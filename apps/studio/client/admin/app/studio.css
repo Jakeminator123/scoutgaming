@@ -634,10 +634,11 @@
 .preview-admin .admin-service-page .sg-page{padding:24px 0}
 .preview-admin .admin-speech-panel{min-width:0}
 .preview-admin .admin-speech-lead{max-width:76ch;margin:0 0 18px;color:var(--sg-muted);font-size:14px;line-height:1.6}
-/* Split account pages: own header above the shared native reader, which shows one section. */
+.studio-sidebar nav>.studio-logout{display:flex;width:100%;align-items:center;gap:10px;padding:11px 10px;border:0;border-radius:5px;background:none;font:inherit;font-size:13px;line-height:1.45;color:#a3a8b0;text-align:left;cursor:pointer}
+.studio-sidebar nav>.studio-logout:hover{color:#e6e8eb}.studio-sidebar nav>.studio-logout:focus-visible{outline:2px solid var(--sg-lime);outline-offset:2px}.studio-sidebar nav>.studio-logout:disabled{cursor:wait;opacity:.7}
+.studio-logout-error{margin:4px 10px;color:#ffb547;font-size:12px;line-height:1.4}
+/* Split account pages: own header above the native reader, which reads and shows one section. */
 .preview-admin .admin-accounts-page .admin-system-page{padding:0}
-.preview-admin [data-admin-view] .sg-page-copy>:is(.sg-eyebrow,h1){display:none}
-.preview-admin [data-admin-view=players] [data-admin-section=users],.preview-admin [data-admin-view=users] [data-admin-section=players]{display:none}
 
 /* Resource tabs share the clip workspace, without squeezing whole editors beside the map. */
 .studio-map-stage.is-resource-editor>.studio-canvas{display:none}

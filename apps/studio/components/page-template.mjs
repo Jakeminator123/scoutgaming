@@ -31,8 +31,9 @@ export function PageTemplate({ eyebrow, title, intro, primary, status, tabs, chi
   return React.createElement('section', { className: 'sg-page' },
     React.createElement('header', { className: 'sg-page-head' },
       React.createElement('div', { className: 'sg-page-copy' },
-        React.createElement('p', { className: 'sg-eyebrow' }, eyebrow),
-        React.createElement('h1', null, title),
+        // A section inside a page with its own heading passes neither.
+        eyebrow == null ? null : React.createElement('p', { className: 'sg-eyebrow' }, eyebrow),
+        title == null ? null : React.createElement('h1', null, title),
         intro ? React.createElement('p', { className: 'sg-intro' }, intro) : null,
       ),
       actions,

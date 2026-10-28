@@ -21,7 +21,9 @@ function harness({search='',data=session,status=200}={}){
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},
     useEffect(effect,deps){const index=cursor++;if(!effects[index]||deps.some((value,i)=>!Object.is(value,effects[index][i])))queue.push({index,effect,deps});}};
   const markers=Object.fromEntries(['NativeAdministration','StudioAdministration','OpenClawWorkspace','ConnectedEconomy','MovingDriftControls','ConnectedServices'].map(name=>[name,marker(name)]));
-  const admin={...markers,StudioAdminUiError:class extends Error{constructor(status){super('Serverstatus '+status);this.status=status;}}};
+  const admin={...markers,StudioAdminUiError:class extends Error{constructor(status){super('Serverstatus '+status);this.status=status;}},
+    sharedStudioAdminRead:actions=>({actions,read:()=>assert.fail('render never reads'),refresh(){}})};
+  const navigation={usePathname:()=>'/admin/ekonomi',useSearchParams:()=>new URLSearchParams(search)};
   const context={URL,URLSearchParams,AbortController,Error,location:{origin:'https://admin.invalid',search},
     fetch:async(path,init)=>{requests.push({path,init});return {ok:status>=200&&status<300,status,json:async()=>data};}};
   function compile(file,resolve){
@@ -31,7 +33,7 @@ function harness({search='',data=session,status=200}={}){
     return module.exports;
   }
   const auth=compile('./admin-session.ts',()=>admin);
-  const connected=compile('../components/studio/connected-services.tsx',name=>name.includes('admin-session')?auth:name.includes('studio-navigation')?studioNavigation:name.includes('studio-resource-lifecycle')?{isActiveOperator:()=>true}:name.endsWith('.module.css')?{__esModule:true,default:{embedded:'embedded-theme'}}:admin);
+  const connected=compile('../components/studio/connected-services.tsx',name=>name.includes('admin-session')?auth:name.includes('runtime/navigation')?navigation:name.includes('studio-navigation')?studioNavigation:name.includes('studio-resource-lifecycle')?{isActiveOperator:()=>true}:name.endsWith('.module.css')?{__esModule:true,default:{embedded:'embedded-theme'}}:admin);
   const pages=compile('../components/studio/accounts-pages.tsx',()=>({ConnectedServices:markers.ConnectedServices}));
   return {connected,pages,requests,markers,
     render(fn,props={}){cursor=0;return fn(props);},
@@ -55,22 +57,28 @@ test('both account pages describe their routes and read the one accounts documen
   }
 });
 
-test('the section prop selects one part of the accounts document without a second reader or request',async()=>{
+test('each accounts page asks the native reader for only its own section, and Ekonomi shares one journal read',async()=>{
   for(const section of ['players','users',undefined]){
     const h=harness();
     const tree=await administration(h,{path:'/admin/admin/accounts',section});
-    assert.equal(tree.props['data-admin-view'],section);
+    assert.equal(Object.hasOwn(tree.props,'data-admin-view'),false,'no CSS hides the other half');
     const native=node(tree,item=>item.type===h.markers.NativeAdministration);
     assert.equal(native.props.initialGroup,'accounts');assert.equal(native.props.apiBase,'/studio/api/admin');assert.equal(native.props.embedded,true);
+    assert.deepEqual(section?plain(native.props.sections):native.props.sections,section?[section]:undefined);
     assert.deepEqual(plain(native.props.availableActions),session.availableActions);
     assert.deepEqual(h.requests.map(row=>row.path),['/studio/api/auth/session']);
     assert.equal(h.requests[0].init.credentials,'same-origin');
   }
-  // Other groups never carry an accounts view.
+  // Both Ekonomi tabs get the same shared journal; other groups never carry a section.
   const h=harness();
-  const payments=await administration(h,{path:'/admin/ekonomi',tab:'payments',section:'players'});
-  assert.equal(payments.props['data-admin-view'],undefined);
-  assert.equal(node(payments,item=>item.type===h.markers.NativeAdministration).props.initialGroup,'finance');
+  const economy=h.connected.ConnectedServices({path:'/admin/ekonomi',section:'players'});
+  assert.equal(economy.type,h.connected.EconomyService);
+  const tabs=h.render(economy.type,economy.props).props.tabs;
+  const overview=tabs.find(tab=>tab.id==='overview').content,payments=tabs.find(tab=>tab.id==='payments').content;
+  assert.equal(overview.type,h.markers.ConnectedEconomy);assert.deepEqual(plain(overview.props.journal.actions),['transactions']);
+  assert.equal(payments.props.group,'finance');assert.equal(payments.props.section,undefined);
+  assert.equal(payments.props.sharedRead,overview.props.journal,'Översikt and Betalningar share one read');
+  assert.equal(h.requests.length,0,'rendering the tabs reads nothing');
 });
 
 test('Drift keeps game status, shoe proof and integrity through the native reader under its game-status tab',async()=>{
@@ -80,7 +88,7 @@ test('Drift keeps game status, shoe proof and integrity through the native reade
   assert.ok(reader,'the native StudioAdministration reader renders the operations group');
   assert.equal(reader.props.initialGroup,'operations');assert.equal(reader.props.apiBase,'/studio/api/admin');
   assert.equal(reader.props.readIdentity,'response-headers-v1');assert.equal(reader.props.showGroupNavigation,false);
-  assert.equal(reader.props.roomsHref,'/admin/rooms');assert.equal(reader.props.companyTeamLabel,'Bolag & team');
+  assert.equal(Object.hasOwn(reader.props,'roomsHref'),false);assert.equal(reader.props.companyTeamLabel,'Bolag & team');
   assert.deepEqual(plain(reader.props.availableActions),session.availableActions);assert.equal(reader.props.gameOrigin,'https://game.invalid');
   assert.equal(reader.props.renderOperations,undefined,'the taldrift controls no longer render on Drift');
   assert.equal(node(tree,item=>item.type===h.markers.NativeAdministration),null);

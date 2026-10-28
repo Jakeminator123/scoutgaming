@@ -6,8 +6,8 @@ export const PLAYER_ACCOUNTS_ROUTE:AccountsRoute=Object.freeze({path:'/admin/pla
 /** Admin staff (nivå 1): Användare och roller with invitations. */
 export const ADMIN_STAFF_ROUTE:AccountsRoute=Object.freeze({path:'/admin/admin/accounts',label:'Konton & åtkomst',area:'System',description:'Adminpersonalens konton, roller och inbjudningar till nivå 1.',section:'users'});
 
-// Both pages read the one accounts document through the native reader and show
-// their own part. The link leads to the other half so nothing is lost.
+// Each page reads and shows only its own part of the accounts group through the
+// native reader. The link leads to the other half so nothing is lost.
 function AccountsPage({route,other}:{route:AccountsRoute;other:AccountsRoute}) {
   return <div className="admin-system-page admin-accounts-page">
     <header className="admin-system-header"><div><p className="sg-eyebrow">{route.area}</p><h1 id={route.section+'-accounts-title'}>{route.label}</h1><p>{route.description}</p></div>
