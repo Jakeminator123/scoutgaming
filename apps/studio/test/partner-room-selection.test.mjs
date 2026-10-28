@@ -34,16 +34,21 @@ test('unavailable room links render no default preview or appearance controls',(
 });
 test('the exact room is selected in server markup before client hydration',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'vip-room',apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
-  assert.doesNotMatch(html,/Foreign|Archived|spelbordet är inte tillgängligt/i);
-  assert.match(html,/Paused[\s\S]*pausat|pausat[\s\S]*Paused/);
+  assert.match(html,/<h1>VIP<\/h1>/);assert.match(html,/aria-current="page">VIP</);
+  assert.doesNotMatch(html,/Foreign|Archived|Main|spelbordet är inte tillgängligt/i);
   assert.match(html,/Hämtar utseende/);
+  // The list (no room requested) shows the company's rooms as cards, the paused one marked, never foreign or archived rooms.
+  const list=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',list:true,apiBase:'/studio/api/partner/snapshot'}));
+  assert.match(list,/aria-label="Öppna Main"/);assert.match(list,/aria-label="Öppna VIP"/);
+  assert.match(list,/Paused[\s\S]*pausat/);assert.doesNotMatch(list,/aria-label="Öppna Paused"|Foreign|Archived/);
+  assert.match(list,/Bolagets standard/);
 });
 
 test('controlled room selection renders the current scope instead of its original room',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'main-room',selection:{roomId:'vip-room',unavailable:false},onSelectionChange(){},apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
-  assert.equal((html.match(/aria-pressed="true"/g)||[]).length,1);
+  assert.match(html,/<h1>VIP<\/h1>/);assert.doesNotMatch(html,/<h1>Main<\/h1>/);
+  const company=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',selection:{roomId:'',unavailable:false},onSelectionChange(){},apiBase:'/studio/api/partner/snapshot'}));
+  assert.match(company,/<h1>Bolagets standard<\/h1>/);
 });
 
 function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-casino/rooms?room=main-room',accessClass='internal-admin'}={}) {
@@ -153,6 +158,7 @@ test('cancelled cross-company history restores the selected room and dirty edito
 
 // Render the real room wrapper and actual draft panel with persistent hook state.
 // Only the already-fetched package and media-preview boundary are fixtures.
+function AppearanceChoices(){return null;}
 function actualAppearance(session) {
   const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../../../packages/presentation/contracts/studio-model.mjs');
   const lane=defaultPresentationLane('astrid');lane.operatorAdjustable=['dealer'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','elin']};
@@ -168,7 +174,7 @@ function actualAppearance(session) {
     const code=transformSync(require('node:fs').readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:name==='PartnerAppearance'?'typescript':'ecmascript',tsx:name==='PartnerAppearance',jsx:name!=='PartnerAppearance'},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
     const local=createRequire(file),module={exports:{}};
     require('node:vm').runInNewContext(code,{module,exports:module.exports,fetch:()=>assert.fail('No server write belongs in a navigation test'),
-      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-layer-picker'?{AppearanceLayerPicker:()=>null}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
+      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-choices'?{AppearanceChoices}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
   const wrapper=mount('../components/kevin-bo/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
@@ -182,14 +188,14 @@ function actualAppearance(session) {
     if(!panel){panel=mount('../components/partner-appearance.tsx','PartnerAppearance');mounts++;}
     return panel.render({...loader.props,initial});
   };
-  const dealer=()=>walk(render()).find(node=>node.type==='select'&&node.props['aria-label']==='Dealer');
+  const dealer=()=>walk(render()).find(node=>node.type===AppearanceChoices&&node.props.kind==='dealer');
   return {render,dealer,get mounts(){return mounts;}};
 }
 
 test('Back to an invalid room cannot unmount a real unsaved appearance draft after cancellation',()=>{
   const h=sessionHarness({initialRoomId:'missing',path:'/partner/north-casino/rooms?room=missing'});h.settle();
   const panel=actualAppearance(h);assert.equal(panel.dealer(),undefined);
-  h.choose('main-room');panel.dealer().props.onChange({target:{value:'elin'}});assert.equal(panel.dealer().props.value,'elin');
+  h.choose('main-room');panel.dealer().props.onChange('elin');assert.equal(panel.dealer().props.value,'elin');
   let prompts=0;h.window.confirm=()=>{prompts++;return false;};
   const length=h.history.length;h.history.go(-1);
   assert.equal(panel.dealer()?.props.value,'elin','cancelled history must retain the actual unsaved room override');
@@ -202,7 +208,7 @@ test('Back to an invalid room cannot unmount a real unsaved appearance draft aft
 
 test('valid room and company switches retain the real draft across Back without discard prompts',()=>{
   const h=sessionHarness();h.settle();const panel=actualAppearance(h);
-  panel.dealer().props.onChange({target:{value:'elin'}});assert.equal(panel.dealer().props.value,'elin');
+  panel.dealer().props.onChange('elin');assert.equal(panel.dealer().props.value,'elin');
   h.window.confirm=()=>assert.fail('All room overrides stay in the same mounted draft');
   h.choose('vip-room');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'elin');
   h.choose('');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'elin');assert.equal(panel.mounts,1);
