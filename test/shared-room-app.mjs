@@ -347,6 +347,28 @@ test(`binding HTTP ${status} ${error} never gains recoverable stale authority`,a
   assert.equal(h.controller.state.connected,false);assert.equal(h.mounts.length,0);
 });
 
+// K04 F5b, aggravating: every snapshot of the same window read the binding again (1-2.5 s in staging) before its
+// plan could be presented. A binding the server confirmed for this window and configuration is reused; a new
+// window, another configuration or a binding that was never confirmed is read and confirmed again.
+test('a snapshot of an already confirmed window reuses its binding without another read; a new window reads it again',async t=>{
+  let reads=0;const restores=[];
+  const h=await bindingHarness(t,{fetchImpl:async url=>{reads++;return bindingResponse(url);},
+    createPresentation:options=>{options.onReady(options.selection.dealer);return{restoreSnapshot:value=>restores.push(value.version),present(){},close(){}};}});
+  await h.restore(seated(1));assert.equal(reads,2,'read and confirmed once for the window');
+  await h.restore(seated(2));await h.restore(seated(3,{presentationVer:1}));
+  assert.equal(reads,2,'later snapshots of the same window are not read again');assert.deepEqual(restores,[1,2,3]);
+  assert.equal(h.controller.state.connected,true);
+  await h.restore(seated(4,{windowId:'window-2',presentationVer:1}));assert.equal(reads,3,'a new window is read again');
+  assert.equal(h.mounts.length,1,'its unchanged binding keeps the mounted media');assert.deepEqual(restores,[1,2,3,4]);
+});
+
+test('a binding that failed its confirmation is read again by the next snapshot of the same window',async t=>{
+  let reads=0;
+  const h=await bindingHarness(t,{fetchImpl:async url=>++reads===2?Response.json({error:'other_conflict'},{status:409}):bindingResponse(url)});
+  await assert.rejects(h.restore(seated(1)));assert.equal(reads,2);
+  await h.restore(seated(2));assert.equal(reads,4,'nothing unconfirmed is reused');assert.equal(h.controller.state.connected,true);
+});
+
 test('an aborted binding fetch cannot mount late or replace a newer connection generation',async t=>{
   const oldRead=deferred(),oldConnection=new AbortController();let reads=0,firstSignal;
   const next=seated(3,{windowId:'window-3',configVersion:'cfg-3',settings:{...snapshot().settings,configVersion:'cfg-3'}});
