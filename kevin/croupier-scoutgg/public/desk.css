@@ -40,6 +40,10 @@ html.desk .stage {
 }
 html.desk .stage::before { display: none; }
 html.desk.room-wide .stage .still { visibility: hidden; }   /* the widened room behind is this same room */
+/* Emil 28 Oct: a coloured felt. table-style.js colours the felt in the frame from the phone's room still, down to the
+   phone table's curved front (frame y 1694), so in the frame the wide room's straight armrest turned green and the felt
+   met the room's at the frame's edges. The wide room is coloured whole by desk-felt.js, the frame's part too. */
+html.desk.room-wide .table-style-layer { display: none; }
 
 /* everything the phone lays over the frame is laid over the window instead */
 html.desk .game-frame { position: fixed; inset: 0; width: auto; aspect-ratio: auto; transform: none; container-type: normal; }

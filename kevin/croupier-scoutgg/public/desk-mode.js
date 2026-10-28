@@ -14,8 +14,8 @@
   var html = document.documentElement, KEYED = ['dragge', 'paow', 'astrid2'];
   // the rooms widened for the desktop table (dealers.js ROOMS .wide); a room without one shows its own plate in the frame
   // over a blurred copy of it. Emil 28 Oct: all four (metodik bredda-rum-gemini.py: Dark Hall's wide table, each room's wall)
-  var WIDE = { darkhall: '/media/dealers/rooms-wide/darkhall.jpg?v=20261016', azure: '/media/dealers/rooms-wide/azure.jpg?v=20261028',
-    golden: '/media/dealers/rooms-wide/golden.jpg?v=20261028', mahogany: '/media/dealers/rooms-wide/mahogany.jpg?v=20261028' };
+  var WIDE = { darkhall: '/media/dealers/rooms-wide/darkhall.jpg?v=20261028b', azure: '/media/dealers/rooms-wide/azure.jpg?v=20261028b',
+    golden: '/media/dealers/rooms-wide/golden.jpg?v=20261028b', mahogany: '/media/dealers/rooms-wide/mahogany.jpg?v=20261028b' };
   function setRoom(id, wide) {
     var url = wide || WIDE[id];
     html.classList.toggle('room-wide', !!url);

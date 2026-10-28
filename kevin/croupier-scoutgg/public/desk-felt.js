@@ -31,11 +31,16 @@ async function recolour() {
   const data = g.getImageData(0, 0, W, H), d = data.data;
   const tint = color.match(/[0-9a-f]{2}/gi).map(v => parseInt(v, 16) / 255);
   // room px -> frame px: the frame's (0, 90) is the room's (740, 0) (KLARA_DESKTOP layout); felt between the far rail
-  // (frame y 733-744) and the front of the table (frame y 1694)
+  // (frame y 733-744) and the front of the WIDE table: Emil 28 Oct, the phone table's front (frame y 1694) lies under the
+  // wide room's armrest, whose warm sheen took the felt's colour too. Its edge, fitted on the wide rooms (they share the
+  // table): room row 1138.5 - 16 u^2 - 90.8 u^4, u = (room x - 1280) / 1280.
+  const edge = new Float32Array(W).map((_, x) => { const u = (x * 2560 / W - 1280) / 1280, u2 = u * u; return 1138.5 - 16 * u2 - 90.8 * u2 * u2; });
   for (let y = 0; y < H; y++) {
-    const fy = y * 1440 / H + 90, mask = ss(733, 744, fy) * (1 - ss(1687, 1694, fy));
-    if (mask <= 0) continue;
+    const ry = y * 1440 / H, top = ss(733, 744, ry + 90);
+    if (top <= 0 || ry > 1150) continue;
     for (let x = 0, i = y * W * 4; x < W; x++, i += 4) {
+      const mask = top * (1 - ss(edge[x] - 10, edge[x] - 2, ry));
+      if (mask <= 0) continue;
       const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, hi = Math.max(r, gg, b), lo = Math.min(r, gg, b);
       const key = ss(.055, .10, hi) * (1 - ss(.25, .34, hi)) * (1 - ss(.042, .09, hi - lo)) * ss(-.008, .012, r - gg);
       const a = mask * key;

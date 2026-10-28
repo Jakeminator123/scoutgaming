@@ -204,10 +204,10 @@ export function chooseDealer(id) {
 export const ROOMS = [
   // wide: the room widened around the 1080 x 1920 frame for the desktop table (desk.css; greenscreen KLARA_DESKTOP, Emil 16 Oct; the other three
   // Emil 28 Oct, metodik bredda-rum-gemini.py)
-  { id: 'darkhall', name: 'Dark Hall', still: '/media/dealers/rooms-v2/darkhall.png' + V, thumb: '/media/dealers/rooms-v2/darkhall-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/darkhall.jpg?v=20261016' },
-  { id: 'mahogany', name: 'Mahogany Privé', still: '/media/dealers/rooms-v2/mahogany.png' + V, thumb: '/media/dealers/rooms-v2/mahogany-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/mahogany.jpg?v=20261028' },
-  { id: 'golden', name: 'Golden Salon', still: '/media/dealers/rooms-v2/golden.png' + V, thumb: '/media/dealers/rooms-v2/golden-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/golden.jpg?v=20261028' },
-  { id: 'azure', name: 'Azure Venue', still: '/media/dealers/rooms-v2/azure.png' + V, thumb: '/media/dealers/rooms-v2/azure-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/azure.jpg?v=20261028' },
+  { id: 'darkhall', name: 'Dark Hall', still: '/media/dealers/rooms-v2/darkhall.png' + V, thumb: '/media/dealers/rooms-v2/darkhall-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/darkhall.jpg?v=20261028b' },
+  { id: 'mahogany', name: 'Mahogany Privé', still: '/media/dealers/rooms-v2/mahogany.png' + V, thumb: '/media/dealers/rooms-v2/mahogany-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/mahogany.jpg?v=20261028b' },
+  { id: 'golden', name: 'Golden Salon', still: '/media/dealers/rooms-v2/golden.png' + V, thumb: '/media/dealers/rooms-v2/golden-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/golden.jpg?v=20261028b' },
+  { id: 'azure', name: 'Azure Venue', still: '/media/dealers/rooms-v2/azure.png' + V, thumb: '/media/dealers/rooms-v2/azure-thumb.jpg' + V, wide: '/media/dealers/rooms-wide/azure.jpg?v=20261028b' },
 ];
 
 export function savedRoom() {
