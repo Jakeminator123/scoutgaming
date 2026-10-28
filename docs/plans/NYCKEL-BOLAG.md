@@ -80,6 +80,9 @@ Felkoderna är `partner_operator_mismatch`, `partner_key_unbound`, `partner_laun
 2. **Jakob:** backupgren `backup-api-key-operator-<datum>` enligt [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md), `node tools/prepare-api-key-operator.mjs --evidence <privat-json> --readiness-sql` och sedan `--sql`, körs som `croupier_game` mot produktionen. Därefter kontrolleras kolumnen och ledgerraden. Samma sak på preview- och staginggrenar, där testnycklar raderas först.
 3. **PR B: Admin och demo** (efter DDL, ovanpå #512 och #518). Bolagsväljare i Integration, partnerportalens egna nycklar, demo-byggaren slås på och `DEMO_LAUNCH_ENABLED` och `DEMO_LAUNCH_OFF_TEXT` raderas.
 4. **PR C: kravhöjning och radering.** Motorn kräver ledgerraden `game-012-api-key-operator` vid start, nycklar och token utan bolag nekas, `allowLegacyPartnerSessions`, legacygrenen och kommentaren i `shared-room-access.mjs:18–19` ("no canonical grant") samt `keys.list` och `keys.create` raderas, och kommentarerna i bryggan och `game-start.mjs` skrivs om. B och C kan slås ihop om de blir små.
+   C tar också två saker som granskningen av #538 noterade:
+   - **Nativa bord.** En bunden partnersession kan fortfarande öppna ett annat bolags nativa bord, till exempel `/blackjack?operator=<annat bolag>` utan rum, eller vilket rum som helst när delat bord är avstängt. Sidkontrollen i A gäller bara delat bord. C nekar en bunden session hos ett annat bolag också på den nativa ingången och i dess API.
+   - **Rumsorakel.** En bunden partner får 101 och 1008 `partner_operator_mismatch` för ett annat bolags live-rum men 403 för ett okänt rum, och kan därmed se att rummet finns. C jämför bolaget (`admit`) före registerläsningen (`current()`) eller ger samma svar i båda fallen.
 
 **Risker:**
 

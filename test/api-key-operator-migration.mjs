@@ -113,6 +113,13 @@ test('012 on PGlite: readiness changes nothing, preflight refuses drift and rows
   assert.notEqual(interrupted, prepared.sql);
   await assert.rejects(apply(interrupted), /division by zero/);
   assert.deepEqual(await state(pool), baseline);
+  // Postflight checks what was created, not only that it exists: another CHECK or a trigger on every UPDATE is refused.
+  for (const [from, to] of [["{0,99}$');\nCREATE INDEX", "{0,98}$');\nCREATE INDEX"], ['BEFORE UPDATE OF operator_id ON', 'BEFORE UPDATE ON']]) {
+    const drifted = prepared.sql.replace(from, () => to);
+    assert.notEqual(drifted, prepared.sql, from);
+    await assert.rejects(apply(drifted), /api_key_operator_postflight_failed/, to);
+    assert.deepEqual(await state(pool), baseline);
+  }
 
   await apply(prepared.sql);
   const after = await state(pool);

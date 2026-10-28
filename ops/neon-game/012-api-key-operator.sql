@@ -84,9 +84,14 @@ DECLARE keys oid := 'croupier_auth.api_keys'::regclass;
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_attribute WHERE attrelid=keys AND attname='operator_id' AND NOT attisdropped
       AND attnotnull AND format_type(atttypid,atttypmod)='text')
-    OR NOT EXISTS (SELECT FROM pg_constraint WHERE conrelid=keys AND conname='api_keys_operator_id_check' AND contype='c' AND convalidated)
+    OR NOT EXISTS (SELECT FROM pg_constraint WHERE conrelid=keys AND conname='api_keys_operator_id_check' AND contype='c' AND convalidated
+      AND pg_get_constraintdef(oid)='CHECK ((operator_id ~ ''^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$''::text))')
     OR NOT EXISTS (SELECT FROM pg_index WHERE indrelid=keys AND indexrelid=to_regclass('croupier_auth.api_keys_operator_idx') AND indisvalid)
-    OR NOT EXISTS (SELECT FROM pg_trigger WHERE tgrelid=keys AND tgname='api_keys_operator_immutable' AND NOT tgisinternal AND tgenabled='O')
+    OR NOT EXISTS (SELECT FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid
+      WHERE t.tgrelid=keys AND t.tgname='api_keys_operator_immutable' AND NOT t.tgisinternal AND t.tgenabled='O'
+        AND t.tgfoid='croupier_auth.api_key_operator_immutable()'::regprocedure AND NOT p.prosecdef
+        AND p.proconfig=ARRAY['search_path=pg_catalog']
+        AND pg_get_triggerdef(t.oid)='CREATE TRIGGER api_keys_operator_immutable BEFORE UPDATE OF operator_id ON croupier_auth.api_keys FOR EACH ROW EXECUTE FUNCTION croupier_auth.api_key_operator_immutable()')
     OR EXISTS (SELECT FROM croupier_auth.api_keys)
     OR NOT EXISTS (SELECT FROM croupier_game.storage_migrations WHERE version='product-v1' AND checksum={{productChecksum}})
     OR NOT EXISTS (SELECT FROM croupier_game.storage_migrations WHERE version='game-012-api-key-operator' AND checksum={{migrationChecksum}}) THEN

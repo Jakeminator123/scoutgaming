@@ -112,6 +112,6 @@ run_node_tests gameplay player-results test/player-results.mjs
 # Real engine over HTTP on PostgreSQL. Without the harness these skip with a reason;
 # CI runs exactly this list through tools/run-engine-qa.mjs (owned TLS cluster), which
 # reads it from here and fails on any skip.
-run_node_tests engine engine-http test/engine-public-routes-http.mjs test/table-http.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
+run_node_tests engine engine-http test/engine-public-routes-http.mjs test/table-http.mjs test/partner-launch-http.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
 # Pinned OpenClaw Gateway image on Linux Docker; CI runs it as its own job beside the regression legs.
 run_node_tests container gateway-container services/openclaw/lab/deploy/container/gateway-container.test.mjs
