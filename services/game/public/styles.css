@@ -198,25 +198,39 @@ html[data-presentation-standard="three-layer"] .seat-inner { transform:scale(var
   .bet-target-tp {left:25px;width:24px;}
   .bet-target:focus-visible {outline:2px solid #d6ff3a;border-radius:8px;}
 }
-/* shared room: Admin geometry places each seat; controls never shrink below touch size */
-.seat-shared .seat-shared-inner { left: -70px; top: -22px; width: 140px; height: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* shared room: Admin geometry or the dealer's filmed landing places each seat root (0 x 0) on its box; controls
+   never shrink below touch size. The seat's circle stays centred on the box. Its bets and Lämna form a grid below,
+   moved sideways at a screen edge (--seat-shift-x) and lifted clear of the bottom controls (--seat-lift),
+   both measured in shared-room-view.mjs. Only the buttons take clicks, never the seat's empty box. */
+.seat-shared .seat-shared-inner { left: 0; top: -22px; width: max-content; height: auto; translate: -50% var(--seat-lift, 0px); pointer-events: none;
+  display: grid; grid-template-columns: auto auto auto; grid-template-areas: "join join join" "pp main tp" "leave leave leave";
+  justify-items: center; align-items: center; column-gap: 4px; row-gap: 6px; }
 html[data-presentation-standard="three-layer"] .seat-shared .seat-shared-inner { transform: none; }
-/* The 140 px seat box is wider than the seat spacing; only its buttons take clicks, never a neighbour's empty box. */
-.seat-shared .seat-shared-inner { pointer-events: none; }
 .seat-shared .seat-shared-join, .seat-shared-bet, .seat-shared-leave { pointer-events: auto; }
-/* Shared-room banner: kept below the seats and wrapping, so it never covers seat controls or runs off a phone screen. */
-html[data-shared-room="1"] #banner { top: auto; bottom: 19vh; max-width: calc(100vw - 32px); white-space: normal; text-align: center; }
-.seat-shared .seat-shared-join { position: static; width: auto; min-width: 44px; min-height: 44px; padding: 0 12px; border-radius: 999px; font: 700 12px 'Space Grotesk', sans-serif; white-space: nowrap; }
-/* The own seat's circle is filled and reads "Du"; it is a marker, not the place to bet. */
+.seat-shared .seat-shared-join { grid-area: join; position: static; width: auto; min-width: 44px; min-height: 44px; margin-bottom: 4px; padding: 0 12px; border-radius: 999px; font: 700 12px 'Space Grotesk', sans-serif; white-space: nowrap; }
+/* The own seat's circle is filled and reads "Du"; it is a marker, not the place to bet. With several own
+   seats it chooses the one whose side bets and Lämna show; the others read lighter. */
 .seat-shared.active .seat-shared-join { background: rgba(214,255,58,.9); border-color: rgba(214,255,58,.9); color: #101618; cursor: default; }
+.seat-shared.active:not(.primary) .seat-shared-join:not(:disabled) { background: rgba(214,255,58,.42); cursor: pointer; }
 .seat-shared .seat-shared-join:disabled { cursor: default; }
-.seat-shared-bets { display: flex; gap: 4px; justify-content: center; align-items: center; z-index: 5; margin-top: 10px; }
-/* Wide screens: neighbouring seats sit up to ~21 px lower on the arc, so the own bet row starts below their pills, and Redo goes below the bet rows. */
-@media (min-width: 861px) {
-  .seat-shared-bets { margin-top: 16px; }
-  html[data-shared-room="1"] #deal-now { top: auto; bottom: 23vh; }
-}
+.seat-shared-bets { display: contents; }
 .seat-shared-bets[hidden] { display: none; }
+.seat-shared-bet-main { grid-area: main; }
+.seat-shared-bet-pp { grid-area: pp; }
+.seat-shared-bet-tp { grid-area: tp; }
+.seat-shared-leave { grid-area: leave; }
+.seat-shared .seat-shared-bet, .seat-shared .seat-shared-leave { translate: var(--seat-shift-x, 0px) 0; }
+/* Wide screens: neighbouring seats sit up to ~21 px lower on the arc, so the own bet row starts below their circles. */
+@media (min-width: 861px) { .seat-shared .seat-shared-join { margin-bottom: 18px; } }
+/* K04 F14: own seats closer than one bet row keep their main bet within the gap (--seat-bet-w); the chosen one
+   adds Par, 21+3 and Lämna on the line below, where no other seat has a control. */
+.seat-shared.crowded .seat-shared-inner { grid-template-areas: "join join join" "main main main" "pp tp leave"; }
+.seat-shared.crowded .seat-shared-bet, .seat-shared.crowded .seat-shared-leave { translate: var(--seat-shift-x, 0px) var(--seat-row-y, 0px); }
+.seat-shared.crowded .seat-shared-bet-main { min-width: 0; width: var(--seat-bet-w, 84px); min-height: 44px; padding: 0 4px; font-size: 11px; }
+.seat-shared.crowded:not(.primary) .seat-shared-inner { grid-template-columns: auto; grid-template-areas: "join" "main"; }
+.seat-shared.crowded:not(.primary) .seat-shared-bet-side, .seat-shared.crowded:not(.primary) .seat-shared-leave { display: none; }
+/* A phone shows its three boxes' circles; the chosen own seat's bets dock above the action zone (#shared-room-dock). */
+#seats.seats-docked .seat-shared-bets, #seats.seats-docked .seat-shared-leave { display: none; }
 .seat-shared-bet { min-width: 44px; min-height: 44px; padding: 0 8px; border-radius: 8px; font: 700 11px 'Space Grotesk', sans-serif; white-space: nowrap; cursor: pointer; }
 /* The main bet looks like the table's betting spot (.spot): the larger, marked target with its amount. */
 .seat-shared-bet-main { min-width: 84px; min-height: 52px; padding: 0 12px; border-radius: 50%; border: 2px solid rgba(214,255,58,.85);
@@ -230,10 +244,6 @@ html[data-shared-room="1"] #banner { top: auto; bottom: 19vh; max-width: calc(10
 .seat-shared-leave { min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: rgba(242,241,237,.82);
   font: 600 11px 'Space Grotesk', sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .seat-shared-leave:disabled { opacity: .4; cursor: default; }
-/* K04 F8: the sign-in link after an expired session. */
-.shared-room-sign-in { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 8px; background: #d6ff3a; color: #101618;
-  font: 700 13px 'Space Grotesk', sans-serif; text-decoration: none; }
-.shared-room-sign-in[hidden] { display: none; }
 .spot {
   position: absolute; left: var(--spot-x); top: var(--spot-y); width: var(--spot-w); height: var(--spot-h); border-radius: 50%;
   background: radial-gradient(ellipse, rgba(24,72,50,.30), rgba(20,60,42,.38));
@@ -1024,3 +1034,122 @@ html[data-studio-preview] #chat { display: none !important; }
 #studio-preview-status > p { position: absolute; right: 0; top: calc(100% + 6px); width: min(300px, calc(100vw - 24px)); box-sizing: border-box; margin: 0; padding: 12px; background: #101618; border: 1px solid #52605e; border-radius: 8px; }
 html[data-studio-preview] #player-choices { max-width: calc(100vw - 24px); box-sizing: border-box; }
 html[data-studio-preview] body:not(.in-round) #player-choices { pointer-events: auto; }
+
+/* ---------- shared table: bottom controls, seat controls and connection sign ---------- */
+/* The bottom grid holds, top to bottom: a phone's docked seat bets, the action zone (status line, Redo,
+   Nästa runda, insurance, the decision panel) and the wallet, chips and table buttons. Each has its own row,
+   so none covers another (K04 F12, F13), and the decision panel never covers the dealer's cards (F15). */
+html[data-shared-room="1"] #hud-bottom { grid-template-columns: auto minmax(0,1fr) auto; grid-template-areas: "dock dock dock" "status status status" "wallet chips right"; }
+/* The wallet keeps one line, so the bottom controls keep one height. */
+html[data-shared-room="1"] #wallet { flex-wrap: nowrap; }
+@media (max-width: 1280px) and (min-width: 861px) {
+  html[data-shared-room="1"] #add-funds { margin-left: 0; padding: 0; width: 36px; height: 36px; flex: 0 0 36px; font-size: 0; }
+  html[data-shared-room="1"] #add-funds::before { content: '+'; font-size: 22px; }
+}
+html[data-shared-room="1"] #hud-bottom button, html[data-shared-room="1"] #hud-bottom select { pointer-events: auto; }
+.shared-room-dock { grid-area: dock; justify-self: center; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; max-width: 100%; }
+.shared-room-dock[hidden] { display: none; }
+.shared-room-actions { grid-area: status; justify-self: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 8px 12px; min-height: 64px; max-width: 100%; }
+/* The moved native nodes keep their ids; id selectors here outrank their absolute placement above. */
+#shared-room-actions > #banner, #shared-room-actions > #deal-now, #shared-room-actions > #insurance, #shared-room-actions > #actions-top,
+#shared-room-actions > .shared-room-next { position: static; transform: none; inset: auto; margin: 0; }
+#shared-room-actions > [hidden], #shared-room-actions > #deal-now[hidden], #shared-room-actions > #actions-top[hidden], #shared-room-actions > #insurance[hidden] { display: none; }
+#shared-room-actions > #banner { max-width: min(100%, 520px); white-space: normal; text-align: center; padding: 8px 18px; font-size: 13px; }
+/* Redo and Nästa runda are the table's primary pill (Redo's own look); a closed Redo stays visible with its reason. */
+#shared-room-actions > #deal-now, .shared-room-next {
+  min-height: 44px; padding: 0 32px; border: none; border-radius: 26px; background: #D6FF3A; color: #0A0B0D; cursor: pointer;
+  font: 700 14px 'Space Grotesk', sans-serif; letter-spacing: .12em; text-transform: uppercase; box-shadow: 0 6px 22px rgba(0,0,0,.45), 0 0 30px rgba(214,255,58,.3); }
+#shared-room-actions > #deal-now:disabled, .shared-room-next:disabled { opacity: .4; box-shadow: none; cursor: default; pointer-events: auto; }
+.shared-room-next:not(:disabled):hover { background: #e2ff66; }
+#shared-room-actions > #insurance { padding: 6px 14px; }
+#shared-room-actions > #insurance button { min-height: 44px; }
+/* The decision panel keeps its glass look, sized to the zone: 44 px round buttons with their word below. */
+#shared-room-actions > #actions-top { padding: 4px 14px 3px; gap: 12px; border-radius: 18px; max-width: 100%; }
+#shared-room-actions > #actions-top button { min-width: 44px; min-height: 44px; padding: 0; }
+#shared-room-actions > #actions-top button i { width: 44px; height: 44px; font-size: 18px; margin: 0 auto; }
+#shared-room-actions > #actions-top button em { margin-top: 2px; font-size: 8px; letter-spacing: .14em; }
+
+/* Seat controls in the top bar beside the sound button: the table's pill buttons, 44 px tall. "Visa platser" only on a phone. */
+.shared-room-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; min-width: 0; pointer-events: none; }
+.shared-room-controls > * { pointer-events: auto; }
+.shared-room-controls > [hidden] { display: none; }
+.shared-room-button, .shared-room-select {
+  min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(242,241,237,.16); background: rgba(10,11,13,.78); color: #c9cbd2;
+  font: 700 11px 'Space Grotesk', sans-serif; letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: border-color .15s, color .15s, background .15s; }
+.shared-room-select { appearance: none; -webkit-appearance: none; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23D6FF3A' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; }
+.shared-room-select option { background: #101618; color: #F2F1ED; text-transform: none; letter-spacing: 0; }
+.shared-room-button:not(:disabled):hover, .shared-room-select:not(:disabled):hover { border-color: rgba(214,255,58,.55); color: #F2F1ED; background-color: rgba(214,255,58,.08); }
+.shared-room-button:focus-visible, .shared-room-select:focus-visible, .shared-room-next:focus-visible { outline: 2px solid #D6FF3A; outline-offset: 2px; }
+.shared-room-button:disabled, .shared-room-select:disabled { opacity: .35; cursor: default; }
+.shared-room-primary { background: #D6FF3A; border-color: #D6FF3A; color: #0A0B0D; }
+.shared-room-primary:not(:disabled):hover { background: #e2ff66; color: #0A0B0D; }
+#shared-room-window { display: none; }
+/* K04 F8: the sign-in link after an expired session. */
+.shared-room-sign-in { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px; background: #d6ff3a; color: #101618;
+  font: 700 13px 'Space Grotesk', sans-serif; text-decoration: none; }
+.shared-room-sign-in[hidden] { display: none; }
+/* A lost connection: a clear sign over the table; the last server state stays visible around it. */
+.shared-room-connection { position: absolute; left: 50%; top: 34%; translate: -50% -50%; z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  max-width: min(420px, calc(100% - 32px)); padding: 18px 22px; border-radius: 16px; text-align: center;
+  background: rgba(10,11,13,.94); border: 1px solid rgba(255,176,32,.6); box-shadow: 0 18px 44px rgba(0,0,0,.6); color: #F2F1ED; }
+.shared-room-connection[hidden] { display: none; }
+.shared-room-connection strong { font: 600 15px/1.4 'Space Grotesk', sans-serif; }
+.shared-room-connection[data-state="reconnecting"] { border-color: rgba(214,255,58,.4); }
+
+@media (max-width: 860px) {
+  html[data-shared-room="1"] #hud-bottom { grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "dock dock" "status status" "wallet right" "chips chips"; gap: 6px; }
+  .shared-room-actions { min-height: 52px; gap: 6px 10px; }
+  #shared-room-actions > #banner { font-size: 11px; padding: 6px 12px; }
+  #shared-room-actions > #deal-now, .shared-room-next { padding: 0 22px; font-size: 13px; }
+  #shared-room-actions > #actions-top { padding: 3px 8px; gap: 6px; justify-content: center; }
+  #shared-room-actions > #actions-top button { width: 48px; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #shared-room-actions > #actions-top button i { width: 30px; height: 30px; font-size: 15px; }
+  #shared-room-actions > #actions-top button em { margin-top: 1px; font-size: 7px; letter-spacing: .04em; }
+  /* The seat controls share the sound button's row below the title and wrap as needed. */
+  .shared-room-controls { flex: 1 1 auto; gap: 6px; }
+  .shared-room-button, .shared-room-select { padding: 0 12px; letter-spacing: .04em; text-transform: none; font-size: 12px; }
+  .shared-room-select { padding-right: 28px; background-position: right 10px center; }
+  #shared-room-window { display: block; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  html[data-shared-room="1"] #hud-bottom { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); grid-template-areas: "dock dock dock" "status status status" "wallet chips right"; }
+}
+/* The shared table has no dealer choice: its rail goes, the lobby link sits with the seat controls and the
+   bottom controls reach the screen edge. */
+html[data-shared-room="1"] #dealer-picker { display: none; }
+html[data-shared-room="1"] #hud-bottom { bottom: 0; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.shared-room-controls .shared-room-lobby { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 999px; font-size: 12px; }
+/* Chips, Ångra, Dubbla, Upprepa, Alla platser and Rensa act in the betting window only (the native table's body.in-round). */
+html[data-shared-room="1"] #scene:not([data-shared-phase="bets"]) #chip-row,
+html[data-shared-room="1"] #scene:not([data-shared-phase="bets"]) #bottom-right { display: none; }
+/* Ångra and Dubbla carry words at a shared table: pills, not the native icon circles. */
+html[data-shared-room="1"] #bottom-right button { width: auto; }
+html[data-shared-room="1"] #undo-btn, html[data-shared-room="1"] #double-btn { width: auto; min-width: 40px; padding: 0 12px; border-radius: 999px; font: 600 12px 'Space Grotesk', sans-serif; }
+@media (max-width: 860px) {
+  html[data-shared-room="1"] #hud-bottom { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .shared-room-controls .shared-room-lobby { padding: 0 12px; font-size: 12px; }
+  html[data-shared-room="1"] #bottom-right button { padding: 0 12px; letter-spacing: .06em; }
+}
+/* A narrow phone: the chips take their own line above Ångra, Dubbla and Upprepa instead of scrolling. */
+@media (max-width: 480px) {
+  html[data-shared-room="1"] #chip-row { flex-wrap: wrap; justify-content: center; overflow: visible; row-gap: 6px; }
+  html[data-shared-room="1"] #chips { order: -1; flex: 1 0 100%; }
+}
+/* The sound button is one of the seat controls' pills; on a wide screen it closes the row. */
+.shared-room-controls #sound-btn { min-width: 44px; min-height: 44px; border-radius: 999px; order: 3; }
+@media (max-width: 860px) {
+  /* Two whole rows on a phone: lobby, seat choice and sound, then the three boxes shown and leaving. */
+  .shared-room-controls #sound-btn { order: 0; }
+  #shared-room-window, .shared-room-controls > .shared-room-button { order: 1; }
+}
+/* A narrow phone keeps the status line and the four decisions on one line: 44 px buttons, tighter glass. */
+@media (max-width: 400px) {
+  #shared-room-actions > #actions-top { padding: 3px 6px; gap: 4px; }
+  #shared-room-actions > #actions-top button { width: 44px; height: 44px; }
+  #shared-room-actions > #banner { padding: 6px 10px; }
+  .shared-room-actions { gap: 6px 8px; }
+}
