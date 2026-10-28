@@ -187,7 +187,9 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
   upstream.on('error', () => shut(1011));
   upstream.on('close', code => {
     trace('upstream_close', {code});
-    terminal = closeCode(code);
+    // K04 F10: an engine that went away without a close frame (1005/1006, e.g. a Render restart) is a service
+    // restart, 1012, not an internal error. Clients reconnect on both; receipts can tell the two apart.
+    terminal = code === 1005 || code === 1006 ? 1012 : closeCode(code);
     if (frontend) {
       shut(terminal);
       if (frontend.readyState === WebSocket.CLOSED) finish();

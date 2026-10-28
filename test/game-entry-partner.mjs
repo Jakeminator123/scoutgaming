@@ -5,7 +5,7 @@ import {Readable} from 'node:stream';
 import {installPartnerApi as asyncFactory} from '../services/game/storage/async-partner-api.mjs';
 import {createPartnerDb} from './fixtures/partner-db.mjs';
 import {launchGameStart} from '../services/game/game-start.mjs';
-import {platformConfiguration, platformRoute} from '../packages/navigation/server/platform-routing.mjs';
+import {launchBackendSearch, platformConfiguration, platformRoute} from '../packages/navigation/server/platform-routing.mjs';
 
 test('async storage contract partner launch returns canonical game address with preserved identity and wallet',async () => {
   const db = createPartnerDb();
@@ -37,28 +37,33 @@ test('async storage contract partner launch returns canonical game address with 
 test('partner launch lands in the lobby without a company and keeps an explicit company room',async () => {
   const db = createPartnerDb(), publicOrigin = 'https://game.example.invalid';
   const partner = asyncFactory({db,boDb:db,publicUrl:publicOrigin,publicGamePath:'/game',root:'',
-    getPlayer:id => db.prepare('SELECT * FROM players WHERE id=?').get(id),jwtSign:() => 'fixture.claim.signature',logTx:() => {}});
+    getPlayer:id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
+    jwtSign:value => 'fixture.'+Buffer.from(JSON.stringify(value)).toString('base64url')+'.signature',logTx:() => {}});
   const key = await partner.keys.create({name:'lobby-landing',scopes:['launch']});
   const minted = await partner.keys.mintLaunch(key.id,{playerId:'external-ref',currency:'EUR'});
   const routing = platformConfiguration({CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
     CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_LAB_UI_ORIGIN:'https://lab.example.invalid',
     CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)});
+  // L5: the launch passes the public bridge (launchBackendSearch) before the engine, as on Vercel.
   const land = launchUrl => {
-    const url = new URL(launchUrl);
+    const url = new URL(launchUrl), forwarded = platformRoute(url,routing);
     // The public address forwards a launch to the engine; the engine's 303 is the landing.
-    assert.equal(platformRoute(url,routing).kind,'backend');
-    url.searchParams.delete('launch');
-    const destination = launchGameStart(url.searchParams,{origin:url.origin});
+    assert.deepEqual(forwarded,{kind:'backend',destination:'https://engine.example.invalid/game'+launchBackendSearch(url)});
+    const engine = new URL(forwarded.destination);
+    engine.searchParams.delete('launch');
+    const destination = launchGameStart(engine.searchParams,{origin:engine.origin});
     return {destination,route:platformRoute(new URL(destination,publicOrigin),routing)};
   };
-  assert.equal(minted.url,publicOrigin+'/game?launch=fixture.claim.signature');
-  for (const issued of [minted.url,publicOrigin+'/game?dealer=astrid&launch=fixture.claim.signature',
-    publicOrigin+'/game?dealer=astrid&lane=mobile-phone&table=room-1&launch=fixture.claim.signature']) {
+  const launch = new URL(minted.url).searchParams.get('launch');
+  assert.equal(JSON.parse(Buffer.from(launch.split('.')[1],'base64url').toString()).partner,key.id);
+  assert.equal(minted.url,publicOrigin+'/game?launch='+launch);
+  for (const issued of [minted.url,publicOrigin+'/game?dealer=astrid&launch='+launch,
+    publicOrigin+'/game?dealer=astrid&lane=mobile-phone&table=room-1&launch='+launch]) {
     const {destination,route} = land(issued);
     assert.equal(destination,'/game?game=blackjack',issued);
     assert.deepEqual(route,{kind:'redirect',destination:publicOrigin+'/lobby'},issued);
   }
-  const company = land(publicOrigin+'/game?operator=sg-test&table=room-1&dealer=astrid&launch=fixture.claim.signature');
+  const company = land(publicOrigin+'/game?operator=sg-test&table=room-1&dealer=astrid&launch='+launch);
   assert.equal(company.destination,'/game?game=blackjack&dealer=astrid&table=room-1&operator=sg-test');
   assert.deepEqual(company.route,{kind:'frontend'});
 });

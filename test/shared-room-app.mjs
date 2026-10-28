@@ -80,7 +80,7 @@ test('all server command intents use current window, membership and turn identif
   h.setSend(async intent=>({status:'ok',result:{op:intent.op,version},replay:false}));
   const reset=async extra=>h.restore(seated(version++,extra));
   for(const op of ['bet','undo','clear','doubleBets','allSeats','repeat','ready']){
-    await reset({bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]});
+    await reset({bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)],me:{...seated().me,lastSettlement:{roundId:'r0',returned:0,hands:[{box:0}]}}});
     await h.controller.dispatch(op,op==='bet'?{seat:0,field:'pp'}:undefined);
     const expected={op,windowId:'window-1',...(op==='bet'?{seat:0,field:'pp',chip:.5}:op==='allSeats'?{chip:.5}:{})};
     assert.deepEqual(h.calls.at(-1),expected);await reset();
@@ -153,6 +153,19 @@ test('presentation restores reconnect cards without old replay; new events use e
   assert.deepEqual(trace.at(-1),['finish',7,1,true]);first.abort();
   ports.restoreSnapshot(seated(5,{presentationVer:5}),{signal:new AbortController().signal});
   await ports.present({...p,ver:5});assert.equal(trace.at(-1)[0],'restore');ports.close();
+});
+
+// K04 F9: the media asks the step's own card cursor whether its card shows before it writes an error line.
+test('a filmed step tells its media whether the card of its own film already shows on the table',async()=>{
+  const asked=[],tokens=[];
+  const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close','frame','finish'].map(key=>[key,()=>{}]));
+  cards.begin=()=>7;cards.shown=token=>{tokens.push(token);return true;};
+  const media={state(){},prepareSequence(){},async present(event,options){asked.push(options.shown());options.onSelected({id:'exact'},event);asked.push(options.shown());return true;},close(){}};
+  const ports=createSharedRoomPresentationPorts({cards,media,clock:()=>1000}),signal=new AbortController().signal;
+  const p={roomId,ver:3,talkId:'talk-3',endAt:2000,events:[{type:'deal',to:'player',box:0,shoeDraw:1}]};
+  ports.restoreSnapshot(seated(3,{presentationVer:3}),{signal});await ports.present(p,{signal});
+  ports.restoreSnapshot(seated(4,{presentationVer:4}),{signal});await ports.present({...p,ver:4},{signal});
+  assert.deepEqual(asked,[false,true],'no card cursor before the film is selected');assert.deepEqual(tokens,[7]);ports.close();
 });
 
 class Element extends EventTarget {
@@ -386,7 +399,11 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   const can={join:true,bet:true,leave:true,act:[],insurance:false};
   view.render({snapshot:seated(1,{me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
   assert.match(nodes.get('balance').textContent,/17,5 demo/);assert.equal(nodes.get('seats').children.length,7);
-  const own=nodes.get('seats').children[0],join=own.children[0].children[0];assert.equal(join.tagName,'BUTTON');join.click();assert.deepEqual(calls[0],['join',{seat:0}]);
+  // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
+  const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
+  assert.equal(join.tagName,'BUTTON');assert.equal(join.textContent,'Du');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
+  assert.equal(leaveSeat.textContent,'Lämna');assert.equal(leaveSeat.hidden,false);leaveSeat.click();assert.deepEqual(calls[0],['join',{seat:0}]);
+  assert.equal(nodes.get('seats').children[1].children[0].children[2].hidden,true,'a free seat has no leave control');
   nodes.get('chips').children[1].disabled=false;nodes.get('chips').children[1].click();assert.deepEqual(calls[1],['chip',1]);
   // The status overlay is pointer-transparent; the retry control must sit in the clickable control bar.
   const status=nodes.get('scene').children.find(node=>node.id==='shared-room-status');assert.equal(status.children.some(node=>node.id==='shared-room-retry'),false);
@@ -399,7 +416,79 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 kr · demo$/);
   view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
   assert.equal(nodes.get('limits').textContent,'–','no snapshot shows no stale placeholder limits');
-  view.close();join.click();assert.equal(calls.length,3);
+  view.close();leaveSeat.click();assert.equal(calls.length,3);
+});
+
+// Jakob in staging 28 Oct 2026: Redo, Upprepa and the side bets went to the server, which answered 409 NO_BETS.
+test('before a main bet Redo and the side bets stay closed locally with the server text as tooltip; Upprepa needs a previous round',async t=>{
+  const h=harness(t);await h.restore(seated(1));
+  let r=h.renders.at(-1);
+  assert.equal(r.can.bet,true);assert.equal(r.can.ready,false);assert.equal(r.can.repeat,false);
+  assert.deepEqual(r.hints,{ready:'Lägg en insats först.',repeat:'Det finns ingen tidigare insats att upprepa.',side:'Lägg en insats först.'});
+  for(const [op,args] of [['ready'],['repeat'],['bet',{seat:0,field:'pp'}],['bet',{seat:0,field:'tp'}]])await h.controller.dispatch(op,args);
+  assert.deepEqual(h.calls,[],'nothing reaches the server before a main bet');
+  // The main bet on this box opens Redo and its side bets; a previous round on a box still owned opens Upprepa.
+  const lastSettlement={roundId:'r0',returned:0,hands:[{box:0}]};
+  await h.restore(seated(2,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)],me:{...seated().me,lastSettlement}}));
+  r=h.renders.at(-1);assert.equal(r.can.ready,true);assert.equal(r.can.repeat,true);assert.deepEqual([r.hints.ready,r.hints.repeat],['','']);
+  await h.controller.dispatch('bet',{seat:0,field:'pp'});assert.deepEqual(h.calls.at(-1),{op:'bet',windowId:'window-1',seat:0,field:'pp',chip:.5});
+  // A previous round on a box the player has since left is nothing to repeat (the server's lastBets filter).
+  await h.restore(seated(11,{me:{...seated().me,lastSettlement:{...lastSettlement,hands:[{box:4}]}}}));
+  assert.equal(h.renders.at(-1).can.repeat,false);
+  // The server's NO_BETS text stays the safety net for a refusal that still arrives.
+  h.setSend(async()=>({status:'rejected',httpStatus:409,code:'NO_BETS'}));await h.restore(seated(12,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]}));
+  await h.controller.dispatch('ready');assert.equal(h.renders.at(-1).notice,'Lägg en insats först.');
+});
+
+test('the view closes side bets without a main bet on their box and shows why on Redo, Upprepa and the side bets',()=>{
+  const {document,nodes}=documentFixture(),calls=[];const view=createSharedRoomView({document});
+  view.bind({dispatch:(...args)=>calls.push(args)});
+  const can={join:true,bet:true,leave:true,ready:false,repeat:false,act:[],insurance:false};
+  const hints={ready:'Lägg en insats först.',repeat:'Det finns ingen tidigare insats att upprepa.',side:'Lägg en insats först.'};
+  view.render({snapshot:seated(1),chip:.5,can,hints,notice:'',retry:false,busy:false,connected:true});
+  const bets=nodes.get('seats').children[0].children[0].children[1],[pp,main,tp]=bets.children;
+  assert.equal(main.disabled,false);assert.equal(main.className.split(' ').includes('seat-shared-bet-main'),true);assert.equal(main.title,'');
+  for(const side of [pp,tp]){assert.equal(side.disabled,true);assert.equal(side.title,'Lägg en insats först.');assert.equal(side.className.split(' ').includes('seat-shared-bet-side'),true);}
+  assert.equal(nodes.get('deal-now').disabled,true);assert.equal(nodes.get('deal-now').title,'Lägg en insats först.');
+  assert.equal(nodes.get('max-btn').disabled,true);assert.equal(nodes.get('max-btn').title,'Det finns ingen tidigare insats att upprepa.');
+  main.click();assert.deepEqual(calls,[['bet',{seat:0,field:'main'}]]);
+  view.render({snapshot:seated(2,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]}),chip:.5,can:{...can,ready:true,repeat:true},
+    hints:{ready:'',repeat:'',side:hints.side},notice:'',retry:false,busy:false,connected:true});
+  assert.equal(main.textContent,'Insats 5');assert.equal(main.classes.has('staked'),true);
+  for(const side of [pp,tp]){assert.equal(side.disabled,false);assert.equal(side.title,'');}
+  assert.equal(nodes.get('deal-now').disabled,false);assert.equal(nodes.get('deal-now').title,'');
+  view.close();
+});
+
+// K04 F8: a revoked session ended the table with "Ladda om sidan", which only met the same refusal again.
+test('a session the socket refused twice asks for a new sign-in with a link; other terminal errors keep the reload text',async t=>{
+  for(const [code,notice,signIn] of [['shared_room_unauthorized','Din session har gått ut. Logga in igen.',true],
+    ['shared_room_renderer_failed','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],[undefined,'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
+    const h=harness(t);await h.restore(seated(1));h.controller.fail(code);
+    const r=h.renders.at(-1);assert.equal(r.notice,notice);assert.equal(r.signIn,signIn,String(code));assert.equal(r.can.bet,false);
+    assert.equal(h.commands.state,'stopped');
+  }
+  const {document,nodes}=documentFixture();const view=createSharedRoomView({document,signInHref:'/player-login?game=blackjack&table=north-1'});
+  const link=()=>nodes.get('scene').children.find(node=>node.id==='shared-room-controls').children.find(node=>node.id==='shared-room-sign-in');
+  view.render({snapshot:null,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',signIn:false,retry:false,busy:false,connected:false});
+  assert.equal(link().tagName,'A');assert.equal(link().hidden,true);assert.equal(link().href,'/player-login?game=blackjack&table=north-1');
+  view.render({snapshot:null,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'Din session har gått ut. Logga in igen.',signIn:true,retry:false,busy:false,connected:false});
+  assert.equal(link().hidden,false);assert.equal(link().textContent,'Logga in');view.close();
+});
+
+test('the mounted app hands the socket\'s unauthorized code to the table and links to the player sign-in of this table',async t=>{
+  const {document}=documentFixture();const window=new EventTarget();
+  window.location={origin:'https://game.invalid',href:'https://game.invalid/game?game=blackjack&operator=north&table=north-1&launch=a.b.c'};
+  let socketOptions,viewOptions,rendered;
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),
+    createCommands:()=>({state:'idle',send:async()=>({status:'rejected',httpStatus:409,code:'STALE_COMMAND'}),stop(){this.state='stopped';}}),
+    createView:options=>{viewOptions=options;return{bind(){},render:value=>{rendered=value;},close(){}};},
+    createSocket:options=>{socketOptions=options;return{start(){},stop(){},status:()=>({state:'failed'})};},
+    createPresentation:async options=>(options.onReady(options.selection.dealer),{restoreSnapshot(){},present(){},close(){}})});
+  t.after(app.close);
+  assert.equal(viewOptions.signInHref,'/player-login?game=blackjack&table=north-1&operator=north','the sign-in keeps the table and never a launch token');
+  socketOptions.onError({code:'shared_room_unauthorized'});
+  assert.equal(rendered.notice,'Din session har gått ut. Logga in igen.');assert.equal(rendered.signIn,true);
 });
 
 test('mounted application wires real WS and HTTP clients; duplicate reconnect state never replays presentation',async t=>{

@@ -310,7 +310,7 @@ test('new game document retains live session/policy checks, cookies and fail-clo
     assert.equal((await platformUiDocument(new Request(config.publicOrigin+path),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('retired document '+path)})).status,404,path);
 });
 
-test('lobby operator survives into the engine proxy; an invalid slug matches today and a launch partner wins',async t=>{
+test('lobby operator survives into the engine proxy, also on a partner launch; only an invalid slug is dropped',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'croupier-operator-proxy-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
@@ -321,11 +321,14 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
     {kind:'backend',destination:unified.backendOrigin+'/game?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
   assert.deepEqual(platformRoute(new URL('/game?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+'/game?launch=fixture.claim.signature&table=room-1'});
+  // L5 (O02): a partner key names no company, so a valid ?operator= stays on a partner launch.
   assert.deepEqual(platformRoute(new URL(`/game?operator=sg-test&launch=${partner}&table=room-1`,unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+`/game?operator=sg-test&launch=${partner}&table=room-1`});
+  assert.deepEqual(platformRoute(new URL(`/game?operator=play&launch=${partner}&table=room-1`,unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+`/game?launch=${partner}&table=room-1`});
   const legacyLaunch=platformRoute(new URL(`/blackjack?operator=sg-test&launch=${partner}`,unified.publicOrigin),unified);
   assert.deepEqual(legacyLaunch,{kind:'redirect',status:308,destination:unified.publicOrigin+`/game?game=blackjack&operator=sg-test&launch=${partner}`});
-  assert.deepEqual(platformRoute(new URL(legacyLaunch.destination),unified),{kind:'backend',destination:unified.backendOrigin+`/game?game=blackjack&launch=${partner}`});
+  assert.deepEqual(platformRoute(new URL(legacyLaunch.destination),unified),{kind:'backend',destination:unified.backendOrigin+`/game?game=blackjack&operator=sg-test&launch=${partner}`});
   const kept=platformRoute(new URL(`/game?operator=demo-north&launch=${notPartner}`,unified.publicOrigin),unified);
   assert.equal(kept.kind,'backend');assert.match(kept.destination,/operator=demo-north/);assert.doesNotMatch(kept.destination,/partner=/);
   const calls=[];let authenticated=true;

@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {platformUiDocument} from '../lib/server-ui.mjs';
 import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
-import {platformConfiguration,platformRoute} from '../../../packages/navigation/server/platform-routing.mjs';
+import {launchBackendSearch,platformConfiguration,platformRoute} from '../../../packages/navigation/server/platform-routing.mjs';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:'https://game.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.onrender.com',
   CROUPIER_LAB_UI_ORIGIN:'https://studio.vercel.app',CROUPIER_VERCEL_INGRESS_SECRET:'test-only-ingress-secret-'.repeat(3)};
 
@@ -43,6 +43,20 @@ test('the game start validates the live session and preserves the engine documen
   authenticated=true;failed=true;response=await platformUiDocument(request('/game?dealer=linnea'),options);
   assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/app.mjs|fixture-session/);
   assert.ok(calls.every(call=>!call.url.includes('/api/bo/config')));
+});
+
+// L5 (O02): a partner key names no company, so the bridge keeps ?operator= on a partner launch.
+test('the launch bridge keeps a valid operator on a partner launch and drops only an invalid slug',() => {
+  const partnerLaunch = 'fixture.'+Buffer.from(JSON.stringify({sub:'player-ref',partner:'pk_fixture'})).toString('base64url')+'.signature';
+  const search = query => launchBackendSearch(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+query));
+  const kept = `?operator=sg-test&table=room-1&dealer=nora&launch=${partnerLaunch}`;
+  assert.equal(search(kept),kept);
+  const config = platformConfiguration({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
+  assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+kept),config),{kind:'backend',destination:env.CROUPIER_BACKEND_ORIGIN+'/game'+kept});
+  for (const invalid of ['Not_A_Slug','sg-test&operator=other',''])
+    assert.equal(search(`?operator=${invalid}&table=room-1&dealer=nora&launch=${partnerLaunch}`),`?table=room-1&dealer=nora&launch=${partnerLaunch}`,invalid);
+  for (const unchanged of [`?table=room-1&dealer=nora&launch=${partnerLaunch}`,'?launch=a.b.c',''])
+    assert.equal(search(unchanged),unchanged);
 });
 
 test('a signed launch on the game start reaches the authoritative engine without another public alias',() => {
