@@ -63,7 +63,7 @@ Nya namn kräver inga nya adresser: alla omdirigeringar i `packages/navigation/a
 | **Spelbord** | rumsdelen av `/admin/rooms` | alla bolags rum, filter per bolag, en editor (4.3). |
 | **Bolag** | `/admin/companies`, bolagsdelen av `/admin/rooms`, `/admin/admin/api`, `/admin/players`, `/admin/ekonomi` | ett nav per bolag (4.4). |
 | **Dealers** | `/admin/dealers`, `/admin/clips` med alla flikar, `/admin/dealer-studio?view=generate`, `/admin/replies`, `/admin/dealer-agent` | ett nav per dealer med alla dealerverktyg (4.2). |
-| **Scenmallar** | `/admin/scenes` | egen sida, inte längre samma instans som klippkartan. Visar vilka rum och bolag som använder mallen. |
+| **Scenmallar** | `/admin/scenes` | egen sida, inte längre samma instans som klippkartan. Visar vilka rum och bolag som använder mallen. Får knappen **Exportera landningsmall** (4.5). |
 | **Material** | `/admin/assets` | enda stället där bordsgrafik och bakgrunder laddas upp. |
 | **System** | `/admin/drift`, `/admin/ai/models`, `/admin/admin/accounts`, `/admin/structure`, `/admin/lobby` | Drift, AI-agenter, Scoutgamings personal, Beroenden, Intern lobby. |
 | **Hjälp** | `/admin/guide` | begrepp, vem som får ändra vad, länkar till guiden och ordlistan. |
@@ -107,7 +107,13 @@ Publiceringen är gemensam för båda nivåerna och går via en kontrollerad ser
 
 Knappen *Förhandsvisa portalen i läsläge* öppnar portalen som en läsare hos bolaget ser den, med serverbegränsning och loggning. Den är ingen rollväxlare.
 
-### 4.5 System
+### 4.5 Scenmallar: rita bordet efter dealern
+
+Korten ritas av klienten där dealerns hand landar i filmen; landningspunkterna kommer från dealerns registrerade filmprofil (`registeredFilmedProfile`, till exempel `packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs`). Mobilen visar tre av sju platser i ett glidande fönster runt den egna eller aktiva platsen (`services/game/public/shared-room-presentation.mjs:249`); placeringsredigeraren (`components/blackjack-scene-placement-editor.tsx`) har per bord mobil tre platser och dator sju, med valet att följa filmen (`autoScale.landing`) eller placera manuellt. En bordsgrafik som är bredare än filmen får boxar där handen inte landar, och då börjar man zooma och flytta i stället.
+
+Målbildspunkt (nivå 1, efter O03, samordnad med spåret för flerspelarbordet och mobilvyn 2026-10-28): **rita bordet efter dealern, inte dealern efter bordet.** Placeringsredigeraren får knappen **Exportera landningsmall**, som ger en PNG eller SVG med dealerns sju landningspunkter, dealerplatsen och mobilens treboxram, hämtade ur den registrerade filmprofilen för vald dealer (inte ur den manuella geometrin, så att mallen gäller även bord som inte kalibrerats). Bordsdesignern målar boxarna efter mallen, och samma bordsgrafik fungerar på mobil och dator utan nya klipp. Utanför målbilden: zoom och panorering på mobil, kameravinklar per plats (alla ser samma frontfilm) och fler än tre synliga boxar på telefon. "Neutral giv" (dealern lägger kortet framför sig och renderingen glider det till platsen) är en filminspelningsfråga, inte Admin.
+
+### 4.6 System
 
 Drift (status, skor, delade bordets prov; Taldrift flyttar till Dealers › Röst och tal), AI-agenter (modell per agent, OpenClaw-panelen under det namnet bara i detaljer), Scoutgamings personal (bara nivå 1-konton; egen komponent i stället för CSS-delning med Spelarkonton), Beroenden (var används dealer, material, mall och rum; visas också som *Används av* på varje objekt), Intern lobby (visar även opublicerat, bakom inloggning).
 
@@ -267,7 +273,7 @@ Användarspråk; inga tekniska id:n eller tabeller byter namn.
 
 | Används i dag | Målbild |
 |---|---|
-| rum, spelrum, spelutbud, room, table, bj, game-tables | **Spelbord** i menyer och rubriker (ordet rum behålls i löptext och i TERMINOLOGI tills Jakob beslutar, avsnitt 10) |
+| rum, spelrum, spelutbud, room, table, bj, game-tables | **Spelbord** (beslutat 2026-10-28; äldre dokument säger rum) |
 | bord som material | **Bordsgrafik** |
 | mall, spelmall, gemensam mall, sammansättning, lane, composition | **Scenmall** (TERMINOLOGI: mall) |
 | paketversion, publiceringsrevision | **Publicerad version** (teknisk revision under Detaljer) |
@@ -300,20 +306,24 @@ Små PR:er, en sak i taget; docs, UI och server blandas inte. Varje steg har ett
 | **B nivå 2: editorn** | flikarna Utseende, Dealer, Spelinställningar, Tillgänglighet, Historik; val filtrerade på tilldelningen; *Låst av Scoutgaming*; granskningen säger att utkastet är gemensamt per bolag och listar alla rum; bordsfärg bort ur formuläret | `components/partner-appearance.tsx`, editorkomponenten från Admin | bolaget kan bara välja det som finns i paketet, servern avvisar annat, granskningen visar rätt påverkan |
 | **C partner-API** | läsa tilldelning, byta dealer inom tilldelning, spelinställningar, pausa eget rum, begära material (journalpost), nyckelstatus och begäran om rotation; varje åtgärd kontrollerar bolag, resurs, åtgärd och revision | `apps/studio/lib/partner-*.mjs`, `packages/operators/**` | acceptanslistan i 5.6 passerar mot staging |
 | **D en publicering** | avsnitt 7: `publish-room`, `room-release`, felkontrakt, kontroll av 009-lagringen; sedan tas de åtta knapparna och PAOW-knappen bort; rumslistan fryses i paketet | `operator-package-api.mjs`, ny `lib/room-release.mjs`, `studio-admin-contract.mjs`, `studio-access-policy.mjs`, `studio-admin-api.mjs`, `registered-studio.tsx`, `room-game-config.tsx`, `partner-appearance.tsx` | en publicering ökar versionen med exakt 1; inaktuell förhandsvisning ger 409 utan skrivning; saknad 009 ger 503; grannrummet oförändrat; bolag B får 404; `/game` visar `data-game-package-revision = N+1`; J08-harnessen återanvänd i staging |
-| **E nivå 1: meny och nav** | åtta menyval; Dealers blir nav med flikarna i 4.2; Bolag blir nav med flikarna i 4.4; `/admin/rooms` delas; Scenmallar egen instans; `viewPaths` och omdirigeringar rättade | `packages/navigation/admin-navigation.mjs`, `admin-workspace-routes.mjs`, `client/admin/entry.tsx`, `registered-studio.tsx`, `dealer-directory.tsx`, `connected-clip-map.tsx`, `workspace-tools.tsx` | varje uppgift nås från menyn utan djuplänk; gamla djuplänkar landar rätt med bibehållen bolag, rum, dealer och revision; staging visad för Jakob |
+| **E nivå 1: meny och nav** | åtta menyval; Dealers blir nav med flikarna i 4.2; Bolag blir nav med flikarna i 4.4; `/admin/rooms` delas; Scenmallar egen instans med **Exportera landningsmall** (4.5); `viewPaths` och omdirigeringar rättade | `packages/navigation/admin-navigation.mjs`, `admin-workspace-routes.mjs`, `client/admin/entry.tsx`, `registered-studio.tsx`, `dealer-directory.tsx`, `connected-clip-map.tsx`, `workspace-tools.tsx` | varje uppgift nås från menyn utan djuplänk; gamla djuplänkar landar rätt med bibehållen bolag, rum, dealer och revision; staging visad för Jakob |
 | **F spelare knyts till bolag** | bolagsfält på `players`, inloggningsnamn unika per bolag, bolaget i sessionen, saldo per bolag, API-nycklar per bolag, bolag i varje skapväg, bolagskontroll i `/game` och delade bordets kommando/socket, lobby och `/player-login` med bolagskontext; `players/create` och `GET players` med bolag; Spelare-vyerna i båda nivåerna får data | `ops/neon-game/*.sql` (DDL, Jakob applicerar), `services/game/**`, `packages/storage/**`, Admin- och partner-API | schemamigrering före kravhöjning; en spelare hos A kan inte spela i B:s rum; negativa prov per väg |
 | **G städning** | dubbla livscykler (Dealers mot `panel=dealer`), fem uppladdningsingångar till en, `operator-create-demo` och `sg-test`, `nora`, `remote-ui`, döda Forge-exporter, mappnamnet `kevin-bo`, `lissabon_*`-tabellerna (011), `bo_*`-rester | per område | inga medier, revisioner eller tabeller raderas som bieffekt av UI-städning |
 | **H verktygskedja och struktur** | React, TypeScript och byggen mellan `apps/studio` och `apps/studio/client`; "ett repo, en sajt"; Node- och Next-versioner | egen plan efter O03 (orkestratorn) | ren klon, låst installation, båda frontendbyggena |
 | **Tal** | dealer-generisk talkedja (text → röst → läppsynk) konfigurerad per dealer via registret; Dragan och Astrid som exempel, inte specialfall; Röst och tal får livemärke och "Använd i spelet" | egen aktivitet (Jakobs beslut 2026-10-28) | – |
 
-## 10. Beslut som krävs av Jakob
+## 10. Beslut
 
-1. **Ordet för rum i menyer:** "Spelbord" (Johns skiss och paketet) eller "Rum" (TERMINOLOGI). Om Spelbord: TERMINOLOGI uppdateras så att *Bord* fortsatt bara betyder bordslagret ("Bordsgrafik").
-2. **Rumslistan i paketet:** fryses rummens namn och läge i paketet (så att spelet bara läser paketet, som TERMINOLOGI säger), eller skrivs TERMINOLOGI om så att rummets läge är ett levande fält?
-3. **Produktnamnet i Admin:** "Scoutgaming Admin" i stället för "Croupier Admin".
-4. **Astrid-kortet "Legacyreferens"** i Dealers: bort i P2 eller i ren start.
-5. **Dealer-godkännande** som krav för tilldelning (nytt statusfält i projektet): ja eller nej.
-6. **Nya dealers**: filmas eller genereras (avgör Skapa materials framtid); efter O03.
+Tagna 2026-10-28 (Jakob gav Admin-arkitekten fria händer för ordlistan och godkände namn, dotfiler och godkännande):
+
+1. **Spelbord** är ordet för `room` i menyer, rubriker och ny text; bordslagret heter **bordsgrafik**. TERMINOLOGI är omskriven.
+2. **Spelbordets namn och läge fryses i paketet** i steg D, så att spelet bara läser paketet. Tills dess beskriver TERMINOLOGI undantaget ärligt.
+3. **Scoutgaming Admin** ersätter "Croupier Admin" (P2).
+4. **Dotfil-städningen** görs som egen PR.
+5. **Dealer-godkännande**: ett enkelt statusfält "godkänd" i projektet (inget schema), krav för tilldelning. Bolaget tilldelas en **uppsättning** dealers, bordsgrafik, bakgrunder och insatsprofiler att välja bland, aldrig bara en.
+6. **Astrid-kortet "Legacyreferens"** i Dealers tas bort i ren start tillsammans med Astrid som dealer.
+
+Kvar: **nya dealers filmas eller genereras** (avgör Skapa materials framtid); efter O03.
 
 ## 11. Avvikelser mot Jakobs paket
 

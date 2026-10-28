@@ -3,11 +3,8 @@ import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../../pac
 import { createRegisteredIdlePolicy } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { uploadNativeVideo } from '../../../lib/upload-native-video.mjs';
-import { materialForAsset } from '../../../../../packages/presentation/contracts/material-catalog.mjs';
-import { defaultCompositionSettings } from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../lib/dealer-media-library.mjs';
-import {layerAssetFitsGame} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {bindFilmedBank,filmedBankState,hasEmbeddedShoeTransitions,hasSeparateShoeTransitions} from '../../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
 
@@ -257,21 +254,6 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
       variant.videoGenerationId=videoId;
     }
   }
-  return validateProject(draft);
-}
-
-// This edits the shared template, never the choices of an individual room.
-// Room choices use the existing scoped branding draft/review/publication API.
-export function selectCompositionLayer(project, room, role, assetId) {
-  const draft = structuredClone(project);
-  const lane = draft.lanes?.find(row => row.id === room.compositionId);
-  if (!lane || !['background', 'table'].includes(role) || !lane.layers[role].enabled
-    || !lane.layers[role].allowed.includes(assetId)) throw Error('Lagret är inte tillåtet i rummets sammansättning.');
-  if (role === 'table' && !layerAssetFitsGame(draft.layerAssets?.find(row=>row.id===assetId),room.game)) throw Error('Bordet tillhör ett annat spel eller saknar rätt speltyp.');
-  const material=materialForAsset(draft.layerAssets?.find(row=>row.id===assetId));
-  if(role==='table'&&material&&material.game!==room.game)throw Error('Bordet tillhör ett annat spel.');
-  if(role==='table'&&material){lane.composition??=defaultCompositionSettings();lane.composition.tableFront=true;}
-  lane.layers[role].default = assetId;
   return validateProject(draft);
 }
 

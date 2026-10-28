@@ -71,11 +71,8 @@ vendor/
 /apps/web/public/packages/
 /apps/web/public/web/
 
-# Retired local data roots: never stage them if an old checkout still has them.
-/lab/data/
-/web/data/
+# Local export output written by tools/export-media-blob.mjs; never source.
 /apps/studio/**/data/
-/services/game/data/
 
 # Director/Gateway local state: the Director adapter defaults to the relative
 # open-claw/lab root when LAB_DATA_DIR is unset (Render sets it).

@@ -3,7 +3,6 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {validateProject,type StudioProject,type LayerAsset} from '../../../packages/presentation/contracts/studio-model.mjs';
 import type {MaterialTrashImpact} from '../lib/material-trash.mjs';
 import {layerAssetReferences} from '../lib/layer-asset-removal.mjs';
-import {labUrl} from '../lib/lab-url.mjs';
 import {requestJson} from './studio-types';
 
 export function validMaterialTrashImpact(value:unknown,id:string,archived:boolean):value is MaterialTrashImpact {
@@ -19,7 +18,7 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
  filterAsset?:(asset:LayerAsset)=>boolean;
  renderAsset?:(asset:LayerAsset,actions:{disabled:boolean;onTrash:()=>void})=>ReactNode;
  onEdit?:(change:(project:StudioProject)=>StudioProject)=>void;
- onSaved?:(project:StudioProject)=>void;onBusyChange?:(busy:boolean)=>void;
+ onSaved:(project:StudioProject)=>void;onBusyChange?:(busy:boolean)=>void;
 }){
  const [plan,setPlan]=useState<{impact:MaterialTrashImpact;revision:string}|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[uncertain,setUncertain]=useState(false);
@@ -32,7 +31,7 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
  const blocked=disabled||busy||uncertain,heading=<>Hantera {role==='table'?'bord':'bakgrunder'} · {assets.length} filer</>;
  const Container=expanded?'section':'details';
  async function run(id:string,archived:boolean,apply=false){
-  if(blocked||lock.current||!onSaved||apply&&(!plan||plan.revision!==project.revision||plan.impact.id!==id||plan.impact.archived!==archived))return;
+  if(blocked||lock.current||apply&&(!plan||plan.revision!==project.revision||plan.impact.id!==id||plan.impact.archived!==archived))return;
   const ticket=epoch.current;lock.current=true;setBusy(true);callbacks.current.onBusyChange?.(true);setError('');setNotice('');
   try{
    const body={id,archived,expectedRevision:project.revision,...(apply?{impactToken:plan!.impact.token}:{})};
@@ -60,7 +59,6 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
   }catch{if(ticket===epoch.current)setError('Aktuella uppgifter kunde inte läsas. Försök igen.');}
   finally{lock.current=false;if(ticket===epoch.current)setBusy(false);callbacks.current.onBusyChange?.(false);}
  }
- if(!onSaved)return <p><a href={labUrl('/control/library?tab='+(role==='table'?'tables':'backgrounds'))}>Hantera {role==='table'?'bord':'bakgrunder'} och papperskorg i biblioteket</a></p>;
  return <Container>{expanded?<h3>{heading}</h3>:<summary>{heading}</summary>}
   {!renderAsset&&<p>Flytta en fil till papperskorgen. Kontrollera först vilka sammansättningar och publicerade spelrum som påverkas. Ändringen sparas direkt.</p>}
   {error?<p role="alert">{error} <button type="button" disabled={disabled||busy} onClick={()=>void refresh()}>Läs in aktuella uppgifter</button></p>:null}

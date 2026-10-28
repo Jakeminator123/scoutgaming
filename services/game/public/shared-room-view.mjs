@@ -59,7 +59,9 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
       for(const [id,[,op]] of Object.entries(labels))if($(document,id))$(document,id).disabled=!can[op];
       for(const node of document.querySelectorAll('[data-act]'))node.disabled=!can.act.includes(node.dataset.act);
       for(const id of ['actions','actions-top'])if($(document,id))$(document,id).hidden=!can.act.length;
-      $(document,'insurance').hidden=!s?.me?.insuranceDue;
+      // The insurance question shows from turnAt, when every card of its plan shows (K04 review of #481). At the
+      // start of the plan it would tell the player of the dealer's ace before the up card was dealt on screen.
+      $(document,'insurance').hidden=!(s?.me?.insuranceDue&&s.phase==='round'&&s.round?.phase==='insurance'&&(value.serverNow??s.serverNow)>=(s.plan?.turnAt??0));
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
       const limits=$(document,'limits');
       if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';return;}
