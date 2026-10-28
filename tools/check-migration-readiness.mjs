@@ -38,36 +38,43 @@ function versionList(rows) {
  * pending version before the last selected one must be selected too, or be an
  * optional version explicitly skipped that shares no table with a later
  * selected version (019 widens the same CHECK as 018, so 018 cannot be skipped
- * under 019). Required versions can never be left out. */
+ * under 019). Required versions can never be left out. Only the explicit skips
+ * and optional versions after the selection are deferred, so a version that
+ * becomes pending after planning makes the runner refuse under its lock. */
 export function selectPendingMigrations({ registry, pending, optionalPending, only, skip = [] }) {
   const pattern = /^[0-9]{3}$/;
+  const refuse = (code, versions = []) => ({ ok: false, code, versions });
   if (!Array.isArray(registry) || !Array.isArray(only) || !only.length || !Array.isArray(skip)
-    || [...only, ...skip].some(version => typeof version !== 'string' || !pattern.test(version))
-    || new Set([...only, ...skip]).size !== only.length + skip.length) return { ok: false, code: 'migration_check_selection_invalid' };
+    || [...only, ...skip].some(version => typeof version !== 'string' || !pattern.test(version))) return refuse('migration_check_selection_invalid');
+  const repeated = [...only, ...skip].filter((version, position, all) => all.indexOf(version) !== position);
+  if (repeated.length) return refuse('migration_check_selection_invalid', repeated);
   const index = new Map(registry.map((row, position) => [row.version, position]));
-  if ([...only, ...skip].some(version => !index.has(version))) return { ok: false, code: 'migration_check_selection_unknown' };
+  const byOrder = versions => [...new Set(versions)].sort((a, b) => index.get(a) - index.get(b));
+  const unknown = [...only, ...skip].filter(version => !index.has(version));
+  if (unknown.length) return refuse('migration_check_selection_unknown', unknown);
   const waiting = new Set([...pending, ...optionalPending]);
-  if (only.some(version => !waiting.has(version))) return { ok: false, code: 'migration_check_selection_not_pending' };
+  const notPending = only.filter(version => !waiting.has(version));
+  if (notPending.length) return refuse('migration_check_selection_not_pending', byOrder(notPending));
   const last = Math.max(...only.map(version => index.get(version)));
-  if (skip.some(version => !optionalPending.includes(version) || index.get(version) > last)) return { ok: false, code: 'migration_check_skip_invalid' };
-  if (pending.some(version => !only.includes(version))
-    || [...waiting].some(version => index.get(version) < last && !only.includes(version) && !skip.includes(version))) {
-    return { ok: false, code: 'migration_check_selection_order' };
-  }
+  const skipRequired = skip.filter(version => !registry[index.get(version)].deploymentOptional);
+  if (skipRequired.length) return refuse('migration_check_skip_required', byOrder(skipRequired));
+  const skipInvalid = skip.filter(version => !optionalPending.includes(version) || index.get(version) > last);
+  if (skipInvalid.length) return refuse('migration_check_skip_invalid', byOrder(skipInvalid));
+  const requiredLeft = pending.filter(version => !only.includes(version));
+  if (requiredLeft.length) return refuse('migration_check_required_pending', byOrder(requiredLeft));
+  const unordered = [...waiting].filter(version => index.get(version) < last && !only.includes(version) && !skip.includes(version));
+  if (unordered.length) return refuse('migration_check_selection_order', byOrder(unordered));
   const objects = version => { const row = registry[index.get(version)]; return [...row.tables, ...(row.fingerprintTables ?? [])]; };
-  for (const skipped of skip) {
-    const touched = objects(skipped);
-    if (only.some(version => index.get(version) > index.get(skipped) && objects(version).some(name => touched.includes(name)))) {
-      return { ok: false, code: 'migration_check_skip_conflict' };
-    }
-  }
-  const selected = registry.map(row => row.version).filter(version => only.includes(version));
-  const deferOptional = registry.filter(row => row.deploymentOptional && !only.includes(row.version)).map(row => row.version);
+  const conflicts = skip.filter(skipped => only.some(version => index.get(version) > index.get(skipped)
+    && objects(version).some(name => objects(skipped).includes(name))));
+  if (conflicts.length) return refuse('migration_check_skip_conflict', byOrder(conflicts));
+  const selected = byOrder(only);
+  const deferOptional = registry.filter(row => row.deploymentOptional && (skip.includes(row.version) || index.get(row.version) > last)).map(row => row.version);
   return { ok: true, selected, deferOptional };
 }
 
-function fail(code) {
-  return { database: null, role: null, applied: [], pending: [], ready: false, exitCode: 2, code, message: null };
+function fail(code, versions = []) {
+  return { database: null, role: null, applied: [], pending: [], ready: false, exitCode: 2, code, versions, message: null };
 }
 
 function failureCode(error) {
@@ -115,7 +122,7 @@ export async function checkMigrationReadiness({ pool, directory, connectionStrin
   let deferOptional = [];
   if (only !== undefined) {
     const selection = selectPendingMigrations({ registry: sources, pending: report.pending, optionalPending: report.optionalPending, only, skip });
-    if (!selection.ok) return fail(selection.code);
+    if (!selection.ok) return fail(selection.code, selection.versions);
     ({ selected, deferOptional } = selection);
     if (apply !== true) return { ...report, selected };
   }
@@ -175,7 +182,9 @@ async function main() {
     const onPlan = versions => console.error(`migration_apply_plan ${versions.length ? versions.join(',') : 'none'}`);
     const result = await checkMigrationReadiness({ pool, apply, confirm: apply && confirmed, only, skip, onPlan });
     if (result.exitCode === 2) {
-      console.error(safeLine(result.code) ? result.code : 'migration_check_unreachable');
+      const named = Array.isArray(result.versions) && result.versions.length && result.versions.every(version => /^[0-9]{3}$/.test(version))
+        ? `${result.code} ${result.versions.join(',')}` : result.code;
+      console.error(safeLine(named) ? named : 'migration_check_unreachable');
       code = 2;
     } else {
       const output = { database: result.database, role: result.role, applied: result.applied, pending: result.pending, optionalPending: result.optionalPending, ready: result.ready };

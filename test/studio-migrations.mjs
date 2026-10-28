@@ -689,7 +689,7 @@ test('--only refuses unknown, already applied, order breaks and conflicting skip
   ]) {
     const pool=await optionalGap(),before=pool.snapshot();let printed=false;
     const result=await checkMigrationReadiness({pool,apply:true,confirm:true,only,skip,onPlan:()=>{printed=true;}});
-    assert.equal(result.exitCode,2,code);assert.equal(result.code,code);assert.equal(printed,false);
+    assert.equal(result.exitCode,2,code);assert.equal(result.code,code);assert.equal(printed,false);assert.ok(Array.isArray(result.versions));
     assert.deepEqual(pool.snapshot(),before);assert.equal(pool.calls.some(row=>row.marker==='lock'),false);
   }
 });
@@ -718,4 +718,35 @@ test('the runner refuses a pending set that differs from the approved list under
     const pool=await optionalGap();
     await assert.rejects(applyStudioMigrations({pool,expectedTarget:target,confirm:true,expectedVersions}),refusal('studio_migration_invalid_selection'));
   }
+});
+
+test('a stale plan is refused under the lock when a selected version was applied after planning',async()=>{
+  const pool=await optionalGap();
+  const plan=async args=>{
+    const planned=await planStudioMigrations(args);
+    await applyStudioMigrations({pool,expectedTarget:target,confirm:true,deferOptional:['018','019','020'],expectedVersions:['016']});
+    return planned;
+  };
+  const after=[];
+  const result=await checkMigrationReadiness({pool,plan,apply:true,confirm:true,only:['016'],onPlan:()=>{after.push(pool.snapshot());}});
+  assert.equal(result.exitCode,2);assert.equal(result.code,'studio_migration_selection_mismatch');
+  assert.deepEqual(pool.snapshot(),after[0]);assert.deepEqual(await pendingOf(pool),['018','019','020']);
+});
+
+test('a ledger that shrinks after planning makes --only refuse instead of silently deferring the new gap',async()=>{
+  const pool=await installed();pool.change(remove020);pool.calls.length=0;
+  const plan=async args=>{const planned=await planStudioMigrations(args);pool.change(remove016);return planned;};
+  const shrunk=[];
+  const result=await checkMigrationReadiness({pool,plan,apply:true,confirm:true,only:['020'],onPlan:list=>{shrunk.push(pool.snapshot());assert.deepEqual(list,['020']);}});
+  assert.equal(result.exitCode,2);assert.equal(result.code,'studio_migration_selection_mismatch');
+  assert.deepEqual(pool.snapshot(),shrunk[0]);assert.equal(pool.calls.some(row=>row.marker?.startsWith('ddl-')),false);
+  assert.deepEqual(await pendingOf(pool),['016','020']);
+});
+
+test('019 without 018 directly against the runner fails its structure proof and rolls back completely',async()=>{
+  const pool=await optionalGap(),before=pool.snapshot();
+  await assert.rejects(applyStudioMigrations({pool,expectedTarget:target,confirm:true,deferOptional:['016','018','020'],expectedVersions:['019']}),
+    refusal('studio_migration_structure_mismatch'));
+  assert.equal(pool.calls.some(row=>row.marker==='ddl-019'),true);assert.equal(pool.calls.some(row=>row.marker==='ROLLBACK'),true);
+  assert.deepEqual(pool.snapshot(),before);assert.deepEqual(await pendingOf(pool),['016','018','019','020']);
 });
