@@ -113,7 +113,7 @@ time "$PG/pg_restore" --single-transaction --exit-on-error --no-owner --role=cro
 SELECT n.nspname, c.relname, pg_get_userbyid(c.relowner) AS owner, c.relacl::text
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname IN ('croupier_game','croupier_studio','croupier_auth') AND c.relkind IN ('r','p','S')
-ORDER BY 1 COLLATE "C", 2 COLLATE "C";
+ORDER BY n.nspname COLLATE "C", c.relname COLLATE "C";
 ```
 
 Kör samma fråga mot källan och jämför raderna.
