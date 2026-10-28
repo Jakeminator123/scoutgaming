@@ -216,8 +216,9 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   if (!may('overview.read')) fail(403);
   const permissions = PARTNER_PERMISSIONS.filter(may);
   const role = roleOf(session, context);
-  // Vyns behörighet avgörs här, på servern: en nekad vy svarar sidan 403 på
-  // (`denied`), och snapshoten bär bara de avsnitt rollen får läsa:
+  // Vyns behörighet avgörs här, på servern. En nekad vy får skalet och ett
+  // 403-kort med HTTP 200 (`denied`; API-vägarna svarar 403), och snapshoten
+  // bär bara de avsnitt rollen får läsa:
   // tables.read → spelbord och deras inställningar, presentations.read →
   // scenmall/utseende/tilldelning/utkast, reports.read → ekonomi och
   // publiceringar, team.read → team och inbjudningar.

@@ -150,6 +150,14 @@ test('Spelare, Ekonomi, Integration and Hjälp render honest content without inv
   const mixedRooms = [withAmounts(base.rooms[0], 'USD'), withAmounts({ ...base.rooms[1], rounds: 1, staked: 20, returned: 0, net: 20, days: days([0, 0, 0, 0, 0, 0, 1]).map(day => ({ ...day, staked: day.rounds * 20, returned: 0 })) }, 'EUR')];
   const mixed = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...base, currency: null, currencies: ['EUR', 'USD'], rooms: mixedRooms } }) });
   assert.match(mixed, /Flera valutor i perioden \(EUR, USD\)/); assert.match(mixed, /20 EUR · 600 USD/); assert.doesNotMatch(mixed, /620/);
+  // The read window did not reach the whole period: Ekonomi and Översikt both say so, naming the row count only then.
+  const cut = { ...base, truncated: true, seqWindow: 100000 };
+  for (const view of ['reports', 'overview']) {
+    const html = render({ initialView: view, initialSnapshot: realSnapshot({ reports: cut }) });
+    assert.match(html, /role="status"[^>]*>Siffrorna bygger på de senaste 100 000 journalraderna/, view);
+    assert.doesNotMatch(render({ initialView: view }), /journalraderna|läsfönstret/, view + ' without truncation');
+  }
+  assert.match(render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...cut, seqWindow: undefined } }) }), /Journalen är längre än läsfönstret/);
   const noReports = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'read-failed' } }) });
   assert.match(noReports, /kunde inte läsas just nu/); assert.doesNotMatch(noReports, /600 USD|540 USD/);
   const integration = render({ initialView: 'integration' });

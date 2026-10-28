@@ -32,6 +32,7 @@ export function reportFigures(reports, days = 7) {
   for (const room of rooms) addAmounts(amounts, room.amounts);
   const currencies = Object.keys(amounts).sort();
   return { days, currency: currencies.length === 1 ? currencies[0] || null : null, currencies, mixed: currencies.length > 1, truncated: reports.truncated === true,
+    seqWindow: Number.isSafeInteger(reports.seqWindow) ? reports.seqWindow : null,
     rounds: rooms.reduce((sum, room) => sum + room.rounds, 0), staked: total(amounts, 'staked'), returned: total(amounts, 'returned'), net: total(amounts, 'net'),
     amounts, rooms: new Map(rooms.map(room => [room.roomId, room])) };
 }
@@ -43,6 +44,16 @@ export function amountText(amounts, key, language = 'sv', currency = null) {
   const entries = Object.entries(amounts ?? {}).sort(([left], [right]) => left.localeCompare(right));
   if (!entries.length) return currency ? `${format(0)} ${currency}` : format(0);
   return entries.map(([code, value]) => code ? `${format(value[key])} ${code}` : format(value[key])).join(' · ');
+}
+
+// Varningen när läsfönstret inte nådde hela perioden. Journalen delas av alla
+// bolag, så "de senaste N raderna" nämns bara när det faktiskt avkortats.
+export function reportsTruncatedNotice(figures, language = 'sv') {
+  if (!figures?.truncated) return null;
+  const en = language === 'en', rows = figures.seqWindow ? new Intl.NumberFormat(en ? 'en-GB' : 'sv-SE').format(figures.seqWindow) : null;
+  if (!rows) return en ? 'The journal is longer than the read window; the oldest rounds in the period may be missing.' : 'Journalen är längre än läsfönstret; de äldsta rundorna i perioden kan saknas.';
+  return en ? `The figures are based on the latest ${rows} journal rows (shared by every company), so the oldest rounds in the period may be missing.`
+    : `Siffrorna bygger på de senaste ${rows} journalraderna (journalen delas av alla bolag), så de äldsta rundorna i perioden kan saknas.`;
 }
 
 // Varför det inte finns siffror, med användarens ord.

@@ -13,6 +13,8 @@ const CONFIG_TABLE = 'croupier_game.shared_table_configs';
 export const REPORT_WINDOW_DAYS = 30;
 export const REPORT_SEQ_WINDOW = 100_000;
 const CACHE_TTL_MS = 3 * 60 * 1000;
+// Bolag × rumsuppsättningar som hålls i minnet; äldsta poster faller först.
+export const CACHE_MAX_ENTRIES = 200;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const cache = new Map();
 
@@ -24,6 +26,15 @@ const amount = value => { const number = Number(value); return Number.isFinite(n
 const count = value => { const number = Number(value); return Number.isSafeInteger(number) && number >= 0 ? number : null; };
 
 export function clearPartnerGameReadoutCache() { cache.clear(); }
+export function partnerGameReadoutCacheSize() { return cache.size; }
+// Varje skrivning tar bort utgångna poster och håller taket, så kartan växer
+// aldrig med antalet bolag som någon gång läst Ekonomi.
+function remember(key, value, now, ttlMs) {
+  for (const [other, entry] of cache) if (now - entry.at >= ttlMs) cache.delete(other);
+  cache.delete(key);
+  cache.set(key, { at: now, value });
+  while (cache.size > CACHE_MAX_ENTRIES) cache.delete(cache.keys().next().value);
+}
 
 // Raden tolkas som services/game/storage/async-player-results.mjs: body är JSON
 // med type/at/payload, payload är JSON-text med roundId/staked/returned/currency.
@@ -34,21 +45,26 @@ const BOUNDS_SQL = `/* partner-game-readout:bounds */ WITH head AS (SELECT COALE
     (SELECT CASE WHEN jsonb_typeof(a.body::jsonb->'at') = 'number' THEN (a.body::jsonb->>'at')::numeric END
        FROM ${AUDIT_TABLE} a WHERE a.seq >= GREATEST(head.seq - $1::bigint, 1) ORDER BY a.seq LIMIT 1) AS oldest_at
   FROM head`;
+// Varje tal läses genom CASE på jsonb_typeof: PostgreSQL garanterar inte i vilken
+// ordning AND-villkor prövas, så en kast direkt i WHERE kunde fälla hela frågan på
+// en enda rad med text i staked/returned. En sådan rad hoppas över i stället.
 const SETTLEMENTS_SQL = `/* partner-game-readout:settlements */ SELECT s.room_id,
     to_char(to_timestamp((s.at / 1000)::double precision) AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
     s.payload->>'currency' AS currency,
     COUNT(DISTINCT s.payload->>'roundId') AS rounds,
-    SUM((s.payload->>'staked')::numeric) AS staked,
-    SUM((s.payload->>'returned')::numeric) AS returned
-  FROM (SELECT a.room_id,
-      CASE WHEN jsonb_typeof(a.body::jsonb->'at') = 'number' THEN (a.body::jsonb->>'at')::numeric END AS at,
-      (a.body::jsonb->>'payload')::jsonb AS payload
-    FROM ${AUDIT_TABLE} a
-    WHERE a.seq >= $2 AND a.room_id = ANY($1::text[]) AND a.body::jsonb->>'type' = 'wallet.settlement') s
+    SUM(s.staked) AS staked,
+    SUM(s.returned) AS returned
+  FROM (SELECT p.room_id, p.at, p.payload,
+      CASE WHEN jsonb_typeof(p.payload->'staked') = 'number' THEN (p.payload->>'staked')::numeric END AS staked,
+      CASE WHEN jsonb_typeof(p.payload->'returned') = 'number' THEN (p.payload->>'returned')::numeric END AS returned
+    FROM (SELECT a.room_id,
+        CASE WHEN jsonb_typeof(a.body::jsonb->'at') = 'number' THEN (a.body::jsonb->>'at')::numeric END AS at,
+        (a.body::jsonb->>'payload')::jsonb AS payload
+      FROM ${AUDIT_TABLE} a
+      WHERE a.seq >= $2 AND a.room_id = ANY($1::text[]) AND a.body::jsonb->>'type' = 'wallet.settlement') p) s
   WHERE s.at >= $3 AND s.at < $4
     AND jsonb_typeof(s.payload->'roundId') = 'string' AND s.payload->>'roundId' <> ''
-    AND jsonb_typeof(s.payload->'staked') = 'number' AND jsonb_typeof(s.payload->'returned') = 'number'
-    AND (s.payload->>'staked')::numeric >= 0 AND (s.payload->>'returned')::numeric >= 0
+    AND s.staked >= 0 AND s.returned >= 0
   GROUP BY s.room_id, day, currency
   ORDER BY s.room_id, day, currency`;
 
@@ -67,7 +83,7 @@ function addAmount(target, code, staked, returned) {
 // rapporten: per spelbord totalt och per dag, belopp per valuta. `staked`/`returned`
 // utan valuta är summan över alla valutor och bara meningsfull när en valuta finns;
 // `currency` sätts då, annars listar `currencies` dem som förekommer.
-export function aggregateReportRows(rows, { roomIds, from, to, truncated = false }) {
+export function aggregateReportRows(rows, { roomIds, from, to, truncated = false, seqWindow = REPORT_SEQ_WINDOW }) {
   const rooms = new Map(roomIds.map(id => [id, { roomId: id, rounds: 0, staked: 0, returned: 0, net: 0, amounts: {}, days: emptyDays(from, to) }]));
   for (const row of Array.isArray(rows) ? rows : []) {
     const room = rooms.get(row?.room_id), day = room?.days.find(item => item.day === row.day);
@@ -80,7 +96,7 @@ export function aggregateReportRows(rows, { roomIds, from, to, truncated = false
   const currencies = [...new Set([...rooms.values()].flatMap(room => Object.keys(room.amounts)))].sort();
   return {
     status: 'ready', from, to, windowDays: Math.round((to - from) / DAY_MS),
-    currency: currencies.length === 1 ? currencies[0] || null : null, currencies, truncated,
+    currency: currencies.length === 1 ? currencies[0] || null : null, currencies, truncated, seqWindow,
     rooms: [...rooms.values()].map(room => ({ ...room, net: money(room.staked - room.returned),
       amounts: Object.fromEntries(Object.entries(room.amounts).map(([code, value]) => [code, { ...value, net: money(value.staked - value.returned) }])) })),
   };
@@ -104,18 +120,19 @@ export async function readPartnerReports({ query, operatorId, roomIds, now = Dat
   let value;
   try {
     if (!await tableReady(query, AUDIT_TABLE)) value = notConnected('table-missing');
-    else if (!ids.length) value = aggregateReportRows([], { roomIds: ids, from, to });
+    else if (!ids.length) value = aggregateReportRows([], { roomIds: ids, from, to, seqWindow });
     else {
       const bounds = (await query(BOUNDS_SQL, [seqWindow]))?.rows?.[0];
       const floor = Math.max(1, Math.trunc(Number(bounds?.floor)) || 1);
       const oldest = bounds?.oldest_at == null ? null : Number(bounds.oldest_at);
       const result = await query(SETTLEMENTS_SQL, [ids, floor, from, to]);
       // Fönstret nådde inte hela perioden när dess äldsta rad är yngre än `from`.
-      const truncated = floor > 1 && Number.isFinite(oldest) && oldest > from;
-      value = aggregateReportRows(result?.rows, { roomIds: ids, from, to, truncated });
+      // Kan golvradens tid inte läsas vet vi inte hur långt fönstret nådde: avkortat.
+      const truncated = floor > 1 && (!Number.isFinite(oldest) || oldest > from);
+      value = aggregateReportRows(result?.rows, { roomIds: ids, from, to, truncated, seqWindow });
     }
   } catch { value = notConnected('read-failed'); }
-  cache.set(key, { at: now, value });
+  remember(key, value, now, ttlMs);
   return value;
 }
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateReportRows, clearPartnerGameReadoutCache, readPartnerReports, readPublishedRoomSettings, REPORT_SEQ_WINDOW } from '../lib/partner-game-readout.mjs';
+import { aggregateReportRows, CACHE_MAX_ENTRIES, clearPartnerGameReadoutCache, partnerGameReadoutCacheSize, readPartnerReports, readPublishedRoomSettings, REPORT_SEQ_WINDOW } from '../lib/partner-game-readout.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
 const now = Date.UTC(2026, 9, 28, 12);
@@ -14,7 +14,7 @@ const settlement = (roomId, roundId, { staked, returned, at = now - DAY, playerI
 
 // The fixture pool answers the three statements the way PostgreSQL would: the
 // readiness probe, the seq bounds and the grouped settlement aggregate.
-function fakePool(rows, { ready = true, fail = false, head = null } = {}) {
+function fakePool(rows, { ready = true, fail = false, head = null, oldestAt } = {}) {
   const queries = [];
   // Only audit rows parse as body/payload; config rows are answered from `rows` as they are.
   const parsed = rows.flatMap(row => { try { const body = JSON.parse(row.body); return [{ ...row, body, payload: JSON.parse(body.payload) }]; } catch { return []; } });
@@ -26,7 +26,7 @@ function fakePool(rows, { ready = true, fail = false, head = null } = {}) {
     if (text.includes('partner-game-readout:bounds')) {
       const floor = Math.max(top - values[0], 1);
       const oldest = parsed.filter(row => row.seq >= floor).sort((a, b) => a.seq - b.seq)[0];
-      return { rows: [{ floor: String(floor), oldest_at: oldest ? String(oldest.body.at) : null }] };
+      return { rows: [{ floor: String(floor), oldest_at: oldestAt !== undefined ? oldestAt : oldest ? String(oldest.body.at) : null }] };
     }
     if (text.includes('partner-game-readout:settlements')) {
       const [ids, floor, from, to] = values;
@@ -108,8 +108,11 @@ test('the SQL filters on the company rooms, a seq floor and the time window, gro
   assert.deepEqual(read.values, [['room-a', 'room-b'], 1, now - 30 * DAY, now]);
   assert.match(read.text, /a\.seq >= \$2 AND a\.room_id = ANY\(\$1::text\[\]\) AND a\.body::jsonb->>'type' = 'wallet\.settlement'/);
   assert.match(read.text, /s\.at >= \$3 AND s\.at < \$4/);
-  assert.match(read.text, /COUNT\(DISTINCT s\.payload->>'roundId'\)/); assert.match(read.text, /SUM\(\(s\.payload->>'staked'\)::numeric\)/);
+  assert.match(read.text, /COUNT\(DISTINCT s\.payload->>'roundId'\)/); assert.match(read.text, /SUM\(s\.staked\)/);
+  assert.match(read.text, /CASE WHEN jsonb_typeof\(p\.payload->'staked'\) = 'number' THEN \(p\.payload->>'staked'\)::numeric END/, 'every numeric cast sits behind a type check');
+  assert.doesNotMatch(read.text, /AND \(s\.payload->>'staked'\)::numeric/, 'no bare cast in WHERE whose evaluation order PostgreSQL does not promise');
   assert.match(read.text, /GROUP BY s\.room_id, day, currency/);
+  assert.equal(first.seqWindow, REPORT_SEQ_WINDOW);
   assert.doesNotMatch(read.text, /LIMIT/, 'the database returns grouped rows, not journal rows');
   assert.equal(pool.queries.length, 3);
   const again = await readPartnerReports({ query: pool.query, operatorId: 'north', roomIds: ['room-a', 'room-b'], now: now + 60_000 });
@@ -130,7 +133,33 @@ test('the seq floor follows the journal head and marks the report truncated when
   assert.equal(report.truncated, true); assert.equal(report.rooms[0].rounds, 1);
   const small = await readPartnerReports({ query: fakePool(rows).query, operatorId: 'west', roomIds: ['room-a'], now, seqWindow: 10 });
   assert.equal(small.truncated, false, 'a journal shorter than the window is complete even when its first row is younger than the period');
-  assert.equal(small.rooms[0].rounds, 2);
+  assert.equal(small.rooms[0].rounds, 2); assert.equal(small.seqWindow, 10);
+  // The floor row's time cannot be read: the window's reach is unknown, so the report says truncated.
+  for (const oldestAt of [null, 'nope']) {
+    clearPartnerGameReadoutCache();
+    const unknown = await readPartnerReports({ query: fakePool(rows, { head: REPORT_SEQ_WINDOW + 2, oldestAt }).query, operatorId: 'north', roomIds: ['room-a'], now });
+    assert.equal(unknown.truncated, true, String(oldestAt));
+  }
+});
+
+test('the cache drops expired entries on every write and never holds more than the cap', async () => {
+  const pool = fakePool([]);
+  const ttlMs = 1000;
+  await readPartnerReports({ query: pool.query, operatorId: 'a', roomIds: ['room-a'], now, ttlMs });
+  await readPartnerReports({ query: pool.query, operatorId: 'b', roomIds: ['room-a'], now: now + 100, ttlMs });
+  assert.equal(partnerGameReadoutCacheSize(), 2);
+  await readPartnerReports({ query: pool.query, operatorId: 'c', roomIds: ['room-a'], now: now + 1000, ttlMs });
+  assert.equal(partnerGameReadoutCacheSize(), 2, 'the expired first entry is gone, the second and third remain');
+  await readPartnerReports({ query: pool.query, operatorId: 'd', roomIds: ['room-a'], now: now + 1100, ttlMs });
+  assert.equal(partnerGameReadoutCacheSize(), 2);
+  clearPartnerGameReadoutCache();
+  for (let index = 0; index < CACHE_MAX_ENTRIES + 25; index += 1) await readPartnerReports({ query: pool.query, operatorId: `company-${index}`, roomIds: ['room-a'], now, ttlMs: 60_000 });
+  assert.equal(partnerGameReadoutCacheSize(), CACHE_MAX_ENTRIES);
+  const queries = pool.queries.length;
+  await readPartnerReports({ query: pool.query, operatorId: `company-${CACHE_MAX_ENTRIES + 24}`, roomIds: ['room-a'], now, ttlMs: 60_000 });
+  assert.equal(pool.queries.length, queries, 'the newest entries are the ones kept');
+  await readPartnerReports({ query: pool.query, operatorId: 'company-0', roomIds: ['room-a'], now, ttlMs: 60_000 });
+  assert.ok(pool.queries.length > queries, 'the oldest entry was evicted');
 });
 
 test('the readout never throws: missing table, denied read, no pool and no rooms all answer honestly', async () => {
@@ -171,6 +200,11 @@ test('the settlement SQL runs on the real game schema and groups per room, day a
   await audit('room-a', 'engine.start', now - 2 * DAY, { shoeId: 's', draws: [] }, 'r2');
   await audit('room-b', 'wallet.settlement', now - 3 * DAY, { playerId: 'p3', roundId: 'r9', settledAt: now - 3 * DAY, staked: 100, returned: 150, currency: 'EUR' });
   await audit('room-foreign', 'wallet.settlement', now - DAY, { playerId: 'p4', roundId: 'rx', settledAt: now - DAY, staked: 777, returned: 0, currency: 'USD' });
+  // Damaged rows are skipped, never fatal: text where a number belongs, a missing amount, a text timestamp, an empty round id.
+  await audit('room-a', 'wallet.settlement', now - DAY, { playerId: 'p9', roundId: 'broken-1', settledAt: now - DAY, staked: 'abc', returned: 5, currency: 'USD' });
+  await audit('room-a', 'wallet.settlement', now - DAY, { playerId: 'p9', roundId: 'broken-2', settledAt: now - DAY, staked: 5, returned: null, currency: 'USD' });
+  await audit('room-a', 'wallet.settlement', 'yesterday', { playerId: 'p9', roundId: 'broken-3', settledAt: now - DAY, staked: 5, returned: 5, currency: 'USD' });
+  await audit('room-a', 'wallet.settlement', now - DAY, { playerId: 'p9', roundId: '', settledAt: now - DAY, staked: 5, returned: 5, currency: 'USD' });
   const query = (text, values) => pool.query(text, values);
   const report = await readPartnerReports({ query, operatorId: 'north', roomIds: ['room-a', 'room-b'], now });
   assert.equal(report.status, 'ready'); assert.equal(report.truncated, false);
@@ -181,8 +215,10 @@ test('the settlement SQL runs on the real game schema and groups per room, day a
   assert.deepEqual(a.days.find(day => day.day === dayOf(now - DAY)), { day: dayOf(now - DAY), rounds: 1, staked: 40, returned: 20, amounts: { USD: { staked: 40, returned: 20 } } });
   assert.deepEqual([b.rounds, b.amounts], [1, { EUR: { staked: 100, returned: 150, net: -50 } }]);
   assert.equal(JSON.stringify(report).includes('999'), false); assert.equal(JSON.stringify(report).includes('p1'), false);
+  assert.equal(JSON.stringify(report).includes('broken'), false, 'damaged rows are skipped, not counted');
   clearPartnerGameReadoutCache();
-  const narrow = await readPartnerReports({ query, operatorId: 'north', roomIds: ['room-a', 'room-b'], now, seqWindow: 2 });
-  assert.equal(narrow.truncated, true, 'a window of two rows from the head cannot reach thirty days back');
+  // The last five rows: room-b's settlement and the four damaged rows; room-a's rounds fall outside.
+  const narrow = await readPartnerReports({ query, operatorId: 'north', roomIds: ['room-a', 'room-b'], now, seqWindow: 5 });
+  assert.equal(narrow.truncated, true, 'a window of five rows from the head cannot reach thirty days back');
   assert.deepEqual([narrow.rooms[0].rounds, narrow.rooms[1].rounds], [0, 1]);
 });

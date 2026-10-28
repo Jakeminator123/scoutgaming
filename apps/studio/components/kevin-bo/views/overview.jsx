@@ -3,7 +3,7 @@ import React from 'react';
 import { workspaceSurfacePath } from '../../../../../packages/navigation/workspace-surfaces.mjs';
 import { compositionLabel } from '../../../../../packages/navigation/control-flow.mjs';
 import { Bars, Btn, Card, Chip, KV, Page, Row, Stat, fmtDate, fmtInt } from './ui.jsx';
-import { amountText, reportFigures, reportsUnavailableReason } from './report-figures.mjs';
+import { amountText, reportFigures, reportsTruncatedNotice, reportsUnavailableReason } from './report-figures.mjs';
 
 export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
   const en = language === 'en', t = (sv, english) => en ? english : sv;
@@ -40,6 +40,7 @@ export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
       <Card><Stat value={figures ? money('staked') : notConnected} label={t('insatser · 7 d', 'stakes · 7 d')} /></Card>
       <Card><Stat value={figures ? money('net') : notConnected} label={t('netto (insatser − utbetalt) · 7 d', 'net (stakes − payouts) · 7 d')} /></Card>
     </div>
+    {figures?.truncated ? <div className="note warn" role="status">{reportsTruncatedNotice(figures, language)}</div> : null}
     {figures?.mixed ? <p className="small muted">{t(`Flera valutor (${figures.currencies.filter(Boolean).join(', ')}): beloppen visas per valuta.`, `Several currencies (${figures.currencies.filter(Boolean).join(', ')}): amounts are shown per currency.`)}</p> : null}
     <div className="grid main-aside">
       <div className="stack">

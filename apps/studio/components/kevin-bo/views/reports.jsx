@@ -2,7 +2,7 @@
 // (avslutade rundor), publiceringar ur paketen. Per spelare och avräkning är steg F.
 import React, { useState } from 'react';
 import { Bars, Card, Chip, Empty, KV, Note, Page, Stat, fmtDate, fmtInt } from './ui.jsx';
-import { amountText, reportFigures, reportsReady, reportsUnavailableReason } from './report-figures.mjs';
+import { amountText, reportFigures, reportsReady, reportsTruncatedNotice, reportsUnavailableReason } from './report-figures.mjs';
 
 export function PartnerReports({ snapshot, copy, language = 'sv' }) {
   const en = language === 'en', t = (sv, english) => en ? english : sv;
@@ -16,7 +16,7 @@ export function PartnerReports({ snapshot, copy, language = 'sv' }) {
   return <Page title={copy.reports} intro={t('Hur det går per spelbord: rundor, insatser, utbetalt och netto. Siffrorna kommer ur spelets journal för era spelbord och räknar bara avslutade rundor.', 'How each table does: rounds, stakes, payouts and net. The figures come from the game journal for your tables and count settled rounds only.')}
     actions={<div className="seg" role="group" aria-label={t('Period', 'Period')}>{periods.map(([value, label]) => <button key={value} type="button" aria-pressed={days === value ? 'true' : 'false'} onClick={() => setDays(value)}>{label}</button>)}</div>}>
     {!ready ? <Note tone="warn" role="status"><b>{copy.notConnected}.</b> {reportsUnavailableReason(reports, language)}</Note> : null}
-    {ready && figures.truncated ? <Note tone="warn">{t('Journalen är längre än läsfönstret; de äldsta rundorna i perioden kan saknas.', 'The journal is longer than the read window; the oldest rounds in the period may be missing.')}</Note> : null}
+    {ready && figures.truncated ? <Note tone="warn" role="status">{reportsTruncatedNotice(figures, language)}</Note> : null}
     {ready && figures.mixed ? <Note tone="warn" role="status">{t(`Flera valutor i perioden (${figures.currencies.filter(Boolean).join(', ')}): beloppen visas per valuta och räknas inte ihop.`, `Several currencies in the period (${figures.currencies.filter(Boolean).join(', ')}): amounts are shown per currency and never added together.`)}</Note> : null}
     <div className="grid c4">
       <Card><Stat value={ready ? fmtInt(figures.rounds, language) : '—'} label={t('rundor', 'rounds')} /></Card>
