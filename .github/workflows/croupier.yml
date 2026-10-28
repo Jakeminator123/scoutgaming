@@ -39,6 +39,9 @@ jobs:
             tools/check-no-sqlite.mjs
             tools/no-sqlite-allowlist.json
             test/check-no-sqlite.mjs
+            tools/check-repo-limits.mjs
+            tools/repo-limits-allowlist.json
+            test/check-repo-limits.mjs
             migrering/status.mjs
             migrering/status.json
             migrering/STATUS.md
@@ -54,6 +57,11 @@ jobs:
         run: |
           node --test test/check-no-sqlite.mjs
           node tools/check-no-sqlite.mjs --tree HEAD --changed-since HEAD^1
+      # Repo growth: files over 1 MB only via the shrinking allowlist, no new media binaries, short living docs.
+      - name: Repository size limits (shrinking allowlist)
+        run: |
+          node --test test/check-repo-limits.mjs
+          node tools/check-repo-limits.mjs --tree HEAD --changed-since HEAD^1
 
   documentation:
     needs: changes
