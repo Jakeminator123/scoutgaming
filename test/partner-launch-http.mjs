@@ -38,7 +38,8 @@ for (const bound of [false, true]) test(`engine launch route and shared-table pa
   if (!bound) await assert.rejects(create({ name: 'pending', operatorId: company }), { code: 'partner_key_operator_schema_pending', statusCode: 503 });
 
   const env = { ...Object.fromEntries(PRIVATE_ENV.map(name => [name, ''])), ...studio.env, NODE_ENV: 'development',
-    PUBLIC_URL: studio.env.CROUPIER_PUBLIC_ORIGIN, CROUPIER_SHARED_TABLE_ENABLED: '1', CROUPIER_STREAM_LANE: '', DEMO_GUEST_ACCESS: '' };
+    PUBLIC_URL: studio.env.CROUPIER_PUBLIC_ORIGIN, CROUPIER_SHARED_TABLE_ENABLED: '1', CROUPIER_PLAYER_ACCOUNTS: '1',
+    CROUPIER_STREAM_LANE: '', DEMO_GUEST_ACCESS: '' };
   const engine = await startEngine(t, { database, env, preload: studio.preload }), origin = engine.origin;
   async function mint(k, playerId) {
     const path = '/api/v1/launch', body = JSON.stringify({ playerId }), ts = String(Math.floor(Date.now() / 1000));
@@ -52,8 +53,8 @@ for (const bound of [false, true]) test(`engine launch route and shared-table pa
     return { status: response.status, location: response.headers.get('location'), cookies: response.headers.getSetCookie(), text: await response.text() };
   }
   async function page(cookie) {
-    const response = await fetch(origin + room, { headers: cookie ? { cookie } : {}, signal: AbortSignal.timeout(10000) });
-    return { status: response.status, text: await response.text() };
+    const response = await fetch(origin + room, { redirect: 'manual', headers: cookie ? { cookie } : {}, signal: AbortSignal.timeout(10000) });
+    return { status: response.status, location: response.headers.get('location'), text: await response.text() };
   }
   const token = url => new URL(url).searchParams.get('launch');
   const refused = (result, title) => {
@@ -61,8 +62,13 @@ for (const bound of [false, true]) test(`engine launch route and shared-table pa
     assert.match(result.text, new RegExp(`<h1>${title}</h1>`)); assert.match(result.text, /^<!doctype html><html lang="sv">/);
   };
 
-  // Without a partner session the published shared-table room is served as today.
-  const open = await page();
+  // As today: without a session the room asks for a sign-in, and a native player gets the shared-table room.
+  const anonymous = await page();
+  assert.equal(anonymous.status, 303); assert.doesNotMatch(anonymous.text, /data-shared-room/);
+  const registered = await fetch(origin + '/api/auth/player/register', { method: 'POST', signal: AbortSignal.timeout(10000),
+    headers: { 'content-type': 'application/json', origin }, body: JSON.stringify({ username: 'native-player', password: 'Synthetic-Player-Test-Password' }) });
+  assert.equal(registered.status, 200, await registered.clone().text());
+  const open = await page(registered.headers.getSetCookie()[0].split(';')[0]);
   assert.equal(open.status, 200); assert.match(open.text, /data-shared-room="1"/); assert.match(open.text, /data-game-room-id="room-astrid"/);
 
   const north = await key('north', company), other = await key('other', 'other-company');
