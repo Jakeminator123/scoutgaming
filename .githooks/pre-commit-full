@@ -101,7 +101,7 @@ run_node_tests gameplay native-partner-events test/native-partner-events.mjs tes
 run_node_tests gameplay native-observation test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests gameplay roulette test/roulette.mjs test/roulette-room.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
 run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs test/room-idle-kevin-parity.mjs test/table-behaviours-kevin.mjs test/table-limits-kevin.mjs test/table-restart-kevin.mjs test/shared-room-overlap.mjs
-run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs
+run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs test/blackjack-sidebets.mjs
 run_node_tests gameplay generation-media test/generation-media.mjs test/qa-process-guard.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/paow-filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-coverage.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
