@@ -47,6 +47,7 @@ color-scheme:light;isolation:isolate;min-height:100vh;background:var(--bg);color
 .partner-portal .side .prefs select{background:var(--ink-2);color:var(--ink-text);border:1px solid var(--ink-line);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
 .partner-portal .side .prefs a{color:var(--ink-muted)}
 .partner-portal .side .prefs a:hover{color:var(--ink-text)}
+.partner-portal .side .foot [aria-busy]>div{display:flex;gap:14px;flex-wrap:wrap}
 .partner-portal .side .foot button{color:var(--ink-muted);font-size:12px;padding:0}
 .partner-portal .side .foot button:hover{color:var(--ink-text)}
 .partner-portal .side .foot [role="status"],.partner-portal .side .foot [role="alert"]{font-size:12px}

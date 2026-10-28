@@ -51,7 +51,7 @@ test('level-two member entrance is scoped and empty access never selects a fixtu
   assert.doesNotMatch(member, /href="\/(?:admin|lobby|control|play)"|sg-test|Demo North|Demo South|Intern administratör/);
   for (const operators of [[], [{ slug: 'login', name: 'Invalid destination' }], [{ slug: '../sg-test', name: 'Invalid destination' }]]) {
     const empty = render(operators);
-    assert.match(empty, /Inga tillgängliga spelbolag/);
+    assert.match(empty, /Inga tillgängliga bolag/);
     assert.doesNotMatch(empty, /href="\/partner\/[^\"]+"|Invalid destination/);
   }
 });

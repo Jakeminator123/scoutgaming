@@ -16,7 +16,7 @@ export function PartnerWorkspace({ user, operators, accessClass, apiBase = '/stu
   const admin = accessClass === 'internal-admin';
   // Invalid destinations never become a fallback to another operator.
   const partners = operators.flatMap(operator => {
-    const href = workspaceSurfacePath('partner', 'ops', operator.slug);
+    const href = workspaceSurfacePath('partner', 'overview', operator.slug);
     return href ? [{ ...operator, href }] : [];
   });
   const matching = partners.filter(operator => `${operator.name} ${operator.slug}`.toLocaleLowerCase(language).includes(query.trim().toLocaleLowerCase(language)));
