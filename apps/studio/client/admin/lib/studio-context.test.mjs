@@ -114,12 +114,15 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
     fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='react'?hooks.react:name==='../ui/kit'?{cn:(...names)=>names.filter(Boolean).join(' '),buttonVariants:()=>'button'}
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
-      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
+      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
+      :name==='./dealer-identity-portrait'?portraitStubs(React):name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{hooks.reset();const tree=module.exports.RegisteredStudio(currentProps);hooks.flush();return tree;};
   render();await settle(1);
   return {render,listeners,allowLeave:value=>{allowLeave=value;},setProps(next){currentProps={...currentProps,...next};},
     get href(){return currentPath+currentSearch+currentHash;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
 }
+// Portraits are presentation only (their own test is dealer-artwork.test.mjs); the names stay as text.
+const portraitStubs=React=>({DealerAvatar:()=>null,DealerFaces:props=>React.createElement('span',{'data-dealer-faces':''},props.dealers.map(row=>row.label).join(', ')||props.empty||'–')});
 async function registeredStudioHtml(props,options){return renderToStaticMarkupOf(await mountRegisteredStudio(props,options));}
 function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}
 
@@ -142,6 +145,7 @@ async function companiesPageHtml({page,id,search='',...overrides}){
     :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:()=>null}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
+    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
   const render=()=>{hooks.reset();const tree=module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
   render();await settle(1);
