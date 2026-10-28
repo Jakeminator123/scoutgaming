@@ -102,7 +102,8 @@ export function createOpenClawAdminApi({ config, authorize, settings = settingsN
         return json({ browserUrl:dashboardBrowserUrl(value), expiresAtMs:value.expiresAtMs,
           remainingLifetimeMs:value.expiresAtMs - Date.now() });
       }
-      return json(projection(value, request.method));
+      // Admin shows whether OPENAI_API_KEY is configured (true/false), never the value.
+      return json(request.method === 'GET' ? { ...projection(value, request.method), openaiKeyConfigured: Boolean(process.env.OPENAI_API_KEY) } : projection(value, request.method));
     } catch (error) {
       const status = [400,401,403,404,405,409,413,415,422,503].includes(error?.statusCode) ? error.statusCode : 503;
       const code = status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected'

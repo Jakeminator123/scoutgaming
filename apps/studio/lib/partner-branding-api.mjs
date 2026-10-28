@@ -11,6 +11,7 @@ import {StudioStorageError} from '../../../packages/studio-registry/server/docum
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
+import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
 // 8000 bytes, 200 nodes and depth 6. It has no key whitelist.
@@ -128,6 +129,8 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         if (Object.hasOwn(branding,role) && !rights.has(role)) fail(422);
         if (merged[role] !== undefined && merged[role] !== null && !partnerLayerChoices(lane, role).includes(merged[role])) fail(422);
       }
+      // The chosen table must fit this template when it is an AI table graphic.
+      assertAiTableChoiceFits(lane, presentation.assets, merged.table ?? lane.layers.table.default);
       if (Object.hasOwn(branding,'dealer') || merged.dealer !== undefined && merged.dealer !== null) {
         const wanted = merged.dealer ?? lane.layers.dealer.default;
         if (!choices(current,presentation,document)[lane.id].includes(wanted)) fail(409);
@@ -206,6 +209,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         if(key==='color'){
           if(!/^#[a-f0-9]{6}$/.test(value.color)||selectedLane.layers.table.colors?.length&&!selectedLane.layers.table.colors.includes(value.color))fail(422);
         }else if(!partnerLayerChoices(selectedLane,key).includes(value[key]))fail(422);
+        if(key==='table')assertAiTableChoiceFits(selectedLane,presentation.assets,value.table);
         if(key==='dealer'&&!allowedDealers.includes(value[key]))fail(409);
       }
     }

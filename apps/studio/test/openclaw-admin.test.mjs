@@ -31,7 +31,7 @@ test('authorized native admin reads only projected fields and sends no browser c
   const f = fixture({ response:{ ...snapshot, password:key, config:{ providerKey:'PRIVATE_PROVIDER_KEY' }, gateway:{ ...snapshot.gateway, deviceToken:'PRIVATE_DEVICE_TOKEN' },
     models:snapshot.models.map(value => ({ ...value, apiKey:'PRIVATE_PROVIDER_KEY' })) } });
   const result = await f.api.handle(request());
-  assert.equal(result.status, 200); assert.deepEqual(await result.json(), snapshot);
+  assert.equal(result.status, 200); assert.deepEqual(await result.json(), { ...snapshot, openaiKeyConfigured: Boolean(process.env.OPENAI_API_KEY) });
   assert.equal(f.calls[0].url, 'https://croupier-lab-director.onrender.com/api/studio/openclaw/admin');
   assert.deepEqual(f.calls[0].options.headers, { Authorization:`Bearer ${key}` });
   assert.equal(f.calls[0].options.redirect, 'error'); assert.equal(f.calls[0].options.cache, 'no-store');

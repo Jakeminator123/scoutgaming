@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {labBasePath,labUrl} from '../lib/lab-url.mjs';
 import styles from './control-resource-lifecycle.module.css';
-import {ConfirmDialog} from '../client/admin/components/studio/confirm-dialog';
+import {ConfirmDialog} from '../client/admin/components/ui/dialog';
 
 type Operator = {id:string;slug:string;name:string;status:string;lanes:string[];packageRevision:number|null;archivedAt:string|null;roomCount:number;archivedRoomCount:number};
 type Room = {id:string;name:string;operatorId:string;presentationLaneId:string;state:string;archivedAt:string|null;packageRevision:number|null;published:boolean;canArchive:boolean;canRestore:boolean;restoreBlockers:string[]};

@@ -16,6 +16,9 @@ const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const origin='https://lab-history.fixture.invalid';
 const shared={operator:'fixture-operator',table:'fixture-room',composition:'fixture-scene',game:'roulette'};
 const query=dealer=>new URLSearchParams({...shared,dealer,view:'speech'}).toString();
+// Svarsbiblioteket lives under the dealer's nav: the dealer sits in the path, the room context in the query.
+const navPath=dealer=>'/admin/dealers/'+dealer;
+const navHref=dealer=>navPath(dealer)+'?flik=tal&'+new URLSearchParams(shared);
 const lab=dirname(dirname(fileURLToPath(import.meta.url)));
 const reply=dealerId=>({id:'11111111-1111-4111-8111-111111111111',dealerId,exactText:'Isolated history fixture',language:'sv',createdAt:'2026-10-12T10:20:00.000Z',profileRevision:'a'.repeat(64),revision:1,categories:['player-greeting'],reviewStatus:'pending',media:{audio:{available:false,sha256:'b'.repeat(64),contentType:'audio/wav',size:100},video:{available:false,sha256:'c'.repeat(64),contentType:'video/mp4',size:200}}});
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href);const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
@@ -23,7 +26,9 @@ const fiveFields=href=>Object.fromEntries([...new URL(href,origin).searchParams]
 
 test('shared Studio navigation retains five selectors and excludes unrelated parameters',()=>{
   const context=studioNavigationContextFromQuery(new URLSearchParams(query('elin')+'&token=secret&unrelated=value'));
-  assert.deepEqual(fiveFields(studioNavigationHref('/admin/replies',context)),{...shared,dealer:'elin'});
+  const href=studioNavigationHref('/admin/replies',context);
+  assert.equal(new URL(href,origin).pathname,navPath('elin'),'the dealer selector becomes the dealer nav');
+  assert.deepEqual(fiveFields(href),shared);assert.equal(new URL(href,origin).searchParams.get('flik'),'tal');
   assert.equal(Object.keys(context).length,5);
 });
 test('one document owner keeps capture until subscription and guard release, including remount',()=>{
@@ -83,7 +88,8 @@ async function adminFixtureSource(){
     const owner=studioHistory(window),audit=window.__adminAudit={traversals:[]};
     owner.guardTraversal(href=>{queueMicrotask(()=>audit.traversals.push({raw:href,accepted:owner.snapshotHref()}));return true;});
     window.__historyOwner=owner;window.__adminNavigate=navigate;
-    function App(){const path=usePathname(),search=useSearchParams();return <><output data-testid="path">{path}</output><output data-testid="query">{search.toString()}</output><WorkspaceTool section="replies"/></>;}
+    // Like the dealer nav (dealer-hub.tsx), the fixture hands the tool the dealer from the path.
+    function App(){const path=usePathname(),search=useSearchParams();const dealer=path.match(/^\\/admin\\/dealers\\/([^/]+)$/)?.[1];return <><output data-testid="path">{path}</output><output data-testid="query">{search.toString()}</output><WorkspaceTool section="replies" overrides={dealer?{dealer}:{}}/></>;}
     createRoot(document.getElementById('root')).render(<App/>);`,resolveDir:lab,loader:'tsx'},
     bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"'},
     alias:{react:fileURLToPath(new URL('../client/node_modules/react',import.meta.url)),'react-dom':fileURLToPath(new URL('../client/node_modules/react-dom',import.meta.url)),'next/navigation':fileURLToPath(new URL('../client/runtime/navigation.tsx',import.meta.url))},plugins:[{name:'admin-replies-boundaries',setup(builder){
@@ -117,11 +123,11 @@ async function openAdminReplies(browser){
       assert.deepEqual([...url.searchParams.keys()].sort(),url.searchParams.has('category')?['category','dealer']:['dealer']);
       const dealer=url.searchParams.get('dealer'),category=url.searchParams.get('category');reads.push({dealer,category});const item=current(dealer);return route.fulfill({json:{items:[category?{...item,categories:[category]}:item],nextCursor:null}});
     }
-    assert.equal(url.pathname,'/admin/replies');return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});
+    assert.match(url.pathname,/^\/admin\/dealers\/(?:astrid|elin|lina)$/,'documents are the dealer navs');return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});
   }catch(error){failures.push(error);await route.fulfill({status:500,body:'Isolated Admin fixture failed'});}});
   const page=await context.newPage();page.setDefaultTimeout(7000);page.on('pageerror',error=>failures.push(error));
-  await page.goto(origin+'/admin/replies?'+query('astrid'));
-  const ready=async dealer=>{await page.getByText('Reply: '+dealer,{exact:true}).waitFor();assert.equal(await page.getByLabel('Dealer i svarsbiblioteket').inputValue(),dealer);assert.equal(reads.at(-1).dealer,dealer);assert.equal(await page.getByTestId('path').textContent(),'/admin/replies');};
+  await page.goto(origin+navHref('astrid'));
+  const ready=async dealer=>{await page.getByText('Reply: '+dealer,{exact:true}).waitFor();assert.equal(await page.getByLabel('Dealer i svarsbiblioteket').inputValue(),dealer);assert.equal(reads.at(-1).dealer,dealer);assert.equal(await page.getByTestId('path').textContent(),navPath(dealer));};
   try{await ready('astrid');}catch(error){await context.close();throw failures[0]??error;}
   const snapshot=async()=>({...await page.evaluate(()=>({href:location.href,state:history.state,length:history.length})),query:await page.getByTestId('query').textContent(),dealer:await page.getByLabel('Dealer i svarsbiblioteket').inputValue()});
   return {page,reads,writes,ready,snapshot,
@@ -143,8 +149,11 @@ test('Admin Replies guards dirty and in-flight drafts through Back, Forward and 
       const at=delta===1?1:2;if(at===1){await f.page.goBack();await f.page.waitForURL(b.href);await f.ready('elin');}
       await f.dirty();if(mode==='saving')await f.saveHeld();const before=await f.snapshot();
       if(mode==='saving'){assert.equal(await f.page.getByLabel('Dealer i svarsbiblioteket').isDisabled(),true);assert.equal(await f.page.getByLabel('Filtrera svarskategori').isDisabled(),true);}else{await f.page.getByLabel('Dealer i svarsbiblioteket').selectOption('astrid');await f.page.getByLabel('Filtrera svarskategori').selectOption('game-win');}
+      // Admin's in-app navigation (menu, navs) asks the editor guard and is refused; a real document navigation meets the browser's guard.
+      assert.equal(await f.page.evaluate(()=>window.__adminNavigate('/admin/dealers/astrid?flik=tal')),false,'Admin navigation asks the editor guard before it unmounts a draft or a write');
+      await f.page.getByText('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.',{exact:true}).waitFor();
       const blockedDocument=f.page.waitForEvent('dialog');f.page.once('dialog',dialog=>dialog.dismiss());
-      await f.page.evaluate(()=>window.__adminNavigate('/admin/replies?dealer=astrid'));assert.equal((await blockedDocument).type(),'beforeunload','Admin uses the editor document guard for drafts and writes');
+      await f.page.evaluate(()=>{location.assign('/admin/dealers/astrid?flik=tal');});assert.equal((await blockedDocument).type(),'beforeunload','the document guard still runs for a real navigation');
       assert.deepEqual(await f.snapshot(),before);
       for(let attempt=0;attempt<2;attempt++){
         const count=await f.page.evaluate(()=>window.__adminAudit.traversals.length);await f.page.evaluate(delta=>history.go(delta),delta);
@@ -162,11 +171,13 @@ test('Admin Replies retains category and room context through filtering, dealer 
   const f=await openAdminReplies(browser);
   try{
     await f.page.getByLabel('Filtrera svarskategori').selectOption('player-question');await f.ready('astrid');await f.choose('elin');const target=f.page.url();
-    assert.equal(new URL(target).pathname,'/admin/replies');assert.equal(new URL(target).searchParams.get('category'),'player-question');assert.deepEqual(fiveFields(target),{...shared,dealer:'elin'});
-    for(const href of await f.page.locator('nav[aria-label^="Studio för"] a').evaluateAll(links=>links.map(link=>link.href)))assert.deepEqual(fiveFields(href),{...shared,dealer:'elin'});
+    // The new dealer is the new nav; the room context and the filter follow in the query and every tab link stays in that nav.
+    assert.equal(new URL(target).pathname,navPath('elin'));assert.equal(new URL(target).searchParams.get('flik'),'tal');assert.equal(new URL(target).searchParams.get('category'),'player-question');assert.deepEqual(fiveFields(target),shared);
+    const links=await f.page.locator('nav[aria-label^="Studio för"] a').evaluateAll(links=>links.map(link=>link.href));assert.ok(links.length);
+    for(const href of links){assert.equal(new URL(href).pathname,navPath('elin'),href);assert.deepEqual(fiveFields(href),shared,href);}
     await f.page.goBack();await f.ready('astrid');assert.equal(await f.page.getByLabel('Filtrera svarskategori').inputValue(),'player-question');
     await f.page.goForward();await f.page.waitForURL(target);await f.ready('elin');await f.page.reload();await f.ready('elin');
-    assert.deepEqual(fiveFields('?'+await f.page.getByTestId('query').textContent()),{...shared,dealer:'elin'});assert.equal(await f.page.getByLabel('Filtrera svarskategori').inputValue(),'player-question');
+    assert.deepEqual(fiveFields('?'+await f.page.getByTestId('query').textContent()),shared);assert.equal(await f.page.getByLabel('Filtrera svarskategori').inputValue(),'player-question');
     assert.deepEqual(f.reads.at(-1),{dealer:'elin',category:'player-question'});assert.equal(f.writes.length,0);
   }finally{await f.close();}
 }));

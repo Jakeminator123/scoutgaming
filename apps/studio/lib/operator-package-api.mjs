@@ -14,6 +14,7 @@ import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-i
 import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
 import {sceneLayoutPublication} from '../../../packages/presentation/contracts/scene-layout-publication.mjs';
 import {refreshFrozenDealerIdle} from '../../../packages/presentation/server/refresh-frozen-dealer-idle.mjs';
+import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
@@ -110,6 +111,8 @@ function publishedScenePresentation(current,administration,projectDocument,body)
   if(!candidate.changed)fail(422);
   lane.composition=candidate.composition;
   const checked=validatePresentationPackage(presentation);
+  // A new placement must still fit the AI table graphics this template shows.
+  assertAiTablesFit(checked.lanes.filter(row=>row.id===body.compositionId),checked.assets);
   assertPublishedRoomBindings({administration,operatorId:body.operatorId,currentPackage:current,presentation:checked});
   const affectedRooms=listPackageRooms({administration,package:current,operatorId:body.operatorId})
     .filter(room=>room.presentationLaneId===body.compositionId).map(({id,name,state})=>({id,name,state}));
@@ -172,6 +175,8 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const snapshot = await repository.readPresentationSnapshot();
     const saved = normalizeProject(snapshot.projectDocument.value);
     const lanes = selectedLanes(wanted, presentationLaneIds(saved));
+    // Refuse an AI table graphic drawn for another dealer or placement before any I/O or freezing.
+    assertAiTablesFit(saved.lanes.filter(lane => lanes.includes(lane.id)), saved.layerAssets ?? []);
     const source = saved;
     const hasDealers = source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.length || lane.layers.dealer.allowed.length);
     if (hasDealers && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) {
@@ -272,6 +277,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     // extra dealer requires the native saved snapshot and immutable media path.
     const saved = normalizeProject(typeof project === 'function' ? await project() : project);
     const lanes = selectedLanes(context.body.lanes, presentationLaneIds(saved));
+    assertAiTablesFit(saved.lanes.filter(lane => lanes.includes(lane.id)), saved.layerAssets ?? []);
     const source = saved;
     if (source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id))))
       throw new StudioStorageError('studio_media_registry_unavailable');
