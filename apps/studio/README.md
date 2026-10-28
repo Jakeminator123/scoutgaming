@@ -1,8 +1,9 @@
 # `apps/studio`: utvecklarreferens
 
-Användarsteg står i [användarguiden](docs/README.md), som Admin visar under
-**Hjälp** (`/admin/guide`). Orden står i [TERMINOLOGI](docs/TERMINOLOGI.md),
-läget i [överlämningen](../../docs/NEXT-AGENT.md).
+Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
+(`/admin/guide`) listar vad varje sida gör och länkar till guiden och till
+[TERMINOLOGI](docs/TERMINOLOGI.md). Läget står i
+[överlämningen](../../docs/NEXT-AGENT.md).
 
 ## Vad tjänsten gör
 
@@ -74,7 +75,7 @@ schemas/      appens egna scheman (manifest, social policy)
 animations/   2D-rörelseprov för klippkartan
 test/         Studio-, API- och lagringsprov
 tools/        byggsteg för förhandsvisning och klient
-docs/         användarguiden, guide.json (Admin-hjälpens text) och TERMINOLOGI
+docs/         användarguiden och TERMINOLOGI (Admins Hjälp länkar hit)
 ```
 
 Se också [policies](policies/README.md), [scheman](schemas/README.md) och

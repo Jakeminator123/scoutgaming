@@ -2,7 +2,7 @@
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
   companies: 'Bolag & team',
   'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek', 'media-review': 'Talgranskning',
-  events: 'Spelhändelser & regler', guide: 'Hjälp',
+  events: 'Spelhändelser & regler',
   'dealer-agent': 'Dialogtest',
 });
 

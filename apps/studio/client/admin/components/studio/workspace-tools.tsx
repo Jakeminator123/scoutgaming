@@ -5,7 +5,6 @@ import type {OperatorDirectory} from '../../../../components/control-operator-di
 import {ControlEventsPage} from '../../../../components/control-events-page';
 import {ControlTreePage} from '../../../../components/control-tree-page';
 import {ControlRepliesPage} from '../../../../components/control-replies-page';
-import {ControlGuidePage} from '../../../../components/control-guide-page';
 
 import {ControlOpenClawChat} from '../../../../components/control-openclaw-chat';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
@@ -54,7 +53,6 @@ export function WorkspaceTool({section}:{section:string}){
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
     case 'media-review':content=<ConnectedServices path="/admin/media-review" dealerId={get('dealer')}/>;break;
-    case 'guide':content=<ControlGuidePage {...common}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
     default:return <p role="alert">Verktyget finns inte.</p>;
   }

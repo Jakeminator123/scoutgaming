@@ -14,7 +14,7 @@ const node=(tree,predicate)=>{
   return predicate(tree)?tree:node(tree.props?.children,predicate);
 };
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
-const components=Object.fromEntries(['AdminPublicationPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
+const components=Object.fromEntries(['AdminPublicationPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
 function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}},responseStatus=200){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
