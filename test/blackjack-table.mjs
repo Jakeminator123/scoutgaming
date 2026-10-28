@@ -62,10 +62,12 @@ function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
 }
 const rejects = (promise, code) => assert.rejects(promise, e => e.code === code || assert.fail(`expected ${code}, got ${e.code}: ${e.message}`));
 
-function nativeConfig() {
+// Built once (Brotli-packed fixture material is slow to encode); every caller gets its own deep copy.
+const nativeBase = (() => {
   const fixture = nativeRoomMaterialFixture(), material = resolveNativeRoomGameMaterial(fixture.input);
   return { material, language: material.language, leadMs: material.leadMs, cardMs: material.cardMs };
-}
+})();
+function nativeConfig() { return structuredClone(nativeBase); }
 async function durableState(t) {
   return { room: await t.store.read.room('party'), members: await t.store.read.members('party'),
     balance: t.store.test.balance('kevin'), ledger: t.store.test.ledger(), reservations: t.store.test.reservations(),

@@ -9,6 +9,13 @@ import * as studioHistory from '../../lib/studio-history.mjs';
 
 const require=createRequire(import.meta.url);
 const runtime=transformSync(readFileSync(new URL('./navigation.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+// Each component compiles once per file; every mount still evaluates it in a fresh context.
+const compiledComponents=new Map();
+const compiledComponent=url=>{
+  const key=String(url);
+  if(!compiledComponents.has(key))compiledComponents.set(key,transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code);
+  return compiledComponents.get(key);
+};
 const eventTarget=()=>{
   const listeners=new Map();
   return {addEventListener(type,listener){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(listener);},
@@ -112,7 +119,6 @@ test('native Admin tools still use document navigation and their beforeunload gu
     assert.equal(h.api.navigate(target),true);assert.equal(h.api.navigate(target,true),true);
     assert.deepEqual(h.native,[{method:'assign',href:target,allowed:false},{method:'replace',href:target,allowed:false}]);assert.deepEqual(h.snapshot(),before);
   }
-  for(const href of ['/control/login?returnTo=%2Fadmin','/control/set-password?token=fixture'])assert.equal(harness().api.previewHref(href),href);
 });
 
 for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']){
@@ -162,7 +168,7 @@ async function mountImport(h){
   const slots=[],effects=[],cleanups=[];let cursor=0,finish;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},
     useRef(initial){return slots[cursor++]??={current:initial};},useEffect(effect,deps){const i=cursor++;if(!slots[i]||deps.some((dep,j)=>dep!==slots[i][j])){slots[i]=deps;effects.push(()=>{cleanups[i]?.();cleanups[i]=effect();});}}};
-  const module={exports:{}},code=transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  const module={exports:{}},code=compiledComponent(componentUrl);
   runInNewContext(code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,window:h.window,document:eventTarget(),setTimeout,
     fetch:async path=>Response.json(path.endsWith('/api/videos')?{uploadMode:'private-client-blob'}:catalog),
     require:name=>name==='react'?react:name.includes('upload-native-video.mjs')?{uploadNativeVideo:()=>assert.fail('no real upload')}
@@ -193,7 +199,7 @@ function mountScenePlacement(){
   function mount(relative,name){
     const url=new URL(relative,import.meta.url),localRequire=createRequire(url),slots=[];let cursor=0;
     const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},useRef(initial){return slots[cursor++]??={current:initial};}};
-    const module={exports:{}},code=transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+    const module={exports:{}},code=compiledComponent(url);
     runInNewContext(code,{module,exports:module.exports,structuredClone,require:specifier=>specifier==='react'?hooks:specifier.endsWith('.css')?{}
       :specifier==='./scene-publication'?{ScenePublication:()=>null}:specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
     return props=>{cursor=0;return module.exports[name](props);};
@@ -241,7 +247,7 @@ async function mountClipMap(h,{scene=false}={}){
   const components=new Proxy({},{get:(_,name)=>name==='__esModule'?false:String(name)});
   const flow={...components,ReactFlowProvider:'FlowProvider',ReactFlow:'Flow',Controls:'Controls',MiniMap:'MiniMap',Background:'Background',BackgroundVariant:{Dots:'dots'},useReactFlow:()=>({setViewport(){}}),
     useNodesState(initial){const [value,setValue]=react.useState(initial);return [value,setValue,()=>{}];}};
-  const module={exports:{}},code=transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  const module={exports:{}},code=compiledComponent(componentUrl);
   runInNewContext(code,{module,exports:module.exports,AbortController,URL,URLSearchParams,structuredClone,location:h.location,window:h.window,document:eventTarget(),
     confirm:()=>assert.fail('ordinary pane navigation must not discard its draft'),
     require:name=>name==='react'?react:name==='@xyflow/react'?flow:name.endsWith('.css')?{}

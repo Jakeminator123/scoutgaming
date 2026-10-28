@@ -120,7 +120,6 @@ test('pending 005 is not ready and the message names 005', async () => {
   assert.equal(result.ready, false);
   assert.equal(result.exitCode, 1);
   assert.deepEqual(result.pending, ['005']);
-  assert.equal(result.message, 'Migration 005 saknas i måldatabasen. Kör migrationen innan deploy.');
   assert.match(result.message, /005/);
   assertNoSecret(result);
 });

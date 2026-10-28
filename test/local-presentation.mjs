@@ -12,7 +12,7 @@ import { createPresentationStartup } from '../services/game/public/presentation-
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
-import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
+import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/test/fixtures/local-video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
@@ -275,7 +275,7 @@ test('a browser can identify a deal but cannot change its card, hand or hidden s
 
 test('native endpoint selects the same exact family, deduplicates requests and rejects another player or revision', async t => {
   const receipts = new Map([['qa', { version: 2, payload: JSON.stringify([source]) }]]), db = nativeReceipts(receipts);
-  const handler = createPresentationApi({ db, env: {}, store: { load: async () => createSeedProject() } });
+  const handler = createPresentationApi({ db, env: {}, store: { load: async () => createSeedProject(), configurationSource: 'fixture-store' } });
   const server = createServer(async (req, res) => { if (!await handler(req, res, new URL(req.url, 'http://local').pathname, req.headers['x-fixture-player'] ?? 'qa')) { res.writeHead(404); res.end(); } });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(() => { server.closeAllConnections(); server.close(); });
@@ -286,7 +286,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   const result = await response.json();
   assert.equal(result.owner, 'web'); assert.equal(result.video.fileName, 'deal_pos4.mp4');
   assert.equal(result.projectRevision, createSeedProject().revision);
-  assert.equal(result.configurationSource, 'lab/project.json');
+  assert.equal(result.configurationSource, 'fixture-store', 'the store names its own configuration source');
   assert.equal(result.decision.sourceEvent.card.r, 'A'); assert.equal(result.decision.sourceEvent.handIndex, 1);
   assert.deepEqual(await (await choose()).json(), result);
   assert.equal((await choose({ version: 1 })).status, 409);
@@ -316,7 +316,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.equal(idle.status, 200); const advice = await idle.json();
   assert.equal(advice.videoId, null); assert.equal(advice.provider, 'openclaw_not_configured');
   assert.equal(advice.projectRevision, createSeedProject().revision);
-  assert.equal(advice.configurationSource, 'lab/project.json');
+  assert.equal(advice.configurationSource, 'fixture-store');
 });
 
 test('explicit test archive feeds the same exact product and library media', async t => {
@@ -789,8 +789,8 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
-    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'studio-selection-source', dealerIdle: {[dealerId]: ownIdle} }
+    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'studio-selection-source', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
   const player = customPlayer ?? { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
@@ -866,7 +866,7 @@ test('native configuration and actual film receipts preserve their saved project
   const deal = receipts.filter(row => row.event === 'deal');
   assert.deepEqual(deal.map(row => row.state), ['selected', 'start', 'presented', 'end']);
   for (const row of deal) {
-    assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'lab/project.json');
+    assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'studio-selection-source');
     assert.equal(row.requestId, 'selection-fixture');
   }
 });

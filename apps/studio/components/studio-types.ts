@@ -98,21 +98,6 @@ export function resolveStudioEventId(project: StudioProject, initial?: string) {
   return initial && project.events.some(item => item.id === initial) ? initial : project.events[0].id;
 }
 
-export function studioViewForPath(path: string): StudioView {
-  const bare = stripLabBasePath(path).split('#')[0];
-  const [pathname, query = ''] = bare.split('?');
-  const tab = query.split('&').find((part: string) => part.startsWith('tab='))?.slice(4) ?? '';
-  // The OpenClaw page: the dealer agent and idle speech are studio views; models, drift and the assistant are not.
-  if (pathname === '/admin/openclaw') return tab === 'agent' ? 'openclaw' : tab === 'probe' ? 'probe' : 'lab';
-  if (pathname === '/admin/dealer-agent') return 'openclaw';
-  if (pathname === '/admin/probe') return 'probe';
-  const parts = pathname.split('/').filter(Boolean);
-  const segment = parts[0] === 'control' ? parts[1] : parts[0];
-  if (segment === 'operator-chat' || (segment === 'openclaw' && tab === 'chat')) return 'openclaw';
-  if (segment === 'events') return 'lab';
-  return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
-}
-
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(labUrl(url), { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   const data = await response.json().catch(() => ({}));

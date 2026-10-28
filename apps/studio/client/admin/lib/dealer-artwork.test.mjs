@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { suppliedDealerArtwork, isSuppliedPortraitVideo } from './dealer-artwork.mjs';
 
-test('retired Paow identities never inherit a supplied portrait or approved clip', () => {
+test('PAOW (paow, paow-v2) has no supplied public.zip portrait pair and never inherits an approved clip', () => {
   for (const id of ['paow', 'paow-v2']) assert.equal(suppliedDealerArtwork({ id, name: 'PAOW' }), undefined);
   assert.equal(isSuppliedPortraitVideo('/admin/_assets/lobby/images/dealers/paow.jpg', { src: '/admin/_assets/lobby/videos/dealers/paow-hair.mp4', approved: true, source: 'supplied-portrait' }), false);
 });

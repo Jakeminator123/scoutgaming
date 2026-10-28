@@ -103,12 +103,15 @@ test('catalog read carries session and cancellation, disables cache, and rejects
 });
 
 // Artwork may show locked teasers, but never becomes a source of playable IDs.
-import { dealerCards, portraitFor } from './dealer-portraits.mjs';
+import { dealerCards, dealerPortraits, portraitFor } from './dealer-portraits.mjs';
 
-const TEASERS = ['astrid', 'marten', 'dragge', 'anna', 'paow'];
+// Every lobby portrait, in artwork order; the list itself is artwork, not a rule.
+const TEASERS = dealerPortraits.map(portrait => portrait.id);
 
-test('five locked portrait teasers fill an empty or unavailable catalog without granting access', () => {
+test('locked portrait teasers fill an empty or unavailable catalog without granting access', () => {
   const cards = dealerCards();
+  assert.ok(TEASERS.length > 0);
+  assert.equal(new Set(TEASERS).size, TEASERS.length);
   assert.deepEqual(cards.map(row => row.id), TEASERS);
   assert.ok(cards.every(row => row.available === false));
   const catalog = parseLobbyCatalog(payload([]));

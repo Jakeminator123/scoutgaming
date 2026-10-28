@@ -76,16 +76,19 @@ test('a hung process tree times out, reports its group and stops its descendant'
   const f = fixture(t), marker = join(f.dir, 'descendant-survived');
   const logs = [];
   // The child outlives the group leader unless the timeout kills the whole tree.
-  const childScript = `setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'unexpected'),1800)`;
+  // It cannot start after the 0.4 s timeout, so a survivor writes by 1.4 s; the
+  // check below runs later than that (0.4 s timeout + 1.1 s wait). The 1 s timer
+  // leaves room for a slow Windows taskkill before it could fire.
+  const childScript = `setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'unexpected'),1000)`;
   const script = `require('node:child_process').spawn(process.execPath,['-e',${JSON.stringify(childScript)}],{stdio:'inherit'});setInterval(()=>{},1000)`;
-  const result = await runGroup({ name: 'fixture/hung', seconds: 0.8, command: 'node',
+  const result = await runGroup({ name: 'fixture/hung', seconds: 0.4, command: 'node',
     args: ['-e', script], env: f.env, heartbeatMs: 100, graceMs: 50,
     log: line => { logs.push(line); if (/RUNNING|TIMED-OUT/.test(line)) throw Error('unavailable log'); }, warn: () => {} });
   assert.equal(result.status, 'timed-out');
   assert.equal(result.exitCode, 124);
   assert.ok(logs.some(line => /RUNNING fixture\/hung/.test(line)));
   assert.ok(logs.some(line => /TIMED-OUT fixture\/hung/.test(line)));
-  await new Promise(resolveWait => setTimeout(resolveWait, 1500));
+  await new Promise(resolveWait => setTimeout(resolveWait, 1100));
   assert.equal(existsSync(marker), false);
   assert.equal(f.receipts().at(-1).status, 'timed-out');
 });
@@ -99,7 +102,7 @@ for (const code of [0, 7]) {
           const fs = require('node:fs');
           if (${ignoreTerm}) process.on('SIGTERM', () => {});
           fs.writeFileSync(process.argv[1], 'ready');
-          setTimeout(() => { fs.writeFileSync(process.argv[2], 'unexpected'); process.exit(0); }, 700);
+          setTimeout(() => { fs.writeFileSync(process.argv[2], 'unexpected'); process.exit(0); }, 400);
         `;
         // Wait for the descendant to be running before the leader exits. It is
         // an ordinary member of the owned group, not a detached background job.
@@ -114,7 +117,8 @@ for (const code of [0, 7]) {
         assert.equal(existsSync(ready), true, 'the descendant started before its leader exited');
         assert.equal(result.exitCode, code);
         assert.equal(result.status, code === 0 ? 'passed' : 'failed');
-        await new Promise(resolveWait => setTimeout(resolveWait, 800));
+        // Longer than the descendant's 400 ms timer, which started before its leader exited.
+        await new Promise(resolveWait => setTimeout(resolveWait, 500));
         assert.equal(existsSync(marker), false, 'no descendant can write after the group completes');
         assert.equal(f.receipts().at(-1).exitCode, code);
       });
@@ -144,8 +148,8 @@ test('CI suite selection partitions the actual full hook without omission or dup
   const groups = all.stdout.trim().split(/\r?\n/);
   assert.ok(groups.length > 0);
   assert.equal(new Set(groups).size, groups.length);
-  // engine runs in CI through tools/run-engine-qa.mjs; it is still part of the one registry.
-  const suites = ['studio', 'admin', 'contracts', 'database', 'presentation', 'access', 'speech', 'gameplay', 'engine'];
+  // engine runs in CI through tools/run-engine-qa.mjs and container in its own job; both stay in the one registry.
+  const suites = ['studio', 'admin', 'contracts', 'database', 'presentation', 'access', 'speech', 'gameplay', 'engine', 'container'];
   const partitioned = suites.flatMap(suite => {
     const result = invokeHook(suite); assert.equal(result.status, 0, result.stderr);
     const names = result.stdout.trim().split(/\r?\n/);

@@ -159,7 +159,10 @@ export async function runMovingDriftExecutorSqlChecks({pool}){
   }
   const reserveFirst=await setup('reserve-first'),firstInput=reserveFirst.request();
   const accepted=await operationWins(reserveFirst,'reserve',()=>reserveFirst.journal.reserveMovingSession(firstInput));
-  const retained=await reserveFirst.snapshot();assert.equal(retained.gpu_reservations.length,1);assert.equal(retained.speech_requests.length,1);
+  // reserveGpu charges every UTC day its 12-minute window touches: one row, or
+  // two after 23:48 UTC. Compare with the days this reservation reported.
+  const retained=await reserveFirst.snapshot();assert.ok([1,2].includes(accepted.days.length));
+  assert.deepEqual(retained.gpu_reservations.map(({row})=>row.day).sort(),accepted.days);assert.equal(retained.speech_requests.length,1);
   assert.equal(accepted.reservedMicroUsd,250000);
   await assert.rejects(reserveFirst.journal.assertMovingSession({...firstInput,submissionPhase:true}),reject('drift_not_admitting'));
   assert.deepEqual(await reserveFirst.snapshot(),retained);await reserveFirst.assertLockOrder();

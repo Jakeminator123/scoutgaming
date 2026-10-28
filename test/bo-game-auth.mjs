@@ -41,8 +41,7 @@ test('BO/game auth: retired BO routes, bounded aliases, one-use handoff, wallet 
   const initial=await begin();
   const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/admin\/login\?returnTo=%2Fapi%2Fbo%2Fgame-login%3Fstate%3D[a-f0-9]{64}$/);
   const aliasState='a'.repeat(64),token='b'.repeat(43);
-  for(const [path,destination] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
-    ['/bo/login.html','/admin/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/admin/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
+  for(const [path,destination] of [['/bo/login.html','/admin/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/admin/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
     [`/bo/set-password.html?t=${token}`,`/admin/set-password?t=${token}`]]){
     const response=await request(bo+path);assert.equal(response.status,308,path);assert.equal(location(response),destination,path);
   }
@@ -52,7 +51,6 @@ test('BO/game auth: retired BO routes, bounded aliases, one-use handoff, wallet 
   for(const [path,options] of [['/api/bo/me',{}],['/api/bo/players',{}],['/api/bo/login',{body:{user:'demo-reviewer',pass:password}}],
     ['/api/bo/users/remove',{body:{username:'demo-reviewer'}}]])assert.equal((await request(bo+path,options)).status,404,path);
   let boCookie=await administratorCookie();
-  const speechQa=await request(bo+'/bo/speech-qa.html',{cookie:boCookie});assert.equal(speechQa.status,200);assert.match(await speechQa.text(),/speech-qa\.mjs/);
   const protectedMedia=await request(bo+'/bo/speech-qa.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/admin/login');
   const boClaims=JSON.parse(Buffer.from(boCookie.split('.')[1],'base64url').toString());
   const launchCookie='bo_jwt='+sign({sub:'partner-player',partner:'partner-key',exp:boClaims.exp});

@@ -57,24 +57,23 @@ Råkvitton, skript och skärmbilder bakom kvittona finns bara lokalt hos orkestr
 
 ### K06 — Admin till spel efter omstart (IN_PROGRESS; kräver K05 VERIFIED)
 
-- **Bevisat:** staging 27 oktober: Admin → publicering C0→C1 → aktiv hand behöll paket 7 över publicering och processbyte, nästa fönster fick paket 8 (13/13, [K06-kvittot](2026-10-27-K06-STAGING-ACCEPTANCE.json)). Delat bord på `cc415cd8`: aktiv runda behöll C1 när C2 publicerades, nästa fönster band C2, och processbytet skedde på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json), K06-S1–S3 och K07-e2).
+- **Bevisat:** staging 27 oktober: Admin → publicering C0→C1 → aktiv hand behöll paket 7 över publicering och processbyte, nästa fönster fick paket 8 (13/13, [K06-kvittot](2026-10-27-K06-STAGING-ACCEPTANCE.json)). Delat bord på `cc415cd8`: aktiv runda behöll C1 när C2 publicerades, nästa fönster band C2, och processbytet skedde på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json), K06-S1–S3 och K07-e2). 28 oktober på `13aa5a01` ([omprovskvittot](2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json), 23 av 27 kontroller; de fyra underkända är samma fynd F1): en publicering som byter material (repliken blackjack från tagning `blackjack_7` till `blackjack_3`, paket 11 → 13), där den aktiva delade rundan behöll C0 och M0 och nästa fönster band C2 och M1. Dessutom wrong-role (spelarsession och anonym får 401, fel ägare och rum 404), bad-media-id (422 vid projektsparning, 404/409 utan bytes på medievägarna), interrupted-presentation, Restart service på samma SHA mitt i nativehand och mitt i delad runda (två gånger, kontroll först när den gamla processen stängt) samt två följande spel med media-ID per händelse. Stagingen är återställd till `blackjack_7` och casual (paket 15, `room-config-e0be09e9…`).
 - **Saknas:**
-  - En publicering som byter material så att M0 och M1 kan särskiljas.
-  - Wrong-role, bad-media-id och interrupted-presentation.
+  - Fynd F1 i omprovskvittot: på nativebordet behåller en aktiv hand inte M0 när publiceringen byter material. Handens gamla paketrevision svarar 409 `studio_presentation_idle_package_changed` (`packages/presentation/server/frozen-dealer-presentation.mjs:196-198`), och klienten ber spelaren ladda om till det nya paketet. Det kräver ett beslut om policyn eller en kodrättning, och därefter omprov.
+  - Partnerrollen i wrong-role: stagingen saknar e-postleverans, så en partnerinbjudan får aldrig lösenord.
   - Visuellt godkända giv- och revealklipp.
   - Johns Bet-kedjan i produktionen, dokumenterad efter K05.
-- **Vem:** agent i staging; Jakob för det visuella.
-- **Kvitto:** komplettera K06-kvittot eller lägg ett nytt daterat kvitto.
+- **Vem:** Jakob eller orkestratorn beslutar om F1; agent rättar och kör om i staging; Jakob för det visuella.
+- **Kvitto:** omprovskvittot ovan; komplettera det efter F1.
 
 ### K07 — Spelbeteenden och samtidighet (TODO; kräver K04 och K06 VERIFIED)
 
-- **Bevisat:** dagtid 27 oktober: enspelarbeteenden, idempotens, samtidiga kommandon, ledgerparitet mot Neon, utloggning och isolering ([J08-kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json), avsnitt `k07`). Kväll, flaggan på i staging: 19/19 på `cc415cd8` ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)), bland annat två spelare vid samma delade bord, g1 platsfrigivning (#426), g2 inga ticks i tysta rum, återanslutning efter processbyte på samma SHA, isolering och ledgerparitet mot read-only Neon.
+- **Bevisat:** dagtid 27 oktober: enspelarbeteenden, idempotens, samtidiga kommandon, ledgerparitet mot Neon, utloggning och isolering ([J08-kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json), avsnitt `k07`). Kväll, flaggan på i staging: 19/19 på `cc415cd8` ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)), bland annat två spelare vid samma delade bord, g1 platsfrigivning (#426), g2 inga ticks i tysta rum, återanslutning efter processbyte på samma SHA, isolering och ledgerparitet mot read-only Neon. Oberoende granskning 28 oktober ([K07-granskningen](2026-10-28-K07-REVIEW.md)). Omkörning 28 oktober på `13aa5a01` ([omprovskvittot](2026-10-28-K07-STAGING-RERUN-ACCEPTANCE.json)): 19/19 med rättad förväntan (anonym 403 `shared_room_forbidden` i K07-a och K07-f), Restart service mitt i beslutsfasen och återanslutning först när den gamla processen stängt, ledgerhash med dokumenterad metod och Vercel-deployment `dpl_CHmwFT918RMhmjM81xwT3NJD1u4z`.
 - **Saknas:**
-  - En oberoende granskning av kvittot.
-  - Jämförelsen main mot kandidat som K07-kriterierna kräver, eller ett uttryckligt scopebeslut av Jakob.
+  - Jämförelsen main mot kandidat som K07-kriterierna kräver, eller ett uttryckligt scopebeslut av Jakob (granskningens beslutsfråga 1).
   - K04 och K06 VERIFIED.
-- **Vem:** en agent som inte körde provet granskar; orkestratorn uppdaterar status.
-- **Kvitto:** K07-kvittot ovan.
+- **Vem:** Jakob för scopebeslutet; orkestratorn uppdaterar status.
+- **Kvitto:** omprovskvittot ovan.
 
 ### O02 — Oberoende samprov (TODO; kräver K07 och J10)
 
@@ -138,4 +137,4 @@ Aldrig: hemligheter i Git eller chatt, prov mot riktiga användares data eller J
 
 - **Ren start (clean slate):** Jakobs beslut 27 oktober. När K05 är klar och som egen aktivitet med backup och Jakobs uttryckliga go: ta bort gamla Astrid-, Dragan- och testrum, alla operatörer utom Johns Bet (PAOW) och töm papperskorgen. Följ avvecklingsreglerna i [AGENTS.md](../AGENTS.md#data-media-och-avveckling) och [masterplanens raderingsavsnitt](../migrering/MASTERPLAN.md#radera-med-ett-konkret-slutdatum). Stagingens bevisdata (rum `33b37ff3`) står kvar till O03. I repot ingår att radera Astrids gamla experimentmapp `media/dealers/astrid/staging/` (442 spårade filer, cirka 6 MB, ingen kod läser dem) och samtidigt bygga om `media/layout.json` och `media/blob-index.json`, som listar mappens filer, med de befintliga medieverktygen.
 - **Admin-förenkling (UX):** `/admin` ska vara enkel. Underlag: [Admin-kartan](history/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md), [backloggen](history/jakob-main-migrering/BACKLOGG-2026-10-23.md), [separat produktarbete](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar) och utkastet [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) (en publiceringsknapp per rum). Det finns inte i masterplanen; Jakob beslutar omfattningen.
-- **Övrigt:** SQLite-steg 8–9 (planen ligger utanför Git; `tools/no-sqlite-allowlist.json` visar vad som återstår), Astrid-legacy (hårdkodat `'astrid'` i Admin-avbokning, utloggning, `/chat` och probe) och en inställning per dealer för proben (av, klipp efter N minuter eller AI-tal); Jakob har inte beslutat om den sista.
+- **Övrigt:** SQLite-steg 8–9 (planen ligger utanför Git; ingen kod nämner SQLite längre, och `tools/check-no-sqlite.mjs` förbjuder det utanför dokumentation), Astrid-legacy (hårdkodat `'astrid'` i Admin-avbokning, utloggning, `/chat` och probe) och en inställning per dealer för proben (av, klipp efter N minuter eller AI-tal); Jakob har inte beslutat om den sista.
