@@ -1,6 +1,0 @@
-.editor { display: grid; gap: 12px; min-width: 0; border: 0; padding: 0; margin: 16px 0; }
-.editor label { font-weight: 600; }
-.editor select { width: 100%; max-width: 640px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius, 8px); background: var(--bg); color: var(--text); font: inherit; }
-.editor select:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
-.editor p { margin: 0; color: var(--muted); line-height: 1.6; max-width: 75ch; }
-.editor:disabled select { opacity: .6; }
