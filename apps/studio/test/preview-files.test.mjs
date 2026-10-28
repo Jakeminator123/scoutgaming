@@ -38,7 +38,7 @@ test('native preview retires local catalog, page and media before disk access bu
       assert.equal(response.status,410,key+' '+path.join('/'));
       assert.equal(response.headers.get('cache-control'),'private, no-store');
       const body=await response.text();
-      if(method==='GET')assert.match(body,/href="\/admin\/rehearsal"/);else assert.equal(body,'');
+      if(method==='GET')assert.match(body,/href="\/admin\/rooms"/);else assert.equal(body,'');
     }
     assert.equal(route.opens(),0,'retired fixture never opens the deployed disk');
     for(const name of ['compositor.js','geometry.js']){
