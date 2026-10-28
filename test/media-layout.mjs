@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,writeFile,rename,symlink,rm} from 'node:fs/promises';
 import {closeSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {openPublicMedia,resolveMediaPath,resolvePublicMedia,readMediaLayout,validateMediaLayout} from '../tools/media-layout.mjs';
+import {openPublicMedia,resolveMediaPath,resolvePublicMedia,readMediaLayout,validateMediaLayout,validateMediaAliases} from '../tools/media-layout.mjs';
 import {writeMediaLayoutFixture} from './fixtures/media-layout-files.mjs';
 test('public URL aliases serve the same descriptor bytes and forbid directory links',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-public-layout-'));t.after(()=>rm(root,{recursive:true,force:true}));
@@ -70,4 +70,18 @@ test('canonical dealer paths resolve without treating a historical four-name lis
     const layout={schemaVersion:1,roots:{},files:[{path:`dealers/${dealer}/runtime/a.png`,legacyPath:'source/a.png',access:'private',sha256:'a'.repeat(64),size:32}]};
     assert.throws(()=>validateMediaLayout(layout),/Invalid media entry/);
   }
+});
+
+test('canonical aliases reject traversal, missing targets, hash/type mismatches and chains',()=>{
+  // One physical file and two aliases with identical bytes: a public URL and a source path.
+  const sha256='b'.repeat(64),size=26,canonicalPath='game/runtime/streams/a.h264';
+  const valid={schemaVersion:1,roots:{},files:[
+    {path:canonicalPath,legacyPath:'web/public/streams/a.h264',access:'public',publicUrl:'/streams/a.h264',sha256,size},
+    {path:'game/runtime/streams/orig/a.h264',legacyPath:'web/public/streams/orig/a.h264',access:'public',publicUrl:'/streams/orig/a.h264',sha256,size,canonicalPath},
+    {path:'game/source/3d/a.h264',legacyPath:'assets/3d/a.h264',access:'source',sha256,size,canonicalPath}]};
+  assert.equal(validateMediaLayout(valid),valid);
+  for(const mutate of [row=>row.canonicalPath='../escape',row=>row.canonicalPath='game/missing.h264',row=>row.canonicalPath=row.path,row=>row.sha256='a'.repeat(64),row=>row.size++,row=>row.path=row.path+'.mp4']){
+    const bad=structuredClone(valid);mutate(bad.files.find(row=>row.canonicalPath));assert.throws(()=>validateMediaAliases(bad),/Invalid canonical/);
+  }
+  const bad=structuredClone(valid),aliases=bad.files.filter(row=>row.canonicalPath);aliases[0].canonicalPath=aliases[1].path;assert.throws(()=>validateMediaAliases(bad),/Invalid canonical/);
 });

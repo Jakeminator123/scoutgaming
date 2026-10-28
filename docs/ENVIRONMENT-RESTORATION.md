@@ -94,7 +94,7 @@ Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 01
 ## Blob och media
 
 - Neon äger identiteter och bindningar, Blob äger bytes. Lagringsgränsen och sökvägarna står i [BLOB-NEON](storage/BLOB-NEON.md).
-- Original raderas inte som bieffekt av import, papperskorg eller dedup. Permanent radering går genom Admins beroendekontroll och sker sist, efter att originalbytes är bevarade på annat håll.
+- Original raderas inte som bieffekt av import eller papperskorg. Permanent radering går genom Admins beroendekontroll och sker sist, efter att originalbytes är bevarade på annat håll.
 - En återställd databas pekar på samma Blob-objekt. Kontrollera att objekten finns (HEAD och SHA-256 mot registret) innan rum öppnas igen. Restoreproven omfattar inte Blob.
 - Preview har eget Blob-lager `store_7E06N1P4w9Mu1dZD` där godkänt material (bakgrunder, bord, dealerklipp) får finnas, laddat via produktens egna uppladdnings- och publiceringsvägar. Produktionens Blob-token kopieras aldrig dit och inga riktiga spelardata förs över (Jakobs beslut 2026-10-28).
 
