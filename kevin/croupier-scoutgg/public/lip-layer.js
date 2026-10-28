@@ -8,7 +8,7 @@
 // the clock says the talk is: a clip that runs late (a slow phone, a decoder catching up) still gets the mouth made for
 // exactly that frame, only a little later against the sound.
 // BORROW: how many body frames away in the same take a patch may be borrowed when the frame on screen has none.
-const FPS = 24, REACH = 48, BORROW = 48;
+const FPS = 24, REACH = 48, BORROW = 48, SAME_SOUND = 3;
 
 /** Splits an Annex B stream into access units at each delimiter (NAL type 9): [{data, key}] in order. */
 export function splitAccessUnits(buf) {
@@ -152,7 +152,7 @@ export function createLipTracks() {
         const n = time() - t.shift;
         if (!t.lips || n < t.kartaStart || n >= t.endAt + 600) continue;
         const k = Math.floor((n - t.kartaStart) * FPS / 1000);
-        const nearest = key => { let b = -1; for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (b < 0 || Math.abs(j - k) < Math.abs(b - k))) b = j; return b; };
+        const nearest = (key, reach = REACH) => { let b = -1; for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= reach && (b < 0 || Math.abs(j - k) < Math.abs(b - k))) b = j; return b; };
         const hit = (j, rect, extra = {}) => { const e = t.frames[j]; return { bitmap: e.bitmap, rect: rect ?? e.tag.rect, key: `${t.id}:${j}${rect ? ':' + frame : ''}`, ruta: e.tag.ruta, dk: j - k, ...extra }; };
         // this very frame's patch
         let best = nearest(`${take}:${frame}`);
@@ -161,11 +161,14 @@ export function createLipTracks() {
         // next frame, on a held last frame the take's last), at this frame's place (own); without the table, between the
         // places of the patches before and after it (his head moves smoothly). Before: a held-frame rule took the take's
         // last patch whenever the frame was past it, and drew it at its own place, beside his mouth.
-        // a dealer without the table borrows only from the next two frames, as before (a late piece shows no mouth)
+        // A borrowed mouth is said at this moment (its patch within SAME_SOUND map frames of now): one from another moment of
+        // the talk said another sound, or nothing (a silent frame, his own mouth). A dealer without the table borrows only
+        // from the next two frames, as before (a late piece shows no mouth).
+        if (t.silent.has(k)) continue;
         const far = places ? BORROW : 2;
         let lo = -1, hi = -1, dl = 0, dh = 0;
-        for (let d = 1; d <= far && lo < 0; d++) { lo = nearest(`${take}:${frame - d}`); dl = d; }
-        for (let d = 1; d <= far && hi < 0; d++) { hi = nearest(`${take}:${frame + d}`); dh = d; }
+        for (let d = 1; d <= far && lo < 0; d++) { lo = nearest(`${take}:${frame - d}`, SAME_SOUND); dl = d; }
+        for (let d = 1; d <= far && hi < 0; d++) { hi = nearest(`${take}:${frame + d}`, SAME_SOUND); dh = d; }
         if (lo >= 0 || hi >= 0) {
           const use = hi < 0 || (lo >= 0 && dl <= dh) ? lo : hi;
           const between = lo >= 0 && hi >= 0 ? t.frames[use].tag.rect.map((_, i) => t.frames[lo].tag.rect[i] + (t.frames[hi].tag.rect[i] - t.frames[lo].tag.rect[i]) * dl / (dl + dh)) : null;
