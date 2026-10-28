@@ -11,6 +11,7 @@ import {defaultLayerRule,selectableLayerBases} from '../../../../../packages/pre
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
 import {effectiveDealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import {aiTableFitsTemplate} from './ai-background.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
@@ -144,7 +145,7 @@ test('roulette preview never borrows blackjack idle or a blackjack table and kee
 test('the real layer selector offers only matching tables and removes incompatible choices only on explicit action',()=>{
   const source=readFileSync(new URL('../../../components/layer-selectors.tsx',import.meta.url),'utf8');
   const output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),module={exports:{}};
-  runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>name.includes('layer-asset-contract')?{layerAssetFitsGame}:name.includes('composition-settings.mjs')?settings:require(name)});
+  runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>name.includes('layer-asset-contract')?{layerAssetFitsGame}:name.includes('composition-settings.mjs')?settings:name.endsWith('/ai-background.mjs')?{aiTableFitsTemplate}:require(name)});
   const assets=[{id:'legacy',role:'table',label:'Roulette filename',contentType:'image/png'},{id:'roulette',role:'table',game:'roulette',label:'Roulette',contentType:'video/webm'},{id:'blackjack',role:'table',game:'blackjack',label:'Blackjack',contentType:'video/mp4'}];
   const lane=defaultPresentationLane('astrid');lane.layers.table={...lane.layers.table,default:'legacy',allowed:['legacy','roulette','blackjack']};
   const before=structuredClone(lane),edits=[];

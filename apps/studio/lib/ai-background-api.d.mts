@@ -2,7 +2,7 @@ import type {AiImagePresetId,AiImageRole} from './ai-image-contract.mjs';
 import type {FilmedTableTemplate} from './filmed-table-template.mjs';
 import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
-export type AiImageConfiguration={readonly apiKey:string;readonly endpoint:string;readonly model:string;readonly reasoning:string;readonly dailyLimit:number};
+export type AiImageConfiguration={readonly apiKey:string;readonly endpoint:string;readonly model:string;readonly renderer:string;readonly reasoning:string;readonly dailyLimit:number};
 export type AiImageRequest={readonly role:AiImageRole;readonly prompt:string;readonly preset:AiImagePresetId;readonly count:number;readonly dealerId:string|null;
   readonly sceneTemplate:{readonly id:string;readonly composition:CompositionSettings|null}|null;
   readonly reference:{contentType:string;bytes:Uint8Array}|null};
@@ -13,6 +13,8 @@ export const AI_IMAGE_DEFAULT_REASONING: string;
 export const AI_IMAGE_REASONING_LEVELS: readonly string[];
 export const AI_IMAGE_DEFAULT_DAILY_LIMIT: number;
 export const AI_IMAGE_RENDERER: string;
+export function aiImageEnabled(env?:Record<string,string|undefined>):boolean;
+export function logAiProviderFailure(event:{status:number|null;code:string|null}):void;
 export function aiImageConfiguration(env?:Record<string,string|undefined>):AiImageConfiguration|null;
 export function createAiImageDailyLimit(options?:{clock?:()=>number}):AiImageDailyLimit;
 export function validateAiImageRequest(body:unknown):AiImageRequest;
@@ -26,5 +28,7 @@ export function createAiBackgroundApi(options:{
   fetchImpl?:typeof fetch;
   imageLibrary?:()=>Promise<unknown>;
   templateFor?:(dealerId:string,composition:CompositionSettings|null)=>FilmedTableTemplate|null;
+  enabled?:()=>boolean;
+  log?:(event:{status:number|null;code:string|null})=>void;
 }):{handle(request:Request):Promise<Response>};
 export function handleAiBackgroundRequest(request:Request):Promise<Response>;

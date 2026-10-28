@@ -394,8 +394,8 @@ Beslutsord: **behåll** (samma komponent, ny plats), **flytta**, **slå ihop**, 
 | 53 | Dold grupp `tables`, actions utan handler | – | `studio-administration.tsx:466-508` (UI borta i #500) | ta bort ur kontraktet efter orkestratorns ok | – | – | ingen anropare (kartan) |
 | 54 | tournament, pitboss, operator-create-demo | – | `studio-admin-contract.mjs` | ta bort efter orkestratorns ok | – | – | ingen anropare |
 | 55 | Inloggning | Logga in | `/admin/login` | behåll | – | `/studio/api/auth` | #497 |
-| 67 | Skapa bakgrund med AI | Scenmallar och material › Bakgrunder › Skapa bakgrund med AI | ny (`ai-background-dialog.tsx`, inte inkopplad) | ny efter O03 | Scenmallar och material › Bakgrunder | `OPENAI_API_KEY` → `POST /studio/api/layer-assets/generate` (1–4 förslag, sparar inget) → befintlig layer-asset-uppladdning | Jakob 28 okt; godkännandet är människan (Använd), sedan befintlig grind: scenmall och publicering |
-| 68 | Skapa bordsgrafik med AI | Bordsgrafik › Skapa bordsgrafik med AI | ny (samma dialog, `role="table"`) | ny efter O03 | Scenmallar och material › Bordsgrafik | samma väg; servern ritar insatsboxarna ur den filmade profilen (`filmed-table-template.mjs`) | bara Blackjack-dealers med filmad profil; målbild 4.5 |
+| 67 | Skapa bakgrund med AI | Scenmallar och material › Bakgrunder › Skapa bakgrund med AI | ny (`ai-background-dialog.tsx`, inte inkopplad) | ny efter O03 | Scenmallar och material › Bakgrunder | `OPENAI_API_KEY` och `CROUPIER_AI_IMAGE_ENABLED=1` → `POST /studio/api/layer-assets/generate` (1–3 förslag, sparar inget) → befintlig layer-asset-uppladdning | Jakob 28 okt; godkännandet är människan (Använd), sedan befintlig grind: scenmall och publicering |
+| 68 | Skapa bordsgrafik med AI | Bordsgrafik › Skapa bordsgrafik med AI | ny (samma dialog, `role="table"`) | ny efter O03 | Scenmallar och material › Bordsgrafik | samma väg; servern ritar insatsboxarna ur den filmade profilen och scenmallens placering (`filmed-table-template.mjs`); etiketten bär dealer och placeringshash, och scenmallens bordsval spärrar fel mall | bara Blackjack-dealers med filmad profil; målbild 4.5 |
 
 ### Nivå 2: Partnerportalen
 

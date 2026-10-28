@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
-import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
+import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,aiImageEnabled,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
 import {filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
-import {AI_IMAGE_REFERENCE_MAX_BYTES} from '../lib/ai-image-contract.mjs';
+import {AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 // No real provider call anywhere: every test injects fetchImpl.
 const origin='https://studio.example.invalid',scope={environment:'test',workspaceId:'studio-test'};
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid','studio.example.invalid']};
 const KEY='fixture-openai-key-not-real';
-const env={OPENAI_API_KEY:KEY};
+const env={OPENAI_API_KEY:KEY,CROUPIER_AI_IMAGE_ENABLED:'1'};
 const staff=role=>async()=>({user:'Personal',role,scope});
 const url=origin+'/studio/api/layer-assets/generate';
 const post=(body,headers={})=>new Request(url,{method:'POST',headers:{'content-type':'application/json',origin,'sec-fetch-site':'same-origin',...headers},body:JSON.stringify(body)});
@@ -28,8 +28,10 @@ function provider(calls,{respond}={}) {
       {type:'image_generation_call',id:'ig_fixture',status:'completed',result:(await png()).toString('base64')}]});
   };
 }
-function api({role='admin',calls=[],respond,limiter=createAiImageDailyLimit(),settings=env,...rest}={}) {
-  return createAiBackgroundApi({authorize:staff(role),config,configuration:()=>aiImageConfiguration(settings),limiter,fetchImpl:provider(calls,{respond}),...rest});
+function api({role='admin',calls=[],respond,limiter=createAiImageDailyLimit(),settings=env,logs=[],...rest}={}) {
+  const flagged={CROUPIER_AI_IMAGE_ENABLED:'1',...settings};
+  return createAiBackgroundApi({authorize:staff(role),config,configuration:()=>aiImageConfiguration(flagged),enabled:()=>aiImageEnabled(flagged),
+    log:event=>logs.push(event),limiter,fetchImpl:provider(calls,{respond}),...rest});
 }
 
 test('wrong role, foreign scope, foreign origin and missing login are refused at the direct address without a provider call',async()=>{
@@ -57,9 +59,20 @@ test('a missing key answers ai_image_unavailable and "not connected" status with
     const calls=[],handler=api({calls,settings});
     const response=await handler.handle(post(background));
     assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'ai_image_unavailable',code:'ai_image_unavailable'});
-    assert.deepEqual(await (await handler.handle(get())).json(),{configured:false,dailyLimit:0,remaining:0});
+    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:false,dailyLimit:0,remaining:0});
     assert.equal(calls.length,0);
   }
+});
+
+test('without CROUPIER_AI_IMAGE_ENABLED=1 the route answers ai_image_disabled, even with a key, and never calls',async()=>{
+  for (const flag of [undefined,'','0','true','yes']) {
+    const calls=[],handler=api({calls,settings:{OPENAI_API_KEY:KEY,CROUPIER_AI_IMAGE_ENABLED:flag}});
+    const response=await handler.handle(post(background));
+    assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'ai_image_disabled',code:'ai_image_disabled'});
+    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:false,configured:false,dailyLimit:0,remaining:0});
+    assert.equal(calls.length,0,String(flag));
+  }
+  assert.equal(aiImageEnabled({}),false);assert.equal(aiImageEnabled({CROUPIER_AI_IMAGE_ENABLED:'1'}),true);
 });
 
 test('the daily cap answers ai_image_limit_reached before any provider call',async()=>{
@@ -67,15 +80,15 @@ test('the daily cap answers ai_image_limit_reached before any provider call',asy
   const handler=api({calls,limiter,settings});
   assert.equal((await handler.handle(post({...background,count:2}))).status,200);
   assert.equal(calls.length,2);
-  assert.deepEqual(await (await handler.handle(get())).json(),{configured:true,dailyLimit:2,remaining:0});
+  assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:true,dailyLimit:2,remaining:0});
   const refused=await handler.handle(post(background));
   assert.equal(refused.status,429);assert.equal((await refused.json()).code,'ai_image_limit_reached');
   assert.equal(calls.length,2,'no call once the cap is reached');
   const off=[],closed=await api({calls:off,settings:{...env,CROUPIER_AI_IMAGE_DAILY_LIMIT:'0'}}).handle(post(background));
   assert.equal(closed.status,429);assert.equal(off.length,0);
   // A request larger than what is left is refused whole, without a partial call.
-  const partial=[],cap=api({calls:partial,settings:{...env,CROUPIER_AI_IMAGE_DAILY_LIMIT:'3'}});
-  assert.equal((await cap.handle(post({...background,count:4}))).status,429);assert.equal(partial.length,0);
+  const partial=[],cap=api({calls:partial,settings:{...env,CROUPIER_AI_IMAGE_DAILY_LIMIT:'2'}});
+  assert.equal((await cap.handle(post({...background,count:3}))).status,429);assert.equal(partial.length,0);
 });
 
 test('the cap follows the Stockholm day and counts attempts, not only successes',()=>{
@@ -91,7 +104,7 @@ test('invalid requests, including table graphics without a filmed profile, are r
   const calls=[],handler=api({calls});
   for (const body of [
     {...background,prompt:'ab'},{...background,prompt:'x'.repeat(601)},{...background,prompt:'bild\u0000'},{...background,preset:'Lounge'},
-    {...background,count:0},{...background,count:5},{...background,count:'2'},{...background,role:'dealer'},{...background,extra:true},
+    {...background,count:0},{...background,count:4},{...background,count:'2'},{...background,role:'dealer'},{...background,extra:true},
     {...background,dealerId:'paow'},{...background,role:'table'},{...background,role:'table',dealerId:'astrid'},{...background,role:'table',dealerId:'okänd'},
     {role:'background',prompt:'Studio',preset:'free'},null,[],
   ]) {
@@ -117,7 +130,7 @@ test('a reference image is validated on the server: wrong type, false signature 
 
 test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the fixed frame, references and forbidden content',async()=>{
   const calls=[],handler=api({calls});
-  const photo=await sharp({create:{width:2400,height:1600,channels:3,background:{r:120,g:60,b:40}}}).withMetadata({exif:{IFD0:{Copyright:'Privat foto'}}}).jpeg().toBuffer();
+  const photo=await sharp({create:{width:1536,height:1024,channels:3,background:{r:120,g:60,b:40}}}).withMetadata({exif:{IFD0:{Copyright:'Privat foto'}}}).jpeg().toBuffer();
   const response=await handler.handle(post({...background,count:2,preset:'warm-lounge',reference:dataUrl('image/jpeg',photo)}));
   assert.equal(response.status,200);
   const body=await response.json();
@@ -137,6 +150,7 @@ test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the 
     assert.deepEqual(sent.reasoning,{effort:AI_IMAGE_DEFAULT_REASONING});assert.equal(sent.reasoning.effort,'xhigh');
     assert.equal(sent.store,false);assert.deepEqual(sent.tool_choice,{type:'image_generation'});
     assert.deepEqual(sent.tools,[{type:'image_generation',model:AI_IMAGE_RENDERER,size:'1920x1088',quality:'high',output_format:'png',action:'generate'}]);
+    assert.equal(AI_IMAGE_RENDERER,'gpt-image-2.5-sunburst');
     const [part,...images]=sent.input[0].content,text=part.text;
     assert.equal(part.type,'input_text');
     for (const phrase of ['1920x1080','x 656-1264','PHONE CROP','DEALER SAFE AREA','TABLE SAFE AREA','text, letters, digits','logos','people, faces','playing cards, chips, markers','amber, walnut',
@@ -144,7 +158,7 @@ test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the 
     // The reference photo goes along, re-encoded in memory without its metadata.
     assert.equal(images.length,1);assert.equal(images[0].type,'input_image');assert.match(images[0].image_url,/^data:image\/jpeg;base64,/);
     const sentPhoto=await sharp(Buffer.from(images[0].image_url.split(',')[1],'base64')).metadata();
-    assert.equal(sentPhoto.exif,undefined);assert.ok(Math.max(sentPhoto.width,sentPhoto.height)<=2048);
+    assert.equal(sentPhoto.exif,undefined);assert.deepEqual([sentPhoto.width,sentPhoto.height],[1536,1024]);
   }
   // Without a reference, nothing but the brief is sent.
   const plain=[];await api({calls:plain}).handle(post({...background,preset:'free'}));
@@ -152,7 +166,9 @@ test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the 
 });
 
 test('model, reasoning and cap are configurable; invalid values switch the feature off',()=>{
-  assert.deepEqual({...aiImageConfiguration(env)},{apiKey:KEY,endpoint:'https://api.openai.com/v1/responses',model:'gpt-6.1-sol',reasoning:'xhigh',dailyLimit:20});
+  assert.deepEqual({...aiImageConfiguration(env)},{apiKey:KEY,endpoint:'https://api.openai.com/v1/responses',model:'gpt-6.1-sol',renderer:'gpt-image-2.5-sunburst',reasoning:'xhigh',dailyLimit:20});
+  assert.equal(aiImageConfiguration({...env,CROUPIER_AI_IMAGE_RENDERER:'gpt-image-2.5-flare'}).renderer,'gpt-image-2.5-flare');
+  assert.equal(aiImageConfiguration({...env,CROUPIER_AI_IMAGE_RENDERER:'Bild 2'}),null);
   assert.deepEqual((({model,reasoning,dailyLimit})=>({model,reasoning,dailyLimit}))(aiImageConfiguration({...env,CROUPIER_AI_IMAGE_MODEL:'gpt-6.1-terra',CROUPIER_AI_IMAGE_REASONING:'max',CROUPIER_AI_IMAGE_DAILY_LIMIT:'5'})),
     {model:'gpt-6.1-terra',reasoning:'max',dailyLimit:5});
   for (const extra of [{CROUPIER_AI_IMAGE_REASONING:'extreme'},{CROUPIER_AI_IMAGE_MODEL:'GPT 6'},{CROUPIER_AI_IMAGE_DAILY_LIMIT:'-1'},{CROUPIER_AI_IMAGE_DAILY_LIMIT:'1001'},{CROUPIER_AI_IMAGE_DAILY_LIMIT:'tio'},
@@ -166,7 +182,8 @@ test('provider failures become fixed codes; neither the key nor the provider tex
   const leak=`Incorrect API key ${KEY}; organisation org-private; prompt "hemlig"`;
   for (const [respond,status,code] of [
     [()=>Response.json({error:{message:leak,type:'invalid_request_error',code:'moderation_blocked'}},{status:400}),422,'ai_image_rejected'],
-    [()=>Response.json({error:{message:leak,code:'insufficient_quota'}},{status:429}),429,'ai_image_limit_reached'],
+    [()=>Response.json({error:{message:leak,code:'insufficient_quota'}},{status:429}),429,'ai_image_budget_exhausted'],
+    [()=>Response.json({error:{message:leak,code:'billing_hard_limit_reached'}},{status:400}),429,'ai_image_budget_exhausted'],
     [()=>Response.json({error:{message:leak,code:'rate_limit_exceeded'}},{status:429}),503,'ai_image_unavailable'],
     [()=>Response.json({error:{message:leak,code:'invalid_api_key'}},{status:401}),503,'ai_image_unavailable'],
     [()=>new Response(leak,{status:500}),503,'ai_image_unavailable'],
@@ -250,4 +267,70 @@ test('an invalid scene template or composition is refused as ai_image_invalid_re
   const {dealerId:_dealer,...background}=table;
   assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'mall'}}))).status,400);
   assert.equal(calls.length,0);
+});
+
+test('the server logs only the provider status and error code, never text, prompt or key',async()=>{
+  const leak=`Incorrect API key ${KEY}; prompt "Hemlig kvällsstudio"`;
+  for (const [respond,expected] of [
+    [()=>Response.json({error:{message:leak,code:'moderation_blocked'}},{status:400}),{status:400,code:'moderation_blocked'}],
+    [()=>Response.json({error:{message:leak,code:'insufficient_quota'}},{status:429}),{status:429,code:'insufficient_quota'}],
+    [()=>Response.json({error:{message:leak,code:leak}},{status:401}),{status:401,code:null}],
+    [()=>new Response(leak,{status:500}),{status:500,code:null}],
+    [()=>{throw new Error(leak);},{status:null,code:'fetch_failed'}],
+    [()=>Response.json({status:'incomplete',incomplete_details:{reason:'max_output_tokens'},output:[]}),{status:200,code:'max_output_tokens'}],
+  ]) {
+    const logs=[],response=await api({respond,logs}).handle(post({...background,prompt:'Hemlig kvällsstudio'}));
+    assert.notEqual(response.status,200);assert.deepEqual(logs,[expected]);
+    for (const secret of [KEY,'Hemlig','Incorrect']) assert.equal(JSON.stringify(logs).includes(secret),false,secret);
+  }
+  const quiet=[];assert.equal((await api({logs:quiet}).handle(post(background))).status,200);assert.deepEqual(quiet,[]);
+});
+
+// A noise image is the worst case for WebP; the answer must still stay under 3 MB.
+async function noisePng(width,height) {
+  const raw=Buffer.alloc(width*height*3);
+  for (let index=0;index<raw.length;index++) raw[index]=(Math.imul(index+1,2654435761)>>>24)&255;
+  return sharp(raw,{raw:{width,height,channels:3}}).png({compressionLevel:1}).toBuffer();
+}
+test('three worst-case proposals stay under 3 MB in total, each WebP within 700 KiB',async()=>{
+  for (const [body,width,height] of [[{...background,count:3},1920,1088],
+    [{role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:3,sceneTemplate:{id:'paow-bord',composition:facitComposition()}},1920,1408]]) {
+    const noise=(await noisePng(width,height)).toString('base64'),calls=[];
+    const handler=api({calls,respond:()=>Response.json({status:'completed',output:[{type:'image_generation_call',status:'completed',result:noise}]})});
+    const response=await handler.handle(post(body)),text=await response.text();
+    assert.equal(response.status,200,body.role);
+    const {images}=JSON.parse(text);
+    assert.equal(images.length,3);assert.ok(text.length<3*1024*1024,`${body.role}: ${text.length} bytes`);
+    // Noise may be sent smaller, but always with the frame's aspect.
+    const aspect=body.role==='table'?1920/1404:16/9;
+    for (const image of images) {
+      assert.match(image.dataUrl,/^data:image\/webp;base64,/);
+      const bytes=Buffer.from(image.dataUrl.split(',')[1],'base64'),metadata=await sharp(bytes).metadata();
+      assert.ok(bytes.length<=AI_IMAGE_PROPOSAL_MAX_BYTES);assert.deepEqual([metadata.width,metadata.height],[image.width,image.height]);
+      assert.ok(Math.abs(image.width/image.height-aspect)<.01);
+    }
+  }
+});
+
+test('a table answer names the dealer and the placement it was drawn for; a background has none',async()=>{
+  const table={role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:1};
+  const plain=await (await api().handle(post(table))).json();
+  assert.deepEqual(plain.fit,{dealerId:'paow',placement:aiPlacementHash(defaultCompositionSettings())});
+  const placed=await (await api().handle(post({...table,sceneTemplate:{id:'paow-bord',composition:facitComposition()}}))).json();
+  assert.deepEqual(placed.fit,{dealerId:'paow',placement:aiPlacementHash(facitComposition())});
+  assert.notEqual(placed.fit.placement,plain.fit.placement);
+  assert.equal(Object.hasOwn(await (await api().handle(post(background))).json(),'fit'),false);
+});
+
+test('the inspiration image is checked for dimensions on the server: over 1536 px is refused',async()=>{
+  const calls=[],handler=api({calls});
+  for (const [width,height] of [[1537,100],[100,2000],[12,12]]) {
+    const image=await sharp({create:{width,height,channels:3,background:felt}}).png().toBuffer();
+    const response=await handler.handle(post({...background,reference:dataUrl('image/png',image)}));
+    assert.equal(response.status,400,`${width}x${height}`);assert.equal((await response.json()).code,'ai_image_invalid_request');
+  }
+  assert.equal(calls.length,0);
+  const fits=await sharp({create:{width:1536,height:864,channels:3,background:felt}}).webp().toBuffer();
+  assert.equal((await handler.handle(post({...background,reference:dataUrl('image/webp',fits)}))).status,200);
+  assert.equal(calls[0].body.input[0].content[1].type,'input_image');
 });

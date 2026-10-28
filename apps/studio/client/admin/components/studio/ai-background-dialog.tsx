@@ -5,6 +5,7 @@ import {useEffect, useRef, useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMAGE_REFERENCE_TYPES, aiImageLabel, type AiImagePresetId} from '../../../../lib/ai-image-contract.mjs';
 import {aiImageErrorMessage, aiSceneTemplates, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
+import type {AiTableFit} from '../../../../lib/ai-image-contract.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
 
 export type AiBackgroundDialogProps = {
@@ -22,6 +23,7 @@ export type AiBackgroundDialogProps = {
 };
 
 type Phase = 'form' | 'generating' | 'results' | 'saving';
+const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en scenmall som publiceras.';
 const field = 'min-w-0 w-full rounded border border-sg-line bg-sg-bg p-2 text-sm text-sg-text';
 
 // Proposals are drafts in this dialog only. "Använd" registers one through the
@@ -33,7 +35,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   const [status, setStatus] = useState<AiImageStatus | null>(null), [statusError, setStatusError] = useState('');
   const [prompt, setPrompt] = useState(''), [preset, setPreset] = useState<AiImagePresetId>('dark-studio'), [count, setCount] = useState(2);
   const [dealerId, setDealerId] = useState(''), [templateId, setTemplateId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
-  const [proposals, setProposals] = useState<AiProposal[]>([]), [selected, setSelected] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<AiProposal[]>([]), [selected, setSelected] = useState<string | null>(null), [fit, setFit] = useState<AiTableFit | null>(null);
   const [error, setError] = useState(''), [progress, setProgress] = useState<number | null>(null), [confirmation, setConfirmation] = useState('');
   const request = useRef<AbortController | null>(null), anchor = useRef<HTMLSpanElement>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
   busyCallback.current = onBusyChange;
@@ -57,29 +59,28 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
 
   const noun = table ? 'bordsgrafik' : 'bakgrund', place = table ? 'Bordsgrafik' : 'Bakgrunder';
   const text = prompt.replace(/\s+/g, ' ').trim();
-  const offline = status?.configured === false, exhausted = status?.configured === true && status.remaining < count;
-  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && !offline && !exhausted && !unsupported;
+  const off = status?.enabled === false, offline = status?.enabled === true && !status.configured, exhausted = status?.configured === true && status.remaining < count;
+  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !offline && !exhausted && !unsupported;
 
   function close(next: boolean) {
     if (next) { setOpen(true); setConfirmation(''); return; }
     request.current?.abort(); request.current = null;
-    setOpen(false); setPhase('form'); setProposals([]); setSelected(null); setError(''); setProgress(null);
+    setOpen(false); setPhase('form'); setProposals([]); setSelected(null); setFit(null); setError(''); setProgress(null);
   }
-  async function pickReference(input: HTMLInputElement) {
-    const file = input.files?.[0]; input.value = '';
-    if (!file) return;
+  async function pickReference(file: File | undefined) {
+    if (!file || busy) return;
     setError('');
     try { const value = await prepareReferenceImage(file); if (mounted.current) { setReference(value); setReferenceName(file.name); } }
-    catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'Referensbilden kunde inte läsas.'); }
+    catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'Inspirationsbilden kunde inte läsas.'); }
   }
   async function generate() {
     if (!ready || busy) return;
     const controller = new AbortController(); request.current = controller;
-    setPhase('generating'); setError(''); setProposals([]); setSelected(null);
+    setPhase('generating'); setError(''); setProposals([]); setSelected(null); setFit(null);
     try {
       const result = await requestAiProposals({role, prompt: text, preset, count, ...(table ? {dealerId, sceneTemplate: scene ? {id: scene.id, composition: scene.composition} : null} : {}), reference}, {signal: controller.signal});
       if (!mounted.current || controller.signal.aborted) return;
-      setProposals(result.images); setSelected(result.images[0]?.id ?? null); setPhase('results');
+      setProposals(result.images); setSelected(result.images[0]?.id ?? null); setFit(result.fit); setPhase('results');
       setStatus(current => current ? {...current, remaining: result.remaining} : current);
     } catch (cause) {
       if (!mounted.current) return;
@@ -93,12 +94,12 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
     let commitStarted = false;
     setPhase('saving'); setError(''); setProgress(null);
     try {
-      const saved = await registerAiProposal(proposal, {role, prompt: text}, {signal: controller.signal,
+      const saved = await registerAiProposal(proposal, {role, prompt: text, fit}, {signal: controller.signal,
         onUploadProgress: event => { if (mounted.current) setProgress(Math.round(event.percentage)); },
         onCommit: () => { commitStarted = true; }});
       if (!mounted.current) return;
       onRegistered(saved.project, saved.id);
-      setConfirmation(`Sparad i ${place} som "${aiImageLabel(text)}". Den når inget bolag förrän den läggs till i en scenmall och publiceras.`);
+      setConfirmation(`Sparad i ${place} som "${aiImageLabel(text, table ? fit : null)}". ${PUBLICATION_NOTE}`);
       close(false);
     } catch (cause) {
       if (!mounted.current) return;
@@ -122,7 +123,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
             <div>
               <Dialog.Title className="text-lg font-semibold">Skapa {noun} med AI</Dialog.Title>
               <Dialog.Description className="mt-1 text-sg-muted">
-                AI tar fram förslag. Inget sparas förrän du väljer ett och klickar Använd; då hamnar det i {place} som ett vanligt material.
+                AI tar fram förslag. Inget sparas förrän du väljer ett och klickar Använd. {PUBLICATION_NOTE}
                 {table ? ' Insatsboxarna ritas av servern exakt där dealerns kort landar.' : ''}
               </Dialog.Description>
             </div>
@@ -131,6 +132,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
 
           {status === null && !statusError ? <p role="status" className="text-sg-muted">Kontrollerar bildtjänsten…</p> : null}
           {statusError ? <p role="alert" className="text-sg-red">{statusError}</p> : null}
+          {off ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte påslaget.</strong> AI-bilder är avstängda på den här servern. Manuell uppladdning fungerar som vanligt.</p> : null}
           {offline ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte anslutet.</strong> OpenAI-nyckeln saknas på servern, så inga förslag kan skapas här ännu. Manuell uppladdning fungerar som vanligt.</p> : null}
           {status?.configured ? <p className="text-xs text-sg-muted">{status.remaining} av {status.dailyLimit} bilder kvar i dag på den här servern.</p> : null}
           {unsupported ? <p role="status" className="rounded border border-sg-line p-3">Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.</p> : null}
@@ -165,17 +167,18 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               </select>
               <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
             </label> : null}
-            <div className="grid gap-1">
-              <span className="font-medium">Referensbild · valfri</span>
+            <div className="grid gap-1 rounded border border-dashed border-sg-line p-3" onDragOver={event => { event.preventDefault(); }}
+              onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>
+              <span className="font-medium">Inspirationsbild · valfri</span>
               {reference ? <div className="flex items-center gap-3">
-                <img src={reference} alt={'Referensbild: ' + referenceName} className="h-16 w-24 rounded border border-sg-line object-cover" />
+                <img src={reference} alt={'Inspirationsbild: ' + referenceName} className="h-16 w-24 rounded border border-sg-line object-cover" />
                 <span className="min-w-0 flex-1 truncate text-xs">{referenceName}</span>
                 <button type="button" className="sg-btn sg-btn-ghost" disabled={busy} onClick={() => { setReference(null); setReferenceName(''); }}>Ta bort</button>
               </div> : <label className="sg-btn sg-btn-secondary w-fit cursor-pointer">
                 <ImagePlus size={16} aria-hidden="true" />Välj bild
-                <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => void pickReference(event.currentTarget)} />
+                <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
               </label>}
-              <span className="text-xs text-sg-muted">Ett foto av ett bord, en lokal eller en miljö att inspireras av. PNG, JPEG eller WebP, högst 8 MB. Skickas bara med förfrågan och sparas inte.</span>
+              <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
             </div>
             <label className="grid w-fit gap-1">
               <span className="font-medium">Antal förslag</span>

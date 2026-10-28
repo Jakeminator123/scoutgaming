@@ -6,8 +6,9 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
-import {AI_IMAGE_MESSAGES,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
-import {aiImageLabel} from '../lib/ai-image-contract.mjs';
+import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {aiImageLabel,aiPlacementHash,aiTableLabelFit,sha256Hex} from '../lib/ai-image-contract.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 
 const webp=async(width,height)=>sharp({create:{width,height,channels:3,background:{r:30,g:30,b:40}}}).webp().toBuffer();
@@ -43,42 +44,59 @@ test('"Använd" registers the chosen background through the existing layer-asset
   assert.equal(puts[0].file.type,'image/webp');assert.equal(puts[0].file.size,bytes.length);
 });
 
-test('"Använd" for a table graphic registers a Blackjack table, never a background',async()=>{
-  const calls=[],proposal=await proposalOf(1080,1233);
-  await registerAiProposal(proposal,{role:'table',prompt:'Grön filt'},{fetchImpl:uploadServer(calls),put:async pathname=>({pathname})});
-  assert.equal(calls[0].body.role,'table');assert.equal(calls[0].body.game,'blackjack');assert.equal(calls[0].body.label,'AI · Grön filt');
-  assert.deepEqual([calls[0].body.width,calls[0].body.height],[1080,1233]);
+test('"Använd" for a table graphic registers a Blackjack table labelled with dealer and placement',async()=>{
+  const calls=[],proposal=await proposalOf(1215,2074),fit={dealerId:'paow',placement:aiPlacementHash(defaultCompositionSettings())};
+  await registerAiProposal(proposal,{role:'table',prompt:'Grön filt',fit},{fetchImpl:uploadServer(calls),put:async pathname=>({pathname})});
+  assert.equal(calls[0].body.role,'table');assert.equal(calls[0].body.game,'blackjack');
+  assert.equal(calls[0].body.label,`AI · Grön filt · paow · ${fit.placement}`);assert.deepEqual(aiTableLabelFit(calls[0].body.label),fit);
+  assert.deepEqual([calls[0].body.width,calls[0].body.height],[1215,2074]);
+  await assert.rejects(registerAiProposal(proposal,{role:'table',prompt:'Grön filt'},{fetchImpl:uploadServer([]),put:async pathname=>({pathname})}),/dealer och placering/);
+  const long=aiImageLabel('x'.repeat(600),fit);assert.ok(long.length<=80);assert.deepEqual(aiTableLabelFit(long),fit);
 });
 
 test('proposal requests go to the one AI route and only fixed codes become text',async()=>{
   const sent=[],image=await proposalOf();
   const fetchImpl=async(url,init)=>{sent.push({url,init});return Response.json({ok:true,images:[image,{id:'x',dataUrl:'https://evil.invalid/x.png',width:1,height:1}],remaining:7});};
-  const result=await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:2,dealerId:'paow',reference:'data:image/png;base64,AAAA'},{fetchImpl});
+  const tableAnswer=async(url,init)=>{sent.push({url,init});return Response.json({ok:true,images:[image],remaining:7,fit:{dealerId:'paow',placement:'0a1b2c3d'}});};
+  const withFit=await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow'},{fetchImpl:tableAnswer});
+  assert.deepEqual(withFit.fit,{dealerId:'paow',placement:'0a1b2c3d'});sent.length=0;
+  await assert.rejects(requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow'},{fetchImpl}),/kunde inte skapas/,'a table answer without fit is refused');sent.length=0;
+  const result=await requestAiProposals({role:'background',prompt:'Filt',preset:'casino',count:2,reference:'data:image/png;base64,AAAA'},{fetchImpl});
   assert.equal(sent[0].url,'/api/layer-assets/generate');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
-  assert.deepEqual(JSON.parse(sent[0].init.body),{role:'table',prompt:'Filt',preset:'casino',count:2,dealerId:'paow',reference:'data:image/png;base64,AAAA'});
-  assert.deepEqual(result,{images:[image],remaining:7},'malformed proposals are dropped');
+  assert.deepEqual(JSON.parse(sent[0].init.body),{role:'background',prompt:'Filt',preset:'casino',count:2,reference:'data:image/png;base64,AAAA'});
+  assert.deepEqual(result,{images:[image],remaining:7,fit:null},'malformed proposals are dropped');
   await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'mall'}},{fetchImpl});
   assert.deepEqual(JSON.parse(sent[1].init.body),{role:'background',prompt:'Studio',preset:'free',count:1});
   const composition={mobile:{},desktop:{}};
-  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:{id:'paow-bord',composition}},{fetchImpl});
+  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:{id:'paow-bord',composition}},{fetchImpl:tableAnswer});
   assert.deepEqual(JSON.parse(sent[2].init.body).sceneTemplate,{id:'paow-bord',composition},'the scene template and its composition go along');
-  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:null},{fetchImpl});
+  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:null},{fetchImpl:tableAnswer});
   assert.equal(Object.hasOwn(JSON.parse(sent[3].init.body),'sceneTemplate'),false,'no template: the server uses the composition defaults');
   for (const [code,message] of Object.entries(AI_IMAGE_MESSAGES)) {
     const error=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code,error:'secret provider text'},{status:503})}).catch(cause=>cause);
     assert.equal(aiImageErrorMessage(error),message);
   }
-  assert.match(AI_IMAGE_MESSAGES.ai_image_unavailable,/^Inte anslutet\./);
+  assert.match(AI_IMAGE_MESSAGES.ai_image_unavailable,/^Inte anslutet\./);assert.match(AI_IMAGE_MESSAGES.ai_image_disabled,/^Inte påslaget\./);
+  assert.equal(AI_IMAGE_MESSAGES.ai_image_budget_exhausted,'AI-budgeten är slut. Kontakta den som äger OpenAI-kontot.');
+  assert.doesNotMatch(AI_IMAGE_MESSAGES.ai_image_budget_exhausted,/i morgon/);
   const unknown=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code:'provider_said',error:'secret provider text'},{status:500})}).catch(cause=>cause);
   assert.equal(aiImageErrorMessage(unknown),'Förslagen kunde inte skapas. Försök igen.');assert.doesNotMatch(aiImageErrorMessage(unknown),/secret|provider/);
-  assert.deepEqual(await readAiImageStatus({fetchImpl:async()=>Response.json({configured:false,dailyLimit:0,remaining:0})}),{configured:false,dailyLimit:0,remaining:0});
+  assert.deepEqual(await readAiImageStatus({fetchImpl:async()=>Response.json({enabled:false,configured:false,dailyLimit:0,remaining:0})}),{enabled:false,configured:false,dailyLimit:0,remaining:0});
 });
 
-test('reference photos: PNG, JPEG or WebP up to 8 MB in the dialog; small files are sent as they are',async()=>{
+test('inspiration images: PNG, JPEG or WebP, shrunk in the browser to at most 1536 px and under 2 MB',async()=>{
   const png=await sharp({create:{width:20,height:20,channels:3,background:{r:1,g:2,b:3}}}).png().toBuffer();
-  assert.equal(await prepareReferenceImage(new File([png],'bord.png',{type:'image/png'})),'data:image/png;base64,'+png.toString('base64'));
-  await assert.rejects(prepareReferenceImage(new File([png],'bord.gif',{type:'image/gif'})),/PNG, JPEG eller WebP/);
-  await assert.rejects(prepareReferenceImage(new File([new Uint8Array(8*1024*1024+1)],'stor.jpg',{type:'image/jpeg'})),/högst 8 MB/);
+  const measure=size=>async()=>size,never=async()=>assert.fail('small images are sent as they are');
+  assert.equal(await prepareReferenceImage(new File([png],'bord.png',{type:'image/png'}),{measure:measure({width:1536,height:900}),shrink:never}),'data:image/png;base64,'+png.toString('base64'));
+  const shrinks=[],jpeg=new Blob([new Uint8Array(1000)],{type:'image/jpeg'});
+  const shrunk=await prepareReferenceImage(new File([png],'foto.png',{type:'image/png'}),{measure:measure({width:4000,height:3000}),shrink:async(_file,size,quality)=>{shrinks.push({size,quality});return jpeg;}});
+  assert.match(shrunk,/^data:image\/jpeg;base64,/);assert.deepEqual(shrinks,[{size:{width:1536,height:1152},quality:.88}]);
+  const big=new File([new Uint8Array(2*1024*1024)],'stor.webp',{type:'image/webp'}),qualities=[];
+  await prepareReferenceImage(big,{measure:measure({width:1200,height:800}),shrink:async(_file,size,quality)=>{qualities.push([size.width,quality]);return quality<.7?jpeg:new Blob([new Uint8Array(2*1024*1024)]);}});
+  assert.deepEqual(qualities,[[1200,.88],[1200,.75],[1200,.6]],'2 MB or more is re-encoded until it is under 2 MB');
+  await assert.rejects(prepareReferenceImage(big,{measure:measure({width:1200,height:800}),shrink:async()=>new Blob([new Uint8Array(3*1024*1024)])}),/mindre än 2 MB/);
+  await assert.rejects(prepareReferenceImage(new File([png],'bord.gif',{type:'image/gif'}),{measure:measure({width:20,height:20})}),/PNG, JPEG eller WebP/);
+  await assert.rejects(prepareReferenceImage(new File([new Uint8Array(8*1024*1024+1)],'stor.jpg',{type:'image/jpeg'}),{measure:measure({width:20,height:20})}),/högst 8 MB/);
   assert.equal(dataUrlFile('data:image/webp;base64,'+png.toString('base64'),'a.webp').size,png.length);
   assert.throws(()=>dataUrlFile('https://example.invalid/a.webp','a.webp'));
 });
@@ -117,4 +135,47 @@ test('the exported dialog renders its trigger and stays closed until opened',()=
   for (const props of [{role:'table',game:'roulette',dealers:[{id:'paow',label:'PAOW'}]},{role:'table',dealers:[{id:'astrid',label:'Astrid'}]},{disabled:true}]) {
     assert.match(html(props),/<button[^>]*disabled=""/,JSON.stringify(props));
   }
+});
+
+test('SHA-256 runs synchronously in the browser and matches Node',()=>{
+  for (const text of ['','abc','å'.repeat(31),'x'.repeat(55),'x'.repeat(56),'x'.repeat(64),'y'.repeat(1000)]) {
+    assert.equal(sha256Hex(text),createHash('sha256').update(text,'utf8').digest('hex'),text.slice(0,8));
+  }
+  const composition=defaultCompositionSettings(),moved=defaultCompositionSettings();moved.desktop.table.y=.05;
+  assert.match(aiPlacementHash(composition),/^[a-f0-9]{8}$/);assert.notEqual(aiPlacementHash(moved),aiPlacementHash(composition));
+  // Card geometry, game UI and table order do not move the graphic.
+  const extra={...defaultCompositionSettings(),blackjackTables:[{tableId:'00000000-0000-4000-8000-0000000000aa',mobile:{},desktop:{}}]};
+  assert.equal(aiPlacementHash(extra),aiPlacementHash(composition));
+});
+
+test('an AI table graphic fits only a scene template with its dealer landings and placement; all other material passes',()=>{
+  const fit={dealerId:'paow',placement:aiPlacementHash(defaultCompositionSettings())};
+  const asset={role:'table',label:aiImageLabel('Grön filt',fit)},lane={dealers:['paow']};
+  assert.deepEqual(aiTableFitsTemplate(asset,lane),{ok:true},'no composition: the defaults it was drawn for');
+  assert.deepEqual(aiTableFitsTemplate(asset,{dealers:['paow','dragan'],composition:defaultCompositionSettings()}),{ok:true},'Dragan lands where PAOW lands');
+  for (const other of [{dealers:['astrid']},{dealers:['paow','ny-dealer']},{dealers:[]}]) {
+    assert.deepEqual(aiTableFitsTemplate(asset,other),{ok:false,code:'ai_table_other_dealer',reason:AI_TABLE_MISFIT.ai_table_other_dealer});
+  }
+  const moved=defaultCompositionSettings();moved.mobile.table={width:1.58,x:0,y:.35};
+  assert.deepEqual(aiTableFitsTemplate(asset,{dealers:['paow'],composition:moved}),{ok:false,code:'ai_table_other_placement',reason:AI_TABLE_MISFIT.ai_table_other_placement});
+  assert.equal(aiTableFitsTemplate(asset,{dealers:['paow'],composition:{mobile:{}}}).code,'ai_table_other_placement');
+  for (const material of [{role:'table',label:'Blackjack · grön filt'},{role:'background',label:asset.label},{role:'table',label:'Bord från AI, omdöpt'},null]) {
+    assert.deepEqual(aiTableFitsTemplate(material,{dealers:['astrid'],composition:moved}),{ok:true});
+  }
+});
+
+test('choosing a table in a scene template blocks a misfit AI graphic and explains why',()=>{
+  const {exports:{LayerAssetSelect},localRequire}=loadTs(new URL('../components/layer-selectors.tsx',import.meta.url));
+  const {createElement}=localRequire('react'),{renderToStaticMarkup}=localRequire('react-dom/server');
+  const placement=aiPlacementHash(defaultCompositionSettings()),asset=(id,label)=>({schemaVersion:1,id,role:'table',game:'blackjack',label,sha256:'a'.repeat(64),size:100,contentType:'image/webp',pathname:'x',width:1215,height:2074});
+  const ai=asset('00000000-0000-4000-8000-0000000000a1',`AI · Grön filt · paow · ${placement}`),manual=asset('00000000-0000-4000-8000-0000000000a2','Blackjack · eget bord');
+  const lane=dealers=>({id:'mall',label:'Mall',dealers,layers:{table:{enabled:true,default:null,allowed:[]},background:{enabled:false,default:null,allowed:[],mode:'baked'}}});
+  const html=props=>renderToStaticMarkup(createElement(LayerAssetSelect,{role:'table',assets:[ai,manual],onChange:()=>{},...props}));
+  const fits=html({lane:lane(['paow'])});
+  assert.doesNotMatch(fits,/passar inte scenmallen/);assert.doesNotMatch(fits,/<option[^>]*disabled=""[^>]*value="00000000-0000-4000-8000-0000000000a1"|value="00000000-0000-4000-8000-0000000000a1"[^>]*disabled=""/);
+  const other=html({lane:lane(['astrid'])});
+  assert.match(other,/value="00000000-0000-4000-8000-0000000000a1" disabled=""/);assert.match(other,/passar inte scenmallen/);
+  assert.doesNotMatch(other,/value="00000000-0000-4000-8000-0000000000a2" disabled=""/,'manual material is never blocked');
+  const chosen={...lane(['astrid']),layers:{...lane(['astrid']).layers,table:{enabled:true,default:ai.id,allowed:[ai.id]}}};
+  assert.match(html({lane:chosen}),new RegExp('role="alert">'+ai.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+': Bordsgrafiken är ritad för en annan dealer'));
 });
