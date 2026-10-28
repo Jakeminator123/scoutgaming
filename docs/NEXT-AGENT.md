@@ -47,11 +47,12 @@ Råkvitton, skript och skärmbilder bakom kvittona finns bara lokalt hos orkestr
 ### K05 — Exakt mediakoppling till Neon och Blob (IN_PROGRESS)
 
 - **Bevisat:** produktionen 27 oktober kväll ([K05-kvittot](2026-10-27-K05-PRODUCTION-ACCEPTANCE.json)): `cc415cd8`, Studio-migrering 020, paketrevision 9 och `room-config-133cfffc…`, de 15 godkända och servermätta tagningarnas media-ID och identitetshash, och Jakobs godkännande med tid och gräns (mobilvy, inte telefon). Blockeraren i `status.json` beskriver läget före detta och ändras bara efter granskning.
+- **Bevisat i kompletteringen (`matrix`, `negative`):** manifestmatrisen för 15/15 tagningar, där källbytesen i `c7138759` stämmer med Neons sha256 och storlek, med rumskonfigurationens material och med Blob-sökvägen, och där varje tagning är approved med tid. Negativt fall i staging på `13aa5a01`: en ogranskad, en avvisad och en okänd tagning ger 404 `studio_presentation_idle_media_unavailable` utan bytes. Paket 10 och 11 (`room-config-4ad8301e…`) publicerades efter kvittot; de 15 tagningarna finns kvar oförändrade.
 - **Saknas:**
-  - K05:s manifestmatris `käll-SHA → bytes-SHA → Neon-ID → Blob → paket/händelse → acceptans`; bytes-SHA saknas för de 8 tagningar som bands utan import.
-  - Ett negativt fall: en ogranskad eller okänd tagning kan inte väljas.
-  - Inloggad läsning av produktionens tre lager (anonymt svarar de 401).
-- **Vem:** agent kompletterar med läsningar (Neon read-only, Admin-API GET); en annan agent granskar; orkestratorn uppdaterar status.
+  - Inloggad läsning av produktionens tre lager (anonymt svarar de 401). Den väntar på Jakobs ja.
+  - En avvisad POST-publicering med ogranskad tagning i drift. Readiness-svaret i produktionen och kodproven täcker vägen; orkestratorn avgör om det räcker.
+  - Oberoende granskning.
+- **Vem:** Jakob godkänner den inloggade läsningen, en annan agent granskar och orkestratorn uppdaterar status.
 - **Kvitto:** komplettera K05-kvittot.
 
 ### K06 — Admin till spel efter omstart (IN_PROGRESS; kräver K05 VERIFIED)
