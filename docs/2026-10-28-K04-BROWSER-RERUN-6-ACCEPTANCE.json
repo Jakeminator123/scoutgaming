@@ -3030,6 +3030,15 @@
    "fixHint": "Visa bara den fokuserade platsens rad i full storlek, eller krymp raderna när flera egna platser ligger intill varandra."
   },
   {
+   "id": "F15-duplicate-decision-bar-1440",
+   "severity": "låg; kosmetisk",
+   "blocking": false,
+   "observation": "Dubbla beslutsknappar vid 1440: en liten kopia av actionbaren (2x/+/−/↔) renderas uppe till vänster över rubriken samtidigt som huvudpanelen visas; huvudpanelen täcker dealerns kort",
+   "evidence": "o02/jakob-eyes/v3-decision-1440.png (utanför Git)",
+   "disposition": "bokförd till mobil/3-rutors-arbetet efter O03",
+   "verifiedBy": "scoutgaming-f1 (orkestratorn, egen läsning av skärmbilden)"
+  },
+  {
    "id": "F9-rest-stall-before-card",
    "severity": "låg; en gång på 189 filmade steg",
    "observation": "Se 3-no-false-text: stopp före kortet visar \"Filmen kunde inte spelas.\" i 11,2 s, även efter att hit/stand öppnats.",
