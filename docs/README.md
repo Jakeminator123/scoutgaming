@@ -37,6 +37,7 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [plans/O02-PLAN](plans/O02-PLAN.md) och [O02-RESTORE-REPLAY](plans/O02-RESTORE-REPLAY.md) | Frysning, restore och replay inför O02 (refereras av `tools/o02-*.mjs`) | Orkestreraren | Tills O02 är klar, sedan raderas de |
+| [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: verifierat läge för röst, bank och RunPod, proven 28 oktober, varför inget aktiveras före O03, aktiviteten "dealer-generisk talkedja, Paow först" | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
 | [plans/REN-START](plans/REN-START.md) | Ren start: ordning, backup och go-punkter för att radera Astrid, testrum och operatörer | Orkestreraren och Jakob | Tills ren start är utförd |
 | [plans/ADMIN-KARTA](plans/ADMIN-KARTA.md), [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html) | Kablagekarta, målbild och klickbar skiss för Admin | Admin-arkitekten | Av Admin-arkitekten |
 
