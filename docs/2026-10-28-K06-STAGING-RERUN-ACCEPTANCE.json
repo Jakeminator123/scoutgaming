@@ -7,7 +7,7 @@
     "frozenCandidate": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2 (main vid körningen; ingen kodändring mellan stegen, processbytena är Restart service på samma deploy)"
   },
   "complements": "2026-10-27-K06-STAGING-ACCEPTANCE.json; punkterna i dess remaining är omprovade här enligt docs/2026-10-28-K07-REVIEW.md, avsnittet om vad omkörningarna måste visa (punkt 3–6)",
-  "mainAtWriting": "0db26a9b (#462). 13aa5a01..0db26a9b ändrar inte blackjackmotorn: dokumentation, apps/studio/docs/guide.json, roulettens media-specification.json och borttagna oanvända filer. Inte provat i denna körning.",
+  "mainAtWriting": "43b7404e (#465). 13aa5a01..43b7404e ändrar inte motorns serverdel: #465 rättar spelklienten (services/game/public/local-film-player.mjs, local-presentation.mjs, shared-room-presentation.mjs, K04), övrigt är dokumentation, apps/studio/docs/guide.json, roulettens media-specification.json och borttagna oanvända filer. Klientändringen är inte provad i denna körning.",
   "status": {
     "activity": "K06",
     "result": "IN_PROGRESS",
@@ -122,7 +122,7 @@
       "code": [
         "packages/presentation/server/frozen-dealer-presentation.mjs:196-198 (en äldre paketrevision serveras bara om sameFrozenPackage, dvs. samma frysta presentation)",
         "packages/presentation/server/frozen-dealer-presentation.mjs:68 (409 studio_presentation_idle_package_changed)",
-        "services/game/public/local-presentation.mjs:22, 151, 330 och services/game/public/app.mjs:231 (klientens omladdningsuppmaning)"
+        "services/game/public/local-presentation.mjs:22, 151, 330 på 13aa5a01 (22, 151, 343 på main 43b7404e) och services/game/public/app.mjs:231 (klientens omladdningsuppmaning)"
       ],
       "why27OctPassed": "2026-10-27-K06-kvittots K06-3b/3c höll eftersom den publiceringen bara ändrade limits; paket 7 och 8 hade samma frysta presentation, så sameFrozenPackage släppte igenom det äldre paketet.",
       "options": "Antingen binda nativehanden till sin startrevision på servern (som det delade bordets fönster) så att samma spelare kan läsa den tills handen är avräknad, eller besluta att omladdning är policyn för nativebordet och skriva in det i O01/K06-kriteriet. En kodändring i packages/presentation/server ger en ny kandidat."

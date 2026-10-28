@@ -5,7 +5,7 @@
   "codeSha": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2",
   "candidate": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2",
   "supersedes": "2026-10-27-K07-STAGING-ACCEPTANCE.json (cc415cd8) för K07-körningen; det kvittot står kvar som historik",
-  "mainAtWriting": "0db26a9b (#462). 13aa5a01..0db26a9b ändrar inte blackjackmotorn: dokumentation, apps/studio/docs/guide.json, roulettens media-specification.json och borttagna oanvända filer (apps/web/public-bilder, site-footer.tsx, ops/neon-game/core-schema.sql). Inte provat i denna körning.",
+  "mainAtWriting": "43b7404e (#465). 13aa5a01..43b7404e ändrar inte motorns serverdel: #465 rättar spelklienten (services/game/public/local-film-player.mjs, local-presentation.mjs, shared-room-presentation.mjs, K04), övrigt är dokumentation, apps/studio/docs/guide.json, roulettens media-specification.json och borttagna oanvända filer (apps/web/public-bilder, site-footer.tsx, ops/neon-game/core-schema.sql). Klientändringen är inte provad i denna körning.",
   "status": {
     "activity": "K07",
     "result": "TODO",
