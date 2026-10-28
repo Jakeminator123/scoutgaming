@@ -153,6 +153,7 @@ test('the seat controls are labelled for a phone, Lämna platser shows only when
   const leave = controls.children.find(node => node.textContent === 'Lämna platser');
   assert.deepEqual(windows.children.map(option => option.textContent), ['Visa platser 1–3', 'Visa platser 2–4', 'Visa platser 3–5', 'Visa platser 4–6', 'Visa platser 5–7']);
   assert.equal(windows.attributes['aria-label'], 'Visa platser på bordet');
+  assert.equal(nodes.get('table-profile').textContent, 'Blackjack', 'no stake profile is named before the first snapshot');
   view.render({ snapshot: snapshot(), can: everything, notice: '', connected: true });
   assert.equal(leave.hidden, true, 'nothing to leave');
   assert.equal(windows.value, '2');
@@ -167,6 +168,8 @@ test('the seat controls are labelled for a phone, Lämna platser shows only when
   assert.equal(tableProfileName(snapshot().settings), 'Privé Blackjack');
   assert.equal(tableProfileName({ limits: { ...ROOM_LIMIT_PRESETS.high }, chips: [...ROOM_LIMIT_PRESETS.high.chips], refill: ROOM_LIMIT_PRESETS.high.refill }), 'High Blackjack');
   assert.equal(tableProfileName({ ...snapshot().settings, refill: 7 }), 'Blackjack', 'an unknown profile is not named');
+  assert.equal(tableProfileName({ ...snapshot().settings, limitPreset: 'casual' }), 'Casual Blackjack', 'a named preset wins over the values');
+  assert.equal(tableProfileName({ ...snapshot().settings, limitPreset: 'constructor' }), 'Privé Blackjack', 'an unknown name falls back to the values');
 });
 
 test('several own seats: the chosen one shows its side bets and Lämna, another own circle chooses without a server write', () => {
@@ -174,7 +177,9 @@ test('several own seats: the chosen one shows its side bets and Lämna, another 
   const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args), focusSeat: seat => calls.push(['focus', seat]) });
   view.render({ snapshot: seatedAt([2, 3]), focusSeat: null, can: everything, notice: '', connected: true });
   const [two, three] = [2, 3].map(i => nodes.get('seats').children[i].children[0].children[0]);
-  assert.equal(two.disabled, true, 'the first own seat is the chosen one'); assert.equal(three.disabled, false);
+  // The chosen circle stays focusable: aria-disabled, never disabled, so choosing a seat keeps the focus on it.
+  assert.deepEqual([two.disabled, two.attributes['aria-disabled'], two.attributes['aria-pressed']], [false, 'true', 'true'], 'the first own seat is the chosen one');
+  assert.deepEqual([three.disabled, three.attributes['aria-disabled']], [false, 'false']);
   three.click(); assert.deepEqual(calls, [['focus', 3]]);
   view.render({ snapshot: seatedAt([2, 3], { phase: 'round', roundId: 'r1' }), focusSeat: 3, can: { ...everything, bet: false, join: false }, notice: '', connected: true });
   const own = nodes.get('seats').children[3].children[0], [pp, main, tp] = own.children[1].children;
@@ -202,4 +207,28 @@ test('a lost socket shows a reconnecting sign until the next state; a spent budg
   assert.equal(sign.dataset.state, 'offline'); assert.match(sign.textContent, /bröts.*Återanslut/);
   real.render({ snapshot: seatedAt([0]), can: everything, notice: '', connected: true });
   assert.equal(sign.hidden, true); real.close();
+});
+
+// Review of #536 (3): on a composition plane without table geometry the seats are fitted above the bottom controls,
+// whose height changes with the phase. The plane keeps the tallest seen at the screen size, so cards never move.
+test('a composition plane keeps its seat and card layout when the bottom controls shrink, and measures again on resize', async () => {
+  const { document, window, nodes } = presentationDocument({ width: 390, height: 844 });
+  const hud = new Element();let hudTop = 560;hud.getBoundingClientRect = () => ({ top: hudTop, height: 844 - hudTop, left: 0, width: 390 });nodes.set('hud-bottom', hud);
+  const projections = [];
+  const cards = { restore() {}, sync() {}, clear() {}, show() {}, reveal() {}, close() {}, setProjection: value => projections.push(structuredClone({ x: value.x, y: value.y, scale: value.scale, seats: value.seats })) };
+  const plane = { referencePlane: () => ({ x: -45, y: 0, scale: 844 / 1920, sourceAligned: true }), onGeometryChange: () => () => {}, setBackground() {}, setTable() {}, close() {} };
+  const selection = { presentation: 'local', dealer: 'paow', localDealer: 'paow', operator: 'north', roomId, packageRevision: 1, registeredDealers: [{ id: 'paow', label: 'paow' }] };
+  const port = await mountSharedRoomPresentation({ document, window, selection, onReady() {}, onError() {}, createComposition: () => plane,
+    loadAdapters: async () => [{ PerformancePlayer: class { dispose() {} } }, { createLocalPresentation: async () => ({ state() {}, start() {}, close() {} }) }, { createLocalCardOverlay: () => cards }] });
+  const seats = Array.from({ length: 7 }, () => new Element()), value = { snapshot: seatedAt([3]), focusSeat: null, seats };
+  port.layout(value);const tall = projections.at(-1);
+  assert.ok(Math.max(...tall.seats.map(seat => seat.y)) <= 560 - 28 + 16, 'the seats sit above the tallest bottom controls');
+  hudTop = 700;port.layout(value);
+  assert.deepEqual(projections.at(-1), tall, 'a shorter bottom row (a round on a phone) moves no card or seat');
+  hudTop = 500;port.layout(value);
+  assert.ok(projections.at(-1).y < tall.y || projections.at(-1).scale < tall.scale, 'a taller one is kept from then on');
+  const kept = projections.at(-1);hudTop = 700;port.layout(value);assert.deepEqual(projections.at(-1), kept);
+  for (const node of [nodes.get('scene'), nodes.get('table2d')]) node.getBoundingClientRect = () => ({ left: 0, top: 0, width: 390, height: 700, right: 390, bottom: 700 });
+  port.layout(value);assert.notDeepEqual(projections.at(-1), kept, 'a resize measures the bottom controls anew');
+  port.close();
 });

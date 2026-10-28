@@ -55,11 +55,17 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   const dock=document.createElement('div');dock.id='shared-room-dock';dock.className='shared-room-dock';dock.hidden=true;
   if(hud){hud.prepend(dock,zone);zone.append(...['banner','deal-now'].map(id=>$(document,id)),next,...['insurance','actions-top'].map(id=>$(document,id)).filter(Boolean));}
   else scene.append(next);
-  const profile=$(document,'table-profile');
+  // K06 O1: until the first snapshot names the room's stake profile, the heading names no profile at all.
+  const profile=$(document,'table-profile');if(profile)profile.textContent='Blackjack';
   const labels={ 'undo-btn':['Ångra','undo'], 'clear-btn':['Rensa','clear'], 'double-btn':['Dubbla','doubleBets'],
     'max-btn':['Upprepa','repeat'], 'all-sides':['Alla platser','allSeats'], 'add-funds':['Fyll på demosaldo','refill'],
     'pitboss':['Spelpaus 24 timmar','pause'], 'deal-now':['Redo','ready'] };
   for(const [id,[label,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.textContent=label;node.setAttribute('aria-label',label);listen(node,()=>actions?.dispatch(op));}
+  // The 24-hour pause is responsible gaming and the server takes it in every phase, also mid-round: it sits with the
+  // seat controls, outside the betting-window buttons that a round hides. A phone shows "Spelpaus"; its name keeps 24 h.
+  const pause=$(document,'pitboss');
+  if(pause&&topRight){pause.classList?.add('shared-room-button','shared-room-pause');pause.textContent='Spelpaus';
+    const hours=document.createElement('span');hours.className='shared-room-long';hours.textContent='24 timmar';pause.append(hours);extra.insertBefore?.(pause,sound??null);}
   const decisions=[...document.querySelectorAll('[data-act]')].filter(node=>!node.closest?.('#actions'));
   for(const node of decisions)listen(node,()=>actions?.dispatch('act',{action:node.dataset.act}));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
@@ -88,10 +94,38 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   // The same buttons move, so a seat never has two sets of controls.
   function dockSeat(index){
     if(docked===index)return;
-    if(docked!==null){const slot=slots[docked];slot.inside.append(slot.bets,slot.leaveSeat);slot.leaveSeat.textContent='Lämna';}
+    const previous=docked===null?null:slots[docked];
+    if(previous){previous.inside.append(previous.bets,previous.leaveSeat);previous.leaveSeat.textContent='Lämna';}
     docked=index;dock.hidden=index===null;
     if(index!==null){const slot=slots[index];dock.append(slot.bets,slot.leaveSeat);slot.leaveSeat.textContent=`Lämna plats ${index+1}`;}
   }
+  // Keyboard focus survives the table's own changes. A restore disables every control for a moment (the binding is
+  // checked again), a round hides the bets and a phone's dock moves its buttons: Chrome then drops focus to the page.
+  // The control that had it gets it back once usable; one that left the screen hands it to the same control of the
+  // docked seat, else to its seat's circle, else to the action zone. A pointer press elsewhere is the player's own move.
+  let lastFocus=null,moved=false;
+  const focused=event=>{if(scene.contains?.(event.target)){lastFocus=event.target;moved=false;}};
+  const pressed=()=>{moved=true;};
+  for(const [type,handler] of [['focusin',focused],['pointerdown',pressed]]){document.addEventListener?.(type,handler,true);cleanups.push(()=>document.removeEventListener?.(type,handler,true));}
+  const usable=node=>Boolean(node&&!node.disabled&&node.isConnected!==false&&(node.checkVisibility?.()??true));
+  function substitute(node){
+    const slot=slots.find(item=>item.leaveSeat===node||Object.values(item.fields).includes(node)||item.join===node);
+    const field=slot&&Object.entries(slot.fields).find(([,control])=>control===node)?.[0];
+    const current=docked===null?null:slots[docked];
+    return [current&&field?current.fields[field]:null,current&&slot?.leaveSeat===node?current.leaveSeat:null,slot?.join,
+      ...(zone.querySelectorAll?.('button')??[])].find(usable)??null;
+  }
+  function keepFocus(){
+    if(closed||!lastFocus||moved)return;
+    const active=document.activeElement,shown=lastFocus.isConnected!==false&&(lastFocus.checkVisibility?.()??true);
+    // Focus elsewhere is the player's; the control that still holds it on screen needs nothing.
+    if(active&&active!==document.body&&(active!==lastFocus||shown))return;
+    // A control that is only closed for a moment keeps its claim; one that left the screen hands it on.
+    const target=shown?lastFocus:substitute(lastFocus);
+    if(usable(target)&&target!==active)target.focus?.({preventScroll:true});
+  }
+  // Chrome moves focus off a closed control at its next frame, so the check runs again then.
+  const keepFocusSoon=()=>{keepFocus();view?.requestAnimationFrame?.(keepFocus);};
   const rect=node=>typeof node?.getBoundingClientRect==='function'?node.getBoundingClientRect():null;
   // Layout after every render and after the presentation lays the seats out again on resize. Own seats closer than a
   // full bet row share its space (K04 F14); a row at a phone's edge moves inside the scene; a seat whose controls would
@@ -161,7 +195,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       $(document,'insurance').hidden=!(s?.me?.insuranceDue&&s.phase==='round'&&s.round?.phase==='insurance'&&(value.serverNow??s.serverNow)>=(s.plan?.turnAt??0));
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
       const limits=$(document,'limits');
-      if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';dockSeat(null);return;}
+      if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';dockSeat(null);keepFocusSoon();return;}
       $(document,'balance').textContent=money(s.me.available)+' demo';
       if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
       // K06 O1: the heading names the room's stake profile instead of a fixed "Privé".
@@ -186,7 +220,9 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
         // Short visible label so 44 px pills fit the seat spacing; the full text stays in aria-label.
         // The own seat's circle reads "Du"; with several own seats it chooses whose bets show in full, else it takes no click.
         slot.join.textContent=own?'Du':String(i+1);slot.join.setAttribute('aria-label',own?`Plats ${i+1}, din plats`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`);
-        slot.join.disabled=own?!several||i===chosen:!can.join||occupied;slot.join.setAttribute('aria-pressed',String(own&&(!several||i===chosen)));
+        // The chosen one of several own circles stays focusable (aria-disabled), so choosing it never drops focus to the page.
+        slot.join.disabled=own?!several:!can.join||occupied;slot.join.setAttribute('aria-disabled',String(own&&several&&i===chosen));
+        slot.join.setAttribute('aria-pressed',String(own&&(!several||i===chosen)));
         slot.leaveSeat.hidden=!own||!betting;slot.leaveSeat.style.display=own&&betting?'':'none';slot.leaveSeat.disabled=!can.join;slot.leaveSeat.setAttribute('aria-label',`Lämna plats ${i+1}`);
         slot.bets.hidden=!own;slot.bets.style.display=own?'':'none';
         for(const [field,node] of Object.entries(slot.fields)){
@@ -199,7 +235,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       }
       arrange();
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});
-      onScreen();
+      onScreen();keepFocusSoon();
     },
     get snapshot(){return model?.snapshot;},
     close(){if(closed)return;closed=true;cleanups.forEach(fn=>fn());actions=null;},

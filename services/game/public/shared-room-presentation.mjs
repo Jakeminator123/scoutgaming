@@ -296,6 +296,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     restoreColor=roomColor(document,chosen.tableColor);
   } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();placeholder.remove();throw error;}
   const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
+  let floorSize,floorTop;
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
     const scene=host.getBoundingClientRect(),table=document.getElementById('table2d').getBoundingClientRect();
@@ -305,8 +306,12 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     // K04 F13: the seats keep clear of the bottom controls (dock, action zone, wallet and chips), so the room
     // above them is measured. A seat's controls reach about 140 px below its anchor on a wide screen; a phone
     // shows only the seat's circle there (its bets dock in the bottom controls).
-    const hud=document.getElementById('hud-bottom')?.getBoundingClientRect?.();
-    const floor=hud?.height>0?Math.min(height,hud.top-scene.top):height-150,below=compact?28:140;
+    // The bottom controls change height with the phase (a phone's dock and chips belong to the betting window). The
+    // plane keeps the tallest seen at this screen size, so cards never move between phases; a resize measures anew.
+    const hud=document.getElementById('hud-bottom')?.getBoundingClientRect?.(),size=`${Math.round(width)}x${Math.round(height)}`;
+    if(size!==floorSize){floorSize=size;floorTop=undefined;}
+    if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,hud.top-scene.top);
+    const floor=floorTop??height-150,below=compact?28:140;
     let projected;
     if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile});
     // Without a composition plane the seats stand on the dealer's filmed landings (shared-room-layout.mjs); the

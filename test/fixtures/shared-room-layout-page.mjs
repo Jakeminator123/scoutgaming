@@ -22,13 +22,17 @@ const pageScript = `
   const selection=${JSON.stringify(selection)};
   let restore;const connection=new AbortController(),sent=[];
   class Player{dispose(){}}
+  // ?plane=film: a composition plane without table geometry, the film contain-fitted to the scene (no Admin boxes).
+  const plane=new URLSearchParams(location.search).get('plane')==='film';
+  const composition=plane?{referencePlane(){const scene=document.getElementById('scene').getBoundingClientRect(),scale=Math.min(scene.width/1080,scene.height/1920);
+      return{x:(scene.width-1080*scale)/2,y:(scene.height-1920*scale)/2,scale,sourceAligned:true};},onGeometryChange:()=>()=>{},setBackground(){},setTable(){},close(){}}:null;
   const app=await mountSharedRoomApp({
     fetchImpl:async url=>{const query=new URL(url,location.origin).searchParams;
       return Response.json({owner:'web',roomId:selection.roomId,configVersion:query.get('configVersion'),windowId:query.get('windowId'),
         presentationContext:{operatorSlug:selection.operator,roomId:selection.roomId,packageRevision:selection.packageRevision,dealerId:selection.dealer},selection});},
-    createCommands:()=>({state:'idle',async send(intent){sent.push(intent);return{status:'ok',result:{op:intent.op,version:0}};},retry(){},stop(){this.state='stopped';}}),
+    createCommands:()=>({state:'idle',async send(intent){sent.push(intent);return{status:'ok',result:{op:intent.op,version:0,...(intent.op==='pause'?{pausedUntil:0}:{})}};},retry(){},stop(){this.state='stopped';}}),
     createSocket:options=>{restore=options.restoreSnapshot;return{start(){},stop(){},reconnect(){},status:()=>({state:'running'})};},
-    createPresentation:async options=>mountSharedRoomPresentation({...options,createComposition:()=>null,
+    createPresentation:async options=>mountSharedRoomPresentation({...options,createComposition:()=>composition,
       loadAdapters:async()=>[{PerformancePlayer:Player},{createLocalPresentation:async media=>({state(){},prepareSequence(){},present:async()=>true,close(){},start(){media.onIdle();}})},{createLocalCardOverlay}]})});
   window.fixture={app,sent,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),ready:true};
 `;
@@ -76,14 +80,14 @@ export async function openLayoutFixture(browserModule, { channel } = {}) {
   const browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}),
     args: ['--disable-background-networking', '--disable-component-update', '--disable-domain-reliability'] });
   const pageErrors = [];
-  async function open(viewport) {
+  async function open(viewport, { plane = null } = {}) {
     const context = await browser.newContext({ viewport, isMobile: viewport.width < 860, hasTouch: viewport.width < 860, serviceWorkers: 'block' });
     context.setDefaultTimeout(7000);
     await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue()
       : (unexpected.push({ external: route.request().url() }), route.abort('blockedbyclient')));
     const page = await context.newPage();
     page.on('pageerror', error => pageErrors.push(error.message));
-    await page.goto(origin); await page.waitForFunction(() => window.fixture?.ready);
+    await page.goto(origin + (plane ? `/?plane=${plane}` : '')); await page.waitForFunction(() => window.fixture?.ready);
     return { page, context,
       async show(snapshot) {
         await page.evaluate(value => window.fixture.push(value), snapshot);

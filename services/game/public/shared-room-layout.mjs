@@ -62,9 +62,11 @@ export function fallbackSeatLayout({ width, height, boxes, filmedProfile = null,
     dealer: { x: x + positions.dealer.cx * scale, y: y + positions.dealer.cy * scale }, controlScale };
 }
 
-// The heading names the room's stake profile (Admin: Casual, Privé, High); the snapshot carries its limits and chips.
+// The heading names the room's stake profile (Admin: Casual, Privé, High): its `limitPreset` when the snapshot
+// carries one, else the preset whose limits, chips and refill the snapshot's settings match exactly.
 const PROFILE_NAMES = Object.freeze({ casual: 'Casual', prive: 'Privé', high: 'High' });
 export function tableProfileName(settings) {
+  if (Object.hasOwn(PROFILE_NAMES, settings?.limitPreset ?? '')) return `${PROFILE_NAMES[settings.limitPreset]} Blackjack`;
   const limits = settings?.limits, chips = settings?.chips;
   const match = Object.entries(ROOM_LIMIT_PRESETS).find(([, preset]) => limits && Array.isArray(chips)
     && preset.min === limits.min && preset.max === limits.max && preset.sideMax === limits.sideMax && preset.refill === settings.refill

@@ -1153,3 +1153,7 @@ html[data-shared-room="1"] #undo-btn, html[data-shared-room="1"] #double-btn { w
   #shared-room-actions > #banner { padding: 6px 10px; }
   .shared-room-actions { gap: 6px 8px; }
 }
+/* Spelpaus 24 timmar is responsible gaming: one of the seat controls, reachable in every phase. */
+html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex; align-items: center; justify-content: center; gap: .45em; width: auto; height: auto; }
+.seat-shared.active .seat-shared-join[aria-disabled="true"] { cursor: default; }
+@media (max-width: 860px) { .shared-room-controls .shared-room-long { display: none; } }
