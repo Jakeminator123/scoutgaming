@@ -29,7 +29,8 @@ function harness({search='',pathname='/admin/drift',data=session(),status=200}={
   class StudioAdminUiError extends Error{constructor(status){super('Serverstatus '+status);this.status=status;}}
   const admin={...markers,StudioAdminUiError,
     studioAdminActor:value=>value&&typeof value.username==='string'&&typeof value.role==='string'?{username:value.username,role:value.role}:null,
-    createStudioAdminClient:options=>({options,available:()=>true,async request(){throw Error('no transport in this fixture');}})};
+    createStudioAdminClient:options=>({options,available:()=>true,async request(){throw Error('no transport in this fixture');}}),
+    sharedStudioAdminRead:actions=>({actions,async read(){throw Error('no transport in this fixture');},refresh(){}})};
   const context={URL,URLSearchParams,AbortController,Error,location:{origin:'https://admin.invalid',get search(){return search;}},
     fetch:async(path,init)=>{requests.push({path,init});return {ok:status>=200&&status<300,status,json:async()=>typeof data==='function'?data():data};}};
   function compile(file,resolve){
@@ -102,8 +103,9 @@ test('service tabs keep visited panels mounted and ignore tab selection from oth
 
 test('service navigation retains explicit ambiguous scope and excludes credentials',()=>{
   const h=harness({search:'?tab=payments&dealer=elin&operator=north&operator=other&room=one&room=two&token=secret',pathname:'/admin/ekonomi'});
-  const page=h.connected.ConnectedServices({path:'/admin/ekonomi'}),tree=h.render(page.type,page.props);
+  const page=h.connected.ConnectedServices({path:'/admin/ekonomi'}),service=h.render(page.type,page.props),tree=h.render(service.type,service.props);
   const links=descendants(tree).filter(row=>row.type==='a');
+  assert.equal(links.length,2,'both Ekonomi tabs are links');
   for(const link of links){
     const url=new URL(link.props.href,'https://test.invalid');assert.equal(url.pathname,'/admin/ekonomi');
     assert.equal(url.searchParams.getAll('tab').length,1);assert.equal(url.searchParams.get('dealer'),'elin');

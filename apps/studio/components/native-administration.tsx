@@ -1,13 +1,11 @@
 'use client';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { StudioAdministration, StudioAdminUiError, createStudioAdminClient, type StudioAdminApiBase } from './studio-administration';
-import { createStudioLoginClient, StudioLoginUiError } from '../lib/studio-login-client.mjs';
+import { useCallback, useMemo } from 'react';
+import { StudioAdministration, StudioAdminUiError, createStudioAdminClient, type StudioAdminApiBase, type SharedStudioAdminRead } from './studio-administration';
 import styles from './studio-administration.module.css';
 import { MovingDriftControls } from './moving-drift-controls';
 
-export function NativeAdministration({ apiBase, availableActions, gameOrigin, initialGroup, embedded = false }: {apiBase: StudioAdminApiBase; availableActions: string[]; gameOrigin?: string; initialGroup?: string; embedded?: boolean }) {
-  const [epoch,setEpoch] = useState(0), [busy,setBusy] = useState(false), [error,setError] = useState('');
-  const writing = useRef(false);
+// Logging out belongs to the Admin menu, not to each embedded page.
+export function NativeAdministration({ apiBase, availableActions, gameOrigin, initialGroup, embedded = false, sections, sharedRead }: {apiBase: StudioAdminApiBase; availableActions: string[]; gameOrigin?: string; initialGroup?: string; embedded?: boolean; sections?: readonly string[]; sharedRead?: SharedStudioAdminRead }) {
   const session = useCallback(async () => {
     const response = await fetch(`${apiBase.replace(/\/admin$/, '/auth')}/session`, {
       credentials: 'same-origin', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json' },
@@ -15,19 +13,10 @@ export function NativeAdministration({ apiBase, availableActions, gameOrigin, in
     if (!response.ok) throw new StudioAdminUiError(response.status);
     return response.json();
   }, [apiBase]);
-  async function logout() {
-    if (writing.current) return;
-    writing.current = true; setBusy(true); setError(''); setEpoch(value => value+1);
-    const authBase = apiBase === '/studio/api/admin' ? '/studio/api/auth' : '/api/auth';
-    try { await createStudioLoginClient({authBase}).request('logout',{}); window.location.assign('/admin/login'); }
-    catch (error) { setError(error instanceof StudioLoginUiError ? error.message : 'Utloggningen kunde inte bekräftas.'); }
-    finally { writing.current = false; setBusy(false); }
-  }
   const driftClient=useMemo(()=>createStudioAdminClient({apiBase,session,availableActions,gameOrigin,readIdentity:'response-headers-v1'}),[apiBase,session,availableActions,gameOrigin]);
   const Wrapper = embedded ? 'div' : 'main';
-  return <Wrapper className={embedded ? styles.embedded : styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
-    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} initialGroup={initialGroup} readIdentity="response-headers-v1"
-      roomsHref={embedded ? '/admin/rooms' : undefined} companyTeamLabel={embedded ? 'Bolag & team' : undefined}
-      renderOperations={actor=><MovingDriftControls key={'drift-'+epoch} client={driftClient} expectedActor={actor}/>} showGroupNavigation={!embedded}
-      sessionAction={<button type="button" className="sg-btn sg-btn-ghost" onClick={() => void logout()}>Logga ut</button>} />}</Wrapper>;
+  return <Wrapper className={embedded ? styles.embedded : styles.shell}>
+    <StudioAdministration apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} initialGroup={initialGroup} readIdentity="response-headers-v1"
+      sections={sections} sharedRead={sharedRead} companyTeamLabel={embedded ? 'Bolag & team' : undefined}
+      renderOperations={actor=><MovingDriftControls client={driftClient} expectedActor={actor}/>} showGroupNavigation={!embedded} /></Wrapper>;
 }
