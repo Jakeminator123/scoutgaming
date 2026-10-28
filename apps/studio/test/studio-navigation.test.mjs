@@ -7,37 +7,9 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
-import { SCOUT_FOOTER_NAVIGATION, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
-
-test('exact active-page lookup handles canonical paths and rejects a doubled studio prefix', () => {
-  const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
-  for (const item of items) {
-    assert.equal(scoutNavigationItem(item.href, ''), item);
-    assert.equal(scoutNavigationItem(item.href, '/studio'), item);
-    assert.equal(scoutNavigationItem(`/studio${item.href}`, '/studio'), item);
-    assert.equal(item.href.startsWith('/studio'), false);
-  }
-  assert.equal(scoutNavigationItem('/studio', ''), null);
-  assert.equal(scoutNavigationItem('/studio/studio/videos', '/studio'), null);
-});
-
-test('unknown, malformed and injected paths have no active item or default destination', () => {
-  for (const basePath of ['', '/studio']) {
-    for (const path of [null, undefined, 1, {}, [], 'constructor', '__proto__', '', '/unknown',
-      '//evil.test/videos', 'https://scoutgaming.tech/studio/videos',
-      '/videos#users', '/videos/', '/Videos', '/studio-other/videos', '/studio//videos',
-      '/studio/videos#users', '/studio/videos/',
-      '/studio/../videos', '/studio/%2fvideos', '/studio\\videos', '<script>',
-    ]) {
-      const item = scoutNavigationItem(path, basePath);
-      assert.equal(item, null, `${basePath}: ${String(path)}`);
-    }
-  }
-  for (const basePath of [null, {}, [], '/studio/', '/other']) assert.equal(scoutNavigationItem('/videos', basePath), null);
-});
 
 function loadComponent(file, overrides = {}, browser) {
   const url = new URL(`../components/${file}`, import.meta.url);

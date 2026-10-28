@@ -1,0 +1,377 @@
+[
+  {
+    "path": "apps/studio/client/lobby/public/images/dealers/anna.png",
+    "maxBytes": 2019747,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/detail-chips.png",
+    "maxBytes": 1480840,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/hero-end.png",
+    "maxBytes": 1623044,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/hero-table.png",
+    "maxBytes": 1413905,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/room-loungen.png",
+    "maxBytes": 1646529,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/room-salongen.png",
+    "maxBytes": 1615140,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/images/lobby/room-studion.png",
+    "maxBytes": 1612301,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/dealers/anna.mp4",
+    "maxBytes": 2896687,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/dealers/astrid-look.mp4",
+    "maxBytes": 2188722,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/dealers/dragge-shirt.mp4",
+    "maxBytes": 3841224,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/dealers/marten-look.mp4",
+    "maxBytes": 2717717,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/dealers/paow-hair.mp4",
+    "maxBytes": 3082573,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/client/lobby/public/videos/hero-end.mp4",
+    "maxBytes": 6441517,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/about/scout-lounge.mp4",
+    "maxBytes": 7402897,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/about/scout-lounge.png",
+    "maxBytes": 2069059,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/images/astrid-table.png",
+    "maxBytes": 1628428,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/videos/ai-casino-demo.mp4",
+    "maxBytes": 4242696,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/videos/astrid-card.mp4",
+    "maxBytes": 1485005,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/web/public/videos/fantasy-card.mp4",
+    "maxBytes": 1140806,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/astrid_startbild_spel_1080x1920.png",
+    "maxBytes": 1628428,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_flip/deal_flip.mp4",
+    "maxBytes": 2366246,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_hole/deal_hole.mp4",
+    "maxBytes": 3232429,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos1/deal_pos1.mp4",
+    "maxBytes": 4353251,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos1/variant/box_1_variant.mp4",
+    "maxBytes": 4032961,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos2/deal_pos2.mp4",
+    "maxBytes": 4173515,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos2/variant/box_2_variant.mp4",
+    "maxBytes": 4403838,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos3/deal_pos3.mp4",
+    "maxBytes": 4126836,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos3/variant/box_3_variant_shoefix.mp4",
+    "maxBytes": 3750658,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos4/deal_pos4.mp4",
+    "maxBytes": 3940477,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos4/variant/box_4_varaint.mp4",
+    "maxBytes": 3987934,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos5/deal_pos5.mp4",
+    "maxBytes": 3719148,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos5/variant/box_5_variant.mp4",
+    "maxBytes": 3803730,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos5/variant/box_5_variant_shoefix.mp4",
+    "maxBytes": 3852010,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos6/deal_pos6.mp4",
+    "maxBytes": 3836766,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos6/variant/box_6_variant_shoefix.mp4",
+    "maxBytes": 4283623,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos7/deal_pos7.mp4",
+    "maxBytes": 4035008,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_pos7/variant/box_7_variant.mp4",
+    "maxBytes": 3910212,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_posdealer/deal_posdealer.mp4",
+    "maxBytes": 3053175,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/deal/deal_posdealer/variant/box_dealer_variant.mp4",
+    "maxBytes": 3309197,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/idle_breath_f73_s303.mp4",
+    "maxBytes": 2575447,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/idle_still_f73_s302.mp4",
+    "maxBytes": 2766598,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/croupier_coffie.mp4",
+    "maxBytes": 9025942,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_andas.mp4",
+    "maxBytes": 11268525,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_blink_f73_s303.mp4",
+    "maxBytes": 2560447,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_cheek_f73_s301.mp4",
+    "maxBytes": 2829729,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_glance_f73_s301.mp4",
+    "maxBytes": 2661732,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_handrorelse.mp4",
+    "maxBytes": 10548348,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_huvud_i_handerna.mp4",
+    "maxBytes": 10090857,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_insulted_f73_s301.mp4",
+    "maxBytes": 2665281,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_resa_sig.mp4",
+    "maxBytes": 6103011,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_resa_sig_fargmatchad.mp4",
+    "maxBytes": 5715454,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_resa_sig_kling.mp4",
+    "maxBytes": 9567938,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_smile.mp4",
+    "maxBytes": 1334330,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/idle/variant/idle_yawn.mp4",
+    "maxBytes": 1802520,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/blackjack/blackjack.mp4",
+    "maxBytes": 1559912,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/chatter1/chatter1.mp4",
+    "maxBytes": 1083658,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/chatter2/chatter2.mp4",
+    "maxBytes": 1069687,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/dealerbust/dealerbust.mp4",
+    "maxBytes": 1094113,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/double/double.mp4",
+    "maxBytes": 1058559,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/goodluck/goodluck.mp4",
+    "maxBytes": 1072958,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/greeting/greeting.mp4",
+    "maxBytes": 1614179,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/insurance/insurance.mp4",
+    "maxBytes": 1051079,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/peek/peek.mp4",
+    "maxBytes": 1075085,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/sidebet/sidebet.mp4",
+    "maxBytes": 1062262,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/dealers/astrid/runtime/presentation/repliker/win/win.mp4",
+    "maxBytes": 1088582,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/game/runtime/assets/room-extended.png",
+    "maxBytes": 1882573,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/game/runtime/assets/table.png",
+    "maxBytes": 6864957,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/game/runtime/scene/dealer-fallback.png",
+    "maxBytes": 2053865,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "media/site/source/design-kit/prive-blackjack-ui-kit.html",
+    "maxBytes": 2397187,
+    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
+  },
+  {
+    "path": "packages/presentation/preview/site/media/90e907d020cc385cb692830fabb512ee4503cbca51722603ab76fe5f877c71de.mp4",
+    "maxBytes": 3196171,
+    "reason": "Fanns på main när grinden infördes (2026-10-28)"
+  },
+  {
+    "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png",
+    "maxBytes": 1628428,
+    "reason": "Fanns på main när grinden infördes (2026-10-28)"
+  },
+  {
+    "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.yuv",
+    "maxBytes": 3110400,
+    "reason": "Fanns på main när grinden infördes (2026-10-28)"
+  },
+  {
+    "path": "services/astrid-gpu-worker/assets/talk_base.yuv",
+    "maxBytes": 3110400,
+    "reason": "Fanns på main när grinden infördes (2026-10-28)"
+  },
+  {
+    "path": "services/game/public/roulette/assets/anna-roulette-table-v1.png",
+    "maxBytes": 1079892,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "services/game/public/roulette/assets/roulette-bord.png",
+    "maxBytes": 2229281,
+    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  }
+]

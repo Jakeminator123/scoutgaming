@@ -36,6 +36,9 @@ jobs:
             tools/documentation-paths.mjs
             tools/precommit-checks.mjs
             tools/check-push-target.mjs
+            tools/check-repo-limits.mjs
+            tools/repo-limits-allowlist.json
+            test/check-repo-limits.mjs
             migrering/status.mjs
             migrering/status.json
             migrering/STATUS.md
@@ -46,6 +49,11 @@ jobs:
       - name: Classify the complete PR merge diff
         id: scope
         run: node tools/ci-changes.mjs
+      # Repo growth: files over 1 MB only via the shrinking allowlist, no new media binaries, short living docs.
+      - name: Repository size limits (shrinking allowlist)
+        run: |
+          node --test test/check-repo-limits.mjs
+          node tools/check-repo-limits.mjs --tree HEAD --changed-since HEAD^1
 
   documentation:
     needs: changes

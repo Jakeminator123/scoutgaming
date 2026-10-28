@@ -5,7 +5,6 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as adminWorkspaceRoutes from '../../../../../packages/navigation/admin-workspace-routes.mjs';
-import * as adminRouting from '../../runtime/admin-routing.mjs';
 import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -15,7 +14,7 @@ const node=(tree,predicate)=>{
   return predicate(tree)?tree:node(tree.props?.children,predicate);
 };
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
-const components=Object.fromEntries(['AdminPublicationPage','ControlEventsPage','ControlTreePage','ControlRepliesPage','ControlGuidePage','ControlOpenClawChat','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
+const components=Object.fromEntries(['AdminPublicationPage','ControlRepliesPage','ControlOpenClawChat','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
 function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}},responseStatus=200){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
@@ -42,96 +41,4 @@ test('API & integrationer opens the real NativeAdministration with the server-re
   assert.equal(adminWorkspaceRoutes.adminToolName('/admin/media-review'),null);
   const retired=service.exports.ConnectedServices({path:'/admin/media-review'});
   assert.equal(node(retired,item=>item.type===components.NativeAdministration),null);
-});
-
-for(const [query,room] of [
-  ['?operator=north&room=room-evening&table=other','room-evening'],
-  ['?operator=north&table=room-evening','room-evening'],
-  ['?operator=north&room=&table=other',''],
-  ['?operator=north&room=one&room=two',['one','two']],
-  ['?operator=north&tableAsset=design-table',undefined],
-])test(`Admin publication passes an explicit room selection without confusing design assets: ${query}`,async()=>{
-  const h=harness('../components/studio/workspace-tools.tsx',query);
-  h.render(h.exports.WorkspaceTool,{section:'publication'});await h.settle();
-  const publication=node(h.render(h.exports.WorkspaceTool,{section:'publication'}),item=>item.type===components.AdminPublicationPage);
-  assert.deepEqual(publication.props.initialRoomId,room);
-});
-
-function publicationWorkspaceHarness(search) {
-  const {createEmptyProject,addDealer,defaultPresentationLane}=require('../../../../../packages/presentation/contracts/studio-model.mjs');
-  const project=addDealer(createEmptyProject(),'nora','Nora');
-  const first=defaultPresentationLane('nora');project.lanes=[first,{...structuredClone(first),id:'evening',label:'Kväll'}];
-  const operator={id:'north',slug:'north',name:'North',status:'active',publishedPackage:{revision:4,lanes:project.lanes.map(row=>row.id)}};
-  const data={project,videos:{videos:[]},status:{configured:true},operators:[operator],storeAvailable:true,directory:null};
-  let url=new URL('/admin/publication'+search,'https://workspace.invalid'),active,rootTree,lanesTree;
-  const location={get pathname(){return url.pathname;},get search(){return url.search;},get hash(){return url.hash;},get href(){return url.href;},origin:url.origin};
-  const history={state:{external:'preserved'},replaceState(state,unused,href){this.state=state;if(href!==undefined)url=new URL(href,url);}};
-  const window={location,history,confirm:()=>false,addEventListener(){},removeEventListener(){}};
-  // A child update must not refresh the parent link unless the component notifies it.
-  const root={slots:[],effects:[],pending:true},child={slots:[],effects:[],pending:false};
-  const hooks={...React,useState(initial){const owner=active,index=owner.cursor++;
-    if(!(index in owner.slots))owner.slots[index]=typeof initial==='function'?initial():initial;
-    return [owner.slots[index],next=>{owner.slots[index]=typeof next==='function'?next(owner.slots[index]):next;owner.pending=true;}];},
-    useRef(initial){const owner=active,index=owner.cursor++;return owner.slots[index]??={current:initial};},
-    useEffect(effect,deps){const owner=active,index=owner.cursor++,previous=owner.slots[index];
-      if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))owner.effects.push(()=>{previous?.cleanup?.();owner.slots[index]={deps,cleanup:effect()};});}};
-  const Room=marker('PresentationRoomCreate'),Lifecycle=marker('ControlResourceLifecycle');
-  function compile(file,resolve) {
-    const url=new URL(file,import.meta.url),module={exports:{}},localRequire=createRequire(url);
-    const source=transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
-    runInNewContext(source,{module,exports:module.exports,window,location,URL,URLSearchParams,AbortController,structuredClone,
-      fetch:async()=>({ok:true,json:async()=>data}),require:name=>name==='react'?hooks:resolve(name)??localRequire(name)});
-    return module.exports;
-  }
-  const {AdminPublicationPage}=compile('../../../components/admin-publication-page.tsx',name=>{
-    if(name.endsWith('.module.css'))return {__esModule:true,default:{}};
-    if(name==='./studio-session')return {useStudioProjectSession:()=>({project,dirty:false,saving:false,conflict:false,savedJson:JSON.stringify(project)})};
-    if(name==='./presentation-room-create')return {PresentationRoomCreate:Room};
-    if(name==='./room-game-config')return {RoomGameConfig:marker('RoomGameConfig')};
-    if(name==='./control-resource-lifecycle')return {ControlResourceLifecycle:Lifecycle};
-    if(name==='./control-operator-directory')return {ControlOperatorDirectory:marker('ControlOperatorDirectory')};
-    if(name==='./page-template.mjs')return {PageTemplate:marker('PageTemplate')};
-    if(name==='./project-conflict')return {ProjectConflict:marker('ProjectConflict')};
-  });
-  const {WorkspaceTool}=compile('../components/studio/workspace-tools.tsx',name=>{
-    if(name.includes('admin-publication-page'))return {AdminPublicationPage};
-    if(name.includes('admin-workspace-routes'))return adminWorkspaceRoutes;
-    if(name.includes('admin-navigation'))return adminNavigation;
-    if(name.includes('admin-routing'))return adminRouting;
-    if(name.includes('studio-navigation'))return {studioNavigationContextFromQuery:()=>({})};
-    if(name.includes('lab-url'))return {labUrl:path=>path};
-    if(name!=='react/jsx-runtime')return components;
-  });
-  return {window,history,
-    snapshot:{administrationRevision:'admin-1',operators:[{...operator,packageRevision:4,lanes:operator.publishedPackage.lanes,archivedAt:null}],
-      rooms:[{id:'room-evening',operatorId:'north',name:'Kvällsrummet',presentationLaneId:'evening',state:'live',published:true,archivedAt:null}]},
-    async settle(){for(let i=0;i<6;i++){
-      if(root.pending){root.pending=false;root.cursor=0;active=root;rootTree=WorkspaceTool({section:'publication'});child.pending=true;}
-      const lanes=node(rootTree,item=>item.type===AdminPublicationPage);
-      if(lanes&&child.pending){child.pending=false;child.cursor=0;active=child;lanesTree=AdminPublicationPage(lanes.props);}
-      for(const owner of [root,child])while(owner.effects.length)owner.effects.shift()();
-      await new Promise(setImmediate);
-    }},
-    lifecycle:()=>node(lanesTree,item=>item.type===Lifecycle),
-    composition:()=>node(lanesTree,item=>item.type==='select'&&item.props.value!=='north'),
-  };
-}
-
-test('verified room seeding updates history context without changing ownership',async()=>{
-  const h=publicationWorkspaceHarness('?operator=north&room=room-evening&table=outdated-room&composition=mobile-phone&tableAsset=design-table#review');
-  await h.settle();h.lifecycle().props.onChanged(h.snapshot);await h.settle();
-  const query=new URLSearchParams(h.window.location.search);
-  assert.equal(query.get('composition'),'evening');assert.equal(query.get('table'),'room-evening');
-  assert.equal(query.get('room'),'room-evening');assert.equal(query.get('tableAsset'),'design-table');
-  assert.equal(h.window.location.hash,'#review');assert.equal(h.history.state.external,'preserved');
-  assert.equal(h.history.state.__scoutAdminHistory.href,h.window.location.pathname+h.window.location.search+h.window.location.hash);
-  h.composition().props.onChange({target:{value:'mobile-phone'}});await h.settle();
-  assert.equal(new URLSearchParams(h.window.location.search).has('room'),false);
-});
-
-for(const query of ['room=missing','room=room-evening&room=room-evening'])test('unavailable room context is never normalized into table: '+query,async()=>{
-  const search='?operator=north&'+query+'&composition=mobile-phone&tableAsset=design-table';
-  const h=publicationWorkspaceHarness(search);await h.settle();h.lifecycle().props.onChanged(h.snapshot);await h.settle();
-  assert.equal(h.window.location.search,search);assert.equal(new URLSearchParams(h.window.location.search).has('table'),false);
-  assert.equal(h.history.state.__scoutAdminHistory,undefined);
 });

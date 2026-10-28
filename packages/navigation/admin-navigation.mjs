@@ -15,6 +15,13 @@ export const adminNavigationGroups = [
   ]},
 ];
 export const adminSystemGroups = [
-  {label:'Inställningar',links:[{label:'Systeminställningar',href:'/admin/ai/models'},{label:'Kopplingar & användning',href:'/admin/structure'},{label:'Integrationer',href:'/admin/admin/api'}]},
-  {label:'Åtkomst och hjälp',links:[{label:'Konton & åtkomst',href:'/admin/admin/accounts'},{label:'Hjälp',href:'/admin/guide'}]},
+  {label:'Inställningar',links:[
+    {label:'Systeminställningar',href:'/admin/ai/models',description:'Agenternas modellval.'},
+    {label:'Kopplingar & användning',href:'/admin/structure',description:'Vad som använder vad: bolag, dealers, bord, bakgrunder och mallar.'},
+    {label:'Integrationer',href:'/admin/admin/api',description:'Partnernycklar och API.'},
+  ]},
+  {label:'Åtkomst och hjälp',links:[
+    {label:'Konton & åtkomst',href:'/admin/admin/accounts',description:'Intern personal och roller.'},
+    {label:'Hjälp',href:'/admin/guide',description:'Den här sidan: vad varje sida gör, med länkar till användarguiden och ordlistan.'},
+  ]},
 ];

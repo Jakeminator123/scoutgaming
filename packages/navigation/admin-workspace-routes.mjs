@@ -1,8 +1,7 @@
 // Document destinations only. APIs and authentication retain their own contracts.
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
-  companies: 'Bolag & team', publication: 'Rum & publicering',
+  companies: 'Bolag & team',
   'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek',
-  guide: 'Hjälp',
   'dealer-agent': 'Dialogtest',
 });
 
@@ -41,6 +40,7 @@ export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
   '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
   '/admin/videos':'/admin/clips', '/admin/events':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
   '/admin/compositions':'/admin/scenes', '/admin/probe':'/admin/clips?panel=room',
+  '/admin/admin/operators':'/admin/companies',
   '/admin/media-review':'/admin/clips?panel=room',
 });
 const openClawHomes=Object.freeze({drift:'/admin/drift?tab=speech',models:'/admin/ai/models',
