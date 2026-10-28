@@ -24,7 +24,7 @@ export function createAlerts({ url = process.env.ALERT_WEBHOOK_URL, env = alertE
       const key = `${typ}:${dealer ?? ''}`, o = open.get(key), t = now(), text = String(fel ?? '').slice(0, 300);
       log(`larm ${typ}${who(dealer)}: ${text}`);
       const due = t - (posted.get(key) ?? -Infinity) >= windowMs;
-      if (o) o.count++; else open.set(key, { since: t, count: 1, posted: false });
+      if (o) { o.count++; o.fel = text; } else open.set(key, { since: t, count: 1, posted: false, typ, dealer: dealer ?? null, fel: text });
       if (!due) return false;
       posted.set(key, t); open.get(key).posted = true;
       post({ text: `${ICON.fail} ${env}: läppsynk ${typ}${who(dealer)}: ${text}`, env, dealer: dealer ?? null, typ, tid: new Date(t).toISOString(), fel: text });
@@ -41,5 +41,7 @@ export function createAlerts({ url = process.env.ALERT_WEBHOOK_URL, env = alertE
       return true;
     },
     open: () => [...open.keys()],
+    /** The open failures with what they say (runpod-notice.mjs: the maintenance banner follows them). */
+    openList: () => [...open.values()].map(o => ({ typ: o.typ, dealer: o.dealer, since: o.since, count: o.count, fel: o.fel })),
   };
 }

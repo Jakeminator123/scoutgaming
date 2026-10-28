@@ -38,6 +38,7 @@ import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
 import { RorligLipsync, kartaFor, mp4Duration } from './rorlig-lipsync.mjs';
 import { createAlerts } from './alerts.mjs';
+import { createRunpodNotice } from './runpod-notice.mjs';
 // Kevin 23 Oct: lip-sync and callback failures to the webhook in ALERT_WEBHOOK_URL (server/alerts.mjs), else to the log
 const alerts = createAlerts();
 import { DEALERS } from '../public/dealers.js';   // the dealers' idle lists (which takes a chain at rest is laid from)
@@ -130,6 +131,9 @@ const makeRorlig = apiKey => new RorligLipsync({
 });
 // the key Paow's voice already uses (local QA disables only Astrid's); given later on /studio/lipsync.html it starts then
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
+// Kevin 28 Oct: the maintenance banner follows RunPod (server/runpod-notice.mjs): open lip-sync alerts, no worker ready
+// for the dealer, a low balance, or MAINTENANCE_NOTICE=1 by hand; tracked in the log and /api/lipsync-status
+const runpodNotice = createRunpodNotice({ alerts, rorlig: () => rorlig, rorligOn, apiKey: runpodKey() || (localQA ? null : process.env.RUNPOD_API_KEY) || null });
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
   talk:room=>{const d=dealerOf(room);stillCheck(d);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language),idle:rorlig.idleTakes(d)}:null;},   // idle: the idle takes a connected worker can map (the chain at rest is laid from these)
   // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
@@ -546,7 +550,9 @@ async function api(req, res, route) {
     res.writeHead(200, { "Content-Type": "application/octet-stream", "Cache-Control": "private, max-age=600" });
     return res.end(piece.bytes);
   }
-  if (req.method === "GET" && route === "lipsync-status") return json(res, 200, { rorlig: rorlig ? { on: rorligOn(), origin: publicOrigin || null, dealers: rorlig.status() } : null, ...(rorlig ? {} : { orsak: "ingen RunPod-nyckel" }) });
+  // Kevin 28 Oct: the maintenance banner's state for one dealer (or all): the table polls it (maintenance-notice.js)
+  if (req.method === "GET" && route === "notice") return json(res, 200, runpodNotice.state(new URL(req.url, "http://x").searchParams.get("dealer") || null));
+  if (req.method === "GET" && route === "lipsync-status") return json(res, 200, { runpod: runpodNotice.state(null), rorlig: rorlig ? { on: rorligOn(), origin: publicOrigin || null, dealers: rorlig.status() } : null, ...(rorlig ? {} : { orsak: "ingen RunPod-nyckel" }) });
   if (req.method === "GET" && route === "health") {
     return json(res, 200, { ok: true, demo: true });
   }
@@ -716,7 +722,7 @@ async function handleHttp(req, res) {
     res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${desk};`); return; }
   // Kevin 24 Oct: "Runpod is down can you add we currently doing maintance work notification in prod": a banner on the
   // table and the lobby while MAINTENANCE_NOTICE=1 in the env, text from MAINTENANCE_TEXT (maintenance-notice.js)
-  if (p === "/notice.js") { const text = process.env.MAINTENANCE_NOTICE === "1" ? (process.env.MAINTENANCE_TEXT?.trim() || MAINTENANCE_DEFAULT).slice(0, 300) : ""; res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
+  if (p === "/notice.js") { const text = runpodNotice.text(null); res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.
     if(!/^\/answers\/[a-f0-9-]{36}\.mp4$/.test(p))return json(res,404,{error:'Not found'});

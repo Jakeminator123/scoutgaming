@@ -46,6 +46,7 @@ let playing = null;              // the clip play() is on, and whether it has st
 const voiceOvers = new Set();    // answers still talking as sound after the table took the screen
 // A ready dealer speaking his lines over his clips (server/rorlig-lipsync.mjs): the mouth patches for the dealer layer.
 const lips = dealer.ready ? createLipTracks() : null;
+document.documentElement.dataset.dealer = dealer.id;   // the maintenance banner asks RunPod's state for this dealer (maintenance-notice.js)
 
 // ------------------------------------------------------------------ spelaren ---
 const queue = [];           // { url, sound, text, kind }
