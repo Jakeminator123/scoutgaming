@@ -1,0 +1,1025 @@
+{
+  "kind": "k06-staging-acceptance/v1",
+  "date": "2026-10-28",
+  "branch": "jakob/claude-o02-k06k07",
+  "candidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+  "codeShas": {
+    "allSteps": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+    "frozenCandidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76 (main; frysningen registrerad 10:45:15Z; processbytet är Restart service på samma deploy)"
+  },
+  "producedBy": "Claude Opus 5.5, utförarens underagent till orkestratorn scoutgaming-f1 (session f5909847-3066-4ff1-8098-4921235c9134); har inte granskat",
+  "supersedes": "2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json (13aa5a01) för O02; det kvittot står kvar som historik",
+  "status": {
+    "activity": "K06",
+    "result": "ingen statusändring",
+    "reason": "Omprov på den frysta O02-kandidaten f3780593 med K2-kedjan och rummets fält via roomOverrides. Kvittot ändrar inte status.json. Jakobs omdöme om V4, V6 och V7 och den oberoende O02-granskningen återstår."
+  },
+  "scopeDecisions": [
+    "Väg B (Jakob 2026-10-28): delat bord är produktvägen från O03; nativebordets aktiva hand följer interimspolicyn \"materialbytande publicering under pågående nativehand ger omladdning till det nya paketet; Admin publicerar inte materialbyte för Johns Bet medan händer pågår förrän flaggan är på\". K06R2-N4a provar just den policyn.",
+    "Partnerrollen i wrong-role bevisas med CI-prov (Jakob 2026-10-28): test/partner-access-policy.mjs och test/partner-team-postgres.mjs, gröna i full CI 40667372034 (push, success) på f3780593.",
+    "K06-fälten dealerval, idle, marker och rummets utseende via scoped roomOverrides bevisas i O02 (Jakob 2026-10-28): fieldTable, K06R2-3/4b/4c/4d/K2a/K2b/O1 och V4.",
+    "Slå på ljud är struket (Jakob 2026-10-28)."
+  ],
+  "sources": "Sammanfattat från råkvittot receipt-k06r2.json (257 HTTP-anrop med x-vercel-id och rndr-id, plus webbläsartittarens nätverks- och WS-logg), k06r2.log, neon-k06.json och receipt-gates.json i utförarens arbetsmapp o02-f3780593/k06-k07-rerun-2/ (utanför Git). Inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID; spelarna heter N1–N3 (nativebord), S1 (delat bord, HTTP), V (webbläsare, plats 4) och RD (läsare).",
+  "rawSha256": {
+    "k06r2.mjs": "1392be56d45e1984330b730129d8a14511a0caa5f41ba9989a304e2ca7822b92",
+    "k06s2.mjs": "e2f75ab02d7797b4676f43168d1e5d32a76255f8d2f231c52e0e2a2d3c0558a2",
+    "vb.mjs": "0bb0ba016f16de609c995199739de26af2a8aeb7ee14246f148305dde9e6f239",
+    "receipt-k06r2.json": "0abd96f34acad4e070609d9d0499cf6236c80742c7605e7e74e6ad6c2bfe4db9",
+    "k06r2.log": "2abf14a694285734dc899c024290327b85b544d3d1a5d6945835503461c22db3",
+    "receipt-k06s2.json": "0221c17537947721ff5326a62442da411704e1cf01dbb0bf52e6e0352b622bfd",
+    "k06s2.log": "54483b648a93ae6064e69eedbcd0ef4d16fbaf6a1c75ca91d4206f2c8b0d3457",
+    "attempt1/receipt-k06r2-attempt1.json": "4c43958f5e3e0612a4dc90a469d3ad702d7d720a810c851a823d7b75d181cae2",
+    "attempt1/k06r2-attempt1.log": "249aaee9aa352cfc2580c87f5731a9eda287d562ba8adbcfe15e4fd63bb18265",
+    "neon-k06.json": "604bee1f4b8c36881f2c4812c77e81782f0d59e8702b0735818baab04db3ab0a",
+    "receipt-gates.json": "f34c78714716c4b51df0f7677e961ee21d5328c287229fb92b2cc33a6f975b04",
+    "render.mjs": "89af5381c42b8d42717c9d9909225044aba9c39852534b3f89e8994430568d93",
+    "lib.mjs": "6234d493680e1230cffcc2a98aaf5b9ae558e1af434aae5cc09e3ea380a0a3b8",
+    "gate.mjs": "39bb9bd4f992883f72db5266c5602c02d93a930d9b2c47f8f85ce16a0a8cc0b2",
+    "k4.json": "3a2de8022e0c4aff6fa1449074c1236ba9bd26722e58341be52ed484d95cdc85",
+    "probe2.json": "92560af1b62a601b10c77472430d90e1eaa87e906bd496a5de7957091cb36843",
+    "probe3.json": "56becf8de2963a0f6cfb3efe7f6c518d1ab0132bf006a8a9d9478f3b1756d82e"
+  },
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployment": "dpl_4p3Qzn2xNEwKkuFKVYtHHM2uWYrQ",
+      "url": "croupier-k06-k07-staging-17sbowjlv-scoutgaming.vercel.app",
+      "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+      "createdAt": "2026-10-28T09:52:07.235Z",
+      "readyAt": "2026-10-28T09:54:10.243Z",
+      "readBy": "Vercel REST v13/deployments (GET) 12:23Z; samma deployment hela körningen"
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "sharedTableFlag": 1,
+      "deploy": {
+        "id": "dep-dbgsbhnf3r2c73aig40g",
+        "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "trigger": "api",
+        "finishedAt": "2026-10-28T09:52:39Z",
+        "unchangedAfterRun": true
+      },
+      "gates": [
+        {
+          "label": "pre-k07-f3780593",
+          "at": "2026-10-28T12:23Z",
+          "passed": 32,
+          "total": 32,
+          "versionSha": [
+            "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+          ]
+        }
+      ],
+      "versionCheck": {
+        "start": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "end": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "supplement": [
+          "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+          "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+        ],
+        "after": "12:55:53Z health 200, version f3780593"
+      },
+      "restarts": [
+        {
+          "run": "huvudkörning",
+          "method": "Restart service (POST /v1/services/{id}/restart), ingen build och ingen ny deploy",
+          "requestedAt": "2026-10-28T12:40:58.881Z",
+          "event": {
+            "type": "server_restarted",
+            "at": "2026-10-28T12:41:00.087Z"
+          },
+          "newRuntime": {
+            "runtimeId": "e1fe06e4",
+            "instance": "m24jt",
+            "listeningAt": "2026-10-28T12:41:28.413Z"
+          },
+          "oldRuntime": {
+            "runtimeId": "b0eac13c",
+            "instance": "hdc87",
+            "closedAt": "2026-10-28T12:44:30.526Z"
+          },
+          "checksAfter": "2026-10-28T12:44:40Z"
+        }
+      ],
+      "renderEvents": "list_events 12:20Z–12:56Z: server_restarted 12:25:29Z (K07) och 12:41:00Z (K06); inga build- eller deployhändelser efter 09:52Z.",
+      "restartNote": "Kontrollerna efter bytet gjordes först när den gamla processens publika lyssnare (listener 2) hade stängts enligt motorns cloud_gateway_lifecycle-logg (Renders logg-API)."
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "database": "croupier_staging",
+      "access": "endast SELECT (Neon MCP) 12:23Z–12:57Z"
+    },
+    "blob": "store_7E06N1P4w9Mu1dZD (endast läsning via medievägarna)"
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "operatorB": "qa-k06k07-9dd2d3a4-b (isolering; rum room-930c39d1-beeb-535a-b79e-06b6aff127bd)",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "neighbourRoom": "room-cb4c4696-f671-c546-eb15-6fb67d09feea (samma operatörspaket, egen lane och dealer qa-k06k07-9dd2d3a4)",
+    "dealer": "paow",
+    "adminAccount": "stagingens Admin-konto (staging-admin); ingen Admin-utloggning",
+    "players": "syntetiska N1, N2, N3 (nativebord), S1 (delat bord, HTTP), V (webbläsare, plats 4), W (webbläsare, tillägget), RD (läsare); användarnamn och UUID utelämnas"
+  },
+  "run": {
+    "startedAt": "2026-10-28T12:37:15.144Z",
+    "finishedAt": "2026-10-28T12:49:02.140Z",
+    "requests": 257,
+    "httpStatus": {
+      "200": 204,
+      "308": 2,
+      "401": 17,
+      "404": 7,
+      "409": 19,
+      "422": 7
+    },
+    "unexpected": 1,
+    "unexpectedList": [
+      {
+        "name": "s1 R2 bet seat0",
+        "status": 409,
+        "expected": 200
+      }
+    ],
+    "note": "Huvudkörningen 12:37:15Z–12:49:02Z (257 HTTP-anrop; webbläsarens anrop räknas inte där). Alla 401/404/422 och 409 i felproven var förväntade. Enda oväntade svaret: S1:s insats i R2 409 BETTING_CLOSED – S1 (bara HTTP, ingen socket) hade inte skickat något kommando på cirka två minuter medan nativespelen kördes, räknades som frånvarande enligt närvaroregeln (B4, PR #503) och rundan startade när webbläsarspelaren var redo. Försök 1 12:33–12:35Z avbröts före publiceringen på grund av ett harnessfel (skärmbildslistan i vb.mjs skrevs över av funktionen); det lämnade en syntetisk spelare på plats 0–3, vars runda motorn avgjorde själv och vars platser frigavs innan försök 2 startade. Tillägget K06S2 12:52–12:55Z (webbläsare, ingen publicering)."
+  },
+  "material": {
+    "line": "paow.speak.other.slot-blackjack (replik blackjack, svenska)",
+    "M0": {
+      "mediaId": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3",
+      "take": "blackjack_7",
+      "sha256": "63752fce450f9e5409e3498c236e3a752a0250fbac6dc6e4a550717f4339d461",
+      "review": "approved"
+    },
+    "M1": {
+      "mediaId": "17bf71dd-7510-4306-a6db-c48eff564a66",
+      "take": "blackjack_3",
+      "sha256": "29faed8811c71cf6b82edeb17e7638c2b36fa94bc4806a41189c30db27c925af",
+      "review": "approved"
+    },
+    "inventory": {
+      "P17": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1 (46 videor, M0 med, M1 inte)",
+      "P20": "7f5638583916d10bd968bcdf55509ea3c358d2e000b04dd7504c62f6b5f4af24 (46 videor, M1 med, M0 inte)",
+      "P23": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1 (återställt, lika med P17)"
+    },
+    "idle": {
+      "mediaId": "687ca110-0f4e-489d-a112-6537c18b337c",
+      "fileName": "andas",
+      "sha256": "f5aa88aae58367702d644c401148e6ffdb9dad481f548d00c1321a45f2795581",
+      "note": "PAOW:s frysta viloklipp i paket 17, 20 och 23 och efter omstarten; grannrummets dealer har eget viloklipp a9c9a176"
+    },
+    "roomOverride": {
+      "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+      "value": {
+        "color": "#2e6b4f",
+        "dealer": "paow"
+      },
+      "publishedIn": "paket 19 (kvar i 20), borttaget i paket 22"
+    }
+  },
+  "configs": {
+    "C0": {
+      "configVersion": "room-config-b8f7dac0-ac31-4fb7-832d-d101d9c82729",
+      "packageRevision": 17,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      },
+      "limits": {
+        "min": 1,
+        "max": 500,
+        "sideMax": 50
+      },
+      "chips": [
+        1,
+        5,
+        10,
+        25,
+        50,
+        100
+      ],
+      "material": "M0",
+      "roomOverride": "ingen",
+      "role": "head och öppet fönster före provet"
+    },
+    "C2": {
+      "configVersion": "room-config-b16ec0d3-9e23-4179-a54c-26dd9e49ca95",
+      "packageRevision": 20,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "prive"
+      },
+      "limits": {
+        "min": 5,
+        "max": 2000,
+        "sideMax": 200
+      },
+      "chips": [
+        5,
+        10,
+        25,
+        50,
+        100,
+        500
+      ],
+      "material": "M1",
+      "roomOverride": "color #2e6b4f, dealer paow",
+      "role": "publicerad 12:38:18Z mitt i N1:s hand H0 och den delade rundan R; band nästa fönster"
+    },
+    "C4": {
+      "configVersion": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+      "packageRevision": 23,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      },
+      "limits": {
+        "min": 1,
+        "max": 500,
+        "sideMax": 50
+      },
+      "chips": [
+        1,
+        5,
+        10,
+        25,
+        50,
+        100
+      ],
+      "material": "M0",
+      "roomOverride": "ingen",
+      "role": "återställning 12:46:09Z; head och öppet fönster efter provet"
+    },
+    "intermediate": "Paket 18 (M1, automatisk ombindning room-config-4ff04f22), 19 (roomOverrides, room-config-e911d255), 21 (M0, room-config-91e2071c), 22 (roomOverrides bort, room-config-e7e13302); se neon.configs.",
+    "timers": "betMs 20000 och actionMs 15000 i alla"
+  },
+  "k2Chain": [
+    {
+      "step": "Admin spara",
+      "at": "2026-10-28T12:38:02.690Z",
+      "what": "PUT /studio/api/project: repliken blackjack → M1 (projektrevision studio-634385ad-a354-4ee2-9a8f-d150915aecc4)"
+    },
+    {
+      "step": "publicera material",
+      "at": "2026-10-28T12:38:12.227Z",
+      "what": "POST /studio/api/admin/operator-package → paket 18, automatisk ombindning room-config-4ff04f22"
+    },
+    {
+      "step": "idle",
+      "at": "2026-10-28T12:38:12.494Z",
+      "what": "Admins \"Publicera PAOWs viloklipp\" (operator-package refresh-dealer-idle) → 422 Invalid data: stagingprojektet saknar en rotationspolicy för PAOW (packages/presentation/server/refresh-frozen-dealer-idle.mjs:15), inget paket skapat"
+    },
+    {
+      "step": "utseende och dealerval (roomOverrides)",
+      "at": "2026-10-28T12:38:15.953Z",
+      "what": "POST /studio/api/partner/branding save-draft → utkast 1; lobbyn och /game visade fortfarande paket 18 utan färg; review: changes color null→#2e6b4f och dealer null→paow, affectedRooms bara room-33b37ff3; publish med reviewToken → paket 19 (room-config-e911d255)"
+    },
+    {
+      "step": "spelinställningar och marker",
+      "at": "2026-10-28T12:38:18.877Z",
+      "what": "POST /studio/api/admin/room-game-config save-draft (prive) → publish → paket 20, head room-config-b16ec0d3"
+    },
+    {
+      "step": "lobby",
+      "at": "2026-10-28T12:38:33Z",
+      "what": "GET /api/operators/qa-k06k07-9dd2d3a4-a/rooms: paket 20, rummet listat med playUrl /play/blackjack?operator=…&table=room-33b37ff3…; /lobby?operator=… 200; operatör B:s lobby oförändrad (paket 1)"
+    },
+    {
+      "step": "launch",
+      "at": "2026-10-28T12:38:33Z",
+      "what": "GET /play/blackjack?operator&table → 308 /game?game=blackjack&table=…&operator=… → 200, data-game-package-revision 20, dealer paow, data-game-branding.color #2e6b4f; grannrummet: paket 20, dealer qa-k06k07-9dd2d3a4, ingen färg"
+    },
+    {
+      "step": "spel",
+      "at": "2026-10-28T12:38Z–12:45Z",
+      "what": "nativehänder N2/N3 och delade rundor R (C0/P17) och R1 (C2/P20) med S1 och webbläsarspelaren V"
+    },
+    {
+      "step": "återanslutning",
+      "at": "2026-10-28T12:44:45Z",
+      "what": "S1 loggade in med ny session efter omstarten och fick samma runda 752c276a, platser och C2; webbläsaren V var kvar på samma runda utan omladdning"
+    },
+    {
+      "step": "Render Restart service",
+      "at": "2026-10-28T12:40:58.881Z",
+      "what": "server_restarted 12:41:00.087Z; ny process e1fe06e4 lyssnade 12:41:28.4Z; gamla b0eac13c stängde 12:44:30.5Z; /__cloud/version f3780593 före och efter"
+    },
+    {
+      "step": "återläsning",
+      "at": "2026-10-28T12:44:46.827Z",
+      "what": "Admin room-game-config: head room-config-b16ec0d3/paket 20/prive; partner/branding: roomOverrides {room-33b37ff3: {dealer: paow, color: #2e6b4f}}; lobbyn paket 20; /game paket 20, paow, #2e6b4f"
+    }
+  ],
+  "fieldTable": [
+    {
+      "field": "dealerval (roomOverrides[rum].dealer)",
+      "writer": "Admin POST /studio/api/partner/branding save-draft → review → publish (åtkomstklass internal-admin)",
+      "storedRevision": "paketets branding.roomOverrides, paket 19–21; borttaget i 22",
+      "publishedPackage": "17 → 19/20 → 22/23",
+      "runtimeValue": "/game data-game-dealer paow; nästa fönsters binding selection.branding.dealer paow; grannrummet i samma paket har dealer qa-k06k07-9dd2d3a4 (dealern är per rum)",
+      "afterRestart": "/game dealer paow (K06R2-K2b)",
+      "activeHand": "rundan R behöll selection utan uttryckligt dealerval (K06R2-4c), nästa fönster fick det (K06R2-4d)",
+      "negative": "dealer som rummet inte tillåter 422, ogiltigt fält 422, operatör B med operatör A:s rum 422, querydealer i /game 404 (K06R2-O1)",
+      "limit": "Den frysta presentationen tillåter en dealer per rum (paow-lanens dealer.allowed = [paow]); det uttryckliga valet är därför lika med standardvärdet. Byte till en annan dealer kräver en ny presentation med två tillåtna dealers och är inte provat."
+    },
+    {
+      "field": "idle (dealerns viloklipp)",
+      "writer": "projektets rad idle.ready, fryst vid operator-package-publiceringen; Admins knapp Publicera PAOWs viloklipp (refresh-dealer-idle)",
+      "storedRevision": "paketets registeredDealers[].idle",
+      "publishedPackage": "17 → 20 → 23",
+      "runtimeValue": "dealerIdle.paow 687ca110 (sha f5aa88aa…) i nativebordets och det delade bordets konfiguration; room-idle-bytes = fryst sha (K06R2-2); grannrummet a9c9a176",
+      "afterRestart": "samma id och sha (K06R2-5a)",
+      "activeHand": "oförändrat värde",
+      "negative": "refresh-dealer-idle 422 (ingen rotationspolicy i stagingprojektet)",
+      "limit": "Inget annat viloklipp publicerades; fältets flöde är provat med oförändrat värde."
+    },
+    {
+      "field": "marker (chips via limitPreset)",
+      "writer": "Admin room-game-config save-draft + publish",
+      "storedRevision": "shared_table_configs.body.chips: C0 [1,5,10,25,50,100] → C2 [5,10,25,50,100,500] → C4 [1,5,10,25,50,100]",
+      "publishedPackage": "17 → 20 → 23",
+      "runtimeValue": "aktiv runda R behöll [1…100] och 1–500/50 efter publiceringen (K06R2-4c); nästa fönster [5…500] och 5–2000/200 (K06R2-4d); syns i webbläsarens markerrad i v6-bilderna",
+      "afterRestart": "R1 under C2 behöll gränserna över omstarten (K06R2-5b)",
+      "activeHand": "delat bord pass"
+    },
+    {
+      "field": "rummets utseende (roomOverrides[rum].color)",
+      "writer": "Admin POST /studio/api/partner/branding save-draft → review → publish",
+      "storedRevision": "paketets branding.roomOverrides, paket 19–21",
+      "publishedPackage": "17 → 19/20 → 22/23",
+      "runtimeValue": "/game data-game-branding.color #2e6b4f i paket 20; nästa fönsters binding selection.branding.color #2e6b4f; klientens --table-felt '' → #2e6b4f i nästa hand utan omladdning (K06R2-V6); grannrummet utan färg (K06R2-K2a)",
+      "afterRestart": "/game färg #2e6b4f (K06R2-K2b)",
+      "activeHand": "rundan R utan färg i bindningen och oförändrad filt efter publiceringen (K06R2-4c)",
+      "negative": "ogiltig färg 422 (K06R2-O1)",
+      "note": "Bordslagrets bild täcker det mesta av filten; färgen syns främst i plånbokens kantlinje. Gränserna och markerna är den tydligaste synliga skillnaden i V6."
+    },
+    {
+      "field": "material (vald tagning för repliken blackjack)",
+      "writer": "PUT /studio/api/project + operator-package (+ automatisk ombindning)",
+      "storedRevision": "M0 blackjack_7 → M1 blackjack_3 → M0",
+      "publishedPackage": "17 → 18–20 → 21–23",
+      "runtimeValue": "delat bord: aktiv runda R löste M0 efter publiceringen, nästa fönster M1 (K06R2-4c/4d); nativebordet: ny session M1 (K06R2-4b), aktiv hand interimspolicyn (K06R2-N4a)",
+      "afterRestart": "paket 20-kontexten löste samma media efter omstart (K06R2-5a)",
+      "activeHand": "delat bord pass; nativebordet enligt väg B"
+    },
+    {
+      "field": "language",
+      "writer": "samma publicering",
+      "storedRevision": "sv i alla",
+      "runtimeValue": "svenska godkända tagningar valda (goodluck, lose, placebets, dealerbust, blackjack)",
+      "afterRestart": "samma",
+      "activeHand": "oförändrat värde"
+    }
+  ],
+  "checks": [
+    {
+      "id": "K06R2-0",
+      "name": "room published at C0/P0; slot blackjack bound to the M0 take; an approved alternative take exists; no branding draft pending",
+      "result": "pass",
+      "at": "2026-10-28T12:37:17.608Z",
+      "evidence": "Head C0 room-config-b8f7dac0 (casual, paket 17), projekt studio-a5f8325f, inget brandingutkast. Repliken blackjack har tre tagningar: blackjack_7 (M0, approved), blackjack_3 (M1, approved), blackjack_1 (rejected)."
+    },
+    {
+      "id": "K06R2-B1",
+      "name": "bad-media-id (publication): fabricated UUID and another dealer's UUID refused 422 by the project writer; project and published head unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:37:19.069Z",
+      "evidence": "PUT /studio/api/project med påhittat UUID: 422 studio_native_unavailable. Med en annan dealers media (qa-k06k07-9dd2d3a4): 422. Projektrevision och head C0/paket 17 oförändrade."
+    },
+    {
+      "id": "K06R2-O1",
+      "name": "roomOverrides negative: a dealer the room does not allow, an invalid colour, an unknown field and operator B naming operator A's room are refused; no draft, no package, query dealer refused at /game",
+      "result": "pass",
+      "at": "2026-10-28T12:37:21.651Z",
+      "evidence": "save-draft med roomOverrides: dealer qa-k06k07-9dd2d3a4 i paow-rummet 422, färg \"red\" 422, okänt fält idle 422, operatör B som namnger operatör A:s rum 422. Efteråt inget utkast (draftRevision 0), paket 17; operatör B utan utkast, paket 1. /game med querydealer qa-k06k07-9dd2d3a4 för paow-rummet: 404."
+    },
+    {
+      "id": "K06R2-1",
+      "name": "native hand H0 started under P0; deal and speak:blackjack resolve M0; frozen dealer idle served from the package",
+      "result": "pass",
+      "at": "2026-10-28T12:37:33.717Z",
+      "evidence": "N1 /game → kontext paket 17; inventarie 8e67e3bf… (46 videor, M0 med, M1 inte), dealerIdle 687ca110. Giv draw 2–5: f1aefbda, 6134db90, ec8534ad, 3ae61b24 (200, SHA = registret). speak:blackjack → ab57d7ca (M0). Hand i beslutsfas, version 1, saldo 995."
+    },
+    {
+      "id": "K06R2-B2",
+      "name": "bad-media-id (native media): fabricated UUID and a UUID that is not in the hand's package give 4xx and no video bytes",
+      "result": "pass",
+      "at": "2026-10-28T12:37:33.721Z",
+      "evidence": "registered-video paket 17 med M1 (finns inte i paketet): 404 studio_presentation_idle_media_unavailable, inga bytes. Påhittat UUID: 404, inga bytes."
+    },
+    {
+      "id": "K06R2-2",
+      "name": "shared round R (S1 + browser viewer) started under the open window's config (= head C0); binding and inventory = P0 with the M0 take; room idle bytes = frozen idle",
+      "result": "pass",
+      "at": "2026-10-28T12:38:02.682Z",
+      "evidence": "S1 (HTTP) plats 0–3 och webbläsarspelaren V plats 4 i runda 7d5d584d under C0 (1–500/50, chips 1–100). binding → paket 17 utan rumsfärg; delad config-inventarie 8e67e3bf… (M0 med, M1 inte); room-video M0 200; room-idle-bytes sha = fryst idle. v6-before-publish.png tagen här."
+    },
+    {
+      "id": "K06R2-3",
+      "name": "K2 Admin save -> publish: project (M1 take) -> package -> roomOverrides (colour + explicit dealer) save-draft/review/publish -> room-game-config (flipped limits) -> new head; a saved branding draft alone publishes nothing",
+      "result": "pass",
+      "at": "2026-10-28T12:38:18.903Z",
+      "evidence": "12:38:02.7–12:38:18.9Z: PUT project 200 (studio-634385ad, repliken → M1); operator-package 200 → paket 18 (automatisk C room-config-4ff04f22); refresh-dealer-idle 422; partner/branding save-draft 200 (utkast 1, lobby och /game fortfarande paket 18 utan färg), review 200 (color null→#2e6b4f, dealer null→paow, affectedRooms [room-33b37ff3]), publish 200 → paket 19; room-game-config save-draft 200 (ready) och publish 200 → paket 20, C2 room-config-b16ec0d3 (prive)."
+    },
+    {
+      "id": "K06R2-N4a",
+      "name": "native H0 after a material-changing publication follows the booked interim policy (väg B): hand state and balance unchanged; the old package context answers 409 studio_presentation_idle_package_changed (reload to the new package), never mixed media",
+      "result": "pass",
+      "at": "2026-10-28T12:38:20.322Z",
+      "evidence": "Interimspolicy väg B: handens tillstånd oförändrat (version 1, saldo 995, samma vyhash); giv-omval 4/4 och /api/presentation/config med handens kontext paket 17 → 409 studio_presentation_idle_package_changed (omladdning till nya paketet). Inga blandade media levererades."
+    },
+    {
+      "id": "K06R2-4b",
+      "name": "new window after publication binds P2/M1: inventory has the alternative take and not the M0 take; speak:blackjack resolves M1; /game carries the room colour; idle unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:38:22.890Z",
+      "evidence": "N2 (ny spelare) och N1 (ny /game) får paket 20; data-game-branding.color #2e6b4f; inventarie 7f563858… ≠ 8e67e3bf…, M1 med och M0 inte; speak:blackjack → 17bf71dd (M1); HEAD registered-video M1 200; idle 687ca110 oförändrat."
+    },
+    {
+      "id": "K06R2-B3",
+      "name": "bad-media-id (native media): the M0 take is refused in the P2 context (UUID from another package), no bytes",
+      "result": "pass",
+      "at": "2026-10-28T12:38:22.895Z",
+      "evidence": "registered-video paket 20 med M0: 404 studio_presentation_idle_media_unavailable, inga bytes."
+    },
+    {
+      "id": "K06R2-4c",
+      "name": "shared round R after publication keeps C0 (configVersion, limits, chips) and M0 (binding P0, inventory with the M0 take) and no room colour; the browser shows the same round with the same felt",
+      "result": "pass",
+      "at": "2026-10-28T12:38:29.178Z",
+      "evidence": "Runda 7d5d584d i beslutsfas efter publiceringen: configVersion C0, limits 1–500/50, chips 1–100, binding paket 17 utan rumsfärg, inventarie 8e67e3bf…; webbläsaren visade samma runda och samma filt (v6-after-publish-same-hand.png)."
+    },
+    {
+      "id": "K06R2-B4",
+      "name": "bad-media-id (shared media): the M1 take is refused during R, with R's package and with the new package revision, no bytes",
+      "result": "pass",
+      "at": "2026-10-28T12:38:29.186Z",
+      "evidence": "room-video M1 med paket 17: 404 studio_presentation_idle_media_unavailable. Med paket 20 medan R är bunden till paket 17: 409 shared_room_presentation_stale. Inga bytes."
+    },
+    {
+      "id": "K06R2-I2",
+      "name": "interrupted-presentation (shared): aborted room media mid-round leaves round and config untouched; retry delivers the exact bytes",
+      "result": "pass",
+      "at": "2026-10-28T12:38:32.130Z",
+      "evidence": "room-video M0 avbruten efter 30 720 bytes mitt i runda R; därefter samma roundId, C0, beslutsfas; ny hämtning 200, 284 915 bytes, sha256 63752fce… = M0."
+    },
+    {
+      "id": "K06R2-K2a",
+      "name": "K2 lobby -> launch: lobby lists the room at the new package; its playUrl (/play/blackjack) redirects to /game, which serves P2 with dealer paow and the room colour; the neighbour room in the same package has no colour and its own dealer; operator B unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:38:33.603Z",
+      "evidence": "Lobbyn: paket 20 och playUrl /play/blackjack?operator=qa-k06k07-9dd2d3a4-a&table=room-33b37ff3…; /lobby?operator=… 200; /play/blackjack → 308 /game?game=blackjack&table=…&operator=…; /game 200 paket 20, dealer paow, färg #2e6b4f; grannrummet paket 20, dealer qa-k06k07-9dd2d3a4, ingen färg; operatör B:s lobby paket 1."
+    },
+    {
+      "id": "K06R2-I1",
+      "name": "interrupted-presentation (native, valid context P2): a media transfer and a selection aborted mid-hand; table, balance and ledger unchanged; retry delivers the exact bytes and the same media ids, no new debit",
+      "result": "pass",
+      "at": "2026-10-28T12:38:39.750Z",
+      "evidence": "N3 (paket 20, giltig kontext): givklipp f1aefbda avbrutet efter 30 720 bytes, ett deal-val avbrutet efter 25 ms (AbortError). Därefter samma vyhash, saldo 995/995/995, Admin-transaktioner 2/2/2 med samma hash. Ny hämtning 200, 1 620 131 bytes, sha256 b515a540… = registret; omval gav samma fyra media-ID."
+    },
+    {
+      "id": "K06R2-W1",
+      "name": "wrong-role: a player session and an anonymous caller are refused (401/403) on room-game-config read/save/publish, operator-package, players/status, project save and the roomOverrides writer; a player cannot obtain a Studio session; wrong operator/room 404, stale package 409; nothing changed",
+      "result": "pass",
+      "at": "2026-10-28T12:38:44.346Z",
+      "evidence": "Spelarsession och anonym: 401 på alla 16 anrop (room-game-config GET/save-draft/publish, operator-package, players/status som försökte spärra N1, PUT project, partner/branding GET och save-draft med roomOverrides). Spelarens uppgifter mot /studio/api/auth/login: 401. Admin GET room-game-config operatör A + operatör B:s rum 404; save-draft operatör B + operatör A:s rum 404; save-draft med gammal paketrevision 17: 409. Efteråt head C2/paket 20, inget utkast, samma administrationsrevision, inget brandingutkast, N1 aktiv."
+    },
+    {
+      "id": "K06R2-4d",
+      "name": "shared next window after R binds C2 (flipped limits and chips), M1 (binding P2, inventory with the alternative take) and the room colour; idle unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:40:40.284Z",
+      "evidence": "R avräknad av tick 12:40:26.9Z; next 200 → fönster d2ba370e bundet till C2 (5–2000/200, chips 5–500), binding paket 20 med selection.branding.color #2e6b4f och dealer paow, inventarie 7f563858… (M1 med, M0 inte), idle 687ca110."
+    },
+    {
+      "id": "K06R2-V6",
+      "name": "browser: the same round keeps the old felt through the publication; the next hand (new window) shows the new room colour without a reload",
+      "result": "pass",
+      "at": "2026-10-28T12:40:56.026Z",
+      "evidence": "--table-felt i webbläsaren: före publiceringen '' , samma runda efter publiceringen '' , nästa hand 752c276a under C2 #2e6b4f; en sidladdning hela körningen."
+    },
+    {
+      "id": "K06R2-5a",
+      "name": "Restart service on the same SHA mid native hand (old runtime closed before this read): /__cloud/version equal; hand state, balance and view identical; the same package context resolves the same media and idle",
+      "result": "pass",
+      "at": "2026-10-28T12:44:42.252Z",
+      "evidence": "Ny process e1fe06e4 12:41:28.4Z, gamla b0eac13c stängd 12:44:30.5Z. /__cloud/version f3780593 före och efter. N3:s hand: version 1, saldo 995, samma vyhash; giv draw 2–5 med kontext paket 20 → samma fyra media-ID och SHA; inventarie och idle oförändrade."
+    },
+    {
+      "id": "K06R2-5b",
+      "name": "Restart service mid shared round R1: a new player session reconnects to the same room, roundId, seats, configVersion C2, limits and binding P2 (round advanced only by recorded ticks, see Neon); the browser viewer is on the same round",
+      "result": "pass",
+      "at": "2026-10-28T12:44:45.474Z",
+      "evidence": "R1 752c276a (sju boxar à 5: S1 0–3, 5, 6 och V 4) under C2 i beslutsfas vid omstarten (turnSeq 1). Efter att gamla processen stängt: S1 med ny session 200, samma roundId, ägare, C2, limits och binding paket 20; V på samma runda. Fem turn.autostand under bytet, var och en tillämpad en gång 74–321 ms efter förfallotiden (Neon)."
+    },
+    {
+      "id": "K06R2-K2b",
+      "name": "K2 re-read after Restart service: Admin head C2/P2 with the flipped preset, the published roomOverrides, the lobby package and /game (dealer, colour) are unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:44:46.866Z",
+      "evidence": "Efter omstarten: Admin head room-config-b16ec0d3/paket 20/prive; roomOverrides {dealer: paow, color: #2e6b4f}; lobbyn paket 20; /game paket 20, paow, #2e6b4f."
+    },
+    {
+      "id": "K06R2-6a",
+      "name": "native hand H3 finishes after the restart with media per event from the same package (P2)",
+      "result": "pass",
+      "at": "2026-10-28T12:45:10.508Z",
+      "evidence": "N3 avslutade handen efter omstarten: reveal b07c94b6, giv draw 6–8 (848f6e50, 6134db90, 08e939c6), speak:dealerbust 137a8e68, speak:placebets fa4a9ac5; alla 200 ur inventariet för paket 20. Saldo 1005 (vinst, collect 10)."
+    },
+    {
+      "id": "K06R2-7a",
+      "name": "two consecutive native games, same player, same room, same SHA, no relaunch; every event resolves a media id in the P2 inventory",
+      "result": "pass",
+      "at": "2026-10-28T12:45:20.921Z",
+      "evidence": "N2, en /game-laddning, paket 20. G1: giv draw 2–5 (f1aefbda, 6134db90, ec8534ad, 3ae61b24), goodluck c16b8b1f, reveal b07c94b6, giv draw 6–7 (848f6e50, 08e939c6), lose 65bfca97, placebets fa4a9ac5. G2: giv draw 8–11 (samma fyra media-ID), goodluck c16b8b1f, reveal b07c94b6, lose 65bfca97, placebets fa4a9ac5. Alla 200 med SHA ur inventariet för paket 20. Saldo 1000 → 995 → 990."
+    },
+    {
+      "id": "K06R2-V7",
+      "name": "browser offline mid-hand (R2): the client recovers to the same round or its settlement without a reload; exactly one stake row for the round, ledger sum = balance",
+      "result": "pass",
+      "at": "2026-10-28T12:46:30.653Z",
+      "evidence": "Webbläsaren V offline 7 s (Playwright setOffline) mitt i R2 b1c32403 (C2): klienten visade fortfarande rundan och ingen felruta (v7-offline.png); åter online samma runda och beslutsfas (v7-recovered.png), rundan avräknad 12:46:26.9Z. Ledger för V under R2: exakt en rad consume:stake −10 (12:45:31Z), ingen utbetalning; saldo 994 → 984 = Σ ledger. Saldoutdrag: jakob-eyes/v7-balance.json."
+    },
+    {
+      "id": "K06R2-7b",
+      "name": "two consecutive shared rounds R3, R4 for the same players without leaving or reloading (S1 over HTTP, viewer in the browser): both bound to the restored head; the browser fetched media ids per event, all in the bound package inventory with body sha256",
+      "result": "fail",
+      "at": "2026-10-28T12:48:23.188Z",
+      "evidence": "Underkänd av harnessen, se note.",
+      "note": "Harnessfel, inte produktfel. S1 (bara HTTP) räknades som frånvarande under nativespelen (inga kommandon på ~2 min, B4), så R2 startade utan S1 och S1:s platser frigavs; S1:s inaktuella snapshot gav fel rund-id åt R3/R4, och R4 startade aldrig eftersom harnessen väntade på bets medan rummet stod i settled utan next. Webbläsarspelaren V spelade R1 → R2 → R3 i följd utan omladdning (WS-ramar). Ersatt av K06S2-7b."
+    },
+    {
+      "id": "K06R2-8",
+      "name": "restored: slot blackjack back on the M0 take, roomOverrides removed, original preset; new native window and the shared windows after restoration serve the original inventory and no room colour; room empty",
+      "result": "fail",
+      "at": "2026-10-28T12:48:28.313Z",
+      "evidence": "Underkänd av harnessen, se note.",
+      "note": "Harnessfel, inte produktfel. Alla återställningsvärden stämde (slot M0, branding {}, casual, inventarie = paket 17, speak:blackjack M0, ingen färg, nästa fönster bundet till C4), men kontrollen 'rummet tomt' läste S1:s inaktuella snapshot efter att S1:s leave gett 409 NOT_SEATED (platsen var redan frigiven). Ersatt av K06R2-8r."
+    },
+    {
+      "id": "K06S2-V4",
+      "name": "V4 game layers: desktop and 390 shots after the dealer film is visible, no horizontal scroll at 390",
+      "result": "pass",
+      "at": "2026-10-28T12:52:38Z",
+      "evidence": "Ny webbläsarspelare W på återställt head C4/paket 23: bakgrund (room-layers 0cd85d44…), bord (room-layers 332eb796…) och dealerfilmen synliga; v4-game-layers-desktop.png (1440×900) och v4-game-layers-390.png (390×844, ingen horisontell rullning). Tidigare v4-bilder i huvudkörningen togs under ommonteringen ('Förbereder spelbordet…', 'Dealern laddas…') och ersattes."
+    },
+    {
+      "id": "K06S2-7b",
+      "name": "two consecutive shared rounds for the same browser player in the same room on the same SHA without leaving or reloading; media ids per event fetched in each round, all from the one bound package, body sha256 recorded",
+      "result": "pass",
+      "at": "2026-10-28T12:55:10Z",
+      "evidence": "W plats 3, en sidladdning. G1 6404401f och G2 54b90edc, båda under C4 room-config-8082de33 och paket 23. Webbläsarens room-video-hämtningar, alla paket 23 med body sha256: G1 6134db90, 1d73fa9f, c16b8b1f, 917a436b, 3ae61b24, b07c94b6, 139fd295 (7 media); G2 fa4a9ac5, 08e939c6, 848f6e50, 137a8e68 (4 media). Händelser ur WS-planen G1: deal, deal@3, idle, reveal, settle, speak:dealerblackjack, speak:goodluck, speak:placebets; G2: deal, deal@3, idle, reveal, settle, speak:dealerbust, speak:goodluck, speak:placebets, turn@3. G1: dealern fick blackjack (förlust 1); G2: dealern bust (insats 5, retur 10). Ledger W: −1, −5, +10 = 1004."
+    },
+    {
+      "id": "K06R2-8r",
+      "name": "restoration re-read (read-only): room empty, open window = head C4, operator packages A 23 / B 1, material and branding restored",
+      "result": "pass",
+      "at": "2026-10-28T12:55:36Z",
+      "evidence": "Neon (SELECT) 12:55:36Z: alla ägare null, fas bets, öppet fönster = head room-config-8082de33 (paket 23, casual 1–500/50, chips 1–100, 46 media, md5 99696ad0…), operatörspaket A 23 och B 1. HTTP-återläsning i körningen 12:48:27Z: slot blackjack ab57d7ca (M0), partner/branding {} (inga roomOverrides), /game paket 23 utan färg, inventarie 8e67e3bf… = paket 17, idle 687ca110."
+    }
+  ],
+  "findings": [
+    {
+      "id": "O1",
+      "severity": "icke-blockerande (kosmetiskt, för Jakobs V4-bedömning)",
+      "summary": "Spelets rubrik säger alltid PRIVÉ BLACKJACK oavsett insatsprofil; under casual visas 'PRIVÉ BLACKJACK · 1 – 500 KR'.",
+      "code": [
+        "services/game/public/index.html:40 (fast text före #limits)"
+      ]
+    },
+    {
+      "id": "O2",
+      "severity": "känd avvikelse F11 (bokförd av K04 RERUN-6, rättas efter O03)",
+      "summary": "Under Renders överlapp efter Restart service fick webbläsarspelaren inga snapshots mellan 12:40:53.3Z (version 1183) och 12:42:41.0Z (version 1187): 102 s efter omstartsbegäran 12:40:58.9Z och 73 s efter att den nya processen lyssnade 12:41:28.4Z. Den gamla processen stängde 12:44:30.5Z. Därefter kom ramarna normalt och rundan avgjordes. Tiden till 1012 kunde inte mätas i klienten, eftersom harnessen inte sparade WS-stängningskoderna.",
+      "code": [
+        "services/game/shared-room-channel.mjs:231 (enligt F11)"
+      ]
+    },
+    {
+      "id": "O3",
+      "severity": "icke-blockerande (förväntat beteende, påverkade harnessen)",
+      "summary": "En spelare utan socket som inte skickar kommandon räknas som frånvarande efter närvarofönstret (B4); rundan startar när de närvarande är redo och spelarens platser frigörs om de inte spelas. S1 fick 409 BETTING_CLOSED i R2."
+    },
+    {
+      "id": "O4",
+      "severity": "icke-blockerande (UX)",
+      "summary": "Admins knapp Publicera PAOWs viloklipp visas, men ger 422 i stagingen eftersom projektet saknar en rotationspolicy för PAOW.",
+      "code": [
+        "apps/studio/client/admin/components/studio/registered-studio.tsx (knappen)",
+        "packages/presentation/server/refresh-frozen-dealer-idle.mjs:15"
+      ]
+    }
+  ],
+  "neon": {
+    "at": "2026-10-28T12:55Z–12:57Z",
+    "target": "red-violet-36066351/br-plain-voice-b9yu49xi/croupier_staging (read-only SELECT via Neon MCP)",
+    "configs": [
+      {
+        "version": "room-config-b8f7dac0-ac31-4fb7-832d-d101d9c82729",
+        "packageRevision": 17,
+        "preset": "casual",
+        "chips": [
+          1,
+          5,
+          10,
+          25,
+          50,
+          100
+        ],
+        "materialRevision": "native-film-v2-b9b86f471…",
+        "media": 46,
+        "M0": true,
+        "M1": false,
+        "md5": "1ed7df0652116ca3d8e9436147cdc88e",
+        "role": "C0: head och öppet fönster när K06 startade (K07:s återställning)"
+      },
+      {
+        "version": "room-config-4ff04f22-82bb-476c-9071-00de8ad7cfb1",
+        "packageRevision": 18,
+        "preset": "casual",
+        "materialRevision": "native-film-v2-e9ba6d35a…",
+        "media": 46,
+        "M0": false,
+        "M1": true,
+        "md5": "85240b4e378aca928f3f55bb3324d82a",
+        "role": "automatisk ombindning vid paketpubliceringen med M1 (12:38:12Z)"
+      },
+      {
+        "version": "room-config-e911d255-76eb-493a-b4f9-34360427e442",
+        "packageRevision": 19,
+        "preset": "casual",
+        "materialRevision": "native-film-v2-e9ba6d35a…",
+        "media": 46,
+        "M0": false,
+        "M1": true,
+        "md5": "1500a85787d669f2c1603f612fd42fe0",
+        "role": "automatisk ombindning vid roomOverrides-publiceringen (12:38:15Z); samma presentationHash 04ce82fd… som paket 18 – rummets utseende ligger i paketets branding, inte i den frysta presentationen"
+      },
+      {
+        "version": "room-config-b16ec0d3-9e23-4179-a54c-26dd9e49ca95",
+        "packageRevision": 20,
+        "preset": "prive",
+        "chips": [
+          5,
+          10,
+          25,
+          50,
+          100,
+          500
+        ],
+        "materialRevision": "native-film-v2-e9ba6d35a…",
+        "media": 46,
+        "M0": false,
+        "M1": true,
+        "md5": "2f067b87c6e0fdae1f6580eedfc97844",
+        "role": "C2: publicerad 12:38:18Z mitt i H0 och runda R; band nästa fönster"
+      },
+      {
+        "version": "room-config-91e2071c-18d9-4239-b7f3-b16d171469c2",
+        "packageRevision": 21,
+        "preset": "prive",
+        "materialRevision": "native-film-v2-d130d2d2a…",
+        "media": 46,
+        "M0": true,
+        "M1": false,
+        "md5": "767561f99a860560e306c1ec798b6e23",
+        "role": "återställning: paket med M0 (12:45:54Z)"
+      },
+      {
+        "version": "room-config-e7e13302-af2a-4f55-87f1-03a215b90821",
+        "packageRevision": 22,
+        "preset": "prive",
+        "materialRevision": "native-film-v2-d130d2d2a…",
+        "media": 46,
+        "M0": true,
+        "M1": false,
+        "md5": "554a2db00b886d94d5468bdaf5b87f00",
+        "role": "återställning: roomOverrides borttagna (12:46:04Z)"
+      },
+      {
+        "version": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+        "packageRevision": 23,
+        "preset": "casual",
+        "chips": [
+          1,
+          5,
+          10,
+          25,
+          50,
+          100
+        ],
+        "materialRevision": "native-film-v2-d130d2d2a…",
+        "media": 46,
+        "M0": true,
+        "M1": false,
+        "md5": "99696ad0b7c1fb84e97c846869f4292a",
+        "role": "C4: återställt head (12:46:09Z); öppet fönster efter provet"
+      }
+    ],
+    "configsNote": "M0 = ab57d7ca (blackjack_7), M1 = 17bf71dd (blackjack_3). Materialrevision och presentationHash för paket 21–23 skiljer sig från paket 15–17 eftersom den frysta presentationen bär projektets nya revision; inventariet (8e67e3bf…) är detsamma.",
+    "ticks": [
+      {
+        "round": "7d5d584d (R)",
+        "kind": "turn.autostand",
+        "dueAt": "12:38:50.725Z",
+        "lagMs": 280
+      },
+      {
+        "round": "7d5d584d (R)",
+        "kind": "round.settle",
+        "dueAt": "12:40:26.772Z",
+        "lagMs": 104
+      },
+      {
+        "round": "752c276a (R1)",
+        "kind": "turn.autostand ×5",
+        "dueAt": "12:42:07.691Z, 12:42:40.508Z, 12:43:13.483Z, 12:43:46.244Z, 12:44:19.272Z",
+        "lagMs": "127, 285, 74, 321, 181",
+        "note": "under omstarten 12:40:59Z–12:44:30Z"
+      },
+      {
+        "round": "752c276a (R1)",
+        "kind": "round.settle",
+        "dueAt": "12:45:07.050Z",
+        "lagMs": 192
+      },
+      {
+        "round": "b1c32403 (R2)",
+        "kind": "round.settle",
+        "dueAt": "12:46:26.920Z",
+        "lagMs": 261
+      },
+      {
+        "round": "d4f165a8 (R3)",
+        "kind": "round.settle",
+        "dueAt": "12:47:34.445Z",
+        "lagMs": 121
+      },
+      {
+        "round": "6404401f (K06S2 G1)",
+        "kind": "round.settle",
+        "dueAt": "12:53:17.392Z",
+        "lagMs": 306
+      },
+      {
+        "round": "54b90edc (K06S2 G2)",
+        "kind": "round.settle",
+        "dueAt": "12:54:33.961Z",
+        "lagMs": 271
+      }
+    ],
+    "ticksNote": "12 tick-rader med förfallotid 12:37Z–12:57Z, 12 unika tick-id, alla outcome applied, varje en gång.",
+    "ledger": {
+      "N1": {
+        "balance": "995",
+        "ledgerSum": "995",
+        "rows": [
+          "open:1000",
+          "start:-5 (H0 12:37:33Z)"
+        ],
+        "note": "inga rader under publicering, interimspolicy och felprov; H0 förlorad"
+      },
+      "N2": {
+        "balance": "990",
+        "ledgerSum": "990",
+        "rows": [
+          "open:1000",
+          "start:-5 (G1)",
+          "start:-5 (G2)"
+        ]
+      },
+      "N3": {
+        "balance": "1005",
+        "ledgerSum": "1005",
+        "rows": [
+          "open:1000",
+          "start:-5 (H3 12:38:36Z)",
+          "collect:10 (12:45:11Z)"
+        ],
+        "note": "inga rader under avbrottet och omstarten"
+      },
+      "S1": {
+        "balance": "980.50",
+        "ledgerSum": "980.50",
+        "rows": [
+          "open:1000",
+          "consume:stake:-4 (R)",
+          "payout:2 (R)",
+          "consume:stake:-30 (R1)",
+          "payout:12.50 (R1)"
+        ]
+      },
+      "V": {
+        "balance": "985.00",
+        "ledgerSum": "985.00",
+        "rows": [
+          "open:1000",
+          "consume:stake:-1 (R)",
+          "consume:stake:-5 (R1)",
+          "consume:stake:-10 (R2, offline mitt i handen)",
+          "consume:stake:-1 (R3)",
+          "payout:2 (R3)"
+        ]
+      },
+      "W": {
+        "balance": "1004.00",
+        "ledgerSum": "1004.00",
+        "rows": [
+          "open:1000",
+          "consume:stake:-1 (G1)",
+          "consume:stake:-5 (G2)",
+          "payout:10 (G2)"
+        ]
+      },
+      "RD": {
+        "balance": "1000",
+        "ledgerSum": "1000",
+        "rows": [
+          "open:1000"
+        ]
+      },
+      "global": {
+        "duplicateSourceKeys": 0,
+        "negativeBalances": 0,
+        "balanceNotEqualLedgerSum": 0,
+        "players": 187
+      }
+    },
+    "finalRoom": {
+      "readAt": "2026-10-28T12:55:36Z",
+      "owners": "all null",
+      "phase": "bets",
+      "version": 1220,
+      "openWindowConfig": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+      "head": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+      "operatorPackages": {
+        "qa-k06k07-9dd2d3a4-a": 23,
+        "qa-k06k07-9dd2d3a4-b": 1
+      }
+    }
+  },
+  "twoConsecutiveGames": {
+    "pass": true,
+    "candidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+    "native": "N2, paket 20, G1 och G2 utan ny /game-laddning, media-ID per händelse i K06R2-7a",
+    "shared": "Webbläsarspelaren W, G1 6404401f och G2 54b90edc utan att lämna eller ladda om, båda C4/paket 23, media-ID per händelse ur webbläsaren med sha256 (K06S2-7b). Dessutom spelade S1 och webbläsarspelaren V rundorna R (C0/P17) och R1 (C2/P20) i följd över publiceringen."
+  },
+  "o02ContractChecks": [
+    {
+      "id": "wrong-role",
+      "result": "pass",
+      "checks": [
+        "K06R2-W1"
+      ],
+      "note": "Spelarsession och anonym 401/403, fel operatör/rum 404, gammal paketrevision 409. Partnerrollen bevisas med CI-prov (Jakobs beslut 2026-10-28): test/partner-access-policy.mjs, test/partner-team-postgres.mjs i full CI 40667372034 på kandidaten."
+    },
+    {
+      "id": "bad-media-id",
+      "result": "pass",
+      "checks": [
+        "K06R2-B1",
+        "K06R2-B2",
+        "K06R2-B3",
+        "K06R2-B4"
+      ],
+      "note": "/api/presentation/select tar inget media-ID (servern väljer per händelse); felaktiga ID provades mot projektskrivaren och medievägarna."
+    },
+    {
+      "id": "interrupted-presentation",
+      "result": "pass",
+      "checks": [
+        "K06R2-I1",
+        "K06R2-I2",
+        "K06R2-V7"
+      ],
+      "note": "Nativehand på giltig paketkontext, delad runda och webbläsaren offline mitt i handen (V7)."
+    }
+  ],
+  "finalState": {
+    "readAt": "2026-10-28T12:55:36Z",
+    "operators": {
+      "qa-k06k07-9dd2d3a4-a": {
+        "packageRevision": 23,
+        "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+        "configHead": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+        "openWindowConfig": "room-config-8082de33-5007-4430-a3d2-89326b8ece47",
+        "gameConfig": {
+          "language": "sv",
+          "limitPreset": "casual"
+        },
+        "limits": {
+          "min": 1,
+          "max": 500,
+          "sideMax": 50
+        },
+        "chips": [
+          1,
+          5,
+          10,
+          25,
+          50,
+          100
+        ],
+        "configBodyMd5": "99696ad0b7c1fb84e97c846869f4292a",
+        "media": 46,
+        "inventorySha256": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1",
+        "slotBlackjack": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3 (M0)",
+        "branding": {},
+        "projectRevision": "studio-707455a4-9e5d-4bdd-925e-33e998f268f5",
+        "owners": "all null",
+        "phase": "bets"
+      },
+      "qa-k06k07-9dd2d3a4-b": {
+        "packageRevision": 1,
+        "note": "orörd"
+      }
+    },
+    "restoredToOriginal": "Ja i sak: M0-tagningen, inga roomOverrides, casual, samma inventarie och idle som före provet. Revisionerna är nya (projekt studio-707455a4, paket 23, head room-config-8082de33) och den frysta presentationen bär projektets nya revision, så presentationHash och materialrevision skiljer sig från paket 15/17.",
+    "forO02Receipt": "STAGING.publishedConfig = room-config-8082de33-5007-4430-a3d2-89326b8ece47 och STAGING.packageRevision = 23 (i stället för e0be09e9/15)."
+  },
+  "jakobEyes": {
+    "folder": "o02-f3780593/o02/jakob-eyes/ (privat, utanför Git)",
+    "index": "index-k06-k07-rerun2.json",
+    "V4": [
+      {
+        "file": "v4-admin-room-fields.png",
+        "sha256": "735bb3f35e594ab80cfb61b0a0f394f8d3ff43b151a87247e8ba8cce48220f5c",
+        "what": "Admins rum (1440×2600, helsida) när paket 20 var publicerat: bakgrund, dealer (Använd standard = uttryckligt val i roomOverrides), bord, Färg och standardval med bordsfärg #2e6b4f, Spelinställningar med insatsprofil Privé 5–2 000, knappen Publicera PAOWs viloklipp"
+      },
+      {
+        "file": "v4-game-layers-desktop.png",
+        "sha256": "ca4f2a43c524cb391e80475fa21216f717f366efdbfe28762128babbb2ce1dd9",
+        "what": "Spelet 1440×900 på återställt paket 23 (casual): bakgrund, dealerfilm och bord som tre separata lager, marker 1–100"
+      },
+      {
+        "file": "v4-game-layers-390.png",
+        "sha256": "e325aef93f4e7ea3cc1b557440ec7e43c4aa890f99b2f3fac16f64682b43e05f",
+        "what": "Samma sida i 390×844, tre lager, ingen horisontell rullning"
+      },
+      {
+        "file": "v4-game-layers-desktop-before.png",
+        "sha256": "ee057d615d8a149d5faf5331405765ee3a085a4f094885a702c5b7cf8484de81",
+        "what": "Extra: spelet 1440×900 före publiceringen (paket 17)"
+      }
+    ],
+    "V6": [
+      {
+        "file": "v6-before-publish.png",
+        "sha256": "141e7caaa2b859346ef3b911fed52ea4fa672ea5b86df35555257c900940a61b",
+        "what": "Aktiv runda R före publiceringen: C0/paket 17, 1–500 kr, marker 1–100, M0"
+      },
+      {
+        "file": "v6-after-publish-same-hand.png",
+        "sha256": "e43648ab75f2cf29a058931570daf6371d6a0da9d3e26db183188fdcb6abcd41",
+        "what": "Samma runda R efter publiceringen av M1, rumsfärg och prive: fortfarande 1–500 kr, marker 1–100, samma filt"
+      },
+      {
+        "file": "v6-next-hand-new.png",
+        "sha256": "695ffface7988a62b4f61e6ccadc060bd0ad991fd8c22f606ceec8e7ffaa763b",
+        "what": "Nästa hand R1 i nytt fönster utan omladdning: C2/paket 20, 5–2 000 kr, marker 5–500, --table-felt #2e6b4f"
+      }
+    ],
+    "V7": [
+      {
+        "file": "v7-offline.png",
+        "sha256": "cf88886938bdc6ba08504989c04810c5bb8173f3ae76c38866d39acfffb9af08",
+        "what": "Webbläsaren offline 7 s mitt i R2: rundan visas oförändrad, ingen felruta"
+      },
+      {
+        "file": "v7-recovered.png",
+        "sha256": "2e49904f7f3cc248a333741151976f18ab85b34e099e3e43e0d7cbe590989372",
+        "what": "Åter online: samma runda fortsätter (hålkortet på plats), saldo 984, insats 10"
+      },
+      {
+        "file": "v7-balance.json",
+        "sha256": "ba6609a8113219841f53cdc9fad788a12f0977f8b3f0d7b95a0458e2a1ef04fc",
+        "what": "Saldoutdrag för webbläsarspelaren: rader före och efter, exakt en insatsrad i R2, Σ ledger = saldo"
+      }
+    ],
+    "note": "Agenten har inte satt något omdöme; manifest.json med by:\"Jakob\" skrivs av Jakob."
+  },
+  "remaining": [
+    "Jakobs omdöme om V4, V6 och V7 i o02/jakob-eyes/manifest.json.",
+    "Dealerval: den frysta presentationen tillåter en dealer per rum, så det uttryckliga valet är lika med standardvärdet; byte till en annan dealer kräver en presentation med två tillåtna dealers och är inte provat.",
+    "Idle: inget annat viloklipp publicerades (Admins knapp ger 422 utan rotationspolicy); flödet är provat med oförändrat värde.",
+    "F11 (känd, efter O03): snapshotglapp under Renders överlapp; tiden till 1012 mättes inte i klienten.",
+    "V7 emulerar offline i webbläsaren; att socketen faktiskt bröts är inte loggat i klienten.",
+    "Nativebordets aktiva hand följer interimspolicyn (väg B); nativebordet avvecklas efter O03."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Projektdokumentet: repliken blackjack bytt till blackjack_3 (studio-634385ad) och tillbaka till blackjack_7 (studio-707455a4); bindningen är densamma som före provet, revisionen är ny.",
+      "Operatör A: paket 18–23 och rumskonfigurationerna room-config-4ff04f22, e911d255, b16ec0d3 (prive, M1, rumsfärg), 91e2071c, e7e13302 och 8082de33 (casual, M0, ingen rumsfärg = head). Grannrummet room-cb4c4696 följde med i paketen utan egna val.",
+      "Brandingjournalen för operatör A: utkast 1 (roomOverrides) publicerat som paket 19 och utkast 3 (tomt) publicerat som paket 22; inget utkast kvar.",
+      "Sju nya syntetiska spelare i huvudkörningen och tillägget (N1, N2, N3, S1, V, RD, W) plus en i det avbrutna försöket 1; demo-USD; alla har lämnat bordet. N1:s hand H0 avslutades.",
+      "En Restart service på samma deploy (12:40:59Z); ingen ny deploy, inga env-ändringar, inga nya Admin-konton.",
+      "Privat underlag för restore-replay: o02-f3780593/private/p1.json (N2:s /api/table-kroppar med requestId och lagrade svar) och p1-k07-shared.json (K07:s commandId-form)."
+    ],
+    "production": "orörd; Johns Bet orörd",
+    "sqlWrites": "inga"
+  },
+  "secretsExported": false
+}
