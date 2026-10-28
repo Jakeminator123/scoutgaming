@@ -2,18 +2,11 @@
 // åtgärdsmeny (⋯) per medlem med bekräftelse och körs bara genom den serverkontrollerade
 // adaptern (partner-team-loader.mjs). Journalen renderas av laddaren under vyn.
 import React, { useState } from 'react';
-import { ActionMenu, Card, Chip, Page } from './ui.jsx';
+import { ActionMenu, Card, Chip, Page, Tip } from './ui.jsx';
 import { partnerRoleWord } from '../partner-copy.mjs';
+import { partnerPermissionWord } from '../../../lib/partner-words.mjs';
 
 const STATUS = { sv: { active: 'aktiv', suspended: 'avstängd', invited: 'inbjuden' }, en: { active: 'active', suspended: 'suspended', invited: 'invited' } };
-const PERMISSIONS = {
-  'overview.read': ['Se översikten', 'See the overview'], 'players.read': ['Se spelare', 'See players'],
-  'team.read': ['Se teamet', 'See the team'], 'team.invite': ['Bjuda in medlemmar', 'Invite members'],
-  'team.roles.assign': ['Byta roll på medlemmar', 'Change member roles'], 'team.suspend': ['Stänga av och återaktivera medlemmar', 'Suspend and reactivate members'],
-  'tables.read': ['Se spelborden', 'See the tables'], 'tables.configure': ['Ändra spelbordens inställningar', 'Change table settings'],
-  'presentations.read': ['Se scenmallar och utseende', 'See scene templates and appearance'], 'presentations.configure': ['Ändra spelbordets utseende och publicera', 'Change table appearance and publish'],
-  'reports.read': ['Se ekonomi', 'See finance'], 'integrations.read': ['Se integration', 'See integration'],
-};
 
 const text = value => typeof value === 'string' ? value.trim() : '';
 function roleOf(member) {
@@ -41,7 +34,6 @@ function roleChoices(snapshot, members, operatorId) {
   for (const member of members) add(roleOf(member));
   return choices;
 }
-const revisionText = (member, en) => Number.isSafeInteger(member?.revision) && member.revision > 0 || /^[1-9]\d*$/.test(String(member?.revision ?? '')) ? `${en ? 'revision' : 'revision'} ${member.revision}` : '';
 function notify(toast, runtime, message) {
   const fn = typeof toast === 'function' ? toast : runtime?.notify;
   if (typeof fn === 'function') fn(message);
@@ -52,7 +44,7 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
   const busy = runtime?.teamBusy === true;
   const live = runtime?.team ?? null;
   const locked = !live;
-  const operatorId = text(snapshot?.operator?.id), operatorName = text(snapshot?.operator?.name) || '—';
+  const operatorId = text(snapshot?.operator?.id);
   const [query, setQuery] = useState('');
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
@@ -84,28 +76,28 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
     for (const roleId of live.assignable(member) ?? []) {
       const next = choices.find(role => role.id === roleId) ?? { id: roleId, label: roleId };
       items.push({ id: `role:${roleId}`, label: t(`Byt roll till ${word(next)}`, `Change role to ${word(next)}`), onSelect: () => void live.role(member, roleId),
-        confirm: { title: t(`Byt roll för ${name}?`, `Change role for ${name}?`), impact: [t(`Ny roll: ${word(next)}.`, `New role: ${word(next)}.`), t('Gäller direkt och loggas i journalen (team.role).', 'Applies immediately and is logged in the journal (team.role).')], button: t('Byt roll', 'Change role'), cancel: t('Avbryt', 'Cancel') } });
+        confirm: { title: t(`Byt roll för ${name}?`, `Change role for ${name}?`), impact: [t(`Ny roll: ${word(next)}.`, `New role: ${word(next)}.`), t('Gäller direkt och loggas i journalen.', 'Applies immediately and is logged in the journal.')], button: t('Byt roll', 'Change role'), cancel: t('Avbryt', 'Cancel') } });
     }
     if (live.canSuspend?.(member)) items.push({ id: 'suspend', tone: 'danger', label: t('Stäng av', 'Suspend'), onSelect: () => void live.status(member, 'suspend'),
-      confirm: { title: t(`Stäng av ${name}?`, `Suspend ${name}?`), impact: [t('Medlemmen kan inte längre logga in i Partnerportalen.', 'The member can no longer sign in to the partner portal.'), t('Loggas i journalen (team.suspend). Kan återaktiveras senare.', 'Logged in the journal (team.suspend). Can be reactivated later.')], button: t('Stäng av', 'Suspend'), cancel: t('Avbryt', 'Cancel') } });
+      confirm: { title: t(`Stäng av ${name}?`, `Suspend ${name}?`), impact: [t('Medlemmen kan inte längre logga in i Partnerportalen.', 'The member can no longer sign in to the partner portal.'), t('Loggas i journalen. Kan återaktiveras senare.', 'Logged in the journal. Can be reactivated later.')], button: t('Stäng av', 'Suspend'), cancel: t('Avbryt', 'Cancel') } });
     if (live.canReactivate?.(member)) items.push({ id: 'reactivate', label: t('Återaktivera', 'Reactivate'), onSelect: () => void live.status(member, 'reactivate'),
-      confirm: { title: t(`Återaktivera ${name}?`, `Reactivate ${name}?`), impact: [t('Medlemmen kan logga in igen med sin roll.', 'The member can sign in again with their role.'), t('Loggas i journalen (team.reactivate).', 'Logged in the journal (team.reactivate).')], button: t('Återaktivera', 'Reactivate'), cancel: t('Avbryt', 'Cancel') } });
+      confirm: { title: t(`Återaktivera ${name}?`, `Reactivate ${name}?`), impact: [t('Medlemmen kan logga in igen med sin roll.', 'The member can sign in again with their role.'), t('Loggas i journalen.', 'Logged in the journal.')], button: t('Återaktivera', 'Reactivate'), cancel: t('Avbryt', 'Cancel') } });
     if (!items.length) return lastAdmin(member)
       ? <Chip>{t('sista administratören', 'last administrator')}</Chip>
       : <span className="faint">—</span>;
     return <ActionMenu id={`team-actions-${text(member.id)}`} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} items={items} disabled={busy} />;
   };
   const statusChip = status => <Chip tone={status === 'active' ? 'ok' : status === 'invited' ? 'warn' : status === 'suspended' ? 'danger' : ''} dot>{STATUS[lang][status] ?? status ?? '—'}</Chip>;
-  return <Page title={copy?.team ?? t('Team', 'Team')} intro={t(`${operatorName}: medlemmar, roller och inbjudningar. Administratör utses bara av Scoutgaming; den sista administratören kan inte stängas av.`, `${operatorName}: members, roles and invitations. Administrators are appointed by Scoutgaming only; the last administrator cannot be suspended.`)}>
+  return <Page title={copy?.team ?? t('Team', 'Team')} intro={t('Medlemmar, roller och inbjudningar. Administratör utses bara av Scoutgaming; den sista administratören kan inte stängas av.', 'Members, roles and invitations. Administrators are appointed by Scoutgaming only; the last administrator cannot be suspended.')}>
     <div className="grid main-aside">
       <div className="stack">
         <Card title={t('Medlemmar', 'Members')} aside={<input className="input" style={{ width: 200 }} placeholder={t('Sök medlemmar', 'Search members')} aria-label={t('Sök medlemmar', 'Search members')} value={query} onChange={event => setQuery(event.target.value)} />}>
           {shown.length ? <div className="scroll-x"><table className="table">
             <thead><tr>{[t('Medlem', 'Member'), t('Roll', 'Role'), t('Status', 'Status'), t('Åtgärder', 'Actions')].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
             <tbody>{shown.map((member, index) => {
-              const role = roleOf(member), name = text(member.name) || text(member.id) || '—', userId = text(member.id), revision = revisionText(member, en);
+              const role = roleOf(member), name = text(member.name) || text(member.id) || '—', userId = text(member.id);
               return <tr key={`${member.operatorId || ''}:${userId}:${index}`}>
-                <td><b>{name}</b>{userId && userId !== name ? <div className="small muted"><code>{userId}</code></div> : null}{revision ? <div className="small faint">{revision}</div> : null}</td>
+                <td className="name-cell"><Tip content={userId && userId !== name ? t(`Konto-id: ${userId}`, `Account id: ${userId}`) : null}><b className="ellipsis">{name}</b></Tip></td>
                 <td>{word(role)}</td>
                 <td>{statusChip(member.status)}</td>
                 <td className="num">{actions(member)}</td>
@@ -126,8 +118,8 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
         <Card title={t('Rollerna', 'The roles')}>
           <div className="rows">{choices.map(role => <div className="row" key={role.id}>
             <div><Chip tone={adminRoles.has(role.id) ? 'accent' : ''}>{word(role)}</Chip></div>
-            <div><div className="title">{role.label}</div>
-              <div className="text">{Array.isArray(role.permissions) ? role.permissions.map(permission => PERMISSIONS[permission]?.[en ? 1 : 0] ?? permission).join(', ') : t('Rättighetsdetaljer saknas.', 'Permission details are unavailable.')}</div>
+            <div>{partnerRoleWord(role.id, '', lang) !== role.id ? null : <div className="title">{role.label}</div>}
+              <div className="text">{Array.isArray(role.permissions) ? role.permissions.map(permission => partnerPermissionWord(permission, language)).join(', ') : t('Rättighetsdetaljer saknas.', 'Permission details are unavailable.')}</div>
               {typeof role.delegable === 'boolean' ? <div className="text">{role.delegable ? t('Kan tilldelas av bolagets administratör.', 'May be assigned by the company administrator.') : t('Utses bara av Scoutgaming.', 'Appointed by Scoutgaming only.')}</div> : null}</div>
             <div />
           </div>)}</div>

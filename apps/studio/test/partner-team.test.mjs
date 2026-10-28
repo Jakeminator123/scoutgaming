@@ -23,9 +23,9 @@ test('without a verified team adapter the view is read-only, names roles with th
       { id: 'user-99', operatorId: 'op-2', name: 'Other Operator', email: 'other@op.invalid', roleId: 'partner-admin', role: 'Partner administrator', status: 'invited', revision: 1 },
     ] };
   const { html, calls } = render(snapshot);
-  assert.match(html, /<h1>Team<\/h1>/); assert.match(html, /Nordic Bet: medlemmar, roller och inbjudningar/);
+  assert.match(html, /<h1>Team<\/h1>/); assert.match(html, /<p class="intro">Medlemmar, roller och inbjudningar/); assert.doesNotMatch(html, /Nordic Bet:/);
   assert.match(html, /Åtgärderna är låsta tills teamåtkomsten har verifierats\./);
-  assert.match(html, /<code>user-22<\/code>/); assert.match(html, /revision 4/);
+  assert.doesNotMatch(html, /<code>user-22<\/code>|revision 4/, 'account ids and revisions are not shown in the rows'); assert.match(html, /Karin Berg/);
   assert.match(html, /aktiv/); assert.match(html, /avstängd/);
   assert.match(html, /<td>administratör<\/td>/); assert.match(html, /<td>läsare<\/td>/);
   assert.match(html, /Utses bara av Scoutgaming\./); assert.match(html, /Kan tilldelas av bolagets administratör\./);

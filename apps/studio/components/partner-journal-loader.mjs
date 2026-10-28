@@ -28,9 +28,9 @@ const ACTIONS = {
   'draft.save': ['Utkast sparat', 'Draft saved'], 'draft.restore': ['Version återställd till utkast', 'Version restored to draft'],
   'draft.publish': ['Utkast publicerat', 'Draft published'],
   'role.save': ['Roll sparad', 'Role saved'], 'membership.activate': ['Medlemskap aktiverat', 'Membership activated'], 'membership.compensate': ['Aktivering återställd', 'Activation reverted'],
-  'operator.create': ['Bolag skapat', 'Operator created'], 'operator.role.upsert': ['Roll ändrad', 'Role changed'],
+  'operator.create': ['Bolag skapat', 'Company created'], 'operator.role.upsert': ['Roll ändrad', 'Role changed'],
   'role.upsert': ['Roll ändrad', 'Role changed'], 'membership.create': ['Medlem tillagd', 'Member added'],
-  'membership.update': ['Medlemskap ändrat', 'Membership changed'], 'package.publish': ['Paket publicerat', 'Package published'],
+  'membership.update': ['Medlemskap ändrat', 'Membership changed'], 'package.publish': ['Ny version publicerad', 'New version published'],
   'team.invite': ['Medlem inbjuden', 'Member invited'], 'team.role': ['Roll ändrad', 'Role changed'],
   'team.suspend': ['Medlem avstängd', 'Member suspended'], 'team.reactivate': ['Medlem återaktiverad', 'Member reactivated'],
 };

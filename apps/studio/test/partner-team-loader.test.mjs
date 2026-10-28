@@ -213,6 +213,6 @@ test('live status controls follow server grants, support English and lock during
   assert.match(html, /aria-label="Actions for 44"/);
   assert.doesNotMatch(html, /Actions for north-admin/);
   assert.match(html, /last administrator/);
-  assert.match(html, /North: members, roles and invitations/);
+  assert.match(html, /<p class="intro">Members, roles and invitations/); assert.doesNotMatch(html, /North: /, 'the company name stands in the sidebar, not in every intro');
   for (const button of html.matchAll(/<button[^>]+aria-haspopup="menu"[^>]*>/g)) assert.match(button[0], /disabled/);
 });

@@ -51,18 +51,20 @@ function realSnapshot(overrides = {}) {
     summary: { activeTables: 1 }, ...overrides };
 }
 const render = (props, options) => renderToStaticMarkup(React.createElement(components(options).PartnerOperatorWorkspace, { surface: 'partner', user: 'john-admin', apiBase: '/studio/api/partner/snapshot', initialSnapshot: realSnapshot(), ...props }));
-const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/class="nav"[^>]*>([^<]+)</g)].map(match => match[1]);
+const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/<span class="label">([^<]+)</g)].map(match => match[1]);
 
-test('the shell names the company, Partnerportalen, the assignment revision and the role word; the menu follows the role', () => {
+test('the shell names the company, Partnerportalen, the assignment version and the role word; the menu follows the role', () => {
   const editor = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions] }) });
   assert.deepEqual(menuOf(editor), ['Översikt', 'Spelbord', 'Hjälp och kontakt']);
   assert.match(editor, /class="name">Johns Bet</); assert.match(editor, /class="sub">Partnerportalen</);
-  assert.match(editor, /Tilldelning från Scoutgaming/); assert.match(editor, /<b>revision 7<\/b>/);
-  assert.match(editor, /1 dealers · 1 scenmallar · 2 bordsgrafik · 1 bakgrunder/);
+  assert.match(editor, /Tilldelning från Scoutgaming/); assert.match(editor, /<b>Version 7<\/b>/);
+  assert.match(editor, /1 dealer · 1 bakgrund · 2 bordsgrafik/); assert.doesNotMatch(editor, /scenmall|revision 7/);
   assert.match(editor, /class="small">redaktör</);
-  assert.match(editor, /aria-current="page"[^>]*>Översikt</);
+  assert.match(editor, /aria-current="page"[^>]*>[\s\S]*?<span class="label">Översikt</);
+  assert.match(editor, /aria-keyshortcuts="Control\+K Meta\+K"/, 'the ⌘K palette is offered in the shell');
   const viewer = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-viewer', label: 'läsare' }, permissions: [...roleOf('partner-viewer').permissions] }) });
-  assert.deepEqual(menuOf(viewer), ['Översikt', 'Spelbord', 'Spelare', 'Ekonomi', 'Team', 'Integration', 'Hjälp och kontakt']);
+  // Spelare stays out of the menu until players belong to the company; the server still guards the address.
+  assert.deepEqual(menuOf(viewer), ['Översikt', 'Spelbord', 'Ekonomi', 'Team', 'Integration', 'Hjälp och kontakt']);
   assert.match(viewer, /class="small">läsare</);
   for (const [, href] of viewer.matchAll(/class="nav" href="([^"]+)"/g)) assert.match(href, /^\/partner\/johnsspelbolag(?:\/|$)/);
   for (const html of [editor, viewer]) {
@@ -78,7 +80,7 @@ test('a denied view renders the 403 card with role and permission inside the she
   const denied = { view: 'team', permission: 'team.read', role: { id: 'partner-editor', label: 'redaktör' } };
   const html = render({ initialView: 'team', denied, initialSnapshot: realSnapshot({ role: denied.role, permissions: [...roleOf('partner-editor').permissions], view: 'team', denied }) });
   assert.match(html, /role="alert"/); assert.match(html, />403</);
-  assert.match(html, /Rollen redaktör saknar behörigheten team\.read/);
+  assert.match(html, /Rollen redaktör får inte se teamet\./); assert.match(html, /<code>team\.read<\/code>/, 'the permission code name sits under Tekniska detaljer');
   assert.match(html, /href="\/partner\/johnsspelbolag"[^>]*>Till översikten</);
   assert.doesNotMatch(html, /data-team="stub"/);
   // The shell stays: company, menu for the role and the role word.
@@ -89,10 +91,10 @@ test('a denied view renders the 403 card with role and permission inside the she
   assert.doesNotMatch(render({ initialView: 'overview', denied }), />403</);
 });
 
-test('a role without a section sees Inte anslutet with the permission named, never invented rooms or assignment', () => {
+test('a role without a section sees no such section, never invented rooms or assignment', () => {
   // A role that lacks tables.read or presentations.read gets a snapshot without those sections.
   const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], presentations: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined, summary: {} }) });
-  assert.match(narrow, /Visas för roller med behörigheten tables\.read/); assert.match(narrow, /Visas för roller med behörigheten presentations\.read/);
+  assert.doesNotMatch(narrow, />Var ni är publicerade<\/h2>|>Er tilldelning<\/h2>|spelbord öppna i lobbyn/);
   assert.doesNotMatch(narrow, /0 av 0/); assert.doesNotMatch(narrow, /Oak|Lounge|Johns bord/);
   assert.deepEqual(menuOf(narrow), ['Översikt', 'Hjälp och kontakt']);
   const allowed = render({ initialView: 'team' });
@@ -124,49 +126,57 @@ test('the overview shows real figures from the game journal and says Inte anslut
   assert.match(html, /600 USD/); assert.match(html, /60 USD/);
   assert.match(html, /href="\/game\?game=blackjack&amp;operator=johnsspelbolag&amp;table=room-john"/);
   assert.match(html, /öppet/); assert.match(html, /pausat/); assert.match(html, /inte i lobbyn/);
-  assert.match(html, /PAOW · casual · en/); assert.match(html, /config-3/);
-  assert.match(html, /Lounge/); assert.match(html, /Oak, Green felt/); assert.match(html, /Johns lane/);
-  assert.match(html, /Senaste tilldelning: revision 7/); assert.match(html, /20 okt\. 2026/);
+  assert.match(html, /PAOW · Casual · engelska/); assert.doesNotMatch(html, /config-3|Johns lane|Johns Bet ·/, 'no technical ids, no scene template names, no repeated company name');
+  assert.match(html, /Lounge/); assert.match(html, /Oak, Green felt/);
+  assert.match(html, /Senaste tilldelning: version 7/); assert.match(html, /20 okt\. 2026/);
+  assert.match(html, /Rundor och netto per dag/);
   assert.doesNotMatch(html, /Spelkoppling återstår|playersToday|roundsToday|Planerat/);
   const unconnected = render({ initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'table-missing' }, draft: { revision: 3, basePackageRevision: 7 }, invitations: 2 }) });
-  assert.equal((unconnected.match(/Inte anslutet/g) ?? []).length >= 3, true);
-  assert.match(unconnected, /Spelets journal finns inte i den här miljön/); assert.doesNotMatch(unconnected, /shared_table_audit/, 'no table name in user text');
+  // Only what works: without the aggregate the round and money figures are simply not shown.
+  assert.doesNotMatch(unconnected, /rundor senaste 7 dagarna|insatser · 7 d|Rundor och netto per dag/);
+  assert.doesNotMatch(unconnected, /shared_table_audit|spelets journal|steg F|O03/i, 'no table names or plan words in user text');
   assert.doesNotMatch(unconnected, /600 USD|class="v">12</);
-  assert.match(unconnected, /Sparat utkast 3/); assert.match(unconnected, /2 inbjudan väntar/);
+  assert.match(unconnected, /Ett sparat utkast väntar/); assert.match(unconnected, /2 inbjudningar väntar på svar/);
   assert.match(unconnected, /href="\/partner\/johnsspelbolag\/rooms"[^>]*class="row link"/);
   const withoutRight = render({ initialSnapshot: realSnapshot({ reports: undefined, role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions] }) });
-  assert.match(withoutRight, /reports\.read/);
+  assert.doesNotMatch(withoutRight, /rundor senaste 7 dagarna|reports\.read/);
 });
 
 test('Spelare, Ekonomi, Integration and Hjälp render honest content without invented numbers', () => {
   const players = render({ initialView: 'players' });
-  assert.match(players, /<h1>Spelare<\/h1>/); assert.match(players, /steg F efter O03/); assert.doesNotMatch(players, /<td|preview-area|\d+ USD|\d{4,}/);
+  assert.match(players, /<h1>Spelare<\/h1>/); assert.match(players, /Era spelare visas här när de kopplats till er\./); assert.doesNotMatch(players.replace(/<svg[\s\S]*?<\/svg>/g, ''), /<td|preview-area|\d+ USD|\d{4,}|steg F|O03|Det här kommer att visas/);
   const reports = render({ initialView: 'reports' });
-  assert.match(reports, /<h1>Ekonomi<\/h1>/); assert.match(reports, /ur spelets journal/); assert.match(reports, /600 USD/); assert.match(reports, /540 USD/);
-  assert.match(reports, /revision 7<\/b><span class="small muted"> · publicerad nu/); assert.match(reports, /revision 6/);
-  assert.match(reports, /steg F/); assert.match(reports, /Avräkning/); assert.match(reports, /aria-pressed="true"[^>]*>7 dagar/);
+  assert.match(reports, /<h1>Ekonomi<\/h1>/); assert.match(reports, /Rundor och netto per dag/); assert.match(reports, /600 USD/); assert.match(reports, /540 USD/);
+  assert.doesNotMatch(reports, /Publiceringar|revision 6|steg F|Avräkning|Per spelare|spelets journal/, 'no placeholders, publications live in the table history');
+  assert.match(reports, /aria-pressed="true"[^>]*>7 dagar/);
   // Two currencies in the period: amounts per currency, never one added-up sum.
   const base = realSnapshot().reports, withAmounts = (room, code) => ({ ...room, days: room.days.map(day => ({ ...day, amounts: day.rounds ? { [code]: { staked: day.staked, returned: day.returned } } : {} })) });
   const mixedRooms = [withAmounts(base.rooms[0], 'USD'), withAmounts({ ...base.rooms[1], rounds: 1, staked: 20, returned: 0, net: 20, days: days([0, 0, 0, 0, 0, 0, 1]).map(day => ({ ...day, staked: day.rounds * 20, returned: 0 })) }, 'EUR')];
   const mixed = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...base, currency: null, currencies: ['EUR', 'USD'], rooms: mixedRooms } }) });
-  assert.match(mixed, /Flera valutor i perioden \(EUR, USD\)/); assert.match(mixed, /20 EUR · 600 USD/); assert.doesNotMatch(mixed, /620/);
+  // One currency at a time: a switch at the top, the largest currency first, never a mixed line or a sum.
+  assert.match(mixed, /aria-pressed="true"[^>]*>USD</); assert.match(mixed, /aria-pressed="false"[^>]*>EUR</);
+  assert.match(mixed, /600 USD/); assert.doesNotMatch(mixed, /20 EUR · 600 USD|· \d+ EUR|620/);
   // The read window did not reach the whole period: Ekonomi and Översikt both say so, naming the row count only then.
   const cut = { ...base, truncated: true, seqWindow: 100000 };
   for (const view of ['reports', 'overview']) {
     const html = render({ initialView: view, initialSnapshot: realSnapshot({ reports: cut }) });
-    assert.match(html, /role="status"[^>]*>Siffrorna bygger på de senaste 100 000 journalraderna/, view);
-    assert.doesNotMatch(render({ initialView: view }), /journalraderna|läsfönstret/, view + ' without truncation');
+    assert.match(html, /role="status"[^>]*>Perioden är längre än vad som kunde läsas nu/, view);
+    assert.doesNotMatch(render({ initialView: view }), /Perioden är längre/, view + ' without truncation');
   }
-  assert.match(render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...cut, seqWindow: undefined } }) }), /Journalen är längre än läsfönstret/);
+  assert.match(render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...cut, seqWindow: undefined } }) }), /Perioden är längre än vad som kunde läsas nu/);
   const noReports = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'read-failed' } }) });
-  assert.match(noReports, /kunde inte läsas just nu/); assert.doesNotMatch(noReports, /600 USD|540 USD/);
+  assert.match(noReports, /Siffror för rundor och insatser finns inte här ännu\./); assert.doesNotMatch(noReports, /600 USD|540 USD/);
   const integration = render({ initialView: 'integration' });
   assert.match(integration, /<h1>Integration<\/h1>/); assert.match(integration, /<code>\/game\?operator=johnsspelbolag<\/code>/);
-  assert.match(integration, /inte ansluten/); assert.match(integration, /api_keys/); assert.doesNotMatch(integration, /Spelarkonton för den här operatören|\/admin\/admin\/players/);
+  assert.match(integration, /Er nyckel hanteras av Scoutgaming/); assert.doesNotMatch(integration, /api_keys|steg F|O03|Spelarkonton för den här operatören|\/admin\/admin\/players/);
   const help = render({ initialView: 'help' });
   assert.match(help, /<h1>Hjälp och kontakt<\/h1>/); assert.match(help, /Begär material/);
   assert.match(help, /href="mailto:\?subject=Beg%C3%A4ran%20om%20material%20fr%C3%A5n%20Johns%20Bet/);
-  assert.match(help, /Vad rollen administratör får göra/); assert.match(help, /Låst av Scoutgaming/);
+  assert.match(help, /Rollen administratör får/); assert.match(help, /Bestäms av Scoutgaming/);
+  // "Önska bakgrund" is only a request by e-mail to Scoutgaming; nothing enters the package from here.
+  assert.match(help, /<option value="background-wish" selected="">Önska bakgrund<\/option>/); assert.match(help, /Beskriv bakgrunden/);
+  assert.match(help, /Scoutgaming tar fram förslag och lägger det godkända i er tilldelning/); assert.match(help, /href="mailto:\?subject=[^"]*%C3%96nska%20bakgrund/);
+  assert.doesNotMatch(help, /steg C|steg F|O03/);
 });
 
 test('shell strings exist in both languages and the snapshot validator rejects fixtures and foreign resources', () => {
