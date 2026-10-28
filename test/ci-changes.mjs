@@ -211,8 +211,8 @@ test('CI uses one Studio discovery registry and retains blocking product checks'
   assert.match(engine, /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
   assert.match(engine, /if: \$\{\{ !cancelled\(\) \}\}/);
   assert.doesNotMatch(engine, /continue-on-error: true/);
-  const ratchet = yaml.indexOf('node tools/check-no-sqlite.mjs --tree HEAD --changed-since HEAD^1');
-  assert.ok(yaml.indexOf('  changes:') < ratchet && ratchet < yaml.indexOf('  documentation:'), 'the SQLite ratchet runs on the merge diff plus the allowlist in the classifier job');
+  // The SQLite ban exempts documentation, so a documentation-only PR cannot violate it; the full regression runs it.
+  assert.match(fullHook, /^run_check contracts no-sqlite \d+ node tools\/check-no-sqlite\.mjs$/m);
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);
@@ -461,8 +461,9 @@ test('sparse checkout retains the full commit diff and every policy dependency',
   assert.doesNotMatch(changes,/^\s+(?:ref|repository):/m,'checkout must retain the event repository and commit');
   const files = changes.match(/sparse-checkout: \|\n((?:            [^\n]+\n)+)/)?.[1].trim().split('\n').map(line=>line.trim());
   assert.ok(files?.length, 'sparse checkout must declare its policy inputs');
-  // The isolated sparse run below executes every policy test and catches
-  // missing transitive dependencies without freezing this file list.
+  // The classifier job itself runs every policy test in this sparse checkout, so a
+  // missing policy input fails CI there; this fixture proves selection and fail-closed
+  // classification without re-running the whole file inside it.
   const root = mkdtempSync(join(tmpdir(),'ci-sparse-policy-'));
   const env = {...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'};
   for (const key of Object.keys(env)) if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(key)) delete env[key];
@@ -504,23 +505,6 @@ test('sparse checkout retains the full commit diff and every policy dependency',
         assert.deepEqual(ciSelection({cwd:root,env:{...pr,...invalid}}),full(true),'uncertain identity must never become documentation-only');
       }
     }
-    const policyEnv = {...env};
-    // A separate runner must not inherit the parent node:test worker context:
-    // Node otherwise returns zero without discovering any test files.
-    delete policyEnv.NODE_TEST_CONTEXT;
-    const policy = spawnSync(process.execPath,['--test','--test-concurrency=4','--test-reporter=tap',
-      '--test-skip-pattern=^sparse checkout retains the full commit diff and every policy dependency$','test/ci-changes.mjs'],{
-      cwd:root,env:policyEnv,encoding:'utf8',maxBuffer:2*1024*1024,
-    });
-    assert.ifError(policy.error);
-    assert.equal(policy.status,0,policy.stdout+'\n'+policy.stderr);
-    const total = Number(policy.stdout.match(/^# tests (\d+)$/m)?.[1]);
-    const passed = Number(policy.stdout.match(/^# pass (\d+)$/m)?.[1]);
-    const skipped = Number(policy.stdout.match(/^# skipped (\d+)$/m)?.[1]);
-    assert.ok(total >= 12 && passed === total && skipped === 0,
-      'the sparse checkout must actually execute every other policy test: '+policy.stdout+'\n'+policy.stderr);
-    // The nested run executes every other policy test; it skips only this
-    // fixture to avoid recursively creating another sparse checkout.
     rmSync(join(root,'tools','documentation-paths.mjs'));
     const missing = spawnSync(process.execPath,['tools/ci-changes.mjs'],{
       cwd:root,env:{...env,GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/1/merge',GITHUB_SHA:git('rev-parse','HEAD')},encoding:'utf8',

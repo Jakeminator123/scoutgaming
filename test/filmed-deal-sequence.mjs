@@ -4,7 +4,6 @@ import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contract
 import {planFilmedDealSequence,orderFilmedPresentationEvents} from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
 import {timeFilmedDealSequence,planFilmedTimeline,filmedStepPhase,FILMED_TAKE_GAP_MS,FILMED_OPEN_LEAD_MS} from '../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import {presentationEvents} from '../services/game/partner-presentation.mjs';
-import {readFileSync} from 'node:fs';
 const inventory={videos:profile.takes.map(t=>({id:`video-${t.key}`,sha256:t.sha256,available:true,classification:{dealerId:'dragan',kind:'action'}}))};
 const box=(box,shoeDraw)=>({type:'deal',to:'box',box,shoeDraw});
 const dealer=(shoeDraw,faceDown=false)=>({type:'deal',to:'dealer',box:null,shoeDraw,faceDown});
@@ -187,9 +186,9 @@ test('phase math: wait when early, seek into phase past 0.15 s, never into the l
   assert.equal(filmedStepPhase(fitted,700+fitted.fit.durationMs).expired,false,'without the fit the real length counts');
 });
 
-test('the timeline is pure, refuses what it cannot time and plays untimed when the published order differs',()=>{
-  const source=readFileSync(new URL('../packages/presentation/runtime/filmed-deal-timeline.mjs',import.meta.url),'utf8');
-  for(const word of ['Date.','document.','performance.','window.','setTimeout(','requestAnimationFrame'])assert.ok(!source.includes(word),`no ${word} in the planner`);
+test('the timeline is pure, refuses what it cannot time and plays untimed when the published order differs',t=>{
+  // Ambient clocks and timers are never read while planning or timing (document/window do not exist under Node).
+  for(const [object,name] of [[Date,'now'],[performance,'now'],[globalThis,'setTimeout'],[globalThis,'setInterval']])t.mock.method(object,name,()=>{throw Error(`ambient ${name} used`);});
   const events=[box(6,1),box(0,2)],plan=planFilmedDealSequence({profile,events,inventory,dealerId:'dragan'});
   const snapshot=structuredClone({plan,profile,events});
   const result=timeFilmedDealSequence(plan,profile,{startAt:7,endAt:30007});
@@ -207,6 +206,7 @@ test('the timeline is pure, refuses what it cannot time and plays untimed when t
   assert.equal(timeFilmedDealSequence(withShoe,profile).reason,'transition_timing_missing');
   const timed=timeFilmedDealSequence(withShoe,profile,{transitions:{toShoe:{id:'to',durationMs:2000},fromShoe:{id:'from',durationMs:1000}}});
   assert.deepEqual(timed.steps.map(s=>[s.takeKey,s.joinBefore,s.joinAfter,s.gapAfterMs]),[['7:base',false,true,0],['1:base',true,false,FILMED_TAKE_GAP_MS]]);
+  t.mock.restoreAll();
 });
 
 test('an explicit reduced bank times its selected shoe clips and exact take, without synthesizing missing variants',()=>{

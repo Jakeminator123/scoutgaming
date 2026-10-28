@@ -251,9 +251,9 @@ test('only the room preparation GET retains two exact query keys through the pub
   assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + query, { headers: { ...forwarded, origin: 'https://evil.invalid' } }), config), error => error.statusCode === 403);
 });
 
-test('known staff document navigation remains readable when transport omits mode and destination',()=>{
+test('known Admin document navigation remains readable when transport omits mode and destination',()=>{
   const navigation={...forwarded,'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
-  for(const path of ['/control','/control/clips','/control/replies','/studio/control/replies','/admin','/admin/dealers','/admin/lobby','/admin/admin/accounts','/studio/admin','/studio/admin/dealers']) {
+  for(const path of ['/admin','/admin/dealers','/admin/lobby','/admin/admin/accounts','/studio/admin','/studio/admin/dealers']) {
     const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
     assert.equal(headers.get('sec-fetch-site'),null);
     assert.equal(headers.get('cookie'),forwarded.cookie);
@@ -302,8 +302,8 @@ test('proxy cors document handling keeps API, Origin, action, method and frame b
   }
 });
 
-test('known staff documents accept only the observed cors document transport without Origin',()=>{
-  for(const path of ['/control/replies','/studio/control/replies','/admin','/admin/dealers','/studio/admin/dealers']){
+test('known Admin documents accept only the observed cors document transport without Origin',()=>{
+  for(const path of ['/admin','/admin/dealers','/studio/admin/dealers']){
     const request=new Request(publicOrigin+path,{headers:{cookie:forwarded.cookie,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'}});
     const headers=studioDocumentNavigationHeaders(request);

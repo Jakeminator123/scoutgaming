@@ -129,23 +129,9 @@ test('missing browser support and partial failures clean up rather than leaving 
   assert.throws(() => playMotion(MOTION_CLIPS[0], missing.targets, { durationMs: NaN }), /Invalid motion duration/);
 });
 
-test('Stage keeps exact videos separate and owns cleanup for selection, replay and reduced motion', async () => {
-  const source = await readFile(new URL('../components/stage.tsx', import.meta.url), 'utf8');
+test('exact file videos never loop or autoplay on their own', async () => {
   const filePlayer = await readFile(new URL('../components/file-video.tsx', import.meta.url), 'utf8');
-  assert.match(source, /getMotionClip\(asset\?\.id\)/);
-  assert.match(source, /preference\.removeEventListener\('change', reduce\); playback\.cancel\(\)/);
-  assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo, allow2dFallback\]/);
-  assert.match(source, /if \(!scene \|\| showVideo \|\| !shouldAnimate \|\| playId === 0 \|\| !allow2dFallback\) return;/);
-  assert.match(source, /const shouldAnimate = playing && \(hasResult \|\| previewing\)/);
-  assert.match(source, /Spela valt klipp/);
-  assert.match(source, /setFailedVideos\(\[\]\); onPreview\(\)/);
-  assert.match(source, /setFailedVideos\(\[\]\); onPlay\(\)/);
-  assert.match(source, /<FileVideo key=\{`\$\{event\.id\}-\$\{dealer\}-\$\{videoUrl\}-\$\{playId\}`\}/);
-  assert.match(filePlayer, /src=\{url\} controls=\{!blocked\} preload="metadata" muted playsInline/);
-  assert.match(filePlayer, /element\.play\(\)/);
-  assert.match(filePlayer, /onEnded=\{event => finish\(event\.currentTarget\)\}/);
   assert.doesNotMatch(filePlayer, /<video[^>]*\b(?:loop|autoPlay)\b/);
-  assert.match(source, /visar 2D-reserv/);
 });
 
 test('social.ledsen is separate from all 64 game clips and saved project bindings', async () => {

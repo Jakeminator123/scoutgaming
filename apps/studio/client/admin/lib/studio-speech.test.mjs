@@ -41,13 +41,19 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
   for(const value of ['https://provider.invalid/file','//outside.invalid','/api/voice/private','/studio/api/videos/id?token=secret','javascript:alert(1)','/studio/api/speech-build?media='+'a'.repeat(32)+'&kind=video&token=secret'])assert.equal(studioSpeechMediaUrl(value),null);
 });
 
+// Compile each panel source once; every harness still evaluates it in a fresh context.
+let compiledPanels;
+function panelSources(transformSync,readFileSync){
+  const compile=path=>transformSync(readFileSync(new URL(path,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  return compiledPanels??={picker:compile('../../../components/dealer-voice-picker.tsx'),panel:compile('../components/studio/studio-speech-panel.tsx')};
+}
 async function panelHarness(respond){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../../packages/presentation/contracts/studio-speech.mjs'),profile=await import('../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs'),connected=await import('./connected-studio.mjs'),slotBindings=await import('../../../../../packages/presentation/contracts/speech-slot-bindings.mjs');
-  const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../../../components/dealer-voice-picker.tsx',import.meta.url),'utf8');
-  runInNewContext(transformSync(pickerSource,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog.mjs')?voices:require(name)});
+  const compiled=panelSources(transformSync,readFileSync),pickerModule={exports:{}};
+  runInNewContext(compiled.picker,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog.mjs')?voices:require(name)});
   const {DealerVoicePicker}=pickerModule.exports;
-  const source=readFileSync(new URL('../components/studio/studio-speech-panel.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),slots=[],effects=[];
+  const output={code:compiled.panel},slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};
   runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:name.includes('connected-studio.mjs')?connected:name.includes('speech-slot-bindings.mjs')?slotBindings:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});

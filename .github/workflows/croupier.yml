@@ -36,9 +36,6 @@ jobs:
             tools/documentation-paths.mjs
             tools/precommit-checks.mjs
             tools/check-push-target.mjs
-            tools/check-no-sqlite.mjs
-            tools/no-sqlite-allowlist.json
-            test/check-no-sqlite.mjs
             migrering/status.mjs
             migrering/status.json
             migrering/STATUS.md
@@ -49,11 +46,6 @@ jobs:
       - name: Classify the complete PR merge diff
         id: scope
         run: node tools/ci-changes.mjs
-      # Ratchet: only allowlisted files may still use SQLite, and fixed files must leave the list.
-      - name: No new SQLite use (shrinking allowlist)
-        run: |
-          node --test test/check-no-sqlite.mjs
-          node tools/check-no-sqlite.mjs --tree HEAD --changed-since HEAD^1
 
   documentation:
     needs: changes
