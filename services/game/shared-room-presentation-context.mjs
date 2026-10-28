@@ -54,7 +54,10 @@ export function createActiveRoomPresentationContext({saved,context,privateMedia,
     if(!parts||url.search||url.hash||parts[1]==='idle'&&parts[6]||parts[1]==='video'&&!parts[6])fail();
     await resolve({operatorSlug:parts[2],roomId:parts[3],packageRevision:Number(parts[4]),dealerId:parts[5]});
     url.pathname=url.pathname.replace('/api/presentation/room-'+parts[1]+'/','/api/presentation/registered-'+parts[1]+'/');
-    return frozen.response(new Request(url,{method:request.method,headers:request.headers,signal:request.signal}));
+    // A room-video URL names an immutable package revision, its dealer and a media id: the record it resolves to (and
+    // its sha256, the ETag the reader verified the served bytes against) can never change, so the browser may keep the
+    // file (frozen-dealer-presentation.mjs, private-media-revalidation.mjs). room-idle names no media id and revalidates.
+    return frozen.response(new Request(url,{method:request.method,headers:request.headers,signal:request.signal}),{immutable:parts[1]==='video'});
   }
   async function layerResponse(request=activeRequest) {
     const url=new URL(request.url),parts=/^\/api\/presentation\/room-layers\/([^/]+)\/([^/]+)\/([1-9][0-9]{0,15})\/([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/.exec(url.pathname);
