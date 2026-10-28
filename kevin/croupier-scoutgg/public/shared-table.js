@@ -225,7 +225,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     $('#totalStake').textContent=money(stake);$('#lastReturn').textContent=me?.lastReturn==null?'-':money(me.lastReturn);$('#shoeCount').textContent=`${state.shoe.remaining} cards in the shoe`;
     $('#lastReturnLabel').textContent=state.phase==='round'?'Previous return':'Last return';
     $('#gameControls').dataset.phase=state.phase==='bets'?'bets':state.phase==='settled'?'settled':round?.phase;
-    $('#gameStatus').textContent=(me?.boxesAfterRound&&state.phase!=='bets'&&!notice)?`Your new boxes (${me.boxesAfterRound.map(boxLabel).sort((a,b)=>a-b).join(', ')}) apply from the next round`:(broke&&!paused&&!notice)?`Out of chips. Tap + ${whole(state.limits?.refill??1000)} demo to keep playing.`:(paused?`Demo break until ${new Date(state.pausedUntil).toLocaleString()}. Existing hands can stand or time out.`:mediaNotice||notice)||(me?.leaving?'Finishing your hand automatically, then freeing your seats':b?`${dealer.name} is dealing`:state.phase==='settled'?'Round complete':state.phase==='bets'?ready?'Ready. Waiting for the table':'Choose a chip and place your bets':round?.phase==='insurance'?state.insuranceDue?'Would you like insurance?':'Waiting for insurance decisions':turn?`Your turn · box ${boxLabel(round.hands[round.active].box)} · ${total(round.hands[round.active].cards)}`:`${playerName(ownerOfHand())} is playing`);
+    $('#gameStatus').textContent=(me?.boxesAfterRound&&state.phase!=='bets'&&!notice)?`Your new boxes (${me.boxesAfterRound.map(boxLabel).sort((a,b)=>a-b).join(', ')}) apply from the next round`:(broke&&!paused&&!notice)?`Out of chips. Tap + ${whole(state.limits?.refill??1000)} demo to keep playing.`:(paused?`Demo break until ${new Date(state.pausedUntil).toLocaleString()}. Existing hands can stand or time out.`:mediaNotice||notice)||(me?.leaving?'Finishing your hand automatically, then freeing your seats':b?(document.documentElement.classList.contains('desk')?'':`${dealer.name} is dealing`):state.phase==='settled'?'Round complete':state.phase==='bets'?ready?'Ready. Waiting for the table':'Choose a chip and place your bets':round?.phase==='insurance'?state.insuranceDue?'Would you like insurance?':'Waiting for insurance decisions':turn?`Your turn · box ${boxLabel(round.hands[round.active].box)} · ${total(round.hands[round.active].cards)}`:`${playerName(ownerOfHand())} is playing`);
     $('#betControls').hidden=!betting;$('#betActions').hidden=!betting;
     $('#actionControls').hidden=!turn||b||!entered;
     for(const btn of document.querySelectorAll('[data-action]'))btn.disabled=sending||b||(paused&&btn.dataset.action!=='stand')||!turn||!round.legalActions.includes(btn.dataset.action)||(['double','split'].includes(btn.dataset.action)&&round.hands[round.active].stake>me.balance);
@@ -233,7 +233,10 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     const cost=round?.hands.filter(h=>own().includes(h.box)).reduce((n,h)=>n+h.stake/2,0)??0;
     $('#insuranceCost').textContent=money(cost);$('#insuranceHint').textContent=cost>(me?.balance??0)?'Insufficient demo balance':'Half your main bets. Covers your boxes only.';
     for(const btn of document.querySelectorAll('[data-insurance]'))btn.disabled=sending||(btn.dataset.insurance==='yes'&&(paused||cost>(me?.balance??0)));
-    $('#nextRound').hidden=state.phase!=='settled'||b||!entered;$('#nextRound').disabled=sending;
+    // Kevin 27 Oct ("you won dyker upp innan man ser hennes kort"): the result and Next round wait for the plan's end (the
+    // cards are drawn from the round only then), not for turnAt (62 % into the last take), which is for decisions.
+    const bEnd=Boolean(state?.plan&&time()<state.plan.endAt);
+    $('#nextRound').hidden=state.phase!=='settled'||bEnd||!entered;$('#nextRound').disabled=sending;
     $('#dealNow').textContent=ready?'Ready ✓':preparing?'Loading…':'Deal';$('#dealNow').disabled=sending||ready||preparing||!ownStake();
     // John 12 Oct: only the buttons that apply show (Undo/Clear/2x with a bet down, Repeat with a previous bet and none down).
     for(const id of ['clearBets','doubleBets','undoBet']){$('#'+id).hidden=!ownStake();$('#'+id).disabled=sending||ready;}
@@ -244,7 +247,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     const list=$('#handList');list.replaceChildren();
     if(round&&!b)round.hands.forEach((h,i)=>{const row=document.createElement('div');row.className='hand-summary'+(i===round.active?' current':'');row.textContent=`${playerName(state.owners[h.box])} · box ${boxLabel(h.box)} · ${h.cards.map(c=>c.r+c.s).join(' ')}${state.phase==='settled'?` · main/insurance returned ${money(h.result)} · side returned ${money(h.sideReturn)}`:''}${h.pp||h.tp?` · PP ${money(h.pp)} / 21+3 ${money(h.tp)}: ${h.sideLabels.join(', ')||'lost'}${state.phase!=='settled'?` · side return ${money(h.sideReturn)} (paid at round end)`:''}`:''}`;list.append(row);});
     const receipt=currentReceipt(state);
-    $('#roundResult').hidden=state.phase!=='settled'||!receipt||b;
+    $('#roundResult').hidden=state.phase!=='settled'||!receipt||bEnd;
     if(receipt){$('#roundResult').dataset.win=String(receipt.net>0);$('#roundNet').textContent=(receipt.net>0?'+':'')+money(receipt.net);$('#roundReturn').textContent=`Returned ${money(receipt.returned)} · staked ${money(receipt.staked)}`;
       const word={win:'Win',push:'Push',bust:'Bust',lose:'Lose'};
       $('#roundBoxes').replaceChildren(...boxResults(receipt).map(r=>{const li=document.createElement('li');li.dataset.outcome=r.outcome;

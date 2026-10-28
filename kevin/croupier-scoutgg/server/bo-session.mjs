@@ -11,6 +11,9 @@ export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.
 
   // The signed-in BO user for a request, or null. Throws when the BO cannot be reached (callers fail closed).
   async function user(headers) {
+    // Local development only (Kevin 27 Oct: no login every time locally): LOCAL_BO_USER signs everyone in as that admin,
+    // and only when the server listens on loopback. Never set on staging or prod.
+    if (process.env.LOCAL_BO_USER && ['127.0.0.1', 'localhost', '::1'].includes(process.env.BIND_HOST ?? '')) return { user: process.env.LOCAL_BO_USER, role: process.env.LOCAL_BO_ROLE || ROLES[0], hiddenDealers: [] };
     const jwt = boCookie(headers);
     if (!jwt) return null;
     const r = await fetcher(new URL('/api/bo/me', origin), { headers: { cookie: `bo_jwt=${jwt}` }, redirect: 'error', signal: AbortSignal.timeout(3000) });

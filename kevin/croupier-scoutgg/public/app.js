@@ -41,6 +41,7 @@ let me = "";
 let unlocked = false;       // har besökaren rört sidan (ljud tillåtet)
 let tableBoxes, gameTable;
 let finishCurrent = null;
+let pendingStep = null;   // a table step waiting for the idle on screen to reach VILA (playNow)
 let playing = null;              // the clip play() is on, and whether it has started (chat answers yield to the table)
 const voiceOvers = new Set();    // answers still talking as sound after the table took the screen
 // A ready dealer speaking his lines over his clips (server/rorlig-lipsync.mjs): the mouth patches for the dealer layer.
@@ -223,6 +224,8 @@ async function play(item) {
     item.complete?.(ok);
     // An idle handing over to its prepared successor starts it in this same task (before its own 'ended', while its last
     // frame is on screen): a timeout here waited behind the next draw on a busy main thread, a window with no playing video.
+    // a table step that waited for this idle's last frame (playNow) goes first, before any next idle
+    if (pendingStep) { const s = pendingStep; pendingStep = null; holdUntil = 0; running = true; play(s); return; }
     if (handover) { next(); return; }
     // Give the game sequencer a microtask to queue the next draw before idle.
     setTimeout(() => { if (!running && !loading) next(); }, 0);
@@ -570,7 +573,13 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();for(const c of manifest.idle)videoBuffer.load(c.url,10).catch(()=>{});},   // all his idles follow at low priority (nine short takes, Kevin 20 Oct): the whole pool to pick from, no clip fetched at its switch
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
     warmPlan:plan=>{unclaspFor(plan);for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
-    playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
+    // Kevin 27 Oct ("hon måste gå tillbaka till startpositionen innan ny utdelning"): a table step that arrives while a
+    // random idle is mid-take waits for that take's last frame (VILA, at most ~1.6 s) instead of cutting it; the step
+    // then starts from its timeline offset (play: timelineTime), so the cards land when they would have anyway.
+    playNow:item=>{yieldAnswer();
+      const on=playing?.item??currentItem,v=cur;
+      if(on?.kind==='idle'&&!on.chain&&v&&Number.isFinite(v.duration)&&v.duration-v.currentTime<=1.8&&item.kind==='shared-game'&&!pendingStep){pendingStep=item;return;}
+      pendingStep=null;if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
     // A line over the clips: its sound plays on top of the deal, no idle starts until it ends. True when this viewer hears
     // the language the mouth was synced to (else the line plays without the mouth).
     lips,
@@ -583,7 +592,10 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       // his mouth is synced to him resting, dealing or on the talk's own idle chain, never to a random idle gesture: a random
       // idle playing now gives way (to his still, or to the chain the table names)
       const onItem=playing?.item??currentItem;
-      if(onItem?.kind==='idle'&&!onItem.chain&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
+      // Kevin 27 Oct: a random idle in its last 1.8 s plays to VILA first (the chain or the still follows from there; a
+      // patch is matched to the body frame within REACH, so a chain that starts a little late still gets its mouth); one
+      // with more left gives way at once, as before
+      if(onItem?.kind==='idle'&&!onItem.chain&&finishCurrent&&!(cur&&Number.isFinite(cur.duration)&&cur.duration-cur.currentTime<=1.8)){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
       if(onItem?.kind==='remark'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}

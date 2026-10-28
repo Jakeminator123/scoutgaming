@@ -1,0 +1,37 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Klippgranskning</title>
+<style>
+body{margin:0;background:#0b0b0c;color:#eee;font:14px/1.4 -apple-system,Helvetica,Arial,sans-serif}
+header{position:sticky;top:0;background:#141416;padding:10px 14px;display:flex;gap:12px;align-items:center;border-bottom:1px solid #222;z-index:2}
+h1{font-size:16px;margin:0;font-weight:600}.sum{opacity:.7}button{background:#c6f135;color:#111;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer}
+button.ghost{background:#222;color:#ddd}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;padding:12px}
+.c{background:#151517;border:1px solid #222;border-radius:10px;overflow:hidden}.c.ok{border-color:#c6f135}.c.nej{opacity:.4}
+.c video{width:100%;aspect-ratio:9/16;display:block;background:#000}.c .r{padding:6px 8px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.c b{font-size:12px}.c small{opacity:.6}.c .btns button{padding:4px 9px;font-size:12px}
+.take{grid-column:1/-1;margin:8px 0 -4px;font-weight:600;opacity:.8;border-top:1px solid #222;padding-top:8px}
+</style></head><body>
+<header><h1 id="t">Klippgranskning</h1><span class="sum" id="sum"></span><span style="flex:1"></span>
+<button class="ghost" id="loop">Loopa alla: på</button><button id="exp">Exportera urval</button></header>
+<main id="m"></main>
+<script>
+const q=new URLSearchParams(location.search),dealer=q.get('dealer')||'adebayor',key='klipp-urval-'+dealer;
+let pick={};try{pick=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+let loop=true;const save=()=>{try{localStorage.setItem(key,JSON.stringify(pick))}catch{}};
+fetch(`/media/dealers/${dealer}/kandidater/manifest.json`,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(man=>{
+  document.getElementById('t').textContent=`Klippgranskning · ${man.dealer} · ${man.takes.length} kandidater`;
+  const m=document.getElementById('m');let last='';
+  for(const t of man.takes){
+    if(t.take!==last){last=t.take;const h=document.createElement('div');h.className='take';h.textContent=t.take;m.append(h)}
+    const id=t.take+'/'+t.variant,c=document.createElement('div');c.className='c '+(pick[id]||'');c.dataset.id=id;
+    c.innerHTML=`<video src="${t.url}" muted playsinline loop preload="metadata"></video><div class="r"><div><b>${t.variant}</b><br><small>${(t.size/1e6).toFixed(1)} MB</small></div><div class="btns"><button class="ghost" data-v="nej">Nej</button> <button data-v="ok">OK</button></div></div>`;
+    c.querySelector('video').onclick=e=>{const v=e.target;v.paused?v.play():v.pause()};
+    c.querySelectorAll('button').forEach(b=>b.onclick=()=>{pick[id]=pick[id]===b.dataset.v?'':b.dataset.v;c.className='c '+(pick[id]||'');save();sum()});
+    m.append(c);
+  }
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target;if(e.isIntersecting&&loop)v.play().catch(()=>{});else v.pause()}),{threshold:.4});
+  document.querySelectorAll('video').forEach(v=>io.observe(v));
+  const sum=()=>{const ok=Object.values(pick).filter(v=>v==='ok').length,nej=Object.values(pick).filter(v=>v==='nej').length;document.getElementById('sum').textContent=`OK ${ok} · Nej ${nej}`};sum();
+  document.getElementById('loop').onclick=e=>{loop=!loop;e.target.textContent='Loopa alla: '+(loop?'på':'av');document.querySelectorAll('video').forEach(v=>loop?v.play().catch(()=>{}):v.pause())};
+  document.getElementById('exp').onclick=()=>{const out={dealer,ok:Object.keys(pick).filter(k=>pick[k]==='ok'),nej:Object.keys(pick).filter(k=>pick[k]==='nej')};const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(out,null,1));a.download=`${dealer}-urval.json`;a.click()};
+}).catch(e=>{document.getElementById('m').innerHTML=`<p style="padding:14px">Inga kandidater ännu (manifest saknas: ${e}). Lägg klipp i public/media/dealers/${dealer}/kandidater/&lt;tagning&gt;/&lt;variant&gt;.mp4 och kör <code>node verktyg/kandidat-manifest.mjs ${dealer}</code>.</p>`});
+</script></body></html>

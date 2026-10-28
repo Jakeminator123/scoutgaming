@@ -160,4 +160,5 @@ if(hide.includes(st.dealer)||RETIRED.includes(st.dealer)){const first=$$('.opt[d
 const was=st.screen;st.email='';go('login');
 // After choosing a password the backoffice can send ?email=… so the sign-in is not typed twice (Kevin 12 Oct).
 {const pre=new URLSearchParams(location.search).get('email');if(pre&&/^[^@\s]+@[^@\s]+$/.test(pre)){$('#email').value=pre;$('#pw').focus()}}
-if(new URLSearchParams(location.search).has('resume'))fetch('/api/studio/session').then(r=>r.ok?r.json():{}).then(me=>{if(me.user){st.email=me.user;access(me);go(was&&was!=='login'?was:'builder')}}).catch(()=>{});
+// Locally (127.0.0.1/localhost) the server's LOCAL_BO_USER session reopens the builder without ?resume (Kevin 27 Oct).
+if(new URLSearchParams(location.search).has('resume')||['127.0.0.1','localhost'].includes(location.hostname))fetch('/api/studio/session').then(r=>r.ok?r.json():{}).then(me=>{if(me.user){st.email=me.user;access(me);go(was&&was!=='login'?was:'builder')}}).catch(()=>{});

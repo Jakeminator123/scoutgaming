@@ -57,7 +57,8 @@ const extraIdles = (id, list) => list.map(([k, beskrivning]) => ({ id: k, url: `
 // Astrid: andas, andasb, blickhoger, blickhogerb, blickvanster, djupandetag.
 const DRAGGE_NEW_IDLES = [['vikt6103', 'viktförskjutning på stolen'], ['vridhoger7105', 'vrider huvudet åt höger'],
   ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6103', 'vrider huvudet åt vänster']];
-const PAOW_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'],
+const PAOW_NEW_IDLES = [   // rakrygg6101 out: her skin tone shifts mid-take (Kevin 27 Oct)
+  ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'],
   ['vridhoger6101', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
 const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur, calm: calmIdle(k) }));
 // Kevin 23 Oct: "his head is moving too much": the head takes (idle-chain.js isHead: turns, glances, nods) are weighted
@@ -87,7 +88,7 @@ const evolutionIdles = (id, takes) => takes.map(k => {
   return { id: k, url: `/media/dealers/${id}/v2/${k}.mp4${V}`, vikt: POSE_WEIGHT[base], dur: 1.625, calm: true, fas: base.startsWith('knapp') ? 'bets' : 'decide', from, to };
 });
 const DRAGGE_EVOLUTION_IDLES = ['knappin5101', 'knappin5102', 'knappandas5102', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattaxlar5101', 'lutfram5101'];
-const PAOW_EVOLUTION_IDLES = ['knappin5101', 'knappin5102', 'knappandas5101', 'knappandas5102', 'knappaxlar5101', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattandas5101', 'plattandas5102', 'plattaxlar5101'];
+const PAOW_EVOLUTION_IDLES = ['knappin5101', 'knappin5102', 'knappandas5101', 'knappandas5102', 'knappaxlar5101', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattandas5101', 'plattandas5102'];   // plattaxlar5101 out: her mouth opens in an O mid-take (Kevin 27 Oct)
 const ASTRID2_IDLES = headMovesRarely(h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']));
 
 // serverGreets (Kevin 23 Oct): the server greets the player by nickname in this dealer's own voice (server.mjs welcomeGuest,
@@ -104,7 +105,7 @@ export const DEALERS = {
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]).concat(evolutionIdles('paow', PAOW_EVOLUTION_IDLES)), handMatte: false, faceTracks: PAOW_FACE_TRACKS, serverGreets: true },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', /* andasb out: skin tone shifts (Kevin 27 Oct) */ 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]).concat(evolutionIdles('paow', PAOW_EVOLUTION_IDLES)), handMatte: false, faceTracks: PAOW_FACE_TRACKS, serverGreets: true },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.

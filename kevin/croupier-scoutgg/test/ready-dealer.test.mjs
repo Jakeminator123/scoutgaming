@@ -102,10 +102,10 @@ test('Dragan idles on his H3 takes in his own take folder, without the ones Kevi
 
 test('Paow idles on her seven H3 takes in v2/ (the two glances to the right derailed and are left out), weighted like the others', () => {
   const d = { ...DEALERS.paow, idles: plainIdles('paow') };
-  assert.deepEqual(d.idles.slice(0, 7).map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
-  assert.deepEqual(d.idles.slice(7).map(i => i.id), ['rakrygg6101', 'vikt6103', 'vikt6105', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105'], 'the new takes she kept (Kevin 23 Oct)');
+  assert.deepEqual(d.idles.slice(0, 6).map(i => i.id), ['andas', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar'], 'andasb out: her skin tone shifts mid-take (Kevin 27 Oct)');
+  assert.deepEqual(d.idles.slice(6).map(i => i.id), ['vikt6103', 'vikt6105', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105'], 'the new takes she kept (Kevin 23 Oct), rakrygg6101 out (skin tone shifts, Kevin 27 Oct)');
   //ridvanster6105'], 'plus the sixteen Kevin picked (21 Oct), axlar6105 included');
-  for (const idle of d.idles.slice(7).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
+  for (const idle of d.idles.slice(6).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/paow/v2/'), idle.id); assert.equal(idle.dur, 1.625); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.equal(d.idles.find(i => i.id === 'andas').vikt, 20);
 });
@@ -114,7 +114,7 @@ test('the calm takes are marked for the wait while the player decides (Kevin 21 
   const calmOf = d => plainIdles(d).filter(i => i.calm).map(i => i.id), livelyOf = d => plainIdles(d).filter(i => !i.calm).map(i => i.id);
   assert.deepEqual(calmOf('dragge'), ['andas', 'djupandetag', 'fingrar', 'vikt6103']);
   assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103']);
-  assert.deepEqual(calmOf('paow'), ['andas', 'andasb', 'djupandetag', 'fingrar', 'rakrygg6101', 'vikt6103', 'vikt6105']);
+  assert.deepEqual(calmOf('paow'), ['andas', 'djupandetag', 'fingrar', 'vikt6103', 'vikt6105'], 'andasb and rakrygg6101 out (Kevin 27 Oct)');
   assert.deepEqual(livelyOf('paow'), ['blickvanster', 'huvud', 'huvudb', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105']);
   assert.deepEqual(calmOf('astrid2'), ['fingrar'], 'her only calm take left (Kevin 23 Oct)');
 });

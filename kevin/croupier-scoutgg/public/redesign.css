@@ -1,0 +1,786 @@
+/* Kevin 27 Oct, Claude Design "Privé Blackjack" handoff: the player's chrome around the felt (redesign.js builds the
+   pieces). The felt, the boxes and the cards (feltBrand, tableBoxes, gameCards) keep their geometry and look; nothing
+   here selects them. Loaded last; html.rd is set by redesign.js, so without the script the old look stays. */
+html.rd {
+  --rd-lime: #D9FF3F; --rd-ink: #0b0b0c; --rd-glass: rgba(12,12,13,.55); --rd-dock: rgba(14,15,16,.88);
+  --rd-sheet: #111213; --rd-field: #1b1c1e; --rd-line: rgba(255,255,255,.08); --rd-line2: rgba(255,255,255,.12);
+  --rd-dim: rgba(255,255,255,.6); --rd-cream: #F4F2EC; --rd-danger: #FFB4A6;
+  --rd-mono: 'JetBrains Mono', ui-monospace, monospace; --rd-font: Figtree, system-ui, sans-serif;
+}
+html.rd body { font-family: var(--rd-font); }
+html.rd .rd-ic { display: inline-flex; width: 1em; height: 1em; }
+html.rd .rd-ic svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+html.rd [hidden] { display: none !important; }
+
+/* The frame covers the whole stage, so the dock and the status bar sit at the foot of the screen like the design. */
+html.rd:not(.desk) .game-frame { top: 0; bottom: 0; height: auto; aspect-ratio: auto; }
+html.rd .game-frame::before { height: 150px; background: linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0)); }
+
+/* ---- Header: wordmark, table line, round sound and menu buttons ---- */
+html.rd .table-header { top: 18px; align-items: flex-start; }
+html.rd .brand-name { font: 600 18px Sora, 'Space Grotesk', var(--rd-font); letter-spacing: -.03em; gap: 7px; }
+html.rd .brand-lockup p:not(.rd-line) { display: none; }
+html.rd .rd-line { margin: 4px 0 0; font: 500 12px var(--rd-font); color: rgba(255,255,255,.75); white-space: nowrap; }
+html.rd .table-settings { gap: 8px; flex-wrap: nowrap; max-width: none; }
+html.rd .table-settings > :not(.rd-round) { display: none !important; }
+html.rd .rd-round, html.rd .rd-chat, html.rd .rd-x {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; min-width: 0; min-height: 0; padding: 0;
+  border-radius: 20px; background: var(--rd-glass); border: 1px solid var(--rd-line2); color: #fff; font-size: 20px;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); cursor: pointer; pointer-events: auto; }
+html.rd .rd-round:hover { background: rgba(40,40,42,.8); }
+html.rd .rd-round:focus-visible, html.rd .rd-chat:focus-visible, html.rd .rd-x:focus-visible, html.rd .rd-row:focus-visible { outline: 2px solid var(--rd-lime); outline-offset: 2px; }
+/* the old settings popover still opens from the menu: as a sheet on phones */
+html.rd .audio-settings { display: block !important; position: static; width: 0; height: 0; }
+html.rd .audio-settings > summary { display: none !important; }
+
+/* ---- Dealer pill ---- */
+html.rd .rd-pill { position: absolute; z-index: 4; top: 76px; left: 16px; display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 11px 0 9px;
+  border-radius: 14px; background: var(--rd-glass); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1);
+  font: 600 12px var(--rd-font); color: #fff; pointer-events: none; }
+html.rd .rd-pill i { width: 7px; height: 7px; border-radius: 4px; background: var(--rd-lime); box-shadow: 0 0 8px var(--rd-lime); }
+html.rd .rd-pill span { color: var(--rd-dim); font-weight: 500; }
+html.rd body:has(.gate:not(.off)) .rd-pill { display: none; }
+/* the dealer picker of a Table Studio launch moves under the pill */
+html.rd:not(.desk) .studio { top: 114px; }
+
+/* ---- Dock: one floating card per phase ---- */
+html.rd .game-dock { top: auto; bottom: 84px; left: 10px; right: 10px; max-height: calc(100% - 84px - 52%); border-radius: 26px;
+  background: var(--rd-dock); border: 1px solid var(--rd-line); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  padding: 14px 16px; box-sizing: border-box; gap: 12px; overflow: auto; color: #fff; }
+html.rd .game-dock .game-controls { display: flex !important; flex-direction: column; gap: 12px; }
+html.rd .game-dock .dock-status { padding: 0; align-items: center; min-height: 42px; }
+html.rd .game-dock #gameStatus { font: 700 17px/1.25 var(--rd-font); color: #fff; }
+/* the timer is a ring: lime for the time left */
+html.rd .game-dock .round-timer { position: relative; width: 42px; height: 42px; border-radius: 21px; display: flex; align-items: center; justify-content: center;
+  background: conic-gradient(var(--rd-lime) calc(var(--progress, 1) * 360deg), rgba(255,255,255,.12) 0); font: 600 13px var(--rd-mono); color: #fff; }
+html.rd .game-dock .round-timer::before { content: ""; position: absolute; inset: 4px; border-radius: 17px; background: #0f1011; }
+html.rd .game-dock .round-timer > * { position: relative; }
+html.rd .game-dock .round-timer > span:not(#timerLabel), html.rd .game-dock #timerLabel, html.rd .game-dock .dock-progress { display: none; }
+html.rd .game-dock .round-timer[data-urgent=true] { background: conic-gradient(#ff8a73 calc(var(--progress, 1) * 360deg), rgba(255,255,255,.12) 0); }
+/* chips: a rail of five-six, the chosen one lifted with a lime ring */
+html.rd .game-dock .chip-picker { padding: 0; justify-content: space-between; gap: 4px; }
+html.rd .game-dock .chip-picker button { width: 46px; height: 46px; }
+html.rd .game-dock .chip-picker button[aria-pressed=true] { transform: translateY(-5px); }
+html.rd .game-dock .chip-picker button[aria-pressed=true]::after { inset: -5px; border: 2px solid var(--rd-lime); box-shadow: 0 0 0 2px #0e0f10 inset; }
+/* bet tools: Undo, Clear, 2x, Repeat in one row of quiet tiles, Deal as the primary bar */
+html.rd .game-dock #betActions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; }
+html.rd .game-dock #betActions > button.quiet { flex: 1 1 0; min-width: 0; }
+html.rd .game-dock .game-controls #betActions button.quiet { height: 36px; min-height: 36px; border-radius: 12px; border: 0; background: rgba(255,255,255,.07); font: 600 13px var(--rd-font); color: #fff; padding: 0 6px; }
+html.rd .game-dock #betActions #dealNow { flex: 1 0 100%; order: 9; height: 46px; min-height: 46px; border-radius: 14px; font: 700 15px var(--rd-font); background: var(--rd-lime); border-color: var(--rd-lime); color: var(--rd-ink); }
+html.rd .game-dock #betActions #dealNow:disabled { opacity: .35; }
+/* decisions: four round targets, Hit the brightest */
+html.rd .game-dock .action-rail { padding: 0; gap: 4px; }
+html.rd .game-dock .action-rail button span { width: 58px; height: 58px; border-radius: 29px; border: 1.5px solid rgba(255,255,255,.4); font: 700 22px var(--rd-font); }
+html.rd .game-dock .action-rail button[data-action=hit] span { background: var(--rd-lime); border-color: var(--rd-lime); color: var(--rd-ink); box-shadow: 0 0 0 5px rgba(217,255,63,.16), 0 6px 20px rgba(217,255,63,.25); font-size: 30px; }
+html.rd .game-dock .action-rail button[data-action=stand] span { background: var(--rd-cream); border-color: var(--rd-cream); color: var(--rd-ink); font-size: 30px; }
+html.rd .game-dock .action-rail button:disabled { opacity: .32; }
+html.rd .game-dock .action-rail small { font: 600 12.5px var(--rd-font); }
+/* insurance */
+html.rd .game-dock .insurance-panel { background: none; border: 0; }
+html.rd .game-dock .insurance-panel p, html.rd .game-dock #insuranceHint { padding: 0; }
+html.rd .game-dock .insurance-panel .game-buttons { padding: 8px 0 0; }
+html.rd .game-dock .insurance-panel button { height: 46px; border-radius: 14px; }
+/* the result lives over the table (.rd-result); the dock keeps Next round as the one action */
+html.rd .game-dock #roundResult { display: none !important; }
+html.rd .game-dock .settled-actions { padding: 0; }
+html.rd .game-dock #nextRound { height: 46px; min-height: 46px; border-radius: 14px; font: 700 15px var(--rd-font); }
+html.rd .game-dock #sideBetResult { margin: 0; color: var(--rd-lime); }
+html.rd .game-dock #reconnectTable { height: 46px; border-radius: 14px; }
+/* the dock only shows once seated: the gate sheet takes its place before */
+html.rd .game-dock:has(#gameControls[hidden]) { display: none; }
+
+/* ---- Result over the table ---- */
+html.rd .rd-result { position: absolute; z-index: 4; top: 178px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px 28px 18px; border-radius: 24px; background: rgba(10,10,11,.72); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.14); max-width: calc(100% - 40px); box-sizing: border-box; text-align: center; pointer-events: none;
+  animation: rd-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
+html.rd .rd-result[data-win=true] { border-color: rgba(217,255,63,.35); box-shadow: 0 0 40px rgba(217,255,63,.15); }
+html.rd .rd-result small { font: 700 12px var(--rd-font); letter-spacing: .12em; color: var(--rd-dim); }
+html.rd .rd-result[data-win=true] small { color: var(--rd-lime); }
+html.rd .rd-result strong { font: 600 38px var(--rd-mono); letter-spacing: -.02em; color: #fff; }
+html.rd .rd-result p { margin: 0; font: 500 13px var(--rd-font); color: rgba(255,255,255,.65); }
+@keyframes rd-pop { from { opacity: 0; transform: translate(-50%, -10px) scale(.94); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { html.rd .rd-result { animation: none; } }
+
+/* ---- Status bar: balance, bet, last win, chat ---- */
+html.rd .rd-status { position: absolute; z-index: 4; left: 10px; right: 10px; bottom: 14px; height: 60px; box-sizing: border-box; padding: 0 8px 0 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px; border-radius: 20px;
+  background: rgba(14,15,16,.92); border: 1px solid var(--rd-line); pointer-events: auto; }
+html.rd .rd-status .table-wallet { position: static; inset: auto; padding: 0; border: 0; margin: 0; pointer-events: auto; }
+html.rd .rd-status .wallet { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr); gap: 8px; padding: 0; margin: 0; border: 0; background: none; box-shadow: none; border-radius: 0; }
+html.rd .rd-status .wallet small { display: flex; align-items: center; gap: 5px; font: 600 11px var(--rd-font); color: rgba(255,255,255,.55); text-transform: none; letter-spacing: 0; white-space: nowrap; }
+html.rd .rd-status .wallet strong { display: block; margin-top: 2px; font: 600 14.5px var(--rd-mono); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.rd .rd-status .demo-refill { min-width: 0; min-height: 0; height: auto; margin: 0; padding: 0 4px; border-radius: 6px; border: 1px solid rgba(217,255,63,.4); background: none;
+  font: 700 10px var(--rd-font); color: var(--rd-lime); white-space: nowrap; }
+html.rd .rd-status .demo-refill:not(.needed) { font-size: 0; }
+html.rd .rd-status .demo-refill:not(.needed)::before { content: "+ demo"; font-size: 10px; }
+html.rd .rd-status .demo-refill.needed { background: var(--rd-lime); color: var(--rd-ink); }
+html.rd .rd-status .demo-refill:disabled { opacity: .55; }
+html.rd .rd-chat { position: relative; width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,.07); border: 0; font-size: 22px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.rd .rd-chat em { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px;
+  background: var(--rd-lime); color: var(--rd-ink); font: 800 10px var(--rd-font); font-style: normal; display: flex; align-items: center; justify-content: center; }
+html.rd body:has(.gate:not(.off)) .rd-status { display: none; }
+
+/* ---- Take a seat: one sheet with one action ---- */
+html.rd .gate[data-step] { padding: 0; align-items: flex-end; background: none; backdrop-filter: none; pointer-events: none; }
+html.rd .gate .gate-card, html.rd .gate[data-step=boxes] .gate-card { pointer-events: auto; width: 100%; max-width: none; box-sizing: border-box; margin: 0;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--rd-line); border-radius: 30px 30px 0 0;
+  background: var(--rd-sheet); box-shadow: 0 -20px 60px rgba(0,0,0,.45); text-align: left; }
+html.rd .gate .gate-kicker, html.rd .gate h1, html.rd .gate .gate-sub, html.rd .gate .entry-note { display: none; }
+html.rd .gate h2, html.rd .gate[data-step=boxes] h2 { margin: 0 0 4px; font: 700 21px var(--rd-font); letter-spacing: -.01em; color: #fff; }
+html.rd .gate p, html.rd .gate[data-step=boxes] p { margin: 0; font: 400 14px/1.4 var(--rd-font); color: var(--rd-dim); }
+html.rd .gate .selected-boxes { margin: 12px 0 0; color: var(--rd-lime); font: 600 13px var(--rd-font); }
+html.rd .gate #entryError:not(:empty) { margin: 8px 0 0; color: var(--rd-danger); }
+html.rd #entryName label { color: rgba(255,255,255,.5); font: 600 11px var(--rd-font); margin: 14px 0 6px; }
+html.rd #playerName { height: 52px; padding: 0 16px; border-radius: 14px; background: var(--rd-field); border: 1px solid var(--rd-line); font: 600 15px var(--rd-font); color: #fff; box-sizing: border-box; }
+html.rd #playerName:focus { outline: none; border-color: var(--rd-lime); }
+html.rd .gate .entry-actions { margin-top: 14px; gap: 8px; }
+html.rd .gate .entry-actions button { height: 54px; border-radius: 16px; font: 700 16px var(--rd-font); padding: 0 16px; }
+html.rd .gate .entry-actions #enter { background: var(--rd-lime); color: var(--rd-ink); }
+html.rd .gate .entry-actions .ghost { background: var(--rd-field); border: 1px solid var(--rd-line); color: var(--rd-lime); font-size: 14px; }
+
+/* ---- Chat: a sheet over the lower screen, the stream and felt stay visible above ---- */
+html.rd .side .rd-sheet-head { display: none; }
+@media (max-width: 820px) {
+  html.rd .side:not(.chat-open) { display: none !important; }
+  html.rd .side.chat-open { display: flex !important; flex-direction: column; gap: 12px; top: 430px; bottom: 0; max-height: none !important; height: auto; z-index: 7;
+    padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; overflow: hidden;
+    background: var(--rd-sheet); border-top: 1px solid var(--rd-line); border-radius: 30px 30px 0 0; box-shadow: 0 -20px 60px rgba(0,0,0,.5); }
+  html.rd .side.chat-open > :not(.rd-sheet-head):not(.log):not(.compose) { display: none !important; }
+  html.rd .side.chat-open .rd-sheet-head { display: flex; flex: none; justify-content: space-between; align-items: center; padding: 0 4px; }
+  html.rd .side.chat-open .log { flex: 1 1 auto; min-height: 0; max-height: none; padding: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+  html.rd .side.chat-open .compose { flex: none; padding: 0; gap: 8px; background: none; border: 0; }
+}
+@media (max-width: 820px) and (max-height: 700px) { html.rd .side.chat-open { position: fixed; top: 38dvh; } }
+html.rd .rd-sheet-head > div { display: flex; align-items: baseline; gap: 8px; }
+html.rd .rd-sheet-head b { font: 700 18px var(--rd-font); color: #fff; }
+html.rd .rd-sheet-head span { font: 500 12.5px var(--rd-font); color: rgba(255,255,255,.5); }
+html.rd .rd-x { width: 34px; height: 34px; border-radius: 17px; background: rgba(255,255,255,.08); border: 0; font-size: 18px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* messages: Dragan's with a lime name and AI tag, your own as lime bubbles on the right */
+html.rd .side .msg { max-width: 78%; align-self: flex-start; padding: 9px 13px; border-radius: 16px; background: #1c1d20; border: 0; color: #fff; font: 400 14px/1.35 var(--rd-font); }
+html.rd .side .msg .name { font: 700 11.5px var(--rd-font); color: rgba(255,255,255,.6); }
+html.rd .side .her .name { color: var(--rd-lime); }
+html.rd .side .her .name::after { content: "AI"; margin-left: 5px; padding: 1px 4px; border-radius: 4px; background: var(--rd-lime); color: var(--rd-ink); font: 700 9.5px var(--rd-font); vertical-align: 1px; }
+html.rd .side .msg.me, html.rd .side .msg.mine, html.rd .side .msg[data-mine=true] { align-self: flex-end; background: var(--rd-lime); color: var(--rd-ink); }
+html.rd .side .compose input { height: 48px; border-radius: 24px; background: var(--rd-field); border: 1px solid var(--rd-line); padding: 0 16px; font: 400 14.5px var(--rd-font); color: #fff; box-sizing: border-box; }
+html.rd .side .compose #who { flex: 0 0 96px; }
+html.rd .side .compose input:focus { border-color: var(--rd-lime); }
+html.rd .side .compose button { width: 48px; min-width: 48px; height: 48px; padding: 0; border-radius: 24px; background: var(--rd-lime); color: transparent; font-size: 0; position: relative; flex: none; }
+html.rd .side .compose button::after { content: ""; position: absolute; inset: 0; margin: auto; width: 20px; height: 20px; background: var(--rd-ink);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19V5M6 11l6-6 6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19V5M6 11l6-6 6 6'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* ---- Menu sheet ---- */
+html.rd .rd-menu { position: fixed; inset: 0; z-index: 60; }
+html.rd .rd-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+html.rd .rd-menu-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: calc(100dvh - 60px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px calc(20px + env(safe-area-inset-bottom)); box-sizing: border-box; background: var(--rd-sheet); border-top: 1px solid var(--rd-line);
+  border-radius: 30px 30px 0 0; color: #fff; animation: rd-up .22s ease-out both; }
+html.rd .rd-grab { align-self: center; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); margin-bottom: 8px; }
+html.rd .rd-rows { display: flex; flex-direction: column; gap: 4px; }
+html.rd .rd-row { display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 12px; border: 0; border-radius: 14px; background: transparent; color: #fff;
+  font: 600 15.5px var(--rd-font); text-align: left; cursor: pointer; }
+html.rd .rd-row:hover { background: rgba(255,255,255,.05); }
+html.rd .rd-row:disabled { opacity: .4; cursor: default; }
+html.rd .rd-row .rd-ic { font-size: 22px; }
+html.rd .rd-row > span:nth-child(2) { flex: 1; }
+html.rd .rd-row .rd-meta { font: 400 13px var(--rd-font); color: rgba(255,255,255,.5); }
+html.rd .rd-row.danger { color: #FF9A88; }
+html.rd .rd-help { margin: 12px 0 0; padding: 0 12px; font: 400 12px/1.45 var(--rd-font); color: rgba(255,255,255,.5); }
+html.rd .rd-help a { color: var(--rd-lime); text-underline-offset: 2px; }
+@keyframes rd-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { html.rd .rd-menu-panel { animation: none; } }
+@media (min-width: 821px) {
+  /* on a wide screen the menu sheet sits under the table, the width of the table */
+  html.rd .rd-menu-panel { left: 50%; right: auto; width: min(430px, 100vw); transform: translateX(-50%); animation: none; }
+}
+/* Settings (from the menu): a sheet on phones as well */
+@media (max-width: 820px) {
+  html.rd .audio-settings[open] .settings-popover { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 80dvh; overflow-y: auto; z-index: 61;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; background: var(--rd-sheet); border: 0; border-top: 1px solid var(--rd-line); }
+}
+
+/* ---- Wide screens with the phone table and the side panel: the panel keeps its buttons, the frame gets the new chrome ---- */
+@media (min-width: 821px) {
+  html.rd .side .side-head .panel-hide { display: none; }
+}
+
+/* the result banner says it once: the old win toasts would sit on top of it */
+html.rd:has(.rd-result:not([hidden])) #winToasts { display: none; }
+
+/* ---- Floating chat (design 1c, 2a): last three messages over the stream ---- */
+html.rd .rd-float { position: fixed; z-index: 5; left: 14px; top: 200px; width: 230px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; pointer-events: none; }
+html.rd .rd-float-msgs { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; pointer-events: auto; cursor: pointer; }
+html.rd .rd-fm { max-width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 14px; background: rgba(8,8,9,.55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  font: 400 12.5px/1.3 var(--rd-font); color: rgba(255,255,255,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.rd .rd-fm b { font-weight: 700; color: #fff; }
+html.rd .rd-fm.her b { color: var(--rd-lime); }
+html.rd .rd-float-bar { display: none; }
+/* only when seated, the chat sheet closed and no result over the table */
+html.rd body:has(.gate:not(.off)) .rd-float, html.rd body:has(.side.chat-open) .rd-float, html.rd body:has(.rd-result:not([hidden])) .rd-float,
+html.rd body:has(#rdMenu:not([hidden])) .rd-float { display: none; }
+/* the Table Studio dealer column is not part of the player's table: the dealer is chosen in Settings */
+html.rd .studio { display: none !important; }
+
+/* ---- Take a seat: "Playing as" with Change, then "Sit at box N" ---- */
+html.rd .rd-as { display: flex; align-items: center; justify-content: space-between; height: 52px; margin-top: 14px; padding: 0 14px 0 16px; border-radius: 14px; background: var(--rd-field); border: 1px solid var(--rd-line); }
+html.rd .rd-as small { display: block; font: 600 11px var(--rd-font); color: rgba(255,255,255,.5); }
+html.rd .rd-as b { font: 600 15px var(--rd-font); color: #fff; }
+html.rd .rd-change { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 6px 0; color: var(--rd-lime); font: 600 13px var(--rd-font); cursor: pointer; }
+html.rd .rd-change .rd-ic { font-size: 17px; }
+html.rd .gate:has(.rd-as:not([hidden])) #changeName { display: none; }
+html.rd .gate #enter[data-rd-label]:not([data-rd-label=""]) { font-size: 0; }
+html.rd .gate #enter[data-rd-label]:not([data-rd-label=""])::after { content: attr(data-rd-label); font: 700 16px var(--rd-font); }
+
+/* ---- Wide screens (design 2a/2b): no side column; chat floats top left under the header and expands into a panel ---- */
+@media (min-width: 821px) {
+  html.rd:not(.desk) .app { display: flex; justify-content: center; }
+  html.rd .side:not(.chat-open) { display: none !important; }
+  html.rd .rd-float { position: fixed; left: 24px; top: 96px; width: 320px; }
+  html.rd .rd-fm { font-size: 13px; padding: 6px 11px; }
+  html.rd .rd-float-bar { display: flex; align-items: center; gap: 6px; width: 320px; margin-top: 2px; pointer-events: auto; }
+  html.rd .rd-float-field { flex: 1; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 14px; box-sizing: border-box; border-radius: 20px; cursor: text;
+    background: rgba(12,12,13,.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid var(--rd-line2); color: rgba(255,255,255,.5); font: 400 13.5px var(--rd-font); text-align: left; }
+  html.rd .rd-float-field > .rd-ic { font-size: 18px; color: rgba(255,255,255,.6); }
+  html.rd .rd-float-field .rd-ff-label { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; }
+  html.rd .rd-float-field .rd-ff-label::placeholder { color: rgba(255,255,255,.5); }
+  html.rd .rd-float-field button { all: unset; cursor: pointer; display: flex; }
+  html.rd .rd-float-field i { width: 30px; height: 30px; border-radius: 15px; background: var(--rd-lime); color: var(--rd-ink); display: flex; align-items: center; justify-content: center; flex: none; }
+  html.rd .rd-float-field i svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  html.rd .rd-float-open { position: relative; font-size: 18px; }
+  html.rd .rd-float-open em { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: var(--rd-lime); color: var(--rd-ink);
+    font: 800 10px var(--rd-font); font-style: normal; display: flex; align-items: center; justify-content: center; }
+  html.rd .side.chat-open { display: flex !important; flex-direction: column; gap: 12px; position: fixed; left: 24px; top: 96px; width: 340px; height: 384px; max-height: calc(100dvh - 120px); z-index: 20;
+    padding: 14px; box-sizing: border-box; border: 1px solid var(--rd-line); border-radius: 22px; background: rgba(14,15,16,.84); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); overflow: hidden; }
+  html.rd .side.chat-open > :not(.rd-sheet-head):not(.log):not(.compose) { display: none !important; }
+  html.rd .side.chat-open .rd-sheet-head { display: flex; flex: none; justify-content: space-between; align-items: center; padding: 0 2px; }
+  html.rd .side.chat-open .rd-sheet-head b { font-size: 16px; }
+  html.rd .side.chat-open .rd-x { width: 32px; height: 32px; }
+  html.rd .side.chat-open .log { flex: 1 1 auto; min-height: 0; padding: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; overflow-y: auto; }
+  html.rd .side.chat-open .compose { flex: none; padding: 0; gap: 8px; background: none; border: 0; position: static; }
+  html.rd .side.chat-open .compose input { height: 42px; border-radius: 21px; font-size: 13.5px; }
+  html.rd .side.chat-open .compose button { width: 42px; min-width: 42px; height: 42px; border-radius: 21px; }
+  html.rd .side.chat-open .msg { max-width: 82%; font-size: 13.5px; padding: 8px 12px; border-radius: 15px; }
+}
+/* system lines in the chat (welcome, joins) stay quiet */
+html.rd .side .log > .sys { align-self: center; font: 400 12px var(--rd-font); color: rgba(255,255,255,.45); text-align: center; }
+
+/* ---- The wide desktop table (html.desk, desk-mode.js; design 2a-2c) ----
+   The frame, room, felt, boxes and cards stay where desk.css puts them. Decisions and bets float centre stage over the
+   dealer, the wallet and the table actions sit at the foot as pills, chat floats top left. */
+html.rd .rd-desk-acts { display: none; }
+html.rd.desk .rd-pill { position: fixed; top: calc(var(--gut) + 6px); left: auto; right: auto; }
+html.rd.desk .rd-pill { left: calc(var(--fx) + var(--fw) / 2); transform: translateX(-50%); }
+html.rd.desk .table-header { top: 20px; left: 24px; right: 24px; }
+html.rd.desk .table-settings { position: static; }
+/* centre stage: a glass card over the dealer */
+html.rd.desk .game-dock { position: fixed; top: 140px; bottom: auto; left: calc(var(--fx) + var(--fw) / 2); right: auto; transform: translateX(-50%);
+  width: min(460px, calc(var(--fw) - 40px)); max-height: calc(100dvh - 300px); border-radius: 26px; background: rgba(12,12,13,.62);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 18px 50px rgba(0,0,0,.45); padding: 16px 18px; }
+html.rd.desk .game-dock .dock-status { flex-direction: column-reverse; align-items: center; gap: 10px; text-align: center; }
+html.rd.desk .game-dock #gameStatus { font-size: 20px; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+html.rd.desk .game-dock .round-timer { width: 76px; height: 76px; border-radius: 38px; font-size: 26px; }
+html.rd.desk .game-dock .round-timer::before { inset: 6px; border-radius: 32px; background: rgba(12,12,13,.85); }
+html.rd.desk .game-dock .action-rail { gap: 18px; justify-content: center; grid-template-columns: repeat(4, 70px); }
+html.rd.desk .game-dock .action-rail button span { width: 70px; height: 70px; border-radius: 35px; font-size: 23px; }
+html.rd.desk .game-dock .action-rail button[data-action=hit] span, html.rd.desk .game-dock .action-rail button[data-action=stand] span { font-size: 34px; }
+html.rd.desk .game-dock .action-rail small { font-size: 14px; font-weight: 700; }
+html.rd.desk .game-dock .chip-picker { justify-content: center; gap: 12px; }
+html.rd.desk .game-dock .chip-picker button { width: 54px !important; height: 54px !important; }
+/* the gate: a card bottom right, the boxes on the felt stay free to tap */
+html.rd.desk .gate[data-step] { align-items: stretch; }
+html.rd.desk .gate .gate-card, html.rd.desk .gate[data-step=boxes] .gate-card { position: fixed; left: auto; right: 24px; bottom: 24px; width: 380px;
+  border-radius: 24px; border: 1px solid var(--rd-line); padding: 20px; }
+/* result over the dealer */
+html.rd.desk .rd-result { position: fixed; top: 150px; left: calc(var(--fx) + var(--fw) / 2); }
+/* the foot: wallet pills left, table actions right */
+html.rd.desk .rd-status { position: fixed; left: 24px; right: auto; bottom: 14px; width: auto; height: 52px; padding: 0 6px 0 18px; border-radius: 26px;
+  grid-template-columns: auto 40px; gap: 14px; background: rgba(12,12,13,.65); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); }
+html.rd.desk .rd-status .wallet { grid-template-columns: repeat(3, auto); gap: 28px; }
+html.rd.desk .rd-status .wallet strong { font-size: 16px; }
+html.rd.desk .rd-chat { width: 40px; height: 40px; border-radius: 20px; font-size: 19px; }
+html.rd.desk .rd-desk-acts { position: fixed; z-index: 5; right: 24px; bottom: 18px; display: flex; gap: 8px; }
+html.rd.desk body:has(.gate:not(.off)) .rd-desk-acts { display: none; }
+html.rd .rd-pillbtn { display: flex; align-items: center; gap: 7px; height: 44px; padding: 0 18px 0 14px; border-radius: 22px; background: rgba(12,12,13,.65);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid var(--rd-line2); color: #fff; font: 600 14px var(--rd-font); white-space: nowrap; cursor: pointer; }
+html.rd .rd-pillbtn .rd-ic { font-size: 19px; }
+html.rd .rd-pillbtn.danger { border-color: rgba(255,140,120,.3); color: var(--rd-danger); }
+html.rd .rd-pillbtn:disabled { opacity: .45; }
+html.rd.desk .side.chat-open { top: 96px; }
+/* boxes 1 and 7 reach the frame's edges: everything at the foot stays in the room beside the frame, never over a box */
+html.rd.desk { --rd-side: calc(var(--fx) - 48px); --rd-rside: calc(100vw - var(--fx) - var(--fw) - 48px); }
+html.rd.desk .rd-status { max-width: max(220px, var(--rd-side)); height: auto; min-height: 52px; padding: 8px 6px 8px 16px; border-radius: 22px; }
+html.rd.desk .rd-status .wallet { grid-template-columns: repeat(auto-fit, minmax(76px, auto)); gap: 4px 18px; }
+html.rd.desk .rd-status .wallet strong { font-size: 15px; }
+html.rd.desk .rd-desk-acts { flex-direction: column; align-items: flex-end; max-width: max(160px, var(--rd-rside)); }
+html.rd.desk .gate .gate-card, html.rd.desk .gate[data-step=boxes] .gate-card { width: min(380px, max(280px, var(--rd-rside))); }
+/* the result is said over the dealer; Next round waits under it */
+html.rd.desk[data-rd-phase=settled] .game-dock { top: 330px; }
+/* Kevin 27 Oct screenshot fixes. "Back to Table Studio" sits before the wordmark, not over it. */
+html.rd body:has(.studio-back) .table-header { left: calc(24px + 210px); }
+html.rd .studio-back { top: 18px; left: 16px; height: 40px; border-radius: 20px; }
+@media (max-width: 820px) { html.rd body:has(.studio-back) .table-header { left: 16px; top: 66px; } html.rd body:has(.studio-back) .rd-pill { top: 124px; } }
+/* While the dealer deals (no buttons), the dock is just a small status pill, not an empty card over the dealer. */
+html.rd .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) {
+  padding: 8px 18px; border-radius: 22px; min-height: 0; }
+html.rd .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) .dock-status { min-height: 0; }
+html.rd .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) #gameStatus { font-size: 14px; font-weight: 600; }
+html.rd.desk .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) { top: 96px; width: auto; max-width: 420px; }
+/* The wallet and the table actions lie in a row while the room beside the frame has space, and wrap only when it has not. */
+html.rd.desk .rd-status { display: flex; align-items: center; }
+html.rd.desk .rd-status .table-wallet { flex: 0 1 auto; }
+html.rd.desk .rd-status .wallet { display: flex; flex-wrap: wrap; gap: 4px 26px; }
+html.rd.desk .rd-desk-acts { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---- Wide table, second pass against 2a-2c ---- */
+html.rd .rd-desk-only, html.rd .rd-pill-row { display: none; }
+html.rd.desk .rd-desk-only { display: inline-flex; }
+/* top row: [S] scout/gaming | Privé Blackjack · $5 – $2,000 | ● Paow AI dealer */
+html.rd.desk .rd-pill:not(.rd-pill-row) { display: none; }
+html.rd.desk .brand-lockup { display: flex; align-items: center; gap: 16px; }
+html.rd.desk .brand-name { font-size: 21px; }
+html.rd.desk .rd-line { margin: 0; padding-left: 16px; border-left: 1px solid rgba(255,255,255,.2); font-size: 14px; }
+html.rd.desk .rd-pill-row { display: flex; position: static; transform: none; height: 30px; font-size: 13px; }
+/* centre stage without a card: the ring, the prompt and the buttons float over the dealer (design 2a) */
+html.rd.desk .game-dock { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; overflow: visible; padding: 0; width: min(560px, calc(var(--fw) - 40px)); }
+html.rd.desk .game-dock::before { content: ""; position: absolute; z-index: -1; left: 50%; top: -40px; width: 640px; height: 340px; transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.45), rgba(0,0,0,0) 70%); pointer-events: none; }
+html.rd.desk .game-dock #gameStatus, html.rd.desk .game-dock .action-rail small { text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+html.rd.desk .game-dock .action-rail button span:not([data-x]) { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html.rd.desk .game-dock .action-rail button[data-action=double] span, html.rd.desk .game-dock .action-rail button[data-action=split] span { background: rgba(12,12,13,.55); border-color: rgba(255,255,255,.5); }
+/* betting: the chips and bet tools in one glass rail (design 2c) */
+html.rd.desk .game-dock #betControls, html.rd.desk .game-dock #betActions { background: rgba(12,12,13,.6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.1); }
+html.rd.desk .game-dock #betControls { border-radius: 40px; padding: 12px 18px; }
+html.rd.desk .game-dock #betActions { border-radius: 22px; padding: 8px; }
+html.rd.desk .game-dock .insurance-panel, html.rd.desk .game-dock .settled-actions { background: rgba(12,12,13,.6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.1); border-radius: 22px; padding: 12px; }
+/* while the dealer deals: only the line, with a shadow, no panel */
+html.rd.desk .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) { top: 150px; padding: 0; background: none; }
+/* chat lines wrap to two lines rather than being cut */
+html.rd .rd-fm { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* the foot: three wallet pills in a row (design 2a) */
+html.rd.desk .rd-status { background: none; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; gap: 8px; max-width: none; }
+html.rd.desk .rd-status .wallet { gap: 8px; flex-wrap: nowrap; }
+html.rd.desk .rd-status .wallet > div { display: flex; flex-direction: column; justify-content: center; gap: 1px; height: 52px; padding: 0 18px; box-sizing: border-box; border-radius: 26px;
+  background: rgba(12,12,13,.65); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); }
+html.rd.desk .rd-status .wallet strong { margin: 0; font-size: 16px; }
+html.rd.desk .rd-chat { display: none; }
+html.rd.desk .rd-desk-acts { flex-wrap: nowrap; max-width: none; }
+
+/* ---- Third pass against the design file (Kevin 16:2x): headings, the bet rail, wallet labels, hands ---- */
+html.rd .rd-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html.rd .rd-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html.rd .rd-title { font: 700 17px var(--rd-font); color: #fff; }
+html.rd .rd-sub { font: 400 12.5px var(--rd-font); color: rgba(255,255,255,.6); }
+html.rd .rd-sub:empty { display: none; }
+html.rd.desk .rd-head { align-items: center; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+html.rd.desk .rd-title { font-size: 20px; }
+html.rd.desk .rd-sub { font-size: 14px; font-weight: 500; color: rgba(255,255,255,.75); }
+/* five chips as in the design (5, 10, 25, 100, 500); Clear is Undo held down in the design's rail, so it goes */
+html.rd .game-dock #clearBets { display: none !important; }   /* Kevin 18:47: the table's own chips from backoffice, every denomination */
+/* phone (1b): chips, then Undo / 2x Bet / Rebet as three equal tiles; with a bet down, Deal takes Rebet's tile */
+html.rd .game-dock #betActions > button { flex: 1 1 0 !important; height: 36px !important; min-height: 36px !important; border-radius: 12px !important; border: 0 !important;
+  background: rgba(255,255,255,.07) !important; color: #fff !important; font: 600 13px var(--rd-font) !important; padding: 0 6px !important; order: 0 !important; min-width: 0 !important; }
+html.rd .game-dock #betActions #repeatBet, html.rd .game-dock #betActions #dealNow { order: 5 !important; background: var(--rd-lime) !important; color: var(--rd-ink) !important; font-weight: 700 !important; }
+html.rd .game-dock #betActions #dealNow:disabled { background: rgba(255,255,255,.07) !important; color: rgba(255,255,255,.5) !important; opacity: 1; }
+html.rd .game-dock #betActions #repeatBet:not([hidden]) ~ #dealNow, html.rd .game-dock #betActions:has(#repeatBet:not([hidden])) #dealNow { display: none !important; }
+html.rd .game-dock #undoBet { font-size: 0 !important; }
+html.rd .game-dock #undoBet::after { content: "↶ Undo"; font: 600 13px var(--rd-font); }
+html.rd .game-dock #doubleBets { font-size: 0 !important; }
+html.rd .game-dock #doubleBets::after { content: "2× Bet"; font: 600 13px var(--rd-font); }
+html.rd .game-dock #repeatBet { font-size: 0 !important; }
+html.rd .game-dock #repeatBet::after { content: "↻ Rebet"; font: 700 13px var(--rd-font); }
+/* wide table (2c): one floating glass rail: chips | divider | undo | 2x | Rebet (or Deal) */
+html.rd.desk .game-dock .game-controls:has(#betControls:not([hidden])) { display: grid !important; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 0; row-gap: 14px; }
+html.rd.desk .game-dock .game-controls:has(#betControls:not([hidden])) > .dock-status { grid-column: 1 / -1; }
+html.rd.desk .game-dock .game-controls:has(#betControls:not([hidden])) > #sideBetResult { grid-column: 1 / -1; }
+html.rd.desk .game-dock #betControls { border-radius: 40px 0 0 40px; border-right: 0; padding: 12px 14px 12px 18px; height: 78px; box-sizing: border-box; display: flex; align-items: center; }
+html.rd.desk .game-dock #betActions { border-radius: 0 40px 40px 0; border-left: 0; padding: 12px 14px 12px 0; height: 78px; box-sizing: border-box; flex-wrap: nowrap; align-items: center; gap: 14px; }
+html.rd.desk .game-dock #betActions::before { content: ""; width: 1px; height: 34px; background: rgba(255,255,255,.15); margin: 0 2px 0 0; }
+html.rd.desk .game-dock #betActions > button { flex: none !important; width: 44px; height: 44px !important; min-height: 44px !important; border-radius: 22px !important; background: rgba(255,255,255,.08) !important; padding: 0 !important; }
+html.rd.desk .game-dock #undoBet::after { content: "↶"; font-size: 20px; }
+html.rd.desk .game-dock #doubleBets::after { content: "2×"; font: 700 14px var(--rd-font); }
+html.rd.desk .game-dock #betActions #repeatBet, html.rd.desk .game-dock #betActions #dealNow { width: auto; padding: 0 16px !important; background: var(--rd-lime) !important; }
+html.rd.desk .game-dock #dealNow:disabled { background: rgba(255,255,255,.08) !important; }
+html.rd.desk .game-dock .chip-picker { gap: 14px; }
+/* the wallet's words as in the design: Bet / Total bet and Last win */
+html.rd .rd-status .wallet > div:nth-child(2) small { font-size: 0; }
+html.rd .rd-status .wallet > div:nth-child(2) small::after { content: "Bet"; font-size: 11px; }
+html.rd.desk .rd-status .wallet > div:nth-child(2) small::after { content: "Total bet"; }
+html.rd .rd-status #lastReturnLabel { font-size: 0; }
+html.rd .rd-status #lastReturnLabel::after { content: "Last win"; font-size: 11px; }
+/* hands top right (2a): totals in mono, small cards, no panel */
+html.rd .rd-hands { display: none; }
+html.rd.desk .rd-hands { position: fixed; z-index: 5; top: 74px; right: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
+html.rd .rd-hand { display: flex; align-items: center; gap: 12px; }
+html.rd .rd-hand > div:first-child { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+html.rd .rd-hand strong { font: 600 30px/1 var(--rd-mono); color: #fff; }
+html.rd .rd-hand.mine strong { color: var(--rd-lime); }
+html.rd .rd-hand small { font: 600 12.5px var(--rd-font); color: rgba(255,255,255,.75); }
+html.rd .rd-cards { display: flex; gap: 3px; }
+html.rd .rd-card { position: relative; width: 30px; height: 42px; border-radius: 4px; background: #fbfaf6; color: #111; box-shadow: 0 3px 8px rgba(0,0,0,.5); font-style: normal; }
+html.rd .rd-card.red { color: #c4122f; }
+html.rd .rd-card b { position: absolute; left: 3px; top: 3px; font: 800 11px/1 var(--rd-font); }
+html.rd .rd-card em { position: absolute; right: 3px; bottom: 3px; font: normal 16px/1 var(--rd-font); }
+html.rd .rd-card.back { background: #141517; border: 1px solid rgba(255,255,255,.2); color: var(--rd-lime); display: flex; align-items: center; justify-content: center; font: 600 10px Sora, var(--rd-font); box-sizing: border-box; }
+/* chat lines: just the text and the thin field, no bubble panels (design 2a) */
+html.rd.desk .rd-fm { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 3px 0; text-shadow: 0 1px 6px rgba(0,0,0,.9); }
+/* labels: the tile words above lost to the shared tile font rule; set them on the buttons themselves */
+html.rd .game-dock #betActions > #undoBet, html.rd .game-dock #betActions > #doubleBets, html.rd .game-dock #betActions > #repeatBet { font-size: 0 !important; }
+html.rd .game-dock #betActions > #dealNow:disabled { display: none !important; }
+html.rd.desk .game-dock #betActions > #dealNow { font-size: 14px !important; }
+/* wide table, settled: the banner says the result; Next round is one compact lime pill under it */
+html.rd.desk[data-rd-phase=settled] .game-dock .dock-status { display: none; }
+html.rd.desk[data-rd-phase=settled] .game-dock .settled-actions { background: none; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: center; }
+html.rd.desk[data-rd-phase=settled] .game-dock #nextRound { flex: none; height: 44px; min-height: 44px; padding: 0 22px; border-radius: 22px; font-size: 14px; }
+html.rd.desk[data-rd-phase=settled] .game-dock { top: 300px; }
+/* key hints under the decisions (design 2a: D, H, S, P) */
+html.rd.desk .game-dock .action-rail small::after { margin-left: 6px; padding: 0 4px; border: 1px solid rgba(255,255,255,.3); border-radius: 4px; font: 600 10.5px var(--rd-mono); color: rgba(255,255,255,.7); text-shadow: none; }
+html.rd.desk .game-dock .action-rail [data-action=double] small::after { content: "D"; }
+html.rd.desk .game-dock .action-rail [data-action=hit] small::after { content: "H"; }
+html.rd.desk .game-dock .action-rail [data-action=stand] small::after { content: "S"; }
+html.rd.desk .game-dock .action-rail [data-action=split] small::after { content: "P"; }
+/* the rail always shows its tools as in the design; one that does not apply yet is dimmed, not gone */
+html.rd .game-dock #betActions > #undoBet[hidden], html.rd .game-dock #betActions > #doubleBets[hidden] { display: inline-flex !important; opacity: .35; pointer-events: none; }
+html.rd .game-dock #betActions > button { display: inline-flex; align-items: center; justify-content: center; }
+html.rd .game-dock #betActions > #dealNow, html.rd.desk .game-dock #betActions > #dealNow { color: var(--rd-ink) !important; }
+/* Rebet always has its place (design 2c): live after a round, dimmed before the first; with a bet down Deal takes it */
+html.rd .game-dock #betActions:has(#dealNow:disabled) > #repeatBet[hidden] { display: inline-flex !important; opacity: .35; pointer-events: none; }
+html.rd .game-dock #betActions > #repeatBet { gap: 6px; }
+/* the undo arrow as the design's rounded icon */
+html.rd.desk .game-dock #betActions > #undoBet::after { content: ""; width: 20px; height: 20px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5'/%3E%3Cpath d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5'/%3E%3Cpath d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* Kevin 16:40: on a short phone screen the bet dock covered the boxes. The boxes end at 68.4 % of the 9:16 frame
+   (the old dock's top); the dock may never rise above that line, and gets compact when the room under it is short. */
+html.rd:not(.desk) { --rd-boxes: calc(min(100vw, 56.25dvh) * 16 / 9 * .684); }
+html.rd:not(.desk) .game-dock { max-height: calc(100dvh - 84px - var(--rd-boxes) - 4px); }
+@media (max-width: 820px) and (max-height: 760px), (max-width: 820px) and (max-aspect-ratio: 9/18.5) {
+  html.rd:not(.desk) .game-dock { padding: 10px 12px; gap: 8px; bottom: 74px; max-height: calc(100dvh - 74px - var(--rd-boxes) - 4px); }
+  html.rd:not(.desk) .game-dock .game-controls { gap: 8px; }
+  html.rd:not(.desk) .game-dock .dock-status { min-height: 0; }
+  html.rd:not(.desk) .rd-title { font-size: 15px; }
+  html.rd:not(.desk) .rd-sub { font-size: 11.5px; }
+  html.rd:not(.desk) .game-dock .round-timer { width: 34px; height: 34px; font-size: 12px; }
+  html.rd:not(.desk) .game-dock .round-timer::before { inset: 3px; }
+  html.rd:not(.desk) .game-dock .chip-picker button { width: 38px !important; height: 38px !important; }
+  html.rd:not(.desk) .game-dock #betActions > button { height: 32px !important; min-height: 32px !important; }
+  html.rd:not(.desk) .game-dock .action-rail button span { width: 48px; height: 48px; }
+  html.rd:not(.desk) .rd-status { height: 52px; bottom: 12px; }
+}
+/* the seat sheet keeps under the boxes too: they must stay tappable to pick a box */
+html.rd:not(.desk) .gate .gate-card, html.rd:not(.desk) .gate[data-step=boxes] .gate-card { max-height: calc(100dvh - var(--rd-boxes) - 4px); overflow-y: auto; }
+@media (max-width: 820px) and (max-height: 760px), (max-width: 820px) and (max-aspect-ratio: 9/18.5) {
+  html.rd:not(.desk) .gate .gate-card { padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
+  html.rd:not(.desk) .gate h2 { font-size: 17px; }
+  html.rd:not(.desk) .gate p:not(.selected-boxes):not(#entryError) { display: none; }
+  html.rd:not(.desk) .rd-as { height: 44px; margin-top: 8px; }
+  html.rd:not(.desk) .gate .entry-actions { margin-top: 8px; }
+  html.rd:not(.desk) .gate .entry-actions button { height: 46px; }
+}
+/* phone: the undo tile gets the design's undo icon before its word */
+html.rd:not(.desk) .game-dock #betActions > #undoBet { gap: 5px; }
+html.rd:not(.desk) .game-dock #undoBet::after { content: "Undo"; }
+html.rd:not(.desk) .game-dock #betActions > #undoBet::before { content: ""; width: 17px; height: 17px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5'/%3E%3Cpath d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5'/%3E%3Cpath d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* low view: the dock floats over the dealer, between the header and the boxes, glass like the wide table's rail */
+html.rd.rd-tight:not(.desk) .game-dock { top: 112px; bottom: auto; max-height: calc(var(--rd-boxes) * .80 - 112px); background: rgba(12,12,13,.62);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); padding: 10px 12px; gap: 8px; }
+html.rd.rd-tight:not(.desk) .game-dock .game-controls { gap: 8px; }
+html.rd.rd-tight:not(.desk) .rd-title { font-size: 15px; }
+html.rd.rd-tight:not(.desk) .game-dock .round-timer { width: 34px; height: 34px; font-size: 12px; }
+html.rd.rd-tight:not(.desk) .game-dock .round-timer::before { inset: 3px; }
+html.rd.rd-tight:not(.desk) .game-dock .chip-picker button { width: 36px !important; height: 36px !important; }
+html.rd.rd-tight:not(.desk) .game-dock #betActions > button { height: 30px !important; min-height: 30px !important; }
+html.rd.rd-tight:not(.desk) .game-dock .action-rail button span { width: 46px; height: 46px; }
+html.rd.rd-tight:not(.desk) .rd-float { display: none; }
+html.rd.rd-tight:not(.desk) .rd-result { top: 112px; }
+/* the wallet's columns size to their content, so "+ demo" never runs into "Bet" */
+html.rd .rd-status .wallet { grid-template-columns: auto auto auto; justify-content: space-between; column-gap: 12px; }
+/* low views: no page scroll (scout-ui.css made the stage 780 px tall and scrolled it); the stage is the view, the
+   frame shrinks to it, and the dock goes over the dealer when the room under the boxes is too small (rd-tight). */
+@media (max-width: 820px) and (max-height: 700px) {
+  html.rd:not(.desk), html.rd:not(.desk) body { height: 100%; overflow: hidden; }
+  html.rd:not(.desk) .app { height: 100dvh; }
+  html.rd:not(.desk) .stage { height: 100dvh; }
+}
+/* low view: the seat sheet floats over the dealer too, the boxes under it stay free */
+html.rd.rd-tight:not(.desk) .gate[data-step] { align-items: flex-start; padding-top: 104px; }
+html.rd.rd-tight:not(.desk) .gate .gate-card, html.rd.rd-tight:not(.desk) .gate[data-step=boxes] .gate-card { width: calc(100% - 20px); margin: 0 10px; border-radius: 22px;
+  border: 1px solid var(--rd-line); max-height: calc(var(--rd-boxes) * .80 - 104px); padding: 12px 14px; background: rgba(17,18,19,.9); }
+html.rd.rd-tight:not(.desk) .gate p:not(.selected-boxes):not(#entryError) { display: none; }
+html.rd.rd-tight:not(.desk) .gate h2 { font-size: 16px; }
+html.rd.rd-tight:not(.desk) .rd-as { height: 40px; margin-top: 6px; }
+html.rd.rd-tight:not(.desk) .gate .entry-actions { margin-top: 6px; }
+html.rd.rd-tight:not(.desk) .gate .entry-actions button { height: 40px; font-size: 14px; }
+/* the scene scaled as one (redesign.js sets --rd-s / --rd-t): every layer drawn in the 1080 x 1920 frame alike */
+@media (max-width: 820px) {
+  html.rd:not(.desk) .stage > .still, html.rd:not(.desk) .stage > .v, html.rd:not(.desk) .stage > #feltBrand, html.rd:not(.desk) .stage > .table-style-layer,
+  html.rd:not(.desk) .stage > #tableBoxes, html.rd:not(.desk) .stage > #gameCards, html.rd:not(.desk) .stage > .dealer-layer {
+    transform-origin: 50% 0; transform: translateY(var(--rd-t, 0px)) scale(var(--rd-s, 1)); }
+  html.rd:not(.desk) { --rd-boxes: calc(min(100vw, 56.25dvh) * 16 / 9 * .684 * var(--rd-s, 1) + var(--rd-t, 0px)); }
+}
+/* Kevin 17:47: on the wide table nothing covers her face while the game runs. While she deals there is no line at all;
+   the decision sits lower, between her face and her hands, with a smaller ring. Only betting (before the round) keeps
+   the ring up top. */
+html.rd.desk .game-dock:not(:has(#betControls:not([hidden]), #actionControls:not([hidden]), #insuranceControls:not([hidden]), #nextRound:not([hidden]), #reconnectTable:not([hidden]))) { display: none !important; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden])), html.rd.desk .game-dock:has(#insuranceControls:not([hidden])) { top: 40dvh; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden])) .dock-status, html.rd.desk .game-dock:has(#insuranceControls:not([hidden])) .dock-status { flex-direction: row-reverse; justify-content: center; gap: 12px; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden])) .rd-head, html.rd.desk .game-dock:has(#insuranceControls:not([hidden])) .rd-head { align-items: flex-start; text-align: left; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden])) .round-timer, html.rd.desk .game-dock:has(#insuranceControls:not([hidden])) .round-timer { width: 48px; height: 48px; border-radius: 24px; font-size: 17px; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden])) .round-timer::before, html.rd.desk .game-dock:has(#insuranceControls:not([hidden])) .round-timer::before { inset: 4px; border-radius: 20px; }
+html.rd.desk .game-dock:has(#actionControls:not([hidden]))::before { top: -20px; height: 260px; }
+/* after the round the result and Next round sit below her face as well */
+html.rd.desk .rd-result { top: 36dvh; }
+html.rd.desk[data-rd-phase=settled] .game-dock { top: calc(36dvh + 150px); }
+
+/* ---- Result, design v2 (1d/1g/2d/2e) ---- */
+html.rd .rd-res-net, html.rd .rd-res-acts { display: none; }
+html.rd[data-rd-phase=settled] .game-dock .settled-actions { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+/* phone: net and summary in the dock, Rebet $X / Rebet 2x, Next round under them; the pill over the table only on a win */
+html.rd:not(.desk)[data-rd-phase=settled] .rd-res-net { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+html.rd .rd-res-net b { font: 600 20px var(--rd-mono); color: #fff; white-space: nowrap; }
+html.rd .rd-res-net[data-win=true] b { color: var(--rd-lime); }
+html.rd .rd-res-net span { font: 400 12px var(--rd-font); color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.rd[data-rd-phase=settled] .rd-res-acts { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap: 8px; }
+html.rd .rd-rebet, html.rd .rd-rebet2 { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 46px; border-radius: 14px; font: 700 15px var(--rd-font); cursor: pointer; white-space: nowrap; }
+html.rd .rd-rebet { background: var(--rd-lime); color: var(--rd-ink); border: 0; }
+html.rd .rd-rebet .rd-ic { font-size: 19px; }
+html.rd .rd-rebet kbd { display: none; font: 600 10.5px var(--rd-mono); border: 1px solid rgba(11,11,12,.35); border-radius: 4px; padding: 0 4px; }
+html.rd .rd-rebet2 { background: none; color: #fff; border: 1.5px solid rgba(255,255,255,.3); }
+html.rd:not(.desk)[data-rd-phase=settled] .game-dock #nextRound { height: 36px; min-height: 36px; background: rgba(255,255,255,.07); border: 0; color: #fff; font-size: 13px; }
+html.rd:not(.desk)[data-rd-phase=settled] .game-dock .dock-status { display: none; }
+html.rd:not(.desk) .rd-result { flex-direction: row; gap: 10px; height: 44px; padding: 0 18px; top: 206px; border-radius: 22px; background: rgba(10,10,11,.7);
+  border-color: rgba(217,255,63,.4); box-shadow: 0 0 30px rgba(217,255,63,.2); }
+html.rd:not(.desk) .rd-result[data-win=false] { display: none; }
+html.rd:not(.desk) .rd-result small { font-size: 11.5px; color: var(--rd-lime); }
+html.rd:not(.desk) .rd-result strong { font-size: 22px; color: var(--rd-lime); }
+html.rd:not(.desk) .rd-result p { display: none; }
+/* wide table: the net large and free over the table (no panel), then one glass pill: Rebet $X (R) · Rebet 2x | Next round */
+html.rd.desk .rd-result { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 0; gap: 4px; text-shadow: 0 2px 14px rgba(0,0,0,.85); top: 34dvh; }
+html.rd.desk .rd-result small { font-size: 13px; letter-spacing: .14em; color: rgba(255,255,255,.6); }
+html.rd.desk .rd-result[data-win=true] small, html.rd.desk .rd-result[data-win=true] strong { color: var(--rd-lime); }
+html.rd.desk .rd-result strong { font: 600 58px/1.05 var(--rd-mono); letter-spacing: -.03em; }
+html.rd.desk .rd-result p { font-size: 14px; color: rgba(255,255,255,.75); }
+html.rd.desk[data-rd-phase=settled] .game-dock { top: calc(34dvh + 130px); width: auto; }
+html.rd.desk[data-rd-phase=settled] .game-dock .settled-actions { flex-direction: row; align-items: center; gap: 8px; padding: 8px; border-radius: 34px; background: rgba(12,12,13,.6);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.1); }
+html.rd.desk[data-rd-phase=settled] .rd-res-acts { display: flex; gap: 8px; }
+html.rd.desk .rd-rebet, html.rd.desk .rd-rebet2 { height: 48px; border-radius: 24px; padding: 0 20px; }
+html.rd.desk .rd-rebet kbd { display: inline; }
+html.rd.desk .rd-rebet2 { background: rgba(255,255,255,.08); border: 0; padding: 0 18px; }
+html.rd.desk[data-rd-phase=settled] .game-dock .settled-actions::after { content: none; }
+html.rd.desk[data-rd-phase=settled] .game-dock #nextRound { order: 3; height: 48px; min-height: 48px; padding: 0 16px; border-radius: 24px; background: none; border: 0; border-left: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.75); font: 600 13.5px var(--rd-font); }
+html.rd .rd-result small, html.rd .rd-result strong { white-space: nowrap; }
+html.rd:not([data-rd-phase=settled]) .game-dock .settled-actions { display: none !important; }
+
+/* Kevin 18:47: chip colours and denominations come from the table (backoffice), not from the design */
+/* wide table, betting (2c, Kevin 18:23): the ring and prompt sit under her chin and the rail at the table edge above her
+   hands; nothing over her face */
+html.rd.desk .game-dock:has(#betControls:not([hidden])) { top: 40dvh; }
+html.rd.desk .game-dock:has(#betControls:not([hidden])) .round-timer { width: 56px; height: 56px; border-radius: 28px; font-size: 20px; }
+html.rd.desk .game-dock:has(#betControls:not([hidden])) .round-timer::before { inset: 5px; border-radius: 23px; }
+html.rd.desk .game-dock:has(#betControls:not([hidden])) .dock-status { flex-direction: row-reverse; justify-content: center; gap: 12px; }
+html.rd.desk .game-dock:has(#betControls:not([hidden])) .rd-head { align-items: flex-start; text-align: left; }
+html.rd.desk .game-dock #betControls, html.rd.desk .game-dock #betActions { background: rgba(12,12,13,.38); }
+html.rd .studio-back { display: none !important; }
+html.rd body:has(.studio-back) .table-header { left: 24px; }
+/* Kevin 27 Oct: nothing over the dealer while dealing on desktop: an empty status takes no room */
+html.rd.desk .game-dock #gameStatus:empty { display: none; }
+
+html.rd .rd-head:has(.rd-title:empty):has(.rd-sub:empty) { display: none; }
+
+/* Spel-QA 2c: while betting on the wide table the ring sits under the chin, the face stays free */
+html.rd.desk .game-dock:has(#betControls:not([hidden])) { top: 250px !important; }
+
+/* Spel-QA (Kevin 18:30): on a short phone screen the result dock rises over the dealer and the "YOU WON" pill sat on
+   top of its net; the dock already shows the net, so the pill goes there */
+@media (max-width: 820px) and (max-height: 760px), (max-width: 820px) and (max-aspect-ratio: 9/18.5) {
+  html.rd:not(.desk) body:has(.settled-actions:not([hidden])) .rd-result { display: none !important; }
+}
+/* Spel-dev, Kevin 18:30 (low views): the win pill sits on the dealer's chest in the scaled scene, never in the dock */
+html.rd:not(.desk) .rd-result { top: calc(206px * var(--rd-s, 1) + var(--rd-t, 0px)); }
+html.rd:not(.desk) .rd-result[data-win=true] { display: flex; }
+/* typographic minus in the net */
+html.rd .rd-res-net b, html.rd .rd-result strong { font-variant-numeric: tabular-nums; }
+/* Spel-dev: design 1d shows the lime "YOU WON" pill over the dealer on a win even while the dock has Rebet (the
+   Spel-QA rule above hid it for every result); a loss (1g) still shows nothing over her */
+html.rd:not(.desk) body:has(.settled-actions:not([hidden])) .rd-result[data-win=true] { display: flex !important; }
+/* Support, Kevin 27 Oct: in a short phone view (Klippstudio's Spelvy) Hit/Stand did not fit and the dock scrolled.
+   Smaller decision buttons and tighter spacing so the whole dock fits without scrolling. */
+@media (max-height: 860px) {
+  html.rd:not(.desk) .game-dock { overflow: hidden; padding-top: 10px; padding-bottom: 10px; }
+  html.rd:not(.desk) .game-dock .action-rail { gap: 2px; }
+  html.rd:not(.desk) .game-dock .action-rail button span { width: 44px; height: 44px; border-radius: 22px; font-size: 17px; }
+  html.rd:not(.desk) .game-dock .action-rail button[data-action=hit] span, html.rd:not(.desk) .game-dock .action-rail button[data-action=stand] span { font-size: 24px; }
+  html.rd:not(.desk) .game-dock .action-rail small { font-size: 11px; }
+  html.rd:not(.desk) .game-dock #gameStatus { font-size: 15px; }
+}
+/* Spel-dev, Kevin 18:3x ("hit or stand är för stor, jag måste scrolla"): a phone view never scrolls; the dock keeps
+   inside the room above the status bar, and in a low view the decision is compact: heading and ring on one row,
+   44 px targets, 11 px words */
+@media (max-width: 820px) {
+  html.rd:not(.desk), html.rd:not(.desk) body { height: 100%; overflow: hidden !important; }
+  html.rd:not(.desk) .app, html.rd:not(.desk) .stage { height: 100dvh; }
+  html.rd:not(.desk) .game-dock { overflow: hidden; }
+}
+@media (max-width: 820px) and (max-height: 760px) {
+  html.rd:not(.desk) .game-dock .action-rail { gap: 2px; }
+  html.rd:not(.desk) .game-dock .action-rail button { gap: 3px; }
+  html.rd:not(.desk) .game-dock .action-rail button span { width: 44px; height: 44px; font-size: 18px; }
+  html.rd:not(.desk) .game-dock .action-rail button[data-action=hit] span, html.rd:not(.desk) .game-dock .action-rail button[data-action=stand] span { font-size: 24px; }
+  html.rd:not(.desk) .game-dock .action-rail small { font-size: 11px; }
+  html.rd:not(.desk) .game-dock .chip-picker button { width: 36px !important; height: 36px !important; }
+  html.rd:not(.desk) .game-dock #betActions > button { height: 30px !important; min-height: 30px !important; font-size: 12px !important; }
+  html.rd:not(.desk) .game-dock .insurance-panel p { font-size: 11px; }
+}
+/* Spel-dev: the floating chat lines scale with the scene on a phone (design 1c: top 200 of the 844 frame, beside the
+   dealer above the table edge), so they never lie over the felt or the cards in a low view */
+@media (max-width: 820px) {
+  html.rd:not(.desk) .rd-float { top: calc(200px * var(--rd-s, 1) + var(--rd-t, 0px)); width: calc(230px * var(--rd-s, 1)); max-width: 60%; }
+  html.rd:not(.desk) .rd-fm { font-size: calc(12.5px * max(var(--rd-s, 1), .8)); -webkit-line-clamp: 1; }
+}
+@media (max-width: 820px) {
+  /* inside the frame, 14 px from its left edge (the frame is centred when the view is wider than 9:16) */
+  html.rd:not(.desk) .rd-float { left: calc(max(0px, (100vw - 56.25dvh) / 2) + 14px); }
+  html.rd:not(.desk) .rd-fm { max-height: 1.35em; }
+}
+@media (max-width: 820px) {
+  html.rd:not(.desk) .rd-fm { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: none; -webkit-line-clamp: unset; }
+}
+/* Kevin 18:4x: "Deal button är gone, lägg den till höger": Deal always stands last in the rail (phone and wide table),
+   dimmed until a bet is down, never hidden; Rebet keeps its place before it */
+html.rd .game-dock #betActions > #dealNow, html.rd .game-dock #betActions > #dealNow:disabled { display: inline-flex !important; order: 6 !important; }
+html.rd .game-dock #betActions:has(#repeatBet:not([hidden])) #dealNow { display: inline-flex !important; }
+html.rd .game-dock #betActions > #dealNow:disabled { background: rgba(217,255,63,.35) !important; color: rgba(11,11,12,.7) !important; }
+html.rd .game-dock #betActions > #repeatBet { order: 5 !important; }
+html.rd:not(.desk) .game-dock #betActions > #dealNow { flex: 1.2 1 0 !important; }
+/* Support, Kevin 27 Oct: "Deal-knappen är borta, lägg den till höger". Deal always shown, last in the row (right),
+   next to Rebet when both apply; dimmed until there is a bet. */
+html.rd .game-dock #betActions > #dealNow,
+html.rd .game-dock #betActions:has(#repeatBet:not([hidden])) > #dealNow,
+html.rd .game-dock #betActions > #repeatBet:not([hidden]) ~ #dealNow { display: inline-flex !important; order: 99 !important; margin-left: auto; align-items: center; justify-content: center; }
+html.rd .game-dock #betActions > #dealNow:disabled { display: inline-flex !important; opacity: .45 !important; pointer-events: none; }
+/* Emil 27 Oct: the redesign chrome is the phone's. On the desktop table (html.desk, no html.rd) its own elements are
+   hidden and Emil's desk.css lays out the page. */
+html:not(.rd) :is(.rd-pill, .rd-pill-row, .rd-line, .rd-status, .rd-result, .rd-float, .rd-menu, .rd-desk-acts, .rd-hands, .rd-head, .rd-as, .rd-sheet-head, .rd-res-net, .rd-res-acts, .rd-round, .rd-desk-only, .rd-chat) { display: none !important; }
+/* Support, Kevin 27 Oct 20:13: in a short phone view the bet row (Undo · 2× · Rebet · Deal) was cut off below the chips.
+   No scroll: smaller chips, one-line status, a tighter timer, so chips and the action row both fit. */
+@media (max-height: 860px) {
+  html.rd:not(.desk) .game-dock:has(#betControls:not([hidden])) { overflow: visible; }
+  html.rd:not(.desk) .game-dock #betControls [data-chip], html.rd:not(.desk) .game-dock #betControls .chip { width: 44px !important; height: 44px !important; min-width: 44px; font-size: 13px !important; }
+  html.rd:not(.desk) .game-dock #betControls { gap: 4px !important; padding-top: 2px !important; padding-bottom: 2px !important; }
+  html.rd:not(.desk) .game-dock .dock-status { min-height: 0 !important; margin-bottom: 2px; }
+  html.rd:not(.desk) .game-dock .dock-status small, html.rd:not(.desk) .game-dock .dock-status .dock-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.rd:not(.desk) .game-dock #roundTimer { transform: scale(.72); transform-origin: top right; }
+  html.rd:not(.desk) .game-dock #betActions > button { height: 38px !important; min-height: 38px !important; }
+}
+/* Spel-dev, Kevin 20:13: the compact dock whenever redesign.js finds the window low (html.rd-compact), not only under
+   the 760 px media query; the dock never clips its last row, the scene shrinks instead */
+html.rd.rd-compact:not(.desk) .game-dock { padding: 10px 12px; gap: 8px; bottom: 74px; }
+html.rd.rd-compact:not(.desk) .game-dock .game-controls { gap: 8px; }
+html.rd.rd-compact:not(.desk) .game-dock .dock-status { min-height: 0; }
+html.rd.rd-compact:not(.desk) .rd-title { font-size: 15px; }
+html.rd.rd-compact:not(.desk) .rd-sub { font-size: 11.5px; }
+html.rd.rd-compact:not(.desk) .game-dock .round-timer { width: 34px; height: 34px; font-size: 12px; }
+html.rd.rd-compact:not(.desk) .game-dock .round-timer::before { inset: 3px; }
+html.rd.rd-compact:not(.desk) .game-dock .chip-picker button { width: 36px !important; height: 36px !important; }
+html.rd.rd-compact:not(.desk) .game-dock #betActions > button { height: 30px !important; min-height: 30px !important; font-size: 12px !important; }
+html.rd.rd-compact:not(.desk) .game-dock .action-rail button span { width: 44px; height: 44px; font-size: 18px; }
+html.rd.rd-compact:not(.desk) .game-dock .action-rail small { font-size: 11px; }
+html.rd:not(.desk) .game-dock { max-height: none; }
+html.rd:not(.desk) { --rd-boxes: calc(min(100vw, 56.25dvh) * 16 / 9 * .684 * var(--rd-s, 1) + var(--rd-t, 0px)); }
+/* a long heading line ("Box 7, 6, 4, 3, 2, 1 · $30.00 on the felt") stays one line, cut with an ellipsis */
+html.rd .rd-head { min-width: 0; flex: 1 1 auto; }
+html.rd .rd-title, html.rd .rd-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html.rd .game-dock .dock-status { gap: 10px; }
+/* Spel-QA (Kevin 20:3x): a hidden result banner stays hidden; the win rules above set display and beat [hidden], so
+   "YOU WON" and the old amount stuck over the next round */
+html.rd body .rd-result.rd-result.rd-result[hidden][hidden][hidden][hidden][hidden] { display: none !important; }
+/* Spel-dev, Kevin 20:4x ("you won har fastnat"): a hidden result pill is hidden, whatever rule above showed it */
+html.rd .rd-result[hidden], html.rd .rd-res-net[hidden] { display: none !important; }
+html.rd:not([data-rd-phase=settled]) .rd-result { display: none !important; }
+/* Kevin 22:1x ("chatten försvinner"): the floating chat lines stay up while a result is shown; only an open sheet (chat
+   or menu) or the seat gate takes them away */
+html.rd body:has(.rd-result:not([hidden])) .rd-float { display: flex; }
+html.rd body:has(.side.chat-open) .rd-float, html.rd body:has(#rdMenu:not([hidden])) .rd-float, html.rd body:has(.gate:not(.off)) .rd-float { display: none; }
+/* the chat button in the header on the phone (Kevin 21:52), with the unread count; on the wide table the chat is up left */
+html.rd .rd-chat-top { position: relative; }
+html.rd .rd-chat-top em { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: var(--rd-lime); color: var(--rd-ink);
+  font: 800 10px var(--rd-font); font-style: normal; display: flex; align-items: center; justify-content: center; }
+html.rd.desk .rd-chat-top, html:not(.rd) .rd-chat-top { display: none !important; }
+/* Support, Kevin 27 Oct 22:0x "chat keeps disappearing": the floating chat stays during the result and in the short
+   Spelvy; it only goes when the player hides it (full chat open, menu, the entry gate). */
+html.rd body:has(.rd-result:not([hidden])):not(:has(.gate:not(.off))):not(:has(.side.chat-open)):not(:has(#rdMenu:not([hidden]))) .rd-float,
+html.rd.rd-tight:not(.desk) body:not(:has(.gate:not(.off))):not(:has(.side.chat-open)):not(:has(#rdMenu:not([hidden]))) .rd-float { display: flex; }
+/* Support, Kevin 27 Oct 22:1x "chattbubblan kan inte fortsätta skriva": on the desktop table the name field took most
+   of the compose row and the message field was ~130 px, so the text ran out of sight. Name small, message wide. */
+html.desk .side .compose { display: flex; gap: 6px; }
+html.desk .side .compose #who { flex: 0 0 72px; width: 72px; min-width: 0; }
+html.desk .side .compose #input { flex: 1 1 auto; min-width: 0; width: auto; }
+/* Kevin 22:4x ("chattbubblan kan inte fortsätta skriva"): the phone gets the same transparent field under the three
+   lines, so you can keep writing in the bubble; the expand button opens the sheet. Scaled with the scene. */
+@media (max-width: 820px) {
+  html.rd .rd-float-bar { display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 2px; pointer-events: auto; }
+  html.rd .rd-float-field { flex: 1; display: flex; align-items: center; gap: 6px; height: 34px; min-width: 0; padding: 0 4px 0 10px; box-sizing: border-box; border-radius: 17px; cursor: text;
+    background: rgba(12,12,13,.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid var(--rd-line2); color: rgba(255,255,255,.5); font: 400 12px var(--rd-font); text-align: left; }
+  html.rd .rd-float-field > .rd-ic { font-size: 15px; color: rgba(255,255,255,.6); flex: none; }
+  html.rd .rd-float-field .rd-ff-label { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; }
+  html.rd .rd-float-field .rd-ff-label::placeholder { color: rgba(255,255,255,.5); }
+  html.rd .rd-float-field button { all: unset; cursor: pointer; display: flex; }
+  html.rd .rd-float-field i { width: 26px; height: 26px; border-radius: 13px; background: var(--rd-lime); color: var(--rd-ink); display: flex; align-items: center; justify-content: center; flex: none; }
+  html.rd .rd-float-field i svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  html.rd .rd-float-open { position: relative; width: 34px; height: 34px; font-size: 16px; flex: none; }
+  html.rd .rd-float-open em { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: var(--rd-lime); color: var(--rd-ink);
+    font: 800 9px var(--rd-font); font-style: normal; display: flex; align-items: center; justify-content: center; }
+  html.rd .rd-float { width: calc(250px * var(--rd-s, 1)); max-width: 70%; }
+}
+/* low phone view: the bubble sits a little higher and keeps two lines, so the field never reaches the boxes */
+@media (max-width: 820px) {
+  html.rd.rd-compact:not(.desk) .rd-float { top: calc(150px * var(--rd-s, 1) + var(--rd-t, 0px)); }
+  html.rd.rd-compact:not(.desk) .rd-fm:first-child:nth-last-child(3) { display: none; }
+}
+/* left of her face */
+html.rd:not(.desk) .rd-float-bar, html.rd:not(.desk) .rd-float-msgs { max-width: 100%; width: auto; }
+/* the result row in the dock only while the game shows a result (Kevin 22:12): never last round's numbers in a new round */
+html.rd .game-dock:not(.rd-has-result) .settled-actions { display: none !important; }
+/* a window wider than 9:16 but in the phone layout (no .desk): the floating chat stays inside the centred frame (Kevin 22:13) */
+@media (min-width: 821px) {
+  html.rd:not(.desk) .rd-float { left: calc(50% - min(100vw, 56.25dvh) / 2 + 14px); top: 200px; width: calc(min(100vw, 56.25dvh) * .6); }
+  html.rd:not(.desk) .rd-float-bar { width: 100%; }
+}
+/* Kevin 22:17 ("chatten ska vara under ikonerna, längs sidan, inte i mitten"): on the phone the floating chat is a narrow
+   column at the right edge, right under the sound/chat/menu buttons, never over the dealer's face or body */
+@media (max-width: 820px) {
+  html.rd:not(.desk) .rd-float, html.rd.rd-compact:not(.desk) .rd-float { top: 66px; left: auto; right: calc(max(0px, (100vw - 56.25dvh) / 2) + 12px);
+    width: calc(min(100vw, 56.25dvh) * .38); max-width: none; align-items: stretch; gap: 4px; }
+  html.rd:not(.desk) .rd-float-msgs { align-items: stretch; gap: 4px; }
+  html.rd:not(.desk) .rd-fm { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: none; overflow: hidden; text-overflow: ellipsis;
+    font-size: 11.5px; line-height: 1.25; padding: 5px 8px; background: rgba(8,8,9,.6); }
+  html.rd:not(.desk) .rd-float-bar { gap: 4px; }
+  html.rd:not(.desk) .rd-float-field { height: 32px; padding: 0 3px 0 8px; font-size: 11.5px; }
+  html.rd:not(.desk) .rd-float-field > .rd-ic { display: none; }
+  html.rd:not(.desk) .rd-float-open { width: 32px; height: 32px; }
+  html.rd.rd-compact:not(.desk) .rd-fm:first-child:nth-last-child(3) { display: block; }
+}
+/* Spel-dev, Kevin 22:17, FINAL for the phone-layout chat column (any window width while html is not .desk; overrides the
+   !important rules above): a narrow column at the right edge under the sound/chat/menu buttons, never over the dealer */
+html.rd:not(.desk) .rd-float, html.rd.rd-compact:not(.desk) .rd-float { top: 112px !important; bottom: auto !important; left: auto !important;
+  right: calc(max(0px, (100vw - 56.25dvh) / 2) + 10px) !important; width: calc(min(100vw, 56.25dvh) * .33) !important; max-width: calc(min(100vw, 56.25dvh) * .33) !important;
+  align-items: stretch; gap: 4px; }
+html.rd:not(.desk) .rd-float-msgs { align-items: stretch; gap: 4px; }
+html.rd:not(.desk) .rd-fm { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: none; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11.5px; line-height: 1.25; padding: 5px 8px; background: rgba(8,8,9,.6); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); text-shadow: none; }
+html.rd:not(.desk) .rd-float-bar { display: flex; align-items: center; gap: 4px; width: 100%; pointer-events: auto; }
+html.rd:not(.desk) .rd-float-field { flex: 1; display: flex; align-items: center; gap: 4px; height: 32px; min-width: 0; padding: 0 3px 0 8px; box-sizing: border-box; border-radius: 16px; cursor: text;
+  background: rgba(12,12,13,.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid var(--rd-line2); color: rgba(255,255,255,.5); font: 400 11.5px var(--rd-font); text-align: left; }
+html.rd:not(.desk) .rd-float-field > .rd-ic { display: none; }
+html.rd:not(.desk) .rd-float-field .rd-ff-label { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; }
+html.rd:not(.desk) .rd-float-field .rd-ff-label::placeholder { color: rgba(255,255,255,.5); }
+html.rd:not(.desk) .rd-float-field button { all: unset; cursor: pointer; display: flex; }
+html.rd:not(.desk) .rd-float-field i { width: 26px; height: 26px; border-radius: 13px; background: var(--rd-lime); color: var(--rd-ink); display: flex; align-items: center; justify-content: center; flex: none; }
+html.rd:not(.desk) .rd-float-field i svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html.rd:not(.desk) .rd-float-open { position: relative; width: 32px; height: 32px; font-size: 16px; flex: none; }
+/* low view: two lines, so the column ends above box 1 */
+html.rd.rd-compact:not(.desk) .rd-fm:first-child:nth-last-child(3) { display: none; }

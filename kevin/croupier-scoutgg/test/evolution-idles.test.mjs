@@ -7,7 +7,7 @@ import { bettingIdles, phasePool, pickWeighted, PHASE_SHARE } from '../public/id
 // Kevin 23 Oct: e2e's H3 v2 idles after the Evolution references, the ones he picked, colour-matched into v2/.
 const PICKED = {
   dragge: ['knappin5101', 'knappin5102', 'knappandas5102', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattaxlar5101', 'lutfram5101'],
-  paow: ['knappin5101', 'knappin5102', 'knappandas5101', 'knappandas5102', 'knappaxlar5101', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattandas5101', 'plattandas5102', 'plattaxlar5101'],
+  paow: ['knappin5101', 'knappin5102', 'knappandas5101', 'knappandas5102', 'knappaxlar5101', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattandas5101', 'plattandas5102']   // plattaxlar5101 out (Kevin 27 Oct: she opens her mouth in it),
 };
 
 test('Dragan and Paow have the H3 v2 takes Kevin picked, in v2/, with their phase and pose', () => {
