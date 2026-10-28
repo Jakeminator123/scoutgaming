@@ -35,15 +35,42 @@ export function parseStagedChanges(output) {
   return changes;
 }
 
-export function readStagedChanges(root, { env = isolatedGitEnvironment() } = {}) {
+function stagedDiff(root, env, base = []) {
   const result = spawnSync('git', [
     '-c', 'diff.relative=false', 'diff', '--cached', '--name-status', '-z',
-    '--no-renames', '--no-ext-diff', '--no-textconv', '--',
+    '--no-renames', '--no-ext-diff', '--no-textconv', ...base, '--',
   ], { cwd: root, encoding: 'utf8', env });
   if (result.error || result.status !== 0) {
     throw Error('Cannot inspect staged changes: ' + (result.error?.message || result.stderr || result.signal || result.status));
   }
   return parseStagedChanges(result.stdout);
+}
+
+// The merged commit (MERGE_HEAD) while `git merge` is in progress, else null.
+export function readMergeHead(root, { env = isolatedGitEnvironment() } = {}) {
+  const result = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD^{commit}'], { cwd: root, encoding: 'utf8', env });
+  if (result.error) throw Error('Cannot inspect merge state: ' + result.error.message);
+  const value = result.status === 0 ? result.stdout.trim() : '';
+  if (result.status === 0 && !/^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(value)) throw Error('Cannot inspect merge state: unexpected MERGE_HEAD');
+  return value || null;
+}
+
+// During a merge the index holds everything the merged branch changed since the
+// fork point. Those paths were already checked there, so only paths whose index
+// entry differs from BOTH HEAD and MERGE_HEAD are this commit's own work:
+// conflict resolutions and edits made during the merge. A deletion counts when
+// one side still has the file. This only holds when the merged commit is main
+// (or older main): any other branch was never checked, so all paths stay. An
+// octopus merge compares with the first head, which can only keep more paths.
+// Full CI still checks everything.
+export function readStagedChanges(root, { env = isolatedGitEnvironment() } = {}) {
+  const changes = stagedDiff(root, env);
+  const mergeHead = changes.length ? readMergeHead(root, { env }) : null;
+  if (!mergeHead) return changes;
+  const onMain = spawnSync('git', ['merge-base', '--is-ancestor', mergeHead, 'refs/remotes/origin/main'], { cwd: root, encoding: 'utf8', env });
+  if (onMain.error || onMain.status !== 0) return changes;
+  const differsFromMerged = new Set(stagedDiff(root, env, [mergeHead]).map(change => change.path));
+  return changes.filter(change => differsFromMerged.has(change.path));
 }
 
 export function verificationMode(changes, { forceFull = false, env = process.env } = {}) {
@@ -167,6 +194,8 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
+    // The merge guard shares the freeze prefixes and the branch policy.
+    if (/^tools\/(?:o02-freeze-check\.mjs|repository-policy\.json)$/.test(path)) add('test/merge-pr.mjs');
   }
   for (const path of fixtureConsumerTests(changes, root)) selected.add(path);
   return [...selected].sort();
