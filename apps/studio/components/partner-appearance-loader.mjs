@@ -54,7 +54,7 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onS
     return children ? React.createElement(React.Fragment, null, line, children) : line;
   };
   if (current.status === 'hidden') return state_('alert', en ? 'The appearance could not be loaded. Reload or check your access.' : 'Spelbordets utseende kunde inte hämtas. Ladda om eller kontrollera din åtkomst.');
-  if (current.status === 'denied') return state_('alert', en ? 'Your role lacks the permission tables.read, so the table appearance is not shown.' : 'Rollen saknar behörigheten tables.read, så spelbordets utseende visas inte.');
+  if (current.status === 'denied') return state_('alert', en ? 'Your role lacks the permission presentations.read, so the table appearance is not shown.' : 'Rollen saknar behörigheten presentations.read, så spelbordets utseende visas inte.');
   if (current.status === 'legacy') return state_('status', en ? 'Scoutgaming must first publish a package with separate layers.' : 'Inställningarna öppnas när Scoutgaming har publicerat paketet med tre lager.');
   if (current.status === 'loading') return state_('status', en ? 'Loading appearance…' : 'Hämtar utseende…');
   if (current.status === 'none') return state_('status', en ? 'No package is published yet. Scoutgaming publishes the company package first.' : 'Inget paket är publicerat än. Scoutgaming publicerar bolagets paket först.');
