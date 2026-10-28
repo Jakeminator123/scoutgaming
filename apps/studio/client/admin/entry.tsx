@@ -12,6 +12,7 @@ import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
 import { DealerDirectory } from './components/studio/dealer-directory';
 import { ResourceConnections } from './components/studio/resource-connections';
+import { AdminHelp } from './components/studio/admin-help';
 import {WorkspaceTool} from './components/studio/workspace-tools';
 import {adminDocumentHref} from '../../../../packages/navigation/admin-workspace-routes.mjs';
 import {PlayerAccountsPage,AdminStaffPage} from './components/studio/accounts-pages';
@@ -76,8 +77,9 @@ function App() {
       {visitedPages.map(page=><div key={page} hidden={path!==page}>{mountedPages[page]()}</div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
       {path==='/admin/structure'&&<ResourceConnections/>}
+      {path==='/admin/guide'&&<AdminHelp/>}
       {workspaceTool&&!redirected&&<WorkspaceTool section={workspaceTool}/>}
-      {!workspaceTool&&!studio&&!redirected && path!=='/admin/structure' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/assets' && !servicePaths.has(path) && !(path in mountedPages) && <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>}
+      {!workspaceTool&&!studio&&!redirected && path!=='/admin/structure' && path!=='/admin/guide' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/assets' && !servicePaths.has(path) && !(path in mountedPages) && <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>}
     </main>
   </div>;
 }

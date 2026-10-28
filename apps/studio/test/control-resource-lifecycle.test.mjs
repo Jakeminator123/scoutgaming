@@ -79,23 +79,12 @@ test('all companies load even without a selection and switching companies does n
 
 test('shared lifecycle navigation defaults remain compatible while Admin can keep composition edits in Studio',async()=>{
   const legacy=harness();await legacy.ready();
-  assert.match(legacy.html(),/\/admin\/compositions\?operator=north&amp;composition=standard/);
+  assert.match(legacy.html(),/href="\/admin\/scenes\?operator=north&amp;composition=standard"/);
   const admin=harness({navigation:{compositionHref:(operator,room)=>'/admin/clips?'+new URLSearchParams({operator:operator.id,table:room.id,composition:room.presentationLaneId}),rehearsalLabel:'Provspela & följ (äldre vy)'}});
   await admin.ready();const links=admin.nodes(node=>node.type==='a');
   assert.equal(links.find(node=>node.props.children==='Redigera sammansättning').props.href,'/admin/clips?operator=north&table=room-one&composition=standard');
-  assert.match(links.find(node=>node.props.children==='Provspela & följ (äldre vy)').props.href,/\/admin\/rehearsal\?operator=north&table=room-one&composition=standard$/);
+  assert.match(links.find(node=>node.props.children==='Provspela & följ (äldre vy)').props.href,/\/admin\/rooms\?operator=north&table=room-one&composition=standard$/);
   assert.equal(admin.requests.length,1,'navigation does not mutate or reload the shared register');
-});
-
-test('Admin lifecycle wrapper adds game only from the same registered room and composition',()=>{
-  const wrapper=new URL('../client/admin/components/studio/registered-resource-lifecycle.tsx',import.meta.url);
-  const Lifecycle=props=>props.kind==='rooms'?React.createElement('a',{href:props.navigation.compositionHref(company(),room())},props.navigation.rehearsalLabel):null;
-  const {RegisteredResourceLifecycle}=loadTs(wrapper,{react:React,'../../../../components/control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle}});
-  const html=rooms=>renderToStaticMarkup(React.createElement(RegisteredResourceLifecycle,{operatorId:'north',disabled:false,onChanged(){},rooms}));
-  assert.match(html([{id:'room-one',operatorId:'north',compositionId:'standard',game:'roulette'}]),/href="\/admin\/clips\?operator=north&amp;table=room-one&amp;composition=standard&amp;game=roulette"/);
-  for(const context of [{id:'other',operatorId:'north',compositionId:'standard',game:'roulette'},{id:'room-one',operatorId:'south',compositionId:'standard',game:'roulette'},{id:'room-one',operatorId:'north',compositionId:'different',game:'roulette'}]){
-    assert.doesNotMatch(html([context]),/game=/);
-  }
 });
 
 test('archiving confirms a concrete room and sends exactly its tenant and observed revisions',async()=>{

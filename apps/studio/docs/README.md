@@ -3,8 +3,8 @@
 Så här arbetar du i Admin (`/admin`) i dag. Orden förklaras i
 [ordlistan](TERMINOLOGI.md). En **mall** heter i Admin i dag
 **Sammansättning** (ibland **Spelmall** eller **Gemensam mall**); bolagets
-**paket** är avsnittet **Spelmallar för bolaget**. Hjälptexten i Admin kommer
-från [guide.json](guide.json).
+**paket** är avsnittet **Spelmallar för bolaget**. Admins **Hjälp** listar vad
+varje sida gör och länkar hit och till ordlistan.
 
 ## Menyn
 
@@ -23,7 +23,7 @@ från [guide.json](guide.json).
 | System | Kopplingar & användning | `/admin/structure` | Vad som använder vad: bolag, dealers, bord, bakgrunder och mallar |
 | System | Integrationer | `/admin/admin/api` | Partnernycklar och API |
 | System | Konton & åtkomst | `/admin/admin/accounts` | Intern personal och roller |
-| System | Hjälp | `/admin/guide` | Den här guiden i kort form |
+| System | Hjälp | `/admin/guide` | Vad varje sida gör, med länkar till den här guiden och ordlistan |
 
 Portalraden överst leder till Admin, Partnerportalen (**Spelbolag**) och
 **Spelarlobby**; intern personal når alla tre med samma konto.
@@ -184,7 +184,7 @@ röst, ljud, munrörelser och återgång till vila innan du provar mikrofonen.
 Avsluta med **Stoppa drift** och vänta på bekräftat Av. Admins provspel har
 chatt och genererat tal avstängda.
 
-## Svarsbibliotek, Skapa material och Spelhändelser & regler
+## Svarsbibliotek och Skapa material
 
 - **Svarsbibliotek** (`/admin/replies`) visar sparade AI-svar med exakt text,
   ljud och video. Filtrera, lyssna och spara kategorier. Biblioteket startar
@@ -197,9 +197,8 @@ chatt och genererat tal avstängda.
   visas i krediter före start. Visas **Okänt – kontrollera Runway**: kontrollera
   portalen innan du beställer igen. **Generera** igen med samma inställningar
   efter ett fel ger samma jobb, inte en ny debitering.
-- **Spelhändelser & regler** (`/admin/events`) visar de exakta facken för
-  spelmotorns händelser och klippval med villkor. Interna händelse-ID:n ändras
-  inte av visningsnamnen.
+- Klippval och villkor ändrar du i **Studio → Klippkarta** under
+  **Körregler**. Den gamla adressen `/admin/events` leder dit.
 
 ## Sceneditor: mallen
 

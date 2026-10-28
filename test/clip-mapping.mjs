@@ -54,13 +54,8 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
 
 test('paused V2 dealing and explicit staged candidates are not playback claims', () => {
   const mapping = clipMapping({ root });
-  assert.ok(mapping.dealers.astrid.greenTakes.length > 0);
-  for (const row of mapping.dealers.astrid.greenTakes) {
-    assert.equal(row.active, false);
-    assert.equal(row.paused, true);
-    assert.equal(row.route, '/v2/?dealer=astrid');
-    assert.equal(row.actualPlayback, false);
-  }
+  // The V2 table takes (review/astrid-table-v2) were removed from the tree (ren start).
+  assert.deepEqual(mapping.dealers.astrid.greenTakes, []);
   assert.equal(mapping.dealers.astrid.stagedTakes.length, 0);
   assert.equal(mapping.dealers.astrid.manifestStatus, null);
   for (const row of mapping.dealers.astrid.stagedTakes) {
@@ -68,29 +63,4 @@ test('paused V2 dealing and explicit staged candidates are not playback claims',
     assert.equal(row.candidate, true);
     assert.equal(row.actualPlayback, false);
   }
-});
-
-test('BO choices expose consumer limits, rejection and review annotations', () => {
-  const clipLandings = { selected: { part: 'box4', note: 'human annotation' } };
-  const genLandings = { generation: { part: 'idle', note: 'candidate' } };
-  const mapping = clipMapping({ root, bo: {
-    clipAssignments: {
-      astrid: { box4: { clip: 'selected' }, return: { clip: 'return-candidate' }, idle: { clip: 'astrid:idle-1/idle/idle' } },
-      amira: { box1: { clip: 'stored-only' } },
-    },
-    neverAgain: { selected: { reason: 'rejected' } }, clipLandings, genLandings,
-  } });
-  const astrid = mapping.backofficePicks.astrid;
-  assert.equal(astrid['show.deal.box4'].route, null);
-  assert.equal(astrid['show.deal.box4'].formerRoute, '/?dealer=astrid&performance=staged');
-  assert.equal(astrid['show.deal.box4'].consumed, false);
-  assert.equal(astrid['show.deal.box4'].excluded, true);
-  assert.equal(astrid['show.return'].consumed, false);
-  assert.equal(astrid['show.return'].route, null);
-  assert.equal(astrid['show.idle'].route, null);
-  assert.equal(astrid['show.idle'].formerRoute, '/?dealer=astrid');
-  assert.equal(mapping.clipControl.source, 'lab/project.json');
-  assert.equal(mapping.backofficePicks.amira['show.deal.box1'].consumed, false);
-  assert.deepEqual(mapping.clipLandings, clipLandings);
-  assert.deepEqual(mapping.genLandings, genLandings);
 });

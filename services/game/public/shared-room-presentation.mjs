@@ -29,7 +29,16 @@ function roomColor(document,color){
 // early waits, a late one joins in phase, one whose time is over shows its committed card without film.
 // Speech has no published length, so a chain that follows speech anchors where it begins; the plan's
 // leading chain keeps the clock. Nothing here selects media or cards: every step is still the server's.
-const MAX_STEP_WAIT_MS = 5000;
+//
+// A step's media may not hold the table past its time (K04 at 400 kbit/s, 28 Oct 2026: a 1.58 MB deal
+// clip downloaded from 59 to 91 s while turnAt was 56.5 s, so the player saw no cards and no buttons and
+// the server stood for them). A step is due at the end of its window on the table clock and, in a plan
+// that opens a decision, at the server's turnAt at the latest. A film part that has not shown a frame by
+// then is left: its committed card shows at once, its download stays in the verified buffer's grace for
+// whoever needs the same bytes next, and after turnAt the rest of the plan shows its cards without film.
+// A part that already shows frames plays on; its own take clock ends it.
+const MAX_STEP_WAIT_MS = 5000, MAX_TIMER_MS = 2147483647;
+const stepLate = () => Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true });
 const DEALER_LOADING = 'Dealern laddas…', DEALER_UNAVAILABLE = 'Dealern kunde inte visas.';
 export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
@@ -82,22 +91,28 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // shows its committed cards at once instead of loading more film, so the
       // table reaches the player's turn on the server's clock, not the media's.
       let completedSequence=false,shiftMs=0,inRun=false,unavailable=false;
-      const elapsed=()=>clock()+offset-presentation.startAt;
+      const tableNow=()=>clock()+offset,elapsed=()=>tableNow()-presentation.startAt;
+      // The server opens the player's decision at turnAt and refuses it before (NOT_YOUR_TURN).
+      // From then on no step of this plan waits for media: the buttons open on the server's clock.
+      const turnAt=presentation.kind==='plan'&&state.phase==='round'&&['decisions','insurance'].includes(state.round?.phase)
+        &&Number.isFinite(state.plan?.turnAt)?state.plan.turnAt:null;
+      const turnPassed=()=>turnAt!==null&&tableNow()>=turnAt;
+      const showCommitted=event=>{if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);};
       try {
         for(const [index,event] of presentation.events.entries()){
           signal?.throwIfAborted();if(closed)return;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
-          if(unavailable){if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);continue;}
-          const step=timeline?.eventIndex.get(index)??null;let timing={};
+          if(unavailable||turnPassed()){showCommitted(event);continue;}
+          const step=timeline?.eventIndex.get(index)??null;let timing={},dueAt=turnAt??Infinity;
           if(step){
             const placed=fitted?step.fit:step;
             if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(placed.playbackStartMs??placed.startMs));
             inRun=true;
             let phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});
-            if(phase.waitMs>0){await pause(phase.waitMs,signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
-            if(phase.expired){
+            if(phase.waitMs>0){await pause(Math.min(phase.waitMs,Math.max(0,dueAt-tableNow())),signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
+            if(phase.expired||turnPassed()){
               // Its time is over on the table clock: the committed card is shown, the take is never replayed from its start.
-              if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);
+              showCommitted(event);
               continue;
             }
             // A separate entry clip must play whole. Anchor its exact take after
@@ -105,34 +120,41 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
             if(step.beforeMs)shiftMs=Math.max(shiftMs,elapsed()-placed.playbackStartMs);
             const startMs=phase.startMs+shiftMs;
             timing={startOffset:step.beforeMs?0:phase.seekS,handoverAt:step.handoverMs/1000,...(fitted?{playbackRate:phase.rate}:{}),clockTime:()=>Math.max(0,(elapsed()-startMs)*phase.rate/1000)};
+            dueAt=Math.min(dueAt,presentation.startAt+shiftMs+(placed.playbackEndMs??placed.endMs));
           } else inRun=false;
           for(const layerEvent of ['backgroundEvent','tableEvent'])composition?.[layerEvent]?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
           let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1,lastReceived=0;
+          // shown: the current film part has presented a frame. due: the step's time is over.
+          let shown=false,due=false,left=false,dueTimer,resolveLeft;
           const clip=new AbortController();
           const relay=()=>clip.abort(signal.reason);
           signal?.addEventListener('abort',relay,{once:true});
           let rejectStall;
           const stalled=new Promise((_,reject)=>{rejectStall=reject;});
+          const leftStep=new Promise(resolve=>{resolveLeft=resolve;});
           const arm=()=>{clearTimeout(timer);timer=setTimeout(()=>{
             const error=Object.assign(new Error('shared_room_media_stalled'),{rendererTimeout:true});
             rejectStall(error);clip.abort(error);
           },mediaStallTimeoutMs);};
-          const cancel=()=>{clearTimeout(timer);const reason=new DOMException('Presentation closed','AbortError');rejectStall(reason);clip.abort(reason);};
+          const cancel=()=>{clearTimeout(timer);clearTimeout(dueTimer);const reason=new DOMException('Presentation closed','AbortError');rejectStall(reason);clip.abort(reason);};
+          // Leave a step whose time is over before its current film part showed a frame. Not an error.
+          const leave=()=>{if(left||clip.signal.aborted||closed||!accepting)return;left=true;clearTimeout(timer);clearTimeout(dueTimer);resolveLeft();clip.abort(stepLate());};
+          if(Number.isFinite(dueAt))dueTimer=setTimeout(()=>{due=true;if(!shown)leave();},Math.min(MAX_TIMER_MS,Math.max(0,dueAt-tableNow())));
           const progress=value=>{
             if(clip.signal.aborted||closed||!accepting||!Number.isInteger(value?.clip)||value.clip<1||value.clip>4)return;
-            if(value.phase==='prepare'&&value.clip===progressClip+1){progressClip=value.clip;progressPhase='prepare';lastProgressFrame=-1;lastReceived=0;arm();}
+            if(value.phase==='prepare'&&value.clip===progressClip+1){progressClip=value.clip;progressPhase='prepare';lastProgressFrame=-1;lastReceived=0;shown=false;if(due){leave();return;}arm();}
             else if(value.clip===progressClip){
               if(value.phase==='play'&&progressPhase==='prepare'){progressPhase='play';arm();}
               // New verified-buffer bytes renew the lease: a slow download is
               // bounded by silence and the frozen total, never by its length.
               else if(value.phase==='download'&&progressPhase==='play'&&Number.isSafeInteger(value.received)&&value.received>lastReceived){lastReceived=value.received;arm();}
-              else if(value.phase==='frame'&&progressPhase==='play'&&Number.isFinite(value.time)&&value.time>=0&&value.time>lastProgressFrame){lastProgressFrame=value.time;arm();}
+              else if(value.phase==='frame'&&progressPhase==='play'&&Number.isFinite(value.time)&&value.time>=0&&value.time>lastProgressFrame){lastProgressFrame=value.time;shown=true;arm();}
               else if(value.phase==='complete'&&progressPhase==='play'){progressPhase='complete';arm();}
             }
           };
           cancelCurrentClip=cancel;arm();
           try {
-            completed=await Promise.race([stalled,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
+            const outcome=await Promise.race([stalled,leftStep,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
               onUnavailable:()=>{if(!clip.signal.aborted&&!closed&&accepting)unavailable=true;},
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
                 if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
@@ -140,14 +162,16 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
               onFrame:time=>{if(clip.signal.aborted||closed||!accepting)return;
                 // Repeated frozen frames do not prove a live clip. A new verified
                 // fallback may start at zero, but selection alone renews no lease.
-                if(Number.isFinite(time)&&time>=0&&time>lastFrame){lastFrame=time;arm();}
+                if(Number.isFinite(time)&&time>=0&&time>lastFrame){lastFrame=time;shown=true;arm();}
                 if(token!==undefined)cards.frame(token,time);}});})]);
-            clip.signal.throwIfAborted();
-            if(completed===false)onError('shared_room_media_unavailable');
+            if(!left){
+              clip.signal.throwIfAborted();completed=outcome;
+              if(completed===false)onError('shared_room_media_unavailable');
+            }
           } finally {
-            accepting=false;clearTimeout(timer);signal?.removeEventListener('abort',relay);
+            accepting=false;clearTimeout(timer);clearTimeout(dueTimer);signal?.removeEventListener('abort',relay);
             if(cancelCurrentClip===cancel)cancelCurrentClip=null;
-            if(!clip.signal.aborted&&!closed){
+            if(!closed&&(left?!signal?.aborted:!clip.signal.aborted)){
               if(token!==undefined)cards.finish(token,event.shoeDraw,completed===true);
               else if(event.type==='deal')cards.show(event.shoeDraw);
               if(event.type==='reveal')cards.reveal(state.round);

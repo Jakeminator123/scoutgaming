@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { CONTROL_PREVIEW_VIEWS, PARTNER_PREVIEW_VIEWS, resolveWorkspaceSurfacePath, workspaceSurfacePath, isPartnerSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 
 test('public and native documents resolve to the same surface and exact Studio destination', () => {
-  for (const surface of ['control', 'partner']) {
-    const route = resolveWorkspaceSurfacePath('/' + surface);
-    assert.equal(route.surface, surface); assert.equal(route.view, 'ops'); assert.equal(route.operatorSlug, null);
-    assert.equal(route.studioPath, '/studio/' + surface);
-    assert.deepEqual(resolveWorkspaceSurfacePath('/studio/' + surface), route);
-  }
+  const partner = resolveWorkspaceSurfacePath('/partner');
+  assert.equal(partner.surface, 'partner'); assert.equal(partner.view, 'ops'); assert.equal(partner.operatorSlug, null);
+  assert.equal(partner.studioPath, '/studio/partner');
+  assert.deepEqual(resolveWorkspaceSurfacePath('/studio/partner'), partner);
+  // Retired /control documents are only recognised (login return, transport metadata); GET redirects to /admin (admin-workspace.test.mjs).
+  assert.equal(resolveWorkspaceSurfacePath('/control').surface, 'control');
+  assert.equal(resolveWorkspaceSurfacePath('/studio/control').surface, 'control');
   for (const section of PARTNER_PREVIEW_VIEWS) {
     const route = resolveWorkspaceSurfacePath('/partner/demo-north/' + section);
     assert.equal(route.view, section); assert.equal(route.operatorSlug, 'demo-north');
@@ -20,24 +21,15 @@ test('public and native documents resolve to the same surface and exact Studio d
   }
 });
 
-test('friendly sections keep source view IDs while existing internal tools retain their native routes', () => {
+test('friendly sections keep source view IDs while retired control tools stay recognised', () => {
   for (const [section, view] of [['overview', 'ops'], ['presentation', 'theme'], ['integration', 'api'], ['tables', 'bj']]) {
     assert.equal(resolveWorkspaceSurfacePath('/partner/demo-south/' + section).view, view);
   }
   assert.equal(resolveWorkspaceSurfacePath('/control/tables').view, 'tables');
   assert.equal(resolveWorkspaceSurfacePath('/control/overview').view, 'ops');
-  for (const [section, studioPath, legacyPath] of [['studio', '/studio', '/control'], ['admin', '/studio/administration', '/control/administration'],
-    ['ops', '/studio/admin/openclaw', '/admin/openclaw'], ['lab', '/studio', '/control']]) {
+  for (const section of ['studio', 'admin', 'ops', 'lab', 'clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']) {
     const route = resolveWorkspaceSurfacePath('/control/' + section);
-    assert.equal(route.studioPath, studioPath); assert.equal(route.legacyPath, legacyPath);
-    assert.equal(route.view, null);
-    assert.equal(route.legacyPath.startsWith('/studio'), false);
-  }
-  for (const tool of ['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']) {
-    const route = resolveWorkspaceSurfacePath('/control/' + tool);
-    assert.equal(route.canonicalPath, '/control/' + tool);
-    assert.equal(route.studioPath, '/studio/control/' + tool);
-    assert.equal(route.legacyPath, null);
+    assert.equal(route?.surface, 'control', section);
   }
 });
 
@@ -55,11 +47,11 @@ test('partner document list cannot expose internal production views or become an
 });
 
 test('each allowed view has one readable address that reloads to the same view and operator', () => {
-  for(const surface of ['control','partner'])for(const view of surface==='partner'?PARTNER_PREVIEW_VIEWS:CONTROL_PREVIEW_VIEWS){
-    const path=workspaceSurfacePath(surface,view,'demo-south');
+  for(const view of PARTNER_PREVIEW_VIEWS){
+    const path=workspaceSurfacePath('partner',view,'demo-south');
     const route=resolveWorkspaceSurfacePath(path);
     assert.equal(route.view,view,path);assert.equal(route.canonicalPath,path);
-    assert.equal(route.operatorSlug,surface==='partner'?'demo-south':null);
+    assert.equal(route.operatorSlug,'demo-south');
   }
   assert.equal(resolveWorkspaceSurfacePath('/partner/demo-south').view,'ops');
   assert.equal(workspaceSurfacePath('partner','theme','demo-south'),'/partner/demo-south/presentation');
@@ -91,9 +83,5 @@ test('game rooms have a canonical partner address while existing table links sti
   for(const section of ['rooms','tables','game-tables']){
     const route=resolveWorkspaceSurfacePath('/partner/north/'+section);
     assert.equal(route.view,'bj');assert.equal(route.canonicalPath,'/partner/north/rooms');
-  }
-  for(const section of ['companies','rooms','compositions','rehearsal']){
-    const route=resolveWorkspaceSurfacePath('/control/'+section);
-    assert.equal(route.view,null);assert.equal(route.canonicalPath,'/control/'+section);
   }
 });

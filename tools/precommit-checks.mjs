@@ -178,6 +178,8 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
   if (!Number.isInteger(testWorkers) || testWorkers < 1 || testWorkers > 4) throw Error('Focused test workers must be an integer from 1 to 4');
   const tests = focusedTests(changes, root);
   const commands = [['git', 'diff', '--cached', '--check']];
+  // Repo growth (files over 1 MB, new media binaries, living-document limits) on the staged diff only.
+  if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) commands.push([process.execPath, 'tools/check-repo-limits.mjs', '--cached']);
   for (const { status, path } of changes) {
     if (status === 'D' || !existsSync(resolve(root, path))) continue;
     if (/\.[cm]?js$/.test(path)) commands.push([process.execPath, '--check', path]);
@@ -201,7 +203,9 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
 export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = {}) {
   for (const [command, ...args] of commands) {
     const env = isolatedGitEnvironment();
-    if (command === 'git' && args.includes('--cached') && process.env.GIT_INDEX_FILE) env.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
+    // Index readers keep the commit's own index (for example git commit --only); other checks stay isolated.
+    const readsIndex = args.includes('--cached') && (command === 'git' || args[0] === 'tools/check-repo-limits.mjs');
+    if (readsIndex && process.env.GIT_INDEX_FILE) env.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
     const result = run(command, args, { cwd, stdio: 'inherit', env });
     if (result.error) {
       console.error('Verification could not start: ' + result.error.message);

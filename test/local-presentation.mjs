@@ -12,7 +12,7 @@ import { createPresentationStartup } from '../services/game/public/presentation-
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
-import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
+import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/test/fixtures/local-video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
@@ -275,7 +275,7 @@ test('a browser can identify a deal but cannot change its card, hand or hidden s
 
 test('native endpoint selects the same exact family, deduplicates requests and rejects another player or revision', async t => {
   const receipts = new Map([['qa', { version: 2, payload: JSON.stringify([source]) }]]), db = nativeReceipts(receipts);
-  const handler = createPresentationApi({ db, env: {}, store: { load: async () => createSeedProject() } });
+  const handler = createPresentationApi({ db, env: {}, store: { load: async () => createSeedProject(), configurationSource: 'fixture-store' } });
   const server = createServer(async (req, res) => { if (!await handler(req, res, new URL(req.url, 'http://local').pathname, req.headers['x-fixture-player'] ?? 'qa')) { res.writeHead(404); res.end(); } });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(() => { server.closeAllConnections(); server.close(); });
@@ -286,7 +286,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   const result = await response.json();
   assert.equal(result.owner, 'web'); assert.equal(result.video.fileName, 'deal_pos4.mp4');
   assert.equal(result.projectRevision, createSeedProject().revision);
-  assert.equal(result.configurationSource, 'lab/project.json');
+  assert.equal(result.configurationSource, 'fixture-store', 'the store names its own configuration source');
   assert.equal(result.decision.sourceEvent.card.r, 'A'); assert.equal(result.decision.sourceEvent.handIndex, 1);
   assert.deepEqual(await (await choose()).json(), result);
   assert.equal((await choose({ version: 1 })).status, 409);
@@ -316,7 +316,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.equal(idle.status, 200); const advice = await idle.json();
   assert.equal(advice.videoId, null); assert.equal(advice.provider, 'openclaw_not_configured');
   assert.equal(advice.projectRevision, createSeedProject().revision);
-  assert.equal(advice.configurationSource, 'lab/project.json');
+  assert.equal(advice.configurationSource, 'fixture-store');
 });
 
 test('explicit test archive feeds the same exact product and library media', async t => {
@@ -789,8 +789,8 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
-    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'studio-selection-source', dealerIdle: {[dealerId]: ownIdle} }
+    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'studio-selection-source', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
   const player = customPlayer ?? { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
@@ -866,7 +866,7 @@ test('native configuration and actual film receipts preserve their saved project
   const deal = receipts.filter(row => row.event === 'deal');
   assert.deepEqual(deal.map(row => row.state), ['selected', 'start', 'presented', 'end']);
   for (const row of deal) {
-    assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'lab/project.json');
+    assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'studio-selection-source');
     assert.equal(row.requestId, 'selection-fixture');
   }
 });
@@ -1621,11 +1621,30 @@ test('frozen events use owned Director transport and revalidate the package afte
   }
 });
 
-test('a frozen event rechecks package authority even when its video could be cached',async t=>{
-  const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
-  f.setConfigStatus(409);
-  assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
+// K04 F1 (staging 28 Oct 2026): select, the configuration again and the download ran in series before
+// every clip. The select call is the package check for the clip it chooses (the server resolves the
+// frozen context after selecting; a shared room checks its committed receipt), so the film no longer
+// reads the configuration a second time. A package change still stops the clip before any film.
+test('a frozen event checks package authority in its selection, even when its video could be cached, without a second configuration read',async t=>{
+  const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7}}),fetchConfig=globalThis.fetch;
+  const before=f.requests.length;
+  const played=f.controller.present(source);await settle();
+  assert.deepEqual(f.requests.slice(before).map(request=>request.url),['/api/presentation/select'],'no configuration read between selection and film');
+  assert.equal(f.jobs.length,1);f.jobs[0].resolve();assert.equal(await played,true);
+  globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?Response.json({error:'Package changed',code:'studio_presentation_idle_package_changed'},{status:409}):fetchConfig(url,options);
+  assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,1);
   assert.match(f.status.textContent,/Ladda om spelet/);
+});
+
+test('an idle film still reads the frozen package before every play while selected clips rely on their selection',async t=>{
+  const ownIdle={id:'linnea-frozen',fileName:'Linneas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-linnea/7/linnea'};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
+  const paths=()=>f.requests.map(request=>new URL(request.url,'https://game.invalid').pathname);
+  f.controller.start();await settle();assert.deepEqual(paths(),['/api/presentation/config','/api/presentation/config'],'startup plus the idle play');
+  f.controller.state({action:true});const played=f.controller.present(source);await settle();
+  assert.deepEqual(paths().slice(2),['/api/presentation/select']);f.jobs.at(-1).resolve();assert.equal(await played,true);
+  f.controller.state({action:false});await settle();
+  assert.deepEqual(paths().slice(3),['/api/presentation/config'],'the next idle play reads the package again');
 });
 
 test('configuration requires explicit identity and each dealer uses only its saved idle policy',async()=>{
@@ -1829,6 +1848,56 @@ test('a timed film hands over on its last frames and holds the frame instead of 
   video.frame(2.6875); await finished;
   assert.deepEqual(receipts.map(r => [r.state, r.handover ?? false]), [['start', false], ['presented', false], ['end', true]]);
   assert.equal(held, 1); assert.equal(video.removed, true); assert.equal(video.ended, false);
+});
+
+// K04 F1 (staging 28 Oct 2026, also without throttling): a deal or reveal take that was ready after its
+// place on the table clock reported 'presented' and, in the same millisecond, error local_film_incomplete
+// with handover:true and no start (the clock ended it on its first frame, before 'playing'). The table
+// read "Filmen kunde inte spelas." and the shared table reported a media error for a late take.
+test('a take that the table clock ends on its first frame before playback began is late, never a failed film', async t => {
+  const { media, host } = filmFixture(t); const receipts = []; let held = 0;
+  const late = playLocalFilm({ host, src: '/late', clockTime: () => 3, handoverAt: 2.24, onFrame() {}, onReceipt: r => receipts.push(r), hold() { held++; } });
+  const video = media[0]; video.duration = 2.3;
+  video.frame(0);
+  assert.deepEqual(await late, { completed: false, late: true });
+  assert.deepEqual(receipts.map(r => [r.state, r.late ?? false, r.handover ?? false]), [['presented', false, false], ['skipped', true, true]]);
+  assert.equal(receipts[1].code, undefined); assert.equal(receipts[1].playback, undefined);
+  assert.equal(held, 1, 'the late frame is held for the next step'); assert.equal(video.removed, true);
+  const unended = playLocalFilm({ host, src: '/unended', onReceipt() {} }); media[1].frame(0); media[1].ended = true; media[1].emit('ended');
+  await assert.rejects(unended, { code: 'local_film_incomplete' }, 'without the clock an unstarted film is still incomplete');
+});
+
+test('a late take skips its step without a fallback film or error text and prepares the next step', async t => {
+  const originalWindow = globalThis.window; globalThis.window = new EventTarget(); t.after(() => { globalThis.window = originalWindow; });
+  const videos = [], prepared = [];
+  const player = { playLocalClip(take, options) { const video = new Video(); videos.push(video); return playLocalFilm({ host: { append() {} }, src: take.media.src, video, ...options }); },
+    prepareLocalClip(take) { prepared.push(take.media.sha256); } };
+  const standard = { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) };
+  const f = await controllerFixture(t, { player, standardVideo: standard });
+  f.controller.state({ action: true }); f.controller.prepareSequence([source, { ...source, shoeDraw: 8 }]);
+  const result = f.controller.present(source, { clockTime: () => 3, handoverAt: 2.24, startOffset: 0 }); await settle();
+  assert.equal(videos.length, 1); videos[0].duration = 2.3; videos[0].frame(0);
+  assert.equal(await result, true, 'the shared table reports no media error');
+  assert.equal(videos.length, 1, 'no standard film replaces a late take');
+  assert.equal(f.status.textContent, '');
+  const states = f.receipts.filter(row => row.event === 'deal').map(row => row.state);
+  assert.deepEqual(states, ['selected', 'presented', 'skipped']); assert.equal(f.receipts.at(-1).late, true);
+  assert.equal(prepared.length, 2, 'the next step is prepared although the late take never started');
+});
+
+test('a step the shared table leaves because its time is over is skipped as late, without a fallback or error text', async t => {
+  const f = await controllerFixture(t, { standardVideo: { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) } });
+  f.controller.state({ action: true }); const clip = new AbortController(); let unavailable = 0;
+  const result = f.controller.present(source, { signal: clip.signal, onUnavailable: () => unavailable++ }); await settle();
+  assert.equal(f.jobs.length, 1);
+  clip.abort(Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true }));
+  assert.equal(await result, false); assert.equal(f.jobs.length, 1, 'no standard film'); assert.equal(f.status.textContent, '');
+  const left = f.receipts.at(-1);
+  assert.deepEqual([left.state, left.late, left.reason, left.renderer, left.requestId], ['skipped', true, 'step_time_over', '2d', 'selection-fixture']);
+  assert.equal(unavailable, 0);
+  const plain = new AbortController(), cancelled = f.controller.present(source, { signal: plain.signal }); await settle();
+  const count = f.receipts.length; plain.abort(); assert.equal(await cancelled, false);
+  assert.equal(f.receipts.length, count, 'an ordinary cancellation writes no late receipt');
 });
 
 test('a step reached late seeks into phase before play, plays at the fitted rate and follows the table clock', async t => {

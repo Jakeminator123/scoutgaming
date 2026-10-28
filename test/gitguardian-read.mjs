@@ -1,9 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Readable,Writable} from 'node:stream';
-import {spawn} from 'node:child_process';
 import {createGitGuardianReader,validateGitGuardianReadURL,nextGitGuardianPage,GITGUARDIAN_BINDING} from '../tools/gitguardian-read.mjs';
-import {createGitGuardianRpc,runGitGuardianMcp} from '../tools/gitguardian-mcp.mjs';
 const sourceURL='https://api.gitguardian.com/v1/sources/30689542';
 const incidentsURL=sourceURL+'/incidents/secrets?per_page=100';
 const repo=GITGUARDIAN_BINDING.repository,marker='DO_NOT_OUTPUT_PRIVATE_PROVIDER_FIELDS';
@@ -139,51 +136,6 @@ test('source re-read count drift downgrades complete list; repeated cursor is bo
   const r=await loop.reader.readRepoIncidents();assert.equal(r.incidentCoverage,'partial');assert.equal(loop.calls.length,3);
   assert.equal(r.coverageGaps[0].safeCode,'gg_read_pagination_incomplete');
 });
-test('MCP initialize/list do not touch token/API; three no-argument read tools, safe errors',async()=>{
-  let reads=0;const rpc=createGitGuardianRpc({reader:{readSourceBinding:async()=>{reads++;return{sourceBinding:'verified'};},
-    readRepoIncidents:async()=>{throw Error(marker);}}});
-  assert.equal((await rpc({jsonrpc:'2.0',id:0,method:'tools/list'})).error.code,-32000);
-  await rpc({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26'}});
-  const list=await rpc({jsonrpc:'2.0',id:2,method:'tools/list'});assert.equal(reads,0);
-  assert.deepEqual(list.result.tools.map(t=>t.name),['read_source_binding','read_repo_incidents','read_security_status']);
-  assert.ok(list.result.tools.every(t=>t.annotations.readOnlyHint&&t.inputSchema.additionalProperties===false));
-  const deny=await rpc({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'read_repo_incidents',arguments:{url:marker}}});
-  assert.equal(deny.error.code,-32602);assert.equal(reads,0);
-  await rpc({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:'read_source_binding',arguments:{}}});assert.equal(reads,1);
-  const fail=await rpc({jsonrpc:'2.0',id:5,method:'tools/call',params:{name:'read_repo_incidents'}});
-  assert.equal(fail.result.isError,true);assert.equal(JSON.stringify(fail).includes(marker),false);
-  assert.equal(await rpc({jsonrpc:'2.0',method:'notifications/initialized'}),null);
-});
-test('MCP stdio JSON-lines parse errors/notifications do not corrupt response stream',async()=>{
-  let output='';const input=Readable.from(['invalid\n',JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-06-18'}})+'\n',
-    JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n',JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list'})+'\n']);
-  await runGitGuardianMcp({input,output:new Writable({write(chunk,enc,done){output+=chunk;done();}})});
-  const responses=output.trim().split('\n').map(s=>JSON.parse(s));assert.equal(responses.length,3);
-  assert.equal(responses[0].error.code,-32700);assert.equal(responses[1].result.protocolVersion,'2025-06-18');
-  assert.equal(responses[2].result.tools.length,3);
-});
-test('real stdio entrypoint initializes and lists without reading the protected connection',async()=>{
-  const child=spawn(process.execPath,['tools/gitguardian-mcp.mjs'],{stdio:['pipe','pipe','pipe'],windowsHide:true});
-  let out='',err='';child.stdout.on('data',b=>{out+=b;});child.stderr.on('data',b=>{err+=b;});
-  const done=new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',code=>resolve(code));});
-  child.stdin.end(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26'}})+'\n'+
-    JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list'})+'\n');
-  assert.equal(await done,0);assert.equal(err,'');assert.equal(out.trim().split('\n').length,2);
-});
-
-test('MCP combined status calls one read-only adapter and reports unread coverage as an error',async()=>{
-  let calls=0;const rpc=createGitGuardianRpc({readSecurityStatus:async()=>{calls++;return{
-    githubCoverage:'complete-for-this-commit',incidentCoverage:calls===1?'complete-for-source':'not-read',
-    locationCoverage:'partial',incidentIssues:[]};}});
-  await rpc({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25'}});
-  const denied=await rpc({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'read_security_status',arguments:{repository:marker}}});
-  assert.equal(denied.error.code,-32602);assert.equal(calls,0);
-  const ok=await rpc({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'read_security_status',arguments:{}}});
-  assert.equal(ok.result.isError,false);assert.equal(calls,1);
-  const unread=await rpc({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:'read_security_status'}});
-  assert.equal(unread.result.isError,true);assert.equal(calls,2);
-});
-
 test('source monitoring metadata exposes only known states and safe historical scan time',async()=>{
   const{reader}=fixture({[sourceURL]:{data:{...source(),monitored:true,monitoring_status:'active',
     last_scan:{status:'finished',date:'2026-10-08T10:00:00Z',failing_reason:marker},secret:marker}}});

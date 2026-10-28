@@ -96,7 +96,7 @@ test('Gateway preserves operator chat while forwarding the server voice capabili
   function VoicePreviewPanel(props) { voiceProps.push(props); return null; }
   const {GatewayPanel} = load('./gateway-panel.tsx', {
     './studio-types': {requestJson() {assert.fail('render cannot send chat or voice');}},
-    './voice-preview-panel': {VoicePreviewPanel}, './openclaw-sources': {OpenClawSources() {return null;}},
+    './voice-preview-panel': {VoicePreviewPanel},
   });
   for (const available of [undefined, false, true]) {
     voiceProps.length = 0;

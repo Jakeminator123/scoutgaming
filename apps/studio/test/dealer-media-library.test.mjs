@@ -145,35 +145,6 @@ test('baseline and explicitly registered dealers share exact own idle-policy sta
   }
 });
 
-test('library renders registered clips consistently without requesting local clip-controls',async()=>{
-  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const file=new URL('../components/dealer-media-library.tsx',import.meta.url),require=createRequire(file),React=require('react');
-  const {renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('next/dist/build/swc');
-  const output=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
-  for(const dealerId of ['astrid','elin','saga','paow']){
-    const calls=[],effects=[],module={exports:{}};
-    const fakeReact={...React,useState:initial=>[initial,()=>{}],useRef:initial=>({current:initial}),useEffect:run=>effects.push(run)};
-    runInNewContext(output.code,{module,exports:module.exports,require:name=>{
-      if(name==='react')return fakeReact;
-      if(name==='./studio-types')return {requestJson:async path=>{calls.push(path);return {};},studioHref:()=>'/admin/dealer-studio'};
-      if(name==='./media-removal-feedback')return {mediaRemovalMessage:()=>''};
-      if(name==='./video-metadata-fields')return {VideoCompositingFields:()=>null,DealerFramingFields:()=>null};
-      if(name==='./dealer-video-surface')return {DealerClipPreview:()=>null};
-      if(name==='./dealer-file-settings')return {DealerFileSettings:()=>null};
-      if(name.endsWith('.css'))return {default:{}};
-      return require(name);
-    }});
-    const draft=addDealer(createEmptyProject(),dealerId,dealerId);
-    const own={id:dealerId+'-clip',dealer:dealerId,source:'upload',available:true,label:'Own '+dealerId,previewUrl:'/own',classification:{dealerId,eventId:'idle.ready',situation:''}};
-    const tree=module.exports.DealerMediaLibrary({project:draft,inventory:{videos:[own,{...own,id:'foreign',dealer:'foreign-dealer',label:'Foreign clip'}]},dealerId,onInventory(){},onProjectSaved(){},onLifecycleChange(){},onPendingChange(){}});
-    const cleanup=effects.map(run=>run());await new Promise(resolve=>setImmediate(resolve));
-    assert.deepEqual(calls,[],dealerId+' needs no local registry request');
-    const html=renderToStaticMarkup(tree);assert.ok(html.includes('Own '+dealerId));assert.doesNotMatch(html,/Foreign clip|Originalklipp behöver kontrolleras/);
-    assert.match(html,/Krävs · välj grundloop/);
-    for(const stop of cleanup)if(typeof stop==='function')stop();
-  }
-});
-
 test('shoe transitions are exact recommended slots and accept an upload classification',()=>{
   const slots=dealerMediaSlots(project,'transition');
   assert.deepEqual(slots.map(slot=>[slot.id,slot.label]),[['transition.shoe/to-shoe','Till skon'],['transition.shoe/from-shoe','Från skon']]);

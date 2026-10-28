@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSocialPolicy, createMemorySocialStore } from '../lib/social-store.mjs';
+import { createSocialPolicy, createMemorySocialStore } from './fixtures/social-store.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
 import { speechVisitor } from '../lib/generated-speech-server.mjs';
 

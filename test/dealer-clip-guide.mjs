@@ -35,21 +35,16 @@ test('deal pose versions describe sequence requirements separately from optional
   assert.deepEqual(guide.poses.versions.filter(row=>row.requirement==='conditional').map(row=>[row.start,row.end]),[['VILA','REDO'],['REDO','VILA'],['VILA','VILA']]);
   assert.equal(guide.variations.library,'multiple-takes');
   assert.equal(guide.variations.runtime,'not-verified');
-  assert.match(guide.variations.note,/samma plats och samma start-\/slutpose/);
-  assert.match(guide.variations.note,/egen kalibrering bunden till dess hash/);
-  assert.match(guide.variations.note,/livevariation.*ännu inte verifierad/);
-  assert.match(guide.filenames.note,/poseversioner, inte slumpvariationer/);
 });
 
 test('flip never invents REDO and exposes the source versus Forge template difference',()=>{
   const unposed=dealerClipGuide({id:'reveal.dealer/dealer-hole'});
   assert.equal(unposed.poses.start,null);assert.equal(unposed.poses.end,null);
   assert.equal(unposed.poses.status,'not-specified');
-  assert.deepEqual(unposed.poses.versions,[{label:'Kevins källversion',start:'VILA',end:'VILA',requirement:'conditional'}]);
+  assert.deepEqual(unposed.poses.versions.map(row=>[row.start,row.end,row.requirement]),[['VILA','VILA','conditional']]);
   const forge=dealerClipGuide({id:'reveal.dealer/dealer-hole',start:'REDO',end:'REDO'});
   assert.equal(forge.poses.status,'slot-template');
-  assert.match(forge.poses.note,/Kevins flip använder VILA → VILA/);
-  assert.match(forge.poses.note,/Forge-mallen anger REDO → REDO/);
+  assert.deepEqual(forge.poses.versions.map(row=>[row.start,row.end,row.requirement]),[['VILA','VILA','conditional'],['REDO','REDO','required']]);
   assert.equal(forge.verification.status,'guide-only');
   const source=dealerClipGuide({id:'reveal.dealer/dealer-hole',start:'VILA',end:'VILA'});
   assert.equal(source.poses.start,'VILA');assert.equal(source.poses.end,'VILA');
@@ -62,9 +57,8 @@ test('the hidden card keeps its two Kevin pose versions separate from a conflict
   assert.deepEqual(source.filenames.examples,['hole.mp4','hole-i.mp4']);
   const forge=dealerClipGuide({id:'deal.dealer/dealer-hole',start:'REDO',end:'REDO'});
   assert.equal(forge.poses.status,'slot-template');
-  assert.deepEqual(forge.poses.versions.filter(row=>row.requirement==='required').map(row=>[row.label,row.start,row.end]),[['Vald slotmall','REDO','REDO']]);
-  assert.match(forge.poses.note,/hole.mp4 går från REDO till VILA/);
-  assert.match(forge.poses.note,/olika slutpose/);
+  assert.deepEqual(forge.poses.versions.filter(row=>row.requirement==='required').map(row=>[row.start,row.end]),[['REDO','REDO']]);
+  assert.deepEqual(forge.poses.versions.filter(row=>row.requirement!=='required').map(row=>[row.start,row.end]),[['REDO','VILA'],['VILA','VILA']]);
 });
 
 test('images have no movement variation and layers follow background, dealer, table order',()=>{

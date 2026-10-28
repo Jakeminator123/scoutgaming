@@ -168,7 +168,7 @@
       $('.coverage').textContent=value.coverage?'Läst '+new Date(value.observedAt).toLocaleTimeString('sv-SE')+'. Saknad åtkomst: '+(Object.entries(value.coverage).filter(([,v])=>v!=='available').map(([k])=>k).join(', ')||'ingen i denna läsning'):'';status('');
       if(value.navigation){
         const url=new URL(value.navigation.href,location.origin);
-        const allowed=['/admin/clips','/admin/assets','/admin/structure','/admin/drift','/admin/ai/models','/admin/companies','/admin/admin/operators','/admin/admin/log'];
+        const allowed=['/admin/clips','/admin/assets','/admin/structure','/admin/drift','/admin/ai/models','/admin/companies','/admin/admin/log'];
         if(url.origin===location.origin&&allowed.includes(url.pathname)&&!url.hash){const link=document.createElement('a');link.href=url.pathname+url.search;link.textContent=value.navigation.label;link.target='_blank';link.rel='noopener';const box=document.createElement('p');box.append(link);messages.append(box);}
       }
       if(value.proposal&&access==='n1'){
