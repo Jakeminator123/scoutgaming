@@ -4,6 +4,8 @@ import {createHmac} from 'node:crypto';
 import {Readable} from 'node:stream';
 import {installPartnerApi as asyncFactory} from '../services/game/storage/async-partner-api.mjs';
 import {createPartnerDb} from './fixtures/partner-db.mjs';
+import {launchGameStart} from '../services/game/game-start.mjs';
+import {platformConfiguration, platformRoute} from '../packages/navigation/server/platform-routing.mjs';
 
 test('async storage contract partner launch returns canonical game address with preserved identity and wallet',async () => {
   const db = createPartnerDb();
@@ -21,10 +23,42 @@ test('async storage contract partner launch returns canonical game address with 
   await partner.handle(request,response,path);
   assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.playerRef,minted.playerRef);
   for (const result of [minted,response.body]) {
-    assert.equal(result.url,'https://game.example.invalid/blackjack?dealer=astrid&launch=fixture.claim.signature');
+    assert.equal(result.url,'https://game.example.invalid/blackjack?launch=fixture.claim.signature');
   }
   assert.equal(claims.length,2);assert.ok(claims.every(value => value.sub === minted.playerRef && value.partner === key.id));
   assert.equal(db.tables.players.length,1);
   assert.equal(db.tables.players[0].currency,'EUR');
   assert.equal(db.tables.players[0].balance,127.5);assert.deepEqual(journal,[]);
+});
+
+// L1 (O02): a partner launch names no company. Follow the whole landing: launch URL →
+// engine landing (launchGameStart, as in server.mjs) → public routing → lobby. Neither
+// a new nor an already issued dealer=astrid URL may reach /blackjack without a company.
+test('partner launch lands in the lobby without a company and keeps an explicit company room',async () => {
+  const db = createPartnerDb(), publicOrigin = 'https://game.example.invalid';
+  const partner = asyncFactory({db,boDb:db,publicUrl:publicOrigin,publicGamePath:'/game',root:'',
+    getPlayer:id => db.prepare('SELECT * FROM players WHERE id=?').get(id),jwtSign:() => 'fixture.claim.signature',logTx:() => {}});
+  const key = await partner.keys.create({name:'lobby-landing',scopes:['launch']});
+  const minted = await partner.keys.mintLaunch(key.id,{playerId:'external-ref',currency:'EUR'});
+  const routing = platformConfiguration({CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
+    CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_LAB_UI_ORIGIN:'https://lab.example.invalid',
+    CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)});
+  const land = launchUrl => {
+    const url = new URL(launchUrl);
+    // The public address forwards a launch to the engine; the engine's 303 is the landing.
+    assert.equal(platformRoute(url,routing).kind,'backend');
+    url.searchParams.delete('launch');
+    const destination = launchGameStart(url.searchParams,{origin:url.origin});
+    return {destination,route:platformRoute(new URL(destination,publicOrigin),routing)};
+  };
+  assert.equal(minted.url,publicOrigin+'/game?launch=fixture.claim.signature');
+  for (const issued of [minted.url,publicOrigin+'/game?dealer=astrid&launch=fixture.claim.signature',
+    publicOrigin+'/game?dealer=astrid&lane=mobile-phone&table=room-1&launch=fixture.claim.signature']) {
+    const {destination,route} = land(issued);
+    assert.equal(destination,'/game?game=blackjack',issued);
+    assert.deepEqual(route,{kind:'redirect',destination:publicOrigin+'/lobby'},issued);
+  }
+  const company = land(publicOrigin+'/game?operator=sg-test&table=room-1&dealer=astrid&launch=fixture.claim.signature');
+  assert.equal(company.destination,'/game?game=blackjack&dealer=astrid&table=room-1&operator=sg-test');
+  assert.deepEqual(company.route,{kind:'frontend'});
 });

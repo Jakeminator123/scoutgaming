@@ -39,7 +39,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, displayName: presentedAs, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
-        url: `${publicUrl}${publicGamePath}?dealer=astrid&launch=${tok}`,
+        url: `${publicUrl}${publicGamePath}?launch=${tok}`,
         curlLines: [`curl -X POST ${publicUrl}/api/v1/launch`, `  -H 'Content-Type: application/json'`, `  -H 'X-Api-Key: ${row.key}'`, `  -H 'X-Timestamp: ${ts}'`, `  -H 'X-Signature: ${sig}'`, `  -d '${body}'`],
         signedString: `${ts}.POST./api/v1/launch.${body}`,
         curlNote: 'Signature valid 5 minutes. signedString is the exact input to HMAC-SHA256 with the key secret.' };
@@ -148,7 +148,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         const presentedAs = normalizeDisplayName(displayName);
         const p = (await playerFor(k, playerId, currency));
         const tok = jwtSign({ sub: p.id, partner: k.id, partner_key_stamp: keyStamp(k), displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
-        return send(200, { url: `${publicUrl}${publicGamePath}?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
+        return send(200, { url: `${publicUrl}${publicGamePath}?launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') {
         const e=need(k,'play');if(e)return send(e.status,e);
         const {playerId,requestId,...cmd}=input;

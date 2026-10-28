@@ -11,13 +11,15 @@ function selector(id,{configured=true,pack=true}={}){
  const saved={administration:{gameLanes:lanes,gameLane:configured?'configured':null},project:{dealers:[{id,label:id}],lanes:configured?[{id:'configured',dealers:[id],layers:{dealer:{enabled:true,default:id,allowed:[id]},background:{enabled:false,mode:'baked',allowed:[],default:null},table:{enabled:false,allowed:[],default:null}}}]:[]}};
  return createGameEntrySelector({policy:{readSaved:async()=>saved,readGameConfiguration:async()=>{}},packages:{resolve:async()=>({operator:{id:'operator',status:'active'},package:pack?{revision:3,lanes:['configured'],branding:{}}:null})}});
 }
-test('empty configuration invents no lane or local dealer',async()=>{assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});assert.throws(()=>gameLaneFromDocument({}));await assert.rejects(selector('paow',{configured:false})(''),/configured/);});
+test('empty configuration invents no lane or local dealer',async()=>{assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});assert.throws(()=>gameLaneFromDocument({}));await assert.rejects(selector('paow',{configured:false})('?operator=testco'),/presentation_lane_unavailable/);});
 for(const id of ['paow','dragge','nora','astrid'])test(`${id} is available only through explicit saved cloud registration`,async()=>{
  const select=selector(id);
- for(const query of ['',`?dealer=${id}`,`?operator=testco&dealer=${id}`]){
+ for(const query of ['?operator=testco',`?operator=testco&dealer=${id}`]){
   const result=await select(query);assert.equal(result.status,200);assert.equal(result.selection.dealer,id);assert.equal(result.selection.presentation,'local');assert.equal(result.selection.localDealer,id);assert.deepEqual(result.selection.registeredDealers,[{id,label:id}]);assert.deepEqual(result.selection.choices.dealers,[id]);
  }
  const data={gameLane:'configured',gameDealer:id,gamePresentation:'local',gameLocalDealer:id,gameRegisteredDealers:JSON.stringify([{id,label:id}])};
+ // L1: no saved-project entry without a company, also not with ?dealer=.
+ for(const query of ['',`?dealer=${id}`])assert.equal((await select(query)).status,404);
  assert.equal(gameLaneFromDocument(data).dealer,id);
  assert.throws(()=>gameLaneFromDocument({...data,gameRegisteredDealers:'[]'}));
 });
@@ -28,7 +30,7 @@ test('retired dealers cannot launch while old document identifiers remain readab
   assert.throws(()=>validatePublicRegisteredDealers([{id,label:id}]));
  }
 });
-test('local indexed catalog can be read for history but cannot start',async()=>{const old={schemaVersion:1,id:'old',label:'Old',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'};assert.deepEqual(validateGameLanes([old]),[old]);const select=createGameEntrySelector({policy:{readGameConfiguration:async()=>{},readSaved:async()=>({administration:{gameLanes:[old],gameLane:'old'},project:{}})}});await assert.rejects(select(''),/cloud/);});
+test('local indexed catalog can be read for history but cannot start',async()=>{const old={schemaVersion:1,id:'old',label:'Old',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'};assert.deepEqual(validateGameLanes([old]),[old]);const select=createGameEntrySelector({policy:{readGameConfiguration:async()=>{},readSaved:async()=>({administration:{gameLanes:[old],gameLane:'old'},project:{}})},packages:{resolve:async()=>({operator:{id:'op',status:'active'},package:{revision:1,lanes:['old'],branding:{}}})}});await assert.rejects(select('?operator=testco'),/cloud/);});
 test('missing operator package cannot silently start a default dealer',async()=>{assert.equal((await selector('paow',{pack:false})('?operator=testco')).status,404);});
 
 test('registered Astrid does not duplicate the historical package authority',async()=>{

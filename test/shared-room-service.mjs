@@ -27,7 +27,7 @@ function setup(t, hooks = {}) {
       async stop() { calls.push(['runtime-stop']); await hooks.stop?.(); health.running = false; },
       health: () => health,
       withLockedRead: (...args)=>hooks.lockedRead?.(...args),
-      coordinator: { async snapshot(room, actor) { calls.push(['snapshot', room, actor]); return hooks.snapshot ? hooks.snapshot(room, actor) : { roomId: room, presentationVer: 7, me: { id: actor } }; } },
+      coordinator: { async seen(room, actor) { calls.push(['seen', room, actor]); }, async snapshot(room, actor) { calls.push(['snapshot', room, actor]); return hooks.snapshot ? hooks.snapshot(room, actor) : { roomId: room, presentationVer: 7, me: { id: actor } }; } },
     }; },
     createChannel(value) { ports.channel = value; return {
       async prepare(req) { calls.push(['prepare']); const accepted = await value.authorize(req, { roomId: 'room-a', signal: req.signal }); return { attach: () => accepted }; },
@@ -60,7 +60,7 @@ test('construction shares explicit app ports/pool without I/O and rejects an imp
   for (const key of ['scope', 'repository', 'auth']) assert.equal(h.config.access[key], h.options[key]);
   assert.equal(h.config.upgrade.origin, h.options.origin); assert.equal(h.config.upgrade.engineOrigin, h.options.engineOrigin);
   for (const walletMode of [undefined, 'external', '']) assert.throws(() => createSharedRoomService({ ...h.options, walletMode }, h.dependencies), { statusCode: 503 });
-  assert.deepEqual(h.service.health(), { state: 'idle', ready: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null });
+  assert.deepEqual(h.service.health(), { state: 'idle', ready: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
 });
 
 test('receiver readiness precedes runtime start; admission stays shut until both finish', async t => {
@@ -134,10 +134,13 @@ test('read ports retain server actor/room and binding, abort on stop and drain o
   assert.deepEqual(await h.ports.channel.readPresentation('room-a', { signal }), { roomId: 'room-a', ver: 7 });
   assert.equal(await h.ports.channel.revalidate(h.binding, { signal }), h.binding);
   assert.equal(h.calls.find(call => call[0] === 'revalidate')[1], h.binding);
+  // B4: presence is the bound actor in the bound room, through the same service lifetime.
+  await h.ports.channel.touch(h.binding, { signal }); assert.deepEqual(h.calls.filter(call => call[0] === 'seen'), [['seen', 'room-a', 'actor-a']]);
   held = true; const reading = h.ports.channel.readSnapshot('room-a', 'actor-a', { signal }), aborted = assert.rejects(reading, { name: 'AbortError' });
   await turn(); assert.equal(h.service.health().inFlight, true);
   let closed = false; const closing = h.service.close().then(() => { closed = true; }); await turn(); assert.equal(closed, false);
   const before = count(h, 'current'); await assert.rejects(h.ports.channel.readPresentation('room-a', { signal }), { statusCode: 503 }); assert.equal(count(h, 'current'), before);
+  await assert.rejects(h.ports.channel.touch(h.binding, { signal }), { statusCode: 503 }); assert.equal(count(h, 'seen'), 1);
   delayed.resolve(); await aborted; await closing; assert.equal(h.service.health().inFlight, false);
 });
 
@@ -152,7 +155,7 @@ test('close aborts and drains authorization; no admission escapes after its late
 test('health excludes raw details and a failed scheduler closes readiness until recovery', async t => {
   const h = setup(t); await h.service.start();
   Object.assign(h.health, { failed: true, lastErrorAt: 1234, lastSuccessAt: 'private detail', error: 'secret', connection: 'private' });
-  assert.deepEqual(h.service.health(), { state: 'running', ready: false, failed: true, inFlight: false, lastSuccessAt: null, lastErrorAt: 1234 });
+  assert.deepEqual(h.service.health(), { state: 'running', ready: false, failed: true, inFlight: false, lastSuccessAt: null, lastErrorAt: 1234, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   await assert.rejects(h.service.handleUpgrade(request()), { statusCode: 503 }); assert.equal(count(h, 'authorize'), 0);
   h.health.failed = false; assert.equal(h.service.health().ready, true);
 });

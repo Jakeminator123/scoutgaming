@@ -501,9 +501,14 @@ test('authenticated config projects only an exactly bound own Nora idle with ret
   const video={id,dealer:'nora',fileName:'own-nora.mp4',sha256:'a'.repeat(64),available:true,
     classification:{dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Nora idle',notes:'',playback:'once',compositing:key}};
   const inventory={families:[],videos:[video]};
-  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
-  const get=async player=>{const res={writeHead(s){this.status=s;},end(body){this.body=JSON.parse(body);}};await handler({method:'GET',url:'/api/presentation/config?dealerId=nora'},res,'/api/presentation/config',player);return res;};
+  // The dealerId-only form belongs to Admin's preview instance (studio-preview.mjs) only.
+  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,savedDealerConfiguration:true});
+  const get=async (player,api=handler)=>{const res={writeHead(s){this.status=s;},end(body){this.body=JSON.parse(body);}};await api({method:'GET',url:'/api/presentation/config?dealerId=nora'},res,'/api/presentation/config',player);return res;};
   assert.equal((await get(null)).status,401);
+  // L2 (O02): the public engine instance answers 404 and reads neither the saved project nor the inventory.
+  let reads=0;const publicApi=createPresentationApi({env:{},store:{load:async()=>{reads++;return project;}},registryLoader:async()=>{reads++;return inventory;}});
+  const denied=await get('own-fixture',publicApi);assert.equal(denied.status,404);
+  assert.equal(reads,0);assert.equal(JSON.stringify(denied.body).includes(id),false);assert.equal(Object.hasOwn(denied.body,'inventory'),false);
   const response=await get('own-fixture');assert.equal(response.status,200);
   assert.deepEqual(response.body.dealerIdle.nora,{id,sha256:video.sha256,fileName:video.fileName,src:'/api/presentation/videos/'+id,compositing:key});
   video.dealer='astrid';assert.equal((await get('own-fixture')).body.dealerIdle.nora,null);

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { normalizeConversationMemory } from '../../packages/director/conversation-memory.mjs';
 import { normalizeGeneratedSpeechText } from '../../packages/director/generated-speech-text.mjs';
 
@@ -10,6 +11,9 @@ class GatewayError extends Error {
 export const OPENCLAW_SPEECH_KINDS = Object.freeze(['recordedLine', 'generatedText', 'silence']);
 export const OPENCLAW_CHAT_LIMITS = Object.freeze({ message: 1000, history: 30, historyChars: 8000, generatedText: 500, events: 128, hands: 32, cards: 32 });
 
+// A shared round id names a room and its round; the gateway gets an opaque stand-in.
+const maskedRoundId = id => typeof id === 'string' && id.startsWith('shared-')
+  ? 'shared-round-' + createHash('sha256').update(id).digest('hex').slice(0, 16) : id;
 const RANKS = new Set(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']);
 const SUITS = new Set(['♠', '♥', '♦', '♣']);
 const PHASES = new Set(['bets', 'dealing', 'insurance', 'decisions', 'dealer', 'settled', 'collecting', 'idle']);
@@ -156,7 +160,7 @@ export function projectOpenClawGameStatus(authoritative) {
       currencies: authoritative.playResults.currencies.map(({ currency, rounds, won, lost, net, wagered, returned }) =>
         ({ currency, rounds, won, lost, net, wagered, returned })),
       ...(authoritative.playResults.lastRound === undefined ? {} : { lastRound: authoritative.playResults.lastRound ?
-        (({roundId,currency,wagered,returned,net,outcome})=>({roundId,currency,wagered,returned,net,outcome}))(authoritative.playResults.lastRound) : null }),
+        (({roundId,currency,wagered,returned,net,outcome})=>({roundId:maskedRoundId(roundId),currency,wagered,returned,net,outcome}))(authoritative.playResults.lastRound) : null }),
       currentRound: authoritative.playResults.currentRound ? {
         currency: authoritative.playResults.currentRound.currency, wagered: authoritative.playResults.currentRound.wagered,
         phase: authoritative.playResults.currentRound.phase,
