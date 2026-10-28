@@ -230,11 +230,11 @@ test('a north membership cannot read demo-south, and a suspended membership is d
   assert.equal(snapshot.headers.get('x-content-type-options'), 'nosniff');
   const body = await snapshot.json();
   assert.equal(body.preview, false);
-  assert.equal(body.notConnected, true);
+  assert.equal(body.notConnected, undefined);
   assert.equal(body.operator.id, northId);
-  assert.deepEqual(body.players, []);
-  assert.deepEqual(body.transactions, []);
-  assert.deepEqual(body.reports, []);
+  assert.equal(body.players, undefined);
+  assert.equal(body.transactions, undefined);
+  assert.deepEqual(body.role, { id: 'role-partner', label: 'Partner' });
   assert.equal(JSON.stringify(body).includes('demo-south'), false);
   assert.deepEqual(body.team, []); // This role has overview.read, but not team.read.
   for (const key of ['tables', 'presentations']) {
@@ -365,7 +365,13 @@ test('branding read follows the lane, requires configure, and refuses deprecated
       },
     };
   }
-  const reader = storeFor(['overview.read']);
+  // Spelbordens utseende is the Spelbord view: a role without tables.read gets 403 even on GET.
+  const overviewOnly = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    headers: { host: 'public.example.invalid', cookie },
+  }), { ...config, store: storeFor(['overview.read']), readProject, readAdministration: async () => ({ rooms: [] }) });
+  assert.equal(overviewOnly.status, 403);
+  assert.deepEqual(await overviewOnly.json(), { error: 'Access denied' });
+  const reader = storeFor(['overview.read', 'tables.read']);
   const authed = { ...config, store: reader, readProject,readAdministration:async()=>({rooms:[]}) };
   const read = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     headers: { host: 'public.example.invalid', cookie },
@@ -386,7 +392,7 @@ test('branding read follows the lane, requires configure, and refuses deprecated
   }), authed);
   assert.equal(denied.status, 403);
   assert.equal(reader.published.length, 0);
-  const writer = storeFor(['overview.read', 'presentations.configure']);
+  const writer = storeFor(['overview.read', 'tables.read', 'presentations.configure']);
   const saved = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     method: 'POST',
     headers: {
@@ -495,7 +501,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets:tableGeometry?[tableAsset]:[]}).presentation;
   const presentation={...captured,schemaVersion:2};
   let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
-    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
+    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','tables.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
   function anchoredPresentation(){

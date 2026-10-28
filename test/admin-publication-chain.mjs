@@ -106,8 +106,11 @@ async function assertPublishedChain(f, receipt) {
   assert.equal(partner.accessClass, 'partner');
   assert.equal(partner.packageRevision, String(receipt.packageRevision));
   assert.deepEqual(partner.presentation, frozen, 'N2 receives the exact newly frozen package');
+  // Partnerportalen reads the room's state, resolved dealer, bound config version and lobby link from the same package.
   assert.deepEqual(partner.tables, [{id: receipt.room.id, name: receipt.room.name, operatorId: company.id,
-    game: 'blackjack', status: 'active', presentationId: compositionId}]);
+    game: 'blackjack', state: 'live', status: 'active', presentationId: compositionId,
+    dealer: {id: 'astrid', label: 'Astrid'}, configVersion: null,
+    playUrl: `/game?game=blackjack&operator=${company.slug}&table=${receipt.room.id}`}]);
 
   const publicRooms = await f.publicRooms.read(company.slug);
   assert.equal(publicRooms.packageRevision, receipt.packageRevision);
@@ -157,7 +160,9 @@ async function assertPublishedChain(f, receipt) {
   const southPartner = await south.json();
   assert.equal(southPartner.packageRevision, String(southReceipt.packageRevision));
   assert.deepEqual(southPartner.tables, [{id: southReceipt.room.id, name: southReceipt.room.name, operatorId: otherCompany.id,
-    game: 'blackjack', status: 'active', presentationId: compositionId}]);
+    game: 'blackjack', state: 'live', status: 'active', presentationId: compositionId,
+    dealer: {id: 'astrid', label: 'Astrid'}, configVersion: null,
+    playUrl: `/game?game=blackjack&operator=${otherCompany.slug}&table=${southReceipt.room.id}`}]);
   const wrongCompany = new URL(href, f.origin); wrongCompany.searchParams.set('operator', otherCompany.slug);
   assert.equal((await f.request(wrongCompany.pathname + wrongCompany.search)).status, 404, 'foreign company cannot launch this room');
   const wrongRoom = new URL(href, f.origin); wrongRoom.searchParams.set('table', compositionId);
