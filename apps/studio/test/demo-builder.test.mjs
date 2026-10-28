@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DEMO_KEY_SCOPES,DEMO_STEPS,DemoError,chooseCompany,chooseDealer,chooseRoom,creditDemo,demoCompanies,demoCreditReceipt,demoCredits,demoDealers,demoDisplayName,demoErrorMessage,demoKeyName,demoLaunchLink,demoPermissions,demoReceipt,demoRooms,
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import vm from 'node:vm';
+import * as demoLib from '../client/admin/lib/demo-builder.mjs';
+import {DEMO_KEY_SCOPES,DEMO_LAUNCH_ENABLED,DEMO_LAUNCH_OFF_TEXT,DEMO_STEPS,DemoError,chooseCompany,chooseDealer,chooseRoom,creditDemo,demoCompanies,demoCreditReceipt,demoCredits,demoDealers,demoDisplayName,demoErrorMessage,demoFormRequirement,demoKeyName,demoLaunchLink,demoPermissions,demoReceipt,demoRooms,
   editDemo,expiryText,goToStep,initialDemoState,launchDemo,nextLabel,nextStep,previousStep,reachableStep,readCreditAmount,readDemoCatalog,revokeDemoKey,stepRequirement} from '../client/admin/lib/demo-builder.mjs';
 import {approvedPartnerLaunchUrl} from '../lib/partner-launch-url.mjs';
 import {designPreviewPages,designPreviewReturnTo} from '../lib/design-preview-paths.mjs';
@@ -52,12 +56,13 @@ test('steps: each step demands its choice, names the next step and never skips a
   assert.deepEqual(stepRequirement(state),{ready:false,missing:'Välj en dealer.'});
   assert.equal(nextLabel(3),'Nästa: Lansera');
   state=nextStep(chooseDealer(state,'dragan'));assert.equal(state.step,4);
-  assert.deepEqual(stepRequirement(state),{ready:false,missing:'Ge demon ett namn.'});
+  assert.deepEqual(demoFormRequirement(state),{ready:false,missing:'Ge demon ett namn.'});
   assert.equal(nextLabel(4),'Skapa demolänk');
   state=editDemo(state,'name','Demo Johns Bet');
-  assert.equal(stepRequirement(state).ready,true);
-  assert.equal(stepRequirement(editDemo(state,'displayName','x'.repeat(41))).ready,false,'visningsnamn över 40 tecken stoppar');
-  assert.equal(stepRequirement(editDemo(state,'displayName','Bad\u0007name')).missing,'Visningsnamnet får vara högst 40 tecken utan styrtecken.');
+  assert.equal(demoFormRequirement(state).ready,true);
+  assert.deepEqual(stepRequirement(state),DEMO_LAUNCH_ENABLED?{ready:true,missing:''}:{ready:false,missing:DEMO_LAUNCH_OFF_TEXT},'steg 4:s krav följer DEMO_LAUNCH_ENABLED');
+  assert.equal(demoFormRequirement(editDemo(state,'displayName','x'.repeat(41))).ready,false,'visningsnamn över 40 tecken stoppar');
+  assert.equal(demoFormRequirement(editDemo(state,'displayName','Bad\u0007name')).missing,'Visningsnamnet får vara högst 40 tecken utan styrtecken.');
   assert.equal(editDemo(state,'currency','GBP').form.currency,'EUR','okänd valuta ignoreras');
   assert.equal(editDemo(state,'language','de').form.language,'en','okänt språk ignoreras');
   assert.equal(previousStep(state).step,3);
@@ -138,11 +143,11 @@ test('demo key: minimal scopes, a demo- name and purpose demo; never wallet, his
   let ready=nextStep(chooseCompany(initialDemoState(),'op-johns'));
   ready=nextStep(nextStep(chooseRoom(ready,demoRooms(administration(),'op-johns')[0])));
   assert.equal(ready.step,4);
-  assert.equal(stepRequirement(editDemo(ready,'name','demo-')).missing,'Ge demon ett namn.');
-  assert.equal(stepRequirement(editDemo(ready,'name','x'.repeat(75))).ready,false,'utan visningsnamn blir 75 tecken ett för långt visningsnamn');
-  assert.equal(stepRequirement(editDemo(editDemo(ready,'name','x'.repeat(75)),'displayName','X')).ready,true,'demo- plus 75 tecken ryms i nyckelns 80');
-  assert.equal(stepRequirement(editDemo(ready,'name','x'.repeat(76))).missing,'Demons namn får vara högst 75 tecken.');
-  assert.equal(stepRequirement(editDemo(editDemo(ready,'name','Bad\u0007name'),'displayName','X')).missing,'Demons namn får inte innehålla styrtecken.');
+  assert.equal(demoFormRequirement(editDemo(ready,'name','demo-')).missing,'Ge demon ett namn.');
+  assert.equal(demoFormRequirement(editDemo(ready,'name','x'.repeat(75))).ready,false,'utan visningsnamn blir 75 tecken ett för långt visningsnamn');
+  assert.equal(demoFormRequirement(editDemo(editDemo(ready,'name','x'.repeat(75)),'displayName','X')).ready,true,'demo- plus 75 tecken ryms i nyckelns 80');
+  assert.equal(demoFormRequirement(editDemo(ready,'name','x'.repeat(76))).missing,'Demons namn får vara högst 75 tecken.');
+  assert.equal(demoFormRequirement(editDemo(editDemo(ready,'name','Bad\u0007name'),'displayName','X')).missing,'Demons namn får inte innehålla styrtecken.');
 });
 
 test('launch: creates a demo key that the server answers without key or secret, launches on it and keeps no credential',async()=>{
@@ -243,4 +248,38 @@ test('/admin/demo is a served Admin page and a valid return address',()=>{
   assert.equal(designPreviewPages.has('demo'),true);
   assert.equal(designPreviewReturnTo('/admin/demo'),'/admin/demo');
   assert.equal(designPreviewReturnTo('/studio/admin/demo?operator=johns-bet'),'/admin/demo?operator=johns-bet');
+});
+
+// Sidan som den renderas i steg 4 med ett komplett formulär: DemoBuilder:s tillstånd
+// (katalog, session, uppdatering, demon, lansering, återkallelse, krediter) i den ordning
+// komponenten anropar useState. Underkomponenterna i steg 4 har inga egna hooks.
+function renderDemoStep4(){
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const file=new URL('../client/admin/components/studio/demo-builder.tsx',import.meta.url);
+  const {code}=require('next/dist/build/swc').transformSync(readFileSync(file,'utf8'),{filename:'demo-builder.tsx',
+    jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+  let state=nextStep(chooseCompany(initialDemoState(),'op-johns'));
+  state=editDemo(nextStep(nextStep(chooseRoom(state,demoRooms(administration(),'op-johns')[0]))),'name','Johns demo');
+  const slots=[{status:'ready',value:administration()},{status:'ready',value:demoPermissions(adminSession())},0,state,{phase:'idle'},{phase:'idle'},{status:'ready',value:null}];
+  let slot=0;
+  const hooks={...React,useState:()=>[slots[slot++],()=>{}],useEffect:()=>{},useMemo:fn=>fn(),useRef:current=>({current})};
+  const Link=({href,children,...rest})=>React.createElement('a',{href,...rest},children);
+  const module={exports:{}};
+  vm.runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,require:name=>name==='react'?hooks
+    :name==='react/jsx-runtime'?require(name):name.endsWith('/runtime/navigation')?{__esModule:true,default:Link}
+    :name.endsWith('.module.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}
+    :name.endsWith('/lib/demo-builder.mjs')?demoLib:require(name)},{filename:'demo-builder.tsx'});
+  return renderToStaticMarkup(module.exports.DemoBuilder());
+}
+
+test('Skapa demolänk is off with the reason while DEMO_LAUNCH_ENABLED is false; steps 1–3 and Din demo still show the choices',{skip:DEMO_LAUNCH_ENABLED&&'demolänken är påslagen'},()=>{
+  assert.equal(DEMO_LAUNCH_ENABLED,false);
+  const html=renderDemoStep4();
+  assert.match(html,/<h2>4\. Lansera<\/h2>/);
+  const button=html.match(/<button[^>]*>Skapa demolänk<\/button>/)?.[0];
+  assert.ok(button,'knappen finns');assert.match(button,/disabled=""/,'knappen är inaktiv');
+  assert.ok(html.includes(DEMO_LAUNCH_OFF_TEXT),'texten står vid knappen');
+  assert.equal(DEMO_LAUNCH_OFF_TEXT,'Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget, efter O03; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.');
+  for (const choice of ['Johns Bet','PAOW Blackjack','PAOW','Johns demo','demo-Johns demo'])assert.ok(html.includes(choice),'Din demo visar '+choice);
+  assert.doesNotMatch(html,/landar direkt|vid spelbordet/,'inga löften om att demon sätter sig vid bordet');
 });

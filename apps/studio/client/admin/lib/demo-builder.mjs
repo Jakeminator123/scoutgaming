@@ -28,6 +28,12 @@ export const DEMO_KEY_SCOPES=Object.freeze(['launch','play']);
 export const DEMO_KEY_PREFIX='demo-';
 export const DEMO_NAME_MAX=80-DEMO_KEY_PREFIX.length;
 export const DEMO_CREDIT_MAX=100000;
+// Avstängt tills partnernyckeln knyts till bolaget (efter O03): en partnerlanserad session
+// nekas i dag vid det delade bordet (403) och har ingen reserv till det vanliga bordet.
+// Knappen "Skapa demolänk" och steg 4:s krav läser bara den här konstanten; launch, Fyll på
+// och Återkalla ligger kvar oförändrade bakom den och slås på genom att sätta true.
+export const DEMO_LAUNCH_ENABLED=false;
+export const DEMO_LAUNCH_OFF_TEXT='Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget, efter O03; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.';
 const CONTROL=/[\u0000-\u001f\u007f-\u009f]/u;
 const ROOM_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const text=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max&&!CONTROL.test(value);
@@ -56,6 +62,10 @@ export function stepRequirement(state,step=state.step){
   if(step===1)return state.operatorId?ready():missing('Välj ett bolag.');
   if(step===2)return state.roomId?ready():missing('Välj ett spelbart spelbord.');
   if(step===3)return state.dealerId?ready():missing('Välj en dealer.');
+  return DEMO_LAUNCH_ENABLED?demoFormRequirement(state):missing(DEMO_LAUNCH_OFF_TEXT);
+}
+// Steg 4:s formulär (namn och visningsnamn), oberoende av om demolänken är påslagen.
+export function demoFormRequirement(state){
   const name=demoNameBase(state.form);
   if(!name)return missing('Ge demon ett namn.');
   if(name.length>DEMO_NAME_MAX)return missing(`Demons namn får vara högst ${DEMO_NAME_MAX} tecken.`);

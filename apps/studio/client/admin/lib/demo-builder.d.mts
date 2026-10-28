@@ -9,6 +9,8 @@ export const DEMO_KEY_SCOPES:readonly ('launch'|'play')[];
 export const DEMO_KEY_PREFIX:'demo-';
 export const DEMO_NAME_MAX:number;
 export const DEMO_CREDIT_MAX:number;
+export const DEMO_LAUNCH_ENABLED:boolean;
+export const DEMO_LAUNCH_OFF_TEXT:string;
 
 export type DemoOperatorRow={id:string;slug:string;name:string;status:string;packageRevision:number|null;archivedAt?:string|null};
 export type DemoRoomRow={id:string;name:string;operatorId:string;game?:string;state:string;published:boolean;playable:boolean;
@@ -39,6 +41,7 @@ export function chooseRoom(state:DemoState,room:DemoRoom):DemoState;
 export function chooseDealer(state:DemoState,dealerId:string):DemoState;
 export function editDemo(state:DemoState,field:keyof DemoForm,value:string):DemoState;
 export function stepRequirement(state:DemoState,step?:number):DemoRequirement;
+export function demoFormRequirement(state:DemoState):DemoRequirement;
 export function reachableStep(state:DemoState):number;
 export function goToStep(state:DemoState,step:number):DemoState;
 export function nextStep(state:DemoState):DemoState;

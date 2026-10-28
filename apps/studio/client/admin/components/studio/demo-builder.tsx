@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode} from 'react';
 import Link from '../../../runtime/navigation';
 import styles from './demo-builder.module.css';
-import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
+import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DEMO_LAUNCH_ENABLED, DEMO_LAUNCH_OFF_TEXT, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
   demoKeyName, demoNameBase, demoPermissions, demoRooms, editDemo, expiryText, formatMoney, goToStep, initialDemoState, launchDemo, nextLabel, nextStep, previousStep, reachableStep,
   readCreditAmount, readDemoCatalogFrom, readDemoSession, readRoomGameConfig, revokeDemoKey, stepRequirement,
   type DemoAdministration, type DemoCompany, type DemoCredits as Credits, type DemoDealer, type DemoKey, type DemoLaunch, type DemoPermissions, type DemoRoom, type DemoState} from '../../lib/demo-builder.mjs';
@@ -86,7 +86,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <div className={styles.field}><label htmlFor="demo-name">Demons namn</label><input id="demo-name" className={styles.input} value={state.form.name} maxLength={80} autoComplete="off" onChange={event=>onEdit('name',event.target.value)} placeholder={company.name}/>
         <span className={styles.hint}>Nyckeln för demon heter <code>{keyName||'demo-…'}</code> under Integration och får bara rättigheterna {SCOPE_TEXT}.</span></div>
       <div className={styles.field}><label htmlFor="demo-display">Spelarens visningsnamn</label><input id="demo-display" className={styles.input} value={state.form.displayName} maxLength={40} autoComplete="off" onChange={event=>onEdit('displayName',event.target.value)} placeholder={demoNameBase(state.form)||'Som demons namn'}/>
-        <span className={styles.hint}>Visas vid spelbordet. Högst 40 tecken; tomt ger demons namn.</span></div>
+        <span className={styles.hint}>Visas i spelet. Högst 40 tecken; tomt ger demons namn.</span></div>
       <div className={styles.field}><label htmlFor="demo-language">Språk i spelet</label><select id="demo-language" className={styles.input} value={state.form.language} onChange={event=>onEdit('language',event.target.value)}>{DEMO_LANGUAGES.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></div>
       <div className={styles.field}><label htmlFor="demo-currency">Valuta</label><select id="demo-currency" className={styles.input} value={state.form.currency} onChange={event=>onEdit('currency',event.target.value)}>{DEMO_CURRENCIES.map(row=><option key={row}>{row}</option>)}</select></div>
     </div>
@@ -94,7 +94,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <CreditsReadout credits={credits} company={company} room={room}/>
       <p className={cx(styles.small,styles.muted,styles.mt)}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; tidigast efter O03). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
-    <div className={cx(styles.note,styles.noteAccent)}>Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter för <b>{dealer.name}</b> vid <b>{room.name}</b> hos <b>{company.name}</b>. Nyckel och hemlighet lämnar aldrig servern. Två skrivningar: <code>apikeys/create</code> och <code>apikeys/launch</code>.</div>
+    <div className={cx(styles.note,styles.noteAccent)}>Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> hos <b>{company.name}</b> med <b>{dealer.name}</b>. Nyckel och hemlighet lämnar aldrig servern. Två skrivningar: <code>apikeys/create</code> och <code>apikeys/launch</code>.</div>
     {permissions.blocker&&<div className={cx(styles.note,styles.noteWarn)} role="note">{permissions.blocker}</div>}
   </div>;
 }
@@ -115,7 +115,7 @@ function Result({value,company,room,dealer,language,permissions,revoke,onRevoke,
         <button type="button" className={cx(styles.btn,styles.btnPrimary)} onClick={copy}>{copied==='copied'?'Kopierad':'Kopiera'}</button></div>
       {copied==='manual'&&<p className={cx(styles.small,styles.muted,styles.mt)}>Urklipp är inte tillgängligt här. Länken är markerad: kopiera den med Ctrl+C.</p>}
     </div>
-    <p><b>Skicka till bolaget.</b> Den som öppnar länken loggas in som demospelaren <b>{value.displayName}</b> ({language==='sv'?'svenska':'engelska'}) och landar direkt vid spelbordet {room.name} hos {company.name} med {dealer.name}: spelmotorn behåller bolaget i starten.</p>
+    <p><b>Skicka till bolaget.</b> Den som öppnar länken loggas in som demospelaren <b>{value.displayName}</b> ({language==='sv'?'svenska':'engelska'}). Länken anger spelbordet {room.name} hos {company.name} med {dealer.name}.</p>
     <dl className={styles.kv}>
       <dt>Startsaldo</dt><dd>{formatMoney(value.receipt.balance,value.receipt.currency)}</dd>
       <dt>Demospelare</dt><dd>{value.receipt.playerId?<code>{value.receipt.playerId}</code>:'–'}{value.receipt.playerRef&&<> · ref <code>{value.receipt.playerRef}</code></>}</dd>
@@ -246,10 +246,10 @@ export function DemoBuilder() {
   else if(effective.step===3&&company)body=<DealerStep company={company} dealers={dealers} selected={dealer?.id??null} onSelect={id=>setState(current=>chooseDealer(current,id))}/>;
   else if(company&&room&&dealer)body=<LaunchStep state={state} company={company} room={room} dealer={dealer} permissions={permissions??demoPermissions(null)} credits={session.status==='ready'?credits:session.status==='loading'?{status:'loading'}:session} onEdit={(field,value)=>setState(current=>editDemo(current,field,value))}/>;
   const launchReady=effective.step===4?requirement.ready&&Boolean(permissions?.canLaunch)&&!busy:requirement.ready;
-  const launchMissing=effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
+  const launchMissing=effective.step===4&&!DEMO_LAUNCH_ENABLED?DEMO_LAUNCH_OFF_TEXT:effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
   return <section className={styles.page} aria-labelledby="demo-title"><div className={styles.inner}>
     <header className={styles.head}><div><p className={styles.eyebrow}><Link href="/admin">Översikt</Link><span className={styles.faint}>/</span><span>Skapa demo</span></p><h1 id="demo-title">Skapa demo</h1>
-      <p className={styles.intro}>Bygg en demo åt ett bolag i fyra steg och få en länk att skicka. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.</p></div></header>
+      <p className={styles.intro}>Bygg en demo åt ett bolag i fyra steg{DEMO_LAUNCH_ENABLED?' och få en länk att skicka':''}. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.</p></div></header>
     <Steps state={effective} done={done} onStep={go}/>
     <div className={styles.grid}>
       <article className={styles.card} aria-live="polite">
