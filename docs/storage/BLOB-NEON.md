@@ -12,6 +12,9 @@ Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegr
 | `runtime_media_catalogs` | Scoped layout, Blob-index och presentationsmanifest, revisions- och hashbundna |
 | `speech_reply_records` | Talrepliker: text, språk, tagning och exakta ljud-, video- och indexhashar |
 | Frysta paket och spelinställningar | Det spelet läser; ändras aldrig efter publicering |
+| `operator_materials`, `operator_material_policies`, `operator_ai_attempts` (migrering 021, valfri) | Bolagets eget material: en journal per bakgrund eller bordsgrafik (väntar, godkänt, avslaget, återkallat; ett nytt läge är en ny rad) med exakt lagerfil och, för bordsgrafik, dealerns landningsmall; bolagets AI-dagstak (standard 0 = av) och spärr; AI-försök per bolag och UTC-dygn |
+
+Bolagets eget material läggs vid varje publicering in i bolagets eget frysta paket, aldrig i någon annans: godkända bakgrunder på mallar som låser upp en bildbakgrund, bordsgrafik bara på sin egen mall när landningsmallen fortfarande stämmer med mallens dealer och placering (`packages/presentation/server/operator-material-merge.mjs`, anropad av alla fyra publicerare via `apps/studio/lib/operator-material-publication.mjs`). Återkallat eller inte längre passande material följer inte med i nästa paket. Utan 021 läses inget material, skrivningar ger `operator_materials_unavailable` och varje publicering är exakt som förut. 021 körs först efter Jakobs uttryckliga "ja 021".
 
 Repo-JSON (`media/layout.json`, `media/blob-index.json`, importfiler) och äldre Blob-JSON är authoring- och importunderlag, aldrig runtime-reserv. Saknad eller felaktig katalog ger 503, inte en lokal fallback.
 
