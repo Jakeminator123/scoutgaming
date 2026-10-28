@@ -41,11 +41,8 @@ export function postgresStatement(sql) {
     } else if (ch === "'" || ch === '"') { quote = ch; output += ch; }
     else output += ch === '?' ? `$${++n}` : ch;
   }
-  if (/^\s*INSERT\s+OR\s+IGNORE\s+/i.test(output)) output = output.replace(/^\s*INSERT\s+OR\s+IGNORE\s+/i, 'INSERT ') + ' ON CONFLICT DO NOTHING';
   output=output.split(/('(?:[^']|'')*'|"(?:[^"]|"")*")/g).map((part,i)=>i%2?part:part.replace(/\bAS\s+([a-z_][a-zA-Z0-9_]*)\b/g,
     (all,name)=>/[A-Z]/.test(name)?`AS "${name}"`:all)).join('');
-  // SQLite uses boolean expressions as integer columns in BO payloads.
-  output = output.replace(/hash IS NOT NULL AS active/gi, '(hash IS NOT NULL)::integer AS active');
   return output;
 }
 
