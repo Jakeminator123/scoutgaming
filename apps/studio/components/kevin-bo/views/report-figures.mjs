@@ -6,27 +6,50 @@ export function reportsReady(reports) {
   return reports?.status === 'ready' && Array.isArray(reports.rooms);
 }
 
+function addAmounts(target, source) {
+  for (const [code, value] of Object.entries(source ?? {})) {
+    const bucket = target[code] ??= { staked: 0, returned: 0, net: 0 };
+    bucket.staked = round(bucket.staked + value.staked); bucket.returned = round(bucket.returned + value.returned);
+    bucket.net = round(bucket.staked - bucket.returned);
+  }
+}
+const total = (amounts, key) => round(Object.values(amounts).reduce((sum, value) => sum + value[key], 0));
+
 // Per spelbord och totalt för de sista `days` dagarna i fönstret (dagarna är
-// kronologiska i aggregatet; den sista är i dag).
+// kronologiska i aggregatet; den sista är i dag). Belopp summeras per valuta;
+// `currency` finns bara när en enda valuta förekommer, annars är `mixed` satt.
 export function reportFigures(reports, days = 7) {
   if (!reportsReady(reports)) return null;
+  const fallback = reports.currency ?? '';
+  const amountsOf = day => day.amounts ?? { [fallback]: { staked: day.staked, returned: day.returned } };
   const rooms = reports.rooms.map(room => {
-    const window = room.days.slice(-days);
-    const sum = key => round(window.reduce((total, day) => total + day[key], 0));
-    const staked = sum('staked'), returned = sum('returned');
-    return { roomId: room.roomId, rounds: window.reduce((total, day) => total + day.rounds, 0), staked, returned, net: round(staked - returned), perDay: window.map(day => day.rounds) };
+    const window = room.days.slice(-days), amounts = {};
+    for (const day of window) addAmounts(amounts, amountsOf(day));
+    const staked = total(amounts, 'staked'), returned = total(amounts, 'returned');
+    return { roomId: room.roomId, rounds: window.reduce((sum, day) => sum + day.rounds, 0), staked, returned, net: round(staked - returned), amounts, perDay: window.map(day => day.rounds) };
   });
-  const total = key => round(rooms.reduce((sum, room) => sum + room[key], 0));
-  return { days, currency: reports.currency ?? null, truncated: reports.truncated === true,
-    rounds: rooms.reduce((sum, room) => sum + room.rounds, 0), staked: total('staked'), returned: total('returned'), net: total('net'),
-    rooms: new Map(rooms.map(room => [room.roomId, room])) };
+  const amounts = {};
+  for (const room of rooms) addAmounts(amounts, room.amounts);
+  const currencies = Object.keys(amounts).sort();
+  return { days, currency: currencies.length === 1 ? currencies[0] || null : null, currencies, mixed: currencies.length > 1, truncated: reports.truncated === true,
+    rounds: rooms.reduce((sum, room) => sum + room.rounds, 0), staked: total(amounts, 'staked'), returned: total(amounts, 'returned'), net: total(amounts, 'net'),
+    amounts, rooms: new Map(rooms.map(room => [room.roomId, room])) };
+}
+
+// Ett belopp per valuta som text: "600 USD" eller "600 USD · 20 EUR". Utan
+// belopp (inga rundor) visas 0 i rapportens valuta när den är känd, annars 0.
+export function amountText(amounts, key, language = 'sv', currency = null) {
+  const format = value => new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'sv-SE', { maximumFractionDigits: 0 }).format(value);
+  const entries = Object.entries(amounts ?? {}).sort(([left], [right]) => left.localeCompare(right));
+  if (!entries.length) return currency ? `${format(0)} ${currency}` : format(0);
+  return entries.map(([code, value]) => code ? `${format(value[key])} ${code}` : format(value[key])).join(' · ');
 }
 
 // Varför det inte finns siffror, med användarens ord.
 export function reportsUnavailableReason(reports, language = 'sv') {
   const en = language === 'en';
   if (!reports) return en ? 'Shown to roles with reports.read.' : 'Visas för roller med behörigheten reports.read.';
-  if (reports.reason === 'table-missing') return en ? 'The game journal (shared_table_audit) is not installed in this environment.' : 'Spelets journal (shared_table_audit) finns inte i den här miljön.';
+  if (reports.reason === 'table-missing') return en ? 'The game journal is not installed in this environment.' : 'Spelets journal finns inte i den här miljön.';
   if (reports.reason === 'no-pool') return en ? 'No game database is connected to the portal here.' : 'Ingen speldatabas är ansluten till portalen här.';
   return en ? 'The game journal could not be read right now.' : 'Spelets journal kunde inte läsas just nu.';
 }

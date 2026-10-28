@@ -55,11 +55,6 @@ export function Tabs({ items, active, onSelect, label }) {
 }
 
 export const locale = language => language === 'en' ? 'en-GB' : 'sv-SE';
-export function fmtMoney(value, currency, language) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
-  const text = new Intl.NumberFormat(locale(language), { maximumFractionDigits: 0 }).format(value);
-  return currency ? `${text} ${currency}` : text;
-}
 export const fmtInt = (value, language) => typeof value === 'number' && Number.isFinite(value) ? new Intl.NumberFormat(locale(language)).format(value) : '—';
 export function fmtDate(ms, language) {
   if (!Number.isFinite(ms)) return '—';

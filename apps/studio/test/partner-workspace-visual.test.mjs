@@ -118,7 +118,7 @@ test('the overview shows real figures from the game journal and says Inte anslut
   assert.doesNotMatch(html, /Spelkoppling återstår|playersToday|roundsToday|Planerat/);
   const unconnected = render({ initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'table-missing' }, draft: { revision: 3, basePackageRevision: 7 }, invitations: 2 }) });
   assert.equal((unconnected.match(/Inte anslutet/g) ?? []).length >= 3, true);
-  assert.match(unconnected, /shared_table_audit/);
+  assert.match(unconnected, /Spelets journal finns inte i den här miljön/); assert.doesNotMatch(unconnected, /shared_table_audit/, 'no table name in user text');
   assert.doesNotMatch(unconnected, /600 USD|class="v">12</);
   assert.match(unconnected, /Sparat utkast 3/); assert.match(unconnected, /2 inbjudan väntar/);
   assert.match(unconnected, /href="\/partner\/johnsspelbolag\/rooms"[^>]*class="row link"/);
@@ -133,6 +133,11 @@ test('Spelare, Ekonomi, Integration and Hjälp render honest content without inv
   assert.match(reports, /<h1>Ekonomi<\/h1>/); assert.match(reports, /ur spelets journal/); assert.match(reports, /600 USD/); assert.match(reports, /540 USD/);
   assert.match(reports, /revision 7<\/b><span class="small muted"> · publicerad nu/); assert.match(reports, /revision 6/);
   assert.match(reports, /steg F/); assert.match(reports, /Avräkning/); assert.match(reports, /aria-pressed="true"[^>]*>7 dagar/);
+  // Two currencies in the period: amounts per currency, never one added-up sum.
+  const base = realSnapshot().reports, withAmounts = (room, code) => ({ ...room, days: room.days.map(day => ({ ...day, amounts: day.rounds ? { [code]: { staked: day.staked, returned: day.returned } } : {} })) });
+  const mixedRooms = [withAmounts(base.rooms[0], 'USD'), withAmounts({ ...base.rooms[1], rounds: 1, staked: 20, returned: 0, net: 20, days: days([0, 0, 0, 0, 0, 0, 1]).map(day => ({ ...day, staked: day.rounds * 20, returned: 0 })) }, 'EUR')];
+  const mixed = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...base, currency: null, currencies: ['EUR', 'USD'], rooms: mixedRooms } }) });
+  assert.match(mixed, /Flera valutor i perioden \(EUR, USD\)/); assert.match(mixed, /20 EUR · 600 USD/); assert.doesNotMatch(mixed, /620/);
   const noReports = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'read-failed' } }) });
   assert.match(noReports, /kunde inte läsas just nu/); assert.doesNotMatch(noReports, /600 USD|540 USD/);
   const integration = render({ initialView: 'integration' });

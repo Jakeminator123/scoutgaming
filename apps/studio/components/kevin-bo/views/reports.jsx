@@ -1,25 +1,28 @@
 // Ekonomi: rundor, insatser, utbetalt och netto per spelbord ur spelets journal
 // (avslutade rundor), publiceringar ur paketen. Per spelare och avräkning är steg F.
 import React, { useState } from 'react';
-import { Bars, Card, Chip, Empty, KV, Note, Page, Stat, fmtDate, fmtInt, fmtMoney } from './ui.jsx';
-import { reportFigures, reportsReady, reportsUnavailableReason } from './report-figures.mjs';
+import { Bars, Card, Chip, Empty, KV, Note, Page, Stat, fmtDate, fmtInt } from './ui.jsx';
+import { amountText, reportFigures, reportsReady, reportsUnavailableReason } from './report-figures.mjs';
 
 export function PartnerReports({ snapshot, copy, language = 'sv' }) {
   const en = language === 'en', t = (sv, english) => en ? english : sv;
   const [days, setDays] = useState(7);
   const reports = snapshot.reports, ready = reportsReady(reports), figures = reportFigures(reports, days);
-  const money = value => fmtMoney(value, figures?.currency, language);
+  // Belopp per valuta: en valuta ger "600 USD", flera ger "600 USD · 20 EUR" (aldrig en hopräknad summa).
+  const money = (figure, key) => amountText(figure?.amounts, key, language, figures?.currency);
   const tables = snapshot.tables ?? [], publications = snapshot.publications ?? [];
   const periods = [[7, t('7 dagar', '7 days')], [30, t('30 dagar', '30 days')]];
+  const share = ready && !figures.mixed && figures.staked ? ` · ${Math.round((figures.net / figures.staked) * 100)} %` : '';
   return <Page title={copy.reports} intro={t('Hur det går per spelbord: rundor, insatser, utbetalt och netto. Siffrorna kommer ur spelets journal för era spelbord och räknar bara avslutade rundor.', 'How each table does: rounds, stakes, payouts and net. The figures come from the game journal for your tables and count settled rounds only.')}
     actions={<div className="seg" role="group" aria-label={t('Period', 'Period')}>{periods.map(([value, label]) => <button key={value} type="button" aria-pressed={days === value ? 'true' : 'false'} onClick={() => setDays(value)}>{label}</button>)}</div>}>
     {!ready ? <Note tone="warn" role="status"><b>{copy.notConnected}.</b> {reportsUnavailableReason(reports, language)}</Note> : null}
     {ready && figures.truncated ? <Note tone="warn">{t('Journalen är längre än läsfönstret; de äldsta rundorna i perioden kan saknas.', 'The journal is longer than the read window; the oldest rounds in the period may be missing.')}</Note> : null}
+    {ready && figures.mixed ? <Note tone="warn" role="status">{t(`Flera valutor i perioden (${figures.currencies.filter(Boolean).join(', ')}): beloppen visas per valuta och räknas inte ihop.`, `Several currencies in the period (${figures.currencies.filter(Boolean).join(', ')}): amounts are shown per currency and never added together.`)}</Note> : null}
     <div className="grid c4">
       <Card><Stat value={ready ? fmtInt(figures.rounds, language) : '—'} label={t('rundor', 'rounds')} /></Card>
-      <Card><Stat value={ready ? money(figures.staked) : '—'} label={t('insatser', 'stakes')} /></Card>
-      <Card><Stat value={ready ? money(figures.returned) : '—'} label={t('utbetalt', 'paid out')} /></Card>
-      <Card><Stat value={ready ? money(figures.net) : '—'} label={ready && figures.staked ? t(`netto · ${Math.round((figures.net / figures.staked) * 100)} % av insatserna`, `net · ${Math.round((figures.net / figures.staked) * 100)} % of stakes`) : t('netto', 'net')} /></Card>
+      <Card><Stat value={ready ? money(figures, 'staked') : '—'} label={t('insatser', 'stakes')} /></Card>
+      <Card><Stat value={ready ? money(figures, 'returned') : '—'} label={t('utbetalt', 'paid out')} /></Card>
+      <Card><Stat value={ready ? money(figures, 'net') : '—'} label={share ? t(`netto${share} av insatserna`, `net${share} of stakes`) : t('netto', 'net')} /></Card>
     </div>
     <div className="grid main-aside">
       <div className="stack">
@@ -31,9 +34,9 @@ export function PartnerReports({ snapshot, copy, language = 'sv' }) {
               return <tr key={room.id}>
                 <td><b>{room.name}</b><div className="small muted">{[room.settings?.limitPreset, open ? t('öppet', 'open') : t('pausat', 'paused')].filter(Boolean).join(' · ')}</div></td>
                 <td className="num">{figure ? fmtInt(figure.rounds, language) : '—'}</td>
-                <td className="num">{figure ? money(figure.staked) : '—'}</td>
-                <td className="num">{figure ? money(figure.returned) : '—'}</td>
-                <td className="num strong">{figure ? money(figure.net) : '—'}</td>
+                <td className="num">{figure ? money(figure, 'staked') : '—'}</td>
+                <td className="num">{figure ? money(figure, 'returned') : '—'}</td>
+                <td className="num strong">{figure ? money(figure, 'net') : '—'}</td>
                 <td>{figure ? <Bars values={figure.perDay} label={t(`${figure.rounds} rundor`, `${figure.rounds} rounds`)} /> : <span className="faint small">{copy.notConnected}</span>}</td>
               </tr>;
             })}</tbody>
@@ -52,7 +55,7 @@ export function PartnerReports({ snapshot, copy, language = 'sv' }) {
           <Note tone="warn">{t('Insatser och vinster per spelare, spelarantal och nya spelare visas när spelare knutits till bolag (steg F efter O03).', 'Stakes and wins per player, player counts and new players appear once players are linked to companies (step F after O03).')}</Note>
         </Card>
         <Card title={t('Avräkning', 'Settlement')} aside={<Chip tone="warn">{copy.notConnected}</Chip>}>
-          <KV items={[[t('Modell', 'Model'), t('ingen avtalad', 'none agreed')], [t('Valuta', 'Currency'), figures?.currency ?? t('spelets', 'the game\'s')], [t('Rapport', 'Report'), t('inte ansluten', 'not connected')]]} />
+          <KV items={[[t('Modell', 'Model'), t('ingen avtalad', 'none agreed')], [t('Valuta', 'Currency'), figures?.currency ?? (figures?.mixed ? t('flera valutor', 'several currencies') : t('spelets', 'the game\'s'))], [t('Rapport', 'Report'), t('inte ansluten', 'not connected')]]} />
           <p className="small muted mt">{t('Intäktsdelning och avräkning kräver data som inte finns i dag. Visas som planerat, inte som låtsas.', 'Revenue share and settlement need data that does not exist today. Shown as planned, never as make-believe.')}</p>
         </Card>
         {!ready ? <Empty chip={copy.notConnected} title={t('Inga siffror att visa', 'No figures to show')} text={reportsUnavailableReason(reports, language)} /> : null}
