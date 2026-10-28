@@ -59,7 +59,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
     signal?.addEventListener('abort',abort,{once:true});
   });
   return Object.freeze({
-    restoreSnapshot(snapshot,{signal} = {}) {
+    restoreSnapshot(snapshot,{signal,receivedAt=clock()} = {}) {
       signal?.throwIfAborted(); if(closed)return;
       const reconnect = !state || previousSignal?.aborted;
       previousSignal?.removeEventListener('abort',abortMedia);
@@ -71,7 +71,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       if(reconnect){cards.restore(snapshot.round);restoredThrough=snapshot.presentationVer;}
       else if(snapshot.roundId!==state.roundId){cards.clear();cards.sync(snapshot.round);}
       else cards.sync(snapshot.round);
-      state=snapshot;previousSignal=signal;offset=snapshot.serverNow-clock();
+      state=snapshot;previousSignal=signal;offset=snapshot.serverNow-receivedAt;
       media.state({ready:snapshot.players?.some(p=>p.id===snapshot.me.id&&p.ready)===true,action:false,speech:false});
     },
     async present(presentation,{signal} = {}) {

@@ -33,10 +33,36 @@ function harness(t,options={}){
   const commands=options.commands??{state:'idle',send(intent){calls.push(intent);return send(intent);},retry(){return send();},stop(){this.state='stopped';}};
   const view={bind(value){this.actions=value;},render(value){renders.push(value);},close(){events.push('view-close');}};
   const presentation=options.presentation??{restoreSnapshot(s){events.push('restore:'+s.version);},present(p){events.push('present:'+p.ver);},close(){events.push('media-close');}};
-  const controller=createSharedRoomController({roomId,commands,view,presentation,now:()=>1000});
+  const controller=createSharedRoomController({roomId,commands,view,presentation,now:options.now??(()=>1000)});
   t.after(()=>controller.stop());
   return{controller,calls,renders,events,commands,view,setSend:fn=>send=fn,restore:(s,signal)=>controller.restoreSnapshot(s,{signal:signal??new AbortController().signal})};
 }
+
+test('binding latency counts toward the server turn and action deadline',async t=>{
+  let now=100;const gate=deferred();let restoredOptions;
+  const h=harness(t,{now:()=>now,presentation:{restoreSnapshot:async(_s,options)=>{restoredOptions=options;await gate.promise;},present(){},close(){}}});
+  const s=seated(2,{phase:'round',roundId:'round-2',serverNow:1000,plan:{turnAt:1100},actionDeadline:1300,
+    round:{phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']}});
+  const restoring=h.controller.restoreSnapshot(s,{receivedAt:100});now=300;
+  assert.deepEqual(h.renders.at(-1).can.act,[],'binding must still authorize controls');
+  gate.resolve();await restoring;
+  assert.equal(restoredOptions.receivedAt,100);
+  assert.equal(h.renders.at(-1).serverNow,1200);
+  assert.deepEqual(h.renders.at(-1).can.act,['hit','stand'],'binding delay must not postpone the turn');
+  now=450;await h.controller.dispatch('act',{action:'hit'});
+  assert.equal(h.calls.length,0,'the elapsed deadline must not be extended by binding latency');
+});
+
+test('a queued presentation uses receipt time and restores expired cards without playing old film',async()=>{
+  const calls=[];const ports=createSharedRoomPresentationPorts({clock:()=>500,
+    media:{state(){},present(){calls.push('film');},close(){}},
+    cards:{restore(){calls.push('cards');},sync(){},clear(){},close(){}}});
+  ports.restoreSnapshot(seated(1),{receivedAt:100});
+  ports.restoreSnapshot(seated(2,{presentationVer:1}),{receivedAt:100});calls.length=0;
+  try { await ports.present({roomId,ver:1,kind:'plan',startAt:1000,endAt:1100,events:[{type:'deal',shoeDraw:1}]});
+    assert.deepEqual(calls,['cards']);
+  } finally {ports.close();}
+});
 
 test('first join uses server generations and waits for WS; HTTP results cannot invent seats, balance or cards',async t=>{
   const h=harness(t);await h.restore(snapshot());
@@ -244,6 +270,50 @@ test('binding scope, owner, context and snapshot preconditions are checked befor
     const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(binding)});
     await assert.rejects(h.restore(snapshot()));assert.equal(h.mounts.length,0);assert.equal(h.controller.state.connected,false);h.close();
   }
+});
+
+test('a window rollover during binding exposes only the recognized recoverable conflict',async t=>{
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json({error:'shared_room_presentation_stale'},{status:409})});
+  await assert.rejects(h.restore(snapshot()),{code:'shared_room_presentation_stale'});
+  assert.equal(h.controller.state.connected,false);assert.equal(h.mounts.length,0);
+});
+
+for(const stage of ['binding','mount','confirmation'])test(`window rollover during ${stage} recovers the mounted app through fresh WS authority`,async t=>{
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const sockets=[],renders=[],closes=[],restores=[];let reads=0,mounts=0,stale=true;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(s){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:null})}));}}
+  const commands={state:'idle',stop(){this.state='stopped';}};
+  const app=await mountSharedRoomApp({document,window,createCommands:()=>commands,
+    createView:()=>({bind(){},render:value=>renders.push(value),close(){}}),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1}),
+    fetchImpl:async url=>{
+      reads++;
+      if(stale&&(stage==='binding'||stage==='confirmation'&&reads===2))return Response.json({error:'shared_room_presentation_stale'},{status:409});
+      return bindingResponse(url);
+    },
+    createPresentation:async()=>{
+      const mount=++mounts;
+      if(stale&&stage==='mount')throw Object.assign(Error('shared_room_presentation_stale'),{code:'shared_room_presentation_stale'});
+      return{restoreSnapshot:(_s,options)=>restores.push(options),present(){},close:()=>closes.push(mount)};
+    }});
+  t.after(app.close);sockets[0].message(seated(1));
+  for(let i=0;i<100&&sockets.length<2;i++)await delay(2);
+  assert.equal(sockets.length,2);assert.equal(app.controller.state.connected,false);
+  assert.equal(commands.state,'idle','retry must not stop the command client');
+  assert.deepEqual(renders.at(-1).can.act,[]);assert.equal(renders.at(-1).can.bet,false);
+  if(stage==='confirmation')assert.deepEqual(closes,[1],'the unconfirmed candidate is disposed');
+  stale=false;const receivedAt=Date.now();sockets[1].message(seated(2,{windowId:'window-2',serverNow:receivedAt}));
+  for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
+  assert.equal(app.controller.state.snapshot.windowId,'window-2');assert.equal(renders.at(-1).can.bet,true);
+  assert.ok(restores.at(-1).receivedAt>=receivedAt,'the binding forwards the WS receipt time');
+});
+
+for(const [status,error]of [[401,'shared_room_authentication_required'],[403,'shared_room_presentation_forbidden'],[409,'other_conflict']])
+test(`binding HTTP ${status} ${error} never gains recoverable stale authority`,async t=>{
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json({error},{status})});
+  await assert.rejects(h.restore(snapshot()),reason=>reason.code!=='shared_room_presentation_stale');
+  assert.equal(h.controller.state.connected,false);assert.equal(h.mounts.length,0);
 });
 
 test('an aborted binding fetch cannot mount late or replace a newer connection generation',async t=>{

@@ -109,7 +109,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     finally { sending = false; if (!closed) { draw(); schedule(); } }
   }
   const api = {
-    async restoreSnapshot(raw, { signal } = {}) {
+    async restoreSnapshot(raw, { signal, receivedAt = now() } = {}) {
       signal?.throwIfAborted(); if (closed) return;
       const next = checked(raw,roomId);
       if (snapshot && (next.me.id !== snapshot.me.id || next.version < snapshot.version || next.presentationVer < snapshot.presentationVer)) fail();
@@ -117,12 +117,13 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       // An active socket is not authority to act while its new window's media
       // binding is loading and being checked again by the server.
       connected = false; restoring = true; clearTimeout(clockTimer); draw();
-      try { await presentation.restoreSnapshot(next,{signal}); signal?.throwIfAborted(); }
+      try { await presentation.restoreSnapshot(next,{signal,receivedAt}); signal?.throwIfAborted(); }
       catch(error) { if (generation === restoreGeneration) { restoring = false; if (!closed) draw(); } throw error; }
       if (closed || generation !== restoreGeneration) return;
       restoring = false;
       activeSignal?.removeEventListener('abort',disconnected);
-      snapshot = next; activeSignal = signal; connected = true; clockOffset = next.serverNow-now();
+      // Include time spent queued and checking the binding in the table clock.
+      snapshot = next; activeSignal = signal; connected = true; clockOffset = next.serverNow-receivedAt;
       disconnected = () => { connected = false; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
       activeSignal?.addEventListener('abort',disconnected,{once:true});
       if (!next.settings.chips.includes(chip)) chip = next.settings.chips[0];

@@ -20,8 +20,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const context = entry?.operator ? { operatorSlug: entry.operator, roomId: entry.roomId, packageRevision: entry.packageRevision, dealerId } : null;
   const configUrl = '/api/presentation/config' + (context ? '?' + new URLSearchParams(Object.entries(context).map(([key,value])=>[key,String(value)])) : '?dealerId=' + encodeURIComponent(dealerId));
   const packageError = () => Object.assign(new Error('Presentationspaketet har ändrats. Ladda om spelet.'), { code:'studio_presentation_idle_package_changed' });
+  const configurationConflict = async response => {
+    const failure = await response.json().catch(() => null);
+    // A shared window can advance while this read is in flight. Its next WS
+    // snapshot must reauthorize the binding; the published package is not revoked.
+    return failure?.error === 'shared_room_presentation_stale'
+      ? Object.assign(new Error('shared_room_presentation_stale'), {code:'shared_room_presentation_stale'}) : packageError();
+  };
   const response = await request(configUrl, { cache: 'no-store' });
-  if (response.status === 409) throw packageError();
+  if (response.status === 409) throw await configurationConflict(response);
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
   let upcoming = [], queueVersion;
@@ -178,7 +185,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onProgress?.({phase:'prepare'});
       if (preview || (context && !selected)) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
-        if (current.status === 409) throw packageError();
+        if (current.status === 409) throw await configurationConflict(current);
         if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');
       }
       if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing,video.framing ?? video.classification?.framing,{kind});
@@ -241,6 +248,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
+        if (error.code === 'shared_room_presentation_stale') { idleRun = 0; return; }
         if (requireReload(error)) return;
         onBusy();
         idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
@@ -275,7 +283,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; if (idle.mode === 'rotation') idle.updateScene({phase:readIdlePhase()}); idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
-      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+      .catch(error => { if (epoch !== serial || closed) return;
+        if (error.code === 'shared_room_presentation_stale') { idleRun = 0; return; }
+        if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
         if (transientPlayback(error) && idleTransientRetries++ < 20) { retryIdleSoon(); return; }
         idle.failed(clip.playId); resumeIdle(); });
   }
