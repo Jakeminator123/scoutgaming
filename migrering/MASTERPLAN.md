@@ -99,6 +99,7 @@ Ingen av punkterna är en av de 20 aktiviteterna eller ger procent; status och v
 6. **L3:** rummens namn och state läses ur det publicerade paketet i stället för administrationsdokumentet.
 7. **Ren start steg 2** enligt [REN-START](../docs/plans/REN-START.md).
 8. **Kevins portplan P4–P14:** resterande beteenden skrivs om i mains moduler; P7 (gäståtkomst) och P13 (desktop) kräver Jakobs beslut.
+   Plan: [KEVIN-PORT](../docs/plans/KEVIN-PORT.md) (läget för P1–P14, Kevins och Emils kandidater med fil och rad, PR-ordningen P-E, P-C, P-B, P-A, P-D, vad som inte tas och Jakobs beslutspunkter).
 9. **Skalningstest:** tio bord med sju spelare (10×7) som grind, med de kända serialiseringspunkterna i motorn (globalt lås även vid läsning, auditlåset, den sekventiella schemaläggaren) mätta.
 10. **Preview får egen taluppsättning** när den generiska talkedjan byggs, med egna nycklar och egen budget; produktionens nycklar kopieras aldrig dit.
 11. **Städning (D6):** kvarlämnade QA-roller (`croupier_game_qa`, `croupier_studio_qa_abc92154cb15`) tas bort, `pg_stat_statements` flyttas ur schemat `croupier_game` eller tas bort, och `CROUPIER_ASTRID_CAMERA=1` på `croupier-v3` ses över (kamera och röst är en behållen produktfunktion, flaggan är Astrid-märkt). Jakob raderar O03:s Neon-grenar och restoremålen enligt [ENVIRONMENT-RESTORATION](../docs/ENVIRONMENT-RESTORATION.md#preview).
