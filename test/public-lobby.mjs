@@ -205,7 +205,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       else if (path === '/fixture.js') {body = outputFiles[0].text; type = 'application/javascript';}
       else if (path === '/api/operators') body = JSON.stringify({operators: [{slug: 'alpha', name: 'Bolag alpha'}]});
       else if (path === '/api/operators/alpha/rooms') body = JSON.stringify(pack);
-      else if (path === '/play/blackjack') {body = '<h1>Isolerad launchmottagare</h1><a href="/lobby?operator=alpha&room=shared-room">Till lobbyn</a>'; type='text/html';}
+      else if (path === '/game') {body = '<h1>Isolerad launchmottagare</h1><a href="/lobby?operator=alpha&room=shared-room">Till lobbyn</a>'; type='text/html';}
       else if (path === '/play/profil' || path === '/play/historik') {
         const model=playerAreaModel({session:{authenticated:true},player:{name:'Isolerad spelare',balance:125,currency:'SEK'},results:{currencies:[],lastRound:null}},path.endsWith('profil')?'profil':'historik');
         body=renderPlayerAreaHtml(model);type='text/html';
@@ -238,7 +238,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(4).waitFor();
     assert.equal(await dealerCards.count(), 5);
     assert.equal(await page.locator('ul[aria-label="Dealers"] button:not([disabled])').count(), 0);
-    assert.equal(await page.locator('a[href^="/play/blackjack"], a[href^="/play/roulette"]').count(), 0);
+    assert.equal(await page.locator('a[href^="/game?game=blackjack"], a[href^="/game?game=roulette"]').count(), 0);
     await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
@@ -252,7 +252,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       const dialog = page.getByRole('dialog', {name, exact: true});
       await dialog.waitFor({state: 'visible'});
       assert.equal(await dialog.getByRole('link', {name: 'Spela med ' + name}).getAttribute('href'),
-        '/play/blackjack?operator=alpha&table=shared-room&dealer=' + name.toLowerCase());
+        '/game?game=blackjack&operator=alpha&table=shared-room&dealer=' + name.toLowerCase());
       const closeButton = dialog.getByRole('button', {name: 'Stäng', exact: true});
       assert.equal(await closeButton.evaluate(element => element === document.activeElement), true);
       await page.keyboard.press('Tab');
@@ -287,7 +287,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     dialog=page.getByRole('dialog',{name:'Nora',exact:true});
     assert.equal(await dialog.getByLabel('Bord',{exact:true}).inputValue(),table2,'reopening must retain the current chosen table');
     await dialog.getByRole('link',{name:'Spela med Nora',exact:true}).click();
-    await page.waitForURL('**/play/blackjack?operator=alpha&table=shared-room&dealer=nora');
+    await page.waitForURL('**/game?game=blackjack&operator=alpha&table=shared-room&dealer=nora');
     assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('croupier.choices.alpha'))),{dealer:'nora',tableAsset:table2,background:back2});
     await page.getByRole('link',{name:'Till lobbyn',exact:true}).click();
     await page.getByLabel('Bord',{exact:true}).waitFor();
@@ -309,10 +309,10 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     assert.equal(await page.getByLabel('Bakgrund',{exact:true}).inputValue(),'');
     await page.goto(origin+'/lobby?operator=alpha&room=foreign-room&dealer=nora');
     await page.getByRole('alert').waitFor();
-    assert.equal(await page.locator('a[href^="/play/blackjack"]').count(),0);
+    assert.equal(await page.locator('a[href^="/game?game=blackjack"]').count(),0);
     await page.goto(origin+'/lobby?operator=alpha&operator=beta&room=shared-room&dealer=nora');
     await page.getByRole('alert').waitFor();
-    assert.equal(await page.locator('a[href^="/play/blackjack"]').count(),0);
+    assert.equal(await page.locator('a[href^="/game?game=blackjack"]').count(),0);
     assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
   });
 

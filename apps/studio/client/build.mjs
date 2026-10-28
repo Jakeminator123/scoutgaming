@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import postcss from 'postcss';
 import tailwind3 from 'tailwindcss3';
 import tailwind4 from '@tailwindcss/postcss';
+import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -67,7 +68,8 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   const result = await postcss(plugins).process(css, { from: resolve(source, 'app/globals.css') });
   await writeFile(resolve(outdir, 'theme.css'), result.css + '\n' + (publicLobby
     ? commonCss.replaceAll('/admin/_assets/fonts/', '/lobby/_assets/fonts/') : commonCss));
-  await cp(resolve(source, 'public'), resolve(outdir), { recursive: true });
+  // Admin has no static files of its own; the lobby ships its portraits and hero media and must have them.
+  if (surface !== 'admin' || existsSync(resolve(source, 'public'))) await cp(resolve(source, 'public'), resolve(outdir), { recursive: true });
   const title = surface === 'admin' ? 'Administration' : 'Spellobby';
   const extra = surface === 'admin' ? '<link rel="stylesheet" href="/admin/_assets/admin/app.css">' : '';
   await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} · Arbetsversion · Scoutgaming</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script><script src="${process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : ''}/assistant-widget.js" defer></script></body></html>`);

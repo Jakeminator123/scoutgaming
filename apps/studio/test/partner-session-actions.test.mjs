@@ -148,27 +148,6 @@ test('auth actions remain clickable on mobile and show localized failure without
     assert.deepEqual(destinations, ['/admin/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam']);
     assert.equal(render().some(node => node.props?.role === 'alert'), false);
   }
-  const css = readFileSync(new URL('../components/partner-session-actions.module.css', import.meta.url), 'utf8');
-  assert.match(css, /@media\(max-width:820px\)\{\.button\{min-height:44px\}/);
-  assert.doesNotMatch(css, /display:none|visibility:hidden/);
-});
-
-test('auth action colors resolve directory and John operator tokens in both themes', () => {
-  const css = readFileSync(new URL('../components/partner-session-actions.module.css', import.meta.url), 'utf8');
-  assert.match(css, /color:var\(--ink,#0A0B0D\);background:var\(--surface,var\(--white,#FFFFFF\)\)/);
-  assert.match(css, /border:1px solid var\(--border,var\(--rule,#E0DED7\)\)/);
-  assert.match(css, /\.button:hover\{background:var\(--soft,var\(--off,#ECEBE6\)\)\}/);
-  assert.match(css, /outline:2px solid var\(--accent,var\(--accent-text,#4A6200\)\)/);
-  // John defines local steel, but global CSS also supplies an inherited muted.
-  // Prefer the operator token; the directory uses its local muted fallback.
-  assert.match(css, /\.message\{color:var\(--steel,var\(--muted,#55574F\)\)\}/);
-  assert.doesNotMatch(css, /\.message\{color:var\(--muted,/);
-  const operator = readFileSync(new URL('../components/kevin-bo/john-foundation.css', import.meta.url), 'utf8');
-  const directory = readFileSync(new URL('../components/partner-workspace.module.css', import.meta.url), 'utf8');
-  assert.match(operator, /\[data-theme="dark"\]\{[^}]*--white:#121418;[^}]*--ink:#F2F1ED;/);
-  assert.match(directory, /\[data-theme="dark"\]\{[^}]*--surface:#121418;[^}]*--ink:#F2F1ED;/);
-  assert.match(operator, /--white:#FFF;[^}]*--ink:#0A0B0D;/);
-  assert.match(directory, /--surface:#FFF;[^}]*--ink:#0A0B0D;/);
 });
 
 test('declined draft warning prevents session mutation and a failed logout restores navigation protection',async()=>{

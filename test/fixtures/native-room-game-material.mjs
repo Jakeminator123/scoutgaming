@@ -8,9 +8,25 @@ import { bindSpeechSlotStandard, speechSlotEventId, SPEECH_SLOT_IDS } from '../.
 import { recordedSpeechIdentity } from '../../packages/presentation/contracts/recorded-speech.mjs';
 import { mediaTimingSpeechIdentity } from '../../packages/presentation/contracts/media-timing.mjs';
 import { NATIVE_ROOM_SPEECH_SLOTS } from '../../packages/presentation/contracts/native-room-game-budget.mjs';
-import { withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
+import { serialize } from 'node:v8';
+import { withPackagePresentation, PRESENTATION_PACKAGE_KEY } from '../../packages/presentation/server/presentation-package.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
+/** Test-only memo of the product writer. Brotli q11 makes each call ~0.5 s and
+ * fixtures re-encode identical inputs many times. The key is the exact structured
+ * input (undefined values and key order included), so each distinct input still
+ * runs the real writer once; failures are never cached, and every result is a
+ * fresh copy whose envelope is frozen exactly as the writer returns it. */
+const packageCache = new Map();
+export function capturePackagePresentation(branding, presentation, options) {
+  let key;
+  try { key = hash(serialize([branding ?? null, presentation, options ?? null])); }
+  catch { return withPackagePresentation(branding, presentation, options); }
+  if (!packageCache.has(key)) packageCache.set(key, withPackagePresentation(branding, presentation, options));
+  const copy = structuredClone(packageCache.get(key));
+  Object.freeze(copy[PRESENTATION_PACKAGE_KEY]);
+  return copy;
+}
 const uuid = n => `10000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 export function measuredFixtureRecord(row,{frames=48,fps=24,audioEndUs=null} = {}) {
   const endUs = Math.ceil(frames*1e6/fps), speech = row.classification.recordedSpeech;
@@ -63,7 +79,7 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
   presentation.playback.media = rows;
   const room = {schemaVersion:2,id:'room-native-fixture',name:'Fixture',operatorId:'operator-fixture',presentationLaneId:presentation.lanes[0].id,gameLaneId:'fixture-lane',state:'live'};
   const pack = {operatorId:room.operatorId,revision:7,tables:[room.id],games:['blackjack'],lanes:[room.presentationLaneId],branding:{}};
-  const recapture = () => { pack.branding = withPackagePresentation({},presentation,{allowExtended:true}); };
+  const recapture = () => { pack.branding = capturePackagePresentation({},presentation,{allowExtended:true}); };
   if (capture) recapture();
   return {input:{package:pack,room,language},presentation,project,records:rows,profile,recapture};
 }

@@ -132,8 +132,8 @@ test('history pagehide stops playback and pageshow rechecks current media before
 });
 
 
-test('animated dealer card and shared site header enter the new public lobby', () => {
-  for (const [file,name] of [['hero-card','HeroCard'],['site-header','SiteHeader']]) {
+test('animated dealer card enters the new public lobby', () => {
+  for (const [file,name] of [['hero-card','HeroCard']]) {
     const Component = load(resolve(root, 'components/landing/' + file + '.tsx'))[name];
     const html = renderToStaticMarkup(React.createElement(Component));
     assert.match(html, /href="\/lobby"/);

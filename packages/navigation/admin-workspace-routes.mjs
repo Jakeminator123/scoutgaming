@@ -2,7 +2,6 @@
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
   companies: 'Bolag & team',
   'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek', 'media-review': 'Talgranskning',
-  events: 'Spelhändelser & regler',
   'dealer-agent': 'Dialogtest',
 });
 
@@ -13,7 +12,7 @@ const destinations = Object.freeze({
   compositions: '/admin/scenes', preview: '/admin/scenes', backgrounds: '/admin/scenes',
   rehearsal: '/admin/rooms', activity: '/admin/rooms',
   library: '/admin/assets', videos: '/admin/clips', media: '/admin/clips', archive: '/admin/clips',
-  replies: '/admin/replies', events: '/admin/events', tree: '/admin/events', 'presentation-events': '/admin/events',
+  replies: '/admin/replies', events: '/admin/clips', tree: '/admin/clips', 'presentation-events': '/admin/clips',
   zones: '/admin/scenes', probe: '/admin/clips?panel=room', guide: '/admin/guide',
   openclaw: '/admin/ai/models', ops: '/admin/drift?tab=speech', 'operator-chat': '/admin/dealer-agent',
   players: '/admin/players', team: '/admin/admin/accounts', transactions: '/admin/ekonomi',
@@ -37,7 +36,7 @@ export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
   '/admin/publication':'/admin/rooms', '/admin/tools':'/admin/dealers',
   '/admin/admin/payments':'/admin/ekonomi?tab=payments', '/admin/admin/log':'/admin/companies',
   '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
-  '/admin/videos':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
+  '/admin/videos':'/admin/clips', '/admin/events':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
   '/admin/compositions':'/admin/scenes', '/admin/probe':'/admin/clips?panel=room',
   '/admin/admin/operators':'/admin/companies',
 });

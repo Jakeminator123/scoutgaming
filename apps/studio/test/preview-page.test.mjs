@@ -5,10 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
-import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane,normalizeProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {createSeedProject as createEmptyProject,defaultPresentationLane,normalizeProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
@@ -82,77 +79,17 @@ test('shared preview data authorization rejects unauthenticated and partner acce
 
 
 
-
-
-
-function anchoredPreviewProject() {
-  const project=addDealer(createSeedProject(),'nora','Nora'),lane=structuredClone(project.lanes[0]);
-  const asset={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
-  asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];
-  lane.id='nora-evening';lane.dealers=['nora'];lane.layers.dealer={enabled:true,default:'nora',allowed:['nora']};
-  lane.layers.table={enabled:true,default:asset.id,allowed:[asset.id]};
-  const geometry=defaultBlackjackTableGeometry(asset.id);
-  geometry.mobile.anchors={cards:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
-  lane.composition={...defaultCompositionSettings(),blackjackTables:[geometry]};
-  project.lanes.push(lane);return project;
-}
-function anchorSceneLink(h,tree=h.render()) {
-  const editor=h.find(tree,node=>node.type?.name==='BlackjackTableGeometryEditor');assert.ok(editor);
-  const link=h.find(editor.type(editor.props),node=>node.type==='a');assert.ok(link);return link;
-}
-
-
-
-
-
-
-
-test('geometry editor offers direct image placement and keyboard coordinates without JSON; removing a board detaches only its geometry',()=>{
-  const {BlackjackTableGeometryEditor}=loadTs(new URL('../components/blackjack-table-geometry-editor.tsx',import.meta.url));
+test('removing a board from the scene detaches only its table geometry',()=>{
   const first='10000000-0000-4000-8000-000000000001',second='10000000-0000-4000-8000-000000000002';
-  const value=defaultBlackjackTableGeometry(first);
-  const html=renderToStaticMarkup(React.createElement(BlackjackTableGeometryEditor,{tableId:first,url:'/board',contentType:'image/png',value,layout:'mobile',disabled:false,sceneEditorHref:'/admin/clips?composition=mobile-phone',onOpenScene(){},onChange(){}}));
-  assert.match(html,/Kort och insatsplatser/);assert.match(html,/Placera Dealer · kort på bordet/);assert.match(html,/Vågrätt/);assert.match(html,/Lodrätt/);assert.doesNotMatch(html,/<textarea|JSON|Plats 4/);
   const {LayerAssetSelect}=loadTs(new URL('../components/layer-selectors.tsx',import.meta.url));
   const lane=defaultPresentationLane('astrid');lane.layers.table={enabled:true,default:first,allowed:[first,second]};
-  lane.composition={...defaultCompositionSettings(),blackjackTables:[value,defaultBlackjackTableGeometry(second)]};
+  lane.composition={...defaultCompositionSettings(),blackjackTables:[defaultBlackjackTableGeometry(first),defaultBlackjackTableGeometry(second)]};
   let updated;const tree=LayerAssetSelect({role:'table',lane,assets:[first,second].map(id=>({id,role:'table',label:id,contentType:'image/png',width:1672,height:941})),onChange:next=>{updated=next;}});
   const find=node=>!node||typeof node!=='object'?null:node.type==='input'&&node.props.type==='checkbox'?node:[node.props?.children].flat(Infinity).map(find).find(Boolean);
   find(tree).props.onChange({target:{checked:false}});
   assert.equal(updated.layers.table.default,null);assert.deepEqual(structuredClone(updated.composition.blackjackTables.map(row=>row.tableId)),[second]);
   assert.equal(lane.composition.blackjackTables.length,2);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const previewId='11111111-2222-4333-8444-555555555555';
 const previewRequest={presentationLaneId:'mobile-phone',expectedProjectRevision:'revision-1'};

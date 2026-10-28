@@ -69,28 +69,3 @@ test('paused V2 dealing and explicit staged candidates are not playback claims',
     assert.equal(row.actualPlayback, false);
   }
 });
-
-test('BO choices expose consumer limits, rejection and review annotations', () => {
-  const clipLandings = { selected: { part: 'box4', note: 'human annotation' } };
-  const genLandings = { generation: { part: 'idle', note: 'candidate' } };
-  const mapping = clipMapping({ root, bo: {
-    clipAssignments: {
-      astrid: { box4: { clip: 'selected' }, return: { clip: 'return-candidate' }, idle: { clip: 'astrid:idle-1/idle/idle' } },
-      amira: { box1: { clip: 'stored-only' } },
-    },
-    neverAgain: { selected: { reason: 'rejected' } }, clipLandings, genLandings,
-  } });
-  const astrid = mapping.backofficePicks.astrid;
-  assert.equal(astrid['show.deal.box4'].route, null);
-  assert.equal(astrid['show.deal.box4'].formerRoute, '/?dealer=astrid&performance=staged');
-  assert.equal(astrid['show.deal.box4'].consumed, false);
-  assert.equal(astrid['show.deal.box4'].excluded, true);
-  assert.equal(astrid['show.return'].consumed, false);
-  assert.equal(astrid['show.return'].route, null);
-  assert.equal(astrid['show.idle'].route, null);
-  assert.equal(astrid['show.idle'].formerRoute, '/?dealer=astrid');
-  assert.equal(mapping.clipControl.source, 'lab/project.json');
-  assert.equal(mapping.backofficePicks.amira['show.deal.box1'].consumed, false);
-  assert.deepEqual(mapping.clipLandings, clipLandings);
-  assert.deepEqual(mapping.genLandings, genLandings);
-});

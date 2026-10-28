@@ -1,7 +1,9 @@
 # Astrids companion: namn, minne, webbsökning och skämtläge
 
-Status: labbfunktion ovanpå [Astrids sociala chatt](SOCIAL-CHAT.md) i Admins
-Eventstudio. Den tas bort med Astrid vid ren start. Webbsökningen är spärrad
+Status: labbfunktion ovanpå [Astrids sociala chatt](SOCIAL-CHAT.md). Admins
+Eventstudio, som var dess enda yta, är borttagen (PR #468); Director-delarna och
+routerna `/api/social/*` står kvar utan klient tills talkedjan generaliseras
+efter O03. Den tas bort med Astrid vid ren start. Webbsökningen är spärrad
 sedan 21 oktober 2026, då prisunderlaget i `SEARCH_POLICY.pricingValidUntil`
 (`services/openclaw/lab/deploy/companion-search-server.mjs`) gick ut; den
 svarar `pricing_review_required` tills priserna granskats och datumet flyttats.
@@ -17,9 +19,9 @@ Emil!` i skämtläge ger ett kort nyskrivet poem på svenska, tyska och kinesisk
 missar modellen formen används ett lokalt fyraradigt original. **Skämtläge**
 och **Tillåt webbsökning** stängs av var för sig. **Glöm mig / byt person**
 tar bort profilens namn, samtalsminne och svarskvitton. Med **Ljud** läser
-ElevenLabs exakt svarstext; talgränsen är 25 sekunder (`SOCIAL_SPEECH_LIMIT_MS`
-i `apps/studio/lib/social-playback.mjs`), för långt ljud avvisas, och ingen ny
-läppsynk påstås.
+ElevenLabs exakt svarstext; talgränsen var 25 sekunder, för långt ljud
+avvisades, och ingen ny läppsynk påstods. Beskrivningen gäller den borttagna
+Admin-ytan.
 
 ## Identitet och lagring
 

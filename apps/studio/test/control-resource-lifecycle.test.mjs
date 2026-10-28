@@ -79,11 +79,11 @@ test('all companies load even without a selection and switching companies does n
 
 test('shared lifecycle navigation defaults remain compatible while Admin can keep composition edits in Studio',async()=>{
   const legacy=harness();await legacy.ready();
-  assert.match(legacy.html(),/\/admin\/compositions\?operator=north&amp;composition=standard/);
+  assert.match(legacy.html(),/href="\/admin\/scenes\?operator=north&amp;composition=standard"/);
   const admin=harness({navigation:{compositionHref:(operator,room)=>'/admin/clips?'+new URLSearchParams({operator:operator.id,table:room.id,composition:room.presentationLaneId}),rehearsalLabel:'Provspela & följ (äldre vy)'}});
   await admin.ready();const links=admin.nodes(node=>node.type==='a');
   assert.equal(links.find(node=>node.props.children==='Redigera sammansättning').props.href,'/admin/clips?operator=north&table=room-one&composition=standard');
-  assert.match(links.find(node=>node.props.children==='Provspela & följ (äldre vy)').props.href,/\/admin\/rehearsal\?operator=north&table=room-one&composition=standard$/);
+  assert.match(links.find(node=>node.props.children==='Provspela & följ (äldre vy)').props.href,/\/admin\/rooms\?operator=north&table=room-one&composition=standard$/);
   assert.equal(admin.requests.length,1,'navigation does not mutate or reload the shared register');
 });
 

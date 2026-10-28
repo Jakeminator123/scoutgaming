@@ -61,7 +61,7 @@ import {join,dirname,resolve,basename} from 'node:path';
 import {createSeedProject,addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {readUploads} from '../lib/video-local-readers.mjs';
-import {loadVideoRegistry} from '../lib/video-registry.mjs';
+import {loadVideoRegistry} from './fixtures/local-video-registry.mjs';
 
 test('registered Nora video survives reload with greenscreen metadata and never binds Astrid footage',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-nora-video-'));

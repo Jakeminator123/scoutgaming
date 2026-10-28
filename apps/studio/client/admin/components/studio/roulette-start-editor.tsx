@@ -39,7 +39,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
         <option value="">Välj en mall med denna dealer och roulettebord…</option>
         {compositions.map(lane=><option key={lane.id} value={lane.id}>{lane.label} · {lane.id}</option>)}
       </select></label>
-      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte rum eller mall. <a className="underline" href="/admin/compositions" target="_blank" rel="noopener">Hantera sammansättningar</a></p>
+      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte rum eller mall. <a className="underline" href="/admin/scenes" target="_blank" rel="noopener">Hantera sammansättningar</a></p>
       <label className="studio-field">Tillåten borddesign<select value={form.tableDesignId} onChange={event=>change('tableDesignId',event.target.value)}>
         <option value="">Välj registrerat roulettebord…</option>
         {form.tableDesignId&&!designs.includes(form.tableDesignId)&&<option value={form.tableDesignId}>Inte tillåten här: {form.tableDesignId}</option>}

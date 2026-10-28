@@ -10,7 +10,7 @@ import {withPackagePresentation} from '../packages/presentation/server/presentat
 import {canonicalStudioJson,validateDocumentValue} from '../packages/studio-registry/server/document-contract.mjs';
 import {ROOM_LIMIT_PRESETS,ROOM_GAME_TIMERS} from '../packages/presentation/contracts/room-game-config.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
-import {nativeRoomMaterialFixture,nativeRoomMaterialChoicesFixture,measuredFixtureRecord} from './fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,nativeRoomMaterialChoicesFixture,measuredFixtureRecord,capturePackagePresentation} from './fixtures/native-room-game-material.mjs';
 import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
 import {createActiveRoomPresentationContext} from '../services/game/shared-room-presentation-context.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
@@ -80,7 +80,7 @@ function nativeFixture({choices=false,branding={}}={}) {
   h.state.administration.gameLanes[0].dealer='dragan';
   h.state.administration.gameLanes[0].mediaCollection='dragan-presentation';
   const recapture=()=>{
-    h.state.pack.branding=withPackagePresentation({...h.state.pack.branding,...branding},native.presentation,{allowExtended:true});
+    h.state.pack.branding=capturePackagePresentation({...h.state.pack.branding,...branding},native.presentation,{allowExtended:true});
     for(const config of Object.values(h.state.configs))config.presentationHash=createHash('sha256').update(canonicalStudioJson(native.presentation)).digest('hex');
   };
   recapture();
@@ -118,7 +118,7 @@ function activeHistoryFixture() {
     Object.assign(h.state.configs[room.id],{configVersion:version,packageRevision:2});
     h.state.heads[room.id]=version;h.state.pack.branding.roomGameConfigVersions[room.id]=version;
   }
-  h.state.pack.branding=withPackagePresentation({...h.state.pack.branding,roomOverrides:{'room-a':{dealer:'paow',color:'#445566',background:assets[1].id}}},h.native.presentation,{allowExtended:true});
+  h.state.pack.branding=capturePackagePresentation({...h.state.pack.branding,roomOverrides:{'room-a':{dealer:'paow',color:'#445566',background:assets[1].id}}},h.native.presentation,{allowExtended:true});
   rebind();
   return {...h,original,oldPresentation,assets,rebind};
 }
@@ -148,7 +148,7 @@ test('active package lookup cannot resurrect revoked sessions, rooms, dealers, m
     h=>{h.state.pack.tables='["room-b"]';},
     h=>{const lane=h.native.presentation.lanes[0];lane.layers.dealer.default='paow';lane.layers.dealer.allowed=['paow'];
       h.state.administration.gameLanes[0].dealer='paow';h.state.administration.gameLanes[0].mediaCollection='paow-presentation';
-      h.state.pack.branding=withPackagePresentation(h.state.pack.branding,h.native.presentation,{allowExtended:true});h.rebind();},
+      h.state.pack.branding=capturePackagePresentation(h.state.pack.branding,h.native.presentation,{allowExtended:true});h.rebind();},
     h=>{h.state.media.find(row=>row.classification.dealerId==='dragan').classification.archived=true;},
     h=>{h.state.media.find(row=>row.classification.dealerId==='dragan'&&row.classification.recordedSpeech).classification.recordedSpeech.review={status:'pending'};},
     h=>{h.state.project.layerAssets=h.state.project.layerAssets.filter(row=>row.id!==h.assets[0].id);h.state.project.lanes=[];},

@@ -86,89 +86,48 @@ class FakeSocket extends EventEmitter {
   terminate() {this.close(1006);}
 }
 
-test('QA socket counters reveal phase and waitUntil presence without payloads, and remain silent for production origins', async () => {
-  const rows = [], symbol = Symbol.for('@vercel/request-context'), previous = globalThis[symbol];
-  const qa = {...configuration, publicOrigin: 'https://croupier-player-preview-qa.vercel.app', backendOrigin: 'https://croupier-vercel-preview-qa.onrender.com'};
-  try {
-    globalThis[symbol] = {get: () => ({waitUntil() {}})};
-    const trace = platformSocketDiagnostics(qa, {NODE_ENV: 'production'}, '/lipsync-worker', {emit: value => rows.push(value)});
-    const upstream = new FakeSocket(), frontend = new FakeSocket();
-    const bridge = bridgePlatformSocket(upstream, {trace, closeTimeoutMs: 5});
-    upstream.emit('message', Buffer.from('{"t":"start","id":"private-id"}'), false);
-    bridge.attach(frontend);
-    frontend.emit('message', Buffer.from('private-media-payload'), true);
-    upstream.close(1000); await bridge.done;
-    const parsed = rows.map(value => JSON.parse(value.slice('CROUPIER_UNPAID_SOCKET '.length)));
-    assert.equal(parsed.find(value => value.phase === 'attached').contextWaitUntil, true);
-    assert.equal(parsed.find(value => value.phase === 'done').counters.frontend_receive, 1);
-    assert.equal(parsed.find(value => value.phase === 'done').counters.upstream_send, 1);
-    assert.equal(parsed.find(value => value.phase === 'frontend_send_callback').writeError, false);
-    assert.doesNotMatch(rows.join(''), /private-id|private-media|cookie|ticket/);
-    const before = rows.length;
-    for (const [candidate, runtime] of [[configuration, {NODE_ENV: 'production'}], [qa, {}]]) {
-      platformSocketDiagnostics(candidate, runtime, '/speech-stream', {emit: value => rows.push(value)})('attached');
+test('socket diagnostics stay silent for product origins and never observe bridge writes', () => {
+  const rows = [];
+  for (const runtime of [{NODE_ENV: 'production'}, {}]) {
+    for (const path of ['/speech-stream', '/lipsync-worker']) {
+      const trace = platformSocketDiagnostics(configuration, runtime, path, {emit: value => rows.push(value)});
+      assert.notEqual(trace.enabled, true, path);
+      trace('attached'); trace('upstream_receive', {bytes: 1, binary: true}); trace('done');
     }
-    assert.equal(rows.length, before);
-    trace('unknown-private-phase', {text: 'private-text'});
-    for (let index = 0; index < 300; index++) trace('upstream_receive', {bytes: 1, binary: true, payload: 'private-extra'});
-    assert.equal(rows.length - before, 7);
-    assert.doesNotMatch(rows.join(''), /private-/);
-  } finally {
-    if (previous === undefined) delete globalThis[symbol]; else globalThis[symbol] = previous;
   }
+  assert.deepEqual(rows, []);
 });
 
-test('native pre-corked socket reports pending writes until its owner uncorks and exact frames arrive', {timeout: 5000}, async () => {
-  const qaEnv = {...env, NODE_ENV: 'production', CROUPIER_PUBLIC_ORIGIN: 'https://croupier-player-preview-qa.vercel.app',
-    CROUPIER_BACKEND_ORIGIN: 'https://croupier-vercel-preview-qa.onrender.com'};
+test('bridge keeps a native socket cork it does not own and delivers exact frames after the owner uncorks', {timeout: 5000}, async () => {
   const server = createServer(), websocketServer = new WebSocketServer({noServer: true, perMessageDeflate: false});
-  const events = new EventEmitter(), rows = [];
-  let bridge;
-  let upstream, frontendSocket, client, frames = [];
-  const diagnosticEmit = line => {
-    const row = JSON.parse(line.slice('CROUPIER_UNPAID_SOCKET '.length)); rows.push(row); events.emit('row', row);
-  };
-  async function waitFor(predicate) {
-    const prior = rows.find(predicate); if (prior) return prior;
-    return new Promise(resolve => {
-      const listener = row => {if (predicate(row)) {events.off('row', listener); resolve(row);}};
-      events.on('row', listener);
-    });
-  }
+  const events = new EventEmitter(), frames = [];
+  const attached = once(events, 'attached');
+  let bridge, upstream, frontendSocket, client;
   try {
     upstream = new FakeSocket();
-    const trace = platformSocketDiagnostics(platformConfiguration(qaEnv), qaEnv, '/lipsync-worker', {emit: diagnosticEmit});
     server.on('upgrade', (req, socket, head) => websocketServer.handleUpgrade(req, socket, head, ws => {
       frontendSocket = ws;
-      bridge = bridgePlatformSocket(upstream, {trace, writeObservationMs: 25, closeTimeoutMs: 25});
-      bridge.attach(ws);
+      bridge = bridgePlatformSocket(upstream, {closeTimeoutMs: 25});
+      bridge.attach(ws); events.emit('attached');
     }));
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     client = await connect(`ws://127.0.0.1:${server.address().port}/lipsync-worker`, [],
       {headers: {authorization: `Bearer ${workerSecret}`, 'x-worker-id': 'fixture-worker'}});
     client.on('message', (data, binary) => {frames.push({data: Buffer.from(data), binary}); events.emit('frame');});
-    await waitFor(row => row.phase === 'attached');
+    await attached;
     const receivedReady = once(events, 'frame'); upstream.emit('message', Buffer.from('ready'), false); await receivedReady;
     assert.equal(frontendSocket._socket.writableCorked, 0);
-    // The test owns this cork. The bridge must observe it without releasing it.
+    // The test owns this cork. The bridge must queue behind it without releasing it.
     frontendSocket._socket.cork();
     upstream.emit('message', Buffer.from('later'), false);
     upstream.emit('message', Buffer.from([1, 2, 3, 4]), true);
-    const pending = await waitFor(row => row.phase === 'frontend_send_pending' && row.sequence === 3);
-    assert.equal(pending.writableCorked, 1);
-    assert.ok(pending.bufferedAmount > 0); assert.ok(pending.writableLength > 0);
-    assert.equal(pending.destroyed, false); assert.equal(pending.writable, true); assert.equal(pending.writableEnded, false);
+    await new Promise(resolve => setTimeout(resolve, 25));
+    assert.equal(frontendSocket._socket.writableCorked, 1);
+    assert.ok(frontendSocket.bufferedAmount > 0);
     assert.deepEqual(frames.map(frame => frame.data.toString()), ['ready']);
-    assert.equal(rows.filter(row => row.phase === 'frontend_send_callback').length, 1);
-    const before = rows.find(row => row.phase === 'frontend_send_before' && row.sequence === 2);
-    const queued = rows.find(row => row.phase === 'frontend_send' && row.sequence === 2);
-    assert.equal(before.writableCorked, 1); assert.equal(before.bufferedAmount, 0);
-    assert.ok(queued.bufferedAmount > before.bufferedAmount);
     frontendSocket._socket.uncork();
-    await waitFor(row => row.phase === 'frontend_send_callback' && row.sequence === 3);
     while (frames.length < 3) await once(events, 'frame');
     assert.deepEqual(frames, [{data: Buffer.from('ready'), binary: false}, {data: Buffer.from('later'), binary: false}, {data: Buffer.from([1, 2, 3, 4]), binary: true}]);
-    assert.ok(rows.filter(row => row.phase === 'frontend_send_callback').every(row => row.writeError === false && row.writableCorked === 0));
     const closed = once(client, 'close'); upstream.close(1000); assert.equal((await closed)[0], 1000);
     await bridge.done;
   } finally {
@@ -178,18 +137,13 @@ test('native pre-corked socket reports pending writes until its owner uncorks an
   }
 });
 
-test('QA write errors expose only allowlisted codes and keep failure closure intact', async () => {
-  const qa = {...configuration, publicOrigin: 'https://croupier-player-preview-qa.vercel.app', backendOrigin: 'https://croupier-vercel-preview-qa.onrender.com'};
-  for (const [code, expected] of [['EPIPE', 'EPIPE'], ['private-ticket-error', 'OTHER']]) {
-    const rows = [], trace = platformSocketDiagnostics(qa, {NODE_ENV: 'production'}, '/speech-stream', {emit: value => rows.push(value)});
+test('frontend write errors close both sides with 1011 without retrying', async () => {
+  for (const code of ['EPIPE', 'private-ticket-error']) {
     const upstream = new FakeSocket(), frontend = new FakeSocket();
     frontend.send = (_data, _options, callback) => callback(Object.assign(Error('private-payload'), {code}));
-    const bridge = bridgePlatformSocket(upstream, {trace, closeTimeoutMs: 5}); bridge.attach(frontend);
+    const bridge = bridgePlatformSocket(upstream, {closeTimeoutMs: 5}); bridge.attach(frontend);
     upstream.emit('message', Buffer.from('private-input'), false); await bridge.done;
-    const callback = rows.map(value => JSON.parse(value.slice('CROUPIER_UNPAID_SOCKET '.length))).find(value => value.phase === 'frontend_send_callback');
-    assert.equal(callback.writeError, true); assert.equal(callback.writeErrorCode, expected);
-    assert.equal(frontend.codes[0], 1011); assert.equal(upstream.codes[0], 1011);
-    assert.doesNotMatch(rows.join(''), /private-payload|private-input|private-ticket-error/);
+    assert.deepEqual(frontend.codes, [1011]); assert.deepEqual(upstream.codes, [1011]);
   }
 });
 
