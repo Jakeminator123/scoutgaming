@@ -385,15 +385,15 @@
       "stage": "E3",
       "title": "Spelklient och presentation från händelser",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [
         "K03",
         "J07"
       ],
       "branch": "main",
-      "head": "<K04_HEAD>",
-      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/<RERUN4_PR>",
-      "reviewer": "oberoende Claude-granskare: docs/2026-10-28-K04-K05-REVIEW.md (#460) för F1/F2 och K04:s övriga kriterier; <REVIEW_DOC> för F3–F5 (#478) och F5b, F4b, R1 och R2 (#481).",
+      "head": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/510",
+      "reviewer": "oberoende Claude-granskare: docs/2026-10-28-K04-K05-REVIEW.md (#460) för F1/F2 och K04:s övriga kriterier; docs/2026-10-28-K04-F3-F5-REVIEW.md för F3–F5 (#478) och F5b, F4b, R1 och R2 (#481).",
       "evidence": [
         "Dokumentunderlag PR314/head6bd92d05b0d52032675148519e001b8386110dec läsgranskat:1293 unika TSV-paths,1267 runtimeposter matchar K01:s path/bytes/hash och26 databeroenden. Metadatajämförelse är inte egen binärhashning, Neon/Blob- eller visuell acceptans. Beslut6328064364 anger K04:s beständiga presentationssink, sanerade publicViews och exakt materialbindning; root äger auth/HTTP och J08 publicering.",
         "Historik: root6328762858 granskade9e62923b och reproducerade sena munpatchar. Påd226f53370e4355267d8875bc9168e91357f41ba fick PG-läsningarna assertInstalled/lastAccepted/current begränsade transaktioner; fyndet stängt i kodläsning utan egen PG-körning. D226 lämnade två presentationsfel: äldre aldrig ritad A efter end(B) och förlorad återanslutning till samma idle-entry efter avbrott. Root reproducerade A/B/end(B)/sen A som accepted=true med anrop[B,null,A-late], återkopplat i6329131459. Dessa två ursprungsfynd är därefter stängda påe6287ea1 enligt nästa granskningskvitto.",
@@ -425,12 +425,12 @@
         "2026-10-28 F1 och F2 rättade i spelklienten: #465, main 43b7404e.",
         "2026-10-28 omprov 2 på staging 43b7404e efter #465: underkänt (kvittots result IN_PROGRESS). F1 och F2 godkända, men tre nya klientfel: F3 (hit/stand öppnas 1,1–2,6 s efter turnAt), F4 (409 stale vid fönsterbyte visas som paketbyte med Ladda om) och F5 (giv- och revealfilmen visas aldrig på delat bord). Kvittot bär också Jakobs visualApproval för de 35 klippen: docs/2026-10-28-K04-BROWSER-RERUN-2-ACCEPTANCE.json (#475).",
         "2026-10-28 #476 (extern draft jakob/migration-runtime-bugfixes, rättningar för F3 och F4) granskades kritiskt; commit a523cde0 togs oförändrad in i #478 med bevarat författarskap, och #476 stängdes som ersatt av #478.",
-        "2026-10-28 F3–F5 rättade i spelklienten (bara services/game/public): F3 klockan räknas från WebSocket-mottagningen, F4 shared_room_presentation_stale vid config- eller bindningsläsning är inget paketbyte, F5 en delad plans filmade steg hämtar urvalet när planen börjar. Head 1f66245b, mergad som 34fc4cdc. Oberoende granskning utan blockerande fynd; uppföljningarna R1 (misslyckad förhämtning visar filmfel) och R2 (presentationen kan hålla hit/stand cirka 2,75 s efter turnAt) gick till #481: <REVIEW_DOC> (#478).",
+        "2026-10-28 F3–F5 rättade i spelklienten (bara services/game/public): F3 klockan räknas från WebSocket-mottagningen, F4 shared_room_presentation_stale vid config- eller bindningsläsning är inget paketbyte, F5 en delad plans filmade steg hämtar urvalet när planen börjar. Head 1f66245b, mergad som 34fc4cdc. Oberoende granskning utan blockerande fynd; uppföljningarna R1 (misslyckad förhämtning visar filmfel) och R2 (presentationen kan hålla hit/stand cirka 2,75 s efter turnAt) gick till #481: docs/2026-10-28-K04-F3-F5-REVIEW.md (#478).",
         "2026-10-28 omprov 3 på staging 1f66245b (blackjackklienten identisk med main 34fc4cdc): F3 godkänt (hit/stand 54–1 078 ms efter turnAt i elva händer, alla act 200, ingen NOT_YOUR_TURN) och F4 godkänt för bindning och config. F5 underkänt: urvalet hämtas i förväg, men bara 1 av 44 filmade steg startar och ingen fil är förberedd. Orsak F5b: den delade configens giv-, hål-, reveal- och talvideor saknar dealer, så klientens owned() förbereder aldrig filerna. Nytt fel F4b: en verklig 409 stale på idle-filmens bytes efter Nästa runda ger rå text, och dealern kommer inte tillbaka. F1, F2, omladdning, tangentbord och tap, okänt media-ID och avbrutet tal är oförändrat godkända: docs/2026-10-28-K04-BROWSER-RERUN-3-ACCEPTANCE.json (#482).",
         "2026-10-28 F5b, F4b, R1 och R2 rättade i spelklienten, med fler prov (R5): #481.",
-        "2026-10-28 omprov 5 på staging <K04_HEAD> (main efter #502–#507): 25 körningar med DIAG=1 (normal hand, fönsterbyte, 400 kbit/s, Fast 3G, försäkring, Render-omstart mitt i hand, återkallad session). Giv 22/22, dealerns giv 22/22, reveal 11/11 och dealerns drag 8/8 når start; hit/stand −3 till 1 270 ms efter turnAt; dealern syns på 400 kbit/s efter 53 s. Kvar och icke-blockerande enligt granskaren (F8, F9, F10, hit-kort 2/4, B1 oprovat) står i kvittot i #<RERUN4_PR> och i del 4 av <REVIEW_DOC>.",
+        "2026-10-28 omprov 5 på staging 689c690e5fc8343220f3faa834d5a40052359e0d (main efter #502–#507): 25 körningar med DIAG=1 (normal hand, fönsterbyte, 400 kbit/s, Fast 3G, försäkring, Render-omstart mitt i hand, återkallad session). Giv 22/22, dealerns giv 22/22, reveal 11/11 och dealerns drag 8/8 når start; hit/stand −3 till 1 270 ms efter turnAt; dealern syns på 400 kbit/s efter 53 s. Kvar och icke-blockerande enligt granskaren (F8, F9, F10, hit-kort 2/4, B1 oprovat) står i kvittot i #510 och i del 4 av docs/2026-10-28-K04-F3-F5-REVIEW.md.",
         "2026-10-28 Jakobs visuella godkännande av PAOW:s 35 giv-, hål- och revealklipp, cirka 01:55Z i Admin → Klippkarta: \"alla klipp ser jättebra ut\". Registret kan inte lagra det (unreviewed/lab-only är konstanter); bokfört som visualApproval i docs/2026-10-28-K04-BROWSER-RERUN-2-ACCEPTANCE.json (#475) och gäller exakt de bytes (SHA-256) som står där.",
-        "2026-10-28 Jakobs bedömning av klippen vid bordet och av omprovets skärmbilder (villkor 2 i #460): <JAKOB_APPROVAL>.",
+        "2026-10-28 Jakobs bedömning av klippen vid bordet och av omprovets skärmbilder (villkor 2 i #460): godkänt 2026-10-28 (Jakob spelade i staging på main 689c690e): klipp och kort rätt, inga feltexter; UX-fynd att platsmarkör och insatsruta ser lika ut bokförs till efter O03.",
         "Scopebeslut Jakob 2026-10-28: \"Slå på ljud\" stryks som obsolet under väg B. Knappen finns bara på enspelarbordet, som pensioneras efter O03.",
         "Skjutet 2026-10-28 med motivering: fysisk telefon till O02 V3, eftersom mobilen i K04-proven är emulerad (390 px, touch) i headless Chromium och O02 ska prova mobil och dator på den frysta kandidaten. Produktionens tre lager med inloggad spelare till O03, eftersom produktionen kör nativebordet tills delat bord slås på i O03-releasen och kvittot då ska tas på den vägen."
       ],
@@ -490,7 +490,7 @@
       "stage": "E4",
       "title": "Exakt mediakoppling till Neon och Blob",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [
         "K01",
         "K04"
@@ -554,7 +554,7 @@
       "stage": "E4",
       "title": "Verifiera Admin till spel efter omstart",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [
         "J08",
         "K05"
@@ -600,7 +600,7 @@
       "stage": "E5",
       "title": "Verifiera spelbeteenden och samtidighet",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "K04",
         "K06"
