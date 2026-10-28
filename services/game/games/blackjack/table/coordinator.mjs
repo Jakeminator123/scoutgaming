@@ -558,21 +558,27 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // `…:retry:<n>` id after something in its blockedOn changed (O01 2.5), never in a loop.
   // onRoomError(roomId, error) lets the scheduler isolate one room's failed due-check: it
   // returns to skip that room or throws to fail the whole read (B3). Without it, any throws.
-  async function dueTicks(at = now(), { onRoomError } = {}) {
+  // observeRoom(roomId, {version, presentationVer}) sees the committed versions this read
+  // already loaded (F11: another engine instance's commits); it never changes the result.
+  async function dueTicks(at = now(), { onRoomError, observeRoom } = {}) {
     const due = [];
     for (const roomId of await store.read.rooms()) {
-      if (!onRoomError) { await dueForRoom(roomId, at, due); continue; }
+      if (!onRoomError) { await dueForRoom(roomId, at, due, observeRoom); continue; }
       const mark = due.length;
-      try { await dueForRoom(roomId, at, due); }
+      try { await dueForRoom(roomId, at, due, observeRoom); }
       catch (error) { due.length = mark; await onRoomError(roomId, error); }
     }
     return due;
   }
-  async function dueForRoom(roomId, at, due) {
+  async function dueForRoom(roomId, at, due, observeRoom) {
     {
       // Kevin 24 Oct (prod CPU): a room nobody sits at has no member tick, so its members and
       // presence are not read; presence only for the members an absence tick can concern.
       const r = await store.read.room(roomId), seen = {};
+      if (r && observeRoom) {
+        try { observeRoom(roomId, Object.freeze({ version: r.version, presentationVer: r.presentationVer ?? 0 })); }
+        catch { /* An observer is a hint only; it cannot fail a due-check. */ }
+      }
       const members = r.owners.some(Boolean) ? await store.read.members(roomId) : [];
       for (const m of members) if (watched(r, m)) seen[m.actorId] = await store.read.presence(roomId, m.actorId);
       for (const c of candidates(r, members, p => seen[p])) {

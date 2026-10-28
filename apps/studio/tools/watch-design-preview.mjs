@@ -1,7 +1,7 @@
 import { watch, lstatSync, readdirSync } from 'node:fs';
 import { access } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -61,7 +61,7 @@ export async function watchDesignPreview({
   onEvent = () => {},
 } = {}) {
   if (!Number.isFinite(debounceMs) || debounceMs < 0) throw Error('Invalid rebuild debounce.');
-  const watchers = new Map(), activeRoots = new Set();
+  const watchers = new Map(), rootParents = new Map(), activeRoots = new Set();
   let timer, rescan = false, building = false, dirty = false, stopped = false, first = true;
   let acceptReady, acceptClosed;
   const ready = new Promise(accept => { acceptReady = accept; });
@@ -70,8 +70,8 @@ export async function watchDesignPreview({
   function close() {
     stopped = true; dirty = false;
     clearTimeout(timer);
-    for (const { watcher } of watchers.values()) watcher.close();
-    watchers.clear();
+    for (const { watcher } of [...watchers.values(), ...rootParents.values()]) watcher.close();
+    watchers.clear(); rootParents.clear();
     // Let the one owned build (and its compiler children) finish naturally.
     // No detached processes, shell or platform-specific process-tree killing.
     if (!building) acceptClosed();
@@ -111,6 +111,39 @@ export async function watchDesignPreview({
     try { return lstatSync(path, { throwIfNoEntry: false }); }
     catch (error) { if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return; throw error; }
   }
+  function sameDirectory(info, record) {
+    return info && info.dev === record.dev && info.ino === record.ino && info.birthtimeMs === record.birthtimeMs;
+  }
+  // Windows keeps a directory watcher on the renamed handle without any event,
+  // so a root replaced by rename is only visible from its parent. Parent events
+  // are limited to renames of the root names themselves.
+  function watchRootParent(path, name) {
+    const info = statDirectory(path);
+    let record = rootParents.get(path);
+    if (record && !sameDirectory(info, record)) { record.watcher.close(); rootParents.delete(path); record = null; }
+    if (record) { record.names.add(name); return; }
+    if (!info?.isDirectory() || info.isSymbolicLink()) return;
+    const current = { dev: info.dev, ino: info.ino, birthtimeMs: info.birthtimeMs, names: new Set([name]), watcher: null };
+    try {
+      current.watcher = watch(path, { recursive: false }, (event, filename) => {
+        if (stopped || rootParents.get(path) !== current) return;
+        try {
+          if (!sameDirectory(statDirectory(path), current)) {
+            current.watcher.close(); rootParents.delete(path);
+            rescan = true; requestBuild(); return;
+          }
+          const changed = filename?.toString();
+          if (changed !== undefined && (event !== 'rename' || !current.names.has(changed))) return;
+          rescan = true; requestBuild();
+        } catch (error) { watchFailure(error); }
+      });
+    } catch (error) {
+      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return;
+      throw error;
+    }
+    current.watcher.on('error', error => { if (!stopped && rootParents.get(path) === current) watchFailure(error); });
+    rootParents.set(path, current);
+  }
   function refreshDirectories() {
     const seen = new Set();
     function visit(path, recursive, info) {
@@ -118,7 +151,7 @@ export async function watchDesignPreview({
       if (!info?.isDirectory() || info.isSymbolicLink()) return;
       seen.add(path);
       let record = watchers.get(path);
-      if (record && (record.dev !== info.dev || record.ino !== info.ino || record.birthtimeMs !== info.birthtimeMs)) {
+      if (record && !sameDirectory(info, record)) {
         record.watcher.close(); watchers.delete(path); record = null;
       }
       if (!record) {
@@ -130,12 +163,18 @@ export async function watchDesignPreview({
             if (stopped || watchers.get(path) !== current) return;
             try {
               const info = statDirectory(path);
-              if (!info || info.dev !== current.dev || info.ino !== current.ino || info.birthtimeMs !== current.birthtimeMs) {
+              if (!sameDirectory(info, current)) {
+                // Windows keeps firing rename events for a deleted watched directory;
+                // without closing it here each event would push the debounce forever.
+                current.watcher.close(); watchers.delete(path);
                 rescan = true; requestBuild(); return;
               }
               const name = filename?.toString();
               if (name !== undefined && !allowedSourcePath(name)) return;
-              const directory = name !== undefined && event === 'rename' && statDirectory(resolve(path, name))?.isDirectory();
+              const directory = name !== undefined && statDirectory(resolve(path, name))?.isDirectory();
+              // Windows reports child-directory metadata as a change on the parent;
+              // the contents of watched subdirectories have their own watchers.
+              if (directory && event !== 'rename') return;
               if (name !== undefined && !directory && !isDesignPreviewSource(name)) return;
               if (event === 'rename' || name === undefined) rescan = true;
               requestBuild();
@@ -164,6 +203,7 @@ export async function watchDesignPreview({
     for (const entry of roots) {
       const path = resolve(repoRoot, entry.path), inside = relative(repoRoot, path);
       if (!inside || inside.startsWith('..') || isAbsolute(inside)) throw Error('Watch root must be inside the repository.');
+      watchRootParent(dirname(path), basename(path));
       const info = statDirectory(path);
       if (!info) {
         if (activeRoots.has(path)) throw Error(`Källkatalogen försvann: ${entry.path}. Återställ den och starta om bevakningen.`);

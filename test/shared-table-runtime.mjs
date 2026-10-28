@@ -411,3 +411,24 @@ test('contention is counted every time but reported at most once per room per in
     [['shared_table_room_contention', 'busy-room', 5], ['shared_table_room_contention', 'other-room', 5]]);
   assert.throws(() => setup({ options: { contentionReportMs: -1 } }), /contention report/);
 });
+
+test("F11: each pass hands the rooms' committed versions to onRoomObserved after its own ticks and delivery; a broken observer changes nothing",async t=>{
+  const observed=[],order=[];let broken=false;
+  const h=setup({coordinator:{async dueTicks(_at,{observeRoom}){
+    observeRoom('room-a',{version:4,presentationVer:2});observeRoom('room-b',{version:9,presentationVer:9});
+    return [{roomId:'room-a',tickId:'tick-a'}];},
+    async tick(row){order.push('tick');return {tickId:row.tickId,outcome:'applied'};},
+    async deliverOutbox(){order.push('deliver');return {delivered:[],superseded:[],failed:[]};}},
+    options:{sink:async()=>'applied',onRoomObserved(value){order.push('observe');if(broken==='sync')throw Error('observer down');
+      if(broken==='async')return Promise.reject(Error('observer down'));assert.ok(Object.isFrozen(value));observed.push(value);}}});
+  t.after(()=>h.runtime.stop());await h.runtime.start();
+  const first=await h.runtime.pump();
+  assert.deepEqual(observed,[{roomId:'room-a',version:4,presentationVer:2},{roomId:'room-b',version:9,presentationVer:9}]);
+  assert.deepEqual(order,['tick','deliver','observe','observe']);
+  for(broken of ['sync','async']){const next=await h.runtime.pump();assert.equal(next.ticks.length,1);}
+  await flush();assert.equal(first.ticks.length,1);assert.equal(h.runtime.health().failed,false);assert.deepEqual(h.errors,[]);
+  // Without the port the scheduler is asked exactly as before.
+  const plain=setup({coordinator:{async dueTicks(_at,options){assert.equal(Object.hasOwn(options,'observeRoom'),false);return [];}}});
+  t.after(()=>plain.runtime.stop());await plain.runtime.start();await plain.runtime.pump();
+  assert.throws(()=>setup({options:{onRoomObserved:'yes'}}),/Invalid runtime ports/);
+});

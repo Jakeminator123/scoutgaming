@@ -4,6 +4,10 @@
  * server binding {actorId,sessionId,operatorId,roomId,packageRevision,expiresAt}.
  * Commit hints only request fresh reads; this module never acknowledges an outbox or
  * persists a receiver version. A client still gates presentation replay.
+ * Overlap (F11): observeRoom(roomId,{version,presentationVer}) carries the committed room
+ * versions the runtime's pass read anyway; a socket that has sent less rereads once. That
+ * covers commits by another engine instance (Render deploy/restart), whose hints never
+ * arrive here. close() is the SIGTERM path: every socket gets 1012 shared_room_restart.
  * Presence (B4): an optional touch(binding,{signal}) port marks the bound player as seen
  * in the bound room when a socket attaches and then once per presenceIntervalMs while it
  * stays open, after the same revalidation as a read. It is never a game or wallet
@@ -120,7 +124,7 @@ function bounded(work,controller,timeoutMs) {
 }
 export function createSharedRoomChannel({origin,authorize,revalidate,readSnapshot,readPresentation,touch,now=Date.now,
   readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128,consistencyTimeoutMs=10000,
-  presenceIntervalMs=10000}={}) {
+  presenceIntervalMs=10000,observeRetryMs=1000}={}) {
   let parsed;try{parsed=new URL(origin);}catch{fail();}
   if(parsed.origin!==origin||!['https:','http:'].includes(parsed.protocol)
     ||![authorize,revalidate,readSnapshot,readPresentation,now].every(port=>typeof port==='function')
@@ -130,7 +134,8 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
     ||!Number.isSafeInteger(maxReadAttempts)||maxReadAttempts<1||maxReadAttempts>5
     ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000
     ||touch!==undefined&&typeof touch!=='function'
-    ||!Number.isSafeInteger(presenceIntervalMs)||presenceIntervalMs<1||presenceIntervalMs>60000)fail();
+    ||!Number.isSafeInteger(presenceIntervalMs)||presenceIntervalMs<1||presenceIntervalMs>60000
+    ||!Number.isSafeInteger(observeRetryMs)||observeRetryMs<1||observeRetryMs>30000)fail();
   const rooms=new Map(),actors=new Map(),connections=new Set();let stopped=false;
   async function prepare(request) {
     if(stopped)fail();
@@ -150,7 +155,7 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(binding.expiresAt<=now()){socket.close(1008,'shared_room_unauthorized');fail('shared_room_unauthorized',403);}
       if(connections.size>=maxConnections){socket.close(1013,'shared_room_capacity');fail();}
       let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer,presenceTimer,presence;
-      let sentVersion=-1,sentPresentation=-1;
+      let sentVersion=-1,sentPresentation=-1,observed=null;
       const cleanup=()=>{
         if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);clearTimeout(presenceTimer);
         operation?.abort();presence?.abort();
@@ -187,7 +192,8 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
             if(!pair.consistent) {
               if(++mismatches>=maxReadAttempts) {
                 // Game state can commit before its outbox reaches the receiver.
-                // Wait for that receiver's next hint, with one bounded timer;
+                // Wait for that receiver's next hint (or, from another instance, the
+                // runtime's next observation, observeRetryMs), with one bounded timer;
                 // never poll SQL in a loop or send a mixed-version frame.
                 if(!consistencyTimer) {
                   consistencyTimer=setTimeout(()=>close(1011,'shared_room_unavailable'),consistencyTimeoutMs);
@@ -209,6 +215,17 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         finally {running=false;operation=null;}
       }
       const requestRefresh=()=>{if(closed)return;generation++;dirty=true;if(!running)queueMicrotask(refresh);};
+      // F11: committed room versions seen by the runtime's own pass, which also covers a commit
+      // by another engine instance. Behind what this socket has sent -> one ordinary reread
+      // (same revalidation, projection and consistency gate). Never while a read is pending;
+      // the same unchanged observation retries at most once per observeRetryMs (a receiver
+      // that has not caught up yet), so an observation never becomes a read loop.
+      const observe=(version,presentationVer)=>{
+        if(closed||running||dirty||version<=sentVersion&&presentationVer<=sentPresentation)return;
+        const at=now();
+        if(observed&&observed.version===version&&observed.presentationVer===presentationVer&&at-observed.at<observeRetryMs)return;
+        observed={version,presentationVer,at};requestRefresh();
+      };
       // The next touch is armed only after the previous one settled: at most one per interval.
       async function beat() {
         if(closed||!touch)return;presence=new AbortController();
@@ -220,7 +237,7 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         } finally {presence=null;}
         if(!closed){presenceTimer=setTimeout(beat,presenceIntervalMs);presenceTimer.unref?.();}
       }
-      const connection={close,requestRefresh,roomId};
+      const connection={close,requestRefresh,observe,roomId};
       connections.add(connection);if(!rooms.has(roomId))rooms.set(roomId,new Set());rooms.get(roomId).add(connection);
       if(!actors.has(binding.actorId))actors.set(binding.actorId,new Set());actors.get(binding.actorId).add(connection);
       socket.on('message',inbound);socket.on('close',cleanup);socket.on('error',broken);
@@ -236,6 +253,12 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         ||exceptRoom!==undefined&&!id(exceptRoom))fail('shared_room_request_rejected',400);
       for(const actor of new Set(actorIds))for(const connection of actors.get(actor)??[])
         if(connection.roomId!==exceptRoom)connection.requestRefresh();
+    },
+    // F11: {version,presentationVer} as committed in the store, from the runtime pass. Only
+    // sockets in that room that have sent less reread; a room without sockets costs nothing.
+    observeRoom(roomId,{version,presentationVer}={}){
+      if(!id(roomId)||!integer(version)||!integer(presentationVer))fail('shared_room_request_rejected',400);
+      for(const connection of rooms.get(roomId)??[])connection.observe(version,presentationVer);
     },
     // B2: the service closes only on shutdown/restart (SIGTERM). 1012 tells the client to
     // reconnect with a fresh authenticated snapshot; 1000 would stop it for good.

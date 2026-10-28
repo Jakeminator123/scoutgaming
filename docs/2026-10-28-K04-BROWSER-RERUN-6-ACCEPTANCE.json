@@ -1,0 +1,3388 @@
+{
+ "kind": "k04-browser-acceptance/v1",
+ "date": "2026-10-28",
+ "branch": "jakob/claude-o02-k04",
+ "candidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+ "codeSha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+ "producedBy": "claude-k04-rerun6-f5909847 (Claude Opus 5.5, K04-underagent till orkestratorn scoutgaming-f1; utförare av omprovet, inte granskare)",
+ "status": {
+  "activity": "K04",
+  "result": "FAIL_PARTIAL",
+  "reason": "Omprov 6 på den frysta O02-kandidaten f3780593 (main efter #513, #516, #517). Godkänt: hit/stand vid turnAt (−29 till 1 569 ms, n=31) och alla planens kort senast +83 ms; act 32/32 med 200 och NOT_YOUR_TURN 0; försäkringsrutan +784 och +745 ms efter turnAt, aldrig före; 400 kbit/s och Fast 3G (dealern syns efter 55,7 och 20,9 s); fel-UI (404 på goodluck, okänt id, nästa fönster, avbrutet tal); omladdning mitt i hand; tangentbord och tryck inklusive \"Lämna plats N\"; F8 (återkallad session ger \"Din session har gått ut. Logga in igen.\" med 44 px Logga in-länk tillbaka till bordet); F10 (1012 når webbläsaren vid Render-omstart); #517:s egen plats \"Du\", lokal spärr före huvudinsats och Upprepa; ingen horisontell scroll i 390 och 320; två händer i följd utan omladdning (V5); alla tio repliker utlösta; #508: alla 187 valda filmsteg kom ur planen. Underkänt eller nytt: F11 Render-överlapp (sidan fick inga snapshots i 2 min 9 s mitt i handen före omstartens stängning; blockerande för B2), F13 320×568 (saldopanelen täcker huvudinsatsen; blockerande för V3 320), F12 Redo täcker \"Lämna plats N\" vid ≥861 px efter insats, F14 överlapp med flera egna platser, och färre filmsteg når start än i omprov 5 (0,88 mot 0,96 i initial giv), vilket A/B-provet med 689c690e:s klient visar inte kommer från kandidatens klientkod. K04 föreslås inte VERIFIED på kandidaten förrän F11 och F13 är bedömda."
+ },
+ "supersedes": "Ersätter docs/2026-10-28-K04-BROWSER-RERUN-5-ACCEPTANCE.json (689c690e) som aktuellt K04-webbläsarkvitto; det äldre står kvar som historik.",
+ "sources": "Sammanfattat från råkvittot receipt-k04-rerun6.json, analysis-rerun6.json, summary-rerun6.json, split-rerun6.json och körloggarna r6-*.log i utförarens lokala harness (o02-f3780593/k04-rerun-6), inte i Git. Skärmbilder och klipp ligger i o02-f3780593/o02/jakob-eyes/ och committas inte. Inga kakor, lösenord, tokens, nycklar, spelaranvändarnamn, spelar-UUID eller rund-UUID.",
+ "environment": {
+  "origin": "https://croupier-k06-k07-staging.vercel.app",
+  "backend": "https://croupier-k06-k07-staging.onrender.com",
+  "vercel": {
+   "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+   "deployment": "dpl_4p3Qzn2xNEwKkuFKVYtHHM2uWYrQ",
+   "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "evidence": "Sidan refererar dpl_4p3Qzn2xNEwKkuFKVYtHHM2uWYrQ i sina tillgångar. Sju klientfiler hämtade 11:45 UTC: styles.css, shared-room-view.mjs och shared-room-controller.mjs byte-identiska med f3780593; shared-room-app.mjs, shared-room-presentation.mjs, local-presentation.mjs och local-card-overlay.mjs identiska efter byggets omskrivning av importvägar ('../../../packages/' → './packages/')."
+  },
+  "render": {
+   "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+   "deploy": "dep-dbgsbhnf3r2c73aig40g",
+   "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "live": "2026-10-28T09:52:51Z",
+   "versionEndpoint": "/__cloud/version = f3780593 vid start, efter varje omstart och vid slutet; health 200 hela tiden",
+   "oldInstanceClosed": "Instansen gtw5q (240f9732, #517:s gren-head) gick till draining och closed 09:55:38 UTC; därefter körde bara cspk4 (f3780593). Mätningen började 10:33 UTC.",
+   "restarts": "Två Render-omstarter på samma SHA via REST POST /restart (ingen deploy, ingen miljövariabel): begärd 11:14:17Z (cspk4 → pqpgw, cspk4 draining 11:17:32Z) och 11:28:51Z (pqpgw → 9sgtc, pqpgw draining 11:32:04Z). Orkestratorn fick OMSTART NU/KLAR före och efter båda."
+  },
+  "neon": {
+   "project": "red-violet-36066351",
+   "access": "ingen"
+  },
+  "runtimeEquivalenceToMain": {
+   "main": "adfe18e995e6f18784b37086113f9c28412310cf (vid kvittots skrivning)",
+   "result": "git diff --name-only f3780593 adfe18e9 -- RUNTIME_PREFIXES är tom (#520, #521, #522 rör bara docs, tools och test)."
+  }
+ },
+ "subjects": {
+  "operatorA": "qa-k06k07-9dd2d3a4-a",
+  "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+  "dealer": "paow",
+  "packageRevision": 15,
+  "players": "30 nya syntetiska spelare (en per körning), demo-USD; en av dem utloggad (revoke). Användarnamn och UUID utelämnas."
+ },
+ "tool": {
+  "browser": "playwright-core 1.62.1, headless Chromium (--autoplay-policy=no-user-gesture-required)",
+  "harness": "k04i.mjs från omprov 5, kopierad och anpassad efter #517: egen plats \"Du\" och \"Lämna plats N\" (button.seat-shared-leave[aria-label]) i tangentbord/tryck; lokal spärr före huvudinsats (riktigt musklick på spärrade Par/21+3/Redo bara där kontrollen själv ligger överst, och räkning av skickade kommandon); hscroll per steg (documentElement.scrollWidth <= clientWidth och scrollTo(100000) ger scrollX 0); revoke med kontroll av Logga in-länken; restart3 (Render-omstart via REST bakom en grind, flera egna platser utan beslut, draining ur Render-loggen); multi (händer i följd i samma sida, V5, försäkringsjakt); v3 och shots3 för Jakobs bilder; select- och kommandotider ur request.timing(); OLDCLIENT=1 (A/B: 689c690e:s sju klientfiler serverade via page.route, inga produktändringar).",
+  "diagnostics": "DIAG=1: shared-room-presentation.mjs levereras med receipt:()=>{} utbytt mot en inspelare i sidan. Ingen produktkod ändrad.",
+  "throttle": "400 ms RTT och 50 000 B/s; Fast 3G 563 ms, 180 000/70 000 B/s.",
+  "machine": "Windows 10, 12 logiska kärnor; under mätningen körde också Jakobs Chrome (cirka 11 % CPU) och IDE-processer. Ingen annan agent körde mot rummet."
+ },
+ "media": {
+  "note": "Hash räknad av harnessen på svarskroppen.",
+  "items": [
+   {
+    "kind": "card back",
+    "id": "/images/cards/back-scout.png",
+    "bytes": 21574,
+    "sha256": "9c2b32897d9f910575b0818937600c4aa64f04c4de383ca4ed610f72d3ad8720",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "1d73fa9f-ccd3-488b-b809-186b5e431641",
+    "bytes": 1582039,
+    "sha256": "942e3580f9da5595a462fe6df2372e761992c19a48153d3b2b02157ccd41265e",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "6134db90-9c50-438b-9c36-5a363781232b",
+    "bytes": 1087146,
+    "sha256": "4bc6994a706f5fd7258547f92d9d7c7c475ced674310a89306463f44d586b641",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "917a436b-dc60-4e8e-b15d-a6b5c0ab183e",
+    "bytes": 1131696,
+    "sha256": "d27017d40e8ae40baa349d373de8bec1800356e9ff821995c9e6fc3216d8e2fc",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "c16b8b1f-6553-4ea2-b202-740ac3dab876",
+    "bytes": 749710,
+    "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+    "bytes": 1098295,
+    "sha256": "3133d1511cfcf2027a29bf7bd7044c19836778687ff6cc9576894b2632da2bfd",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806",
+    "bytes": 1113561,
+    "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "b07c94b6-74bd-420f-baf5-f3f9da7b9d9a",
+    "bytes": 1706478,
+    "sha256": "93cd59b29853709dcfd916cf5e9318964f690cd86b11318fba897f70c7a2f167",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "71fdf9e3-efde-49ca-b3dd-ce6490ddf661",
+    "bytes": 279643,
+    "sha256": "38aed05c0ea55bb8e0d74f34eacf97a1de9eceac03c90c6f4304a4ec7434e255",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "a4e148fc-8bbf-4d82-b59a-d5f85e9c59c6",
+    "bytes": 1672688,
+    "sha256": "98d6e6eb14d3b5e6f51a6515950d6ec8303ec586fcba587e8cd33f1a9d597730",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "65bfca97-9e2a-402b-98b6-5c0759747cd8",
+    "bytes": 688831,
+    "sha256": "d2938bd12d408ccb180718b6136020997b29453da4740eaf9c4cbf9b403fcba7",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "eba5e1ba-3946-45c3-a37a-36929196aa40",
+    "bytes": 2102463,
+    "sha256": "10520e1a258905187cb358725c96a9c8823da7c23042b40ab09d42ed5697e011",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "848f6e50-3e0d-465b-a8e4-e44eb2720b55",
+    "bytes": 1539219,
+    "sha256": "013ed9d0065b01c9066f42410131684b74f32c5139863af6e1736ec04d900b34",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "08e939c6-60d2-4fa4-81f7-a4723ae21071",
+    "bytes": 1322155,
+    "sha256": "32cdb81f4ea3ab14e232d2478517bcd7e6874e7f2ab924cdd5b36fd7266321f1",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "e8bef201-278c-43b0-ab1a-b0dc6ba7e0c3",
+    "bytes": 1629870,
+    "sha256": "6037a04f6dd04cf3d6d3d56f518d6426f527b962265597213072f04b47e3e5bf",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "7074099a-f1c4-4846-b1b3-3803fb33e6b8",
+    "bytes": 1168707,
+    "sha256": "255c3733603ed56c50ea4d85840a009a95c3799366c86eddeebe3a9a7e5cf043",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "137a8e68-cb46-4c2f-abdd-22a6579c9167",
+    "bytes": 1017512,
+    "sha256": "aa59b8d998dc3319c3fc529145586867e1b9716f6abc44dd02bd79be6191a1bd",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3",
+    "bytes": 284915,
+    "sha256": "63752fce450f9e5409e3498c236e3a752a0250fbac6dc6e4a550717f4339d461",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "f92b8c8b-c90a-4447-82f1-244f7d85c33e",
+    "bytes": 1178312,
+    "sha256": "a7612a8de51b7bb67b73ee222c5955dad1f10f2c7b01f588bdac4712ca2ffc40",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "0ce2241a-82bb-470a-ab35-59997c2c3901",
+    "bytes": 1185687,
+    "sha256": "e3094266aa572522510edbca7e395d176e7fbedba612a2331c35401ea46deb50",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "709f7454-bc3d-4af8-924b-57291ee8e33a",
+    "bytes": 1582854,
+    "sha256": "86c8f02662917c7e8c849bb4649bd78f2c7dd81f4811fa011e3ccdbc56b98ab3",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "d8dfde2e-5ce5-4c7f-a39d-00828d91d4d1",
+    "bytes": 1197373,
+    "sha256": "04e1d1bd77d1ccdc279be7991c25e527b6f1ce085dc09d70650447a167e15b5d",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "ec8534ad-3417-48af-8be7-05c162fe018c",
+    "bytes": 1168195,
+    "sha256": "d4d52b025d28ff0ccc90699a48ee78e0cec242477c4f255a0c65cdd7d4ec623e",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "35926825-2f39-49cd-aaa0-42933100a0f3",
+    "bytes": 1131374,
+    "sha256": "cb67dd3785b2d041af78c36a088335303568c0eb2350d4133f4577ec88eeea50",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "f12c6751-80a1-4169-9ed3-88a7e1c59af8",
+    "bytes": 967742,
+    "sha256": "00bfb92e642f32d7d2ebdd146336fd84a3ff73f8aade024af803263e4c1e6378",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "8c5749b9-bbf2-4d6a-a8d3-635e449e3df4",
+    "bytes": 762632,
+    "sha256": "40df7ec230ee7f610ee1443d4608af78f73dbdefe4dadb96265f786964ce6a19",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+    "bytes": 1620131,
+    "sha256": "b515a54011ea2e4c3f9fa82de0b5aebe5afba88d6c99400bfae2361985579569",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "139fd295-b33c-417c-a0ac-87f817cf1539",
+    "bytes": 1089706,
+    "sha256": "380bcf149dfbfb3bf21b31630c11aa4f2e7514f6032c2066afa13c9e39288d15",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "dealer clip",
+    "id": "f3637a0c-63a6-4d1f-8057-dc6766d9936c",
+    "bytes": 1649689,
+    "sha256": "cdad216ef6f66ac4ec87e7ef6cca7c7efae6fd209af931c7626fa71a82906756",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "idle",
+    "id": "paow (registrerad idle)",
+    "bytes": 912188,
+    "sha256": "f5aa88aae58367702d644c401148e6ffdb9dad481f548d00c1321a45f2795581",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "layer",
+    "id": "0cd85d44-e367-4684-afef-f10111cba542",
+    "bytes": 5826,
+    "sha256": "99026175c53e7d6ad24f8100d3fe3516b51bcefe4d3aa0a8c9c378ac07aa96cb",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "layer",
+    "id": "332eb796-90e3-47da-9171-1cdeb4353bdc",
+    "bytes": 6370,
+    "sha256": "f4b88c30e199fdf27b5f492d1bbc1980100cad6ba305c6e0e23a414b867dc3c2",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/dealers/marten.jpg",
+    "bytes": 334377,
+    "sha256": "e4705a244e427ec26de5d8cbf9c680f3ccb52568b0e309b56c10271b7bc7cb8e",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/room-loungen.png",
+    "bytes": 1646529,
+    "sha256": "c29f9938a2d286989b229806eed39c1499f0f6c79fff5fd9f2900b56934a3c7b",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/hero-table.png",
+    "bytes": 1413905,
+    "sha256": "d3f69ee8cf6a470c71679711c922c55d465cbc2a58669fd8b69c19ff33cc9898",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/room-salongen.png",
+    "bytes": 1615140,
+    "sha256": "381beee90e0ffe11e918f133661ab2bf1b9afc8082486c6c9f36793d62bcd78e",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/dealers/astrid.jpg",
+    "bytes": 368230,
+    "sha256": "98c40754cd3dfdba2765e2d0bc6477f910eae8e44056fbc6e87493a73bc58e2d",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/room-studion.png",
+    "bytes": 1612301,
+    "sha256": "ee0e69af69cd29c5b9f37dea67dfc680c82776558ca7df045825a93f7e45a260",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/dealers/paow.jpg",
+    "bytes": 373541,
+    "sha256": "328b2a15e685d413dd385befae9275c69549c4eebb76e126d8e51f550139b068",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/dealers/dragge.jpg",
+    "bytes": 322889,
+    "sha256": "f23e116a3aab8e11d9f82c3e05f2c285769f55cef57acc4c8884d5f129728f4e",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/dealers/anna.png",
+    "bytes": 2019747,
+    "sha256": "3b5f263126c9dfbe151f322ddea764aa027f90000f76577616a6b11d74e3d904",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/detail-chips.png",
+    "bytes": 1480840,
+    "sha256": "59ca96366ae6d176b23a9a66723225ee3e8b74ca00e21a5dd810133ed76595d9",
+    "hashedBy": "harness"
+   },
+   {
+    "kind": "lobby image",
+    "id": "/lobby/_assets/lobby/images/lobby/hero-end.png",
+    "bytes": 1623044,
+    "sha256": "bb80aae1c6c8a4ae3b68b536e37bb1820f7218b95d818fbd7018eb33fb94d245",
+    "hashedBy": "harness"
+   }
+  ]
+ },
+ "speakLinesObserved": [
+  {
+   "line": "placebets",
+   "runs": 29
+  },
+  {
+   "line": "goodluck",
+   "runs": 26
+  },
+  {
+   "line": "double",
+   "runs": 1
+  },
+  {
+   "line": "dealerbust",
+   "runs": 10
+  },
+  {
+   "line": "win",
+   "runs": 3
+  },
+  {
+   "line": "lose",
+   "runs": 12
+  },
+  {
+   "line": "blackjack",
+   "runs": 2
+  },
+  {
+   "line": "push",
+   "runs": 2
+  },
+  {
+   "line": "insurance",
+   "runs": 2
+  },
+  {
+   "line": "dealerblackjack",
+   "runs": 1
+  }
+ ],
+ "runs": [
+  {
+   "label": "desktop",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:45:37.904Z",
+   "finishedAt": "2026-10-28T10:47:32.321Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-desktop",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-desktop",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-leave-reachable-desktop",
+     "result": "fail"
+    },
+    {
+     "id": "K04-517-after-main-desktop",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-a-desktop",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-b-desktop",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-c-keyboard",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-repeat-after-round",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-c-keyboard-leave",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     null
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     12541
+    ],
+    "acts": [
+     "double:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1783 act:1665",
+     "selectPosts": 2,
+     "selectMs": {
+      "n": 2,
+      "median": 3590,
+      "max": 3590
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    }
+   },
+   "guards": [
+    {
+     "tag": "desktop",
+     "clicked": ".seat-shared-bet-side",
+     "commandsSent": 0
+    }
+   ],
+   "leaveReach": [
+    {
+     "tag": "desktop",
+     "leaveTopIsSelf": false,
+     "coveredBy": "#deal-now",
+     "leave": {
+      "x": 935,
+      "y": 790,
+      "w": 51,
+      "h": 44
+     },
+     "ready": {
+      "x": 896,
+      "y": 785,
+      "w": 128,
+      "h": 47
+     }
+    }
+   ]
+  },
+  {
+   "label": "normal-h1-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:48:43.335Z",
+   "finishedAt": "2026-10-28T10:50:27.831Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     452
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -7353
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1308 act:2030",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 2073,
+      "max": 2640
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 4,
+     "skippedLate": 1,
+     "skippedLateShare": 0.2,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 4,
+      "median": 335,
+      "max": 1166
+     },
+     "stalls": []
+    }
+   }
+  },
+  {
+   "label": "normal-h2-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:50:29.910Z",
+   "finishedAt": "2026-10-28T10:52:40.053Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     767
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -5130
+    ],
+    "acts": [
+     "hit:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [
+     {
+      "text": "Filmen kunde inte spelas.",
+      "ms": 11211,
+      "at": "2026-10-28T10:51:23.809Z"
+     }
+    ],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1470 act:1843",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 2152,
+      "max": 2308
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 3,
+     "start": 1,
+     "skippedLate": 2,
+     "skippedLateShare": 0.67,
+     "fromPlan": 3,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 1,
+      "median": 209,
+      "max": 209
+     },
+     "stalls": [
+      {
+       "event": "deal",
+       "code": "local_film_stalled",
+       "cardShown": null,
+       "at": "2026-10-28T10:51:23.299Z"
+      }
+     ]
+    },
+    "r2b": {
+     "planAfterMs": 1843,
+     "stepSelectedMs": 2072,
+     "takeStartMs": null,
+     "cardVisibleMs": 6538,
+     "takeEndMs": null,
+     "takeOutcome": null
+    }
+   }
+  },
+  {
+   "label": "normal-h3-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:53:09.928Z",
+   "finishedAt": "2026-10-28T10:54:59.183Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     131
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -8305
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1526 act:1737",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1740,
+      "max": 1890
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 2,
+     "skippedLate": 2,
+     "skippedLateShare": 0.4,
+     "fromPlan": 4,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 2,
+      "median": 2355,
+      "max": 2355
+     },
+     "stalls": []
+    }
+   }
+  },
+  {
+   "label": "normal-h4-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:55:01.025Z",
+   "finishedAt": "2026-10-28T10:56:56.526Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     341
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -9249
+    ],
+    "acts": [
+     "hit:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1857 act:1561",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1549,
+      "max": 1774
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 6,
+     "start": 5,
+     "skippedLate": 1,
+     "skippedLateShare": 0.17,
+     "fromPlan": 6,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 5,
+      "median": 1189,
+      "max": 1219
+     },
+     "stalls": []
+    },
+    "r2b": {
+     "planAfterMs": 1561,
+     "stepSelectedMs": 1929,
+     "takeStartMs": null,
+     "cardVisibleMs": 5315,
+     "takeEndMs": null,
+     "takeOutcome": null
+    }
+   }
+  },
+  {
+   "label": "normal-h5-inject409-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T10:56:58.095Z",
+   "finishedAt": "2026-10-28T10:58:47.733Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     725
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -10338
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1387 act:1557",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1271,
+      "max": 1978
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 5,
+     "skippedLate": 0,
+     "skippedLateShare": 0,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 5,
+      "median": 321,
+      "max": 1961
+     },
+     "stalls": []
+    }
+   }
+  },
+  {
+   "label": "slow-a",
+   "context": "390×844",
+   "startedAt": "2026-10-28T10:58:50.392Z",
+   "finishedAt": "2026-10-28T11:00:56.851Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-i-e-slow-400kbps",
+     "result": "pass"
+    },
+    {
+     "id": "K04-390-no-hscroll-slow-400kbps",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     46
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     46
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1032 act:2385",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1179,
+      "max": 1487
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "slow": {
+     "controlsUsableMs": 21110,
+     "placeholderFirstMs": 16754,
+     "placeholderGoneMs": 55689,
+     "hitStandMinusTurnAtMs": 46,
+     "cardsAtHitStand": 4,
+     "playerActAccepted": {
+      "ms": 54643,
+      "action": "stand",
+      "status": 200
+     },
+     "reloadTextSeen": null,
+     "filmFailedTextMs": [],
+     "turnAtMs": 54517,
+     "hitStandOpenMs": 54563
+    },
+    "overflow": {
+     "steps": 5,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   }
+  },
+  {
+   "label": "slow-b",
+   "context": "390×844",
+   "startedAt": "2026-10-28T11:00:59.625Z",
+   "finishedAt": "2026-10-28T11:03:13.439Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-i-e-slow-400kbps",
+     "result": "fail"
+    },
+    {
+     "id": "K04-390-no-hscroll-slow-400kbps",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     null
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     83
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1556 act:2289",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1541,
+      "max": 2370
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "slow": {
+     "controlsUsableMs": 21535,
+     "placeholderFirstMs": 16433,
+     "placeholderGoneMs": 55672,
+     "hitStandMinusTurnAtMs": null,
+     "cardsAtHitStand": null,
+     "playerActAccepted": {
+      "ms": 54661,
+      "action": "stand",
+      "status": 200
+     },
+     "reloadTextSeen": null,
+     "filmFailedTextMs": [],
+     "turnAtMs": 54581,
+     "hitStandOpenMs": null
+    },
+    "overflow": {
+     "steps": 5,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   }
+  },
+  {
+   "label": "slow-fast3g",
+   "context": "390×844",
+   "startedAt": "2026-10-28T11:03:16.263Z",
+   "finishedAt": "2026-10-28T11:04:59.292Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-i-e-slow-fast3g",
+     "result": "pass"
+    },
+    {
+     "id": "K04-390-no-hscroll-slow-fast3g",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     -29
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -29
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:2216 act:1923",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1374,
+      "max": 3358
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "slow": {
+     "controlsUsableMs": 15423,
+     "placeholderFirstMs": 10300,
+     "placeholderGoneMs": 20899,
+     "hitStandMinusTurnAtMs": -29,
+     "cardsAtHitStand": 4,
+     "playerActAccepted": {
+      "ms": 49426,
+      "action": "stand",
+      "status": 200
+     },
+     "reloadTextSeen": null,
+     "filmFailedTextMs": [],
+     "turnAtMs": 49351,
+     "hitStandOpenMs": 49322
+    },
+    "overflow": {
+     "steps": 5,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   }
+  },
+  {
+   "label": "errors-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T11:05:00.506Z",
+   "finishedAt": "2026-10-28T11:07:12.509Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-i-d-missing-media",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-d-invalid-id",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-d-next-window-film",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-d-interrupted-speech",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     null
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     null
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1763 act:2194",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1490,
+      "max": 1760
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 2,
+     "start": 0,
+     "skippedLate": 2,
+     "skippedLateShare": 1,
+     "fromPlan": 2,
+     "fromSelect": 0,
+     "selectedToStartMs": null,
+     "stalls": []
+    },
+    "missingMedia": {
+     "blockedMediaId": "c16b8b1f-6553-4ea2-b202-740ac3dab876",
+     "failTextMs": 53,
+     "failText": "Talet kunde inte spelas.",
+     "fourCardsMs": 53,
+     "actsMinusTurnAtMs": 603,
+     "filmBeforeActs": 0,
+     "raw": false,
+     "plan": {
+      "events": [
+       "speak:goodluck",
+       "deal",
+       "deal",
+       "deal",
+       "deal",
+       "turn"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "label": "mobile",
+   "context": "390×844",
+   "startedAt": "2026-10-28T11:07:14.368Z",
+   "finishedAt": "2026-10-28T11:09:14.447Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-mobile",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-mobile",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-leave-reachable-mobile",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-after-main-mobile",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-a-mobile",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-c-tap",
+     "result": "pass"
+    },
+    {
+     "id": "K04-i-c-tap-leave",
+     "result": "pass"
+    },
+    {
+     "id": "K04-390-no-hscroll-mobile",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     82
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -19274
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1977 act:1403",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1707,
+      "max": 2477
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "overflow": {
+     "steps": 9,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   },
+   "guards": [
+    {
+     "tag": "mobile",
+     "clicked": ".seat-shared-bet-side",
+     "commandsSent": 0
+    }
+   ],
+   "leaveReach": [
+    {
+     "tag": "mobile",
+     "leaveTopIsSelf": true,
+     "coveredBy": null,
+     "leave": {
+      "x": 171,
+      "y": 613,
+      "w": 51,
+      "h": 44
+     },
+     "ready": {
+      "x": 140,
+      "y": 589,
+      "w": 109,
+      "h": 44
+     }
+    }
+   ]
+  },
+  {
+   "label": "revoke",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T11:09:16.055Z",
+   "finishedAt": "2026-10-28T11:12:01.561Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": null,
+   "checks": [
+    {
+     "id": "K04-F8-revoke-sign-in",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [],
+    "allPlanCardsMinusTurnAtMs": [],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "",
+     "selectPosts": 0,
+     "selectMs": null,
+     "planFrames": {
+      "plans": 0,
+      "withFilmedSteps": 0,
+      "allStepsCarryTake": 0
+     }
+    }
+   },
+   "revoke": {
+    "logout": 200,
+    "events": [
+     {
+      "dt": 2709,
+      "ev": "close",
+      "code": 1008,
+      "reason": "Transport closed"
+     },
+     {
+      "dt": 3165,
+      "ev": "new",
+      "code": null,
+      "reason": null
+     },
+     {
+      "dt": 3771,
+      "ev": "close",
+      "code": 1006,
+      "reason": ""
+     }
+    ],
+    "socketsAfter65s": 1,
+    "status": {
+     "shared": "Din session har gått ut. Logga in igen.",
+     "banner": "Din session har gått ut. Logga in igen."
+    },
+    "signIn": {
+     "text": "Logga in",
+     "hidden": false,
+     "visible": true,
+     "w": 82,
+     "h": 44,
+     "path": "/player-login",
+     "query": [
+      "game",
+      "operator",
+      "table"
+     ],
+     "operatorMatches": true,
+     "roomMatches": true,
+     "hasLaunch": false
+    },
+    "afterClick": {
+     "path": "/player-login",
+     "queryKeys": [
+      "game",
+      "operator",
+      "table"
+     ],
+     "title": "Blackjack · Logga in"
+    }
+   }
+  },
+  {
+   "label": "restart3-a-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T11:12:16.992Z",
+   "finishedAt": "2026-10-28T11:26:34.444Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-B2-restart-mid-hand",
+     "result": "fail"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     782,
+     560,
+     1002,
+     676,
+     1026,
+     938,
+     1071
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -7898,
+     -12293,
+     -12913,
+     -12115,
+     -16671,
+     -13024,
+     -12791
+    ],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1179 ready:1563 ready:1488 ready:1514 ready:1553 ready:1506",
+     "selectPosts": 24,
+     "selectMs": {
+      "n": 24,
+      "median": 1314,
+      "max": 3798
+     },
+     "planFrames": {
+      "plans": 15,
+      "withFilmedSteps": 15,
+      "allStepsCarryTake": 15
+     }
+    },
+    "filmedSteps": {
+     "steps": 47,
+     "start": 40,
+     "skippedLate": 6,
+     "skippedLateShare": 0.13,
+     "fromPlan": 46,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 40,
+      "median": 312,
+      "max": 1200
+     },
+     "stalls": []
+    }
+   },
+   "restart": {
+    "seats": 3,
+    "restartRequestedAt": "2026-10-28T11:14:17.797Z",
+    "renderRestartResponse": {
+     "status": 200,
+     "at": "2026-10-28T11:14:20.758Z"
+    },
+    "oldInstanceDrain": {
+     "at": "2026-10-28T11:17:32.733010437Z",
+     "instance": "srv-dbf61l0m7kps73ft7mk0-cspk4",
+     "listenerId": 2,
+     "commitSha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+    },
+    "drainAfterRequestMs": 194936,
+    "closes": [
+     {
+      "at": "2026-10-28T11:17:13.293Z",
+      "code": 1001,
+      "reason": "Transport closed",
+      "socketAgeMs": 291975,
+      "phase": "round",
+      "roundPhase": "decisions",
+      "class": "bridge lifetime (~290 s)"
+     },
+     {
+      "at": "2026-10-28T11:22:06.371Z",
+      "code": 1001,
+      "reason": "Transport closed",
+      "socketAgeMs": 291788,
+      "phase": "round",
+      "roundPhase": "decisions",
+      "class": "bridge lifetime (~290 s)"
+     }
+    ],
+    "restartClose": null,
+    "reopenMs": null,
+    "firstSnapshotMs": null,
+    "sameRound": null,
+    "snapshotPhase": null,
+    "roundSettled": false,
+    "settlement": null,
+    "texts": [
+     "Skickar…",
+     "Väntar på bordets bekräftelse…",
+     "Rundan pågår",
+     "Din tur",
+     "Rundan är avslutad",
+     "Välj plats och lägg insatser",
+     "Anslutningen avbröts. Återansluter…"
+    ],
+    "reconnectButtonShown": false,
+    "versionAfter": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+   }
+  },
+  {
+   "label": "restart3-b-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T11:27:52.614Z",
+   "finishedAt": "2026-10-28T11:32:38.144Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-B2-restart-mid-hand",
+     "result": "fail"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     625
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -8043
+    ],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "",
+     "selectPosts": 2,
+     "selectMs": {
+      "n": 2,
+      "median": 4302,
+      "max": 4302
+     },
+     "planFrames": {
+      "plans": 1,
+      "withFilmedSteps": 1,
+      "allStepsCarryTake": 1
+     }
+    },
+    "filmedSteps": {
+     "steps": 4,
+     "start": 4,
+     "skippedLate": 0,
+     "skippedLateShare": 0,
+     "fromPlan": 4,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 4,
+      "median": 308,
+      "max": 615
+     },
+     "stalls": []
+    }
+   },
+   "restart": {
+    "seats": 3,
+    "restartRequestedAt": "2026-10-28T11:28:50.970Z",
+    "renderRestartResponse": {
+     "status": 200,
+     "at": "2026-10-28T11:28:51.850Z"
+    },
+    "oldInstanceDrain": {
+     "at": "2026-10-28T11:32:04.404975506Z",
+     "instance": "srv-dbf61l0m7kps73ft7mk0-pqpgw",
+     "listenerId": 2,
+     "commitSha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+    },
+    "drainAfterRequestMs": 193434,
+    "closes": [
+     {
+      "at": "2026-10-28T11:32:15.209Z",
+      "code": 1012,
+      "reason": "Transport closed",
+      "socketAgeMs": 209755,
+      "phase": "round",
+      "roundPhase": "decisions",
+      "class": "restart (old instance drained 10.8 s before)"
+     }
+    ],
+    "restartClose": {
+     "code": 1012,
+     "reason": "Transport closed",
+     "afterDrainMs": 10805,
+     "phase": "round",
+     "roundPhase": "decisions",
+     "version": 950
+    },
+    "reopenMs": 1135,
+    "firstSnapshotMs": 577,
+    "sameRound": true,
+    "snapshotPhase": "settled/",
+    "roundSettled": true,
+    "settlement": {
+     "staked": 1,
+     "returned": 0,
+     "net": -1
+    },
+    "texts": [
+     "Välj plats och lägg insatser",
+     "Skickar…",
+     "Rundan pågår",
+     "Din tur",
+     "Anslutningen avbröts. Återansluter…",
+     "Rundan är avslutad",
+     "Väntar på bordets bekräftelse…"
+    ],
+    "reconnectButtonShown": false,
+    "versionAfter": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+   }
+  },
+  {
+   "label": "v3-1440",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T11:35:27.862Z",
+   "finishedAt": "2026-10-28T11:38:05.198Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-v3-1440",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-v3-1440",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-leave-reachable-v3-1440",
+     "result": "fail"
+    },
+    {
+     "id": "K04-517-after-main-v3-1440",
+     "result": "pass"
+    },
+    {
+     "id": "K04-v3-flow-1440",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     17022
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     11845
+    ],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1773",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1006,
+      "max": 1199
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    }
+   },
+   "guards": [
+    {
+     "tag": "v3-1440",
+     "clicked": ".seat-shared-bet-side",
+     "commandsSent": 0
+    }
+   ],
+   "leaveReach": [
+    {
+     "tag": "v3-1440",
+     "leaveTopIsSelf": false,
+     "coveredBy": "#deal-now",
+     "leave": {
+      "x": 695,
+      "y": 663,
+      "w": 51,
+      "h": 44
+     },
+     "ready": {
+      "x": 656,
+      "y": 646,
+      "w": 128,
+      "h": 47
+     }
+    }
+   ]
+  },
+  {
+   "label": "v3-390",
+   "context": "390×844",
+   "startedAt": "2026-10-28T11:38:06.817Z",
+   "finishedAt": "2026-10-28T11:40:54.004Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-v3-390",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-v3-390",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-leave-reachable-v3-390",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-after-main-v3-390",
+     "result": "pass"
+    },
+    {
+     "id": "K04-v3-flow-390",
+     "result": "pass"
+    },
+    {
+     "id": "K04-390-no-hscroll-v3",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     null
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     12989
+    ],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1555",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1207,
+      "max": 2415
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "overflow": {
+     "steps": 7,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   },
+   "guards": [
+    {
+     "tag": "v3-390",
+     "clicked": ".seat-shared-bet-side",
+     "commandsSent": 0
+    }
+   ],
+   "leaveReach": [
+    {
+     "tag": "v3-390",
+     "leaveTopIsSelf": true,
+     "coveredBy": null,
+     "leave": {
+      "x": 171,
+      "y": 613,
+      "w": 51,
+      "h": 44
+     },
+     "ready": {
+      "x": 140,
+      "y": 589,
+      "w": 109,
+      "h": 44
+     }
+    }
+   ]
+  },
+  {
+   "label": "shots3-mobile-diag",
+   "context": "390×844",
+   "startedAt": "2026-10-28T11:42:41.085Z",
+   "finishedAt": "2026-10-28T11:46:32.211Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-390-no-hscroll-v1",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     613
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -9742
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1535 act:1955",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 2624,
+      "max": 3661
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 9,
+     "start": 4,
+     "skippedLate": 5,
+     "skippedLateShare": 0.56,
+     "fromPlan": 9,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 4,
+      "median": 1180,
+      "max": 1260
+     },
+     "stalls": []
+    },
+    "overflow": {
+     "steps": 4,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   }
+  },
+  {
+   "label": "multi-diag",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T11:46:35.181Z",
+   "finishedAt": "2026-10-28T11:52:47.081Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-V5-consecutive",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     1112,
+     624,
+     833,
+     796
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -8014,
+     -11162,
+     -13037,
+     -21906
+    ],
+    "acts": [
+     "stand:200",
+     "hit:200",
+     "stand:200",
+     "stand:200",
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1378 act:980 ready:1428 act:1863 act:1048 ready:993 act:1126 ready:1023 act:1439",
+     "selectPosts": 12,
+     "selectMs": {
+      "n": 12,
+      "median": 1359,
+      "max": 3651
+     },
+     "planFrames": {
+      "plans": 9,
+      "withFilmedSteps": 9,
+      "allStepsCarryTake": 9
+     }
+    },
+    "filmedSteps": {
+     "steps": 23,
+     "start": 21,
+     "skippedLate": 2,
+     "skippedLateShare": 0.09,
+     "fromPlan": 23,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 21,
+      "median": 647,
+      "max": 2288
+     },
+     "stalls": []
+    },
+    "r2b": {
+     "planAfterMs": 1863,
+     "stepSelectedMs": 2317,
+     "takeStartMs": 28212,
+     "cardVisibleMs": 5151,
+     "takeEndMs": 30400,
+     "takeOutcome": "end"
+    }
+   },
+   "multi": {
+    "hands": [
+     {
+      "n": 1,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@17"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 1,
+       "returned": 0,
+       "net": -1
+      }
+     },
+     {
+      "n": 2,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "hit@8",
+       "stand@19"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 1,
+       "returned": 2,
+       "net": 1
+      }
+     },
+     {
+      "n": 3,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@16"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 25,
+       "returned": 50,
+       "net": 25
+      }
+     },
+     {
+      "n": 4,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@17"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 10,
+       "returned": 20,
+       "net": 10
+      }
+     }
+    ],
+    "insuranceRounds": 0,
+    "noReload": true
+   }
+  },
+  {
+   "label": "v3-320-avbruten-tackt-insats",
+   "context": "320×568",
+   "startedAt": "2026-10-28T11:40:55.612Z",
+   "finishedAt": "2026-10-28T11:41:44.784Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-v3-320",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-v3-320",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [],
+    "allPlanCardsMinusTurnAtMs": [],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "",
+     "selectPosts": 0,
+     "selectMs": null,
+     "planFrames": {
+      "plans": 0,
+      "withFilmedSteps": 0,
+      "allStepsCarryTake": 0
+     }
+    },
+    "overflow": {
+     "steps": 3,
+     "allOk": true,
+     "maxScrollWidth": 320,
+     "clientWidth": 320
+    }
+   },
+   "guards": [
+    {
+     "tag": "v3-320",
+     "clicked": "inget (täckt eller osynlig)",
+     "commandsSent": 0
+    }
+   ],
+   "note": "Avbruten: vid 320×568 täcker saldopanelen (#wallet) huvudinsatsen, så klicket gick i timeout (F13). Omkörd som v3-b-320 med \"Alla platser\" som reserv."
+  },
+  {
+   "label": "v1fail-shots3-desktop-overlapp-diag",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T11:41:46.733Z",
+   "finishedAt": "2026-10-28T11:42:34.785Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [],
+    "allPlanCardsMinusTurnAtMs": [],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "",
+     "selectPosts": 0,
+     "selectMs": null,
+     "planFrames": {
+      "plans": 0,
+      "withFilmedSteps": 0,
+      "allStepsCarryTake": 0
+     }
+    },
+    "filmedSteps": {
+     "steps": 0,
+     "start": 0,
+     "skippedLate": 0,
+     "skippedLateShare": null,
+     "fromPlan": 0,
+     "fromSelect": 0,
+     "selectedToStartMs": null,
+     "stalls": []
+    }
+   },
+   "note": "Avbruten: med sju egna platser överlappar insatsraderna vid 1440×900, så klicket på en plats huvudinsats fångades av grannens (F14). Omkörd som shots3-b med \"Alla platser\"."
+  },
+  {
+   "label": "v3-b-320",
+   "context": "320×568",
+   "startedAt": "2026-10-28T11:53:20.536Z",
+   "finishedAt": "2026-10-28T11:55:58.870Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-517-own-seat-v3-320",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-guard-before-main-v3-320",
+     "result": "pass"
+    },
+    {
+     "id": "K04-517-main-bet-reachable-320",
+     "result": "fail"
+    },
+    {
+     "id": "K04-517-leave-reachable-v3-320",
+     "result": "fail"
+    },
+    {
+     "id": "K04-517-after-main-v3-320",
+     "result": "pass"
+    },
+    {
+     "id": "K04-v3-flow-320",
+     "result": "pass"
+    },
+    {
+     "id": "K04-320-no-hscroll-v3",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     15887
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     11379
+    ],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1356",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1016,
+      "max": 2929
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "overflow": {
+     "steps": 8,
+     "allOk": true,
+     "maxScrollWidth": 320,
+     "clientWidth": 320
+    }
+   },
+   "guards": [
+    {
+     "tag": "v3-320",
+     "clicked": "inget (täckt eller osynlig)",
+     "commandsSent": 0
+    }
+   ],
+   "leaveReach": [
+    {
+     "tag": "v3-320",
+     "leaveTopIsSelf": false,
+     "coveredBy": "#chips",
+     "leave": {
+      "x": 135,
+      "y": 458,
+      "w": 51,
+      "h": 44
+     },
+     "ready": {
+      "x": 105,
+      "y": 382,
+      "w": 109,
+      "h": 44
+     }
+    }
+   ],
+   "mainBetReach": {
+    "topIsSelf": false,
+    "coveredBy": "#wallet",
+    "rect": {
+     "x": 115,
+     "y": 400,
+     "w": 84,
+     "h": 52
+    },
+    "viewportHeight": 568
+   },
+   "betFallback": "Alla platser (#all-sides): the main spot was covered"
+  },
+  {
+   "label": "shots3-b-desktop-diag",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T11:56:00.114Z",
+   "finishedAt": "2026-10-28T12:00:49.974Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     1162
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -21649
+    ],
+    "acts": [
+     "stand:200",
+     "stand:200",
+     "stand:200",
+     "stand:200",
+     "stand:200",
+     "stand:200",
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1000 act:132747 act:109957 act:88451 act:68120 act:46861 act:24116 act:1592",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1548,
+      "max": 2553
+     },
+     "planFrames": {
+      "plans": 8,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 18,
+     "start": 16,
+     "skippedLate": 2,
+     "skippedLateShare": 0.11,
+     "fromPlan": 18,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 16,
+      "median": 1033,
+      "max": 1945
+     },
+     "stalls": []
+    }
+   },
+   "mainBetReach": [
+    {
+     "seat": 1,
+     "topIsSelf": false,
+     "topSeat": 2
+    },
+    {
+     "seat": 2,
+     "topIsSelf": false,
+     "topSeat": 3
+    },
+    {
+     "seat": 3,
+     "topIsSelf": false,
+     "topSeat": 4
+    },
+    {
+     "seat": 4,
+     "topIsSelf": false,
+     "topSeat": 5
+    },
+    {
+     "seat": 5,
+     "topIsSelf": false,
+     "topSeat": 6
+    },
+    {
+     "seat": 6,
+     "topIsSelf": false,
+     "topSeat": 7
+    },
+    {
+     "seat": 7,
+     "topIsSelf": true,
+     "topSeat": 7
+    }
+   ]
+  },
+  {
+   "label": "normal-ab-old1-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T12:00:51.493Z",
+   "finishedAt": "2026-10-28T12:02:36.514Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     1004
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -9203
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:970 act:1787",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1595,
+      "max": 2803
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 4,
+     "skippedLate": 1,
+     "skippedLateShare": 0.2,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 4,
+      "median": 653,
+      "max": 1207
+     },
+     "stalls": []
+    }
+   },
+   "abControl": {
+    "servedFrom": "689c690e5fc8343220f3faa834d5a40052359e0d",
+    "files": [
+     "styles.css",
+     "shared-room-app.mjs",
+     "shared-room-controller.mjs",
+     "shared-room-view.mjs",
+     "shared-room-presentation.mjs",
+     "local-presentation.mjs",
+     "local-card-overlay.mjs"
+    ],
+    "paths": [
+     "/styles.css",
+     "/shared-room-app.mjs",
+     "/shared-room-controller.mjs",
+     "/shared-room-view.mjs",
+     "/shared-room-presentation.mjs",
+     "/local-presentation.mjs",
+     "/local-card-overlay.mjs"
+    ]
+   }
+  },
+  {
+   "label": "normal-ab-new1-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T12:02:38.478Z",
+   "finishedAt": "2026-10-28T12:04:29.951Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     679
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -8982
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1799 act:1315",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1341,
+      "max": 2687
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 6,
+     "start": 6,
+     "skippedLate": 0,
+     "skippedLateShare": 0,
+     "fromPlan": 6,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 6,
+      "median": 1113,
+      "max": 1362
+     },
+     "stalls": []
+    }
+   }
+  },
+  {
+   "label": "normal-ab-old2-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T12:04:31.236Z",
+   "finishedAt": "2026-10-28T12:06:16.283Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     731
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -9568
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:930 act:1251",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1730,
+      "max": 2895
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 5,
+     "skippedLate": 0,
+     "skippedLateShare": 0,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 5,
+      "median": 544,
+      "max": 735
+     },
+     "stalls": []
+    }
+   },
+   "abControl": {
+    "servedFrom": "689c690e5fc8343220f3faa834d5a40052359e0d",
+    "files": [
+     "styles.css",
+     "shared-room-app.mjs",
+     "shared-room-controller.mjs",
+     "shared-room-view.mjs",
+     "shared-room-presentation.mjs",
+     "local-presentation.mjs",
+     "local-card-overlay.mjs"
+    ],
+    "paths": [
+     "/styles.css",
+     "/shared-room-app.mjs",
+     "/shared-room-controller.mjs",
+     "/shared-room-view.mjs",
+     "/shared-room-presentation.mjs",
+     "/local-presentation.mjs",
+     "/local-card-overlay.mjs"
+    ]
+   }
+  },
+  {
+   "label": "normal-ab-new2-diag",
+   "context": "1920×1080",
+   "startedAt": "2026-10-28T12:06:17.659Z",
+   "finishedAt": "2026-10-28T12:08:06.996Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     514
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -9109
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1015 act:1254",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1515,
+      "max": 2693
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 7,
+     "start": 6,
+     "skippedLate": 1,
+     "skippedLateShare": 0.14,
+     "fromPlan": 7,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 6,
+      "median": 570,
+      "max": 1251
+     },
+     "stalls": []
+    }
+   }
+  },
+  {
+   "label": "multi-forsakring-diag",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T12:08:55.428Z",
+   "finishedAt": "2026-10-28T12:16:30.562Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-V5-consecutive",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     438,
+     1569,
+     693,
+     1110,
+     322
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -7474,
+     -11425,
+     -12433,
+     -13080,
+     null
+    ],
+    "acts": [
+     "stand:200",
+     "stand:200",
+     "stand:200",
+     "hit:200",
+     "stand:200",
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [
+     {
+      "shownMinusTurnAtMs": 784,
+      "shownBeforeTurnAt": false
+     }
+    ],
+    "planTiming": {
+     "commandToPlanMs": "ready:1009 act:1515 ready:1940 act:1742 ready:1619 act:2080 ready:1353 act:2558 act:1216 ready:1411 act:1503",
+     "selectPosts": 16,
+     "selectMs": {
+      "n": 16,
+      "median": 1507,
+      "max": 2074
+     },
+     "planFrames": {
+      "plans": 12,
+      "withFilmedSteps": 11,
+      "allStepsCarryTake": 11
+     }
+    },
+    "filmedSteps": {
+     "steps": 29,
+     "start": 24,
+     "skippedLate": 5,
+     "skippedLateShare": 0.17,
+     "fromPlan": 29,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 24,
+      "median": 351,
+      "max": 1430
+     },
+     "stalls": []
+    },
+    "r2b": {
+     "planAfterMs": 2558,
+     "stepSelectedMs": 2445,
+     "takeStartMs": 29106,
+     "cardVisibleMs": 7099,
+     "takeEndMs": 31526,
+     "takeOutcome": "end"
+    }
+   },
+   "multi": {
+    "hands": [
+     {
+      "n": 1,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@13"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 1,
+       "returned": 0,
+       "net": -1
+      }
+     },
+     {
+      "n": 2,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@18"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 50,
+       "returned": 100,
+       "net": 50
+      }
+     },
+     {
+      "n": 3,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@14"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 25,
+       "returned": 0,
+       "net": -25
+      }
+     },
+     {
+      "n": 4,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "hit@8",
+       "stand@12"
+      ],
+      "insurance": false,
+      "settlement": {
+       "staked": 50,
+       "returned": 0,
+       "net": -50
+      }
+     },
+     {
+      "n": 5,
+      "started": true,
+      "settled": true,
+      "nexted": true,
+      "acts": [
+       "stand@12"
+      ],
+      "insurance": true,
+      "settlement": {
+       "staked": 25,
+       "returned": 0,
+       "net": -25
+      }
+     }
+    ],
+    "insuranceRounds": 1,
+    "noReload": true
+   }
+  },
+  {
+   "label": "shots3-1seat-desktop-diag",
+   "context": "1440×900",
+   "startedAt": "2026-10-28T12:16:45.650Z",
+   "finishedAt": "2026-10-28T12:18:53.613Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [],
+   "observed": {
+    "hitStandMinusTurnAtMs": [],
+    "allPlanCardsMinusTurnAtMs": [],
+    "acts": [],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [
+     {
+      "shownMinusTurnAtMs": 745,
+      "shownBeforeTurnAt": false
+     }
+    ],
+    "planTiming": {
+     "commandToPlanMs": "ready:1282",
+     "selectPosts": 4,
+     "selectMs": {
+      "n": 4,
+      "median": 2367,
+      "max": 2602
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 5,
+     "skippedLate": 0,
+     "skippedLateShare": 0,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 5,
+      "median": 440,
+      "max": 1491
+     },
+     "stalls": []
+    }
+   },
+   "mainBetReach": [
+    {
+     "seat": 1,
+     "topIsSelf": true,
+     "topSeat": 1
+    }
+   ]
+  },
+  {
+   "label": "shots3-1seat-mobile-diag",
+   "context": "390×844",
+   "startedAt": "2026-10-28T12:18:55.796Z",
+   "finishedAt": "2026-10-28T12:21:39.805Z",
+   "versionShaStart": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "versionShaEnd": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+   "checks": [
+    {
+     "id": "K04-390-no-hscroll-v1",
+     "result": "pass"
+    }
+   ],
+   "observed": {
+    "hitStandMinusTurnAtMs": [
+     864
+    ],
+    "allPlanCardsMinusTurnAtMs": [
+     -8665
+    ],
+    "acts": [
+     "stand:200"
+    ],
+    "notYourTurn": 0,
+    "falseTexts": [],
+    "insurance": [],
+    "planTiming": {
+     "commandToPlanMs": "ready:1753 act:1776",
+     "selectPosts": 3,
+     "selectMs": {
+      "n": 3,
+      "median": 1702,
+      "max": 1765
+     },
+     "planFrames": {
+      "plans": 2,
+      "withFilmedSteps": 2,
+      "allStepsCarryTake": 2
+     }
+    },
+    "filmedSteps": {
+     "steps": 5,
+     "start": 4,
+     "skippedLate": 1,
+     "skippedLateShare": 0.2,
+     "fromPlan": 5,
+     "fromSelect": 0,
+     "selectedToStartMs": {
+      "n": 4,
+      "median": 1263,
+      "max": 2695
+     },
+     "stalls": []
+    },
+    "overflow": {
+     "steps": 5,
+     "allOk": true,
+     "maxScrollWidth": 390,
+     "clientWidth": 390
+    }
+   },
+   "mainBetReach": [
+    {
+     "seat": 3,
+     "topIsSelf": true,
+     "topSeat": 3
+    }
+   ]
+  }
+ ],
+ "criteria": {
+  "1-filmed-steps-start": {
+   "result": "delvis (inte kandidatens klientkod)",
+   "singleSeat": {
+    "initialDeal": {
+     "n": 68,
+     "start": 60,
+     "late": 7,
+     "interrupted": 2,
+     "stalled": 1,
+     "startShare": 0.88,
+     "toStartMedianMs": 570,
+     "toStartMaxMs": 1576
+    },
+    "afterDecision": {
+     "n": 33,
+     "start": 23,
+     "late": 10,
+     "interrupted": 0,
+     "stalled": 0,
+     "startShare": 0.7,
+     "toStartMedianMs": 352,
+     "toStartMaxMs": 2695
+    }
+   },
+   "severalSeats": {
+    "initialDeal": {
+     "n": 57,
+     "start": 46,
+     "late": 10,
+     "interrupted": 4,
+     "stalled": 0,
+     "startShare": 0.81,
+     "toStartMedianMs": 841,
+     "toStartMaxMs": 1260
+    },
+    "afterDecision": {
+     "n": 21,
+     "start": 18,
+     "late": 3,
+     "interrupted": 0,
+     "stalled": 0,
+     "startShare": 0.86,
+     "toStartMedianMs": 320,
+     "toStartMaxMs": 1945
+    }
+   },
+   "rerun5SameMeasure": {
+    "initialDeal": {
+     "n": 111,
+     "start": 107,
+     "late": 4,
+     "interrupted": 0,
+     "stalled": 0,
+     "startShare": 0.96,
+     "toStartMedianMs": 237,
+     "toStartMaxMs": 1553
+    },
+    "afterDecision": {
+     "n": 56,
+     "start": 48,
+     "late": 8,
+     "interrupted": 0,
+     "stalled": 1,
+     "startShare": 0.86,
+     "toStartMedianMs": 483,
+     "toStartMaxMs": 2394
+    }
+   },
+   "abControl689c690e": {
+    "initialDeal": {
+     "n": 8,
+     "start": 7,
+     "late": 1,
+     "interrupted": 1,
+     "stalled": 0,
+     "startShare": 0.88,
+     "toStartMedianMs": 544,
+     "toStartMaxMs": 653
+    },
+    "afterDecision": {
+     "n": 2,
+     "start": 2,
+     "late": 0,
+     "interrupted": 0,
+     "stalled": 0,
+     "startShare": 1,
+     "toStartMedianMs": 1207,
+     "toStartMaxMs": 1207
+    },
+    "runs": [
+     "normal-ab-old1-diag",
+     "normal-ab-old2-diag"
+    ],
+    "sameHourCurrentClient": [
+     "normal-ab-new1-diag",
+     "normal-ab-new2-diag"
+    ]
+   },
+   "speechDurationsMs": {
+    "note": "start→end per klipp, median: omprov 6 mot omprov 5. Samma media-id och byte; talen spelar cirka 20 % längre i båda A/B-armarna, vilket skjuter planens första giv förbi sin tid.",
+    "goodluck_1": [
+     4830,
+     3972
+    ],
+    "placebets_1": [
+     6903,
+     5610
+    ],
+    "lose_1": [
+     3676,
+     3004
+    ],
+    "dealerbust_1": [
+     6363,
+     5441
+    ]
+   },
+   "note": "Andelen filmsteg som når start sjönk mot omprov 5 och tiden från val till start steg (median 570 mot 237 ms i initial giv). Planen skickas lika tidigt (serverNow − startAt median 424/478 ms mot 402/420 ms), klippen är förladdade (preloadHit) och hämtningstiderna är som förut. A/B-provet i samma timme med 689c690e:s klientfiler gav samma nivå (7/8, 544 ms), så nedgången kommer inte från #517:s klientändringar utan från förhållandena vid mätningen (troligen avkodning i den lokala headless-webbläsaren). Bör mätas om på en tyst maskin eller fysisk enhet; inget fynd mot kandidaten."
+  },
+  "2-turnAt": {
+   "result": "pass",
+   "limitMs": 2000,
+   "hitStandMinusTurnAtMs": {
+    "n": 31,
+    "min": -29,
+    "median": 725,
+    "max": 1569,
+    "over2000": 0,
+    "missing": "1 (slow-b: provet tryckte stand 80 ms efter turnAt inom samma 150 ms-sampling som knapparna öppnades; act 200)"
+   },
+   "allPlanCardsMinusTurnAtMsMax": 83,
+   "acts": "32/32 act 200 (stand, hit, double), NOT_YOUR_TURN 0",
+   "scope": "Körningar utan sidomladdning (normal, slow, multi, restart3, shots3); i desktop, mobil, V3 och errors nollställer omladdningen sidans tidslinje."
+  },
+  "3-no-false-text": {
+   "result": "delvis",
+   "clean": "Inga falska idle- eller omladdningstexter vid fönsterbyte, inklusive 409-injektionen på första room-idle efter Nästa runda (normal-h5-inject409). \"Anslutningen avbröts. Återansluter…\" vid återanslutning är avsedd.",
+   "exceptions": [
+    "normal-h2 10:51:23 UTC: givtagningen 1d73fa9f (ruta 4) fick start och första bild och sedan inga bildrutor i 9,5 s (local_film_stalled). Kortet hade inte visats, så F9-regeln (tyst när kortet redan ligger) gällde inte; \"Filmen kunde inte spelas.\" stod i 11,2 s, också medan hit/stand var öppna. En gång på 189 filmade steg."
+   ],
+   "F9": "Stopp efter att kortet visats inträffade inte, så den tysta vägen (#517) kunde inte observeras i staging; bara stoppet före kortet, som enligt koden ska visa texten."
+  },
+  "4-slow-links": {
+   "result": "pass",
+   "kbps400": {
+    "placeholderGoneMs": [
+     55689,
+     55672
+    ],
+    "controlsUsableMs": [
+     21110,
+     21535
+    ],
+    "hitStandMinusTurnAtMs": [
+     46,
+     "≤80 (sampling)"
+    ],
+    "actStatus": [
+     200,
+     200
+    ],
+    "note": "K04-i-e-slow-400kbps föll i slow-b bara på samplingen (se 2-turnAt); act gick 80 ms efter turnAt med 200."
+   },
+   "fast3g": {
+    "placeholderGoneMs": 20899,
+    "controlsUsableMs": 15423,
+    "hitStandMinusTurnAtMs": -29
+   },
+   "rerun5": {
+    "kbps400": [
+     53579,
+     53137
+    ],
+    "fast3g": 42301
+   },
+   "filmFailedText": "ingen"
+  },
+  "5-insurance": {
+   "result": "pass",
+   "insuranceShownMinusTurnAtMs": [
+    784,
+    745
+   ],
+   "shownBeforeTurnAt": false,
+   "note": "Två försäkringsrundor: multi-forsakring hand 5 (Nej klickat) och shots3-1seat-desktop (dealer blackjack). Insurance-repliken utlöst."
+  },
+  "6-render-restart-mid-hand": {
+   "result": "fail (F11); klientens återanslutning pass",
+   "attemptA": "Omstart 11:14:17Z. Bryggans livslängdsstängning (1001, socketålder 292 s) kom 11:17:13Z mitt i beslutsfasen, 19 s före den gamla instansens draining 11:17:32Z; den nya socketen hamnade på den nya instansen och omstarten nådde aldrig sidan. Två 1001 mitt i beslutsfas, båda med ny socket på cirka 1,3 s och ingen omladdning.",
+   "attemptB": "Färsk socket direkt före omstarten (11:28:51Z). Den gamla instansen pqpgw drained 11:32:04,405Z; sidan fick 1012 \"Transport closed\" 10,8 s senare (11:32:15Z) mitt i beslutsfasen, ny socket öppen efter 1,1 s, första snapshot 0,6 s senare i samma runda (redan avräknad) och ingen omladdning (sidans egen WS-logg från 11:28:45 finns kvar efter stängningen). Men från 11:29:22Z till stängningen kom inga snapshots alls: fristen gick ut 11:30:05Z, sidan visade \"Rundan pågår\" utan ändring i 2 min 9 s och spelaren såg aldrig dealerns spel eller resultatet (v951 kom aldrig fram; nästa var v952 collect).",
+   "code1012": "1012 når nu webbläsaren (F10 rättad i #517). Klassningen bygger på Render-loggens draining och socketens ålder, inte på koden, eftersom bryggan nu skickar 1012 även för uppströms 1005/1006.",
+   "check": "K04-B2-restart-mid-hand föll i försök B också på harnessens markör (lästes före provets egen färska omladdning); WS-loggen visar att ingen omladdning skedde efter stängningen.",
+   "classification": "Varje stängning klassas mot Render-loggens draining (inom 60 s) och socketens ålder (cirka 290 s = bryggans livslängd), aldrig mot koden."
+  },
+  "7-R2b-hit-card": {
+   "result": "som omprov 5",
+   "hits": [
+    {
+     "planAfterMs": 1843,
+     "stepSelectedMs": 2072,
+     "takeStartMs": null,
+     "cardVisibleMs": 6538,
+     "takeEndMs": null,
+     "takeOutcome": null
+    },
+    {
+     "planAfterMs": 1561,
+     "stepSelectedMs": 1929,
+     "takeStartMs": null,
+     "cardVisibleMs": 5315,
+     "takeEndMs": null,
+     "takeOutcome": null
+    }
+   ],
+   "note": "Hit-planen kom 1,6–1,8 s efter klicket och kortet syntes 5,3–6,5 s efter; hit-tagningen nådde inte start i någon av de två DIAG-händerna med hit (h2 efter stoppet, h4 sen). Bedömningen från omprov 5 (serverns latens, visuellt) gäller."
+  },
+  "8-pr517": {
+   "result": "delvis",
+   "ownSeat": "pass i desktop, mobil, V3 1440/390/320: cirkeln visar \"Du\", är disabled och har aria-label \"Plats N, din plats\"; \"Lämna plats N\" är en egen knapp 51×44 px",
+   "guardBeforeMain": "pass i alla fem: Par, 21+3 och Redo är disabled med title \"Lägg en insats först.\"; riktiga klick på Par och 21+3 skickade inga kommandon (Redo är osynlig och klickgenomskinlig när den är spärrad, styles.css:504, och klickades därför inte)",
+   "afterMain": "pass: huvudinsatsen 84×52 px markeras staked, sidoinsatserna och Redo öppnas",
+   "repeat": "pass: Upprepa öppnas i nästa fönster efter en runda med huvudinsats (title tom)",
+   "leaveKeyboard": "pass (fokus+Enter, POST join 200)",
+   "leaveTap": "pass (390, page.tap)",
+   "leaveReachable": "fail vid 1920 och 1440 (Redo #deal-now täcker \"Lämna plats N\" efter insats, F12) och 320 (#chips, F13); pass vid 390",
+   "mainBetReachable320": "fail: #wallet täcker huvudinsatsen vid 320×568 (F13)",
+   "severalSeats1440": "fail: med sju egna platser fångar grannarnas insatsrader klicken (F14)"
+  },
+  "9-no-horizontal-scroll": {
+   "result": "pass",
+   "runs": [
+    "mobile",
+    "slow-a",
+    "slow-b",
+    "slow-fast3g",
+    "v3-390",
+    "shots3-mobile-diag",
+    "shots3-1seat-mobile-diag (390)",
+    "v3-b-320",
+    "v3-320 (avbruten)"
+   ],
+   "rule": "documentElement.scrollWidth <= clientWidth och window.scrollTo(100000, y) lämnar scrollX 0, vid varje steg och varje V-bild",
+   "note": "Kriteriet efter #517: inga steg med horisontell scroll i 390 eller 320."
+  },
+  "10-plan-select-508": {
+   "result": "pass (funktion); ingen tidsvinst synlig med en spelare",
+   "filmedStepsFromPlan": "187/189 valda filmsteg kom ur planen (filmed_deal_sequence, requestId null), 0 via POST select",
+   "planFramesCarryTakes": "alla planramar med filmade steg bar filmedTake för varje steg",
+   "selectPosts": {
+    "note": "POST /api/presentation/select används nu bara för tal",
+    "n": 120,
+    "medianMs": 1503,
+    "minMs": 881,
+    "maxMs": 4302
+   },
+   "commandToPlanMs": {
+    "ready": {
+     "n": 23,
+     "median": 1387,
+     "max": 2216
+    },
+    "act": {
+     "n": 24,
+     "median": 1737,
+     "max": 2558
+    },
+    "rerun5": {
+     "ready": 1376,
+     "act": 1325
+    },
+    "scope": "en egen plats, från POST till första planram med giv eller reveal"
+   },
+   "planSendLagMs": {
+    "ready": 424,
+    "act": 478,
+    "rerun5": {
+     "ready": 402,
+     "act": 420
+    },
+    "meaning": "serverNow − presentation.startAt när ramen byggdes (median)"
+   },
+   "note": "#508 cachar planen per (rum, ver, talk) och sparar arbete per socket och uppdatering; med en spelare per rum syns ingen tidsvinst, och planen skickas lika tidigt som i omprov 5. Effekt med nio spelare återstår (granskningens R3)."
+  },
+  "regression": {
+   "reloadMidHand": "pass (desktop, mobil, V3 1440/390/320)",
+   "keyboardAndTap": "pass",
+   "missingMedia": "pass (Talet kunde inte spelas. efter 53 ms, fyra kort, hit/stand +603 ms efter turnAt, ingen film före beslutet)",
+   "unknownMediaId": "pass (409/404)",
+   "interruptedSpeech": "pass",
+   "nextWindowFilm": "pass",
+   "windowChangeWithStale409": "pass (normal-h5-inject409: alla fem filmsteg startade, ingen text)",
+   "revokedSession": "pass (F8)"
+  }
+ },
+ "findings": [
+  {
+   "id": "F11-stale-socket-during-render-overlap",
+   "severity": "hög; blockerande för B2 (Render-omstart mitt i hand) och för produktionsdeploy av det delade bordet",
+   "observation": "Under Renders överlapp (cirka 3 min med två instanser efter omstart eller deploy) fick sidan, vars socket satt på den gamla instansen, inga snapshots från 11:29:22Z till 11:32:15Z. Beslutsfristen gick ut 11:30:05Z och servern avgjorde och samlade in rundan (v951, v952), men sidan stod på \"Rundan pågår\" i 2 min 9 s tills den gamla instansen stängde socketen med 1012. I försök A fortsatte ramarna under överlappet, så det beror på vilken instans som kör rummets tick.",
+   "cause": [
+    "services/game/shared-room-channel.mjs:231 emitCommitted() läser bara om när den egna instansens motor eller mottagare committar; kanalen pollar aldrig (:191 \"never poll SQL in a loop\")",
+    "services/game/shared-room-service.mjs:62 och :71: onTickCommitted och sink signalerar bara den egna instansens kanal; inget LISTEN/NOTIFY mellan instanser",
+    "services/game/games/blackjack/table/postgres-store.mjs:131 det globala advisory-låset avgör vilken instans som tickar rummet"
+   ],
+   "fixHint": "Signalera commits mellan instanser (Postgres LISTEN/NOTIFY eller en lätt versionsläsning per rum vid nästa förfallotid: deadline, actionDeadline, plan.endAt), eller låt klienten återansluta när förfallotiden passerat med några sekunder utan ny version. Kontrollera i K07 med två instanser."
+  },
+  {
+   "id": "F13-320-hud-covers-main-bet",
+   "severity": "hög för V3 320 (huvudkontrollen nås inte med tryck); inte spelets logik",
+   "observation": "Vid 320×568 ligger den egna platsens insatsrad (Par/Insats/21+3) under saldopanelen (#wallet) och \"Lämna plats N\" under marklisten (#chips). elementFromPoint i huvudinsatsens mitt (x 115, y 400, 84×52) ger #wallet; Playwrights klick gick i timeout. \"Alla platser\" fungerar som väg runt.",
+   "cause": [
+    "services/game/public/styles.css (#517): .seat-shared-bets margin-top 10px och .seat-shared-bet-main min-height 52px flyttar raden nedåt",
+    "services/game/public/shared-room-view.mjs onScreen() flyttar bara raden i sidled, inte i höjdled"
+   ],
+   "fixHint": "Flytta insatsraden ovanför HUD:en på låga skärmar (mät mot #wallet/#chips som onScreen mäter mot scenens kanter) eller lyft platserna.",
+   "evidence": "v3-bet-covered-320.png"
+  },
+  {
+   "id": "F12-ready-covers-leave",
+   "severity": "låg; vägar runt finns (Lämna platser, Rensa, platsväljaren)",
+   "observation": "Vid 1920×1080 och 1440×900 ligger Redo (#deal-now, 128×47) över \"Lämna plats N\" (51×44) när huvudinsatsen är lagd; elementFromPoint i Lämna-knappens mitt ger #deal-now. Före insatsen är Redo osynlig och klickgenomskinlig, så Lämna nås då. Tangentbordet når Lämna oavsett.",
+   "cause": [
+    "services/game/public/styles.css:217 html[data-shared-room=\"1\"] #deal-now bottom 23vh på breda skärmar",
+    "#517 lade \"Lämna plats N\" under insatsraden, i samma höjd"
+   ],
+   "fixHint": "Placera Redo under Lämna eller Lämna bredvid insatsraden."
+  },
+  {
+   "id": "F14-several-own-seats-overlap",
+   "severity": "låg; Alla platser fungerar",
+   "observation": "Med sju egna platser vid 1440×900 överlappar insatsraderna (huvudinsatsen 84×52 är bredare än avståndet mellan platserna), så ett klick på en plats huvudinsats fångas av grannens rad.",
+   "cause": [
+    "services/game/public/styles.css (#517) .seat-shared-bet-main min-width 84px"
+   ],
+   "fixHint": "Visa bara den fokuserade platsens rad i full storlek, eller krymp raderna när flera egna platser ligger intill varandra."
+  },
+  {
+   "id": "F15-duplicate-decision-bar-1440",
+   "severity": "låg; kosmetisk",
+   "blocking": false,
+   "observation": "Dubbla beslutsknappar vid 1440: en liten kopia av actionbaren (2x/+/−/↔) renderas uppe till vänster över rubriken samtidigt som huvudpanelen visas; dealerns kort är synliga under huvudpanelen (rättat efter GPT-förgranskningen 2026-10-28)",
+   "evidence": "o02/jakob-eyes/v3-decision-1440.png (utanför Git)",
+   "disposition": "bokförd till mobil/3-rutors-arbetet efter O03",
+   "verifiedBy": "scoutgaming-f1 (orkestratorn, egen läsning av skärmbilden)"
+  },
+  {
+   "id": "F9-rest-stall-before-card",
+   "severity": "låg; en gång på 189 filmade steg",
+   "observation": "Se 3-no-false-text: stopp före kortet visar \"Filmen kunde inte spelas.\" i 11,2 s, även efter att hit/stand öppnats.",
+   "cause": [
+    "services/game/public/local-film-player.mjs:58 vakthunden (8 s utan framsteg ger local_film_stalled)",
+    "services/game/public/local-presentation.mjs:583–587 texten visas när kortet ännu inte ligger (cardShown falskt)"
+   ],
+   "fixHint": "Låt texten försvinna när stegets tid är slut eller när beslutet öppnas."
+  },
+  {
+   "id": "O1-filmed-steps-lower-start-share",
+   "severity": "provmiljö; inte kandidatens klientkod (A/B)",
+   "observation": "Se 1-filmed-steps-start. Ompröva på en tyst maskin eller fysisk enhet innan andelen bedöms."
+  },
+  {
+   "id": "O2-studio-assistant-503",
+   "severity": "information",
+   "observation": "Lobby- och spelsidorna begär /studio/api/assistant, som svarar 503 i stagingen (assistenten är avslagen). Ingen spelpåverkan."
+  },
+  {
+   "id": "O3-render-overlap-and-lifetime",
+   "severity": "information",
+   "observation": "Draining kom 193–195 s efter omstartsbegäran. Bryggans livslängd (cirka 290 s, 1001) kan flytta en socket till den nya instansen före draining; ett B2-prov behöver därför en socket som är yngre än cirka 95 s när omstarten begärs."
+  }
+ ],
+ "jakobReview": {
+  "status": "väntar",
+  "folder": "o02-f3780593/o02/jakob-eyes (lokalt hos utföraren, inte i Git); index-k04-rerun6.json listar filerna med sha256, utan omdömen",
+  "items": [
+   {
+    "id": "V1",
+    "file": "v1-deal-box1-desktop.png",
+    "sha256": "0cbea9f0904e1de93d5671aae1b893457d92b0ce144fff3625d3e38572f9b7da",
+    "source": "shots3-b-desktop-diag/sc-0085.jpg",
+    "note": "deal to box box 0 contact timeline +739 ms after start; media ec8534ad"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box2-desktop.png",
+    "sha256": "fc756e2416150683c5cf9813ebfcee773001d58425888eba453b1bb567cb7a7a",
+    "source": "shots3-b-desktop-diag/sc-0079.jpg",
+    "note": "deal to box box 1 contact timeline +1733 ms after start; media d8dfde2e"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box3-390.png",
+    "sha256": "4c54c31ae02317d8558bdfae63a6f29f4000d82b9dd33148356b903244ca8b1c",
+    "source": "shots3-mobile-diag/sc-0038.jpg",
+    "note": "deal to box box 2 contact timeline +897 ms after start; media f92b8c8b"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box3-desktop.png",
+    "sha256": "3553fbda918094230ba920fd68415beb28336541769d7b773f30296a3bc6213a",
+    "source": "shots3-b-desktop-diag/sc-0070.jpg",
+    "note": "deal to box box 2 contact timeline +1189 ms after start; media f92b8c8b"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box4-390.png",
+    "sha256": "4ed2c7cc5d21394e79c7255d936a5a3a12e53597aa93b7e12e168a9aa9b25086",
+    "source": "shots3-mobile-diag/sc-0032.jpg",
+    "note": "deal to box box 3 contact timeline +2958 ms after start; media 1d73fa9f"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box4-desktop.png",
+    "sha256": "cc2218856689c8b4287af3ff8b385b07cc0a6eb328cb1bd9ca93913b88efb12b",
+    "source": "shots3-b-desktop-diag/sc-0062.jpg",
+    "note": "deal to box box 3 contact timeline +917 ms after start; media 917a436b"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box5-desktop.png",
+    "sha256": "7831c3fc0f53cd26622bd33dcde8cbfc89ff1b046a2ec5612a9b9f745a5e9ed8",
+    "source": "shots3-b-desktop-diag/sc-0055.jpg",
+    "note": "deal to box box 4 contact timeline +918 ms after start; media 7074099a"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box6-desktop.png",
+    "sha256": "6e0f89eca8367445848b79ece989086848bd547dd731fb34827b0f8cb74fd81f",
+    "source": "shots3-b-desktop-diag/sc-0049.jpg",
+    "note": "deal to box box 5 contact timeline +938 ms after start; media 0ce2241a"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-box7-desktop.png",
+    "sha256": "cb3f518bbec560310f62f2d9172a012d77417e35abd802abc77ba5ad7a6aadd6",
+    "source": "shots3-b-desktop-diag/sc-0045.jpg",
+    "note": "deal to box box 6 contact timeline +3141 ms after start; media 709f7454"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-dealer-390.png",
+    "sha256": "8690ee428d1f300815bcd35defee397b365d33dc8e90102958587e119dbc1e8a",
+    "source": "shots3-mobile-diag/sc-0046.jpg",
+    "note": "deal to dealer box None contact timeline +1423 ms after start; media 6134db90"
+   },
+   {
+    "id": "V1",
+    "file": "v1-deal-dealer-desktop.png",
+    "sha256": "0d177a13cc6076d6f1c79c6ef47c5b18902f820d20cf73e336e78d51835d4f19",
+    "source": "shots3-b-desktop-diag/sc-0090.jpg",
+    "note": "deal to dealer box None contact timeline +601 ms after start; media 6134db90"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hand-1seat.mp4",
+    "sha256": "4c8ca99075217d95fb3e8303f59c571ef4117baa6b69d403f7d677876413b387",
+    "source": "shots3-1seat-desktop-diag screencast (224 frames)",
+    "note": "whole hand, variable-rate screencast resampled to 30 fps"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hand-390-1seat.mp4",
+    "sha256": "d5f8f144f540bbba9ad773cc8b4d8fa19906dcd3253a38e16f8ad17550e2130a",
+    "source": "shots3-1seat-mobile-diag screencast (158 frames)",
+    "note": "whole hand, variable-rate screencast resampled to 30 fps"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hand-390.mp4",
+    "sha256": "c6440990534ff54590b89a5c6d8e966f0d52df0ddea8a995814d00dac0d9d0bd",
+    "source": "shots3-mobile-diag screencast (192 frames)",
+    "note": "whole hand, variable-rate screencast resampled to 30 fps"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hand.mp4",
+    "sha256": "331d52d6a2550c8778ffe89674d0ab10c300c99d4e894ba972cec506d578a9e3",
+    "source": "shots3-b-desktop-diag screencast (750 frames)",
+    "note": "whole hand, variable-rate screencast resampled to 30 fps"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hole-390.png",
+    "sha256": "8c7ac95f4079034a911716a62ff37165f70ddc033e0d932d61dece83a4ef1430",
+    "source": "shots3-1seat-mobile-diag/sc-0062.jpg",
+    "note": "deal to dealer box None contact estimate +-608 ms after start; media 3ae61b24"
+   },
+   {
+    "id": "V1",
+    "file": "v1-hole-desktop.png",
+    "sha256": "32caa18191eb6a127ced389ccf607bad23d64778461772cc541d26c944cdffbc",
+    "source": "shots3-1seat-desktop-diag/sc-0060.jpg",
+    "note": "deal to dealer box None contact timeline +2571 ms after start; media 3ae61b24"
+   },
+   {
+    "id": "V1",
+    "file": "v1-reveal-390.png",
+    "sha256": "79cc6321894cd2a777a0940a3f02be20b2b4045a8065a1096ebf3eb9f30a64e5",
+    "source": "shots3-1seat-mobile-diag/sc-0108.jpg",
+    "note": "reveal 0.4 s after the end of the take (card turned); media b07c94b6"
+   },
+   {
+    "id": "V1",
+    "file": "v1-reveal-desktop.png",
+    "sha256": "96b0bb81d74b6edd1fdbafcd4232ee51d13f880ce8ed2cee8080f7f17f2cdf91",
+    "source": "shots3-1seat-desktop-diag/sc-0123.jpg",
+    "note": "reveal 0.4 s after the end of the take (card turned); media b07c94b6"
+   },
+   {
+    "id": "V1",
+    "file": "v1-reveal-turning-390.png",
+    "sha256": "445c2f8649abbde31fdeca75316255b8d422e298c5a44d9a573cb66800c3d0ab",
+    "source": "shots3-1seat-mobile-diag/sc-0107.jpg",
+    "note": "reveal mid-flip, card in the dealer hand (the take lasted about 0.1 s, so the frame before the turned card is used)"
+   },
+   {
+    "id": "V1",
+    "file": "v1-reveal-turning-desktop.png",
+    "sha256": "cb07c9b1069bbbb77795247c2e57ebacd7b64a25b1b10efd8808074fa1dce22f",
+    "source": "shots3-1seat-desktop-diag/sc-0116.jpg",
+    "note": "reveal at 45% of the take; media b07c94b6"
+   },
+   {
+    "id": "V3",
+    "file": "v3-bet-1440.png",
+    "sha256": "4034b3ea296d1e3911c5ebe391105d6529bcb488ee9c953c8c241954aeba1b19",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-bet-320.png",
+    "sha256": "3f324cc2083a92e280f1f1e11213de77b88ec5c1e35be4ec3d1c937afa290a85",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-bet-390.png",
+    "sha256": "e65ae2502f351dcc1c47520872589f532680409b39f9c5270b8b0295778f8528",
+    "source": "v3-390"
+   },
+   {
+    "id": "V3",
+    "file": "v3-bet-covered-320.png",
+    "sha256": "bececc96f717851a7b68270cfb2bd7ebbea68c8a647f7714426e2c5b40170ada",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-decision-1440.png",
+    "sha256": "f050f841ed38ab72d41720b6d9d6adb03c0fdd77ce33fd934dfe390a7dc9d1d1",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-decision-320.png",
+    "sha256": "757e80a94c842492c41a503c847bdfff6a8abb9a7630be5d99112a00a362ead4",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-decision-390.png",
+    "sha256": "6ae55b451476839b1a0fec9e52d56b72399ebe59754e8b82c04c76f7d6db5903",
+    "source": "v3-390"
+   },
+   {
+    "id": "V3",
+    "file": "v3-idle-1440.png",
+    "sha256": "17f3cf6d6ceb3ab23c5e5e23495af1c5474cddd9f8f9ccac9164f577c63c04c8",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-idle-320.png",
+    "sha256": "878f67870c3204325a06098c54100994520f4a2f8870837089918b660aa8b36c",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-idle-390.png",
+    "sha256": "5c540b1069a1ea3688bbf086c042e77a89efdbbebac720fcd91ab5d3241194f7",
+    "source": "v3-390"
+   },
+   {
+    "id": "V3",
+    "file": "v3-lobby-1440.png",
+    "sha256": "746e0286564d8992d0793975138b739a77dee395817492e1fa02eebd9bb750c3",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-lobby-320.png",
+    "sha256": "a0de8a6ccf62b6613473a5636043cbf1ea13249b79ea6c68fca9615fafe6f977",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-lobby-390.png",
+    "sha256": "408b9b84b5b3b33113c7c75bd4d8f67a63d5a4f5320db042ce34795424209f57",
+    "source": "v3-390"
+   },
+   {
+    "id": "V3",
+    "file": "v3-reload-1440.png",
+    "sha256": "5d7c2713eea9712b72553d80054cfb31474155c9aaa55638df4841305986225e",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-reload-320.png",
+    "sha256": "f34a67355d625574d5f10a659f69f65856ee5a611aa5c33f95141b19ec798b37",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-reload-390.png",
+    "sha256": "d46b850d9835cc6fe1ce567e76fa012a618d3ada453ae82b3f0a4a49909086a0",
+    "source": "v3-390"
+   },
+   {
+    "id": "V3",
+    "file": "v3-settle-1440.png",
+    "sha256": "522ad55548d408eb6b666a8640c324e2dfbe37f33cd75f0bef2d05f425e8f73a",
+    "source": "v3-1440"
+   },
+   {
+    "id": "V3",
+    "file": "v3-settle-320.png",
+    "sha256": "525dc7f439ed7e5d1ed5995f7a7a416362e3d13889c5ddf38025479f95588926",
+    "source": "v3-b-320"
+   },
+   {
+    "id": "V3",
+    "file": "v3-settle-390.png",
+    "sha256": "522886689ad5248d728dbc6f8530185b4020ebc1350b913f550bc5ac519be4a0",
+    "source": "v3-390"
+   },
+   {
+    "id": "V5",
+    "file": "v5-hand1-settle.png",
+    "sha256": "1e05b2fc0eee1b0676024497a341eb6d90a4b15633d3abaada8b20869e8cf4c7",
+    "source": "multi-diag"
+   },
+   {
+    "id": "V5",
+    "file": "v5-hand2-deal.png",
+    "sha256": "7baf37164d5198d4770e8e3df748f070b39671233af017c19792b3d574c4a9c3",
+    "source": "multi-diag"
+   },
+   {
+    "id": "V5",
+    "file": "v5-idle.png",
+    "sha256": "5c0448e5530ebc9c4fe120f453b537050fc115e729474cece2b457162683c9d8",
+    "source": "multi-diag"
+   },
+   {
+    "id": "V5",
+    "file": "v5-sequence.mp4",
+    "sha256": "a682e9ba87e2031372973576b14a3ba8a2c32e369ff67320c0a0ba48eefc0348",
+    "source": null
+   }
+  ],
+  "notes": [
+   "V1: giv till alla sju rutor och dealerns uppkort ur 7-platsprovet vid 1440 (shots3-b), hålkort och reveal ur enplatsprovet; i 390 fick bara två rutor insats och revealen var cirka 0,1 s lång. Stillbilderna är PNG ur CDP-screencast (JPEG q92).",
+   "V3: lobby, idle, insats, beslut, omladdning mitt i hand och avräkning i 1440, 390 och 320. I 320 lades insatsen med Alla platser eftersom saldopanelen täcker huvudinsatsen (v3-bet-covered-320.png visar läget). Fysisk telefon ingår inte.",
+   "V5: v5-hand1-settle, v5-idle och v5-hand2-deal ur fyra händer i följd utan omladdning; v5-sequence.mp4 är hela sekvensen (6 min 12 s, Playwright-inspelning)."
+  ],
+  "scope": "Jakob bedömer V1, V3 och V5 på kandidaten i o02/jakob-eyes/manifest.json."
+ },
+ "notTested": [
+  "B1 med två spelare (inte i scenariolistan för omprovet).",
+  "Fysisk telefon (V3 phone).",
+  "F9:s tysta väg (stopp efter att kortet visats) inträffade inte.",
+  "#508 med flera spelare per rum (effekten syns först där).",
+  "V2, V4, V6 och V7 (inte K04-omprovets uppdrag)."
+ ],
+ "remaining": [
+  "Bedöm F11 (Render-överlapp) och F13 (320 px) före K04 VERIFIED på kandidaten.",
+  "Bedöm F12 och F14 (layout efter #517) och F9-resten.",
+  "Mät filmstegens andel om på en tyst maskin eller fysisk enhet.",
+  "Jakobs bedömning av V1, V3 och V5."
+ ],
+ "sideEffects": {
+  "staging": [
+   "Inga deployer, inga miljövariabler, ingen publicering i Admin",
+   "Två Render-omstarter på samma SHA (11:14:17Z och 11:28:51Z), meddelade till orkestratorn",
+   "30 syntetiska spelare med demo-USD; en utloggad (revoke); alla har lämnat bordet",
+   "Rummet släpptes till K06/K07 12:22 UTC"
+  ],
+  "production": "orörd",
+  "sqlWrites": "inga"
+ },
+ "secretsExported": false
+}

@@ -840,3 +840,27 @@ test('missing reachable native film rolls back ready and tick before all durable
     assert.equal((await t.store.audit.verifyChain()).ok,true);
   }
 });
+
+// F11: the scheduler's own room read reports each room's committed versions, so another engine
+// instance's commits can reach this instance's sockets. The observer never changes what is due.
+test('dueTicks reports every room\'s committed versions to observeRoom without altering the due list', async () => {
+  const t = setup();
+  await t.join('kevin', [0]); await t.bet('kevin', 0, 5);
+  await t.join('john', [1], 'other');
+  const seen = [], before = await t.snap();
+  t.time = before.deadline;
+  const plain = await t.table.dueTicks();
+  const observed = await t.table.dueTicks(undefined, { observeRoom: (room, versions) => {
+    assert.ok(Object.isFrozen(versions)); seen.push([room, versions]);
+    if (room === 'other') throw new Error('a broken observer');
+  } });
+  assert.deepEqual(observed, plain); assert.equal(plain.length, 1);
+  const other = await t.snap('john', 'other');
+  assert.deepEqual(seen.sort(([a], [b]) => a < b ? -1 : 1), [['other', { version: other.version, presentationVer: other.presentationVer }],
+    ['party', { version: before.version, presentationVer: before.presentationVer }]]);
+  await t.table.tick(plain[0]);
+  const after = await t.snap(); seen.length = 0;
+  await t.table.dueTicks(undefined, { onRoomError: () => assert.fail('no room error'), observeRoom: (room, versions) => seen.push([room, versions]) });
+  assert.deepEqual(seen.find(([room]) => room === 'party')[1], { version: after.version, presentationVer: after.presentationVer });
+  assert.ok(after.version > before.version && after.presentationVer > before.presentationVer);
+});

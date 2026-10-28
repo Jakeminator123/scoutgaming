@@ -16,7 +16,7 @@ Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i worksp
 
 Imagen installerar bara `services/game` och `services/astrid-gpu-worker/gateway` och kopierar en uttrycklig fillista, se [CONTAINER-CONTEXT](CONTAINER-CONTEXT.md). Build-filter om Render bara ska bygga vid relevanta ändringar: `ops/cloud/**`, `ops/neon-game/**`, `ops/neon-studio/**`, `packages/**`, `services/game/**`, `services/astrid-gpu-worker/gateway/**`, `tools/media-layout.mjs`, `tools/runtime-media-catalog.mjs`, `tools/media-blob-index-reader.mjs`, `.dockerignore`. `ops/cloud/test/game-image.test.mjs` håller listan i takt med spelserverns importer.
 
-Staging har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Jakob startar och stoppar den.
+Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Den behålls efter O03 och orkestratorn deployar dit pinnat, bara SHA:er från `main` eller `jakob/*`, aldrig `kevin*`. Preview är inget obligatoriskt steg före produktion. Jakob startar och stoppar den.
 
 ## Miljövariabler
 
@@ -28,7 +28,7 @@ Hela tabellen står i [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.m
 - `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
 - Ingress från Vercel: `CROUPIER_VERCEL_TRANSPORT_ORIGIN=https://croupier-v3.onrender.com`, `CROUPIER_PUBLIC_ORIGIN` och `PUBLIC_URL` (båda `https://www.scoutgaming.tech`), `CROUPIER_VERCEL_INGRESS_SECRET`
 
-Utan `PUBLIC_URL` härleds originen från `RENDER_EXTERNAL_URL` och starten stoppar med `Invalid or missing CROUPIER_PUBLIC_ORIGIN`. `BO_URL`, `LAB_PUBLIC_URL` och `CROUPIER_GAME_ORIGIN` härleds och sätts inte. `CROUPIER_SHARED_TABLE_ENABLED` är osatt i produktionen till O03 ([regeln](../../docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling)); `CROUPIER_CLOUD_LAB_CHILD` är borttagen och `1` stoppar starten.
+Utan `PUBLIC_URL` härleds originen från `RENDER_EXTERNAL_URL` och starten stoppar med `Invalid or missing CROUPIER_PUBLIC_ORIGIN`. `BO_URL`, `LAB_PUBLIC_URL` och `CROUPIER_GAME_ORIGIN` härleds och sätts inte. `CROUPIER_SHARED_TABLE_ENABLED=1` är satt i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg`, [regeln](../../docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling)); `CROUPIER_CLOUD_LAB_CHILD` är borttagen och `1` stoppar starten.
 
 Render MCP kan skriva env men inte läsa värden; en skrivning sammanfogar nycklar och startar en deploy direkt. Läs värden via REST med `RENDER_API_KEY` från gitignorerad `.env.local` och skriv aldrig ut dem.
 
