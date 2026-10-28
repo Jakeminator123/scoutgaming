@@ -14,7 +14,7 @@ const navigationTests = [
   'apps/studio/test/partner-login.test.mjs',
   'apps/studio/test/workspace-surfaces.test.mjs',
   'apps/studio/test/workspace-surface-pages.test.mjs',
-  'apps/studio/components/kevin-bo/partner-navigation-guard.test.mjs',
+  'apps/studio/test/partner-navigation-guard.test.mjs',
   'apps/studio/test/partner-workspace-visual.test.mjs',
   'apps/studio/test/studio-navigation.test.mjs',
   'apps/studio/test/partner-presentation-flow.test.mjs',

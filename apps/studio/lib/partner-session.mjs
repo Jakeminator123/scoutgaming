@@ -463,6 +463,8 @@ async function brandingResponse(prepared, config) {
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
   const canConfigure = allowsWorkspaceResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
+  // Spelbordens utseende är vyn Spelbord: läsning kräver tables.read, ändring presentations.configure.
+  if (!allowsWorkspaceResource(decided, 'tables.read', { scope, operatorId: operator.id })) fail(403);
   if (prepared.request.method === 'GET') return json({ ...await api.readState({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
   if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);

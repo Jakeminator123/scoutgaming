@@ -32,10 +32,16 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, 
 }) {
   const route = resolveWorkspaceSurfacePath('/' + [surface, ...path].join('/'));
   if (!route || route.surface !== 'partner') notFound();
+  const selector = initialRoomScope === undefined && typeof initialRoomId === 'string' ? 'room=' + initialRoomId
+    : initialRoomId === undefined && initialRoomScope === 'company' ? 'scope=company' : null;
+  // Kevins gamla adresser (/tables, /presentation, /transactions …) omdirigeras
+  // till den nya vyns adress innan något läses; bara ett giltigt rumsval följer med.
+  if (route.operatorSlug && route.canonicalPath && route.canonicalPath !== route.publicPath) {
+    const safe = selector === null ? route.canonicalPath : partnerLoginReturnTo(route.canonicalPath + '?' + selector);
+    redirect(safe === '/partner' ? route.canonicalPath : safe);
+  }
   let returnPath = route.publicPath;
   if (route.operatorSlug && (initialRoomId !== undefined || initialRoomScope !== undefined)) {
-    const selector = initialRoomScope === undefined && typeof initialRoomId === 'string' ? 'room=' + initialRoomId
-      : initialRoomId === undefined && initialRoomScope === 'company' ? 'scope=company' : null;
     const safe = selector === null ? '/partner' : partnerLoginReturnTo(route.publicPath + '?' + selector);
     returnPath = safe === '/partner' ? '/admin' : safe;
   }
@@ -43,7 +49,7 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, 
   const request = new Request(`https://${h.get('host') || 'invalid'}${route.studioPath}`, { headers: h });
   let data;
   try {
-    data = await partnerWorkspaceInitialData(request, route.operatorSlug ? { operatorSlug: route.operatorSlug } : {});
+    data = await partnerWorkspaceInitialData(request, route.operatorSlug ? { operatorSlug: route.operatorSlug, view: route.view } : {});
   } catch (error) {
     const status = statusOf(error);
     // Match the backend's fail-closed N1 priority, including stale N1 cookies.
@@ -61,5 +67,6 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, 
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
   return <PartnerOperatorWorkspace surface="partner"
-    initialSnapshot={data.snapshot} initialView={route.view} {...(initialRoomId===undefined?{}:{initialRoomId})} {...(initialRoomScope===undefined?{}:{initialRoomScope})} apiBase={data.apiBase} user={user} />;
+    initialSnapshot={data.snapshot} initialView={route.view} {...(data.denied ? { denied: data.denied } : {})}
+    {...(initialRoomId===undefined?{}:{initialRoomId})} {...(initialRoomScope===undefined?{}:{initialRoomScope})} apiBase={data.apiBase} user={user} />;
 }

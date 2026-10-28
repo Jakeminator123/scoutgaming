@@ -34,7 +34,7 @@ const initialState = (extra={}) => {
     presentation:{schemaVersion:1,projectRevision:'r1',assets:[],lanes:[lane]},draft:null,draftRevision:0,history:[{revision:7,publishedAt:1000,branding:{color:'#112233'}},{revision:5,publishedAt:900,branding:{color:'#445566'}}],
     rooms:[{id:'north-main',label:'Huvudrum',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],...extra};
 };
-const withDraft=(extra={})=>initialState({draftRevision:2,draft:{revision:2,basePackageRevision:7,branding:{color:'#445566'},updatedAt:1000},...extra});
+const withDraft=(extra={})=>initialState({draftRevision:2,draft:{revision:2,basePackageRevision:7,branding:{color:'#445566',background:'bg-two'},updatedAt:1000},...extra});
 function walk(tree,predicate) {
   if(!tree||typeof tree!=='object')return [];
   return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
@@ -56,7 +56,7 @@ function html(initial,options={}) {return renderToStaticMarkup(React.createEleme
 
 test('saved draft is loaded separately from the live version with SV and EN workflow labels',()=>{
   const sv=html(withDraft()),en=html(withDraft(),{language:'en'});
-  assert.match(sv,/Publicerad version.*7/);assert.match(sv,/Sparat utkast 2/);assert.match(sv,/#445566/);
+  assert.match(sv,/Publicerad version.*7/);assert.match(sv,/Sparat utkast 2/);assert.doesNotMatch(sv,/#445566|Bordsfärg/);
   assert.match(en,/Save draft/);assert.match(en,/Review publication/);assert.match(en,/Restore to draft/);
   assert.doesNotMatch(sv,/<input[^>]+(?:name|logo|primary)|type="range"|Placering|Ordmarke/);
 });
@@ -69,15 +69,35 @@ test('read-only and pre-draft backends fail closed but can inspect room scope',a
   }
   assert.match(html(initialState({canConfigure:false})),/<fieldset[^>]*disabled=""/);
 });
-test('full-frame and section views only expose effective supported adjustments',()=>{
+test('legacy scene templates explain the baked layers and the partner editor never shows table colour',()=>{
   const initial=initialState();delete initial.presentation.lanes[0].composition;
-  assert.match(html(initial,{section:'design'}),/Äldre sammansättning/);assert.match(html(initial,{section:'design'}),/gröna bakgrund tas alltid bort/);assert.doesNotMatch(html(initial,{section:'design'}),/aria-label="Bordsfärg"/);
-  const background=html(initialState(),{section:'background'});
-  assert.match(background,/aria-label="Bakgrund"/);assert.doesNotMatch(background,/aria-label="Bord"|aria-label="Dealer"|aria-label="Bordsfärg"/);
+  const legacy=html(initial);
+  assert.match(legacy,/Äldre scenmall/);assert.match(legacy,/gröna bakgrund tas alltid bort/);assert.doesNotMatch(legacy,/aria-label="Bordsfärg"/);
+  const full=html(initialState());
+  assert.match(full,/aria-label="Bakgrund"/);assert.match(full,/aria-label="Bordsgrafik"/);assert.match(full,/aria-label="Dealer"/);assert.doesNotMatch(full,/aria-label="Bordsfärg"|Bordsfärg</);
+});
+test('locked choices stay visible as Låst av Scoutgaming, tabs carry read-only settings and availability, review names every table',()=>{
+  const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['dealer','branding'];
+  initial.presentation.assets=[{id:'bg-one',role:'background',label:'Salong'},{id:'table-one',role:'table',label:'Grön filt'}];
+  const locked=html(initial,{roomId:'north-main',roomState:'pending',settings:{language:'sv',limitPreset:'prive'}});
+  assert.equal((locked.match(/Låst av Scoutgaming/g)||[]).length,2);
+  assert.match(locked,/data-locked="background"[\s\S]*?Salong/);assert.match(locked,/data-locked="table"[\s\S]*?Grön filt/);
+  assert.doesNotMatch(locked,/aria-label="Bakgrund"|aria-label="Bordsgrafik"|Inte tillgängligt i denna presentation/);
+  assert.match(locked,/aria-label="Dealer"/);
+  for(const label of ['Utseende','Dealer','Spelinställningar','Tillgänglighet','Historik'])assert.match(locked,new RegExp('role="tab"[^>]*>'+label+'<'));
+  assert.match(locked,/<dt>Bordsspråk<\/dt><dd>sv<\/dd>/);assert.match(locked,/<dt>Insatsprofil<\/dt><dd>prive<\/dd>/);assert.match(locked,/ändras av Scoutgaming tills vidare/);
+  assert.match(locked,/<strong>Pausat<\/strong>/);assert.match(locked,/begärs från Scoutgaming tills vidare/);
+  assert.match(locked,/Utkastet är gemensamt för bolagets spelbord[^<]*\(Huvudrum, VIP\)/);
+  assert.match(locked,/20 senaste publicerade/);
+  const open=html(initialState(),{roomId:'north-main',roomState:'live'});
+  assert.match(open,/<strong>Öppet för spelare<\/strong>/);assert.match(open,/<dd>Inte anslutet<\/dd>/);
+  assert.doesNotMatch(open,/Låst av Scoutgaming/);
+  const company=html(initialState(),{roomId:''});
+  assert.match(company,/aria-label="Scenmall"/);assert.match(company,/Bolagets standard har ingen egen tillgänglighet/);
 });
 test('save creates a draft with full supported state, preserves hidden choices and never reports a live publication',async()=>{
   const initial=initialState({branding:{color:'#112233',dealer:'vera',roomOverrides:{'north-vip':{table:'table-two'}},name:'unused'}}),calls=[],published=[];
-  const {render}=stateful(initial,async(url,request)=>{const body=JSON.parse(request.body);calls.push({url,body,request});return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});},{section:'background',onSaved:receipt=>published.push(receipt)});
+  const {render}=stateful(initial,async(url,request)=>{const body=JSON.parse(request.body);calls.push({url,body,request});return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});},{onSaved:receipt=>published.push(receipt)});
   select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
   await byAction(render(),'save-draft').props.onClick();
   assert.deepEqual(calls[0].body,{action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:7,branding:{background:'bg-two',dealer:'vera',color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}}});
@@ -89,7 +109,7 @@ test('publish requires successful exact review and invalidates it immediately af
   const {render}=stateful(initial,async(_url,request)=>{calls.push(JSON.parse(request.body));return response(reviewed(initial));});
   await byAction(render(),'publish').props.onClick();assert.equal(calls.length,0);
   await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,false);
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});
+  select(render(),'Bakgrund').props.onChange({target:{value:''}});
   assert.equal(byAction(render(),'publish').props.disabled,true);await byAction(render(),'publish').props.onClick();assert.equal(calls.length,1);
 });
 test('published receipt advances live only once and keeps tombstone revision for the next draft',async()=>{
@@ -101,31 +121,31 @@ test('published receipt advances live only once and keeps tombstone revision for
   },{onSaved:value=>published.push(value)});
   await byAction(render(),'review').props.onClick();await byAction(render(),'publish').props.onClick();
   assert.deepEqual(calls[1],{action:'publish',expectedDraftRevision:2,expectedPackageRevision:7,reviewToken:'a-valid-review-token'});assert.equal(published.length,1);
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});await byAction(render(),'save-draft').props.onClick();
+  select(render(),'Bakgrund').props.onChange({target:{value:''}});await byAction(render(),'save-draft').props.onClick();
   assert.equal(calls[2].expectedDraftRevision,3);assert.equal(calls[2].expectedPackageRevision,8);assert.equal(published.length,1);
 });
 for(const status of [403,409]) test(`${status} retains local edits and blocks publication until explicit fresh reconciliation`,async()=>{
   const initial=initialState(),calls=[],latest=withDraft({draftRevision:5,draft:{revision:5,basePackageRevision:7,branding:{color:'#112233',background:'bg-one'}}});
   const {render}=stateful(initial,async(_url,request)=>{calls.push(request);return request.method==='POST'?response({},status):response(latest);});
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
-  assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,true);
-  await byAction(render(),'refresh').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'publish').props.disabled,true);
-  byAction(render(),'keep-local').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,false);
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'save-draft').props.onClick();
+  assert.equal(select(render(),'Bakgrund').props.value,'bg-two');assert.equal(byAction(render(),'save-draft').props.disabled,true);
+  await byAction(render(),'refresh').props.onClick();assert.equal(select(render(),'Bakgrund').props.value,'bg-two');assert.equal(byAction(render(),'publish').props.disabled,true);
+  byAction(render(),'keep-local').props.onClick();assert.equal(select(render(),'Bakgrund').props.value,'bg-two');assert.equal(byAction(render(),'save-draft').props.disabled,false);
   await byAction(render(),'save-draft').props.onClick();assert.equal(JSON.parse(calls.at(-1).body).expectedDraftRevision,5);
 });
 test('fresh revocation never re-enables saving and explicit loading can discard local input',async()=>{
   const latest=initialState({canConfigure:false}),{render}=stateful(initialState(),async()=>response(latest));
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'refresh').props.onClick();
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'refresh').props.onClick();
   assert.equal(byAction(render(),'keep-local').props.disabled,true);
-  byAction(render(),'load-latest').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(byAction(render(),'save-draft').props.disabled,true);
+  byAction(render(),'load-latest').props.onClick();assert.equal(select(render(),'Bakgrund').props.value,'');assert.equal(byAction(render(),'save-draft').props.disabled,true);
 });
 test('restore creates a draft only, protects unsaved input and requires a new review',async()=>{
   const initial=initialState(),published=[],calls=[];
   const {render}=stateful(initial,async(_url,request)=>{calls.push(JSON.parse(request.body));return response(withDraft());},{onSaved:value=>published.push(value)});
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'restore-5').props.onClick();assert.equal(calls.length,0);
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});await byAction(render(),'restore-5').props.onClick();
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'restore-5').props.onClick();assert.equal(calls.length,0);
+  select(render(),'Bakgrund').props.onChange({target:{value:''}});await byAction(render(),'restore-5').props.onClick();
   assert.deepEqual(calls[0],{action:'restore',sourcePackageRevision:5,expectedDraftRevision:0,expectedPackageRevision:7});assert.equal(published.length,0);
-  assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+  assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bakgrund').props.value,'bg-two');
 });
 
 test('currently published history has no restore action while older revisions remain restorable',()=>{
@@ -140,19 +160,19 @@ test('discarding unsaved local choices resets them without a request or publicat
   const initial=initialState(),saved=[],dirty=[];
   const {render}=stateful(initial,()=>assert.fail('local discard must not send a request'),{onSaved:value=>saved.push(value),onDirtyChange:value=>dirty.push(value)});
   assert.equal(byAction(render(),'discard-draft'),undefined);
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});render();assert.equal(dirty.at(-1),true);
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});render();assert.equal(dirty.at(-1),true);
   await byAction(render(),'discard-draft').props.onClick();
-  assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(byAction(render(),'discard-draft'),undefined);
+  assert.equal(select(render(),'Bakgrund').props.value,'');assert.equal(byAction(render(),'discard-draft'),undefined);
   assert.equal(dirty.at(-1),false);assert.equal(saved.length,0);assert.equal(byAction(render(),'save-draft').props.disabled,true);
 });
 
 test('local discard clears an obsolete failed-save message without retrying the request',async()=>{
   let calls=0;
   const {render}=stateful(initialState(),async()=>{calls++;return response({},413);});
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'save-draft').props.onClick();
   assert.match(renderToStaticMarkup(render()),/Paketet är för stort/);
   await byAction(render(),'discard-draft').props.onClick();
-  assert.equal(calls,1);assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.doesNotMatch(renderToStaticMarkup(render()),/Paketet är för stort/);
+  assert.equal(calls,1);assert.equal(select(render(),'Bakgrund').props.value,'');assert.doesNotMatch(renderToStaticMarkup(render()),/Paketet är för stort/);
 });
 
 test('discarding a saved or stale company draft keeps live branding and uses the new draft revision for the next save',async()=>{
@@ -162,9 +182,9 @@ test('discarding a saved or stale company draft keeps live branding and uses the
     const {render}=stateful(initial,async(url,request)=>{const body=JSON.parse(request.body);calls.push({url,body});return response(body.action==='discard-draft'?cleared:{...cleared,draftRevision:4,draft:{revision:4,basePackageRevision:initial.packageRevision,branding:body.branding}});},{onSaved:value=>saved.push(value)});
     await byAction(render(),'discard-draft').props.onClick();
     assert.deepEqual(calls[0],{url:'/studio/api/partner/branding?operator=north',body:{action:'discard-draft',expectedDraftRevision:2,expectedPackageRevision:initial.packageRevision}});
-    assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(saved.length,1);assert.equal(saved[0].packageRevision,initial.packageRevision);
+    assert.equal(select(render(),'Bakgrund').props.value,'');assert.equal(saved.length,1);assert.equal(saved[0].packageRevision,initial.packageRevision);
     assert.equal(byAction(render(),'discard-draft'),undefined);assert.equal(byAction(render(),'review').props.disabled,true);
-    select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
+    select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'save-draft').props.onClick();
     assert.equal(calls[1].body.expectedDraftRevision,3);assert.equal(calls[1].body.expectedPackageRevision,initial.packageRevision);
   }
 });
@@ -183,7 +203,7 @@ test('discard refuses foreign or changed live receipts and conflicts without los
     const saved=[];
     const {render}=stateful(initial,async()=>response(payload,status),{onSaved:value=>saved.push(value)});
     await byAction(render(),'discard-draft').props.onClick();
-    assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(saved.length,0);
+    assert.equal(select(render(),'Bakgrund').props.value,'bg-two');assert.equal(saved.length,0);
     assert.equal(byAction(render(),'discard-draft').props.disabled,true);assert.equal(byAction(render(),'review').props.disabled,true);
   }
 });
@@ -198,7 +218,7 @@ test('discard sends one mutation while pending and ignores a completion after un
 test('room reset removes only that override and room presentation remains server-owned',async()=>{
   const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-main':{color:'#445566'},'north-vip':{table:'table-two'}}}}),calls=[];
   const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});});
-  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Sammansättning').props.disabled,true);
+  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Scenmall').props.disabled,true);
   byAction(render(),'reset-room').props.onClick();await byAction(render(),'save-draft').props.onClick();
   assert.deepEqual(calls[0].branding,{color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}});
 });
@@ -206,16 +226,16 @@ test('synchronous lock ignores double clicks, freezes input and suppresses compl
   let finish;const initial=withDraft(),calls=[],published=[];
   const {render,unmount}=stateful(initial,(_url,request)=>{calls.push(JSON.parse(request.body));return new Promise(resolve=>{finish=resolve;});},{onSaved:value=>published.push(value)});
   const first=byAction(render(),'review').props.onClick();await byAction(render(),'review').props.onClick();assert.equal(calls.length,1);
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+  select(render(),'Bakgrund').props.onChange({target:{value:''}});assert.equal(select(render(),'Bakgrund').props.value,'bg-two');
   finish(response(reviewed(initial)));await first;
   const publish=byAction(render(),'publish').props.onClick();unmount();finish(response({...initial,packageRevision:8,draft:null,draftRevision:3}));await publish;assert.equal(published.length,0);
 });
 test('foreign receipt and mismatched review fail closed without replacing input or publishing',async()=>{
   for(const invalid of [reviewed(withDraft(),{draftRevision:10}),reviewed(withDraft(),{branding:{color:'#112233'}})]){
-    const {render}=stateful(withDraft(),async()=>response(invalid));await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+    const {render}=stateful(withDraft(),async()=>response(invalid));await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bakgrund').props.value,'bg-two');
   }
   const {render}=stateful(initialState(),async()=>response(withDraft({operatorId:'op-foreign'})));
-  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'review').props.disabled,true);
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});await byAction(render(),'save-draft').props.onClick();assert.equal(select(render(),'Bakgrund').props.value,'bg-two');assert.equal(byAction(render(),'review').props.disabled,true);
 });
 test('stale base requires saving again before review and history is not silently published',async()=>{
   const initial=withDraft({packageRevision:9}),requests=[];
@@ -227,7 +247,7 @@ test('stale base requires saving again before review and history is not silently
 test('inherited room override changes appear in review even without an immediate visual change',async()=>{
   const initial=withDraft(),{render}=stateful(initial,async()=>response(reviewed(initial,{changes:[{roomId:'north-main',key:'roomOverrides.color',before:'#112233',after:null}],affectedRooms:[]})));
   await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,false);
-  assert.match(renderToStaticMarkup(render()),/Bordsfärg \(rumsval\)/);assert.doesNotMatch(renderToStaticMarkup(render()),/roomOverrides.color/);
+  assert.match(renderToStaticMarkup(render()),/Bordsfärg \(spelbordsval\)/);assert.doesNotMatch(renderToStaticMarkup(render()),/roomOverrides.color/);
 });
 test('room dealers use room-specific choices and frozen schema3 labels',()=>{
   const initial=initialState();initial.presentation={...initial.presentation,schemaVersion:3,registeredDealers:[{id:'astrid',label:'Frozen Astrid',idle:null},{id:'vera',label:'Frozen Vera',idle:null}],playback:{}};
@@ -239,10 +259,10 @@ test('room dealers use room-specific choices and frozen schema3 labels',()=>{
 test('oversized packages explain how to reduce scope and preserve the draft for another save',async()=>{
   for(const language of ['sv','en']){
     const {render}=stateful(initialState(),async()=>response({},413),{language});
-    const label=language==='en'?'Table colour':'Bordsfärg';
-    select(render(),label).props.onChange({target:{value:'#445566'}});
+    const label=language==='en'?'Background':'Bakgrund';
+    select(render(),label).props.onChange({target:{value:'bg-two'}});
     await byAction(render(),'save-draft').props.onClick();
-    assert.equal(select(render(),label).props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,false);assert.equal(byAction(render(),'publish').props.disabled,true);
+    assert.equal(select(render(),label).props.value,'bg-two');assert.equal(byAction(render(),'save-draft').props.disabled,false);assert.equal(byAction(render(),'publish').props.disabled,true);
     const markup=renderToStaticMarkup(render());assert.match(markup,language==='en'?/Reduce the number of room overrides/:/Minska antalet rumsundantag/);assert.match(markup,language==='en'?/20 latest published/:/20 senaste publicerade/);
   }
 });
@@ -279,7 +299,7 @@ test('legacy published composition labels are translated in selection and review
       assert.equal(body.action,'review');
       return response(reviewed(saved,{changes:[{roomId:null,key:'lane',before:'mobile-phone',after:'layer-preview'}]}));
     },{language});
-    const label=language==='en'?'Composition':'Sammansättning';
+    const label=language==='en'?'Scene template':'Scenmall';
     const standard=language==='en'?'Standard composition':'Standardsammansättning';
     const layers=language==='en'?'Layer composition':'Lagersammansättning';
     const options=walk(select(render(),label),node=>node.type==='option');

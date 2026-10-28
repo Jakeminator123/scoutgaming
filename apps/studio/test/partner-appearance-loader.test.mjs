@@ -50,7 +50,7 @@ test('loader rejects a foreign operator response instead of mounting controls',a
 test('an explicit room missing from the fresh package never mounts company-default controls',async()=>{
  const data={...receipt('op-a'),rooms:[{id:'available-room'}]},h=loaderHarness(async()=>ok(data));
  const props={apiBase:'/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'withdrawn-room'};
- h.render(props);await h.flush();const unavailable=h.render(props);assert.equal(unavailable.props.role,'alert');assert.match(unavailable.props.children,/Rummet är inte tillgängligt/);
+ h.render(props);await h.flush();const unavailable=h.render(props);assert.equal(unavailable.props.role,'alert');assert.match(unavailable.props.children,/Spelbordet är inte tillgängligt/);
  const valid=h.render({...props,roomId:'available-room'});assert.equal(valid.props.children.props.roomId,'available-room');
  assert.equal(valid.props.children.props.initial.operatorId,'op-a');
 });
