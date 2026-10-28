@@ -2,6 +2,24 @@ import {driftError,MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/con
 
 // The configuration admits at most eight profiles, one per dealer.
 export const MOVING_DRIFT_MAX_DEALERS=8;
+// Migration 016 refuses octet_length(state::text) above 32768. The store stops
+// at 28 KiB, and each dealer slot ({"<id>": state}) gets an equal share, so a
+// full slot fails only its own dealer's write and never blocks another dealer:
+// 8 x 3400 plus the container stays below the row limit.
+export const MOVING_DRIFT_ROW_LIMIT=28672;
+export const MOVING_DRIFT_DEALER_LIMIT=3400;
+/** Bytes of PostgreSQL's jsonb text output, which the CHECK measures: compact
+ * JSON plus one space after every ':' and every ','. Exact for the drift state
+ * (strings, booleans, null and safe integers). */
+export function jsonbTextBytes(value) {
+  const json=JSON.stringify(value);let spaces=0;
+  const walk=node=>{
+    if(Array.isArray(node)){spaces+=Math.max(0,node.length-1);node.forEach(walk);}
+    else if(node&&typeof node==='object'){const keys=Object.keys(node);spaces+=2*keys.length-(keys.length?1:0);keys.forEach(key=>walk(node[key]));}
+  };
+  walk(JSON.parse(json));
+  return Buffer.byteLength(json)+spaces;
+}
 const OFF=Object.freeze({mode:'off',profileId:null,endsAtMs:null});
 const plain=value=>value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype;
 
@@ -49,11 +67,12 @@ export function createPostgresMovingDriftStore({pool,environmentId,transaction,d
       ||result.state.schemaVersion!==1) throw driftError('drift_invalid_state',503);
     if(dealers&&JSON.stringify(previous)===JSON.stringify(result.state)) return result.value;
     const next={...(dealers??{}),[dealerId]:result.state};
-    if(Object.keys(next).length>MOVING_DRIFT_MAX_DEALERS) throw driftError('drift_invalid_state',503);
+    if(Object.keys(next).length>MOVING_DRIFT_MAX_DEALERS
+      ||jsonbTextBytes({[dealerId]:result.state})>MOVING_DRIFT_DEALER_LIMIT) throw driftError('drift_invalid_state',503);
     const revision=row===null?0:row.revision+1;
     if(!Number.isSafeInteger(revision)) throw driftError('drift_invalid_state',503);
-    const json=JSON.stringify({schemaVersion:1,revision,desired:OFF,dealers:next});
-    if(Buffer.byteLength(json)>32768) throw driftError('drift_invalid_state',503);
+    const state={schemaVersion:1,revision,desired:OFF,dealers:next},json=JSON.stringify(state);
+    if(jsonbTextBytes(state)>MOVING_DRIFT_ROW_LIMIT) throw driftError('drift_invalid_state',503);
     await client.query(
       '/* moving-drift:write */ INSERT INTO croupier_studio.moving_drift_control (environment_id,revision,state) VALUES ($1,$2,$3::jsonb) ON CONFLICT (environment_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state',
       [environmentId,revision,json]);

@@ -196,6 +196,8 @@ test('a second dealer gets its own profile, row slot and endpoint, and only its 
   for(const {dealer,runtime,seen} of built){
     assert.deepEqual(seen.stores,[dealer.dealerId]);
     assert.equal(seen.observer.profile,dealer);assert.equal(seen.sessions.endpointId,dealer.endpointId);
+    // Recovery skips only the other configured dealer's endpoint, never its own or a retired one.
+    assert.deepEqual(seen.sessions.foreignEndpointIds,[dealer===profile?paow.endpointId:profile.endpointId]);
     const status=await runtime.tick();
     assert.deepEqual(status.profiles,[{id:dealer.id,label:dealer.label}]);
     // Own and retired-endpoint sessions count; the other dealer's session never does.

@@ -198,3 +198,26 @@ test('Render config loads from source without frontend or speech dependency inst
   const env = base();
   assert.deepEqual(isolated.validateCloudConfig(env, {repository:root}), validateCloudConfig(env, {repository:root}));
 });
+
+test('today\'s production shape still starts: moving off, retired single-bank names present, profile without dealerId',async t=>{
+  const {main}=await import('../ops/cloud/start.mjs');
+  const bootstrap={CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixture-admin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'fixture-password-'.repeat(2)};
+  const {dealerId:_dealer,...legacyProfile}=driftProfile;
+  const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_map,...rest}=moving();
+  // Render croupier-v3 on 28 October 2026: flag 0, old bank and endpoint names, no bank map, Vercel-style profile.
+  const today={...base(),...rest,...bootstrap,CROUPIER_MOVING_SPEECH_ENABLED:'0',
+    CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),CROUPIER_MOVING_SPEECH_ENDPOINT_ID:'movingfixture',
+    CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([legacyProfile])};
+  const {CROUPIER_MOVING_SPEECH_ENABLED:_flag,...unset}=today;
+  const logs=[];t.mock.method(console,'log',line=>logs.push(line));
+  for(const env of [today,unset,{...today,CROUPIER_MOVING_SPEECH_ENABLED:''},{...base(),...bootstrap,CROUPIER_MOVING_SPEECH_ENABLED:'0'}]){
+    assert.equal(await main(['--check'],env),0);
+    const child=children(env).web.env;
+    assert.deepEqual(Object.keys(child).filter(name=>/MOVING/.test(name)),[],'the game child receives no moving keys');
+  }
+  assert.equal(logs.length,4);
+  // Turning moving speech on with that shape is refused until the map and dealerId are set.
+  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1'}),/Invalid or missing CROUPIER_MOVING_SPEECH_BANK_RECORDS\./);
+  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
+    /CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
+});

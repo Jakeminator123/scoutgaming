@@ -83,3 +83,11 @@ test('a real child process: console.warn diagnostics on stderr reach the parent 
   assert.equal(emitted.find(row => row.event === 'moving_speech_preparation_failed').code, 'generated_speech_total_budget_exhausted');
   assert.ok(emitted.every(row => row.source === 'game' && !JSON.stringify(row).includes('private') && !JSON.stringify(row).includes('startup')));
 });
+
+test('moving speech recovery is forwarded per dealer with a bounded dealer ID and count only', () => {
+  assert.deepEqual(JSON.parse(safeChildDiagnosticLine(JSON.stringify({ event: 'moving_speech_recovery', dealerId: 'paow', unresolved: 2, sessionIds: ['a'.repeat(32)] }))),
+    { event: 'moving_speech_recovery', source: 'game', dealerId: 'paow', unresolved: 2 });
+  for (const bad of [{ unresolved: 1 }, { dealerId: 'Paow', unresolved: 1 }, { dealerId: 'x'.repeat(41), unresolved: 1 },
+    { dealerId: 'https://evil.invalid', unresolved: 1 }, { dealerId: 'paow', unresolved: -1 }, { dealerId: 'paow', unresolved: 100001 }, { dealerId: 'paow' }])
+    assert.equal(safeChildDiagnosticLine(JSON.stringify({ event: 'moving_speech_recovery', ...bad })), null, JSON.stringify(bad));
+});

@@ -114,7 +114,7 @@ export async function createMovingDriftRuntime({pool,scope,configuration,dealerI
     onRejection:diagnostic=>console.warn(JSON.stringify({event:'moving_drift_guard_rejected',...diagnostic})),
     guard:({client,...input})=>make(storeFactory({environmentId:scope.environment,dealerId,
       transaction:work=>work(client)})).guardAdmission(input)}});
-  const sessions=sessionFactory({...sessionOptions,journal,scope,endpointId,provider,
+  const sessions=sessionFactory({...sessionOptions,journal,scope,endpointId,provider,foreignEndpointIds:[...foreignEndpoints],
     release:provider.release,workerState:provider.workerState,driftControl:{pin}});
   let cancelActive=async()=>{};
   const executor=createMovingDriftExecutor({controller,profile,holderId,sessions,

@@ -157,6 +157,21 @@ test('restart recovery cancels only the exact known owned job and requires termi
 });
 
 
+test('restart recovery leaves sessions of another configured dealer to that dealer; unknown endpoints stay unresolved',async()=>{
+  const own={sessionId:'1'.repeat(32),endpointId:'endpointfixture',jobId:'prior-job',workerId:'prior-worker'};
+  const paow={sessionId:'2'.repeat(32),endpointId:'endpointpaow',jobId:'paow-job',workerId:'paow-worker'};
+  const paowUnsubmitted={...paow,sessionId:'3'.repeat(32),jobId:null};
+  const retired={sessionId:'4'.repeat(32),endpointId:'endpointretired',jobId:'old-job',workerId:'old-worker'};
+  const f=fixture({recoverable:[own,paow,paowUnsubmitted,retired],configuration:{foreignEndpointIds:['endpointpaow']}});
+  assert.deepEqual(await f.create.reconcile(),{recovered:[own.sessionId],unresolved:[{sessionId:retired.sessionId,reason:'endpoint_changed'}]});
+  // Paow's jobs are neither cancelled nor polled by this dealer.
+  assert.equal(f.events.filter(event=>event==='provider-status').length,1);assert.equal(f.events.includes('provider-cancel'),false);
+  const single=fixture({recoverable:[own,paow]});
+  assert.deepEqual((await single.create.reconcile()).unresolved,[{sessionId:paow.sessionId,reason:'endpoint_changed'}]);
+  for(const foreignEndpointIds of [['endpointfixture'],[''],[null],'endpointpaow',Array(9).fill('x')])
+    assert.throws(()=>fixture({configuration:{foreignEndpointIds}}),/configuration/);
+});
+
 test('296 second cold start retains admitted ownership and keeps worker execution at 180 seconds',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
   const f=fixture(),attempt=await f.admit();await attempt.submit();

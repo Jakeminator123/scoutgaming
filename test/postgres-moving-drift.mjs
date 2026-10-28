@@ -7,7 +7,7 @@ import {createNativeStudioRequestHandlers} from '../apps/studio/lib/studio-nativ
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {pathToFileURL} from 'node:url';
-import {createPostgresMovingDriftStore} from '../services/game/postgres-moving-drift.mjs';
+import {createPostgresMovingDriftStore,jsonbTextBytes,MOVING_DRIFT_DEALER_LIMIT,MOVING_DRIFT_ROW_LIMIT} from '../services/game/postgres-moving-drift.mjs';
 import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 
 const profiles=[{id:'base',label:'Bas',dealerId:'dragan',endpointId:'endpoint-test',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}];
@@ -112,25 +112,52 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {
       reject('drift_invalid_state'));
     assert.equal(pool.trace.some(x=>x.marker==='write'),false);
   });
-  test('eight dealers with maximum identifiers and an observed worker fit the 32 KiB row of migration 016',async()=>{
-    const pool=fakePool(),hex=c=>c.repeat(64),long=(prefix,n)=>(prefix+'x'.repeat(n)).slice(0,n);
-    for(let i=0;i<8;i++) {
-      const id=long('d'+i+'-',40),profile={id:long('p'+i+'-',32),label:'L'.repeat(80),dealerId:id,endpointId:long('e'+i,128),
-        releaseDigest:hex('a'),bankHash:hex('b')};
-      const controller=createMovingDriftController({profiles:[profile],capabilities:{connected:true,requireExecutor:true},
-        store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId:id})});
-      const execution=await controller.claimExecution({holderId:long('h'+i,128),profileId:profile.id});
-      let status=await controller.observe({revision:0,operationId:null,execution,observedAtMs:1792404000000,observedProfileIds:[profile.id],
-        workers:[],busyJobs:0,queuedJobs:0,applied:{revision:0,operationId:null,mode:'off',profileId:null,workersMin:0,workersMax:1}});
-      status=await controller.command({mode:'saving',profileId:profile.id,expectedRevision:status.revision,commandId:long('c'+i,64)});
-      await controller.observe({revision:status.revision,operationId:status.operationId,execution,observedAtMs:1792404000000,
-        observedProfileIds:[profile.id],busyJobs:0,queuedJobs:0,providerDeadlineMs:9007199254740991,budgetCoveredUntilMs:9007199254740991,
-        workers:[{id:long('w'+i,128),profileId:profile.id,state:'initializing',gpu:'G'.repeat(80),releaseDigest:hex('a'),bankHash:hex('b'),modelReady:true}],
-        applied:{revision:status.revision,operationId:status.operationId,mode:'saving',profileId:profile.id,workersMin:0,workersMax:1}});
+  test('row size is measured as PostgreSQL measures it; a full dealer slot never blocks the others, even with eight workers each',async t=>{
+    const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');
+    const {readFile}=await import('node:fs/promises');
+    const pool=await createPglitePool({migrations:[]});t.after(()=>pool.end());
+    await pool.query('CREATE SCHEMA IF NOT EXISTS croupier_studio');
+    await pool.query(await readFile(new URL('../ops/neon-studio/016-moving-drift-control.sql',import.meta.url),'utf8'));
+    const hex=c=>c.repeat(64),long=(prefix,n)=>(prefix+'x'.repeat(n)).slice(0,n);
+    const stored=async environmentId=>(await pool.query('SELECT octet_length(state::text) AS bytes,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[environmentId])).rows[0];
+    // Seven fill their slots with maximum identifiers; the eighth arrives last and must still write.
+    async function fill(environmentId,{maximum,workers}){
+      const dealers=[];
+      for(let i=0;i<8;i++){
+        const id=maximum?long('d'+i+'-',40):'dealer-'+i;
+        const profile={id:maximum?long('p'+i+'-',32):'p'+i,label:'L'.repeat(80),dealerId:id,endpointId:maximum?long('e'+i,128):'endpoint'+i,releaseDigest:hex('a'),bankHash:hex('b')};
+        const controller=createMovingDriftController({profiles:[profile],capabilities:{connected:true,requireExecutor:true},
+          store:createPostgresMovingDriftStore({pool,environmentId,dealerId:id})});
+        const now=Number((await pool.query('SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n')).rows[0].n);
+        const execution=await controller.claimExecution({holderId:maximum?long('h'+i,128):'holder-'+i,profileId:profile.id});
+        let status=await controller.observe({revision:0,operationId:null,execution,observedAtMs:now,observedProfileIds:[profile.id],
+          workers:[],busyJobs:0,queuedJobs:0,applied:{revision:0,operationId:null,mode:'off',profileId:null,workersMin:0,workersMax:1}});
+        status=await controller.command({mode:'saving',profileId:profile.id,expectedRevision:status.revision,commandId:maximum?long('c'+i,64):'saving-'+i});
+        const observation={revision:status.revision,operationId:status.operationId,execution,observedAtMs:now,observedProfileIds:[profile.id],
+          busyJobs:0,queuedJobs:0,providerDeadlineMs:9007199254740991,budgetCoveredUntilMs:9007199254740991,
+          applied:{revision:status.revision,operationId:status.operationId,mode:'saving',profileId:profile.id,workersMin:0,workersMax:1},
+          workers:Array.from({length:workers},(_,w)=>maximum
+            ?{id:long('w'+i+'-'+w+'-',128),profileId:profile.id,state:'terminated',gpu:'G'.repeat(80),releaseDigest:hex('a'),bankHash:hex('b'),modelReady:false}
+            :{id:'pod-'+i+'-'+w,profileId:profile.id,state:'terminated',gpu:'',releaseDigest:null,bankHash:null,modelReady:false})};
+        const outcome=await controller.observe(observation).then(()=>'stored',error=>error.code);
+        dealers.push({controller,status,outcome});
+        const row=await stored(environmentId);
+        // The store's measure is exactly the CHECK's measure, and the row keeps its margin.
+        assert.equal(jsonbTextBytes(row.state),Number(row.bytes));
+        assert.ok(Number(row.bytes)<=MOVING_DRIFT_ROW_LIMIT,`${row.bytes} bytes`);
+      }
+      // Every dealer can still change its own state afterwards.
+      for(const [i,{controller,status}] of dealers.entries())
+        assert.equal((await controller.command({mode:'off',expectedRevision:status.revision,commandId:'off-'+i})).desired.mode,'off');
+      return dealers.map(dealer=>dealer.outcome);
     }
-    const bytes=Buffer.byteLength(JSON.stringify(pool.row.state));
-    assert.equal(Object.keys(pool.row.state.dealers).length,8);
-    assert.ok(bytes<16384,`${bytes} bytes`);
+    // One observed worker per dealer (the observer reports at most one pod): every dealer fits.
+    assert.deepEqual(await fill('one-worker',{maximum:true,workers:1}),Array(8).fill('stored'));
+    // Eight maximum-length workers exceed one dealer's share: only that dealer's write is refused, cleanly before the database.
+    assert.deepEqual(await fill('eight-maximum-workers',{maximum:true,workers:8}),Array(8).fill('drift_invalid_state'));
+    // Eight ordinary workers per dealer fit for all eight dealers.
+    assert.deepEqual(await fill('eight-ordinary-workers',{maximum:false,workers:8}),Array(8).fill('stored'));
+    assert.ok(8*MOVING_DRIFT_DEALER_LIMIT+256<=MOVING_DRIFT_ROW_LIMIT&&MOVING_DRIFT_ROW_LIMIT<32768);
   });
   test('the dealer container satisfies the unchanged migration 016 table and its constraints in PostgreSQL',async t=>{
     const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');
