@@ -94,7 +94,7 @@ async function adminFixtureSource(){
         if(importer.endsWith('/workspace-tools.tsx')&&(args.path.includes('/components/')&&!args.path.endsWith('/control-replies-page')||args.path==='./connected-services'))return{path:args.path,namespace:'unused-admin-tool'};
         if(importer.endsWith('/control-replies-page.tsx')&&['./page-template.mjs','./dealer-video-surface'].includes(args.path))return{path:args.path,namespace:'reply-child'};
       });
-      builder.onLoad({filter:/.*/,namespace:'unused-admin-tool'},()=>({contents:'export const AdminPublicationPage=()=>null,ControlActivityPage=()=>null,ControlPreviewPage=()=>null,ControlEventsPage=()=>null,ControlTreePage=()=>null,ControlProbePage=()=>null,ControlVideosPage=()=>null,ControlGuidePage=()=>null,ControlOpenClawChat=()=>null,LabStudio=()=>null,ConnectedServices=()=>null;'}));
+      builder.onLoad({filter:/.*/,namespace:'unused-admin-tool'},()=>({contents:'export const DealerMaterialPage=()=>null,AdminPublicationPage=()=>null,ControlActivityPage=()=>null,ControlPreviewPage=()=>null,ControlEventsPage=()=>null,ControlTreePage=()=>null,ControlProbePage=()=>null,ControlVideosPage=()=>null,ControlGuidePage=()=>null,ControlOpenClawChat=()=>null,LabStudio=()=>null,ConnectedServices=()=>null;'}));
       builder.onLoad({filter:/.*/,namespace:'reply-child'},args=>({contents:args.path==='./page-template.mjs'?'export const PageTemplate=props=>props.children;':'export const DealerClipPreview=()=>null;'}));
     }}]}).then(result=>result.outputFiles[0].text);
 }
