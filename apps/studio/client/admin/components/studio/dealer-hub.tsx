@@ -88,8 +88,8 @@ function ApprovalCard({coverage,templates}:{coverage:ReturnType<typeof dealerCov
     [`Tillåten i minst en scenmall (${templates.length})`,templates.length>0],
   ];
   return <Card title="Godkännande" aside="krävs för att dealern ska kunna tilldelas" className="hub-mt">
-    <div className="hub-rows">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">oklart</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
-    <p className="hub-small hub-muted hub-mt">Checklistan är en läsvy. Projektet har inget fält för "godkänd" i dag, så inget sparas här; tilldelning sker under Bolag › Tilldelning. Landningarna läses inte från Admin ännu (profilen ligger i koden).</p>
+    <div className="hub-rows">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">efter O03</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
+    <p className="hub-small hub-muted hub-mt">Checklistan är en läsvy. Projektet har inget fält för "godkänd" i dag, så inget sparas här; tilldelning sker under Bolag › Tilldelning. Landningarna mäts och sparas i Admin efter O03 (generaliseringsspåret); i dag ligger den filmade profilen i koden för dragan och paow.</p>
   </Card>;
 }
 
@@ -108,8 +108,8 @@ function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId
   const [open,setOpen]=useState(false);
   return <div className="hub-mt-l">
     <div className="hub-grid c2">
-      <Card title="Filmad profil · var dealerns hand landar" aside={<Chip tone="warn">oklart</Chip>}>
-        <p className="hub-small hub-muted">Korten ritas där handen landar i filmen: <code>positions</code> 1–7 och dealer som {'{cx, cy}'}, plane 1080×1920 vid 24 fps och <code>takes[]</code> per mål och variant. Profilen ligger i dag i koden (<code>filmed-profiles/registry.mjs</code>, bara dragan och paow) och nås inte från Admin utan en ny läsning; därför visas den som oklar här. Efter O03 mäts och sparas den som data per dealer.</p>
+      <Card title="Filmad profil · var dealerns hand landar" aside={<Chip tone="warn">efter O03</Chip>}>
+        <p className="hub-small hub-muted">Korten ritas där handen landar i filmen: <code>positions</code> 1–7 och dealer som {'{cx, cy}'}, plane 1080×1920 vid 24 fps och <code>takes[]</code> per mål och variant. Landningarna mäts och sparas i Admin efter O03 (generaliseringsspåret). I dag ligger den filmade profilen i koden för dragan och paow.</p>
         <KV items={[['Giv-klipp',`${dealBound}/${dealTotal} fack kopplade`],['Mobilram','3 av 7 platser i ett glidande fönster, ingen zoom'],['Mätt ur','giv-klippen: contactFrame, landFrame, clearFrame']]}/>
         <div className="hub-actions hub-mt"><button type="button" className="hub-btn" disabled title="efter O03 (generaliseringsspåret)">Mät landningar</button><button type="button" className="hub-btn ink" disabled title="efter O03 (generaliseringsspåret)">Exportera landningsmall</button><span className="hub-small hub-muted">efter O03 (generaliseringsspåret)</span></div>
       </Card>
