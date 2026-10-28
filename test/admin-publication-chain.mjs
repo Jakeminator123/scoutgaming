@@ -260,56 +260,63 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.equal((await page.goto(origin + overview + roomQuery)).status(), 200);
     const workspace = page.locator('[data-surface="partner"]');
     await workspace.getByRole('heading', {name: 'Översikt', exact: true}).waitFor();
-    // The shell: company, "Tilldelning från Scoutgaming · revision N" and the role word (TERMINOLOGI).
-    assert.equal(await workspace.locator('.side .context b').textContent(), 'revision ' + receipt.packageRevision);
+    // The shell: company, "Tilldelning från Scoutgaming · Version N" and the role word (TERMINOLOGI).
+    assert.equal(await workspace.locator('.side .context b').textContent(), 'Version ' + receipt.packageRevision);
     assert.equal(await workspace.locator('.side .foot .who .small').textContent(), 'administratör');
     const staffLinks = () => workspace.locator('a[href="/admin"], a[href^="/lobby"]');
     assert.equal(await staffLinks().count(), 0, 'ordinary N2 never receives staff portal links');
-    const nav = workspace.getByRole('navigation');
+    // A menu entry may carry a count after its label (tables, pending items).
+    const nav = workspace.getByRole('navigation', {name: 'Meny', exact: true});
+    const menu = label => nav.getByRole('link', {name: new RegExp('^' + label + '\\s*\\d*$')});
     const brandingRead = page.waitForResponse(response => new URL(response.url()).pathname === '/studio/api/partner/branding');
-    await nav.getByRole('link', {name: 'Spelbord', exact: true}).click();
+    await menu('Spelbord').click();
     const brandingResponse = await brandingRead;
     assert.equal(brandingResponse.status(), 200);
     const branding = await brandingResponse.json();
     assert.equal(branding.operatorId, company.id); assert.equal(branding.packageRevision, receipt.packageRevision);
     assert.equal(branding.canConfigure, true); assert.deepEqual(branding.presentation, chain.partner.presentation);
-    assert.ok(branding.rooms.some(room => room.id === receipt.room.id));
+    assert.equal(branding.rooms.find(room => room.id === receipt.room.id)?.presentationLaneId, compositionId, 'the room shows the published scene template');
     await page.waitForURL(origin + rooms + roomQuery);
-    // Spelbord: the rooms are cards (aria-pressed marks the selected one), the published
-    // scene template is a region with the revision chip, the editor a region with tabs.
-    const roomCards = () => workspace.getByRole('group', {name: 'Spelbord', exact: true});
+    // Spelbord: a selected room opens its editor with one heading row (the room name and its
+    // state), the published version in the status line and a play-test link. The breadcrumb
+    // "Spelbord" opens the list of room cards; the company default is its own scope.
+    const appearance = workspace.getByRole('region', {name: 'Spelbordets utseende och publicering', exact: true});
+    const roomName = new RegExp('^' + receipt.room.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     const assertRoom = async (packageRevision = receipt.packageRevision) => {
-      const picked = roomCards().getByRole('button', {pressed: true});
-      await picked.waitFor(); assert.match(await picked.textContent(), new RegExp(receipt.room.name));
-      const publishedRoom = workspace.getByRole('region', {name: 'Publicerad scenmall', exact: true});
-      assert.equal(await publishedRoom.getByRole('heading', {level: 2}).textContent(), receipt.room.name);
-      assert.equal(await publishedRoom.locator('.chip.accent').textContent(), 'revision ' + packageRevision);
-      const play = publishedRoom.getByRole('link', {name: 'Provspela ' + receipt.room.name + ' ↗', exact: true});
+      await appearance.getByRole('heading', {level: 1, name: roomName}).waitFor();
+      assert.match(await appearance.getByRole('heading', {level: 1}).textContent(), /öppet$/, 'the live room is marked open');
+      await appearance.getByRole('status').filter({hasText: 'Publicerad version ' + packageRevision}).waitFor();
+      const play = appearance.getByRole('link', {name: 'Provspela', exact: true});
       const url = new URL(await play.getAttribute('href'), origin);
       assert.equal(url.searchParams.get('operator'), company.slug); assert.equal(url.searchParams.get('table'), receipt.room.id);
-      const appearance = workspace.getByRole('region', {name: 'Spelbordets utseende och publicering', exact: true});
-      await appearance.waitFor();
-      assert.equal(await appearance.getByRole('combobox', {name: 'Scenmall', exact: true}).inputValue(), compositionId);
-      assert.match(await appearance.textContent(), new RegExp('Publicerad version ' + packageRevision));
       assert.equal(await staffLinks().count(), 0);
     };
+    const crumbs = () => workspace.getByRole('navigation', {name: 'Brödsmulor', exact: true});
+    const roomCard = async () => {
+      await workspace.getByRole('heading', {level: 1, name: 'Spelbord', exact: true}).waitFor();
+      const card = workspace.getByRole('list', {name: 'Spelbord', exact: true}).getByRole('button', {name: 'Öppna ' + receipt.room.name, exact: true});
+      await card.waitFor(); return card;
+    };
+    const companyHeading = () => appearance.getByRole('heading', {level: 1, name: 'Bolagets standard', exact: true});
     await assertRoom();
     await page.reload(); await assertRoom();
-    await nav.getByRole('link', {name: 'Översikt', exact: true}).click();
+    await menu('Översikt').click();
     await page.waitForURL(origin + overview + roomQuery);
     await workspace.getByRole('heading', {name: 'Översikt', exact: true}).waitFor();
     await page.goBack(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
     await page.goForward(); await page.waitForURL(origin + overview + roomQuery);
     await workspace.getByRole('heading', {name: 'Översikt', exact: true}).waitFor();
-    await nav.getByRole('link', {name: 'Spelbord', exact: true}).click(); await assertRoom();
-    const companyCard = () => roomCards().getByRole('button', {name: /Bolagets standard/});
-    await companyCard().click();
-    await page.waitForURL(origin + rooms + '?scope=company');
-    await page.reload();
-    await roomCards().getByRole('button', {name: /Bolagets standard/, pressed: true}).waitFor();
+    await menu('Spelbord').click(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
+    await crumbs().getByRole('link', {name: 'Spelbord', exact: true}).click();
+    await page.waitForURL(origin + rooms);
+    assert.match(await (await roomCard()).textContent(), /öppet/);
+    await workspace.getByRole('button', {name: 'Bolagets standard', exact: true}).click();
+    await page.waitForURL(origin + rooms + '?scope=company'); await companyHeading().waitFor();
+    await page.reload(); await companyHeading().waitFor();
+    await page.goBack(); await page.waitForURL(origin + rooms); await roomCard();
     await page.goBack(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
-    await page.goForward(); await page.waitForURL(origin + rooms + '?scope=company');
-    await roomCards().getByRole('button', {name: /Bolagets standard/, pressed: true}).waitFor();
+    await page.goForward(); await page.waitForURL(origin + rooms); await roomCard();
+    await page.goForward(); await page.waitForURL(origin + rooms + '?scope=company'); await companyHeading().waitFor();
     assert.equal((await page.goto(origin + '/partner/' + otherCompany.slug + '/rooms' + roomQuery)).status(), 403);
     assert.equal(await page.locator('[data-surface="partner"]').count(), 0, 'foreign page never renders a workspace');
     // The same real loader distinguishes N1 from membership-bound N2; the
@@ -325,15 +332,14 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     // Table colour is no longer a partner choice (Jakob 2026-10-28) and this lane
     // grants the company nothing else, so the editor shows every layer locked and the
     // room draft is saved with the same command the editor sends; review and
-    // publication are then clicked in the editor.
+    // publication are then clicked in the editor and its review dialog.
     await useCookie(f.auth.north);
     await page.goto(origin + rooms + roomQuery); await assertRoom();
-    const appearance = workspace.getByRole('region', {name: 'Spelbordets utseende och publicering', exact: true});
     assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).count(), 0, 'no table colour control for partners');
-    await appearance.getByRole('tab', {name: 'Dealer', exact: true}).click();
-    assert.equal(await appearance.locator('[data-locked]').count(), 3, 'background, table graphics and dealer are shown as locked, not hidden');
-    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /Låst av Scoutgaming/);
-    await appearance.getByRole('tab', {name: 'Utseende', exact: true}).click();
+    assert.deepEqual(await appearance.getByRole('tab').allTextContents(), ['Utseende', 'Historik']);
+    const locked = await appearance.locator('[data-locked]').evaluateAll(rows => rows.map(row => row.dataset.locked).sort());
+    assert.deepEqual(locked, ['background', 'dealer', 'table'], 'background, table graphics and dealer are shown as locked, not hidden');
+    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /bestäms av Scoutgaming/);
     const color = '#445566', endpointPath = '/studio/api/partner/branding?operator=' + company.slug, endpoint = origin + endpointPath;
     const expectedBranding = {...branding.branding, roomOverrides: {[receipt.room.id]: {color}}};
     const southBefore = await f.store.getCurrentPackage(otherCompany.id);
@@ -342,13 +348,15 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.equal(branding.draft, null);
     assert.equal(branding.draftRevision, 0);
     assert.ok(branding.presentation.lanes.find(lane => lane.id === compositionId).layers.table.colors.includes(color));
-    const publishButton = appearance.getByRole('button', {name: 'Publicera granskat utkast', exact: true});
-    assert.equal(await publishButton.isDisabled(), true);
-    assert.equal(await appearance.getByRole('button', {name: 'Spara utkast', exact: true}).isDisabled(), true, 'nothing to change, nothing to save');
-    const command = async (name, action) => {
+    const reviewButton = appearance.locator('[data-action="review"]');
+    const saveButton = appearance.getByRole('button', {name: 'Spara utkast', exact: true});
+    assert.equal(await reviewButton.isDisabled(), true, 'no draft, nothing to review or publish');
+    assert.equal(await reviewButton.textContent(), 'Inget att publicera');
+    assert.equal(await saveButton.isDisabled(), true, 'nothing to change, nothing to save');
+    const command = async (button, action) => {
       const pending = page.waitForResponse(response => response.url() === endpoint
         && response.request().method() === 'POST' && response.request().postDataJSON().action === action);
-      await appearance.getByRole('button', {name, exact: true}).click();
+      await button.click();
       const response = await pending; assert.equal(response.status(), 200, await response.text());
       return response.json();
     };
@@ -368,34 +376,41 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     const reloaded = page.waitForResponse(response => response.url() === endpoint && response.request().method() === 'GET');
     await page.reload(); await assertRoom();
     assert.deepEqual((await (await reloaded).json()).draft, draft.draft);
-    await appearance.getByText('Alla ändringar är sparade i utkastet.', {exact: true}).waitFor();
-    assert.match(await appearance.textContent(), /Sparat utkast 1/);
-    assert.ok((await roomCards().allTextContents()).some(text => /utkast/.test(text)), 'the saved draft is marked on the room cards');
-    assert.equal(await appearance.getByRole('button', {name: 'Spara utkast', exact: true}).isDisabled(), true,
-      'reloaded saved changes are clean');
-    assert.equal(await publishButton.isDisabled(), true, 'reload cannot manufacture a publication review');
-    const reviewed = await command('Granska publicering', 'review');
-    await appearance.getByText('Granskningen är klar. Kontrollera ändringar och berörda spelbord innan publicering.', {exact: true}).waitFor();
+    await appearance.getByRole('status').filter({hasText: 'utkast sparat'}).waitFor();
+    assert.equal(await saveButton.isDisabled(), true, 'reloaded saved changes are clean');
+    assert.equal(await reviewButton.textContent(), 'Publicera · 1 ändring', 'the saved draft differs from live in one choice');
+    assert.equal(await workspace.locator('[data-action="publish"]').count(), 0, 'reload cannot manufacture a publication review');
+    // The saved draft is marked on the room card; the card opens the same editor again.
+    await crumbs().getByRole('link', {name: 'Spelbord', exact: true}).click();
+    await page.waitForURL(origin + rooms);
+    const draftCard = await roomCard();
+    assert.match(await draftCard.textContent(), /utkast/, 'the saved draft is marked on the room cards');
+    await draftCard.click(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
+    const reviewed = await command(reviewButton, 'review');
+    const dialog = workspace.getByRole('dialog', {name: 'Granska och publicera', exact: true});
+    await dialog.waitFor();
     assert.equal(reviewed.packageRevision, receipt.packageRevision);
     assert.equal(reviewed.draftRevision, draft.draftRevision);
     assert.deepEqual(reviewed.branding, expectedBranding);
     assert.deepEqual(reviewed.affectedRooms, [receipt.room.id]);
     assert.deepEqual(reviewed.changes, [{roomId: receipt.room.id, key: 'color', before: null, after: color}]);
-    const reviewPanel = appearance.getByRole('region', {name: 'Granskning före publicering', exact: true});
+    const reviewPanel = dialog.getByRole('region', {name: 'Granskning före publicering', exact: true});
     assert.match(await reviewPanel.textContent(), new RegExp(receipt.room.name));
     assert.match(await reviewPanel.textContent(), /#445566/);
     assert.match(await reviewPanel.textContent(), /Utkastet är gemensamt för bolagets spelbord/, 'the review says one draft covers every table in the company');
     assert.deepEqual(f.operators.tables.operator_packages, beforePartner, 'review never publishes');
-    const saved = await command('Publicera granskat utkast', 'publish');
+    const saved = await command(dialog.locator('[data-action="publish"]'), 'publish');
     const nextRevision = receipt.packageRevision + 1;
     assert.equal(saved.packageRevision, nextRevision);
     assert.equal(saved.draft, null); assert.equal(saved.draftRevision, draft.draftRevision + 1);
     assert.deepEqual(saved.branding, expectedBranding);
-    await workspace.getByRole('region', {name: 'Publicerad scenmall', exact: true})
-      .getByText('revision ' + nextRevision, {exact: true}).waitFor();
+    const receiptDialog = workspace.getByRole('dialog', {name: 'Publicerat · version ' + nextRevision, exact: true});
+    await receiptDialog.waitFor();
+    await receiptDialog.getByRole('button', {name: 'Klart', exact: true}).click(); await receiptDialog.waitFor({state: 'hidden'});
     await assertRoom(nextRevision);
-    assert.equal(await workspace.locator('.side .context b').textContent(), 'revision ' + nextRevision, 'the shell follows the new revision without a reload');
-    assert.equal(await publishButton.isDisabled(), true, 'successful publication cannot be repeated without a new draft');
+    await workspace.locator('.side .context b').filter({hasText: 'Version ' + nextRevision}).waitFor();
+    assert.equal(await workspace.locator('.side .context b').textContent(), 'Version ' + nextRevision, 'the shell follows the new revision without a reload');
+    assert.equal(await reviewButton.isDisabled(), true, 'successful publication cannot be repeated without a new draft');
     const current = await f.store.getCurrentPackage(company.id);
     assert.equal(current.revision, nextRevision);
     assert.deepEqual(current.tables, chain.pack.tables);
@@ -427,8 +442,8 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.deepEqual(await f.store.getCurrentPackage(otherCompany.id), southBefore);
 
     await page.reload(); await assertRoom(nextRevision);
-    await appearance.getByText('Du ser den publicerade versionen.', {exact: true}).waitFor();
-    assert.equal(await publishButton.isDisabled(), true);
+    await appearance.getByRole('status').filter({hasText: 'inget utkast'}).waitFor();
+    assert.equal(await reviewButton.isDisabled(), true);
     assert.equal((await f.publicRooms.read(company.slug)).packageRevision, nextRevision);
     await context.clearCookies();
     await page.goto(origin + '/lobby');
