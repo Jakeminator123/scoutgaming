@@ -325,3 +325,14 @@ for (const scenario of ['warm', 'cold', 'incomplete', 'missing-tool']) {
     } finally { await rm(temp, { recursive: true, force: true }); }
   });
 }
+
+test('the required CI gate waits for every job in the PR workflow and runs even when one fails', async () => {
+  const yaml = (await readFile(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const jobs = [...yaml.split('\njobs:\n')[1].matchAll(/^  ([a-z][a-z0-9-]*):\n/gm)].map(match => match[1]);
+  assert.ok(jobs.includes('ci') && jobs.includes('dealer-regression'));
+  const gate = yaml.split('\n  ci:\n')[1];
+  assert.match(gate, /^    name: CI\n/, 'the ruleset requires the check named CI');
+  assert.match(gate, /\n    if: always\(\)\n/);
+  const needs = gate.match(/\n    needs: \[([^\]]+)\]\n/)?.[1].split(',').map(name => name.trim());
+  assert.deepEqual([...needs].sort(), jobs.filter(name => name !== 'ci').sort(), 'a job the gate does not need could fail without blocking a merge');
+});

@@ -35,7 +35,7 @@ async function previewResponse(request: Request, segments: string[] | undefined,
   // modules have no fixture metadata or media; every other legacy preview is gone.
   const rendererCode = segments?.length === 1 && ['compositor.js', 'geometry.js'].includes(segments[0]);
   if (native && !rendererCode) {
-    return new Response(head ? null : '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Äldre förhandsvisning avslutad</title><p>Den äldre lokala förhandsvisningen är avslutad. <a href="/admin/rehearsal">Provspela i Admin</a> med sparade sammansättningar och registrerade medier.</p></html>', {
+    return new Response(head ? null : '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Äldre förhandsvisning avslutad</title><p>Den äldre lokala förhandsvisningen är avslutad. <a href="/admin/rooms">Provspela i Admin</a> med sparade sammansättningar och registrerade medier.</p></html>', {
       status: 410, headers: privateHeaders({ 'Content-Type': 'text/html; charset=utf-8' }),
     });
   }

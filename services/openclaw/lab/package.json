@@ -7,7 +7,7 @@
   "engines": { "node": ">=22.16.0" },
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test test/*.test.mjs deploy/*.test.mjs",
+    "test": "node --test test/*.test.mjs deploy/*.test.mjs deploy/container/*.test.mjs",
     "check": "node src/check.mjs"
   }
 }

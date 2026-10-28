@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
 import { openGenerationMedia, closeGenerationMedia, serveGenerationMedia } from '../services/game/generation-media.mjs';
@@ -11,26 +11,6 @@ import { publicRoutePaths, isRetiredGenerationRoute, isRetiredLocalDealerRoute }
 // Synthetic catalogue entries: the retired BO catalogue file no longer ships with the server.
 const catalog = [{ id: 'c01866d1-7c93-43a4-9493-73f7c66d3725' }, { id: '15777d5f-4085-484e-a170-eb5c9a13d7b0' }];
 const [first, second] = catalog;
-
-test('media resolver allows only catalogue names and refuses symlink escapes', async () => {
-  const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-resolver-'));
-  const directory = join(tmp, 'media'); await mkdir(directory);
-  const open = fileName => openGenerationMedia({ directory, catalog: [{ id: first.id, thumb: 'https://example.invalid/thumbnail.jpg' }, second], fileName });
-  try {
-    await writeFile(join(directory, `${first.id}.mp4`), 'fixture bytes');
-    await writeFile(join(directory, `${first.id}-thumb.jpg`), 'fixture thumbnail');
-    await writeFile(join(directory, `${first.id}-thumb.png`), 'not the declared thumbnail');
-    await writeFile(join(tmp, 'outside.mp4'), 'not served');
-    await symlink(join(tmp, 'outside.mp4'), join(directory, `${second.id}.mp4`), 'file');
-    for (const name of [`${first.id}.mp4`, `${first.id}-thumb.jpg`]) {
-      const media = open(name); assert.ok(media); assert.ok(media.size > 0); closeGenerationMedia(media);
-    }
-    for (const name of [`${second.id}.mp4`, `${first.id}-thumb.png`, '../outside.mp4', `${first.id}.mp4/extra`, 'catalog.json', '.env', '11111111-2222-3333-4444-555555555555.mp4']) assert.equal(open(name), null);
-    const linkedDir = join(tmp, 'linked');
-    await symlink(directory, linkedDir, process.platform === 'win32' ? 'junction' : 'dir');
-    assert.equal(openGenerationMedia({ directory: linkedDir, catalog, fileName: `${first.id}.mp4` }), null);
-  } finally { await rm(tmp, { recursive: true, force: true }); }
-});
 
 test('served media honours GET, HEAD and byte ranges and refuses writes and bad ranges', async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-serve-'));

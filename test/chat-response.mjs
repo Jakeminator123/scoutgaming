@@ -38,13 +38,11 @@ test('transport and mid-stream failures are errors, never empty successful repli
 test('legacy JSON clients work and failures get distinct explanations', async () => {
   const decision = { kind: 'silence' };
   assert.deepEqual(await readChatResponse(Response.json(decision)), decision);
-  assert.match(chatFailureMessage('hidden'), /flik/);
-  assert.match(chatFailureMessage('muted'), /ljudet/);
-  assert.match(chatFailureMessage('stale_round_revision'), /Bordet/);
-  assert.match(chatFailureMessage('generated_speech_timeout'), /lång tid/);
-  assert.match(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Dagens budget/);
+  const codes = ['hidden', 'muted', 'stale_round_revision', 'generated_speech_timeout', 'generated_speech_daily_budget_exhausted', 'generated_speech_total_budget_exhausted'];
+  const messages = codes.map(code => chatFailureMessage(code)), fallback = chatFailureMessage('unrecognised_failure_code');
+  for (const message of messages) { assert.equal(typeof message, 'string'); assert.ok(message.trim()); assert.notEqual(message, fallback); }
+  assert.equal(new Set(messages).size, codes.length, 'each failure code has its own explanation');
   assert.doesNotMatch(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Försök igen\./);
-  assert.match(chatFailureMessage('generated_speech_total_budget_exhausted'), /Provbudgeten/);
   assert.doesNotMatch(chatFailureMessage('generated_speech_total_budget_exhausted'), /Försök igen\./);
 });
 

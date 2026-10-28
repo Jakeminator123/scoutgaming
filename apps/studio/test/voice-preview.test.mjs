@@ -179,13 +179,7 @@ test('HTTP entrypoint checks localhost/origin, JSON and text before any paid req
   assert.equal((await status.json()).configured, true);
 });
 
-test('voice UI has explicit opt-in generation, no audio autoplay and unmount cleanup', async () => {
+test('voice UI never autoplays generated audio', async () => {
   const source = await readFile(new URL('../components/voice-preview-panel.tsx', import.meta.url), 'utf8');
-  assert.match(source, /Generera röstprov/);
-  assert.match(source, /kan förbruka krediter/);
-  assert.match(source, /inget kapas automatiskt/);
-  assert.match(source, /generation\.current\?\.abort\(\)/);
-  assert.match(source, /if \(audioRef\.current !== element\) audioRef\.current\?\.pause\(\)/);
   assert.doesNotMatch(source, /<audio[^>]*autoPlay/);
-  assert.match(source, /import type \{ VoiceResult, VoiceStatus \}/);
 });

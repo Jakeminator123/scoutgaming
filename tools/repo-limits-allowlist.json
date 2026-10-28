@@ -1,30 +1,5 @@
 [
   {
-    "path": "apps/studio/client/admin/public/assets/bg-lounge.png",
-    "maxBytes": 1641500,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/studio/client/admin/public/assets/bg-studio-dark.png",
-    "maxBytes": 1323848,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/studio/client/admin/public/assets/bg-teal.png",
-    "maxBytes": 1123668,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/studio/client/admin/public/assets/table-black.png",
-    "maxBytes": 1248666,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/studio/client/admin/public/assets/table-green.png",
-    "maxBytes": 1357298,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "apps/studio/client/lobby/public/images/dealers/anna.png",
     "maxBytes": 2019747,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"

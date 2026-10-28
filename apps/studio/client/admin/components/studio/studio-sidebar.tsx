@@ -1,11 +1,11 @@
 "use client"
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {Network,LayoutDashboard,Activity,CircleDollarSign,Settings,Cpu,House,Clapperboard,Users,Play,Building2,Wallet,type LucideIcon} from 'lucide-react';
+import {Network,LayoutDashboard,Activity,CircleDollarSign,Settings,Cpu,House,Clapperboard,Users,Building2,Wallet,type LucideIcon} from 'lucide-react';
 import {adminToolName} from '../../../runtime/admin-routing.mjs';
 import {adminNavigationGroups,adminSystemGroups,adminToolHome} from '../../lib/admin-navigation';
 
-const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Clapperboard,'/admin/scenes':LayoutDashboard,'/admin/dealers':Users,'/admin/assets':LayoutDashboard,'/admin/rehearsal':Play,'/admin/companies':Building2,'/admin/players':Wallet,'/admin/drift':Activity,'/admin/ekonomi':CircleDollarSign};
+const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Clapperboard,'/admin/scenes':LayoutDashboard,'/admin/dealers':Users,'/admin/assets':LayoutDashboard,'/admin/companies':Building2,'/admin/players':Wallet,'/admin/drift':Activity,'/admin/ekonomi':CircleDollarSign};
 export function StudioSidebar() {
   const pathname=usePathname();
   // A deep tool marks the menu page it belongs to, so exactly one entry is current.

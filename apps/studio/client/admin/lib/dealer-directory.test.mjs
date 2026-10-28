@@ -17,12 +17,12 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
   for(const dealer of additionalDealers){remote.project=addDealer(remote.project,dealer.id,dealer.label);remote.catalog.administration.dealers.push({id:dealer.id,name:dealer.label});}
   const saves=[],changes=[],navigations=[],archives=[],checks=[],deletionChecks=[],deletions=[],slots=[],effects=[],module={exports:{}},dialogModule={exports:{}};
-  let cursor=0,saveFailure='',readFailure=false,eligibility={allowed:true,count:2};
+  let cursor=0,saveFailure='',readFailure=false,lifecycleFailure='',loads=0,eligibility={allowed:true,count:2};
   const props={active:true,onChanged:()=>changes.push(true)};
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};},useEffect(fn,deps){const index=cursor++;if(!slots[index]||deps.some((dep,i)=>dep!==slots[index].deps[i])){effects.push(()=>{slots[index]?.cleanup?.();slots[index]={deps,cleanup:fn()};});}}};
   let archiveCheck=null;
   const impact={dealerId:'dragan',token:'a'.repeat(64),mediaCount:0,speechEnabled:false,operators:[],rooms:[],compositions:[]};
-  const client={load:async()=>{if(readFailure)throw Error('read unavailable');return structuredClone(remote);},save:async project=>{
+  const client={load:async()=>{loads++;if(readFailure)throw Error('read unavailable');return structuredClone(remote);},save:async project=>{
     saves.push(project);
     if(saveFailure==='conflict')throw Error('En annan ändring har sparats.');
     remote={...remote,project:{...project,revision:'studio.project.2'}};
@@ -30,7 +30,9 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
   }};
   const lifecycle={checkDealerArchive:async(project,id)=>{checks.push({id,revision:project.revision});return archiveCheck?archiveCheck(project,id):impact;},dealerLifecycle:async(project,id,archived,plan,current)=>{
     assert.equal(current(),true);archives.push({id,archived,plan,revision:project.revision});
+    if(lifecycleFailure==='conflict')throw Object.assign(Error('studio_conflict'),{code:'studio_conflict'});
     remote={...remote,project:{...remote.project,revision:'studio.project.3',dealers:[],dealerTrash:[{dealer:{id,label:'Dragan'},lines:[],compositions:restoreCompositions}]}};
+    if(lifecycleFailure==='lost')throw Error('Network lost');
   },checkDealerDeletion:async(project,id)=>{deletionChecks.push({id,revision:project.revision});return eligibility;},deleteDealer:async(project,id,current)=>{
     assert.equal(current(),true);deletions.push({id,revision:project.revision});
     remote={...remote,project:{...remote.project,revision:'studio.project.4',dealers:[],dealerTrash:[]}};
@@ -49,6 +51,7 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     return require(name);
   }});
   const h={setArchiveCheck:handler=>archiveCheck=handler,props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
+    setLifecycleFailure:value=>lifecycleFailure=value,patchRemote:change=>{remote=change(structuredClone(remote));},loads:()=>loads,
     render(){cursor=0;return module.exports.DealerDirectory(props);},
     async settle(){for(let i=0;i<5;i++){h.render();while(effects.length)effects.shift()();await new Promise(resolve=>setImmediate(resolve));}},
     button(label){return nodes(h.render(),node=>node.type==='button'&&text(node)===label)[0];},
@@ -200,4 +203,32 @@ test('late lifecycle checks cannot fill a reopened dialog for the same or anothe
     assert.ok(h.dialogButton('Flytta till papperskorgen'));
     assert.equal(h.archives.length,0);
   }
+});
+
+test('a repeated archive confirmation submits exactly one archive request',async()=>{
+  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();
+  const confirm=h.dialogButton('Flytta till papperskorgen').props.onClick;confirm();confirm();await h.settle();
+  assert.equal(h.checks.length,1);assert.equal(h.archives.length,1);
+  assert.match(text(h.render()),/Dragan har flyttats till papperskorgen/);
+});
+test('an uncertain or refused archive is settled by one registry read and is never repeated',async()=>{
+  for(const failure of ['lost','conflict']){
+    const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();
+    h.setLifecycleFailure(failure);const reads=h.loads();
+    h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
+    assert.equal(h.archives.length,1,failure+' never repeats the archive');assert.equal(h.loads(),reads+1,failure+' reads the registry once');
+    assert.equal(h.dialog(),undefined);assert.equal(h.button('Skapa dealer').props.disabled,false,'the write lock is released');
+    const page=text(h.render());
+    if(failure==='lost'){assert.match(page,/Dragan har flyttats till papperskorgen/);assert.doesNotMatch(page,/kunde inte bekräftas/);}
+    else{assert.doesNotMatch(page,/har flyttats till papperskorgen/);assert.match(page,/Registret eller urvalet har ändrats/);assert.ok(h.button('Ta bort'),'the refused dealer stays active');}
+  }
+});
+test('a pending permanent deletion disables restore and only offers to finish the deletion',async()=>{
+  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
+  h.patchRemote(remote=>{remote.project.dealerTrash[0].deletion={state:'pending',requestedAt:'2026-10-11T12:00:00.000Z',mediaIds:[]};return remote;});
+  h.props.refreshKey=1;await h.settle();
+  assert.match(text(h.render()),/radering påbörjad/);assert.equal(h.button('Återställ').props.disabled,true);
+  assert.equal(h.button('Radera permanent'),undefined);h.button('Slutför radering').props.onClick();await h.settle();
+  assert.match(text(h.dialog()),/Slutför raderingen av Dragan\?/);assert.deepEqual(h.deletionChecks,[{id:'dragan',revision:'studio.project.3'}]);
+  assert.equal(h.archives.length,1,'restore is never submitted');assert.equal(h.deletions.length,0);
 });

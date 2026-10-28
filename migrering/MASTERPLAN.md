@@ -6,7 +6,7 @@ Kort, gällande plan. Status finns bara i [STATUS.md](STATUS.md), genererad frå
 
 - Utvalda beteenden från Kevins spelmodul (regelkärna, delat bord, spelklient, mediakontrakt) körs genom mains befintliga tjänster och styrs av publicerad Admin-konfiguration. Main äger auth, wallet, regler, sko, Neon, Blob och trelagersspelaren.
 - Ingen helmerge av Kevins branch. Hans SQLite, filregister, cookies, fallbackdealer, backoffice och roulette följer inte med. Extra dealers, språk och generativ GPU-worker ingår inte.
-- En produktväg (Jakob 27 oktober): Vercel + Render + Neon + Blob. SQLite lämnar main helt; ren main är ett slutkrav som O02/O03 bekräftar. Kvarvarande SQLite-steg syns i `tools/no-sqlite-allowlist.json`.
+- En produktväg (Jakob 27 oktober): Vercel + Render + Neon + Blob. SQLite lämnar main helt; ren main är ett slutkrav som O02/O03 bekräftar. `tools/check-no-sqlite.mjs` förbjuder SQLite i all kod; bara dokumentation får nämna det.
 - Planen ger inget mandat för merge, produktions-DDL, produktionsflaggor, import, deploy eller GPU-körning. Sådant följer [AGENTS.md](../AGENTS.md) och Jakobs beslut.
 
 ## De 20 aktiviteterna
