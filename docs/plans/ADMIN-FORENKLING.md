@@ -328,3 +328,85 @@ Kvar: **nya dealers filmas eller genereras** (avgör Skapa materials framtid); e
 ## 11. Avvikelser mot Jakobs paket
 
 Paketet skrevs utan repotillgång; det här har rättats mot koden: `/admin/events`, `/admin/admin/operators` och fem testimporterade komponenter är redan borta; Talgranskning tas bort i #477; `lab/lib/*` finns inte (koden ligger i `apps/studio/lib`); `operator-membership` och `/api/partner/team` skriver samma tabell (verifierat); de tolv behörigheterna heter som i 5.4, inte som paketets förslag; `/play/blackjack` är en omdirigering; `A:room-state` och `A:operator-package` finns med samma form; händelseträdet är ingen fråga längre; nativebordet ingår inte i målbilden; "Operatör/Operatörsportal" i paketet heter här Bolag/Partnerportalen enligt TERMINOLOGI; skissen är uppdaterad så att Dealers-navet har fliken Scen och händelseträdet är borta.
+
+## 12. Funktionsregister
+
+> Jakobs beställning 28 oktober 2026: ett register över vilka namn som används till vad och var uppgifterna hämtas. En rad per *funktion* (inte per sida), nivå 1 och 2, verifierad mot kartan och faktabladet på `main` 3415c310ce. **Beslut** är Jakobs (skiss 2 godkänd 28 oktober); **Datakälla** är det UI:t läser eller skriver i dag. Byggs på grenarna `jakob/par-admin-ny-n1` (nivå 1), `jakob/par-admin-ny-n2` (nivå 2) och `jakob/par-admin-ny-demo` (demo-byggaren) som draft-PR:er; inget mergas före O03. Samma tabell visas förkortad under Hjälp › *Var uppgifterna kommer ifrån*.
+
+Beslutsord: **behåll** (samma komponent, ny plats), **flytta**, **slå ihop**, **ta bort** (med konsumentbevis), **ny** (byggs nu, bara UI på befintliga API:er), **efter O03** (kräver ny data, runtime eller nytt API; väntar).
+
+### Nivå 1: Admin
+
+| # | Funktion | Namn i nya Admin | Var i dag | Beslut | Ny plats | Datakälla | Skäl, bevis |
+|---|---|---|---|---|---|---|---|
+| 1 | Det som väntar | Översikt › Väntar på dig | `/admin` (`admin-home.tsx`, tre länkar) | ny | `/admin` | `/admin/_data/catalog`, `/studio/api/videos` | målbild 4.1; inga genvägskort utan uppgift |
+| 2 | Demo åt ett bolag | Skapa demo | finns bara som launch-knapp i Integrationer (`studio-administration.tsx:567-587`) | ny | `/admin/demo` | catalog; `A:apikeys/launch` (Render) | Jakob 28 okt; orkestratorn: operatör och rum i länken, inga fixturbolag |
+| 3 | Dealerlista, skapa dealer | Dealers | `/admin/dealers` (`dealer-directory.tsx:17,45-54`) | behåll | `/admin/dealers` | K-doc `dealers[]`, `lines[]` | – |
+| 4 | Klippkartan: fack, standard, varianter, körregler | Dealers › Klippkarta | `/admin/clips` (`connected-clip-map.tsx`, `connected-clip-card.tsx`, `studio-policy-panel.tsx`) | flytta (dealerväljaren blir navets dealer) | `/admin/dealers/<id>?flik=klipp` | K-load; K-doc `lines[]`, `idlePolicy`, `dealerIdlePolicies`, `mediaPolicy`; `media_records` | Jakob: kartan behålls; målbild 4.2 |
+| 5 | Lägg till klipp (uppladdning) | Lägg till klipp | `/admin/clips?panel=intake` (`clip-intake-panel.tsx`) | slå ihop med 6 | Klippkarta › Lägg till klipp | K-upload, K-classify, `POST import-proposal` | kartan: fem uppladdningsingångar |
+| 6 | Importassistent (mapp, skapa dealer) | steg 2 i Lägg till klipp | `?tool=import` (`dealer-import-assistant.tsx`) | slå ihop | samma | `dealer-import-api.mjs`; förslag via `OPENAI_API_KEY` (`dealer-import-model.mjs:32`) | dubblett uppladdning och skapa dealer |
+| 7 | Skapa material (Forge) | Lägg till klipp › Generera (avstängt) | `/admin/dealer-studio?view=generate` (`dealer-forge-page.tsx`) | flytta, orörd | samma | `/studio/api/forge/*`; `forge_dealers`, `forge_jobs` | avstängd utan `lissabon-stream-lane`; beslut filmas/genereras kvar |
+| 8 | Roulettekort (referens, vila, kulsläpp) | Klippkarta | `/admin/clips` (`roulette-*-editor.tsx`) | behåll | Klippkarta | K-doc `dealers[].rouletteStart/rouletteIdle` | – |
+| 9 | Röst & tal: repliker, tagningar, talfack | Dealers › Röst och tal | `/admin/clips?panel=room` (`studio-speech-panel.tsx`) | flytta | `?flik=tal` | K-doc `speechProfile`, `lines[]`; `POST videos/speech-review`; `media_records.recordedSpeech` | talkedjan pausad; byggsteget (`speech-build`) kan inte lyckas och visas inte som fungerande |
+| 10 | Svarsbibliotek | Röst och tal › Svarsbibliotek | `/admin/replies` (`control-replies-page.tsx`) | flytta | `?flik=tal` | `GET/PATCH /studio/api/replies` → `speech_reply_records` | – |
+| 11 | Dialogtest | Röst och tal › Dialogtest | `/admin/dealer-agent` (`gateway-panel.tsx`) | flytta | `?flik=tal&verktyg=dialog` | `POST /api/chat` | fungerar i molnet: oklart |
+| 12 | Taldrift | Röst och tal › Taldrift | `/admin/drift?tab=speech` (`moving-drift-controls.tsx`) | flytta | `?flik=tal` | `A:moving-drift` → `moving_drift_control` | – |
+| 13 | Tal vid inaktivitet | Röst och tal › Tal vid inaktivitet (Av / klipp efter N min / AI-tal) | bara Astrid (`probe-editor.tsx`, `probePolicy`) | slå ihop → generisk; tills talkedjan "Inte anslutet" | `?flik=tal` | K-doc `probePolicy` | orkestratorn 1c; Astrid bort |
+| 14 | Talgranskning | – | `/admin/media-review` | ta bort (klart, #477) | – | – | – |
+| 15 | Dealerns landningar (filmad profil) | Dealers › Landningar | ingen vy; profilen i kod (`filmed-profiles/registry.mjs`: dragan, paow) | ny läsvy; Mät landningar och Exportera landningsmall efter O03 | `?flik=landningar` | filmad profil (kod) → registret efter O03 | generaliseringsspåret; målbild 4.5 |
+| 16 | Används av (dealer) | Dealers › Används av | `/admin/structure` (`resource-connections.tsx`) | flytta (filtrerad läsvy) | `?flik=anvands` | catalog, project, videos | – |
+| 17 | Dealerlivscykel i Dealers | Dealers › Inställningar | `dealer-directory.tsx:76-90` | slå ihop med 18 | `?flik=installningar` | K-life `/studio/api/dealers/*` | kartan: tre knappar för samma livscykel |
+| 18 | Dealerlivscykel i klippkartan (Dealer & användning, Klipp & arkiv) | samma | `/admin/clips?panel=dealer` (`studio-lifecycle-panel.tsx`) | slå ihop → en | samma | K-life, K-doc `dealerSets` | dubblett |
+| 19 | Radera klipp från kortet | Klippkarta › åtgärdsmeny | `clip-delete-action.tsx` | behåll | Klippkarta | K-life `videos/*` | – |
+| 20 | Dealergodkännande | Inställningar › Godkännande | finns inte (registret: `unreviewed`; Jakobs ok i kvitton) | ny checklista (läsvy); statusfält godkänd i projektet när Jakob säger till | `?flik=installningar` | doc.project | målbild 10.5; orkestratorn 1b |
+| 21 | Astrid Legacyreferens | – | `dealer-directory.tsx:127` | ta bort | – | – | ren start |
+| 22 | Sceneditor: placering, lager, dealerval, publicera placering | Scenmallar | `/admin/scenes` (`studio-composition-panel.tsx`, `blackjack-scene-placement-editor.tsx`) | behåll, egen instans | `/admin/scenes?tab=mallar` | K-doc `lanes[]`; `A:operator-package publish-scene-layout` | målbild 4.6; ett ord: Scenmall |
+| 23 | Exportera landningsmall | Scenmallar › Landningsmall | – | efter O03 | samma | filmad profil | målbild 4.5 |
+| 24 | Bord & bakgrunder (uppladdning) | Bakgrunder, Bordsgrafik | `/admin/assets` (`registered-material-library.tsx`) | behåll, ett ställe | `/admin/scenes?tab=bakgrunder` och `?tab=bordsgrafik` | K-layer; `layerAssets`; Blob | dubbel montering i Sceneditorn bort |
+| 25 | Materialpapperskorg | Papperskorg | `layer-asset-manager.tsx` | behåll | `?tab=papperskorg` | `A:material-trash(-check)` | – |
+| 26 | Bordsfärg | – | `partner-appearance.tsx:243`, `branding.color` | ta bort ur UI | – | sätter bara `data-table-color` (`player-choices.mjs:111-115`) | arkitekten och orkestratorn: kosmetisk |
+| 27 | Uppspelningsregler för bakgrund och bord | Scenmallar › Automatik och uppspelning | `studio-composition-panel` | behåll | `/admin/scenes/<id>` | `lanes[].backgroundPlayback`, `tablePlayback` | – |
+| 28 | Bolagslista, skapa bolag | Bolag | `/admin/companies` (`control-operator-directory.tsx`) | behåll; läsningen av hela projektet (`workspace/companies`) bort | `/admin/companies?tab=bolag` | `A:operator-create`; `operators` | kartan: onödig läsning |
+| 29 | Tilldelning (Spelmallar för bolaget) | Bolag › Tilldelning | `/admin/rooms` (`registered-studio.tsx:271-289`) | flytta nu; hela uppsättningen (dealers, material, insatsprofiler) efter O03 | `/admin/companies/<slug>?flik=tilldelning` | `A:operator-package {lanes}` → `operator_packages` | Jakobs lanepaket; målbild 5.3 |
+| 30 | Bolagets val (upplåsningar) | Tilldelning › Bolaget får välja | finns inte (`operatorAdjustable` per mall) | efter O03 (`allow` i paketet) | samma | paketets `branding` | målbild 4.3 |
+| 31 | Spelbordslista, alla bolag | Alla spelbord | `/admin/rooms` (`operator-game-board.tsx`) | flytta | `/admin/companies?tab=spelbord` | catalog | – |
+| 32 | Nytt spelbord | Nytt spelbord | `presentation-room-create.tsx` | behåll | samma | `A:presentation-room` | – |
+| 33 | Spelbordets utseende (admin-läge) | Spelbord › Utseende | `registered-studio.tsx:261` via `partner-appearance` | behåll | `/admin/rooms/<id>?flik=utseende` | `/studio/api/partner/branding` (ett utkast per bolag) | dubblett med portalen, bokförd |
+| 34 | Spelinställningar | Spelbord › Spelinställningar | `room-game-config.tsx` | behåll | `?flik=spel` | `A:room-game-config` → `roomGameConfigs`, `shared_table_configs` | – |
+| 35 | Pausa/Öppna | Spelbord › Tillgänglighet (gäller direkt) | `control-resource-lifecycle.tsx:122-146` | behåll | `?flik=tillganglighet` | `A:room-state` → `rooms[].state` (levande) | L3 |
+| 36 | Rum till papperskorg, återställ | Spelbord › åtgärdsmeny | `A:room-lifecycle` | behåll | samma | administration + pkg+1 | – |
+| 37 | Publicera PAOWs viloklipp | Publicera (tills steg D) | `registered-studio.tsx:257` | ta bort i steg D | `/admin/rooms/<id>` | `A:operator-package refresh-dealer-idle` | målbild 4.3 |
+| 38 | Åtta publiceringsknappar | en Publicera | kartan: Knappar som höjer paketrevisionen | slå ihop i steg D (ny action) | samma | `A:operator-package publish-room` (efter O03) | målbild 7 |
+| 39 | Bolagets team | Bolag › Team | `/admin/companies` | flytta | `?flik=team` | `A:operator-membership`, `A:operator-role` | samma tabell som portalen |
+| 40 | Journal | Bolag › Journal | `/admin/companies` | flytta | `?flik=journal` | `GET /studio/api/partner/journal` → `operator_audit_events` | – |
+| 41 | Bolagets livscykel | Bolag › Inställningar | `control-resource-lifecycle` kind operator | flytta | `?flik=installningar` | `A:operator-lifecycle` | – |
+| 42 | API-nycklar, launch, credit | System › Integration (tills steg F) | `/admin/admin/api` | flytta; per bolag efter steg F | `/admin/system?flik=integration` | `A:apikeys/*` → `api_keys` (saknar bolag) | steg F |
+| 43 | Spelarkonton | System › Spelarkonton | `/admin/players` (`accounts-pages.tsx`, CSS-dold delning) | flytta; egen komponent; per bolag efter steg F | `/admin/system?flik=spelare` | `A:players`, `players/*` → `croupier_game.players` | dubblett med Konton & åtkomst |
+| 44 | Ekonomi (transaktioner) | System › Spelarkonton › Transaktioner | `/admin/ekonomi` (`connected-economy.tsx`) | slå ihop; etiketter för payout, refill, consume | samma | `A:transactions` | #500 gjorde en läsning |
+| 45 | Förhandsvisa portalen som läsare | Bolag › knapp | finns inte | ny (länk; serverbegränsad roll efter O03) | `/admin/companies/<slug>` | – | målbild 4.4 |
+| 46 | Drift: status, skor, prov | System › Drift | `/admin/drift?tab=status` | flytta | `/admin/system?flik=drift` | `A:overview`, `A:shoes`, `A:shared-table-proof` | – |
+| 47 | OpenClaw agentmodeller | System › AI-agenter | `/admin/ai/models` (`openclaw-workspace.tsx`) | flytta, byter namn | `?flik=agenter` | `GET/PATCH /studio/api/openclaw/admin` → Director | – |
+| 48 | OpenAI-nyckelns status | System › AI-agenter › OpenAI | nyckeln finns på Vercel, läses av `dealer-import-model.mjs:32` | ny statusvisning (bara finns/finns inte) | `?flik=agenter` | `process.env.OPENAI_API_KEY` | Jakob 28 okt; AI-hjälp i nivå 2 efter O03 |
+| 49 | Scoutgamings personal | System › Scoutgamings personal | `/admin/admin/accounts` | flytta; egen komponent | `?flik=personal` | `A:users/*` → `croupier_auth.users` | – |
+| 50 | Kopplingar & användning | System › Beroenden (+ Används av på objekten) | `/admin/structure` | flytta | `?flik=beroenden` | catalog, project, videos | – |
+| 51 | Intern lobby | System › Intern lobby | `/admin/lobby` (ingen länk) | länk | `?flik=lobby` | `/admin/_data/catalog` | – |
+| 52 | Hjälp och datakällor | Hjälp | `/admin/guide` | behåll + tabellen Var uppgifterna kommer ifrån | `/admin/guide` | statisk | Jakobs register |
+| 53 | Dold grupp `tables`, actions utan handler | – | `studio-administration.tsx:466-508` (UI borta i #500) | ta bort ur kontraktet efter orkestratorns ok | – | – | ingen anropare (kartan) |
+| 54 | tournament, pitboss, operator-create-demo | – | `studio-admin-contract.mjs` | ta bort efter orkestratorns ok | – | – | ingen anropare |
+| 55 | Inloggning | Logga in | `/admin/login` | behåll | – | `/studio/api/auth` | #497 |
+
+### Nivå 2: Partnerportalen
+
+| # | Funktion | Namn i nya portalen | Var i dag | Beslut | Ny plats | Datakälla | Skäl, bevis |
+|---|---|---|---|---|---|---|---|
+| 56 | Översikt | Översikt (var ni är publicerade, rundor, väntar, er tilldelning) | `/partner/<bolag>` (`overview.jsx`; `playersToday/roundsToday` hårdkodat 0) | byggs om | samma | snapshot (`partner-data.mjs:148`) + läsande aggregat ur `shared_table_audit` | orkestratorn 4 |
+| 57 | Spelrum och utseende | Spelbord (Utseende, Dealer, Spelinställningar, Tillgänglighet, Historik) | `/partner/<bolag>/rooms` (`rooms.jsx`, `partner-appearance.tsx`) | behåll som flikar; låsta val visas | `/partner/<bolag>/rooms(/<rum>)` | `GET/POST /studio/api/partner/branding` | spelinställningar och paus saknas i partner-API:t → läsvy tills steg C |
+| 58 | Dealers (portal) | Spelbord › Dealer | finns inte | ingen egen sida | samma | snapshot `registeredDealers` | skiss 2 |
+| 59 | Spelare (portal) | Spelare | finns inte (`PD:142` tom) | tomläge; data efter steg F | `/players` | – | steg F |
+| 60 | Rapporter | Ekonomi | finns inte (`PD:144` tom) | ny: rundor, insatser, utbetalt, netto per rum | `/reports` | `shared_table_audit` (wallet.settlement), journal | orkestratorn 4; per spelare efter steg F |
+| 61 | Team | Team | `/partner/<bolag>/team` (`team.jsx`) | behåll | `/team` | `team`, `journal` | – |
+| 62 | Integration | Integration | `integration.jsx` (bara text) | byggs om ärligt | `/integration` | snapshot; nycklar efter steg F | – |
+| 63 | Begär material, hjälp | Hjälp och kontakt | finns inte | ny; begäran som journalpost i steg C | `/help` | mailto tills steg C | målbild 5.5 |
+| 64 | Serverkontroll av sex behörigheter | – | bara overview.read, team.*, presentations.configure kontrolleras (`PS:466`) | ny kontroll per vy | `partner-data.mjs`, `partner-session.mjs` | `partner-access-policy.mjs` | kartan: Sex av tolv |
+| 65 | Kevins vy-id:n, DESTINATIONS, INTERNAL_LINKS, DEFAULT_ROLES, source-provenance | – | `kevin-bo/navigation.mjs`, `team.jsx` | ta bort | – | – | död kod (kartan: Döda vägar) |
+| 66 | Operatörspersonal, Intern administratör, Partnerportal, Spelbolag, Partners | ordlistans ord | `partner-copy.mjs` | byt ord | – | – | TERMINOLOGI |
