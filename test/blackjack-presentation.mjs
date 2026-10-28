@@ -67,8 +67,9 @@ test('Kevin client fixtures are the frozen 5aa7ed10 blobs and tie the media cata
   const row = path => catalogue.find(r => r.path === path);
   assert.equal(row('public/dealers.js').sha256, sha256(fixture('public/dealers.js')));
   assert.equal(row('public/idle-chain.js').sha256, sha256(fixture('public/idle-chain.js')));
-  // Kevin's K04 rows without Astrid's (astrid 65, astrid2 245; ren start K3).
-  assert.equal(catalogue.length, 983);
+  // Kevin's K04 rows without Astrid's (astrid 65, astrid2 245, 8 Astrid Table Studio images; ren start K3).
+  assert.equal(catalogue.length, 975);
+  assert.ok(!catalogue.some(r => /astrid/i.test(r.path)), 'no Astrid path, also none of the Table Studio images');
   assert.deepEqual([...new Set(catalogue.map(r => r.dealer))].sort(), ['dragge', 'marten', 'paow', 'shared', 'studio']);
   assert.deepEqual(catalogue.filter(r => r.path.endsWith('.js')).map(r => r.path).sort(), ['public/dealer-card-tracks-dragge.js',
     'public/dealer-card-tracks-marten.js', 'public/dealer-card-tracks-paow.js', 'public/dealers.js', 'public/idle-chain.js']);
