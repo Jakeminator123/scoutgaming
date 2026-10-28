@@ -4,7 +4,7 @@ import { readdir, lstat, realpath, readlink, mkdir, copyFile, readFile, writeFil
 import { join, resolve, relative, dirname, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { repositoryRoot, PRESENTATION_BANK, readMediaLayout } from './media-layout.mjs';
+import { repositoryRoot, readMediaLayout } from './media-layout.mjs';
 const MEDIA=/\.(mp4|mov|webm|mkv|mp3|wav|ogg|flac|png|jpe?g|webp|gif|svg|ico|glb|gltf|blend|fbx|obj|stl|usdz|bin|h264|webpseq|zip|7z)$/i;
 const owners=new Set(['astrid','vera','amira','mei']);
 const normalize=value=>value.split(sep).join('/');
@@ -46,7 +46,7 @@ function publicPlacement(file) {
 async function oldLayout(root) {try{return JSON.parse(await readFile(join(root,'media/layout.json'),'utf8'));}catch(error){if(error.code==='ENOENT')return {schemaVersion:1,roots:{},files:[]};throw error;}}
 export async function planMediaMigration({root=repositoryRoot,scope='all',hash=false}={}) {
   root=resolve(root);const previous=await oldLayout(root),planned=new Map(previous.files.map(row=>[row.legacyPath,row]));
-  const roots={...previous.roots,'emil/dealklipp-v1':PRESENTATION_BANK};
+  const roots={...previous.roots};
   let tracked=new Set();try{tracked=new Set(execFileSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).split('\0').filter(Boolean));}catch{}
   async function add(old,newRoot,{filter=()=>true,access='source'}={}){
     roots[old]=`media/${newRoot}`;
@@ -56,9 +56,8 @@ export async function planMediaMigration({root=repositoryRoot,scope='all',hash=f
       planned.set(legacyPath,{legacyPath,path,size:info.size,sha256:hash?await hashFile(inside(root,legacyPath)):planned.get(legacyPath)?.sha256??null,tracked:tracked.has(legacyPath),access});
     }
   }
-  if(['bank','all'].includes(scope))await add('emil/dealklipp-v1',PRESENTATION_BANK.slice(6));
+  // The presentation bank and its delivery notes left the repository (REN-START, 2026-10-28).
   if(scope==='all'){
-    await add('emil/README.md','dealers/astrid/source/provenance/emil-delivery.md');
     await add('design-kit','site/source/design-kit');
     for(const file of await files(root,'content'))if(file.split('/').length===2&&MEDIA.test(file))await add(file,`game/source/${file.includes('cardback')?'cards':'scene'}/${file.slice('content/'.length)}`);
     for(const [old,next] of [['assets/astrid-3d','dealers/astrid/source/3d'],['assets/blackjack-3d','game/source/3d'],['assets/scene-footage','game/source/scene-footage'],['content/persona','game/source/persona']])await add(old,next);
@@ -81,7 +80,7 @@ export async function planMediaMigration({root=repositoryRoot,scope='all',hash=f
     }
   }
   if(scope==='docs')await add('docs/reference','dealers/astrid/source/reference');
-  const output={schemaVersion:1,roots,provenance:{presentation:{supplier:'Emil',originalRoot:'emil/dealklipp-v1',deliveryVersion:1},recordedCards:{supplier:'Kevin',sourceCommit:'0d12b7a559d328a333598b7e583b980e88d7925c'}},files:[...planned.values()].sort((a,b)=>a.path.localeCompare(b.path))};
+  const output={schemaVersion:1,roots,provenance:{recordedCards:{supplier:'Kevin',sourceCommit:'0d12b7a559d328a333598b7e583b980e88d7925c'}},files:[...planned.values()].sort((a,b)=>a.path.localeCompare(b.path))};
   const destinations=new Set();for(const row of output.files){inside(root,'media/'+row.path);if(destinations.has(row.path))throw new Error(`Duplicate destination: ${row.path}`);destinations.add(row.path);}
   return output;
 }
@@ -132,6 +131,6 @@ export async function verifyMediaLayout({root=repositoryRoot}={}){
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){const args=process.argv.slice(2),value=key=>args[args.indexOf(key)+1],root=args.includes('--root')?value('--root'):repositoryRoot;
   if(args.includes('--rollback')){if(!args.includes('--apply'))throw new Error('Rollback requires --apply.');console.log(JSON.stringify(await rollbackMediaMigration(value('--rollback'),{root})));}
   else if(args.includes('--verify')){const result=await verifyMediaLayout({root});console.log(JSON.stringify(result));if(result.errors.length)process.exitCode=1;}
-  else{const scope=args.includes('--scope')?value('--scope'):'all';if(!['bank','all','docs'].includes(scope))throw new Error('Scope must be bank, all or docs.');
+  else{const scope=args.includes('--scope')?value('--scope'):'all';if(!['all','docs'].includes(scope))throw new Error('Scope must be all or docs.');
     const result=args.includes('--apply')?await applyMediaMigration({root,scope}):await planMediaMigration({root,scope});console.log(JSON.stringify(args.includes('--apply')?result:{scope,files:result.files.length,bytes:result.files.reduce((n,row)=>n+row.size,0),roots:result.roots},null,2));}
 }

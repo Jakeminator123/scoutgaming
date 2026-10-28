@@ -5,7 +5,7 @@ import {closeSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {applyMediaMigration} from '../tools/migrate-media-layout.mjs';
-import {openPublicMedia,resolveMediaPath,resolvePublicMedia,normalizePresentationArchive,readMediaLayout,validateMediaLayout} from '../tools/media-layout.mjs';
+import {openPublicMedia,resolveMediaPath,resolvePublicMedia,readMediaLayout,validateMediaLayout} from '../tools/media-layout.mjs';
 test('public URL aliases serve the same descriptor bytes and forbid directory links',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-public-layout-'));t.after(()=>rm(root,{recursive:true,force:true}));
   await mkdir(join(root,'web/public/dealer/streams'),{recursive:true});await writeFile(join(root,'web/public/dealer/streams/a.h264'),'immutable frame bytes');
@@ -14,9 +14,8 @@ test('public URL aliases serve the same descriptor bytes and forbid directory li
   const directory=join(root,'media/dealers/vera/runtime/indexed/streams'),outside=join(root,'alternate');await rename(directory,outside);await symlink(outside,directory,process.platform==='win32'?'junction':'dir');
   assert.throws(()=>openPublicMedia('/dealer/streams/a.h264',{repositoryRoot:root}),/links/);
 });
-test('only the exact retired archive location normalizes; explicit roots and relative paths stay unchanged',()=>{
-  const root=process.cwd();assert.equal(normalizePresentationArchive(join(root,'emil/dealklipp-v1'),root),join(root,'media/dealers/astrid/runtime/presentation'));
-  for(const value of ['emil/dealklipp-v1',join(root,'external'),join(root,'emil/dealklipp-v1-other')])assert.equal(normalizePresentationArchive(value,root),value);
+test('unregistered relative paths stay unchanged and layout paths are unique',()=>{
+  const root=process.cwd();
   assert.equal(resolveMediaPath('pipeline/example.mjs'),join(root,'pipeline/example.mjs'));
   const layout=readMediaLayout();assert.equal(new Set(layout.files.map(row=>row.path)).size,layout.files.length);
 });
