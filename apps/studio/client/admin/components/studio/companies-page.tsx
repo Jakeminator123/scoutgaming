@@ -5,6 +5,7 @@ import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout,ActionMenu
 import {Button,buttonVariants,cn,plural,TechnicalDetails} from '../ui/kit';
 import {Dialog,DialogSteps} from '../ui/dialog';
 import {DataTable,type Column} from '../ui/data-table';
+import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
 import type {Catalog} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
@@ -12,6 +13,8 @@ import type {AppearanceRoomStatus} from '../../../../components/partner-appearan
 import {RegisteredStudio} from './registered-studio';
 import {WorkspaceTool} from './workspace-tools';
 import {SavedScenePreview} from './saved-scene-preview';
+import {RoomPicture} from './room-picture';
+import {DealerAvatar,DealerFaces} from './dealer-identity-portrait';
 import {ControlResourceLifecycle} from '../../../../components/control-resource-lifecycle';
 import {PartnerJournal} from '../../../../components/partner-journal-loader.mjs';
 
@@ -52,16 +55,18 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   },[active,refresh,page,id]);
   useEffect(()=>{setRoomStatus(null);},[page,id]);
   const changed=()=>{setRefresh(value=>value+1);onChanged();};
-  const operators=catalog?.administration.operators??[],rooms=catalog?.administration.rooms.filter(room=>room.state!=='archived')??[],compositions=catalog?.administration.compositions??[];
-  // Archived rooms (Papperskorg) stay with their company until they are restored through the rooms lifecycle.
-  const archived=catalog?.administration.rooms.filter(room=>room.state==='archived')??[];
+  const operators=catalog?.administration.operators??[],compositions=catalog?.administration.compositions??[];
+  // Archived rooms stay with their company until restored through the rooms lifecycle; companies in the
+  // trash (archivedAt) are listed only under Papperskorg, beside the archived rooms.
+  const groups=companyListGroups(operators,catalog?.administration.rooms??[]);
+  const rooms=groups.rooms,archived=groups.trashRooms,liveOperators=groups.companies,archivedOperators=groups.trashCompanies;
   const operatorName=(operatorId:string)=>operators.find(row=>row.id===operatorId)?.name??'Okänt bolag';
   const laneLabel=(laneId:string)=>compositions.find(row=>row.id===laneId)?.name??'Okänd scenmall';
   const status=error?<p role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></p>:!catalog?<p role="status" className="mb-4 text-sg-muted">Läser katalogen…</p>:null;
   const roomColumns=(withOperator:boolean):Column<Room>[]=>[
-    {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><><Link className={linkClass} href={roomHref(room)}>{room.name}</Link><div className="text-[12.5px] text-sg-muted">{gameLabel(room.game)}</div></>},
+    {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><span className="flex items-center gap-3"><RoomPicture room={room} className="h-10 w-16 max-md:h-9 max-md:w-14"/><span className="min-w-0"><Link className={linkClass} href={roomHref(room)}>{room.name}</Link><span className="block text-[12.5px] text-sg-muted">{gameLabel(room.game)}</span></span></span>},
     ...(withOperator?[{id:'operator',header:'Bolag',sort:(room:Room)=>operatorName(room.operatorId),cell:(room:Room)=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>}]:[]),
-    {id:'dealers',header:'Dealer',sort:room=>room.dealers.map(dealer=>dealer.name).join(', '),cell:room=>room.dealers.map(dealer=>dealer.name).join(', ')||'–'},
+    {id:'dealers',header:'Dealer',sort:room=>room.dealers.map(dealer=>dealer.name).join(', '),cell:room=><DealerFaces dealers={room.dealers.map(dealer=>({id:dealer.id,label:dealer.name}))}/>},
     {id:'scene',header:'Scenmall',sort:room=>laneLabel(room.compositionId),cell:room=>laneLabel(room.compositionId)},
     {id:'state',header:'Läge',sort:room=>room.state,cell:stateChip},
     {id:'published',header:'Publicerat',sort:room=>room.published?1:0,cell:publishedChip},
@@ -75,16 +80,16 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const filters=(base:string,choices:Operator[])=><div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filtrera på bolag"><Link href={base} className={pill(!filter)} aria-current={!filter?'true':undefined}>Alla bolag</Link>{choices.map(operator=><Link key={operator.id} href={base+'&operator='+encodeURIComponent(operator.id)} className={pill(filter===operator.id)} aria-current={filter===operator.id?'true':undefined}>{operator.name}</Link>)}</div>;
     return <HubPage title="Bolag och spelbord" intro="Varje bolag har ett eget nav: tilldelning, spelbord, spelare, team, integration och journal. Alla bolags spelbord finns på en flik."
       actions={tab==='bolag'?<Link className={buttonVariants({variant:'primary'})} href="/admin/companies?tab=bolag&view=create"><Plus aria-hidden="true"/>Nytt bolag</Link>:tab==='spelbord'?<Link className={buttonVariants({variant:'primary'})} href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}><Plus aria-hidden="true"/>Nytt spelbord</Link>:undefined}>
-      <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?{bolag:operators.filter(row=>!row.archivedAt).length,spelbord:rooms.length,papperskorg:archived.length}:{}}/>
+      <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?groups.counts:{}}/>
       {status}
       {tab==='bolag'&&<>
         <Dialog open={create} size="lg" title="Nytt bolag" description="Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under Tilldelning." onClose={()=>navigate('/admin/companies?tab=bolag')}
           footer={<><Button onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>{operators[0]&&<Link className={buttonVariants({variant:'primary'})} href={companyHref(operators[operators.length-1])}>Till bolagets tilldelning →</Link>}</>}>
           <DialogSteps steps={['Namn och administratör','Tilldelning']} current={0}/>{create&&<WorkspaceTool section="companies"/>}
         </Dialog>
-        {catalog&&<Card><DataTable label="Bolag" rows={operators} rowKey={row=>row.id} filter={{placeholder:'Sök bolag',text:row=>row.name}} initialSort={{id:'name',dir:'asc'}} empty="Inga bolag i registret." columns={[
+        {catalog&&<Card><DataTable label="Bolag" rows={liveOperators} rowKey={row=>row.id} filter={{placeholder:'Sök bolag',text:row=>row.name}} initialSort={{id:'name',dir:'asc'}} empty={archivedOperators.length?'Inga aktiva bolag. Arkiverade bolag finns under Papperskorg.':'Inga bolag i registret.'} columns={[
           {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator)}>{operator.name}</Link>},
-          {id:'status',header:'Status',sort:row=>row.archivedAt?2:row.status==='active'?0:1,cell:operatorChip},
+          {id:'status',header:'Status',sort:row=>row.status==='active'?0:1,cell:operatorChip},
           {id:'package',header:'Tilldelning',sort:row=>row.packageRevision??-1,cell:version},
           {id:'rooms',header:'Spelbord',align:'right',sort:row=>rooms.filter(room=>room.operatorId===row.id).length,cell:operator=>rooms.filter(room=>room.operatorId===operator.id).length},
           {id:'actions',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><span className="inline-flex items-center gap-2"><a className={buttonVariants({variant:'ghost',size:'sm'})} href={'/partner/'+encodeURIComponent(operator.slug)}>Partnerportalen<ExternalLink aria-hidden="true"/></a><Link className={buttonVariants({size:'sm'})} href={companyHref(operator)}>Öppna</Link></span>},
@@ -98,9 +103,16 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
       {tab==='papperskorg'&&<>
-        <Note className="mb-4">Arkiverade spelbord ligger kvar hos sitt bolag tills de återställs. Ett återställt spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.</Note>
+        <Note className="mb-4">Arkiverade bolag och spelbord ligger kvar tills de återställs. Ett bolag återställs under bolagets Inställningar; ett återställt spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.</Note>
+        {catalog&&archivedOperators.length>0&&<Card title="Arkiverade bolag" aside={plural(archivedOperators.length,'bolag','bolag')} className="mb-4"><DataTable label="Arkiverade bolag" rows={archivedOperators} rowKey={row=>row.id} initialSort={{id:'name',dir:'asc'}} columns={[
+          {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator,'installningar')}>{operator.name}</Link>},
+          {id:'status',header:'Status',cell:operatorChip},
+          {id:'archived',header:'Arkiverat',sort:row=>row.archivedAt??'',cell:operator=>operator.archivedAt?<time dateTime={operator.archivedAt}>{new Date(operator.archivedAt).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'})}</time>:'–'},
+          {id:'rooms',header:'Arkiverade spelbord',align:'right',sort:row=>archived.filter(room=>room.operatorId===row.id).length,cell:operator=>archived.filter(room=>room.operatorId===operator.id).length},
+          {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><Link className={buttonVariants({size:'sm'})} href={companyHref(operator,'installningar')}>Återställ</Link>},
+        ]}/></Card>}
         {filters('/admin/companies?tab=papperskorg',operators.filter(row=>archived.some(room=>room.operatorId===row.id)))}
-        {catalog&&<Card><DataTable label="Arkiverade spelbord" rows={filter?archived.filter(room=>room.operatorId===filter):archived} rowKey={row=>row.id} empty={`Papperskorgen är tom${filter?' för bolaget':''}.`} columns={[
+        {catalog&&<Card title={archivedOperators.length?'Arkiverade spelbord':undefined}><DataTable label="Arkiverade spelbord" rows={filter?archived.filter(room=>room.operatorId===filter):archived} rowKey={row=>row.id} empty={`Papperskorgen är tom${filter?' för bolaget':''}.`} columns={[
           {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><><span className="font-semibold">{room.name}</span><div className="text-[12.5px] text-sg-muted">{gameLabel(room.game)}</div></>},
           {id:'operator',header:'Bolag',sort:room=>operatorName(room.operatorId),cell:room=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>},
           {id:'scene',header:'Scenmall',cell:room=>laneLabel(room.compositionId)},
@@ -155,7 +167,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     room.published?`publicerat${operator?.packageRevision!=null?` i version ${operator.packageRevision}`:''}`:'inte publicerat',
     ...(status_?[status_.draft?'sparat utkast väntar på publicering':'inget opublicerat utkast']:[])]:[];
   return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies?tab=spelbord'},...(operator?[{label:operator.name,href:companyHref(operator,'spelbord')}]:[]),{label:room?.name??'Spelbord'}]}/>}
-    title={room?.name??'Spelbord'} chip={room?<>{stateChip(room)}{status_?.draft&&<Chip tone="info">utkast</Chip>}</>:undefined}
+    title={room?<span className="inline-flex min-w-0 items-center gap-4"><RoomPicture room={room} className="h-12 w-20 max-md:h-10 max-md:w-16"/><span className="min-w-0">{room.name}</span></span>:'Spelbord'} chip={room?<>{stateChip(room)}{status_?.draft&&<Chip tone="info">utkast</Chip>}</>:undefined}
     intro={room?facts.join(' · '):catalog?`Spelbordet ${id} finns inte i registret.`:'Läser katalogen…'}
     actions={room&&<>
       {room.playUrl&&<a className={buttonVariants()} href={room.playUrl} target="_blank" rel="noopener">Öppna i spelet<ExternalLink aria-hidden="true"/></a>}
@@ -172,7 +184,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='utseende'&&<RegisteredStudio mode="room" section="appearance" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed} onRoomStatus={setRoomStatus}/>}
       {tab==='dealer'&&<Card title="Dealer" aside={plural(room.dealers.length,'dealer','dealers')+' i spelbordets scenmall'}>
         <Note>Dealern väljs under Utseende tillsammans med bakgrund och bordsgrafik, i bolagets utkast. Vilka dealers som kan väljas styrs av scenmallen.</Note>
-        <div className="mt-3 grid">{room.dealers.map(dealer=><Row key={dealer.id} chip={<Chip tone={room.dealerSource==='published'?'ok':''}>{room.dealerSource==='published'?'publicerad':'sparad'}</Chip>} title={dealer.name} text="Klipp, tal och landningar finns på dealerns sida" href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`}/>)}{!room.dealers.length&&<p className="m-0 text-[12.5px] text-sg-muted">Scenmallen tillåter ingen dealer ännu.</p>}</div>
+        <div className="mt-3 grid">{room.dealers.map(dealer=><Row key={dealer.id} chip={<DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44} motion={false}/>} title={<span className="inline-flex flex-wrap items-center gap-2">{dealer.name}<Chip tone={room.dealerSource==='published'?'ok':''}>{room.dealerSource==='published'?'publicerad':'sparad'}</Chip></span>} text="Klipp, tal och landningar finns på dealerns sida" href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`}/>)}{!room.dealers.length&&<p className="m-0 text-[12.5px] text-sg-muted">Scenmallen tillåter ingen dealer ännu.</p>}</div>
       </Card>}
       {tab==='spel'&&<RegisteredStudio mode="room" section="game" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/>}
       {tab==='tillganglighet'&&<><Note className="mb-4">Pausa gäller direkt. Ett pausat spelbord syns inte i lobbyn och pågående rundor spelas klart.</Note><RegisteredStudio mode="room" section="state" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/></>}
