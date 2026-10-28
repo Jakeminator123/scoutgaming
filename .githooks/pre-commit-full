@@ -5,7 +5,7 @@ set -eu
 suite=${1:-all}
 if [ "$#" -gt 1 ]; then echo 'Usage: pre-commit-full [suite]' >&2; exit 2; fi
 case "$suite" in
-  all|studio|admin|contracts|database|presentation|access|speech|gameplay|engine) ;;
+  all|studio|admin|contracts|database|presentation|access|speech|gameplay|engine|container) ;;
   *) echo "Unknown regression suite: $suite" >&2; exit 2 ;;
 esac
 run_check() {
@@ -23,8 +23,8 @@ run_node_tests() {
   shift 2
   seconds=180
   if [ "$selected" = studio ]; then seconds=240; fi
-  # Includes the pinned-image Docker build and real process regression (900s test).
-  if [ "$selected/$name" = access/openclaw ]; then seconds=960; fi
+  # The pinned-image Docker build and real process regression (900s test).
+  if [ "$selected" = container ]; then seconds=960; fi
   run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"
 }
 # Exact equivalent of the frontend package's non-incremental typecheck.
@@ -113,3 +113,5 @@ run_node_tests gameplay player-results test/player-results.mjs
 # CI runs exactly this list through tools/run-engine-qa.mjs (owned TLS cluster), which
 # reads it from here and fails on any skip.
 run_node_tests engine engine-http test/engine-public-routes-http.mjs test/table-http.mjs test/bo-game-auth.mjs test/bo-lab-auth.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
+# Pinned OpenClaw Gateway image on Linux Docker; CI runs it as its own job beside the regression legs.
+run_node_tests container gateway-container services/openclaw/lab/deploy/container/gateway-container.test.mjs

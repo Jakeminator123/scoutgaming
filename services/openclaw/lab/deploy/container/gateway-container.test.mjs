@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const execute = promisify(execFile);
-const context = fileURLToPath(new URL('../', import.meta.url));
+const context = fileURLToPath(new URL('../../', import.meta.url));
 const bootstrap = '/opt/croupier-gateway/gateway-bootstrap.mjs';
 // Only the external CLI is substituted. The production Dockerfile, pinned base,
 // root mount repair, irreversible identity drop, config and starter all execute.
