@@ -256,6 +256,24 @@ test('the reader reads a config\'s package once for its speech clips; a failed r
   assert.equal((await legacy(room.config.roomId, window)).events[0].speechTake, undefined, 'without the package port the window is unchanged');
 });
 
+test('sockets that read a new config at the same time share one package read; a shared failed read is retried later', async () => {
+  const room = speechRoom();
+  let packageReads = 0, failing = true, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const enrich = createFilmedStepReader({ readConfig: async (roomId, version) => ({ ...room.config, roomId, configVersion: version }),
+    readPackage: async () => { packageReads++; await gate; if (failing) throw Error('unavailable'); return room.pack; } });
+  const window = speechWindow({ roomId: room.config.roomId });
+  const reads = Array.from({ length: 5 }, () => enrich(room.config.roomId, structuredClone(window)));
+  release();
+  for (const read of await Promise.all(reads)) assert.equal(read.events[0].speechTake, undefined, 'every socket gets the window; select remains');
+  assert.equal(packageReads, 1, 'five sockets, one package read');
+  failing = false;
+  const clips = nativeRoomSpeechClips({ package: room.pack, config: room.config });
+  const again = await Promise.all(Array.from({ length: 3 }, () => enrich(room.config.roomId, structuredClone(window))));
+  for (const read of again) assert.deepEqual(read.events[0].speechTake, clips.placebets);
+  assert.equal(packageReads, 2, 'the failed read was not kept; the next reads share one new read');
+});
+
 test('the channel sends a spoken line\'s clip to the player and refuses a malformed one', async t => {
   const origin = 'https://game.invalid', binding = { actorId: 'player-a', sessionId: 'session-a', operatorId: 'operator-a', roomId: 'room-a', packageRevision: 7, expiresAt: Date.now() + 60000 };
   const snapshot = { contract: 'blackjack-table/1', roomId: 'room-a', version: 1, presentationVer: 5, configVersion: 'config-a', windowId: 'window-a', phase: 'bets',

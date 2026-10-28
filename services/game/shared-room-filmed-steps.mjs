@@ -79,7 +79,7 @@ export function withSpeechTakes(presentation, clips) {
 export function createFilmedStepReader({ readConfig, readPackage = null, maxEntries = 64 } = {}) {
   if (typeof readConfig !== 'function' || readPackage !== null && typeof readPackage !== 'function'
     || !Number.isSafeInteger(maxEntries) || maxEntries < 1) throw new TypeError('Explicit config reader required');
-  const cache = new Map(), speech = new Map(), plans = new Map();
+  const cache = new Map(), speech = new Map(), reading = new Map(), plans = new Map();
   const remember = (map, key, value) => { map.set(key, value); if (map.size > maxEntries) map.delete(map.keys().next().value); return value; };
   async function frozenConfig(roomId, configVersion) {
     const key = `${roomId}\0${configVersion}`;
@@ -93,11 +93,14 @@ export function createFilmedStepReader({ readConfig, readPackage = null, maxEntr
     if (!readPackage) return null;
     const key = `${roomId}\0${config.configVersion}`;
     if (speech.has(key)) return speech.get(key);
-    // A failed read (undefined) is not cached, nor is the presentation it leaves without clips: the next
-    // read asks again, and select remains meanwhile.
-    let pack;
-    try { pack = await readPackage(config.operatorId, config.packageRevision); } catch { return undefined; }
-    return remember(speech, key, nativeRoomSpeechClips({ package: pack, config }));
+    // Every socket reads the room's presentation: the sockets that meet a new config at once share one
+    // package read. A failed read (undefined) is not cached, nor is the presentation it leaves without
+    // clips: the next read asks again, and select remains meanwhile.
+    if (!reading.has(key)) reading.set(key, (async () => {
+      try { return remember(speech, key, nativeRoomSpeechClips({ package: await readPackage(config.operatorId, config.packageRevision), config })); }
+      catch { return undefined; } finally { reading.delete(key); }
+    })());
+    return reading.get(key);
   }
   return async function enrich(roomId, presentation) {
     if (!presentation || !['plan', 'window'].includes(presentation.kind) || presentation.status !== 'ready' || typeof presentation.configVersion !== 'string') return presentation;
