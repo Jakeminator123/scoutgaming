@@ -1,7 +1,7 @@
 import {canonicalGameDestination} from '../../../packages/navigation/game-entry.mjs';
 let pending, generation=0, capabilityReady=false;
 const dialog=document.createElement('dialog');dialog.id='auth-modal';
-dialog.innerHTML=`<button class="auth-close" type="button" aria-label="Close sign in">×</button><div class="auth-brand" role="img" aria-label="scout/gaming">scout<span>/</span>gaming</div><p class="auth-eyebrow">PRIVÉ BLACKJACK</p><h2 id="auth-title">Sign in</h2><p id="auth-purpose"></p><form><label for="auth-email">Email or username</label><input id="auth-email" type="text" autocomplete="username" maxlength="254" required placeholder="Email or username"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="1" maxlength="128" required><small id="auth-account">Accounts and passwords are managed in Backoffice.</small><p id="auth-error" role="alert"></p><button id="auth-submit" type="submit" disabled>Sign in →</button></form><p><a id="auth-player-login" hidden>Player account? Sign in here.</a></p><p class="auth-note">Demo credits only. Your table stays here.</p>`;
+dialog.innerHTML=`<button class="auth-close" type="button" aria-label="Close sign in">×</button><div class="auth-brand" role="img" aria-label="scout/gaming">scout<span>/</span>gaming</div><p class="auth-eyebrow">BLACKJACK</p><h2 id="auth-title">Sign in</h2><p id="auth-purpose"></p><form><label for="auth-email">Email or username</label><input id="auth-email" type="text" autocomplete="username" maxlength="254" required placeholder="Email or username"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="1" maxlength="128" required><small id="auth-account">Accounts and passwords are managed in Backoffice.</small><p id="auth-error" role="alert"></p><button id="auth-submit" type="submit" disabled>Sign in →</button></form><p><a id="auth-player-login" hidden>Player account? Sign in here.</a></p><p class="auth-note">Demo credits only. Your table stays here.</p>`;
 dialog.setAttribute('aria-labelledby','auth-title');document.body.appendChild(dialog);
 const $=s=>dialog.querySelector(s);
 const playerLoginPath = '/blackjack';
@@ -38,6 +38,8 @@ $('form').onsubmit=async e=>{
 };
 export function requestLogin(purpose){
   if(pending)return pending;
+  // The dialog names the same table as the page heading (#table-profile), never a fixed stake profile.
+  const eyebrow=$('.auth-eyebrow');if(eyebrow)eyebrow.textContent=document.querySelector?.('#table-profile')?.textContent?.trim()||'Blackjack';
   generation++;capabilityReady=false;$('#auth-submit').disabled=true;$('#auth-error').textContent='Checking sign-in…';$('#auth-purpose').textContent=purpose;$('#auth-password').value='';playerEntry.hidden=true;dialog.returnValue='';
   pending=new Promise(resolve=>dialog.addEventListener('close',()=>{const ok=dialog.returnValue==='authenticated';pending=null;$('#auth-password').value='';resolve(ok);},{once:true}));dialog.showModal();void loadCapability(generation);return pending;
 }

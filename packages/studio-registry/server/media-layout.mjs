@@ -39,7 +39,6 @@ export function createMediaLayout({repositoryRoot,readMediaLayout=()=>{throw new
   if(typeof repositoryRoot!=='string'||!isAbsolute(repositoryRoot)) throw new TypeError('Explicit repository root required.');
 
   function presentationBankRoot(root = repositoryRoot) { return join(root, PRESENTATION_BANK); }
-  function normalizePresentationArchive(value,root=repositoryRoot){return typeof value==='string'&&isAbsolute(value)&&same(resolve(value),join(root,'emil/dealklipp-v1'))?presentationBankRoot(root):value;}
   /** Internal filesystem consumers only. Public requests must use openPublicMedia. */
   function resolveMediaAbsolutePath(file, {repositoryRoot:root=repositoryRoot,layout,runtimeCatalog}={}) {
     const path=relative(root,resolve(file)).split('\\').join('/');
@@ -93,5 +92,5 @@ export function createMediaLayout({repositoryRoot,readMediaLayout=()=>{throw new
     } catch (error) { if(fd!==undefined)closeSync(fd); if(error.code==='ENOENT')return null; throw error; }
   }
 
-  return {presentationBankRoot,normalizePresentationArchive,resolveMediaAbsolutePath,resolveMediaPath,resolvePublicMedia,openPublicMedia};
+  return {presentationBankRoot,resolveMediaAbsolutePath,resolveMediaPath,resolvePublicMedia,openPublicMedia};
 }

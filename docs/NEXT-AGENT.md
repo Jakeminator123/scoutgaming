@@ -49,6 +49,6 @@ Agenter får läsa Neon, Render-loggar och Vercel, prova i preview med syntetisk
 
 ## Separata spår efter migreringen
 
-- **Ren start:** [plans/REN-START.md](plans/REN-START.md). Astrid tas bort som dealer, inklusive legacyreferensen (Jakob: "radera allt sånt"); K1 är #480. Dragans dealer, talbank och talkedja behålls som referens när AI-tal med läppsynk görs dealergeneriskt.
+- **Ren start:** [plans/REN-START.md](plans/REN-START.md). Astrid tas bort som dealer, inklusive legacyreferensen (Jakob: "radera allt sånt"). I repot är K1 (#480) och repo-PR 2 (#488) mergade och driftsatta; Neon- och Blob-stegen väntar på Jakobs go, och bankformatet tas bort i K1b efter katalogbytet (steg 6). Dragans dealer, talbank och talkedja behålls som referens när AI-tal med läppsynk görs dealergeneriskt.
 - **Admin-förenkling (UX):** `/admin`, `/partner` och spelarens väg ska vara enkla och begripliga. Kablagekartan över alla tre nivåerna är [ADMIN-KARTA](plans/ADMIN-KARTA.md); den enda målbilden med leveransordning är [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) med den klickbara skissen [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html). Byggs efter O03 i ordningen ovan. Det finns inte i masterplanen; Jakob avgör UX.
 - **Motorn efter O03:** `croupier-v3` blir ren kort-, sko- och matematiktjänst, och tal och presentation får en egen tjänst.

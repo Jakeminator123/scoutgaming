@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createMovingSpeechSession } from '../services/game/moving-speech-session.mjs';
 import { createMovingSpeechRunPod, summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
 import { movingCapacityFixture } from './fixtures/moving-capacity.mjs';
-import { MOVING_TRIAL_BUDGET } from '../services/game/moving-speech-budget.mjs';
+import { movingTrialBudget } from '../services/game/moving-speech-budget.mjs';
+const DRAGAN_BUDGET = movingTrialBudget('dragan');
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;
@@ -109,8 +110,8 @@ test('aborted admission performs no provider submit and a later attempt can acqu
 });
 
 test('Dragan admission forwards its bounded initial grant independently of technical capacity',async()=>{
-  const f=fixture({configuration:MOVING_TRIAL_BUDGET}),attempt=await f.admit();
-  assert.equal(f.state.input.budgetId,MOVING_TRIAL_BUDGET.budgetId);
+  const f=fixture({configuration:DRAGAN_BUDGET}),attempt=await f.admit();
+  assert.equal(f.state.input.budgetId,DRAGAN_BUDGET.budgetId);
   assert.equal(f.state.input.initialBudgetMicroUsd,13200000);
   assert.equal(f.state.input.totalBudgetMicroUsd,150000000);
   assert.equal(f.state.input.reserveMicroUsd,1200000);
@@ -155,6 +156,21 @@ test('restart recovery cancels only the exact known owned job and requires termi
   assert.equal(running.events.includes('provider-cancel'),true);assert.equal(running.state.released,false);
 });
 
+
+test('restart recovery leaves sessions of another configured dealer to that dealer; unknown endpoints stay unresolved',async()=>{
+  const own={sessionId:'1'.repeat(32),endpointId:'endpointfixture',jobId:'prior-job',workerId:'prior-worker'};
+  const paow={sessionId:'2'.repeat(32),endpointId:'endpointpaow',jobId:'paow-job',workerId:'paow-worker'};
+  const paowUnsubmitted={...paow,sessionId:'3'.repeat(32),jobId:null};
+  const retired={sessionId:'4'.repeat(32),endpointId:'endpointretired',jobId:'old-job',workerId:'old-worker'};
+  const f=fixture({recoverable:[own,paow,paowUnsubmitted,retired],configuration:{foreignEndpointIds:['endpointpaow']}});
+  assert.deepEqual(await f.create.reconcile(),{recovered:[own.sessionId],unresolved:[{sessionId:retired.sessionId,reason:'endpoint_changed'}]});
+  // Paow's jobs are neither cancelled nor polled by this dealer.
+  assert.equal(f.events.filter(event=>event==='provider-status').length,1);assert.equal(f.events.includes('provider-cancel'),false);
+  const single=fixture({recoverable:[own,paow]});
+  assert.deepEqual((await single.create.reconcile()).unresolved,[{sessionId:paow.sessionId,reason:'endpoint_changed'}]);
+  for(const foreignEndpointIds of [['endpointfixture'],[''],[null],'endpointpaow',Array(9).fill('x')])
+    assert.throws(()=>fixture({configuration:{foreignEndpointIds}}),/configuration/);
+});
 
 test('296 second cold start retains admitted ownership and keeps worker execution at 180 seconds',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});

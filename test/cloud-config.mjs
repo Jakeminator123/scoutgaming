@@ -12,8 +12,9 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 // Never use real connections: generate an inert credential once per fixture.
 const fixtureConnection=new URL('postgresql://game.neon.tech/game?sslmode=require');
 fixtureConnection.username='fixture';fixtureConnection.password=randomUUID();
-const privateManifest = { provider:'vercel-blob',sha256:hash('fixture manifest'),size:4096,contentType:'application/json',
-  pathname:`croupier/media/dealers/dragan/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest')}.json` };
+const manifestFor = dealerId => ({ provider:'vercel-blob',sha256:hash('fixture manifest '+dealerId),size:4096,contentType:'application/json',
+  pathname:`croupier/media/dealers/${dealerId}/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest '+dealerId)}.json` });
+const privateManifest = manifestFor('dragan'), paowManifest = manifestFor('paow');
 const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postgres',
   CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
@@ -26,10 +27,11 @@ const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postg
   CROUPIER_SPEECH_STREAM_TICKET_SECRET:'fixture-astrid-ticket-'.repeat(4),CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD:'1',
   CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'5',CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-legacy-runpod',
   CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'legacy-endpoint'});
-const driftProfile={id:'baseline',label:'Basprofil',endpointId:'movingfixture',releaseDigest:hash('owned fixture source'),bankHash:hash('fixture archive')};
-const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),
+const driftProfile={id:'baseline',label:'Basprofil',dealerId:'dragan',endpointId:'movingfixture',releaseDigest:hash('owned fixture source'),bankHash:hash('fixture archive')};
+const paowProfile={id:'paow',label:'Paow',dealerId:'paow',endpointId:'movingpaow01',releaseDigest:hash('owned fixture source'),bankHash:hash('paow archive')};
+const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest}),
   CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:'https://fixture-game.onrender.com',
-  CROUPIER_MOVING_SPEECH_ENDPOINT_ID:'movingfixture',CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:'fixture-owned-runpod',
+  CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:'fixture-owned-runpod',
   CROUPIER_MOVING_SPEECH_IMAGE:`ghcr.io/jakeminator123/moving-gpu-worker@sha256:${hash('owned fixture image')}`,
   CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4),
   CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([driftProfile])});
@@ -62,7 +64,8 @@ test('moving drift rejects missing, malformed or mismatched catalogues before st
   for(const change of [
     {CROUPIER_STUDIO_MOVING_DRIFT_API:undefined},{CROUPIER_STUDIO_MOVING_DRIFT_API:'0'},{CROUPIER_STUDIO_MOVING_DRIFT_API:'true'},
     ...[undefined,'','invalid','[]',JSON.stringify([driftProfile,{...driftProfile,id:'other'}]),
-      JSON.stringify([{...driftProfile,endpointId:'another001'}]),JSON.stringify([{...driftProfile,releaseDigest:hash('different release')}]),
+      JSON.stringify([{...driftProfile,endpointId:'../legacy'}]),JSON.stringify([{...driftProfile,endpointId:'Moving-Fixture'}]),
+      JSON.stringify([{...driftProfile,releaseDigest:hash('different release')}]),JSON.stringify([{...driftProfile,dealerId:undefined}]),
       JSON.stringify([{...driftProfile,apiKey:'must-not-leak'}])].map(raw=>({CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:raw})),
   ])assert.throws(()=>validateCloudConfig({...base(),...moving(),...change}),
     error=>/CROUPIER_STUDIO_MOVING_DRIFT/.test(error.message)&&!error.message.includes('must-not-leak'));
@@ -71,7 +74,7 @@ test('moving drift rejects missing, malformed or mismatched catalogues before st
 test('unset and disabled moving flags forward no staged credentials and preserve legacy children',()=>{
   const legacy=children(base());
   for(const flag of [undefined,'','0']){
-    const env={...base(),...moving(),CROUPIER_MOVING_SPEECH_ENABLED:flag,CROUPIER_MOVING_SPEECH_BANK_RECORD:'not parsed while disabled'};
+    const env={...base(),...moving(),CROUPIER_MOVING_SPEECH_ENABLED:flag,CROUPIER_MOVING_SPEECH_BANK_RECORDS:'not parsed while disabled'};
     assert.equal(validateCloudConfig(env).movingSpeech,null);assert.deepEqual(children(env),legacy);
   }
   for(const flag of ['true','yes','2'])assert.throws(()=>children({...base(),...moving(),CROUPIER_MOVING_SPEECH_ENABLED:flag}),/CROUPIER_MOVING_SPEECH_ENABLED/);
@@ -99,19 +102,65 @@ test('worker origin is explicit, exact HTTPS and belongs to this Render deployme
   assert.equal(specs.web.env.PUBLIC_URL,env.PUBLIC_URL);
 });
 
-test('bank configuration accepts only hash-bound private JSON manifests up to128KiB',()=>{
-  const env={...base(),...moving()},key='CROUPIER_MOVING_SPEECH_BANK_RECORD';
-  for(const bad of ['null','{}','not-json',JSON.stringify({...privateManifest,size:131073}),
-    JSON.stringify({...privateManifest,sha256:hash('different')}),JSON.stringify({...privateManifest,url:'https://public.example.test/bank'}),
-    JSON.stringify({...privateManifest,contentType:'video/mp4'}),JSON.stringify({...privateManifest,pathname:privateManifest.pathname.replace('/moving-bank/','/other/')}),
-    ' '.repeat(131073)])assert.throws(()=>validateCloudConfig({...env,[key]:bad}),/CROUPIER_MOVING_SPEECH_BANK_RECORD/);
-  assert.ok(validateCloudConfig({...env,[key]:JSON.stringify({...privateManifest,size:131072})}).movingSpeech);
+test('bank map accepts only one hash-bound private JSON manifest per dealer up to128KiB',()=>{
+  const env={...base(),...moving()},key='CROUPIER_MOVING_SPEECH_BANK_RECORDS',bank=record=>JSON.stringify({dragan:record});
+  for(const bad of ['null','{}','[]','"dragan"','not-json',JSON.stringify([privateManifest]),JSON.stringify(privateManifest),
+    JSON.stringify({Dragan:privateManifest}),JSON.stringify({'../dragan':privateManifest}),JSON.stringify({dragan:null}),
+    JSON.stringify(Object.fromEntries(Array.from({length:9},(_,i)=>['dealer-'+i,manifestFor('dealer-'+i)]))),
+    bank({...privateManifest,size:131073}),bank({...privateManifest,sha256:hash('different')}),bank({...privateManifest,url:'https://public.example.test/bank'}),
+    bank({...privateManifest,contentType:'video/mp4'}),bank({...privateManifest,pathname:privateManifest.pathname.replace('/moving-bank/','/other/')}),
+    ' '.repeat(131073)])assert.throws(()=>validateCloudConfig({...env,[key]:bad}),error=>error.message===`Invalid or missing ${key}.`);
+  assert.ok(validateCloudConfig({...env,[key]:bank({...privateManifest,size:131072})}).movingSpeech);
+  // The retired single-dealer variable is never read in place of the map.
+  assert.throws(()=>validateCloudConfig({...env,CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),[key]:undefined}),/CROUPIER_MOVING_SPEECH_BANK_RECORDS/);
+});
+
+const twoDealers = () => ({...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest,paow:paowManifest}),
+  CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([driftProfile,paowProfile])});
+
+test('two dealers each get a verified bank and drift profile; Dragan alone is unchanged',()=>{
+  const draganOnly=children({...base(),...moving()}).web.env,both=children({...base(),...twoDealers()}).web.env;
+  assert.deepEqual(JSON.parse(draganOnly.CROUPIER_MOVING_SPEECH_BANK_RECORDS),{dragan:privateManifest});
+  assert.deepEqual(JSON.parse(both.CROUPIER_MOVING_SPEECH_BANK_RECORDS),{dragan:privateManifest,paow:paowManifest});
+  assert.deepEqual(movingDriftConfiguration(both).profiles,[driftProfile,paowProfile]);
+  // Endpoints come from each dealer's profile; no single endpoint or retired bank variable reaches the game.
+  for(const env of [draganOnly,both])for(const name of ['CROUPIER_MOVING_SPEECH_ENDPOINT_ID','CROUPIER_MOVING_SPEECH_BANK_RECORD'])
+    assert.equal(Object.hasOwn(env,name),false,name);
+  const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_a,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:_b,...rest}=both;
+  const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_c,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:_d,...single}=draganOnly;
+  assert.deepEqual(rest,single);
+});
+
+test('bank and profile refusals name the dealer: wrong dealer, profile without a bank, bank without a profile',()=>{
+  const env={...base(),...twoDealers()},banks='CROUPIER_MOVING_SPEECH_BANK_RECORDS',profiles='CROUPIER_STUDIO_MOVING_DRIFT_PROFILES';
+  const refuse=(change,pattern)=>assert.throws(()=>validateCloudConfig({...env,...change}),
+    error=>pattern.test(error.message)&&!error.message.includes('fixture-owned-runpod'),pattern.source);
+  refuse({[banks]:JSON.stringify({dragan:privateManifest,paow:privateManifest})},/BANK_RECORDS \(bank of another dealer for paow\)/);
+  refuse({[banks]:JSON.stringify({dragan:paowManifest})},/BANK_RECORDS \(bank of another dealer for dragan\)/);
+  refuse({[banks]:JSON.stringify({dragan:privateManifest})},/DRIFT_PROFILES \(profile without a bank for paow\)/);
+  refuse({[profiles]:JSON.stringify([driftProfile])},/BANK_RECORDS \(bank without a drift profile for paow\)/);
+  refuse({[profiles]:JSON.stringify([driftProfile,{...paowProfile,dealerId:'astrid'}])},/DRIFT_PROFILES \(profile without a bank for astrid\)/);
+  // One endpoint, profile ID and dealer per profile: a shared endpoint would let one dealer's Off drain the other.
+  for(const shared of [{...paowProfile,endpointId:driftProfile.endpointId},{...paowProfile,id:driftProfile.id},{...paowProfile,dealerId:'dragan'}])
+    refuse({[profiles]:JSON.stringify([driftProfile,shared])},/CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
+  refuse({[profiles]:JSON.stringify([driftProfile,{...paowProfile,releaseDigest:hash('other release')}])},/CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
+});
+
+test('start.mjs --check accepts Dragan alone and Dragan with a second dealer, and refuses a profile without a bank',async t=>{
+  const {main}=await import('../ops/cloud/start.mjs');
+  // Bootstrap credentials make the read-only preflight skip its database read; nothing starts.
+  const bootstrap={CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixture-admin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'fixture-password-'.repeat(2)};
+  const logs=[];t.mock.method(console,'log',line=>logs.push(line));
+  for(const env of [{...base(),...moving(),...bootstrap},{...base(),...twoDealers(),...bootstrap}])assert.equal(await main(['--check'],env),0);
+  assert.equal(logs.length,2);assert.match(logs[0],/^Cloud configuration valid\./);
+  await assert.rejects(main(['--check'],{...base(),...twoDealers(),...bootstrap,CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
+    /profile without a bank for paow/);
 });
 
 test('moving provider identity is immutable and ticket secrets cannot reuse Astrid or provider credentials',()=>{
   const env={...base(),...moving()};
   for(const [key,bad] of [
-    ['ENDPOINT_ID','../legacy'],['ENDPOINT_ID',''],['RUNPOD_API_KEY','contains whitespace'],
+    ['RUNPOD_API_KEY','contains whitespace'],
     ['IMAGE','ghcr.io/jakeminator123/moving-gpu-worker:latest'],['IMAGE',`ghcr.io/elsewhere/moving-gpu-worker@sha256:${hash('image')}`],
     ['RELEASE_SHA256','latest'],['TICKET_SECRET','short'],['TICKET_SECRET',env.CROUPIER_SPEECH_STREAM_WORKER_SECRET],
     ['TICKET_SECRET',env.CROUPIER_SPEECH_STREAM_TICKET_SECRET],['TICKET_SECRET','fixture-moving-key-'.repeat(4)],
@@ -148,4 +197,27 @@ test('Render config loads from source without frontend or speech dependency inst
   const isolated = await import(pathToFileURL(join(root, 'ops/cloud/config.mjs')).href);
   const env = base();
   assert.deepEqual(isolated.validateCloudConfig(env, {repository:root}), validateCloudConfig(env, {repository:root}));
+});
+
+test('today\'s production shape still starts: moving off, retired single-bank names present, profile without dealerId',async t=>{
+  const {main}=await import('../ops/cloud/start.mjs');
+  const bootstrap={CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixture-admin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'fixture-password-'.repeat(2)};
+  const {dealerId:_dealer,...legacyProfile}=driftProfile;
+  const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_map,...rest}=moving();
+  // Render croupier-v3 on 28 October 2026: flag 0, old bank and endpoint names, no bank map, Vercel-style profile.
+  const today={...base(),...rest,...bootstrap,CROUPIER_MOVING_SPEECH_ENABLED:'0',
+    CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),CROUPIER_MOVING_SPEECH_ENDPOINT_ID:'movingfixture',
+    CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([legacyProfile])};
+  const {CROUPIER_MOVING_SPEECH_ENABLED:_flag,...unset}=today;
+  const logs=[];t.mock.method(console,'log',line=>logs.push(line));
+  for(const env of [today,unset,{...today,CROUPIER_MOVING_SPEECH_ENABLED:''},{...base(),...bootstrap,CROUPIER_MOVING_SPEECH_ENABLED:'0'}]){
+    assert.equal(await main(['--check'],env),0);
+    const child=children(env).web.env;
+    assert.deepEqual(Object.keys(child).filter(name=>/MOVING/.test(name)),[],'the game child receives no moving keys');
+  }
+  assert.equal(logs.length,4);
+  // Turning moving speech on with that shape is refused until the map and dealerId are set.
+  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1'}),/Invalid or missing CROUPIER_MOVING_SPEECH_BANK_RECORDS\./);
+  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
+    /CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
 });

@@ -1,7 +1,7 @@
 import { createLayerComposition } from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import { combineAbortSignals } from './abort-signals.mjs';
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
-import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
+import { fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import { nativeRoomFilmedPlanning } from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
@@ -296,22 +296,27 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     restoreColor=roomColor(document,chosen.tableColor);
   } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();placeholder.remove();throw error;}
   const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
+  let floorSize,floorTop;
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
     const scene=host.getBoundingClientRect(),table=document.getElementById('table2d').getBoundingClientRect();
     const plane=composition?.referencePlane(),compact=window.matchMedia?.(BLACKJACK_COMPACT_QUERY).matches;
-    const active=value.snapshot.round?.hands?.[value.snapshot.round.active]?.box;
-    const centre=Number.isInteger(active)?active:value.focusSeat??value.snapshot.me.seats[0]??3;
-    const boxes=compact?Array.from({length:3},(_,i)=>Math.max(0,Math.min(4,centre-1))+i):[0,1,2,3,4,5,6];
+    const boxes=compact?seatWindow(value.snapshot,value.focusSeat).boxes:[0,1,2,3,4,5,6];
     const width=scene.width,height=scene.height;
+    // K04 F13: the seats keep clear of the bottom controls (dock, action zone, wallet and chips), so the room
+    // above them is measured. A seat's controls reach about 140 px below its anchor on a wide screen; a phone
+    // shows only the seat's circle there (its bets dock in the bottom controls).
+    // The bottom controls change height with the phase (a phone's dock and chips belong to the betting window). The
+    // plane keeps the tallest seen at this screen size, so cards never move between phases; a resize measures anew.
+    const hud=document.getElementById('hud-bottom')?.getBoundingClientRect?.(),size=`${Math.round(width)}x${Math.round(height)}`;
+    if(size!==floorSize){floorSize=size;floorTop=undefined;}
+    if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,hud.top-scene.top);
+    const floor=floorTop??height-150,below=compact?28:140;
     let projected;
-    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:height-150},{compact,filmedProfile});
-    else {
-      // Existing calibrated film plane; no replacement board or dealer is selected here.
-      const scale=Math.min(width/1080,height/1920),x=(width-1080*scale)/2,y=(height-1920*scale)/2;
-      projected={x,y,scale,positions:calibration.positions,offsets:{},cardView:'table',followCards:true,boxes,
-        seats:boxes.map(box=>({box,x:x+calibration.positions[String(box+1)].cx*scale,y:y+calibration.positions[String(box+1)].cy*scale})),controlScale:Math.max(.65,scale)};
-    }
+    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile});
+    // Without a composition plane the seats stand on the dealer's filmed landings (shared-room-layout.mjs); the
+    // calibrated row only stands in for a dealer without a filmed profile. No board or dealer is selected here.
+    else projected=fallbackSeatLayout({width,height,boxes,filmedProfile,compact:Boolean(compact)});
     for(const [i,node] of value.seats.entries())node.hidden=!boxes.includes(i);
     for(const item of projected.seats){const node=value.seats[item.box];Object.assign(node.style,{left:(scene.left+item.x-table.left)+'px',top:(scene.top+item.y-table.top)+'px'});node.style.setProperty('--game-seat-scale',String(projected.controlScale));}
     cards.setProjection(projected,width,height);

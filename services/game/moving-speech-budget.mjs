@@ -11,14 +11,23 @@ export const MOVING_BUDGET_MAX_MICRO_USD = 150000000;
 // Raised again 75 → 250 USD on 21 October 2026 so the 150 USD grant plus the
 // retained earlier windows fit under provider-wide coverage.
 export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 250000000;
-export const MOVING_TRIAL_BUDGET = Object.freeze({
-  budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
-  initialBudgetMicroUsd: 13200000,
-  // Daily ceiling 20 → 40 USD on 19 October 2026 (Jakob: run the trial evening
-  // at test cost). Sixteen 1.20 USD reservations had filled the UTC day.
-  // Daily ceiling 40 → 60 USD on 21 October 2026 (migration 019).
-  reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 60000000,
-});
+// The trial mandate that began on 17 October 2026. Each dealer has its own
+// cumulative budget `<dealerId>-test-20261017` in this series, so the first
+// dealer's durable ID and amendments (`dragan-test-20261017`) are unchanged.
+// A new dealer's ID starts at the initial grant; the UTC daily ceiling is the
+// environment's GPU day and stays shared by every dealer.
+export const MOVING_TRIAL_BUDGET_SERIES = 'test-20261017';
+export function movingTrialBudget(dealerId) {
+  if (typeof dealerId !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(dealerId)) throw Error('invalid_moving_budget_dealer');
+  return Object.freeze({
+    budgetId: `${dealerId}-${MOVING_TRIAL_BUDGET_SERIES}`, totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
+    initialBudgetMicroUsd: 13200000,
+    // Daily ceiling 20 → 40 USD on 19 October 2026 (Jakob: run the trial evening
+    // at test cost). Sixteen 1.20 USD reservations had filled the UTC day.
+    // Daily ceiling 40 → 60 USD on 21 October 2026 (migration 019).
+    reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 60000000,
+  });
+}
 const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const hash = /^[a-f0-9]{64}$/;

@@ -65,19 +65,29 @@ const same = (a,b) => typeof a === 'string' && typeof b === 'string'
   && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const publicPlan = plan => JSON.parse(JSON.stringify(plan));
 
-/** Opt-in Dragan path. The existing chat/Director still selects exact text.
+/** Opt-in moving path, one lane per dealer with a verified bank: its own
+ * sessions (endpoint), drift admission and bank capabilities. A dealer without
+ * a lane is unsupported. The existing chat/Director still selects exact text.
  * All authorities and paid work stay here; the browser gets one spent ticket.
- * Initial playback is the bank's explicit rest frame between card sequences. */
-export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, bank, releaseSha256,
-  sessions, dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
-  bankOptions, readPresentation, publicVideo, admissionCheck, now = Date.now, connectionMs = 15000,
+ * Initial playback is the bank's explicit rest frame between card sequences.
+ * readEvidence(context, mediaId, bank) reads the publication for that bank. */
+export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, lanes, releaseSha256,
+  dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
+  bankOptions, readPresentation, publicVideo, now = Date.now, connectionMs = 15000,
   onStreamFailure = receipt => console.warn(JSON.stringify(receipt)),
   onPreparationFailure = receipt => console.warn(JSON.stringify(receipt)),
   onCleanupError = () => console.warn(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}))} = {}) {
   if (!server || typeof ticketSecret !== 'string' || ticketSecret.length < 32
-    || !/^[a-f0-9]{64}$/.test(releaseSha256 ?? '') || typeof sessions?.admit !== 'function'
+    || !/^[a-f0-9]{64}$/.test(releaseSha256 ?? '') || !Array.isArray(lanes) || !lanes.length || lanes.length > 8
+    || lanes.some(lane => typeof lane?.sessions?.admit !== 'function'
+      || lane.admissionCheck !== undefined && typeof lane.admissionCheck !== 'function')
     || typeof dealerRuntime?.prepareMoving !== 'function' || [resolveOwner,readEvidence,readRegistry,readRest].some(fn=>typeof fn !== 'function')) fail('moving_speech_configuration');
-  const downloads = createMovingBankDownloads({origin:workerOrigin,bank,read:bankRead,options:bankOptions,now});
+  // Each bank is validated by its downloads; its source set names the dealer.
+  const dealers = new Map(lanes.map(({bank,sessions,admissionCheck}) => {
+    const downloads = createMovingBankDownloads({origin:workerOrigin,bank,read:bankRead,options:bankOptions,now});
+    return [bank.sourceSet.dealerId,Object.freeze({bank,sessions,admissionCheck,downloads})];
+  }));
+  if (dealers.size !== lanes.length) fail('moving_speech_configuration');
   const records = new Map(), pending = new Set();
   const deals=createMovingDealReservations({now});
   const wss = new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false,
@@ -111,7 +121,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       const receipt=await readPresentation(record.playerId);
       if(!receipt||presentationFingerprint(receipt)!==record.deal.fingerprint)fail('moving_deal_changed');
     }
-    const evidence = await readEvidence(record.context,bank.sourceSet.rest.videoId);
+    const {bank} = record.lane;
+    const evidence = await readEvidence(record.context,bank.sourceSet.rest.videoId,bank);
     if (evidence.projectRevision !== record.evidence.projectRevision
       || JSON.stringify(evidence.mediaReferences) !== JSON.stringify(record.evidence.mediaReferences)) fail('moving_speech_context_changed');
     record.signal.throwIfAborted();
@@ -173,6 +184,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     };
     try {
       await current(record);
+      const {bank} = record.lane;
       const source = bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
       const {videoId,sha256,fps,frameCount,width,height,bytes} = source;
       phase = 'ready';
@@ -238,8 +250,9 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     } catch {if (claimed) await cancel(claimed);if (!socket.destroyed) reject(socket);}
   }
   server.on('upgrade',upgrade);
+  const active = () => [...new Set([...pending,...records.values()])];
   const api = {
-    supports: dealerId => dealerId === bank.sourceSet.dealerId,
+    supports: dealerId => typeof dealerId === 'string' && dealers.has(dealerId),
     observeCommitted(observation) {
       deals.committed(observation);
       // Invalidate active output even when the worker is stalled between chunks.
@@ -251,20 +264,23 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     normalPresentation: (playerId,version)=>deals.normal(playerId,version),
     forContext: (context,presentationVersion,sessionRevision) => ({prepare:input=>api.prepare({...input,context,presentationVersion,sessionRevision})}),
     async prepare(input) {
-      if (closing || !api.supports(input?.dealerId) || !ID.test(input.requestId ?? '') || !input.owner
+      if (closing || !input) fail('moving_speech_input');
+      if (!api.supports(input.dealerId)) fail('moving_speech_dealer_unavailable');
+      if (!ID.test(input.requestId ?? '') || !input.owner
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
         || input.text !== input.text.trim() || input.text.length > 500 || /[\u0000-\u001f\u007f-\u009f]/.test(input.text)) fail('moving_speech_input');
+      const lane=dealers.get(input.dealerId),{bank,sessions}=lane;
       const controller=new AbortController(),signal=AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
-      const record={...input,controller,signal,state:'preparing'}; pending.add(record);
+      const record={...input,lane,controller,signal,state:'preparing'}; pending.add(record);
       let phase='guard';
       try {
         await input.beforeCostly(); signal.throwIfAborted();
-        record.driftAdmission=await admissionCheck?.();
+        record.driftAdmission=await lane.admissionCheck?.();
         signal.throwIfAborted();
         phase='profile-voice';
         record.voice=await dealerRuntime.prepareMoving({...input,signal,sourceSet:bank.sourceSet});
         phase='publication';
-        record.evidence=await readEvidence(input.context,bank.sourceSet.rest.videoId);
+        record.evidence=await readEvidence(input.context,bank.sourceSet.rest.videoId,bank);
         if(input.presentationVersion!==undefined){
           phase='deal-plan';
           if(typeof readPresentation!=='function'||typeof publicVideo!=='function')fail('moving_deal_unavailable');
@@ -298,7 +314,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           // submission_started at the final dispatch. Avoid recursively applying
           // the ordinary reserved/running check inside that callback.
           beforeCostly:()=>current(record,{checkSession:false}),signal,
-          bankDownload:async({sessionSignal,ttlMs})=>{record.download=downloads.issue({
+          bankDownload:async({sessionSignal,ttlMs})=>{record.download=lane.downloads.issue({
             signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record,{submissionPhase:true})});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
         phase='submit'; await record.session.submit();
@@ -340,7 +356,9 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       let response;
       try {
         const request=new Request(origin+req.url,{method:req.method,headers:req.headers});
-        response=await downloads.response(request);
+        // A capability no bank issued gets the ordinary denial of the first bank.
+        const issuers=[...dealers.values()];
+        response=await (issuers.find(lane=>lane.downloads.owns(request))??issuers[0]).downloads.response(request);
         if (!response) {
           const match=/^\/api\/moving-speech\/([a-f0-9]{32})\/rest$/.exec(path);
           const record=match && records.get(match[1]);
@@ -353,10 +371,12 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       if (!response.body) res.end(); else {const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);}
       return true;
     },
-    cancelActive: ()=>Promise.all([...new Set([...pending,...records.values()])].map(cancel)),
-    cancelOwner: value=>Promise.all([...new Set([...pending,...records.values()])].filter(r=>r.owner===value).map(cancel)),
-    cancelPlayer: value=>Promise.all([...new Set([...pending,...records.values()])].filter(r=>r.playerId===value).map(cancel)),
-    async close() {closing=true;server.off('upgrade',upgrade);downloads.close();await Promise.all([...new Set([...pending,...records.values()])].map(cancel));wss.close();},
+    cancelActive: ()=>Promise.all(active().map(cancel)),
+    // A dealer's drift Off drains only that dealer's endpoint and attempts.
+    cancelDealer: dealerId=>Promise.all(active().filter(r=>r.dealerId===dealerId).map(cancel)),
+    cancelOwner: value=>Promise.all(active().filter(r=>r.owner===value).map(cancel)),
+    cancelPlayer: value=>Promise.all(active().filter(r=>r.playerId===value).map(cancel)),
+    async close() {closing=true;server.off('upgrade',upgrade);for(const lane of dealers.values())lane.downloads.close();await Promise.all(active().map(cancel));wss.close();},
   };
   return Object.freeze(api);
 }

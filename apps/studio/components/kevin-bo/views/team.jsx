@@ -1,18 +1,14 @@
-// Membership and permissions for the server-selected operator. Diagnostic drafts stay local.
+// Team: medlemmar, roller, inbjudan, rollbyte, avstängning. Åtgärderna ligger i en
+// åtgärdsmeny (⋯) per medlem med bekräftelse och körs bara genom den serverkontrollerade
+// adaptern (partner-team-loader.mjs). Journalen renderas av laddaren under vyn.
 import React, { useState } from 'react';
+import { ActionMenu, Card, Chip, Page, Tip } from './ui.jsx';
+import { partnerRoleWord } from '../partner-copy.mjs';
+import { partnerPermissionWord } from '../../../lib/partner-words.mjs';
 
-const h = React.createElement;
-const DEFAULT_ROLES = [
-  ['Partner administrator', 'Eget team, spelare och konfiguration inom tilldelat mandat.'],
-  ['Partner editor', 'Godkända presentationer och eget varumärke.'],
-  ['Partner technician', 'Egen integration och avgränsade teststarter.'],
-  ['Partner analyst', 'Egna rapporter och läsbehörighet.'],
-];
-const STATUS_TEXT = { active: 'aktiv', suspended: 'avstängd', invited: 'inbjuden' };
+const STATUS = { sv: { active: 'aktiv', suspended: 'avstängd', invited: 'inbjuden' }, en: { active: 'active', suspended: 'suspended', invited: 'invited' } };
 
-function text(value) {
-  return typeof value === 'string' ? value.trim() : '';
-}
+const text = value => typeof value === 'string' ? value.trim() : '';
 function roleOf(member) {
   const role = member?.role;
   if (role && typeof role === 'object') {
@@ -22,12 +18,9 @@ function roleOf(member) {
   const id = text(member?.roleId) || text(role);
   return { id, label: text(role) || id || '—' };
 }
-function sameOperator(member, operatorId) {
-  return !member?.operatorId || !operatorId || member.operatorId === operatorId;
-}
+const sameOperator = (member, operatorId) => !member?.operatorId || !operatorId || member.operatorId === operatorId;
 function roleChoices(snapshot, members, operatorId) {
-  const choices = [];
-  const seen = new Set();
+  const choices = [], seen = new Set();
   const add = role => {
     if (!role?.id || seen.has(role.id)) return;
     seen.add(role.id);
@@ -41,206 +34,97 @@ function roleChoices(snapshot, members, operatorId) {
   for (const member of members) add(roleOf(member));
   return choices;
 }
-function statusText(status, preview, en) {
-  if (en && STATUS_TEXT[status]) return status;
-  if (STATUS_TEXT[status]) return STATUS_TEXT[status];
-  if (preview && status) return `Fixture · ${status}`;
-  return status ? String(status) : '—';
-}
-function statusNode(status, preview, en) {
-  const label = statusText(status, preview, en);
-  if (preview && status && !STATUS_TEXT[status]) return h('span', { className: 'badge b-paused' }, h('i'), label);
-  const tone = status === 'suspended' ? 'pill pill-err' : status === 'invited' ? 'pill pill-warn' : 'pill kevin-status-pill';
-  return h('span', { className: tone }, label);
-}
-function revisionText(member) {
-  const value = member?.revision;
-  if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return `Revision ${value}`;
-  if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) return `Revision ${value}`;
-  return '';
-}
 function notify(toast, runtime, message) {
   const fn = typeof toast === 'function' ? toast : runtime?.notify;
   if (typeof fn === 'function') fn(message);
 }
 
-const PERMISSIONS = {
-  'overview.read': ['Läsa översikt', 'Read overview'], 'players.read': ['Läsa spelare', 'Read players'],
-  'team.read': ['Läsa team', 'Read team'], 'team.invite': ['Bjuda in medlemmar', 'Invite members'],
-  'team.roles.assign': ['Tilldela roller', 'Assign roles'], 'team.suspend': ['Stänga av och återaktivera medlemmar', 'Suspend and reactivate members'],
-  'tables.read': ['Läsa bord', 'Read tables'], 'tables.configure': ['Konfigurera bord', 'Configure tables'],
-  'presentations.read': ['Läsa presentationer', 'Read presentations'], 'presentations.configure': ['Anpassa presentationer', 'Configure presentations'],
-  'reports.read': ['Läsa rapporter', 'Read reports'], 'integrations.read': ['Läsa integrationer', 'Read integrations'],
-};
-export function TeamView({ snapshot, runtime, surface, toast, language = 'sv' }) {
-  const en = language === 'en';
+export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
+  const en = language === 'en', lang = en ? 'en' : 'sv', t = (sv, english) => en ? english : sv;
   const busy = runtime?.teamBusy === true;
-  const preview = snapshot?.preview === true;
-  const live = !preview && runtime?.team ? runtime.team : null;
-  const locked = !preview && !live;
+  const live = runtime?.team ?? null;
+  const locked = !live;
   const operatorId = text(snapshot?.operator?.id);
-  const operatorName = text(snapshot?.operator?.name) || '—';
   const [query, setQuery] = useState('');
-  const [tab, setTab] = useState('members');
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
-  const [drafts, setDrafts] = useState([]);
-  const [roleOverrides, setRoleOverrides] = useState({});
-  const source = [...(Array.isArray(snapshot?.team) ? snapshot.team : []), ...drafts].filter(member => member && typeof member === 'object' && sameOperator(member, operatorId));
-  const choices = roleChoices(snapshot, source, operatorId);
+  const members = (Array.isArray(snapshot?.team) ? snapshot.team : []).filter(member => member && typeof member === 'object' && sameOperator(member, operatorId));
+  const choices = roleChoices(snapshot, members, operatorId);
+  const word = role => partnerRoleWord(role.id, role.label, lang);
   const inviteChoices = live ? choices.filter(item => live.inviteRoles.includes(item.id)) : choices;
-  const inviteLocked = locked || Boolean(live && inviteChoices.length === 0);
+  const inviteLocked = locked || inviteChoices.length === 0;
   const selectedInviteRole = inviteChoices.some(role => role.id === inviteRole) ? inviteRole : inviteChoices[0]?.id || '';
+  const adminRoles = new Set(choices.filter(role => role.permissions?.includes('team.roles.assign')).map(role => role.id));
+  const activeAdmins = members.filter(member => member.status === 'active' && adminRoles.has(roleOf(member).id));
+  const lastAdmin = member => activeAdmins.length === 1 && activeAdmins[0].id === member.id;
   const needle = query.trim().toLowerCase();
-  const shown = source.filter(member => {
-    if (!needle) return true;
-    const role = roleOf(member);
-    return `${member.name || ''} ${member.email || ''} ${member.id || ''} ${role.label}`.toLowerCase().includes(needle);
-  });
-  const catalogue = Array.isArray(snapshot?.roles) && snapshot.roles.length
-    ? choices
-    : (preview ? DEFAULT_ROLES.map(([label, description]) => ({ id: label, label, description })) : choices);
-  const subtitle = preview
-    ? `Personal i ${operatorName}. Exempelmedlemmar; kontoadministration är inte ansluten.`
-    : (en ? `Memberships in ${operatorName}.` : `Medlemskap i ${operatorName}.`);
+  const shown = members.filter(member => !needle || `${member.name || ''} ${member.id || ''} ${word(roleOf(member))}`.toLowerCase().includes(needle));
 
   const onInvite = event => {
     event.preventDefault();
     if (locked || busy) return;
     const address = email.trim();
-    if (!/^\S+@\S+\.\S+$/.test(address)) {
-      notify(toast, runtime, en ? 'Enter a valid email address. Nothing has been sent.' : 'Ange en giltig e-postadress. Ingenting har skickats.');
-      return;
-    }
-    if (!selectedInviteRole) {
-      notify(toast, runtime, en ? 'Choose a role. Nothing has been sent.' : 'Välj en rollprofil. Ingenting har skickats.');
-      return;
-    }
-    if (source.some(member => text(member.email).toLowerCase() === address.toLowerCase() || member.id === address)) {
-      notify(toast, runtime, en ? 'This address is already listed. Nothing has been sent.' : 'Den adressen finns redan i listan. Ingenting har skickats.');
-      return;
-    }
-    if (live) {
-      void live.invite(address, selectedInviteRole).then(added => { if (added) setEmail(''); });
-      return;
-    }
-    const role = choices.find(item => item.id === selectedInviteRole) || { id: selectedInviteRole, label: selectedInviteRole };
-    setDrafts(current => [...current, {
-      id: address,
-      operatorId,
-      name: address,
-      email: address,
-      role: role.label,
-      roleId: role.id,
-      status: 'invited',
-    }]);
-    setEmail('');
-    notify(toast, runtime, 'Inbjudan sparad lokalt. Ingenting har skickats.');
+    if (!/^\S+@\S+\.\S+$/.test(address)) { notify(toast, runtime, t('Ange en giltig e-postadress. Ingenting har skickats.', 'Enter a valid email address. Nothing has been sent.')); return; }
+    if (!selectedInviteRole) { notify(toast, runtime, t('Välj en roll. Ingenting har skickats.', 'Choose a role. Nothing has been sent.')); return; }
+    if (members.some(member => text(member.email).toLowerCase() === address.toLowerCase() || member.id === address)) { notify(toast, runtime, t('Den adressen finns redan i listan. Ingenting har skickats.', 'This address is already listed. Nothing has been sent.')); return; }
+    void live.invite(address, selectedInviteRole).then(added => { if (added) setEmail(''); });
   };
-  const onRole = (member, nextRole) => {
-    if (busy) return;
-    if (live) {
-      if (member?.id) void live.role(member, nextRole);
-      return;
+  const actions = member => {
+    const name = text(member.name) || text(member.id) || '—';
+    if (!live) return <span className="faint">—</span>;
+    const items = [];
+    for (const roleId of live.assignable(member) ?? []) {
+      const next = choices.find(role => role.id === roleId) ?? { id: roleId, label: roleId };
+      items.push({ id: `role:${roleId}`, label: t(`Byt roll till ${word(next)}`, `Change role to ${word(next)}`), onSelect: () => void live.role(member, roleId),
+        confirm: { title: t(`Byt roll för ${name}?`, `Change role for ${name}?`), impact: [t(`Ny roll: ${word(next)}.`, `New role: ${word(next)}.`), t('Gäller direkt och loggas i journalen.', 'Applies immediately and is logged in the journal.')], button: t('Byt roll', 'Change role'), cancel: t('Avbryt', 'Cancel') } });
     }
-    if (!preview || !member?.id) return;
-    setRoleOverrides(current => ({ ...current, [member.id]: nextRole }));
-    notify(toast, runtime, 'Rollbyte sparat lokalt. Ingenting har skickats.');
+    if (live.canSuspend?.(member)) items.push({ id: 'suspend', tone: 'danger', label: t('Stäng av', 'Suspend'), onSelect: () => void live.status(member, 'suspend'),
+      confirm: { title: t(`Stäng av ${name}?`, `Suspend ${name}?`), impact: [t('Medlemmen kan inte längre logga in i Partnerportalen.', 'The member can no longer sign in to the partner portal.'), t('Loggas i journalen. Kan återaktiveras senare.', 'Logged in the journal. Can be reactivated later.')], button: t('Stäng av', 'Suspend'), cancel: t('Avbryt', 'Cancel') } });
+    if (live.canReactivate?.(member)) items.push({ id: 'reactivate', label: t('Återaktivera', 'Reactivate'), onSelect: () => void live.status(member, 'reactivate'),
+      confirm: { title: t(`Återaktivera ${name}?`, `Reactivate ${name}?`), impact: [t('Medlemmen kan logga in igen med sin roll.', 'The member can sign in again with their role.'), t('Loggas i journalen.', 'Logged in the journal.')], button: t('Återaktivera', 'Reactivate'), cancel: t('Avbryt', 'Cancel') } });
+    if (!items.length) return lastAdmin(member)
+      ? <Chip>{t('sista administratören', 'last administrator')}</Chip>
+      : <span className="faint">—</span>;
+    return <ActionMenu id={`team-actions-${text(member.id)}`} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} items={items} disabled={busy} />;
   };
-
-  const onStatus = (member, action) => {
-    if (!live || busy) return;
-    const name = text(member.name) || text(member.id);
-    const question = action === 'suspend'
-      ? (en ? 'Suspend ' + name + ' for this operator?' : 'Stäng av ' + name + ' för detta bolag?')
-      : (en ? 'Reactivate ' + name + ' for this operator?' : 'Återaktivera ' + name + ' för detta bolag?');
-    if (globalThis.confirm?.(question) === true) void live.status(member, action);
-  };
-  return h(React.Fragment, null,
-    h('header', { className: 'page-h' },
-      h('div', { style: { display: 'grid', gap: 6 } },
-        h('h1', null, preview ? 'Team & access' : (en ? 'Memberships' : 'Medlemskap')),
-        h('div', { className: 'muted', style: { fontSize: 13, maxWidth: 720 } }, subtitle))),
-    h('div', { className: 'page-b' },
-      h('section', { className: 'panel', 'data-surface': surface || 'partner' },
-        h('div', { className: 'panel-h' },
-          h('div', { className: 'seg' }, [['members', en ? 'Members' : 'Medlemmar'], ['roles', en ? 'Roles & permissions' : 'Roller & behörigheter']].map(([id, label]) =>
-            h('button', { key: id, type: 'button', className: tab === id ? 'on' : '', 'aria-pressed': tab === id, onClick: () => setTab(id) }, label))),
-          h('input', {
-            className: 'input',
-            placeholder: en ? 'Search members' : 'Sök medlemmar',
-            'aria-label': en ? 'Search members' : 'Sök medlemmar',
-            value: query,
-            onChange: event => setQuery(event.target.value),
-          })),
-        tab === 'members'
-          ? h('div', { className: 'scroll-x' },
-            h('table', { className: 'tbl pl-tbl' },
-              h('thead', null, h('tr', null, (en ? ['Membership', 'Role', 'Operator', 'Status', 'Actions'] : ['Medlemskap', 'Rollprofil', 'Bolag', 'Status', 'Åtgärder']).map(label => h('th', { key: label, scope: 'col' }, label)))),
-              h('tbody', null, shown.map((member, index) => {
-                const role = roleOf(member);
-                const selected = roleOverrides[member.id] || role.id;
-                const name = text(member.name) || text(member.id) || '—';
-                const userId = text(member.id);
-                const revision = revisionText(member);
-                const optionIds = new Set(choices.map(item => item.id));
-                const options = optionIds.has(selected) || !selected ? choices : [...choices, { id: selected, label: role.label }];
-                const assignable = live ? live.assignable(member) : null;
-                const roleOptions = assignable ? options.filter(item => item.id === selected || assignable.includes(item.id)) : options;
-                return h('tr', { key: `${member.operatorId || ''}:${userId}:${index}` },
-                  h('td', null, h('div', { className: 'pl-who' },
-                    h('span', { className: 'pl-av' }, name.slice(0, 2).toUpperCase()),
-                    h('span', null,
-                      h('b', null, name),
-                      text(member.email) ? h('small', null, member.email) : null,
-                      !preview && userId && userId !== name ? h('small', { className: 'mono' }, userId) : null,
-                      revision ? h('small', { className: 'mono' }, revision) : null))),
-                  h('td', null, h('select', {
-                    id: `team-role-${userId || index}`,
-                    className: 'select',
-                    'aria-label': en ? `Role for ${name}` : `Rollprofil för ${name}`,
-                    value: selected,
-                    disabled: busy || locked || Boolean(assignable && assignable.length === 0),
-                    onChange: event => onRole(member, event.target.value),
-                  }, roleOptions.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
-                  h('td', null, operatorName),
-                  h('td', null, statusNode(member.status, preview, en)),
-                  h('td', null,
-                    live?.canSuspend?.(member) ? h('button', { type: 'button', className: 'btn sm', disabled: busy, onClick: () => onStatus(member, 'suspend'), 'aria-label': (en ? 'Suspend ' : 'Stäng av ') + name }, en ? 'Suspend' : 'Stäng av') : null,
-                    live?.canReactivate?.(member) ? h('button', { type: 'button', className: 'btn sm', disabled: busy, onClick: () => onStatus(member, 'reactivate'), 'aria-label': (en ? 'Reactivate ' : 'Återaktivera ') + name }, en ? 'Reactivate' : 'Återaktivera') : null));
-              }))))
-          : h('div', { className: 'rows' }, catalogue.map(role =>
-            h('section', { key: role.id }, h('h3', null, role.label),
-              role.description ? h('p', null, role.description) : null,
-              typeof role.delegable === 'boolean' ? h('p', { className: 'muted' }, role.delegable
-                ? (en ? 'May be assigned by an authorized partner administrator.' : 'Kan tilldelas av behörig partneradministratör.')
-                : (en ? 'Assigned by internal staff only.' : 'Tilldelas endast av intern personal.')) : null,
-              Array.isArray(role.permissions) ? h('ul', null, role.permissions.map(permission => h('li', { key: permission }, PERMISSIONS[permission]?.[en ? 1 : 0] || permission)))
-                : h('p', { className: 'muted' }, en ? 'Permission details are unavailable.' : 'Rättighetsdetaljer saknas.')))),
-        h('form', { className: 'panel-h wrap', onSubmit: onInvite },
-          h('div', { className: 'field' },
-            h('label', { htmlFor: 'team-invite-email' }, en ? 'Email' : 'E-post'),
-            h('input', {
-              id: 'team-invite-email',
-              className: 'input',
-              type: 'email',
-              autoComplete: 'off',
-              value: email,
-              disabled: busy || inviteLocked,
-              onChange: event => setEmail(event.target.value),
-            })),
-          h('div', { className: 'field' },
-            h('label', { htmlFor: 'team-invite-role' }, en ? 'Role' : 'Rollprofil'),
-            h('select', {
-              id: 'team-invite-role',
-              className: 'select',
-              'aria-label': en ? 'Invitation role' : 'Rollprofil för inbjudan',
-              value: selectedInviteRole,
-              disabled: busy || inviteLocked,
-              onChange: event => setInviteRole(event.target.value),
-            }, inviteChoices.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
-          h('button', { id: 'team-invite-submit', className: 'btn primary', type: 'submit', disabled: busy || inviteLocked }, busy ? (en ? 'Saving…' : 'Sparar…') : (en ? 'Invite' : 'Bjud in'))),
-        h('div', { className: 'note' }, preview
-          ? 'Rollerna är målbilden. Den aktuella förhandsvisningen kräver befintlig intern admininloggning; inga partnerkonton eller utökade rättigheter skapas här.'
-          : live ? live.note : (en ? 'Actions are locked until team access is verified.' : 'Åtgärderna är låsta tills teamåtkomsten har verifierats.')))));
+  const statusChip = status => <Chip tone={status === 'active' ? 'ok' : status === 'invited' ? 'warn' : status === 'suspended' ? 'danger' : ''} dot>{STATUS[lang][status] ?? status ?? '—'}</Chip>;
+  return <Page title={copy?.team ?? t('Team', 'Team')} intro={t('Medlemmar, roller och inbjudningar. Administratör utses bara av Scoutgaming; den sista administratören kan inte stängas av.', 'Members, roles and invitations. Administrators are appointed by Scoutgaming only; the last administrator cannot be suspended.')}>
+    <div className="grid main-aside">
+      <div className="stack">
+        <Card title={t('Medlemmar', 'Members')} aside={<input className="input" style={{ width: 200 }} placeholder={t('Sök medlemmar', 'Search members')} aria-label={t('Sök medlemmar', 'Search members')} value={query} onChange={event => setQuery(event.target.value)} />}>
+          {shown.length ? <div className="scroll-x"><table className="table">
+            <thead><tr>{[t('Medlem', 'Member'), t('Roll', 'Role'), t('Status', 'Status'), t('Åtgärder', 'Actions')].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+            <tbody>{shown.map((member, index) => {
+              const role = roleOf(member), name = text(member.name) || text(member.id) || '—', userId = text(member.id);
+              return <tr key={`${member.operatorId || ''}:${userId}:${index}`}>
+                <td className="name-cell"><Tip content={userId && userId !== name ? t(`Konto-id: ${userId}`, `Account id: ${userId}`) : null}><b className="ellipsis">{name}</b></Tip></td>
+                <td>{word(role)}</td>
+                <td>{statusChip(member.status)}</td>
+                <td className="num">{actions(member)}</td>
+              </tr>;
+            })}</tbody>
+          </table></div> : <p className="muted">{members.length ? t('Inga medlemmar matchar sökningen.', 'No members match the search.') : t('Inga medlemmar ännu.', 'No members yet.')}</p>}
+          <form className="actions mt" onSubmit={onInvite} aria-label={t('Bjud in', 'Invite')}>
+            <div className="field"><label htmlFor="team-invite-email">{t('E-post', 'Email')}</label>
+              <input id="team-invite-email" className="input" type="email" autoComplete="off" value={email} disabled={busy || inviteLocked} onChange={event => setEmail(event.target.value)} /></div>
+            <div className="field"><label htmlFor="team-invite-role">{t('Roll', 'Role')}</label>
+              <select id="team-invite-role" className="input" aria-label={t('Roll för inbjudan', 'Invitation role')} value={selectedInviteRole} disabled={busy || inviteLocked} onChange={event => setInviteRole(event.target.value)}>{inviteChoices.map(item => <option key={item.id} value={item.id}>{word(item)}</option>)}</select></div>
+            <div className="field"><label aria-hidden="true">&nbsp;</label><button id="team-invite-submit" className="btn primary" type="submit" disabled={busy || inviteLocked}>{busy ? t('Sparar…', 'Saving…') : t('Bjud in', 'Invite')}</button></div>
+          </form>
+          <p className="small muted mt">{live ? live.note : t('Åtgärderna är låsta tills teamåtkomsten har verifierats.', 'Actions are locked until team access is verified.')}</p>
+        </Card>
+      </div>
+      <div className="stack">
+        <Card title={t('Rollerna', 'The roles')}>
+          <div className="rows">{choices.map(role => <div className="row" key={role.id}>
+            <div><Chip tone={adminRoles.has(role.id) ? 'accent' : ''}>{word(role)}</Chip></div>
+            <div>{partnerRoleWord(role.id, '', lang) !== role.id ? null : <div className="title">{role.label}</div>}
+              <div className="text">{Array.isArray(role.permissions) ? role.permissions.map(permission => partnerPermissionWord(permission, language)).join(', ') : t('Rättighetsdetaljer saknas.', 'Permission details are unavailable.')}</div>
+              {typeof role.delegable === 'boolean' ? <div className="text">{role.delegable ? t('Kan tilldelas av bolagets administratör.', 'May be assigned by the company administrator.') : t('Utses bara av Scoutgaming.', 'Appointed by Scoutgaming only.')}</div> : null}</div>
+            <div />
+          </div>)}</div>
+        </Card>
+      </div>
+    </div>
+  </Page>;
 }

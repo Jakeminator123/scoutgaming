@@ -14,17 +14,12 @@ Genomförandeplan för punkt 3 i masterplanens [Efter O03](../../migrering/MASTE
 
 | Hinder | Var |
 | --- | --- |
-| En bank per miljö: en post `CROUPIER_MOVING_SPEECH_BANK_RECORD` som valideras och skickas vidare till motorn | `ops/cloud/config.mjs:175–182`, `:333`; läses i `services/game/server.mjs:1195` |
-| Driftväljaren kräver exakt en profil, lika med endpointen och releasen | `ops/cloud/config.mjs:196–197` (`drift.profiles.length !== 1`) |
-| Driftläget är en rad per miljö, inte per dealer | `ops/neon-studio/016-moving-drift-control.sql` |
-| Motorn startar bara med Dragans bank | `services/game/server.mjs:1196` (`bank.sourceSet.dealerId !== 'dragan'`) |
-| Rörligt tal svarar bara för bankens dealer | `services/game/moving-speech-runtime.mjs:242` (`supports: dealerId => dealerId === bank.sourceSet.dealerId`) |
-| En endpoint och en RunPod-beställare | `services/game/server.mjs:1201–1202` |
-| Budgeten heter efter Dragan | `services/game/moving-speech-budget.mjs:15` (`budgetId: 'dragan-test-20261017'`) |
-| Fast avatarlista i rörlig transport | `services/astrid-gpu-worker/gateway/moving-transport.mjs:19` (`['paow', 'dragge']`) |
+| Motorn kör en bank, en driftprofil, en endpoint och en budget per dealer sedan T3 (bankkartan `CROUPIER_MOVING_SPEECH_BANK_RECORDS`, driftläget per dealer i miljöns rad utan ny migrering). En öppen GPU-session åt gången i miljön gäller fortfarande, och en ny dealer behöver en egen endpoint | [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftväljarens-api) |
+| Admins driftväljare styr en dealer; med flera driftprofiler är Admins drift-API stängt tills T5 | `apps/studio/lib/moving-drift-admin.mjs` |
+| Fast avatarlista i rörlig transport. Den gäller bara Emils oägda image, som produktionens konfiguration redan avvisar; den ägda vägen använder bankens verifierade `workerAvatar`. Kvar efter T3 (T3b: radera den oägda transportvägen och dess prov) | `services/astrid-gpu-worker/gateway/moving-transport.mjs:19` (`['paow', 'dragge']`), `services/game/moving-speech-transport.mjs` (`IMAGE`, `createMovingSpeechTransport`) |
 | Admin kan inte slå på en rörlig referens: referenstypen följer den sparade profilen och rutan "Begär AI-tal" är låst för `motion-video` | `apps/studio/client/admin/components/studio/studio-speech-panel.tsx:114`, `:216` |
 | Hårdkodade dealers i talet: personor, Astrids regler, röst och paketkontroll | `packages/presentation/contracts/dealer-chat-persona.mjs:29–33`, `packages/director/product-speech.mjs:132`, `:230`, `packages/director/speech-routing.mjs:11`, `services/game/generated-speech-stream.mjs:91`, `:241`, `packages/presentation/contracts/speech-package.mjs:80`, `:85`, `services/game/server.mjs` (`'astrid'` på 183, 526, 644, 706, 728, 747, 881, 946–947, 958, 1259) |
-| Hårdkodade dealers i materialkatalogen | `services/game/games/blackjack/presentation/media-catalogue.mjs:27–30` (kontaktdata för dragge, paow, astrid2, marten), `material-revision.mjs:36–37` (`ASTRID_DEALS`, `KEYED`), `:47` (`timingSourceOf`), `k04-media.tsv` (kolumnen `dealer`, 1 293 rader) |
+| Hårdkodade dealers i materialkatalogen | `services/game/games/blackjack/presentation/media-catalogue.mjs:20`, `:28–32` (`KEYED` och kontaktdata för dragge, paow, marten), `material-revision.mjs:36` (`KEYED`), `:46` (`timingSourceOf`), `k04-media.tsv` (kolumnen `dealer`, 975 rader sedan K3) |
 | Rösterna ligger i Kevins ElevenLabs-konto (Pro, cirka 780 000 av 979 000 tecken använda 28 oktober). Tar det slut tystnar Dragan och Paow | Render `croupier-v3` `ELEVENLABS_API_KEY`; voiceId i `packages/presentation/contracts/dealer-voice-catalog.json` |
 | RunPod-mallen `5dkkc3wolw` för `zjsdlni6cn8dvo` har `MOVING_CALLBACK_ORIGIN=https://croupier-v2.onrender.com` (raderad). Workern avvisar varje jobb vars callback-värd inte stämmer | `services/moving-gpu-worker/contracts.py:102–109` |
 | Rörligt tal är av i produktionen | Render `CROUPIER_MOVING_SPEECH_ENABLED=0` |
@@ -68,6 +63,7 @@ Jakob kör `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lip
 - **Prov:** enhetstester med två syntetiska banker (Dragan oförändrad, en andra dealer), `start.mjs --check` med båda.
 - **Preview:** deploy med låst SHA, rörligt tal av: motorn startar som förut. Med på kräver en bank i preview (Jakobs beslut, se T2).
 - **Risk:** medel. Kvittobundna kontroller (bank, kvitto, release, image-digest) får inte försvagas när de blir per dealer.
+- **Genomfört (#549):** allt ovan utom avatarlistan i `moving-transport.mjs`, som flyttar till T3b. DDL: nej. Env: `CROUPIER_MOVING_SPEECH_BANK_RECORD` och `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` raderade, `CROUPIER_MOVING_SPEECH_BANK_RECORDS` ny, `dealerId` krävs i varje driftprofil på Vercel och Render.
 
 ### T4. Paows bank byggs (spår 2, GPU och Blob)
 
@@ -126,8 +122,7 @@ Jakob kör `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lip
 
 ## Raderas när kedjan är klar
 
-- En-dealer-variabeln `CROUPIER_MOVING_SPEECH_BANK_RECORD`, kravet på exakt en driftprofil och `'dragan'`-kravet i `server.mjs` (T3).
-- Budgetnamnet `dragan-test-20261017` som kodkonstant och avatarlistan i `moving-transport.mjs` (T3).
+- Avatarlistan i `moving-transport.mjs` och Emils oägda transportväg (T3b). En-dealer-variabeln, kravet på exakt en driftprofil, `'dragan'`-kravet och budgetkonstanten raderades i T3.
 - Hårdkodade dealerlistor i talet och materialkatalogen, och tester som låser dem (T6).
 - PAOW-delen i Skapa material (Dealer Forge, `apps/studio/lib/dealer-forge-catalog.mjs`), om Paow blir en vanlig registerdealer, enligt [PAOW-LIPSYNC](PAOW-LIPSYNC.md).
 - [PAOW-LIPSYNC](PAOW-LIPSYNC.md) och detta dokument, när kedjan är verifierad och innehållet står i de levande dokumenten.
