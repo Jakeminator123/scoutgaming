@@ -43,6 +43,12 @@ export class PerformancePlayer {
       if (prepared) slot.cancel(); else lease?.release();
     }
   }
+  // K04 F5b: downloads and verifies an exact file into the shared buffer ahead of its step. No video element
+  // decodes or shows it; the step's prepared slot or playLocalClip later reads the same verified bytes.
+  async warmLocalClip(take, signal) {
+    const lease = await (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, signal);
+    lease.release();
+  }
   prepareLocalClip(take) {
     if (this.localPrepared?.key === take.media.sha256) return;
     this.cancelLocalPreparation();

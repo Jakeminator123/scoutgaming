@@ -38,19 +38,23 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   function available() {
     const s = snapshot, result = { join:false, leave:false, bet:false, undo:false, clear:false, doubleBets:false, allSeats:false, repeat:false,
       ready:false, insurance:false, next:false, refill:false, pause:false, act:[] };
-    if (!s || closed || !connected || activeSignal?.aborted || presenting || sending || waiting || commands.state !== 'idle') return result;
+    if (!s || closed || !connected || activeSignal?.aborted || sending || waiting || commands.state !== 'idle') return result;
     const paused = s.me.pausedUntil > serverTime(), own = s.me.seats.length > 0;
+    const turnAt = s.plan?.turnAt ?? 0, beforeDeadline = !s.actionDeadline || serverTime() < s.actionDeadline;
+    result.insurance = s.phase === 'round' && s.round?.phase === 'insurance' && s.me.insuranceDue === true && serverTime() >= turnAt && beforeDeadline;
+    const hand = s.round?.hands?.[s.round.active];
+    if (s.phase === 'round' && s.round?.phase === 'decisions' && hand && s.owners[hand.box] === s.me.id && serverTime() >= turnAt && beforeDeadline)
+      result.act = (s.round.legalActions ?? []).filter(action => ['hit','stand','double','split'].includes(action) && (!paused || action === 'stand'));
+    // K04 R2: the player's decision opens on the server's clock. A take that already shows frames at turnAt
+    // plays to its end (shared-room-presentation.mjs), but no longer keeps hit/stand or insurance closed past
+    // turnAt. Every other control still waits for the presentation.
+    if (presenting) return result;
     const player = s.players?.find(p => p.id === s.me.id), bets = s.phase === 'bets' && !player?.ready && !player?.leaving;
     const inWindow = !s.deadline || serverTime() < s.deadline;
     result.join = bets && !paused; result.leave = own && !player?.leaving;
     result.bet = result.undo = result.doubleBets = result.allSeats = result.repeat = bets && own && inWindow && !paused;
     result.clear = bets && own;
     result.ready = result.bet && s.me.seats.some(i => s.bets[i].main > 0);
-    const turnAt = s.plan?.turnAt ?? 0, beforeDeadline = !s.actionDeadline || serverTime() < s.actionDeadline;
-    result.insurance = s.phase === 'round' && s.round?.phase === 'insurance' && s.me.insuranceDue === true && serverTime() >= turnAt && beforeDeadline;
-    const hand = s.round?.hands?.[s.round.active];
-    if (s.phase === 'round' && s.round?.phase === 'decisions' && hand && s.owners[hand.box] === s.me.id && serverTime() >= turnAt && beforeDeadline)
-      result.act = (s.round.legalActions ?? []).filter(action => ['hit','stand','double','split'].includes(action) && (!paused || action === 'stand'));
     result.next = s.phase === 'settled' && typeof s.roundId === 'string' && serverTime() >= (s.plan?.endAt ?? 0);
     result.refill = !paused; result.pause = !paused;
     return result;
