@@ -21,6 +21,11 @@ const previous = s => Array.isArray(s.me.lastSettlement?.hands) && s.me.lastSett
 // A side bet needs the main bet of its own box (coordinator.mjs bet: NO_BETS).
 const sideOpen = (s, box) => s.bets[box]?.main > 0;
 export const SIGN_IN_EXPIRED = 'Din session har gått ut. Logga in igen.';
+// A partner key's company (docs/plans/NYCKEL-BOLAG.md): a reload cannot change these answers.
+export const PARTNER_REFUSED = new Map([
+  ['partner_operator_mismatch', 'Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.'],
+  ['partner_key_unbound', 'Nyckeln är inte kopplad till något spelbolag.'],
+]);
 function checked(raw, roomId) {
   const s = structuredClone(raw), cfg = s?.settings;
   if (s?.contract !== 'blackjack-table/1' || s.roomId !== roomId || !integer(s.version) || !integer(s.presentationVer)
@@ -161,7 +166,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
     // K04 F8: a session the server refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
     fail(code) { if (!closed) { api.stop(); expired = code === 'shared_room_unauthorized';
-      notice = expired ? SIGN_IN_EXPIRED : 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
+      notice = expired ? SIGN_IN_EXPIRED : PARTNER_REFUSED.get(code) ?? 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
     // The socket's reconnect budget is spent: the last server state stays on screen without controls, and the
     // player reconnects here instead of reloading the page (the socket also does so when the page or network returns).
     offline() { if (closed) return; offline = true; connected = false; clearTimeout(clockTimer); notice = 'Anslutningen till bordet bröts.'; draw(); },

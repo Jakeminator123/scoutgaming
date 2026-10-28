@@ -17,7 +17,7 @@ test('Partner display names normalize as bounded untrusted presentation data', (
   for (const value of [42, {}, []]) assert.throws(() => normalizeDisplayName(value), /displayName/);
 });
 
-// L1 (O02): a partner key names no company, so the launch carries only its token and lands in the lobby.
+// L1 (O02): a key without company (before 012, NYCKEL-BOLAG) names none, so the launch carries only its token and lands in the lobby.
 test('BO and signed Partner launch carry only the launch token, without dealer or review motion', async t => {
   const store = await createPgliteStore(), { db, boDb } = store;
   t.after(() => store.close());

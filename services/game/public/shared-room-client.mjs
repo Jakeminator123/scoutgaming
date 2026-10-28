@@ -63,6 +63,9 @@ function readState(data, roomId, maxMessageBytes) {
 // Renderer failures a fresh socket resolves: the room moved on during the binding read, or the binding read
 // kept failing transiently after its own retries (shared-room-app.mjs).
 const recoverable = new Set(['shared_room_presentation_stale', 'shared_room_presentation_binding_unavailable']);
+// A partner session refused for its key's company (docs/plans/NYCKEL-BOLAG.md): the server names the
+// reason in its 1008 close. No other socket changes that answer, so the client ends at once with it.
+const partnerRefusals = new Set(['partner_operator_mismatch', 'partner_key_unbound']);
 // A page and its network are optional wake-up sources; anything else is refused.
 const eventTarget = value => value && typeof value.addEventListener === 'function' && typeof value.removeEventListener === 'function';
 
@@ -90,7 +93,8 @@ const eventTarget = value => value && typeof value.addEventListener === 'functio
  * A contract close (1002, 1003, 1007, 1009) ends the client at once. An authorization
  * close (1008) gets one fresh socket, in case the browser renewed its session cookie
  * (which this client cannot read); a second refusal, or that socket closing before it
- * delivered a state, ends the client.
+ * delivered a state, ends the client. A 1008 naming a partner refusal (another company, or a
+ * key without one) ends it at once and reports that code.
  * Renderer failure or timeout is terminal, except the recognized stale room binding
  * conflict and a binding read that kept failing transiently, which reconnect within
  * the same outage budget.
@@ -173,9 +177,10 @@ export function createSharedRoomClient({
     retry();
   }
   // The socket closed, failed or never opened (code 1006 for the last two).
-  function lost(candidate, code) {
+  function lost(candidate, code, reason) {
     if (!current(candidate)) return;
     if ([1002, 1003, 1007, 1009].includes(code)) { finish('shared_room_invalid_state'); return; }
+    if (code === 1008 && partnerRefusals.has(reason)) { finish(reason); return; }
     if (reauthorizing || code === 1008) {
       // The one re-authenticating socket was refused again or closed before any state.
       if (reauthorizing) { finish('shared_room_unauthorized'); return; }
@@ -281,7 +286,7 @@ export function createSharedRoomClient({
     candidate.listeners = {
       open: () => { if (current(candidate)) clearTimeout(candidate.connectTimer); },
       message: event => receive(candidate, event),
-      close: event => lost(candidate, event.code),
+      close: event => lost(candidate, event.code, event.reason),
       error: () => lost(candidate, 1006),
     };
     connection = candidate;

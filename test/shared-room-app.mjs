@@ -463,7 +463,11 @@ test('the view closes side bets without a main bet on their box and shows why on
 // K04 F8: a revoked session ended the table with "Ladda om sidan", which only met the same refusal again.
 test('a session the socket refused twice asks for a new sign-in with a link; other terminal errors keep the reload text',async t=>{
   for(const [code,notice,signIn] of [['shared_room_unauthorized','Din session har gått ut. Logga in igen.',true],
-    ['shared_room_renderer_failed','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],[undefined,'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
+    ['shared_room_renderer_failed','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],[undefined,'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],
+    // Nyckel→bolag: a partner refused for its key's company sees why; neither a reload nor a sign-in changes it.
+    ['partner_operator_mismatch','Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.',false],
+    ['partner_key_unbound','Nyckeln är inte kopplad till något spelbolag.',false],
+    ['constructor','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
     const h=harness(t);await h.restore(seated(1));h.controller.fail(code);
     const r=h.renders.at(-1);assert.equal(r.notice,notice);assert.equal(r.signIn,signIn,String(code));assert.equal(r.can.bet,false);
     assert.equal(h.commands.state,'stopped');

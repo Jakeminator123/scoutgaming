@@ -20,12 +20,14 @@ function fixture({ source = 'local', playerAccounts = true, epoch = 7, onRead } 
     player: { id: actorId, status: 'active' },
     account: { player_id: actorId, salt: 'account-salt', hash: 'account-hash' },
     link: { craig_user_id: '42' }, user: { id: 42, salt: 'bo-salt', hash: 'bo-hash' },
+    key: { id: 'key-a', secret: 'key-secret', revoked_at: null, wallet_url: null, operator_id: 'north' },
     epoch: epoch === null ? undefined : { epoch },
   };
   const sources = {
     local: `local:${stamp(state.account)}`,
     credential: `credential:${stamp(state.user)}`,
     bo: `bo:${epoch ?? 0}:${stamp(state.user)}`,
+    partner: `partner:key-a:${createHash('sha256').update(state.key.secret).digest('hex')}`,
   };
   state.session = { player_id: actorId, source_stamp: sources[source] ?? source,
     display_name: 'Alice', expires: 10000 };
@@ -45,16 +47,16 @@ function fixture({ source = 'local', playerAccounts = true, epoch = 7, onRead } 
           const query = { schema, table, locked, sql, parameters };
           queries.push(query);
           await onRead?.(query, state, queries.length);
-          assert.equal(schema, ['users', 'bo_auth_epochs'].includes(table) ? 'auth' : 'game');
+          assert.equal(schema, ['users', 'bo_auth_epochs', 'api_keys'].includes(table) ? 'auth' : 'game');
           const row = {
             player_sessions: state.session, players: state.player, player_accounts: state.account,
-            craig_player_links: state.link, users: state.user, bo_auth_epochs: state.epoch,
+            craig_player_links: state.link, users: state.user, bo_auth_epochs: state.epoch, api_keys: state.key,
           }[table];
           if (table === 'player_sessions') {
             assert.equal(parameters[0], digest);
             if (!row || !(row.expires > parameters[1])) return undefined;
           } else {
-            assert.equal(parameters[0], ['users', 'bo_auth_epochs'].includes(table) ? '42' : actorId);
+            assert.equal(parameters[0], ['users', 'bo_auth_epochs'].includes(table) ? '42' : table === 'api_keys' ? 'key-a' : actorId);
           }
           return row && { ...row };
         } };
@@ -102,7 +104,7 @@ test('local accounts require the explicit server option, while credential/BO do 
   for (const source of ['credential', 'bo']) assert.ok(await fixture({ source, playerAccounts: false }).bind());
 });
 
-test('partner, null, old bare fingerprints and malformed provenance cannot become a command binding', async () => {
+test('stampless partner, null, old bare fingerprints and malformed provenance cannot become a command binding', async () => {
   for (const source of [null, '', 'partner:key', 'b'.repeat(64), `local:${'A'.repeat(64)}`,
     `credential:${'c'.repeat(63)}`, `bo:01:${'b'.repeat(64)}`, `bo:9007199254740992:${'b'.repeat(64)}`]) {
     const h = fixture({ source });
@@ -262,4 +264,34 @@ test('invalid or advancing clocks cannot issue a binding after its expiry', asyn
   let calls = 0;
   const auth = createSharedCommandAuth({ ...h.options, now: () => ++calls < 4 ? 1000 : 10000 });
   assert.equal(await auth.bindingById(sessionId, { actorId }), null);
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a stamped partner session of a key bound to a company plays
+// at the table. The key row is locked between P and the final session lock, and its company is returned.
+test('stamped partner binding locks player, key and session in order and names the key company', async () => {
+  const h = fixture({ source: 'partner', playerAccounts: false });
+  assert.deepEqual(await h.bind(), { actorId, sessionId, expiresAt: 10000, partnerKeyId: 'key-a', operatorId: 'north' });
+  assert.deepEqual(h.queries.map(q => [q.schema, q.table, q.locked]), [
+    ['game', 'player_sessions', false], ['game', 'players', true], ['auth', 'api_keys', true], ['game', 'player_sessions', true],
+  ]);
+  assert.match(h.queries[2].sql, /to_jsonb\(k\)->>'operator_id' AS operator_id FROM api_keys k WHERE id=\? FOR SHARE$/);
+  assert.ok(Object.isFrozen(await h.bind()));
+});
+
+test('a wrong stamp, revoked, external-wallet, other or company-less key and a mid-read rotation bind nothing', async () => {
+  const changes = [state => { state.key.secret = 'rotated'; }, state => { state.key.revoked_at = '2026-10-28T00:00:00Z'; },
+    state => { state.key.wallet_url = 'https://wallet.invalid'; }, state => { state.key.id = 'key-b'; },
+    state => { state.key.operator_id = null; }, state => { delete state.key.operator_id; }, state => { state.key = undefined; }];
+  for (const change of changes) {
+    const h = fixture({ source: 'partner', onRead(query, state) { if (query.table === 'api_keys') change(state); } });
+    assert.equal(await h.bind(), null, change.toString());
+    assert.ok(!h.queries.some(q => q.table === 'player_sessions' && q.locked), 'the session is never locked');
+  }
+  for (const source of [`partner:key-a:${'0'.repeat(64)}`, `partner:key-a:${'A'.repeat(64)}`, 'partner:key-a', 'partner::' + 'a'.repeat(64)]) {
+    const h = fixture({ source });
+    assert.equal(await h.bind(), null, source);
+    assert.ok(!h.queries.some(q => q.table === 'player_sessions' && q.locked));
+  }
+  const corrupt = fixture({ source: 'partner' }); corrupt.state.key.operator_id = 'bad company';
+  await assert.rejects(corrupt.bind(), { code: 'partner_key_operator_invalid', statusCode: 503 });
 });

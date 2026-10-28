@@ -177,6 +177,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         const code = 'studio_room_game_material_unavailable';
         return json({ error: code, code }, status);
       }
+      // Nyckel→bolag: Admin names why the chosen company cannot own a new key.
+      if (action === 'apikeys/create' && status === 422 && error instanceof StudioStorageError && error.code === 'partner_key_operator_invalid') {
+        return json({ error: publicErrors.get(status), code: error.code }, status);
+      }
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }

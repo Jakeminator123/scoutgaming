@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readBackofficePlayerSource } from '../bo-player-session.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { keyOperator } from '../partner-operator.mjs';
 
 const fingerprint = row => row?.salt && row?.hash
   ? createHash('sha256').update(`${row.salt}:${row.hash}`).digest('hex') : null;
@@ -53,11 +54,24 @@ export function createSharedCommandAuth({ db, boDb, scope, playerAccounts = fals
     const local = /^local:([a-f0-9]{64})$/.exec(first.source_stamp);
     const credential = /^credential:([a-f0-9]{64})$/.exec(first.source_stamp);
     const backoffice = readBackofficePlayerSource(first.source_stamp);
-    if (!local && !credential && !backoffice || local && !playerAccounts) return null;
+    // Only stamped partner sessions: an older stampless one never becomes a command binding.
+    const partner = /^partner:([^:]+):([a-f0-9]{64})$/.exec(first.source_stamp);
+    if (!local && !credential && !backoffice && !partner || local && !playerAccounts) return null;
 
     const player = await read(db, 'SELECT id,status FROM players WHERE id=? FOR SHARE', [actorId], signal);
     if (!player || player.id !== actorId || player.status !== 'active') return null;
-    if (local) {
+    let operatorId;
+    if (partner) {
+      // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the key row is locked between P and the session,
+      // as rotation and revocation take it before deleting sessions. A rotated, revoked, external
+      // wallet or company-less key binds nothing. Its company is read tolerantly until PR C.
+      const key = await read(boDb, "SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=? FOR SHARE",
+        [partner[1]], signal);
+      if (!key || key.id !== partner[1] || key.revoked_at || key.wallet_url || typeof key.secret !== 'string'
+        || createHash('sha256').update(key.secret).digest('hex') !== partner[2]) return null;
+      operatorId = keyOperator(key);
+      if (operatorId === null) return null;
+    } else if (local) {
       const account = await read(db, 'SELECT player_id,salt,hash FROM player_accounts WHERE player_id=? FOR SHARE', [actorId], signal);
       if (!account || account.player_id !== actorId || fingerprint(account) !== local[1]) return null;
     } else {
@@ -77,7 +91,8 @@ export function createSharedCommandAuth({ db, boDb, scope, playerAccounts = fals
       'SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>? FOR SHARE',
       [digest, clock()], signal);
     if (!sameSession(first, locked) || locked.expires <= clock()) return null;
-    return Object.freeze({ actorId, sessionId, expiresAt: locked.expires, partnerKeyId: null });
+    return Object.freeze({ actorId, sessionId, expiresAt: locked.expires,
+      ...(partner ? { partnerKeyId: partner[1], operatorId } : { partnerKeyId: null }) });
   }
   return Object.freeze({ bindingById });
 }

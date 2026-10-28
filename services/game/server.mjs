@@ -5,6 +5,7 @@ import { withSharedRoomEntry } from './shared-room-entry.mjs';
 import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
 import { sharedRoomOrigins } from './shared-room-origins.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
+import { partnerLaunchOperator, partnerRefusalHtml, partnerRoomRefusal } from './partner-operator.mjs';
 import {currentBackofficeAccount} from './bo-player-session.mjs';
 import { isAdministratorRole } from '../../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
@@ -147,6 +148,14 @@ const { createPublicOperatorDirectory } = await import('./public-operators.mjs')
 const publicOperatorStore = studioPolicyRuntime ? await (await import('../../packages/operators/server/operator-store.mjs')).createOperatorStore({
   sql: storage.pool, scope: studioPolicyRuntime.scope,
 }) : null;
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner key's company exists and is active in this scope.
+const partnerOperatorById = publicOperatorStore ? id => publicOperatorStore.getOperatorById(id) : null;
+const partnerOperatorBySlug = publicOperatorStore ? slug => publicOperatorStore.getOperatorBySlug(slug) : null;
+const partnerRefused = (req, res, code) => {
+  const html = partnerRefusalHtml(code);
+  res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': Buffer.byteLength(html), 'Cache-Control': 'no-store' });
+  res.end(req.method === 'HEAD' ? undefined : html);
+};
 const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).createPublicOperatorRooms({
   store: publicOperatorStore, policy: studioPolicyRuntime?.policy ?? null,
 });
@@ -263,7 +272,7 @@ const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(process.env), root,
-  nativeMode:!localMediaEnabled,
+  nativeMode:!localMediaEnabled, operatorById: partnerOperatorById,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
 // ---------- native Studio identity and retained BO handoff/session ----------
@@ -476,7 +485,8 @@ const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CRO
 // Single-origin ingress has no separate frontend origin; shared rooms then accept the canonical public origin.
 const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
-  partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
+  // The key's company reads as null until migration 012 adds the column (docs/plans/NYCKEL-BOLAG.md).
+  partnerAuthority: async partnerKeyId => boDb.prepare("SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=?").get(partnerKeyId)}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const playerSession = async req => (await auth.session(req));
 async function previewPlayer(req,res) {
@@ -630,13 +640,21 @@ const server = createServer(async (req, res) => {
     if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
+      // Nyckel→bolag: after the verified signature and before any session, a key's company must be the
+      // address's company (the bridge only forwards ?operator=). Another company gets the refusal page.
+      let operator;
+      try { operator = await partnerLaunchOperator(claims,u.searchParams,{operatorById:partnerOperatorById}); }
+      catch (error) { if (error?.statusCode !== 403) throw error; partnerRefused(req,res,error.code); return; }
       // A partner launch is a blackjack start and lands on the one public game start.
-      const destination = neonStudioEnabled ? launchGameStart(u.searchParams,{origin:u.origin})
+      const destination = neonStudioEnabled ? launchGameStart(u.searchParams,{origin:u.origin,operator})
         : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
       if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }
-      catch { res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return; }
+      catch (error) {
+        if (error?.code === 'partner_operator_mismatch') { partnerRefused(req,res,error.code); return; }
+        res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return;
+      }
       res.writeHead(303,{Location:destination,'Set-Cookie':sessionCookie});res.end();return; } }
   try {
     const loggingOut=pathname==='/api/auth/logout'?(await auth.session(req)):null;
@@ -1108,6 +1126,12 @@ const server = createServer(async (req, res) => {
         res.end(req.method === 'HEAD' ? undefined : OPERATOR_NOT_FOUND_HTML); return;
       }
       selection = entry.selection;
+      // Nyckel→bolag: a partner session of another company (or of a key without one) never gets a
+      // shared-table page whose socket would only be refused; it sees why instead.
+      if (sharedRoomsEnabled && selection?.roomId !== undefined) {
+        const refusal = await partnerRoomRefusal(await auth.binding(req), selection.operator, { operatorBySlug: partnerOperatorBySlug });
+        if (refusal) { partnerRefused(req,res,refusal); return; }
+      }
     }
     const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});

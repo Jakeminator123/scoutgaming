@@ -5,6 +5,7 @@ import { isStudioRole, normalizeStudioRole, meetsStudioAdminActionRole } from '.
 import { normalizeDisplayName } from '../../../packages/studio-access/display-name.mjs';
 import { createStudioPasswordDelivery } from './studio-native-auth-actions.mjs';
 import { effectiveAccountRole } from '../../../packages/studio-access/account-role.mjs';
+import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_account_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
@@ -25,6 +26,15 @@ function walletUrl(value) {
       || ipv4[0] === 192 && ipv4[1] === 168 || ipv4[0] === 100 && ipv4[1] >= 64 && ipv4[1] <= 127)) fail();
   return url.href;
 }
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): every new partner key belongs to one company.
+// operatorId is checked on its own and removed, so the rest of the body keeps its own checks.
+const OPERATOR_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
+function keyOperatorBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) fail();
+  const { operatorId, ...rest } = body;
+  if (typeof operatorId !== 'string' || !OPERATOR_ID.test(operatorId)) fail();
+  return { operatorId, body: rest };
+}
 function ipAllow(value) {
   if (value === undefined || value === null || value === '') return null;
   if (!text(value, 2048)) fail();
@@ -40,6 +50,21 @@ export function createStudioAdminAccounts({ boDb, gameDb, scope, gameAuthority, 
   scope = validateStudioScope(scope);
   const handlers = new Map(), gates = new Map();
   const delivery = mail?.send ? createStudioPasswordDelivery({ boDb, mail, publicOrigin, now }) : null;
+  // The column arrives with game migration 012. Until then no key is created at all, so the
+  // table stays empty for it; once seen, the column never goes away again.
+  let operatorColumn = false;
+  async function keyOperator(operatorId) {
+    if (!operatorColumn) {
+      const column = await boDb.prepare("SELECT EXISTS (SELECT FROM pg_attribute WHERE attrelid=to_regclass('croupier_auth.api_keys') AND attname='operator_id' AND NOT attisdropped) AS present").get();
+      if (column?.present !== true) throw new StudioStorageError('partner_key_operator_schema_pending', 503);
+      operatorColumn = true;
+    }
+    // No foreign key between the schemas: the company must exist and be active in this scope.
+    const operator = await boDb.prepare('SELECT operator_id,status FROM croupier_studio.operators WHERE environment_id=? AND workspace_id=? AND operator_id=? FOR SHARE')
+      .get(scope.environment, scope.workspaceId, operatorId);
+    if (operator?.operator_id !== operatorId || operator.status !== 'active') throw new StudioStorageError('partner_key_operator_invalid', 422);
+    return operatorId;
+  }
   function trusted(context, action) {
     if (canonicalStudioJson(validateStudioScope(context.scope)) !== canonicalStudioJson(scope)
       || !text(context.actor?.user, 254) || !isStudioRole(context.actor.role)
@@ -86,14 +111,16 @@ export function createStudioAdminAccounts({ boDb, gameDb, scope, gameAuthority, 
     });
   }
   register('apikeys/create', async context => {
+    const bound = keyOperatorBody(context.body); context = { ...context, body: bound.body };
     keys(context.body,['name','scopes','walletUrl','ipAllow'],['name']);
     const { name, scopes = SCOPES } = context.body;
     if (!text(name,80) || !Array.isArray(scopes) || !scopes.length || scopes.some(scope => !SCOPES.includes(scope))
       || new Set(scopes).size !== scopes.length) fail();
     const wallet = walletUrl(context.body.walletUrl), ips = ipAllow(context.body.ipAllow);
+    const operatorId = await keyOperator(bound.operatorId);
     const id = randomUUID(), key = `ck_live_${randomBytes(18).toString('base64url')}`, secret = `cs_${randomBytes(32).toString('base64url')}`;
-    await boDb.prepare('INSERT INTO api_keys (id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
-      .run(id,name.trim(),key,secret,JSON.stringify(scopes),wallet,ips,context.actor.user,new Date(now()).toISOString());
+    await boDb.prepare('INSERT INTO api_keys (id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at,operator_id) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .run(id,name.trim(),key,secret,JSON.stringify(scopes),wallet,ips,context.actor.user,new Date(now()).toISOString(),operatorId);
     return { ok: true, key: { id, name: name.trim(), key, secret, scopes: [...scopes], walletUrl: wallet, note: 'Secret is shown ONCE. Store it now.' } };
   });
   if (typeof gameAuthority?.execute === 'function') {

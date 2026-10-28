@@ -536,3 +536,24 @@ test('a state restored beside a playing presentation does not renew the reconnec
   h.sockets[1].ended(1006); await until(() => h.errors.length === 1); await delay(15);
   assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]); assert.equal(h.sockets.length, 2);
 });
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the O02 receipt showed 15 sockets over 60 s ending in the error page.
+// A partner refused for its key's company is named in the server's 1008 close; the client ends at once with it.
+test('a partner refusal close ends the client at once with its code, without another socket', async t => {
+  const refused = (socket, reason) => { socket.readyState = 3; socket.dispatchEvent(Object.assign(new Event('close'), { code: 1008, reason })); };
+  for (const reason of ['partner_operator_mismatch', 'partner_key_unbound']) {
+    // Before any state (the upgrade's own refusal) and on an open, rendered socket alike.
+    for (const rendered of [false, true]) {
+      const h = setup(t); h.client.start();
+      if (rendered) { h.sockets[0].message(frame()); await until(() => h.calls.length === 2); }
+      refused(h.sockets[0], reason); await delay(30);
+      assert.equal(h.sockets.length, 1, `${reason} after state: ${rendered}`); assert.deepEqual(h.errors, [{ code: reason }]);
+      assert.equal(h.client.status().state, 'failed'); assert.equal(h.client.reconnect(), false); assert.equal(h.sockets[0].listeners.size, 0);
+    }
+  }
+  // Any other 1008 reason keeps its single re-authentication, and 1006 keeps its bounded retries.
+  const other = setup(t); other.client.start(); refused(other.sockets[0], 'shared_room_unauthorized');
+  await until(() => other.sockets.length === 2); assert.deepEqual(other.errors, []);
+  const network = setup(t); network.client.start(); network.sockets[0].ended(1006);
+  await until(() => network.sockets.length === 2); assert.deepEqual(network.errors, []);
+});
