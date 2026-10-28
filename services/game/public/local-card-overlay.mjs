@@ -78,6 +78,8 @@ export function createCardCursor(renderer, {canTrack=()=>true, filmedProfile=nul
     },
     // Selection failure still needs a coherent static result from server state.
     show(draw) { if (known(draw)) { visible.add(draw); render(); } },
+    // The film of this token already shows its card on the table (its face frame was presented, or the hole card turned).
+    shown(token) { return pending?.token === token && (pending.track === 'flip' ? revealed : visible.has(pending.draw)); },
     reveal(value) { round = value; revealed = true; render(); },
   };
 }

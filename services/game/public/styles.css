@@ -203,18 +203,37 @@ html[data-presentation-standard="three-layer"] .seat-inner { transform:scale(var
 html[data-presentation-standard="three-layer"] .seat-shared .seat-shared-inner { transform: none; }
 /* The 140 px seat box is wider than the seat spacing; only its buttons take clicks, never a neighbour's empty box. */
 .seat-shared .seat-shared-inner { pointer-events: none; }
-.seat-shared .seat-shared-join, .seat-shared-bet { pointer-events: auto; }
+.seat-shared .seat-shared-join, .seat-shared-bet, .seat-shared-leave { pointer-events: auto; }
 /* Shared-room banner: kept below the seats and wrapping, so it never covers seat controls or runs off a phone screen. */
 html[data-shared-room="1"] #banner { top: auto; bottom: 19vh; max-width: calc(100vw - 32px); white-space: normal; text-align: center; }
 .seat-shared .seat-shared-join { position: static; width: auto; min-width: 44px; min-height: 44px; padding: 0 12px; border-radius: 999px; font: 700 12px 'Space Grotesk', sans-serif; white-space: nowrap; }
-.seat-shared-bets { display: flex; gap: 4px; justify-content: center; z-index: 5; }
+/* The own seat's circle is filled and reads "Du"; it is a marker, not the place to bet. */
+.seat-shared.active .seat-shared-join { background: rgba(214,255,58,.9); border-color: rgba(214,255,58,.9); color: #101618; cursor: default; }
+.seat-shared .seat-shared-join:disabled { cursor: default; }
+.seat-shared-bets { display: flex; gap: 4px; justify-content: center; align-items: center; z-index: 5; margin-top: 10px; }
 /* Wide screens: neighbouring seats sit up to ~21 px lower on the arc, so the own bet row starts below their pills, and Redo goes below the bet rows. */
 @media (min-width: 861px) {
   .seat-shared-bets { margin-top: 16px; }
   html[data-shared-room="1"] #deal-now { top: auto; bottom: 23vh; }
 }
 .seat-shared-bets[hidden] { display: none; }
-.seat-shared-bet { min-width: 44px; min-height: 44px; padding: 0 8px; border-radius: 8px; font: 700 11px 'Space Grotesk', sans-serif; white-space: nowrap; }
+.seat-shared-bet { min-width: 44px; min-height: 44px; padding: 0 8px; border-radius: 8px; font: 700 11px 'Space Grotesk', sans-serif; white-space: nowrap; cursor: pointer; }
+/* The main bet looks like the table's betting spot (.spot): the larger, marked target with its amount. */
+.seat-shared-bet-main { min-width: 84px; min-height: 52px; padding: 0 12px; border-radius: 50%; border: 2px solid rgba(214,255,58,.85);
+  background: radial-gradient(ellipse, rgba(24,72,50,.62), rgba(20,60,42,.82)); color: #d6ff3a; font-size: 13px; box-shadow: 0 0 14px rgba(214,255,58,.35); }
+.seat-shared-bet-main.staked { background: radial-gradient(ellipse, rgba(214,255,58,.32), rgba(20,60,42,.85)); color: #f2f1ed; }
+/* Side bets: smaller and quieter beside it. */
+.seat-shared-bet-side { border: 1px solid rgba(214,255,58,.32); background: rgba(16,22,24,.7); color: rgba(242,241,237,.82); font-size: 10px; }
+.seat-shared-bet-side.staked { border-color: rgba(214,255,58,.7); color: #f2f1ed; }
+.seat-shared-bet:disabled { opacity: .5; cursor: default; box-shadow: none; }
+/* Leaving the seat is a small secondary control below the bets. */
+.seat-shared-leave { min-width: 44px; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: rgba(242,241,237,.82);
+  font: 600 11px 'Space Grotesk', sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.seat-shared-leave:disabled { opacity: .4; cursor: default; }
+/* K04 F8: the sign-in link after an expired session. */
+.shared-room-sign-in { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 8px; background: #d6ff3a; color: #101618;
+  font: 700 13px 'Space Grotesk', sans-serif; text-decoration: none; }
+.shared-room-sign-in[hidden] { display: none; }
 .spot {
   position: absolute; left: var(--spot-x); top: var(--spot-y); width: var(--spot-w); height: var(--spot-h); border-radius: 50%;
   background: radial-gradient(ellipse, rgba(24,72,50,.30), rgba(20,60,42,.38));

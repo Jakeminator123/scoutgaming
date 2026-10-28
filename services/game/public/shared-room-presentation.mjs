@@ -200,6 +200,8 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           try {
             const outcome=await Promise.race([stalled,leftStep,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
               onUnavailable:()=>{if(!clip.signal.aborted&&!closed&&accepting)unavailable=true;},
+              // K04 F9: a stalled take whose card this cursor already shows ends its step without error text.
+              shown:()=>token!==undefined&&!committed.has(index)&&cards.shown?.(token)===true,
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
                 if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
                 if((event.type==='deal'||event.type==='reveal')&&!committed.has(index))token=cards.begin(video,source);},
