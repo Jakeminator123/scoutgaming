@@ -7,6 +7,8 @@ const fields = Object.freeze({
   doubleBets: ['windowId'], allSeats: ['windowId', 'chip'], repeat: ['windowId'], ready: ['windowId'],
   act: ['roundId', 'turnSeq', 'box', 'handIndex', 'action'],
   insurance: ['roundId', 'phase', 'take'], next: ['roundId'], pause: [], refill: [],
+  // K6: a viewer without a box at a full table waits for one; the channel only reads, so this is a command.
+  wait: [],
 });
 const betting = new Set(['bet', 'undo', 'clear', 'doubleBets', 'allSeats', 'repeat']);
 const invalidInput = 'shared_room_invalid_command';
@@ -122,6 +124,9 @@ export function projectSharedRoomCommandResult(raw) {
       if (!['double', 'split'].includes(kind) || !number(amount) || amount <= 0) fail(invalidResult);
       return Object.freeze({ kind, amount });
     }));
+  } else if (op === 'wait') {
+    const waiting = get('waiting'); if (typeof waiting !== 'boolean') fail(invalidResult);
+    result.waiting = waiting;
   }
   return Object.freeze(result);
 }

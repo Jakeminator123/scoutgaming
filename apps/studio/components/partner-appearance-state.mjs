@@ -64,3 +64,13 @@ export function appearanceRoomStatus(state, roomId) {
   const live = Object.fromEntries(['background', 'dealer', 'table'].map(key => [key, override[key] ?? inherited[key] ?? lane.layers?.[key]?.default ?? null]));
   return { roomId: room.id, laneId: lane.id, packageRevision: state.packageRevision, draftRevision: appearanceDraftRevision(state), draft: Boolean(state.draft), live };
 }
+
+// How many values differ between two brandings (company fields and every room
+// override field). The primary action shows it: "Publicera · 2 ändringar".
+export function appearanceChangeCount(left, right) {
+  const a = appearanceBranding(left), b = appearanceBranding(right);
+  let changes = KEYS.filter(key => (a[key] ?? null) !== (b[key] ?? null)).length;
+  const rooms = new Set([...Object.keys(a.roomOverrides ?? {}), ...Object.keys(b.roomOverrides ?? {})]);
+  for (const room of rooms) changes += ROOM_KEYS.filter(key => (a.roomOverrides?.[room]?.[key] ?? null) !== (b.roomOverrides?.[room]?.[key] ?? null)).length;
+  return changes;
+}

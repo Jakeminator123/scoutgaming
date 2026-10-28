@@ -1,6 +1,6 @@
 # Gemensam rörlig talworker
 
-Status: live i produktion (Dragans rörliga tal).
+Status: byggd och provad för Dragans rörliga tal; rörligt tal är av i produktionen (`CROUPIER_MOVING_SPEECH_ENABLED=0`). Spelmotorn tar en bank per dealer.
 
 RunPod-worker som renderar tal under rörelse för hashbundna dealerbanker. Renderaren är Emils granskade `rorlig-9` med avgränsade protokollpatchar för rutantal och vilorutans identitet; `source.json` bevarar originalhasharna och beskriver avvikelserna. Modell-, blandnings- och kodningsreceptet är oförändrat. Workern innehåller ingen TTS, textmodell eller produktdatabas. Den äldre strömningsvägen för stillastående tal finns i [astrid-gpu-worker](../astrid-gpu-worker/README.md).
 
@@ -35,6 +35,16 @@ Montera `/banks` read-only med `<avatarSha256>.tar` och `<bankReceiptSha256>.jso
 ```
 
 Hasharna måste matcha jobbets binding. Bara HTTPS mot samma värd och port som callback, utan redirects, komprimering eller proxy. Svaret är status 200 med exakt `Content-Length` eller `Transfer-Encoding: chunked` ([RFC 9112 §7.1](https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1)); båda kräver exakt samma verifierade bytes, och motstridiga längder, andra kodningar, avbrutna eller för stora svar avvisas. Kvittot hämtas före arkivet, med 15 s I/O-gräns och 60 s totalt; högst 1 GiB arkiv och 128 KiB kvitto. Bytes hashkontrolleras före atomisk lagring under `/tmp/croupier-moving-banks`, varje cacheträff återverifieras och korrupta filer skrivs aldrig över automatiskt.
+
+## Bank per dealer i spelmotorn
+
+Spelmotorn läser `CROUPIER_MOVING_SPEECH_BANK_RECORDS`, ett JSON-objekt med dealer-ID som nyckel och bankens privata manifest som värde:
+
+```json
+{"dragan": {"provider": "vercel-blob", "pathname": "croupier/media/dealers/dragan/runtime/moving-bank/<uuid>/<sha256>.json", "contentType": "application/json", "size": 1045, "sha256": "<sha256>"}}
+```
+
+Varje manifest ligger under dealerns egen `croupier/media/dealers/<dealerId>/runtime/moving-bank/`, och bankens källor måste tillhöra samma dealer. Varje dealer har exakt en driftprofil i `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` med `dealerId`, en egen endpoint och `bankHash` lika med bankarkivets SHA-256; alla använder samma image och `CROUPIER_MOVING_SPEECH_RELEASE_SHA256`. En ny dealer behöver alltså en egen endpoint med samma mall (min 0, max 1). Budgeten är per dealer (`<dealerId>-test-20261017`). Se [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#driftväljarens-api).
 
 ## Session och protokoll
 

@@ -10,7 +10,7 @@ import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import { studioLoginReturnTo } from '../lib/studio-login-client.mjs';
 import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-session.mjs';
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
-import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, PARTNER_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
@@ -70,7 +70,7 @@ const rejectedReturns = [undefined, [' /partner'], ['/partner/north','/partner/s
   '/partner/north/rooms?room='+'a'.repeat(65),'/partner/north\r\nLocation: https://outside.invalid',
 ];
 
-safeReturns.push(...PARTNER_PREVIEW_VIEWS.flatMap(view=>{
+safeReturns.push(...PARTNER_VIEWS.flatMap(view=>{
   const path=workspaceSurfacePath('partner',view,'north');
   return [[path+'?scope=company',path+'?scope=company'],['/studio'+path+'?room=room-7',path+'?room=room-7']];
 }),['/studio/partner/north/tables?scope=company','/partner/north/rooms?scope=company']);
@@ -271,8 +271,8 @@ test('actual browser partner login returns to the authorized operator and room w
         assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo='+encodeURIComponent(target));
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+target);
-        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'bj'});
-        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'bj'});
+        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'rooms'});
+        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'rooms'});
         const cookies=await context.cookies();assert.equal(cookies.length,1);
         assert.equal(cookies[0].name,'partner_session');assert.equal(cookies[0].httpOnly,true);assert.equal(cookies[0].secure,true);assert.equal(cookies[0].sameSite,'Lax');
         assert.equal((await page.goto(origin+'/partner/south/rooms?room=room-7')).status(),403);

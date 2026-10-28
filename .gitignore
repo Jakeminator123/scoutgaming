@@ -44,9 +44,6 @@ vendor/
 /services/moving-gpu-worker/.build/
 /services/astrid-gpu-worker/gateway/.npm-cache/
 
-# Media migration ledger.
-/media/.migration/
-
 # Studio build output; never source.
 /apps/studio/preview-build/
 /apps/studio/design-preview-build/

@@ -112,15 +112,18 @@ export function createStudioAdminAccounts({ boDb, gameDb, scope, gameAuthority, 
   }
   register('apikeys/create', async context => {
     const bound = keyOperatorBody(context.body); context = { ...context, body: bound.body };
-    keys(context.body,['name','scopes','walletUrl','ipAllow'],['name']);
-    const { name, scopes = SCOPES } = context.body;
+    keys(context.body,['name','scopes','walletUrl','ipAllow','purpose'],['name']);
+    // purpose 'demo' (Demo-byggaren): the key is named demo-… and its key/secret never
+    // leave the server. Without it, Integrationer receives the secret exactly once.
+    const { name, scopes = SCOPES, purpose } = context.body, demo = purpose === 'demo';
     if (!text(name,80) || !Array.isArray(scopes) || !scopes.length || scopes.some(scope => !SCOPES.includes(scope))
-      || new Set(scopes).size !== scopes.length) fail();
+      || new Set(scopes).size !== scopes.length || purpose !== undefined && !demo || demo && !name.trim().startsWith('demo-')) fail();
     const wallet = walletUrl(context.body.walletUrl), ips = ipAllow(context.body.ipAllow);
     const operatorId = await keyOperator(bound.operatorId);
     const id = randomUUID(), key = `ck_live_${randomBytes(18).toString('base64url')}`, secret = `cs_${randomBytes(32).toString('base64url')}`;
     await boDb.prepare('INSERT INTO api_keys (id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at,operator_id) VALUES (?,?,?,?,?,?,?,?,?,?)')
       .run(id,name.trim(),key,secret,JSON.stringify(scopes),wallet,ips,context.actor.user,new Date(now()).toISOString(),operatorId);
+    if (demo) return { ok: true, key: { id, name: name.trim() } };
     return { ok: true, key: { id, name: name.trim(), key, secret, scopes: [...scopes], walletUrl: wallet, note: 'Secret is shown ONCE. Store it now.' } };
   });
   if (typeof gameAuthority?.execute === 'function') {

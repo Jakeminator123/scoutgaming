@@ -4,13 +4,14 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
-const tsx=name=>transformSync(readFileSync(new URL('../components/studio/'+name+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+// The Admin kit's dialog (components/ui/dialog.tsx) with the kit it builds on.
+const tsx=name=>transformSync(readFileSync(new URL('../components/ui/'+name+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 function load(name,extra={}){
   const module={exports:{}};
-  runInNewContext(tsx(name),{module,exports:module.exports,require:dep=>dep.endsWith('.module.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}:Object.hasOwn(extra,dep)?extra[dep]:require(dep)});
+  runInNewContext(tsx(name),{module,exports:module.exports,require:dep=>Object.hasOwn(extra,dep)?extra[dep]:require(dep)});
   return module.exports;
 }
-const {ConfirmDialog,ConfirmAcknowledgement}=load('confirm-dialog');
+const {ConfirmDialog,ConfirmAcknowledgement}=load('dialog',{'./kit':load('kit')});
 const html=props=>renderToStaticMarkup(React.createElement(ConfirmDialog,{open:true,title:'Radera Vila 1?',onConfirm(){},onCancel(){},...props}));
 
 test('an open dialog names its title and body for assistive technology and starts with the safe choice first',()=>{
@@ -19,7 +20,7 @@ test('an open dialog names its title and body for assistive technology and start
   assert.match(out,new RegExp(`<h2 id="${id}-title"`));assert.match(out,new RegExp(`aria-describedby="${id}-body"`));assert.match(out,new RegExp(`<div id="${id}-body"`));
   assert.match(out,/Används: Grundloop/);
   assert.ok(out.indexOf('>Avbryt<')<out.indexOf('>Radera<'),'cancel precedes the destructive button');
-  assert.doesNotMatch(out,/<dialog[^>]*\sopen/,'modal opening is done through showModal, not the open attribute');
+  assert.doesNotMatch(out.match(/<dialog[^>]*>/)[0].replace(/\sclass="[^"]*"/,''),/\sopen/,'modal opening is done through showModal, not the open attribute');
 });
 test('a closed dialog renders no content and a dialog without confirm label only informs',()=>{
   assert.match(html({open:false,confirmLabel:'Radera'}),/^<dialog [^>]*><\/dialog>$/);

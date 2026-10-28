@@ -18,3 +18,4 @@ export function changeAppearance(value:EditableBranding,change:{roomId?:string|n
 export function resetAppearanceRoom(value:EditableBranding,roomId:string):EditableBranding;
 export type AppearanceRoomLive = Record<'background'|'dealer'|'table',string|null>;
 export function appearanceRoomStatus(state:PartnerAppearanceInitial,roomId:string):{roomId:string;laneId:string;packageRevision:number;draftRevision:number;draft:boolean;live:AppearanceRoomLive}|null;
+export function appearanceChangeCount(left:unknown,right:unknown):number;

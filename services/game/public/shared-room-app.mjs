@@ -6,6 +6,7 @@ import { createSharedRoomCommandClient } from './shared-room-command-client.mjs'
 import { createSharedRoomController } from './shared-room-controller.mjs';
 import { createSharedRoomView } from './shared-room-view.mjs';
 import { mountSharedRoomPresentation } from './shared-room-presentation.mjs';
+import { createSharedRoomWaiting } from './shared-room-waiting.mjs';
 import { canonicalGameDestination } from '../../../packages/navigation/game-entry.mjs';
 
 // The player's sign-in for this table (as auth-modal.mjs): /player-login with the table's own game query,
@@ -173,9 +174,9 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   const loading=document.getElementById('presentation-loading'),loadingText=loading?.textContent??'Visar spelbordet…';
   let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
-  let presentation,view,controller,socket,commands,closed=false;
+  let presentation,view,controller,socket,commands,seats,closed=false;
   const fail=code=>{startup.fail();controller?.fail(code);};
-  const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();controller?.stop();
+  const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();seats?.stop();controller?.stop();
     if(!controller){commands?.stop();view?.close();presentation?.close();}startup.close();};
   window.addEventListener('pagehide',close,{once:true});
   try {
@@ -187,8 +188,11 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
       }});
     view=createView({document,onLayout:layout=>presentation.layout?.(layout),signInHref:signInPath(window.location)});
     controller=createSharedRoomController({roomId,commands,view,presentation,reconnect:()=>socket?.reconnect?.()});
+    // K6: at a full table without a seat the viewer's wait is renewed after each restored snapshot (shared-room-waiting.mjs).
+    seats=createSharedRoomWaiting({roomId,createCommands,state:()=>controller.state});
+    const restoreSnapshot=async(raw,options)=>{await controller.restoreSnapshot(raw,options);seats.update();};
     // A spent reconnect budget leaves the socket offline: the table keeps its last state and offers Återanslut.
-    socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot:controller.restoreSnapshot,
+    socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot,
       present:controller.present,onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
     socket.start();
     return Object.freeze({close,controller});

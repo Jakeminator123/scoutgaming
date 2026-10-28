@@ -212,13 +212,22 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
         && window.fixture.app.controller.state.waiting === null, snapshot.version);
     }
     assert.deepEqual(await page.evaluate(() => window.fixture.app.controller.state.snapshot.me.seats), [0, 6]);
-    for (const focus of [0, 6]) {
-      await page.getByLabel('Visa plats på bordet', { exact: true }).selectOption(String(focus));
+    // A phone chooses which three boxes it shows; a wide screen shows all seven and has no chooser.
+    const windows = page.getByLabel('Visa platser på bordet', { exact: true });
+    if (viewport.width < 860) {
+      for (const [start, seats] of [['0', [0, 1, 2]], ['4', [4, 5, 6]]]) {
+        await windows.selectOption(start);
+        const visible = await page.locator('.seat').evaluateAll(nodes => nodes.filter(node => !node.hidden).map(node => Number(node.dataset.seat)));
+        assert.deepEqual(visible, seats);
+        assert.equal(await page.locator(`.seat[data-seat="${seats.at(start === '0' ? 0 : -1)}"] .spot`).isVisible(), true);
+      }
+      await windows.selectOption('0');
+    } else {
+      assert.equal(await windows.isVisible(), false);
       const visible = await page.locator('.seat').evaluateAll(nodes => nodes.filter(node => !node.hidden).map(node => Number(node.dataset.seat)));
-      assert.deepEqual(visible, viewport.width < 860 ? focus === 0 ? [0, 1, 2] : [4, 5, 6] : [0, 1, 2, 3, 4, 5, 6]);
-      assert.equal(await page.locator(`.seat[data-seat="${focus}"] .spot`).isVisible(), true);
+      assert.deepEqual(visible, [0, 1, 2, 3, 4, 5, 6]);
+      for (const seat of [0, 6]) assert.equal(await page.locator(`.seat[data-seat="${seat}"] .spot`).isVisible(), true);
     }
-    await page.getByLabel('Visa plats på bordet', { exact: true }).selectOption('0');
     const wager = page.getByRole('button', { name: 'Plats 1, huvudinsats, 0', exact: true });
     let received = nextRequest(); await wager.focus(); await wager.press('Enter'); await received;
     await page.locator('#shared-room-retry').waitFor({ state: 'visible' });

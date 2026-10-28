@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   BASELINE_FOREIGN_BRANCHES, PR_FIELDS, changedPaths, evaluateMerge, foreignBranchPatterns, main, matchesGlob, parseArgs,
-  readPrFiles, securityVerdict,
+  readPrFiles, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
 import { featurePatterns } from '../tools/check-push-target.mjs';
 
@@ -161,8 +161,9 @@ test('the REST file list is read as JSON lines and fails closed', () => {
 });
 
 function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { status: 0, stdout: '' }, fetch = { status: 0, stdout: '' },
-  onMain = true, trusted = { 'inbox/people.json': people, 'tools/repository-policy.json': policy } } = {}) {
-  const calls = { gh: [], git: [], security: 0 }, lines = [];
+  onMain = true, trusted = { 'inbox/people.json': people, 'tools/repository-policy.json': policy },
+  securityResults = [cleanSecurity] } = {}) {
+  const calls = { gh: [], git: [], security: 0, sleeps: [] }, lines = [];
   return {
     calls, lines,
     run: args => main({
@@ -180,7 +181,8 @@ function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { stat
         const path = argv[1].replace(/^origin\/main:/, '');
         return trusted[path] ? { status: 0, stdout: JSON.stringify(trusted[path]) } : { status: 128, stdout: '' };
       },
-      security: () => { calls.security++; return cleanSecurity; },
+      security: () => securityResults[Math.min(calls.security++, securityResults.length - 1)],
+      sleep: ms => { calls.sleeps.push(ms); },
     }),
   };
 }
@@ -230,4 +232,34 @@ test('main refuses without merging, and dry-run never merges', () => {
   assert.throws(() => harness({ fetch: { status: 128, stdout: '' } }).run(['42', '--head', HEAD]), /fetch/);
   assert.throws(() => harness({ trusted: {} }).run(['42', '--head', HEAD]), /origin\/main/);
   assert.equal(harness().run(['42']), 2);
+});
+
+test('an unreadable security-status is retried once after ~10 s; attention codes are never retried', () => {
+  const merges = h => h.calls.gh.filter(argv => argv[1] === 'merge').length;
+  const broken = { status: 1, stdout: '' };
+  const recovered = harness({ securityResults: [broken, cleanSecurity] });
+  assert.equal(recovered.run(['42', '--head', HEAD]), 0);
+  assert.equal(recovered.calls.security, 2);
+  assert.deepEqual(recovered.calls.sleeps, [SECURITY_RETRY_MS]);
+  assert.ok(SECURITY_RETRY_MS >= 10000);
+  assert.ok(recovered.lines.some(line => /^omförsök security: security-status kunde inte läsas/.test(line)));
+  assert.ok(recovered.lines.some(line => /^ok  security: .*efter ett omförsök/.test(line)));
+  assert.equal(merges(recovered), 1);
+  const garbled = harness({ securityResults: [{ status: 0, stdout: 'not json' }, cleanSecurity] });
+  assert.equal(garbled.run(['42', '--head', HEAD]), 0);
+  assert.equal(garbled.calls.security, 2);
+  const twice = harness({ securityResults: [broken, broken] });
+  assert.equal(twice.run(['42', '--head', HEAD]), 1);
+  assert.equal(twice.calls.security, 2);
+  assert.equal(merges(twice), 0);
+  assert.ok(twice.lines.some(line => /^nej security: .*efter ett omförsök/.test(line)));
+  const attention = harness({ securityResults: [{ status: 0, stdout: JSON.stringify({ attention: ['gitguardian_check_requires_attention'] }) }, cleanSecurity] });
+  assert.equal(attention.run(['42', '--head', HEAD]), 1);
+  assert.equal(attention.calls.security, 1);
+  assert.deepEqual(attention.calls.sleeps, []);
+  assert.equal(merges(attention), 0);
+  const clean = harness();
+  assert.equal(clean.run(['42', '--head', HEAD]), 0);
+  assert.deepEqual(clean.calls.sleeps, []);
+  assert.ok(clean.lines.every(line => !/omförsök/.test(line)));
 });

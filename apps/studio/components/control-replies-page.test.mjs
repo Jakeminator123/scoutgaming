@@ -26,7 +26,7 @@ const props={dealers:[{id:'astrid',label:'Astrid'},{id:'elin',label:'Elin'}],ini
 const sample=(patch={})=>({id:'11111111-1111-4111-8111-111111111111',dealerId:'astrid',exactText:'Hej! Vad roligt att se dig.',language:'sv',createdAt:'2026-10-12T10:20:00.000Z',profileRevision:'a'.repeat(64),revision:1,categories:['player-greeting'],reviewStatus:'pending',media:{audio:{available:true,sha256:'b'.repeat(64),contentType:'audio/wav',size:100},video:{available:true,sha256:'c'.repeat(64),contentType:'video/mp4',size:200}},...patch});
 function harness(requestJson,p=props){
   const values=[],refs=[],effects=[],listeners=new Map(),calls=[];let cursor=0,refCursor=0,effectCursor=0;
-  const initialUrl=new URL(studioNavigationHref('/admin/replies',{...p.initialNavigationContext,dealerId:p.initialDealerId}),'https://local.test');if(p.initialCategory)initialUrl.searchParams.set('category',p.initialCategory);
+  const initialUrl=new URL(p.initialHref??studioNavigationHref('/admin/replies',{...p.initialNavigationContext,dealerId:p.initialDealerId}),'https://local.test');if(p.initialCategory)initialUrl.searchParams.set('category',p.initialCategory);
   let historyState=null;
   const writeHistory=(value,_title,url)=>{historyState=structuredClone(value);if(url!==undefined)initialUrl.href=new URL(url,initialUrl).href;};
   const runtimeWindow={location:initialUrl,history:{get state(){return historyState;},pushState:writeHistory,replaceState:writeHistory},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);},dispatchEvent(event){listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
@@ -86,7 +86,7 @@ test('unsaved categories guard filters, dealer changes, leaving and browser hist
   select(tree,'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('category'),'');assert.equal(h.state('dealerId'),'astrid');
   const nav=nodes(tree,node=>node.props?.active==='replies')[0],clipLink=nodes(nav.type(nav.props),node=>node.type==='a'&&node.props.children==='Klippkarta')[0],event={button:0,preventDefault(){this.blocked=true;}};clipLink.props.onClick(event);assert.equal(event.blocked,true);
   const unload={preventDefault(){this.blocked=true;}};h.listeners.get('beforeunload')(unload);assert.equal(unload.blocked,true);
-  h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/dealer=astrid/);
+  h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/\/admin\/dealers\/astrid\?/,'the vetoed traversal restores the dealer nav address');
   button(tree,'Ångra kategorival').props.onClick();tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('dealerId'),'elin');
 });
 
@@ -124,10 +124,37 @@ test('Admin replies component preserves exact Studio context through real naviga
   const h=await loaded(async()=>({items:[],nextCursor:null}),p);
   const links=()=>{const nav=nodes(h.render(),node=>node.props?.active==='replies')[0];return nodes(nav.type(nav.props),node=>node.type==='a');};
   const clips=()=>links().find(link=>link.props.children==='Klippkarta');
-  assert.equal(links().some(link=>link.props.href.startsWith('/admin/compositions')),false);assert.equal(clips().props.href,"/admin/clips?dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette");
+  // The Klippkarta tab carries the exact Studio context; the token and the foreign tab never follow.
+  const context=href=>{const url=new URL(href,'https://local.test');assert.ok(url.pathname.startsWith('/admin/dealers'),href);return Object.fromEntries(url.searchParams);};
+  const full={dealer:'astrid',event:'speak.goodluck',variant:'astrid.goodluck.alt-2',situation:'goodluck',composition:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette'};
+  const withoutDealer=href=>{const value=context(href);delete value.dealer;delete value.flik;return value;};
+  assert.equal(links().some(link=>link.props.href.startsWith('/admin/compositions')),false);assert.deepEqual(withoutDealer(clips().props.href),(({dealer,...rest})=>rest)(full));
   const event={button:0,preventDefault(){this.blocked=true;}};clips().props.onClick(event);assert.equal(event.blocked,undefined);
-  select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;assert.equal(new URL(previousHref).pathname,'/admin/replies');assert.equal(new URL(previousHref).searchParams.get('category'),'game-win');
-  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.equal(clips().props.href,"/admin/clips?dealer=elin&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette");for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');assert.equal(h.window.location.pathname,'/admin/replies');for(const key of ['operator','table','game'])assert.equal(h.window.location.searchParams.get(key),query[key]);
-  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.equal(clips().props.href,"/admin/clips?dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette");assert.equal(h.state('category'),'game-win');
+  select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;assert.ok(new URL(previousHref).pathname.startsWith('/admin/dealers'));assert.equal(new URL(previousHref).searchParams.get('category'),'game-win');
+  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.deepEqual(withoutDealer(clips().props.href),{composition:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette'});assert.ok(clips().props.href.includes('elin'),'the new dealer follows');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');assert.ok(h.window.location.pathname.startsWith('/admin/dealers'));for(const key of ['operator','table','game'])assert.equal(h.window.location.searchParams.get(key),query[key]);
+  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.deepEqual(withoutDealer(clips().props.href),(({dealer,...rest})=>rest)(full));assert.ok(clips().props.href.includes('astrid'));assert.equal(h.state('category'),'game-win');
   for(const[url,init]of h.calls){assert.equal(parseStudioRepliesRequest(init.method??'GET',new URL(url,'https://local.test')).kind,'list');assert.deepEqual([...new URL(url,'https://local.test').searchParams.keys()],['dealer','category']);}
+});
+
+// Svarsbiblioteket is mounted inside the dealer nav (/admin/dealers/<d>?flik=tal). studioNavigationHref applies the dealer
+// before it canonicalizes the retired tab paths, so every tab link and every filter or dealer write stays a nav address.
+test('the embedded reply library links to its dealer nav tabs and filtering never leaves the nav',async()=>{
+  const h=await loaded(async()=>({items:[],nextCursor:null}),{...props,initialHref:'/admin/dealers/astrid?flik=tal'});
+  const nav=nodes(h.render(),node=>node.props?.active==='replies')[0],links=nodes(nav.type(nav.props),node=>node.type==='a');
+  const href=label=>new URL(links.find(link=>link.props.children===label).props.href,'https://local.test');
+  assert.equal(href('Klippkarta').pathname,'/admin/dealers/astrid');assert.equal(href('Klippkarta').searchParams.get('flik'),'klipp');
+  assert.equal(href('Röst & tal').searchParams.get('flik'),'tal');assert.equal(href('Svarsbibliotek').searchParams.get('flik'),'tal');
+  assert.equal(href('Inställningar').searchParams.get('flik'),'installningar');assert.equal(href('Skapa material').searchParams.get('panel'),'generera');
+  for(const link of links){const url=new URL(link.props.href,'https://local.test');assert.equal(url.pathname,'/admin/dealers/astrid',link.props.href);assert.equal(url.searchParams.has('dealer'),false,link.props.href);}
+  // The nav owns a dealer: the library offers no "no dealer" choice that would open the dealer list.
+  assert.equal(nodes(select(h.render(),'Dealer i svarsbiblioteket'),node=>node.type==='option'&&node.props.value==='').length,0);
+  select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();
+  assert.equal(h.window.location.pathname,'/admin/dealers/astrid');assert.equal(h.window.location.searchParams.get('flik'),'tal');
+  assert.equal(h.window.location.searchParams.get('category'),'game-win');
+  // Another dealer opens that dealer's nav on the same tab; Back restores the dealer from the path.
+  const before=h.window.location.href;
+  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();
+  assert.equal(h.window.location.pathname,'/admin/dealers/elin');assert.equal(h.window.location.searchParams.get('flik'),'tal');assert.equal(h.window.location.searchParams.has('dealer'),false);
+  h.window.location.href=before;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();
+  assert.equal(h.state('dealerId'),'astrid');assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');
 });

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminAccounts } from '../apps/studio/lib/studio-admin-accounts.mjs';
 import { createStudioAdminApi } from '../apps/studio/lib/studio-admin-api.mjs';
+import { createStudioAdminData } from '../apps/studio/lib/studio-admin-data.mjs';
 
 const scope = {environment:'fixture',workspaceId:'croupier'}, publicOrigin = 'https://studio.example.invalid';
 function fixture(overrides = {}) {
@@ -162,6 +163,55 @@ test('Admin HTTP names the company and schema refusals of a partner create witho
     assert.equal(reply.status, status); assert.equal((await reply.json()).code, code);
     assert.deepEqual(f.state.apiKeys, []);
   }
+});
+
+test('demo create (purpose demo) stores a demo- key but its reply, also over HTTP, carries no key or secret', async () => {
+  const f = fixture(), response = await f.call('apikeys/create',{name:' demo-Johns Bet ',scopes:['launch','play'],purpose:'demo',operatorId:'north'});
+  const [id, name, key, secret, scopes] = f.state.apiKeys[0];
+  assert.deepEqual(response,{ok:true,key:{id,name:'demo-Johns Bet'}});
+  assert.doesNotMatch(JSON.stringify(response),/ck_live_|cs_|secret|scopes|walletUrl|note/);
+  assert.equal(name,'demo-Johns Bet'); assert.equal(f.state.apiKeys[0][9],'north'); assert.match(key,/^ck_live_/); assert.match(secret,/^cs_/); assert.equal(scopes,'["launch","play"]');
+  for (const body of [{name:'Johns Bet',purpose:'demo'},{name:'Demo-x',purpose:'demo'},{name:'demo-x',purpose:'integration'},{name:'demo-x',purpose:''},
+    {name:'demo-x',purpose:null},{name:'demo-x',purpose:true},{name:'demo-x',purpose:['demo']}]) {
+    await assert.rejects(f.call('apikeys/create',{...body,operatorId:'north'}),error=>error.statusCode===400,JSON.stringify(body));
+  }
+  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'demo-x',purpose:'demo',operatorId:'north'},role),error=>error.statusCode===403);
+  assert.equal(f.state.apiKeys.length,1);
+  const api = createStudioAdminApi({ authorize: () => ({ user: 'operator', role: 'admin', scope }), handlers: f.data.handlers, gates: f.data.gates,
+    allowedOrigins: [publicOrigin], publicHosts: [new URL(publicOrigin).host], mutationTransaction: work => f.boDb.transaction(work) });
+  const reply = await api.handle(new Request(`${publicOrigin}/studio/api/admin/apikeys/create`, { method: 'POST',
+    headers: { origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'demo-Acme', scopes: ['launch','play'], purpose: 'demo', operatorId: 'north' }) }));
+  assert.equal(reply.status, 200);
+  const text = await reply.text(), stored = f.state.apiKeys[1];
+  assert.deepEqual(JSON.parse(text), { ok: true, key: { id: stored[0], name: 'demo-Acme' } });
+  for (const value of [stored[2], stored[3]]) assert.equal(text.includes(value), false);
+});
+
+test('create without purpose shows the secret exactly once, in its reply; the key list never returns key or secret', async () => {
+  const f = fixture(), created = await f.call('apikeys/create',{name:'Partner AB',scopes:['launch','wallet'],operatorId:'north'});
+  const stored = f.state.apiKeys[0];
+  assert.equal(created.key.key, stored[2]); assert.equal(created.key.secret, stored[3]); assert.match(created.key.secret,/^cs_[A-Za-z0-9_-]{43}$/);
+  assert.equal(JSON.stringify(created).split(stored[3]).length - 1, 1);
+  // GET apikeys (the Integrationer list) against the stored row, honouring the handler's own column list.
+  const row = Object.fromEntries(['id','name','key','secret','scopes','wallet_url','ip_allow','created_by','created_at'].map((column, index) => [column, stored[index]]));
+  Object.assign(row, { last_used: null, revoked_at: null });
+  const listDb = { prepare(sql) {
+    const columns = /^SELECT (.+) FROM api_keys ORDER BY created_at DESC$/.exec(sql)?.[1].split(',');
+    assert.ok(columns, sql);
+    const project = () => Object.fromEntries(columns.map(column => {
+      const alias = / AS ([a-z_]+)$/.exec(column)?.[1];
+      if (alias === 'wallet_configured' && column.startsWith('(wallet_url IS NOT NULL')) return [alias, Boolean(row.wallet_url)];
+      assert.ok(Object.hasOwn(row, column), `unknown column ${column}`);
+      return [column, row[column]];
+    }));
+    return { all: async () => [project()], get: async () => project(), run: async () => assert.fail('the key list never writes') };
+  }, transaction: work => work() };
+  const data = createStudioAdminData({ db: listDb, boDb: listDb, scope, repository: { readDocument: async () => null, saveDocument: async () => assert.fail('no writes') } });
+  const listed = await data.handlers.get('GET /studio/api/admin/apikeys')({ actor: { user: 'operator', role: 'admin' }, scope });
+  assert.deepEqual(listed.keys.map(key => [key.id, key.name, key.scopes]), [[stored[0], 'Partner AB', ['launch','wallet']]]);
+  for (const value of [stored[2], stored[3], 'ck_live_', 'cs_']) assert.equal(JSON.stringify(listed).includes(value), false, value);
+  assert.equal(Object.hasOwn(listed.keys[0], 'secret') || Object.hasOwn(listed.keys[0], 'key'), false);
 });
 
 test('wallet callback metadata rejects local addresses, credentials and malformed URLs before insert', async () => {

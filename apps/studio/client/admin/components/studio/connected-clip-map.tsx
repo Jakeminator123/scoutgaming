@@ -11,13 +11,10 @@ import { DealerIdentityPortrait } from './dealer-identity-portrait';
 import { bindClip, bindNativeFilmedBank, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace, type VideoInventory } from '../../lib/connected-studio.mjs';
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import { replaceContext, usePathname, useSearchParams } from '../../../runtime/navigation';
-import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
+import Link, { replaceContext, usePathname, useSearchParams } from '../../../runtime/navigation';
+import {isInternalAdminPathname,isStudioAdminRoute,parseAdminPath} from '../../../runtime/admin-routing.mjs';
 import { groupSlots, affectedRooms, slotCaption, slotExplanation, layoutClipCards, clipLibraryForSlot, clipVariantChoices } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
-import { StudioNavigation } from '../../../../components/studio-navigation';
-import { ProbeEditor } from '../../../../components/probe-editor';
-import { createDefaultProbePolicy } from '../../../../../../packages/presentation/contracts/probe-policy.mjs';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
 import { ClipDeleteAction } from './clip-delete-action';
 import { studioClipUsage } from '../../lib/studio-policy.mjs';
@@ -34,17 +31,30 @@ import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 
 const client = createStudioClient();
 const resourcePanel=(value:string|null):'room'|'dealer'|'layers'|null=>value==='room'||value==='dealer'||value==='layers'?value:null;
-const routePanel=(value:string|null)=>value==='intake'?'intake':resourcePanel(value);
+const routePanel=(value:string|null)=>value==='intake'||value==='generera'?'intake':resourcePanel(value);
+/** The one clip-map instance is mounted under the dealer nav (/admin/dealers/<dealer>?flik=) or under Scenmallar (/admin/scenes?tab=mallar). */
+export type ClipMapRoute={kind:'dealer';dealerId:string;base:string}|{kind:'scenes';base:string};
+// The nav's tab decides the panel: Röst och tal and Inställningar are resource editors, Klippkarta carries ?panel=.
+const panelForLocation=(pathname:string,params:URLSearchParams)=>{
+  const route=parseAdminPath(pathname);
+  if(route.page==='scenes')return 'layers' as const;
+  const flik=params.get('flik');
+  return flik==='tal'?'room':flik==='installningar'?'dealer':routePanel(params.get('panel'));
+};
+const routeDealerId=(pathname:string)=>{const route=parseAdminPath(pathname);return route.page==='dealer'?route.id:null;};
+export type { Workspace as ClipMapWorkspace } from '../../lib/connected-studio.mjs';
 // Speech, roulette and planned slots have their own editors; everything else has a run rule.
 const ruleEditable=(slot:ClipSlot)=>!slot.intakeOnly&&!slot.planned&&slot.game!=='roulette'&&slot.sourceType!=='speak';
 const nodeTypes = { registeredClip: ConnectedClipCard };
 const button = 'rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-40';
 const input = 'min-w-0 rounded border border-sg-line bg-sg-panel p-2 text-xs';
 
-function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:{active?:boolean;onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;refreshKey?:number}) {
+type MapProps={route:ClipMapRoute;active?:boolean;onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;onWorkspaceChange?:(workspace:Workspace|null,saved:StudioProject|null)=>void;refreshKey?:number};
+function WorkspaceMap({route,active=true,onDirtyChange,onRevisionChange,onWorkspaceChange,refreshKey=0}:MapProps) {
   // Accepted snapshots stay fixed while a rejected history move is restored.
   const path=usePathname(), search=useSearchParams().toString();
-  const sceneEditor=path==='/admin/scenes';
+  const sceneEditor=route.kind==='scenes';
+  const dealerRoute=route.kind==='dealer'?route:null;
   const { setViewport, fitView, zoomIn, zoomOut } = useReactFlow();
   const [zoom,setZoom] = useState(1);
   const [activeGroupId,setActiveGroupId] = useState('');
@@ -84,10 +94,12 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
   const [operatorId, setOperatorId] = useState(() => new URLSearchParams(location.search).get('operator') ?? '');
   const [roomId, setRoomId] = useState(() => new URLSearchParams(location.search).get('table') ?? '');
   const [compositionId,setCompositionId]=useState(()=>new URLSearchParams(location.search).get('composition')??new URLSearchParams(location.search).get('lane')??'');
-  const [dealerId, setDealerId] = useState(() => new URLSearchParams(location.search).get('dealer') ?? '');
+  const [dealerId, setDealerId] = useState(() => dealerRoute?.dealerId ?? new URLSearchParams(location.search).get('dealer') ?? '');
+  // The nav owns the dealer: a new dealer in the path replaces the map's selection.
+  useEffect(()=>{if(dealerRoute&&dealerRoute.dealerId!==dealerId)setDealerId(dealerRoute.dealerId);},[dealerRoute?.dealerId]);
   const [game, setGame] = useState<'blackjack'|'roulette'>(()=>new URLSearchParams(location.search).get('game')==='roulette'?'roulette':'blackjack');
   const [gameExplicit,setGameExplicit]=useState(()=>['blackjack','roulette'].includes(new URLSearchParams(location.search).get('game')??''));
-  const [panel, setPanel] = useState<'scene'|'clip'|'room'|'dealer'|'layers'|'policy'|'intake'|'roulette-start'|'roulette-media'|null>(()=>location.pathname==='/admin/scenes'?'layers':routePanel(new URLSearchParams(location.search).get('panel')));
+  const [panel, setPanel] = useState<'scene'|'clip'|'room'|'dealer'|'layers'|'policy'|'intake'|'roulette-start'|'roulette-media'|null>(()=>panelForLocation(location.pathname,new URLSearchParams(location.search)));
   // Intake rows live in the panel; the map only knows what is being dragged and how many files await approval.
   const intakeApi=useRef<ClipIntakeHandle|null>(null);
   const intakeDrop=useRef<AbortController|null>(null);
@@ -121,6 +133,8 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
   const dirty = Boolean(data && base && JSON.stringify(data.project) !== JSON.stringify(base));
   useEffect(()=>{onDirtyChange?.(dirty||configDirty||Boolean(pending)||locked);},[dirty,configDirty,pending,locked,onDirtyChange]);
   useEffect(()=>{if(base)onRevisionChange?.(base.revision);},[base?.revision,onRevisionChange]);
+  // The dealer nav reads the same workspace the map loaded; no second load.
+  useEffect(()=>{onWorkspaceChange?.(data,base);},[data,base,onWorkspaceChange]);
   const registry = data?.catalog.administration;
   const requestedRoom=registry?.rooms.find(row=>row.id===roomId&&(!operatorId||row.operatorId===operatorId));
   const resolved=data?studioContext(data.catalog,data.project,{operatorId,game:requestedRoom?.game??game,roomId,compositionId,dealerId,library:true}):null;
@@ -165,10 +179,10 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
   useEffect(()=>{if(!localReference){setReferenceUrl('');return;}const url=URL.createObjectURL(localReference.file);setReferenceUrl(url);return()=>URL.revokeObjectURL(url);},[localReference]);
   useEffect(() => { if (pending && uploadDialog.current && !uploadDialog.current.open) uploadDialog.current.showModal(); }, [pending]);
   useEffect(() => {
-    if (!data || !dealer || !isStudioAdminRoute(path,search) || new URLSearchParams(search).get('tool')==='import') return;
+    if (!data || !dealer || !isStudioAdminRoute(path) || new URLSearchParams(search).get('tool')==='import') return;
     const query = new URLSearchParams(search);
     ['operator','table','composition','dealer','game'].forEach(key => query.delete(key)); query.delete('lane');
-    context.forEach((value,key) => query.set(key,value));
+    context.forEach((value,key) => {if(!(dealerRoute&&key==='dealer'))query.set(key,value);});
     if(query.toString()!==search)replaceContext(`${path}?${query}`);
   }, [path, search, operator?.id, room?.id, compositionId, lane?.id, dealer?.id, game]);
   useEffect(() => {
@@ -180,13 +194,13 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
         const url=new URL(target,location.origin);
         if(url.origin===location.origin&&isInternalAdminPathname(url.pathname)) {
           // Dealer registration/import does not select a room's permitted dealer.
-          if(!isStudioAdminRoute(url.pathname,url.search)||url.searchParams.get('tool')==='import')return;
-          const query=url.searchParams;
-          if(registry&&['operator','table','composition','lane','dealer','game'].some(key=>query.has(key))) {
+          if(!isStudioAdminRoute(url.pathname)||url.searchParams.get('tool')==='import')return;
+          const query=url.searchParams,pathDealer=routeDealerId(url.pathname);
+          if(registry&&(pathDealer||['operator','table','composition','lane','dealer','game'].some(key=>query.has(key)))) {
             const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
             const nextOperator=query.get('operator')??requestedRoom?.operatorId??operator?.id??'';
             const nextRoom=requestedRoom?.operatorId===nextOperator?requestedRoom.id:query.has('table')?query.get('table')??'':query.has('game')?'':room?.id??'';
-            const nextDealer=query.get('dealer')??dealer?.id??'';
+            const nextDealer=pathDealer??query.get('dealer')??dealer?.id??'';
             const hasGame=['blackjack','roulette'].includes(query.get('game')??'');
             const nextGame=hasGame?(query.get('game')==='roulette'?'roulette':'blackjack')
               : requestedRoom?.operatorId===nextOperator?(requestedRoom.game==='roulette'?'roulette':'blackjack'):game;
@@ -196,7 +210,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
               if(!changeContext(()=>{setOperatorId(nextOperator);setRoomId(nextRoom);setCompositionId(nextComposition);setDealerId(nextDealer);setGame(nextGame);setGameExplicit(nextGameExplicit);})){event.preventDefault();return;}
             }
           }
-          if(!openPanel(url.pathname==='/admin/scenes'?'layers':routePanel(query.get('panel')),false))event.preventDefault();
+          if(!openPanel(panelForLocation(url.pathname,query),false))event.preventDefault();
           return;
         }
       }
@@ -294,11 +308,20 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     if(startDirty&&!confirm('Kasta filmformulärets osparade ändringar?'))return false;
     setStartDirty(false);setPanelEpoch(value=>value+1);setPanel(next);
     if(syncUrl){const query=new URLSearchParams(location.search),resource=routePanel(next);
-      if(resource&&resource!=='layers')query.set('panel',resource);else query.delete('panel');
-      replaceContext((next==='layers'?'/admin/scenes':'/admin/clips')+(query.size?'?'+query:'')+location.hash);
+      query.delete('panel');query.delete('tool');
+      if(sceneEditor){query.set('tab','mallar');}
+      else{
+        // The dealer nav's tab follows the panel: Röst och tal, Inställningar or Klippkarta (with ?panel=intake).
+        query.set('flik',resource==='room'?'tal':resource==='dealer'?'installningar':'klipp');
+        if(resource==='intake')query.set('panel','intake');
+      }
+      replaceContext(route.base+(query.size?'?'+query:'')+location.hash);
     }
     return true;
   }
+  // Scenmallar and the dealer's clip map are the same mounted instance; these links carry its context.
+  const scenesHref='/admin/scenes?'+new URLSearchParams({tab:'mallar',...(dealer?{dealer:dealer.id}:{})});
+  const dealerHref=(flik:string,extra:Record<string,string>={})=>dealer?`/admin/dealers/${encodeURIComponent(dealer.id)}?`+new URLSearchParams({flik,...extra}):'/admin/dealers';
   function togglePanel(next:typeof panel) {openPanel(panel===next?null:next);}
   const resourceEditor=Boolean(resourcePanel(panel));
   const PanelTitle=resourceEditor?'h1':'h2';
@@ -344,35 +367,35 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     playingPreview.current=media;
   }} className="studio-clip-workspace flex min-h-0 flex-1 flex-col" aria-label={sceneEditor?'Sceneditor':'Klippkarta för vald dealer'}>
     <header className="studio-workspace-header">
-      <div className="studio-workspace-toolbar"><p>{sceneEditor?'Sceneditor':'Klippkarta'} <span>{sceneEditor?'En gemensam mall för placering och tillåtna material.':'Välj dealer och ordna klipp för spelets händelser.'}</span></p>
+      <div className="studio-workspace-toolbar"><p hidden={Boolean(dealerRoute)}>{sceneEditor?'Scenmall':'Klippkarta'} <span>{sceneEditor?'Placering av bakgrund, dealer och bordsgrafik samt vilka dealers och vilket material mallen tillåter.':'Ordna standardklipp och varianter för varje spelsituation.'}</span></p>
         <div className="studio-save-actions"><span className={dirty||configDirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':configDirty?'Osparat formulär':dirty?'Osparat utkast':data?'Projektutkast sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>void save()}>Spara utkast</button><button className="studio-button" aria-label={dirty||pending||configDirty?'Kasta ändringar':'Läs om register'} disabled={locked||loading} onClick={()=>{if((dirty||pending||configDirty)&&!confirm('Kasta dina osparade ändringar och hämta senaste sparade utkast?'))return;setPending(null);setPanel(sceneEditor?'layers':null);setSpeechDealer('');setStartDirty(false);setConfigDirty(false);void load();}}>{dirty||pending||configDirty?'Kasta ändringar':<RotateCcw size={15}/>}</button></div></div>
       {registry&&<>
         <div className="studio-context-row studio-primary-context">
-          <label className="studio-field">Dealer<select ref={dealerSelect} aria-label="Dealer" value={dealer?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+          {sceneEditor?<label className="studio-field">Dealer<select ref={dealerSelect} aria-label="Dealer" value={dealer?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+            :dealerRoute?(dealer?<p className="studio-field">Klippkarta för<strong>{dealer.label}</strong></p>:null):<p className="studio-field">Dealer<strong>{dealer?.label??dealerId}</strong></p>}
           <label className="studio-field">Spel<select value={game} disabled={locked||loading} onChange={event=>changeContext(()=>{setGame(event.target.value as 'blackjack'|'roulette');setGameExplicit(true);setRoomId('');setCompositionId('');})}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
-          {panel!=='room'&&panel!=='dealer'&&<label className="studio-field">Mall<select aria-label="Mall" value={lane?.id??''} disabled={locked||loading||!dealer||!editableCompositions.length} title={editableCompositions.length?'Den delade mallen för bakgrund, dealer och bord':'Ingen mall tillåter vald dealer ännu'} onChange={event=>changeContext(()=>setCompositionId(event.target.value))}><option value="">{room?'Rummets mall':editableCompositions.length?'Välj mall…':'Ingen mall'}</option>{editableCompositions.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
+          {panel!=='room'&&panel!=='dealer'&&<label className="studio-field">Scenmall<select aria-label="Scenmall" value={lane?.id??''} disabled={locked||loading||!dealer||!editableCompositions.length} title={editableCompositions.length?'Scenmallen för bakgrund, dealer och bordsgrafik':'Ingen scenmall tillåter vald dealer ännu'} onChange={event=>changeContext(()=>setCompositionId(event.target.value))}><option value="">{room?'Spelbordets scenmall':editableCompositions.length?'Välj scenmall…':'Ingen scenmall'}</option>{editableCompositions.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
           {panel!=='room'&&panel!=='dealer'&&<button className="studio-button" disabled={!dealer||locked} onClick={()=>togglePanel('scene')}>Scenförhandsvisning</button>}
-          {panel!=='room'&&panel!=='dealer'&&<button className="studio-button" disabled={!dealer||locked} title={lane?'Redigera den valda delade mallen':'Välj eller skapa en scen för bakgrund, dealer och bord'} onClick={()=>openPanel(sceneEditor?null:'layers')}><Layers size={16}/>{sceneEditor?'Till klippkartan':'Öppna sceneditor'}</button>}
-          {panel!=='room'&&panel!=='dealer'&&panel!=='layers'&&<button className="studio-button studio-intake-open" disabled={!dealer||locked||game!=='blackjack'} aria-pressed={panel==='intake'} title={game==='blackjack'?'Dra in filer eller en mapp och få förslag på fack':'Roulettefilmer laddas upp via respektive kort'} onClick={()=>togglePanel('intake')}><Upload size={16}/>Lägg till klipp</button>}
+          {panel!=='room'&&panel!=='dealer'&&(sceneEditor?<Link className="studio-button" href={dealerHref('klipp')} title="Dealerns klippkarta"><Layers size={16}/>Till klippkartan</Link>:<Link className="studio-button" href={scenesHref} title={lane?'Redigera den valda scenmallen':'Välj eller skapa en scenmall för bakgrund, dealer och bordsgrafik'}><Layers size={16}/>Öppna i Scenmallar</Link>)}
+          {!dealerRoute&&panel!=='room'&&panel!=='dealer'&&panel!=='layers'&&<button className="studio-button studio-intake-open" disabled={!dealer||locked||game!=='blackjack'} aria-pressed={panel==='intake'} title={game==='blackjack'?'Dra in filer eller en mapp och få förslag på fack':'Roulettefilmer laddas upp via respektive kort'} onClick={()=>togglePanel('intake')}><Upload size={16}/>Lägg till klipp</button>}
         </div>
-        {dealer&&!sceneEditor&&<StudioNavigation dealerId={dealer.id} dealerLabel={dealer.label} game={game} laneId={lane?.id} operatorId={operator?.id} tableId={room?.id} active={panel==='room'?'speech':panel==='dealer'?'settings':'clips'}/>}
-        <details className="studio-room-context"><summary>Rum och publicering <span>{room?room.name:'Inget spelrum valt'}</span></summary>
+        <details className="studio-room-context"><summary>Spelbord och publicering <span>{room?room.name:'Inget spelbord valt'}</span></summary>
           <div className="studio-context-row">
-            <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setCompositionId('');})}><option value="">Ingen bolagskontext</option>{registry.operators.filter(isActiveOperator).map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
-            <label className="studio-field">Rum<select value={room?.id??''} disabled={locked||loading||!rooms.length} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setCompositionId('');setGameExplicit(false);})}><option value="">Ingen rumskontext</option>{rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
-            {roomChoices&&<a className="studio-button" href={roomChoices}>Rummets val</a>}
+            <label className="studio-field">Bolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setCompositionId('');})}><option value="">Inget bolag valt</option>{registry.operators.filter(isActiveOperator).map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+            <label className="studio-field">Spelbord<select value={room?.id??''} disabled={locked||loading||!rooms.length} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setCompositionId('');setGameExplicit(false);})}><option value="">Inget spelbord valt</option>{rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+            {room&&<Link className="studio-button" href={'/admin/rooms/'+encodeURIComponent(room.id)}>Öppna spelbordet</Link>}
           </div>
-          {data&&<p className="studio-publication-note">Kartan visar projektutkastet. {room?.published?'Rummets publicerade paket jämförs inte med utkastet här.':'Ingen publicerad rumsversion är vald.'} {room&&<a href={`/admin/rooms?${new URLSearchParams({operator:room.operatorId,table:room.id,composition:room.compositionId,game:room.game})}`}>Granska rumspublicering</a>}</p>}
+          {data&&<p className="studio-publication-note">Kartan visar projektutkastet. {room?.published?'Spelbordets publicerade paket jämförs inte med utkastet här.':'Inget publicerat spelbord är valt.'} {room&&<Link href={'/admin/rooms/'+encodeURIComponent(room.id)+'?flik=historik'}>Granska publiceringen i spelbordet</Link>}</p>}
         </details>
       </>}
       {error&&<p role="alert" className="studio-error">{error} {!data&&<button className="studio-button" onClick={()=>{void load();}}>Försök igen</button>} {revisionConflict&&<button className="studio-button" disabled={locked||!authorized} onClick={()=>{void compareRevision();}}>Jämför senaste revision</button>} {data&&!authorized&&<><a href={'/admin/login?returnTo='+encodeURIComponent(location.pathname+location.search)} target="_blank" rel="noopener">Logga in i ny flik</a><button className="studio-button" disabled={locked} onClick={()=>{void compareRevision();}}>Återanslut och behåll utkast</button></>}</p>}
       {conflictPaths.length>0&&<div className="studio-error" role="alert"><p>Samtidiga ändringar: {conflictPaths.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><button className="studio-button" onClick={()=>setConflictPaths([])}>Behåll mitt utkast för dessa fält</button></div>}
-      {data&&!dealer&&<p role="alert" className="studio-error">Det finns ingen aktiv dealer i biblioteket. Skapa en under Dealers för att börja.</p>}
+      {data&&!dealer&&<p role="alert" className="studio-error">{dealerRoute?`Dealern ${dealerRoute.dealerId} finns inte bland de aktiva dealers.`:'Det finns ingen aktiv dealer i biblioteket.'} <Link href="/admin/dealers">Till Dealers</Link></p>}
       {!sceneEditor&&data&&dealer&&game==='blackjack'&&!loading&&!dealerHasClips&&<p role="note" className="studio-intake-empty">{dealer.label} har inga klipp ännu. Dra in filer eller en hel mapp på kartan, eller välj <button type="button" className="studio-button" disabled={locked} onClick={()=>togglePanel('intake')}><Upload size={14}/>Lägg till klipp</button>. Du får förslag på fack och godkänner innan något sparas.</p>}
-      {dealer&&room&&!lane?.layers.dealer.allowed.includes(dealer.id)&&<p role="note">Du redigerar {dealer.label}s klippbank. {room?'Dealern är ännu inte kopplad till det valda rummet.':'Inget spelrum är valt.'} Lägg till dealern i rummets mall i <a href="/admin/scenes">Sceneditorn</a> när materialet är klart.</p>}
-      {room?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Materialet har en annan katalogtagg; granska rummets bord och spel före nästa publicering.</p>}
+      {dealer&&room&&!lane?.layers.dealer.allowed.includes(dealer.id)&&<p role="note">Du redigerar {dealer.label}s klippbank. Dealern är ännu inte tillåten i det valda spelbordets scenmall. Lägg till dealern i scenmallen under <Link href={scenesHref}>Scenmallar</Link> när materialet är klart.</p>}
+      {room?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Materialet har en annan katalogtagg; granska spelbordets bordsgrafik och spel före nästa publicering.</p>}
     </header>
-    <div className="studio-canvas-toolbar" hidden={resourceEditor}><div><h1>Klippkarta <span>{cardGroups.length} kort · {slots.length} fack</span></h1><p>Dra i bakgrunden för att panorera. Korten kan flyttas.</p></div><div className="studio-map-controls" role="group" aria-label="Kartans visning"><a className="studio-button" href={'/admin/dealers?dealer='+encodeURIComponent(dealer?.id??'')+'&tool=import'}>Ladda upp klipp</a>
+    <div className="studio-canvas-toolbar" hidden={resourceEditor}><div><h1>Klippkarta <span>{cardGroups.length} kort · {slots.length} fack</span></h1><p>Dra i bakgrunden för att panorera. Korten kan flyttas.</p></div><div className="studio-map-controls" role="group" aria-label="Kartans visning">
       <button className="studio-button" aria-label="Zooma ut" onClick={()=>void zoomOut({duration:180})}>−</button>
       <button className="studio-button" aria-label="Visa kartan i 100 procent" onClick={()=>void setViewport({x:24,y:24,zoom:1},{duration:180})}>{Math.round(zoom*100)} %</button>
       <button className="studio-button" aria-label="Zooma in" onClick={()=>void zoomIn({duration:180})}>+</button>
@@ -390,7 +413,13 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     <div className={'studio-map-stage'+(panel==='room'||panel==='dealer'||panel==='layers'?' is-resource-editor':'')}>
     {data&&dealer&&<aside id="studio-clip-inspector" hidden={!panel} className={`studio-drawer ${panel==='scene'?'is-scene':panel==='layers'?'is-layers':panel==='intake'?'is-intake':''}`} aria-label="Klipp och inställningar"><header><PanelTitle ref={panelHeading} tabIndex={-1}>{panel==='scene'?'Provspela sparad scen':panel==='intake'?'Lägg till klipp':panel==='room'?'Röst & tal':panel==='dealer'?'Inställningar':panel==='layers'?'Sceneditor':panel==='policy'&&settingsSlot?'Körregel · '+slotCaption(settingsSlot):clipPanel&&activeCard?activeCard.group.subtitle:settingsSlot?slotCaption(settingsSlot):'Klippinställningar'}</PanelTitle><button className="studio-button" disabled={locked} onClick={()=>{if(openPanel(null))document.getElementById(`studio-card-open-${activeGroupId}`)?.focus();}}>Stäng</button></header>
       {(clipPanel||panel==='scene'||panel==='intake')&&<nav className="studio-inspector-nav" aria-label="Klipp och scen"><button type="button" className="studio-button" disabled={locked||!activeCard} aria-current={clipPanel&&panel!=='policy'?'page':undefined} onClick={()=>openPanel('clip')}>Klipp</button>{activeCard&&ruleEditable(activeCard.slot)&&<button type="button" className="studio-button" disabled={locked} aria-current={panel==='policy'?'page':undefined} onClick={()=>activeCard.onSettings?.()}>Körregel</button>}<button type="button" className="studio-button" disabled={locked} aria-current={panel==='scene'?'page':undefined} onClick={()=>openPanel('scene')}>Scenförhandsvisning</button><button type="button" className="studio-button" disabled={locked||!lane} aria-current={panel==='layers'?'page':undefined} onClick={()=>openPanel('layers')}>Scen &amp; lager</button>{game==='blackjack'&&<button type="button" className="studio-button" disabled={locked} aria-current={panel==='intake'?'page':undefined} onClick={()=>openPanel('intake')}>Lägg till klipp{intakePending?` · ${intakePending}`:''}</button>}</nav>}
-      <div hidden={panel!=='intake'}>{game==='blackjack'?<ClipIntakePanel key={dealer.id} ref={intakeApi} dealer={{id:dealer.id,label:dealer.label}} groups={cardGroups} contextKey={JSON.stringify([operator?.id,room?.id,compositionId,game])} active={active&&panel==='intake'} blocked={busy||loading||!authorized}
+      <div hidden={panel!=='intake'}>
+        {dealerRoute&&<div className="mb-3.5 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5" aria-label="Sätt att lägga till klipp">
+          <span className="grid gap-1 rounded-xl border border-sg-text bg-sg-surface p-3 shadow-[0_0_0_2px_var(--sg-lime)]" aria-pressed="true"><span className="text-[13px] font-semibold">Ladda upp filer</span><span className="text-xs text-sg-muted">Video placeras per fack med förslag från filnamnet</span></span>
+          <Link className="grid gap-1 rounded-xl border border-sg-border bg-sg-surface p-3 text-sg-text no-underline hover:bg-sg-surface-2" href={dealerHref('klipp',{tool:'import'})}><span className="text-[13px] font-semibold">Importera mapp</span><span className="text-xs text-sg-muted">Hela givbanken på en gång med importassistenten</span></Link>
+          <span className="grid cursor-not-allowed gap-1 rounded-xl border border-sg-border bg-sg-surface p-3 opacity-60" aria-disabled="true" title="Kommer senare"><span className="text-[13px] font-semibold">Skapa material</span><span className="text-xs text-sg-muted">Kommer senare, när det är bestämt om nya dealers filmas eller genereras</span></span>
+        </div>}
+        {game==='blackjack'?<ClipIntakePanel key={dealer.id} ref={intakeApi} dealer={{id:dealer.id,label:dealer.label}} groups={cardGroups} contextKey={JSON.stringify([operator?.id,room?.id,compositionId,game])} active={active&&panel==='intake'} blocked={busy||loading||!authorized}
         hasStandard={slotId=>{const slot=slots.find(row=>row.id===slotId);return Boolean(slot&&currentClipId(data.project,dealer.id,slot,undefined,data.inventory));}}
         onBusyChange={childOperation} onPendingChange={setIntakePending} onInventory={updateInventory} onDragChange={setIntakeDrag}
         onBind={(slotId,videoId,asAlternative)=>{const slot=slots.find(row=>row.id===slotId);if(slot){setSelected(current=>({...current,[slot.id]:videoId}));void link(slot,videoId,asAlternative);}}}
@@ -408,11 +437,8 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
       {panel==='roulette-start'&&<RouletteStartEditor key={`${dealer.id}:${startVideoId}:${panelEpoch}`} project={data.project} inventory={data.inventory} dealerId={dealer.id} laneId={lane?.id??''} videoId={startVideoId} blocked={locked||loading||!authorized} onEdit={edit} onDirtyChange={setStartDirty} onInventory={updateInventory} onBusyChange={childOperation}/>}
       {panel==='roulette-media'&&data.inventory.videos.filter(video=>video.id===startVideoId).map(video=><RouletteIdleEditor key={`${dealer.id}:${video.id}:${panelEpoch}`} project={data.project} inventory={data.inventory} video={video} dealerId={dealer.id} blocked={locked||loading||!authorized} onEdit={edit} onSaved={updateInventory} onDirtyChange={setStartDirty} onBusyChange={childOperation}/>)}
       <div hidden={panel!=='room'}>{(panel==='room'||speechDealer===dealer.id)&&<StudioSpeechPanel active={active&&panel==='room'} game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onInventory={updateInventory} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/>}
-        {panel==='room'&&<><details className="mt-5"><summary>Testa dialog · AI-chatt med genererat tal</summary><p className="mt-2 text-xs text-muted-foreground">Chattar med dealerns sparade AI-inställningar och genererade röst, inte med inspelade tagningar.</p><div className="studio-speech-tools"><a className="studio-button" href={'/admin/dealer-agent?'+context.toString()}>Testa dialog</a></div></details>
-          {dealer.id==='astrid'&&<details><summary>Tal vid inaktivitet · Astrid</summary><fieldset disabled={busy||loading||!authorized||configDirty}><ProbeEditor policy={data.project.probePolicy??createDefaultProbePolicy()} onChange={probePolicy=>edit({...data.project,probePolicy})}/></fieldset></details>}
-        </>}
       </div>
-      {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder dealern / mallen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
+      {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><p>{impacts.length===1?'1 spelbord använder':`${impacts.length} spelbord använder`} dealern eller mallen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
       {panel==='policy'&&settingsSlot&&<StudioPolicyPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} slot={settingsSlot} selectedVideoId={startVideoId} selectedVariantId={startVariantId} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation}/>}
       {panel==='layers'&&<StudioCompositionPanel operatorId={operator?.id} operatorSlug={operator?.slug??operator?.id} operatorName={operator?.name} localReferenceUrl={localVilaUrl} uses={compositionUses(data.catalog,lane?.id)} roomChoicesPath={roomChoices} project={data.project} savedProject={base} inventory={data.inventory} dealerId={dealer.id} room={room} compositionId={compositionId||lane?.id} onSelect={setCompositionId} game={game} blocked={busy || loading || !authorized} projectDirty={dirty||configDirty||Boolean(pending)||revisionConflict} onSaved={remote=>{setBase(structuredClone(remote));setData(current=>current&&({...current,project:remote}));setMaterialReload(true);}} onEdit={edit} onBusyChange={childOperation} onRegistered={(remote,id,role)=>{try{if(!base||!lane)throw Error('Mallen saknas. Filen är registrerad; utkastet är kvar.');const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId:lane.id});setBase(structuredClone(remote));setData(current=>current&&({...current,project:result.project}));setConflictPaths(result.conflicts);if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));else setNotice('Lagret är registrerat och valt i utkastet.');}catch(cause){setError((cause as Error).message);}}}/>}
     </aside>}
@@ -421,9 +447,9 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
       onDragLeave={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setCanvasDrop(false);}}
       onDrop={event=>{setCanvasDrop(false);if(game!=='blackjack'||locked||!Array.from(event.dataTransfer.types).includes('Files'))return;event.preventDefault();intakeDrop.current?.abort();const abort=new AbortController();intakeDrop.current=abort;void collectDroppedFiles(event.dataTransfer,{signal:abort.signal}).then(result=>{if(abort.signal.aborted)return;queueIntake(result.files);if(result.truncated)setError(`Bara de första ${result.files.length} filerna lästes från mappen.`);}).catch(cause=>{if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Mappen kunde inte läsas.');});}}>
       {canvasDrop&&<div className="studio-canvas-drop" aria-hidden="true"><Upload size={22}/>Släpp för att lägga till klipp hos {dealer.label}</div>}
-      <ReactFlow key={`${dealer.id}:${game}`} defaultViewport={{x:24,y:24,zoom:1}} onMove={(_event,viewport)=>setZoom(viewport.zoom)} nodes={flowNodes} edges={[]} nodeTypes={nodeTypes} nodesDraggable={!locked} onNodesChange={changes=>{onFlowNodesChange(changes);if(!changes.some(change=>change.type==='position'&&change.position))return;setPositions(current=>{const next={...current};let moved=false;for(const change of changes)if(change.type==='position'&&change.position&&(!current[change.id]||current[change.id].x!==change.position.x||current[change.id].y!==change.position.y)){next[change.id]=change.position;moved=true;}return moved?next:current;});}} nodesConnectable={false} edgesReconnectable={false} minZoom={0.2} maxZoom={1.5} colorMode="dark" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#33363b"/></ReactFlow></div>}
+      <ReactFlow key={`${dealer.id}:${game}`} defaultViewport={{x:24,y:24,zoom:1}} onMove={(_event,viewport)=>setZoom(viewport.zoom)} nodes={flowNodes} edges={[]} nodeTypes={nodeTypes} nodesDraggable={!locked} onNodesChange={changes=>{onFlowNodesChange(changes);if(!changes.some(change=>change.type==='position'&&change.position))return;setPositions(current=>{const next={...current};let moved=false;for(const change of changes)if(change.type==='position'&&change.position&&(!current[change.id]||current[change.id].x!==change.position.x||current[change.id].y!==change.position.y)){next[change.id]=change.position;moved=true;}return moved?next:current;});}} nodesConnectable={false} edgesReconnectable={false} minZoom={0.2} maxZoom={1.5} colorMode="system" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#9aa0a8"/></ReactFlow></div>}
     </div>
     {pending&&<dialog ref={uploadDialog} onCancel={event=>{event.preventDefault();if(!busyRef.current)setPending(null);}} aria-labelledby="upload-heading" className="w-full max-w-md space-y-4 rounded-lg border border-sg-line bg-sg-panel p-5"><h2 id="upload-heading" className="font-semibold">Registrera fil i kortplats</h2><p className="text-xs">{dealer?.label} · {pending.slot.title} · {pending.slot.situation||'standard'} · {pending.file.name}</p>{localUrl&&(pending.slot.eventId==='roulette.reference'?<img src={localUrl} alt="VILA-bild att registrera" className="max-h-52 w-full object-contain"/>:<video src={localUrl} controls muted playsInline className="max-h-52 w-full object-contain"/>)}<label className="flex flex-col gap-1 text-xs">Bakgrund i filen<select className={input} disabled={busy||pending.slot.eventId==='roulette.reference'} value={compositing} onChange={event=>setCompositing(event.target.value as typeof compositing)}><option value="green-screen">Grön skärm</option><option value="opaque">Inbakad bakgrund</option><option value="alpha">Verifierad alfa · PNG / WebM</option></select></label><p className="text-xs text-sg-muted">Filen sparas i det befintliga privata registret. Koppling och rumspublicering är separata steg.</p>{error&&<p role="alert" className="text-xs text-sg-red">{error}</p>}<div className="flex gap-2"><button className={button} disabled={locked||loading||!authorized} onClick={()=>{void upload();}}>{busy?'Registrerar…':'Ladda upp till registret'}</button><button className={button} disabled={busy} onClick={()=>setPending(null)}>Avbryt videoval</button></div></dialog>}
   </section>;
 }
-export function ConnectedClipMap(props:{active?:boolean;onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;refreshKey?:number}) { return <ReactFlowProvider><WorkspaceMap {...props}/></ReactFlowProvider>; }
+export function ConnectedClipMap(props:MapProps) { return <ReactFlowProvider><WorkspaceMap {...props}/></ReactFlowProvider>; }

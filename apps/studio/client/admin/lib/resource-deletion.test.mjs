@@ -152,9 +152,14 @@ test('merged page opens the tab and item of the navigation context and keeps roo
   assert.equal(all.find(row=>row.props?.id==='structure-panel-operators').props.hidden,false);
   assert.ok(links.includes('/admin/scenes?operator=company-a&table=room-a&composition=shared&game=blackjack'),'template edits open the canonical Studio scene with the same room context');
   assert.ok(links.includes('/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack'),'room choices use the room editor');
-  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Öppna bolagets rum')?.props.href,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack','the company rooms open in Spelbolag & rum with the same context');
-  assert.ok(links.includes('/admin/scenes?composition=shared'),'compositions open in the canonical Studio scene editor');
-  assert.ok(links.includes('/admin/assets?tab=backgrounds'));assert.ok(links.includes('/admin/assets?tab=tables&game=blackjack'));
+  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Öppna spelbordet')?.props.href,'/admin/rooms/room-a','the table opens in its own nav by its path identity');
+  assert.ok(links.includes('/admin/rooms/room-b'),'each table links to its own nav');
+  assert.ok(links.includes('/admin/companies/company-a')&&links.includes('/admin/companies/company-b'),'each company opens its own nav');
+  assert.ok(links.includes('/admin/dealers/dragan?flik=anvands'),'a dealer opens the uses tab of its own nav');
+  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Ändra scenmallen')?.props.href,'/admin/scenes?tab=mallar&composition=shared','compositions open in the scene template tab');
+  assert.ok(links.includes('/admin/scenes?tab=bakgrunder'));assert.ok(links.includes('/admin/scenes?tab=bordsgrafik&game=blackjack'));
+  assert.ok(!links.some(href=>/^\/admin\/(assets|clips|structure|deletion)(\?|$)/.test(href)),'no link points at a retired address');
+  assert.deepEqual(nodes(view,row=>row.props?.role==='tab').map(text),['Bolag och spelbord','Dealers','Material','Scenmallar']);
   const dealers=harness(fixture(),'?dealer=dragan');await dealers.settle();
   assert.equal(nodes(dealers.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);
   assert.deepEqual(dealers.scrolled,[resourceAnchor('dealer','dragan')]);
@@ -170,15 +175,18 @@ test('refresh failure removes the old tree and incomplete lifecycle stays visibl
 });
 test('dependency overview has an accessible active Admin link and unique resource anchors',()=>{
   assert.ok(designPreviewPages.has('deletion'));assert.ok(designPreviewPages.has('structure'));
-  assert.equal(designPreviewReturnTo('/admin/deletion'),'/admin/structure');
-  assert.equal(designPreviewReturnTo('/admin/deletion?operator=nord&table=room-1'),'/admin/structure?operator=nord&table=room-1');
+  assert.equal(designPreviewReturnTo('/admin/deletion'),'/admin/system?flik=beroenden');
+  assert.equal(designPreviewReturnTo('/admin/deletion?operator=nord&table=room-1'),'/admin/system?flik=beroenden&operator=nord&table=room-1');
+  assert.equal(designPreviewReturnTo('/admin/structure?operator=nord&table=room-1'),'/admin/system?flik=beroenden&operator=nord&table=room-1');
   const componentUrl=new URL('../components/studio/studio-sidebar.tsx',import.meta.url),componentRequire=createRequire(componentUrl),module={exports:{}};
-  let pathname='/admin/structure';
+  let pathname='/admin/system';
   runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
     require:name=>name.includes('admin-navigation')?adminNavigation:name==='./admin-logout'?{AdminLogout:()=>null}:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
   const dependencyLinks=()=>{
-    const links=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='a'&&node.props.href==='/admin/structure');
-    assert.ok(links.length,'the dependency overview remains reachable');
+    const all=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='a');
+    assert.ok(!all.some(node=>node.props.href==='/admin/structure'),'the retired overview has no menu entry of its own');
+    const links=all.filter(node=>node.props.href==='/admin/system');
+    assert.ok(links.length,'the dependency overview remains reachable through System');
     assert.ok(links.every(link=>text(link).trim()||link.props['aria-label']),'overview links have an accessible name');
     return links;
   };

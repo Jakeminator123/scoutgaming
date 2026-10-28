@@ -81,8 +81,9 @@ const config = {
   clientAddress: async () => '203.0.113.10',
 };
 const northId = 'operator-demo-north';
+// A reader of the snapshot: the sections it carries follow these permissions (partner-data.mjs).
 const role = {
-  id: 'role-partner', permissions: ['overview.read'], label: 'Partner',
+  id: 'role-partner', permissions: ['overview.read', 'tables.read', 'presentations.read'], label: 'Partner',
   operatorId: northId, scope,
 };
 const activeMembership = { userId: '42', roleId: role.id, status: 'active', operatorId: northId, scope, name: 'North Partner', email: 'north@partner.invalid' };
@@ -230,11 +231,11 @@ test('a north membership cannot read demo-south, and a suspended membership is d
   assert.equal(snapshot.headers.get('x-content-type-options'), 'nosniff');
   const body = await snapshot.json();
   assert.equal(body.preview, false);
-  assert.equal(body.notConnected, true);
+  assert.equal(body.notConnected, undefined);
   assert.equal(body.operator.id, northId);
-  assert.deepEqual(body.players, []);
-  assert.deepEqual(body.transactions, []);
-  assert.deepEqual(body.reports, []);
+  assert.equal(body.players, undefined);
+  assert.equal(body.transactions, undefined);
+  assert.deepEqual(body.role, { id: 'role-partner', label: 'Partner' });
   assert.equal(JSON.stringify(body).includes('demo-south'), false);
   assert.deepEqual(body.team, []); // This role has overview.read, but not team.read.
   for (const key of ['tables', 'presentations']) {
@@ -365,7 +366,16 @@ test('branding read follows the lane, requires configure, and refuses deprecated
       },
     };
   }
-  const reader = storeFor(['overview.read']);
+  // Spelbordens utseende is the presentation: a role without presentations.read gets 403 even on GET,
+  // and tables.read (the room list) does not stand in for it.
+  for (const permissions of [['overview.read'], ['overview.read', 'tables.read']]) {
+    const denied = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+      headers: { host: 'public.example.invalid', cookie },
+    }), { ...config, store: storeFor(permissions), readProject, readAdministration: async () => ({ rooms: [] }) });
+    assert.equal(denied.status, 403, permissions.join());
+    assert.deepEqual(await denied.json(), { error: 'Access denied' });
+  }
+  const reader = storeFor(['overview.read', 'presentations.read']);
   const authed = { ...config, store: reader, readProject,readAdministration:async()=>({rooms:[]}) };
   const read = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     headers: { host: 'public.example.invalid', cookie },
@@ -386,7 +396,19 @@ test('branding read follows the lane, requires configure, and refuses deprecated
   }), authed);
   assert.equal(denied.status, 403);
   assert.equal(reader.published.length, 0);
-  const writer = storeFor(['overview.read', 'presentations.configure']);
+  // presentations.configure alone cannot write either: the entry needs presentations.read as well.
+  const configureOnly = storeFor(['overview.read', 'presentations.configure']);
+  const refused = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    method: 'POST',
+    headers: {
+      host: 'public.example.invalid', origin: publicOrigin, 'sec-fetch-site': 'same-origin',
+      'content-type': 'application/json', cookie,
+    },
+    body: JSON.stringify({ expectedRevision: 4, branding: { color: '#00ff00' } }),
+  }), { ...config, store: configureOnly, readProject });
+  assert.equal(refused.status, 403);
+  assert.equal(configureOnly.published.length, 0);
+  const writer = storeFor(['overview.read', 'presentations.read', 'presentations.configure']);
   const saved = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     method: 'POST',
     headers: {
@@ -495,7 +517,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets:tableGeometry?[tableAsset]:[]}).presentation;
   const presentation={...captured,schemaVersion:2};
   let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
-    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
+    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','tables.read','presentations.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
   function anchoredPresentation(){
@@ -536,7 +558,10 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     throw Error('unsupported native operator fixture query '+tag);
   }
   const pool={trace,base,snapshot:()=>copy(state),
-    async query(sql,values=[]) {trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
+    async query(sql,values=[]) {
+      // This schema has no migration 021: company material is not installed.
+      if(sql.includes('/* operator-materials:materials-ready */'))return result([{ledgered:0,present:false}]);
+      trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
     async connect() {
       const client=await base.connect(),id=++clientSequence;let working,readonly,mutating=false;
       return {release:()=>client.release(),async query(sql,values=[]) {

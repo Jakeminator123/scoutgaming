@@ -15,7 +15,8 @@
   background: var(--sg-surface);
   color: var(--sg-text);
   border: 1px solid var(--sg-border);
-  border-radius: 14px;
+  border-radius: 12px;
+  box-shadow: var(--sg-shadow);
   padding: 20px;
 }
 
@@ -97,13 +98,13 @@
 .workflow { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:20px; align-items:start; }
 .workflow > .card { min-width:0; height:100%; align-content:start; }
 .workflow .field { max-width:none; }
-.version[data-state="dirty"] { color:#f5c17d; border-color:#946a34; }
-.version[data-state="conflict"] { color:#ffb0a4; border-color:#a55b51; }
+.version[data-state="dirty"] { color:var(--sg-warn-text); border-color:var(--sg-accent-line); }
+.version[data-state="conflict"] { color:var(--sg-danger-text); border-color:var(--sg-danger-line); }
 .publishAction { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--sg-border); padding-top:16px; }
 .card .savedNotice { color:var(--sg-mark); }
 .receipt { display:grid; gap:6px; padding:14px 16px; border:1px solid var(--sg-mark); border-radius:10px; background:var(--sg-field); }
 .receipt strong { color:var(--sg-mark); font-size:14px; }
-.problem { margin:0; padding:14px 16px; border:1px solid #946a34; border-radius:10px; line-height:1.6; color:#f5c17d; }
+.problem { margin:0; padding:14px 16px; border:1px solid var(--sg-accent-line); border-radius:10px; line-height:1.6; color:var(--sg-warn-text); }
 @media (max-width: 1000px) { .workflow { grid-template-columns:minmax(0,1fr); } }
 @media (max-width: 600px) {
   .steps { gap:6px; }

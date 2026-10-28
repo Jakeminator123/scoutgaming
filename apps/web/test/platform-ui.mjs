@@ -60,8 +60,9 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   const unified = platformConfiguration(unifiedEnv);
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
+  // The retired Administration document is System › Drift in the six-page Admin.
   for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/admin/drift'});
+    {kind:'redirect',destination:unified.publicOrigin+'/admin/system?flik=drift'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
@@ -156,8 +157,8 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
       const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
       const mode=old.endsWith('set-password')?'set-password':'login';
-      // The legacy returnTo is kept but canonicalised: the retired publication page is Spelbolag & rum.
-      const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms?room=room-7');
+      // The legacy returnTo is kept but canonicalised: the retired publication page with one room is that room's nav.
+      const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms/room-7');
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+expected);
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
     }
@@ -290,13 +291,17 @@ test('new game document retains live session/policy checks, cookies and fail-clo
   const directory=await mkdtemp(join(tmpdir(),'croupier-play-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
-  const request=new Request(config.publicOrigin+'/game?game=blackjack&dealer=astrid',{headers:{cookie:'game_session=fixture'}});
+  const request=new Request(config.publicOrigin+'/game?game=blackjack&operator=sg-test&dealer=astrid',{headers:{cookie:'game_session=fixture'}});
   let calls=[];
   const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return url.endsWith('/api/auth/session')?Response.json({authenticated:true}):new Response('<html data-game-lane="saved-johanna" data-game-dealer="johanna"></html>');};
   const ok=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl});
   assert.equal(ok.status,200);assert.match(await ok.text(),/data-game-lane="saved-johanna"/);assert.equal(calls.length,2);
+  // L1: without a company a signed-in player lands in the lobby; the engine document is never asked.
+  calls=[];const lobby=await platformUiDocument(new Request(config.publicOrigin+'/game?game=blackjack&dealer=astrid',{headers:{cookie:'game_session=fixture'}}),{env:unifiedEnv,directory,fetchImpl});
+  assert.equal(lobby.status,303);assert.equal(lobby.headers.get('location'),'/lobby?dealer=astrid');assert.equal(await lobby.text(),'');
+  assert.deepEqual(calls,[config.backendOrigin+'/api/auth/session']);
   const denied=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>Response.json({authenticated:false})});
-  assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?game=blackjack&dealer=astrid');
+  assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?game=blackjack&dealer=astrid&operator=sg-test');
   const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
   assert.equal(failed.status,503);assert.doesNotMatch(await failed.text(),/private upstream detail|Fixture game/);
   // The route never guesses a game; a roulette room goes to the engine's document address without a session read.
@@ -350,12 +355,16 @@ test('lobby operator survives into the engine proxy, also on a partner launch; o
   assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?table=room-1&operator=sg-test');
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
   calls.length=0;authenticated=true;
+  // L1: no operator selector at all is the lobby; the engine document is never asked.
   const plain=await platformUiDocument(request('/game?dealer=astrid'),options);
+  assert.equal(plain.status,303);assert.equal(plain.headers.get('location'),'/lobby?dealer=astrid');
+  assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
+  // An invalid or ambiguous slug is dropped and the engine answers for it (its company 404), as before.
   const invalid=await platformUiDocument(request('/game?dealer=astrid&operator=play'),options);
   const duplicate=await platformUiDocument(request('/game?dealer=astrid&operator=sg-test&operator=demo-north'),options);
-  const plainText=await plain.text();
-  assert.equal(await invalid.text(),plainText);assert.equal(await duplicate.text(),plainText);
-  assert.equal(calls.some(url=>url.includes('/blackjack?')),true);assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
+  const plainText=await invalid.text();
+  assert.equal(await duplicate.text(),plainText);
+  assert.ok(calls.includes(unified.backendOrigin+'/blackjack?dealer=astrid'));assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
   calls.length=0;
   const partnerPage=await platformUiDocument(request(`/game?dealer=astrid&operator=sg-test&launch=${partner}`),options);
   assert.equal(await partnerPage.text(),plainText);

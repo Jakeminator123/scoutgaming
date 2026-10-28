@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { flushSync } from 'react-dom';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
@@ -300,17 +300,9 @@ export function studioPartnerResult(action: string, payload: JsonObject, gameOri
     return { kind: 'credentials', id: values.id, secret: values.secret, ...(action === 'apikeys/create' ? { key: values.key as string } : {}) };
   }
   if (action === 'apikeys/launch') {
-    let url: URL, approved: URL;
-    try { url = new URL(String(payload.url)); approved = new URL(gameOrigin || ''); } catch { throw new StudioAdminUiError(503); }
-    const query = [...url.searchParams.keys()];
-    if (approved.origin !== gameOrigin || approved.protocol !== 'https:' || approved.username || approved.password
-      || url.origin !== approved.origin || url.username || url.password || url.hash || !['/game', '/blackjack'].includes(url.pathname)
-      // A launch opens the lobby (L1, O02); an engine deployed before that still adds a
-      // well-formed dealer, which its landing then ignores without a company.
-      || query.length !== (query.includes('dealer') ? 2 : 1) || !query.includes('launch')
-      || query.includes('dealer') && !isDealerId(url.searchParams.get('dealer'))
-      || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.searchParams.get('launch') || '')
-      || url.href.length > 16384 || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
+    // The same launch-address rule as the Demo-builder (lib/partner-launch-url.mjs).
+    const url = approvedPartnerLaunchUrl(payload.url, gameOrigin);
+    if (!url || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
     return { kind: 'launch', url: url.href, playerRef: payload.playerRef };
   }
   if (action === 'apikeys/credit') {

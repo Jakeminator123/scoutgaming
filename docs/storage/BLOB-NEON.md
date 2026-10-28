@@ -12,6 +12,9 @@ Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegr
 | `runtime_media_catalogs` | Scoped layout, Blob-index och presentationsmanifest, revisions- och hashbundna |
 | `speech_reply_records` | Talrepliker: text, språk, tagning och exakta ljud-, video- och indexhashar |
 | Frysta paket och spelinställningar | Det spelet läser; ändras aldrig efter publicering |
+| `operator_materials`, `operator_material_policies`, `operator_ai_attempts` (migrering 021, valfri) | Bolagets eget material: en journal per bakgrund eller bordsgrafik (väntar, godkänt, avslaget, återkallat; ett nytt läge är en ny rad) med exakt lagerfil och, för bordsgrafik, dealerns landningsmall; bolagets AI-dagstak (standard 0 = av) och spärr; AI-försök per bolag och UTC-dygn |
+
+Bolagets eget material hamnar bara i bolagets eget frysta paket, aldrig i någon annans. Publicerare som bygger om presentationen sammanfogar, övriga bevarar. Sammanfogar gör Admins paketpublicering, publicering av scenlayout och viloklipp, nytt spelbord och bolagets brandingpublicering, via `packages/presentation/server/operator-material-merge.mjs` och `apps/studio/lib/operator-material-publication.mjs`. Godkända bakgrunder hamnar på mallar som låser upp en bildbakgrund och har ett av bolagets spelbord. Bordsgrafik hamnar bara på sin egen mall, och bara när landningsmallen fortfarande stämmer med mallens dealer och placering. Bevarar gör rummets livscykel, materialpapperskorgen, dealerarkivet och rummets spelinställningar: de skriver om det frysta paketet som det är, så återkallat material försvinner först vid nästa sammanfogande publicering, och därför måste ett återkallande publicera om direkt. Ett materialid tillhör ett enda bolag per workspace och kan aldrig vara ett av Admins egna. Utan 021 läses inget material, skrivningar ger `operator_materials_unavailable` och varje publicering är exakt som förut. 021 körs först efter Jakobs uttryckliga "ja 021".
 
 Repo-JSON (`media/layout.json`, `media/blob-index.json`, importfiler) och äldre Blob-JSON är authoring- och importunderlag, aldrig runtime-reserv. Saknad eller felaktig katalog ger 503, inte en lokal fallback.
 
@@ -88,7 +91,7 @@ Permanent radering är det sista steget och kräver att originalbytes är bevara
 - En aktiv GPU-session, giltig tallease eller oavslutad helfilsbegäran i miljön stoppar radering konservativt, eftersom äldre talsessioner saknar exakta indatareferenser.
 - Nya Forge-jobb kontrolleras atomiskt mot pending, deleted och arkiverad media under samma scopelås; ett sent providerutfall får aldrig återaktivera raderad media.
 
-"Inte vald i utkastet" är inget raderingsbevis. `tools/deduplicate-media.mjs` hanterar bara den äldre layouten och indexet, inte hela Neon-grafen. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
+"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
 
 ## Rörligt tal och talworkern
 

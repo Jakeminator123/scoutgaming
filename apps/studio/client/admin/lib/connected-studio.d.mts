@@ -3,8 +3,13 @@ import type { VideoMetadata } from '../../../../../packages/presentation/contrac
 export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;classification?:VideoMetadata;familyId?:string;duration?:number;sha256?:string};
 export type MediaFamily = {id:string;dealerId:string;eventId:string;situation:string;playbackType:string;standardIds:string[];variantIds:string[]};
 export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};
-export type Room = { id:string; name:string; operatorId:string; game:string; compositionId:string; state:string; published:boolean; playable:boolean; dealerIds:string[]; dealers:{id:string;name:string}[];materialWarning?:'catalog_game_material_mismatch' };
-export type Catalog = { source:'registered'; readAt:string; administration:{ revisions:{project:string}; operators:{id:string;name:string;slug:string;status:string;archivedAt:string|null;packageRevision:number|null}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[] } };
+// The registered catalog (apps/studio/lib/design-preview-catalog.mjs): rooms carry their published state, dealers and play URL.
+export type Room = { id:string; name:string; operatorId:string; game:string; compositionId:string; laneId:string; state:string; published:boolean; playable:boolean; dealerIds:string[]; dealers:{id:string;name:string}[]; dealerSource:'published'|'saved'; playUrl:string|null; materialWarning?:'catalog_game_material_mismatch';
+  /** The published scene when the catalog can describe it (image only for a fixed image background). */
+  environment?:{kind:string;fixed:boolean;label:string;image?:string}|null;
+  /** Bet profile in the room's saved game settings (draft); for the room picture only, never shown as a key. */
+  savedLimitPreset?:string };
+export type Catalog = { source:'registered'; readAt:string; administration:{ revisions:{project:string;administration:string}; operators:{id:string;name:string;slug:string;status:string;archivedAt:string|null;packageRevision:number|null}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[]; compositions:{id:string;name:string;dealerIds:string[];defaultDealerId:string}[] } };
 export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null; game?:'roulette'; intakeOnly?:boolean; planned?:boolean; localOnly?:boolean };
 export function clipSlots(project:StudioProject,inventory:VideoInventory,dealerId:string,game?:'blackjack'|'roulette'):ClipSlot[];
 export function clipsForSlot(inventory:VideoInventory,dealerId:string,slot:ClipSlot):VideoEntry[];

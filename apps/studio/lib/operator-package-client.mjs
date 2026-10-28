@@ -2,6 +2,7 @@
 // server-read package revision is a CAS precondition; a stale tab can never
 // replace a newer selection. Shared by Spelbolag & rum and the older
 // publication page so both keep one publish contract.
+import {AI_TABLE_MISFIT_CODE,aiTableMisfitMessage} from './ai-image-contract.mjs';
 
 /** @typedef {{chosen:string[];baseline:string[];revision:number|null;message:string;error:string;needsRefresh:boolean}} PackageEditor */
 
@@ -42,6 +43,9 @@ export function markPackagesStale(current) {
 
 export function packagePublishError(status, payload) {
   if (payload?.code === 'studio_presentation_runtime_update_required') return 'Spelmotorn behöver uppdateras innan ändringen kan publiceras. Dina val finns kvar.';
+  // A refused AI table graphic names the scene template and the fixed reason.
+  if (payload?.code === AI_TABLE_MISFIT_CODE) return (typeof payload.compositionId === 'string' && /^[a-z][a-z0-9-]{0,62}$/.test(payload.compositionId) ? 'Scenmallen ' + payload.compositionId + ': ' : '')
+    + aiTableMisfitMessage({code:payload.reason}) + ' Inget publicerades.';
   if (status === 413) return 'Publiceringspaketet är för stort. Inget publicerades; dina sparade val finns kvar.';
   if (status === 422) return 'Kontrollera lagerfiler, vald grundloop och tillåtna val. Spara sammansättningen och försök igen.';
   if (status === 409) return 'Paketet kunde inte uppdateras. Uppgifterna kan ha ändrats, eller så påverkar urvalet ett befintligt spelrum. Läs in bolagets publicerade paket och behåll sammansättningar som används av spelrum.';

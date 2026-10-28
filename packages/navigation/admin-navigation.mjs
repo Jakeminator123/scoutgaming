@@ -1,27 +1,38 @@
-// Shared menu labels for the Admin shell and Studio help.
+// Shared menu, tab lists and dealer steps for the Admin shell and Hjälp. Words follow apps/studio/docs/TERMINOLOGI.md.
 export const adminNavigationGroups = [
-  {id:'creation',label:'Studio',description:'Dealers, klipp och scenens utseende.',links:[
-    {label:'Sceneditor',href:'/admin/scenes',description:'Placera dealer, bakgrund, bord, kort och spelkontroller i den gemensamma mallen.'},
-    {label:'Klippkarta',href:'/admin/clips',description:'Ordna standardklipp och varianter för varje spelsituation.'},
-    {label:'Dealers',href:'/admin/dealers',description:'Lägg till dealers och hantera deras bibliotek.'},
-    {label:'Bord & bakgrunder',href:'/admin/assets',description:'Hantera material till scenens lager.'},
+  {id:'content',label:'Innehåll',description:'Dealers, klipp, tal, scenmallar och material.',links:[
+    {label:'Dealers',href:'/admin/dealers',description:'Ett nav per dealer: klippkarta, röst och tal, landningar, används av och inställningar.'},
+    {label:'Scenmallar och material',href:'/admin/scenes',description:'Placering av bakgrund, dealer och bordsgrafik, samt bakgrunder och bordsgrafik på ett ställe.'},
   ]},
-  {id:'business',label:'Administration',description:'Spelbolag, rum och löpande drift.',links:[
-    {label:'Spelbolag & rum',href:'/admin/rooms',description:'Öppna ett rum och granska dess tillåtna val.'},
-    {label:'Bolag & team',href:'/admin/companies',description:'Hantera bolag, medlemmar och deras åtkomst.'},
-    {label:'Spelarkonton',href:'/admin/players',description:'Spelarnas konton, saldon och status.'},
-    {label:'Drift',href:'/admin/drift',description:'Se driftstatus och tillgängliga driftlägen.'},
-    {label:'Ekonomi',href:'/admin/ekonomi',description:'Följ ekonomin och öppna betalningsunderlaget.'},
+  {id:'companies',label:'Bolag',description:'Bolagen och deras spelbord.',links:[
+    {label:'Bolag och spelbord',href:'/admin/companies',description:'Ett nav per bolag: tilldelning, spelbord, spelare och ekonomi, team, integration, journal och inställningar.'},
+  ]},
+  {id:'scoutgaming',label:'Scoutgaming',description:'Drift, personal och hjälp.',links:[
+    {label:'System',href:'/admin/system',description:'Drift, AI-agenter, Scoutgamings personal, spelarkonton, integration, beroenden och intern lobby.'},
+    {label:'Hjälp',href:'/admin/guide',description:'Menyn, vem som får ändra vad, orden, dealerflödet och var uppgifterna kommer ifrån.'},
   ]},
 ];
-export const adminSystemGroups = [
-  {label:'Inställningar',links:[
-    {label:'Systeminställningar',href:'/admin/ai/models',description:'Agenternas modellval.'},
-    {label:'Kopplingar & användning',href:'/admin/structure',description:'Vad som använder vad: bolag, dealers, bord, bakgrunder och mallar.'},
-    {label:'Integrationer',href:'/admin/admin/api',description:'Partnernycklar och API.'},
-  ]},
-  {label:'Åtkomst och hjälp',links:[
-    {label:'Konton & åtkomst',href:'/admin/admin/accounts',description:'Intern personal och roller.'},
-    {label:'Hjälp',href:'/admin/guide',description:'Den här sidan: vad varje sida gör, med länkar till användarguiden och ordlistan.'},
-  ]},
+export const adminMenuLinks = adminNavigationGroups.flatMap(group=>group.links);
+export const adminDealerTabs = [
+  {id:'klipp',label:'Klippkarta'},{id:'tal',label:'Röst och tal'},{id:'landningar',label:'Landningar'},
+  {id:'anvands',label:'Används av'},{id:'installningar',label:'Inställningar'},
 ];
+export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','Mät landningar','Röst och tal','Godkänn','Tilldela'];
+export const adminSceneTabs = [
+  {id:'mallar',label:'Scenmallar'},{id:'bakgrunder',label:'Bakgrunder'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'papperskorg',label:'Papperskorg'},
+];
+export const adminCompanyListTabs = [{id:'bolag',label:'Bolag'},{id:'spelbord',label:'Alla spelbord'},{id:'papperskorg',label:'Papperskorg'}];
+export const adminCompanyTabs = [
+  {id:'tilldelning',label:'Tilldelning'},{id:'spelbord',label:'Spelbord'},{id:'spelare',label:'Spelare och ekonomi'},
+  {id:'team',label:'Team'},{id:'integration',label:'Integration'},{id:'journal',label:'Journal'},{id:'installningar',label:'Inställningar'},
+];
+export const adminRoomTabs = [
+  {id:'utseende',label:'Utseende'},{id:'dealer',label:'Dealer'},{id:'spel',label:'Spelinställningar'},
+  {id:'tillganglighet',label:'Tillgänglighet'},{id:'bolagets-val',label:'Bolagets val'},{id:'historik',label:'Historik'},
+];
+export const adminSystemTabs = [
+  {id:'drift',label:'Drift'},{id:'agenter',label:'AI-agenter'},{id:'personal',label:'Scoutgamings personal'},{id:'spelare',label:'Spelarkonton'},
+  {id:'integration',label:'Integration'},{id:'beroenden',label:'Beroenden'},{id:'lobby',label:'Intern lobby'},
+];
+const tabsFor = {dealer:adminDealerTabs,scenes:adminSceneTabs,companies:adminCompanyListTabs,company:adminCompanyTabs,room:adminRoomTabs,system:adminSystemTabs};
+export const adminTabId = (page,value) => (tabsFor[page]??[]).some(tab=>tab.id===value) ? value : (tabsFor[page]?.[0]?.id??'');

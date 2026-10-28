@@ -35,11 +35,18 @@ function anchors(node) {
   return [...(node.type === 'a' ? [node] : []), ...anchors(node.props?.children)];
 }
 
+// Every dealer tab is a tab of that dealer's nav: the dealer sits in the path, the selection in the query.
+const pathOf = href => new URL(href, 'https://scoutgaming.test').pathname;
+const flikOf = { clips: 'klipp', speech: 'tal', replies: 'tal', generate: 'klipp', settings: 'installningar' };
+
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
   for (const tab of tabs) {
     const params = query(tab.href);
-    assert.equal(params.get('dealer'), selection.dealerId);
+    assert.equal(pathOf(tab.href), '/admin/dealers/' + selection.dealerId, tab.id);
+    assert.equal(params.has('dealer'), false, tab.id);
+    assert.equal(params.get('flik'), flikOf[tab.id], tab.id);
+    assert.equal(params.get('panel'), tab.id === 'generate' ? 'generera' : null, tab.id);
     assert.equal(params.get('event'), selection.eventId);
     assert.equal(params.get('variant'), selection.variantId);
     assert.equal(params.get('situation'), selection.situation);
@@ -59,8 +66,18 @@ test('custom tab destinations keep their own query and hash while encoding selec
 
 test('dealer navigation never substitutes another dealer identity', () => {
   for (const dealerId of ['astrid', 'paow', 'new-dealer']) {
-    for(const tab of studioNavigationTabs({dealerId}))assert.equal(query(tab.href).get('dealer'),dealerId);
+    for(const tab of studioNavigationTabs({dealerId})){assert.equal(pathOf(tab.href),'/admin/dealers/'+dealerId,tab.id);assert.equal(query(tab.href).has('dealer'),false,tab.id);}
   }
+  // An identity that cannot be a path segment stays a query selector on the dealer list for downstream validation.
+  for(const tab of studioNavigationTabs({dealerId:'dealer & two'})){assert.equal(pathOf(tab.href),'/admin/dealers',tab.id);assert.equal(query(tab.href).get('dealer'),'dealer & two',tab.id);}
+});
+
+test('a selected company filters the company list and does not open the company nav', () => {
+  assert.equal(studioNavigationHref('/admin/companies', { operatorId: 'north' }), '/admin/companies?tab=spelbord&operator=north');
+  assert.equal(studioNavigationHref('/admin/companies?tab=papperskorg', { operatorId: 'north' }), '/admin/companies?tab=papperskorg&operator=north');
+  assert.equal(studioNavigationHref('/admin/companies'), '/admin/companies');
+  // Retired bookmarks keep their one-step redirect to the company's nav.
+  assert.equal(studioNavigationHref('/control/lanes?tab=companies', { operatorId: 'north' }), '/admin/companies/north');
 });
 
 test('rendered navigation preserves repeated and mixed room scope for destination validation', () => {

@@ -155,3 +155,21 @@ test('internal bank diagnostics retain only finite codes and stages',()=>{
  assert.equal(messageReads,1);
  for(const value of [null,['authorization:rejected'],'authorization:private','private:rejected','authorization:rejected:private','read:rejected\r\nprivate'])assert.equal(readMovingBankDiagnostic(value),null);
 });
+
+test('ownership routes only this bank\'s pending capabilities and grants nothing by itself',async()=>{
+  const controller=new AbortController();let reads=0;
+  const service=createMovingBankDownloads({origin:'https://game.example',bank,read:async r=>{reads++;
+    return new Response(new Uint8Array(r.size),{headers:{'content-length':String(r.size)}});}});
+  const other=createMovingBankDownloads({origin:'https://game.example',bank,read:async()=>assert.fail('foreign bank read')});
+  const issued=service.issue({signal:controller.signal,authorize:async()=>{}});
+  for(const url of [issued.descriptor.archive.url,issued.descriptor.receipt.url])assert.equal(service.owns(new Request(url)),true);
+  for(const url of [issued.descriptor.archive.url+'?x=1',issued.descriptor.archive.url.replace(/archive$/,'other'),
+    'https://game.example/api/moving-speech/bank/'+'f'.repeat(64)+'/archive','https://game.example/api/moving-speech/abc/rest'])
+    assert.equal(service.owns(new Request(url)),false,url);
+  assert.equal(other.owns(new Request(issued.descriptor.archive.url)),false);
+  assert.equal(service.owns({url:'not a url'}),false);
+  assert.equal(reads,0);
+  assert.equal((await other.response(new Request(issued.descriptor.archive.url))).status,403);
+  controller.abort();assert.equal(service.owns(new Request(issued.descriptor.archive.url)),false);
+  service.close();other.close();
+});

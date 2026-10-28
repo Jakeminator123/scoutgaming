@@ -88,7 +88,7 @@ function useLayerClips(role:LayerPlaybackRole,{policy,assets,enabled,sourceKey,l
 
 // Optional silent layer videos share playback controls. Only the dealer owns
 // the finite play count, preserving the exact clip chosen by Studio.
-export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode}) {
+export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay,minimal=false}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode;minimal?:boolean}) {
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0);
@@ -190,10 +190,10 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
       <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>
 
     </div>
-    <p role="status">{status}</p>{error?<p role="alert">{error}</p>:null}
-    {backgroundStatus?<p role="status">{backgroundStatus}</p>:null}
-    {tableStatus?<p role="status">{tableStatus}</p>:null}
-    <details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer?.contentType.startsWith('video/')} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
-    <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small>
+    {minimal?null:<p role="status">{status}</p>}{error?<p role="alert">{error}</p>:null}
+    {!minimal&&backgroundStatus?<p role="status">{backgroundStatus}</p>:null}
+    {!minimal&&tableStatus?<p role="status">{tableStatus}</p>:null}
+    {minimal?null:<><details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer?.contentType.startsWith('video/')} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
+    <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small></>}
   </div>;
 }

@@ -28,7 +28,7 @@ export function createStudioMemoryPool() {
       const client = {
         async query(sql, values = []) {
           if (released) throw new Error('fixture client already released');
-          const marker = /\/\* (?:studio|forge):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
+          const marker = /\/\* (?:studio|forge|operator-materials):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
           calls.push({ client: id, marker, sql, values: clone(values) });
           if (faults.has(marker)) {
             const fault = faults.get(marker);
@@ -112,6 +112,8 @@ export function createStudioMemoryPool() {
               ...[...working.documents.values()].filter(row => scoped(row, values) && references(row.value, values[2])).map(row => ({ kind: row.kind, revision: row.revision, historical: false })),
               ...working.history.filter(row => scoped(row, values) && references(row.value, values[2])).map(row => ({ kind: row.kind, revision: row.revision, historical: true })),
             ]);
+            // This schema has no migration 021: company material is not installed.
+            case 'materials-ready': return result([{ ledgered: 0, present: false }]);
             default: throw new Error(`unexpected fixture SQL marker: ${marker}`);
           }
         },

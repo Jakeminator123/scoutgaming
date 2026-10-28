@@ -63,6 +63,12 @@ const sources = Object.freeze([
   // Reader-first rollout: ordinary startup still accepts schemas through 019.
   { version:'020', file:'020-extended-presentation.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_packages','operator_branding_drafts'] },
+  // Bolagets eget material. Tolerant code first: without 021 the store reads
+  // nothing and refuses writes, so this version never blocks readiness. Applied
+  // only after Jakob's explicit yes.
+  { version:'021', file:'021-operator-materials.sql', deploymentOptional:true,
+    tables:['operator_materials','operator_material_policies','operator_ai_attempts'],
+    indexes:['operator_materials_time_idx','operator_ai_attempts_day_idx'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -367,7 +373,7 @@ export async function planStudioMigrations({ pool, directory } = {}) {
   return withClient(pool, true, async client => result(await target(client), await inspect(client, migrations)));
 }
 
-export async function applyStudioMigrations({ pool, expectedTarget, confirm, deferOptional = [] } = {}) {
+export async function applyStudioMigrations({ pool, expectedTarget, confirm, deferOptional = [], expectedVersions } = {}) {
   if (confirm !== true || !expectedTarget) refuse('studio_migration_apply_requires_confirmation', 422);
   let expected;
   try { expected = canonicalStudioJson(expectedTarget); } catch { refuse('studio_migration_target_unverified', 422); }
@@ -379,12 +385,20 @@ export async function applyStudioMigrations({ pool, expectedTarget, confirm, def
       || !migrations.some(row => row.version === version && row.deploymentOptional))) {
     refuse('studio_migration_invalid_defer_optional', 422);
   }
+  // Optional exact selection: the operator approved this list, so any other
+  // pending set under the lock refuses before a single statement runs.
+  if (expectedVersions !== undefined && (!Array.isArray(expectedVersions) || new Set(expectedVersions).size !== expectedVersions.length
+    || expectedVersions.some(version => typeof version !== 'string' || !migrations.some(row => row.version === version)))) {
+    refuse('studio_migration_invalid_selection', 422);
+  }
   const deferred = new Set(deferOptional);
   return withClient(pool, false, async client => {
     const verifiedTarget = await target(client);
     if (canonicalStudioJson(verifiedTarget) !== expected) refuse('studio_migration_target_mismatch');
     const before = await inspect(client, migrations), appliedNow = [];
-    for (const migration of before.toApply.filter(row => !deferred.has(row.version))) {
+    const selected = before.toApply.filter(row => !deferred.has(row.version));
+    if (expectedVersions !== undefined && selected.map(row => row.version).join(',') !== expectedVersions.join(',')) refuse('studio_migration_selection_mismatch');
+    for (const migration of selected) {
       await client.query(migration.sql);
       const objects = await catalog(client);
       const appliedVersions = new Set([...before.applied.map(row => row.version), ...appliedNow, migration.version]);

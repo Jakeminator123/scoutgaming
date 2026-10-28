@@ -75,7 +75,7 @@ function clipActionHarness(variant='permanent') {
   const f=fixture(),props={...f,catalog:{source:'registered',administration:{dealers:[{id:'paow-v2'}]}},dealerId:'paow-v2',videoId:a,variant};
   const client={checkClipDeletion:()=>new Promise((resolve,reject)=>checks.push({resolve,reject})),archiveClips:async input=>{mutations.push(input);},deleteClip:async()=>{mutations.push('delete');return f;}};
   const module={exports:{}};
-  runInNewContext(code,{module,exports:module.exports,require:name=>name==='react'?hooks:name==='lucide-react'?{Trash2:()=>null}:name.endsWith('studio-lifecycle.mjs')?{createLifecycleClient:()=>client,lifecycleFingerprint,lifecycleMessage}:name.endsWith('lifecycle-actions.mjs')?{clipArchivePlan,clipDeletePlan}:name==='./confirm-dialog'?{ConfirmDialog:'confirmation'}:require(name)});
+  runInNewContext(code,{module,exports:module.exports,require:name=>name==='react'?hooks:name==='lucide-react'?{Trash2:()=>null}:name.endsWith('studio-lifecycle.mjs')?{createLifecycleClient:()=>client,lifecycleFingerprint,lifecycleMessage}:name.endsWith('lifecycle-actions.mjs')?{clipArchivePlan,clipDeletePlan}:name==='../ui/dialog'?{ConfirmDialog:'confirmation'}:require(name)});
   const h={props,checks,mutations,render(){cursor=0;const tree=module.exports.ClipDeleteAction(props);while(effects.length)effects.shift()();return tree;},open(){h.render().props.children[0].props.onClick();},dialog(){return h.render().props.children[1].props;},async settle(){await new Promise(resolve=>setImmediate(resolve));return h.dialog();}};
   return h;
 }

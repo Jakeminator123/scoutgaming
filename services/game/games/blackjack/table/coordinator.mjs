@@ -12,6 +12,16 @@ import { assertNativeRoomSequenceBudget, isNativeRoomMaterial } from '../../../.
 
 export const TABLE_CONTRACT = 'blackjack-table/1';
 export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
+// K6 full table (Kevin 24 Oct, kevin-staging 7ddb7de4): his values until Jakob decides otherwise. While a viewer
+// without a box waits at a full table (a registration counts for waitingMs), each player keeps at most keepBoxes
+// boxes after the round. A seat holder who neither bets nor sends a command for idleSeatMs in the betting window
+// gives up his boxes.
+export const FULL_TABLE = Object.freeze({ keepBoxes: 3, waitingMs: 30000, idleSeatMs: 90000 });
+// A renewed wait whose registration is younger than this writes no room row (its receipt is still kept), so
+// frequent waits cannot churn the row. A renewal then finds the stored time at most this plus the client's
+// 10 s interval old (public/shared-room-waiting.mjs), so one lost renewal still lands inside FULL_TABLE.waitingMs.
+export const WAIT_WRITE_AFTER_MS = 5000;
+const { keepBoxes: KEEP_BOXES, waitingMs: WAITING_MS, idleSeatMs: IDLE_SEAT_MS } = FULL_TABLE;
 const PAUSE_MS = 86400000;                         // :350
 const emptyBets = () => Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));
 const clientSettings = cfg => ({ configVersion: cfg.configVersion, language: cfg.language, betMs: cfg.betMs, actionMs: cfg.actionMs,
@@ -22,9 +32,9 @@ const sorted = ids => [...new Set(ids.filter(Boolean))].sort();
 const fail = (code, message) => { throw new TableError(code, message); };
 const ROOM_ID = /^[a-z0-9_-]{1,128}$/;             // Main room-<UUID> ids are 41 chars; ':' remains forbidden for tick identity.
 const BET_OPS = new Set(['bet', 'undo', 'clear', 'doubleBets', 'allSeats', 'repeat']);
-const OPS = new Set([...BET_OPS, 'join', 'leave', 'ready', 'act', 'insurance', 'next', 'pause', 'refill']);
-// :348 demo-break block list: stand and declining insurance stay allowed.
-const PAUSE_BLOCKS = new Set(['join', 'refill', 'bet', 'undo', 'doubleBets', 'allSeats', 'repeat', 'ready']);
+const OPS = new Set([...BET_OPS, 'join', 'leave', 'ready', 'act', 'insurance', 'next', 'pause', 'refill', 'wait']);
+// :348 demo-break block list: stand and declining insurance stay allowed. A paused account does not wait for a box.
+const PAUSE_BLOCKS = new Set(['join', 'refill', 'bet', 'undo', 'doubleBets', 'allSeats', 'repeat', 'ready', 'wait']);
 const stakeReservation = (r, p) => `${r.roomId}:${r.windowId}:${p}:stake`;
 const insuranceReservation = (r, p) => `${r.roomId}:${r.roundId}:${p}:insurance`;
 // Ticks whose wallet refusal (reservation or consume) is recorded as `blocked` (O01 2.5).
@@ -157,7 +167,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const r = { contract: TABLE_CONTRACT, roomId, version: 0, configVersion, windowId: random.uuid(), phase: 'bets',
       owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: emptyBets(), ready: [], history: {}, deadline: null,
       roundId: null, roundPhase: null, insurance: {}, actionDeadline: null, plan: null, leaving: [], boxesAfterRound: {}, unplayed: {},
-      lastBets: {}, lastSettlement: {}, settledAt: null, presentationVer: 0, game: created.state };
+      lastBets: {}, lastSettlement: {}, settledAt: null, presentationVer: 0, waiting: {}, lastAct: {}, game: created.state };
+    r.windowAt = { windowId: r.windowId, at: now() };
     for (const e of created.events) await openShoe(tx, roomId, e.payload);
     return r;
   }
@@ -168,32 +179,58 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (m?.active) await tx.members.put(r.roomId, { ...m, active: false, memberGen: m.memberGen + 1 });
   }
 
+  // K6: the viewers whose wait for a box (command `wait`) still counts at `at`: registered within
+  // WAITING_MS and still without a box. A room stored before `waiting` has none.
+  const waitingAt = (r, at) => sorted(Object.keys(r.waiting ?? {}).filter(p => at - r.waiting[p] < WAITING_MS && !r.owners.includes(p)));
+  // The boxes of p's hands in the round just settled, in the order the dealer played them. round.mjs
+  // deals and plays from the rightmost box (deal: reverse, advance: findLastIndex), so the last hand
+  // of the settlement's left-to-right list was played first.
+  const playOrder = (r, p) => {
+    const receipt = r.lastSettlement?.[p];
+    return receipt?.roundId === r.roundId ? [...new Set(receipt.hands.map(h => h.box).reverse())] : [];
+  };
   // The boxes a player keeps into the next window. A box choice made during the round
   // (boxesAfterRound, join) replaces the set; otherwise it is the boxes held minus those not bet
   // on in the round (unplayed, startRound). A room stored before `unplayed` keeps every box.
-  const keptAfterRound = (r, p) => r.boxesAfterRound[p] ?? owned(r, p).filter(i => !(r.unplayed?.[p] ?? []).includes(i));
+  // K6: while a viewer waits, at most KEEP_BOXES of them: the boxes played first, then a box taken
+  // during the round (lowest first). The limit leaves at least one box, so it never ends a membership.
+  const keptAfterRound = (r, p, waiting = waitingAt(r, now()).length > 0) => {
+    const kept = (r.boxesAfterRound[p] ?? owned(r, p).filter(i => !(r.unplayed?.[p] ?? []).includes(i))).filter(i => r.owners[i] === p);
+    if (!waiting || kept.length <= KEEP_BOXES) return kept;
+    const order = playOrder(r, p), rank = i => order.includes(i) ? order.indexOf(i) : order.length + i;
+    return kept.sort((a, b) => rank(a) - rank(b)).slice(0, KEEP_BOXES).sort((a, b) => a - b);
+  };
   // The lock plan of `next`: the players resetRound will take the last box from (same predicate
   // as its release loop). Only an owner can lose a box: settle and releaseSeats (the tick paths)
   // reset only once no owner is left, where this is empty, so a tick writes no other member.
-  const endingAtReset = r => sorted(r.owners).filter(p => !keptAfterRound(r, p).some(i => r.owners[i] === p));
+  // The K6 limit is part of the predicate but always keeps a box, so a registration that lapses
+  // between this plan and the reset cannot change the set (no LockSetExceeded).
+  const endingAtReset = r => sorted(r.owners).filter(p => !keptAfterRound(r, p).length);
 
   // :248-252; a new window binds the newest published configVersion (O01 2.7). The boxes not
   // kept (keptAfterRound) are released, each player's release audited with its cause; one left
   // without a box leaves like releaseSeats. Should this ever differ from endingAtReset, the
   // membership write falls outside the lock plan and the unit rolls back (LockSetExceeded).
+  // K6: the reset uses the waiting registrations and clears them; a viewer still without a box
+  // registers again (the client renews it while the table is full).
   async function resetRound(tx, r, parent = null) {
+    const t = now(), waiting = waitingAt(r, t);
     for (const p of sorted(r.owners)) {
-      const keep = keptAfterRound(r, p), boxes = owned(r, p).filter(i => !keep.includes(i));
-      if (!boxes.length) continue;
-      for (const i of boxes) { r.owners[i] = null; r.seatGen[i]++; }
+      const played = keptAfterRound(r, p, false), keep = keptAfterRound(r, p, waiting.length > 0);
+      const boxes = owned(r, p).filter(i => !played.includes(i)), full = played.filter(i => !keep.includes(i));
+      if (!boxes.length && !full.length) continue;
+      for (const i of [...boxes, ...full]) { r.owners[i] = null; r.seatGen[i]++; }
       const memberEnded = !owned(r, p).length;
       if (memberEnded) await endMembership(tx, r, p);
-      await audit(tx, r.roomId, r.roundId, 'seat.release',
+      if (boxes.length) await audit(tx, r.roomId, r.roundId, 'seat.release',
         { playerId: p, boxes, reason: Object.hasOwn(r.boxesAfterRound, p) ? 'boxes changed' : 'unplayed', memberEnded }, parent);
+      if (full.length) await audit(tx, r.roomId, r.roundId, 'seat.release', { playerId: p, boxes: full, reason: 'table full', waiting, memberEnded }, parent);
     }
+    // K6: the new window is stamped with its own id (the seat.idle clock); commands of the window before it no longer count.
+    const windowId = random.uuid();
     Object.assign(r, { boxesAfterRound: {}, unplayed: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
-      deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null,
-      windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
+      deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null, waiting: {}, lastAct: {}, windowAt: { windowId, at: t },
+      windowId, configVersion: await tx.config.latest(r.roomId) });
     const cfg = await tx.config.frozen(r.roomId, r.configVersion);
     // K04: placebets follows the betting window actually opened here, not collect or a poll.
     const seq = await audit(tx, r.roomId, null, 'presentation.window', { windowId: r.windowId, configVersion: r.configVersion });
@@ -205,7 +242,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   async function releaseSeats(tx, r, pid) {
     for (const i of owned(r, pid)) { r.owners[i] = null; r.seatGen[i]++; r.bets[i] = { main: 0, pp: 0, tp: 0 }; }
     r.ready = r.ready.filter(x => x !== pid); delete r.history[pid];
-    r.leaving = r.leaving.filter(x => x !== pid); delete r.boxesAfterRound[pid]; delete r.unplayed?.[pid];
+    r.leaving = r.leaving.filter(x => x !== pid); delete r.boxesAfterRound[pid]; delete r.unplayed?.[pid]; delete r.lastAct?.[pid];
     if (r.phase === 'bets') await tx.wallet.release(pid, { reservationId: stakeReservation(r, pid) });
     await endMembership(tx, r, pid);
     if (r.phase === 'settled' && !r.owners.some(Boolean)) await resetRound(tx, r);
@@ -348,6 +385,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (op === 'pause') return pause(tx, plan, actorId, input, t);
     let r = await tx.rooms.read(roomId);
     if (!r) { if (op !== 'join') fail('NO_ROOM', 'This table has not opened yet'); r = await createRoom(tx, roomId); }
+    if (op === 'wait') return waitForBox(tx, r, actorId, input.commandId, t);
     const cfg = await tx.config.frozen(roomId, r.configVersion);
     const me = await tx.members.get(roomId, actorId);
     const parent = await audit(tx, roomId, r.phase === 'bets' ? null : r.roundId, `player.${op}`,
@@ -495,9 +533,28 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (r.phase === 'settled') await resetRound(tx, r, parent);
       }
     }
+    // K6: any accepted command of a seat holder restarts his IDLE_SEAT_MS (the seat.idle tick), bound to this window.
+    if (owned(r, actorId).length) (r.lastAct ??= {})[actorId] = { windowId: r.windowId, at: t };
     r.version++;
     await tx.rooms.write(roomId, r);
     return { ...result, version: r.version };
+  }
+
+  // K6: a viewer without a box at a full table waits for one (resetRound). Sending it again only
+  // renews its time, so the command is idempotent. A registration changes nothing a snapshot shows,
+  // so the room version stays and no viewer gets a new frame; a new wait is audited, a renewal is
+  // not. A renewal of a registration younger than WAIT_WRITE_AFTER_MS writes nothing. A seated
+  // actor or a table with a free box registers nothing.
+  async function waitForBox(tx, r, actorId, commandId, t) {
+    const before = JSON.stringify(r.waiting ?? {});
+    const waiting = Object.fromEntries(waitingAt(r, t).map(p => [p, r.waiting[p]]));
+    const registered = r.owners.every(Boolean) && !r.owners.includes(actorId);
+    if (registered && Object.hasOwn(waiting, actorId) && t - waiting[actorId] < WAIT_WRITE_AFTER_MS) return { op: 'wait', waiting: true, version: r.version };
+    if (registered && !Object.hasOwn(waiting, actorId))
+      await audit(tx, r.roomId, r.phase === 'bets' ? null : r.roundId, 'player.wait', { playerId: actorId, commandId });
+    if (registered) waiting[actorId] = t;
+    if (JSON.stringify(waiting) !== before) { r.waiting = waiting; await tx.rooms.write(r.roomId, r); }
+    return { op: 'wait', waiting: registered, version: r.version };
   }
 
   // O01 2.6: never stale; 24 h from commit, MAX with an existing pause, for the account in every
@@ -535,10 +592,19 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (r.phase === 'round' && r.roundPhase === 'decisions') add('turn.autostand', [r.roundId, publicView(r.game).turnSeq], r.actionDeadline);
     if (r.phase === 'round' && r.roundPhase === 'settled') add('round.settle', [r.roundId], r.plan.endAt);
     if (r.phase === 'settled') for (const p of r.leaving) add('seat.release', ['leave', r.roundId, p], r.settledAt, { playerId: p });
+    // K6: only a betting window stamped with its own id (resetRound, createRoom) has an idle clock. A window
+    // opened by an engine without that stamp (a room stored before it, the old instance during a Render overlap,
+    // a rollback) has none, so no seat.idle; the absence release still covers a player who left.
+    const opened = r.phase === 'bets' && r.windowAt?.windowId === r.windowId ? r.windowAt.at : null;
     for (const m of members) {
       if (!watched(r, m)) continue;
       const at = Math.max(seenOf(m.actorId) ?? -Infinity, m.joinedAt) + absentMs;
       add(r.phase === 'round' ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
+      // A seat holder without a main bet gives up his boxes IDLE_SEAT_MS after the window opened, his join or his
+      // last command in this window, whichever is latest.
+      if (opened === null || owned(r, m.actorId).some(i => r.bets[i].main)) continue;
+      const act = r.lastAct?.[m.actorId], since = Math.max(opened, m.joinedAt, act?.windowId === r.windowId ? act.at : -Infinity);
+      add('seat.idle', [r.windowId, m.actorId, m.memberGen], since + IDLE_SEAT_MS, { playerId: m.actorId });
     }
     return out;
   }
@@ -600,7 +666,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   function tickPlayers(r, kind, playerId) {
     if (kind === 'window.close') return r.owners.filter((p, i) => p && sum(r.bets[i]) > 0);
     if (kind === 'insurance.timeout' || kind === 'round.settle') return r.owners;
-    if (kind === 'seat.absent' || kind === 'seat.release') return [playerId];
+    if (kind === 'seat.absent' || kind === 'seat.release' || kind === 'seat.idle') return [playerId];
     return [];
   }
 
@@ -653,7 +719,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
           await present(tx, r, cfg, res, 'stand');
         } else if (desc.kind === 'round.settle') result = await settle(tx, r, cfg, ctx);
         else if (desc.kind === 'seat.absent') r.leaving.push(desc.playerId);
-        else if (desc.kind === 'seat.release') await releaseSeats(tx, r, desc.playerId);
+        else if (desc.kind === 'seat.release' || desc.kind === 'seat.idle') await releaseSeats(tx, r, desc.playerId);
       } catch (e) {
         const blocked = e instanceof WalletDenied && BLOCKABLE.has(desc.kind);
         if (!blocked && !(e instanceof TableError)) throw e;   // infrastructure error: full rollback

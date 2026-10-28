@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
+import { movingTrialBudget } from './moving-speech-budget.mjs';
 import { handleSharedRoomHttp } from './shared-room-http.mjs';
 import { withSharedRoomEntry } from './shared-room-entry.mjs';
 import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
@@ -1211,36 +1211,45 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
 }
 if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if (!studioPolicyRuntime || !speechJournal || !dealerSpeechRuntime) throw Error('moving_speech_registry_required');
-  const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingDriftRuntime},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire},{movingDriftConfiguration}] = await Promise.all([
+  const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingDriftRuntime},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire},{movingDriftConfiguration,movingDriftDealerProfile}] = await Promise.all([
     import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-drift-executor.mjs'),
     import('./moving-speech-runtime.mjs'),import('./blob-media.mjs'),import('node:module'),
     import('../../packages/presentation/contracts/moving-drift.mjs')]);
   const bankOptions=movingBankStorageOptions(createRequire(new URL('./package.json',import.meta.url))('@vercel/blob'));
-  const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'),bankOptions);
-  if (bank.sourceSet.dealerId !== 'dragan') throw Error('moving_speech_test_dealer_required');
-  // Fetch and hash the immutable derived bank before accepting a paid job.
-  // Worker transfer then reads the existing verified cache, bypassing Vercel.
-  await withVerifiedPrivateMediaFile(bank.archive,async()=>true,bankOptions);
-  await withVerifiedPrivateMediaFile(bank.receipt,async()=>true,bankOptions);
-  const provider=createMovingSpeechRunPod({endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
-    apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
-  const driftRuntime=await createMovingDriftRuntime({pool:storage.pool,scope:studioPolicyRuntime.scope,
-    configuration:movingDriftConfiguration(process.env),endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
-    releaseDigest:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,bankHash:bank.archive.sha256,provider,
-    sessionOptions:{origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,...MOVING_TRIAL_BUDGET}});
-  const sessions=driftRuntime.sessions;
-  const recovery=await sessions.reconcile();
-  if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
+  // One verified bank, drift profile, endpoint and budget per dealer; no dealer is preferred.
+  const configuration=movingDriftConfiguration(process.env);
+  const bankRecords=JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORDS ?? 'null');
+  if (!bankRecords || typeof bankRecords !== 'object' || Array.isArray(bankRecords) || !Object.keys(bankRecords).length) throw Error('moving_speech_banks_required');
+  const lanes=[];
+  for (const [dealerId,record] of Object.entries(bankRecords)) {
+    const bank=await loadMovingBankArtifacts(record,bankOptions);
+    if (bank.sourceSet.dealerId !== dealerId) throw Error('moving_speech_bank_dealer_mismatch');
+    const profile=movingDriftDealerProfile(configuration,dealerId);
+    if (!profile) throw Error('moving_speech_drift_profile_required');
+    // Fetch and hash the immutable derived bank before accepting a paid job.
+    // Worker transfer then reads the existing verified cache, bypassing Vercel.
+    await withVerifiedPrivateMediaFile(bank.archive,async()=>true,bankOptions);
+    await withVerifiedPrivateMediaFile(bank.receipt,async()=>true,bankOptions);
+    const provider=createMovingSpeechRunPod({endpointId:profile.endpointId,
+      apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
+    const driftRuntime=await createMovingDriftRuntime({pool:storage.pool,scope:studioPolicyRuntime.scope,
+      configuration,dealerId,endpointId:profile.endpointId,
+      releaseDigest:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,bankHash:bank.archive.sha256,provider,
+      sessionOptions:{origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,...movingTrialBudget(dealerId)}});
+    const recovery=await driftRuntime.sessions.reconcile();
+    if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',dealerId,unresolved:recovery.unresolved.length}));
+    lanes.push({dealerId,bank,driftRuntime});
+  }
   const repository=studioPolicyRuntime.repository;
   const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
   movingSpeechService=createMovingSpeechRuntime({server:gameUpgradeDispatcher?.port('moving') ?? server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
     readPresentation:playerId=>db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId),
     publicVideo:(frozen,id)=>frozenDealerContext.publicVideo(frozen,id),
-    ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
-    releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,sessions,dealerRuntime:dealerSpeechRuntime,
-    admissionCheck:driftRuntime.assertAvailable,
+    ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bankOptions,
+    lanes:lanes.map(({bank,driftRuntime})=>({bank,sessions:driftRuntime.sessions,admissionCheck:driftRuntime.assertAvailable})),
+    releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,dealerRuntime:dealerSpeechRuntime,
     resolveOwner:chatSessionOwner,readRegistry:studioMediaRuntime.videoRegistry,
-    readEvidence:async (context,mediaId)=>{
+    readEvidence:async (context,mediaId,bank)=>{
       const [frozenContext,project,media]=await Promise.all([
         frozenDealerContext.resolve(context),repository.readDocument('project'),
         storage.pool.query('SELECT id,revision,record FROM croupier_studio.media_records WHERE environment_id=$1 AND workspace_id=$2 AND id=ANY($3::uuid[])',
@@ -1262,14 +1271,14 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     readRest:({record},request)=>getPrivateMedia({provider:'vercel-blob',pathname:record.pathname,sha256:record.sha256,
       size:record.size,contentType:record.contentType},request),
   });
-  driftRuntime.start(()=>movingSpeechService.cancelActive());
+  for (const {dealerId,driftRuntime} of lanes) driftRuntime.start(()=>movingSpeechService.cancelDealer(dealerId));
   const existing=speechStreamService;
   // Existing login/logout/profile/room cancellation continues to reach both
   // paths; all Astrid preparation and relay methods remain unchanged.
   speechStreamService={...existing,
     cancelOwner:value=>Promise.all([existing?.cancelOwner(value),movingSpeechService.cancelOwner(value)]),
     cancelPlayer:value=>Promise.all([existing?.cancelPlayer(value),movingSpeechService.cancelPlayer(value)]),
-    close:options=>Promise.all([existing?.close(options),driftRuntime.close(),movingSpeechService.close()])};
+    close:options=>Promise.all([existing?.close(options),...lanes.map(({driftRuntime})=>driftRuntime.close()),movingSpeechService.close()])};
 }
 const gameShutdown = installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   gameUpgradeDispatcher?.close();

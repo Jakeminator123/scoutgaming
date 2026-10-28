@@ -1,17 +1,31 @@
 import {isOperatorSlug} from './operator-slug.mjs';
 // Document navigation only. These routes never grant a role or an operator
 // membership, and deliberately contain no API, auth or asset aliases.
-export const PARTNER_PREVIEW_VIEWS = Object.freeze([
-  'ops', 'players', 'tx', 'pit', 'theme', 'design', 'background', 'bj',
-  'roulette', 'baccarat', 'dealers', 'shoes', 'test', 'stats', 'reports', 'team', 'api',
-]);
-// Kevin preview slugs that only repeated the control overview. Partner keeps them.
-const controlDeadViews = new Set(['pit', 'theme', 'design', 'roulette', 'baccarat', 'test', 'stats', 'reports', 'gen']);
+
+// Partnerportalen: one view per menu entry, the view ID is the public address
+// segment. The server checks the view's permission (partner-access-policy.mjs).
+export const PARTNER_VIEWS = Object.freeze(['overview', 'rooms', 'players', 'reports', 'team', 'integration', 'help']);
+// Kevin's retired partner addresses and view IDs land on the nearest new view.
+const partnerLegacySections = Object.freeze({
+  ops: 'overview', 'pit-bosses': 'overview', pit: 'overview', shoes: 'overview',
+  tables: 'rooms', 'game-tables': 'rooms', bj: 'rooms', presentation: 'rooms', theme: 'rooms', 'table-design': 'rooms', design: 'rooms',
+  backgrounds: 'rooms', background: 'rooms', lanes: 'rooms', dealers: 'rooms', preview: 'rooms', test: 'rooms', roulette: 'rooms', baccarat: 'rooms',
+  transactions: 'reports', tx: 'reports', statistics: 'reports', stats: 'reports',
+  api: 'integration',
+});
+export function partnerView(section) {
+  if (typeof section !== 'string') return null;
+  if (PARTNER_VIEWS.includes(section)) return section;
+  return Object.hasOwn(partnerLegacySections, section) ? partnerLegacySections[section] : null;
+}
+
+// Retired /control bookmarks: Kevin's view IDs are only recognised so the
+// Admin redirect (apps/studio/lib/control-workspace.mjs) can land them.
 export const CONTROL_PREVIEW_VIEWS = Object.freeze([
-  ...PARTNER_PREVIEW_VIEWS.filter(view => !controlDeadViews.has(view)),
+  'ops', 'players', 'tx', 'background', 'bj', 'dealers', 'shoes', 'team', 'api',
   'archive', 'tables', 'voice', 'clips', 'media', 'tree',
 ]);
-const aliases = Object.freeze({ overview: 'ops', presentation: 'theme', integration: 'api' });
+const controlAliases = Object.freeze({ overview: 'ops', integration: 'api' });
 // studioPath is the internal rewrite. legacyPath is the current public document.
 const legacyControl = Object.freeze({
   studio: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
@@ -26,22 +40,21 @@ const staffTools = new Set(['companies', 'rooms', 'compositions', 'rehearsal', '
 
 // Source component IDs stay internal. Links use one readable document address.
 export const WORKSPACE_VIEW_SLUGS = Object.freeze({
-  ops: 'overview', players: 'players', tx: 'transactions', pit: 'pit-bosses',
-  theme: 'presentation', design: 'table-design', background: 'backgrounds',
-  bj: 'game-tables', roulette: 'roulette', baccarat: 'baccarat', dealers: 'lanes',
-  shoes: 'shoes', test: 'preview', stats: 'statistics', reports: 'reports',
-  team: 'team', api: 'integration', archive: 'archive', tables: 'legacy-rooms',
-  voice: 'speech', clips: 'clips', media: 'media', tree: 'presentation-events', gen: 'generations',
+  ops: 'overview', players: 'players', tx: 'transactions', background: 'backgrounds',
+  bj: 'game-tables', dealers: 'lanes', shoes: 'shoes', team: 'team', api: 'integration',
+  archive: 'archive', tables: 'legacy-rooms', voice: 'speech', clips: 'clips', media: 'media',
+  tree: 'presentation-events', gen: 'generations',
 });
 
 /** @param {string | null} [operator] */
 export function workspaceSurfacePath(surface, view, operator = null) {
-  const views = surface === 'partner' ? PARTNER_PREVIEW_VIEWS : surface === 'control' ? CONTROL_PREVIEW_VIEWS : [];
-  if (!views.includes(view)) return null;
-  if (surface === 'partner' && !isOperatorSlug(operator)) return null;
-  const root = surface === 'partner' ? `/partner/${operator}` : '/control';
-  const slug = surface === 'partner' && view === 'bj' ? 'rooms' : WORKSPACE_VIEW_SLUGS[view];
-  return view === 'ops' ? root : `${root}/${slug}`;
+  if (surface === 'partner') {
+    if (!PARTNER_VIEWS.includes(view) || !isOperatorSlug(operator)) return null;
+    const root = `/partner/${operator}`;
+    return view === 'overview' ? root : `${root}/${view}`;
+  }
+  if (surface !== 'control' || !CONTROL_PREVIEW_VIEWS.includes(view)) return null;
+  return view === 'ops' ? '/control' : `/control/${WORKSPACE_VIEW_SLUGS[view]}`;
 }
 
 export function resolveWorkspaceSurfacePath(value) {
@@ -50,35 +63,36 @@ export function resolveWorkspaceSurfacePath(value) {
   const parts = publicPath.slice(1).split('/');
   const surface = parts[0];
   if (surface !== 'control' && surface !== 'partner') return null;
-  let section = 'overview', operator = null;
-  if (surface === 'control') {
-    if (parts.length > 2 || (parts.length === 2 && !parts[1])) return null;
-    section = parts[1] || section;
-    if (Object.hasOwn(legacyControl, section)) {
-      const destination = legacyControl[section];
-      return Object.freeze({
-        surface, operatorSlug: null, section, view: null, publicPath,
-        studioPath: destination.studioPath, legacyPath: destination.legacyPath,
-      });
-    }
-  } else if (parts.length !== 1) {
+  if (surface === 'partner') {
+    if (parts.length === 1) return Object.freeze({ surface, operatorSlug: null, section: 'overview', view: 'overview', publicPath,
+      studioPath: '/studio' + publicPath, canonicalPath: '/partner', legacyPath: null });
     if (![2, 3].includes(parts.length) || !isOperatorSlug(parts[1])) return null;
-    operator = parts[1]; section = parts[2] ?? section;
+    const operator = parts[1], section = parts[2] ?? 'overview';
+    const view = partnerView(section);
+    if (!view) return null;
+    return Object.freeze({ surface, operatorSlug: operator, section, view, publicPath, studioPath: '/studio' + publicPath,
+      canonicalPath: workspaceSurfacePath('partner', view, operator), legacyPath: null });
   }
-  const view = surface === 'partner' && ['rooms', 'tables'].includes(section) ? 'bj'
-    : Object.hasOwn(aliases, section) ? aliases[section]
+  if (parts.length > 2 || (parts.length === 2 && !parts[1])) return null;
+  const section = parts[1] || 'overview';
+  if (Object.hasOwn(legacyControl, section)) {
+    const destination = legacyControl[section];
+    return Object.freeze({
+      surface, operatorSlug: null, section, view: null, publicPath,
+      studioPath: destination.studioPath, legacyPath: destination.legacyPath,
+    });
+  }
+  const view = Object.hasOwn(controlAliases, section) ? controlAliases[section]
     : Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === section) ?? section;
-  const allowed = (surface === 'partner' ? PARTNER_PREVIEW_VIEWS : CONTROL_PREVIEW_VIEWS).includes(view);
-  if (!allowed) {
-    if (surface === 'control' && staffTools.has(section)) return Object.freeze({
+  if (!CONTROL_PREVIEW_VIEWS.includes(view)) {
+    if (staffTools.has(section)) return Object.freeze({
       surface, operatorSlug: null, section, view: null, publicPath,
       studioPath: '/studio' + publicPath, canonicalPath: publicPath, legacyPath: null,
     });
     return null;
   }
-  const canonicalPath = surface === 'control' && staffTools.has(section)
-    ? publicPath : (workspaceSurfacePath(surface, view, operator) ?? '/partner');
-  return Object.freeze({ surface, operatorSlug: operator, section, view, publicPath, studioPath: '/studio' + publicPath,
+  const canonicalPath = staffTools.has(section) ? publicPath : workspaceSurfacePath('control', view);
+  return Object.freeze({ surface, operatorSlug: null, section, view, publicPath, studioPath: '/studio' + publicPath,
     canonicalPath, legacyPath: null });
 }
 

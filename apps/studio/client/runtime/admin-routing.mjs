@@ -1,6 +1,6 @@
 export const adminContextKeys=Object.freeze(['operator','table','dealer','composition','lane','game']);
 
-const canonicalAccountHref=href=>href.replace(/^\/(?:studio\/)?admin\/admin\/players(?=[?#]|$)/,'/admin/players');
+const canonicalAccountHref=href=>href.replace(/^\/(?:studio\/)?admin\/admin\/players(?=[?#]|$)/,'/admin/system?flik=spelare');
 
 // Compatibility for imported design links only. Admin components and route
 // selection use their real /admin pathnames, never a virtual Control pathname.
@@ -11,11 +11,21 @@ export function adminHref(href){
 }
 
 export function adminPathname(pathname){
-  return canonicalAccountHref(pathname.replace(/^\/studio(?=\/admin(?:\/|$))/,''));
+  return pathname.replace(/^\/studio(?=\/admin(?:\/|$))/,'');
 }
 
 export function isInternalAdminPathname(pathname){
   return /^\/admin(?:\/|$)/.test(pathname)&&!/^\/admin\/lobby(?:\/|$)/.test(pathname);
+}
+
+// The six menu pages, the three navs and Skapa demo (reached from Översikt). An unknown /admin path is 'unknown'.
+export function parseAdminPath(pathname){
+  const match=adminPathname(pathname).match(/^\/admin(?:\/(dealers|scenes|companies|rooms|system|guide|lobby|demo)(?:\/([A-Za-z0-9][A-Za-z0-9._:-]{0,99}))?)?\/?$/);
+  if(!match)return {page:'unknown',id:''};
+  const [,section,id='']=match;
+  if(!section)return {page:'home',id:''};
+  if(id)return {page:section==='dealers'?'dealer':section==='companies'?'company':section==='rooms'?'room':'unknown',id};
+  return {page:section==='rooms'?'unknown':section,id:''};
 }
 
 export function hasAdminContext(search){
@@ -23,29 +33,23 @@ export function hasAdminContext(search){
   return adminContextKeys.some(key=>query.has(key));
 }
 
-export function isStudioAdminRoute(path,search){
-  return path==='/admin/clips'||path==='/admin/scenes';
+// The one clip-map instance is mounted under the dealer nav and under Scenmallar.
+export function isStudioAdminRoute(path){
+  const {page}=parseAdminPath(path);
+  return page==='dealer'||page==='scenes';
 }
 
-// Room appearance comes from the selected room, never from a dealer-library query.
-export function adminRoomHref(search,hash=''){
-  const params=new URLSearchParams(search);params.delete('dealer');
-  return '/admin/rooms'+(params.size?'?'+params:'')+hash;
-}
-
+// Only the clip map carries room/template context between its two mounts; the
+// dealer sits in the path, so it is never inherited from a query.
 export function withAdminContext(href,currentSearch){
   if(!href.startsWith('/admin'))return href;
   const url=new URL(href,'https://admin-routing.invalid');
-  // A dealer library is independent of a room's permitted appearance choices.
-  if(url.pathname==='/admin/dealers')return href;
-  if(!isInternalAdminPathname(url.pathname)||url.pathname==='/admin')return href;
-  if(url.pathname==='/admin/rooms')url.searchParams.delete('dealer');
+  if(!isStudioAdminRoute(url.pathname))return href;
   const context=new URLSearchParams(currentSearch);
   const explicitComposition=url.searchParams.has('composition')||url.searchParams.has('lane');
   const changedRoom=['operator','table'].some(key=>url.searchParams.has(key)&&url.searchParams.get(key)!==context.get(key));
   const changedRoomContext=changedRoom||url.searchParams.has('game')&&url.searchParams.get('game')!==context.get('game');
-  for(const key of adminContextKeys){
-    if(key==='dealer'&&url.pathname==='/admin/rooms')continue;
+  for(const key of ['operator','table','composition','lane','game']){
     // An omitted template follows a newly selected room; an explicit template
     // (including an old lane bookmark) must never inherit a competing ID.
     if((key==='composition'||key==='lane')&&(explicitComposition||changedRoomContext))continue;
@@ -55,5 +59,4 @@ export function withAdminContext(href,currentSearch){
   }
   return url.pathname+url.search+url.hash;
 }
-import {adminDocumentHref,adminToolName} from '../../../../packages/navigation/admin-workspace-routes.mjs';
-export {adminToolName};
+import {adminDocumentHref} from '../../../../packages/navigation/admin-workspace-routes.mjs';
