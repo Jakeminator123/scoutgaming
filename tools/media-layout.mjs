@@ -2,7 +2,7 @@ import {readFileSync,lstatSync} from 'node:fs';
 import {resolve,join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createMediaLayout,validateMediaLayout} from '../packages/studio-registry/server/media-layout.mjs';
-export {PRESENTATION_BANK,validateMediaLayout,validateMediaAliases} from '../packages/studio-registry/server/media-layout.mjs';
+export {PRESENTATION_BANK,PRESENTATION_BANK_PATH,validateMediaLayout,validateMediaAliases} from '../packages/studio-registry/server/media-layout.mjs';
 export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cache = new Map();
 export function readMediaLayout(root = repositoryRoot) {

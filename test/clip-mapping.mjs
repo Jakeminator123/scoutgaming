@@ -10,7 +10,7 @@ import { buildAssetsManifest } from '../services/game/partner-presentation.mjs';
 const root = fileURLToPath(mediaUrl('../web/public/', import.meta.url));
 const read = file => JSON.parse(readFileSync(mediaUrl(`../web/public/${file}`, import.meta.url)));
 
-test('mapping preserves original and V2 speech as distinct exact media sets', () => {
+test('mapping keeps native speech and lists no V2 speech after its manifest left the tree', () => {
   const mapping = clipMapping({ root, revision: 'test' });
   assert.equal(mapping.version, 2);
   assert.equal(mapping.actualPlayback, false);
@@ -20,21 +20,8 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
     assert.throws(() => buildAssetsManifest(root, dealer), /unknown dealer/);
   }
   for (const dealer of ['astrid']) {
-    const manifest = read(`review/${dealer}-green-speak/speak.json`);
-    const rows = mapping.dealers[dealer].greenSpeech;
-    assert.equal(rows.length, Object.keys(manifest.lines).length);
-    for (const row of rows) {
-      const line = manifest.lines[row.line];
-      assert.equal(row.text, line.text);
-      assert.equal(row.file, line.media.src);
-      assert.equal(row.sha256, line.media.sha256);
-      assert.equal(row.audio, line.audio);
-      assert.equal(row.audioSha256, line.audioSha256);
-      assert.equal(row.audioDelayMs, line.audioOffsetSeconds * 1000);
-      assert.equal(row.route, `/v2/?dealer=${dealer}`);
-      assert.equal(row.status, manifest.status);
-      assert.equal(row.actualPlayback, false);
-    }
+    // The V2 speech manifest (review/<dealer>-green-speak/speak.json) left with the presentation bank (2026-10-28).
+    assert.deepEqual(mapping.dealers[dealer].greenSpeech, []);
     const speech = (mapping.dealers[dealer].engine ?? []).filter(row => row.kind === 'speech');
     if (speech.length) {
       const bank = read(`dealers/${dealer}/audio/en/bank.json`);
@@ -45,9 +32,7 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
     }
   }
   const native = mapping.dealers.astrid.nativeSpeech.find(row => row.line === 'win');
-  const green = mapping.dealers.astrid.greenSpeech.find(row => row.line === 'win');
   assert.equal(native.text, read('speech-media.json').astrid.win.text);
-  assert.notEqual(native.text, green.text, 'different recordings must not share an invented caption');
   assert.equal(native.audioSource, 'embedded');
   assert.equal(typeof native.fileAvailable, 'boolean');
 });

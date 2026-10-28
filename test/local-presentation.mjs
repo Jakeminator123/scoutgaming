@@ -1,5 +1,5 @@
 import { presentationPublicModules, presentationPublicSource } from '../packages/presentation/public-modules.mjs';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once, EventEmitter, getEventListeners } from 'node:events';
@@ -18,11 +18,14 @@ import { videoIdFromSha256 } from '../packages/studio-registry/server/video-mani
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 import { nativeReceipts } from './fixtures/native-receipts.mjs';
+import { bindIdlePolicy, writeSyntheticPresentationBank } from './fixtures/presentation-bank.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import {fileURLToPath} from 'node:url';
-const fixtureArchive=fileURLToPath(new URL('../media/dealers/astrid/runtime/presentation',import.meta.url));
+// The repository carries no dealer bank; this file's archive is a synthetic one.
+const fixtureArchive=await mkdtemp(join(tmpdir(),'croupier-local-bank-'));
+const fixtureManifest=await writeSyntheticPresentationBank(fixtureArchive);
+after(()=>rm(fixtureArchive,{recursive:true,force:true}));
 // Archived media is explicitly injected test data, never an automatic runtime source.
 async function loadVideoRegistry(options={}) {
   const registry=await readVideoRegistry({archiveDir:options.env?.LAB_VIDEO_ARCHIVE??fixtureArchive,...options});
@@ -31,6 +34,7 @@ async function loadVideoRegistry(options={}) {
 }
 function createSeedProject(){
   const project=historicalProject();
+  project.idlePolicy=bindIdlePolicy(project.idlePolicy,fixtureManifest);
   project.dealerIdlePolicies=[{dealerId:'astrid',policy:structuredClone(project.idlePolicy)}];
   return project;
 }
@@ -324,7 +328,7 @@ test('explicit test archive feeds the same exact product and library media', asy
   const directory = await mkdtemp(join(tmpdir(), 'croupier-shared-archive-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const archiveDir = join(directory, 'archive'), media = Buffer.from('configured-archive-video-fixture');
-  const manifest = JSON.parse(await readFile(new URL('../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url)));
+  const manifest = structuredClone(fixtureManifest);
   const relativePath = 'deal/deal_pos4/deal_pos4.mp4';
   const entry = manifest.items.find(item => item.relativePath === relativePath);
   assert.ok(entry);
@@ -366,7 +370,7 @@ test('native player reads saved deal frequencies, caches retries and picks up an
   const registry = await loadVideoRegistry();
   const family = registry.families.find(row => row.situation === 'box0');
   const variant = registry.videos.find(row => family.variantIds.includes(row.id) && row.available);
-  assert.ok(variant, 'The current Astrid manifest has a real first-box variant.');
+  assert.ok(variant, 'The bank has a first-box variant.');
   project.mediaPolicy = [{ familyId: family.id, variants: [{ videoId: variant.id, priority: 10, triggerIds: [], selection: { model: false, random: false, rules: false }, frequencyPercent: 100 }] }];
   let saved = await store.save(project, project.revision), calls = 0;
   const committed = { ...source, box: 0, clip: { action: 'deal-left' } };

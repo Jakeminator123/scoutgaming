@@ -7,6 +7,7 @@ import {once} from 'node:events';
 import {fileURLToPath} from 'node:url';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
+import {withSyntheticBank} from './fixtures/presentation-bank.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
 import {createStudioMediaRuntime} from '../services/game/storage/studio-media-runtime.mjs';
@@ -173,7 +174,8 @@ async function neutralMediaFixture(){
   const bytes=Buffer.from('cloud-fixture:linnea'),record={...cloud.mediaRows[0],size:bytes.length};
   delete record.revision;delete record.updatedAt;
   await repository.registerMedia(record,{actor:'isolated-fixture'});
-  const catalog=readRuntimeCatalogFixture();pool.seedRuntimeCatalog(localScope,catalog);
+  // The repository has no bank; the contract for a catalogue that still has one is kept.
+  const catalog=withSyntheticBank(readRuntimeCatalogFixture());pool.seedRuntimeCatalog(localScope,catalog);
   const layout=createMediaLayout({repositoryRoot});
   let privateReads=0;
   const getPrivateMedia=async(storage,request)=>{

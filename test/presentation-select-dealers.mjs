@@ -2,20 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import {fileURLToPath} from 'node:url';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { createSeedProject, addDealer, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { loadVideoRegistry } from '../apps/studio/test/fixtures/local-video-registry.mjs';
 import { nativeReceipts } from './fixtures/native-receipts.mjs';
+import { writeSyntheticPresentationBank } from './fixtures/presentation-bank.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
-test('another dealer legacy rules cannot change the selected dealer presentation', async () => {
-  const registry = await loadVideoRegistry({archiveDir:fileURLToPath(new URL('../media/dealers/astrid/runtime/presentation',import.meta.url))});
+test('another dealer legacy rules cannot change the selected dealer presentation', async t => {
+  const archiveDir = await mkdtemp(join(tmpdir(), 'croupier-select-bank-'));
+  t.after(() => rm(archiveDir, { recursive: true, force: true }));
+  await writeSyntheticPresentationBank(archiveDir);
+  const registry = await loadVideoRegistry({archiveDir});
   const choose = project => selectPresentation({
     requestId: 'snapshot-c5b', project, dealerId: 'astrid', eventId: 'deal.player.centre', sourceEvent: source, mode: 'off',
   }, { videoRegistry: registry, random: () => 0 });
   const before = await choose(createSeedProject());
+  assert.equal(before.decision.media.fileName, 'deal_pos4.mp4', 'the bank supplies the exact box');
   const migrated = normalizeProject({ ...structuredClone(createSeedProject()), legacyClipPolicy: [
     { dealerId: 'vera', part: 'box3', clipId: 'vera:legacy/box3' },
     { dealerId: 'vera', part: 'idle', clipId: 'vera:legacy/idle' },

@@ -159,6 +159,7 @@ Staging (se [START-HERE](../START-HERE.md#staging)) använder samma namn som pro
 | Registerpost | Namn | Status |
 | --- | --- | --- |
 | `github-actions-tooling` | `CROUPIER_GAME_DATABASE_URL` (repository secret), `CROUPIER_MIGRATION_CONFIRM` | CI läser produktionens migreringsledger med `tools/check-migration-readiness.mjs`. `CROUPIER_MIGRATION_CONFIRM=apply-pending` sätts bara i den terminal där Jakob kör `--apply`, aldrig i CI eller Vercel |
+| `local-runtime-media-import` | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_RUNTIME_IMPORT_CONFIRM` | `ops/neon-studio/runtime-media-import-run.mjs` byter runtime-katalogen ([REN-START](plans/REN-START.md) steg 6–7). Scope krävs alltid; `prepare` läser ingen databas, `plan` läser och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Sätts bara i Jakobs terminal, aldrig i CI, Vercel eller Render |
 | `render-gpu-relay` | `WORKER_SECRET`, `TICKET_SECRET`, `ALLOWED_ORIGINS`, `PORT` | Separat GPU-relä i `services/astrid-gpu-worker/gateway/server.mjs`; inte driftsatt |
 | `runpod-gpu-worker` | `AVATAR_ID`, `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` | Äldre GPU-testworker; endpoint och nyckel hanteras i RunPod |
 | `local-lab-openclaw` | Mallarna `apps/studio/.env.example` och `services/openclaw/lab/.env.example` | Lokala verktyg; ingen lokal produktstart läser dem |
