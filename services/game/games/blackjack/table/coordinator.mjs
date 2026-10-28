@@ -271,7 +271,9 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
           key: ledgerKey({ ...origin, roomId: r.roomId, playerId: p, effect: 'payout' }) })).ledgerId : null;
         const receipt = { roundId: r.roundId, settledAt: at, returned, staked, net: returned - staked, hands };
         r.lastSettlement[p] = receipt;
-        await audit(tx, r.roomId, r.roundId, 'wallet.settlement', { playerId: p, ...receipt, ledgerId }, parent);
+        // The ledger currency of this round: the player's history must not follow a later currency change.
+        const currency = typeof tx.wallet.currency === 'function' ? await tx.wallet.currency(p) : undefined;
+        await audit(tx, r.roomId, r.roundId, 'wallet.settlement', { playerId: p, ...receipt, ledgerId, ...(currency ? { currency } : {}) }, parent);
         receipts.push({ playerId: p, returned, staked, ledgerId });
         if (ledgerId) ids.push(ledgerId);
       }

@@ -88,6 +88,7 @@ export function createPostgresTableWallet({ client, assertPlayer, assertRoom }) 
   }
   return {
     async available(p) { return amount((await account(p)).available); },
+    async currency(p) { return (await account(p)).currency; },
     async gen(p) { return String((await account(p)).wallet_gen); },
     reservation,
     async reserve(p, { reservationId, roomId, kind, amount: value }) {

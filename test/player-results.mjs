@@ -119,6 +119,12 @@ test('history merges settled shared table rounds per player in time order and ke
   const history = await createPlayerHistoryHandler({ db, readPlayerResults, getPlayer: async id => ({ id, currency: 'SEK' }),
     readGame: async () => settled })('bob');
   assert.equal(history.currencies[0].rounds, 1); assert.equal(JSON.stringify(history).includes('shared-party'), false);
+  // The settlement keeps its ledger currency after a later profile currency change.
+  await pool.query("UPDATE croupier_game.players SET currency='EUR' WHERE id='bob'");
+  assert.deepEqual((await readPlayerResults(db, 'bob', settled, 'EUR')).currencies.map(row => [row.currency, row.rounds]), [['SEK', 1], ['EUR', 0]]);
+  // Hot paths read the native ledger only.
+  assert.equal((await readPlayerResults(db, 'bob', settled, 'EUR', { shared: false })).currencies[0].rounds, 0);
+  assert.equal((await readPlayerResults(db, 'alice', settled, 'SEK', { shared: false })).lastRound.roundId, 'native-ledger-1');
   // A shared round still in play is not a result; the native history of others is untouched.
   const done = await table.snapshot('party', 'alice');
   at = Math.max(at, done.plan.endAt); await send('alice', 'next', { roundId: done.roundId });
@@ -128,6 +134,22 @@ test('history merges settled shared table rounds per player in time order and ke
   assert.equal((await table.snapshot('party', 'alice')).phase, 'round');
   assert.equal((await readPlayerResults(db, 'alice', settled, 'SEK')).currencies[0].rounds, 2);
   assert.deepEqual(await readPlayerResults(db, 'carol', settled, 'SEK'), nativeOnly);
+});
+
+test('a shared round id reaches the speech relay only as an opaque stand-in', () => {
+  const lastRound = { roundId: 'shared-party-3d3c4e80-d374-4dc4-904d-7a67d389a096', currency: 'SEK', wagered: 25, returned: 50, net: 25, outcome: 'win' };
+  const playResults = { scope: 'saved-demo-profile', accounting: 'collected-rounds',
+    currencies: [{ currency: 'SEK', rounds: 1, won: 25, lost: 0, net: 25, wagered: 25, returned: 50 }], lastRound, currentRound: null };
+  const status = projectOpenClawGameStatus({ dealerId:'astrid', sessionRevision:1, roundRevision:1, playResults,
+    policy:{ recordedLines:[], generatedText:true, silence:true, mediaFamilies:[] } });
+  assert.match(status.playResults.lastRound.roundId, /^shared-round-[0-9a-f]{16}$/);
+  assert.equal(JSON.stringify(status).includes('party'), false); assert.equal(JSON.stringify(status).includes('3d3c4e80'), false);
+  assert.deepEqual({ ...status.playResults.lastRound, roundId: lastRound.roundId }, lastRound);
+  const native = projectOpenClawGameStatus({ dealerId:'astrid', sessionRevision:1, roundRevision:1,
+    playResults: { ...playResults, lastRound: { ...lastRound, roundId: 'native-ledger-7' } }, policy:{ recordedLines:[], generatedText:true, silence:true, mediaFamilies:[] } });
+  assert.equal(native.playResults.lastRound.roundId, 'native-ledger-7');
+  const envelope = { request:{ requestId:'results-mask', message:'Last round?', history:[] }, status };
+  assert.deepEqual(normalizeProductSpeechEnvelope(envelope).status.playResults, status.playResults);
 });
 
 test('optional results are allowlisted and validated at both sides of the speech relay', () => {

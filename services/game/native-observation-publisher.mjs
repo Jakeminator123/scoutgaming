@@ -38,7 +38,7 @@ export function createNativeObservationPublisher({ probeRuntime, partner, readPl
       const hands = settledHands(observation.previousView.round);
       const roundId = `collected-${observation.view.shoe.id}-${observation.view.version}`;
       const { currency } = await getPlayer(observation.playerId);
-      const sequence = (await readPlayerResults(db, observation.playerId, {}, currency)).currencies.reduce((sum,row)=>sum+row.rounds,0);
+      const sequence = (await readPlayerResults(db, observation.playerId, {}, currency, { shared: false })).currencies.reduce((sum,row)=>sum+row.rounds,0);
       await probeRuntime.completedRound(scope, { roundId, sequence, hands });
     } catch (error) { report(NATIVE_OBSERVATION_EVENTS.probe, 'completedRound', error); }
   }

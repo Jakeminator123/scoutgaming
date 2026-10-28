@@ -21,7 +21,8 @@
 //                                     release(p, {reservationId}),
 //                                     consume(p, {reservationId, key}) -> {ledgerId, amount},
 //                                     debit(p, {amount, kind, key}) -> {ledgerId},
-//                                     credit(p, {amount, kind, key}) -> {ledgerId}
+//                                     credit(p, {amount, kind, key}) -> {ledgerId},
+//                                     currency(p) -> ledger currency (optional; recorded in settlements)
 //                                     A domain refusal throws WalletDenied; anything else is an infrastructure error.
 //   tx.audit      GameAuditPort       append({room, roundId, at, parent, type, payload}) -> {seq, hash} (global A-writer,
 //                                     serialization in audit-chain.mjs), openShoe(row), closeShoe(row), shoe(shoeId),

@@ -52,16 +52,19 @@ async function readSharedRounds(db, playerId, currency) {
     const event = JSON.parse(row.body), payload = JSON.parse(event.payload);
     if (event.type !== 'wallet.settlement' || payload?.playerId !== playerId) continue;
     const { roundId, staked, returned, settledAt } = payload;
+    // The settlement records its ledger currency; older rows fall back to the profile.
+    const code = typeof payload.currency === 'string' && /^[A-Z]{3}$/.test(payload.currency) ? payload.currency : currency;
     if (typeof roundId !== 'string' || !roundId || ![staked, returned].every(value => Number.isFinite(value) && value >= 0))
       throw new Error('Invalid shared table settlement');
-    // The demo wallet holds one profile currency; shared ledger rows carry the same.
-    rounds.push({ roundId: `shared-${event.room ?? row.room_id}-${roundId}`, currency,
+    rounds.push({ roundId: `shared-${event.room ?? row.room_id}-${roundId}`, currency: code,
       wagered: money(staked), returned: money(returned), at: time(settledAt) ?? time(event.at) });
   }
   return rounds;
 }
 
-export async function readPlayerResults(db, playerId, game, currency) {
+// shared:false reads only the native ledger. Hot paths (native round observation, the
+// stream lane's chat status) use it: the audit has no player index (DDL after O03).
+export async function readPlayerResults(db, playerId, game, currency, { shared = true } = {}) {
   const totals = new Map();
   const bucket = code => {
     if (!totals.has(code)) totals.set(code, { currency: code, rounds: 0, won: 0, lost: 0, net: 0, wagered: 0, returned: 0 });
@@ -71,7 +74,7 @@ export async function readPlayerResults(db, playerId, game, currency) {
   const pending = Boolean(game.round && !game.paid);
   const completed = [...native.rounds, ...(!pending && native.open ? [native.open] : [])];
   // Stable time order; a round without a readable time keeps its source order first.
-  const rounds = [...completed, ...await readSharedRounds(db, playerId, currency)]
+  const rounds = [...completed, ...(shared ? await readSharedRounds(db, playerId, currency) : [])]
     .map((round, index) => ({ round, index, at: round.at ?? -Infinity }))
     .sort((a, b) => a.at - b.at || a.index - b.index).map(item => item.round);
   let lastRound = null;
