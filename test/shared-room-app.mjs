@@ -1527,3 +1527,25 @@ test('a state of another round, window or configuration never waits beside the p
     release(true);await playing;ports.close();
   }
 });
+
+// K6 (docs/plans/KEVIN-PORT.md, P-C): a viewer without a seat at a full table waits for one.
+const fullTable=(version,extra={})=>snapshot(version,{owners:Array(7).fill('bob'),seatGen:Array(7).fill(1),unopened:false,...extra});
+test('the status line tells a viewer without a seat at a full table that he waits for one',()=>{
+  const {document,nodes}=documentFixture(),view=createSharedRoomView({document});view.bind({dispatch(){},selectChip(){},retry(){}});
+  const can={join:false,bet:false,leave:false,act:[],insurance:false},render=(s,notice='')=>view.render({snapshot:s,chip:.5,can,notice,busy:false,connected:true,serverNow:1000});
+  // The text and its title (the full text where a phone clamps the line) always match.
+  const line=()=>{const banner=nodes.get('banner');assert.equal(banner.title,banner.textContent,'title follows text');return banner.textContent;};
+  render(fullTable(1));assert.equal(line(),'Väntar på plats');
+  render(fullTable(2),'Skickar…');assert.equal(line(),'Skickar…','a command notice comes first');
+  render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(line(),'Väntar på plats','a paused account does not wait');
+  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.equal(line(),'Välj plats och lägg insatser','a free seat ends the wait, title too');
+  view.close();
+});
+test('the mounted table sends wait after a full table\'s snapshot, and not while the player has a seat',async t=>{
+  const h=await bindingHarness(t);
+  await h.restore(seated(1));await delay(5);
+  assert.deepEqual(h.writes,[],'a seated player does not wait');
+  await h.restore(fullTable(2));
+  for(let i=0;i<100&&!h.writes.length;i++)await delay(2);
+  assert.deepEqual(h.writes,[{op:'wait'}]);
+});

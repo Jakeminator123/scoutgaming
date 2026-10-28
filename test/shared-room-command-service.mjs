@@ -47,7 +47,8 @@ function fixture(t, hooks = {}) {
           await options.authorizeCommand({rooms:{read:async()=>({presentationVer:0})}}, {...context,roomId:input.roomId,commandId:input.commandId,lockedPlayers:hooks.actors??['alice']});
           trace.push('receipt-read');
           if (!hooks.replay) state.writes++;
-          const result = input.op === 'pause' ? {op:'pause',pausedUntil:900000,rooms:hooks.rooms??[]} : {op:'refill',version:state.writes,ledgerId:'never-public'};
+          const result = input.op === 'pause' ? {op:'pause',pausedUntil:900000,rooms:hooks.rooms??[]}
+            : input.op === 'wait' ? {op:'wait',version:state.writes,waiting:true} : {op:'refill',version:state.writes,ledgerId:'never-public'};
           return {result,replay:hooks.replay===true,snapshot:hooks.noRoom ? null : hooks.badSnapshot ? {...snapshot(),me:{id:'bob'}} : snapshot()};
         } },
       };
@@ -87,6 +88,15 @@ test('actor hints use all locked players and wait for outer COMMIT; rollback and
   const failure=new Error('COMMIT failed'),bad=fixture(t,{commit:()=>{throw failure;}});await bad.service.start();
   await assert.rejects(bad.command(),error=>error===failure);assert.equal(bad.state.writes,0);assert.deepEqual(bad.actorsHinted,[]);assert.deepEqual(bad.hinted,[]);
   const replay=fixture(t,{replay:true});await replay.service.start();await replay.command();assert.deepEqual(replay.actorsHinted,[]);
+});
+
+// K6: a waiting registration changes no snapshot, so after its COMMIT no socket of the room or of the actor rereads.
+test('a committed wait hints no socket: its registration is in no snapshot',async t=>{
+  const h=fixture(t);await h.service.start();
+  const result=await h.command(undefined,{op:'wait',commandId:'wait-1'});
+  assert.deepEqual(result.result,{op:'wait',version:1,waiting:true});assert.equal(result.replay,false);
+  assert.deepEqual(h.trace.slice(-2),['receipt-read','commit']);assert.deepEqual(h.hinted,[]);assert.deepEqual(h.actorsHinted,[]);
+  await h.command();assert.deepEqual(h.hinted,['room-a'],'any other state change still hints');
 });
 
 test('service cannot mistake a nested transaction return for the outer COMMIT',async t=>{

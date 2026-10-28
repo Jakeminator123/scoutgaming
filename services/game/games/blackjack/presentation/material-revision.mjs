@@ -9,7 +9,7 @@
 // K01 TSV, path + bytes + sha256 of Kevin 5aa7ed10 files). They are NOT Neon ids or Blob
 // identities yet (K05); `observed` is whatever the binder verified (e.g. a local hash pass or,
 // later, the registry), and the revision changes if any of those hashes or timing inputs change.
-// The required set is activationSet (without K05's deferred rows) minus the six public/ JS files,
+// The required set is activationSet (without K05's deferred rows) minus the five public/ JS files,
 // which are source evidence pinned by CATALOGUE_SOURCE and never observed in runtime. That change
 // (K05-mappning.md 4b) changed every revision; revisions computed at 1148fa76 are no longer valid.
 //
@@ -17,8 +17,8 @@
 // (server/shared-table.mjs @ 5aa7ed10): lead 700/1000/1500 ms before the first take (:150, 1500
 // when the plan opens on the flip), each take's own length, 80 ms between takes that do not join
 // (:132), ready dealers' lengths from meta.json frames at 24 fps by run variant (:114-135,
-// readyTimeline), Astrid classic from manifest.json deal[].dur (:170-172). C has only lead + draws
-// x card and does not count the flip as a draw (coordinator.mjs engine(): draws = shoe draws). So:
+// readyTimeline). C has only lead + draws x card and does not count the flip as a draw
+// (coordinator.mjs engine(): draws = shoe draws). So:
 //   cardMs = ceil(longest deal take of the set, any track 1-7/dealer/hole, any variant) + 80
 //   leadMs = 1500 + ceil(longest flip take) + 80
 // which never ends a plan before Kevin's filmed deal/reveal takes for the same steps would. It is
@@ -33,9 +33,8 @@ export const MATERIAL_REVISION_CONTRACT = 'k04-material-revision/1';
 const FPS = 24, GAP_MS = 80, LEAD_MAX_MS = 1500;
 const DEAL_TRACKS = ['1', '2', '3', '4', '5', '6', '7', 'dealer', 'hole'];
 const RUN_VARIANTS = ['-', '-i', '-u', '-iu']; // every track has these; -v/-iv where filmed (meta)
-const ASTRID_DEALS = ['deal_pos1', 'deal_pos2', 'deal_pos3', 'deal_pos4', 'deal_pos5', 'deal_pos6', 'deal_pos7', 'deal_posdealer', 'deal_hole'];
-const KEYED = new Set(['dragge', 'paow', 'astrid2', 'marten']);
-const LINE_SOURCES = new Set(['replik', 'replik-rot']);
+const KEYED = new Set(['dragge', 'paow', 'marten']);
+const LINE_SOURCE = 'replik';
 
 export class PlanningRefused extends Error {
   constructor(refusal) { super(`K04 planning refused: ${refusal.reason}`); this.name = 'PlanningRefused'; this.code = 'planning_refused'; this.refusal = refusal; }
@@ -43,8 +42,8 @@ export class PlanningRefused extends Error {
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const get = (map, key) => (map instanceof Map ? map.get(key) : map?.[key]);
-// The single timing document per dealer: its ready meta.json, or (Astrid classic) the manifest.
-export const timingSourceOf = dealer => KEYED.has(dealer) ? `media/dealers/${dealer}/v2/meta.json` : dealer === 'astrid' ? 'media/manifest.json' : null;
+// The single timing document per dealer: its ready meta.json.
+export const timingSourceOf = dealer => KEYED.has(dealer) ? `media/dealers/${dealer}/v2/meta.json` : null;
 
 function timingFromMeta(meta) {
   if (Object.hasOwn(meta, 'hands')) return { reason: 'hands_take_not_modelled' };
@@ -58,16 +57,6 @@ function timingFromMeta(meta) {
   }
   return { field: 'meta.json frames[track][variant] (frames at 24 fps)', cardFrames: card, flipFrames: flip,
     cardTakeMs: Math.ceil(card * 1000 / FPS), flipTakeMs: Math.ceil(flip * 1000 / FPS) };
-}
-
-function timingFromManifest(manifest) {
-  const dur = id => manifest.deal?.find(c => c?.id === id)?.dur;
-  const all = [...ASTRID_DEALS, 'deal_flip'];
-  const bad = all.find(id => !(Number.isFinite(dur(id)) && dur(id) > 0));
-  if (bad) return { reason: `manifest_deal_incomplete:${bad}` };
-  const card = Math.max(...ASTRID_DEALS.map(dur)), flip = dur('deal_flip');
-  return { field: 'manifest.json deal[id].dur (seconds)', cardSeconds: card, flipSeconds: flip,
-    cardTakeMs: Math.ceil(card * 1000), flipTakeMs: Math.ceil(flip * 1000) };
 }
 
 // -> { ok: true, contract, dealer, language, leadMs, cardMs, revision, media, timing } or
@@ -84,7 +73,7 @@ export function planningRevision({ catalogue, dealer, language, observed, docume
   const languageOf = r => r.language || /\/repliker\/([a-z]{2})\//.exec(r.path)?.[1] || null;
   const required = activationSet(catalogue, dealer).filter(r => !languageOf(r) || languageOf(r) === language)
     .filter(r => !r.path.startsWith('public/')); // version-bound source evidence, pinned by CATALOGUE_SOURCE
-  if (!required.some(r => LINE_SOURCES.has(r.source) && r.language === language)) return refuse('no_recorded_lines_in_language');
+  if (!required.some(r => r.source === LINE_SOURCE && r.language === language)) return refuse('no_recorded_lines_in_language');
   const missing = required.filter(r => get(observed, r.path) === undefined).map(r => r.path);
   const mismatched = required.filter(r => get(observed, r.path) !== undefined && get(observed, r.path) !== r.sha256).map(r => r.path);
   if (missing.length || mismatched.length) return refuse('media_set_not_verified', { missing, mismatched });
@@ -94,7 +83,7 @@ export function planningRevision({ catalogue, dealer, language, observed, docume
   if (sha256(bytes) !== row.sha256) return refuse('timing_document_mismatch', { mismatched: [source] });
   let parsed;
   try { parsed = JSON.parse(Buffer.from(bytes).toString('utf8')); } catch { return refuse('timing_document_unreadable'); }
-  const timing = KEYED.has(dealer) ? timingFromMeta(parsed) : timingFromManifest(parsed);
+  const timing = timingFromMeta(parsed);
   if (timing.reason) return refuse(timing.reason);
   const cardMs = timing.cardTakeMs + GAP_MS, leadMs = LEAD_MAX_MS + timing.flipTakeMs + GAP_MS;
   const media = required.map(r => [r.path, r.bytes, r.sha256]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));

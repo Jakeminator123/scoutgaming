@@ -10,7 +10,7 @@ Den lokala bankens omskanning är borttagen; nya klipp läggs in i klippbibliote
 
 | Verktyg | Uppgift och begränsning |
 | --- | --- |
-| `build-lab-video-manifest.mjs` | Bygger/verifierar en presentationsbanks manifest med exakt filhash och stabilt ID (`--root <bank>`; repot har ingen bank sedan 2026-10-28). Används av Lab-proven för manifest och uppladdning; är inte en automatisk registrering av nya klipp. |
+| `build-lab-video-manifest.mjs` | Bygger en syntetisk banks manifest i Lab-proven för manifest och uppladdning. Repot har ingen bank sedan 2026-10-28; verktyget tas bort med bankformatet efter katalogbytet ([REN-START](../../docs/plans/REN-START.md), K1b). |
 | `build-index.mjs` | Indexerar Annex-B H.264 via AUD-markörer. Bevarar tidigare metadata vid oförändrade bytes och vägrar ersätta en kalibrerad tagning med nya bytes. |
 | `encode.sh` | Äldre export till 1440 × 1440, 24 fps, rå H.264. Beskär bilden kvadratiskt och tar bort ljud. Är inget allmänt exportrecept för dagens stående klipp eller lager. |
 | `test-*.mjs` | Prov för bland annat talpar, idle, kortkontakt och komposition. Filnamn med en gammal teknik innebär inte att provet saknar en nuvarande spelarkonsument. |
