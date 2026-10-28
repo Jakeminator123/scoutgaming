@@ -1,10 +1,11 @@
-import {Building2,Clapperboard,Plus} from 'lucide-react';
+import {Building2,Clapperboard,Plus,Rocket} from 'lucide-react';
 import Link from '../../../runtime/navigation';
 
 const actions=[
   {kind:'dealer',label:'Skapa dealer',href:'/admin/dealers?view=create',description:'Namnge din dealer och bygg klippkartan.',Icon:Plus},
   {kind:'clips',label:'Fortsätt redigera',href:'/admin/clips',description:'Arbeta med klippen, bordet och bakgrunden.',Icon:Clapperboard},
   {kind:'company',label:'Hantera spelbolag',href:'/admin/companies',description:'Välj bolag och hantera dess team och journal.',Icon:Building2},
+  {kind:'demo',label:'Skapa demo',href:'/admin/demo',description:'Bolag, spelbord, dealer och en demolänk att skicka. Fyra steg.',Icon:Rocket},
 ];
 
 function ActionArtwork({kind}:{kind:string}) {
@@ -26,6 +27,10 @@ function ActionArtwork({kind}:{kind:string}) {
         <path d={'M'+(x+43)+' '+(y+19)+'h24m-24 9h17m-17 9h21'} stroke="currentColor" strokeOpacity=".35" strokeWidth="3" strokeLinecap="round"/>
       </g>)}
       <circle cx="150" cy="49" r="5" fill="currentColor"/>
+    </>:kind==='demo'?<>
+      <path d="M56 82h208" stroke="currentColor" strokeOpacity=".35" strokeWidth="2"/>
+      {[56,125,194,263].map((x,i)=><g key={x}><circle cx={x} cy="82" r={i===3?22:16} fill={i===3?'currentColor':'#1c2828'} stroke="currentColor" strokeOpacity={i===3?1:.6} strokeWidth="2"/>{i<3?<text x={x} y="87" textAnchor="middle" fill="currentColor" fontSize="14" fontWeight="700">{i+1}</text>:<path d="M253 82h20m-8-8l8 8-8 8" stroke="#132018" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>}</g>)}
+      <rect x="92" y="120" width="136" height="22" rx="11" fill="currentColor" opacity=".18"/><rect x="104" y="128" width="88" height="6" rx="3" fill="currentColor" opacity=".55"/>
     </>:<>
       {[{x:24,y:38,o:.35},{x:172,y:38,o:.35},{x:98,y:20,o:1}].map(({x,y,o})=><g key={x} opacity={o}>
         <rect x={x} y={y} width="124" height="111" rx="14" fill="#232536" stroke="currentColor" strokeOpacity=".5"/>
