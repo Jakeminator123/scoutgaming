@@ -179,10 +179,10 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     let revealed=Boolean((plan&&now<plan.endAt?plan.before:round)?.dealer.length>1);
     if((plan&&now<plan.endAt?plan.before:round)?.holeDraw)visible.add((plan&&now<plan.endAt?plan.before:round).holeDraw);
     if(plan)for(const s of plan.steps){
-      if(s.kind==='reveal'&&now>=s.startAt){const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s),s.track);if(!s.clip||elapsed>=firstFaceTime(s.track??'flip'))revealed=true;}
+      if(s.kind==='reveal'&&now>=s.startAt){const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000*(s.rate??1)-variantOffset(readyVariant(plan,s),s.track);if(!s.clip||elapsed>=firstFaceTime(s.track??'flip'))revealed=true;}
       if(s.kind==='deal') {
         // Not adopted yet (a plan that arrived late): count from the deal take too, past a ready dealer's in-transition.
-        const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s),s.track);
+        const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000*(s.rate??1)-variantOffset(readyVariant(plan,s),s.track);
         if(elapsed>=firstFaceTime(s.track??s.seat))visible.add(s.shoeDraw);
       }
     }
@@ -318,10 +318,12 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
       if(step) {
         // A ready dealer's run variant may start with his in-transition: card timing counts from the deal take itself.
         const variant=readyVariant(plan,step),lead=variantOffset(variant,step.track);
-        currentDeal=step.kind==='deal'||(step.kind==='reveal'&&step.clip)?step:null;sourceFrame=Math.max(0,(now-step.startAt)/1000)-lead;let landed=false;
+        currentDeal=step.kind==='deal'||(step.kind==='reveal'&&step.clip)?step:null;sourceFrame=Math.max(0,(now-step.startAt)/1000)*(step.rate??1)-lead;let landed=false;
         
         // fit: a ready dealer's take is shorter than the slot (timed on Astrid's): the player stretches it to the slot.
-        playNow({...step.clip,variant,kind:'shared-game',fit:dealer.ready&&currentDeal?(step.endAt-step.startAt)/1000:null,startOffset:Math.max(0,(now-step.startAt)/1000), timelineTime:()=>Math.max(0,(time()-step.startAt)/1000),
+        // A table's tempo (step.rate, Emil 28 Oct) gives a slot of frames/(24*rate): the same fit plays it rate times faster,
+        // and every count of his frames here is media time (wall time * rate).
+        playNow({...step.clip,variant,kind:'shared-game',fit:dealer.ready&&currentDeal?(step.endAt-step.startAt)/1000:null,startOffset:Math.max(0,(now-step.startAt)/1000)*(step.rate??1), timelineTime:()=>Math.max(0,(time()-step.startAt)/1000),
           onStart:()=>{if(stepKey!==key)return;if(currentDeal)cards.beginDeal(step.seat,step.shoeDraw,step.track??step.seat);},
           onFrame:frame=>{if(stepKey!==key)return;frame-=lead;sourceFrame=frame;if(currentDeal){drawCards();cards.advanceDeal(frame);if(!landed&&frame>=DEAL_CONTACT[step.track??step.seat].contact){landed=true;audio?.play('land');}}},
         });

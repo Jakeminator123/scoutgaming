@@ -7,7 +7,8 @@
 // A patch is chosen by the body frame on screen (its take and frame), anywhere in the talk within REACH frames of where
 // the clock says the talk is: a clip that runs late (a slow phone, a decoder catching up) still gets the mouth made for
 // exactly that frame, only a little later against the sound.
-const FPS = 24, REACH = 48;
+// NEIGHBOURS: how many body frames away a patch may be borrowed when the frame on screen has none (a take at tempo 2.5).
+const FPS = 24, REACH = 48, NEIGHBOURS = 2;
 
 /** Splits an Annex B stream into access units at each delimiter (NAL type 9): [{data, key}] in order. */
 export function splitAccessUnits(buf) {
@@ -150,6 +151,11 @@ export function createLipTracks() {
         // patch is for the same VILA pose
         for (const key of patchKeys(take, frame, rest, t.last))
           for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
+        // Emil 28 Oct (a table's tempo): a take at 2x or 2.5x shows 2-2.5 body frames per patch, so the frames between get
+        // the patch of the nearest frame of the same take (one or two frames of head movement away) instead of no mouth
+        for (let d = 1; best < 0 && d <= NEIGHBOURS; d++)
+          for (const f of [frame - d, frame + d])
+            for (const j of t.index.get(`${take}:${f}`) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
         if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}` }; }
       }
       return null;

@@ -57,7 +57,8 @@ export function takeOf(step) {
  * [[take, firstFrame, count], …]. Between two takes the last frame stays (the 80 ms gaps); before the plan and after a
  * take that ends at rest, the dealer rests: on his moving idle when the talk carries one (idle = its chain, idleChain
  * below, Kevin 20 Oct: he keeps moving while he speaks, also between rounds), else on his still ('vila').
- * Held frames are runs of one.
+ * Held frames are runs of one. A take at a table's tempo (s.rate, Emil 28 Oct) runs that many body frames per frame of
+ * the map: the map stays 24 a second of audio and samples his frames, so at 2x it names every other one (runs of one).
  */
 export function kartaFor(steps, t0, n, { restEnd = [], idle = [] } = {}) {
   const takes = (steps ?? []).filter(s => takeOf(s) && Number.isFinite(s.startAt) && s.endAt > s.startAt);
@@ -71,9 +72,9 @@ export function kartaFor(steps, t0, n, { restEnd = [], idle = [] } = {}) {
   for (let k = 0; k < n; k++) {
     const t = t0 + k * 1000 / FPS + 1;
     const s = takes.find(x => t >= x.startAt && t < x.endAt);
-    if (s) { push(takeOf(s), Math.floor((t - s.startAt) * FPS / 1000 + 1e-6)); continue; }
+    if (s) { push(takeOf(s), Math.min((s.frames ?? Infinity) - 1, Math.floor((t - s.startAt) * FPS * (s.rate ?? 1) / 1000 + 1e-6))); continue; }
     const prev = [...takes].reverse().find(x => x.endAt <= t);
-    if (prev && !atRest(prev)) { push(takeOf(prev), Math.max(0, Math.round((prev.endAt - prev.startAt) * FPS / 1000) - 1)); continue; }
+    if (prev && !atRest(prev)) { push(takeOf(prev), Math.max(0, (prev.frames ?? Math.round((prev.endAt - prev.startAt) * FPS / 1000)) - 1)); continue; }
     const c = idle.find(x => t >= x.startAt && t < x.endAt);
     if (c) push(c.take, Math.min(c.frames - 1, Math.floor((t - c.startAt) * FPS / 1000 + 1e-6)));
     else push('vila', 0);

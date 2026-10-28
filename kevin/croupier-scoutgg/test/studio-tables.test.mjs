@@ -74,6 +74,15 @@ test('a table can open in the mobile view on a computer (Kevin 20 Oct); the desk
   assert.equal(new URL(tables.gameUrl(mobile), 'http://x').searchParams.get('layout'), 'mobile');
 });
 
+test('a table keeps its deal tempo (Emil 28 Oct): Slow 1x, Normal 1.5x, Fast 2x, Turbo 2.5x; none or an odd one is 1x', () => {
+  const file = path.join(mkdtempSync(path.join(tmpdir(), 'studio-')), 't.json');
+  const tables = createStudioTables(file);
+  const old = tables.create(table), turbo = tables.create({ ...table, name: 'Turbo', tempo: '2.5' }), odd = tables.create({ ...table, name: 'Odd', tempo: 3 });
+  assert.equal(old.tempo, 1); assert.equal(turbo.tempo, 2.5); assert.equal(odd.tempo, 1);
+  assert.equal(createStudioTables(file).tempoFor('turbo'), 2.5);
+  assert.equal(tables.tempoFor('no-such-table'), 1);
+});
+
 test('Mårten is not in prod (Kevin 16 Oct): no new table gets him, and his saved tables open with Paow', () => {
   const file = path.join(mkdtempSync(path.join(tmpdir(), 'studio-')), 'tables.json');
   const old = { ...table, dealer: 'marten', lang: 'sv', slug: 'prive-blackjack-19', created: '2026-10-10T16:38:32.179Z' };

@@ -83,6 +83,8 @@ const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // are read from each file; a dealer with Kling loops (dur 5.04, not rest-to-rest takes) or missing files rests on the
 // still as before. The worker image must carry these takes under the same names.
 const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1,calm:Boolean(i.calm),head:Boolean(i.head),once:Boolean(i.once),...(i.fas?{fas:i.fas}:{}),...(i.from&&i.from!=='vila'?{from:i.from}:{}),...(i.to&&i.to!=='vila'?{to:i.to}:{})}]:[];}catch{return [];}});
+// Emil 28 Oct: the dealers whose deal takes may run at a studio table's tempo (studio-tables.mjs TEMPOS); Astrid 2.0 first.
+const TEMPO_DEALERS=['astrid2'];
 const READY_TAKES=Object.fromEntries(['dragge','paow','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
@@ -130,7 +132,7 @@ const makeRorlig = apiKey => new RorligLipsync({
 });
 // the key Paow's voice already uses (local QA disables only Astrid's); given later on /studio/lipsync.html it starts then
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
-const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
+const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,tempoFor:room=>TEMPO_DEALERS.includes(studioTables.get(room)?.dealer)?studioTables.tempoFor(room):1,
   talk:room=>{const d=dealerOf(room);stillCheck(d);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language),idle:rorlig.idleTakes(d)}:null;},   // idle: the idle takes a connected worker can map (the chain at rest is laid from these)
   // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
   // plays his recorded "congratulations to the winners" instead

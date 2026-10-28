@@ -45,7 +45,7 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 const IDLE_SEAT_MS=90000;
 // Kevin 24 Oct (full table): while someone waits for a place a player keeps at most this many boxes after a round
 const MAX_BOXES_WHEN_WAITING=3,WAITING_MS=30000;
-export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
+export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null,tempoFor=()=>1}={}) {
   const talkFor=talk;
   const db=new DatabaseSync(filename);db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');   // WAL + NORMAL: a bet's COMMIT no longer waits on a full fsync (Kevin 22 Oct)
   db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
@@ -131,7 +131,10 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // A ready dealer's takes join (REDO to REDO): he reaches for the shoe once, deals the run of cards back to back
   // and returns to rest after the last. Each card gets its own take length, not Astrid's filmed slot, and the
   // step says which variant ('i' opens a run, 'u' closes it) so every viewer plays the same frames.
-  function readyTimeline(steps,ready) {
+  // tempo (Emil 28 Oct, a studio table's Slow 1 / Normal 1.5 / Fast 2 / Turbo 2.5): his deal takes play that much faster
+  // (the client's playbackRate = step.rate). A take's frames stay its own (clip.dur, card tracks, the lip-sync map count
+  // them in media time); only the wall-clock slot shrinks. Speech, idles and the waits for the other players do not.
+  function readyTimeline(steps,ready,tempo=1) {
     const dealing=s=>s?.clip&&(s.kind==='deal'||s.kind==='reveal');
     // Some takes start or end at REST instead of REDO (Paow's hole card ends at rest, her filmed turn goes rest to
     // rest): meta lists them, so a take after one reaches for the shoe again and none jumps between the two poses.
@@ -147,7 +150,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
         const t=take(s),rest=s.variant.endsWith('u')&&ready.frames[t]?.[`-${s.variant.slice(0,-1)}v`];
         if(rest){s.variant=s.variant.slice(0,-1)+'v';s.track=`${t}v`;}
         const frames=ready.frames[t]?.[`-${s.variant}`];
-        if(frames){s.endAt=at+frames/24*1000;s.clip={...s.clip,dur:frames/24};}else s.endAt=at+length;
+        if(frames){s.endAt=at+frames/24/tempo*1000;s.clip={...s.clip,dur:frames/24};s.frames=frames;if(tempo!==1)s.rate=tempo;}else s.endAt=at+length;
       }else s.endAt=at+length;
       at=s.endAt+(s.clip&&!joined(s,steps[i+1])?80:0);
     });
@@ -162,7 +165,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const draws=planDraws(before,r.round,opening,{calls});
     // Emil 12 Oct: the next player may act once the last card has landed (turnAt below), while the dealer still brings her
     // hand back to rest and talks about the bust. A card asked for then starts when that take has ended, never cutting it.
-    const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[];
+    const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[],tempo=ready?tempoFor(roomId):1;
     const clipFor=event=>clipByEvent(event,r.language)??(ready?.variants?.[event]?ownLine(event):null);
     // Emil 13 Oct: while the dealer speaks, a card asked for gives the lip-sync worker 1 s (not 0.7) to remake the mouth
     // over the new take; without speech the pace is as before
@@ -210,7 +213,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     }
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
-    if(ready&&steps.length)at=readyTimeline(steps,ready);
+    if(ready&&steps.length)at=readyTimeline(steps,ready,tempo);
     const spoken=[];for(const t of talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}):[])spoken.push(withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker,[...(r.talk??[]),...spoken]));
     if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
@@ -221,7 +224,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const lastDeal=[...steps].reverse().find(x=>x.clip&&(x.kind==='deal'||x.kind==='reveal'));
     const handsOn=steps.some(x=>x.kind==='turn')&&ready&&lastDeal&&!steps.some(x=>x.kind==='speech'&&x.startAt>lastDeal.startAt);
     const turnAt=handsOn?Math.round(lastDeal.startAt+.62*(lastDeal.endAt-lastDeal.startAt)):at;
-    r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at,turnAt};
+    r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at,turnAt,...(tempo!==1?{tempo}:{})};
     // Kevin 20 Oct: the table waits for a player after this plan (hit or stand, insurance): from its end, back at VILA,
     // his idle takes run as a chain on the table clock (public/idle-chain.js waitClips) instead of him standing still,
     // the same for every viewer and the worker's map, until the next take. The wait before it stays until its take.

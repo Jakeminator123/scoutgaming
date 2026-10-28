@@ -33,6 +33,9 @@ const slugOf = name => name.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g,
 
 // reserved(slug): true when a slug is already a table people play at (e.g. the public "astrid" room),
 // so a studio table never takes over its wallets and bets.
+// The deal tempos a studio table can have (Emil 28 Oct): Slow, Normal, Fast, Turbo.
+export const TEMPOS = [1, 1.5, 2, 2.5];
+
 export function createStudioTables(file, { reserved = () => false } = {}) {
   let tables = {};
   try { tables = JSON.parse(readFileSync(file, "utf8")); } catch {}
@@ -50,6 +53,8 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
     config.name = input.name.trim();
     // Kevin 20 Oct: a table can open in the phone layout on a computer too (desk-mode.js ?layout=mobile).
     config.layout = input.layout === "mobile" ? "mobile" : "desk";
+    // Emil 28 Oct: the tempo the dealer deals at (Slow 1x, Normal 1.5x, Fast 2x, Turbo 2.5x). An old client sends none: 1x.
+    config.tempo = TEMPOS.includes(Number(input.tempo)) ? Number(input.tempo) : 1;
     config.custom = /^#[0-9a-f]{6}$/i.test(input.custom ?? "") ? input.custom : null;
     if (input.logo != null && input.logo !== "" && (typeof input.logo !== "string" || input.logo.length > LOGO_MAX || !LOGO.test(input.logo)))
       throw new Error("Logo must be a PNG, JPEG or WebP image under 300 KB");
@@ -64,6 +69,8 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   }
 
   const get = slug => Object.hasOwn(tables, slug) ? tables[slug] : null;
+  // A table's deal tempo; tables saved before tempo existed, and rooms that are not studio tables, deal at 1x.
+  const tempoFor = slug => get(slug)?.tempo ?? 1;
   // The limits a room plays with: its studio preset, or the demo's original limits.
   const limitsFor = slug => { const t = get(slug); return t ? { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name } : DEFAULT_LIMITS; };
 
@@ -73,5 +80,5 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   // A back office account's own tables, newest first.
   const ownedBy = owner => Object.values(tables).filter(t => owner && t.owner === owner).sort((a, b) => b.created.localeCompare(a.created));
 
-  return { create, get, gameUrl, limitsFor, ownedBy };
+  return { create, get, gameUrl, limitsFor, ownedBy, tempoFor };
 }

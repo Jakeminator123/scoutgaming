@@ -110,7 +110,7 @@ export const DEALERS = {
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
   astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg?v=20261014',
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
-    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true },
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true, preloadHits: true },
 };
 
 function pick() {
@@ -137,7 +137,10 @@ export function dealerClipUrl(url, variant = '') {
 // Every run variant of one of a ready dealer's takes (any other URL passes through), for the preloader.
 export function dealerClipVariants(url) {
   const m = dealer.ready && url?.startsWith(dealer.clips) ? /\/([a-z0-9]+)\.mp4/.exec(url) : null;
-  return m ? ['', 'i', 'u', 'iu'].map(v => `${dealer.clips}${m[1]}${v ? '-' + v : ''}.mp4${V}`) : [url];
+  // Emil 28 Oct: a dealer with preloadHits also has his hit takes (-v, -iv: the card that ends at rest) loaded before the
+  // table opens: fetched when the plan came, a hit on a slow line waited for them (0.7 s lead, 1.3-1.9 MB at crf 16)
+  const hits = dealer.preloadHits && m && dealer.ready.land?.[`${m[1].replace(/^pos/, '')}v`] != null ? ['v', 'iv'] : [];
+  return m ? ['', 'i', 'u', 'iu', ...hits].map(v => `${dealer.clips}${m[1]}${v ? '-' + v : ''}.mp4${V}`) : [url];
 }
 
 // Which variant a ready dealer plays for a plan step: 'i' when the step opens a run of deals

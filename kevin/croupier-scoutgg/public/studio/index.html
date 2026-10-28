@@ -250,7 +250,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .drop-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.drop-meta strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drop-meta span{font-size:12px;color:var(--mute)}
 .drop-x{border:0;background:none;color:var(--dim);font-size:13px;font-weight:600;padding:8px}.drop-x:hover{color:#ef9a84}
 .url-row{display:flex;gap:8px}.url-row input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel3);font-size:14px}.url-row input:focus{outline:none;border-color:var(--gold)}.url-row input.bad{border-color:#ef9a84}
-.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.seg-o{min-height:44px;font-size:13px;font-weight:600;text-align:center;padding:0 8px}.seg-o[aria-checked=true]::after{display:none}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.seg-4{grid-template-columns:repeat(4,minmax(0,1fr))}.seg-o{min-height:44px;font-size:13px;font-weight:600;text-align:center;padding:0 8px}.seg-o[aria-checked=true]::after{display:none}
 /* Scout Gaming brand: lime + ink, per scoutgaminggroup.com */
 #login,#builder,#ready,.launch{--gold:#d6ff3a;--gold2:#b9dc22;--ink:#0b0c0e;--panel:#0f1012;--panel2:#141517;--panel3:#1a1b1e;--cream:#f2f1ed;--dim:#a9aaa5;--mute:#7c7d78}
 #login .btn-gold,#builder .btn-gold,#ready .btn-gold{background:#d6ff3a;border:0;border-radius:10px;color:#0b0c0e;box-shadow:none;font-weight:700}
@@ -447,6 +447,12 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <div class="seg" role="radiogroup" aria-label="Desktop view"><button type="button" class="opt seg-o" role="radio" data-k="layout" data-val="desk" aria-checked="true">Desktop table</button><button type="button" class="opt seg-o" role="radio" data-k="layout" data-val="mobile" aria-checked="false">Mobile view</button></div>
 </div></div></div>
 </section>
+<section class="step" data-step="tempo">
+<div class="step-h"><span class="sec-l">// 08 · Tempo</span><span class="step-v" data-v="tempo">Normal</span></div><p class="sec-d" id="tempoNote">How fast the dealer deals the cards. Her voice keeps its own pace.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="seg seg-4" role="radiogroup" aria-label="Tempo"><button type="button" class="opt seg-o" role="radio" data-k="tempo" data-val="1" aria-checked="false">Slow</button><button type="button" class="opt seg-o" role="radio" data-k="tempo" data-val="1.5" aria-checked="true">Normal</button><button type="button" class="opt seg-o" role="radio" data-k="tempo" data-val="2" aria-checked="false">Fast</button><button type="button" class="opt seg-o" role="radio" data-k="tempo" data-val="2.5" aria-checked="false">Turbo</button></div>
+</div></div></div>
+</section>
 
 </div>
 <div class="config-foot"><p>All choices can be changed later.</p><button class="btn-gold" type="button" id="createBtn">Create table →</button></div>
@@ -472,6 +478,7 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <dt>Limits</dt><dd id="rsLimit">$5 – $2,000</dd>
 <dt>Logo</dt><dd id="rsLogo">None</dd>
 <dt>Desktop view</dt><dd id="rsLayout">Desktop table</dd>
+<dt>Tempo</dt><dd id="rsTempo">Normal</dd>
 </dl>
 <div class="share"><code id="shareUrl">croupier.scoutgg.dev/t/prive-blackjack</code><button type="button" id="copyBtn">Copy link</button></div>
 <div class="ready-actions"><button class="btn-gold" type="button" id="playBtn">Open table →</button><button class="btn-quiet" type="button" id="editBtn">Edit table</button><button class="btn-quiet" type="button" id="newBtn">New table</button></div>

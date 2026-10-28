@@ -1,5 +1,6 @@
 import { pickWeighted, restingPool, bettingIdles } from "./idle-chain.js";
 import { createVoicePool } from "./voice-pool.js";
+import { clipFormatReady, formatUrl, clipFormatFailed } from "./clip-format.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
 import {pickQueued,clipDuration} from './chat-priority.js';
@@ -63,7 +64,9 @@ const nativeIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platfor
 let mediaBase='';
 const mediaUrl=u=>mediaBase&&/^\/media\/[^?]+\.mp4(\?|$)/.test(u)?mediaBase+u:u;
 const mediaFetch=createMediaFetch(mediaUrl,()=>{if(mediaBase)console.warn('clip cache unavailable here, clips come from this host');mediaBase='';});
-const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:mediaFetch});
+// Emil 28 Oct: a dealer with smaller formats (clip-format.js) is fetched and played in the visit's format; everything else
+// in the game keeps the original URL (the buffer's key, the take name dealer-layer.js reads).
+const videoBuffer=createVideoBuffer(nativeIOS?{fetchImpl:(u,o)=>clipFormatReady.then(()=>fetch(formatUrl(u),o)),createURL:(_blob,source)=>formatUrl(source),revokeURL:()=>{}}:{fetchImpl:(u,o)=>clipFormatReady.then(()=>mediaFetch(formatUrl(u),o))});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
 function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const unclasp=manifest.idle.filter(c=>c.from==='knappt'&&c.to==='vila'),next=unclasp.find(c=>!videoBuffer.has(c.url))??restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the way out of the clasped hands first (unclaspFor, before a card), then the calm ones: they are what he rests on
@@ -243,7 +246,7 @@ async function play(item) {
     // Card faces follow the clip's own time (onFrame), so they stay with his hand.
     if (item.fit && Number.isFinite(v.duration) && Math.abs(v.duration - item.fit) > 0.02) {
       // Shorter clip: stretch it to the slot. Longer (Emil's takes at their own pace, slotted on Astrid's): speed it up.
-      const rate = Math.min(2, Math.max(.6, v.duration / item.fit)), wall = item.timelineTime;
+      const rate = Math.min(2.6, Math.max(.6, v.duration / item.fit)), wall = item.timelineTime;   // up to Turbo (2.5x, a studio table's tempo)
       v.playbackRate = rate; item.dur = v.duration;
       if (wall) item.timelineTime = () => wall() * rate;
     }
@@ -282,7 +285,11 @@ async function play(item) {
   };
   v.oncanplay = start;
   v.onended = () => finish(true);
-  v.onerror = () => { if (item.kind !== "idle") sys("Unable to play the clip", "err"); finish(false); };
+  v.onerror = () => {
+    // a clip in a smaller format this device could not decode after all: the visit goes over to H.264 (clip-format.js)
+    if (formatUrl(item.url) !== item.url && clipFormatFailed()) { location.reload(); return; }
+    if (item.kind !== "idle") sys("Unable to play the clip", "err"); finish(false);
+  };
   try {
     const ready=await videoPreloader.consume(v,item.url);
     if(!ready||done||token!==playToken)return;
@@ -309,7 +316,9 @@ function playRemark(id) {
 // Kevin 20 Oct: no sound on his phone when the dealer spoke: every line and answer was a new Audio() started by a timer,
 // outside the player's gesture, which Safari on iPhone/iPad refuses. The pool (voice-pool.js) is unlocked in the gesture
 // and reused, and the next line's sound is loaded ahead so it starts on its first frame.
-const voices = createVoicePool({ busy: a => voiceOvers.has(a) });
+const voicePool = createVoicePool({ busy: a => voiceOvers.has(a) });
+// a recorded line's sound: the H.264 copy of a dealer with smaller formats (its own audio, untouched; any element plays it)
+const voices = { ...voicePool, warm: u => voicePool.warm(formatUrl(u, 'h264')), take: u => voicePool.take(formatUrl(u, 'h264')) };
 
 // sound only while the dealer's film goes on; one that had not started yet goes back to the front of the queue.
 function yieldAnswer() {
