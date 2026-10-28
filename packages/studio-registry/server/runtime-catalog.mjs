@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {cloneStudioJson, StudioStorageError} from './storage-contract.mjs';
-import {validateMediaLayout} from './media-layout.mjs';
-import {validateLabVideoManifest} from './video-manifest.mjs';
+import {validateMediaLayout,PRESENTATION_BANK_PATH} from './media-layout.mjs';
+import {createEmptyPresentationManifest,isEmptyPresentationManifest,validatePresentationManifest} from './video-manifest.mjs';
 import {validatePrivateMedia} from './private-media-contract.mjs';
 
 const limits={maxBytes:16*1024*1024,maxNodes:200000,maxDepth:32};
@@ -13,9 +13,10 @@ export const runtimeCatalogRevision=value=>hash(runtimeCatalogJson(value));
 
 // Explicit absence of an immutable bank, never a fallback for missing/corrupt SQL.
 // Uploaded clips and layers remain separate scoped media/project records.
+// A catalogue with game/site assets may also carry this empty presentation.
 const emptyCatalog={schemaVersion:1,layout:{schemaVersion:1,roots:{},files:[]},
   blobIndex:{schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files:[]},
-  presentation:{schemaVersion:1,source:'scoutgaming-empty',families:[],items:[]},
+  presentation:createEmptyPresentationManifest(),
   legacy:{schemaVersion:2,entries:{}}};
 const emptyCatalogJson=runtimeCatalogJson(emptyCatalog);
 export function createEmptyRuntimeMediaCatalog(){return cloneStudioJson(emptyCatalog,limits);}
@@ -31,7 +32,9 @@ export function validateRuntimeMediaCatalog(source) {
     if(isEmptyRuntimeMediaCatalog(value))return value;
     if(value.schemaVersion!==1||Object.keys(value).sort().join(',')!=='blobIndex,layout,legacy,presentation,schemaVersion')fail();
     validateMediaLayout(value.layout);
-    validateLabVideoManifest(value.presentation);
+    validatePresentationManifest(value.presentation);
+    // Only the exact empty catalogue may carry no media at all.
+    if(isEmptyPresentationManifest(value.presentation)&&!value.layout.files.length)fail();
     const index=value.blobIndex;
     if(index.schemaVersion!==1||index.namespace!=='croupier/media'||index.verification!=='readback-sha256'||!Array.isArray(index.files)||index.files.length>20000)fail();
     const layout=new Map(value.layout.files.map(row=>[row.path,row])), blobs=new Map();
@@ -45,7 +48,7 @@ export function validateRuntimeMediaCatalog(source) {
     }
     for(const row of value.layout.files)if(row.access!=='source'&&!blobs.has(row.path))fail();
     for(const item of value.presentation.items){
-      const row=blobs.get('dealers/astrid/runtime/presentation/'+item.relativePath);
+      const row=blobs.get(PRESENTATION_BANK_PATH+'/'+item.relativePath);
       if(!row||row.id!==item.id||row.sha256!==item.sha256||row.size!==item.size)fail();
     }
     if(value.legacy.schemaVersion!==2||!value.legacy.entries||Array.isArray(value.legacy.entries)||typeof value.legacy.entries!=='object')fail();

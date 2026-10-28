@@ -14,7 +14,7 @@ const mode = changes => verificationMode(changes, { env: {} });
 test('documentation and indexing-only changes use quick checks', () => {
   assert.equal(mode([
     change('docs/history/JOHN-HANDOFF-2026-10.md'), change('README.md'),
-    change('.ignore'), change('.cursorindexingignore'),
+    change('.ignore'), change('.cursorignore'),
     change('docs/obsolete.md', 'D'),
   ]), 'documentation');
 });

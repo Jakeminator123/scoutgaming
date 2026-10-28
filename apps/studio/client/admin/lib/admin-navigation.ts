@@ -7,7 +7,7 @@ import {adminNavigationGroups,adminSystemGroups} from '../../../../../packages/n
 export const adminToolHomes:Record<string,string>={
   companies:'/admin/companies',
   'dealer-studio':'/admin/clips','dealer-agent':'/admin/clips',
-  'media-review':'/admin/clips',replies:'/admin/clips',
+  replies:'/admin/clips',
 };
 export const adminToolHome=(tool:string|null)=>tool?adminToolHomes[tool]??'/admin':null;
 export const adminPageLabels:Record<string,string> = {

@@ -5,7 +5,7 @@ import { createStudioLoginClient, StudioLoginUiError } from '../lib/studio-login
 import styles from './studio-administration.module.css';
 import { MovingDriftControls } from './moving-drift-controls';
 
-export function NativeAdministration({ apiBase, availableActions, gameOrigin, initialGroup, initialDealerId, embedded = false }: {apiBase: StudioAdminApiBase; availableActions: string[]; gameOrigin?: string; initialGroup?: string; initialDealerId?: string; embedded?: boolean }) {
+export function NativeAdministration({ apiBase, availableActions, gameOrigin, initialGroup, embedded = false }: {apiBase: StudioAdminApiBase; availableActions: string[]; gameOrigin?: string; initialGroup?: string; embedded?: boolean }) {
   const [epoch,setEpoch] = useState(0), [busy,setBusy] = useState(false), [error,setError] = useState('');
   const writing = useRef(false);
   const session = useCallback(async () => {
@@ -26,7 +26,7 @@ export function NativeAdministration({ apiBase, availableActions, gameOrigin, in
   const driftClient=useMemo(()=>createStudioAdminClient({apiBase,session,availableActions,gameOrigin,readIdentity:'response-headers-v1'}),[apiBase,session,availableActions,gameOrigin]);
   const Wrapper = embedded ? 'div' : 'main';
   return <Wrapper className={embedded ? styles.embedded : styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
-    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} initialGroup={initialGroup} initialDealerId={initialDealerId} readIdentity="response-headers-v1"
+    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} initialGroup={initialGroup} readIdentity="response-headers-v1"
       roomsHref={embedded ? '/admin/rooms' : undefined} companyTeamLabel={embedded ? 'Bolag & team' : undefined}
       renderOperations={actor=><MovingDriftControls key={'drift-'+epoch} client={driftClient} expectedActor={actor}/>} showGroupNavigation={!embedded}
       sessionAction={<button type="button" className="sg-btn sg-btn-ghost" onClick={() => void logout()}>Logga ut</button>} />}</Wrapper>;

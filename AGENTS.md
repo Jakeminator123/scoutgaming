@@ -47,7 +47,7 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 - Ordinarie papperskorg/livscykel får inte radera historik eller källmedia som bieffekt. Frikoppla aktiva beroenden atomiskt; återställning får inte automatiskt återöppna rum eller aktivera tal. Följ befintliga livscykelkontrakt och negativa behörighetsprov.
 - Följ konsumenterna innan kod eller lagring avvecklas: route, UI, tjänst, adapter, data, build, test och dokumentation. Mappnamn, tom tabell eller grön build bevisar inte att produktionsdata kan raderas. Produktionsrensning/migrering kräver sitt uttryckliga mandat och återställningsunderlag.
 - Sök (ripgrep, Grep i Claude Code och Cursor) hoppar över allt i `.gitignore`, `.ignore` och `.cursorignore`. Inventering och städning utgår därför från `git ls-files`, som visar varje spårad fil. Lokala `node_modules` används bara för hookar, tester och skript på den egna maskinen; Vercel och Render installerar beroenden själva från lockfilerna.
-- Bevara godkända media, exakta identiteter och publiceringshistorik, inklusive Astrids märkta legacy-referens. Det kräver inga gamla parallella implementationer eller register. `dealerSets` organiserar referenser, inte personer eller uppspelningsval.
+- Bevara godkända media, exakta identiteter och publiceringshistorik. Astrid, också hennes märkta legacy-referens, bevaras inte: hon tas bort helt, och radering går före arkiv (Jakobs beslut 2026-10-28; ordningen i Neon och Blob står i [REN-START](docs/plans/REN-START.md)). Det kräver inga gamla parallella implementationer eller register. `dealerSets` organiserar referenser, inte personer eller uppspelningsval.
 - Talets text, ljud, video, frameindex, kalibrering och godkännande hör ihop. Ändrade bytes ogiltigförklarar tidigare visuell acceptans. Använd inte ungefärlig klipplängd, loopad inspelad mening eller fristående munanimation som ersättning. Följ runtimeguidens exakt bildrute-/ljudbundna kompositionskontrakt.
 - Bygg ersättningstagningar i separat staging. Kringgå inte `build-index.mjs`:s skydd genom att radera kalibreringsmetadata. Hash, vågform, första munrörelse eller testpass bevisar inte läppsynk. Regenerera inte orelaterade godkända tillgångar.
 
@@ -59,3 +59,12 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 - Respektera `.ignore`; använd inte `rg --no-ignore`. Läs inte `random-stuff-jakob/jakob-docs/arkiv/` eller kopior av dess innehåll i återställningar, Git-historik eller externa säkerhetskopior utan Jakobs uttryckliga begäran om ett specifikt dokument. Ignoreringsfiler är inte OS-behörigheter; samma sekretessgräns gäller terminal/MCP.
 - Radera verifierat förbrukade rester. Tveksamt lokalt återställningsmaterial hör till kanoniska gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>`, inte nya parallella arkiv; följ `tools/retention-policy.json`. Sök inte igenom mediebinärer/genererade artefakter för vanliga dokumentfrågor. Konversationsexporter och hemligheter ska vara privata och utanför Git.
 - Produkttexter ska vara korta, begripliga och tillgängliga. Lägg tekniska detaljer där de hjälper användarens beslut; beskriv konsekvensen vid destruktiv åtgärd.
+
+## Hitta och radera skit
+
+- Börja i `git ls-tree -r -l origin/main | sort -k4 -rn`, största filen först. Börja aldrig i ripgrep, som hoppar över ignorerade filer.
+- En fil får bara finnas om något levande läser den. Bevisa det med `git grep -F <filnamn eller URL> origin/main -- apps packages services ops tools .github .githooks`. Dokumentation räknas inte, och inte heller ett prov som bara låser filen.
+- Kontrollera även strängbyggda sökvägar (`${base}/x.png`, relativa `url('assets/…')`), routinglistor, `publicUrl` i `media/layout.json`, `blob-index.json`, Dockerfiles och skript i `package.json`.
+- En `.d.mts` behöver en `.mjs` bredvid sig och en import från TypeScript. En tillgång i Neon eller Blob är levande bara om en klient faktiskt begär dess URL.
+- Radera filen, dess rad i `tools/repo-limits-allowlist.json`, dess manifestrader och dess prov i samma PR. Arkivera inte.
+- Kontrollera ägarskapet först: `gh pr list --json files` och uppdragets lista över vad som inte får röras.

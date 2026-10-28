@@ -28,12 +28,13 @@ test('every existing Control tool and registered N1 view has a served Admin dest
   assert.equal(adminDocumentHref('/control/players?operator=nord'),'/admin/players?operator=nord');
   assert.equal(adminDocumentHref('/control/dealer-forge?dealerId=dragan'),'/admin/dealer-studio?view=generate&dealer=dragan');
 });
-test('speech review retains its actual group and dealer on a served Admin document',()=>{
+test('retired speech review bookmarks land on Röst & tal with their dealer context',()=>{
   const target=adminDocumentHref('/control/administration?tab=media-review&dealer=dragan&lane=portrait');
-  assert.equal(target,'/admin/media-review?tab=media-review&dealer=dragan&composition=portrait');
-  assert.equal(adminToolName('/admin/media-review'),'media-review');
-  assert.ok(designPreviewPages.has('media-review'));
+  assert.equal(target,'/admin/clips?panel=room&dealer=dragan&composition=portrait');
+  assert.equal(adminDocumentHref('/admin/media-review?dealer=dragan'),'/admin/clips?panel=room&dealer=dragan');
+  assert.equal(adminToolName('/admin/media-review'),null);
   assert.equal(studioLoginReturnTo(target),target);
+  assert.equal(studioLoginReturnTo('/admin/media-review?dealer=dragan'),'/admin/clips?panel=room&dealer=dragan');
 });
 test('legacy lanes bookmarks preserve the company tab instead of opening the rooms page',()=>{
   for(const prefix of ['/control','/studio/control']){

@@ -13,7 +13,6 @@ import { ConnectedEconomy } from './connected-economy';
 const groups: Record<string,string> = {
   '/admin/admin/accounts':'accounts', '/admin/admin/players':'accounts',
   '/admin/admin/api':'partners',
-  '/admin/media-review':'media-review',
 };
 /** The accounts group is one server document; a page may show only players (nivå 3) or staff users (nivå 1). */
 export type AccountsSection='players'|'users';
@@ -45,7 +44,7 @@ export function ServiceTabs({path,label,tabs}:{path:string;label:string;tabs:{id
   </div>;
 }
 
-function Administration({group,dealerId,section}:{group:string;dealerId?:string;section?:AccountsSection}) {
+function Administration({group,section}:{group:string;section?:AccountsSection}) {
   const [actions,setActions]=useState<string[]|null>(null);
   const [gameOrigin,setGameOrigin]=useState<string>();
   const [error,setError]=useState('');
@@ -68,11 +67,11 @@ function Administration({group,dealerId,section}:{group:string;dealerId?:string;
   // Keep the native readers, authorization and writes on their existing contracts.
   const content=group==='operations'
     ?<div className={adminStyles.embedded}><StudioAdministration key={group} apiBase="/studio/api/admin" session={readAdminSession} availableActions={actions??undefined} gameOrigin={gameOrigin} initialGroup={group} readIdentity="response-headers-v1" roomsHref="/admin/rooms" companyTeamLabel="Bolag & team" showGroupNavigation={false}/></div>
-    :<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions??[]} gameOrigin={gameOrigin} initialGroup={group} initialDealerId={dealerId}/>;
+    :<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions??[]} gameOrigin={gameOrigin} initialGroup={group}/>;
   return <section className="admin-system-page" data-admin-view={section}>{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:content}</section>;
 }
 
-export function ConnectedServices({path,dealerId,section}:{path:string;dealerId?:string;section?:AccountsSection}) {
+export function ConnectedServices({path,section}:{path:string;section?:AccountsSection}) {
   if(path==='/admin/ekonomi')return <ServiceTabs path={path} label="Ekonomi" tabs={[
     {id:'overview',label:'Översikt',content:<ConnectedEconomy/>},
     {id:'payments',label:'Betalningar',content:<Administration group="finance"/>},
@@ -82,6 +81,6 @@ export function ConnectedServices({path,dealerId,section}:{path:string;dealerId?
     {id:'speech',label:'Taldrift',content:<TaldriftPanel/>},
   ]}/>;
   if(path==='/admin/ai/models')return <AgentModelsPanel/>;
-  if(groups[path])return <Administration group={groups[path]} dealerId={dealerId} section={groups[path]==='accounts'?section:undefined}/>;
+  if(groups[path])return <Administration group={groups[path]} section={groups[path]==='accounts'?section:undefined}/>;
   return <section className="admin-system-page" aria-labelledby="unknown-service-title"><header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="unknown-service-title">Tjänsten finns inte</h1><p>Den här adressen har ingen ansluten administrationstjänst.</p></div></header><nav className="admin-system-actions" aria-label="Tillgängliga verktyg"><a className="studio-button" href="/admin">Till översikten</a></nav></section>;
 }

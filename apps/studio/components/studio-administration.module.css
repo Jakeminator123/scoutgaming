@@ -9,10 +9,6 @@
 .header p { color: var(--muted); font-size: 12px; }
 .headerActions { grid-column: 2; grid-row: 1; align-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .areaLabel { align-self:center; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-right:12px; }
-.contextLinks { padding:16px 20px; border:1px solid var(--line); border-radius:10px; background:var(--panel); font-size:13px; }
-.contextLinks p { margin:0 0 12px; color:var(--muted); }
-.contextLinks nav { display:flex; gap:20px; flex-wrap:wrap; }
-.contextLinks a { color:var(--teal); }
 .groups { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
 .administration button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); min-height: 40px; padding: 9px 14px; cursor: pointer; font: inherit; }
 .administration button:not(:disabled):hover { border-color: var(--teal); }
@@ -72,12 +68,6 @@
 .integrationFacts { display: flex; flex-wrap: wrap; gap: 16px 36px; margin: 12px 0 4px; }
 .integrationFacts small { display: block; color: var(--muted); margin-top: 5px; }
 .row > .form { flex: 1 1 100%; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-soft); padding: 16px; }
-.review { border-top: 1px solid var(--line-soft); padding: 10px 0; }
-.review > summary { cursor: pointer; padding: 5px 0; }
-.review > summary span { margin-left: 12px; color: var(--muted); font-size: 12px; }
-.review video { display: block; max-width: min(100%, 26rem); max-height: 22rem; margin: 12px 0; }
-.review audio { display: block; max-width: 100%; margin: 12px 0; }
-.review form { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
 .shell { composes: workspace from './studio-theme.module.css'; padding: 22px 24px 40px; max-width: 1368px; margin: auto; min-height: calc(100vh - 64px); }
 .embedded { composes: workspace from './studio-theme.module.css'; width: 100%; min-width: 0; }
 @media (max-width: 640px) {

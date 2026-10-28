@@ -23,17 +23,14 @@ function adminEndpoint(method, action) {
 }
 
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
-  ...['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts',
+  ...['overview', 'config', 'clips', 'generations', 'gen-verdicts',
     'apikeys', 'users', 'players', 'transactions','emails','shoes', 'room-game-config', 'shared-table-proof', 'presentation-room', 'resource-lifecycle', 'moving-drift'].map(action => adminEndpoint('GET', action)),
-  ...['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
+  ...['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
     'operator-package', 'room-game-config', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'moving-drift']
     .map(action => adminEndpoint('POST', action)),
-  // These methods still require the existing opt-in operator gate, owner/budget
-  // checks and paid-work authority. A matching descriptor grants none of them.
-  ...['GET', 'POST', 'DELETE'].map(method => adminEndpoint(method, 'speech-qa')),
 ]);
 
 export const STUDIO_AUTH_ENDPOINTS = Object.freeze([
