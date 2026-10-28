@@ -46,7 +46,6 @@ const ROOM_PRESENTATION_MEDIA = [
 ];
 const roomPresentationMediaPath=path=>ROOM_PRESENTATION_MEDIA.some(pattern=>{const match=pattern.exec(path);return match&&Number.isSafeInteger(Number(match[1]));});
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
-const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
 const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config']);
@@ -74,7 +73,6 @@ export function backendPlatformPath(value) {
     || path === '/api/dealer/observation'
     || path === '/api/dealer/transcription'
     || STUDIO_PREVIEW.test(path)
-    || BACKOFFICE.has(path)
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/rooms)?$/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/rooms\/[a-z][a-z0-9-]{0,63}\/preview(?:\/media\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/(?:dealer|table|background)\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})?$/.test(path)

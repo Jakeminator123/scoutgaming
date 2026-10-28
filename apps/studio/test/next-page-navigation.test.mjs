@@ -178,12 +178,11 @@ const authEntryConfig = authBase => ({
 const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/admin/' + mode,
   { headers: { host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', ...extra } });
 
-test('standalone auth documents move to configured public Studio before rendering with exact state and token', async () => {
+test('standalone auth documents move to configured public Studio before rendering with exact returnTo and token', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   for (const authBase of ['/api/auth', '/studio/api/auth']) {
     const config = authEntryConfig(authBase);
-    for (const kind of ['game', 'lab']) {
-      const returnTo = '/api/bo/' + kind + '-login?state=' + 'a'.repeat(64);
+    for (const returnTo of ['/studio/administration', '/admin/rooms?operator=north&table=room-one']) {
       const destination = nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'login'), config, { returnTo });
       let thrown; try { navigation.redirect(destination); } catch (error) { thrown = error; }
       const actual = new URL(locationFromNext(thrown, authBase === '/api/auth' ? '' : '/studio'));
@@ -204,7 +203,7 @@ test('standalone auth documents move to configured public Studio before renderin
 test('auth-entry redirects reject spoofed origins and retain only validated returnTo or scalar bearer', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   const config = authEntryConfig('/studio/api/auth'), request = entryRequest('studio.fixture.invalid', 'login');
-  for (const returnTo of ['https://attacker.invalid', '//attacker.invalid', '/studio?draft=private', '/api/bo/game-login?state=' + 'a'.repeat(63), ['x']]) {
+  for (const returnTo of ['https://attacker.invalid', '//attacker.invalid', '/studio?draft=private', '/api/bo/game-login?state=' + 'a'.repeat(63), '/api/bo/lab-login?state=' + 'a'.repeat(64), ['x']]) {
     const url = new URL(nextStudioAuthEntryRedirect(request, config, { returnTo }));
     assert.equal(url.searchParams.get('returnTo'), '/admin');
     assert.equal(url.origin, config.allowedOrigins[0]);
@@ -220,7 +219,7 @@ test('auth-entry redirects reject spoofed origins and retain only validated retu
 test('actual login and password SSR routes redirect standalone before any auth form and preserve public rewrite rendering', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   for (const authBase of ['/api/auth', '/studio/api/auth']) for (const mode of ['login', 'set-password']) {
-    const config = authEntryConfig(authBase), token = 'b'.repeat(43), returnTo = '/api/bo/lab-login?state=' + 'a'.repeat(64);
+    const config = authEntryConfig(authBase), token = 'b'.repeat(43), returnTo = '/admin/rooms?operator=north&table=room-one';
     for (const [host, extra, moved] of [
       ['studio.fixture.invalid', {}, true], ['game.fixture.invalid', {}, false],
       ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}, false],

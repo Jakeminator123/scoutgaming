@@ -11,7 +11,7 @@ test('exact partner room survives login while foreign paths and arbitrary query 
     assert.equal(studioLoginReturnTo(value),'/admin',value);
 });
 
-test('native login returnTo preserves current Studio views or one-use BO handoff without a cross-host cookie handoff', () => {
+test('native login returnTo preserves current Studio views and refuses the retired BO handoff', () => {
   for (const value of ['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
     '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']) {
     assert.equal(studioLoginReturnTo(value),value);
@@ -20,9 +20,8 @@ test('native login returnTo preserves current Studio views or one-use BO handoff
   }
   for (const kind of ['game','lab']) {
     const value = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
-    assert.equal(studioLoginReturnTo(value),value);
-    assert.equal(studioLoginDestination(value,'/api/auth'),'/', 'standalone login cannot forward a host-only cookie');
-    assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
+    assert.equal(studioLoginReturnTo(value),'/admin');
+    for (const authBase of ['/api/auth','/studio/api/auth']) assert.equal(studioLoginDestination(value,authBase),'/admin');
   }
   for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',
     '/studio/login','/studio/set-password','/admin/login','/admin/set-password','/studio/admin/login','/studio/admin/set-password','/partner/set-password','/studio/partner/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',

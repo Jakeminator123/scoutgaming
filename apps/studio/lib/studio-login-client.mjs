@@ -7,7 +7,6 @@ import { designPreviewReturnTo } from './design-preview-paths.mjs';
 // Keep login and bearer-entry pages out of this list to avoid auth redirect loops.
 const returns = new Set(['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
-const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
 function partnerSelectionReturn(value) {
   if (typeof value !== 'string' || !value.includes('?')) return null;
   const target = partnerLoginReturnTo(value);
@@ -33,7 +32,7 @@ export function studioLoginReturnTo(value) {
   if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/admin';
   const preview = designPreviewReturnTo(value);
   if (preview) return preview;
-  if (returns.has(value) || handoff.test(value)) return value;
+  if (returns.has(value)) return value;
   const room = partnerSelectionReturn(value);
   if (room) return room;
   const publication = publicationReturn(value);
