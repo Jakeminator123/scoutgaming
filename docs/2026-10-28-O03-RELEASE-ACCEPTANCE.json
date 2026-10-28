@@ -1,0 +1,646 @@
+{
+  "kind": "o03-release-acceptance/v1",
+  "activity": "O03",
+  "date": "2026-10-28",
+  "status": "VERIFIED",
+  "note": "Sanerat kvitto för O03. Inga hemligheter, inga användarrader; bara aggregat, identiteter och hashar. Dumpen, anslutningssträngar, skärmbilder och råa körloggar ligger privat utanför Git (orkestratorns O03-mapp: s1-restore-proof.json, verification-20261028.json, private/). Tider i UTC.",
+  "candidate": {
+    "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+    "frozenAt": "2026-10-28T10:45:15Z",
+    "frozenBy": "scoutgaming-f1",
+    "o02Receipt": "docs/2026-10-28-O02-ACCEPTANCE.json",
+    "mainHeadAtRelease": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+    "runtimeDiffCandidateToMain": {
+      "range": "f3780593..5f5bc88d",
+      "tool": "git diff --name-only filtrerat med tools/o02-freeze-check.mjs touchesRuntime",
+      "changedFiles": 28,
+      "runtimeFiles": 0,
+      "result": "pass",
+      "note": "Bara docs/ och tools/ ändrade efter frysningen; main-head kör samma runtime som kandidaten"
+    },
+    "ci": {
+      "pushRunOnCandidate": {
+        "id": 40667372034,
+        "workflow": "Croupier GitHub checks",
+        "conclusion": "success"
+      },
+      "containerCheckOnCandidate": {
+        "id": 40667597931,
+        "workflow": "Render v3 container check",
+        "conclusion": "success"
+      },
+      "pushRunOnMainHead": {
+        "id": 40698170880,
+        "workflow": "Croupier GitHub checks",
+        "sha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+        "conclusion": "success",
+        "completedAt": "2026-10-28T13:40:26Z"
+      }
+    },
+    "security": {
+      "tool": "GitHub check-runs (GitGuardian-appen) på PR #526:s head",
+      "checkedAt": "2026-10-28T13:34:33Z",
+      "gitguardianOnPrHead": {
+        "pr": 526,
+        "head": "d1836b4a521b5dc3defe906f7ba86377e08c3bbf",
+        "check": "GitGuardian Security Checks",
+        "conclusion": "success"
+      },
+      "newOpen": 0,
+      "knownOpen": "två kända falska positiver (39166318, 39166319) från O02 F4; bara Jakob kan stänga dem",
+      "note": "GitGuardian-checken på PR:en som blev main-head är grön; granskarens omläsning av incidentlistan gav 0 nya. Runtimediffen mot kandidaten är tom.",
+      "newOpenSource": "o03-granskare-fable-f5909847 (docs/2026-10-28-O03-REVIEW.md): node tools/security-status.mjs på 81d1846a 2026-10-28 ca 14:30–14:45Z gav 2 öppna kända (39166318, 39166319), inga nya"
+    },
+    "runtimeDiff": {
+      "tool": "git diff --name-only <från> <till> filtrerat med tools/o02-freeze-check.mjs touchesRuntime",
+      "ranges": [
+        {
+          "range": "f3780593..5f5bc88d",
+          "what": "kandidat → release-head (#526)",
+          "changedFiles": 28,
+          "runtimeFiles": 0
+        },
+        {
+          "range": "f3780593..81d1846a",
+          "what": "kandidat → main efter #523 (status 95 %)",
+          "changedFiles": 34,
+          "runtimeFiles": 0
+        },
+        {
+          "range": "f3780593..0c04d16e",
+          "what": "kandidat → main efter #528 (PAOW-LIPSYNC, docs)",
+          "changedFiles": 35,
+          "runtimeFiles": 0
+        }
+      ],
+      "result": "pass",
+      "note": "Allt som Vercel och Render har kört sedan releasen har kandidatens runtime; bara docs/, tools/ och migrering/ har ändrats."
+    }
+  },
+  "before": {
+    "readAt": "2026-10-28T11:29:26Z",
+    "vercel": {
+      "projectId": "prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD",
+      "deploymentId": "dpl_GJFJVc69BNkamKuG6X6ChpWNntzx",
+      "sha": "ac77f4a5e43bf085ffe952c6af6b2bdedf2e421c",
+      "runtimeEquivalentToCandidate": true
+    },
+    "render": {
+      "serviceId": "srv-dbd6nfon74is73aiblf0",
+      "deployId": "dep-dbgr0j8ae00c73d6s000",
+      "sha": "3415c310ce7660a89a1ab11ccc1f8a6c36bf6286"
+    },
+    "directorGateway": {
+      "sha": "cc415cd8ab",
+      "redeployed": false
+    }
+  },
+  "vercelDeployment": {
+    "projectId": "prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD",
+    "id": "dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV",
+    "sha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+    "ref": "main",
+    "target": "production",
+    "readyState": "READY",
+    "readyAt": "2026-10-28T13:39:12.946Z",
+    "aliases": [
+      "www.scoutgaming.tech",
+      "scoutgaming.tech"
+    ],
+    "action": "ingen; mains automatiska deploy, runtime-ekvivalent med kandidaten (runtimeDiff tom, läst 14:01Z)",
+    "servedProductionUntil": "2026-10-28T14:27:20Z",
+    "coversVerificationWindow": "2026-10-28T14:00Z–14:16Z",
+    "history": [
+      {
+        "id": "dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV",
+        "sha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+        "what": "release-head (merge #526)",
+        "aliasAssignedAt": "2026-10-28T13:39:13.312Z",
+        "servedUntil": "2026-10-28T14:27:21.254Z"
+      },
+      {
+        "id": "dpl_61X7pi7dw5F9cXeVTsQ9mVmPvrwq",
+        "sha": "81d1846ad22d25ad4e1bec4b56087804acd54091",
+        "what": "mains auto-deploy av #523 (status 95 %, bara docs)",
+        "readyAt": "2026-10-28T14:27:20.896Z",
+        "aliasAssignedAt": "2026-10-28T14:27:21.254Z",
+        "servedUntil": "2026-10-28T14:49:29.452Z",
+        "runtimeDiffFromCandidate": 0
+      },
+      {
+        "id": "dpl_E5nng5VhKNqzZRjrATJw7prJWoux",
+        "sha": "0c04d16e72ca84f0e999d5cf36ef8603755be004",
+        "what": "mains auto-deploy av #528 (PAOW-LIPSYNC, bara docs)",
+        "readyAt": "2026-10-28T14:49:29.134Z",
+        "aliasAssignedAt": "2026-10-28T14:49:29.452Z",
+        "servedUntil": null,
+        "runtimeDiffFromCandidate": 0
+      }
+    ],
+    "currentAtFill": {
+      "readAt": "2026-10-28T14:51:36Z",
+      "tool": "Vercel REST GET v6/deployments (target production) och v4/aliases/www.scoutgaming.tech; token aldrig ekad",
+      "aliasDeploymentId": "dpl_E5nng5VhKNqzZRjrATJw7prJWoux",
+      "sha": "0c04d16e72ca84f0e999d5cf36ef8603755be004",
+      "runtimeDiffFromCandidate": 0
+    },
+    "note": "O03:s Vercel-bevis gäller dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV (5f5bc88d), som var produktion under hela verifieringen. Senare auto-deployer av main (81d1846a, 0c04d16e) har samma runtime (runtimediff 0). Render kör fortfarande 5f5bc88d; Vercel- och Render-SHA skiljer sig därför men inte runtimen."
+  },
+  "renderDeploy": {
+    "serviceId": "srv-dbd6nfon74is73aiblf0",
+    "engineRelease": {
+      "id": "dep-dbgvog0ae00c73dgivq0",
+      "sha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+      "startedAt": "2026-10-28T13:44:32Z",
+      "liveAt": "2026-10-28T13:45:11Z",
+      "note": "Motorn på main-head utan flaggan; delat bord avstängt, så F11-villkoret gällde inte"
+    },
+    "id": "dep-dbgvsc5g1s2s73cdoqkg",
+    "sha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd",
+    "startedAt": "2026-10-28T13:52:48Z",
+    "liveAt": "2026-10-28T13:53:25Z",
+    "newInstanceListeningAt": "2026-10-28T13:53:19Z",
+    "oldInstanceDrainedAt": "2026-10-28T13:56:24Z",
+    "method": "Auto-deploy av main-head när flaggan sattes med Render MCP update_environment_variables (merge). Avviker från körplanens REST PUT + låst deploy; utfallet är detsamma eftersom 5f5bc88d har kandidatens runtime.",
+    "tableEmptyBeforeDeploy": true,
+    "tableEmptyCheck": "Neon READ ONLY före flaggan: shared_table_members WHERE active = 0, shared_wallet_reservations = 0 (F11-villkoret); bekräftat 14:07:30Z: members 0, presence 0, rooms 0, audit 0",
+    "events": "build_started 13:52:48Z, build_ended succeeded 13:53:03Z, deploy_ended succeeded 13:53:25Z; inga server_failed eller omstarter efter 13:40Z",
+    "version": {
+      "at": "2026-10-28T14:01:48Z",
+      "http": 200,
+      "commitSha": "5f5bc88ddb91ff40f9fa528ca008937ae28fa8bd"
+    },
+    "health": {
+      "at": "2026-10-28T14:01:48Z",
+      "http": 200,
+      "body": "ok"
+    },
+    "sharedRoomHealth": {
+      "direct": 421,
+      "viaWww": 404,
+      "note": "/__cloud/shared-room-health är inte publikt nåbar: gatewayen svarar 421 på anrop som inte kommer via Vercel-ingressen, och Vercel routar inte /__cloud/*. Kriteriet ersattes av en spelad hand på det delade bordet (verification.playedHand) och 0 shared_room_runtime_unavailable i loggarna."
+    }
+  },
+  "sharedTableFlag": {
+    "service": "croupier-v3",
+    "key": "CROUPIER_SHARED_TABLE_ENABLED",
+    "before": "unset",
+    "after": "1",
+    "at": "2026-10-28T13:52:48Z",
+    "deployId": "dep-dbgvsc5g1s2s73cdoqkg",
+    "readBack": {
+      "at": "2026-10-28T14:01:03Z",
+      "value": "1",
+      "tool": "Render REST, bara flaggans värde"
+    },
+    "method": "Render MCP update_environment_variables (merge), som startade en deploy av main-head direkt",
+    "authority": "Jakobs separata go via orkestratorn scoutgaming-f1, 2026-10-28 ca 13:52Z"
+  },
+  "ddl": {
+    "011": {
+      "file": "ops/neon-game/011-retire-lissabon.sql",
+      "ledgerVersion": "game-011-retire-lissabon",
+      "migrationChecksum": "d128b7ae3a7060320887274bb5b217ccb72af9da334fa9183d7773d5406aa939",
+      "productChecksum": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
+      "decision": "D1: kör utan skrivarstopp (Jakob 2026-10-28)",
+      "rendered": {
+        "tool": "node tools/prepare-lissabon-retirement.mjs (offline, ansluter aldrig)",
+        "readinessSqlSha256": "c2ef27e9cba9669aff2f3517960a55f0c726f862f9551f54b8431e6f5bdb9afc",
+        "applySqlSha256": "cd9e1b57958f4022d6feea54a50a28977a25b28e52628f12e5b3c1f37a83ab6e",
+        "manifestSha256Prefix": "96357e82",
+        "evidence": {
+          "database": "croupier_game",
+          "role": "croupier_game",
+          "releaseSha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+          "rollbackSha": "3415c310ce7660a89a1ab11ccc1f8a6c36bf6286",
+          "consumerInventorySha256": "8d5d4f35fbe9cf362e473ffc3b1ca46b73e82817a1f77508e53a2ca49e2a424f",
+          "backupSha256": "3883e587faca6d989b5ffc4d27d8508bf6cca681b973efa0cf0370f85d3fadcd",
+          "restoreReceiptSha256": "77b24a7ca97bfc518234dd1e32ae2e30fa17435996b0c041d6dbe0dcf5a4ec21"
+        }
+      },
+      "appliedAt": "2026-10-28T14:21:48.755954Z",
+      "by": "orkestratorn scoutgaming-f1 med Jakobs uttryckliga \"ja\" (inte Jakob själv)",
+      "preCheck": {
+        "at": "ca 2026-10-28T14:19Z",
+        "readinessSqlExit": 0,
+        "ended": "ROLLBACK",
+        "lissabonTablesRows": 0,
+        "eventTriggers": 0
+      },
+      "apply": {
+        "exit": 0,
+        "ended": "COMMIT"
+      },
+      "postCheck": {
+        "lissabonTablesPresent": false,
+        "gameLedger": [
+          "game-011-retire-lissabon",
+          "product-v1",
+          "sqlite-import-v1"
+        ],
+        "catalog": {
+          "tables": 74,
+          "croupier_auth": 7,
+          "croupier_game": 39,
+          "croupier_studio": 28,
+          "sharedTables": 15,
+          "eventTriggers": 0
+        },
+        "readiness": "studio-ledgern oförändrad (18 versioner); spel-ledgern har ledgerraden",
+        "health": 200
+      },
+      "afterRelease": {
+        "ranAfterRelease": true,
+        "order": "S0 13:08Z → S1 13:16–13:22Z → R1 motorn 13:44Z → flagga + R2 13:52Z → 011 14:21Z",
+        "why": [
+          "Inga konsumenter: ingen kod på 3415c310, f3780593 eller 5f5bc88d läser eller skriver lissabon_profiles eller lissabon_profile_sessions (konsumentinventering sha256 8d5d4f35fbe9cf362e473ffc3b1ca46b73e82817a1f77508e53a2ca49e2a424f; postgres-store.mjs:8 är bara en namnlista för schemakvalificering)",
+          "Ingen kravhöjning: motorn och Studio kontrollerar bara product-v1-checksumman; 011 är frivillig och inget deploy- eller startkrav, så MASTERPLANs ordning tolerant kod → migrering → kravhöjning håller",
+          "Framåtvägen är täckt: S0 (13:14:15Z, backupgrenen backup-before-o03-20261028) innehåller båda tabellerna (0 rader)",
+          "Ledgerns checksumma d128b7ae3a7060320887274bb5b217ccb72af9da334fa9183d7773d5406aa939 = sha256 av ops/neon-game/011-retire-lissabon.sql på main"
+        ],
+        "checkedBy": "o03-granskare-fable-f5909847 (docs/2026-10-28-O03-REVIEW.md §3), Neon READ ONLY 14:35Z: tabellistan = baseline 11:29Z minus exakt de två tabellerna, ingen annan DDL"
+      }
+    },
+    "notInO03": "D2: bo_game_handoffs, bo_lab_handoffs och lab_sessions står kvar; de har konsumenter i Admin och partnerportalen"
+  },
+  "backup": {
+    "authority": "Jakob via orkestratorn scoutgaming-f1, 2026-10-28 ca 15:35 lokal tid: \"ja gör du. Du har fulla privilegier\" (S0/S1, icke-destruktivt)",
+    "neonProject": "wandering-hill-60561912",
+    "mainTouched": false,
+    "backupBranch": {
+      "name": "backup-before-o03-20261028",
+      "id": "br-winter-sunset-b1dnm0kb",
+      "parent": "br-flat-fog-b161a6r8",
+      "parentLsn": "0/2F1E6850",
+      "parentTimestamp": "2026-10-28T13:08:33Z",
+      "createdAt": "2026-10-28T13:08:57Z",
+      "endpoint": "ep-falling-violet-b1u3t8pm"
+    },
+    "s0": {
+      "label": "S0prod",
+      "at": "2026-10-28T13:14:15.170Z",
+      "source": "backupgrenen, roll croupier_game",
+      "tables": 76,
+      "sequences": 4,
+      "totalSha256": "cd7eb8f9a491436319166d8adc16e553fc06da07954f03d5d35f9797e2b602ff",
+      "tool": "node tools/o02-snapshot.mjs"
+    },
+    "dump": {
+      "at": "2026-10-28T13:15:22.966Z",
+      "bytes": 2820676,
+      "sha256": "3883e587faca6d989b5ffc4d27d8508bf6cca681b973efa0cf0370f85d3fadcd",
+      "listEntries": 801,
+      "format": "custom",
+      "client": "pg_dump (PostgreSQL) 18.6",
+      "server": "18.6",
+      "storage": "privat, utanför Git"
+    },
+    "restore": {
+      "branch": {
+        "name": "o03-restore-proof",
+        "id": "br-delicate-sea-b1ukv9y2",
+        "parent": "br-winter-sunset-b1dnm0kb",
+        "endpoint": "ep-square-snow-b1v6kiy7"
+      },
+      "database": "croupier_restore_o03",
+      "target": {
+        "owner": "croupier_game",
+        "appConnect": true,
+        "publicConnect": false,
+        "emptyBeforeRestore": true
+      },
+      "at": "2026-10-28T13:16:33Z",
+      "command": "pg_restore --single-transaction --exit-on-error --no-owner --role=croupier_game --use-list (799 av 801 poster; två cloud_admin DEFAULT ACL utelämnade)",
+      "exit": 0,
+      "seconds": 43,
+      "postStep": "croupier_studio.moving_drift_control ägs av neondb_owner i produktionen; i kopian återställd som neondb_owner (ALTER OWNER, GRANT SELECT, INSERT, UPDATE TO croupier_game)"
+    },
+    "s1": {
+      "label": "S1restore",
+      "at": "2026-10-28T13:16:58.108Z",
+      "tables": 76,
+      "totalSha256": "cd7eb8f9a491436319166d8adc16e553fc06da07954f03d5d35f9797e2b602ff"
+    },
+    "parity": {
+      "equal": true,
+      "compareExit": 0,
+      "differences": 0,
+      "afterOwnerFixEqual": true
+    },
+    "ledgerOnTarget": {
+      "studio": [
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "011",
+        "012",
+        "013",
+        "014",
+        "015",
+        "016",
+        "017",
+        "018",
+        "019",
+        "020"
+      ],
+      "game": [
+        "product-v1",
+        "sqlite-import-v1"
+      ],
+      "sharedTables": 15,
+      "equalToSource": true,
+      "readiness": {
+        "ready": true,
+        "pending": [],
+        "optionalPending": []
+      }
+    },
+    "ownerAcl": {
+      "objects": 94,
+      "identical": true,
+      "listingSha256": "cd33307e119eecc4206ebe38e15661f82fbd908c7e3eff58faa25e3863e4735c"
+    },
+    "proofSha256": {
+      "s1RestoreProof": "5f4c127fa43e4d9598f2168a471c45f32b5544d4bb5d9b417a0923c50d464f20",
+      "restoreReceiptFor011": "7bf4dfb856f6f46f084a82720e1e089fde7cf5748705aa95481465c761e22033"
+    },
+    "limits": [
+      "Roller och lösenord ingår inte i dumpen; grenar ärver projektets roller",
+      "Databasnivåns ACL ingår inte (produktionen: PUBLIC och kevin_migration_readonly får ansluta; kopian är snävare)",
+      "PITR och grenåterställning provades inte",
+      "Blob ingår inte",
+      "S0 = S1 gäller backupgrenens tidpunkt, inte skrivningar i main efter LSN 0/2F1E6850"
+    ],
+    "producedBy": "O03 S0/S1-underagent åt scoutgaming-f1 (Claude Opus 5.5), 2026-10-28 13:08–13:23Z",
+    "verifiedBy": "o03-granskare-fable-f5909847 (docs/2026-10-28-O03-REVIEW.md §7): s1-restore-proof.json sha256 5f4c127f… läst; hashar för s0, s1, restore-proof, 011-SQL och konsumentinventering lika med kvittot; backupgrenens S0 innehåller båda lissabon-tabellerna; produktionens ledger och katalog 14:35Z = S0 minus exakt de två tabellerna plus ledgerraden"
+  },
+  "verification": {
+    "producedBy": "O03-verifieringsagent af16ab68 (Claude Opus 5.5) åt scoutgaming-f1, 2026-10-28 14:00–14:16Z; bara GET/HEAD, REST-läsning och Neon READ ONLY utöver en demohand med ett nytt syntetiskt konto",
+    "login": {
+      "what": "Vanlig inloggning: spelare på www.scoutgaming.tech och Admin på /admin",
+      "result": "pass (agent) + Jakobs Admin-inloggning; Jakobs spelarinloggning pending Jakob (frivillig)",
+      "agentEvidence": {
+        "at": "2026-10-28T14:03:06Z",
+        "adminLoginPage": "/admin 307 → /admin/login?returnTo=%2Fadmin; /admin/login 200",
+        "playerLoginPage": "/game?operator=johns-bet&table=… utan session 303 → /player-login; /player-login 200",
+        "syntheticPlayerLogin": "ny syntetisk spelare via POST /api/auth/player/register 200 (14:08:57Z), session satt, spelet laddade"
+      },
+      "jakobAdmin": "Jakob loggade in i Admin och sparade administrationsdokumentet 13:53Z (se adminSave)",
+      "jakobPlayer": "pending Jakob (frivillig)"
+    },
+    "adminSave": {
+      "what": "Admin-sparning och återläsning: publicering av dragan-tests spelinställning (D3a) utan att ändra Johns Bets publicerade läge",
+      "by": "Jakob",
+      "at": "2026-10-28T13:53:08Z",
+      "result": "sparning pass; publicering av dragan-tests spelinställning pending Jakob",
+      "auditEvents": [
+        {
+          "action": "save_document",
+          "subject": "administration",
+          "at": "2026-10-28T13:53:08.628Z"
+        },
+        {
+          "action": "save_document",
+          "subject": "administration",
+          "at": "2026-10-28T13:53:24.293Z"
+        },
+        {
+          "action": "save_document",
+          "subject": "administration",
+          "at": "2026-10-28T13:53:29.546Z"
+        }
+      ],
+      "draganTestPackageRevisionAfter": 16,
+      "draganTestConfigPublished": "pending Jakob: rummet room-8bd056a2… har ingen rad i shared_table_configs och ingen config head (läst 14:14Z och efter 011). Jakob publicerar i Admin eller pausar rummet; tills dess ger rummet 'No published table configuration'.",
+      "johnsBetPackageRevisionAfter": 13,
+      "johnsBetConfigHeadAfter": "room-config-36bf0df8-09a9-4e97-b662-b31344d55fb3"
+    },
+    "launch": {
+      "what": "Lobby → Johns Bet → /play/blackjack → /game med operator och bord; delat bord laddas",
+      "at": "2026-10-28T14:09:01Z",
+      "result": "pass",
+      "evidence": "/lobby 200; /api/operators 200 (dragan-test, johns-bet); johns-bet paket 13, rum room-76640ca1-b619-7948-596e-3d102202b7d0 'PAOW Blackjack'; /play/blackjack 308 → /game 200 med data-shared-room=1; websocket /shared-room/room-76640ca1…; 0 konsol- och sidfel"
+    },
+    "playedHand": {
+      "what": "Ett spelat parti på det delade bordet, omladdning, saldot stämmer",
+      "result": "pass (syntetiskt konto); Jakobs egen hand pending Jakob (frivillig)",
+      "agentHand": {
+        "player": "syntetiskt konto o03v-3436cfb2 via den publika registreringen, öppningssaldo 1000 demo-USD",
+        "room": "room-76640ca1-b619-7948-596e-3d102202b7d0",
+        "seat": 3,
+        "chip": 5,
+        "action": "stand",
+        "roundId": "b43c3414-7ec5-43d2-ae59-d12f0db79cb8",
+        "commands": {
+          "ops": [
+            "join",
+            "bet",
+            "ready",
+            "act",
+            "leave"
+          ],
+          "http200": 5,
+          "replays": 0
+        },
+        "settlement": {
+          "staked": 5,
+          "returned": 0,
+          "net": -5
+        },
+        "balance": {
+          "before": 1000,
+          "after": 995,
+          "afterReloadPhone": 995,
+          "neonAfter": 995
+        },
+        "economicEffect": {
+          "rows": 1,
+          "type": "consume:stake",
+          "amount": -5,
+          "otherPlayersNewTx": 0
+        },
+        "duplicateSourceKeys": 0,
+        "sharedTableAuditDelta": 15,
+        "after": {
+          "at": "2026-10-28T14:14:31Z",
+          "membersActive": 0,
+          "reservations": 0,
+          "tableEmpty": true
+        },
+        "reload": "samma rum, version 6, fas bets, alla platser lediga; saldot 995 läst från servern"
+      },
+      "jakobHand": "pending Jakob (frivillig): en hand på dator och telefon och 'godkänt'"
+    },
+    "threeLayers": {
+      "what": "Produktionens tre lager (bakgrund, bord, dealer) med inloggad spelare, desktop och telefon",
+      "result": "pass (agent, inte AV-omdöme); Jakobs ögon pending Jakob (frivillig)",
+      "agentEvidence": {
+        "layers": "bakgrund 6daa1434 (video), bord f00be01d (Blackjack · Oak), PAOW-dealern; alla tre synliga på 1440×900",
+        "desktopScreenshotSha256": "ec66f94c16ad08cb7396c47c14fac83016717a355ee889e138e61069af4aa791",
+        "phoneScreenshotSha256": "ec3a930445b9e852132e89b0a92e164a0b376fe787a504184c88a2406cc09e9f",
+        "phoneNote": "390×844 tagen medan dealern laddade; bord och dealer synliga, bakgrunden ännu svart",
+        "media": "utan session 401 (väntat); med session 61 medieanrop 200/206 (en 304); tio dealerklipp GET 200"
+      },
+      "observations": [
+        "Platskontrollerna uppe till höger visas ostylade (jämför F12–F15)",
+        "Rubriken PRIVÉ BLACKJACK syns (O1)"
+      ]
+    },
+    "retiredPaths": {
+      "what": "/control och /lab 307 till /admin, /bo 404",
+      "at": "2026-10-28T14:03:06Z",
+      "result": "pass"
+    },
+    "logs": {
+      "what": "Efter flaggan: inga shared_room_runtime_unavailable, inga 5xx",
+      "window": "2026-10-28T13:52:00Z–14:16:00Z",
+      "result": "pass",
+      "errors": 0,
+      "http5xx": 0,
+      "http4xx": "9, alla från verifieringen (421 shared-room-health direkt, 401 lager utan session, 400 ogiltig registreringsprob)",
+      "sharedRoomRuntimeUnavailable": 0,
+      "startup": "ny instans lyssnade 13:53:19Z utan validateCloudConfig-fel"
+    },
+    "rollbackTested": false,
+    "rollbackPrepared": "D7: flaggan av och låst deploy av 3415c310ce7660a89a1ab11ccc1f8a6c36bf6286 på croupier-v3, förgodkänd av Jakob 2026-10-28. Inte behövd: inga grindar fallerade."
+  },
+  "strandedNativeRounds": [
+    {
+      "playerIdPrefix": "b6d78b21",
+      "playerId": "b6d78b21-9c42-4c47-a31a-001388b1c26d",
+      "phase": "decisions",
+      "paid": false,
+      "hands": 4,
+      "stakedTotal": 20,
+      "currency": "USD",
+      "balanceAfter": 975,
+      "status": "strandad: insatsen dragen, rundan ej avräknad"
+    },
+    {
+      "playerIdPrefix": "2659bbed",
+      "phase": "settled",
+      "paid": true,
+      "status": "avräknad och inkasserad"
+    },
+    {
+      "playerIdPrefix": "61480a87",
+      "phase": "settled",
+      "paid": true,
+      "status": "avräknad och inkasserad (förlust)"
+    },
+    {
+      "playerIdPrefix": "c7cfdf08",
+      "phase": "settled",
+      "paid": true,
+      "status": "avräknad och inkasserad (förlust)"
+    }
+  ],
+  "strandedNativeRoundsNote": "D3b, läst 14:06Z (Neon READ ONLY, croupier_game.blackjack_tables). Strandat på riktigt: en nativerunda i beslutsfasen med 4 × 5 = 20 demo-USD dragna. De tre avräknade har paid:true och är alltså redan inkasserade (paid sätts först vid collect); körplanens 'ej inkasserade' var fel. Demopengar, inga riktiga spelare.",
+  "knownLimitations": [
+    {
+      "id": "F11",
+      "what": "Under Render-överlappet får spelare på den gamla instansen inga ögonblicksbilder av det delade bordet tills 1012",
+      "condition": "Driftundantag: croupier-v3 deployas bara när bordet är tomt (shared_table_members WHERE active = 0 och inga reservationer) tills #529 är mergad och provad i preview"
+    },
+    {
+      "id": "F12-F15",
+      "what": "Layout: knappöverlapp vid 1440/1920 (F12, F14), saldopanelen täcker insatsen vid 320×568 (F13), dubblerad beslutspanel (F15)",
+      "condition": "första gränssnitts-PR:en efter O03"
+    },
+    {
+      "id": "D3c",
+      "what": "Talströmning (CROUPIER_GENERATED_SPEECH_STREAMING=1) tillsammans med delat bord är inte provad i preview; preview saknar taluppsättning",
+      "condition": "förgodkänd återgång D7; delat bord använder inte tal"
+    },
+    {
+      "id": "L3",
+      "what": "Rummens namn och state läses ur administrationsdokumentet, inte ur paketet",
+      "condition": "bokförd till efter O03"
+    },
+    {
+      "id": "O1",
+      "what": "Rubriken PRIVÉ BLACKJACK visas alltid",
+      "condition": "efter O03"
+    },
+    {
+      "id": "O4",
+      "what": "Admins idle-knapp ger 422 utan rotationspolicy",
+      "condition": "efter O03"
+    },
+    {
+      "id": "L1-503",
+      "what": "Inloggad /game?dealer=<id> utan operator ger 503 i stället för lobbyn",
+      "condition": "efter O03"
+    },
+    {
+      "id": "partner-key-shared-table",
+      "what": "Partnernyckel mot delat bord ger 403",
+      "condition": "bindning nyckel → bolag efter O03"
+    },
+    {
+      "id": "moving-callback-origin",
+      "what": "MOVING_CALLBACK_ORIGIN på RunPod-mallen pekar på den raderade croupier-v2",
+      "condition": "rättas med Jakobs skript innan CROUPIER_MOVING_SPEECH_ENABLED=1 slås på igen"
+    },
+    {
+      "id": "elevenlabs-budget",
+      "what": "ElevenLabs-kontot (Kevins) är till 80 % förbrukat",
+      "condition": "Jakob och Kevin avgör"
+    },
+    {
+      "id": "synthetic-prod-account",
+      "what": "Syntetiskt produktionskonto o03v-3436cfb2 (saldo 995 demo-USD) och dess inaktiva bordsmedlemskap",
+      "condition": "städas efter O03"
+    },
+    {
+      "id": "D6",
+      "what": "Kvarlämnade QA-roller, pg_stat_statements i schemat croupier_game, CROUPIER_ASTRID_CAMERA=1 och O03:s Neon-grenar",
+      "condition": "städning efter O03 (MASTERPLAN, Efter O03 punkt 11)"
+    }
+  ],
+  "pendingJakob": [
+    "Publicera dragan-tests spelinställning i Admin (D3a) eller pausa rummet",
+    "Frivilligt: en egen hand i produktionen på dator och telefon och 'godkänt'"
+  ],
+  "deviations": [
+    {
+      "id": "flag-method",
+      "what": "Flaggan sattes med Render MCP update_environment_variables, som auto-deployade main-head, i stället för körplanens REST PUT + låst deploy",
+      "impact": "ingen: main-head var 5f5bc88d med kandidatens runtime",
+      "rule": "blir inte praxis; låst REST-deploy enligt ENVIRONMENT-RESTORATION gäller"
+    },
+    {
+      "id": "shared-room-health",
+      "what": "/__cloud/shared-room-health är inte publikt nåbar (421 direkt, 404 via www)",
+      "impact": "ersatt av spelad hand på delat bord och 0 shared_room_runtime_unavailable i loggarna"
+    },
+    {
+      "id": "r1-without-f11-precheck",
+      "what": "R1 (13:44Z) gjordes utan F11-förkontroll",
+      "impact": "ingen: flaggan var osatt, så bordet kunde inte ha spelare; före flaggdeployen var bordet tomt"
+    },
+    {
+      "id": "011-after-release",
+      "what": "011 kördes efter releasen, av orkestratorn på Jakobs uttryckliga \"ja\"",
+      "impact": "ingen; se ddl.011.afterRelease"
+    },
+    {
+      "id": "vercel-after-release",
+      "what": "Vercel-produktionen har efter verifieringen auto-deployat main 81d1846a (14:27Z) och 0c04d16e (14:49Z)",
+      "impact": "ingen: runtimediff 0; se vercelDeployment.history"
+    }
+  ],
+  "review": {
+    "file": "docs/2026-10-28-O03-REVIEW.md",
+    "verdict": "GODKÄND MED ANMÄRKNING",
+    "reviewedAt": "2026-10-28T14:45:00Z",
+    "receiptReviewedAt": "2fc8a8f5dce35d66c221d15672243a491245bb90"
+  },
+  "producedBy": "scoutgaming-f1 (orkestrator) + agenter af16ab68/a5669683",
+  "verifiedBy": "o03-granskare-fable-f5909847 (docs/2026-10-28-O03-REVIEW.md): GODKÄND MED ANMÄRKNING; egna läsningar av CI, säkerhet, runtimediff, Render, Vercel, Neon READ ONLY och HTTP 2026-10-28 14:30–14:45Z"
+}

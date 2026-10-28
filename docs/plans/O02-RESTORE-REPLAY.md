@@ -1,6 +1,6 @@
 # O02: körplan för restore-replay (variant B)
 
-Körklar steg-för-steg-lista för [O02-PLAN §3](O02-PLAN.md#3-restore-replay-variant-b). Inget här är kört. Bara staging rörs; produktionen och Johns Bet rörs aldrig. Jakob gav samlat go för stagingstegen 2026-10-28 ("fixa bara detta på bästa sätt"): stoppa skrivare i staging, ny tom restoredatabas, byte av staging-env till kopian och tillbaka, och lösenordsåterställning av en syntetisk spelare i kopian. Allt annat (produktion, radering av resurser, nya betalda resurser) kräver eget ja.
+Steg-för-steg-lista för [O02-PLAN §3](O02-PLAN.md#3-restore-replay-variant-b). Körd 28 oktober 2026 på kandidaten `f3780593` (stagingen nere 12:58–13:05Z, R1–R10 godkända); kvittot sammanfattas i O02-kvittot. Den gällande restorevägen för produktionen står i [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#neon-backup-och-restore). Bara staging rörs; produktionen och Johns Bet rörs aldrig. Jakob gav samlat go för stagingstegen 2026-10-28 ("fixa bara detta på bästa sätt"): stoppa skrivare i staging, ny tom restoredatabas, byte av staging-env till kopian och tillbaka, och lösenordsåterställning av en syntetisk spelare i kopian. Allt annat (produktion, radering av resurser, nya betalda resurser) kräver eget ja.
 
 ## Förutsättningar
 
@@ -107,6 +107,8 @@ time "$PG/pg_restore" --single-transaction --exit-on-error --no-owner --role=cro
   --dbname "$(cat "$O2/private/dst-migrator.url")" "$O2/private/croupier_staging-$SHA.dump"; echo "exit=$?"
 ```
 
+I körningen krävdes `--use-list` utan de två posterna `DEFAULT PRIVILEGES FOR … cloud_admin`, som Neon själv skapar i varje ny databas; annars avbryts transaktionen.
+
 `--no-owner --role` gör migratorn till ägare som i källan; ACL:erna (`GRANT … TO croupier_staging_app`) följer med dumpen. Kontrollera ägare och ACL efteråt:
 
 ```sql
@@ -184,7 +186,7 @@ node tools/o02-snapshot.mjs --url-file "$O2/private/src-app.url" --out "$O2/o02/
 node tools/o02-snapshot.mjs --compare "$O2/o02/restore-replay/s0.json" "$O2/o02/restore-replay/s0prime.json"; echo "exit=$?"   # 0
 ```
 
-S0′ tas medan appen fortfarande pekar på målet, så ingen skrivare kan ha rört källan mellan R1 och jämförelsen. Byt sedan tillbaka `CROUPIER_GAME_DATABASE_URL` på Render och Vercel till `src-app.url` (samma kommandon som i R7), kör D1–D3 och kontrollera health. Suspendera Render-stagingen enligt Jakob. Målet `croupier_staging_restore_o02` står kvar tills Jakob raderar stagingen efter O03.
+S0′ tas medan appen fortfarande pekar på målet, så ingen skrivare kan ha rört källan mellan R1 och jämförelsen. Byt sedan tillbaka `CROUPIER_GAME_DATABASE_URL` på Render och Vercel till `src-app.url` (samma kommandon som i R7), kör D1–D3 och kontrollera health. Suspendera Render-stagingen enligt Jakob. Målet `croupier_staging_restore_o02` står kvar tills Jakob raderar det efter O03; stagingen själv behålls som preview (Jakobs beslut D5, se [START-HERE](../../START-HERE.md#preview)).
 
 ### R10 Kvitto
 

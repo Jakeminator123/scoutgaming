@@ -116,7 +116,7 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 
 `CROUPIER_SHARED_TABLE_ENABLED=1` slår på delade bord i spelmotorn: Postgres, befintlig Studio-repository och scope, samma appägda pool och demoplånbok. Saknade schema 008/009/010 stoppar starten; starten installerar inget. Ursprung följer `CROUPIER_VERCEL_FRONTEND_ORIGIN` och `CROUPIER_PUBLIC_ORIGIN`/`PUBLIC_URL`; i enkel-origin-layouten godtas den publika originen (PR #442, `cc415cd8`). Rumsvägarna routas i `vercel.json` (`/shared-room/*`) och `platform-routing.mjs` (`/api/shared-room/*`).
 
-**Regel:** produktionens `croupier-v3` har flaggan osatt. Den sätts där bara som del av O03, efter Jakobs separata godkännande och verifierad readiness, aldrig som bieffekt av ett prov. Stagingen kör `=1` sedan 27 oktober 2026. Kontrollera `/__cloud/health` efter varje ändring.
+**Regel:** produktionens `croupier-v3` kör `=1` sedan O03 (satt 2026-10-28 13:52Z, deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`), satt med Jakobs separata godkännande efter verifierad readiness; preview kör `=1` sedan 27 oktober 2026. Flaggan ändras aldrig som bieffekt av ett prov. Med flaggan på deployas `croupier-v3` bara när bordet är tomt tills F11 är rättad, och återgången (flaggan `0` och låst deploy) står i [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten). Kontrollera `/__cloud/health` efter varje ändring. `/__cloud/shared-room-health` är inte publikt nåbar (gatewayen svarar 421 utanför Vercel-ingressen, och Vercel routar inte `/__cloud/*`); bordet kontrolleras i stället med en spelad hand och loggarna (`shared_room_runtime_unavailable`).
 
 ## Driftväljarens API
 
@@ -147,7 +147,7 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `OPENCLAW_PRODUCT_SPEECH_URL` | valfri, bara lokalt | Directors egen relämottagare i labbet; sätts inte på Render |
 | `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` | nekas | Lokalt fjärrläge som skickar vidare till en annan Director; stänger av Gateway-inloggningen och sätts aldrig på Render |
 
-Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Bara panelen, inte Blueprint, äger värdet för `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`.
+Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Blueprint deklarerar `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` med `sync: false` och `OPENCLAW_SPEECH_TIMEOUT_MS` med `20000`; de hemliga värdena sätts bara i panelen.
 
 ## Gateway `croupier-lab-openclaw`
 
@@ -161,15 +161,15 @@ Privat tjänst; registerposten är `render-openclaw-gateway`.
 | `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH` | valfri | `18789`, `/data/openclaw`, `/data/openclaw/openclaw.json` |
 | `OPENCLAW_DASHBOARD_ORIGIN` | valfri | Directors exakta HTTPS-origin utan `/openclaw` |
 | `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Bara lokalt |
-| `CROUPIER_SPEECH_VISION` | valfri, sätts i panelen | Bildstöd i talet, opt-in; satt i panelen |
+| `CROUPIER_SPEECH_VISION` | valfri, sätts i panelen | Bildstöd i talet, opt-in; Blueprint deklarerar den med `sync: false` och värdet sätts i panelen |
 
-## Staging: skillnader mot produktionen
+## Preview: skillnader mot produktionen
 
-Staging (se [START-HERE](../START-HERE.md#staging)) använder samma namn som produktionen men egna värden, och tas bort efter O03.
+Preview, den tidigare stagingen (se [START-HERE](../START-HERE.md#preview)), använder samma namn som produktionen men egna värden. Den behålls efter O03.
 
 - **Vercel `croupier-k06-k07-staging`:** egen `CROUPIER_GAME_DATABASE_URL` till `croupier_staging` med approllen `croupier_staging_app`, eget scope (`staging_k06_k07`/`croupier`), egen Blob-token till `store_7E06N1P4w9Mu1dZD`, egen ingresshemlighet och den egna publika adressen `croupier-k06-k07-staging.vercel.app`.
-- **Render `croupier-k06-k07-staging`:** samma namn som `croupier-v3` med stagingens adresser och hemligheter, `CROUPIER_SHARED_TABLE_ENABLED=1`, AI- och talflaggor av och bootstrap-inloggningen borttagen.
-- Agenternas Admin-inloggning till stagingen ligger under `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW` i gitignorerad `.env.local`. De är inga tjänstevariabler.
+- **Render `croupier-k06-k07-staging`:** samma namn som `croupier-v3` med previews adresser och hemligheter, `CROUPIER_SHARED_TABLE_ENABLED=1`, AI- och talflaggor av (ingen egen taluppsättning ännu) och bootstrap-inloggningen borttagen.
+- Agenternas Admin-inloggning till preview ligger under `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW` i gitignorerad `.env.local`. De är inga tjänstevariabler.
 
 ## Övriga poster i registret
 

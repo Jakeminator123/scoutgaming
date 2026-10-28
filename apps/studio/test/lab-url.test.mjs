@@ -37,8 +37,13 @@ test('public root redirect admits exact Admin without accepting external or auth
   const headers = new Headers({host:'studio.internal.invalid','x-forwarded-host':'public.example.invalid','x-forwarded-proto':'https'});
   for(const path of ['/admin/clips','/admin/dealers','/admin/rooms','/admin/assets','/admin/media-review','/admin/drift','/admin/ekonomi','/admin/admin/accounts','/admin/admin/players','/admin/admin/payments','/admin/admin/api']){
     assert.equal(publicAbsoluteUrl(headers,path+'?dealer=elin&room=room-a#selected'),'https://public.example.invalid'+path+'?dealer=elin&room=room-a#selected');
-    for(const suffix of ['/extra','-extra','/../login'])assert.throws(()=>publicAbsoluteUrl(headers,path+suffix),/control_redirect_rejected/);
+    // /admin/dealers/<id> and /admin/rooms/<id> are the navs; any other extra segment is not a page.
+    for(const suffix of ['/extra','-extra','/../login'])if(!(suffix==='/extra'&&['/admin/dealers','/admin/rooms'].includes(path)))assert.throws(()=>publicAbsoluteUrl(headers,path+suffix),/control_redirect_rejected/);
   }
+  for(const path of ['/admin/dealers/vera?flik=klipp#clips','/admin/companies/north?flik=team','/admin/rooms/room-1?flik=utseende','/admin/scenes?tab=mallar','/admin/system?flik=integration'])
+    assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
+  for(const path of ['/admin/dealers/vera/edit','/admin/dealers/-vera','/admin/companies/north/team','/admin/rooms/../login','/admin/scenes/mallar','/admin/system/drift','/admin/dealers/'+'a'.repeat(101)])
+    assert.throws(()=>publicAbsoluteUrl(headers,path),/control_redirect_rejected/,path);
   assert.equal(publicAbsoluteUrl(headers, '/admin'), 'https://public.example.invalid/admin');
   assert.equal(publicAbsoluteUrl(headers, '/admin/dealer-studio?dealer=saga&view=clips#idle'), 'https://public.example.invalid/admin/dealer-studio?dealer=saga&view=clips#idle');
   for(const path of ['/admin/dealer-studio-extra','/admin/dealer-studio/edit','/admin/dealer-studio/../login'])assert.throws(()=>publicAbsoluteUrl(headers,path),/control_redirect_rejected/);
@@ -49,7 +54,7 @@ test('public root redirect admits exact Admin without accepting external or auth
     assert.throws(() => publicAbsoluteUrl(headers,path),/control_redirect_rejected/);
   }
   for(const path of ['/admin/publication?operator=north&room=room-1&game=roulette#review','/admin/companies?operator=north','/admin/guide?dealer=saga','/admin/videos?dealer=saga&event=idle.ready#clips','/admin/probe?dealer=astrid&event=idle.ready','/admin/replies?dealer=saga&category=greeting','/admin/events?dealer=saga&event=idle.ready&tab=variants','/admin/compositions?composition=portrait&operator=north&table=room-1&game=roulette','/admin/rehearsal?dealer=saga&composition=portrait&operator=north&table=room-1'])assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
-  for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/publication-extra','/admin/publication/../login','/admin/companies/edit','/admin/videos-extra','/admin/guide/edit','/admin/probe-extra','/admin/replies/edit','/admin/events-extra','/admin/compositions-extra','/admin/rehearsal/edit','/admin/tree','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
+  for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/publication-extra','/admin/publication/../login','/admin/companies/edit/more','/admin/videos-extra','/admin/guide/edit','/admin/probe-extra','/admin/replies/edit','/admin/events-extra','/admin/compositions-extra','/admin/rehearsal/edit','/admin/tree','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
     assert.throws(() => publicAbsoluteUrl(headers, value), /control_redirect_rejected/);
   }
 });

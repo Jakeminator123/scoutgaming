@@ -1,62 +1,50 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 28 oktober 2026, eftermiddag. Skriven för en agent som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) (produktväg, identiteter, leverans) och [AGENTS.md](../AGENTS.md). Jakobs aktuella instruktioner går före allt här. Alla dokument står i [docs/README](README.md); raderade dokument läses ur Git.
+Uppdaterad 28 oktober 2026, eftermiddag, efter O03 (migreringen 100 %). Skriven för en agent som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) (produktväg, identiteter, leverans) och [AGENTS.md](../AGENTS.md). Jakobs aktuella instruktioner går före allt här. Alla dokument står i [docs/README](README.md); raderade dokument läses ur Git.
 
 ## Läget
 
-- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). K04–K07 är VERIFIED sedan 28 oktober (90 %); bevis, granskare och Jakobs scopebeslut står i `status.json`. O02 pågår, O03 återstår.
-- **O02 pågår:** kandidaten är `main` `f3780593` (efter #517), fryst 28 oktober 10:45:15Z enligt [O02-PLAN](plans/O02-PLAN.md) §1. Frysregistreringen (F1–F8) ligger utanför Git hos orkestratorn. Efter frysningen mergas bara dokument och verktyg utanför runtimeprefixen; en merge som rör dem ger en ny kandidat och alla omprov om. Väntar: omproven på kandidaten (K04 omprov 6, K06 och K07 omprov 2), restore-replay (§3), negativa fall (§5), den oberoende granskarens kvitto `docs/<datum>-O02-ACCEPTANCE.json` och Jakobs ögon V1–V7 (§4). Därefter status-PR:en till 95 %, förberedd som draft.
-- **Produktion:** Vercel `scoutgaming` deployar `main` automatiskt. Render `croupier-v3` kör `3415c310` (#508); kontrollera aktuell SHA med `curl https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Kandidaten går till produktionen först i O03.
-- **Johns Bet (PAOW):** paket 11 och spelinställningen `room-config-4ad8301e…` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`. Paket 10 och 11 var Jakobs egna publiceringar. Produktionen kör nativebordet; `CROUPIER_SHARED_TABLE_ENABLED` är osatt där till O03.
-- **Staging:** Render och Vercel är pinnade på kandidaten `f3780593` med `CROUPIER_SHARED_TABLE_ENABLED=1`. Operatör `qa-k06k07-9dd2d3a4-a`, PAOW-rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`, paket 15. Jakobs egna inloggningar (Admin och spelare) är speglade från produktionen. Neon-endpointen autoskalar 0,5–2 CU sedan 28 oktober. Ingen annan deploy till stagingen under O02 utan orkestratorns besked.
-- **Merge:** den obligatoriska kontrollen `CI` gäller på PR:ens head, men branchen behöver inte längre vara à jour med `main` (Jakob 28 oktober). Orkestratorn mergar grönt Jakob-ägt arbete och deployar `croupier-v3` efter varje grön main-CI som rör motorn (Jakobs ja 28 oktober); under O02 rörs inte runtime.
+- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). **Migreringen är klar: 100 % (20/20).** O03 VERIFIED via #527 efter oberoende granskning ([O03-REVIEW](2026-10-28-O03-REVIEW.md), GODKÄND MED ANMÄRKNING).
+- **O03 släppt 28 oktober:** main-head `5f5bc88d` (runtime lika med O02-kandidaten `f3780593`). Vercel `dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV` READY 13:39Z (senare auto-deployer av main, bara docs, runtimediff 0); Render `croupier-v3` `dep-dbgvog0ae00c73dgivq0` 13:44Z och, när flaggan sattes 13:52Z, `dep-dbgvsc5g1s2s73cdoqkg` live 13:53Z. 011 (`game-011-retire-lissabon`) applicerad 14:21:48Z; 74 tabeller. Backup och restoreprov S0 = S1 på grenen `backup-before-o03-20261028`. Spelad hand på delat bord med syntetiskt konto, 0 fel och 0 5xx i loggarna. Allt i [O03-kvittot](2026-10-28-O03-RELEASE-ACCEPTANCE.json).
+- **Produktion:** Vercel `scoutgaming` deployar `main` automatiskt. Kontrollera Render med `curl https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`; `/__cloud/shared-room-health` är inte publikt nåbar. `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen: deploya `croupier-v3` bara när bordet är tomt (F11, [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)) tills #529 är mergad och provad i preview.
+- **Johns Bet (PAOW):** paket 13 och spelinställningen `room-config-36bf0df8…` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, nu på det delade bordet. En strandad nativerunda (beslutsfas, 20 demo-USD dragna) ligger kvar; de tre avräknade är inkasserade.
+- **dragan-test:** paket 16 sparat av Jakob 13:53Z; spelinställningen är inte publicerad (pending Jakob, eller pausa rummet).
+- **Preview** (tidigare staging) behålls; se [START-HERE](../START-HERE.md#preview).
+- **Merge:** den obligatoriska kontrollen `CI` gäller på PR:ens head; branchen behöver inte vara à jour med `main`. Orkestratorn mergar grönt Jakob-ägt arbete och deployar `croupier-v3` efter grön main-CI som rör motorn, med F11-villkoret ovan.
 
-## Mergat 27–28 oktober
+## Pending Jakob (blockerar inget)
 
-- **K04:** omprov 1 (#459), granskning (#460), F1/F2 (#465), omprov 2 (#475, underkänt: F3–F5), F3–F5 med den externa draften #476 som grund (#478), omprov 3 (#482, F5b och F4b), F5b, F4b, R1 och R2 (#481), omprov 4 (#501, nya fynd F5c och F7), F5c/F7/P2/P3 (#502–#508) och omprov 5 (#510) med granskarens del 4 i [K04-F3-F5-REVIEW](2026-10-28-K04-F3-F5-REVIEW.md) och Jakobs godkännande i staging 28 oktober. Status 90 % i #514.
-- **Före frysningen:** L5 (#513, bryggan behåller `operator`), L4 (#516, Admin-servern projicerar launch-svaret) och bords-UX med K04-resterna F8, F9 och F10 (#517). L1 och L2 rättades i #503.
-- **K05–K07:** K05-matrisen (#457), K07-granskningen (#456), K06/K07-omproven (#470) och deras granskning (#471).
-- **Städning och Admin:** #458, #466, #479 och #483 (motorn startar ingen handoff från Admin till spelaren, SQLite B1); Admin #464, #467 och #468; Admin-arkitektens karta och målbild (#486); Astrids media utan konsument (#474); grind mot repotillväxt (#463); pushpolicyn för mergade brancher (#485); kortbaksidan (#473); CI-regressionen (#469, #472); `docs/history` raderad (#521).
-
-## Kvar till O03
-
-| # | Steg | Ägare |
-| --- | --- | --- |
-| 1 | Avsluta O02: omproven på kandidaten, restore-replay, negativa fall (L3 bokförs till efter O03), granskarens kvitto, Jakobs ögon V1–V7 och status-PR:en (95 %). | agenter; oberoende granskare; Jakob för V1–V7; orkestratorn |
-| 2 | Produktions-DDL i godkänd ordning (011, `bo_game_handoffs`, `bo_lab_handoffs`, `lab_sessions`). | Jakob |
-| 3 | `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen som del av releasen (väg B). | Jakob |
-| 4 | Neon restore-branch för återställningsprovet mot migrerat schema. | Jakob |
-| 5 | Stagingen blir preview (namnbyte, inte radering). | Jakob |
-| 6 | Färsk ägar-, head-, CI- och säkerhetskontroll; release med verifierad Vercel- och Render-SHA. | orkestratorn |
-| 7 | I produktionen: vanlig inloggning, Admin-sparning, launch och spel, och produktionens tre lager med inloggad spelare (skjutet från K04; Jakobs adminlogin får läsa med GET). | orkestratorn |
-| 8 | Återställning dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md), kvitto `docs/<datum>-O03-RELEASE-ACCEPTANCE.json` och status 100 %. | orkestratorn |
+Publicera dragan-tests spelinställning i Admin (eller pausa rummet); frivilligt en egen hand i produktionen på dator och telefon och "godkänt".
 
 ## Efter O03
 
-1. Nya Admin: #518 (nivå 2, partnerportalen), sedan #519 (nivå 1), sedan #512 (demo-byggaren), alla prövade i staging före merge.
-2. Dealer-generisk talkedja, med Paow först. Stillbildsvägen finns redan i main: `speechProfile` med `reference.kind='video-frame'`.
-3. Ren start steg 2 ([REN-START](plans/REN-START.md)).
-4. Generalisering av filmade profiler.
-5. Bindning nyckel → bolag, där motorn kräver att `operator` matchar nyckelns bolag efter verifierad signatur.
-6. Kevins portplan P4–P14.
-7. Skalningstest (10×7).
-8. L3: rummens namn och state ur paketet i stället för administrationsdokumentet.
-9. K06 F1-policyn: nativebordet pensioneras med konsumentkontroll av `/api/table`, `native_presentations` och klientens enspelarväg; omladdning vid publicering är interimspolicy till dess.
+Nästa arbete, i ordning (bakgrund i [MASTERPLAN](../migrering/MASTERPLAN.md#efter-o03); punkterna ger inga procent):
+
+1. **#529 F11:** merge → prov i preview → prod-deploy av `croupier-v3` vid tomt bord. Till dess deploy bara vid tomt bord.
+2. **Gränssnitts-PR:en F12–F16** (draft på väg, `jakob/claude-table-layout`).
+3. **#530** preview-namn i docs.
+4. **Admin:** N2 → N1 → demo → AI-grenen efter designrunda (#518, #519, #512; [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md)).
+5. **Städning:** syntetiskt prodkonto `o03v-3436cfb2` (saldo 995), staging-QA-rester, Vercel-previews, D6 (QA-roller, `pg_stat_statements`, `CROUPIER_ASTRID_CAMERA`, O03:s Neon-grenar och restoremål).
+6. **Dealer-generisk talkedja med Paow** ([PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md)): RunPod-callbacken (`MOVING_CALLBACK_ORIGIN`, pekar på raderade `croupier-v2`) rättas före rörligt tal. ElevenLabs-kontot (Kevins) är till 80 % förbrukat.
+7. **Bindning nyckel → bolag** (partnernyckel mot delat bord ger 403 i dag).
+8. **L3** (rumsnamn och state ur paketet), sedan O1, O4, L1-503.
+9. **Ren start steg 2.**
+10. **Kevins portplan** P4–P14 (skalningstest 10×7, preview med egen taluppsättning och pensionering av nativebordet följer i MASTERPLAN).
+
+D3c (talströmning med delat bord) är inte provad i preview; återgången D7 (flaggan av och låst deploy av `3415c310`) är förgodkänd och behövdes inte.
 
 ## Behörigheter
 
-Agenter får läsa Neon, Render-loggar och Vercel, prova i staging med syntetiska konton och öppna PR:er. Underagenter mergar aldrig. Jakob krävs för publicering i produktionens Admin, produktions-DDL, radering av molnresurser, produktionsflaggor, betald drift och allt visuellt eller AV; hash och testpass räknas inte som visuellt godkännande. Aldrig hemligheter i Git eller chatt, prov mot riktiga användare eller Johns Bet, eller ändringar i Kevins brancher.
+Agenter får läsa Neon, Render-loggar och Vercel, prova i preview med syntetiska konton och öppna PR:er. Underagenter mergar aldrig. Jakob krävs för publicering i produktionens Admin, produktions-DDL, radering av molnresurser, produktionsflaggor, betald drift och allt visuellt eller AV; hash och testpass räknas inte som visuellt godkännande. Aldrig hemligheter i Git eller chatt, prov mot riktiga användare eller Johns Bet, eller ändringar i Kevins brancher.
 
 ## Kända fällor
 
-- **Interimspolicy till O03:** materialbytande publicering under pågående nativehand ger omladdning till det nya paketet. Publicera därför inte materialbyte för Johns Bet medan händer pågår.
-- **Prov i staging:** delat bord innebär att Jakobs hand stör mätningarna. Låt honom inte spela medan en harness kör.
+- **Deploy med delat bord på:** kontrollera `shared_table_members WHERE active` och `shared_wallet_reservations` (båda 0) före varje `croupier-v3`-deploy tills F11 är rättad.
+- **Prov i preview:** delat bord innebär att Jakobs hand stör mätningarna. Låt honom inte spela medan en harness kör.
 - **Pre-push-hooken** (`tools/check-push-target.mjs`) tillåter sedan #485 bara radering av `jakob/*`-brancher som redan är mergade i `main`; GitHub raderar mergade headbrancher automatiskt.
-- **Render MCP:** `update_environment_variables` slår ihop nycklar och startar en deploy. Den läser inga värden; använd REST med `RENDER_API_KEY`.
+- **Render MCP:** `update_environment_variables` slår ihop nycklar och startar en deploy av branchens senaste commit direkt (så sattes flaggan i O03). Den läser inga värden; använd REST med `RENDER_API_KEY`.
 - **Windows:** `core.longpaths` är på i repot. Kvarblivna mappar tas bort med `Remove-Item -LiteralPath ('\\?\' + $p) -Recurse -Force`. Filbevakningsprov kan fallera lokalt; CI avgör.
 - **Hemlighetsskanning:** bokstavliga Postgres-URI:er i tester underkänns. Använd `fixtureDatabaseUrl()` i `test/fixtures/database-url.mjs`.
-- **Glappet mellan PAOW:s hand och skon i stagingen** kommer från stagingmallens standardplacering, inte från produktionen. Det blockerar inte.
-- **Talkedjan och Dealer Forge** är frysta till efter O03. Dragans tal är pausat, inget raderas.
 - **Namn:** `recordedSpeech` v2 är MP4-talformatet, inte Render-motorn v2.
 
 ## Separata spår efter migreringen

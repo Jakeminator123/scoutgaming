@@ -2,8 +2,9 @@ export const JOURNAL_LIMIT = 100;
 const unavailable = () => { throw Error('Journalen kunde inte läsas. Försök igen.'); };
 const titles = { open: 'Öppningssaldo', deposit: 'Insättning', sync: 'Saldojustering', fx: 'Valutabyte · nytt saldo',
   start: 'Insats · Blackjack', act: 'Spelåtgärd · Blackjack', insurance: 'Försäkring · Blackjack',
-  collect: 'Utbetalning · Blackjack', roulette_bet: 'Insats · Roulette', roulette_payout: 'Utbetalning · Roulette' };
-const movementTypes = new Set(['deposit','sync','start','act','insurance','collect','roulette_bet','roulette_payout']);
+  collect: 'Utbetalning · Blackjack', roulette_bet: 'Insats · Roulette', roulette_payout: 'Utbetalning · Roulette',
+  payout: 'Utbetalning · delat bord', refill: 'Påfyllning · demokrediter', 'consume:stake': 'Insats · delat bord', 'consume:insurance': 'Försäkring · delat bord' };
+const movementTypes = new Set(['deposit','sync','start','act','insurance','collect','roulette_bet','roulette_payout','payout','refill','consume:stake','consume:insurance']);
 export function journalType(type) { return Object.hasOwn(titles,type) ? titles[type] : `Okänd händelse · ${type}`; }
 export function formatJournalAmount(amount,currency) {
   if (!currency) return '—';

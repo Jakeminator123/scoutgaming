@@ -37,8 +37,13 @@ function checkedItem(value:ReplyItem,dealerId:string,expectedId?:string):ReplyIt
   return value;
 }
 
+// Inside the dealer nav (/admin/dealers/<id>?flik=tal) the dealer sits in the path, not in the query.
+const navDealer=(pathname:string)=>pathname.match(/^\/(?:studio\/)?admin\/dealers\/([A-Za-z0-9][A-Za-z0-9._:-]{0,99})$/)?.[1];
+
 export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,initialCategory,initialNavigationContext={}}:{dealers:Dealer[];initialDealerId?:string;initialCategory?:string;initialNavigationContext?:StudioNavigationContext}){
   const dealers=activeStudioDealers({dealers:registeredDealers});
+  // The nav owns a dealer; its library never offers "no dealer", which would leave the nav for the dealer list.
+  const inDealerNav=typeof window!=='undefined'&&Boolean(navDealer(window.location.pathname));
   const [dealerId,setDealerId]=useState(dealers.some(row=>row.id===initialDealerId)?initialDealerId!:'');
   const [category,setCategory]=useState(validCategory(initialCategory));
   const [navigationContext,setNavigationContext]=useState<StudioNavigationContext>(initialNavigationContext);
@@ -80,7 +85,7 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
     context.current.href=window.location.href;
     const unload=(event:BeforeUnloadEvent)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();event.returnValue='';}};
     const restore=()=>{
-      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??'',nextCategory=validCategory(query.get('category'));
+      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??navDealer(window.location.pathname)??'',nextCategory=validCategory(query.get('category'));
       setDealerId(dealers.some(row=>row.id===nextDealer)?nextDealer:'');setCategory(nextCategory);setNavigationContext(studioNavigationContextFromQuery(query));setDrafts({});context.current.href=window.location.href;
     };
     const history=studioHistory(window);
@@ -89,8 +94,10 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
       return true;
     });
     const unsubscribe=history.subscribe(event=>{if(event)restore();});
-    window.addEventListener('beforeunload',unload);
-    return()=>{window.removeEventListener('beforeunload',unload);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
+    // Admin's in-app navigation (menu, navs, tabs) asks here before it would unmount a draft or a write in flight.
+    const beforeNavigate=(event:Event)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}};
+    window.addEventListener('beforeunload',unload);window.addEventListener('studio:before-navigate',beforeNavigate);
+    return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('studio:before-navigate',beforeNavigate);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
   },[]);
   function choose(nextDealer:string,nextCategory:string){
     if(studioHistory(window).isRestoring())return;
@@ -146,7 +153,7 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
   }
   return <PageTemplate eyebrow="// STUDIO" title="Svarsbibliotek" intro="Här visas sparade svar för vald dealer, med exakt text, ljud och läppsynkvideo. Kategorier hjälper dig att ordna biblioteket.">
     <main className="sg-page-body">
-      <div className={styles.controls}><label>Dealer<select aria-label="Dealer i svarsbiblioteket" value={dealerId} disabled={Boolean(writingId)} onChange={event=>choose(event.target.value,category)}><option value="">Välj dealer</option>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+      <div className={styles.controls}><label>Dealer<select aria-label="Dealer i svarsbiblioteket" value={dealerId} disabled={Boolean(writingId)} onChange={event=>choose(event.target.value,category)}>{(!inDealerNav||!dealerId)&&<option value="">Välj dealer</option>}{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
         <label>Kategori<select aria-label="Filtrera svarskategori" value={category} disabled={Boolean(writingId)} onChange={event=>choose(dealerId,event.target.value)}><option value="">Alla kategorier</option>{categories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
         <button type="button" className="sg-btn sg-btn-secondary" disabled={loading||dirty||Boolean(writingId)||!dealerId} onClick={()=>setReload(value=>value+1)}>Uppdatera</button>
       </div>

@@ -92,9 +92,11 @@ export function changedPaths(files) {
 
 // Only safe fields: exit status, attention codes and the open incident count. Never excerpts.
 export function securityVerdict(result) {
-  if (!result || result.status !== 0) return { ok: false, reason: `security-status kunde inte läsas (status ${result?.status ?? 'okänd'})` };
+  // unreadable: the command could not run or its output could not be parsed (worth one retry);
+  // a readable report with attention codes refuses at once.
+  if (!result || result.status !== 0) return { ok: false, unreadable: true, reason: `security-status kunde inte läsas (status ${result?.status ?? 'okänd'})` };
   let report;
-  try { report = JSON.parse(result.stdout); } catch { return { ok: false, reason: 'security-status gav oläsbart svar' }; }
+  try { report = JSON.parse(result.stdout); } catch { return { ok: false, unreadable: true, reason: 'security-status gav oläsbart svar' }; }
   const attention = Array.isArray(report?.attention) ? report.attention : null;
   if (!attention || report.purpose === 'gitguardian-safe-status-unavailable') return { ok: false, reason: 'security-status otillgänglig' };
   const open = Number.isSafeInteger(report.incidentCounts?.open) ? report.incidentCounts.open : null;
@@ -106,7 +108,7 @@ export function securityVerdict(result) {
 }
 
 export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = false, allowWorkflowChange = false,
-  jakobLogin, featureBranches, foreignPatterns, security }) {
+  jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false }) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), reason });
   check('pr', pr?.number !== undefined, pr ? `#${pr.number}` : 'PR kunde inte läsas');
@@ -142,8 +144,21 @@ export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = f
       : runtime.length ? `${runtime.length} runtimesökvägar under frysningen ${freeze.slice(0, 12)}, t.ex. ${runtime[0]}` : `inga runtimefiler (frysning ${freeze.slice(0, 12)})`);
   }
   const sec = securityVerdict(security);
-  check('security', sec.ok, sec.reason);
+  check('security', sec.ok, securityRetried ? `${sec.reason} (efter ett omförsök)` : sec.reason);
   return { ok: checks.every(entry => entry.ok), checks };
+}
+
+export const SECURITY_RETRY_MS = 10000;
+const sleepSync = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+// One retry after ~10 s when security-status could not run or be parsed; never on attention codes.
+export function readSecurity(security, { sleep = sleepSync, log = () => {} } = {}) {
+  const first = security();
+  const verdict = securityVerdict(first);
+  if (verdict.ok || !verdict.unreadable) return { result: first, retried: false };
+  log(`omförsök security: ${verdict.reason}; nytt försök om ${SECURITY_RETRY_MS / 1000} s`);
+  sleep(SECURITY_RETRY_MS);
+  return { result: security(), retried: true };
 }
 
 function runner(command) {
@@ -164,7 +179,8 @@ function readTrustedJson(git, path) {
 }
 
 export function main({ args = process.argv.slice(2), gh = runner('gh'), git = runner('git'),
-  security = () => runner(process.execPath)(['tools/security-status.mjs'], { timeout: 180000 }), log = console.log } = {}) {
+  security = () => runner(process.execPath)(['tools/security-status.mjs'], { timeout: 180000 }), sleep = sleepSync,
+  log = console.log } = {}) {
   let options;
   try { options = parseArgs(args); } catch (error) { log(error.message); return 2; }
   const fetched = git(['fetch', '-q', 'origin', 'main']);
@@ -177,9 +193,10 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   let pr = null;
   if (!view.error && view.status === 0) { try { pr = JSON.parse(view.stdout); } catch { pr = null; } }
   const files = pr ? readPrFiles(gh, options.number) : null;
+  const sec = pr ? readSecurity(security, { sleep, log }) : { result: null, retried: false };
   const verdict = evaluateMerge({ pr, files, head: options.head, freeze: options.freeze, freezeOnMain,
     allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
-    foreignPatterns: foreignBranchPatterns({ policy, people }), security: pr ? security() : null });
+    foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried });
   for (const entry of verdict.checks) log(`${entry.ok ? 'ok ' : 'nej'} ${entry.name}: ${entry.reason}`);
   if (!verdict.ok) { log(`nekad: PR #${options.number} mergas inte`); return 1; }
   if (options.dryRun) { log(`dry-run: PR #${options.number} skulle mergas på ${options.head}`); return 0; }

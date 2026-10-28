@@ -8,6 +8,7 @@ import { readPackagePresentation } from '../../../packages/presentation/server/p
 import { readOperatorLifecycle } from '../../../packages/operators/server/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
+import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
 
 const unavailable = () => { throw Object.assign(new Error('design_catalog_unavailable'), { statusCode: 503 }); };
 
@@ -62,6 +63,11 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
   ];
   const compositions = (project.lanes ?? []).map(row => ({ id: row.id, name: row.label,
     dealerIds: [...row.layers.dealer.allowed], defaultDealerId: row.layers.dealer.default }));
+  // The bet profile in the room's saved game settings (draft), for Admin's room picture only. The published
+  // value is read on the room's Spelinställningar tab; a missing or unknown key is simply left out.
+  const savedProfiles = new Map((Array.isArray(saved.administration.roomGameConfigs) ? saved.administration.roomGameConfigs : [])
+    .filter(row => typeof row?.roomId === 'string' && typeof row.gameConfig?.limitPreset === 'string' && Object.hasOwn(ROOM_LIMIT_PRESETS, row.gameConfig.limitPreset))
+    .map(row => [row.operatorId + '/' + row.roomId, row.gameConfig.limitPreset]));
   const rooms = (saved.administration.rooms ?? []).filter(isPresentationRoom).map(row => {
     const operator = operators.find(item => item.id === row.operatorId);
     const pack = packages.get(row.operatorId);
@@ -79,6 +85,7 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
       environment: playable ? roomEnvironment(playable, operator.slug) : null,
       playUrl: playable?.playUrl ?? null,
+      ...(savedProfiles.has(row.operatorId + '/' + row.id) ? { savedLimitPreset: savedProfiles.get(row.operatorId + '/' + row.id) } : {}),
       ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),

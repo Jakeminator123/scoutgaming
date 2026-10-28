@@ -50,6 +50,12 @@ services:
         value: adaptive
       - key: OPENCLAW_SPEECH_DEEP_MODEL
         value: gpt-6-sol
+      # Same value on croupier-v3 before adaptive chat.
+      - key: OPENCLAW_SPEECH_TIMEOUT_MS
+        value: "20000"
+      # Ed25519 key (base64 PKCS8) for Admin model selection; set privately.
+      - key: OPENCLAW_STUDIO_ADMIN_DEVICE_KEY
+        sync: false
       # Uses this web service's Render-provided HTTPS origin. Native Gateway
       # login stays disabled until the matching origin is set on the pserv.
       - key: OPENCLAW_DASHBOARD_ENABLED
@@ -89,6 +95,9 @@ services:
         value: /data/openclaw
       - key: OPENCLAW_CONFIG_PATH
         value: /data/openclaw/openclaw.json
+      # Opt-in image support in speech; set in the service Environment.
+      - key: CROUPIER_SPEECH_VISION
+        sync: false
       # After creation, add OPENCLAW_DASHBOARD_ORIGIN in this private service's
       # Environment: the Director's exact HTTPS origin, WITHOUT /openclaw.
       # Omitted deliberately: the generated public address does not exist yet.
