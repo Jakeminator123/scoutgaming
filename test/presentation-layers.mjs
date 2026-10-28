@@ -309,3 +309,17 @@ test('on a slow or unknown link the background film waits for the dealer’s fir
     assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),0),true);h.composition.close();
   }
 });
+
+// Review of #505: a background film deferred until the dealer's first frame must not stay dark when that frame
+// never comes. It loads after DEFERRED_LAYER_MS (20 s), or at once when the dealer is reported unavailable.
+test('a deferred background film loads after twenty seconds without a dealer frame, or at once when the dealer is unavailable',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const h=layerHarness({backgroundType:'video/mp4',connection:null}),background=h.node('background'),src=`/api/presentation/room-layers/north/room-a/1/${h.assets.background.id}`;
+  assert.equal(background.src,'');t.mock.timers.tick(19999);assert.equal(background.src,'','still waiting for the dealer');
+  t.mock.timers.tick(1);assert.equal(background.src,src,'the background loads anyway');assert.equal(background.preload,'auto');
+  assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),3000),true);
+  h.composition.renderFrame(h.video,0);assert.deepEqual(background.sources,[src],'a later dealer frame does not load it again');h.composition.close();
+  const u=layerHarness({backgroundType:'video/mp4',connection:null}),deferred=u.node('background');
+  u.composition.dealerUnavailable();assert.equal(deferred.src,src,'a dealer reported unavailable releases it at once');
+  t.mock.timers.tick(20000);assert.deepEqual(deferred.sources,[src]);u.composition.close();
+});

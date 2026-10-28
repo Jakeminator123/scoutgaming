@@ -110,7 +110,8 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // only names the clip of a step of this plan: its card, receipt and film still wait for the step's own
       // time on the table clock, and a step whose answer is still missing at the end of its time is left.
       media.prepareSequence?.(presentation.events.map((event,index)=>{const step=timeline?.eventIndex.get(index);
-        return step?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}),{selectAhead:!turnPassed()});
+        // A plan that already carries the server's choice for the step (K04 F5c, #506) keeps it.
+        return step&&!event.filmedTake?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}),{selectAhead:!turnPassed()});
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
       // unavailable: a step's exact media was missing (404/410) or declared
@@ -281,7 +282,8 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     // clip): the server confirmed this binding for its window, and the WS binding and 409 stale catch a change.
     media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,idlePhase:()=>sharedIdlePhase(latest),idleConfigRead:false,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:dealerFrame,onBusy:()=>{},
-      onError:()=>{if(!dealerShown)placeholder.textContent=DEALER_UNAVAILABLE;onError('shared_room_media_unavailable');}});
+      // A dealer that cannot be shown releases a background film deferred for its first frame.
+      onError:()=>{if(!dealerShown){placeholder.textContent=DEALER_UNAVAILABLE;composition?.dealerUnavailable?.();}onError('shared_room_media_unavailable');}});
     signal?.throwIfAborted();
     cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile});
     // Apply only this server binding's N2 values. Shared tables never read a
