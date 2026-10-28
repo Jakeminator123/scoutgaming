@@ -7,10 +7,10 @@ const mediaName={video:'Film',image:'Bild',audio:'Ljud'};
 const resourceHref=(kind:ResourceKind,id:string)=>'#'+resourceAnchor(kind,id);
 // One tab per registry. A reference into another registry switches tab before it scrolls.
 const tabs=[
-  {id:'operators',label:'Spelbolag',kinds:['operator','room']},
+  {id:'operators',label:'Bolag och spelbord',kinds:['operator','room']},
   {id:'dealers',label:'Dealers',kinds:['dealer','media']},
-  {id:'materials',label:'Bord & bakgrunder',kinds:['material']},
-  {id:'compositions',label:'Sammansättningar',kinds:['composition']},
+  {id:'materials',label:'Material',kinds:['material']},
+  {id:'compositions',label:'Scenmallar',kinds:['composition']},
 ] as const;
 type TabId=(typeof tabs)[number]['id'];
 const tabForKind=(kind:string)=>tabs.find(tab=>(tab.kinds as readonly string[]).includes(kind))?.id;
@@ -69,7 +69,6 @@ function PublishedChoices({publication}:{publication:PublishedRoomChoices}){
 }
 function RoomBranch({room,tree}:{room:DeletionRoom;tree:ResourceDeletionTree}){
   const composition=tree.compositions.find(row=>row.id===room.compositionId);
-  const query=new URLSearchParams({operator:room.operatorId,table:room.id,...room.compositionId?{composition:room.compositionId}:{},...room.game?{game:room.game}:{}});
   // The shared template is edited in the clip map's Scen & lager panel; room choices use the room editor.
   const templateHref=!room.archived&&composition&&!composition.missing&&room.game?'/admin/scenes?'+new URLSearchParams({operator:room.operatorId,table:room.id,composition:composition.id,game:room.game}):null;
   return <li className="admin-system-card scroll-mt-6" id={resourceAnchor('room',room.id)}>
@@ -91,13 +90,14 @@ function RoomBranch({room,tree}:{room:DeletionRoom;tree:ResourceDeletionTree}){
     <div className="mt-3 flex flex-wrap gap-2">
       {templateHref&&<a className="studio-button" href={templateHref}>Ändra mallens kopplingar</a>}
       {room.choicesPath&&<a className="studio-button" href={room.choicesPath}>Ändra bara rummets val</a>}
-      {tree.operators.some(row=>row.id===room.operatorId)&&<a className="studio-button" href={'/admin/rooms?'+query}>Öppna bolagets rum</a>}
+      {tree.operators.some(row=>row.id===room.operatorId)&&<a className="studio-button" href={'/admin/rooms/'+encodeURIComponent(room.id)}>Öppna spelbordet</a>}
     </div>
   </li>;
 }
-export function ResourceConnections(){
+// embedded drops the page heading; context is the search string that chooses the first tab and item.
+export function ResourceConnections({embedded=false,context}:{embedded?:boolean;context?:string}={}){
   const [tree,setTree]=useState<ResourceDeletionTree|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[refresh,setRefresh]=useState(0);
-  const [target]=useState(()=>contextTarget(location.search));
+  const [target]=useState(()=>contextTarget(context??location.search));
   const [tab,setTab]=useState<TabId>(target.tab),[pending,setPending]=useState(target.anchor);
   useEffect(()=>{const abort=new AbortController();setLoading(true);setError('');setTree(null);
     void client.load(abort.signal).then(value=>{if(!abort.signal.aborted)setTree(value);})
@@ -115,22 +115,22 @@ export function ResourceConnections(){
     if(!next||next===tab)return;
     event.preventDefault();setPending(href.slice(1));setTab(next);
   }
-  return <section className="admin-system-page" id={resourceAnchor('project','saved')} aria-labelledby="structure-title" onClick={follow}>
-    <header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="structure-title">Kopplingar &amp; användning</h1>
-      <p>Se var bolag, rum, dealers, material och mallar används och ändra kopplingarna där de hör hemma.</p></div><button className="studio-button" type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Uppdatera</button></header>
+  return <section className="admin-system-page" id={resourceAnchor('project','saved')} aria-labelledby={embedded?undefined:'structure-title'} aria-label={embedded?'Beroenden':undefined} onClick={follow}>
+    <header className="admin-system-header"><div>{!embedded&&<h1 id="structure-title">Beroenden</h1>}
+      <p>Var bolag, spelbord, dealers, material och scenmallar används. Ändra kopplingarna där de hör hemma.</p></div><button className="studio-button" type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Uppdatera</button></header>
     <div className="studio-game-tabs" role="tablist" aria-label="Register">{tabs.map(row=><button key={row.id} type="button" role="tab" id={'structure-tab-'+row.id} aria-selected={tab===row.id} aria-controls={'structure-panel-'+row.id} onClick={()=>setTab(row.id)}>{row.label}</button>)}</div>
     {loading&&<p role="status" className="mt-4">Läser aktuella register…</p>}{error&&<p role="alert" className="mt-4">{error} Använd Uppdatera för att försöka igen.</p>}
     {tree&&<div className="mt-6 space-y-6">
       {!tree.lifecycleAvailable&&<p role="alert" className="rounded border border-amber-500 p-3">Bolagens och rummens arkiv kunde inte läsas. Trädet är ofullständigt. Uppdatera för att försöka igen.</p>}
       {tree.warnings.length>0&&<ul role="status" className="space-y-1 text-amber-300">{tree.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
-      <section role="tabpanel" id="structure-panel-operators" aria-labelledby="structure-tab-operators" hidden={tab!=='operators'} className="space-y-4"><h2 className="text-xl font-semibold">Bolag → spel → rum</h2>
+      <section role="tabpanel" id="structure-panel-operators" aria-labelledby="structure-tab-operators" hidden={tab!=='operators'} className="space-y-4"><h2 className="text-xl font-semibold">Bolag → spel → spelbord</h2>
         <p className="text-sm text-sg-muted">Bolaget äger rummet. Dealers, bord och bakgrunder är delade filer som flera bolags rum kan använda.</p>
         {!tree.operators.length&&<p>Inga bolag i det lästa registret.</p>}
         <RegistryRows rows={tree.operators} render={operator=>{
           const rooms=tree.rooms.filter(room=>room.operatorId===operator.id),games=[...new Set(rooms.map(room=>room.game))];
           return <li key={operator.id} id={resourceAnchor('operator',operator.id)} className="admin-system-card scroll-mt-6"><h3 className="font-semibold">{operator.label}</h3><State row={operator}/>{!operator.archived&&operator.status!=='active'&&<p className="text-sm text-sg-muted">Avstängt bolag</p>}
             <ResourceIdentity id={operator.id}/>
-            <a className="studio-button my-2" href={'/admin/companies?'+new URLSearchParams({operator:operator.id})}>Öppna bolaget</a>
+            <a className="studio-button my-2" href={'/admin/companies/'+encodeURIComponent(operator.id)}>Öppna bolaget</a>
             {rooms.length?<ul className="space-y-4 border-l border-sg-line pl-4">{games.map(game=><li key={game??'unknown'}><h4 className="my-2 font-medium">{gameName(game)}</h4><ul className="grid gap-3 lg:grid-cols-2">{rooms.filter(room=>room.game===game).map(room=><RoomBranch key={room.id} room={room} tree={tree}/>)}</ul></li>)}</ul>:<p>Inga rum i de lästa registren.</p>}
           </li>;
         }}/>
@@ -142,7 +142,7 @@ export function ResourceConnections(){
         <RegistryRows rows={tree.dealers} render={dealer=>{
           const owned=tree.media.filter(row=>row.primaryOwnerId===dealer.id),borrowed=tree.media.filter(row=>row.primaryOwnerId!==dealer.id&&(row.ownerIds.includes(dealer.id)||row.uses.some(use=>use.kind==='dealer'&&use.id===dealer.id)));
           return <li key={dealer.id} id={resourceAnchor('dealer',dealer.id)} className="admin-system-card scroll-mt-6"><h3 className="font-semibold">{dealer.label}</h3><State row={dealer}/><ResourceIdentity id={dealer.id}/>
-            {!dealer.missing&&!dealer.publishedOnly&&<a className="studio-button my-2" href={'/admin/dealers?'+new URLSearchParams({dealer:dealer.id})}>Öppna dealern</a>}
+            {!dealer.missing&&!dealer.publishedOnly&&<a className="studio-button my-2" href={'/admin/dealers/'+encodeURIComponent(dealer.id)+'?flik=anvands'}>Öppna dealern</a>}
             <div className="my-3 text-sm"><Uses rows={dealer.uses}/></div>
             {owned.length?<MediaRows rows={owned}/>:<p>Inga egna filer i det lästa klippregistret.</p>}
             {borrowed.length>0&&<div className="mt-3 text-sm"><h4 className="font-medium">Filreferenser som visas på annan plats</h4><ul>{borrowed.map(row=><li key={row.id}><a className="underline" href={resourceHref('media',row.id)}>{row.label}</a></li>)}</ul></div>}
@@ -150,16 +150,16 @@ export function ResourceConnections(){
         }}/>
         {tree.media.some(row=>!row.primaryOwnerId)&&<div className="admin-system-card"><h3 className="font-semibold">Filer och referenser utan registrerad dealerägare</h3><MediaRows rows={tree.media.filter(row=>!row.primaryOwnerId)}/></div>}
       </section>
-      <section role="tabpanel" id="structure-panel-materials" aria-labelledby="structure-tab-materials" hidden={tab!=='materials'} className="space-y-4"><h2 className="text-xl font-semibold">Bord och bakgrunder</h2>
+      <section role="tabpanel" id="structure-panel-materials" aria-labelledby="structure-tab-materials" hidden={tab!=='materials'} className="space-y-4"><h2 className="text-xl font-semibold">Bakgrunder och bordsgrafik</h2>
         <p className="text-sm text-sg-muted">Material är delade filer. Ett lager i en mall eller ett publicerat val är den enda kopplingen.</p>
         <RegistryRows rows={tree.materials} columns render={row=><li key={row.id} id={resourceAnchor('material',row.id)} className="admin-system-card scroll-mt-6">
           <h3 className="font-semibold">{row.label}</h3><p className="text-sm">{row.role==='background'?'Bakgrund':'Bord'}{row.game?' · '+gameName(row.game):''}</p><State row={row}/><ResourceIdentity id={row.id}/>
           <div className="mt-3 text-sm"><Uses rows={row.uses}/></div>
-          {!row.missing&&<a className="studio-button mt-3" href={'/admin/assets?'+new URLSearchParams({tab:row.role==='background'?'backgrounds':'tables',...row.game?{game:row.game}:{}})}>Öppna i Bord &amp; bakgrunder</a>}
+          {!row.missing&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:row.role==='background'?'bakgrunder':'bordsgrafik',...row.game?{game:row.game}:{}})}>Öppna i Material</a>}
         </li>}/>{!tree.materials.length&&<p>Inga bord eller bakgrunder i de lästa registren.</p>}
       </section>
-      <section role="tabpanel" id="structure-panel-compositions" aria-labelledby="structure-tab-compositions" hidden={tab!=='compositions'} className="space-y-4"><h2 className="text-xl font-semibold">Sammansättningar</h2>
-        <p className="text-sm text-sg-muted">Sparade mallar som kan användas av flera rum. Mallen ändras i klippkartans Scen &amp; lager.</p>
+      <section role="tabpanel" id="structure-panel-compositions" aria-labelledby="structure-tab-compositions" hidden={tab!=='compositions'} className="space-y-4"><h2 className="text-xl font-semibold">Scenmallar</h2>
+        <p className="text-sm text-sg-muted">Scenmallar som kan användas av flera spelbord. Mallen ändras under Scenmallar och material.</p>
         <RegistryRows rows={tree.compositions} render={row=><li key={row.id} id={resourceAnchor('composition',row.id)} className="admin-system-card scroll-mt-6">
           <h3 className="font-semibold">{row.label}</h3><State row={row}/><ResourceIdentity id={row.id}/>
           <div className="my-3 space-y-3 text-sm"><Uses rows={row.uses}/>
@@ -168,7 +168,7 @@ export function ResourceConnections(){
           </div>
           {row.layers&&<dl className="space-y-2 text-sm">{(['background','dealer','table'] as const).map(role=><div key={role}><dt className="font-medium">{role==='background'?'Bakgrund':role==='dealer'?'Dealer':'Bord'}{row.layers![role].enabled?'':' · avstängt'}</dt>
             <dd>{row.layers![role].ids.length?row.layers![role].ids.map((id,index)=><span key={id}>{index>0?', ':''}<a className="underline" href={resourceHref(role==='dealer'?'dealer':'material',id)}>{(role==='dealer'?tree.dealers:tree.materials).find(item=>item.id===id)?.label??id}</a>{row.layers![role].defaultId===id?' (förval)':''}</span>):'Inga sparade val'}</dd></div>)}</dl>}
-          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({composition:row.id})}>Ändra mallens kopplingar</a>}
+          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:'mallar',composition:row.id})}>Ändra scenmallen</a>}
         </li>}/>{!tree.compositions.length&&<p>Inga sammansättningar i det lästa registret.</p>}
       </section>
       <details className="admin-system-card text-sm text-sg-muted"><summary>Vad läsningen omfattar</summary><p className="mt-2">Historikräkning: {tree.historyCoverage==='complete'?'komplett registerläsning':tree.historyCoverage==='incomplete'?'ofullständig':'inte tillgänglig'}.</p><ul className="mt-2 list-disc space-y-2 pl-5">{tree.coverage.map(item=><li key={item}>{item}</li>)}</ul>

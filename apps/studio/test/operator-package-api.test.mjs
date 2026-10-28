@@ -14,6 +14,7 @@ import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {aiImageLabel,aiPlacementHash} from '../lib/ai-image-contract.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -242,7 +243,7 @@ async function nativeFixture({dealer='linnea'}={}){
 const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
 async function placementFixture(options){
   const f=await nativeFixture(options),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];
-  const asset={schemaVersion:1,id:placementTable,role:'table',label:'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
+  const asset={schemaVersion:1,id:placementTable,role:'table',label:options?.tableLabel??'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
     pathname:`croupier/media/tables/${placementTable}/${'b'.repeat(64)}.png`};
   presentation.assets.push(asset);lane.layers.table={enabled:true,default:placementTable,allowed:[placementTable]};
   lane.composition=defaultCompositionSettings();lane.composition.mobile.table={width:1.75,x:0,y:.35};lane.composition.mobile.dealer.y=.03;
@@ -751,4 +752,49 @@ test('native publication of all measured filmed takes requires v29 and installed
     const raw=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
     await assert.rejects(raw.handlers.get('POST /studio/api/admin/operator-package')(context),e=>e.code==='studio_presentation_runtime_update_required');
   }
+});
+
+// AI table graphics: publication refuses one drawn for another dealer or placement.
+const aiTableId='a1000000-0000-4000-8000-000000000001';
+function aiTableAsset(label){return {schemaVersion:1,id:aiTableId,role:'table',game:'blackjack',label,sha256:'c'.repeat(64),size:2048,contentType:'image/webp',width:1215,height:2074,
+  pathname:`croupier/media/tables/${aiTableId}/${'c'.repeat(64)}.webp`};}
+const drawnForPaow=composition=>aiImageLabel('Grön filt',{dealerId:'paow',placement:aiPlacementHash(composition??defaultCompositionSettings())});
+
+test('Admin package publication refuses an AI table graphic after a dealer swap, with a fixed answer; manual material passes', async () => {
+  const pool=memoryPool(),project=createSeedProject(),lane=project.lanes[0];
+  project.layerAssets=[aiTableAsset(drawnForPaow())];lane.layers.table={enabled:true,default:aiTableId,allowed:[aiTableId]};
+  const {api}=apiFor(pool,project);
+  await api.handle(request('operator-create-demo',{}));
+  // The template's dealer is not the one the table was drawn for.
+  const refused=await api.handle(request('operator-package',{operatorId:'sg-test',lanes:[lane.id]}));
+  assert.equal(refused.status,422);
+  assert.deepEqual(await refused.json(),{error:'ai_table_misfit',code:'ai_table_misfit',compositionId:lane.id,assetId:aiTableId,reason:'ai_table_other_dealer'});
+  assert.equal((await (await createOperatorStore({sql:pool,scope,now:clock})).getCurrentPackage('sg-test'))?.revision??null,null,'nothing was frozen');
+  project.layerAssets[0].label='Blackjack · eget bord';
+  const manual=await api.handle(request('operator-package',{operatorId:'sg-test',lanes:[lane.id]}));
+  assert.equal(manual.status,200,'the same table as ordinary material publishes');
+});
+
+test('native package publication lets a fitting AI table through and refuses a moved placement before any I/O', async () => {
+  for (const [composition,refuse] of [[undefined,false],[{...defaultCompositionSettings(),desktop:{...defaultCompositionSettings().desktop,table:{width:.5,x:0,y:.35}}},true]]) {
+    const f=await nativeFixture({dealer:'paow'}),doc=await f.repository.readDocument('project');
+    doc.value.layerAssets=[aiTableAsset(drawnForPaow())];
+    const lane=doc.value.lanes.find(row=>row.id===f.lane.id);lane.layers.table={enabled:true,default:aiTableId,allowed:[aiTableId]};
+    if (composition) lane.composition=composition;
+    await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+    if (!refuse) { const receipt=await f.publish();assert.equal(receipt.ok,true);assert.ok(receipt.presentation.assets.some(row=>row.id===aiTableId));continue; }
+    await assert.rejects(f.prepare(),error=>error.code==='ai_table_misfit'&&error.reason==='ai_table_other_placement'&&error.compositionId===f.lane.id);
+    assert.equal(f.io(),0,'refused before provider reads');assert.equal(await f.direct.getCurrentPackage('north'),null);
+  }
+});
+
+test('publish-scene-layout refuses a moved placement for an AI table drawn for the old one, and passes one drawn for the new', async () => {
+  const published=defaultCompositionSettings();published.mobile.table={width:1.75,x:0,y:.35};published.mobile.dealer.y=.03;
+  const moved=structuredClone(published);moved.desktop.table.width=.8;
+  const stale=await placementFixture({dealer:'paow',tableLabel:drawnForPaow(published)}),before=await stale.direct.getCurrentPackage('north');
+  await assert.rejects(stale.prepare(),error=>error.code==='ai_table_misfit'&&error.reason==='ai_table_other_placement'&&error.assetId===placementTable);
+  assert.equal((await stale.direct.getCurrentPackage('north')).revision,before.revision,'the published package is unchanged');
+  const redrawn=await placementFixture({dealer:'paow',tableLabel:drawnForPaow(moved)});
+  const receipt=await redrawn.publish(await redrawn.prepare());
+  assert.equal(receipt.packageRevision,10);assert.equal(receipt.presentation.lanes[0].composition.desktop.table.width,.8);
 });

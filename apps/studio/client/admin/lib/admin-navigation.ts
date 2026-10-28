@@ -1,17 +1,8 @@
-import {ADMIN_WORKSPACE_TOOLS} from '../../../../../packages/navigation/admin-workspace-routes.mjs';
-
 export type AdminNavigationLink = {label:string;href:string;description:string};
-export {adminNavigationGroups,adminSystemGroups} from '../../../../../packages/navigation/admin-navigation.mjs';
-import {adminNavigationGroups,adminSystemGroups} from '../../../../../packages/navigation/admin-navigation.mjs';
-// Contextual tools belong to their resource, never to a second tool directory.
-export const adminToolHomes:Record<string,string>={
-  companies:'/admin/companies',
-  'dealer-studio':'/admin/clips','dealer-agent':'/admin/clips',
-  replies:'/admin/clips',
-};
-export const adminToolHome=(tool:string|null)=>tool?adminToolHomes[tool]??'/admin':null;
+export type AdminTab = {id:string;label:string};
+export {adminNavigationGroups,adminMenuLinks,adminDealerTabs,adminDealerSteps,adminSceneTabs,adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminSystemTabs,adminTabId} from '../../../../../packages/navigation/admin-navigation.mjs';
+import {adminMenuLinks} from '../../../../../packages/navigation/admin-navigation.mjs';
 export const adminPageLabels:Record<string,string> = {
-  ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
-  ...Object.fromEntries([...adminNavigationGroups,...adminSystemGroups].flatMap(group=>group.links.map(link=>[link.href,link.label]))),
-  '/admin':'Översikt','/admin/admin/players':'Spelarkonton',
+  ...Object.fromEntries(adminMenuLinks.map(link=>[link.href,link.label])),
+  '/admin':'Översikt',
 };

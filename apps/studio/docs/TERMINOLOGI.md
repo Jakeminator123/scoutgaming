@@ -12,6 +12,50 @@ Vad orden betyder i produkten. Ett ord per begrepp i all text som vänder sig ti
 
 Regeln: **Admin skapar och tilldelar, bolaget väljer, spelaren spelar.** Allt ett bolag kan ändra är en delmängd av det Admin kan ändra, begränsat av tilldelningen och av personens roll. "Nivå 1, 2, 3" får användas som kortform i dokument; menyer och rubriker använder namnen.
 
+## Så hänger det ihop
+
+```mermaid
+flowchart LR
+  subgraph A["Admin skapar"]
+    D["Dealer<br/>klipp, klippkarta, filmad profil"]
+    M["Material<br/>bakgrunder och bordsgrafik"]
+    S["Scenmall<br/>tillåtna dealers och material<br/>+ placering"]
+  end
+  subgraph B["Bolaget får och väljer"]
+    P["Paket, version N<br/>tilldelningen, fryst"]
+    R["Spelbord<br/>namn, öppet eller pausat,<br/>utseende inom tilldelningen"]
+    G["Spelinställningar<br/>språk och insatsprofil"]
+  end
+  D --> S
+  M --> S
+  S -- "tilldelas" --> P
+  P --> R
+  R --- G
+  R -- "öppna spelbord" --> L["Spelaren: lobbyn och spelet"]
+```
+
+En **dealer** och **material** sätts ihop i en **scenmall**. Scenmallen tilldelas ett **bolag** och fryses i bolagets **paket** när den publiceras. Bolagets **spelbord** pekar på en av scenmallarna i paketet och har egna **spelinställningar**. Spelaren ser bara öppna spelbord och bara det som är publicerat.
+
+**Ordet "bord" betyder tre saker** och används därför aldrig ensamt:
+
+- **spelbord** (`room`): det spelaren går in i, till exempel "Loungen". Äldre text säger "rum".
+- **bordsgrafik** (`table`): bilden av bordet i scenen, med boxar där korten landar.
+- **delat bord** (`shared-table`): spelmotorns sätt att låta flera spelare sitta vid samma spelbord.
+
+### Exempel: Johns Bet (preview)
+
+| Sak | Antal | I exemplet |
+| --- | --- | --- |
+| Bolag | 1 | Johns Bet (preview) |
+| Dealer | 1 | PAOW, med filmad profil |
+| Bakgrunder | 3 | Studion, Salongen, Loungen |
+| Bordsgrafik | 3 | Ljus ek, Johns Bet · Grön filt, Lila neon, alla ritade efter PAOW:s landningar |
+| Scenmallar | 3 | Studion, Salongen, Loungen: PAOW, en bakgrund, en bordsgrafik och placering |
+| Paket | 1 | version 17, med de tre scenmallarna |
+| Spelbord | 3 | Studion (Casual), Salongen (Privé) och Loungen (High), alla på svenska |
+
+Ska Johns Bet få ett fjärde spelbord som ser ut som Loungen, skapar Admin ett spelbord som pekar på scenmallen Loungen. Inget material laddas upp igen.
+
 ## Ytor
 
 - **Admin** (`/admin`): personalens arbetsyta för dealers, klipp, tal, mallar, material, bolag och spelbord. Kallas i produkten **Scoutgaming Admin**. `apps/studio` är källkoden och `/studio` appens tekniska sökväg (basePath), inte en egen produkt; ordet Studio används inte i menyer.
@@ -35,6 +79,8 @@ Regeln: **Admin skapar och tilldelar, bolaget väljer, spelaren spelar.** Allt e
 - **Spelbordets utseende** (`branding`, `roomOverrides`): vald bakgrund, dealer och bordsgrafik per spelbord inom tilldelningen. Ändras som utkast, granskas och publiceras. Utkastet är i dag ett per bolag, inte per spelbord.
 - **Utkast** och **live**: det sparade läget mot det publicerade. Spelaren ser bara live. Pågående rundor spelas klart på den gamla versionen; nästa runda får den nya.
 - **Publicering**: tal godkänns, paketet publiceras och sist spelbordets spelinställningar. Målbilden samlar det till en knapp per spelbord med granskning och kvitto.
+- **Demo** (**Skapa demo**): Admins guide som sätter ihop bolag, spelbord och dealer för en visning. Demolänken är avstängd tills API-nycklar knyts till bolag.
+- **Bolagets eget material** (planerat): bakgrunder och bordsgrafik som bolaget skapar själv, genom uppladdning eller AI. Scoutgaming godkänner varje material med ett klick, och materialet syns bara på bolagets egna spelbord. Bordsgrafik ritas alltid efter dealerns landningsmall. Det kräver en ny tabell i databasen (migrering 021) innan det byggs.
 - **Papperskorgen**: arkivering som går att ångra. Historik och källmedia raderas aldrig som bieffekt; permanent radering är ett eget steg.
 
 ## Scenen
@@ -43,6 +89,20 @@ Regeln: **Admin skapar och tilldelar, bolaget väljer, spelaren spelar.** Allt e
 - **Material**: bordsgrafik och bakgrunder (`layerAssets`), uppladdade på ett ställe och tilldelade till bolag.
 - **Placering** (`composition`): mallens skala och läge för dealer, bakgrund och bordsgrafik, separat för dator och mobil, samt kortens geometri. Publiceras med mallen.
 - **Skon**, korten och dealerns händer sitter i dealerns filmade klipp, inte i något lager.
+- **Filmad profil** (`packages/presentation/contracts/filmed-profiles/`): mätningen av en dealerfilm, med bildytans storlek, kortets storlek och var handen landar på plats 1–7 och hos dealern (**landningar**). PAOW har en filmad profil.
+- **Landningsmall**: en bild med boxarna 1–7, dealerns kortplats och mobilens fönster med tre boxar, som bordsgrafik ritas efter. För PAOW är bordsgrafiken 1920 × 1404 px, och placeringen är bordsbredd 0,5 på dator och 1,58 på mobil, båda med y 0,35.
+- **AI-material**: bakgrund eller bordsgrafik som Admin skapar med **Skapa med AI**. En AI-ritad bordsgrafik gäller en viss dealer och placering, och etiketten säger det ("AI · … · paow · <kod>"). Den spärras i en scenmall med annan dealer eller annan placering. Funktionen är avstängd tills servern har `CROUPIER_AI_IMAGE_ENABLED=1`.
+
+## Varför finns det? Ord som ser onödiga ut
+
+- **Scenmall** (`lane`): utseendet sätts i en mall och inte på varje spelbord, eftersom flera spelbord delar samma utseende. En ändring i mallen gäller alla spelbord som använder den. Mallen anger också vilka dealers och vilket material som passar ihop, så att ett bolag bara kan välja sådant som fungerar. `lane` är kodens namn och syns aldrig i menyer.
+- **Sammansättning**: ett äldre menyord för scenmallen. I koden lever det kvar som `compositionId` (scenmallens id på ett spelbord) och `composition` (placeringen i mallen). I menyer heter det bara **Scenmall** och **Placering**.
+- **Placering** (`composition`): dealerfilmen, bordsgrafiken och bakgrunden är tre separata bilder som måste ligga exakt rätt, så att bordsgrafikens boxar sitter där dealerns hand lägger korten i filmen. Placeringen anger skala och läge för var och en, separat för dator och mobil, och kortens och markernas läge per bordsgrafik (`blackjackTables`). Normalt rör ingen siffrorna: **Placera på detta bord** fyller i dem ur dealerns filmade profil.
+- **Paket och version**: spelaren får aldrig se ett halvfärdigt utkast. Det publicerade fryses därför i ett paket med ett versionsnummer som bara räknas uppåt. En pågående runda spelas klart på den gamla versionen, och nästa runda får den nya.
+- **Utkast och granskning**: man kan spara och prova utan att något når spelarna. Granskningen visar vad som ändras och vilka spelbord som berörs innan man publicerar.
+- **Id**: varje sak har ett permanent id, så att länkar, historik och publicering pekar rätt även när namnet ändras. Admin skapar id:t av namnet automatiskt, och det visas bara under **Tekniska detaljer**.
+- **Upplåsta val** (`operatorAdjustable`): det bolaget själv får byta på sina spelbord. Resten är låst och visas som "bestäms av Scoutgaming".
+- **Filmad profil**: utan den finns inga landningar att rita bordsgrafik efter, och då gäller standardplaceringen.
 
 ## Klipp och tal
 

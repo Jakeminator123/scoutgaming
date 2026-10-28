@@ -60,8 +60,9 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   const unified = platformConfiguration(unifiedEnv);
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
+  // The retired Administration document is System › Drift in the six-page Admin.
   for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/admin/drift'});
+    {kind:'redirect',destination:unified.publicOrigin+'/admin/system?flik=drift'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
@@ -156,8 +157,8 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
       const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
       const mode=old.endsWith('set-password')?'set-password':'login';
-      // The legacy returnTo is kept but canonicalised: the retired publication page is Spelbolag & rum.
-      const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms?room=room-7');
+      // The legacy returnTo is kept but canonicalised: the retired publication page with one room is that room's nav.
+      const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms/room-7');
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+expected);
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
     }

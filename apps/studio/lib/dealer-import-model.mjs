@@ -22,6 +22,15 @@ export function dealerImportSelectedModel(intent = 'mapping') {
 
 export function dealerImportModelConfiguration(env = process.env) {
   if (env.CROUPIER_DEALER_IMPORT_AI !== '1') return null;
+  const connection = openAiModelConnection(env);
+  if (!connection) return null;
+  return Object.freeze({ apiKey: connection.apiKey, api: connection.api,
+    endpoint: `${connection.baseUrl}/${connection.api === 'openai-responses' ? 'responses' : 'chat/completions'}` });
+}
+
+// The site's one reading of the model connection, shared by the import, the
+// assistant and AI images. The key never leaves the server.
+export function openAiModelConnection(env = process.env) {
   const api = env.OPENCLAW_MODEL_API || 'openai-responses';
   if (!['openai-responses', 'openai-completions'].includes(api)) return null;
   let base; try { base = new URL(env.OPENCLAW_MODEL_BASE_URL || 'https://api.openai.com/v1'); } catch { return null; }
@@ -31,7 +40,7 @@ export function dealerImportModelConfiguration(env = process.env) {
   const official = base.href.replace(/\/$/, '') === 'https://api.openai.com/v1';
   const apiKey = (env.OPENCLAW_MODEL_API_KEY ?? (official ? env.OPENAI_API_KEY : undefined))?.trim();
   if (!apiKey || /[\r\n]/.test(apiKey)) return null;
-  return Object.freeze({ apiKey, api, endpoint: `${base.href.replace(/\/$/, '')}/${api === 'openai-responses' ? 'responses' : 'chat/completions'}` });
+  return Object.freeze({ apiKey, api, baseUrl: base.href.replace(/\/$/, '') });
 }
 
 export function dealerImportProviderStatus(configuration) {

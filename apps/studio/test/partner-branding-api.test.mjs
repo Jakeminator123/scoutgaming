@@ -80,7 +80,7 @@ async function seeded(lanes = ['vip-table', 'mobile-phone']) {
   await store.createOperator({ actor, operatorId, slug: 'unibet', name: 'Unibet' });
   await store.upsertRole({
     actor, operatorId, roleId: 'partner-admin', label: 'Partner administrator',
-    permissions: ['overview.read', 'presentations.configure'], delegable: false,
+    permissions: ['overview.read', 'tables.read', 'presentations.configure'], delegable: false,
   });
   await store.upsertMembership({ actor, operatorId, userId: 'staff-1', roleId: 'partner-admin', status: 'active' });
   await store.publishPackage({

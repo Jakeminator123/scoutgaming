@@ -1,12 +1,15 @@
 import { useSyncExternalStore, type AnchorHTMLAttributes, type ImgHTMLAttributes } from 'react';
 import {studioHistory} from '../../lib/studio-history.mjs';
-import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext,adminToolName} from './admin-routing.mjs';
+import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext} from './admin-routing.mjs';
 
 export function previewHref(href: string) {
   return adminHref(href);
 }
-const nativeFormPaths = new Set(['/admin/admin/accounts', '/admin/admin/api', '/admin/players']);
-const needsDocumentNavigation = (pathname: string) => adminToolName(pathname) || nativeFormPaths.has(adminPathname(pathname));
+// System hosts the native administration forms, which own beforeunload guards for
+// unsaved changes. Entering or leaving System uses document navigation so those
+// guards run; switching tabs inside System keeps the forms mounted.
+const nativeFormPaths = new Set(['/admin/system']);
+const needsDocumentNavigation = (pathname: string) => nativeFormPaths.has(adminPathname(pathname));
 const historyOwner = () => studioHistory(window);
 const snapshotLocation = () => new URL(historyOwner().snapshotHref(), location.origin);
 const subscribe = (notify: () => void) => historyOwner().subscribe(notify);
@@ -27,9 +30,8 @@ export function navigate(href: string, replace = false) {
   if(historyOwner().isRestoring())return false;
   href=withAdminContext(previewHref(href),location.search);
   if (!historyOwner().canNavigate(href)) return false;
-  // Editors and native service forms own beforeunload guards for unsaved changes.
   // Use document entries in both directions so Back/Forward also uses those guards.
-  if(needsDocumentNavigation(location.pathname)||needsDocumentNavigation(new URL(href,location.origin).pathname)){
+  if(needsDocumentNavigation(location.pathname)!==needsDocumentNavigation(new URL(href,location.origin).pathname)){
     if(replace)location.replace(href);else location.assign(href);return true;
   }
   return historyOwner().push(href, replace);

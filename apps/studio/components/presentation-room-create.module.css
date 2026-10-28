@@ -35,5 +35,5 @@
 .visual .create > summary, .visual .create > p { display: none; }
 .gameChoices { display: flex; flex-wrap: wrap; gap: 12px; }
 .gameChoices button { flex: 1; min-width: 145px; min-height: 72px; font-size: 18px; }
-.gameChoices button[aria-pressed="true"] { border-color: #c8f044; background: #303b22; color: #efffb9; }
-.gameChoices button:focus-visible { outline: 2px solid #c8f044; outline-offset: 3px; }
+.gameChoices button[aria-pressed="true"] { border-color: var(--sg-lime); background: var(--sg-accent-bg); color: var(--sg-ok); }
+.gameChoices button:focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 3px; }

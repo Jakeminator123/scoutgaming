@@ -430,13 +430,17 @@ async function brandingResponse(prepared, config) {
     if(!repository)fail(503);
     return repository.readDocument('administration');
   };
+  // Samma kontroll som ingången nedan, läst på nytt inne i transaktionen: en
+  // ändring kräver både presentations.read och presentations.configure.
+  const mayConfigure=decided=>['presentations.read','presentations.configure']
+    .every(permission=>allowsWorkspaceResource(decided,permission,{scope:session.scope,operatorId:operator.id}));
   const reauthorize=async source=>{
     const current=await partnerOperatorContext(prepared,{...config,store:source});
     const decided=await decidedPartnerContext(current);
     if(current.operator.id!==operator.id||current.session.accountId!==session.accountId
       ||current.session.accessClass!==session.accessClass
       ||!sameOperatorScope(decided.scope,session.scope))fail(403);
-    return allowsWorkspaceResource(decided,'presentations.configure',{scope:session.scope,operatorId:operator.id});
+    return mayConfigure(decided);
   };
   const withWriteContext=async(work,options={})=>{
     if(config.store)return work({store,readAdministration,reauthorize:()=>reauthorize(store)});
@@ -462,7 +466,10 @@ async function brandingResponse(prepared, config) {
     readProject:typeof config.readProject==='function'?config.readProject:defaultReadProject});
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
-  const canConfigure = allowsWorkspaceResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
+  // Spelbordens utseende (presentation, bakgrund, dealer, bordsgrafik): läsning
+  // kräver presentations.read, ändring dessutom presentations.configure.
+  if (!allowsWorkspaceResource(decided, 'presentations.read', { scope, operatorId: operator.id })) fail(403);
+  const canConfigure = mayConfigure(decided);
   if (prepared.request.method === 'GET') return json({ ...await api.readState({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
   if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);

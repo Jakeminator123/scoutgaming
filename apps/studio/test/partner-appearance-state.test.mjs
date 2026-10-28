@@ -42,3 +42,23 @@ test('room status follows the published choice, then the company choice for the 
  assert.equal(appearanceRoomStatus({...state,draft:null,draftRevision:3},'vip').draft,false);
  assert.equal(appearanceRoomStatus(state,'missing'),null);
 });
+
+test('the primary action counts every differing company and table choice, ignoring unsupported fields', async () => {
+  const {appearanceChangeCount} = await import('../components/partner-appearance-state.mjs');
+  const live = {lane: 'main', background: 'bg-a', roomOverrides: {vip: {dealer: 'vera'}}};
+  assert.equal(appearanceChangeCount(live, {...live, logo: 'never-live'}), 0);
+  assert.equal(appearanceChangeCount({...live, background: 'bg-b'}, live), 1);
+  assert.equal(appearanceChangeCount({...live, roomOverrides: {vip: {dealer: 'astrid', table: 'oak'}, main: {background: 'bg-c'}}}, live), 3);
+  assert.equal(appearanceChangeCount({lane: 'main'}, live), 2, 'a removed override counts as a change');
+});
+
+test('choice cards get plain labels and initials; previews are never read outside the browser', async () => {
+  const {choiceInitials, displayLabel, loadPreviewMedia, previewChoiceMedia} = await import('../components/partner-preview-media.mjs');
+  assert.equal(displayLabel('PAOW · paow-20261027'), 'PAOW'); assert.equal(displayLabel('paow-20261027'), 'Paow'); assert.equal(displayLabel('Green felt'), 'Green felt');
+  assert.equal(choiceInitials('Green felt'), 'GF'); assert.equal(choiceInitials('PAOW'), 'PA'); assert.equal(choiceInitials(''), '?');
+  assert.equal(await loadPreviewMedia({operatorSlug: 'north', roomId: 'room-a', dealerId: 'astrid', packageRevision: 7}), null, 'no window, no request');
+  const payload = {media: {dealer: {src: '/d', contentType: 'video/webm'}, tables: [{id: 't', src: '/t', contentType: 'image/png'}], backgrounds: []}};
+  assert.deepEqual(previewChoiceMedia(payload, 'dealer'), {src: '/d', contentType: 'video/webm'});
+  assert.deepEqual(previewChoiceMedia(payload, 'table', 't'), {src: '/t', contentType: 'image/png'});
+  assert.equal(previewChoiceMedia(payload, 'background', 'x'), null); assert.equal(previewChoiceMedia(null, 'dealer'), null);
+});

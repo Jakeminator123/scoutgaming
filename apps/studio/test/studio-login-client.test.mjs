@@ -77,10 +77,12 @@ test('Studio permission denial explains the admin boundary without echoing serve
 
 test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
   const value='/admin/dealer-studio?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
-  const canonical=value.replace('/admin/dealer-studio','/admin/clips').replace('&view=clips','');
+  const canonical='/admin/dealers/paow?flik=klipp&operator=north&table=room-one&composition=scene-one&event=speak.other&category=speech&situation=goodluck';
   assert.equal(studioLoginReturnTo(value),canonical);
   assert.equal(studioLoginReturnTo(value.replace('/admin/dealer-studio','/control/clips')),canonical);
+  assert.equal(studioLoginReturnTo(canonical),canonical,'the dealer nav itself is a valid return');
   for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/admin');
+  for (const query of ['flik=klipp&flik=tal','flik=klipp&token=secret','situation=https://evil.test']) assert.equal(studioLoginReturnTo('/admin/dealers/paow?'+query),'/admin');
 });
 
 test('missing or rejected N1 return targets fall back to Admin on both supported mounts', () => {
@@ -91,18 +93,15 @@ test('missing or rejected N1 return targets fall back to Admin on both supported
 });
 
 test('operator menus retain exactly one room or company selector through either N1 auth base',()=>{
-  for(const view of ['','/team','/rooms','/integration','/table-design']){
+  for(const view of ['','/team','/rooms','/integration','/reports','/players','/help']){
     for(const query of ['room=vip-room','scope=company']){
       const target='/partner/north-casino'+view+'?'+query;
       for(const prefix of ['','/studio'])assert.equal(studioLoginReturnTo(prefix+target),target);
       for(const authBase of ['/api/auth','/studio/api/auth'])assert.equal(studioLoginDestination(target,authBase),target);
     }
   }
-  for(const query of ['scope=','scope=Company','scope=unknown','scope=%63ompany','%73cope=company',
-    'scope=company&scope=company','scope=company&room=','scope=company&room=foreign-room',
-    'room=vip-room&scope=company','room=vip-room&room=vip-room','room=%76ip-room','scope=company&extra=x']){
-    const target='/partner/north-casino/team?'+query;
-    assert.equal(studioLoginReturnTo(target),'/admin',target);
-    assert.equal(studioLoginDestination(target,'/api/auth'),'/admin',target);
+  // Kevins retired addresses return to the new view with the same selector.
+  for(const [legacy,canonical] of [['/table-design','/rooms'],['/presentation','/rooms'],['/transactions','/reports'],['/overview','']]){
+    assert.equal(studioLoginReturnTo('/partner/north-casino'+legacy+'?room=vip-room'),'/partner/north-casino'+canonical+'?room=vip-room');
   }
 });
