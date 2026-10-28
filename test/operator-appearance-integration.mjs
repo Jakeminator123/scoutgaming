@@ -44,7 +44,7 @@ async function serverFixture({authenticated=true,available=true}={}){
   assert.equal(server.init.callee.name,'createServer');const handlerNode=server.init.arguments[0];assert.equal(handlerNode.type,'ArrowFunctionExpression');
   const handler=compile({URL,Request,Response,Buffer,process:{env:{}},gameOrigin:'https://game.example.invalid',frontendOrigin:'https://frontend.example.invalid',
     studioPreview:null,movingSpeechService:null,sharedRoomsEnabled:false,handleSharedRoomHttp,sharedRoomCommand:null,sharedRoomQa:null,studioLabSession:null,studioPolicyRuntime:available?{}:null,neonStudioEnabled:true,studioGameCommand:null,
-    presentationCapabilitiesResponse:()=>null,compositionRuntimeResponse:async()=>null,layerPacksRoute:async()=>false,isRetiredBackofficePost:()=>false,
+    presentationCapabilitiesResponse:()=>null,compositionRuntimeResponse:async()=>null,isRetiredBackofficePost:()=>false,
     boGameAuth:async()=>false,boLabAuth:async()=>false,auth:{handle:async()=>false},legacyBackofficeRedirect:()=>null,
     playerSession:async()=>authenticated?{playerId:'isolated-player'}:null,guestPreview:false,
     playerPostOriginOk:()=>true,playerAccounts:true,...initialized},`return (${text(serverSource,handlerNode)});`);

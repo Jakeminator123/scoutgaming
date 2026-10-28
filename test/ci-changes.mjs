@@ -41,7 +41,7 @@ test('Moving image verification follows worker and its workflow changes, includi
 test('local and CI prose selection share reviewed guides and prose folders while other Markdown and JSON stay strict', async () => {
   const { verificationMode, focusedTests } = await import('../tools/precommit-checks.mjs');
   for (const path of ['apps/web/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
-    'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+    'ops/cloud/CONTAINER-CONTEXT.md',
     'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
     'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/SAMARBETE-OCH-ATKOMST.md', 'migrering/new-runtime.md',

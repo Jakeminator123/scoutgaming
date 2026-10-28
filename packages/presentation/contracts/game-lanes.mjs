@@ -14,8 +14,7 @@ export function validateGameLanes(value) {
       || typeof lane.label !== 'string' || !lane.label.trim() || lane.label.length > 80
       || /[\u0000-\u001f\u007f-\u009f<>]/u.test(lane.label) || !isDealerId(lane.dealer)
       || !(lane.renderer === 'portrait-video' && lane.mediaCollection === `${lane.dealer}-presentation`
-        || lane.renderer === 'indexed-video' && BASE_DEALER_IDS.includes(lane.dealer) && lane.mediaCollection === 'legacy-dealers'
-        || lane.renderer === 'layered' && lane.id === 'layer-preview' && lane.mediaCollection === 'layer-packs-preview' && ['paow', 'dragge'].includes(lane.dealer))) throw Error('Invalid lane definition');
+        || lane.renderer === 'indexed-video' && BASE_DEALER_IDS.includes(lane.dealer) && lane.mediaCollection === 'legacy-dealers')) throw Error('Invalid lane definition');
     ids.add(lane.id);
     return { ...lane };
   });
