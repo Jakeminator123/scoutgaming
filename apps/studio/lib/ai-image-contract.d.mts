@@ -1,0 +1,13 @@
+export type AiImageErrorCode='ai_image_unavailable'|'ai_image_limit_reached'|'ai_image_rejected'|'ai_image_invalid_request';
+export type AiImageRole='background'|'table';
+export type AiImagePresetId='dark-studio'|'warm-lounge'|'light-studio'|'casino'|'free';
+export const AI_IMAGE_ERROR_CODES: readonly AiImageErrorCode[];
+export const AI_IMAGE_ROLES: readonly AiImageRole[];
+export const AI_IMAGE_PROMPT_LENGTH: {readonly min:number;readonly max:number};
+export const AI_IMAGE_MAX_PROPOSALS: number;
+export const AI_IMAGE_REFERENCE_TYPES: readonly string[];
+export const AI_IMAGE_REFERENCE_MAX_BYTES: number;
+export const AI_IMAGE_REFERENCE_FILE_MAX_BYTES: number;
+export const AI_BACKGROUND_SIZE: {readonly width:number;readonly height:number};
+export const AI_IMAGE_PRESETS: readonly {readonly id:AiImagePresetId;readonly label:string}[];
+export function aiImageLabel(prompt:string):string;
