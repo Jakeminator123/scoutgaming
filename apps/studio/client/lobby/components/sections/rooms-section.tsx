@@ -28,7 +28,7 @@ export function RoomsSection() {
               : i % 3 === 0 ? 'md:col-span-2 md:row-span-2' : 'md:col-span-2 md:row-span-1')}>
               <button type="button" disabled={locked} aria-pressed={selected} onClick={() => selectRoom(item.key)}
                 className={cn('group relative h-full w-full overflow-hidden rounded-lg border bg-card text-left transition-[transform,border-color] duration-500 motion-reduce:transition-none focus-visible:outline-lime', selected ? 'border-lime' : 'border-border', !locked && 'hover:-translate-y-1 hover:border-lime')}>
-                <CatalogueArtwork kind="room" name={item.name} image={item.image} game={item.game} selected={selected} fadeDelay={i * 80} className="absolute inset-0 h-full w-full" />
+                <CatalogueArtwork kind="room" name={item.name} image={item.image} illustration={item.illustration} game={item.game} selected={selected} fadeDelay={i * 80} className="absolute inset-0 h-full w-full" />
                 <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3"><span className="font-mono text-[10px] uppercase tracking-wider text-off/80">Rum {pad(i + 1)}</span>
                   {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-lime px-2 py-1 text-xs text-ink"><Check size={13} />Valt</span> : <span className="rounded-full border border-off/30 bg-ink/40 px-2 py-1 font-mono text-[9px] uppercase text-off/80">{locked ? companyName ?? 'Välj bolag' : 'Publicerat'}</span>}
                 </div>

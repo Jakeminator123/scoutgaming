@@ -1,6 +1,15 @@
 import { validatePublicOperatorRooms } from '../../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../../../../packages/presentation/contracts/room-environment.mjs';
 import { gameStartPath } from '../../../../../packages/navigation/game-entry.mjs';
+import { roomLimitProfileArtwork } from '../../../lib/room-limit-profiles.mjs';
+
+// The room card's illustration follows the published bet profile, with the same pictures as Admin's
+// profile cards (Studion, Salongen, Loungen). Without a known profile the card keeps Salongen,
+// which every room showed before (the Privé picture).
+const defaultIllustration = roomLimitProfileArtwork('prive');
+export function roomIllustration(limitPreset) {
+  return roomLimitProfileArtwork(limitPreset) ?? defaultIllustration;
+}
 
 /** Validate the published subcatalog, never use administration objects as playable data. */
 export function parseLobbyCatalog(payload) {
@@ -26,6 +35,7 @@ export function parseLobbyCatalog(payload) {
         game: room.game ?? 'blackjack', presentation: room.presentation.label,
         environmentLabel: environment.label, environmentFixed: environment.fixed, environmentKind: environment.kind,
         ...(environment.image ? { image: environment.image } : {}),
+        ...(room.limitPreset ? { limitPreset: room.limitPreset } : {}), illustration: roomIllustration(room.limitPreset),
         dealerDefault: room.dealerDefault,
         dealers: room.dealers.map(dealer => ({ ...dealer, name: dealer.label })),
         playUrl: room.playUrl,

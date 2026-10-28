@@ -1,6 +1,7 @@
 import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
 import { clipCompositing } from '../../presentation/runtime/presentation-composition.mjs';
 import { selectableLayerBases } from '../../presentation/contracts/background-playback-policy.mjs';
+import { ROOM_LIMIT_PRESETS } from '../../presentation/contracts/room-game-config.mjs';
 
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
 class UnplayableOperatorRooms extends Error {
@@ -51,6 +52,7 @@ function publicLayer(selection, role, independentLayers, defaults) {
  * presentation fallback, private media, player state or launch tokens. */
 export function createPublicOperatorRooms({ store = null, policy = null } = {}) {
   if (store !== null && (typeof store.getOperatorBySlug !== 'function' || typeof store.getCurrentPackage !== 'function')
+    || store?.getPublishedRoomLimitPresets !== undefined && typeof store.getPublishedRoomLimitPresets !== 'function'
     || policy !== null && (typeof policy.readSaved !== 'function' || typeof policy.readGameConfiguration !== 'function')) throw TypeError('Invalid operator rooms reader');
   async function read(slug) {
     if (!isOperatorSlug(slug)) return null;
@@ -71,6 +73,9 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     if (!frozen) return validatePublicOperatorRooms(result, { operatorSlug: slug });
     const saved = await policy.readSaved();
     const rooms = listPackageRooms({ administration: saved.administration, package: pack, operatorId: operator.id }).filter(room => room.state === 'live');
+    // The bet profile in each room's published game settings, for the lobby's room picture. A store
+    // without game settings, or a profile this build does not know, gives the room no profile.
+    const limitPresets = rooms.length && store.getPublishedRoomLimitPresets ? await store.getPublishedRoomLimitPresets(pack) : new Map();
     // All choices in this response use the same saved snapshot and immutable
     // package. Delegate exact room ownership, version and renderer checks to
     // the actual game selector instead of duplicating its authority.
@@ -114,7 +119,9 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           table: publicLayer(selection, 'table', independentLayers, defaults),
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
+      const limitPreset = limitPresets.get(room.id);
       result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
+        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
         playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }

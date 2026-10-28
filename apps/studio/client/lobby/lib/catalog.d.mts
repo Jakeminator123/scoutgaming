@@ -1,10 +1,12 @@
 import type { PublicRoomDealer } from '../../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 export type RoomDealer = Dealer & PublicRoomDealer;
+export type RoomIllustration = { image: string; alt: string };
 export type Dealer = { id: string; name: string; image?: string };
 export type Room = {
   id: string; key: string; operatorId: string; name: string;
   game: 'blackjack' | 'roulette'; presentation: string; dealerDefault: string; dealers: RoomDealer[]; playUrl: string;
   environmentLabel: string; environmentFixed: boolean; environmentKind: 'image' | 'video' | 'baked' | 'variable'; image?: string;
+  limitPreset?: string; illustration: RoomIllustration;
 };
 export type Operator = {
   id: string; name: string; monogram: string; accent: string; status: 'open' | 'empty';

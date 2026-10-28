@@ -22,7 +22,13 @@ export function roomLimitProfiles() {
   }));
 }
 
+/** The profile's room illustration and its alt text, or undefined for anything that is not a known profile key. */
+export function roomLimitProfileArtwork(id) {
+  if (typeof id !== 'string' || !Object.hasOwn(presentation, id) || !Object.hasOwn(ROOM_LIMIT_PRESETS, id)) return undefined;
+  return {image: presentation[id].image, alt: presentation[id].alt};
+}
+
 /** The profile's room illustration, or undefined for anything that is not a known profile key. */
 export function roomLimitProfileImage(id) {
-  return typeof id === 'string' && Object.hasOwn(presentation, id) && Object.hasOwn(ROOM_LIMIT_PRESETS, id) ? presentation[id].image : undefined;
+  return roomLimitProfileArtwork(id)?.image;
 }

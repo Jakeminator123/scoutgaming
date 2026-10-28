@@ -47,6 +47,20 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(playUrlFor(choice), '/game?game=blackjack&operator=north&table=' + f.room.id + '&dealer=linnea');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'linnea' }).dealer, null);
 });
+test("the lobby's room picture follows the published bet profile, never the saved draft", async () => {
+  const f = fixture(), read = [];
+  // The draft says High; the version the package binds says Casual.
+  f.saved.administration.roomGameConfigs = [{ operatorId: f.room.operatorId, roomId: f.room.id, gameConfig: { language: 'sv', limitPreset: 'high' } }];
+  f.store.getPublishedRoomLimitPresets = async pack => { read.push(pack.revision); return new Map([[f.room.id, 'casual']]); };
+  const result = await registeredDesignCatalog(f);
+  assert.deepEqual(read, [7]);
+  assert.equal(result.lobby.catalogs[0].rooms[0].limitPreset, 'casual');
+  assert.equal(result.administration.rooms.find(row => row.id === f.room.id).savedLimitPreset, 'high', "Admin's own room picture keeps the draft");
+  const room = parseLobbyCatalog(result).rooms[0];
+  assert.deepEqual(room.illustration, { image: '/admin/_assets/lobby/images/lobby/room-studion.png', alt: 'Nordisk studio med limegrön ljuslinje' });
+  delete f.store.getPublishedRoomLimitPresets;
+  assert.equal(parseLobbyCatalog(await registeredDesignCatalog(f)).rooms[0].illustration.image, '/admin/_assets/lobby/images/lobby/room-salongen.png');
+});
 test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
   const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');

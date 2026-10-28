@@ -921,3 +921,26 @@ test('v2 configuration publication requires live readiness and preserves v1 room
   assert.deepEqual(h.config('room-other'),other);
   assert.deepEqual(h.sql.tables.shared_table_configs.find(row=>row.version===active.configVersion).body,active);
 });
+
+// The lobby's room picture reads each room's published bet profile: exactly the version the package binds,
+// on PostgreSQL (PGlite with the game schema), never another version, room or operator.
+test('published bet profiles are read for the versions the package binds, on the real game schema', async t => {
+  const { createPglitePool } = await import('./fixtures/pglite-pool.mjs');
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock });
+  const version = n => `room-config-${String(n).padStart(8, '0')}-0000-4000-8000-000000000000`;
+  const config = async (roomId, n, body) => pool.query('INSERT INTO croupier_game.shared_table_configs(room_id,version,body) VALUES($1,$2,$3)',
+    [roomId, version(n), typeof body === 'string' ? body : JSON.stringify({ configVersion: version(n), roomId, operatorId: 'north', language: 'sv', ...body })]);
+  await config('room-a', 1, { limitPreset: 'casual' });
+  await config('room-a', 2, { limitPreset: 'high' });
+  await config('room-b', 3, { limitPreset: 'prive' });
+  await config('room-c', 4, { limitPreset: 'high', operatorId: 'south' });
+  await config('room-d', 5, '{not json');
+  await config('room-e', 6, { limitPreset: 'casual', roomId: 'room-a' });
+  const pack = { operatorId: 'north', revision: 3, branding: { roomGameConfigVersions: {
+    'room-a': version(2), 'room-b': version(3), 'room-c': version(4), 'room-d': version(5), 'room-e': version(6), 'room-f': version(7) } } };
+  assert.deepEqual([...(await store.getPublishedRoomLimitPresets(pack)).entries()].sort(), [['room-a', 'high'], ['room-b', 'prive']]);
+  pack.branding.roomGameConfigVersions['room-a'] = version(1);
+  assert.equal((await store.getPublishedRoomLimitPresets(pack)).get('room-a'), 'casual', 'the bound version, not the newest row');
+  assert.equal((await store.getPublishedRoomLimitPresets({ operatorId: 'north', revision: 1, branding: {} })).size, 0);
+});

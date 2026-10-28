@@ -43,8 +43,12 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
   text(value.operator.name, 120);
   if (value.packageRevision !== null && (!Number.isSafeInteger(value.packageRevision) || value.packageRevision < 1)) fail();
   rows(value.rooms, 128, room => {
-    exact(room, ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl', ...(Object.hasOwn(room,'game')?['game']:[])]);
+    exact(room, ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl', ...(Object.hasOwn(room,'game')?['game']:[]),
+      ...(Object.hasOwn(room,'limitPreset')?['limitPreset']:[])]);
     if (!['blackjack','roulette'].includes(Object.hasOwn(room,'game') ? room.game : 'blackjack')) fail();
+    // The published bet profile's key (casual, prive, high), for the lobby's picture only. The format is
+    // checked here; a key this build does not know is shown with the default picture, never rejected.
+    if (Object.hasOwn(room,'limitPreset') && (typeof room.limitPreset !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.limitPreset))) fail();
     if (!isGameLaneId(room.id) || !isGameLaneId(room.laneId)) fail();
     text(room.name, 100); exact(room.presentation, ['id', 'label']);
     if (!isGameLaneId(room.presentation.id)) fail();

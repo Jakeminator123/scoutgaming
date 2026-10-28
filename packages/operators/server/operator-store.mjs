@@ -274,6 +274,28 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (rows.length > 1) fail('studio_corrupt_operator');
     return rows[0] ? packageRow(rows[0]) : null;
   }
+  // Each room's bet profile (limitPreset) in the published game settings: the exact version the package
+  // binds (branding.roomGameConfigVersions), never a draft or the latest head. Display only; the game
+  // revalidates the whole config at entry. Rooms without a binding, or with a body that does not match it, are left out.
+  async function getPublishedRoomLimitPresets(pack) {
+    const bound = Object.entries(pack?.branding?.roomGameConfigVersions ?? {})
+      .filter(([roomId, version]) => typeof roomId === 'string' && typeof version === 'string');
+    if (!bound.length) return new Map();
+    if (bound.length > 256) fail('studio_corrupt_operator');
+    const rows = await query(`/* operator-store:room-limit-presets */
+      SELECT c.room_id, c.version, c.body FROM croupier_game.shared_table_configs c
+      JOIN unnest($3::text[], $4::text[]) AS b(room_id, version) ON b.room_id=c.room_id AND b.version=c.version
+      WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL`, [bound.map(([roomId]) => roomId), bound.map(([, version]) => version)]);
+    const presets = new Map();
+    for (const row of rows) {
+      let body;
+      try { body = typeof row.body === 'string' ? JSON.parse(row.body) : row.body; } catch { continue; }
+      if (body?.configVersion !== row.version || body.roomId !== row.room_id || body.operatorId !== pack.operatorId
+        || pack.branding.roomGameConfigVersions[row.room_id] !== row.version || typeof body.limitPreset !== 'string') continue;
+      presets.set(row.room_id, body.limitPreset);
+    }
+    return presets;
+  }
   async function resolvePartnerContext({ account, operatorSlug } = {}) {
     const userId = idText(ownValue(account, 'userId'));
     const accountRole = ownValue(account, 'role');
@@ -712,6 +734,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
 
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
+    getCurrentPackage, getPublishedRoomLimitPresets, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
   });
 }
