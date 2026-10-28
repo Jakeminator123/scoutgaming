@@ -1,9 +1,9 @@
-export declare const adminContextKeys: readonly ['operator','table','dealer','composition','lane','game'];
-export declare function adminHref(href:string):string;
-export declare function adminPathname(pathname:string):string;
-export declare function isInternalAdminPathname(pathname:string):boolean;
-export declare function hasAdminContext(search:string):boolean;
-export declare function isStudioAdminRoute(path:string,search:string):boolean;
-export declare function withAdminContext(href:string,currentSearch:string):string;
-export function adminToolName(path:string):string|null;
-export declare function adminRoomHref(search:string,hash?:string):string;
+export const adminContextKeys: readonly string[];
+export function adminHref(href: string): string;
+export function adminPathname(pathname: string): string;
+export function isInternalAdminPathname(pathname: string): boolean;
+export type AdminPage = 'home'|'dealers'|'dealer'|'scenes'|'companies'|'company'|'room'|'system'|'guide'|'lobby'|'demo'|'unknown';
+export function parseAdminPath(pathname: string): { page: AdminPage; id: string };
+export function hasAdminContext(search: string): boolean;
+export function isStudioAdminRoute(path: string, search?: string): boolean;
+export function withAdminContext(href: string, currentSearch: string): string;

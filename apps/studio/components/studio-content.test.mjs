@@ -63,7 +63,7 @@ test('position preview changes only the destination; consecutive card slots, car
 
 test('display naming is separate from file identity and situation URL survives variant changes', () => {
   const { studioHref, selectionHref } = load('./studio-types.ts');
-  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), "/admin/clips?dealer=nora&event=deal.dealer&situation=dealer-hole");
+  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), "/admin/dealers/nora?flik=klipp&event=deal.dealer&situation=dealer-hole");
   assert.match(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.player.left', 'same-variant'), /situation=box1/);
   assert.doesNotMatch(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.dealer'), /situation=/);
 });
@@ -76,7 +76,7 @@ test('Probe selection stays in Admin and preserves room context under either mou
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
       const href = selectionHref(basePath + '/admin/probe', '?dealer=astrid&event=idle.ready&operator=north&table=room-1&lane=portrait&token=private', 'saga', 'idle.ready');
-      assert.equal(href, "/admin/clips?panel=room&dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1");
+      assert.equal(href, "/admin/dealers/saga?flik=tal&event=idle.ready&composition=portrait&operator=north&table=room-1");
     }
   } finally {
     if (previous === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH; else process.env.NEXT_PUBLIC_LAB_BASE_PATH = previous;

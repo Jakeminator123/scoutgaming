@@ -11,14 +11,14 @@ import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/present
 const require=createRequire(import.meta.url),React=require('react');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-async function harness(search='?game=roulette') {
+async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
   const project=createSeedProject();
   project.layerAssets=[['roulette','Roulette board','table'],['blackjack','Blackjack board','table'],[undefined,'Legacy board','table'],[undefined,'Shared background','background']].map(([game,label,role],index)=>{
     const asset={schemaVersion:1,id:`10000000-0000-4000-8000-00000000000${index}`,role,label,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1920,height:1080,...(game?{game}:{})};
     return {...asset,pathname:layerAssetPath(asset)};
   });
   const newStore=()=>({states:[],effects:[],queue:[],cursor:0});
-  const parent=newStore(),cards=new Map();let current=parent,changed=0;
+  const parent=newStore(),cards=new Map(),navigated=[];let current=parent,changed=0;
   const hooks={...React,useState(initial){const store=current,index=store.cursor++;if(!(index in store.states))store.states[index]=typeof initial==='function'?initial():initial;return [store.states[index],value=>store.states[index]=typeof value==='function'?value(store.states[index]):value];},
     useRef(value){const index=current.cursor++;return current.states[index]??={current:value};},
     useEffect(callback,deps){const store=current,index=store.cursor++;if(!store.effects[index]||deps.some((value,i)=>value!==store.effects[index].deps[i])){store.queue.push(()=>{store.effects[index]?.cleanup?.();store.effects[index]={deps,cleanup:callback()};});}}};
@@ -27,7 +27,7 @@ async function harness(search='?game=roulette') {
   const source=readFileSync(new URL('../components/studio/registered-material-library.tsx',import.meta.url),'utf8');
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URLSearchParams,AbortController,document:doc,location:{search},window:{addEventListener(){},removeEventListener(){}},require:name=>{
     if(name==='react')return hooks;
-    if(name.endsWith('/runtime/navigation'))return {useSearchParams:()=>new URLSearchParams(search),navigate:href=>{search=new URL(href,'https://fixture.invalid').search;}};
+    if(name.endsWith('/runtime/navigation'))return {useSearchParams:()=>new URLSearchParams(search),navigate:href=>{navigated.push(href);search=new URL(href,'https://fixture.invalid').search;}};
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('layer-asset-removal.mjs'))return {layerAssetReferences};
     if(name.includes('material-catalog.mjs'))return {materialLabel};
@@ -37,7 +37,7 @@ async function harness(search='?game=roulette') {
     if(name.includes('connected-studio.mjs'))return {createStudioClient:()=>({load:async()=>({project})})};
     return require(name);
   }});
-  const props={visible:true,disabled:false,refreshKey:'1',onChanged:()=>changed++};
+  const props={role,base:'/admin/scenes',visible:true,disabled:false,refreshKey:'1',onChanged:()=>changed++};
   const renderWith=(store,Component,props)=>{current=store;store.cursor=0;const tree=Component(props);while(store.queue.length)store.queue.shift()();return tree;};
   const render=()=>renderWith(parent,module.exports.RegisteredMaterialLibrary,props);
   const manager=tree=>nodes(tree,node=>node.type===LayerAssetManager)[0];
@@ -48,7 +48,7 @@ async function harness(search='?game=roulette') {
     return renderWith(cards.get(asset.id),element.type,element.props);
   };
   render();await setImmediate();
-  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
+  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
 }
 
 test('real assets page scopes table upload and visible library to explicit game, with shared backgrounds',async()=>{
@@ -58,10 +58,13 @@ test('real assets page scopes table upload and visible library to explicit game,
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Roulette board']);
     assert.equal(nodes(tree,node=>node.type==='li').length,0,'no duplicate gallery beside the lifecycle cards');
     assert.equal(nodes(tree,node=>node.type===h.LayerAssetManager)[0].props.project,h.project,'lifecycle manager retains complete dependency graph');
+    assert.equal(nodes(tree,node=>node.props?.role==='tablist'||node.type==='h1').length,0,'the Scenes page owns the heading and the role tabs');
+    assert.equal(nodes(tree,node=>node.props?.id==='material-trash').length,1,'the trash has one anchor for the Scenes page link');
     nodes(tree,node=>node.type==='select')[0].props.onChange({target:{value:'blackjack'}});tree=h.render();
+    assert.deepEqual(h.navigated,['/admin/scenes?tab=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.game,'blackjack');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Blackjack board','Legacy board']);
-    nodes(tree,node=>node.props.role==='tab'&&text(node)==='Bakgrunder')[0].props.onClick();tree=h.render();
+    h.props.role='background';tree=h.render();
     assert.equal(nodes(tree,node=>node.type==='select').length,0);
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.role,'background');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Shared background']);
@@ -73,7 +76,7 @@ test('upload readback cannot accept a table registered for another game; unspeci
     nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.onRegistered(h.project,h.project.layerAssets[1].id);
     assert.match(text(h.render()),/Registreringen kunde inte bekräftas för valt spel/);assert.equal(h.changed(),0);
   } finally{h.close();}
-  const legacy=await harness('');try {
+  const legacy=await harness('?tab=bordsgrafik');try {
     const uploader=nodes(legacy.render(),node=>node.type===legacy.LayerLibrary)[0];assert.equal(uploader.props.game,'blackjack');
     uploader.props.onRegistered(legacy.project,legacy.project.layerAssets[1].id);assert.equal(legacy.changed(),1);
   } finally{legacy.close();}
@@ -129,12 +132,17 @@ test('material card delegates trash to the guarded lifecycle action and respects
 });
 
 test('mounted material library follows alias context and keeps dealer and room while changing filters',async()=>{
-  const h=await harness('?game=blackjack&dealer=dragan&room=one');try{
-    nodes(h.render(),node=>node.props.role==='tab'&&text(node)==='Bakgrunder')[0].props.onClick();
-    assert.equal(new URLSearchParams(h.query()).get('dealer'),'dragan');
-    assert.equal(new URLSearchParams(h.query()).get('room'),'one');
+  const h=await harness('?tab=bordsgrafik&game=blackjack&dealer=dragan&room=one');try{
+    nodes(h.render(),node=>node.type==='select')[0].props.onChange({target:{value:'roulette'}});
+    const query=new URLSearchParams(h.query());
+    assert.equal(query.get('dealer'),'dragan');assert.equal(query.get('room'),'one');
+    assert.equal(query.get('tab'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
+    assert.match(h.navigated.at(-1),/^\/admin\/scenes\?/);
+    assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Roulette board']);
+    h.navigate('?tab=bakgrunder&game=roulette&dealer=astrid');h.props.role='background';
     assert.equal(nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.role,'background');
-    h.navigate('?tab=tables&game=roulette&dealer=astrid');
+    assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Shared background']);
+    h.navigate('?tab=bordsgrafik&game=roulette&dealer=astrid');h.props.role='table';
     assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Roulette board']);
   }finally{h.close();}
 });

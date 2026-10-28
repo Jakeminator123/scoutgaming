@@ -77,10 +77,12 @@ test('Studio permission denial explains the admin boundary without echoing serve
 
 test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
   const value='/admin/dealer-studio?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
-  const canonical=value.replace('/admin/dealer-studio','/admin/clips').replace('&view=clips','');
+  const canonical='/admin/dealers/paow?flik=klipp&operator=north&table=room-one&composition=scene-one&event=speak.other&category=speech&situation=goodluck';
   assert.equal(studioLoginReturnTo(value),canonical);
   assert.equal(studioLoginReturnTo(value.replace('/admin/dealer-studio','/control/clips')),canonical);
+  assert.equal(studioLoginReturnTo(canonical),canonical,'the dealer nav itself is a valid return');
   for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/admin');
+  for (const query of ['flik=klipp&flik=tal','flik=klipp&token=secret','situation=https://evil.test']) assert.equal(studioLoginReturnTo('/admin/dealers/paow?'+query),'/admin');
 });
 
 test('missing or rejected N1 return targets fall back to Admin on both supported mounts', () => {

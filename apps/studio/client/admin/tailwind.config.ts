@@ -15,12 +15,14 @@ const config: Config = {
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       colors: {
+        // Surfaces follow the --sg-* tokens in app/studio.css (light by default, dark under
+        // prefers-color-scheme). Lime, teal, amber and red keep hex so /opacity variants work.
         sg: {
-          bg: '#1b1c1e',
-          panel: '#232427',
-          line: '#33363b',
-          text: '#e6e8eb',
-          muted: '#8b9098',
+          bg: 'var(--sg-bg)',
+          panel: 'var(--sg-surface)',
+          line: 'var(--sg-border)',
+          text: 'var(--sg-text)',
+          muted: 'var(--sg-muted)',
           lime: '#d6ff3a',
           teal: '#3ad6c4',
           amber: '#ffb547',

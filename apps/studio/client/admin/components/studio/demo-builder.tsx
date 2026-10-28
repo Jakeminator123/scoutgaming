@@ -48,7 +48,7 @@ function CompanyStep({companies,selected,onSelect}:{companies:DemoCompany[];sele
 function RoomStep({company,rooms,selected,onSelect}:{company:DemoCompany;rooms:DemoRoom[];selected:string|null;onSelect:(room:DemoRoom)=>void}) {
   if(!rooms.length)return <div className={styles.empty}><Chip tone="warn">Inga spelbord</Chip><h3 className={styles.mt}>{company.name} har inget spelbord</h3>
     <p className={styles.small}>Lägg till ett spelbord hos bolaget under Bolag och spelbord och publicera paketet, så går det att välja här.</p>
-    <p className={styles.mt}><Link className={styles.btn} href={'/admin/rooms?operator='+encodeURIComponent(company.slug)}>Öppna Bolag och spelbord</Link></p></div>;
+    <p className={styles.mt}><Link className={styles.btn} href={`/admin/companies/${encodeURIComponent(company.id)}?flik=spelbord`}>Bolag › {company.name} › Spelbord</Link></p></div>;
   return <div className={styles.choiceGrid}>{rooms.map(room=><button key={room.id} type="button" className={styles.choice} aria-pressed={room.id===selected} disabled={!room.selectable} onClick={()=>onSelect(room)}>
     <div className={styles.choiceTop}><span className={styles.choiceName}>{room.name}</span>{room.selectable?<Chip tone="ok" dot>öppet</Chip>:<Chip tone="warn">{room.state==='live'?'inte spelbart':'pausat'}</Chip>}</div>
     <div className={styles.choiceMeta}><code>{room.id}</code> · {room.game} · {room.dealers.length?`${room.dealers.length} ${room.dealers.length===1?'dealer':'dealers'}: ${room.dealers.map(row=>row.name).join(', ')}`:'inga dealers i paketet'}</div>

@@ -120,7 +120,7 @@ Kör `node apps/studio/start.mjs --no-open` (skriver lobbyns adress, startar ing
 | PostgreSQL-prov | `node tools/studio-isolated-qa.mjs --download-postgres` (Linux/WSL, icke-root) eller `--postgres-bin <bin>`; spelmotorn över HTTP med `node tools/run-engine-qa.mjs --postgres-bin <bin>`. Verktygen skapar och tar bort egna kluster. |
 | Modultester utan Postgres | PGlite via `test/fixtures/pglite-pool.mjs`; en session, bevisar inte låsning mellan anslutningar. |
 | Webbläsarprov | Playwright och Chrome installeras separat; `CROUPIER_BROWSER_FIXTURE_MODULE` och `CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome`. Överhoppade prov redovisas separat. |
-| Riktig acceptans | Staging (syntetiska konton och material), aldrig produktionen eller Johns Bet. |
+| Riktig acceptans | Staging (syntetiska konton och material samt Jakobs speglade inloggningar), aldrig produktionen eller Johns Bet. |
 
 En `--single-branch`-klon hämtar bara `main`; lägg till den egna branchen med `git remote set-branches --add origin <branch>` före push.
 

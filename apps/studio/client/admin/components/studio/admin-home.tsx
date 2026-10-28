@@ -1,52 +1,81 @@
-import {Building2,Clapperboard,Plus,Rocket} from 'lucide-react';
+import {useEffect,useState} from 'react';
 import Link from '../../../runtime/navigation';
+import {HubPage,Card,Chip,Row,Empty,KV} from '../ui/hub';
+import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
+import {dealerCoverage} from '../../lib/dealer-coverage.mjs';
 
-const actions=[
-  {kind:'dealer',label:'Skapa dealer',href:'/admin/dealers?view=create',description:'Namnge din dealer och bygg klippkartan.',Icon:Plus},
-  {kind:'clips',label:'Fortsätt redigera',href:'/admin/clips',description:'Arbeta med klippen, bordet och bakgrunden.',Icon:Clapperboard},
-  {kind:'company',label:'Hantera spelbolag',href:'/admin/companies',description:'Välj bolag och hantera dess team och journal.',Icon:Building2},
-  {kind:'demo',label:'Skapa demo',href:'/admin/demo',description:'Bolag, spelbord, dealer och en demolänk att skicka. Fyra steg.',Icon:Rocket},
-];
+const client=createStudioClient();
+type Pending={kind:'warn'|'danger'|'info'|'accent';type:string;title:string;text:string;href:string};
 
-function ActionArtwork({kind}:{kind:string}) {
-  return <svg className="admin-home-art" viewBox="0 0 320 164" fill="none" aria-hidden="true" focusable="false">
-    {kind==='dealer'?<>
-      <rect x="66" y="24" width="132" height="126" rx="16" fill="currentColor" opacity=".09" transform="rotate(-9 66 24)"/>
-      <rect x="104" y="16" width="128" height="132" rx="16" fill="#1c2828" stroke="currentColor" strokeOpacity=".45"/>
-      <circle cx="168" cy="62" r="20" fill="currentColor" opacity=".65"/>
-      <path d="M131 114c0-23 16-35 37-35s37 12 37 35" fill="currentColor" opacity=".35"/>
-      <rect x="141" y="127" width="54" height="3" rx="1.5" fill="currentColor" opacity=".35"/>
-      <circle cx="231" cy="118" r="22" fill="currentColor"/>
-      <path d="M231 108v20m-10-10h20" stroke="#132018" strokeWidth="2.5" strokeLinecap="round"/>
-    </>:kind==='clips'?<>
-      <path d="M78 49h72v70h88M150 49h88" stroke="currentColor" strokeOpacity=".45" strokeWidth="2"/>
-      {[{x:30,y:27,w:78},{x:205,y:27,w:80},{x:110,y:96,w:80}].map(({x,y,w})=><g key={x}>
-        <rect x={x} y={y} width={w} height="52" rx="10" fill="#182c2c" stroke="currentColor" strokeOpacity=".5"/>
-        <rect x={x+10} y={y+11} width="25" height="30" rx="5" fill="currentColor" opacity=".18"/>
-        <path d={'M'+(x+20)+' '+(y+20)+'v12l9-6z'} fill="currentColor" opacity=".8"/>
-        <path d={'M'+(x+43)+' '+(y+19)+'h24m-24 9h17m-17 9h21'} stroke="currentColor" strokeOpacity=".35" strokeWidth="3" strokeLinecap="round"/>
-      </g>)}
-      <circle cx="150" cy="49" r="5" fill="currentColor"/>
-    </>:kind==='demo'?<>
-      <path d="M56 82h208" stroke="currentColor" strokeOpacity=".35" strokeWidth="2"/>
-      {[56,125,194,263].map((x,i)=><g key={x}><circle cx={x} cy="82" r={i===3?22:16} fill={i===3?'currentColor':'#1c2828'} stroke="currentColor" strokeOpacity={i===3?1:.6} strokeWidth="2"/>{i<3?<text x={x} y="87" textAnchor="middle" fill="currentColor" fontSize="14" fontWeight="700">{i+1}</text>:<path d="M253 82h20m-8-8l8 8-8 8" stroke="#132018" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>}</g>)}
-      <rect x="92" y="120" width="136" height="22" rx="11" fill="currentColor" opacity=".18"/><rect x="104" y="128" width="88" height="6" rx="3" fill="currentColor" opacity=".55"/>
-    </>:<>
-      {[{x:24,y:38,o:.35},{x:172,y:38,o:.35},{x:98,y:20,o:1}].map(({x,y,o})=><g key={x} opacity={o}>
-        <rect x={x} y={y} width="124" height="111" rx="14" fill="#232536" stroke="currentColor" strokeOpacity=".5"/>
-        <path d={'M'+(x+16)+' '+(y+65)+'V'+(y+17)+'h92v48'} fill="currentColor" opacity=".09"/>
-        <circle cx={x+62} cy={y+40} r="10" fill="currentColor" opacity=".8"/>
-        <path d={'M'+(x+43)+' '+(y+67)+'q0-18 19-18t19 18'} fill="currentColor" opacity=".4"/>
-        <path d={'M'+(x+15)+' '+(y+70)+'q47-23 94 0l-11 22H'+(x+26)+'z'} fill="currentColor" opacity=".27"/>
-        <path d={'M'+(x+15)+' '+(y+70)+'q47-23 94 0'} stroke="currentColor" strokeWidth="2"/>
-      </g>)}
-    </>}
-  </svg>;
-}
-
-export function AdminHome() {
-  return <section className="admin-home" aria-labelledby="admin-home-title">
-    <header className="admin-home-heading"><p className="sg-eyebrow">Scoutgaming · Admin</p><h1 id="admin-home-title">Studio & administration</h1><p>Dealers, bord och bakgrunder. Samlade för dina spelbolag.</p></header>
-    <nav className="admin-home-actions" aria-label="Börja arbeta">{actions.map(({kind,label,href,description,Icon})=><Link key={href} href={href} className={'admin-home-link admin-home-'+kind}><ActionArtwork kind={kind}/><div className="admin-home-action-copy"><h2><Icon size={21} aria-hidden="true"/>{label}</h2><p>{description}</p></div></Link>)}</nav>
-  </section>;
+// Översikt: what waits for Scoutgaming, read from the same catalog and video register the other pages use.
+export function AdminHome({workspace}:{workspace:Workspace|null}) {
+  const [own,setOwn]=useState<Workspace|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(!workspace);
+  useEffect(()=>{
+    if(workspace)return;
+    const abort=new AbortController();setLoading(true);setError('');
+    void client.load(abort.signal).then(value=>{if(!abort.signal.aborted)setOwn(value);})
+      .catch(cause=>{if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Registren kunde inte läsas.');})
+      .finally(()=>{if(!abort.signal.aborted)setLoading(false);});
+    return()=>abort.abort();
+  },[workspace]);
+  const data=workspace??own;
+  const registry=data?.catalog.administration;
+  const pending:Pending[]=[];
+  if(data&&registry){
+    for(const dealer of data.project.dealers){
+      const coverage=dealerCoverage(data.project,data.inventory,dealer.id);
+      if(!coverage.complete)pending.push({kind:'warn',type:'Klipp saknas',title:dealer.label,text:`Giv ${coverage.deal.bound}/${coverage.deal.total} · talfack ${coverage.speech.bound}/${coverage.speech.total} · vila ${coverage.idle.bound}/${coverage.idle.total}`,href:`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`});
+    }
+    for(const room of registry.rooms.filter(row=>row.state==='pending')){
+      const operator=registry.operators.find(row=>row.id===room.operatorId);
+      pending.push({kind:'info',type:'Pausat spelbord',title:room.name,text:`${operator?.name??room.operatorId} · ${room.published?'publicerat':'inte publicerat'} · öppnas under Tillgänglighet`,href:`/admin/rooms/${encodeURIComponent(room.id)}?flik=tillganglighet`});
+    }
+    for(const room of registry.rooms.filter(row=>row.state!=='archived'&&!row.published)){
+      const operator=registry.operators.find(row=>row.id===room.operatorId);
+      pending.push({kind:'danger',type:'Ej publicerat',title:room.name,text:`${operator?.name??room.operatorId} saknar publicerat paket för spelbordet`,href:`/admin/companies/${encodeURIComponent(room.operatorId)}?flik=tilldelning`});
+    }
+    for(const operator of registry.operators.filter(row=>row.status==='active'&&!row.archivedAt&&row.packageRevision===null)){
+      pending.push({kind:'accent',type:'Ingen tilldelning',title:operator.name,text:'Bolaget har ingen publicerad tilldelning ännu',href:`/admin/companies/${encodeURIComponent(operator.id)}?flik=tilldelning`});
+    }
+  }
+  const activeOperators=registry?.operators.filter(row=>row.status==='active'&&!row.archivedAt)??[];
+  const rooms=registry?.rooms.filter(row=>row.state!=='archived')??[];
+  return <HubPage title="Översikt" intro="Det som väntar på Scoutgaming just nu. Varje rad leder till platsen där det åtgärdas.">
+    <div className="hub-grid main-aside">
+      <div className="hub-stack">
+        <Card title="Väntar på dig" aside={data?`${pending.length} ${pending.length===1?'sak':'saker'}`:undefined}>
+          {loading&&<p role="status" className="hub-muted">Läser register…</p>}
+          {error&&<p role="alert" className="hub-muted">{error}</p>}
+          {data&&!pending.length&&<Empty chip={null} title="Inget väntar" text="Alla dealers har sina krävda klipp och alla spelbord är publicerade."/>}
+          {pending.length>0&&<div className="hub-rows">{pending.map(row=><Row key={row.type+row.title} chip={<Chip tone={row.kind}>{row.type}</Chip>} title={row.title} text={row.text} href={row.href}/>)}</div>}
+          <p className="hub-small hub-muted hub-mt">Opublicerade ändringar per spelbord och väntande inbjudningar kan inte avgöras ur katalogen; de syns i spelbordets Historik och i bolagets Team.</p>
+        </Card>
+        {registry&&<Card title="Bolag och spelbord" aside={<Link href="/admin/companies">Alla →</Link>}>
+          {!activeOperators.length?<Empty chip={null} title="Inga aktiva bolag" action={<Link className="hub-btn" href="/admin/companies?view=create">Nytt bolag</Link>}/>:<div className="hub-table-wrap"><table className="hub-table"><thead><tr><th>Bolag</th><th>Paket</th><th>Spelbord</th><th>Läge</th><th></th></tr></thead><tbody>
+            {activeOperators.map(operator=>{const own=rooms.filter(room=>room.operatorId===operator.id);return own.length?own.map((room,index)=><tr key={room.id}>
+              <td>{index===0&&<Link className="hub-strong" href={`/admin/companies/${encodeURIComponent(operator.id)}`}>{operator.name}</Link>}</td><td>{index===0&&(operator.packageRevision===null?'–':`version ${operator.packageRevision}`)}</td>
+              <td><Link href={`/admin/rooms/${encodeURIComponent(room.id)}`}>{room.name}</Link><div className="hub-small hub-muted">{room.dealers.map(dealer=>dealer.name).join(', ')||'ingen dealer'} · {room.game}</div></td>
+              <td><Chip tone={room.state==='live'?'ok':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip></td><td className="num"><Link className="hub-btn small" href={`/admin/rooms/${encodeURIComponent(room.id)}`}>Öppna</Link></td>
+            </tr>):<tr key={operator.id}><td><Link className="hub-strong" href={`/admin/companies/${encodeURIComponent(operator.id)}`}>{operator.name}</Link></td><td>{operator.packageRevision===null?'–':`version ${operator.packageRevision}`}</td><td className="hub-muted" colSpan={3}>Inga spelbord</td></tr>;})}
+          </tbody></table></div>}
+        </Card>}
+      </div>
+      <div className="hub-stack">
+        <Card title="Börja med"><div className="hub-stack">
+          <Link className="hub-btn primary" href={data?.project.dealers[0]?`/admin/dealers/${encodeURIComponent(data.project.dealers[0].id)}?flik=klipp&panel=intake`:'/admin/dealers'}>Lägg till klipp</Link>
+          <Link className="hub-btn" href={activeOperators[0]?`/admin/companies/${encodeURIComponent(activeOperators[0].id)}?flik=tilldelning`:'/admin/companies'}>Tilldela innehåll</Link>
+          <Link className="hub-btn" href="/admin/dealers?view=create">Ny dealer</Link>
+          <Link className="hub-btn" href="/admin/companies?tab=spelbord&view=create">Nytt spelbord</Link>
+          <Link className="hub-btn" href="/admin/demo">Skapa demo</Link>
+        </div></Card>
+        <Card title="Drift just nu" aside={<Link href="/admin/system?flik=drift">System →</Link>}>
+          <Empty title="Visas under System › Drift" text="Spelstatus, skor och det delade bordets prov läses där (A:overview, A:shoes); ingen extra läsning görs här."/>
+        </Card>
+        <Card title="Så hänger det ihop">
+          <KV items={[['Admin','skapar och tilldelar'],['Bolaget','väljer inom tilldelningen'],['Spelaren','ser bara publicerat']]}/>
+          <p className="hub-small hub-muted hub-mt">Bolag → paket (version) → spelbord (scenmall + dealer + språk + insatsprofil) → spelinställningar → motorns bord.</p>
+        </Card>
+      </div>
+    </div>
+  </HubPage>;
 }

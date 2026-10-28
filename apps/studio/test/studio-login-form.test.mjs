@@ -189,7 +189,10 @@ test('actual browser expired Admin login restores the real room view through his
     apiBase:'/studio/api/admin', authBase:'/studio/api/auth' };
   const expectedContext = {operator:'fixture-operator',table:'fixture-room-7',composition:'fixture-scene',dealer:'linnea',game:'roulette'};
   const expectedLabels = {operator:'C4 valt bolag',room:'C4 valt rum',composition:'C4 vald sammansättning',dealer:'Linnea'};
-  const target = '/admin/clips?' + new URLSearchParams(expectedContext);
+  // The dealer nav owns the dealer in its path; the room context travels in the query (Admin nivå 1).
+  const {dealer:dealerId,...roomContext} = expectedContext;
+  const expectedQuery = {flik:'klipp',...roomContext};
+  const target = '/admin/dealers/' + dealerId + '?' + new URLSearchParams(expectedQuery);
   const project = addDealer(createSeedProject(),'linnea','Linnea');
   project.lanes = [{...defaultPresentationLane('astrid'),id:'fixture-default-scene',label:'C4 annan sammansättning'},
     {...defaultPresentationLane('linnea'),id:expectedContext.composition,label:expectedLabels.composition}];
@@ -201,21 +204,27 @@ test('actual browser expired Admin login restores the real room view through his
   assert.notEqual(room.id,room.presentationLaneId);
   async function assertRoomView(page) {
     const studio = page.getByRole('region',{name:'Klippkarta för vald dealer'});
-    await studio.locator('summary').filter({hasText:'Rum och publicering'}).click();
-    const choices = [['Spelbolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],
-      ['Rum',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
+    // The nav owns the dealer: the map names it, never offers it as a choice; the room context is chosen under Spelbord och publicering.
+    await studio.locator('.studio-primary-context').getByText(expectedLabels.dealer,{exact:true}).waitFor();
+    await studio.locator('summary').filter({hasText:'Spelbord och publicering'}).click();
+    const choices = [['Bolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],['Spelbord',expectedContext.table,expectedLabels.room]];
     for (const [name,value,label] of choices) {
       const select = studio.getByRole('combobox',{name,exact:true});await select.waitFor();
       assert.equal(await select.inputValue(),value,name + ' must come from the returned stored room context');
       assert.equal(await select.locator('option:checked').textContent(),label);
       assert.equal(await select.isEnabled(),true);
     }
-    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+    assert.equal(new URL(page.url()).pathname,'/admin/dealers/' + dealerId);
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedQuery);
+  }
+  // Scenmallar and back are in-app navigations of the same Admin document; the dealer and the room context travel with them.
+  async function assertSceneRoundTrip(page) {
+    const studio = page.getByRole('region',{name:'Klippkarta för vald dealer'});
     const publicationRead = page.waitForResponse(response => new URL(response.url()).pathname === '/studio/api/partner/branding');
-    await studio.getByRole('button',{name:'Öppna sceneditor',exact:true}).click();
+    await studio.getByRole('link',{name:'Öppna i Scenmallar',exact:true}).click();
     await page.waitForURL(url=>url.pathname==='/admin/scenes');
     assert.equal(new URL(page.url()).pathname,'/admin/scenes');
-    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'mallar',...expectedContext},'Scenmallar keeps the dealer and the room context');
     const scene = page.getByRole('region',{name:'Sceneditor',exact:true});
     const composition = page.getByRole('region',{name:'Gemensam sammansättningsmall',exact:true});
     await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();
@@ -223,7 +232,7 @@ test('actual browser expired Admin login restores the real room view through his
     assert.equal(await composition.getByRole('combobox',{name:'Förvald dealer',exact:true}).inputValue(),expectedContext.dealer);
     assert.equal((await publicationRead).status(),404,'the fixture operator has no published package');
     assert.equal(await scene.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'opening the scene must not create a draft');
-    await scene.getByRole('button',{name:'Till klippkartan',exact:true}).click();
+    await scene.getByRole('link',{name:'Till klippkartan',exact:true}).click();
     await page.waitForURL(publicOrigin + target);
     assert.equal(await studio.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'reading the room must not create a draft');
   }
@@ -324,9 +333,11 @@ test('actual browser expired Admin login restores the real room view through his
               dataReads.push(url.pathname);
               return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'Not found'})});
             }
-            const document = ['/admin/clips','/studio/admin/clips'].includes(url.pathname);
+            // The documents are the dealer nav (the login return) and Scenmallar; the page itself navigates between them.
+            const navDocument = ['/admin/dealers/' + dealerId,'/studio/admin/dealers/' + dealerId].includes(url.pathname);
+            const document = navDocument || ['/admin/scenes','/studio/admin/scenes'].includes(url.pathname);
             assert.ok(document || ['/admin/_data/catalog','/admin/_assets/admin/app.js','/admin/_assets/admin/app.css'].includes(url.pathname),'only real Admin fixture routes and assets are served: ' + url.pathname);
-            assert.equal(url.search,document ? new URL(target,publicOrigin).search : '');
+            if (navDocument) assert.equal(url.search,new URL(target,publicOrigin).search); else if (!document) assert.equal(url.search,'');
             const path = url.pathname.replace(/^\/(?:studio\/)?admin\//,'').split('/');
             const response = await admin.GET(new Request(url,{headers}),{params:Promise.resolve({path})});
             if (document) documentStatuses.push(response.status);
@@ -358,7 +369,11 @@ test('actual browser expired Admin login restores the real room view through his
           await page.goForward();await page.waitForURL(publicOrigin + target);await assertRoomView(page);
           const readsBeforeReload = dataReads.length;
           await page.reload();await assertRoomView(page);
-          assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/partner/branding','/studio/api/project','/studio/api/videos']);
+          // The clip map reads the catalog, the project and the videos; the company's publication is read in Scenmallar only.
+          assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/project','/studio/api/videos']);
+          const readsBeforeScene = dataReads.length;
+          await assertSceneRoundTrip(page);
+          assert.deepEqual(dataReads.slice(readsBeforeScene),['/studio/api/partner/branding'],'Scenmallar reads the publication once, without rereading the project');
           assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
           assert.deepEqual(storedDocuments(),storedBefore,'room inspection does not mutate saved data');
           const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');

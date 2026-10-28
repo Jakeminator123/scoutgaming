@@ -3,7 +3,6 @@ import {RefreshCw} from 'lucide-react';
 import {Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis} from 'recharts';
 import {ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent} from '@/components/ui/chart';
 import {Page, PageHeader, Panel, Kpis, inputClass} from '../ops/ui';
-import {usePathname} from '../../../runtime/navigation';
 import {createStudioAdminClient, studioAdminActor, StudioAdminUiError, type SharedStudioAdminRead} from '../../../../components/studio-administration';
 import {JOURNAL_LIMIT, journalType, formatJournalAmount, readEconomyJournal, summarizeEconomyJournal, type JournalRow} from '../../lib/economy-journal.mjs';
 
@@ -14,13 +13,13 @@ const date = (value:string) => new Intl.DateTimeFormat('sv-SE',{day:'numeric',mo
 const money = formatJournalAmount;
 
 // The journal read is shared with the Betalningar tab; Uppdatera starts a new one.
-export function ConnectedEconomy({journal}:{journal:SharedStudioAdminRead}) {
-  const path = usePathname();
+export function ConnectedEconomy({journal,active=true}:{journal:SharedStudioAdminRead;active?:boolean}) {
+
   const [state,setState] = useState<State>({status:'loading'});
   const [refresh,setRefresh] = useState(0), [currency,setCurrency] = useState(''), [days,setDays] = useState(0);
   const reload = () => {journal.refresh();setRefresh(value=>value+1);};
   useEffect(()=>{
-    if(path!=='/admin/ekonomi'){setState({status:'idle'});return;}
+    if(!active){setState({status:'idle'});return;}
     const controller = new AbortController(); setState({status:'loading'});
     void (async()=>{
       try {
@@ -40,12 +39,12 @@ export function ConnectedEconomy({journal}:{journal:SharedStudioAdminRead}) {
       }catch(error){if(!controller.signal.aborted)setState({status:'error',message:error instanceof StudioAdminUiError?error.message:'Journalen kunde inte läsas. Försök igen.'});}
     })();
     return()=>controller.abort();
-  },[path,refresh,journal]);
+  },[active,refresh,journal]);
   const summary=useMemo(()=>state.status==='ready'?summarizeEconomyJournal(state.journal,{currency,days,now:state.readAt}):null,[state,currency,days]);
   const loading=state.status==='loading'||state.status==='idle';
   return <Page>
     <PageHeader eyebrow="Ekonomi" title="Ekonomisk översikt"
-      description="Se kontorörelser och aktivitet. Öppna journalen när du behöver granska en enskild händelse."
+      description="Kontorörelser och aktivitet ur de senaste journalposterna, alla bolag (tills steg F). Journalen nedan visar varje händelse."
       aside={<button type="button" className="studio-button inline-flex items-center gap-2" disabled={loading} onClick={reload}><RefreshCw className="size-3.5" aria-hidden/>{loading?'Läser…':'Uppdatera'}</button>}/>
     {loading&&<div role="status" className="rounded-lg border border-sg-line bg-sg-panel p-8 text-sm text-sg-muted">Läser ekonomins journal…</div>}
     {state.status==='error'&&<div role="alert" className="rounded-lg border border-sg-line bg-sg-panel p-6"><p>{state.message}</p><button type="button" className="studio-button mt-3" onClick={reload}>Försök igen</button></div>}
