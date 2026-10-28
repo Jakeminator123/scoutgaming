@@ -86,8 +86,11 @@ const eventTarget = value => value && typeof value.addEventListener === 'functio
  * or shutdown included, reconnects through a new authenticated socket. The wait doubles
  * from reconnectDelayMs up to maxReconnectDelayMs, within maxReconnectAttempts and
  * reconnectBudgetMs per outage; `online` and a page that becomes visible skip the wait.
- * A spent budget leaves the client offline until reconnect() (or online/visible). An
- * outage caused by an authorization (1008) or contract close ends the client instead.
+ * A spent budget leaves the client offline until reconnect() (or online/visible).
+ * A contract close (1002, 1003, 1007, 1009) ends the client at once. An authorization
+ * close (1008) gets one fresh socket, in case the browser renewed its session cookie
+ * (which this client cannot read); a second refusal, or that socket closing before it
+ * delivered a state, ends the client.
  * Renderer failure or timeout is terminal, except the recognized stale room binding
  * conflict and a binding read that kept failing transiently, which reconnect within
  * the same outage budget.
@@ -119,12 +122,11 @@ export function createSharedRoomClient({
   }
   const socketURL = `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}/shared-room/${roomId}`;
   let state = 'idle', connection, retryTimer, pumping = false, queue = [], playing = null;
-  let retries = 0, outageAt, outage, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
+  let retries = 0, outageAt, outage, reauthorizing = false, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
   const timers = new Set();
   const current = candidate => state === 'running' && connection === candidate && !candidate.controller.signal.aborted;
   const report = code => { try { onError(Object.freeze({ code })); } catch {} };
-  // An outage keeps its most specific cause; only a spent budget reports it.
-  const causeOf = code => code === 1008 ? 'shared_room_unauthorized' : [1002, 1003, 1007, 1009].includes(code) ? 'shared_room_invalid_state' : undefined;
+  // A rendered state renews the budget.
   const renewed = () => { retries = 0; outageAt = outage = undefined; };
   function detach(candidate) {
     clearTimeout(candidate.connectTimer); candidate.controller.abort();
@@ -146,10 +148,8 @@ export function createSharedRoomClient({
     outageAt ??= now();
     const wait = Math.min(maxReconnectDelayMs, reconnectDelayMs * 2 ** Math.min(retries, 16));
     if (retries >= maxReconnectAttempts || now() - outageAt + wait > reconnectBudgetMs) {
-      const code = outage ?? 'shared_room_reconnect_exhausted';
-      if (code === 'shared_room_unauthorized' || code === 'shared_room_invalid_state') { finish(code); return; }
       // Offline: no socket and no timer of its own. A renderer still settling keeps its deadline.
-      state = 'offline'; clearTimeout(retryTimer); retryTimer = undefined; queue = []; report(code); return;
+      state = 'offline'; clearTimeout(retryTimer); retryTimer = undefined; queue = []; report(outage ?? 'shared_room_reconnect_exhausted'); return;
     }
     retries++;
     retryTimer = setTimeout(() => { retryTimer = undefined; if (state === 'running') connect(); }, wait);
@@ -171,6 +171,17 @@ export function createSharedRoomClient({
     connection = undefined; queue = []; detach(candidate);
     if (cause) outage = cause;
     retry();
+  }
+  // The socket closed, failed or never opened (code 1006 for the last two).
+  function lost(candidate, code) {
+    if (!current(candidate)) return;
+    if ([1002, 1003, 1007, 1009].includes(code)) { finish('shared_room_invalid_state'); return; }
+    if (reauthorizing || code === 1008) {
+      // The one re-authenticating socket was refused again or closed before any state.
+      if (reauthorizing) { finish('shared_room_unauthorized'); return; }
+      reauthorizing = true;
+    }
+    disconnected(candidate);
   }
   async function render(port, value, candidate, timeoutMs, context) {
     let timer;
@@ -242,6 +253,8 @@ export function createSharedRoomClient({
       if (actorId !== undefined && frame.snapshot.me.id !== actorId) invalid();
     } catch { finish('shared_room_invalid_state'); return; }
     actorId ??= frame.snapshot.me.id;
+    // The server authorized this socket: a later 1008 gets its own single re-authentication.
+    reauthorizing = false;
     const s = frame.snapshot, tail = queue.at(-1)?.frame.snapshot;
     // Never queue a state older than one already rendered or pending.
     if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer
@@ -268,12 +281,12 @@ export function createSharedRoomClient({
     candidate.listeners = {
       open: () => { if (current(candidate)) clearTimeout(candidate.connectTimer); },
       message: event => receive(candidate, event),
-      close: event => disconnected(candidate, causeOf(event.code)),
-      error: () => disconnected(candidate),
+      close: event => lost(candidate, event.code),
+      error: () => lost(candidate, 1006),
     };
     connection = candidate;
     for (const [type, listener] of Object.entries(candidate.listeners)) socket.addEventListener(type, listener);
-    if (socket.readyState !== 1) candidate.connectTimer = setTimeout(() => disconnected(candidate), connectTimeoutMs);
+    if (socket.readyState !== 1) candidate.connectTimer = setTimeout(() => lost(candidate, 1006), connectTimeoutMs);
   }
   return Object.freeze({
     start() {

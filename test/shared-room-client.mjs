@@ -428,8 +428,8 @@ test('a newer committed presentation tells the playing one it is superseded; bot
 // K04 B2 (external review 28 Oct 2026): the server's channel.close, service release and SIGTERM shutdown use 1000,
 // and the client treated 1000 as terminal: every deploy left the players at "Återansluter…" for good. The client's
 // own closes go through detach, which removes the listeners first, so every close event comes from elsewhere.
-test('every close the client did not ask for reconnects with fresh authentication; only stop() is terminal', async t => {
-  for (const code of [1000, 1001, 1006, 1008, 1009, 1011, 1012, 1013]) {
+test('every close but an authorization or contract close reconnects with fresh authentication; stop() is the client’s own', async t => {
+  for (const code of [1000, 1001, 1006, 1011, 1012, 1013]) {
     const h = setup(t); h.client.start(); h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
     h.sockets[0].ended(code); await until(() => h.sockets.length === 2);
     assert.equal(h.client.status().state, 'running', `close ${code}`); assert.deepEqual(h.errors, []);
@@ -491,13 +491,48 @@ test('online and a visible page reconnect at once, during a backoff wait and whe
   assert.equal(h.sockets.length, 4, 'stop removes the listeners');
 });
 
-test('a close that keeps coming exhausts the budget; authorization and contract closes stay terminal, others go offline', async t => {
-  for (const [code, expected, state] of [[1000, 'shared_room_reconnect_exhausted', 'offline'], [1008, 'shared_room_unauthorized', 'failed'],
-    [1009, 'shared_room_invalid_state', 'failed']]) {
-    const h = setup(t, { maxReconnectAttempts: 2 }); h.client.start();
-    for (let i = 0; i < 3; i++) { await until(() => h.sockets.length === i + 1); h.sockets[i].ended(i === 0 ? code : 1006); }
-    await until(() => h.errors.length === 1); await delay(15);
-    assert.equal(h.sockets.length, 3); assert.deepEqual(h.errors, [{ code: expected }]); assert.equal(h.client.status().state, state);
-    assert.equal(h.client.reconnect(), state === 'offline');
+test('a close that keeps coming exhausts the budget and leaves the client offline', async t => {
+  const h = setup(t, { maxReconnectAttempts: 2 }); h.client.start();
+  for (let i = 0; i < 3; i++) { await until(() => h.sockets.length === i + 1); h.sockets[i].ended(i === 0 ? 1000 : 1006); }
+  await until(() => h.errors.length === 1); await delay(15);
+  assert.equal(h.sockets.length, 3); assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]);
+  assert.equal(h.client.status().state, 'offline'); assert.equal(h.client.reconnect(), true);
+});
+
+// Review of #502 (G1): 1008 and 1009 were tried again for up to 20 attempts and 60 s behind "Återansluter…".
+test('a contract close ends the client at once; an authorization close gets one re-authenticating socket', async t => {
+  for (const code of [1002, 1003, 1007, 1009]) {
+    const h = setup(t); h.client.start(); h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
+    h.sockets[0].ended(code); await delay(15);
+    assert.equal(h.sockets.length, 1, `close ${code}`); assert.deepEqual(h.errors, [{ code: 'shared_room_invalid_state' }]);
+    assert.equal(h.client.status().state, 'failed'); assert.equal(h.client.reconnect(), false); assert.equal(h.sockets[0].listeners.size, 0);
   }
+  for (const second of [1008, 1006]) {
+    const h = setup(t); h.client.start(); h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
+    h.sockets[0].ended(1008); await until(() => h.sockets.length === 2); assert.deepEqual(h.errors, [], 'one socket re-authenticates');
+    h.sockets[1].ended(second); await delay(15);
+    assert.equal(h.sockets.length, 2, `no further socket after ${second}`); assert.deepEqual(h.errors, [{ code: 'shared_room_unauthorized' }]);
+    assert.equal(h.client.status().state, 'failed');
+  }
+  // A renewed session: the re-authenticating socket delivers state, and a later 1008 gets its own single attempt.
+  const h = setup(t); h.client.start(); h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
+  h.sockets[0].ended(1008); await until(() => h.sockets.length === 2); h.sockets[1].message(frame(2)); await until(() => h.calls.length === 4);
+  h.sockets[1].ended(1006); await until(() => h.sockets.length === 3); assert.deepEqual(h.errors, []);
+  h.sockets[2].message(frame(3)); await until(() => h.calls.length === 6);
+  h.sockets[2].ended(1008); await until(() => h.sockets.length === 4); h.sockets[3].ended(1008); await delay(15);
+  assert.deepEqual(h.errors, [{ code: 'shared_room_unauthorized' }]); assert.equal(h.sockets.length, 4);
+});
+
+// Review of #502 (G4): only a fully rendered state renews the outage budget. A newer state restored beside a
+// presentation that still plays is not one.
+test('a state restored beside a playing presentation does not renew the reconnect budget', async t => {
+  const entered = deferred(); let restored = 0;
+  const h = setup(t, { maxReconnectAttempts: 1, restoreSnapshot: () => { restored++; },
+    present: (p, { signal }) => { entered.resolve(); return new Promise(resolve => signal.addEventListener('abort', resolve, { once: true })); } });
+  h.client.start(); h.sockets[0].ended(1006); await until(() => h.sockets.length === 2);
+  h.sockets[1].message(frame(1)); await entered.promise;
+  h.sockets[1].message(frame(2, 1)); await until(() => restored === 2);
+  assert.equal(h.client.status().reconnectAttempts, 1, 'the spent attempt is not given back');
+  h.sockets[1].ended(1006); await until(() => h.errors.length === 1); await delay(15);
+  assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]); assert.equal(h.sockets.length, 2);
 });

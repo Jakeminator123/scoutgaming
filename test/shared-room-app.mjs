@@ -1419,3 +1419,22 @@ test('a binding read still failing after its retries rereads the room through a 
   down=false;sockets[1].frame(seated(2));for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
   assert.equal(app.controller.state.snapshot.version,2);assert.deepEqual(errors,[]);
 });
+
+// Review of #502 (G4): only a state of the same round, window and configuration waits beside the playing plan.
+test('a state of another round, window or configuration never waits beside the playing plan',async()=>{
+  for(const [label,edit,expected] of [['same',{},[]],['round',{roundId:'round-2'},['clear','sync']],['window',{windowId:'window-2'},['sync']],
+    ['configuration',{configVersion:'cfg-2'},['sync']]]){
+    const calls=[],states=[];let release;
+    const cards={restore(){},sync:()=>calls.push('sync'),clear:()=>calls.push('clear'),close(){},show(){},reveal(){},begin(){},frame(){},finish(){}};
+    const media={state:value=>states.push(value),prepareSequence(){},close(){},present:()=>new Promise(resolve=>{release=resolve;})};
+    const ports=createSharedRoomPresentationPorts({media,cards,clock:()=>1000}),signal=new AbortController().signal;
+    // The first state of a connection restores (and consumes) its presentation; the plan comes with the next one.
+    ports.restoreSnapshot(seated(1,{phase:'round',roundId:'round-1'}),{signal});
+    ports.restoreSnapshot(seated(2,{phase:'round',roundId:'round-1',presentationVer:1}),{signal});calls.length=0;
+    const playing=ports.present({roomId,ver:1,talkId:'t',kind:'plan',startAt:1000,endAt:5000,events:[{type:'deal',to:'box',box:0,shoeDraw:1,faceDown:false}]},{signal});
+    await flushRender();const before=states.length;
+    ports.restoreSnapshot(seated(3,{phase:'round',roundId:'round-1',presentationVer:1,...edit}),{signal});
+    assert.deepEqual(calls,expected,label);if(label==='same')assert.equal(states.length,before,'a held state leaves the dealer alone');
+    release(true);await playing;ports.close();
+  }
+});
