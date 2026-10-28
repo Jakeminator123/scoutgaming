@@ -1,11 +1,11 @@
 {
   "kind": "o02-acceptance/v1",
   "date": "2026-10-28",
-  "verdict": "O02-not-yet",
+  "verdict": "O02-pass",
   "status": {
     "activity": "O02",
-    "result": "O02-not-yet",
-    "reason": "Alla automatiska kriterier passerar på kandidaten f3780593 och granskaren fann inga blockerande fynd mot O02:s kriterier. V1–V7 väntar Jakobs manifest (utanför Git: o02/jakob-eyes/manifest.json). status95-fill.mjs för in Jakobs domar här och sätter verdict O02-pass bara om alla sju är godkända."
+    "result": "O02-pass",
+    "reason": "Alla automatiska kriterier passerar på kandidaten f3780593, granskaren fann inga blockerande fynd mot O02:s kriterier och Jakob godkände V1–V7 i sitt manifest (utanför Git: o02/jakob-eyes/manifest.json, sha256 i jakobEyes)."
   },
   "candidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
   "frozenAt": "2026-10-28T10:45:15Z",
@@ -196,73 +196,80 @@
     },
     {
       "id": "V1",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med anmärkning: synliga storleksskiften i övergången filmat → ritat kort (kosmetiskt, efter O03). | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "21 filer (png/mp4), sha256 = index",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 21
     },
     {
       "id": "V2",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med undantag: alla tio klipp har ljud och munrörelser (ffprobe/bildrutor, GPT); ordalydelse och synk <150 ms ej lyssnade av Jakob; blackjack/win 0,5 s svans = vilomun. Bokfört. | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "10 klipp v2-<replik>.mp4 ur paketet (v2-fetch-raw.json), 10/10 sha256 = paketets register; ligger i manifest.template.json (efter granskarens utkast)",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 10
     },
     {
       "id": "V3",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med undantag: F12 (Redo täcker Lämna 1440/1920), F13 (320×568 saldopanel täcker insats), F14 (flera egna platser överlappar), F15 (dubbla beslutsknappar 1440) bokförda; rättas i första gränssnitts-PR efter O03 och provas i preview. Telefonbilder ej tagna (strukna). | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad). | saknas och struket: v3-lobby-phone.png, v3-idle-phone.png, v3-bet-phone.png, v3-decision-phone.png, v3-settle-phone.png, v3-reload-phone.png",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "18 bilder 1440/390/320; fysisk telefon tas av Jakob; F12/F13/F15 att ta ställning till",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 19
     },
     {
       "id": "V4",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med undantag: viloklippspublicering gav 422 i staging (miljö utan rotationspolicy), dealerbyte ej provbart (en dealer per lane), marker via insatsprofil; dealer + färg via roomOverrides visade. Bokfört. | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "4 bilder; dealerval = standard (en tillåten dealer), idle oförändrat värde (knappen 422), marker via preset, färg via roomOverrides",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 4
     },
     {
       "id": "V5",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med anmärkning: kort återanslutningsavbrott ~4:50 i v5-sequence.mp4, spelet fortsatte utan omladdning. | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "3 bilder + v5-sequence.mp4",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 4
     },
     {
       "id": "V6",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med anmärkning: aktiv hand behöll material, nästa fick nya gränser/marker; färgändringen syns bara som tunn ram. | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "3 bilder; K06R2-4c/4d/V6",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 3
     },
     {
       "id": "V7",
-      "verdict": "pending",
-      "note": "väntar Jakobs manifest",
-      "by": null,
-      "at": null,
+      "verdict": "approved",
+      "note": "Godkänd med anmärkning: ingen offlineskylt i v7-offline.png; v7-balance.json styrker exakt en insatsrad (−10) och saldo = huvudbok. | Jakob 2026-10-28 ~20:50: \"allt detta antar jag är fina att ja:a\" – V1–V7 godkända med undantagen i GPT-förgranskningen (öppet bokförda); F11 kvarstår som uttryckligt driftundantag (Render-deploy bara vid tomt bord tills #529 är mergad och provad).",
+      "by": "Jakob",
+      "at": "2026-10-28T14:19:23.604Z",
       "material": "2 bilder + v7-balance.json; K06R2-V7",
       "producedBy": "jakobs-ogon-agent (Opus 5.5) och omprovens agenter (underlag)",
-      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget"
+      "verifiedBy": "Jakob (AV-dom); granskaren hashade underlaget",
+      "screenshots": 3
     }
   ],
   "findings": [
@@ -406,12 +413,12 @@
   },
   "jakobEyes": {
     "manifest": "utanför Git: o02/jakob-eyes/manifest.json",
-    "manifestSha256": null,
-    "filledAt": null,
-    "filledBy": null
+    "manifestSha256": "8d30830ca952523aa61f20debf7aef0728216c7b11066534f1d7fa09f71ac77d",
+    "filledAt": "2026-10-28T14:21:12.196Z",
+    "filledBy": "status95-fill.mjs (orkestratorn scoutgaming-f1); domarna är Jakobs, ordagrant i criteria[].note",
+    "manifestWrittenAt": "2026-10-28T14:19:23.817Z"
   },
   "remaining": [
-    "Jakobs manifest V1–V7 (fill-manifest.mjs; telefonbilder för V3 om Jakob tar dem); status95-fill.mjs för in domarna här och fyller status.json[O02] i #523 i samma körning.",
     "Verktygsuppföljning, ej blockerande: o02-receipt.mjs läser neon.finalState, K06 omprov 2 skriver neon.finalRoom; rätta verktyg eller kvitto före nästa körning utan --expect-*."
   ],
   "mutations": {
