@@ -9,7 +9,7 @@ import { buildLabVideoManifest, manifestJson } from '../../../tools/media/build-
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { validateVideoMetadata } from '../../../packages/presentation/contracts/video-intake.mjs';
 import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
-import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
+import { loadVideoRegistry, getVideoResponse } from './fixtures/local-video-registry.mjs';
 
 const bytes = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom00000000family-upload-fixture')]);
 const metadata = { familyId: 'astrid/deal.player.left/box0', label: 'Ny kortvariant.mp4', dealerId: 'astrid', eventId: 'deal.player.left', kind: 'action', role: 'alternative', situation: 'box0', playback: 'once', notes: '' };

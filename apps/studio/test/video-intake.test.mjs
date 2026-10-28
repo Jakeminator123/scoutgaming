@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {uploadDirectory, readUploads} from '../lib/video-local-readers.mjs';
-import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
+import { loadVideoRegistry, getVideoResponse } from './fixtures/local-video-registry.mjs';
 import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../../services/game/storage/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../../../packages/presentation/contracts/video-intake.mjs';
 import { validateProject, addVariant, buildRuntimeCatalog } from '../../../packages/presentation/contracts/studio-model.mjs';

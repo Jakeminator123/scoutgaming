@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import seed from '../policies/social.seed.json' with { type: 'json' };
-import { validateSocialPolicy } from '../../../packages/director/social.mjs';
-import { StudioError } from './project-store.mjs';
+import seed from '../../policies/social.seed.json' with { type: 'json' };
+import { validateSocialPolicy } from '../../../../packages/director/social.mjs';
+import { StudioError } from '../../lib/project-store.mjs';
 
 export function createSocialPolicy() { return structuredClone(seed); }
 export function checkedPolicy(policy) {
@@ -9,7 +9,7 @@ export function checkedPolicy(policy) {
   catch { throw new StudioError('Ogiltig social policy. Kontrollera namn, instruktion, känslighet och taltext.', 422); }
 }
 
-// Test/fixture adapter. Neon owns the live social policy and its revisions;
+// Test fixture only. Neon owns the live social policy and its revisions;
 // nothing here touches disk and no local history is kept.
 export function createMemorySocialStore(initial = createSocialPolicy()) {
   let current = checkedPolicy(initial);

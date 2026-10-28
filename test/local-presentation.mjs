@@ -12,7 +12,7 @@ import { createPresentationStartup } from '../services/game/public/presentation-
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
-import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
+import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/test/fixtures/local-video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';

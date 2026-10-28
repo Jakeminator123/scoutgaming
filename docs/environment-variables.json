@@ -370,7 +370,6 @@
         "apps/studio/lib/studio-game-authority.mjs",
         "apps/studio/lib/neon-video-registry.mjs",
         "apps/studio/lib/cloud-media-store.mjs",
-        "apps/studio/lib/video-registry.mjs",
         "apps/studio/lib/legacy-clip-inventory.mjs",
         "apps/studio/lib/voice-preview.mjs",
         "apps/studio/lib/studio-voice-lines.mjs",

@@ -6,8 +6,7 @@ indexerade dealerbanken är avvecklad; att ett byggrecept finns kvar betyder
 inte att dess indata finns kvar eller att det är rätt väg för nya klipp.
 
 `/admin` är backofficeytan och `apps/studio/` är Studios källmapp.
-Den lokala bankens omskanning i `apps/studio/lib/video-registry.mjs`
-svarar 410 och hänvisar till klippbiblioteket.
+Den lokala bankens omskanning är borttagen; nya klipp läggs in i klippbiblioteket.
 
 | Verktyg | Uppgift och begränsning |
 | --- | --- |
