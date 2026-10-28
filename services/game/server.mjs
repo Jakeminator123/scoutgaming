@@ -5,8 +5,7 @@ import { withSharedRoomEntry } from './shared-room-entry.mjs';
 import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
 import { sharedRoomOrigins } from './shared-room-origins.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
-import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
-import {playerHandoffDestination} from '../../packages/navigation/player-handoff.mjs';
+import {currentBackofficeAccount} from './bo-player-session.mjs';
 import { isAdministratorRole } from '../../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
@@ -14,7 +13,6 @@ import { isAdministratorRole } from '../../packages/studio-access/server/account
 import { playerAuth, playerPostOriginOk } from './storage/async-player-auth.mjs';
 import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
-import { backofficeGameAuth } from './storage/async-bo-game-auth.mjs';
 import { backofficeLabAuth } from './storage/async-bo-lab-auth.mjs';
 import { readPlayerResults } from './storage/async-player-results.mjs';
 import { createPlayerChatMemory } from './storage/async-player-chat-memory.mjs';
@@ -344,7 +342,6 @@ async function backofficeGameLogout(req) {
     const account=await currentBackofficeAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
     if(!account)return;
     await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(account.id);
-    await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id=?').run(account.id);
   };
   // PostgreSQL's existing transaction lock is shared with native Studio and
   // BO session issuance, including across the Vercel and Render processes.
@@ -355,7 +352,7 @@ async function boSessionOk(req) {
   const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
   const claims = m ? jwtVerify(m[1]) : null;
   // Partner launch tokens use the same signer. Only a current, role-bearing
-  // CRAIG login may authorize backoffice routes or the BO-to-game handoff.
+  // CRAIG login may authorize the remaining backoffice routes and the Lab handoff.
   if (!claims || claims.aud !== 'backoffice' || claims.partner ||
       typeof claims.sub !== 'string' || !Object.hasOwn(ROLE_RANK, claims.role) ||
       typeof claims.source_stamp !== 'string' || !Number.isSafeInteger(claims.auth_epoch)) return null;
@@ -396,12 +393,12 @@ function boPostOriginOk(req) {
   return origin === expected && (!fetchSite || fetchSite === 'same-origin');
 }
 const LEGACY_STUDIO_RETURNS = new Set(['/studio', '/studio/administration', '/control', '/control/administration']);
-const LEGACY_STUDIO_HANDOFF = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
+const LEGACY_STUDIO_HANDOFF = /^\/api\/bo\/lab-login\?state=[a-f0-9]{64}$/;
 const LEGACY_STUDIO_TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 function legacyBackofficeRedirect(req, pathname) {
   let destination = null;
   if (pathname === '/bo' || pathname === '/bo/' || pathname === '/bo/index.html') {
-    destination = '/control/administration';
+    destination = '/admin';
   } else if (pathname === '/bo/login.html') {
     const returnTo = new URL(req.url, 'http://local').searchParams.get('returnTo');
     destination = '/admin/login';
@@ -484,8 +481,6 @@ const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CRO
 const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
-const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp));};
-const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));
 const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
   labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
@@ -628,7 +623,13 @@ const server = createServer(async (req, res) => {
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"legacy_administration_retired"}'); return;
   }
-  if((await boGameAuth(req,res)))return;
+  if (pathname === '/api/auth/access') {
+    // Render's process supervisor waits on this route (ops/cloud/process-group.mjs).
+    // The BO-to-game handoff behind it is retired; it only reports a player session.
+    const status = !['GET', 'HEAD'].includes(req.method) ? 405 : (await auth.user(req)) ? 200 : 401;
+    res.writeHead(status, { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', ...(status === 405 ? { Allow: 'GET, HEAD' } : {}) });
+    res.end(); return;
+  }
   if (studioLabSession && pathname === '/api/auth/lab/check') {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
@@ -675,13 +676,6 @@ const server = createServer(async (req, res) => {
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
   const playerEntry=['/blackjack','/blackjack/','/roulette','/roulette/','/play/roulette','/play/roulette/'].includes(pathname);
-  const backofficeHandoff=(pathname==='/api/auth/session' || playerEntry) && ['GET','HEAD'].includes(req.method)
-    && await backofficePlayerHandoffRequired(req,{db,identity:scoutIdentity,boSession:boSessionOk,publicUrl:gameOrigin,boUrl:BO_URL,playerId:authenticated});
-  if(backofficeHandoff && playerEntry) {
-    const entryUrl=new URL(req.url,gameOrigin);
-    const handoff=playerHandoffDestination(entryUrl.pathname.replace(/\/$/,'')+entryUrl.search,{origin:gameOrigin});
-    if(handoff){res.writeHead(303,{Location:handoff,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return;}
-  }
   if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs'].includes(pathname)
       && await rouletteDocument(req,res,{authenticated,guestPreview,resolveRoom:rouletteRoomAccess})) return;
   if (pathname === '/api/profile') {
@@ -694,9 +688,9 @@ const server = createServer(async (req, res) => {
     res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
     res.end(); return;
   }
-  const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && (pathname.startsWith('/api/') || pathname==='/chat');
+  const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,sharedCredentials:true,...(playerAccounts ? {playerAccounts:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
@@ -852,21 +846,6 @@ const server = createServer(async (req, res) => {
     res.end('{"error":"Invalid origin"}'); return;
   }
   if (await operatorSpeechQa.handle(req, res, pathname)) return;
-  if (req.method === 'GET' && pathname === '/api/bo/config') {
-    if (!studioPolicyRuntime) {
-      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      res.end('{"error":"Game configuration unavailable"}'); return;
-    }
-    try {
-      const projection = await studioPolicyRuntime.policy.readGameConfiguration();
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify(projection));
-    } catch {
-      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      res.end('{"error":"Game configuration unavailable"}');
-    }
-    return;
-  }
   if (pathname.startsWith('/api/bo/')) {
     res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"not found"}'); return;

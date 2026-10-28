@@ -152,7 +152,7 @@ test('history keeps the empty state when every currency has zero rounds', () => 
 });
 
 
-test('verified N1 handoff precedes every player or wallet read, even with a foreign player session',async()=>{
+test('a stray backoffice handoff flag never starts the retired BO handoff or a player read',async()=>{
   for(const surface of ['profil','historik']) {
     const path=surface==='lobby'?'/play?operator=swedish-games':'/play/'+surface;
     const calls=[];
@@ -161,8 +161,8 @@ test('verified N1 handoff precedes every player or wallet read, even with a fore
       assert.equal(new URL(url).pathname,'/api/auth/session');
       return Response.json({authenticated:false,guest:false,sharedCredentials:true,backofficeHandoff:true});
     }});
-    assert.equal(page.redirect,'/api/auth/bo/start?next='+encodeURIComponent(path));
-    assert.equal(page.html,'');assert.equal(page.data.player,null);
+    assert.equal(String(page.redirect??'').includes('/api/auth/bo/'),false,'the engine has no BO handoff any more');
+    assert.equal(page.data.player,null);
     assert.deepEqual(calls,['/api/auth/session']);
   }
 });

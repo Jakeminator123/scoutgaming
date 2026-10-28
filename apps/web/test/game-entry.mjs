@@ -297,7 +297,7 @@ test('modal stays inert before capability resolves and ignores a cancelled stale
 });
 
 
-test('verified N1 game handoff happens before fetching another player game document',async()=>{
+test('a stray backoffice handoff flag never starts the retired BO handoff for a game document',async()=>{
   const calls=[];
   const request=new Request('https://game.example.invalid/game?game=blackjack&operator=swedish-games&table=room-evening',{headers:{cookie:'bo_jwt=verified; player_session=other'}});
   const response=await platformUiDocument(request,{env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1'},fetchImpl:async(url)=>{
@@ -305,6 +305,6 @@ test('verified N1 game handoff happens before fetching another player game docum
     return Response.json({authenticated:false,backofficeHandoff:true});
   }});
   assert.equal(response.status,303);
-  assert.equal(response.headers.get('location'),'/api/auth/bo/start?next='+encodeURIComponent('/game?game=blackjack&table=room-evening&operator=swedish-games'));
-  assert.deepEqual(calls,['/api/auth/session']);
+  assert.equal(response.headers.get('location').startsWith('/api/auth/bo/'),false,'the engine has no BO handoff any more');
+  assert.deepEqual(calls,['/api/auth/session'],'an unauthenticated session still reads no game document');
 });

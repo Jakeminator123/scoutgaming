@@ -15,7 +15,6 @@ import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epo
 import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { backofficeGameAuth } from '../services/game/storage/async-bo-game-auth.mjs';
 import { backofficeLabAuth } from '../services/game/storage/async-bo-lab-auth.mjs';
 import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
 import { command as shoeCommand, newGame } from '../services/game/shoe-game.mjs';
@@ -171,7 +170,7 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
   const config=JSON.parse(await readFile(process.env.CROUPIER_POSTGRES_QA_CONFIG,'utf8')),store=createPostgresStore({connectionString:config.databaseUrl});
   const suffix=randomUUID().slice(0,8),username=`qa-${suffix}`,password='Synthetic-Only-Password-4173',actor='qa-operator';
   let player,profile,operatorId,partnerKey,partnerPlayer;
-  const gameStates=[],labStates=[];
+  const labStates=[];
   try {
     assert.equal((await store.pool.query('SELECT current_database() AS name')).rows[0].name,'croupier_game_qa');
     const admin=createPlayerAdministration({db:store.db});player=await admin.create({username,password,actor,reason:'synthetic lifecycle/concurrency test'});
@@ -205,15 +204,6 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'role change revokes saved Lab access');
     await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('admin',operatorId);
     assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'restored admin role cannot revive an old Lab session');
-    const gamePlayerAuth=playerAuth(store.db,async()=>player,identity,{authEpoch:epoch}),gameAuth=backofficeGameAuth({db:store.db,auth:gamePlayerAuth,identity,boSession,validLaunch:async()=>false,...origins,publicGamePath:'/game'});
-    const gameFlow=await invoke(gameAuth,origins.publicUrl+'/api/auth/bo/start?next='+encodeURIComponent('/game?dealer=astrid&launch=discard'));
-    assert.equal(gameFlow.status,303);gameStates.push(new URL(gameFlow.headers.Location).searchParams.get('state'));
-    const gameAuthorized=await invoke(gameAuth,gameFlow.headers.Location);assert.equal(gameAuthorized.status,303);
-    assert.equal((await invoke(gameAuth,gameAuthorized.headers.Location)).status,400);
-    const gameDone=await invoke(gameAuth,gameAuthorized.headers.Location,{cookie:cookiePair(gameFlow)});assert.equal(gameDone.status,303);assert.equal(gameDone.headers.Location,'/game?dealer=astrid');
-    assert.equal(await gamePlayerAuth.user({headers:{cookie:cookiePair(gameDone)}}),player.id);
-    assert.ok(!cookiePair(gameDone).includes('bo_jwt'),'game session does not carry BO authority');
-    assert.equal((await invoke(gameAuth,gameAuthorized.headers.Location,{cookie:cookiePair(gameFlow)})).status,400);
     const partner=installPartnerApi({db:store.db,boDb:store.boDb,shoeCommand,newGame,getPlayer:id=>store.db.prepare('SELECT * FROM players WHERE id=?').get(id),logTx:(id,type,amount,currency,meta)=>store.db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at)VALUES(?,?,?,?,?,?)').run(id,type,amount,currency,meta,new Date().toISOString()),jwtSign:()=> 'synthetic-launch',publicUrl:origins.publicUrl,publicGamePath:'/game',root:'.'});
     partnerKey=await partner.keys.create({name:`QA ${suffix}`},account.name);
     const signed=async(path,input,{timestamp=String(Math.floor(Date.now()/1000))}={})=>{const body=JSON.stringify(input),signature=createHmac('sha256',partnerKey.secret).update(`${timestamp}.POST.${path}.${body}`).digest('hex');const result=await invoke(partner.handle,origins.publicUrl+path,{body,method:'POST',headers:{'x-api-key':partnerKey.key,'x-timestamp':timestamp,'x-signature':signature}});return {...result,json:JSON.parse(result.body)};};
@@ -271,7 +261,6 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     await assert.rejects(admin.setStatus({playerId:player.id,status:'active',actor,reason:'must stay closed'}),/cannot/);
     assert.ok((await store.db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE player_id=?').get(player.id)).n>=2);
   }finally{
-    for(const state of gameStates)await store.db.prepare('DELETE FROM bo_game_handoffs WHERE state_digest=?').run(createHash('sha256').update(state).digest('hex'));
     for(const state of labStates)await store.boDb.prepare('DELETE FROM bo_lab_handoffs WHERE state_digest=?').run(createHash('sha256').update(state).digest('hex'));
     if(partnerKey){for(const table of ['partner_rounds','partner_idem','partner_players'])await store.db.prepare(`DELETE FROM ${table} WHERE key_id=?`).run(partnerKey.id);await store.boDb.prepare('DELETE FROM api_keys WHERE id=?').run(partnerKey.id);}
     if(partnerPlayer){for(const table of ['transactions','blackjack_tables','native_presentations'])await store.db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(partnerPlayer);await store.db.prepare('DELETE FROM players WHERE id=?').run(partnerPlayer);}
