@@ -31,9 +31,9 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "Scout Gaming Group · Blackjackpilot med Astrid",
+  title: "Scoutgaming · Live-dealer blackjack och roulette",
   description:
-    "Möt Astrid i en blackjackpilot med serverstyrt spel och demokrediter. Inga riktiga pengar.",
+    "Scoutgaming bygger live-dealer blackjack och roulette för spelbolag: egna dealers, bord och bakgrunder, serverstyrt spel och demokrediter. Inga riktiga pengar.",
 }
 
 export const viewport: Viewport = {

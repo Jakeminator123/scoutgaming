@@ -17,18 +17,18 @@ export default function Home() {
           <main className="relative z-10 flex flex-col items-center gap-12 px-6 pt-8 pb-32 md:px-16 lg:flex-row lg:items-center lg:justify-between lg:pt-12">
             <div className="max-w-2xl">
               <p className="mb-5 font-mono text-xs tracking-[0.25em] text-lime uppercase">
-                {"// Blackjackpilot · Scout Gaming Group"}
+                {"// Scoutgaming · Live-dealer för spelbolag"}
               </p>
               <h1 className="mb-6 text-[clamp(2.25rem,9vw,3rem)] leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
                 Välj ditt bord.
                 <br />
                 <span className="text-lime">Live blackjack</span>
                 <br />
-                i vår pilot.
+                och roulette.
               </h1>
               <p className="mb-10 max-w-xl text-base leading-relaxed text-off/75 md:text-lg">
-                Välj spelbolag, hitta ett blackjackrum och möt din dealer.
-                Bolaget bestämmer vilka dealers, bord och bakgrunder du kan välja. Du spelar med demokrediter.
+                Scoutgaming ger spelbolag egna live-dealerbord: dealers, bord och bakgrunder som bolaget väljer och publicerar själv.
+                Välj spelbolag i lobbyn, hitta ett bord och möt din dealer. Du spelar med demokrediter.
               </p>
 
               <div className="mb-12 flex flex-wrap gap-4">
