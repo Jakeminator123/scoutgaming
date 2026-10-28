@@ -1,0 +1,1648 @@
+{
+  "kind": "k04-browser-acceptance/v1",
+  "date": "2026-10-28",
+  "branch": "jakob/claude-k04-rerun-5",
+  "codeSha": "689c690e5fc8343220f3faa834d5a40052359e0d",
+  "status": {
+    "activity": "K04",
+    "result": "IN_PROGRESS",
+    "reason": "Omprov 5 på main 689c690e (#502, #503, #505, #506, #507). Godkänt: (1) giv och reveal når start (vanliga händer och bildserier: giv 44/44, reveal efter stand 11/11, dealerns drag 8/8), (2) hit/stand −3 till 1 270 ms efter turnAt och alla kort senast +588 ms, (4) dealern syns på 400 kbit/s (53 s) och Fast 3G (42 s), F1/F2, (5) försäkringsrutan +617 och +375 ms, samt återanslutning utan omladdning efter Render-omstart och efter en stängning mitt i beslutsfasen. Kvar eller delvis: hit-kortet når start i 2 av 4 och syns 4,1–6,2 s efter klicket med ett hopp in i kontaktögonblicket (punkt 7); webbläsaren får 1011 och inte 1012 vid omstart, och Render-bytet träffade aldrig själva rundan i tre försök (punkt 6, delvis); en reveal-tagning stannade och visade \"Filmen kunde inte spelas.\" i 8 s (F9, en gång); en återkallad session slutar med texten \"Ladda om sidan\" (F8); B1 kunde inte provas med två spelare i harnessen. READY_FOR_VERIFIED föreslås inte förrän F9 och hit-kortet är bedömda."
+  },
+  "supersedes": "Ersätter docs/2026-10-28-K04-BROWSER-RERUN-4-ACCEPTANCE.json (6a158180) som aktuellt K04-webbläsarkvitto; det äldre står kvar som historik.",
+  "sources": "Sammanfattat från råkvittot receipt-k04-rerun5.json, analysis-rerun5.json, split-rerun5.json, extra-rerun5.json och körloggarna r5-*.log i orkestratorns lokala harness (k04-rerun-5), inte i Git. Skärmbilderna committas inte. Inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID.",
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "mainCi": "Croupier GitHub checks på push 689c690e: success före deploy",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployment": "dpl_9SqWppYduG5jYjSwmSkeMw65DriD",
+      "gitSource": {
+        "repoId": 1380630440,
+        "ref": "main",
+        "sha": "689c690e5fc8343220f3faa834d5a40052359e0d"
+      },
+      "evidence": "READY; nio klientfiler (local-presentation, performance-player, local-card-overlay, verified-video-buffer, shared-room-app/-client/-controller/-presentation/-view) serveras byte-identiska med SHA:n, bortsett från byggets omskrivning av importvägar."
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "deploy": "dep-dbgq4rdg1s2s73c20epg",
+      "sha": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "sharedTableFlag": 1,
+      "live": "2026-10-28T07:22:02Z",
+      "oldInstanceClosed": "6a158180-instansen: draining och closed 07:24:49 UTC, därefter inga loggrader på 60 s; mätningen började efter det.",
+      "restarts": "Tre Render-omstarter på samma SHA för B2 (08:01:50, 08:16:58, 08:27:55 UTC); den gamla instansen gick till draining 08:05:58, 08:20:25 och 08:31:18. Ingen miljövariabel ändrad."
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "access": "ingen"
+    },
+    "runtimeEquivalenceToMain": {
+      "main": "8f1afc62ef (vid kvittots skrivning)",
+      "result": "Efter 689c690e har #508 (2afbe546, F5c-uppföljning: stegvalen cachas per plan och valideras som kanalen; konfliktrapporten stryps) ändrat services/game/shared-room-filmed-steps.mjs och services/game/games/blackjack/table/postgres-runtime.mjs. Klientfilerna är oförändrade. Proven gäller 689c690e, och #508 är inte provad i stagingen."
+    }
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "dealer": "paow",
+    "packageRevision": 15,
+    "players": "cirka 30 nya syntetiska spelare (en per körning och spelare B i b1-körningarna). Jakobs konto återanvänds. Användarnamn och UUID utelämnas."
+  },
+  "tool": {
+    "browser": "playwright-core 1.62.1, headless Chromium",
+    "harness": "k04i.mjs från omprov 4 med tillägg: WebSocket-logg i sidan (öppning, stängning, kod och anledning), en markör som avslöjar omladdning, tvingad hit (HIT=1 FORCEHIT=1), restart och restart2 (Render-omstart via REST under spel; restart2 spelar händer i följd och loggar fasen vid varje stängning), revoke (POST /api/auth/logout medan spelaren sitter), b1 (spelare B i en andra kontext) och shots2 med hit. turnAt skattas lokalt som plan.turnAt − (serverNow − mottagningstid).",
+    "diagnostics": "DIAG=1: shared-room-presentation.mjs levereras med receipt:()=>{} utbytt mot en inspelare i sidan. Ingen produktkod ändrad.",
+    "throttle": "400 ms RTT och 50 000 B/s; Fast 3G 563 ms, 180 000/70 000 B/s."
+  },
+  "media": {
+    "note": "Hash räknad av harnessen på svarskroppen.",
+    "items": [
+      {
+        "kind": "card back",
+        "id": "/images/cards/back-scout.png",
+        "bytes": 21574,
+        "sha256": "9c2b32897d9f910575b0818937600c4aa64f04c4de383ca4ed610f72d3ad8720",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "1d73fa9f-ccd3-488b-b809-186b5e431641",
+        "bytes": 1582039,
+        "sha256": "942e3580f9da5595a462fe6df2372e761992c19a48153d3b2b02157ccd41265e",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "6134db90-9c50-438b-9c36-5a363781232b",
+        "bytes": 1087146,
+        "sha256": "4bc6994a706f5fd7258547f92d9d7c7c475ced674310a89306463f44d586b641",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "c16b8b1f-6553-4ea2-b202-740ac3dab876",
+        "bytes": 749710,
+        "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "917a436b-dc60-4e8e-b15d-a6b5c0ab183e",
+        "bytes": 1131696,
+        "sha256": "d27017d40e8ae40baa349d373de8bec1800356e9ff821995c9e6fc3216d8e2fc",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+        "bytes": 1098295,
+        "sha256": "3133d1511cfcf2027a29bf7bd7044c19836778687ff6cc9576894b2632da2bfd",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "8c5749b9-bbf2-4d6a-a8d3-635e449e3df4",
+        "bytes": 762632,
+        "sha256": "40df7ec230ee7f610ee1443d4608af78f73dbdefe4dadb96265f786964ce6a19",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "b07c94b6-74bd-420f-baf5-f3f9da7b9d9a",
+        "bytes": 1706478,
+        "sha256": "93cd59b29853709dcfd916cf5e9318964f690cd86b11318fba897f70c7a2f167",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "65bfca97-9e2a-402b-98b6-5c0759747cd8",
+        "bytes": 688831,
+        "sha256": "d2938bd12d408ccb180718b6136020997b29453da4740eaf9c4cbf9b403fcba7",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806",
+        "bytes": 1113561,
+        "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "a4e148fc-8bbf-4d82-b59a-d5f85e9c59c6",
+        "bytes": 1672688,
+        "sha256": "98d6e6eb14d3b5e6f51a6515950d6ec8303ec586fcba587e8cd33f1a9d597730",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "848f6e50-3e0d-465b-a8e4-e44eb2720b55",
+        "bytes": 1539219,
+        "sha256": "013ed9d0065b01c9066f42410131684b74f32c5139863af6e1736ec04d900b34",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "08e939c6-60d2-4fa4-81f7-a4723ae21071",
+        "bytes": 1322155,
+        "sha256": "32cdb81f4ea3ab14e232d2478517bcd7e6874e7f2ab924cdd5b36fd7266321f1",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "137a8e68-cb46-4c2f-abdd-22a6579c9167",
+        "bytes": 1017512,
+        "sha256": "aa59b8d998dc3319c3fc529145586867e1b9716f6abc44dd02bd79be6191a1bd",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "eba5e1ba-3946-45c3-a37a-36929196aa40",
+        "bytes": 2102463,
+        "sha256": "10520e1a258905187cb358725c96a9c8823da7c23042b40ab09d42ed5697e011",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "71fdf9e3-efde-49ca-b3dd-ce6490ddf661",
+        "bytes": 279643,
+        "sha256": "38aed05c0ea55bb8e0d74f34eacf97a1de9eceac03c90c6f4304a4ec7434e255",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "f3637a0c-63a6-4d1f-8057-dc6766d9936c",
+        "bytes": 1649689,
+        "sha256": "cdad216ef6f66ac4ec87e7ef6cca7c7efae6fd209af931c7626fa71a82906756",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "f92b8c8b-c90a-4447-82f1-244f7d85c33e",
+        "bytes": 1178312,
+        "sha256": "a7612a8de51b7bb67b73ee222c5955dad1f10f2c7b01f588bdac4712ca2ffc40",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "dealer clip",
+        "id": "f12c6751-80a1-4169-9ed3-88a7e1c59af8",
+        "bytes": 967742,
+        "sha256": "00bfb92e642f32d7d2ebdd146336fd84a3ff73f8aade024af803263e4c1e6378",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "idle",
+        "id": "paow (registrerad idle)",
+        "bytes": 912188,
+        "sha256": "f5aa88aae58367702d644c401148e6ffdb9dad481f548d00c1321a45f2795581",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "layer",
+        "id": "332eb796-90e3-47da-9171-1cdeb4353bdc",
+        "bytes": 6370,
+        "sha256": "f4b88c30e199fdf27b5f492d1bbc1980100cad6ba305c6e0e23a414b867dc3c2",
+        "hashedBy": "harness"
+      },
+      {
+        "kind": "layer",
+        "id": "0cd85d44-e367-4684-afef-f10111cba542",
+        "bytes": 5826,
+        "sha256": "99026175c53e7d6ad24f8100d3fe3516b51bcefe4d3aa0a8c9c378ac07aa96cb",
+        "hashedBy": "harness"
+      }
+    ]
+  },
+  "runs": [
+    {
+      "label": "normal-h1 (DIAG, försäkring)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:26:17.628Z",
+      "finishedAt": "2026-10-28T07:28:30.622Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          426
+        ],
+        "standPressedMinusTurnAtMs": 678,
+        "allPlanCardsMinusTurnAtMs": [
+          null
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 5,
+          "start": 5,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            90,
+            376,
+            173,
+            165,
+            1502
+          ]
+        }
+      }
+    },
+    {
+      "label": "normal-h2 (DIAG, hit)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:28:31.523Z",
+      "finishedAt": "2026-10-28T07:30:31.710Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          -3
+        ],
+        "standPressedMinusTurnAtMs": 22883,
+        "allPlanCardsMinusTurnAtMs": [
+          -10284
+        ],
+        "acts": [
+          "hit 200",
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            110,
+            224,
+            464,
+            475,
+            2254,
+            1404
+          ]
+        }
+      },
+      "r2b": {
+        "planAfterMs": 1325,
+        "planEvents": "deal,turn",
+        "stepSelectedMs": 1774,
+        "takeStartMs": 4028,
+        "cardVisibleMs": 4792,
+        "takeEndMs": 4555,
+        "takeOutcome": "end",
+        "cardBeforeTakeEnd": false,
+        "leftBeforeStart": [
+          "idle:interrupted:saved_exact_baseline@1324"
+        ],
+        "lastStepBeforeHit": "deal:end"
+      }
+    },
+    {
+      "label": "normal-h3 (DIAG)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:30:32.529Z",
+      "finishedAt": "2026-10-28T07:32:18.728Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          643
+        ],
+        "standPressedMinusTurnAtMs": 884,
+        "allPlanCardsMinusTurnAtMs": [
+          -10833
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 8,
+          "start": 8,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            122,
+            519,
+            225,
+            216,
+            2020,
+            477,
+            235,
+            483
+          ]
+        }
+      }
+    },
+    {
+      "label": "normal-h4 (DIAG)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:32:19.537Z",
+      "finishedAt": "2026-10-28T07:34:01.353Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          604
+        ],
+        "standPressedMinusTurnAtMs": 722,
+        "allPlanCardsMinusTurnAtMs": [
+          -10358
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            121,
+            517,
+            506,
+            761,
+            1993,
+            834
+          ]
+        }
+      }
+    },
+    {
+      "label": "normal-h5 (DIAG, hit)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:57:36.206Z",
+      "finishedAt": "2026-10-28T07:59:29.393Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          708
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -10770
+        ],
+        "acts": [
+          "hit 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            121,
+            236,
+            467,
+            460,
+            1960,
+            558
+          ]
+        }
+      },
+      "r2b": {
+        "planAfterMs": 1208,
+        "planEvents": "deal,reveal,settle,speak:lose",
+        "stepSelectedMs": 1551,
+        "takeStartMs": 3511,
+        "cardVisibleMs": 4339,
+        "takeEndMs": 4049,
+        "takeOutcome": "end",
+        "cardBeforeTakeEnd": false,
+        "leftBeforeStart": [
+          "idle:interrupted:saved_exact_baseline@1193",
+          "idle:interrupted:saved_exact_baseline@1207"
+        ],
+        "lastStepBeforeHit": "deal:end"
+      }
+    },
+    {
+      "label": "normal-h6 (DIAG, hit)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:59:30.283Z",
+      "finishedAt": "2026-10-28T08:01:22.362Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          722
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -11903
+        ],
+        "acts": [
+          "hit 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 5,
+          "skippedLate": 1,
+          "skippedLateShare": 0.17,
+          "selectedToStartMs": [
+            117,
+            240,
+            222,
+            236,
+            513
+          ]
+        }
+      },
+      "r2b": {
+        "planAfterMs": 985,
+        "planEvents": "deal,reveal,settle,speak:lose",
+        "stepSelectedMs": 1233,
+        "takeStartMs": null,
+        "cardVisibleMs": 4104,
+        "takeEndMs": null,
+        "takeOutcome": null,
+        "cardBeforeTakeEnd": null,
+        "leftBeforeStart": [
+          "idle:interrupted:saved_exact_baseline@969",
+          "idle:interrupted:saved_exact_baseline@984",
+          "deal:skipped@3945",
+          "idle:interrupted:saved_exact_baseline@22212",
+          "idle:interrupted:saved_exact_baseline@45081"
+        ],
+        "lastStepBeforeHit": "deal:end"
+      }
+    },
+    {
+      "label": "slow 400 kbit/s a",
+      "context": "390×844",
+      "startedAt": "2026-10-28T07:34:02.289Z",
+      "finishedAt": "2026-10-28T07:36:09.550Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-e-slow-400kbps",
+          "result": "fail"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          null
+        ],
+        "standPressedMinusTurnAtMs": 8,
+        "allPlanCardsMinusTurnAtMs": [
+          588
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "slow": {
+          "controlsUsableMs": 20861,
+          "placeholderGoneMs": 53579,
+          "commandsMs": {
+            "join": 21248,
+            "bet": 22308,
+            "ready": 24123,
+            "act": 53405,
+            "next": 89299
+          }
+        }
+      },
+      "note": "K04-i-e föll bara på samplingen: harnessen tryckte stand 8 ms efter turnAt, inom samma 150 ms-intervall som knapparna öppnades. Korten syntes +588 ms och act gav 200."
+    },
+    {
+      "label": "slow 400 kbit/s b",
+      "context": "390×844",
+      "startedAt": "2026-10-28T07:36:10.857Z",
+      "finishedAt": "2026-10-28T07:38:12.630Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-e-slow-400kbps",
+          "result": "pass"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          496
+        ],
+        "standPressedMinusTurnAtMs": 9,
+        "allPlanCardsMinusTurnAtMs": [
+          496
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "slow": {
+          "controlsUsableMs": 20465,
+          "placeholderGoneMs": 53137,
+          "commandsMs": {
+            "join": 20669,
+            "bet": 22020,
+            "ready": 23767,
+            "act": 53890,
+            "next": 84395
+          }
+        }
+      }
+    },
+    {
+      "label": "slow Fast 3G",
+      "context": "390×844",
+      "startedAt": "2026-10-28T07:38:13.140Z",
+      "finishedAt": "2026-10-28T07:39:53.680Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-e-slow-fast3g",
+          "result": "pass"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          106
+        ],
+        "standPressedMinusTurnAtMs": 106,
+        "allPlanCardsMinusTurnAtMs": [
+          -4170
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "slow": {
+          "controlsUsableMs": 14333,
+          "placeholderGoneMs": 42301,
+          "commandsMs": {
+            "join": 14582,
+            "bet": 15611,
+            "ready": 17328,
+            "act": 46661,
+            "next": 77003
+          }
+        }
+      }
+    },
+    {
+      "label": "errors (ihållande 404 på goodluck)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:39:54.504Z",
+      "finishedAt": "2026-10-28T07:41:49.421Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-d-missing-media",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-d-invalid-id",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-d-next-window-film",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-d-interrupted-speech",
+          "result": "pass"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          null
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          null
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "missingMedia": {
+          "failTextMs": 370,
+          "failText": "Talet kunde inte spelas.",
+          "fourCardsMs": 370,
+          "actsMinusTurnAtMs": 597,
+          "filmBeforeActs": 0,
+          "raw": false
+        }
+      }
+    },
+    {
+      "label": "desktop",
+      "context": "1920×1080 tangentbord",
+      "startedAt": "2026-10-28T07:41:50.197Z",
+      "finishedAt": "2026-10-28T07:44:06.203Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-a-desktop",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-b-desktop",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-c-keyboard",
+          "result": "pass"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          null
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          null
+        ],
+        "acts": [
+          "hit 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": []
+      }
+    },
+    {
+      "label": "mobile",
+      "context": "390×844 tap",
+      "startedAt": "2026-10-28T07:44:07.005Z",
+      "finishedAt": "2026-10-28T07:45:46.813Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [
+        {
+          "id": "K04-i-a-mobile",
+          "result": "pass"
+        },
+        {
+          "id": "K04-i-c-tap",
+          "result": "pass"
+        }
+      ],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          513
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -18928
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": []
+      }
+    },
+    {
+      "label": "revoke",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T07:47:38.147Z",
+      "finishedAt": "2026-10-28T07:49:32.112Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [],
+        "acts": [],
+        "notYourTurn": 0,
+        "falseTexts": [
+          "Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta."
+        ]
+      },
+      "revoke": {
+        "logout": 200,
+        "events": [
+          {
+            "dt": 6156,
+            "ev": "close",
+            "code": 1008,
+            "reason": "Transport closed"
+          },
+          {
+            "dt": 6475,
+            "ev": "new",
+            "code": null,
+            "reason": null
+          },
+          {
+            "dt": 6999,
+            "ev": "close",
+            "code": 1006,
+            "reason": ""
+          }
+        ],
+        "socketsAfter": 1,
+        "socketsAfter65s": 1,
+        "status": {
+          "shared": "Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.",
+          "banner": "Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.",
+          "buttons": []
+        },
+        "firstClose": {
+          "dt": 6156,
+          "ev": "close",
+          "code": 1008,
+          "reason": "Transport closed"
+        },
+        "closes": [
+          "1008:Transport closed",
+          "1006:"
+        ]
+      }
+    },
+    {
+      "label": "restart (Render-omstart)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T08:01:22.894Z",
+      "finishedAt": "2026-10-28T08:06:37.334Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          802
+        ],
+        "standPressedMinusTurnAtMs": 802,
+        "allPlanCardsMinusTurnAtMs": [
+          -10330
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 5,
+          "skippedLate": 1,
+          "skippedLateShare": 0.17,
+          "selectedToStartMs": [
+            116,
+            221,
+            246,
+            471,
+            3
+          ]
+        }
+      },
+      "restart": {
+        "ws": [
+          {
+            "dt": 258096,
+            "ev": "close",
+            "code": 1011,
+            "reason": "Transport closed"
+          },
+          {
+            "dt": 258415,
+            "ev": "new",
+            "code": null,
+            "reason": null
+          },
+          {
+            "dt": 259159,
+            "ev": "open",
+            "code": null,
+            "reason": null
+          }
+        ],
+        "closeAfterMs": 258096,
+        "closeCode": 1011,
+        "reopenAfterCloseMs": 1063,
+        "firstSnapshotAfterReopenMs": 1290,
+        "sameRound": true,
+        "snapshotPhase": "settled",
+        "noReload": true,
+        "nexted": true,
+        "versionAfter": "689c690e5fc8343220f3faa834d5a40052359e0d",
+        "textsAfter": [
+          "Rundan pågår",
+          "Din tur",
+          "Skickar…",
+          "Väntar på bordets bekräftelse…",
+          "Rundan är avslutad",
+          "Anslutningen avbröts. Återansluter…",
+          "Välj plats och lägg insatser"
+        ],
+        "badTexts": [],
+        "reconnectButtonShown": false,
+        "acts": [
+          "act stand 200",
+          "next  200"
+        ],
+        "renderDrain": "08:05:58.066Z",
+        "note": "Stängningen kom 10,9 s efter den gamla instansens draining, när handen redan var avgjord."
+      }
+    },
+    {
+      "label": "restart2-a (omstart under spel)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T08:16:43.346Z",
+      "finishedAt": "2026-10-28T08:26:38.109Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          531,
+          210,
+          null,
+          555,
+          591,
+          208,
+          801
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          null,
+          -14369,
+          -14579,
+          -14673,
+          -13922,
+          -14255,
+          -14080
+        ],
+        "acts": [
+          "stand 200",
+          "stand 200",
+          "stand 200",
+          "stand 200",
+          "stand 200",
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 45,
+          "start": 44,
+          "skippedLate": 1,
+          "skippedLateShare": 0.02,
+          "selectedToStartMs": [
+            122,
+            236,
+            227,
+            241,
+            803,
+            228,
+            109,
+            478,
+            216,
+            213,
+            11,
+            230,
+            219,
+            117,
+            220,
+            225,
+            209,
+            6,
+            532,
+            115,
+            214,
+            224,
+            224,
+            6,
+            708,
+            113,
+            232,
+            224,
+            212,
+            5,
+            154,
+            212,
+            113,
+            225,
+            480,
+            215,
+            4,
+            571,
+            124,
+            522,
+            493,
+            488,
+            5,
+            547
+          ]
+        }
+      },
+      "restart2": {
+        "hands": 6,
+        "closes": [
+          {
+            "at": "2026-10-28T08:20:36.640Z",
+            "code": 1011,
+            "phase": "bets"
+          },
+          {
+            "at": "2026-10-28T08:25:29.562Z",
+            "code": 1001,
+            "phase": "bets"
+          }
+        ],
+        "renderDrain": "08:20:25.909Z"
+      }
+    },
+    {
+      "label": "restart2-b (omstart under spel, utan stand)",
+      "context": "1920×1080",
+      "startedAt": "2026-10-28T08:27:39.905Z",
+      "finishedAt": "2026-10-28T08:37:24.703Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          744,
+          406,
+          513,
+          386,
+          369
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -11810,
+          -13683,
+          -13563,
+          -9249,
+          -19979
+        ],
+        "acts": [],
+        "notYourTurn": 0,
+        "falseTexts": [
+          "Filmen kunde inte spelas.",
+          "Skickar… | Filmen kunde inte spelas.",
+          "Väntar på bordets bekräftelse… | Filmen kunde inte spelas."
+        ],
+        "filmedSteps": {
+          "outcomes": 24,
+          "start": 22,
+          "skippedLate": 3,
+          "skippedLateShare": 0.13,
+          "selectedToStartMs": [
+            125,
+            232,
+            506,
+            257,
+            8,
+            128,
+            544,
+            851,
+            784,
+            7,
+            251,
+            139,
+            283,
+            303,
+            872,
+            8,
+            638,
+            146,
+            951,
+            170,
+            77,
+            1118
+          ]
+        }
+      },
+      "restart2": {
+        "hands": 5,
+        "midRoundClose": {
+          "at": "2026-10-28T08:36:21.883Z",
+          "code": 1001,
+          "reason": "Transport closed",
+          "phase": "round",
+          "roundPhase": "decisions",
+          "version": 769
+        },
+        "noReload": true,
+        "versionAfter": "689c690e5fc8343220f3faa834d5a40052359e0d",
+        "reopenMs": 1482,
+        "firstSnapshotMs": 470,
+        "sameRound": true,
+        "snapshotPhase": "round/decisions",
+        "roundSettled": false,
+        "closes": [
+          {
+            "at": "2026-10-28T08:31:29.021Z",
+            "code": 1011,
+            "phase": "settled",
+            "roundPhase": null
+          },
+          {
+            "at": "2026-10-28T08:36:21.883Z",
+            "code": 1001,
+            "phase": "round",
+            "roundPhase": "decisions"
+          }
+        ],
+        "renderDrain": "08:31:18.299Z"
+      }
+    },
+    {
+      "label": "shots2-a dator",
+      "context": "1920×1080 screencast",
+      "startedAt": "2026-10-28T07:49:32.661Z",
+      "finishedAt": "2026-10-28T07:50:57.308Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          1270
+        ],
+        "standPressedMinusTurnAtMs": 1026,
+        "allPlanCardsMinusTurnAtMs": [
+          -11311
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            87,
+            358,
+            352,
+            171,
+            1825,
+            78
+          ]
+        }
+      }
+    },
+    {
+      "label": "shots2-a 390 px",
+      "context": "390×844 screencast",
+      "startedAt": "2026-10-28T07:50:58.148Z",
+      "finishedAt": "2026-10-28T07:52:21.482Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          526
+        ],
+        "standPressedMinusTurnAtMs": 778,
+        "allPlanCardsMinusTurnAtMs": [
+          -9905
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 5,
+          "start": 5,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            131,
+            255,
+            245,
+            261,
+            1388
+          ]
+        }
+      }
+    },
+    {
+      "label": "shots2-b dator",
+      "context": "1920×1080 screencast",
+      "startedAt": "2026-10-28T07:52:22.196Z",
+      "finishedAt": "2026-10-28T07:53:51.866Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          319
+        ],
+        "standPressedMinusTurnAtMs": 586,
+        "allPlanCardsMinusTurnAtMs": [
+          -9999
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            124,
+            221,
+            466,
+            476,
+            1095,
+            153
+          ]
+        }
+      }
+    },
+    {
+      "label": "shots2-b 390 px",
+      "context": "390×844 screencast",
+      "startedAt": "2026-10-28T07:53:52.801Z",
+      "finishedAt": "2026-10-28T07:55:20.969Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          552
+        ],
+        "standPressedMinusTurnAtMs": 304,
+        "allPlanCardsMinusTurnAtMs": [
+          -11861
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 6,
+          "skippedLate": 0,
+          "skippedLateShare": 0,
+          "selectedToStartMs": [
+            130,
+            285,
+            237,
+            241,
+            1673,
+            188
+          ]
+        }
+      }
+    },
+    {
+      "label": "shots2 med hit",
+      "context": "1920×1080 screencast",
+      "startedAt": "2026-10-28T08:15:06.311Z",
+      "finishedAt": "2026-10-28T08:16:42.433Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          466
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -10079
+        ],
+        "acts": [
+          "hit 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 7,
+          "start": 6,
+          "skippedLate": 1,
+          "skippedLateShare": 0.14,
+          "selectedToStartMs": [
+            133,
+            253,
+            224,
+            228,
+            584,
+            84
+          ]
+        }
+      }
+    },
+    {
+      "label": "b1 v1",
+      "context": "1920×1080 + spelare B",
+      "startedAt": "2026-10-28T07:45:47.574Z",
+      "finishedAt": "2026-10-28T07:47:37.530Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          893
+        ],
+        "standPressedMinusTurnAtMs": 921,
+        "allPlanCardsMinusTurnAtMs": [
+          -5980
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 8,
+          "start": 7,
+          "skippedLate": 1,
+          "skippedLateShare": 0.13,
+          "selectedToStartMs": [
+            332,
+            727,
+            714,
+            2158,
+            459,
+            766,
+            1216
+          ]
+        }
+      }
+    },
+    {
+      "label": "b1 v1b",
+      "context": "1920×1080 + spelare B",
+      "startedAt": "2026-10-28T07:55:55.244Z",
+      "finishedAt": "2026-10-28T07:57:35.371Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          17
+        ],
+        "standPressedMinusTurnAtMs": 35,
+        "allPlanCardsMinusTurnAtMs": [
+          -7303
+        ],
+        "acts": [
+          "stand 200"
+        ],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 5,
+          "start": 4,
+          "skippedLate": 1,
+          "skippedLateShare": 0.2,
+          "selectedToStartMs": [
+            339,
+            808,
+            1553,
+            1082
+          ]
+        }
+      }
+    },
+    {
+      "label": "b1 v2",
+      "context": "1920×1080 + spelare B 1280 px",
+      "startedAt": "2026-10-28T08:08:05.453Z",
+      "finishedAt": "2026-10-28T08:15:05.226Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          350
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -5264
+        ],
+        "acts": [],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 6,
+          "start": 5,
+          "skippedLate": 1,
+          "skippedLateShare": 0.17,
+          "selectedToStartMs": [
+            346,
+            806,
+            1341,
+            1293,
+            2394
+          ]
+        }
+      }
+    },
+    {
+      "label": "b1 v3",
+      "context": "1920×1080 + spelare B 1920 px",
+      "startedAt": "2026-10-28T08:38:22.089Z",
+      "finishedAt": "2026-10-28T08:44:40.062Z",
+      "versionShaStart": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "versionShaEnd": "689c690e5fc8343220f3faa834d5a40052359e0d",
+      "checks": [],
+      "observed": {
+        "hitStandMinusTurnAtMs": [
+          634
+        ],
+        "standPressedMinusTurnAtMs": null,
+        "allPlanCardsMinusTurnAtMs": [
+          -6391
+        ],
+        "acts": [],
+        "notYourTurn": 0,
+        "falseTexts": [],
+        "filmedSteps": {
+          "outcomes": 5,
+          "start": 3,
+          "skippedLate": 2,
+          "skippedLateShare": 0.4,
+          "selectedToStartMs": [
+            358,
+            480,
+            1122
+          ]
+        }
+      }
+    }
+  ],
+  "criteria": {
+    "1-filmed-steps-start": {
+      "result": "pass för giv och reveal; delvis för hit-kortet",
+      "normalAndShots": {
+        "initialBoxDeal": "22/22 start, median 173 ms, max 506 ms från urval till start",
+        "initialDealerDeal": "22/22, median 255 ms, max 761 ms",
+        "revealAfterStand": "11/11, median 1 404 ms, max 2 020 ms",
+        "dealerDrawsAfter": "8/8, median 235 ms, max 834 ms",
+        "hitCard": "2/4 start (h2, h5); h6 och shots2-hit lämnades som sena"
+      },
+      "allDiagRuns": {
+        "initial": {
+          "steps": 72,
+          "start": 70,
+          "skippedLate": 2,
+          "medianMs": 246,
+          "maxMs": 1553
+        },
+        "afterDecision": {
+          "steps": 95,
+          "start": 85,
+          "skippedLate": 10,
+          "medianMs": 232,
+          "maxMs": 2394,
+          "note": "De fem sena: två hit-kort, revealen i handen där Render startades om och revealen i två b1-händer med en andra webbläsarkontext öppen."
+        }
+      },
+      "perRunSkippedLateShare": {
+        "normal-h1-diag": 0,
+        "normal-h2-diag": 0,
+        "normal-h3-diag": 0,
+        "normal-h4-diag": 0,
+        "shots2-a-desktop-diag": 0,
+        "shots2-a-mobile-diag": 0,
+        "shots2-b-desktop-diag": 0,
+        "shots2-b-mobile-diag": 0,
+        "b1-v1-diag": 0.13,
+        "normal-h5-diag": 0,
+        "normal-h6-diag": 0.17,
+        "restart-diag": 0.17,
+        "b1-v1b-diag": 0.2,
+        "shots2-hit-desktop-diag": 0.14,
+        "restart2-a-diag": 0.02,
+        "restart2-b-diag": 0.13,
+        "b1-v2-diag": 0.17,
+        "b1-diag": 0.4
+      }
+    },
+    "2-turnAt": {
+      "result": "pass",
+      "limitMs": 2000,
+      "hitStandMinusTurnAtMs": "−3 till 1 270 ms över 30 händer med beslut (median cirka 530 ms); 400 kbit/s stand tryckt +8 och +9 ms",
+      "allPlanCardsMinusTurnAtMsMax": 588,
+      "acts": "alla act 200 (stand, hit, double), NOT_YOUR_TURN 0"
+    },
+    "3-no-false-text": {
+      "result": "delvis",
+      "clean": "23 av 25 körningar utan falsk film-, idle- eller omladdningstext; \"Anslutningen avbröts. Återansluter…\" vid återanslutning är avsedd",
+      "exceptions": [
+        "restart2-b: \"Filmen kunde inte spelas.\" i 8,1 s efter en reveal-tagning som stannade (F9)",
+        "revoke: terminal text \"Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.\" efter återkallad session (F8)"
+      ]
+    },
+    "4-slow-links": {
+      "result": "pass",
+      "kbps400": {
+        "placeholderGoneMs": [
+          53579,
+          53137
+        ],
+        "note": "F7 rättad: omprov 4 aldrig eller 183 s; omprov 3 68,6 s"
+      },
+      "fast3g": {
+        "placeholderGoneMs": 42301,
+        "hitStandMinusTurnAtMs": 106,
+        "note": "omprov 3 23,2 s, omprov 4 50,7 s"
+      },
+      "F1": "pass utom F9 (en stannad tagning, inte ett sent steg)",
+      "F2": "pass"
+    },
+    "5-insurance": {
+      "result": "pass",
+      "insuranceShownMinusTurnAtMs": [
+        617,
+        375
+      ],
+      "note": "Två försäkringsrundor (normal-h1 och restart2-a); rutan syntes aldrig före turnAt. I desktop-körningens försäkringsrunda syntes rutan inte alls, eftersom sidan laddades om mitt i handen (provets omladdning)."
+    },
+    "6-deploy-mid-hand": {
+      "result": "delvis",
+      "renderRestart": "Tre omstarter. Webbläsarens socket stängdes 10,7–10,9 s efter den gamla instansens draining, varje gång med 1011 \"Transport closed\". Återanslutningen tog 1,06 s, och sidan laddades inte om. I alla tre försöken låg bytet i insatsfasen eller i avgjord runda, aldrig mitt i en runda.",
+      "midRoundReconnect": "restart2-b: bryggans livslängdsstängning (1001) mitt i beslutsfasen. Ny socket efter 1,48 s, snapshot 0,47 s senare i samma runda och fas, ingen omladdning.",
+      "code1012": "1012 nådde aldrig webbläsaren; bryggan gör om en uppströmsstängning utan stängningsram till 1011 (F10).",
+      "revoke1008": "1008:Transport closed, 1006:; en ny socket, sedan terminal (inga fler på 65 s)"
+    },
+    "7-R2b": {
+      "result": "delvis",
+      "hits": [
+        {
+          "planAfterMs": 1325,
+          "takeStartMs": 4028,
+          "takeEndMs": 4555,
+          "cardVisibleMs": 4792
+        },
+        {
+          "planAfterMs": 1208,
+          "takeStartMs": 3511,
+          "takeEndMs": 4049,
+          "cardVisibleMs": 4339
+        },
+        {
+          "planAfterMs": 985,
+          "takeStartMs": null,
+          "takeEndMs": null,
+          "cardVisibleMs": 4104
+        }
+      ],
+      "shots2Hit": "Planen kom 3,1 s efter klicket. Dealern stod still till cirka +5,9 s och visades sedan plötsligt med armen framme vid rutan medan kortet landade (+6,16 s). Kvittona visar deal presented +5,08 s och skipped +5,83 s. Kortet väntar inte på hela tagningen, men rörelsen hoppar direkt in i kontaktögonblicket och dröjer 4–6 s efter klicket.",
+      "note": "Ingen tidigare tagning spelade när hit-planen kom, så superseded-fallet uppstod inte i dessa händer."
+    },
+    "B1": {
+      "result": "inte provad",
+      "note": "I fyra försök blev spelare B:s join-knapp aldrig aktiv inom 20 s medan A:s film spelade; orsaken är inte fastställd. Inga failed-kvitton i b1-körningarna, och fönsterbytet gick igenom."
+    },
+    "regression": {
+      "reloadMidHand": "pass (desktop, mobile)",
+      "keyboardAndTap": "pass",
+      "missingMedia": "pass",
+      "unknownMediaId": "pass",
+      "interruptedSpeech": "pass",
+      "nextWindowFilm": "pass"
+    }
+  },
+  "findings": [
+    {
+      "id": "F9-reveal-take-stalled",
+      "severity": "falsk filmtext i 8 s, en gång",
+      "observation": "restart2-b 08:35:41 UTC: reveal-tagningen b07c94b6 (flip) fick start och presented och därefter inga bildrutor. Efter vakthundens gräns kom error, fallback \"Film playback stalled\" och texten \"Filmen kunde inte spelas.\" i 8,1 s. Inga HTTP-fel; bytes redan verifierade i bufferten. Det inträffade 4 min efter ett omstartsbyte och upprepades inte i någon annan körning (ungefär 100 filmade steg).",
+      "cause": [
+        "services/game/public/local-film-player.mjs:58: vakthunden avslutar efter 8 s utan framsteg med local_film_stalled",
+        "services/game/public/local-presentation.mjs:582 visar FILM_FAILED för film"
+      ],
+      "fixHint": "Ta reda på varför en tagning i en blob slutar ge bildrutor (headless-avkodning eller ett paus- eller seek-anrop från B1/R2b), eller lämna steget tyst som sent i stället för att visa text, eftersom kortet redan visas."
+    },
+    {
+      "id": "F10-1012-not-seen-by-browser",
+      "severity": "låg (klienten återansluter ändå)",
+      "observation": "Vid tre Render-omstarter fick webbläsaren 1011 \"Transport closed\" 10,7–10,9 s efter den gamla instansens draining, aldrig 1012.",
+      "cause": [
+        "packages/server-transport/socket-core.mjs:7 closeCode gör om 1006 till 1011, och shut() stänger båda sidor med \"Transport closed\"",
+        "#506 skickar 1012 från kanalen, men den gamla instansen tycks inte nå fram med stängningsramen genom Render och bryggan"
+      ],
+      "fixHint": "Om 1012 ska synas: låt bryggan vidarebefordra uppströmskoden även vid draining, eller signalera omstart före SIGTERM."
+    },
+    {
+      "id": "F8-revoked-session-text",
+      "severity": "låg",
+      "observation": "Efter utloggning: 1008 efter 6,2 s, en ny socket som nekades (1006) och sedan terminalt läge med texten \"Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.\".",
+      "cause": [
+        "services/game/public/shared-room-controller.mjs:150 fail() använder samma text för alla terminala fel, även shared_room_unauthorized"
+      ],
+      "fixHint": "Visa en inloggningsuppmaning för shared_room_unauthorized."
+    },
+    {
+      "id": "R2b-hit-card-jump",
+      "severity": "visuellt",
+      "observation": "Hit-kortet når start i 2 av 4 händer. I de andra hoppar dealern från vila direkt till kortets kontakt vid rutan. Kortet syns 4,1–6,2 s efter klicket, efter att hit-planen kommit 1,0–3,1 s efter klicket."
+    },
+    {
+      "id": "O2-deploy-overlap",
+      "severity": "provmetod",
+      "observation": "Den gamla instansen tog trafik i 2–3 min efter \"live\" (07:22:02 → 07:24:49 och vid omstarterna cirka 3 min). Mätningen började först efter draining och closed."
+    },
+    {
+      "id": "O1-bridge-lifetime",
+      "severity": "information",
+      "observation": "packages/server-transport/socket-core.mjs: rumssockets genom Vercel-bryggan stängs efter lifetimeMs 290 000 med 1001 eller 1011. Klienten återansluter inom cirka 1–1,5 s, även mitt i en runda."
+    }
+  ],
+  "jakobReview": {
+    "status": "väntar",
+    "stills": {
+      "folder": "k04-rerun-5/jakob-shots (lokalt hos orkestratorn, inte i Git)",
+      "items": [
+        {
+          "file": "01-dator-giv-ruta4-forsta-kort.jpg",
+          "sha256": "473b9ca833c0d983a1ef96851ab506633ced93dc793f30656f12f32457aef36e"
+        },
+        {
+          "file": "02-dator-giv-dealer-oppet-kort.jpg",
+          "sha256": "d6ee7dbad3a4d5ae32fec2c2381cf6bfcf8354ce5deeab76d7d42cb202d901b6"
+        },
+        {
+          "file": "03-dator-giv-ruta4-andra-kort.jpg",
+          "sha256": "8f492e3f14da15622f21fc8ba5423793562934d4a22c442442d4f60e67bbec51"
+        },
+        {
+          "file": "04-dator-giv-halkort.jpg",
+          "sha256": "dadbd2bee8c84b40b5b631e7cec62bc9e4010bab0bb963b2c228ba8de7e8a6b7"
+        },
+        {
+          "file": "05-dator-reveal-vandning.jpg",
+          "sha256": "d4b308a2bd665091d1e40f7fdab4df9d090674c5b381a4fadca9e987579afdaf"
+        },
+        {
+          "file": "06-dator-reveal-vant.jpg",
+          "sha256": "2022021879acacae3d90d04dd9d83bf712ee7baffff0293a9c755140d0a127bb"
+        },
+        {
+          "file": "07-390px-giv-ruta4-forsta-kort.jpg",
+          "sha256": "39819b8d3d0d00d7fb5dbe9abad8e9d019d45c37ede6c5714d92757cd115eb70"
+        },
+        {
+          "file": "08-390px-giv-dealer-oppet-kort.jpg",
+          "sha256": "52b6bc9b9a794ba89db4a2aeba15c81e3a41841b21f8e4d822d8687928dab39d"
+        },
+        {
+          "file": "09-390px-giv-ruta4-andra-kort.jpg",
+          "sha256": "8a524b4de3ab2b33e62cfd894af4fe51469ba1f953c23227048e132f587704ff"
+        },
+        {
+          "file": "10-390px-giv-halkort.jpg",
+          "sha256": "96b42bad1be832919def0149e12a7cb9490962c6c7bfee770c1bfaf12faae793"
+        },
+        {
+          "file": "11-390px-reveal-vandning.jpg",
+          "sha256": "372b0eb7f0e86d25d3d4c52688d9188525c6cbb095902e632f39b70e22bc03ad"
+        },
+        {
+          "file": "12-390px-reveal-vant.jpg",
+          "sha256": "1c1ea1943bb36020f42beba6985a7ed24d865006d018893800e2ebb8be7dbae9"
+        }
+      ],
+      "note": "Ur CDP-screencast medan filmerna spelar: giv till ruta 4 (första och andra kortet), dealerns öppna kort, hålkortet och revealen (vändningen och det vända kortet), på dator och i 390 px."
+    },
+    "account": "Samma syntetiska konto som tidigare; instruktionen har ny SHA.",
+    "scope": "Godkännandet ska gälla klippen vid bordet och skärmbilderna ovan."
+  },
+  "remaining": [
+    "Bedöm F9 (stannad reveal med filmtext) och hit-kortets hopp (R2b), eventuellt efter ett nytt prov.",
+    "B2 med bytet mitt i en runda: tre försök träffade insatsfasen. Återanslutning mitt i runda är visad via bryggans livslängd.",
+    "B1 med två spelare: harnessen fick inte spelare B att sätta sig under A:s film.",
+    "Jakobs bedömning av klippen vid bordet och av skärmbilderna.",
+    "Slå på ljud (#446) i riktig webbläsare och fysisk telefon; produktionens tre lager."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Render och Vercel deployade på 689c690e; tre Render-omstarter på samma SHA för B2; ingen miljövariabel eller flagga ändrad",
+      "Syntetiska spelare med demo-USD; en av dem utloggad (revoke)",
+      "Stagingen står på för Jakobs kontroll"
+    ],
+    "production": "orörd",
+    "sqlWrites": "inga"
+  },
+  "secretsExported": false
+}
