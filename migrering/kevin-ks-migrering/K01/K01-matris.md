@@ -22,7 +22,7 @@
 | `tools/verify-audit-chain.mjs` | omräkning av hashkedjan |
 | `instr/runs.log` | 200 instrumenterade körningar |
 
-Sedan 27 oktober 2026 ligger bara matrisen och [O01-svaret](O01-svar.md) kvar i den här mappen. `media-summary.md` och `medieinventering-avatarer.md` finns i [docs/history/kevin-ks-migrering/K01](../../../docs/history/kevin-ks-migrering/K01/). Testloggen (`test-run-5aa7ed1.txt`), patchen, `media-runtime.tsv` (samma 1 267 sökvägar och sha256 som [K04-medie-fack.tsv](../K04/K04-medie-fack.tsv)) och `tools/verify-audit-chain.mjs` är borttagna ur main och finns kvar i Git, till exempel på [ddbc6803](https://github.com/Jakeminator123/scoutgaming/tree/ddbc6803bdd959f45b3b5cf8bba199bb68986e25/migrering/kevin-ks-migrering/K01).
+Sedan 27 oktober 2026 ligger bara matrisen och [O01-svaret](O01-svar.md) kvar i den här mappen. `media-summary.md` och `medieinventering-avatarer.md` är raderade; se `git show 29ed6626bf:docs/history/kevin-ks-migrering/K01/media-summary.md` och `git show 29ed6626bf:docs/history/kevin-ks-migrering/K01/medieinventering-avatarer.md`. Testloggen (`test-run-5aa7ed1.txt`), patchen, `media-runtime.tsv` (samma 1 267 sökvägar och sha256 som [K04-medie-fack.tsv](../K04/K04-medie-fack.tsv)) och `tools/verify-audit-chain.mjs` är borttagna ur main och finns kvar i Git, till exempel på [ddbc6803](https://github.com/Jakeminator123/scoutgaming/tree/ddbc6803bdd959f45b3b5cf8bba199bb68986e25/migrering/kevin-ks-migrering/K01).
 
 ## 1. Matris: beteende → K fil:rad → M-konsument → beslut → kontrakt → test
 
