@@ -9,6 +9,7 @@ import {parseAdminPath} from '../runtime/admin-routing.mjs';
 import { ConnectedClipMap, type ClipMapWorkspace } from './components/studio/connected-clip-map';
 import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
+import { DemoBuilder } from './components/studio/demo-builder';
 import { DealerDirectory } from './components/studio/dealer-directory';
 import { DealerHub } from './components/studio/dealer-hub';
 import { ScenesPage } from './components/studio/scenes-page';
@@ -55,7 +56,7 @@ function App() {
   useEffect(()=>{if(keepMounted.has(route.page)&&!redirected)setVisited(current=>current.includes(route.page)?current:[...current,route.page]);},[route.page,redirected]);
   const isolatedPreview = document.querySelector('meta[name="croupier-environment"]')?.getAttribute('content')==='isolated-qa';
   const show=(page:string)=>!redirected&&route.page===page;
-  const pageTitle=route.page==='dealer'?'Dealers':route.page==='company'||route.page==='room'?'Bolag och spelbord':adminPageLabels[path]??'Admin';
+  const pageTitle=route.page==='dealer'?'Dealers':route.page==='company'||route.page==='room'?'Bolag och spelbord':route.page==='demo'?'Skapa demo':adminPageLabels[path]??'Admin';
   return <div className="preview-admin flex bg-sg-bg text-sg-text" onClick={event=>{
     if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
     const anchor=(event.target as Element).closest('a');if(!anchor||anchor.target)return;
@@ -83,6 +84,7 @@ function App() {
       {(visited.includes('companies')||visited.includes('company')||visited.includes('room'))&&<div hidden={!(show('companies')||show('company')||show('room'))}><CompaniesPage page={route.page==='company'?'company':route.page==='room'?'room':'companies'} id={route.id} active={show('companies')||show('company')||show('room')} disabled={studioDirty||importBusy} onChanged={materialChanged}/></div>}
       {visited.includes('system')&&<div hidden={!show('system')}><SystemPage active={show('system')} tab={adminTabId('system',query.get('flik'))}/></div>}
       {show('guide')&&<AdminHelp/>}
+      {show('demo')&&<DemoBuilder/>}
       {show('unknown')&&<section className="hub-page" aria-labelledby="admin-missing-title"><h1 id="admin-missing-title">Sidan finns inte</h1><p className="hub-muted">Adressen hör inte till någon av Admins sex sidor.</p><p className="hub-mt"><Link className="hub-btn" href="/admin">Till översikten</Link></p></section>}
     </main>
   </div>;

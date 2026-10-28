@@ -18,9 +18,9 @@ export function isInternalAdminPathname(pathname){
   return /^\/admin(?:\/|$)/.test(pathname)&&!/^\/admin\/lobby(?:\/|$)/.test(pathname);
 }
 
-// The six menu pages and the three navs. An unknown /admin path is 'unknown'.
+// The six menu pages, the three navs and Skapa demo (reached from Översikt). An unknown /admin path is 'unknown'.
 export function parseAdminPath(pathname){
-  const match=adminPathname(pathname).match(/^\/admin(?:\/(dealers|scenes|companies|rooms|system|guide|lobby)(?:\/([A-Za-z0-9][A-Za-z0-9._:-]{0,99}))?)?\/?$/);
+  const match=adminPathname(pathname).match(/^\/admin(?:\/(dealers|scenes|companies|rooms|system|guide|lobby|demo)(?:\/([A-Za-z0-9][A-Za-z0-9._:-]{0,99}))?)?\/?$/);
   if(!match)return {page:'unknown',id:''};
   const [,section,id='']=match;
   if(!section)return {page:'home',id:''};

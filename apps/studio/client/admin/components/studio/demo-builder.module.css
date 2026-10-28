@@ -1,0 +1,115 @@
+/* Demo-byggaren: ljust tema enligt skissen (ny-admin-skiss/app/globals.css), avgränsat till sidan. */
+.page{--bg:#f4f5f7;--surface:#fff;--surface2:#f7f8fa;--line:#e3e5e9;--line2:#eef0f3;--text:#1b1c1e;--muted:#666c75;--faint:#8d939b;--ink:#1b1c1e;--ink-text:#e6e8eb;
+  --lime:#d6ff3a;--on-lime:#1b1c1e;--ok:#1f8a4c;--ok-bg:#e6f6ec;--warn:#9a6200;--warn-bg:#fff3d6;--danger:#b4232c;--danger-bg:#fde8ea;--info:#2a5db0;--info-bg:#e6eefb;--accent-bg:#f4ffcf;
+  --radius:12px;--shadow:0 1px 2px rgba(20,22,26,.05),0 8px 24px -16px rgba(20,22,26,.25);
+  color-scheme:light;flex:1;min-width:0;padding:28px 32px 64px;background:var(--bg);color:var(--text);font:400 14px/1.5 "Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.page *{box-sizing:border-box}
+.page h1,.page h2,.page h3,.page p{margin:0}
+.page a{color:inherit}
+.page code{font:12px/1.4 "Cascadia Code",ui-monospace,Consolas,monospace;padding:1px 5px;border-radius:4px;background:var(--surface2)}
+.inner{max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;font-weight:600;color:var(--muted)}
+.eyebrow a:hover{color:var(--text);text-decoration:underline}
+.head h1{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.intro{margin-top:6px;max-width:68ch;color:var(--muted)}
+
+/* Stegrad */
+.steps{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin:0 0 20px;padding:0;list-style:none}
+.step{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.step:disabled{cursor:default}
+.stepN{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface2);color:var(--faint);font-size:11px;font-weight:700}
+.stepT{display:block;font-weight:600}
+.stepDone{border-color:transparent;background:var(--ok-bg)}
+.stepDone .stepN{background:var(--ok);color:#fff}
+.stepNow{border-color:var(--text);box-shadow:0 0 0 2px var(--lime)}
+.stepNow .stepN{background:var(--ink);color:var(--ink-text)}
+
+/* Raster och kort */
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) 320px;align-items:start}
+.card{min-width:0;padding:18px 20px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+.cardHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.cardHead h2{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.aside{font-size:12.5px;color:var(--muted)}
+.stack{display:grid;gap:12px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.faint{color:var(--faint)}
+.mt{margin-top:12px}
+
+/* Val */
+.choiceGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.choice{position:relative;display:grid;gap:6px;width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.choice:hover{border-color:var(--faint)}
+.choice[aria-pressed="true"]{border-color:var(--text);box-shadow:0 0 0 2px var(--lime)}
+.choice:disabled{opacity:.6;cursor:not-allowed}
+.choiceName{font-weight:600;font-size:13.5px;overflow-wrap:anywhere}
+.choiceMeta{font-size:12px;color:var(--muted)}
+.choiceTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.portrait{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--ink);color:var(--ink-text);font-weight:700;font-size:14px;flex:none}
+
+/* Etiketter */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface2);color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+.chipOk{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.chipWarn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chipDanger{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.chipInfo{background:var(--info-bg);color:var(--info);border-color:transparent}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* Knappar */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:7px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:13px;white-space:nowrap;text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btnPrimary{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+.btnPrimary:hover{filter:brightness(1.04)}
+.btnGhost{border-color:transparent;background:transparent;color:var(--muted)}
+.btnGhost:hover{background:var(--surface2);color:var(--text)}
+.btnDanger{color:var(--danger)}
+.btnSmall{min-height:30px;padding:4px 10px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btn:focus-visible,.choice:focus-visible,.step:focus-visible,.input:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line2)}
+.footerNext{display:grid;justify-items:end;gap:6px}
+.missing{font-size:12.5px;color:var(--warn)}
+
+/* Rader (Din demo) */
+.rows{display:grid}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line2)}
+.row:first-child{border-top:0;padding-top:0}
+.row:last-child{padding-bottom:0}
+.rowLabel{font-size:12px;color:var(--muted)}
+.rowValue{font-weight:600;overflow-wrap:anywhere}
+.rowText{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+
+/* Formulär */
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field{display:grid;gap:6px;font-size:13px}
+.field label{font-weight:600}
+.hint{font-size:12.5px;color:var(--muted)}
+.input{width:100%;min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:0;font-size:13.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+
+/* Notiser och tomlägen */
+.note{padding:10px 12px;border-radius:8px;background:var(--info-bg);color:var(--info);font-size:13px}
+.noteWarn{background:var(--warn-bg);color:var(--warn)}
+.noteDanger{background:var(--danger-bg);color:var(--danger)}
+.noteAccent{background:var(--accent-bg);color:var(--text)}
+.empty{padding:28px 20px;border:1px dashed var(--line);border-radius:var(--radius);background:var(--surface2);color:var(--muted);text-align:center}
+.empty h3{margin-bottom:4px;color:var(--text);font-size:14px}
+.receipt{padding:12px 14px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-weight:600}
+.linkBox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.linkBox .input{font:12px/1.4 "Cascadia Code",ui-monospace,Consolas,monospace}
+
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .page{padding:18px 16px 48px}
+  .head h1{font-size:22px}
+  .steps{grid-auto-columns:minmax(120px,1fr);overflow-x:auto;padding-bottom:4px}
+  .form{grid-template-columns:1fr}
+  .kv{grid-template-columns:1fr;gap:2px 0}
+  .kv dt{margin-top:8px}
+  .linkBox{grid-template-columns:1fr}
+  .footer{align-items:stretch}
+  .footerNext{justify-items:stretch}
+}

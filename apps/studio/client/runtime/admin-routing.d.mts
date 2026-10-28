@@ -2,7 +2,7 @@ export const adminContextKeys: readonly string[];
 export function adminHref(href: string): string;
 export function adminPathname(pathname: string): string;
 export function isInternalAdminPathname(pathname: string): boolean;
-export type AdminPage = 'home'|'dealers'|'dealer'|'scenes'|'companies'|'company'|'room'|'system'|'guide'|'lobby'|'unknown';
+export type AdminPage = 'home'|'dealers'|'dealer'|'scenes'|'companies'|'company'|'room'|'system'|'guide'|'lobby'|'demo'|'unknown';
 export function parseAdminPath(pathname: string): { page: AdminPage; id: string };
 export function hasAdminContext(search: string): boolean;
 export function isStudioAdminRoute(path: string, search?: string): boolean;

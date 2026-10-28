@@ -76,7 +76,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const own=operator?rooms.filter(room=>room.operatorId===operator.id):[];
     return <HubPage wide eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies'},{label:operator?.name??id}]}/>} title={operator?.name??id} chip={operator?operatorChip(operator):undefined}
       intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${own.length} spelbord · /partner/${operator.slug}`:catalog?`Bolaget ${id} finns inte i registret.`:'Läser katalogen…'}
-      actions={operator&&<a className="hub-btn" href={'/partner/'+encodeURIComponent(operator.slug)}>Öppna Partnerportalen ↗</a>}>
+      actions={operator&&<><Link className="hub-btn" href="/admin/demo">Skapa demo</Link><a className="hub-btn" href={'/partner/'+encodeURIComponent(operator.slug)}>Öppna Partnerportalen ↗</a></>}>
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
       {operator&&<>

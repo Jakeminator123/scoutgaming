@@ -1,6 +1,6 @@
 import {ADMIN_RETIRED_DOCUMENTS,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 // Static documents the Admin bundle serves. Retired addresses stay listed so the server can redirect them.
-export const designPreviewPages = new Set([...Object.keys(ADMIN_RETIRED_DOCUMENTS).map(path=>path.slice(7)),'', 'dealers', 'scenes', 'companies', 'system', 'guide',
+export const designPreviewPages = new Set([...Object.keys(ADMIN_RETIRED_DOCUMENTS).map(path=>path.slice(7)),'', 'dealers', 'scenes', 'companies', 'system', 'guide', 'demo',
   'tools', 'structure', 'deletion', 'rooms', 'clips', 'assets', 'drift', 'ekonomi', 'replies', 'dealer-agent', 'dealer-studio',
   'admin/accounts', 'admin/players', 'admin/payments', 'admin/api', 'admin/log', 'ai/models', 'ai/chat', 'openclaw', 'players']);
 // The three navs carry one identity in the path: /admin/dealers/<dealer>, /admin/companies/<bolag>, /admin/rooms/<spelbord>.

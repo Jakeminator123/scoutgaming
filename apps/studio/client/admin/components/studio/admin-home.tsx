@@ -66,6 +66,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
           <Link className="hub-btn" href={activeOperators[0]?`/admin/companies/${encodeURIComponent(activeOperators[0].id)}?flik=tilldelning`:'/admin/companies'}>Tilldela innehåll</Link>
           <Link className="hub-btn" href="/admin/dealers?view=create">Ny dealer</Link>
           <Link className="hub-btn" href="/admin/companies?tab=spelbord&view=create">Nytt spelbord</Link>
+          <Link className="hub-btn" href="/admin/demo">Skapa demo</Link>
         </div></Card>
         <Card title="Drift just nu" aside={<Link href="/admin/system?flik=drift">System →</Link>}>
           <Empty title="Visas under System › Drift" text="Spelstatus, skor och det delade bordets prov läses där (A:overview, A:shoes); ingen extra läsning görs här."/>

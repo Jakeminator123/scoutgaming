@@ -5,11 +5,11 @@ import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isStudio
 test('the six menu pages and the three navs parse from the path; anything else is unknown',()=>{
   assert.deepEqual(parseAdminPath('/admin'),{page:'home',id:''});
   assert.deepEqual(parseAdminPath('/studio/admin/'),{page:'home',id:''});
-  for(const [path,page] of [['/admin/dealers','dealers'],['/admin/scenes','scenes'],['/admin/companies','companies'],['/admin/system','system'],['/admin/guide','guide'],['/admin/lobby','lobby']])assert.deepEqual(parseAdminPath(path),{page,id:''},path);
+  for(const [path,page] of [['/admin/dealers','dealers'],['/admin/scenes','scenes'],['/admin/companies','companies'],['/admin/system','system'],['/admin/guide','guide'],['/admin/demo','demo'],['/admin/lobby','lobby']])assert.deepEqual(parseAdminPath(path),{page,id:''},path);
   assert.deepEqual(parseAdminPath('/admin/dealers/dragan'),{page:'dealer',id:'dragan'});
   assert.deepEqual(parseAdminPath('/admin/companies/johns-bet'),{page:'company',id:'johns-bet'});
   assert.deepEqual(parseAdminPath('/studio/admin/rooms/room-1'),{page:'room',id:'room-1'});
-  for(const path of ['/admin/rooms','/admin/clips','/admin/dealers/a/b','/admin/system/x','/control/clips','/partner'])assert.equal(parseAdminPath(path).page,'unknown',path);
+  for(const path of ['/admin/rooms','/admin/clips','/admin/dealers/a/b','/admin/system/x','/admin/demo/x','/control/clips','/partner'])assert.equal(parseAdminPath(path).page,'unknown',path);
 });
 
 test('the clip map is a Studio route only under the dealer nav and under Scenmallar',()=>{
