@@ -13,7 +13,7 @@ const sources:[string,string,string][]=[
   ['Dealers','GET /admin/_data/catalog + /studio/api/videos','doc.project dealers[], lines[]; media_records'],
   ['Dealers › Klippkarta','GET /admin/_data/catalog + /studio/api/videos; PUT /studio/api/project; POST /studio/api/videos/upload','doc.project lines[], idlePolicy; media_records; Blob dealers/<id>/'],
   ['Dealers › Röst och tal','samma läsning; POST /studio/api/speech-build; GET /studio/api/replies; POST /api/chat; A:moving-drift','doc.project dealers[].speechProfile; media_records; speech_reply_records; moving_drift_control'],
-  ['Dealers › Landningar','filmad profil i koden (filmed-profiles/registry.mjs); doc.project lanes[]','ingen lagring per dealer ännu; mäts efter O03'],
+  ['Dealers › Landningar','filmad profil i koden (filmed-profiles/registry.mjs); doc.project lanes[]','ingen lagring per dealer ännu; mätningen kommer senare'],
   ['Dealers › Används av','GET /admin/_data/catalog + /studio/api/project + /studio/api/videos; A:resource-lifecycle','doc.project, doc.administration, operators, operator_packages'],
   ['Dealers › Inställningar','POST /studio/api/dealers/{archive,delete}; PUT /studio/api/project','doc.project dealers[], dealerTrash[], dealerSets[]; media_records; Blob'],
   ['Scenmallar','GET /admin/_data/catalog + /studio/api/videos; PUT /studio/api/project; A:operator-package publish-scene-layout','doc.project lanes[]; operator_packages'],
@@ -28,7 +28,7 @@ const sources:[string,string,string][]=[
   ['System › AI-agenter','GET/PATCH /studio/api/openclaw/admin','Director-tjänsten på Render (inte Neon); OPENAI_API_KEY-flaggan ur miljön'],
   ['System › Scoutgamings personal','A:users; users/invite, resend, role, remove','croupier_auth.users, tokens'],
   ['System › Spelarkonton','A:players, A:transactions; players/create, status, password','croupier_game.players, player_accounts, transactions, player_admin_events'],
-  ['System › Integration','A:apikeys, A:emails; apikeys/create, revoke, rotate, launch, credit','croupier_auth.api_keys (globala tills steg F)'],
+  ['System › Integration','A:apikeys, A:emails; apikeys/create, revoke, rotate, launch, credit','croupier_auth.api_keys (globala tills nycklarna knyts till bolag)'],
   ['System › Beroenden','GET /admin/_data/catalog + /studio/api/project + /studio/api/videos; A:resource-lifecycle','doc.project, doc.administration, operators, operator_packages'],
 ];
 
@@ -44,7 +44,7 @@ export function AdminHelp() {
         <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Allt ett bolag kan ändra är en delmängd av det Admin kan ändra på samma objekt. En dold meny är ingen behörighet; servern avgör.</p>
       </Card>
       <Card title="Orden">
-        <KV items={[['Spelbord','bolagets ingång till ett spel; öppet eller pausat'],['Bordsgrafik','bilden av bordet'],['Scenmall','hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter'],['Tilldelning','det bolaget får använda; varje publicering blir en ny version'],['Vila','dealerns grundloop mellan händelserna'],['Tagning','en inspelning av en replik'],['Insatsprofil','Casual, Privé eller High'],['Delat bord','flera spelare vid samma spelbord; enda spelvägen från O03']]}/>
+        <KV items={[['Spelbord','bolagets ingång till ett spel; öppet eller pausat'],['Bordsgrafik','bilden av bordet'],['Scenmall','hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter'],['Tilldelning','det bolaget får använda; varje publicering blir en ny version'],['Vila','dealerns grundloop mellan händelserna'],['Tagning','en inspelning av en replik'],['Insatsprofil','Casual, Privé eller High'],['Delat bord','flera spelare vid samma spelbord; enda spelvägen']]}/>
       </Card>
       <Card title="Flödet för en ny dealer">
         <ol className="m-0 grid list-none gap-2 p-0">{adminDealerSteps.map((step,index)=><li key={step} className="flex items-center gap-2.5 text-[13.5px]"><span className="grid size-6 place-items-center rounded-full bg-sg-hover text-[11px] font-bold text-sg-muted">{index+1}</span>{step}</li>)}</ol>
@@ -55,7 +55,7 @@ export function AdminHelp() {
       <summary className={cn('cursor-pointer select-none font-semibold hover:text-sg-text',focusRing)}>Tekniska detaljer · var uppgifterna kommer ifrån</summary>
       <div className="mt-3 overflow-x-auto"><table className="w-full border-collapse text-[12.5px] [&_td]:border-b [&_td]:border-sg-line-2 [&_td]:px-2 [&_td]:py-2 [&_td]:align-top [&_th]:border-b [&_th]:border-sg-border [&_th]:px-2 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold"><thead><tr><th>Sida › flik</th><th>Läsning / åtgärd</th><th>Lagring</th></tr></thead>
         <tbody>{sources.map(([page,read,storage])=><tr key={page}><td className="font-semibold text-sg-text">{page}</td><td className="font-mono text-[11.5px]">{read}</td><td>{storage}</td></tr>)}</tbody></table></div>
-      <p className="mb-0 mt-3">A:x = /studio/api/admin/x. Spelare, transaktioner och API-nycklar saknar bolag i dag; det kommer i steg F efter O03.</p>
+      <p className="mb-0 mt-3">A:x = /studio/api/admin/x. Spelare, transaktioner och API-nycklar saknar bolag i dag; det kommer senare.</p>
     </details>
   </HubPage>;
 }

@@ -82,7 +82,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
       <Stat label="Dealers redo för spel" value={data?`${ready.length}/${dealers.length}`:'–'} hint={data?(dealers.length-ready.length?`${plural(dealers.length-ready.length,'dealer saknar','dealers saknar')} klipp`:'Alla har sina klipp'):'Läser…'} icon={<Users/>} tone={data&&ready.length===dealers.length?'ok':'warn'}/>
       <Stat label="Öppna spelbord" value={registry?`${live.length}/${rooms.length}`:'–'} hint={registry?`${plural(rooms.length-live.length,'pausat','pausade')}`:'Läser…'} icon={<Table2/>} tone="info"/>
       <Stat label="Aktiva bolag" value={registry?activeOperators.length:'–'} hint={registry?`${plural(activeOperators.filter(row=>row.packageRevision!==null).length,'med publicerad tilldelning','med publicerad tilldelning')}`:'Läser…'} icon={<Building2/>} tone="accent"/>
-      <Stat label="Spelarkonton" value={players??'–'} hint={overview.status==='unavailable'?'Inte anslutet för din roll':players===null?'Läser…':'Alla bolag tills steg F'} icon={<UserRound/>}/>
+      <Stat label="Spelarkonton" value={players??'–'} hint={overview.status==='unavailable'?'Inte anslutet för din roll':players===null?'Läser…':'Alla bolag; per bolag kommer senare'} icon={<UserRound/>}/>
     </div>
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">
       <div className="grid content-start gap-5">

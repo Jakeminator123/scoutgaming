@@ -157,7 +157,7 @@ test('the room nav mounts the exact scoped editor per tab; the company nav owns 
   assert.equal(hrefs(appearance).some(href=>/^\/admin\/(publication|rooms\?|clips)/.test(href)),false,'no function lives only on a retired page');
   assert.match(appearance,/data-room-editor="roulette"/);assert.match(appearance,/data-operator="a"/);assert.match(appearance,/data-admin-choices="true"/);assert.match(appearance,/data-room-layout="true"/);
   assert.doesNotMatch(appearance,/data-game-config=|data-room-create=|aria-label="Tilldelning"/,'the appearance tab mounts only the layer editor');
-  assert.match(appearance,/Publicera \(tills steg D\)/);
+  assert.match(appearance,/Publicera \(tills vidare\)/);
   assert.doesNotMatch(appearance,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"|Återställ borttaget spel/);
   assert.match(await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'game'},{compositions}),/data-game-config="bj"/);
   const rouletteGame=await registeredStudioHtml({operatorId:'a',roomId:'roulette',mode:'room',section:'game'},{compositions});
@@ -564,7 +564,7 @@ test('a removed composition never blocks the PAOW idle refresh, which publishes 
   const paow=()=>walk(p.h.render(),node=>node.type==='button'&&node.props.children==='Publicera PAOWs viloklipp')[0];
   assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
   assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the room editor carries no package form; the blocked assignment stays on its own tab');
-  assert.match(p.html(),/Publicera \(tills steg D\)/);
+  assert.match(p.html(),/Publicera \(tills vidare\)/);
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
   paow().props.onClick();await p.settle();
   assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);
