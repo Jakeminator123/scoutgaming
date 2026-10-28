@@ -65,7 +65,8 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
   env = process.env, store = unavailableStore,
   registryOptions = { env, repositoryRoot: root },
   select = selectPresentation, directorFetchFactory = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, withActiveRoomPresentation = null, qaPublicOrigin = null } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, withActiveRoomPresentation = null, qaPublicOrigin = null,
+  savedDealerConfiguration = false } = {}) {
   // Only the verified server QA capability supplies this constructor port.
   if (qaPublicOrigin !== null && (typeof qaPublicOrigin !== 'string'
     || !/^http:\/\/127\.0\.0\.1:([1-9][0-9]{3,4})$/.test(qaPublicOrigin)
@@ -172,6 +173,10 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
           json(200, { inventory:{videos:[],families:[]},defaultMode:'off',
             ...await frozenDealerContext.configuration({operatorSlug:query.get('operatorSlug'),roomId:query.get('roomId'),packageRevision:Number(query.get('packageRevision')),dealerId:query.get('dealerId')}) }); return true;
         }
+        // L2 (O02): the dealerId-only form reads the saved project and the whole inventory.
+        // Only Admin's own preview instance (studio-preview.mjs) may answer it; the public
+        // engine serves configuration only for a published operator, room and package.
+        if (savedDealerConfiguration !== true) fail('Presentation configuration requires a published room', 404);
         const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
         if (requestedDealer !== null && (!isDealerId(requestedDealer) || !project.dealers.some(row => row.id === requestedDealer))) fail('Invalid presentation dealer');
         const ownPolicy = registeredIdlePolicy(project, requestedDealer);

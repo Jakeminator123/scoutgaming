@@ -3,13 +3,11 @@ import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.
 import { isActiveDealerId, isRegisteredDealer } from '../contracts/dealer-identity.mjs';
 import { validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
 import {materialLabel} from '../contracts/material-catalog.mjs';
-// Server-owned /blackjack selection with optional operator context. Without
-// ?operator= the lane, dealer and presentation stay on the saved catalogue
-// path. gameChoices is still attached from the active presentation lane so
-// the player can choose before a company exists. A package and a presentation
-// lane only narrow lanes and dealers the catalogue already renders; they
-// never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
-// not read or written here.
+// Server-owned /blackjack selection in an operator's published package. Without
+// ?operator= there is no game (L1, O02): the saved, unpublished project is never
+// a player path, also not with ?dealer=. A package and a presentation lane only
+// narrow lanes and dealers the catalogue already renders; they never add a lane,
+// dealer or renderer. Wallet, cards, shoe and payouts are not read or written here.
 import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
 import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from '../contracts/game-selection.mjs';
 import {laneDealerSelection} from '../contracts/game-lanes.mjs';
@@ -46,22 +44,8 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     const explicitTable = tables.length > 0;
     if (explicitTable && (tables.length !== 1 || !/^[a-z][a-z0-9-]{0,63}$/.test(tables[0]))) return { status: 404 };
     const slug = requestedOperator(params);
-    // N3.4: gameChoices follows the active presentation lane even before a
-    // company is selected. Lane, dealer and presentation stay on the catalogue
-    // rules, and this path still does not query operator storage.
-    if (explicitTable && (slug === undefined || slug === null)) return { status: 404 };
-    if (slug === undefined) {
-      const saved = await policy.readSaved();
-      const { gameLane, gameLanes } = gameLaneConfiguration(saved.administration);
-      const selection = gameLaneSelection(params, gameLane, gameLanes);
-      const lane = gameLanes.find(row => row.id === selection.lane);
-      const presentation = saved.project?.lanes?.find(row => row.id === selection.lane);
-      const portraitDealerIds = (saved.project?.dealers ?? []).map(row => row.id).filter(isActiveDealerId);
-      const dealer = laneDealerSelection(params,lane,presentation?.layers.dealer,{portraitDealerIds});
-      if (!dealer) return {status:404};
-      return { status: 200, selection: withChoices({...selection,dealer}, saved, gameLanes, selection.lane, saved.project?.dealers, portraitDealerIds) };
-    }
-    if (slug === null) return { status: 404 };
+    // No company, no game: neither storage is read before a valid operator.
+    if (slug === undefined || slug === null) return { status: 404 };
     const [saved, context] = await Promise.all([policy.readSaved(), packages ? packages.resolve(slug) : null]);
     const { gameLane, gameLanes } = gameLaneConfiguration(saved.administration);
 

@@ -1680,7 +1680,7 @@ test('configuration requires explicit identity and each dealer uses only its sav
   project.dealerIdlePolicies=[{dealerId:'linnea',policy}];
   const inventory={families:[],videos:[{id,dealer:'linnea',available:true,sha256:'c'.repeat(64),fileName:id+'.mp4',
     classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',playback:'once',label:'Grundloop',notes:''}}]};
-  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
+  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,savedDealerConfiguration:true});
   async function get(query){
     const req=Readable.from([]);req.method='GET';req.url='/api/presentation/config'+query;req.headers={};
     const res={writeHead(status){this.status=status;},end(raw){this.body=JSON.parse(raw);}};

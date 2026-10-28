@@ -57,11 +57,17 @@ async function fixture({ lanes = {gameLane:mobile.id,gameLanes:[mobile]}, projec
   return { page, select, db, logs, reads };
 }
 
-test('saved explicit entry reads no operator storage and never creates another dealer',async()=>{
- const f=await fixture(),result=await f.page('');
- assert.equal(result.status,200);assert.equal(result.selection.dealer,'astrid');assert.equal(result.selection.presentation,'local');
- assert.deepEqual(result.selection.registeredDealers,[{id:'astrid',label:'Astrid'}]);assert.deepEqual(f.db.calls,[]);
- assert.equal((await f.page('?dealer=amira')).status,404);assert.equal((await f.page('?dealer=unknown')).status,404);
+// L1 (O02): without a company there is no game. The saved, unpublished project
+// is never read for a player entry, also not with an explicit ?dealer=.
+test('entry without operator is 404 and reads neither the saved project nor operator storage',async()=>{
+ const f=await fixture();
+ for(const query of ['','?dealer=astrid','?dealer=amira','?dealer=unknown','?lane=mobile-phone','?presentation=local&dealer=astrid']){
+  const result=await f.page(query);assert.equal(result.status,404,query);assert.equal(result.body,OPERATOR_NOT_FOUND_HTML);
+ }
+ assert.deepEqual(f.reads,{configuration:0,saved:0});assert.deepEqual(f.db.calls,[]);
+ const published=await f.page('?operator=sg-test&dealer=astrid');
+ assert.equal(published.status,200);assert.equal(published.selection.dealer,'astrid');assert.equal(published.selection.packageRevision,2);
+ assert.deepEqual(published.selection.registeredDealers,[{id:'astrid',label:'Astrid'}]);
 });
 test('published operator entry carries exact package revision and escaped metadata',async()=>{
  const f=await fixture(),result=await f.page('?operator=sg-test');
@@ -92,7 +98,7 @@ test('explicit dealer outside a saved presentation is rejected rather than subst
 });
 test('all choices are escaped and tampered dealer authority is rejected',async()=>{
  const lane=defaultPresentationLane('astrid');lane.layers.table.colors=['#112233','#aabbcc'];lane.layers.table.default='#112233';lane.layers.background.mode='image';lane.layers.background.allowed=['room"<script>'];lane.layers.background.default='room"<script>';
- const f=await fixture({projectLanes:[lane]}),result=await f.page('');assert.equal(result.body.includes('<script'),false);
+ const f=await fixture({projectLanes:[lane]}),result=await f.page('?operator=sg-test');assert.equal(result.status,200);assert.equal(result.body.includes('<script'),false);
  const data={gameLane:'mobile-phone',gameDealer:'astrid',gamePresentation:'local',gameLocalDealer:'astrid',gameRegisteredDealers:JSON.stringify(result.selection.registeredDealers),gameChoices:JSON.stringify(result.selection.choices)};
  assert.deepEqual(gameLaneFromDocument(data).choices.tableColors,['#112233','#aabbcc']);
  for(const choices of ['{','null',JSON.stringify({...result.selection.choices,dealers:['unknown']}),JSON.stringify({...result.selection.choices,dealerDefault:'mei'})])assert.throws(()=>gameLaneFromDocument({...data,gameChoices:choices}));
@@ -100,10 +106,10 @@ test('all choices are escaped and tampered dealer authority is rejected',async()
 test('policy failures reject and invalid selectors do not access policy',async()=>{
  const policy={readGameConfiguration:async()=>{throw Error('policy');},readSaved:async()=>{throw Error('policy');}};
  const select=createGameEntrySelector({policy,packages:{resolve:async()=>null}});
- await assert.rejects(select(''));await assert.rejects(select('?operator=sg-test'));assert.equal((await select('?operator=Bad')).status,404);
+ assert.equal((await select('')).status,404);await assert.rejects(select('?operator=sg-test'));assert.equal((await select('?operator=Bad')).status,404);
  assert.throws(()=>createGameEntrySelector({policy:{}}));
 });
 test('historical indexed configuration remains readable but cannot launch',async()=>{
- const f=await fixture({lanes:{gameLane:'legacy',gameLanes:[legacy]}});
- await assert.rejects(f.page(''),/cloud/);
+ const f=await fixture({lanes:{gameLane:'legacy',gameLanes:[legacy]},packages:[packageRow(scope,'sg-test',1,['legacy'])]});
+ await assert.rejects(f.page('?operator=sg-test'),/cloud/);
 });
