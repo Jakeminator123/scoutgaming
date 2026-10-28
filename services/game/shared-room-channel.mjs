@@ -27,10 +27,13 @@ const snapshotShape = {
   me:{...fields('id memberGen active available pausedUntil insuranceDue'),seats:list(true,7),
     lastSettlement:{...fields('roundId settledAt returned staked net'),hands:list(hand,28)}}
 };
+// K04 F5c: a filmed step's server choice (shared-room-filmed-steps.mjs); never a card.
+const clipRef = fields('id sha256');
+const filmed = {filmedTake:fields('profileId takeKey id sha256'),filmedTransitions:{before:clipRef,after:clipRef}};
 const eventShapes = {
   speak:fields('type line blocking family'),idle:fields('type family'),
-  deal:{...fields('type to box handIndex faceDown shoeDraw family'),card,clip:fields('action prefer fallback')},
-  reveal:{...fields('type to shoeDraw family'),card},
+  deal:{...fields('type to box handIndex faceDown shoeDraw family'),card,clip:fields('action prefer fallback'),...filmed},
+  reveal:{...fields('type to shoeDraw family'),card,...filmed},
   settle:{...fields('type dealerTotal dealerBlackjack'),hands:list(fields('box stake returned outcome'),28)},
   turn:{...fields('type box handIndex'),legalActions:list(true,8)}
 };
@@ -76,7 +79,11 @@ function publicPair(rawSnapshot,rawPresentation,binding) {
   p.events=rawPresentation.events.map(event=>{
     if(!object(event)||!Object.hasOwn(eventShapes,event.type))fail();
     if(event.type==='deal'&&event.faceDown===true&&event.card!==null)fail();
-    return project(event,eventShapes[event.type]);
+    const value=project(event,eventShapes[event.type]),take=value.filmedTake,moves=value.filmedTransitions;
+    const sha=ref=>typeof ref?.sha256==='string'&&/^[a-f0-9]{64}$/.test(ref.sha256)&&id(ref.id);
+    if(take!==undefined&&(!sha(take)||!id(take.profileId)||!id(take.takeKey)))fail();
+    if(moves!==undefined&&(take===undefined||!object(moves)||['before','after'].some(key=>moves[key]!==null&&!sha(moves[key]))))fail();
+    return value;
   });
   if(!Array.isArray(p.lines))fail();
   if(p.status==='legacy') {
@@ -211,6 +218,8 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       for(const actor of new Set(actorIds))for(const connection of actors.get(actor)??[])
         if(connection.roomId!==exceptRoom)connection.requestRefresh();
     },
-    close(){if(stopped)return;stopped=true;for(const connection of [...connections])connection.close();}
+    // B2: the service closes only on shutdown/restart (SIGTERM). 1012 tells the client to
+    // reconnect with a fresh authenticated snapshot; 1000 would stop it for good.
+    close(){if(stopped)return;stopped=true;for(const connection of [...connections])connection.close(1012,'shared_room_restart');}
   });
 }

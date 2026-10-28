@@ -6,6 +6,7 @@ import { createSharedRoomUpgrade } from './shared-room-upgrade.mjs';
 import { createPostgresTableRuntime } from './games/blackjack/table/postgres-runtime.mjs';
 import { createPostgresPresentationReceiver } from './games/blackjack/presentation/postgres-receiver.mjs';
 import { assertSharedPostgresOwner } from '../../packages/storage/server/postgres-transaction-context.mjs';
+import { createFilmedStepReader } from './shared-room-filmed-steps.mjs';
 
 const unavailable = () => Object.assign(new Error('shared_room_service_unavailable'), { statusCode: 503 });
 const stopped = () => new DOMException('Shared room service stopped', 'AbortError');
@@ -127,6 +128,9 @@ export function createSharedRoomService({
       } finally { admissions.delete(token); }
     }, combined);
   }
+  const filmedSteps = typeof runtime.store?.read?.config === 'function'
+    ? createFilmedStepReader({ readConfig: (roomId, version) => runtime.store.read.config(roomId, version) })
+    : async (_roomId, presentation) => presentation;
   let presentationAccess;
   function presentationRead(method,args,selectFrozen) {
     if (typeof runtime.withLockedRead !== 'function' || typeof receiver.currentLocked !== 'function') throw unavailable();
@@ -143,7 +147,8 @@ export function createSharedRoomService({
     authorize: (request, { roomId, signal }) => read(active => access.authorize(request, { roomId, signal: active }), signal),
     revalidate: (binding, { signal }) => read(active => access.revalidate(binding, { signal: active }), signal),
     readSnapshot: (roomId, actorId, { signal }) => read(() => runtime.coordinator.snapshot(roomId, actorId, {client:true}), signal),
-    readPresentation: (roomId, { signal }) => read(() => receiver.current(roomId), signal),
+    // K04 F5c: a native filmed plan carries its step choices (shared-room-filmed-steps.mjs).
+    readPresentation: (roomId, { signal }) => read(async () => filmedSteps(roomId, await receiver.current(roomId)), signal),
   });
   const upgrade = createUpgrade({ origin, engineOrigin, WebSocketServer, channel: {
     async prepare(request) {
