@@ -10,7 +10,7 @@ import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import { studioLoginReturnTo } from '../lib/studio-login-client.mjs';
 import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-session.mjs';
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
-import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, PARTNER_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
@@ -70,7 +70,7 @@ const rejectedReturns = [undefined, [' /partner'], ['/partner/north','/partner/s
   '/partner/north/rooms?room='+'a'.repeat(65),'/partner/north\r\nLocation: https://outside.invalid',
 ];
 
-safeReturns.push(...PARTNER_PREVIEW_VIEWS.flatMap(view=>{
+safeReturns.push(...PARTNER_VIEWS.flatMap(view=>{
   const path=workspaceSurfacePath('partner',view,'north');
   return [[path+'?scope=company',path+'?scope=company'],['/studio'+path+'?room=room-7',path+'?room=room-7']];
 }),['/studio/partner/north/tables?scope=company','/partner/north/rooms?scope=company']);

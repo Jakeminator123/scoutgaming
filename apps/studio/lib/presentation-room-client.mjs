@@ -35,7 +35,7 @@ export function presentationRoomContextKey(context) {
   return JSON.stringify([context?.operator?.id ?? null, context?.operator?.slug ?? null, context?.presentation?.id ?? null, context?.projectRevision ?? null]);
 }
 function validContext(context) {
-  return object(context?.operator) && identifier(context.operator.id) && workspaceSurfacePath('partner', 'ops', context.operator.slug) !== null
+  return object(context?.operator) && identifier(context.operator.id) && workspaceSurfacePath('partner', 'overview', context.operator.slug) !== null
     && laneId(context?.presentation?.id) && revision(context.projectRevision);
 }
 function preflight(value, context, game) {
