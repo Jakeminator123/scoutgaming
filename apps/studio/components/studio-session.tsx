@@ -51,8 +51,7 @@
 // projectRef: latest project for async upload handlers
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
-import type { ActivityDraft } from './activity-log';
+import { appendActivity, type ActivityDraft, type ActivityEntry } from '../lib/activity-log.mjs';
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
 import { mediaExampleEvent, mediaLineForEvent } from '../../../packages/presentation/runtime/media-family-policy.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';

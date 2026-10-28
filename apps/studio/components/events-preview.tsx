@@ -2,7 +2,7 @@
 
 import type { RefObject } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
-import type { ActivityDraft } from './activity-log';
+import type { ActivityDraft } from '../lib/activity-log.mjs';
 import { EventTestPanel } from './event-test-panel';
 import { MediaSituation } from './media-family-editor';
 import { SocialChatPanel, type SocialActivity, type SocialDraftCache } from './social-chat-panel';
