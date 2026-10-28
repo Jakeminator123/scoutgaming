@@ -33,8 +33,9 @@ export async function readAiImageStatus({fetchImpl=fetch,signal}={}) {
   const body=await response.json();
   return {configured:body?.configured===true,dailyLimit:Number(body?.dailyLimit)||0,remaining:Number(body?.remaining)||0};
 }
-export async function requestAiProposals({role,prompt,preset,count,dealerId,reference},{fetchImpl=fetch,signal}={}) {
-  const body={role,prompt,preset,count,...(role==='table'?{dealerId}:{}),...(reference?{reference}:{})};
+export async function requestAiProposals({role,prompt,preset,count,dealerId,sceneTemplate,reference},{fetchImpl=fetch,signal}={}) {
+  const scene=role==='table'&&sceneTemplate?{sceneTemplate:{id:sceneTemplate.id,...(sceneTemplate.composition?{composition:sceneTemplate.composition}:{})}}:{};
+  const body={role,prompt,preset,count,...(role==='table'?{dealerId,...scene}:{}),...(reference?{reference}:{})};
   const response=await fetchImpl(labUrl(AI_IMAGE_ENDPOINT),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
   if (!response.ok) throw new AiImageRequestError(await readCode(response));
   const value=await response.json();
@@ -47,6 +48,11 @@ export async function requestAiProposals({role,prompt,preset,count,dealerId,refe
 // Table graphics follow a filmed profile's landings; other dealers have none.
 export function aiTableDealers(dealers) {
   return (dealers??[]).filter(dealer=>typeof dealer?.id==='string'&&registeredFilmedProfile(dealer.id));
+}
+// A table is drawn for one scene template: those that allow the dealer, first
+// one first. Its composition decides where the graphic sits under the cards.
+export function aiSceneTemplates(templates,dealerId) {
+  return (templates??[]).filter(row=>typeof row?.id==='string'&&Array.isArray(row.dealers)&&row.dealers.includes(dealerId));
 }
 
 export function dataUrlFile(dataUrl,name) {

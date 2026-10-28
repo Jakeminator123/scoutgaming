@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
 import {filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
 import {AI_IMAGE_REFERENCE_MAX_BYTES} from '../lib/ai-image-contract.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 // No real provider call anywhere: every test injects fetchImpl.
 const origin='https://studio.example.invalid',scope={environment:'test',workspaceId:'studio-test'};
@@ -208,4 +209,45 @@ test('table mode sends the computed landing template and draws the boxes exactly
     assert.equal(inside[3],255);assert.ok(Math.abs(inside[1]-felt.g)<24,'felt inside the box');
     assert.ok(edge[0]+edge[1]+edge[2]>inside[0]+inside[1]+inside[2]+150,'the drawn box edge is at the computed position');
   }
+});
+
+// The table-template work's placement (bordsmatt-paow.json): desktop 50 % / y 35 %, phone 158 % / y 35 %.
+function facitComposition() {
+  const composition=defaultCompositionSettings();
+  composition.desktop.table={width:.5,x:0,y:.35};composition.mobile.table={width:1.58,x:0,y:.35};
+  return composition;
+}
+test('a table graphic follows the chosen scene template: facit placement gives facit measurements, none gives the defaults',async()=>{
+  const table={role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:1};
+  const calls=[],handler=api({calls});
+  const response=await handler.handle(post({...table,sceneTemplate:{id:'paow-bord',composition:facitComposition()}}));
+  assert.equal(response.status,200);
+  const [proposal]=(await response.json()).images;
+  assert.deepEqual([proposal.width,proposal.height],[1920,1404]);
+  assert.equal(calls[0].body.tools[0].size,'1920x1408');assert.match(calls[0].body.input[0].content[0].text,/scene template paow-bord/);
+  // Seat 4 of the facit lands at u 960, v 498.38: felt there, the drawn box edge at x 901.5.
+  const {data,info}=await sharp(Buffer.from(proposal.dataUrl.split(',')[1],'base64')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const pixel=(x,y)=>{const at=(Math.round(y)*info.width+Math.round(x))*4;return [...data.subarray(at,at+4)];};
+  const centre=pixel(960,498.38),edge=pixel(901.5,498.38);
+  assert.equal(centre[3],255);assert.ok(edge[0]+edge[1]+edge[2]>centre[0]+centre[1]+centre[2]+150);
+  for (const body of [table,{...table,sceneTemplate:null},{...table,sceneTemplate:{id:'utan-placering'}}]) {
+    const plain=[],result=await api({calls:plain}).handle(post(body));
+    assert.equal(result.status,200);
+    const [image]=(await result.json()).images;
+    assert.deepEqual([image.width,image.height],[1215,2074]);assert.equal(plain[0].body.tools[0].size,'1216x2080');
+  }
+});
+
+test('an invalid scene template or composition is refused as ai_image_invalid_request without a call',async()=>{
+  const table={role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:1},calls=[],handler=api({calls});
+  const wide=facitComposition();wide.desktop.table.width=9;
+  const skewed=facitComposition();skewed.mobile.table.x=.2;
+  for (const sceneTemplate of [{id:'Bad Id',composition:facitComposition()},{id:'',composition:facitComposition()},{id:'x'.repeat(64)},{id:'mall',composition:{mobile:{}}},
+    {id:'mall',composition:wide},{id:'mall',composition:{...facitComposition(),extra:true}},{id:'mall',composition:skewed},{id:'mall',composition:facitComposition(),label:'Mall'},'mall',[]]) {
+    const response=await handler.handle(post({...table,sceneTemplate}));
+    assert.equal(response.status,400,JSON.stringify(sceneTemplate).slice(0,80));assert.equal((await response.json()).code,'ai_image_invalid_request');
+  }
+  const {dealerId:_dealer,...background}=table;
+  assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'mall'}}))).status,400);
+  assert.equal(calls.length,0);
 });

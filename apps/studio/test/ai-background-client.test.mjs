@@ -6,7 +6,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
-import {AI_IMAGE_MESSAGES,aiImageErrorMessage,aiTableDealers,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_MESSAGES,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
 import {aiImageLabel} from '../lib/ai-image-contract.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 
@@ -57,8 +57,13 @@ test('proposal requests go to the one AI route and only fixed codes become text'
   assert.equal(sent[0].url,'/api/layer-assets/generate');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
   assert.deepEqual(JSON.parse(sent[0].init.body),{role:'table',prompt:'Filt',preset:'casino',count:2,dealerId:'paow',reference:'data:image/png;base64,AAAA'});
   assert.deepEqual(result,{images:[image],remaining:7},'malformed proposals are dropped');
-  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow'},{fetchImpl});
+  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'mall'}},{fetchImpl});
   assert.deepEqual(JSON.parse(sent[1].init.body),{role:'background',prompt:'Studio',preset:'free',count:1});
+  const composition={mobile:{},desktop:{}};
+  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:{id:'paow-bord',composition}},{fetchImpl});
+  assert.deepEqual(JSON.parse(sent[2].init.body).sceneTemplate,{id:'paow-bord',composition},'the scene template and its composition go along');
+  await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:null},{fetchImpl});
+  assert.equal(Object.hasOwn(JSON.parse(sent[3].init.body),'sceneTemplate'),false,'no template: the server uses the composition defaults');
   for (const [code,message] of Object.entries(AI_IMAGE_MESSAGES)) {
     const error=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code,error:'secret provider text'},{status:503})}).catch(cause=>cause);
     assert.equal(aiImageErrorMessage(error),message);
@@ -82,6 +87,9 @@ test('labels and table dealers follow the layer contract and the filmed profile 
   assert.equal(aiImageLabel('  Mörk <studio>\n med   ljus '),'AI · Mörk studio med ljus');
   assert.ok(aiImageLabel('x'.repeat(600)).length<=80);assert.equal(aiImageLabel(''),'AI · bild');
   assert.deepEqual(aiTableDealers([{id:'paow',label:'PAOW'},{id:'astrid',label:'Astrid'},{id:'dragan',label:'Dragan'},{id:'ny',label:'Ny'}]).map(row=>row.id),['paow','dragan']);
+  const lanes=[{id:'roulette',label:'Roulette',dealers:['anna']},{id:'paow-bord',label:'PAOW-bord',dealers:['paow','dragan']},{id:'andra',label:'Andra',dealers:['paow']}];
+  assert.deepEqual(aiSceneTemplates(lanes,'paow').map(row=>row.id),['paow-bord','andra'],'the first template that allows the dealer comes first');
+  assert.deepEqual(aiSceneTemplates(lanes,'astrid'),[]);assert.deepEqual(aiSceneTemplates(undefined,'paow'),[]);
 });
 
 // Render the exported dialog's closed state: it compiles, resolves its client

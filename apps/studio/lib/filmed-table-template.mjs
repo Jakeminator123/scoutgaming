@@ -1,7 +1,8 @@
 // Pure geometry for AI table graphics: where a filmed dealer's cards land on a
-// table graphic placed with the default composition. Everything is computed at
-// call time from the filmed profile registry and the composition defaults; no
-// measurement is copied into Studio. Dealers without a filmed profile get null.
+// table graphic placed by a scene template's composition (or the composition
+// defaults). Everything is computed at call time from the filmed profile
+// registry and that composition; no measurement is copied into Studio.
+// Dealers without a filmed profile get null.
 import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import {validateFilmedDealProfile} from '../../../packages/presentation/contracts/filmed-profile.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -20,7 +21,7 @@ const rect = (center,width,height) => ({x:round(center.x-width/2),y:round(center
 function tableInPlane(composition,layout) {
   const scene={layout,stage:{mobile:composition.mobile.dealer,desktop:composition.desktop.dealer},tablePlacement:composition[layout].table};
   const geometry=stageGeometry(scene),[x,y,width]=tableRect(scene,{width:1,height:1},geometry);
-  return {x:(x-geometry.x)/geometry.s,y:(y-geometry.y)/geometry.s,width:width/geometry.s};
+  return {x:(x-geometry.x)/geometry.s,y:(y-geometry.y)/geometry.s,width:width/geometry.s,sceneWidth:width};
 }
 
 // Least-squares arc y = a + b(x - centre)^2 through the seat landings. Filmed
@@ -37,8 +38,10 @@ function seatArc(points,centre) {
 
 /**
  * Landing template for a filmed dealer's table graphic, or null when the dealer
- * has no filmed profile or the placement differs between phone and desktop.
- * width is the graphic's pixel width; by default one pixel per filmed-plane pixel.
+ * has no filmed profile, the placement differs between phone and desktop, or
+ * the graphic would exceed the image model's limits. width is the graphic's
+ * pixel width; by default two pixels per desktop scene pixel, so the table
+ * stays sharp on a 4K or retina desktop. The graphic reaches the plane's bottom.
  */
 export function filmedTableTemplate(dealerId,{profileFor=registeredFilmedProfile,composition=defaultCompositionSettings(),width}={}) {
   const profile=typeof dealerId==='string'?profileFor(dealerId):null;
@@ -49,7 +52,7 @@ export function filmedTableTemplate(dealerId,{profileFor=registeredFilmedProfile
   const [mobile,desktop]=['mobile','desktop'].map(layout=>tableInPlane(composition,layout));
   // One graphic serves both formats only when both place it on the same plane rectangle.
   if (['x','y','width'].some(key=>!Number.isFinite(desktop[key])||Math.abs(mobile[key]-desktop[key])>LAYOUT_TOLERANCE)||desktop.width<=0) return null;
-  const canvasWidth=width??Math.round(desktop.width);
+  const canvasWidth=width??Math.round(2*desktop.sceneWidth);
   if (!Number.isSafeInteger(canvasWidth)||canvasWidth<256||canvasWidth>3840) return null;
   const scale=canvasWidth/desktop.width,toImage=({cx,cy})=>({x:(cx-desktop.x)*scale,y:(cy-desktop.y)*scale});
   const card={width:profile.card.width*scale,height:profile.card.height*scale};
@@ -61,9 +64,11 @@ export function filmedTableTemplate(dealerId,{profileFor=registeredFilmedProfile
   const gap=box.height/2+card.height*.45,railWidth=card.height*.55;
   const curve=(x,offset)=>arc.a+arc.b*(x-arc.centre)**2+offset;
   const feltTop=Math.max(0,dealerCenter.y-card.height*2.2);
-  const height=Math.ceil(Math.max(...[0,canvasWidth,arc.centre].map(x=>curve(Math.min(canvasWidth,Math.max(0,x)),gap+railWidth)))+card.height*.15);
-  // Every box must sit on the felt, inside the rail and the graphic.
-  if (height>3840||seats.some(seat=>seat.box.y<feltTop||seat.box.y+seat.box.height>curve(seat.center.x,gap)||seat.box.x<0||seat.box.x+seat.box.width>canvasWidth)) return null;
+  const railBottom=Math.max(...[0,canvasWidth,arc.centre].map(x=>curve(Math.min(canvasWidth,Math.max(0,x)),gap+railWidth)))+card.height*.15;
+  const height=Math.ceil(Math.max(railBottom,(profile.plane.height-desktop.y)*scale)-1e-6);
+  // Within the renderer's limits (edge 3840, 8.3 MP, 3:1), and every box on the
+  // felt, inside the rail and the graphic.
+  if (height>3840||canvasWidth*height>8_294_400||Math.max(canvasWidth/height,height/canvasWidth)>3||seats.some(seat=>seat.box.y<feltTop||seat.box.y+seat.box.height>curve(seat.center.x,gap)||seat.box.x<0||seat.box.x+seat.box.width>canvasWidth)) return null;
   const samples=Array.from({length:33},(_,index)=>canvasWidth*index/32);
   const line=offset=>samples.map(x=>[round(x),round(Math.max(feltTop,curve(x,offset)))]);
   return Object.freeze({

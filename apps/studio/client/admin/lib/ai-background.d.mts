@@ -1,5 +1,8 @@
 import type {StudioProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AiImageErrorCode,AiImagePresetId,AiImageRole} from '../../../lib/ai-image-contract.mjs';
+import type {CompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
+
+export type AiSceneTemplate={id:string;label:string;dealers:readonly string[];composition?:CompositionSettings};
 
 export type AiProposal={id:string;dataUrl:string;width:number;height:number};
 export type AiImageStatus={configured:boolean;dailyLimit:number;remaining:number};
@@ -8,9 +11,10 @@ export const AI_IMAGE_MESSAGES: Readonly<Record<AiImageErrorCode,string>>;
 export class AiImageRequestError extends Error { readonly code:AiImageErrorCode|null; constructor(code:string|null); }
 export function aiImageErrorMessage(error:unknown):string;
 export function readAiImageStatus(options?:{fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<AiImageStatus>;
-export function requestAiProposals(input:{role:AiImageRole;prompt:string;preset:AiImagePresetId;count:number;dealerId?:string;reference?:string|null},
+export function requestAiProposals(input:{role:AiImageRole;prompt:string;preset:AiImagePresetId;count:number;dealerId?:string;sceneTemplate?:{id:string;composition?:CompositionSettings}|null;reference?:string|null},
   options?:{fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<{images:AiProposal[];remaining:number}>;
 export function aiTableDealers<T extends {id:string}>(dealers:readonly T[]|null|undefined):T[];
+export function aiSceneTemplates<T extends AiSceneTemplate>(templates:readonly T[]|null|undefined,dealerId:string):T[];
 export function dataUrlFile(dataUrl:string,name:string):File;
 export function registerAiProposal(proposal:AiProposal,input:{role:AiImageRole;prompt:string},options?:{
   fetchImpl?:typeof fetch;put?:(pathname:string,file:File,options:Record<string,unknown>)=>Promise<{pathname:string}>;

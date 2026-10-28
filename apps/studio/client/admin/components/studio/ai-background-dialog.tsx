@@ -4,7 +4,7 @@ import {Check, ImagePlus, RefreshCw, Sparkles, X} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMAGE_REFERENCE_TYPES, aiImageLabel, type AiImagePresetId} from '../../../../lib/ai-image-contract.mjs';
-import {aiImageErrorMessage, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal} from '../../lib/ai-background.mjs';
+import {aiImageErrorMessage, aiSceneTemplates, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
 
 export type AiBackgroundDialogProps = {
@@ -14,6 +14,8 @@ export type AiBackgroundDialogProps = {
   game?: 'blackjack' | 'roulette';
   /** Registered dealers; table mode lists those with a filmed profile. */
   dealers?: readonly {id: string; label: string}[];
+  /** Scene templates (project.lanes); a table is drawn for one template's composition. */
+  templates?: readonly AiSceneTemplate[];
   disabled?: boolean;
   onRegistered: (project: StudioProject, id: string) => void;
   onBusyChange?: (busy: boolean) => void;
@@ -25,12 +27,12 @@ const field = 'min-w-0 w-full rounded border border-sg-line bg-sg-bg p-2 text-sm
 // Proposals are drafts in this dialog only. "Använd" registers one through the
 // existing layer-asset upload; it reaches no operator until a scene template
 // lists it and is published.
-export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
+export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], templates = [], disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
   const table = role === 'table', filmed = aiTableDealers(dealers), unsupported = table && (game !== 'blackjack' || filmed.length === 0);
   const [open, setOpen] = useState(false), [phase, setPhase] = useState<Phase>('form');
   const [status, setStatus] = useState<AiImageStatus | null>(null), [statusError, setStatusError] = useState('');
   const [prompt, setPrompt] = useState(''), [preset, setPreset] = useState<AiImagePresetId>('dark-studio'), [count, setCount] = useState(2);
-  const [dealerId, setDealerId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
+  const [dealerId, setDealerId] = useState(''), [templateId, setTemplateId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
   const [proposals, setProposals] = useState<AiProposal[]>([]), [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState(''), [progress, setProgress] = useState<number | null>(null), [confirmation, setConfirmation] = useState('');
   const request = useRef<AbortController | null>(null), anchor = useRef<HTMLSpanElement>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
@@ -40,6 +42,10 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   useEffect(() => { busyCallback.current?.(busy); }, [busy]);
   const filmedIds = filmed.map(row => row.id).join(',');
   useEffect(() => { const ids = filmedIds ? filmedIds.split(',') : []; if (table && !ids.includes(dealerId)) setDealerId(ids[0] ?? ''); }, [table, filmedIds, dealerId]);
+  // Default: the first scene template that allows the chosen dealer; '' = the composition defaults.
+  const scenes = aiSceneTemplates(templates, dealerId), sceneIds = scenes.map(row => row.id).join(',');
+  useEffect(() => { const ids = sceneIds ? sceneIds.split(',') : []; setTemplateId(current => ids.includes(current) ? current : ids[0] ?? ''); }, [sceneIds]);
+  const scene = scenes.find(row => row.id === templateId) ?? null;
   useEffect(() => {
     if (!open) return undefined;
     const controller = new AbortController();
@@ -71,7 +77,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
     const controller = new AbortController(); request.current = controller;
     setPhase('generating'); setError(''); setProposals([]); setSelected(null);
     try {
-      const result = await requestAiProposals({role, prompt: text, preset, count, ...(table ? {dealerId} : {}), reference}, {signal: controller.signal});
+      const result = await requestAiProposals({role, prompt: text, preset, count, ...(table ? {dealerId, sceneTemplate: scene ? {id: scene.id, composition: scene.composition} : null} : {}), reference}, {signal: controller.signal});
       if (!mounted.current || controller.signal.aborted) return;
       setProposals(result.images); setSelected(result.images[0]?.id ?? null); setPhase('results');
       setStatus(current => current ? {...current, remaining: result.remaining} : current);
@@ -151,6 +157,14 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               </select>
               <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
             </label> : null}
+            {table && filmed.length ? <label className="grid gap-1">
+              <span className="font-medium">Scenmall</span>
+              <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
+                {scenes.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+                <option value="">Standardplacering (ingen scenmall)</option>
+              </select>
+              <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
+            </label> : null}
             <div className="grid gap-1">
               <span className="font-medium">Referensbild · valfri</span>
               {reference ? <div className="flex items-center gap-3">
@@ -174,7 +188,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
           {phase === 'generating' ? <div className="grid gap-2">
             <p role="status">Skapar förslag… Det kan ta ett par minuter.</p>
             <div className="grid grid-cols-2 gap-3" aria-hidden="true">
-              {Array.from({length: count}, (_, index) => <div key={index} className={'animate-pulse rounded border border-sg-line bg-sg-bg ' + (table ? 'aspect-[1080/1233]' : 'aspect-video')} />)}
+              {Array.from({length: count}, (_, index) => <div key={index} className={'animate-pulse rounded border border-sg-line bg-sg-bg ' + (table ? 'aspect-[3/4]' : 'aspect-video')} />)}
             </div>
           </div> : null}
 

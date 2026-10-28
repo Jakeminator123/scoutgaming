@@ -19,6 +19,8 @@ function scenePoints(template,composition,layout) {
 
 test('boxes sit exactly where the filmed dealer lands, on phone and desktop, with the default composition',()=>{
   const composition=defaultCompositionSettings();
+  // Two pixels per desktop scene pixel (607.5 -> 1215), down to the plane's bottom edge.
+  assert.deepEqual(filmedTableTemplate('paow').canvas,{width:1215,height:2074});assert.equal(filmedTableTemplate('paow').plane.scale,1.125);
   for (const dealerId of ['paow','dragan']) {
     const template=filmedTableTemplate(dealerId),profile=registeredFilmedProfile(dealerId);
     assert.equal(template.profileId,profile.id);
@@ -60,7 +62,9 @@ const PAOW_FACIT=[['1',476.25,397.13,417.75,322.88,117,148.5],['2',637.13,453.38
 test('the same computation reproduces the PAOW table measurements (bordsmatt-paow.json) for its placement',()=>{
   const composition=defaultCompositionSettings();
   composition.desktop.table={width:.5,x:0,y:.35};composition.mobile.table={width:1.58,x:0,y:.35};
-  const template=filmedTableTemplate('paow',{composition,width:1920});
+  // The graphic's size follows the placement's table width: facit's 1920 x 1404.
+  const template=filmedTableTemplate('paow',{composition});
+  assert.deepEqual(template.canvas,{width:1920,height:1404});assert.deepEqual(filmedTableRequestSize(template),{width:1920,height:1408});
   assert.ok(Math.abs(template.plane.scale-1.125)<1e-3);assert.deepEqual(template.plane.offset,{x:-313.33,y:672});
   assert.deepEqual(template.card,{width:87.75,height:119.25});
   for (const [id,u,v,x,y,width,height] of PAOW_FACIT) {
