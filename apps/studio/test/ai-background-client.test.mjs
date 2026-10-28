@@ -60,11 +60,11 @@ test('proposal requests go to the one AI route and only fixed codes become text'
   await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow'},{fetchImpl});
   assert.deepEqual(JSON.parse(sent[1].init.body),{role:'background',prompt:'Studio',preset:'free',count:1});
   for (const [code,message] of Object.entries(AI_IMAGE_MESSAGES)) {
-    const error=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code,error:'sk-secret provider text'},{status:503})}).catch(cause=>cause);
+    const error=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code,error:'secret provider text'},{status:503})}).catch(cause=>cause);
     assert.equal(aiImageErrorMessage(error),message);
   }
   assert.match(AI_IMAGE_MESSAGES.ai_image_unavailable,/^Inte anslutet\./);
-  const unknown=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code:'provider_said',error:'sk-secret provider text'},{status:500})}).catch(cause=>cause);
+  const unknown=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code:'provider_said',error:'secret provider text'},{status:500})}).catch(cause=>cause);
   assert.equal(aiImageErrorMessage(unknown),'Förslagen kunde inte skapas. Försök igen.');assert.doesNotMatch(aiImageErrorMessage(unknown),/secret|provider/);
   assert.deepEqual(await readAiImageStatus({fetchImpl:async()=>Response.json({configured:false,dailyLimit:0,remaining:0})}),{configured:false,dailyLimit:0,remaining:0});
 });

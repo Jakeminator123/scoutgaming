@@ -8,7 +8,7 @@ import {AI_IMAGE_REFERENCE_MAX_BYTES} from '../lib/ai-image-contract.mjs';
 // No real provider call anywhere: every test injects fetchImpl.
 const origin='https://studio.example.invalid',scope={environment:'test',workspaceId:'studio-test'};
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid','studio.example.invalid']};
-const KEY='sk-fixture-ai-image-secret';
+const KEY='fixture-openai-key-not-real';
 const env={OPENAI_API_KEY:KEY};
 const staff=role=>async()=>({user:'Personal',role,scope});
 const url=origin+'/studio/api/layer-assets/generate';
@@ -162,7 +162,7 @@ test('model, reasoning and cap are configurable; invalid values switch the featu
 });
 
 test('provider failures become fixed codes; neither the key nor the provider text reaches the browser',async()=>{
-  const leak='Incorrect API key sk-fixture-ai-image-secret; organisation org-private; prompt "hemlig"';
+  const leak=`Incorrect API key ${KEY}; organisation org-private; prompt "hemlig"`;
   for (const [respond,status,code] of [
     [()=>Response.json({error:{message:leak,type:'invalid_request_error',code:'moderation_blocked'}},{status:400}),422,'ai_image_rejected'],
     [()=>Response.json({error:{message:leak,code:'insufficient_quota'}},{status:429}),429,'ai_image_limit_reached'],
