@@ -6,6 +6,7 @@ import { sanitizeDriftGuardDiagnostic } from '../../services/game/moving-drift-d
 
 const CODE = /^[a-z][a-z0-9_]{0,63}$/, PHASE = /^[a-z][a-z0-9_-]{0,63}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, HEX32 = /^[a-f0-9]{32}$/;
+const DEALER = /^[a-z][a-z0-9-]{0,39}$/;
 const READBACK_PHASES = new Set(['claim', 'configuration', 'cancel', 'reconcile', 'provider_observation', 'session_read', 'controller_observe']);
 const own = (value, key) => {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -33,7 +34,8 @@ export const CHILD_DIAGNOSTIC_EVENTS = Object.freeze({
   moving_drift_readback_failed: value => pick(value, { code }),
   moving_speech_preparation_failed: receipt,
   moving_speech_stream_interrupted: receipt,
-  moving_speech_recovery: value => pick(value, { unresolved: candidate => Number.isSafeInteger(candidate) && candidate >= 0 && candidate <= 100000 }),
+  moving_speech_recovery: value => pick(value, { dealerId: candidate => typeof candidate === 'string' && DEALER.test(candidate),
+    unresolved: candidate => Number.isSafeInteger(candidate) && candidate >= 0 && candidate <= 100000 }),
   moving_speech_cleanup_requires_recovery: () => ({}),
 });
 

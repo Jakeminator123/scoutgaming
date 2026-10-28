@@ -20,19 +20,33 @@ export function parseMovingDriftCommand(input) {
   return Object.fromEntries(keys.map(key=>[key,input[key]]));
 }
 
+// The same dealer identifier as `croupier/media/dealers/<id>/` in private Blob.
+export const MOVING_DRIFT_DEALER_ID=/^[a-z][a-z0-9-]{0,39}$/;
+
 // One shared, explicit configuration parser for Admin and the game runtime.
-// No environment reads or connection at module import.
+// No environment reads or connection at module import. Each profile belongs
+// to exactly one dealer and one endpoint: drift state is kept per dealer, and
+// an endpoint shared between dealers would let one dealer's Off drain the other.
 export function movingDriftConfiguration(env={}) {
   if(env.CROUPIER_STUDIO_MOVING_DRIFT_API!=='1') return null;
   const raw=env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES;
   if(typeof raw!=='string'||new TextEncoder().encode(raw).byteLength>8192) throw driftError('drift_invalid_configuration',422);
   let profiles;
   try {profiles=JSON.parse(raw);} catch {throw driftError('drift_invalid_configuration',422);}
-  const keys=['id','label','endpointId','releaseDigest','bankHash'];
+  const keys=['id','label','dealerId','endpointId','releaseDigest','bankHash'];
+  const unique=key=>new Set(profiles.map(profile=>profile[key])).size===profiles.length;
   if(!Array.isArray(profiles)||!profiles.length||profiles.length>8||profiles.some(profile=>
     !profile||typeof profile!=='object'||Array.isArray(profile)
-    ||Object.keys(profile).length!==keys.length||keys.some(key=>!Object.hasOwn(profile,key)))) {
+    ||Object.keys(profile).length!==keys.length||keys.some(key=>!Object.hasOwn(profile,key))
+    ||typeof profile.dealerId!=='string'||!MOVING_DRIFT_DEALER_ID.test(profile.dealerId))
+    ||!['id','dealerId','endpointId'].every(unique)) {
     throw driftError('drift_invalid_configuration',422);
   }
   return Object.freeze({profiles:structuredClone(profiles)});
+}
+
+/** The one profile of a dealer, or null. The controller catalogue is this profile alone. */
+export function movingDriftDealerProfile(configuration,dealerId) {
+  const matches=configuration?.profiles?.filter(profile=>profile.dealerId===dealerId)??[];
+  return matches.length===1?matches[0]:null;
 }

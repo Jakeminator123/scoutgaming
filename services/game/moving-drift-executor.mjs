@@ -6,7 +6,7 @@ import {createMovingSpeechSession} from './moving-speech-session.mjs';
 import {createMovingDriftObserver} from './moving-drift-observer.mjs';
 import {driftReadDurationClass} from './moving-drift-diagnostics.mjs';
 import {validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
-import {driftError} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,movingDriftDealerProfile} from '../../packages/presentation/contracts/moving-drift.mjs';
 
 /**
  * One existing min0/max1 endpoint, read-only control plane. Off closes admission
@@ -83,23 +83,25 @@ export function createMovingDriftExecutor({controller,profile,observer,sessions,
   });
 }
 
-/** Server-only factory. This does not start a loop or make a provider call.
+/** Server-only factory for one dealer. This does not start a loop or make a provider call.
  * The original Astrid journal remains untouched; only this moving journal has
- * the SQL drift guard. Runtime hashes bind the single configured immutable bank.
+ * the SQL drift guard. Runtime hashes bind this dealer's configured immutable bank.
+ * Sessions on another configured dealer's endpoint are that dealer's paid jobs:
+ * they neither keep this dealer busy nor hold its Off drain.
  */
-export async function createMovingDriftRuntime({pool,scope,configuration,endpointId,releaseDigest,bankHash,
+export async function createMovingDriftRuntime({pool,scope,configuration,dealerId,endpointId,releaseDigest,bankHash,
   provider,sessionOptions={},holderId=randomUUID(),journalFactory=createSpeechJournal,
   sessionFactory=createMovingSpeechSession,storeFactory=createPostgresMovingDriftStore,
   observerFactory=createMovingDriftObserver}={}) {
   scope=validateStudioScope(scope);
-  const profiles=configuration?.profiles;
-  if(!Array.isArray(profiles)||profiles.length!==1
-    ||profiles[0].endpointId!==endpointId||profiles[0].releaseDigest!==releaseDigest||profiles[0].bankHash!==bankHash) {
+  const profile=movingDriftDealerProfile(configuration,dealerId);
+  if(!profile||profile.endpointId!==endpointId||profile.releaseDigest!==releaseDigest||profile.bankHash!==bankHash) {
     throw driftError('drift_invalid_configuration',422);
   }
-  const profile=profiles[0],caps={connected:true,requireExecutor:true};
+  const profiles=[profile],caps={connected:true,requireExecutor:true};
+  const foreignEndpoints=new Set(configuration.profiles.filter(other=>other!==profile).map(other=>other.endpointId));
   const make=store=>createMovingDriftController({store,profiles,capabilities:caps});
-  const controller=make(storeFactory({pool,environmentId:scope.environment}));
+  const controller=make(storeFactory({pool,environmentId:scope.environment,dealerId}));
   const pin=async({endpointId:requested,signal}={})=>{
     signal?.throwIfAborted();
     if(requested!==profile.endpointId) throw driftError('drift_not_admitting');
@@ -110,14 +112,17 @@ export async function createMovingDriftRuntime({pool,scope,configuration,endpoin
   };
   const journal=await journalFactory({pool,environmentId:scope.environment,driftControl:{scope,
     onRejection:diagnostic=>console.warn(JSON.stringify({event:'moving_drift_guard_rejected',...diagnostic})),
-    guard:({client,...input})=>make(storeFactory({environmentId:scope.environment,
+    guard:({client,...input})=>make(storeFactory({environmentId:scope.environment,dealerId,
       transaction:work=>work(client)})).guardAdmission(input)}});
-  const sessions=sessionFactory({...sessionOptions,journal,scope,endpointId,provider,
+  const sessions=sessionFactory({...sessionOptions,journal,scope,endpointId,provider,foreignEndpointIds:[...foreignEndpoints],
     release:provider.release,workerState:provider.workerState,driftControl:{pin}});
   let cancelActive=async()=>{};
   const executor=createMovingDriftExecutor({controller,profile,holderId,sessions,
     observer:observerFactory({profile,provider}),cancelActive:()=>cancelActive(),
-    readOpenSessions:()=>journal.listMovingSessions({scope}),
+    readOpenSessions:async()=>{
+      const open=await journal.listMovingSessions({scope});
+      return Array.isArray(open)?open.filter(session=>!foreignEndpoints.has(session?.endpointId)):open;
+    },
     onReadback:({phase,result,durationClass})=>console.warn(JSON.stringify({event:'moving_drift_readback_timing',phase,result,durationClass})),
     onError:error=>console.warn(JSON.stringify({event:'moving_drift_readback_failed',
       code:/^drift_[a-z_]+$/.test(error?.code??'')?error.code:'drift_observation_unverified'}))});

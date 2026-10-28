@@ -17,6 +17,8 @@ const record = (extension, type, bytes) => ({ provider: 'vercel-blob',
   pathname: `croupier/media/dealers/dragan/runtime/moving-bank/${videoId}/${digest(bytes)}.${extension}`,
   contentType: type, size: bytes.length, sha256: digest(bytes) });
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await pause(5); } assert.fail('runtime fixture did not settle'); }
+// The single-dealer fixture is one lane of the per-dealer runtime.
+const oneLane = ({ bank, sessions, admissionCheck, ...options }) => ({ ...options, lanes: [{ bank, sessions, admissionCheck }] });
 
 async function setup(t, options = {}) {
   const original = Buffer.from('synthetic-original'), pcm = options.pcm ?? Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
@@ -41,7 +43,7 @@ async function setup(t, options = {}) {
   const server = createServer(async (req, res) => { if (!await runtime.handleHttp(req, res)) { res.writeHead(404); res.end(); } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`, address = base.replace('http:', 'ws:') + '/moving-speech-stream';
-  runtime = createMovingSpeechRuntime({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
+  runtime = createMovingSpeechRuntime(oneLane({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
     connectionMs: options.connectionMs ?? 15000, admissionCheck:options.admissionCheck,
     onCleanupError:()=>trace.push('cleanup-recovery'),
     onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
@@ -81,7 +83,7 @@ async function setup(t, options = {}) {
         },
       };
     } },
-  });
+  }));
   t.after(async () => { for (const socket of sockets) socket.terminate(); await runtime.close(); await new Promise(resolve => server.close(resolve)); });
   const input = { owner: 'owner-one', playerId: 'player-one', requestId: 'request-1', dealerId: 'dragan', text: 'Hej Jakob.',
     context: { dealerId: 'dragan' }, beforeCostly: async () => { trace.push('guard'); await options.beforeCostly?.(state); } };
@@ -541,4 +543,82 @@ test('private bank read keeps the pinned SQL fence while permitting submission_s
   allowed=false;
   assert.equal((await fetch(local(bank.receipt.url))).status,403);assert.ok(checks>=2);
   await f.runtime.cancelActive();finish();await assert.rejects(prepared);
+});
+
+test('two dealers are two lanes: each attempt uses only its own bank, sessions, drift admission and bank capability', async t => {
+  const { request: get } = await import('node:http');
+  const lane = (dealerId, videoId) => {
+    const original = Buffer.from('synthetic-original-' + dealerId), archive = Buffer.from('bank-' + dealerId);
+    const artifact = (extension, type, bytes) => ({ provider: 'vercel-blob', contentType: type, size: bytes.length, sha256: digest(bytes),
+      pathname: `croupier/media/dealers/${dealerId}/runtime/moving-bank/${videoId}/${digest(bytes)}.${extension}` });
+    const sourceSet = createMovingSpeechSourceSet({ dealerId, clips: [{ videoId, sha256: digest(original), bytes: original.length,
+      fps: 24, frameCount: 24, width: 1080, height: 1920 }], rest: { videoId, frame: 3 } });
+    const bank = { schemaVersion: 1, sourceSet, archive: artifact('bin', 'application/octet-stream', archive),
+      receipt: artifact('json', 'application/json', Buffer.from('{}')) };
+    const video = { id: videoId, dealer: dealerId, sha256: digest(original), bytes: original.length, available: true,
+      storage: 'private-blob', contentType: 'video/mp4', classification: { dealerId, kind: 'idle' } };
+    const seen = { admitted: [], admissions: 0, cancelled: 0 };
+    const sessions = { async admit(args) {
+      seen.admitted.push(args);
+      if (args.requestId.startsWith('hold')) await new Promise((_, reject) => args.signal.addEventListener('abort', () => reject(Error('moving_speech_cancelled')), { once: true }));
+      seen.descriptor = await args.bankDownload({ sessionSignal: new AbortController().signal, ttlMs: 5000 });
+      seen.fetched = await seen.fetch(new URL(seen.descriptor.archive.url).pathname);
+      throw Error('fixture_stop_after_admission');
+    } };
+    return { dealerId, bank, archive, video, seen, sessions, admissionCheck: async () => { seen.admissions++; return { dealerId }; } };
+  };
+  const dragan = lane('dragan', '11111111-1111-4111-8111-111111111111'), paow = lane('paow', '22222222-2222-4222-8222-222222222222');
+  const lanes = [dragan, paow], byDealer = id => lanes.find(entry => entry.dealerId === id);
+  const evidenceFor = bank => ({ projectRevision: 1, mediaReferences: [{ id: bank.sourceSet.rest.videoId, sha256: bank.sourceSet.clips[0].sha256 }],
+    frozenContext: { schemaVersion: 3, dealer: { id: bank.sourceSet.dealerId }, records: [] } });
+  const evidenceBanks = [], reads = [];
+  let runtime;
+  const server = createServer(async (req, res) => { if (!await runtime.handleHttp(req, res)) { res.writeHead(404); res.end(); } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const fetchPath = path => new Promise((resolve, reject) => get({ host: '127.0.0.1', port: server.address().port, path }, res => {
+    const chunks = []; res.on('data', chunk => chunks.push(chunk)); res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks) }));
+  }).on('error', reject).end());
+  for (const entry of lanes) entry.seen.fetch = fetchPath;
+  const options = { server, origin, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4),
+    lanes: lanes.map(({ bank, sessions, admissionCheck }) => ({ bank, sessions, admissionCheck })),
+    resolveOwner: async () => 'owner-one', readRegistry: async () => ({ videos: lanes.map(entry => entry.video) }),
+    readEvidence: async (_context, mediaId, bank) => { evidenceBanks.push([mediaId, bank.sourceSet.dealerId]); return evidenceFor(bank); },
+    readRest: async () => new Response(null, { status: 404 }), onPreparationFailure: () => {},
+    bankRead: async record => { reads.push(record.pathname); const owner = lanes.find(entry => entry.bank.archive.pathname === record.pathname);
+      return new Response(owner.archive, { headers: { 'content-length': String(owner.archive.length) } }); },
+    dealerRuntime: { async prepareMoving(input) {
+      assert.equal(input.sourceSet, byDealer(input.dealerId).bank.sourceSet);
+      return { profileRevision: h, compositing: null, async assertFresh() {}, async *source() {} };
+    } } };
+  for (const invalid of [[], [options.lanes[0], options.lanes[0]], Array(9).fill(options.lanes[0]), [{ ...options.lanes[0], sessions: {} }]])
+    assert.throws(() => createMovingSpeechRuntime({ ...options, lanes: invalid }), /moving_speech_configuration/);
+  runtime = createMovingSpeechRuntime(options);
+  t.after(async () => { await runtime.close(); await new Promise(resolve => server.close(resolve)); });
+  assert.equal(runtime.supports('dragan'), true); assert.equal(runtime.supports('paow'), true);
+  for (const unknown of ['astrid', undefined, '__proto__', 'constructor']) assert.equal(runtime.supports(unknown), false);
+  const input = dealerId => ({ owner: 'owner-one', playerId: 'player-one', requestId: 'request-' + dealerId, dealerId, text: 'Hej.',
+    context: { dealerId }, beforeCostly: async () => {} });
+  await assert.rejects(runtime.prepare(input('astrid')), error => error.code === 'moving_speech_dealer_unavailable');
+  await assert.rejects(runtime.prepare(input('paow')), /fixture_stop_after_admission/);
+  assert.equal(paow.seen.admissions, 1); assert.equal(dragan.seen.admissions, 0); assert.equal(dragan.seen.admitted.length, 0);
+  const [admitted] = paow.seen.admitted;
+  assert.equal(admitted.binding.dealerId, 'paow'); assert.equal(admitted.binding.avatarSha256, paow.bank.archive.sha256);
+  assert.equal(admitted.binding.bankReceiptSha256, paow.bank.receipt.sha256); assert.equal(admitted.binding.workerAvatar, 'paow');
+  assert.equal(admitted.binding.releaseSha256, h); assert.deepEqual(admitted.driftAdmission, { dealerId: 'paow' });
+  assert.deepEqual(evidenceBanks.map(([, dealerId]) => dealerId), ['paow', 'paow']);
+  // The worker's bank capability resolves to Paow's archive and nothing else.
+  assert.equal(paow.seen.descriptor.archive.sha256, paow.bank.archive.sha256);
+  assert.equal(paow.seen.fetched.status, 200); assert.deepEqual(paow.seen.fetched.body, paow.archive);
+  assert.deepEqual(reads, [paow.bank.archive.pathname]);
+  assert.equal((await fetchPath('/api/moving-speech/bank/' + 'f'.repeat(64) + '/archive')).status, 403);
+  await assert.rejects(runtime.prepare(input('dragan')), /fixture_stop_after_admission/);
+  assert.equal(dragan.seen.admitted[0].binding.avatarSha256, dragan.bank.archive.sha256); assert.equal(dragan.seen.fetched.status, 200);
+  assert.deepEqual(dragan.seen.fetched.body, dragan.archive);
+  // One dealer's drift Off cancels only that dealer's attempts.
+  const held = runtime.prepare({ ...input('paow'), requestId: 'hold-paow' });
+  await until(() => paow.seen.admitted.length === 2);
+  await runtime.cancelDealer('dragan'); await pause(10);
+  assert.equal(paow.seen.admitted[1].signal.aborted, false);
+  await runtime.cancelDealer('paow');
+  await assert.rejects(held, /moving_speech_cancelled/);
 });
