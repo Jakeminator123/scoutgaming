@@ -9,7 +9,6 @@ import { canonicalStudioJson } from '../../../packages/studio-registry/server/do
 import { cloneStudioJson } from '../../../packages/studio-registry/server/storage-contract.mjs';
 
 export const DEALER_IMPORT_PLAN_VERSION = 1;
-export { FROZEN_IMPORT_SOURCE_ALIASES };
 const hash = value => createHash('sha256').update(value).digest('hex');
 // A whole plan or inventory export is far larger than a saved document; it
 // gets the same canonical form with wider limits, never the document cap.
@@ -172,17 +171,4 @@ export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, in
       sourceAvatar: runtime.lipsyncAvatar, applyAllowed: false },
     applyAllowed: false, blockers: ['plan-only-no-apply', 'publication-and-audiovisual-acceptance-not-implied', ...(inventoryBlocker ? [inventoryBlocker] : [])], rows };
   return { ...plan, planId: largeHash(plan) };
-}
-
-// Compact, human-readable view of a plan for the CLI; the plan itself is authoritative.
-export function summarizeDealerImportPlan(plan) {
-  const tally = (list, key) => list.reduce((acc, item) => { const k = key(item); acc[k] = (acc[k] ?? 0) + 1; return acc; }, {});
-  const rows = plan.rows;
-  return { planId: plan.planId, dealerId: plan.dealerId, source: plan.source, targetCoverage: plan.targetCoverage, blockers: plan.blockers,
-    rows: rows.length, verifiedBytes: rows.filter(row => row.sha256).length,
-    decisions: tally(rows, row => row.decision), categories: tally(rows, row => row.placement.category),
-    reasons: tally(rows.flatMap(row => row.reasons), reason => reason),
-    speechByLanguage: tally(rows.filter(row => row.placement.speech), row => `${row.placement.speech.language}:${row.decision}`),
-    slots: tally(rows.filter(row => row.placement.slotId), row => row.placement.slotId),
-    missingSlots: tally(rows.filter(row => row.placement.proposedSlotId && !row.placement.slotId), row => row.placement.proposedSlotId) };
 }

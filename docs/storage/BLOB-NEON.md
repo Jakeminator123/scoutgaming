@@ -69,13 +69,9 @@ dragan__speech__blackjack__sv__t01.mp4
 
 Varje importerad tillgång behöver validerad identitet, format, storlek och hash, dealer, spel, funktion, situation och källproveniens. Poseklipp behöver start- och slutpose och kalibreringsrevision; tal dessutom språk, exakt text, replik och tagning. Fält som saknas i schemat införs med en versionerad migrering, aldrig som ad hoc-fält i produktions-JSON.
 
-För större källor (till exempel en Kevin-revision) planeras importen offline:
+För större källor (till exempel en Kevin-revision) planeras importen offline med importplanen i `apps/studio/lib/dealer-import-plan.mjs`.
 
-```sh
-node tools/dealer-import-plan.mjs --plan --project <privat-project.json> --dealer dragan --source-alias dragge --inventory <privat-inventory.json> --source-root <källcheckout>
-```
-
-Verktyget läser bara original, kontrollerar mot fryst Git-blob och storlek, beräknar SHA-256 och klassar varje rad som återanvänd, importera, korrigera bindning, behåll skyddad eller raderingskandidat. Alla rader har `applyAllowed: false`: verktyget laddar inte upp, registrerar inte och raderar inget. Genomförandet går genom Admins revisionsskyddade skrivare:
+Planen läser bara original, kontrollerar mot fryst Git-blob och storlek, beräknar SHA-256 och klassar varje rad som återanvänd, importera, korrigera bindning, behåll skyddad eller raderingskandidat. Alla rader har `applyAllowed: false`: planen laddar inte upp, registrerar inte och raderar inget. Genomförandet går genom Admins revisionsskyddade skrivare:
 
 1. Frys källmanifest, mål-scope, projekt- och medierevisioner och spara ett privat återgångsunderlag.
 2. Ladda upp saknade bytes, läs tillbaka och verifiera hash och storlek innan registrering.
@@ -108,7 +104,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 
 | Del | Filer |
 | --- | --- |
-| Import och klassning | `apps/studio/lib/dealer-import-*.mjs`, `packages/presentation/contracts/video-intake.mjs`, `packages/presentation/contracts/schemas/video.schema.json`, `tools/dealer-import-plan.mjs` |
+| Import och klassning | `apps/studio/lib/dealer-import-*.mjs`, `packages/presentation/contracts/video-intake.mjs`, `packages/presentation/contracts/schemas/video.schema.json` |
 | Pose och utdelning | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `services/game/filmed-deal-selection.mjs` |
 | Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealer-lifecycle.mjs` |
 | Talrepliker | `packages/presentation/server/speech-reply-repository.mjs` |

@@ -1,13 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
 import { createSeedProject, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { createFrozenKevinImportPlan, frozenKevinImportSource, reviewDealerImportFilenames, verifyImportSourceBytes } from '../lib/dealer-import-plan.mjs';
 import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
-import { runDealerImportPlan } from '../../../tools/dealer-import-plan.mjs';
 
 const project = addDealer(createSeedProject(), 'dragan', 'Dragan');
 const args = { project, dealerId: 'dragan', sourceAlias: 'dragge' };
@@ -194,54 +190,6 @@ test('recorded speech reuse requires exact bound recording tuple and preserves i
   assert.equal(rowAt(plan({ verifiedFiles, inventory: { videos: [mismatched] } }), tail).decision, 'correct-binding');
 });
 
-test('CLI is a working read-only plan entry and rejects apply or moving source overrides', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'dealer-import-plan-'));
-  try {
-    const path = join(dir, 'project.json'); await writeFile(path, JSON.stringify(project));
-    const argv = ['--plan', '--project', path, '--dealer', 'dragan', '--source-alias', 'dragge'];
-    const result = await runDealerImportPlan(argv);
-    assert.equal(result.source.ref, source.ref); assert.equal(result.mode, 'plan');
-    assert.equal(result.targetCoverage, 'not-read');
-    const inventoryPath = join(dir, 'inventory.json');
-    await writeFile(inventoryPath, JSON.stringify({ videos: [], summary: { readable: false } }));
-    const unreadable = await runDealerImportPlan([...argv, '--inventory', inventoryPath]);
-    assert.equal(unreadable.targetCoverage, 'unreadable');
-    assert.ok(rowAt(unreadable, 'idle-v2/breath.mp4').reasons.includes('target-inventory-unreadable'));
-    for (const extra of [['--apply'], ['--ref', 'kevin-staging'], ['--plan']])
-      await assert.rejects(() => runDealerImportPlan([...argv, ...extra]));
-  } finally {
-    assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep + 'dealer-import-plan-'));
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-
-test('CLI local path map verifies bytes, rejects unknown paths and keeps reads inside its explicit root', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'dealer-import-plan-'));
-  try {
-    const projectPath = join(dir, 'project.json'), mapPath = join(dir, 'map.json');
-    await writeFile(projectPath, JSON.stringify(project));
-    const argv = ['--plan', '--project', projectPath, '--dealer', 'dragan', '--source-alias', 'dragge', '--source-map', mapPath];
-    const map = { schemaVersion: 1, root: dir, files: {} };
-    await writeFile(mapPath, JSON.stringify(map));
-    assert.equal((await runDealerImportPlan(argv)).planId, plan().planId);
-    await assert.rejects(() => runDealerImportPlan([...argv, '--source-root', dir]), { code: 'conflicting_source_options' });
-    await writeFile(mapPath, JSON.stringify({ ...map, files: { unknown: 'project.json' } }));
-    await assert.rejects(() => runDealerImportPlan(argv), { code: 'invalid_source_map' });
-    const path = entryAt('v2/pos4.mp4').path;
-    await writeFile(mapPath, JSON.stringify({ ...map, files: { [path]: 'project.json' } }));
-    await assert.rejects(() => runDealerImportPlan(argv), { code: 'import_source_bytes_mismatch' });
-    await writeFile(mapPath, JSON.stringify({ ...map, root: join(dir, 'missing'), files: {} }));
-    await assert.rejects(() => runDealerImportPlan(argv), { code: 'ENOENT' });
-    await writeFile(mapPath, JSON.stringify({ ...map, root: '.', files: {} }));
-    await assert.rejects(() => runDealerImportPlan(argv), { code: 'invalid_source_map' });
-    await writeFile(mapPath, JSON.stringify({ ...map, files: { [path]: import.meta.filename } }));
-    await assert.rejects(() => runDealerImportPlan(argv), { code: 'source_path_outside_root' });
-  } finally {
-    assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep + 'dealer-import-plan-'));
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-
 // Paow: Kevin's kevin-staging head, frozen with every language and the K05 selection.
 const paowSource = frozenKevinImportSource('paow');
 const paowProject = addDealer(createSeedProject(), 'paow', 'Paow');
@@ -329,26 +277,4 @@ test('Paow declared SHA-256 must agree with verified bytes; verified idle takes 
   const speech = rowAt(paowPlan({ verifiedFiles: paowProof('repliker/sv/goodluck_1.mp4'), inventory: { videos: [] } }), 'repliker/sv/goodluck_1.mp4');
   assert.equal(speech.decision, 'review'); assert.ok(speech.reasons.includes('recorded-audio-index-calibration-required'));
   assert.equal(speech.placement.speech.videoSha256, speech.sha256);
-});
-
-test('CLI verifies local bytes against the chosen alias and offers a summary, never Dragan\'s list for Paow', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'dealer-import-plan-'));
-  try {
-    const projectPath = join(dir, 'project.json'); await writeFile(projectPath, JSON.stringify(paowProject));
-    const argv = ['--plan', '--project', projectPath, '--dealer', 'paow', '--source-alias', 'paow'];
-    await assert.rejects(() => runDealerImportPlan([...argv.slice(0, -1), 'marten']), { code: 'unknown_source_alias' });
-    await assert.rejects(() => runDealerImportPlan([...argv, '--summary', '--summary']), { code: 'duplicate_option' });
-    const result = await runDealerImportPlan([...argv, '--source-root', dir]);
-    assert.equal(result.source.id, paowSource.id); assert.equal(result.targetCoverage, 'not-read'); assert.equal(result.planId, paowPlan().planId);
-    const summary = await runDealerImportPlan([...argv, '--summary']);
-    assert.equal(summary.planId, paowPlan().planId); assert.equal(summary.rows, 414); assert.equal(summary.verifiedBytes, 0);
-    assert.equal(summary.decisions.excluded, paowPlan().rows.filter(row => row.decision === 'excluded').length);
-    assert.equal(summary.missingSlots['speak.other/twentyone'], 28);
-    const entry = paowEntry('v2/andas.mp4'), local = join(dir, ...entry.path.split('/'));
-    await mkdir(dirname(local), { recursive: true }); await writeFile(local, 'not the frozen bytes');
-    await assert.rejects(() => runDealerImportPlan([...argv, '--source-root', dir]), { code: 'import_source_bytes_mismatch' });
-  } finally {
-    assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep + 'dealer-import-plan-'));
-    await rm(dir, { recursive: true, force: true });
-  }
 });

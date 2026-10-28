@@ -27,8 +27,10 @@ test('room document preserves login context and serves only explicit public asse
   authenticated=true;
   const page=await get(path);assert.equal(page.status,200);const document=await page.text();assert.match(document,/id="spin"/);
   assert.equal((document.match(/href="\/lobby\?operator=north&amp;room=room-one&amp;dealer=astrid"/g)??[]).length,2,'both returns use the authorized room');
-  assert.match(page.headers.get('content-security-policy'),/media-src 'self' blob: https:\/\/agents-results\.d-id\.com;/);
-  assert.match(page.headers.get('content-security-policy'),/connect-src 'self' https:\/\/api\.d-id\.com;/);
+  // The roulette document embeds no D-ID avatar and decodes no blob media.
+  assert.match(page.headers.get('content-security-policy'),/media-src 'self';/);
+  assert.match(page.headers.get('content-security-policy'),/connect-src 'self';/);
+  assert.doesNotMatch(page.headers.get('content-security-policy'),/d-id|blob:/);
   assert.match(page.headers.get('content-security-policy'),/script-src 'self';/);
   assert.equal(page.headers.get('cache-control'),'private, no-store');
   for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
