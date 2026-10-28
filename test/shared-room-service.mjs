@@ -27,7 +27,7 @@ function setup(t, hooks = {}) {
       async stop() { calls.push(['runtime-stop']); await hooks.stop?.(); health.running = false; },
       health: () => health,
       withLockedRead: (...args)=>hooks.lockedRead?.(...args),
-      coordinator: { async snapshot(room, actor) { calls.push(['snapshot', room, actor]); return hooks.snapshot ? hooks.snapshot(room, actor) : { roomId: room, presentationVer: 7, me: { id: actor } }; } },
+      coordinator: { async seen(room, actor) { calls.push(['seen', room, actor]); }, async snapshot(room, actor) { calls.push(['snapshot', room, actor]); return hooks.snapshot ? hooks.snapshot(room, actor) : { roomId: room, presentationVer: 7, me: { id: actor } }; } },
     }; },
     createChannel(value) { ports.channel = value; return {
       async prepare(req) { calls.push(['prepare']); const accepted = await value.authorize(req, { roomId: 'room-a', signal: req.signal }); return { attach: () => accepted }; },
@@ -134,10 +134,13 @@ test('read ports retain server actor/room and binding, abort on stop and drain o
   assert.deepEqual(await h.ports.channel.readPresentation('room-a', { signal }), { roomId: 'room-a', ver: 7 });
   assert.equal(await h.ports.channel.revalidate(h.binding, { signal }), h.binding);
   assert.equal(h.calls.find(call => call[0] === 'revalidate')[1], h.binding);
+  // B4: presence is the bound actor in the bound room, through the same service lifetime.
+  await h.ports.channel.touch(h.binding, { signal }); assert.deepEqual(h.calls.filter(call => call[0] === 'seen'), [['seen', 'room-a', 'actor-a']]);
   held = true; const reading = h.ports.channel.readSnapshot('room-a', 'actor-a', { signal }), aborted = assert.rejects(reading, { name: 'AbortError' });
   await turn(); assert.equal(h.service.health().inFlight, true);
   let closed = false; const closing = h.service.close().then(() => { closed = true; }); await turn(); assert.equal(closed, false);
   const before = count(h, 'current'); await assert.rejects(h.ports.channel.readPresentation('room-a', { signal }), { statusCode: 503 }); assert.equal(count(h, 'current'), before);
+  await assert.rejects(h.ports.channel.touch(h.binding, { signal }), { statusCode: 503 }); assert.equal(count(h, 'seen'), 1);
   delayed.resolve(); await aborted; await closing; assert.equal(h.service.health().inFlight, false);
 });
 
