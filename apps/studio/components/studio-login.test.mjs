@@ -53,18 +53,6 @@ test('login sends one event only, clears password DOM immediately and navigates 
   assert.doesNotMatch(renderToStaticMarkup(tree),/PRIVATE-PASSWORD|SERVER_SECRET/);h.unmount();
 });
 
-test('a standalone client never forwards its host-only cookie to another handoff host',async()=>{
-  for(const kind of ['game','lab']){
-    const h=harness(),state='a'.repeat(64),returnTo=`/api/bo/${kind}-login?state=${state}`;
-    const props={authBase:'/api/auth',gameOrigin:'https://game.fixture.invalid',returnTo,fetchImpl:async()=>Response.json({ok:true})};
-    let tree=h.render(props);h.effects();tree=h.render(props);
-    forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'private-pass'})});
-    await flush();
-    assert.deepEqual(h.destinations,['/']);
-    h.unmount();
-  }
-});
-
 test('password token is removed from URL, stays outside DOM/state and survives strict effect replay',async()=>{
   const h=harness(),token='b'.repeat(43),writes=[];
   const props={authBase:'/studio/api/auth',mode:'set-password',token,fetchImpl:async(url,init)=>{writes.push({url,body:JSON.parse(init.body)});return Response.json({ok:true});}};
@@ -143,11 +131,11 @@ test('native password page binds the player entrance to configured game origin a
   }
 });
 
-test('native login page binds handoff completion to configured game origin',async()=>{
+test('native login page binds the configured game origin and never keeps a retired handoff return',async()=>{
   const pageSource=readFileSync(new URL('../app/admin/login/page.tsx',import.meta.url),'utf8');
   const pageCode=transformSync(pageSource,{filename:'page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
-  for(const authBase of ['/studio/api/auth','/api/auth']){
-    const gameOrigin='https://game.fixture.invalid',page={exports:{}},returnTo=`/api/bo/game-login?state=${'a'.repeat(64)}`;
+  for(const authBase of ['/studio/api/auth','/api/auth']) for(const [returnTo,expected] of [['/admin/rooms?operator=north','/admin/rooms?operator=north'],[`/api/bo/game-login?state=${'a'.repeat(64)}`,'/admin']]){
+    const gameOrigin='https://game.fixture.invalid',page={exports:{}};
     const overrides={
       '@/components/studio-login':{StudioLogin:()=>null},
       '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
@@ -158,7 +146,7 @@ test('native login page binds handoff completion to configured game origin',asyn
     };
     vm.runInNewContext(pageCode,{module:page,exports:page.exports,Request,Headers,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name),process:{env:{}}});
     const tree=await page.exports.default({searchParams:Promise.resolve({returnTo})});
-    assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);assert.equal(tree.props.returnTo,returnTo);
+    assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);assert.equal(tree.props.returnTo,expected);
   }
 });
 

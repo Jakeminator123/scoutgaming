@@ -121,7 +121,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
       'packages/storage/server/player-administration.mjs', 'services/game/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'apps/studio/lib/studio-game-authority.mjs',
       'apps/studio/lib/studio-native-auth-actions.mjs', 'apps/studio/lib/studio-admin-accounts.mjs', 'apps/studio/lib/studio-admin-data.mjs', 'apps/studio/lib/studio-admin-api.mjs', 'apps/studio/lib/studio-document-api.mjs',
-      'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-voice-lines.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
+      'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
       'apps/studio/lib/voice-preview.mjs', 'apps/studio/lib/media-blob-index.mjs', 'services/game/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
       'services/game/postgres-speech-journal.mjs', 'services/game/speech-journal-runtime.mjs', 'packages/presentation/contracts/speech-journal-constants.mjs', 'services/game/generated-speech-session.mjs', 'services/game/generated-speech-stream.mjs', 'services/game/generated-speech-runtime.mjs',
       'services/game/speech-blob-artifacts.mjs', 'services/game/postgres-operator-speech-qa.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);

@@ -14,16 +14,7 @@ import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
-const DealerClipPreview = () => React.createElement('div', {'data-keyed-preview': true});
 const { transformSync } = require('next/dist/build/swc');
-const navigationSource = readFileSync(new URL('./studio-navigation.tsx', import.meta.url), 'utf8');
-const navigationModule = { exports: {} };
-vm.runInNewContext(transformSync(navigationSource, {
-  filename: 'studio-navigation.tsx',
-  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
-  module: { type: 'commonjs' },
-}).code, { module: navigationModule, exports: navigationModule.exports, URL,
-  require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name) });
 const source = readFileSync(new URL('./studio-administration.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, {
   filename: 'studio-administration.tsx',
@@ -77,7 +68,7 @@ function harness() {
     },
   };
   const window = {
-    location: new URL('https://admin.fixture.invalid/admin/media-review?dealer=astrid'),
+    location: new URL('https://admin.fixture.invalid/admin/drift'),
     history: {state:{foreign:'preserved',__NA:true},replaceState(state,title,href){this.state=state;if(href)window.location=new URL(href,window.location.href);},pushState(state,title,href){this.replaceState(state,title,href);}},
     dispatchEvent(event) {listeners.get(event.type)?.(event);return !event.defaultPrevented;},
     confirm: () => true,
@@ -94,7 +85,7 @@ function harness() {
       const wasDeferred = deferUpdates; deferUpdates = false;
       try { deferredUpdates.splice(0).forEach(apply=>apply()); return action(); }
       finally { deferUpdates = wasDeferred; }
-    }} : name === './shared-table-proof' ? {SharedTableProof:()=>null} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
+    }} : name === './shared-table-proof' ? {SharedTableProof:()=>null} : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -139,7 +130,7 @@ test('native administration preserves its standalone shell and embeds without a 
         : name.endsWith('.module.css')
           ? { __esModule: true, default: { shell: 'standalone-shell', embedded: 'embedded-shell' } } : require(name),
   });
-  const props = { apiBase: '/studio/api/admin', availableActions: ['GET overview'], gameOrigin: 'https://game.fixture.invalid', initialGroup: 'integrations', initialDealerId: 'astrid' };
+  const props = { apiBase: '/studio/api/admin', availableActions: ['GET overview'], gameOrigin: 'https://game.fixture.invalid', initialGroup: 'integrations' };
   const standalone = renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, props));
   assert.match(standalone, /^<main class="standalone-shell">/);
   assert.equal(renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, { ...props, embedded: false })), standalone);
@@ -147,7 +138,7 @@ test('native administration preserves its standalone shell and embeds without a 
   assert.equal([...embedded.matchAll(/<main\b/g)].length, 1, 'the surrounding Admin owns the page landmark');
   assert.match(embedded, /<div class="embedded-shell"><section data-native-view="true">/);
   for (const view of views) {
-    for (const name of ['apiBase', 'availableActions', 'gameOrigin', 'initialGroup', 'initialDealerId']) assert.equal(view[name], props[name]);
+    for (const name of ['apiBase', 'availableActions', 'gameOrigin', 'initialGroup']) assert.equal(view[name], props[name]);
     assert.equal(view.readIdentity, 'response-headers-v1');
     assert.equal(typeof view.session, 'function');
     assert.equal(view.sessionAction.type, 'button');
@@ -207,7 +198,6 @@ function resources() {
     ] } },
     apikeys: { payload: { keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true }] } },
     transactions: { payload: { tx: [{ player_id: 'player-closed', type: 'open', amount: 42, currency: 'EUR', at: '2026-10-02T00:00:00Z' }] } },
-    voicelines: { payload: { dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Lycka till', review: null, reviewable:true,identity:'exact-pair-fixture', preview: '/dealers/astrid/preview/goodluck.mp4', audio: '/dealers/astrid/audio/en/goodluck.mp3' }] }] } },
     shoes:{payload:{rules:{decks:8,total:416,cutAfter:312,burn:1},tableCount:2,shoes:2,activeRounds:1,cutReached:0,observedAt:'2026-10-03T02:00:00.000Z'}},
     emails:{payload:{previewOnly:true,templates:[{id:'welcome',name:'Welcome',heading:'Hello <script>',text:'Preview',fields:[['Account','[PLAYER EMAIL]']],action:'Take a seat'}]}},
   };
@@ -340,7 +330,7 @@ test('each work area retains native identity headers and only shows its own tabs
       assert.ok(view&&Object.values(view.props.resources).every(resource=>resource.payload),group.id);
       assert.equal(view.props.actor.role,'admin');
       assert.equal(f.state.sessions,readIdentity==='response-headers-v1'?0:f.state.reads+1);
-      const expectedTabs={Drift:['Spelstatus & integritet','Betalningar & journal'],Administration:['Konton & åtkomst','API & integrationer'],Studio:['Talgranskning']};
+      const expectedTabs={Drift:['Spelstatus & integritet','Betalningar & journal'],Administration:['Konton & åtkomst','API & integrationer']};
       const menu=nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Backoffice-grupper')[0];
       assert.deepEqual(nodes(menu,node=>node.type==='button').map(node=>node.props.children),expectedTabs[group.area],group.id);
       assert.equal(buttons(tree,'Spelmotor & rum').length,0,'retired room settings are never offered in the group menu');
@@ -529,18 +519,18 @@ test('native all-error reload clears previous actor, data and controls instead o
   assert.equal(f.state.sessions, 0); h.unmount();
 });
 
-test('render never mutates or requests providers/accounts; six groups expose eleven implemented sections', () => {
+test('render never mutates or requests providers/accounts; five groups expose ten implemented sections', () => {
   const h = harness(); let calls = 0;
   const props = { apiBase: '/studio/api/admin', availableActions: allActions, session: async () => { ++calls; return actor('superadmin'); }, fetchImpl: async () => { ++calls; throw new Error('no'); } };
   const html = renderToStaticMarkup(h.render(props));
   assert.equal(calls, 0);
   assert.doesNotMatch(html, /iframe|localStorage|MUST-NOT-RENDER/);
-  assert.equal(navigation.BACKOFFICE_GROUPS.length, 6);
+  assert.equal(navigation.BACKOFFICE_GROUPS.length, 5);
   const sections = navigation.BACKOFFICE_GROUPS.flatMap(group => {
     const tree = h.StudioAdministrationView(viewProps('superadmin', group.id));
     return nodes(tree, node => node.props?.['data-admin-section']).map(node => node.props['data-admin-section']);
   });
-  assert.equal(sections.length, 11); assert.equal(new Set(sections).size, 11);
+  assert.equal(sections.length, 10); assert.equal(new Set(sections).size, 10);
   assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).sort());
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
@@ -605,7 +595,6 @@ test('menu changes fetch only displayed resources and keep a live identity check
     ['accounts', 'Konton & åtkomst', ['players', 'users']],
     ['partners', 'API & integrationer', ['apikeys', 'emails']],
     ['finance', 'Betalningar & journal', ['transactions']],
-    ['media-review', 'Talgranskning', ['config', 'voicelines']],
   ]) {
     h=harness(); requests.length=0; identities=0;
     const scoped={...props,initialGroup:group};
@@ -639,7 +628,7 @@ test('each request checks live identity, role floors and self-role/self-removal 
 test('all config mutations carry exact string revision; no numeric/missing/prototype CAS fallback', async () => {
   const h = harness(); let requests = [];
   const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', session: async () => actor('superadmin'), availableActions: allActions, fetchImpl: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return reply({ ok: true }); } });
-  const configActions = ['room', 'tier', 'pitboss', 'tournament', 'voiceline-review', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
+  const configActions = ['room', 'tier', 'pitboss', 'tournament', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
   for (const action of configActions) {
     for (const expectedRevision of [undefined, null, 0, 1, [], {}, 'bad revision', '/external', 'x'.repeat(101)]) await assert.rejects(client.request('POST', action, { expectedRevision }), status(409));
     await client.request('POST', action, { expectedRevision: 'studio-91ba0c61-3f45-4e9e-9efe-b40a3b201234' });
@@ -648,7 +637,7 @@ test('all config mutations carry exact string revision; no numeric/missing/proto
   assert.ok(requests.every(request => typeof request.body.expectedRevision === 'string'));
 });
 
-test('activated partner actions use explicit transient projections while paid speech QA stays gated', async () => {
+test('activated partner actions use explicit transient projections and the retired speech QA has no descriptor', async () => {
   const h = harness(); let fetches = 0;
   const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
   const responses = {
@@ -663,7 +652,7 @@ test('activated partner actions use explicit transient projections while paid sp
     const response = await client.request('POST',action,{});
     assert.ok(response.payload.oneTime); assert.doesNotMatch(JSON.stringify(response),/EXTRA_SECRET|ARBITRARY_TEXT|curlLines/);
   }
-  await assert.rejects(client.request('POST','speech-qa',{}),status(501));
+  await assert.rejects(client.request('POST','speech-qa',{}),status(400));
   assert.equal(fetches,4);
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'partners')));
   assert.doesNotMatch(html, /MUST-NOT-RENDER|wallet_url|type="password"/);
@@ -677,9 +666,16 @@ test('partner result projection rejects malformed credentials and cross-origin/a
   }
   for (const url of ['https://outside.test/game?dealer=astrid&launch=a.b.c','http://game.example.test/game?dealer=astrid&launch=a.b.c',
     'https://game.example.test/other?dealer=astrid&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=a.b.c&launch=x.y.z',
-    'https://game.example.test/game?dealer=wrong&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=bad',
+    'https://game.example.test/game?dealer=Wrong&launch=a.b.c','https://game.example.test/game?dealer=..%2Fastrid&launch=a.b.c',
+    'https://game.example.test/game?dealer=admin&launch=a.b.c','https://game.example.test/game?dealer=&launch=a.b.c',
+    'https://game.example.test/game?dealer=astrid&launch=bad',
     'https://game.example.test/game?dealer=astrid&launch=a.b.c#secret']) {
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
+  }
+  // Dealer-independent: any well-formed registered identity, not a historical name list.
+  for (const dealer of ['astrid','dragan','linnea-2']) {
+    const url=`https://game.example.test/game?dealer=${dealer}&launch=a.b.c`;
+    assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'))),{kind:'launch',url,playerRef:'player'});
   }
   assert.throws(()=>h.studioPartnerResult('apikeys/credit',{playerId:'player',balance:NaN,currency:'EUR'}),status(503));
 });
@@ -790,7 +786,7 @@ test('keys/invite responses are projected before state, and server errors never 
 test('malformed list payloads are unavailable, never a fabricated empty account/key/journal list', async () => {
   const h = harness();
   const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async () => reply({ ok: true }) });
-  for (const action of ['players', 'users', 'transactions', 'apikeys', 'voicelines']) await assert.rejects(client.request('GET', action), status(503));
+  for (const action of ['players', 'users', 'transactions', 'apikeys']) await assert.rejects(client.request('GET', action), status(503));
   const unconfirmed = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async () => reply({}) });
   await assert.rejects(unconfirmed.request('POST', 'users/remove', { username: 'other' }), status(503));
 });
@@ -916,18 +912,6 @@ test('config writes disappear without valid revision while read data and honest 
   }
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
   assert.match(html, /Certifieringsunderlag: saknas/); assert.match(html,/Cut card efter 312/);assert.doesNotMatch(html, /CERTIFIED|VALID/);
-});
-
-test('media preview allowlist refuses external/query/traversal URLs and manual review uses exact line/dealer/revision', () => {
-  const h = harness();
-  for (const url of ['https://outside.test/a.mp4', '//outside.test/a.mp4', '/dealers/astrid/../a.mp4', '/dealer/a.mp4?token=secret', '/api/admin/config.mp4', '/dealer//a.mp4', 'javascript:alert(1)', null]) assert.equal(h.studioAdminMediaUrl(url), null);
-  assert.equal(h.studioAdminMediaUrl('/dealer/preview/line.mp4'), '/dealer/preview/line.mp4');
-  const calls = [];
-  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), command: (action, body) => calls.push({ action, body }) });
-  assert.equal(nodes(tree, node => node.type === DealerClipPreview).length, 1);
-  nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { action: 'voiceline-review', body: { dealer: 'astrid', line: 'goodluck', verdict: 'approved',expectedIdentity:'exact-pair-fixture', expectedRevision: 'studio-v1' } });
-  assert.match(renderToStaticMarkup(tree), /Betald speech-QA körs inte/);
 });
 
 test('native mail previews escape content, render placeholders and never send or navigate',()=>{
@@ -1257,52 +1241,6 @@ test('successful technical creation resets only its own form after authoritative
   await flush();tree=h.render(props);
   assert.equal(writes,1);assert.equal(own.resets,1);assert.equal(other.resets,0);
   assert.match(renderToStaticMarkup(tree),/Osparade formulärfält/);h.unmount();
-});
-
-test('selected dealer speech review renders and submits only that dealers exact media pair', () => {
-  const h = harness(), data = resources(), calls = [];
-  data.voicelines.payload.dealers.push({ dealer: 'paow', name: 'PAOW', lines: [
-    { key: 'paow.greeting', text: 'PAOW greeting only', review: null, reviewable: true, identity: 'paow-exact-pair-v2', preview: '/dealer/preview/paow.mp4' },
-  ] });
-  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId: 'paow', resources: data, command: (action, body) => calls.push({ action, body }) });
-  const html = renderToStaticMarkup(tree);
-  assert.match(html, /PAOW greeting only/);
-  assert.doesNotMatch(html, /Astrid|Lycka till|exact-pair-fixture|goodluck/);
-  const forms = nodes(tree, node => node.type === 'form');
-  assert.equal(forms.length, 1);
-  forms[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
-  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'voiceline-review', body: {
-    dealer: 'paow', line: 'paow.greeting', verdict: 'approved', expectedIdentity: 'paow-exact-pair-v2', expectedRevision: 'studio-v1',
-  } }]);
-});
-
-test('a dealer without registered speech never falls back to another dealers review actions', () => {
-  const h = harness();
-  for (const dealerId of ['paow', 'missing-dealer']) {
-    const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId });
-    const html = renderToStaticMarkup(tree);
-    assert.match(html, /Inga registrerade talpar finns för vald dealer/);
-    assert.doesNotMatch(html, /Astrid|Lycka till|<video|<audio|<form|Spara manuell granskning/);
-  }
-});
-
-test('changed media review remains invalidated and unavailable media cannot be approved', () => {
-  const h = harness(), data = resources();
-  const line = data.voicelines.payload.dealers[0].lines[0];
-  line.reviewState = 'unbound-or-changed-media'; line.review = null; line.reviewable = false; line.identity = null;
-  const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId: 'astrid', resources: data }));
-  assert.match(html, /Tidigare bedömning gäller inte för nuvarande mediepar/);
-  assert.match(html, /ej granskad/);
-  assert.doesNotMatch(html, /<form|Spara manuell granskning|>Godkänd</);
-});
-
-test('speech review navigation starts with the route-selected dealer', () => {
-  const h = harness();
-  const html = renderToStaticMarkup(h.render({ initialGroup: 'media-review', initialDealerId: 'paow', availableActions: allActions, session: async () => actor('admin') }));
-  assert.match(html, /Studio för paow/);
-  assert.match(html, /dealer=paow/);
-  assert.doesNotMatch(html, /dealer=astrid/);
-  h.unmount();
 });
 
 test('technical creation keeps an empty or unselected dealer registry explicit',()=>{

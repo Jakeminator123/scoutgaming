@@ -52,7 +52,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Event-ID, källtyper och klippbegrepp | `packages/presentation/contracts/policies/studio-contract.json` | `test/studio-contract.test.mjs` |
 | Projektschema, seed och validering | `packages/presentation/contracts/` (`schemas/`, `policies/`, `studio-model.mjs`) | `validateProject` och kontraktstester |
 | Mediefamiljer och standardfiler | `packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
-| Astrids manifest (storlek, SHA-256) | `media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node tools/media/build-lab-video-manifest.mjs --check` |
+| Runtime-katalogens källor (utan presentationsbank sedan 2026-10-28) | `media/layout.json`, `media/blob-index.json`, `media/catalog/*.json` | `node tools/build-runtime-media-catalog.mjs --check` |
 | Uppmätta kortspår | `services/game/public/card-presentation/` | `test/local-card-overlay.mjs` i reporoten och browsergranskning |
 | Medieorkestrering och läsare | `packages/studio-registry/server/`; bindning i `packages/presentation/server/` | Paketens tester |
 | Director-, tal- och sociala kontrakt | `packages/director/`; Studios miljöläsning i `lib/director-settings.mjs` | `packages/director`-tester |
@@ -60,7 +60,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Lobbykatalogen | `packages/player-catalog/` | Katalogtester |
 | Sparade projekt, policy och mediemetadata | Neon (`croupier_studio`) med revisionslås och historik | Studio-API:ts konfliktprov |
 
-Efter nya källmedier: kör `node tools/media/build-lab-video-manifest.mjs`,
+En presentationsbank byggs med `node tools/media/build-lab-video-manifest.mjs --root <bank>`;
 granska diffen och kör `--check`. En ny hash är inget visuellt godkännande.
 
 ## Mappar

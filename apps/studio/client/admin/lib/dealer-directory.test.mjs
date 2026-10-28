@@ -67,13 +67,11 @@ test('dealer library includes Dragan without a room and opens his own clip intak
   const link=nodes(h.render(),node=>node.type==='a'&&text(node)==='Lägg till klipp')[0];
   assert.equal(link.props.href,'/admin/clips?dealer=dragan&panel=intake');
 });
-test('Astrid is a visible legacy reference while Dragan keeps his ordinary dealer card',async()=>{
+test('every registered dealer gets the same ordinary card without a name-bound legacy note',async()=>{
   const h=harness([],[{id:'astrid',label:'Astrid'}]);await h.settle();
   const card=label=>nodes(h.render(),node=>node.type==='li'&&nodes(node,child=>child.type==='h2'&&text(child)===label).length)[0];
   const astrid=card('Astrid'),dragan=card('Dragan');
-  assert.match(text(astrid),/Legacyreferens.*inkopplad via legacy och saknar trelagersversion/);
-  assert.match(text(astrid),/Befintliga OpenClaw- och talflöden kan användas som referens/);
-  assert.doesNotMatch(text(dragan),/Legacyreferens|trelagersversion|OpenClaw/);
+  for(const node of [astrid,dragan])assert.doesNotMatch(text(node),/Legacyreferens|trelagersversion|OpenClaw/);
   for(const [dealer,node] of [['astrid',astrid],['dragan',dragan]]){
     assert.equal(nodes(node,child=>child.type==='a'&&text(child)==='Lägg till klipp')[0].props.href,`/admin/clips?dealer=${dealer}&panel=intake`);
   }

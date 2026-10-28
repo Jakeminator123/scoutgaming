@@ -372,7 +372,6 @@
         "apps/studio/lib/cloud-media-store.mjs",
         "apps/studio/lib/legacy-clip-inventory.mjs",
         "apps/studio/lib/voice-preview.mjs",
-        "apps/studio/lib/studio-voice-lines.mjs",
         "apps/studio/lib/openclaw-admin.mjs",
         "apps/studio/lib/runway-client.mjs",
         "apps/studio/lib/dealer-import-model.mjs",
@@ -439,6 +438,22 @@
       "conditional": [
         "CROUPIER_GAME_DATABASE_URL",
         "CROUPIER_MIGRATION_CONFIRM"
+      ],
+      "managed": [],
+      "blocked": []
+    },
+    "local-runtime-media-import": {
+      "sources": [
+        "ops/neon-studio/runtime-media-import-run.mjs"
+      ],
+      "required": [
+        "CROUPIER_STUDIO_ENVIRONMENT_ID",
+        "CROUPIER_STUDIO_WORKSPACE_ID"
+      ],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_RUNTIME_IMPORT_CONFIRM"
       ],
       "managed": [],
       "blocked": []
