@@ -1,17 +1,23 @@
 // Bolagets eget material at publication: a company's approved backgrounds and
 // table graphics join its own frozen package, nobody else's. Pure: storage,
 // the table landing check and the package size check are supplied by the
-// publisher. Every publication path calls this, so the next publication can
-// never drop approved material silently, and revoked or no longer fitting
-// material leaves with it. Without material the result equals the input.
+// publisher. Publishers that rebuild the presentation merge (Admin's package,
+// scene layout, idle refresh, new room, the company's branding); all others
+// preserve the frozen package as it is (resource lifecycle, material trash,
+// dealer archive, room game config), so revoked material leaves only with the
+// next merging publication: revoking must republish at once. Without material
+// the result equals the input.
 import {validatePresentationPackage, validateLayerAsset} from '../contracts/presentation-layers.mjs';
 import {canonicalStudioJson} from '../../studio-registry/server/document-contract.mjs';
 
 export const MAX_PACKAGE_ASSETS = 128;
 export const MAX_LANE_LAYER_CHOICES = 32;
 export const OPERATOR_MATERIAL_WARNING_CODES = Object.freeze([
-  'operator_material_locked', 'operator_material_table_mismatch', 'operator_material_game_mismatch',
-  'operator_material_package_full', 'operator_material_conflict']);
+  'operator_material_locked', 'operator_material_no_room', 'operator_material_table_mismatch', 'operator_material_game_mismatch',
+  'operator_material_package_full', 'operator_material_conflict', 'operator_material_corrupt']);
+// Only material that has been in a package can be taken out again; a waiting
+// or rejected row never touches the package, whatever id or file it names.
+const MERGED_STATES = new Set(['approved', 'revoked']);
 
 const same = (a, b) => canonicalStudioJson(a) === canonicalStudioJson(b);
 // Admin's lock applies: only a lane that unlocks the role, with separate layers.
@@ -29,10 +35,10 @@ function adminReferences(lane, id) {
   return canonicalStudioJson(rest).includes(`"${id}"`);
 }
 
-/** The presentation without any of this company's material (any state). */
+/** The presentation without this company's merged (approved or revoked) material. */
 export function withoutOperatorMaterials(presentation, materials = []) {
   const next = structuredClone(validatePresentationPackage(presentation));
-  const owned = new Map(materials.map(row => [row.materialId, row]));
+  const owned = new Map(materials.filter(row => MERGED_STATES.has(row.state)).map(row => [row.materialId, row]));
   const removable = next.assets.filter(asset => owned.has(asset.id) && same(asset, owned.get(asset.id).asset)
     && !next.lanes.some(lane => adminReferences(lane, asset.id))).map(asset => asset.id);
   if (!removable.length) return next;
@@ -45,7 +51,8 @@ export function withoutOperatorMaterials(presentation, materials = []) {
 /**
  * Add the approved material to its lanes. materials: the company's current
  * rows (latest revision of each, any state), oldest first. rooms: the
- * package's rooms ({id, name, state, presentationLaneId, game}).
+ * package's rooms ({id, name, state, presentationLaneId, game}); material only
+ * goes to lanes with at least one of them, so the 32 choices are not used up.
  * tableFits(material, lane) -> {ok} | {ok:false, reason}: the landing template
  * check. fits(presentation) -> boolean: the package and branding limits.
  * Returns {presentation, warnings, changed}; warnings name the affected rooms.
@@ -56,10 +63,16 @@ export function mergeOperatorMaterials({presentation, materials = [], rooms = []
   }
   const input = validatePresentationPackage(presentation);
   const base = withoutOperatorMaterials(input, materials), warnings = [];
+  const roomLanes = new Set(rooms.map(room => room.presentationLaneId));
   const roomsOn = laneIds => rooms.filter(room => laneIds.includes(room.presentationLaneId))
     .map(({id, name, state}) => ({id, name, state}));
-  const warn = (row, code, laneIds, extra = {}) => warnings.push({materialId: row.materialId, role: row.asset.role, code,
+  const warn = (row, code, laneIds, extra = {}) => warnings.push({materialId: row.materialId, role: row.asset?.role ?? null, code,
     laneIds: [...laneIds], rooms: roomsOn(laneIds), ...extra});
+  // A row the store could not read is skipped, never trusted and never stripped.
+  for (const row of materials.filter(item => item.state === 'corrupt')) {
+    warn(row, 'operator_material_corrupt', input.lanes.filter(lane => ['background', 'table']
+      .some(role => lane.layers[role].allowed.includes(row.materialId))).map(lane => lane.id));
+  }
   const added = [];
   let next = structuredClone(base);
   for (const row of materials.filter(item => item.state === 'approved')) {
@@ -77,6 +90,9 @@ export function mergeOperatorMaterials({presentation, materials = [], rooms = []
       lanes = [bound];
     }
     if (!lanes.length) { warn(row, 'operator_material_locked', []); continue; }
+    const used = lanes.filter(lane => roomLanes.has(lane.id));
+    if (!used.length) { warn(row, 'operator_material_no_room', lanes.map(lane => lane.id)); continue; }
+    lanes = used;
     const full = lanes.filter(lane => lane.layers[role].allowed.length >= MAX_LANE_LAYER_CHOICES);
     lanes = lanes.filter(lane => !full.includes(lane));
     if (full.length) warn(row, 'operator_material_package_full', full.map(lane => lane.id));

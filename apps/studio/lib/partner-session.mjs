@@ -460,7 +460,9 @@ async function brandingResponse(prepared, config) {
       }
     }),options);
   };
+  // Bolagets eget material: read before SQL for the negotiated candidate, then again under the lock.
   const api = createPartnerBrandingApi({store,readAdministration,withWriteContext,
+    materials:config.store?undefined:createOperatorMaterialStore({sql:config.pool,scope:config.scope,now:config.now}),
     readProject:typeof config.readProject==='function'?config.readProject:defaultReadProject});
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;

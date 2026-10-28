@@ -12,7 +12,9 @@ import { partnerPresentationDealerChoices } from './partner-presentation-choices
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
 import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
-import { brandingPackageWithMaterials } from './operator-material-publication.mjs';
+import { mergeOperatorMaterialsForPublication, operatorMaterialFingerprint, presentationFits, publicationRooms } from './operator-material-publication.mjs';
+import { encodePresentationPackage } from '../../../packages/presentation/server/presentation-package.mjs';
+import { isExtendedPresentationEnvelope } from '../../../packages/presentation/server/presentation-storage.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
 // 8000 bytes, 200 nodes and depth 6. It has no key whitelist.
@@ -74,7 +76,10 @@ function view(pack, adjustable) {
   };
 }
 
-export function createPartnerBrandingApi({ store, readProject, readAdministration, withWriteContext } = {}) {
+// materials: optional store of the company's own material (Bolagets eget
+// material), read before SQL; the write context supplies the same store on its
+// locked client. Without it every branding publication keeps the frozen package.
+export function createPartnerBrandingApi({ store, readProject, readAdministration, withWriteContext, materials } = {}) {
   if (typeof store?.getCurrentPackage !== 'function' || typeof store?.publishPackage !== 'function' || typeof readProject !== 'function') fail(503);
   async function savedProject() {
     try {
@@ -269,12 +274,28 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const presentation=readPackagePresentation(pack);
     return [...nativeFilmedPlanningMutations(pack),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
   }
-  // Bolagets eget material: the locked package with the company's current
-  // approved material merged in. Without a material store (or 021) it is the
-  // locked package itself, so the frozen presentation stays byte for byte.
-  async function withCompanyMaterials(context,pack,document) {
-    if(typeof context.materials?.listMaterials!=='function')return pack;
-    return (await brandingPackageWithMaterials({store:context.materials,pack,presentation:readPackagePresentation(pack),administration:document?.value})).pack;
+  // Bolagets eget material. brandingFor(pack) is the exact branding this
+  // publication writes for a package; the merge is sized against that branding
+  // (never the old package's), then the choices are validated again against the
+  // merged package. No rows (no store, no 021, no material): the plain branding.
+  const mergesMaterials=typeof materials?.listMaterials==='function';
+  const materialRowsBeforeSql=operatorId=>mergesMaterials?materials.listMaterials(operatorId):[];
+  async function lockedMaterialRows(context,operatorId,fingerprint) {
+    if(!mergesMaterials)return [];
+    if(typeof context.materials?.listMaterials!=='function')fail(503);
+    const rows=await context.materials.listMaterials(operatorId);
+    // The negotiated candidate assumed these rows; a decision in between is a conflict.
+    if(operatorMaterialFingerprint(rows)!==fingerprint)fail(409);
+    return rows;
+  }
+  async function brandingWithMaterials(pack,rows,document,brandingFor) {
+    const plain=await brandingFor(pack),presentation=readPackagePresentation(pack);
+    if(!rows.length||!presentation)return plain;
+    const allowExtended=isExtendedPresentationEnvelope(pack.branding?.[PRESENTATION_PACKAGE_KEY]);
+    const merged=mergeOperatorMaterialsForPublication({presentation,rows,rooms:publicationRooms(document?.value,pack.operatorId,pack),
+      fits:presentationFits({branding:plain,base:presentation,allowExtended})});
+    if(!merged.changed)return plain;
+    return brandingFor({...pack,branding:{...pack.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(merged.presentation,{allowExtended})}});
   }
   async function checkPublication(context,pack) {
     // Native callers already negotiated this exact operator before SQL. Check
@@ -291,15 +312,28 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     input=structuredClone(input);
     if(typeof withWriteContext!=='function')fail(503);
     // Partner changes retain N1's frozen presentation. Negotiate that package,
-    // never the latest project or a different operator's package, before SQL.
-    const presentationMutation=input.action==='publish'?publicationMutation(await load(input.operatorId)):undefined;
+    // never the latest project or a different operator's package, before SQL;
+    // with the company's material it is the merged candidate this publish writes.
+    let presentationMutation,materialFingerprint=operatorMaterialFingerprint([]);
+    const adminChoices=input.audit?.accessClass==='internal-admin';
+    if(input.action==='publish'){
+      const current=await load(input.operatorId),rows=await materialRowsBeforeSql(input.operatorId);
+      materialFingerprint=operatorMaterialFingerprint(rows);
+      let candidate=current;
+      if(rows.length) {
+        try {
+          const draft=await store.getBrandingDraft(input.operatorId),document=await administrationSnapshot();
+          candidate={...current,branding:await brandingWithMaterials(current,rows,document,pack=>validateDraft(pack,draft.branding,document,adminChoices))};
+        } catch { /* The locked publication validates again and fails with the real reason. */ }
+      }
+      presentationMutation=publicationMutation(candidate);
+    }
     return withWriteContext(async context=>{
       if(await context.reauthorize()!==true)fail(403);
       requireDraftStore(context.store);
       const pack=await load(input.operatorId,context.store),draft=await context.store.getBrandingDraft(input.operatorId);
       if(!Array.isArray(pack.lanes)||!pack.lanes.length||pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
       const document=await administrationSnapshot(context.readAdministration);
-      const adminChoices=input.audit?.accessClass==='internal-admin';
       if(input.action==='discard-draft'){
         if(!await cleanDraft(draft,pack,context.store))fail(409);
         await context.store.saveBrandingDraft({...input,branding:publicEditableBranding(pack.branding),sourcePackageRevision:pack.revision});
@@ -316,8 +350,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         await context.store.saveBrandingDraft({...input,branding});
       }else{
         if(!await cleanDraft(draft,pack,context.store)||draft.basePackageRevision!==pack.revision)fail(409);
-        const source=input.action==='publish'?await withCompanyMaterials(context,pack,document):pack;
-        const branding=await validateDraft(source,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
+        const brandingFor=source=>validateDraft(source,draft.branding,document,adminChoices);
+        const branding=input.action==='publish'
+          ?await brandingWithMaterials(pack,await lockedMaterialRows(context,input.operatorId,materialFingerprint),document,brandingFor)
+          :await brandingFor(pack),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
         await checkPublication(context,{...pack,branding});
@@ -337,7 +373,8 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       branding=structuredClone(branding);
       const current=await load(operatorId), presentation=readPackagePresentation(current);
       const captured=presentation?await administrationSnapshot():null;
-      await prepareBranding(current,branding,captured);
+      const rows=await materialRowsBeforeSql(operatorId),materialFingerprint=operatorMaterialFingerprint(rows);
+      const candidate=await brandingWithMaterials(current,rows,captured,pack=>prepareBranding(pack,branding,captured));
       if (current.revision !== expectedRevision) fail(409);
       if (typeof withWriteContext !== 'function') fail(503);
       return withWriteContext(async context=>{
@@ -345,7 +382,8 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         const locked=await load(operatorId,context.store);
         const document=presentation?await administrationSnapshot(context.readAdministration):null;
         if (locked.revision !== current.revision || document?.revision !== captured?.revision) fail(409);
-        const nextBranding=await prepareBranding(await withCompanyMaterials(context,locked,document),branding,document);
+        const nextBranding=await brandingWithMaterials(locked,await lockedMaterialRows(context,operatorId,materialFingerprint),document,
+          pack=>prepareBranding(pack,branding,document));
         await checkPublication(context,{...locked,branding:nextBranding});
         let published;
         try {
@@ -353,7 +391,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
             lanes:[...locked.lanes],games:[...locked.games],tables:[...locked.tables],branding:nextBranding});
         } catch(error) { if(Number.isInteger(error?.statusCode)) throw error; fail(503); }
         return present(published,document);
-      },{presentationMutation:publicationMutation(current)});
+      },{presentationMutation:publicationMutation({...current,branding:candidate})});
     },
   });
 }

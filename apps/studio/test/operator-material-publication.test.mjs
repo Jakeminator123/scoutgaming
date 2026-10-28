@@ -4,8 +4,7 @@ import { validatePresentationPackage } from '../../../packages/presentation/cont
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import { canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { mergeOperatorMaterials, withoutOperatorMaterials, MAX_LANE_LAYER_CHOICES } from '../../../packages/presentation/server/operator-material-merge.mjs';
-import { withPackagePresentation, readPackagePresentation, PRESENTATION_PACKAGE_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
-import { operatorTableBinding, operatorTableFits, mergeOperatorMaterialsForPublication, brandingPackageWithMaterials, presentationFits,
+import { operatorTableBinding, operatorTableFits, mergeOperatorMaterialsForPublication, presentationFits,
   operatorMaterialFingerprint } from '../lib/operator-material-publication.mjs';
 
 // Bolagets eget material at publication, as pure data: which lanes receive a
@@ -124,18 +123,40 @@ test('the server binds a table graphic to the filmed landing template of its lan
   assert.deepEqual(operatorTableFits({ tableBinding: { ...binding, profileId: 'kevin-paow-older' } }, paow), { ok: false, reason: 'dealer' });
 });
 
-test('without rows the publisher keeps its own presentation object and branding package byte for byte', async () => {
+test('without rows the publisher keeps its own presentation object; the fingerprint names every decision', () => {
   const base = presentation();
   assert.equal(mergeOperatorMaterialsForPublication({ presentation: base, rows: [], rooms, fits: () => true }).presentation, base);
-  const pack = { operatorId: 'north', revision: 4, lanes: base.lanes.map(row => row.id), tables: ['room-a'], branding: withPackagePresentation({ name: 'North' }, base) };
-  for (const store of [undefined, { listMaterials: async () => [] }]) {
-    assert.equal((await brandingPackageWithMaterials({ store, pack, presentation: readPackagePresentation(pack), administration: { rooms: [] } })).pack, pack);
-  }
-  const merged = await brandingPackageWithMaterials({ store: { listMaterials: async () => [material(1)] }, pack, presentation: readPackagePresentation(pack), administration: { rooms: [] } });
-  assert.notEqual(merged.pack.branding[PRESENTATION_PACKAGE_KEY], pack.branding[PRESENTATION_PACKAGE_KEY]);
-  assert.deepEqual(allowed(readPackagePresentation(merged.pack), 'open'), [uuid(900), uuid(1)]);
-  assert.equal(merged.pack.branding.name, 'North', 'every other branding field is kept');
-  assert.equal(presentationFits({ branding: {}, base })(base), true);
+  const unchanged = mergeOperatorMaterialsForPublication({ presentation: base, rows: [material(2, { state: 'pending' })], rooms, fits: () => true });
+  assert.equal(unchanged.presentation, base, 'a waiting row changes nothing');
+  assert.equal(presentationFits({ branding: { name: 'North' }, base })(base), true);
+  assert.equal(presentationFits({ branding: { name: 'x'.repeat(9000) }, base })(base), false, 'sized against the branding being published');
   assert.notEqual(operatorMaterialFingerprint([material(1)]), operatorMaterialFingerprint([material(1, { state: 'revoked' })]));
   assert.equal(operatorMaterialFingerprint([]), operatorMaterialFingerprint(undefined));
+});
+
+test('a row that never was in a package never strips anything, even with the id and file of Admin material', () => {
+  const admin = { ...material(900), asset: asset(900) };
+  // Admin's asset only in allowed (no default) is strippable by an approved owner only.
+  const value = presentation(), open = value.lanes.find(row => row.id === 'open');
+  open.layers.background.default = null;
+  const checked = validatePresentationPackage(value);
+  for (const state of ['pending', 'rejected']) {
+    assert.equal(canonicalStudioJson(withoutOperatorMaterials(checked, [{ ...admin, state }])), canonicalStudioJson(checked), state);
+    const merged = mergeOperatorMaterials({ presentation: checked, materials: [{ ...admin, state }], rooms, tableFits: fits });
+    assert.equal(merged.changed, false, state); assert.deepEqual(merged.warnings, []);
+  }
+});
+
+test('an unreadable row is skipped with a warning; the package and the other material stay', () => {
+  const once = mergeOperatorMaterials({ presentation: presentation(), materials: [material(1)], rooms, tableFits: fits }).presentation;
+  const corrupt = { materialId: uuid(1), revision: 3, state: 'corrupt', asset: null, tableBinding: null };
+  const result = mergeOperatorMaterials({ presentation: once, materials: [corrupt, material(2)], rooms, tableFits: fits });
+  assert.deepEqual(result.presentation.assets.map(row => row.id), [uuid(900), uuid(1), uuid(2)], 'never trusted, never stripped');
+  assert.deepEqual(result.warnings, [{ materialId: uuid(1), role: null, code: 'operator_material_corrupt', laneIds: ['open'], rooms: [{ id: 'room-a', name: 'Rum A', state: 'live' }] }]);
+});
+
+test('material goes only to lanes where the company has a room in this package', () => {
+  const noRooms = mergeOperatorMaterials({ presentation: presentation(), materials: [material(1), material(7, { role: 'table' })], rooms: [], tableFits: fits });
+  assert.equal(noRooms.changed, false);
+  assert.deepEqual(noRooms.warnings.map(row => [row.materialId, row.code, row.laneIds]), [[uuid(1), 'operator_material_no_room', ['open']], [uuid(7), 'operator_material_no_room', ['open']]]);
 });

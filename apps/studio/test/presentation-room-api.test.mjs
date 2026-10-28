@@ -1057,3 +1057,38 @@ test('room preflight and creation reject malformed current capabilities without 
     assert.deepEqual(f.pool.snapshot(),before);
   }
 });
+
+// Bolagets eget material: a new room rebuilds the package, so it merges like the
+// other rebuilding publishers. The company's approved background is not a changed
+// room environment, survives with the company's choice, and leaves when revoked.
+test('a new room keeps the company\'s approved background and choice instead of refusing a changed environment', async () => {
+  const own = '0d0d0d0d-0000-4000-8000-00000000b001';
+  const ownAsset = { schemaVersion: 1, id: own, role: 'background', label: 'Bolagets bakgrund', sha256: '6'.repeat(64), size: 4096, contentType: 'image/png', width: 1920, height: 1080 };
+  ownAsset.pathname = layerAssetPath(ownAsset);
+  let rows = [];
+  const f = await fixture({ materials: () => ({ listMaterials: async operatorId => operatorId === 'north' ? rows : [] }) });
+  const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
+  fixedBackground(saved.value, lane); lane.operatorAdjustable = [...lane.operatorAdjustable, 'background']; lane.composition = defaultCompositionSettings();
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  const allowed = () => { const raw = f.pool.snapshot().packages.at(-1); return { raw, frozen: readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding) }) }; };
+  await f.create(await f.payload());
+  assert.equal(allowed().frozen.assets.some(row => row.id === own), false);
+  rows = [{ materialId: own, revision: 2, state: 'approved', source: 'upload', role: 'background', asset: ownAsset, tableBinding: null, occurredAtMs: 1 }];
+  await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  let { raw, frozen } = allowed();
+  assert.deepEqual(frozen.lanes[0].layers.background.allowed.at(-1), own, 'the new room publication merges the approved background');
+  // The company chooses its own background; the next room must neither refuse nor reset it.
+  await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: raw.package_revision, lanes: JSON.parse(raw.lanes), games: JSON.parse(raw.games),
+    tables: JSON.parse(raw.tables), branding: { ...JSON.parse(raw.branding), background: own } });
+  const ready = await f.prepare();
+  assert.equal(ready.reason, null, 'the company material is not a changed room environment'); assert.equal(ready.ready, true);
+  const third = await f.create(await f.payload({ idempotencyKey: '0ccc0000-1111-4222-8333-444444444444' }));
+  assert.equal(third.duplicate, false);
+  ({ raw, frozen } = allowed());
+  assert.ok(frozen.assets.some(row => row.id === own)); assert.equal(JSON.parse(raw.branding).background, own, 'the company choice stays');
+  rows = [{ ...rows[0], revision: 3, state: 'revoked' }];
+  await f.create(await f.payload({ idempotencyKey: '0ddd0000-1111-4222-8333-444444444444' }));
+  ({ raw, frozen } = allowed());
+  assert.equal(frozen.assets.some(row => row.id === own), false, 'revoked material leaves the next room publication');
+  assert.equal(Object.hasOwn(JSON.parse(raw.branding), 'background'), false, 'the choice falls back to the template');
+});

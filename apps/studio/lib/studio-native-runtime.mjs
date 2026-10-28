@@ -201,15 +201,15 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       clientAddress: request => request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() || 'shared-unknown' });
     const videoRegistry = Object.freeze({ loadCaptured: media.videoRegistryCaptured, verifyCapturedMedia: media.verifyCapturedMedia });
     const preparations = new Map();
+    // Bolagets eget material in every publication that rebuilds a presentation; empty without 021.
+    const materials = sql => createOperatorMaterialStore({ sql, scope: config.scope });
     const lanePackages = createOperatorPackageApi({
-      pool, repository, videoRegistry, scope: config.scope,
-      // Bolagets eget material in every package publication; empty without 021.
-      materials: sql => createOperatorMaterialStore({ sql, scope: config.scope }),
+      pool, repository, videoRegistry, scope: config.scope, materials,
       project: async () => (await gamePolicy.readSaved()).project,
       gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
+    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope, materials,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
       runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
@@ -272,7 +272,7 @@ export async function studioNativeRuntime() {
 // context is trusted caller metadata ({method, route: pathname}); bare
 // {statusCode:503} objects are deliberate "feature off" answers and stay quiet.
 export function nativeStudioErrorResponse(error, context) {
-  const status = [400,401,403,404,405,408,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
+  const status = [400,401,403,404,405,408,409,413,415,422,423,429,503].includes(error?.statusCode) ? error.statusCode : 503;
   const inspectionMessage=layerMediaInspectionMessage(error?.code);
   const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
   if (status === 503 && !readiness && error instanceof Error) logStudioServerFailure(error, context);
@@ -281,7 +281,9 @@ export function nativeStudioErrorResponse(error, context) {
   const lifecycleCodes=new Set(['studio_dealer_background_required','studio_conflict','studio_dealer_not_registered','studio_dealer_base_protected','studio_dealer_missing','studio_dealer_in_use','studio_dealer_published',
     'studio_dealer_delete_pending','studio_dealer_speech_enabled','studio_dealer_restore_conflict','studio_dealer_archived','studio_dealer_lifecycle_required',
     'studio_media_delete_coverage_incomplete','studio_media_upload_grant_active','studio_media_owned_elsewhere','studio_media_delete_failed','studio_media_already_deleted','studio_media_deletion_pending','studio_media_archive_required','studio_media_published','studio_retained_media_immutable',
-    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified']);
+    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified',
+    // Bolagets eget material: fixed codes, incl. 429 for the daily AI limit.
+    'operator_materials_unavailable','operator_materials_blocked','operator_materials_limit_reached','operator_ai_limit_reached']);
   const body = inspectionMessage ? {error:inspectionMessage,code:error.code}
     : status===415&&error?.code===STUDIO_MEDIA_TYPE_UNSUPPORTED ? {error:STUDIO_MEDIA_TYPE_MESSAGE,code:STUDIO_MEDIA_TYPE_UNSUPPORTED} : lifecycleCodes.has(error?.code) ? {error:error.code,code:error.code} : readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
     code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }

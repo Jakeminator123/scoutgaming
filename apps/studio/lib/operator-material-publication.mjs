@@ -1,17 +1,19 @@
-// Bolagets eget material in the four publishers: Admin's package, the saved
-// scene layout, the idle refresh (operator-package-api.mjs) and the company's
-// branding (partner-branding-api.mjs). Each reads the company's current
-// material, merges it with packages/presentation/server/operator-material-merge.mjs
-// and publishes the result. No material store, no rows (021 missing) or no
-// change: the publisher keeps its original presentation object untouched.
+// Bolagets eget material in the publishers that rebuild a presentation: Admin's
+// package, the saved scene layout and the idle refresh (operator-package-api.mjs),
+// a new room (presentation-room-api.mjs) and the company's branding
+// (partner-branding-api.mjs). Each reads the company's current material, merges
+// it with packages/presentation/server/operator-material-merge.mjs and publishes
+// the result; every other package writer preserves the frozen package as is.
+// No material store, no rows (021 missing) or no change: the publisher keeps
+// its original presentation object untouched.
 import {createHash} from 'node:crypto';
 import {filmedTableTemplate} from './filmed-table-template.mjs';
 import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {canonicalStudioJson} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {mergeOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
-import {encodePresentationPackage, withPackagePresentation, PRESENTATION_PACKAGE_KEY} from '../../../packages/presentation/server/presentation-package.mjs';
-import {EXTENDED_PRESENTATION_FORMAT, isExtendedPresentationEnvelope} from '../../../packages/presentation/server/presentation-storage.mjs';
+import {encodePresentationPackage, withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 
 const sha256 = text => createHash('sha256').update(text).digest('hex');
 function template(dealerId, lane) {
@@ -79,16 +81,4 @@ export function mergeOperatorMaterialsForPublication({presentation, rows = [], r
 export async function readOperatorMaterialRows(store, operatorId) {
   if (typeof store?.listMaterials !== 'function') return [];
   return store.listMaterials(operatorId);
-}
-
-/** Branding publications keep the frozen package; only material changes its envelope. */
-export async function brandingPackageWithMaterials({store, pack, presentation, administration}) {
-  const rows = presentation ? await readOperatorMaterialRows(store, pack.operatorId) : [];
-  if (!rows.length) return {pack, warnings: []};
-  const allowExtended = isExtendedPresentationEnvelope(pack.branding?.[PRESENTATION_PACKAGE_KEY]);
-  const result = mergeOperatorMaterialsForPublication({presentation, rows, rooms: publicationRooms(administration, pack.operatorId, pack),
-    fits: presentationFits({branding: pack.branding, base: presentation, allowExtended})});
-  if (!result.changed) return {pack, warnings: result.warnings};
-  const envelope = encodePresentationPackage(result.presentation, {allowExtended});
-  return {pack: {...pack, branding: {...pack.branding, [PRESENTATION_PACKAGE_KEY]: envelope}}, warnings: result.warnings};
 }
