@@ -180,8 +180,8 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
   }
 });
 
-test('CI uses one Studio discovery registry and retains blocking product checks', () => {
-  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8');
+test('CI runs every full-regression suite exactly once across its parallel legs and keeps blocking product checks', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
   const fullHook = readFileSync(new URL('../.githooks/pre-commit-full',import.meta.url),'utf8');
   const registered = fullHook.split('\n').filter(line => line.startsWith('run_node_tests '))
     .flatMap(line => line.trim().split(/\s+/).slice(3));
@@ -191,32 +191,46 @@ test('CI uses one Studio discovery registry and retains blocking product checks'
   const explicitStudio = registered.filter(path => /^apps\/studio\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
   assert.deepEqual(explicitStudio, []);
   assert.doesNotMatch(yaml, /npm --prefix apps\/studio test/);
-  const suites = ['studio', 'admin', 'contracts', 'database', 'presentation', 'access', 'speech', 'gameplay'];
-  const selected = [...yaml.matchAll(/run: sh \.githooks\/pre-commit-full ([a-z]+)/g)].map(match => match[1]);
-  assert.deepEqual(selected, suites, 'CI must execute every full-regression suite exactly once');
-  assert.match(yaml, /needs\.changes\.outputs\.migration == 'true'/);
-  const steps = yaml.split('      - name: ');
-  for (const step of steps.filter(step => /^Regression - /.test(step))) {
-    assert.match(step, /if: \$\{\{ !cancelled\(\) \}\}/);
-    assert.match(step, step.startsWith('Regression - Access,') ? /timeout-minutes: 18/ : /timeout-minutes: 8/);
-    assert.doesNotMatch(step, /continue-on-error: true/);
-  }
-  const isolated = steps.find(step => /^Existing isolated Studio SQL/.test(step));
-  assert.match(isolated, /tools\/studio-isolated-qa\.mjs/);
-  assert.doesNotMatch(isolated, /continue-on-error: true/);
-  // The engine suite skips without PostgreSQL; CI runs it only through its harness.
-  assert.match(fullHook, /\|gameplay\|engine\) ;;/);
+  // The hook's own suite list is the registry; CI may neither drop nor repeat a suite.
+  const hookSuites = fullHook.match(/^  all\|([a-z|]+)\) ;;$/m)?.[1].split('|');
+  assert.ok(hookSuites?.includes('engine') && hookSuites.includes('container'));
+  const dealer = yaml.split('\n  dealer-regression:\n')[1]?.split('\n  gateway-container:\n')[0];
+  assert.ok(dealer, 'the regression job must exist');
+  assert.match(dealer, /strategy:\n      fail-fast: false\n/, 'one failing leg must not cancel the others');
+  const include = '\n' + (dealer.split('\n        include:\n')[1]?.split('\n    outputs:\n')[0] ?? '');
+  const legs = include.split('\n          - leg: ').slice(1).map(body => ({leg: body.split('\n')[0],
+    suites: body.match(/suites: (.*)/)?.[1].replace(/^'(.*)'$/, '$1').split(' ').filter(Boolean) ?? [],
+    flags: [...body.matchAll(/            ([a-z_]+): true/g)].map(match => match[1])}));
+  assert.ok(legs.length >= 2, 'regression runs in parallel legs');
+  const matrixSuites = legs.flatMap(leg => leg.suites);
+  const container = yaml.split('\n  gateway-container:\n')[1]?.split('\n  migration-readiness:\n')[0];
+  assert.match(container, /run: sh \.githooks\/pre-commit-full container\n/);
+  // engine skips without PostgreSQL; CI runs exactly its list through the TLS harness.
+  assert.deepEqual([...matrixSuites, 'container', 'engine'].sort(), [...hookSuites].sort(), 'every suite runs exactly once');
+  assert.equal(new Set(matrixSuites).size, matrixSuites.length);
   assert.match(fullHook, /^run_node_tests engine engine-http test\//m);
-  const engine = steps.find(step => /^Real engine over HTTP on isolated PostgreSQL/.test(step));
-  assert.match(engine, /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
-  assert.match(engine, /if: \$\{\{ !cancelled\(\) \}\}/);
-  assert.doesNotMatch(engine, /continue-on-error: true/);
+  const suitesStep = dealer.split('      - name: Regression suites\n')[1]?.split('\n      - name: ')[0];
+  assert.match(suitesStep, /sh \.githooks\/pre-commit-full "\$suite" \|\| failed=1/);
+  assert.match(suitesStep, /exit "\$failed"/);
+  const steps = dealer.split('      - name: ');
+  const postgresLeg = legs.filter(leg => leg.flags.includes('postgres'));
+  assert.equal(postgresLeg.length, 1, 'one leg owns the isolated PostgreSQL acceptance');
+  for (const name of ['Existing isolated Studio SQL', 'Real engine over HTTP on isolated PostgreSQL']) {
+    const step = steps.find(step => step.startsWith(name));
+    assert.match(step, /if: \$\{\{ !cancelled\(\) && matrix\.postgres \}\}/, name);
+  }
+  assert.match(steps.find(step => step.startsWith('Existing isolated Studio SQL')), /tools\/studio-isolated-qa\.mjs/);
+  assert.match(steps.find(step => step.startsWith('Real engine over HTTP')), /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
+  assert.equal(legs.filter(leg => leg.flags.includes('browser')).length, 1, 'one leg runs every browser test');
+  assert.match(steps.find(step => step.startsWith('Real browser acceptance')), /git grep -l -F -e process\.env\.CROUPIER_BROWSER_FIXTURE_MODULE /, 'discovery matches files that read the variable, not files that mention it');
+  assert.equal(legs.filter(leg => leg.flags.includes('build')).length, 1, 'the real Studio build runs once');
+  assert.equal(yaml.match(/continue-on-error: true/g)?.length, 1, 'only the timing receipt below may fail softly');
   // The SQLite ban exempts documentation, so a documentation-only PR cannot violate it; the full regression runs it.
   assert.match(fullHook, /^run_check contracts no-sqlite \d+ node tools\/check-no-sqlite\.mjs$/m);
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);
-  assert.match(timings, /timeout-minutes: 2/);
+  assert.match(timings, /name: dealer-regression-timing-\$\{\{ matrix\.leg \}\}-/, 'each leg keeps its own timing receipt');
   assert.match(yaml, /if: always\(\)[\s\S]*dealer-regression-timing\.jsonl/);
   assert.doesNotMatch(yaml, /system-map/);
   assert.doesNotMatch(fullHook, /system-map/);
@@ -316,30 +330,35 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     encoding:'utf8',env:{...process.env,CI_NEEDS:JSON.stringify(needs)},
   }).status;
   const full = { changes:{result:'success',outputs:{scope:'full',migration:'true',moving:'false'}}, documentation:{result:'skipped'},
-    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true',migration_readiness:'success'}}, 'moving-worker':{result:'skipped'} };
+    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'gateway-container':{result:'success'},
+    'migration-readiness':{result:'success'}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
   const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.documentation.result='success';
   docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
+  docs['gateway-container'].result='skipped'; docs['migration-readiness'].result='skipped';
   assert.equal(run(docs),0);
   const client = structuredClone(full); client.changes.outputs.migration='false';
-  client['dealer-regression'].outputs.migration_readiness='skipped';
+  client['migration-readiness'].result='skipped';
   assert.equal(run(client),0,'client-only changes need no production access');
-  for (const receipt of [undefined,'','skipped','failure','cancelled','true',true]) {
-    const broken=structuredClone(full); broken['dealer-regression'].outputs.migration_readiness=receipt;
-    assert.notEqual(run(broken),0,'required readiness must have a successful step outcome: '+receipt);
+  for (const result of [undefined,'','skipped','failure','cancelled']) {
+    const broken=structuredClone(full); broken['migration-readiness'].result=result;
+    assert.notEqual(run(broken),0,'required readiness must have a successful job: '+result);
   }
+  const unreportedReadiness=structuredClone(full); delete unreportedReadiness['migration-readiness'];
+  assert.notEqual(run(unreportedReadiness),0);
   for (const value of [undefined,'','unknown',true,false]) {
     const broken=structuredClone(full); broken.changes.outputs.migration=value;
     assert.notEqual(run(broken),0,'unreported or malformed migration selection is rejected');
   }
   const inconsistentDocs=structuredClone(docs); inconsistentDocs.changes.outputs.migration='true';
   assert.notEqual(run(inconsistentDocs),0,'documentation cannot claim to have run required readiness');
-  const readiness = yaml.split('      - name: Studio migration readiness (production ledger)\n')[1]?.split('\n  moving-worker:')[0];
-  assert.ok(readiness?.includes('id: migration_readiness'));
-  assert.ok(yaml.includes('migration_readiness: $'+'{{ steps.migration_readiness.outcome }}'),'job exposes the real step outcome');
+  const readiness = yaml.split('\n  migration-readiness:\n')[1]?.split('\n  moving-worker:')[0];
+  assert.ok(readiness?.includes('run: node tools/check-migration-readiness.mjs'));
+  assert.ok(readiness.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_GAME_DATABASE_URL }}'));
   assert.doesNotMatch(readiness,/continue-on-error:/);
-  const condition=readiness.match(/if: \$\{\{ (.+) \}\}/)?.[1];
-  assert.ok(condition,'readiness retains an explicit production-access guard');
+  assert.equal(yaml.match(/secrets\.CROUPIER_GAME_DATABASE_URL/g)?.length,1,'only the readiness job receives production access');
+  const condition=readiness.match(/\n    if: \$\{\{ (.+) \}\}\n/)?.[1];
+  assert.ok(condition,'readiness retains an explicit production-access guard on its job');
   const repository='Jakeminator123/scoutgaming';
   const contexts=[
     {event_name:'pull_request',repository,event:{pull_request:{head:{repo:{full_name:repository}}}},allowed:true},
@@ -353,19 +372,21 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     const allowed=runInNewContext(condition,{needs:{changes:{outputs:{migration}}},github:context});
     assert.equal(allowed,migration==='true' && context.allowed,'production access: '+JSON.stringify({event:context.event_name,migration,allowed:context.allowed}));
     const result=structuredClone(full); result.changes.outputs.migration=migration;
-    result['dealer-regression'].outputs.migration_readiness=allowed?'success':'skipped';
+    result['migration-readiness'].result=allowed?'success':'skipped';
     assert.equal(run(result)===0,migration==='false' || context.allowed,'fork readiness must block without exposing production access');
   }
   for (const receipt of [undefined,'','false',false]) {
     const broken=structuredClone(full); broken['dealer-regression'].outputs.lipsync_verified=receipt; assert.notEqual(run(broken),0);
   }
   const missingOutputs=structuredClone(full); delete missingOutputs['dealer-regression'].outputs; assert.notEqual(run(missingOutputs),0);
-  const missingDealer=structuredClone(full); delete missingDealer['dealer-regression']; assert.notEqual(run(missingDealer),0);
-  for (const result of ['failure','cancelled','skipped']) {
-    const broken=structuredClone(full); broken['dealer-regression'].result=result; assert.notEqual(run(broken),0);
-    const missingDocs=structuredClone(docs); missingDocs.documentation.result=result; assert.notEqual(run(missingDocs),0);
+  for (const job of ['dealer-regression','gateway-container']) {
+    const missing=structuredClone(full); delete missing[job]; assert.notEqual(run(missing),0,job);
+    for (const result of ['failure','cancelled','skipped']) {
+      const broken=structuredClone(full); broken[job].result=result; assert.notEqual(run(broken),0,job+' '+result);
+    }
   }
   for (const result of ['failure','cancelled','skipped']) {
+    const missingDocs=structuredClone(docs); missingDocs.documentation.result=result; assert.notEqual(run(missingDocs),0);
     const broken=structuredClone(docs); broken.changes.result=result; assert.notEqual(run(broken),0);
   }
   const moving = structuredClone(full); moving.changes.outputs.moving='true'; moving['moving-worker'].result='success';
@@ -380,22 +401,27 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   assert.notEqual(run({}),0);
 });
 
-test('consolidated worker checks use isolated Python and only attest after every command passes', () => {
+test('lipsync worker checks run in one regression leg with isolated Python and only attest after every command passes', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
-  const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  moving-worker:\n')[0];
+  const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  gateway-container:\n')[0];
   assert.ok(dealer, 'the full regression job must exist');
-  assert.doesNotMatch(yaml, /^  lipsync-worker:/m, 'the redundant worker VM must be removed');
+  assert.doesNotMatch(yaml, /^  lipsync-worker:/m, 'the worker checks stay a leg of the regression job');
+  assert.equal(dealer.match(/\n            lipsync: true\n/g)?.length, 1, 'exactly one leg runs and attests the worker checks');
   assert.ok(dealer.includes('lipsync_verified: $' + '{{ steps.lipsync_contracts.outputs.verified }}'));
   const python = dealer.split('      - name: Select the worker Python without changing other checks\n')[1]?.split('      - name:')[0];
   assert.ok(python?.includes('id: lipsync_python'));
   assert.ok(python.includes('uses: actions/setup-python@v6'));
   assert.ok(python.includes("python-version: '3.11'"));
   assert.ok(python.includes('update-environment: false'), 'worker setup must not replace other checks\' Python');
-  const step = dealer.split('      - name: Verify lipsync worker contracts in the prepared regression VM\n')[1]?.split('\n      # OpenClaw')[0];
+  const step = dealer.split('      - name: Verify lipsync worker contracts in the prepared regression VM\n')[1]?.split('\n      - ')[0];
   assert.ok(step?.includes('id: lipsync_contracts'));
   assert.ok(step.includes('shell: bash'));
   assert.ok(step.includes('LIPSYNC_PYTHON: $' + "{{ steps.lipsync_python.outputs['python-path'] }}"));
-  assert.doesNotMatch(python + step, /^\s+(?:if|continue-on-error):/m, 'worker checks cannot silently skip or ignore failure');
+  // The only condition is the leg selector; a missing receipt fails the final gate.
+  for (const part of [python, step]) {
+    assert.deepEqual(part.match(/^\s+if: .*$/gm), ['        if: $' + '{{ matrix.lipsync }}'], 'worker checks cannot silently skip');
+    assert.doesNotMatch(part, /^\s+continue-on-error:/m, 'worker checks cannot ignore failure');
+  }
   const script = step.split('        run: |\n')[1]?.split('\n').filter(line=>line.trim()).map(line=>line.slice(10)).join('\n');
   assert.ok(script);
   const expected = [

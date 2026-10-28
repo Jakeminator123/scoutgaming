@@ -66,14 +66,43 @@ jobs:
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
 
+  # Same registry as local --full (.githooks/pre-commit-full), split into parallel legs.
+  # Every leg gets the same verified toolchain; a leg runs its suites to the end and
+  # fails if any suite fails. Engine runs only through its PostgreSQL harness, and the
+  # container suite has its own job.
   dealer-regression:
+    name: Regression (${{ matrix.leg }})
     needs: changes
     if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: studio
+            suites: studio
+          - leg: admin-contracts
+            suites: admin contracts
+            policy: true
+          - leg: database-engine
+            suites: database
+            postgres: true
+          - leg: presentation
+            suites: presentation
+          - leg: access
+            suites: access
+            build: true
+          - leg: speech-gameplay
+            suites: speech gameplay
+            speech_node: true
+            lipsync: true
+          - leg: browser
+            suites: ''
+            browser: true
     outputs:
+      # Only the lipsync leg runs this step; legs that skip it record no value.
       lipsync_verified: ${{ steps.lipsync_contracts.outputs.verified }}
-      migration_readiness: ${{ steps.migration_readiness.outcome }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -82,6 +111,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             apps/studio/package-lock.json
+            apps/studio/client/package-lock.json
             apps/speech/package-lock.json
             services/game/package-lock.json
             services/astrid-gpu-worker/gateway/package-lock.json
@@ -89,11 +119,23 @@ jobs:
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
       - run: npm --prefix apps/studio ci
-      - name: Orphan tests
-        run: node tools/check-orphan-tests.mjs
+      # Bundled Admin and lobby component tests resolve the client's own packages.
+      # The access leg gets them from the real Studio build below.
+      - name: Install the Admin and lobby client packages
+        if: ${{ !matrix.build }}
+        run: npm --prefix apps/studio/client ci --include=dev --ignore-scripts --no-audit --no-fund
       - run: npm --prefix services/game ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
+      - name: Install the speech service's own locked transport
+        run: npm --prefix apps/speech ci --ignore-scripts
+      - name: Install the real Next middleware used by frontend regression tests
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+          run_install: false
+      - run: pnpm --dir apps/web install --frozen-lockfile
       - name: Restore Studio compiler cache
+        if: ${{ matrix.build }}
         uses: actions/cache@v6
         with:
           path: apps/studio/.next/cache
@@ -101,98 +143,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-studio-next-v1-${{ hashFiles('apps/studio/package-lock.json') }}-
       - name: Build the real studio used by launcher regression tests
+        if: ${{ matrix.build }}
         run: npm --prefix apps/studio run build
-      - name: Install the real Next middleware used by frontend regression tests
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.2
-          run_install: false
-      - run: pnpm --dir apps/web install --frozen-lockfile
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22.23.1'
-      - name: Install the speech service's own locked transport
-        working-directory: apps/speech
-        run: npm ci --ignore-scripts && npm run build
-      - name: Speech transport on its declared Node runtime
-        run: node --test --test-concurrency=4 apps/web/test/platform-websocket.mjs test/platform-native-websocket.mjs test/platform-moving-speech.mjs
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - name: Select the worker Python without changing other checks
-        id: lipsync_python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-          update-environment: false
-      - name: Verify lipsync worker contracts in the prepared regression VM
-        id: lipsync_contracts
-        shell: bash
-        timeout-minutes: 15
-        env:
-          LIPSYNC_PYTHON: ${{ steps.lipsync_python.outputs['python-path'] }}
-        run: |
-          npm --prefix services/astrid-gpu-worker/gateway test
-          "$LIPSYNC_PYTHON" -m unittest discover -s services/astrid-gpu-worker/tests -v
-          "$LIPSYNC_PYTHON" -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
-          bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
-          echo "verified=true" >> "$GITHUB_OUTPUT"
       # OpenClaw launcher acceptance runs in the access suite and needs the build above.
-      - run: npm --prefix services/openclaw/lab run check
-      # Same registry as local --full. Each suite has its own visible step;
-      # later suites still diagnose failures, and any failed suite fails this job.
-      - name: Regression - Studio tests and frontend typecheck
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full studio
-      - name: Regression - Admin and economy journal
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full admin
-      - name: Regression - Contracts, security and ownership
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full contracts
-      - name: Regression - Database, migrations and authority
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full database
-      - name: Regression - Presentation and media identity
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full presentation
-      - name: Real shared-room browser wiring (Chrome)
-        if: ${{ !cancelled() }}
-        timeout-minutes: 5
+      - name: OpenClaw lab check
+        if: ${{ matrix.build }}
+        run: npm --prefix services/openclaw/lab run check
+      - name: Orphan tests
+        if: ${{ matrix.policy }}
+        run: node tools/check-orphan-tests.mjs
+      - name: Regression suites
+        if: ${{ matrix.suites != '' }}
+        timeout-minutes: 20
         shell: bash
+        env:
+          SUITES: ${{ matrix.suites }}
         run: |
-          set -euo pipefail
-          test -x /opt/google/chrome/chrome
-          /opt/google/chrome/chrome --version
-
-          browser_tools="$RUNNER_TEMP/shared-room-browser"
-          mkdir -p "$browser_tools"
-          npm install --prefix "$browser_tools" \
-            --no-save --package-lock=false --ignore-scripts \
-            --no-audit --no-fund playwright-core@1.62.1
-
-          CROUPIER_BROWSER_FIXTURE_MODULE="$browser_tools/node_modules/playwright-core/index.mjs" \
-          CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome \
-            node --test --test-concurrency=1 --test-reporter=spec test/shared-room-browser.mjs
-      - name: Regression - Access, wallet, registry and cloud
-        if: ${{ !cancelled() }}
-        timeout-minutes: 18
-        run: sh .githooks/pre-commit-full access
-      - name: Regression - Speech and player transport
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full speech
-      - name: Regression - Game rules and media ownership
-        if: ${{ !cancelled() }}
-        timeout-minutes: 8
-        run: sh .githooks/pre-commit-full gameplay
+          # Later suites still diagnose failures; any failed suite fails the leg.
+          failed=0
+          for suite in $SUITES; do
+            sh .githooks/pre-commit-full "$suite" || failed=1
+          done
+          exit "$failed"
       - name: Existing isolated Studio SQL, restart and HTTPS acceptance
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.postgres }}
         timeout-minutes: 8
         run: |
           # The runner image ships PostgreSQL 16 binaries; the download stays as fallback.
@@ -208,7 +182,7 @@ jobs:
           node tools/regression-group.mjs database/lissabon-retirement 180 node tools/run-shared-table-qa.mjs --lissabon-retirement "${postgres_source[@]}"
           node tools/regression-group.mjs database/room-game-config 360 node tools/run-room-game-config-qa.mjs "${postgres_source[@]}"
       - name: Real engine over HTTP on isolated PostgreSQL with TLS
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.postgres }}
         timeout-minutes: 12
         run: |
           # The engine suite in .githooks/pre-commit-full skips without this harness;
@@ -220,25 +194,122 @@ jobs:
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
           node tools/regression-group.mjs engine/http-postgres 660 node tools/run-engine-qa.mjs "${postgres_source[@]}"
+      - name: Restore the pinned browser driver
+        if: ${{ matrix.browser }}
+        id: browser_driver
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/croupier-browser-driver
+          key: ${{ runner.os }}-playwright-core-1.62.1
+      - name: Real browser acceptance (Chrome)
+        if: ${{ matrix.browser }}
+        timeout-minutes: 15
+        shell: bash
+        env:
+          DRIVER_CACHED: ${{ steps.browser_driver.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test -x /opt/google/chrome/chrome
+          /opt/google/chrome/chrome --version
+          driver="$HOME/.cache/croupier-browser-driver"
+          if [ "$DRIVER_CACHED" != true ] || [ ! -f "$driver/node_modules/playwright-core/index.mjs" ]; then
+            npm install --prefix "$driver" --no-save --package-lock=false --ignore-scripts \
+              --no-audit --no-fund playwright-core@1.62.1
+          fi
+          # Every test file that reads the browser fixture runs here, so a new
+          # browser test can never be skipped in CI by default. In the suites
+          # above the variable is unset and these cases skip.
+          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
+          test "${#files[@]}" -gt 0
+          printf 'Browser test file: %s\n' "${files[@]}"
+          CROUPIER_BROWSER_FIXTURE_MODULE="$driver/node_modules/playwright-core/index.mjs" \
+          CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome \
+            node tools/regression-group.mjs browser/chrome 840 node --test --test-concurrency=2 --test-reporter=spec "${files[@]}"
+      - uses: actions/setup-node@v7
+        if: ${{ !cancelled() && matrix.speech_node }}
+        with:
+          node-version: '22.23.1'
+      - name: Speech transport on its declared Node runtime
+        if: ${{ !cancelled() && matrix.speech_node }}
+        run: |
+          npm --prefix apps/speech run build
+          node --test --test-concurrency=4 apps/web/test/platform-websocket.mjs test/platform-native-websocket.mjs test/platform-moving-speech.mjs
+      - uses: actions/setup-node@v7
+        if: ${{ !cancelled() && matrix.speech_node }}
+        with:
+          node-version: '24'
+      - name: Select the worker Python without changing other checks
+        if: ${{ matrix.lipsync }}
+        id: lipsync_python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          update-environment: false
+      - name: Verify lipsync worker contracts in the prepared regression VM
+        if: ${{ matrix.lipsync }}
+        id: lipsync_contracts
+        shell: bash
+        timeout-minutes: 15
+        env:
+          LIPSYNC_PYTHON: ${{ steps.lipsync_python.outputs['python-path'] }}
+        run: |
+          npm --prefix services/astrid-gpu-worker/gateway test
+          "$LIPSYNC_PYTHON" -m unittest discover -s services/astrid-gpu-worker/tests -v
+          "$LIPSYNC_PYTHON" -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
+          bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+      - name: Game rules split check
+        if: ${{ !cancelled() && matrix.policy }}
+        run: node test/split-rules.mjs
+      - name: Delivery policy and team inbox
+        if: ${{ !cancelled() && matrix.policy }}
+        run: node --test --test-concurrency=4 test/github-workflow.mjs test/inbox.mjs
       - name: Save regression group timings
         continue-on-error: true
         timeout-minutes: 2
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: dealer-regression-timing-${{ github.sha }}
+          name: dealer-regression-timing-${{ matrix.leg }}-${{ github.sha }}
           retention-days: 30
           if-no-files-found: warn
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
-      - run: node test/split-rules.mjs
-      - run: node --test --test-concurrency=4 test/github-workflow.mjs test/inbox.mjs
+
+  # The pinned OpenClaw Gateway image build (about 90 s, mostly the base pull) runs
+  # beside the regression legs instead of inside the access suite.
+  gateway-container:
+    name: Gateway container
+    needs: changes
+    if: needs.changes.outputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Pinned Gateway image drops privilege and releases its lease on SIGTERM
+        run: sh .githooks/pre-commit-full container
+
+  migration-readiness:
+    name: Studio migration readiness
+    needs: changes
+    # Main/manual runs always check the ledger. Client/test-only PR edits
+    # need no production access; server/schema/dependency changes still do.
+    # Forks receive no production credentials; the final gate rejects
+    # skipped readiness whenever the classified change requires it.
+    if: ${{ needs.changes.outputs.migration == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/studio/package-lock.json
+      - run: npm --prefix apps/studio ci
       - name: Studio migration readiness (production ledger)
-        id: migration_readiness
-        # Main/manual runs always check the ledger. Client/test-only PR edits
-        # need no production access; server/schema/dependency changes still do.
-        # Forks receive no production credentials; the final gate rejects
-        # skipped readiness whenever the classified change requires it.
-        if: ${{ needs.changes.outputs.migration == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
         run: node tools/check-migration-readiness.mjs
         env:
           CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
@@ -250,7 +321,7 @@ jobs:
 
   ci:
     name: CI
-    needs: [changes, documentation, dealer-regression, moving-worker]
+    needs: [changes, documentation, dealer-regression, gateway-container, migration-readiness, moving-worker]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
@@ -264,12 +335,12 @@ jobs:
           const jobs = JSON.parse(process.env.CI_NEEDS);
           const scope = jobs.changes?.outputs?.scope;
           const required = scope === 'documentation' ? ['documentation']
-            : scope === 'full' ? ['dealer-regression'] : [];
+            : scope === 'full' ? ['dealer-regression', 'gateway-container'] : [];
           const moving = jobs.changes?.outputs?.moving;
           const migration = jobs.changes?.outputs?.migration;
           if (!['true', 'false'].includes(migration)
             || (migration === 'true' && (scope !== 'full'
-              || jobs['dealer-regression']?.outputs?.migration_readiness !== 'success'))) {
+              || jobs['migration-readiness']?.result !== 'success'))) {
             console.error('CI failed: required production migration readiness is missing or unsuccessful. Fork code must not receive production credentials; review and rerun from an authorized repository branch.');
             process.exit(1);
           }
