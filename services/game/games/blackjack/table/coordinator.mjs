@@ -554,9 +554,20 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
 
   // Scheduler interface: what is due at `at`. A blocked tick is offered again only as a new
   // `…:retry:<n>` id after something in its blockedOn changed (O01 2.5), never in a loop.
-  async function dueTicks(at = now()) {
+  // onRoomError(roomId, error) lets the scheduler isolate one room's failed due-check: it
+  // returns to skip that room or throws to fail the whole read (B3). Without it, any throws.
+  async function dueTicks(at = now(), { onRoomError } = {}) {
     const due = [];
     for (const roomId of await store.read.rooms()) {
+      if (!onRoomError) { await dueForRoom(roomId, at, due); continue; }
+      const mark = due.length;
+      try { await dueForRoom(roomId, at, due); }
+      catch (error) { due.length = mark; await onRoomError(roomId, error); }
+    }
+    return due;
+  }
+  async function dueForRoom(roomId, at, due) {
+    {
       // Kevin 24 Oct (prod CPU): a room nobody sits at has no member tick, so its members and
       // presence are not read; presence only for the members an absence tick can concern.
       const r = await store.read.room(roomId), seen = {};
@@ -576,7 +587,6 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
             blockedPlayers: last.blockedOn.map(b => b.playerId) });
       }
     }
-    return due;
   }
 
   function tickPlayers(r, kind, playerId) {
@@ -702,10 +712,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // Delivery after COMMIT with the stored talkId/ver (O01 2.9). deliveredVer only skips rows
   // already known to be old; the ordering guarantee is the receiver's atomic version check
   // (sink contract in ports.mjs): a row it answers 'stale' was never applied and is superseded.
-  // Failures leave the row for a later attempt.
-  async function deliverOutbox(sink) {
+  // Failures leave the row for a later attempt; so does skipRoom (an isolated, resting room).
+  async function deliverOutbox(sink, { skipRoom } = {}) {
     const delivered = [], superseded = [], failed = [];
     for (const row of await store.outbox.pending()) {
+      if (skipRoom?.(row.roomId)) continue;
       if (row.ver < (await store.outbox.deliveredVer(row.roomId))) { await store.outbox.ack(row, 'superseded'); superseded.push(row); continue; }
       try {
         const status = await sink(row);

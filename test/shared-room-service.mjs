@@ -60,7 +60,7 @@ test('construction shares explicit app ports/pool without I/O and rejects an imp
   for (const key of ['scope', 'repository', 'auth']) assert.equal(h.config.access[key], h.options[key]);
   assert.equal(h.config.upgrade.origin, h.options.origin); assert.equal(h.config.upgrade.engineOrigin, h.options.engineOrigin);
   for (const walletMode of [undefined, 'external', '']) assert.throws(() => createSharedRoomService({ ...h.options, walletMode }, h.dependencies), { statusCode: 503 });
-  assert.deepEqual(h.service.health(), { state: 'idle', ready: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null });
+  assert.deepEqual(h.service.health(), { state: 'idle', ready: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null, rooms: [] });
 });
 
 test('receiver readiness precedes runtime start; admission stays shut until both finish', async t => {
@@ -152,7 +152,7 @@ test('close aborts and drains authorization; no admission escapes after its late
 test('health excludes raw details and a failed scheduler closes readiness until recovery', async t => {
   const h = setup(t); await h.service.start();
   Object.assign(h.health, { failed: true, lastErrorAt: 1234, lastSuccessAt: 'private detail', error: 'secret', connection: 'private' });
-  assert.deepEqual(h.service.health(), { state: 'running', ready: false, failed: true, inFlight: false, lastSuccessAt: null, lastErrorAt: 1234 });
+  assert.deepEqual(h.service.health(), { state: 'running', ready: false, failed: true, inFlight: false, lastSuccessAt: null, lastErrorAt: 1234, rooms: [] });
   await assert.rejects(h.service.handleUpgrade(request()), { statusCode: 503 }); assert.equal(count(h, 'authorize'), 0);
   h.health.failed = false; assert.equal(h.service.health().ready, true);
 });

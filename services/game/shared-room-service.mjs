@@ -10,6 +10,12 @@ import { assertSharedPostgresOwner } from '../../packages/storage/server/postgre
 const unavailable = () => Object.assign(new Error('shared_room_service_unavailable'), { statusCode: 503 });
 const stopped = () => new DOMException('Shared room service stopped', 'AbortError');
 const timestamp = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+const roomUnavailable = () => Object.assign(new Error('shared_room_unavailable'), { statusCode: 503, code: 'shared_room_unavailable' });
+// Isolated room faults (B3): identity, counts and times only, never error details.
+const projectRoomFaults = rooms => Object.freeze((Array.isArray(rooms) ? rooms : [])
+  .filter(room => typeof room?.roomId === 'string' && /^[a-z0-9_-]{1,128}$/.test(room.roomId))
+  .map(room => Object.freeze({ roomId: room.roomId, failures: Number.isSafeInteger(room.failures) ? room.failures : 0,
+    blocked: room.blocked === true, since: timestamp(room.since), lastErrorAt: timestamp(room.lastErrorAt), retryAt: timestamp(room.retryAt) })));
 
 /** Application-owned, single-use composition. It installs no HTTP listener and
  * never creates/closes a pool. Await start before readiness, and close BEFORE
@@ -66,9 +72,16 @@ export function createSharedRoomService({
     try { current = runtime.health(); } catch { current = { failed: true }; }
     return Object.freeze({ state, ready: state === 'running' && current?.running === true && current.failed === false,
       failed: failed || current?.failed !== false, inFlight: reads.size > 0 || current?.inFlight === true,
-      lastSuccessAt: timestamp(current?.lastSuccessAt), lastErrorAt: timestamp(current?.lastErrorAt) });
+      lastSuccessAt: timestamp(current?.lastSuccessAt), lastErrorAt: timestamp(current?.lastErrorAt),
+      rooms: projectRoomFaults(current?.rooms) });
   }
   function requireReady() { if (!health().ready) throw unavailable(); }
+  // A room fault never closes the service; only a room that keeps failing refuses commands.
+  function requireRoomReady(roomId) {
+    let fault = null;
+    try { fault = typeof runtime.roomHealth === 'function' ? runtime.roomHealth(roomId) : null; } catch { throw unavailable(); }
+    if (fault?.blocked === true) throw roomUnavailable();
+  }
   function read(work, signal) {
     const combined = signal ? AbortSignal.any([lifetime.signal, signal]) : lifetime.signal;
     // Track the actual port operation, not the channel's timeout race. Closing
@@ -95,7 +108,7 @@ export function createSharedRoomService({
       // return before its caller commits, so it must never publish hints here.
       assertSharedPostgresOwner();
       const binding = await access.authorize(request, { roomId, signal: active });
-      active.throwIfAborted(); requireReady();
+      active.throwIfAborted(); requireReady(); requireRoomReady(roomId);
       const admission = { binding, signal: active, presentationVer: 0 }, token = Object.freeze({});
       admissions.set(token, admission);
       try {
