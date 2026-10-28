@@ -2,7 +2,7 @@ import {readFile,writeFile,rename,unlink,lstat,realpath} from 'node:fs/promises'
 import {resolve,join,relative,dirname,extname,sep} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {validateMediaAliases} from './media-layout.mjs';
-import {hashFile} from './migrate-media-layout.mjs';
+import {hashFile} from './export-media-blob.mjs';
 import {MEDIA_MIME,validatePrivateMedia} from '../apps/studio/lib/cloud-media-store.mjs';
 
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');

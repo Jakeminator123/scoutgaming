@@ -1,20 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,readFile,rm,lstat} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm,lstat} from 'node:fs/promises';
 import {readFileSync,closeSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {applyMediaMigration,verifyMediaLayout} from '../tools/migrate-media-layout.mjs';
+import {createHash} from 'node:crypto';
+import {writeMediaLayoutFixture} from './fixtures/media-layout-files.mjs';
 import {planBlobExport} from '../tools/export-media-blob.mjs';
 import {planMediaDeduplication,applyMediaDeduplication} from '../tools/deduplicate-media.mjs';
 import {readMediaLayout,resolveMediaPath,openPublicMedia,resolvePublicMedia,validateMediaAliases} from '../tools/media-layout.mjs';
 
 async function fixture(t){
   const root=await mkdtemp(join(tmpdir(),'croupier-dedup-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  for(const path of ['web/public/dealer/streams/orig/a.h264','web/public/dealer/streams/a.h264','assets/astrid-3d/a.h264']){
-    await mkdir(join(root,path,'..'),{recursive:true});await writeFile(join(root,path),'exact original video bytes');
-  }
-  await applyMediaMigration({root});const layout=readMediaLayout(root),index={...await planBlobExport({root,includeSource:true}),verification:'readback-sha256'};
+  // Three registered copies of the same bytes: two public aliases and one source file.
+  const body='exact original video bytes';
+  await writeMediaLayoutFixture(root,{files:[
+    {path:'game/runtime/streams/orig/a.h264',legacyPath:'web/public/streams/orig/a.h264',access:'public',publicUrl:'/streams/orig/a.h264',body},
+    {path:'game/runtime/streams/a.h264',legacyPath:'web/public/streams/a.h264',access:'public',publicUrl:'/streams/a.h264',body},
+    {path:'game/source/3d/a.h264',legacyPath:'assets/3d/a.h264',access:'source',body}]});
+  const layout=readMediaLayout(root),index={...await planBlobExport({root,includeSource:true}),verification:'readback-sha256'};
   await writeFile(join(root,'media/blob-index.json'),JSON.stringify(index));return {root,layout,index};
 }
 test('dedup removes physical copies while local URLs, legacy paths, IDs and export storage stay exact',async t=>{
@@ -32,7 +36,7 @@ test('dedup removes physical copies while local URLs, legacy paths, IDs and expo
   const exported=await planBlobExport({root,includeSource:true});
   assert.deepEqual(exported.files,plan.nextIndex.files);
   for(let i=0;i<index.files.length;i++){const {storage,...before}=index.files[i],{storage:afterStorage,...after}=plan.nextIndex.files[i];assert.deepEqual(after,before);assert.equal(afterStorage.sha256,storage.sha256);}
-  assert.deepEqual((await verifyMediaLayout({root})).errors,[]);
+  for(const row of next.files){const bytes=await readFile(join(root,'media',row.canonicalPath??row.path));assert.equal(bytes.length,row.size);assert.equal(createHash('sha256').update(bytes).digest('hex'),row.sha256);}
   const repeat=planMediaDeduplication({layout:next,index:plan.nextIndex});assert.equal(repeat.summary.localFiles,0);assert.equal(repeat.summary.blobObjects,0);
 });
 test('changed bytes or tampered plans fail before switching metadata or removing any file',async t=>{

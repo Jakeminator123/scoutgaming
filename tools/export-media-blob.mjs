@@ -1,12 +1,13 @@
 import {readFile,writeFile,mkdir,rename,lstat} from 'node:fs/promises';
-import {openAsBlob} from 'node:fs';
+import {openAsBlob,createReadStream} from 'node:fs';
 import {dirname,join,resolve,extname} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {readMediaLayout,repositoryRoot,resolveMediaPath,validateMediaAliases} from './media-layout.mjs';
-import {hashFile} from './migrate-media-layout.mjs';
 import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../apps/studio/lib/cloud-media-store.mjs';
 const identity=hash=>`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
+/** Streams the file; the result is compared with the layout's exact SHA-256. */
+export async function hashFile(file){const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);return hash.digest('hex');}
 /** Metadata-only dry run: public rows, and source rows on request. The ID is
  * derived from the exact bytes; the repository carries no presentation bank. */
 export async function planBlobExport({root=repositoryRoot,includeSource=false,layout=readMediaLayout(root)}={}){

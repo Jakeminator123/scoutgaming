@@ -100,7 +100,7 @@ Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 01
 
 ## Media och regression
 
-`media/` i repot är käll- och granskningsmaterial och importunderlag, inte produktens register. `media/layout.json` binder gamla sökvägar, publika URL:er, storlek och hash till dagens filer; `media/blob-index.json` listar Blob-sökvägarna `croupier/media/<logisk-katalog>/<id>/<sha256>.<ext>`. `tools/migrate-media-layout.mjs --rollback <ledger>` vägrar överskrivning och kräver stoppade skrivare.
+`media/` i repot är käll- och granskningsmaterial och importunderlag, inte produktens register. `media/layout.json` binder gamla sökvägar, publika URL:er, storlek och hash till dagens filer; `media/blob-index.json` listar Blob-sökvägarna `croupier/media/<logisk-katalog>/<id>/<sha256>.<ext>`.
 
 Varje talad replik är ett paket: exakt text, ljud, video, frameindex, kalibrering och mänskligt godkännande. Ny ljud- eller videohash ogiltigförklarar tidigare godkännande. Bygg ersättningstagningar i separat staging och kringgå aldrig `tools/media/build-index.mjs`:s skydd genom att radera kalibreringsmetadata. Hash, vågform, testpass eller första munrörelse godkänner inte läppsynk; det gör Jakob. Uppspelningskontrakten står i [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md).
 

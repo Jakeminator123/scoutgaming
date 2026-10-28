@@ -4,15 +4,14 @@ import {mkdtemp,mkdir,writeFile,rename,symlink,rm} from 'node:fs/promises';
 import {closeSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {applyMediaMigration} from '../tools/migrate-media-layout.mjs';
 import {openPublicMedia,resolveMediaPath,resolvePublicMedia,readMediaLayout,validateMediaLayout} from '../tools/media-layout.mjs';
+import {writeMediaLayoutFixture} from './fixtures/media-layout-files.mjs';
 test('public URL aliases serve the same descriptor bytes and forbid directory links',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-public-layout-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  await mkdir(join(root,'web/public/dealer/streams'),{recursive:true});await writeFile(join(root,'web/public/dealer/streams/a.h264'),'immutable frame bytes');
-  await applyMediaMigration({root,scope:'all'});
-  for(const url of ['/dealer/streams/a.h264','/media/dealers/vera/runtime/indexed/streams/a.h264']){const result=openPublicMedia(url,{repositoryRoot:root});assert.equal(readFileSync(result.fd).toString(),'immutable frame bytes');closeSync(result.fd);}
-  const directory=join(root,'media/dealers/vera/runtime/indexed/streams'),outside=join(root,'alternate');await rename(directory,outside);await symlink(outside,directory,process.platform==='win32'?'junction':'dir');
-  assert.throws(()=>openPublicMedia('/dealer/streams/a.h264',{repositoryRoot:root}),/links/);
+  await writeMediaLayoutFixture(root,{files:[{path:'game/runtime/assets/streams/a.h264',legacyPath:'web/public/assets/streams/a.h264',access:'public',publicUrl:'/assets/streams/a.h264',body:'immutable frame bytes'}]});
+  for(const url of ['/assets/streams/a.h264','/media/game/runtime/assets/streams/a.h264']){const result=openPublicMedia(url,{repositoryRoot:root});assert.equal(readFileSync(result.fd).toString(),'immutable frame bytes');closeSync(result.fd);}
+  const directory=join(root,'media/game/runtime/assets/streams'),outside=join(root,'alternate');await rename(directory,outside);await symlink(outside,directory,process.platform==='win32'?'junction':'dir');
+  assert.throws(()=>openPublicMedia('/assets/streams/a.h264',{repositoryRoot:root}),/links/);
 });
 test('unregistered relative paths stay unchanged and layout paths are unique',()=>{
   const root=process.cwd();
@@ -21,19 +20,21 @@ test('unregistered relative paths stay unchanged and layout paths are unique',()
 });
 test('partial media roots preserve renderer and admin code in the existing application',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-partial-media-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  for(const [file,body]of [['web/public/kevin-cards/back.png','card bytes'],['web/public/kevin-cards/calibration.mjs','export const calibration={};'],['web/public/bo/img/logo.png','logo bytes'],['web/public/bo/speech-qa.html','<main>Operator QA</main>']]){await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),body);}
-  await applyMediaMigration({root,scope:'all'});
-  for(const file of ['web/public/kevin-cards/calibration.mjs','web/public/bo/speech-qa.html'])assert.equal(resolveMediaPath(file,{repositoryRoot:root}),join(root,file));
-  assert.equal(resolveMediaPath('web/public/kevin-cards/back.png',{repositoryRoot:root}),join(root,'media/game/runtime/cards/back.png'));
-  assert.ok(!Object.hasOwn(readMediaLayout(root).roots,'web/public/bo'));
-  for(const file of ['kevin-cards/calibration.mjs','bo/speech-qa.html']) {
+  // The whole cards root moved, but only the image subtree of the site root.
+  await writeMediaLayoutFixture(root,{roots:{'web/public/cards':'media/game/runtime/cards','web/public/site/img':'media/site/runtime/img'},files:[
+    {path:'game/runtime/cards/back.png',legacyPath:'web/public/cards/back.png',access:'public',publicUrl:'/cards/back.png',body:'card bytes'},
+    {path:'site/runtime/img/logo.png',legacyPath:'web/public/site/img/logo.png',access:'public',publicUrl:'/site/img/logo.png',body:'logo bytes'}]});
+  for(const [file,body]of [['web/public/cards/calibration.mjs','export const calibration={};'],['web/public/site/speech-qa.html','<main>Operator QA</main>']]){await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),body);}
+  for(const file of ['web/public/cards/calibration.mjs','web/public/site/speech-qa.html'])assert.equal(resolveMediaPath(file,{repositoryRoot:root}),join(root,file));
+  assert.equal(resolveMediaPath('web/public/cards/back.png',{repositoryRoot:root}),join(root,'media/game/runtime/cards/back.png'));
+  for(const file of ['cards/calibration.mjs','site/speech-qa.html']) {
     const sourcePath='services/game/public/'+file;await mkdir(join(root,sourcePath,'..'),{recursive:true});
     await rename(join(root,'web/public',file),join(root,sourcePath));
     assert.equal(resolveMediaPath('web/public/'+file,{repositoryRoot:root,sourcePath}),join(root,sourcePath));
     assert.ok(readFileSync(resolveMediaPath('web/public/'+file,{repositoryRoot:root,sourcePath})).length);
   }
-  const sourcePath='services/game/public/kevin-cards/back.png';await writeFile(join(root,sourcePath),'shadow bytes');
-  assert.equal(resolveMediaPath('web/public/kevin-cards/back.png',{repositoryRoot:root,sourcePath}),join(root,'media/game/runtime/cards/back.png'));
+  const sourcePath='services/game/public/cards/back.png';await writeFile(join(root,sourcePath),'shadow bytes');
+  assert.equal(resolveMediaPath('web/public/cards/back.png',{repositoryRoot:root,sourcePath}),join(root,'media/game/runtime/cards/back.png'));
   assert.throws(()=>resolveMediaPath('web/public/entry.mjs',{repositoryRoot:root,sourcePath:'../outside.mjs'}),/Unsafe media path/);
   const noLayout=join(root,'without-layout'),code='services/game/public/entry.mjs';await mkdir(join(noLayout,code,'..'),{recursive:true});await writeFile(join(noLayout,code),'export const code=true;');
   assert.equal(readFileSync(resolveMediaPath('web/public/entry.mjs',{repositoryRoot:noLayout,sourcePath:code}),'utf8'),'export const code=true;');
