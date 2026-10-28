@@ -6,6 +6,8 @@ import { planFilmedTimeline } from '../packages/presentation/runtime/filmed-deal
 import { nativeRoomFilmedPlanning } from '../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import { withFilmedSteps, createFilmedStepReader } from '../services/game/shared-room-filmed-steps.mjs';
 import { createSharedRoomChannel } from '../services/game/shared-room-channel.mjs';
+import { selectSharedRoomPresentation } from '../services/game/shared-room-presentation-selection.mjs';
+import { createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
 
 // K04 F5c: the server attaches each filmed step's choice to the committed plan, so a client
 // can play a decision's first step without waiting for POST select (median 3.3 s in staging).
@@ -91,4 +93,64 @@ test('the channel sends the choices to the player and refuses malformed ones', a
   channel.emitCommitted('room-a');
   for (let n = 0; n < 50 && !closed.length; n++) await new Promise(setImmediate);
   assert.deepEqual(closed, [{ code: 1011, reason: 'shared_room_unavailable' }]);
+});
+
+test('the enriched plan is computed once per (room, ver) for every socket and update', async () => {
+  let reads = 0, planned = 0;
+  const enrich = createFilmedStepReader({ readConfig: async (roomId, version) => { reads++;
+    return { roomId, configVersion: version, material: new Proxy(material, { get(target, key) { if (key === 'film') planned++; return target[key]; } }) }; } });
+  // The receiver returns a freshly parsed object on every read.
+  const results = [];
+  for (let socket = 0; socket < 5; socket++) results.push(await enrich('room-a', structuredClone(plan(opening(null)))));
+  assert.equal(reads, 1); assert.equal(planned > 0, true); const once = planned;
+  for (let socket = 0; socket < 5; socket++) results.push(await enrich('room-a', structuredClone(plan(opening(null)))));
+  assert.equal(planned, once, 'no planning after the first read of this plan version');
+  assert.ok(results.every(value => value === results[0]));
+  const next = await enrich('room-a', structuredClone(plan(opening(null), { ver: 5, talkId: 'talk-5' })));
+  assert.notEqual(next, results[0]); assert.ok(planned > once, 'a new plan version is planned');
+  // Same key but different committed events (never expected): recomputed, not reused.
+  const changed = plan(opening(null)); changed.events = changed.events.slice(0, 3);
+  assert.equal((await enrich('room-a', changed)).events.length, 3);
+});
+
+test('a record the channel would refuse never reaches the frame: the plan goes out unchanged and select remains', () => {
+  for (const change of [row => ({ ...row, id: 'bad id with spaces' }), row => ({ ...row, id: '-leading-dash' })]) {
+    const broken = { ...material, media: material.media.map((row, index) => index === 0 ? change(row) : row) };
+    let result;
+    try { result = withFilmedSteps(plan(opening(null)), broken); } catch (error) { assert.fail(String(error)); }
+    assert.ok(result.events.every(event => event.filmedTake === undefined), 'unchanged plan; select remains');
+  }
+});
+
+// Equivalence with POST select for a native v2 room whose package registers one video per file.
+test('the frame choice equals the select answer: same take, sha256 and video id', async () => {
+  const stillMaterial = { ...material, media: material.media.filter(row => ![toShoe.id, fromShoe.id].includes(row.id)),
+    film: { ...material.film, transitions: { toShoe: null, fromShoe: null } } };
+  const project = addDealer(createEmptyProject(), 'dragan', 'dragan');
+  const line = project.lines.find(row => row.dealerId === 'dragan');
+  line.variants = stillMaterial.media.map((row, index) => ({ ...structuredClone(line.variants[0]), id: `dragan.fixture.${index}`, videoGenerationId: row.id }));
+  const videos = stillMaterial.media.map(row => ({ id: row.id, dealer: 'dragan', sha256: row.sha256, available: true, fileName: `${row.id}.mp4`, contentType: 'video/mp4',
+    classification: { dealerId: 'dragan', eventId: line.eventId, kind: 'action', role: 'standard', situation: '', playback: 'once', label: 'take', notes: '' } }));
+  const context = { operatorSlug: 'north', roomId: 'room-a', packageRevision: 7, dealerId: 'dragan' };
+  const frozen = { context, dealer: { id: 'dragan' }, project, inventory: { videos, families: [] }, projectRevision: 'frozen-7', configurationSource: 'operator-package-v3', lane: { openclaw: {} } };
+  const frozenDealerContext = { resolve: async () => frozen, publicVideo: (_frozen, videoId) => {
+    const row = videos.find(item => item.id === videoId);
+    return row ? { id: row.id, sha256: row.sha256, fileName: row.fileName, src: '/api/presentation/room-video/' + ['north', 'room-a', 7, 'dragan', row.id].join('/') } : null; } };
+  const committed = plan(opening(null)), enriched = withFilmedSteps(committed, stillMaterial);
+  let compared = 0;
+  for (const [index, event] of committed.events.entries()) {
+    if (!['deal', 'reveal'].includes(event.type)) continue;
+    const capture = { sourceEvent: event, published: committed.events, material: stillMaterial, configVersion: 'config-a', version: 4, roomId: 'room-a',
+      talkId: 'talk-4', language: 'sv', presentationContext: context, operatorId: 'operator-a', packageRevision: 7 };
+    const body = { dealerId: 'dragan', mode: 'off', version: 4, event, presentationContext: context, sharedRoom: { roomId: 'room-a', ver: 4, talkId: 'talk-4' } };
+    const answer = await selectSharedRoomPresentation({ capture, body, frozenDealerContext, select: async () => assert.fail('no Director for a filmed step'),
+      request: null, playerId: 'alice', signal: new AbortController().signal });
+    const own = enriched.events[index].filmedTake;
+    assert.deepEqual({ profileId: own.profileId, takeKey: own.takeKey }, answer.video.filmedTake, `event ${index}`);
+    assert.equal(own.id, answer.video.id); assert.equal(own.sha256, answer.video.sha256);
+    assert.deepEqual(enriched.events[index].filmedTransitions, { before: answer.transitions.before && { id: answer.transitions.before.id, sha256: answer.transitions.before.sha256 },
+      after: answer.transitions.after && { id: answer.transitions.after.id, sha256: answer.transitions.after.sha256 } });
+    compared++;
+  }
+  assert.equal(compared, 4);
 });

@@ -17,7 +17,8 @@ import { assertSharedPostgresOwner } from '../../../../../packages/storage/serve
 // - contention (lock/statement timeout, serialization failure, deadlock) is neutral:
 //   the global A lock makes it say nothing about the room. The room is skipped for the
 //   rest of that pass, nothing is counted against it, no backoff grows; a separate
-//   counter and a shared_table_room_contention report record it;
+//   counter records each one, and a shared_table_room_contention report goes out at most
+//   once per room per contentionReportMs (with the count since that room's last report);
 // - a room fault in a tick or due-check marks only that room: reported with code
 //   shared_table_room_failed, retried after a bounded backoff, blocked for commands
 //   after roomBlockAfter consecutive failures. It recovers when a pass no longer fails;
@@ -51,13 +52,14 @@ export function createPostgresTableRuntime({
   pool, walletMode, clock = { now: Date.now }, random = secureRandom(), sink,
   intervalMs = 250, onError = error => process.emitWarning(error),
   lockTimeoutMs, statementTimeoutMs, authorizeCommand, onTickCommitted,
-  roomBackoffMaxMs = 30000, roomBlockAfter = 3,
+  roomBackoffMaxMs = 30000, roomBlockAfter = 3, contentionReportMs = 10000,
 } = {}, {
   createStore = createPostgresTableStore, createCoordinator = createTableCoordinator,
   setTimer = setTimeout, clearTimer = clearTimeout,
 } = {}) {
   if (!Number.isInteger(intervalMs) || intervalMs < 1 || intervalMs > 2147483647)
     throw new TypeError('intervalMs must be a positive timer interval');
+  if (!Number.isSafeInteger(contentionReportMs) || contentionReportMs < 0) throw new TypeError('Invalid contention report interval');
   if (!Number.isSafeInteger(roomBackoffMaxMs) || roomBackoffMaxMs < 1 || !Number.isSafeInteger(roomBlockAfter) || roomBlockAfter < 1)
     throw new TypeError('Invalid room fault policy');
   if (typeof clock?.now !== 'function' || typeof onError !== 'function'
@@ -75,6 +77,8 @@ export function createPostgresTableRuntime({
   // roomId -> { failures, since, lastErrorAt, retryAt }; no error details are kept.
   const roomFaults = new Map(), outboxFaults = new Map();
   const contention = { count: 0, lastAt: null };
+  // roomId -> { reportedAt, suppressed }: throttles the report, never the counter.
+  const contentionReports = new Map();
   const faultView = (roomId, fault) => ({ roomId, failures: fault.failures, since: fault.since, lastErrorAt: fault.lastErrorAt, retryAt: fault.retryAt });
   const roomView = (roomId, fault) => Object.freeze({ ...faultView(roomId, fault), blocked: fault.failures >= roomBlockAfter });
   const backoff = failures => Math.min(roomBackoffMaxMs, intervalMs * 2 ** Math.min(failures - 1, 30));
@@ -171,7 +175,12 @@ export function createPostgresTableRuntime({
     }
     for (const [roomId, error] of contended) {
       contention.count++; contention.lastAt = at;
-      await report('Shared table room met lock contention', error, { code: 'shared_table_room_contention', roomId });
+      const last = contentionReports.get(roomId);
+      if (last && at - last.reportedAt < contentionReportMs) { last.suppressed++; continue; }
+      contentionReports.set(roomId, { reportedAt: at, suppressed: 0 });
+      if (contentionReports.size > 1024) contentionReports.delete(contentionReports.keys().next().value);
+      await report('Shared table room met lock contention', error,
+        { code: 'shared_table_room_contention', roomId, occurrences: (last?.suppressed ?? 0) + 1 });
     }
     // A room that was eligible in this pass and did not fail has recovered; contention
     // and system faults prove nothing either way.

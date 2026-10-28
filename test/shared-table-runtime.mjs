@@ -395,3 +395,19 @@ test('real coordinator: an unreadable room does not stop another room from start
   at += 250; await runtime.pump();
   assert.equal((await table.snapshot('broken', 'bob')).phase, 'round'); assert.deepEqual(runtime.health().rooms, []);
 });
+
+test('contention is counted every time but reported at most once per room per interval', async t => {
+  let at = 1000;
+  const h = setup({ coordinator: {
+    async dueTicks() { return [{ roomId: 'busy-room', tickId: 'b' }, { roomId: 'other-room', tickId: 'o' }]; },
+    async tick() { throw Object.assign(new Error('lock timeout'), { code: '55P03' }); },
+  }, options: { clock: { now: () => at }, contentionReportMs: 10000 } });
+  t.after(() => h.runtime.stop()); await h.runtime.start();
+  for (let pass = 0; pass < 5; pass++) { await h.runtime.pump(); at += 1000; }
+  assert.deepEqual(h.runtime.health().contention, { count: 10, lastAt: 5000 });
+  assert.deepEqual(h.errors.map(error => [error.roomId, error.occurrences]), [['busy-room', 1], ['other-room', 1]]);
+  at = 11000; await h.runtime.pump();
+  assert.deepEqual(h.errors.slice(2).map(error => [error.code, error.roomId, error.occurrences]),
+    [['shared_table_room_contention', 'busy-room', 5], ['shared_table_room_contention', 'other-room', 5]]);
+  assert.throws(() => setup({ options: { contentionReportMs: -1 } }), /contention report/);
+});
