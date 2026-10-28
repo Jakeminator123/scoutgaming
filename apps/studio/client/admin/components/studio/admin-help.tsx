@@ -1,5 +1,7 @@
 import Link from '../../../runtime/navigation';
 import {HubPage,Card,KV} from '../ui/hub';
+import {buttonVariants,focusRing,cn} from '../ui/kit';
+import {ExternalLink} from 'lucide-react';
 import {adminNavigationGroups,adminDealerSteps,adminDealerTabs,adminCompanyTabs,adminSystemTabs} from '../../lib/admin-navigation';
 
 // Hjälp (/admin/guide): the menu, who may change what, the words, the dealer flow and where the data comes from.
@@ -31,28 +33,29 @@ const sources:[string,string,string][]=[
 ];
 
 export function AdminHelp() {
-  return <HubPage title="Hjälp" intro="Vad varje menyval gör, vem som får ändra vad, orden vi använder och var uppgifterna kommer ifrån." actions={<><a className="hub-btn" href={GUIDE} target="_blank" rel="noopener">Användarguiden ↗</a><a className="hub-btn" href={GLOSSARY} target="_blank" rel="noopener">Ordlistan ↗</a></>}>
-    <div className="hub-grid c2">
+  return <HubPage title="Hjälp" intro="Vad varje menyval gör, vem som får ändra vad och orden vi använder." actions={<><a className={buttonVariants({variant:'secondary'})} href={GUIDE} target="_blank" rel="noopener">Användarguiden<ExternalLink aria-hidden="true"/></a><a className={buttonVariants({variant:'secondary'})} href={GLOSSARY} target="_blank" rel="noopener">Ordlistan<ExternalLink aria-hidden="true"/></a></>}>
+    <div className="grid gap-4 md:grid-cols-2">
       <Card title="Menyn (6 val)">
-        <KV items={[['Översikt',<><Link href="/admin">Översikt</Link> · det som väntar på dig, med länk till platsen där det åtgärdas.</>],
-          ...adminNavigationGroups.flatMap(group=>group.links.map(link=>[link.label,<><Link href={link.href}>{link.label}</Link> · {link.description}</>] as [string,React.ReactNode]))]}/>
+        <KV items={[['Översikt',<><Link href="/admin" className="font-semibold text-sg-text">Översikt</Link> · det som väntar på dig, med länk till platsen där det åtgärdas.</>],
+          ...adminNavigationGroups.flatMap(group=>group.links.map(link=>[link.label,<><Link href={link.href} className="font-semibold text-sg-text">{link.label}</Link> · {link.description}</>] as [string,React.ReactNode]))]}/>
       </Card>
       <Card title="Vem får ändra vad">
         <KV items={[['Admin','skapar och tilldelar: dealers, klipp, tal, scenmallar, material, bolag och spelbord'],['Bolaget','väljer inom tilldelningen på sina spelbord i Partnerportalen; publicerar med granskning'],['Spelaren','ser bara publicerade, öppna spelbord hos sitt bolag']]}/>
-        <p className="hub-small hub-muted hub-mt">Allt ett bolag kan ändra är en delmängd av det Admin kan ändra på samma objekt. En dold meny är ingen behörighet; servern avgör.</p>
+        <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Allt ett bolag kan ändra är en delmängd av det Admin kan ändra på samma objekt. En dold meny är ingen behörighet; servern avgör.</p>
       </Card>
       <Card title="Orden">
-        <KV items={[['Spelbord','bolagets ingång till ett spel (room); öppet eller pausat'],['Bordsgrafik','bilden av bordet, lagret table'],['Scenmall','placeringen av lagren och vad mallen tillåter (lane)'],['Tilldelning','det bolaget får använda; publiceras som paketets version'],['Vila','dealerns basloop (idle.ready)'],['Tagning','en inspelning av en replik (take)'],['Insatsprofil','Casual eller Privé (limitPreset)'],['Delat bord','flera spelare vid samma spelbord; enda spelvägen från O03']]}/>
+        <KV items={[['Spelbord','bolagets ingång till ett spel; öppet eller pausat'],['Bordsgrafik','bilden av bordet'],['Scenmall','hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter'],['Tilldelning','det bolaget får använda; varje publicering blir en ny version'],['Vila','dealerns grundloop mellan händelserna'],['Tagning','en inspelning av en replik'],['Insatsprofil','Casual, Privé eller High'],['Delat bord','flera spelare vid samma spelbord; enda spelvägen från O03']]}/>
       </Card>
       <Card title="Flödet för en ny dealer">
-        <ol className="hub-small" style={{paddingLeft:18,display:'grid',gap:4,margin:0}}>{adminDealerSteps.map(step=><li key={step}>{step}</li>)}</ol>
-        <p className="hub-small hub-muted hub-mt">Stegen visas överst på dealerns sida med avklarade steg markerade. Flikarna: {adminDealerTabs.map(tab=>tab.label).join(' · ')}. Bolagets flikar: {adminCompanyTabs.map(tab=>tab.label).join(' · ')}. System: {adminSystemTabs.map(tab=>tab.label).join(' · ')}.</p>
+        <ol className="m-0 grid list-none gap-2 p-0">{adminDealerSteps.map((step,index)=><li key={step} className="flex items-center gap-2.5 text-[13.5px]"><span className="grid size-6 place-items-center rounded-full bg-sg-hover text-[11px] font-bold text-sg-muted">{index+1}</span>{step}</li>)}</ol>
+        <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Stegen visas överst på dealerns sida med avklarade steg markerade. Flikarna: {adminDealerTabs.map(tab=>tab.label).join(' · ')}. Bolagets flikar: {adminCompanyTabs.map(tab=>tab.label).join(' · ')}. System: {adminSystemTabs.map(tab=>tab.label).join(' · ')}.</p>
       </Card>
     </div>
-    <Card title="Var uppgifterna kommer ifrån" aside="per sida och flik · läsning → lagring" className="hub-mt-l">
-      <div className="hub-table-wrap"><table className="hub-table"><thead><tr><th>Sida › flik</th><th>Läsning / åtgärd</th><th>Lagring</th></tr></thead>
-        <tbody>{sources.map(([page,read,storage])=><tr key={page}><td className="hub-strong">{page}</td><td><code>{read}</code></td><td className="hub-muted">{storage}</td></tr>)}</tbody></table></div>
-      <p className="hub-small hub-muted hub-mt">A:x = /studio/api/admin/x. Spelare, transaktioner och API-nycklar saknar bolag i dag; det kommer i steg F efter O03.</p>
-    </Card>
+    <details className="mt-8 rounded-xl border border-dashed border-sg-border px-4 py-3 text-[12.5px] text-sg-muted">
+      <summary className={cn('cursor-pointer select-none font-semibold hover:text-sg-text',focusRing)}>Tekniska detaljer · var uppgifterna kommer ifrån</summary>
+      <div className="mt-3 overflow-x-auto"><table className="w-full border-collapse text-[12.5px] [&_td]:border-b [&_td]:border-sg-line-2 [&_td]:px-2 [&_td]:py-2 [&_td]:align-top [&_th]:border-b [&_th]:border-sg-border [&_th]:px-2 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold"><thead><tr><th>Sida › flik</th><th>Läsning / åtgärd</th><th>Lagring</th></tr></thead>
+        <tbody>{sources.map(([page,read,storage])=><tr key={page}><td className="font-semibold text-sg-text">{page}</td><td className="font-mono text-[11.5px]">{read}</td><td>{storage}</td></tr>)}</tbody></table></div>
+      <p className="mb-0 mt-3">A:x = /studio/api/admin/x. Spelare, transaktioner och API-nycklar saknar bolag i dag; det kommer i steg F efter O03.</p>
+    </details>
   </HubPage>;
 }

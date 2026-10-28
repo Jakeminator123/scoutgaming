@@ -15,6 +15,13 @@ export function dealerCoverage(project,inventory,dealerId){
   const anyClip=slots.some(slot=>bound(project,inventory,dealerId,slot));
   return {deal,speech,idle,optional,complete,anyClip,speechProfile:project.dealers.find(row=>row.id===dealerId)?.speechProfile??null};
 }
+/** A still for the dealer's card: the bound idle clip (its first second), else null for initials. */
+export function dealerStill(project,inventory,dealerId){
+  const slot=clipSlots(project,inventory,dealerId,'blackjack').find(row=>row.eventId==='idle.ready'&&!row.planned);
+  const id=slot?currentClipId(project,dealerId,slot,undefined,inventory):'';
+  const video=id?inventory.videos.find(row=>row.id===id&&row.available!==false):undefined;
+  return video?.previewUrl?{url:video.previewUrl,image:/^image\//.test(video.contentType??''),label:video.label}:null;
+}
 /** Scene templates that allow the dealer (lanes[].layers.dealer.allowed). */
 export function dealerTemplates(project,dealerId){
   return (project.lanes??[]).filter(lane=>lane.layers.dealer.allowed.includes(dealerId)).map(lane=>({id:lane.id,label:lane.label,isDefault:lane.layers.dealer.default===dealerId}));

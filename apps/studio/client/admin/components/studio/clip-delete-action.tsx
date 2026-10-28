@@ -5,7 +5,7 @@ import type { StudioProject } from '../../../../../../packages/presentation/cont
 import type { Catalog, VideoInventory } from '../../lib/connected-studio.mjs';
 import { createLifecycleClient, lifecycleFingerprint, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
 import { clipArchivePlan, clipDeletePlan } from '../../lib/lifecycle-actions.mjs';
-import { ConfirmDialog } from './confirm-dialog';
+import { ConfirmDialog } from '../ui/dialog';
 
 const client = createLifecycleClient();
 const defaultClass = 'inline-flex items-center justify-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-40';

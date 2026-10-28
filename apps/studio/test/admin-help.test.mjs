@@ -16,8 +16,11 @@ function loadHelp(){
       require:name=>name==='react'?React:name==='react/jsx-runtime'?require(name):name.endsWith('runtime/navigation')?runtime:resolve(name)});
     return module.exports;
   };
-  const hub=compile('../client/admin/components/ui/hub.tsx',name=>require(name));
-  return compile('../client/admin/components/studio/admin-help.tsx',name=>name==='../ui/hub'?hub:name.endsWith('lib/admin-navigation')?navigation:require(name));
+  // The hub layout builds on the kit (./kit, ./dialog, ./menu) and the client's packages.
+  const clientRequire=createRequire(new URL('../client/admin/components/ui/hub.tsx',import.meta.url));
+  const ui={},uiRequire=name=>name.startsWith('./')?(ui[name]??=compile('../client/admin/components/ui/'+name.slice(2)+'.tsx',uiRequire)):clientRequire(name);
+  const hub=compile('../client/admin/components/ui/hub.tsx',uiRequire);
+  return compile('../client/admin/components/studio/admin-help.tsx',name=>name==='../ui/hub'?hub:name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.endsWith('lib/admin-navigation')?navigation:clientRequire(name));
 }
 
 // Hjälp follows the shared menu: every page the menu offers is explained, and only living addresses are linked.

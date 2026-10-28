@@ -1,19 +1,30 @@
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {type ReactNode} from 'react';
+import {Eye} from 'lucide-react';
 import Link, {usePathname,useSearchParams} from '../../../runtime/navigation';
 import type {AdminTab} from '../../lib/admin-navigation';
+import {Badge,Card,cn,focusRing,type Tone} from './kit';
+import {Sheet} from './dialog';
+export {ActionMenu,type MenuAction} from './menu';
+export {Card,type Tone};
 
-// Shared building blocks for the six Admin pages: hub header, tab row, chips, cards,
-// rows, empty state, action menu, steps and the preview flyout. No data of their own.
-export type Tone=''|'ok'|'warn'|'danger'|'info'|'accent'|'ink';
-
-export function HubPage({eyebrow,title,chip,intro,actions,children,wide=false}:{eyebrow?:ReactNode;title:ReactNode;chip?:ReactNode;intro?:ReactNode;actions?:ReactNode;children:ReactNode;wide?:boolean}) {
-  return <div className={'hub-page'+(wide?' is-wide':'')}>
-    <header className="hub-head"><div className="hub-head-copy">{eyebrow&&<div className="hub-eyebrow">{eyebrow}</div>}<h1>{title}{chip&&<> {chip}</>}</h1>{intro&&<p className="hub-intro">{intro}</p>}</div>{actions&&<div className="hub-actions">{actions}</div>}</header>
+// Page layout for the Admin pages: header with crumbs, title, status and actions; tab row; rows, empty
+// state, key/value list, notes, steps and the preview panel. Built on the kit (kit.tsx); no data of its own.
+// Content sits beside the sidebar with an even gutter and uses the width up to a readable maximum.
+export const pageClass='w-full min-w-0 px-8 pb-16 pt-7 text-[14px] leading-normal max-md:px-4 max-md:pb-12 max-md:pt-5';
+/** `wide` lets an editor below (the clip map) use the full width; `continued` drops the bottom padding before it. */
+export function HubPage({eyebrow,title,chip,intro,actions,children,wide=false,continued=false}:{eyebrow?:ReactNode;title:ReactNode;chip?:ReactNode;intro?:ReactNode;actions?:ReactNode;children:ReactNode;wide?:boolean;continued?:boolean}) {
+  return <div className={cn(pageClass,wide?'max-w-none':'max-w-[1640px]',continued&&'pb-3 max-md:pb-3')}>
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0 flex-[1_1_320px]">{eyebrow&&<div className="mb-2">{eyebrow}</div>}
+        <h1 className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[26px] font-bold leading-tight tracking-[-0.02em] text-sg-text max-md:text-[22px]">{title}{chip&&<> {chip}</>}</h1>
+        {intro&&<p className="mb-0 mt-1.5 max-w-[72ch] text-sg-muted">{intro}</p>}</div>
+      {actions&&<div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </header>
     {children}
   </div>;
 }
 export function Crumbs({items}:{items:{label:ReactNode;href?:string}[]}) {
-  return <nav aria-label="Brödsmulor" className="hub-crumbs">{items.map((item,index)=><span key={index}>{index>0&&<span className="hub-faint"> / </span>}{item.href?<Link href={item.href}>{item.label}</Link>:<span>{item.label}</span>}</span>)}</nav>;
+  return <nav aria-label="Brödsmulor" className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-sg-muted">{items.map((item,index)=><span key={index} className="inline-flex items-center gap-1.5">{index>0&&<span className="text-sg-faint" aria-hidden="true">/</span>}{item.href?<Link href={item.href} className={cn('rounded text-inherit no-underline hover:text-sg-text hover:underline',focusRing)}>{item.label}</Link>:<span className="text-sg-text">{item.label}</span>}</span>)}</nav>;
 }
 // Only the shared Studio context travels between tabs; credentials, panels and tools never do.
 const tabContext=new Set(['operator','table','room','composition','game','dealer','event','variant','situation','category']);
@@ -21,50 +32,43 @@ const tabContext=new Set(['operator','table','room','composition','game','dealer
 export function Tabs({items,active,param='flik',label='Flikar',drop=[],counts={}}:{items:readonly AdminTab[];active:string;param?:string;label?:string;drop?:string[];counts?:Record<string,ReactNode>}) {
   const path=usePathname(),query=useSearchParams();
   const href=(id:string)=>{const next=new URLSearchParams();for(const [key,value] of query)if(tabContext.has(key)&&!drop.includes(key))next.append(key,value);next.set(param,id);return path+'?'+next;};
-  return <nav className="hub-tabs" aria-label={label}>{items.map(tab=><Link key={tab.id} href={href(tab.id)} aria-current={tab.id===active?'page':undefined}>{tab.label}{counts[tab.id]!==undefined&&<span className="hub-count">{counts[tab.id]}</span>}</Link>)}</nav>;
+  return <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-sg-border" aria-label={label}>{items.map(tab=><Link key={tab.id} href={href(tab.id)} aria-current={tab.id===active?'page':undefined}
+    className={cn('-mb-px inline-flex items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 border-transparent px-3 py-2.5 font-medium text-sg-muted no-underline transition-colors hover:text-sg-text aria-[current=page]:border-sg-text aria-[current=page]:font-semibold aria-[current=page]:text-sg-text',focusRing)}>
+    {tab.label}{counts[tab.id]!==undefined&&<span className="rounded-full bg-sg-hover px-1.5 text-[11px] font-semibold tabular-nums text-sg-muted">{counts[tab.id]}</span>}</Link>)}</nav>;
 }
 export function Chip({tone='',dot,children,title}:{tone?:Tone;dot?:boolean;children:ReactNode;title?:string}) {
-  return <span className={'hub-chip '+tone} title={title}>{dot&&<span className="hub-dot" aria-hidden="true"/>}{children}</span>;
-}
-export function Card({title,aside,children,className='',id,as:Tag='section'}:{title?:ReactNode;aside?:ReactNode;children:ReactNode;className?:string;id?:string;as?:'section'|'article'|'div'}) {
-  return <Tag className={'hub-card '+className} id={id}>{title&&<div className="hub-card-head"><h2>{title}</h2>{aside&&<div className="hub-aside">{aside}</div>}</div>}{children}</Tag>;
+  return <Badge tone={tone} dot={dot} title={title}>{children}</Badge>;
 }
 export function Row({chip,title,text,href,action}:{chip?:ReactNode;title:ReactNode;text?:ReactNode;href?:string;action?:ReactNode}) {
-  const body=<><div>{chip}</div><div className="hub-row-copy"><div className="hub-row-title">{title}</div>{text&&<div className="hub-row-text">{text}</div>}</div><div>{action??(href?<span className="hub-btn small">Öppna</span>:null)}</div></>;
-  return href?<Link href={href} className="hub-row is-link">{body}</Link>:<div className="hub-row">{body}</div>;
+  const body=<><div>{chip}</div><div className="min-w-0"><div className="font-semibold text-sg-text">{title}</div>{text&&<div className="text-[13px] text-sg-muted">{text}</div>}</div><div>{action??(href?<span className="text-[12.5px] font-semibold text-sg-muted group-hover/row:text-sg-text">Öppna →</span>:null)}</div></>;
+  const cls='group/row grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 border-t border-sg-line-2 py-3 text-inherit no-underline first:border-t-0 first:pt-0 last:pb-0 max-md:grid-cols-1 max-md:gap-1.5';
+  return href?<Link href={href} className={cn(cls,'rounded-sm hover:[&_.font-semibold]:underline',focusRing)}>{body}</Link>:<div className={cls}>{body}</div>;
 }
+export function Rows({children,className}:{children:ReactNode;className?:string}) { return <div className={cn('grid',className)}>{children}</div>; }
 /** Honest empty state. The default chip says the surface is not connected; pass `chip={null}` for an ordinary "nothing here". */
 export function Empty({title,text,action,chip='Inte anslutet'}:{title:ReactNode;text?:ReactNode;action?:ReactNode;chip?:ReactNode|null}) {
-  return <div className="hub-empty" role="status">{chip&&<Chip tone="warn">{chip}</Chip>}<h3>{title}</h3>{text&&<p className="hub-small">{text}</p>}{action&&<div className="hub-mt">{action}</div>}</div>;
+  return <div className="rounded-xl border border-dashed border-sg-border bg-sg-surface-2 px-5 py-7 text-center text-sg-muted" role="status">{chip&&<div className="mb-2.5"><Badge tone="warn">{chip}</Badge></div>}<h3 className="m-0 mb-1 text-[14px] font-semibold text-sg-text">{title}</h3>{text&&<p className="m-0 text-[12.5px]">{text}</p>}{action&&<div className="mt-3 flex justify-center">{action}</div>}</div>;
 }
 export function KV({items}:{items:[ReactNode,ReactNode][]}) {
-  return <dl className="hub-kv">{items.map(([key,value],index)=><div key={index} className="hub-kv-row"><dt>{key}</dt><dd>{value}</dd></div>)}</dl>;
+  return <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[13.5px] max-md:grid-cols-1 max-md:gap-y-0.5">{items.map(([key,value],index)=><div key={index} className="contents"><dt className="text-sg-muted max-md:mt-2">{key}</dt><dd className="m-0 min-w-0 [overflow-wrap:anywhere]">{value}</dd></div>)}</dl>;
 }
-export function Note({tone='',children}:{tone?:''|'warn'|'accent';children:ReactNode}) {
-  return <p className={'hub-note '+tone}>{children}</p>;
+export function Note({tone='',children,className}:{tone?:''|'warn'|'accent';children:ReactNode;className?:string}) {
+  return <p className={cn('m-0 rounded-lg px-3.5 py-2.5 text-[13px]',tone==='warn'?'bg-sg-warn-bg text-sg-warn':tone==='accent'?'bg-sg-accent-bg text-sg-text':'bg-sg-info-bg text-sg-info',className)}>{children}</p>;
 }
 export type Step={label:string;done:boolean;href?:string};
 export function Steps({steps}:{steps:Step[]}) {
   const now=steps.findIndex(step=>!step.done);
-  return <ol className="hub-steps" aria-label="Dealerflödet">{steps.map((step,index)=>{const state=step.done?'done':index===now?'now':'';const content=<><span className="hub-step-n">{index+1}</span><span className="hub-step-t">{step.label}</span></>;return <li key={step.label} className={'hub-step '+state} aria-current={index===now?'step':undefined}>{step.href?<Link href={step.href}>{content}</Link>:content}</li>;})}</ol>;
-}
-export type MenuAction={id:string;label:string;tone?:'danger'|'';disabled?:string;onSelect:()=>void};
-/** The ⋯ menu per object. Confirmation and consequence belong to the caller's ConfirmDialog. */
-export function ActionMenu({name,actions,small=false}:{name:string;actions:MenuAction[];small?:boolean}) {
-  const [open,setOpen]=useState(false),root=useRef<HTMLSpanElement>(null);
-  useEffect(()=>{if(!open)return;const close=(event:MouseEvent)=>{if(!root.current?.contains(event.target as Node))setOpen(false);};const key=(event:KeyboardEvent)=>{if(event.key==='Escape')setOpen(false);};document.addEventListener('click',close,true);document.addEventListener('keydown',key);return()=>{document.removeEventListener('click',close,true);document.removeEventListener('keydown',key);};},[open]);
-  return <span ref={root} className="hub-menu">
-    <button type="button" className={'hub-btn'+(small?' small':'')} aria-haspopup="menu" aria-expanded={open} aria-label={'Åtgärder för '+name} title={'Åtgärder för '+name} onClick={()=>setOpen(value=>!value)}>⋯</button>
-    {open&&<div role="menu" className="hub-menu-list">{actions.map(action=><button key={action.id} type="button" role="menuitem" className={'hub-btn ghost '+(action.tone??'')} disabled={Boolean(action.disabled)} title={action.disabled} onClick={()=>{setOpen(false);action.onSelect();}}>{action.label}{action.disabled&&<span className="hub-small hub-faint">spärrad</span>}</button>)}</div>}
-  </span>;
+  return <ol aria-label="Dealerflödet" className="mb-6 grid list-none auto-cols-fr grid-flow-col gap-1.5 p-0 max-md:auto-cols-[minmax(120px,1fr)] max-md:overflow-x-auto max-md:pb-1">{steps.map((step,index)=>{
+    const state=step.done?'done':index===now?'now':'';
+    const content=<><span className={cn('grid size-5 place-items-center rounded-full text-[11px] font-bold',state==='done'?'bg-sg-ok text-sg-surface':state==='now'?'bg-sg-ink text-sg-side-text':'bg-sg-hover text-sg-faint')} aria-hidden="true">{state==='done'?'✓':index+1}</span><span className="block font-semibold leading-snug">{step.label}</span></>;
+    return <li key={step.label} aria-current={index===now?'step':undefined} className={cn('rounded-xl border text-[12.5px]',state==='done'?'border-transparent bg-sg-ok-bg':state==='now'?'border-sg-text bg-sg-surface shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border bg-sg-surface')}>
+      {step.href?<Link href={step.href} className={cn('flex h-full items-center gap-2 rounded-xl px-3 py-2.5 text-inherit no-underline',focusRing)}>{content}</Link>:<span className="flex items-center gap-2 px-3 py-2.5">{content}</span>}</li>;})}</ol>;
 }
 /** Preview as a panel sliding in from the right. The caller mounts the real preview component inside. */
 export function PreviewFlyout({title='Förhandsvisning',children,open,onOpenChange}:{title?:string;children:ReactNode;open:boolean;onOpenChange:(open:boolean)=>void}) {
   return <>
-    {!open&&<button type="button" className="hub-btn ink hub-flyout-btn" aria-expanded="false" onClick={()=>onOpenChange(true)}>Förhandsvisning</button>}
-    <aside className="hub-flyout" data-open={open?'true':'false'} aria-hidden={!open} aria-label={title}>
-      <div className="hub-flyout-head"><h2>{title}</h2><button type="button" className="hub-btn ghost small" aria-label="Stäng förhandsvisningen" onClick={()=>onOpenChange(false)}>✕</button></div>
-      {open&&children}
-    </aside>
+    {!open&&<button type="button" aria-expanded="false" onClick={()=>onOpenChange(true)}
+      className={cn('fixed right-0 top-[72%] z-30 inline-flex origin-bottom-right -translate-y-1/2 -rotate-90 items-center gap-2 rounded-t-lg border-0 bg-sg-ink px-3.5 py-2 text-[13px] font-semibold text-sg-side-text shadow-lg [&_svg]:size-4',focusRing)}><Eye aria-hidden="true"/>Förhandsvisning</button>}
+    <Sheet open={open} title={title} onClose={()=>onOpenChange(false)}>{children}</Sheet>
   </>;
 }
