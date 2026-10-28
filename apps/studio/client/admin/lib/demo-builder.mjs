@@ -1,11 +1,12 @@
 // Demo-byggaren (Admin, nivå 1): stegens tillstånd, urvalet ur katalogen och
 // demolänken. Läser GET /admin/_data/catalog och GET room-game-config; skriver
-// bara via dagens actions apikeys/create, apikeys/launch och apikeys/revoke.
-// En demo är en API-nyckel med demons namn plus en testsession på den nyckeln.
+// bara via dagens actions apikeys/create, apikeys/launch, apikeys/credit och apikeys/revoke.
+// En demo är en API-nyckel demo-<namn> plus en testsession på den nyckeln.
 import {ROOM_LIMIT_PRESETS} from '../../../../../packages/presentation/contracts/room-game-config.mjs';
 import {isActiveDealerId} from '../../../../../packages/presentation/contracts/dealer-identity.mjs';
 import {isOperatorSlug} from '../../../../../packages/navigation/operator-slug.mjs';
 import {normalizeDisplayName} from '../../../../../packages/studio-access/display-name.mjs';
+import {approvedPartnerLaunchUrl} from '../../../lib/partner-launch-url.mjs';
 
 export const DEMO_STEPS=Object.freeze([
   Object.freeze({id:'company',label:'Bolag',next:'Nästa: Välj spelbord'}),
@@ -17,10 +18,19 @@ export const DEMO_CURRENCIES=Object.freeze(['EUR','USD','SEK']);
 export const DEMO_LANGUAGES=Object.freeze([Object.freeze({id:'en',label:'Engelska'}),Object.freeze({id:'sv',label:'Svenska'})]);
 export const LIMIT_PRESET_LABELS=Object.freeze({casual:'Casual',prive:'Privé',high:'High'});
 // Serverns namn på de actions sidan använder, så som /studio/api/auth/session listar dem.
-export const DEMO_ACTIONS=Object.freeze({create:'POST apikeys/create',launch:'POST apikeys/launch',revoke:'POST apikeys/revoke',config:'GET room-game-config'});
-const TOKEN=/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+export const DEMO_ACTIONS=Object.freeze({create:'POST apikeys/create',launch:'POST apikeys/launch',credit:'POST apikeys/credit',revoke:'POST apikeys/revoke',config:'GET room-game-config'});
+// Minsta rättigheter för en demospelare (services/game/storage/async-partner-api.mjs):
+// launch är nyckelns syfte (Integrationer erbjuder "Skapa spellänk" bara med launch) och
+// play är spelrätten (motorns enda scope-kontroll på en launchad spelares rundor kräver
+// play eller events). lobby, wallet, history och events läses bara av de signerade
+// /api/v1-anropen, som demon aldrig kan göra: nyckel och hemlighet lämnar inte servern.
+export const DEMO_KEY_SCOPES=Object.freeze(['launch','play']);
+export const DEMO_KEY_PREFIX='demo-';
+export const DEMO_NAME_MAX=80-DEMO_KEY_PREFIX.length;
+export const DEMO_CREDIT_MAX=100000;
+const CONTROL=/[\u0000-\u001f\u007f-\u009f]/u;
 const ROOM_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const text=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max&&!/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+const text=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max&&!CONTROL.test(value);
 const byName=(left,right)=>left.name.localeCompare(right.name,'sv');
 
 export class DemoError extends Error {
@@ -46,9 +56,10 @@ export function stepRequirement(state,step=state.step){
   if(step===1)return state.operatorId?ready():missing('Välj ett bolag.');
   if(step===2)return state.roomId?ready():missing('Välj ett spelbart spelbord.');
   if(step===3)return state.dealerId?ready():missing('Välj en dealer.');
-  const name=state.form.name.trim();
+  const name=demoNameBase(state.form);
   if(!name)return missing('Ge demon ett namn.');
-  if(name.length>80)return missing('Demons namn får vara högst 80 tecken.');
+  if(name.length>DEMO_NAME_MAX)return missing(`Demons namn får vara högst ${DEMO_NAME_MAX} tecken.`);
+  if(CONTROL.test(name))return missing('Demons namn får inte innehålla styrtecken.');
   try{normalizeDisplayName(state.form.displayName.trim()||name);}catch{return missing('Visningsnamnet får vara högst 40 tecken utan styrtecken.');}
   return ready();
 }
@@ -58,8 +69,11 @@ export function goToStep(state,step){return {...state,step:Math.min(Math.max(1,s
 export function nextStep(state){return stepRequirement(state).ready&&state.step<DEMO_STEPS.length?{...state,step:state.step+1}:state;}
 export function previousStep(state){return {...state,step:Math.max(1,state.step-1)};}
 export const nextLabel=step=>DEMO_STEPS[step-1]?.next??'';
+// Demons namn utan ett inskrivet demo-prefix; nyckeln heter alltid demo-<namn>.
+export function demoNameBase(form){return form.name.trim().replace(/^demo-\s*/i,'').trim();}
+export function demoKeyName(form){const base=demoNameBase(form);return base?DEMO_KEY_PREFIX+base:'';}
 // Visningsnamnet faller tillbaka på demons namn så att launch alltid får ett namn.
-export function demoDisplayName(form){return normalizeDisplayName(form.displayName.trim()||form.name.trim());}
+export function demoDisplayName(form){return normalizeDisplayName(form.displayName.trim()||demoNameBase(form));}
 
 // Katalogen -------------------------------------------------------------------
 export function readDemoCatalog(value){
@@ -108,7 +122,7 @@ export function demoPermissions(session){
   const canCreate=actions.has(DEMO_ACTIONS.create),mayLaunch=actions.has(DEMO_ACTIONS.launch);
   const blocker=!canCreate||!mayLaunch?'Din inloggning får inte skapa nycklar eller starta testsessioner. Det kräver rollen admin.'
     :!gameOrigin?'Spelmotorns adress saknas i serverns inställningar, så demolänkar kan inte skapas.':'';
-  return {gameOrigin,canCreate,canLaunch:mayLaunch&&Boolean(gameOrigin),canRevoke:actions.has(DEMO_ACTIONS.revoke),canReadConfig:actions.has(DEMO_ACTIONS.config),blocker};
+  return {gameOrigin,canCreate,canLaunch:mayLaunch&&Boolean(gameOrigin),canCredit:actions.has(DEMO_ACTIONS.credit),canRevoke:actions.has(DEMO_ACTIONS.revoke),canReadConfig:actions.has(DEMO_ACTIONS.config),blocker};
 }
 
 // Demokrediter ur spelbordets publicerade spelinställningar (läsvärde) ----------
@@ -121,15 +135,12 @@ export function demoCredits(receipt){
 }
 
 // Länken ----------------------------------------------------------------------
-// Spelmotorns adress måste vara den godkända speladressen med exakt en launch-token;
+// Spelmotorns adress prövas med samma regel som Integrationer (lib/partner-launch-url.mjs);
 // därefter läggs bolag, spelbord och dealer till så att landningen pekar på spelbordet.
 export function demoLaunchLink(payload,{gameOrigin,operatorSlug,roomId,dealerId}){
   if(!payload||payload.ok!==true||typeof payload.url!=='string')throw new DemoError('Spelmotorn bekräftade inte testsessionen.');
-  let url;try{url=new URL(payload.url);}catch{throw new DemoError('Spelmotorns länk kunde inte läsas.');}
-  const keys=[...url.searchParams.keys()],token=url.searchParams.get('launch')??'';
-  if(!gameOrigin||url.origin!==gameOrigin||url.protocol!=='https:'||url.username||url.password||url.hash||!['/game','/blackjack'].includes(url.pathname)
-    ||!keys.includes('launch')||keys.some(key=>!['launch','dealer'].includes(key))||keys.length!==new Set(keys).size
-    ||!TOKEN.test(token)||token.length>16384)throw new DemoError('Spelmotorns länk stämmer inte med den godkända speladressen.');
+  const url=approvedPartnerLaunchUrl(payload.url,gameOrigin),token=url?.searchParams.get('launch');
+  if(!url||!token)throw new DemoError('Spelmotorns länk stämmer inte med den godkända speladressen.');
   if(!isOperatorSlug(operatorSlug)||!ROOM_ID.test(roomId??'')||(dealerId!==undefined&&dealerId!==null&&!isActiveDealerId(dealerId)))throw new DemoError('Bolaget, spelbordet eller dealern har ett ogiltigt id.');
   const link=new URL(url.origin+url.pathname);
   link.searchParams.set('launch',token);link.searchParams.set('operator',operatorSlug);link.searchParams.set('table',roomId);
@@ -147,20 +158,37 @@ export function expiryText(expiresIn){
   const hours=Math.round(expiresIn/3600);
   return hours>=1?`${hours} ${hours===1?'timme':'timmar'}`:`${Math.max(1,Math.round(expiresIn/60))} minuter`;
 }
+// Fyll på (frivilligt, efter lansering) via apikeys/credit -----------------------
+export function readCreditAmount(value){
+  const raw=typeof value==='string'?value.replace(/\s/gu,'').replace(',','.'):'';
+  if(!raw)return {amount:null,missing:'Ange ett belopp.'};
+  if(!/^\d+(?:\.\d{1,2})?$/.test(raw))return {amount:null,missing:'Beloppet ska vara ett tal med högst två decimaler.'};
+  const amount=Number(raw);
+  if(!(amount>0))return {amount:null,missing:'Beloppet måste vara större än 0.'};
+  if(amount>DEMO_CREDIT_MAX)return {amount:null,missing:'Högst 100 000 per påfyllning.'};
+  return {amount,missing:''};
+}
+// Saldot efter påfyllningen läses bara ur ett svar som gäller samma demospelare.
+export function demoCreditReceipt(payload,playerId){
+  const balance=payload?.playerId===playerId&&typeof payload?.balance==='number'&&Number.isFinite(payload.balance)&&payload.balance>=0?payload.balance:null;
+  return {balance,currency:balance!==null&&DEMO_CURRENCIES.includes(payload?.currency)?payload.currency:null};
+}
 export function formatMoney(amount,currency){
   if(typeof amount!=='number')return '–';
   return new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(amount)+(currency?' '+currency:'');
 }
 
 // Fel från servern, läsbara --------------------------------------------------
-const WHAT={create:'Nyckeln kunde inte skapas',launch:'Testsessionen kunde inte startas',revoke:'Nyckeln kunde inte återkallas',config:'Spelinställningarna kunde inte läsas',catalog:'Katalogen kunde inte läsas',session:'Sessionen kunde inte läsas'};
+const WHAT={create:'Nyckeln kunde inte skapas',launch:'Testsessionen kunde inte startas',credit:'Demosaldot kunde inte fyllas på',revoke:'Nyckeln kunde inte återkallas',config:'Spelinställningarna kunde inte läsas',catalog:'Katalogen kunde inte läsas',session:'Sessionen kunde inte läsas'};
 const WHY={400:'servern avvisade uppgifterna. Kontrollera namn och visningsnamn.',401:'din inloggning har gått ut. Logga in igen.',
   403:'din inloggning saknar behörighet (kräver rollen admin) eller sessionen har ändrats.',404:'funktionen finns inte på den här servern.',
   409:'uppgifterna har ändrats eller krockar med ett pågående spel. Läs in sidan igen.',413:'begäran var för stor.',415:'servern kräver JSON.',
   422:'servern avvisade uppgifterna.',503:'spelmotorn eller nyckeltjänsten är tillfälligt otillgänglig. Inget skapades lokalt.'};
+const WHY_FOR={credit:{400:'servern avvisade beloppet eller demospelaren.',
+  503:'spelmotorn svarade inte, eller nyckeln är återkallad. Kontrollera saldot i spelet innan du försöker igen.'}};
 export function demoErrorMessage(step,status,payload){
   const code=typeof payload?.code==='string'&&/^[a-z][a-z0-9_]{0,100}$/.test(payload.code)?payload.code:'';
-  return `${WHAT[step]??'Åtgärden misslyckades'}: ${WHY[status]??'servern svarade oväntat.'}${code?` (${code})`:''}`;
+  return `${WHAT[step]??'Åtgärden misslyckades'}: ${WHY_FOR[step]?.[status]??WHY[status]??'servern svarade oväntat.'}${code?` (${code})`:''}`;
 }
 
 // Anrop -----------------------------------------------------------------------
@@ -198,12 +226,13 @@ export async function postAdminAction(fetchImpl=fetch,action,body,signal){
   if(!response.ok)throw new DemoError(demoErrorMessage(step,response.status,payload),response.status);
   return payload;
 }
-// Två skrivningar i följd: nyckel med demons namn, sedan testsession på nyckeln.
+// Två skrivningar i följd: nyckeln demo-<namn> med minsta rättigheter och purpose demo
+// (servern svarar då utan nyckel och hemlighet), sedan testsession på nyckeln.
 // Misslyckas lanseringen följer nyckeln med felet så att den kan återkallas.
 export async function launchDemo({fetchImpl=fetch,signal,form,permissions,operatorSlug,roomId,dealerId,onPhase}){
-  const name=form.name.trim(),displayName=demoDisplayName(form);
+  const name=demoKeyName(form),displayName=demoDisplayName(form);
   onPhase?.('create');
-  const created=await postAdminAction(fetchImpl,'apikeys/create',{name},signal);
+  const created=await postAdminAction(fetchImpl,'apikeys/create',{name,scopes:[...DEMO_KEY_SCOPES],purpose:'demo'},signal);
   if(created?.ok!==true||!text(created.key?.id,256))throw new DemoError('Nyckelns kvitto saknade id. Kontrollera nycklarna under Integration.');
   const key={id:created.key.id,name:text(created.key.name,80)?created.key.name:name}; // Aldrig key/secret vidare.
   onPhase?.('launch');
@@ -211,6 +240,13 @@ export async function launchDemo({fetchImpl=fetch,signal,form,permissions,operat
     const launched=await postAdminAction(fetchImpl,'apikeys/launch',{id:key.id,displayName,currency:form.currency,language:form.language},signal);
     return {key,displayName,link:demoLaunchLink(launched,{gameOrigin:permissions.gameOrigin,operatorSlug,roomId,dealerId}),receipt:demoReceipt(launched)};
   }catch(error){throw Object.assign(error,{key});}
+}
+export async function creditDemo({fetchImpl=fetch,signal,keyId,playerId,amount}){
+  if(!text(keyId,256)||!text(playerId,256))throw new DemoError('Demospelaren saknas i kvittot. Fyll på under Integration i stället.');
+  if(!Number.isFinite(amount)||amount<=0||amount>DEMO_CREDIT_MAX)throw new DemoError('Beloppet måste vara större än 0 och högst 100 000.');
+  const value=await postAdminAction(fetchImpl,'apikeys/credit',{id:keyId,playerId,amount},signal);
+  if(value?.ok!==true)throw new DemoError(demoErrorMessage('credit',503,null),503);
+  return demoCreditReceipt(value,playerId);
 }
 export async function revokeDemoKey({fetchImpl=fetch,signal,keyId}){
   const value=await postAdminAction(fetchImpl,'apikeys/revoke',{id:keyId},signal);

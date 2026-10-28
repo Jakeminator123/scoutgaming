@@ -101,6 +101,12 @@
 .linkBox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .linkBox .input{font:12px/1.4 "Cascadia Code",ui-monospace,Consolas,monospace}
 
+/* Kvittots paneler: Fyll på och Återkalla */
+.panel{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
+.panelDanger{grid-template-columns:minmax(0,1fr) auto;align-items:center;border-color:var(--danger-bg);background:var(--surface)}
+.panelTitle{margin-bottom:2px;font-size:13.5px;font-weight:650}
+.topUp{display:grid;grid-template-columns:minmax(0,220px) auto;justify-content:start;gap:8px;align-items:end}
+
 @media (max-width:980px){.grid{grid-template-columns:1fr}}
 @media (max-width:760px){
   .page{padding:18px 16px 48px}
@@ -110,6 +116,7 @@
   .kv{grid-template-columns:1fr;gap:2px 0}
   .kv dt{margin-top:8px}
   .linkBox{grid-template-columns:1fr}
+  .panelDanger,.topUp{grid-template-columns:1fr;justify-content:stretch}
   .footer{align-items:stretch}
   .footerNext{justify-items:stretch}
 }

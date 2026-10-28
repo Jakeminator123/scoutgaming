@@ -4,7 +4,11 @@ export const DEMO_STEPS:readonly DemoStep[];
 export const DEMO_CURRENCIES:readonly string[];
 export const DEMO_LANGUAGES:readonly {id:'en'|'sv';label:string}[];
 export const LIMIT_PRESET_LABELS:Readonly<Record<string,string>>;
-export const DEMO_ACTIONS:Readonly<{create:string;launch:string;revoke:string;config:string}>;
+export const DEMO_ACTIONS:Readonly<{create:string;launch:string;credit:string;revoke:string;config:string}>;
+export const DEMO_KEY_SCOPES:readonly ('launch'|'play')[];
+export const DEMO_KEY_PREFIX:'demo-';
+export const DEMO_NAME_MAX:number;
+export const DEMO_CREDIT_MAX:number;
 
 export type DemoOperatorRow={id:string;slug:string;name:string;status:string;packageRevision:number|null;archivedAt?:string|null};
 export type DemoRoomRow={id:string;name:string;operatorId:string;game?:string;state:string;published:boolean;playable:boolean;
@@ -18,11 +22,13 @@ export type DemoCompany={id:string;slug:string;name:string;packageRevision:numbe
 export type DemoRoom={id:string;name:string;game:string;state:string;published:boolean;playable:boolean;dealers:{id:string;name:string}[];selectable:boolean;reason:string};
 export type DemoDealer={id:string;name:string};
 export type DemoRequirement={ready:boolean;missing:string};
-export type DemoPermissions={gameOrigin:string|null;canCreate:boolean;canLaunch:boolean;canRevoke:boolean;canReadConfig:boolean;blocker:string};
+export type DemoPermissions={gameOrigin:string|null;canCreate:boolean;canLaunch:boolean;canCredit:boolean;canRevoke:boolean;canReadConfig:boolean;blocker:string};
 export type DemoReceipt={playerRef:string|null;playerId:string|null;balance:number|null;currency:string|null;expiresIn:number|null};
 export type DemoCredits={preset:string;label:string;refill:number|null;language:string;configVersion:string}|null;
 export type DemoKey={id:string;name:string};
 export type DemoLaunch={key:DemoKey;displayName:string;link:string;receipt:DemoReceipt};
+export type DemoCreditAmount={amount:number;missing:''}|{amount:null;missing:string};
+export type DemoCreditReceipt={balance:number|null;currency:string|null};
 export type RoomGameConfigReceipt={ok:true;operatorId:string;roomId:string;published:{configVersion:string;gameConfig:{language:string;limitPreset:string}}|null;draft:unknown};
 
 export class DemoError extends Error {status:number;constructor(message:string,status?:number);}
@@ -38,6 +44,8 @@ export function goToStep(state:DemoState,step:number):DemoState;
 export function nextStep(state:DemoState):DemoState;
 export function previousStep(state:DemoState):DemoState;
 export function nextLabel(step:number):string;
+export function demoNameBase(form:DemoForm):string;
+export function demoKeyName(form:DemoForm):string;
 export function demoDisplayName(form:DemoForm):string;
 
 export function readDemoCatalog(value:unknown):DemoAdministration;
@@ -53,6 +61,8 @@ export function demoCredits(receipt:RoomGameConfigReceipt|null|undefined):DemoCr
 export function demoLaunchLink(payload:unknown,context:{gameOrigin:string|null;operatorSlug:string;roomId:string;dealerId?:string|null}):string;
 export function demoReceipt(payload:unknown):DemoReceipt;
 export function expiryText(expiresIn:number|null):string;
+export function readCreditAmount(value:string):DemoCreditAmount;
+export function demoCreditReceipt(payload:unknown,playerId:string):DemoCreditReceipt;
 export function formatMoney(amount:number|null,currency:string|null):string;
 export function demoErrorMessage(step:string,status:number,payload:unknown):string;
 
@@ -61,4 +71,5 @@ export function readDemoCatalogFrom(fetchImpl?:typeof fetch,signal?:AbortSignal)
 export function readRoomGameConfig(fetchImpl:typeof fetch|undefined,context:{operatorId:string;roomId:string},signal?:AbortSignal):Promise<RoomGameConfigReceipt>;
 export function postAdminAction(fetchImpl:typeof fetch|undefined,action:string,body:Record<string,unknown>,signal?:AbortSignal):Promise<Record<string,unknown>>;
 export function launchDemo(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;form:DemoForm;permissions:DemoPermissions;operatorSlug:string;roomId:string;dealerId:string|null;onPhase?:(phase:'create'|'launch')=>void}):Promise<DemoLaunch>;
+export function creditDemo(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;keyId:string;playerId:string;amount:number}):Promise<DemoCreditReceipt>;
 export function revokeDemoKey(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;keyId:string}):Promise<Record<string,unknown>>;

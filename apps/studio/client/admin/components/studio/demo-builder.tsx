@@ -1,14 +1,19 @@
-import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode} from 'react';
 import Link from '../../../runtime/navigation';
 import styles from './demo-builder.module.css';
-import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_LANGUAGES, DemoError, chooseCompany, chooseDealer, chooseRoom, demoCompanies, demoCredits, demoDealers, demoDisplayName,
-  demoPermissions, demoRooms, editDemo, expiryText, formatMoney, goToStep, initialDemoState, launchDemo, nextLabel, nextStep, previousStep, reachableStep,
-  readDemoCatalogFrom, readDemoSession, readRoomGameConfig, revokeDemoKey, stepRequirement,
+import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
+  demoKeyName, demoNameBase, demoPermissions, demoRooms, editDemo, expiryText, formatMoney, goToStep, initialDemoState, launchDemo, nextLabel, nextStep, previousStep, reachableStep,
+  readCreditAmount, readDemoCatalogFrom, readDemoSession, readRoomGameConfig, revokeDemoKey, stepRequirement,
   type DemoAdministration, type DemoCompany, type DemoCredits as Credits, type DemoDealer, type DemoKey, type DemoLaunch, type DemoPermissions, type DemoRoom, type DemoState} from '../../lib/demo-builder.mjs';
 
 type Load<T>={status:'loading'}|{status:'error';message:string;authentication:boolean}|{status:'ready';value:T};
 type LaunchState={phase:'idle'}|{phase:'create'|'launch'}|{phase:'done';value:DemoLaunch}|{phase:'error';message:string;key:DemoKey|null};
 type RevokeState={phase:'idle'}|{phase:'busy'}|{phase:'done'}|{phase:'error';message:string};
+type Saldo={balance:number|null;currency:string|null};
+type TopUpState={phase:'idle'}|{phase:'busy'}|{phase:'done';amount:number;before:Saldo;after:Saldo}|{phase:'error';message:string};
+const SCOPE_TEXT=DEMO_KEY_SCOPES.join(' och ');
+// Rutan visar visningsnamnet även medan det är ogiltigt; stegets krav säger vad som är fel.
+const safeDisplayName=(form:DemoState['form'])=>{try{return demoDisplayName(form);}catch{return form.displayName.trim()||demoNameBase(form);}};
 
 const failure=(error:unknown)=>{const status=error instanceof DemoError?error.status:0;return {status:'error' as const,message:error instanceof Error?error.message:'Okänt fel.',authentication:[401,403].includes(status)};};
 const cx=(...names:(string|false|null|undefined)[])=>names.filter(Boolean).join(' ');
@@ -69,27 +74,27 @@ function CreditsReadout({credits,company,room}:{credits:Load<Credits>;company:De
   if(!credits.value)return <p className={cx(styles.small,styles.muted)}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under Bolag och spelbord › {company.name}.</p>;
   const value=credits.value;
   return <dl className={styles.kv}>
-    <dt>Startsaldo</dt><dd>Bestäms av spelmotorn när testsessionen skapas och visas i kvittot. Det går inte att välja här.</dd>
+    <dt>Startsaldo</dt><dd>Bestäms av spelmotorn när testsessionen skapas och visas i kvittot. Det går inte att välja här; efter lanseringen kan du fylla på demosaldot.</dd>
     <dt>Demokrediter</dt><dd>{value.refill===null?'okänd påfyllning':`${formatMoney(value.refill,null)} per påfyllning i spelet`} · insatsprofil {value.label} · bordsspråk {value.language}</dd>
   </dl>;
 }
 
 function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{state:DemoState;company:DemoCompany;room:DemoRoom;dealer:DemoDealer;permissions:DemoPermissions;credits:Load<Credits>;onEdit:(field:'name'|'displayName'|'language'|'currency',value:string)=>void}) {
-  const name=state.form.name.trim();
+  const name=state.form.name.trim(),keyName=demoKeyName(state.form);
   return <div className={styles.stack}>
     <div className={styles.form}>
-      <div className={styles.field}><label htmlFor="demo-name">Demons namn</label><input id="demo-name" className={styles.input} value={state.form.name} maxLength={80} autoComplete="off" onChange={event=>onEdit('name',event.target.value)} placeholder={`Demo ${company.name}`}/>
-        <span className={styles.hint}>Blir namnet på den API-nyckel som skapas för demon under Integration.</span></div>
-      <div className={styles.field}><label htmlFor="demo-display">Spelarens visningsnamn</label><input id="demo-display" className={styles.input} value={state.form.displayName} maxLength={40} autoComplete="off" onChange={event=>onEdit('displayName',event.target.value)} placeholder={name||'Som demons namn'}/>
+      <div className={styles.field}><label htmlFor="demo-name">Demons namn</label><input id="demo-name" className={styles.input} value={state.form.name} maxLength={80} autoComplete="off" onChange={event=>onEdit('name',event.target.value)} placeholder={company.name}/>
+        <span className={styles.hint}>Nyckeln för demon heter <code>{keyName||'demo-…'}</code> under Integration och får bara rättigheterna {SCOPE_TEXT}.</span></div>
+      <div className={styles.field}><label htmlFor="demo-display">Spelarens visningsnamn</label><input id="demo-display" className={styles.input} value={state.form.displayName} maxLength={40} autoComplete="off" onChange={event=>onEdit('displayName',event.target.value)} placeholder={demoNameBase(state.form)||'Som demons namn'}/>
         <span className={styles.hint}>Visas vid spelbordet. Högst 40 tecken; tomt ger demons namn.</span></div>
       <div className={styles.field}><label htmlFor="demo-language">Språk i spelet</label><select id="demo-language" className={styles.input} value={state.form.language} onChange={event=>onEdit('language',event.target.value)}>{DEMO_LANGUAGES.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></div>
       <div className={styles.field}><label htmlFor="demo-currency">Valuta</label><select id="demo-currency" className={styles.input} value={state.form.currency} onChange={event=>onEdit('currency',event.target.value)}>{DEMO_CURRENCIES.map(row=><option key={row}>{row}</option>)}</select></div>
     </div>
     <section aria-labelledby="demo-credits-title"><h3 id="demo-credits-title" className={cx(styles.small,styles.muted)} style={{fontWeight:600,marginBottom:6}}>Saldo och giltighet</h3>
       <CreditsReadout credits={credits} company={company} room={room}/>
-      <p className={cx(styles.small,styles.muted,styles.mt)}>Giltighetstid går inte att välja: spelmotorns länk gäller i sex timmar, och nyckeln gäller tills du återkallar den. Återkallar du nyckeln stängs demospelarens sessioner.</p>
+      <p className={cx(styles.small,styles.muted,styles.mt)}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; tidigast efter O03). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
-    <div className={cx(styles.note,styles.noteAccent)}>Skapar nyckeln <b>{name||'(namn saknas)'}</b> och en testsession med demokrediter för <b>{dealer.name}</b> vid <b>{room.name}</b> hos <b>{company.name}</b>. Två skrivningar: <code>apikeys/create</code> och <code>apikeys/launch</code>.</div>
+    <div className={cx(styles.note,styles.noteAccent)}>Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter för <b>{dealer.name}</b> vid <b>{room.name}</b> hos <b>{company.name}</b>. Nyckel och hemlighet lämnar aldrig servern. Två skrivningar: <code>apikeys/create</code> och <code>apikeys/launch</code>.</div>
     {permissions.blocker&&<div className={cx(styles.note,styles.noteWarn)} role="note">{permissions.blocker}</div>}
   </div>;
 }
@@ -115,12 +120,55 @@ function Result({value,company,room,dealer,language,permissions,revoke,onRevoke,
       <dt>Startsaldo</dt><dd>{formatMoney(value.receipt.balance,value.receipt.currency)}</dd>
       <dt>Demospelare</dt><dd>{value.receipt.playerId?<code>{value.receipt.playerId}</code>:'–'}{value.receipt.playerRef&&<> · ref <code>{value.receipt.playerRef}</code></>}</dd>
       <dt>Länken gäller</dt><dd>{expiryText(value.receipt.expiresIn)} från nu, enligt spelmotorn.</dd>
-      <dt>Nyckeln gäller</dt><dd>{revoke.phase==='done'?<Chip tone="danger">återkallad</Chip>:<>tills den återkallas. {permissions.canRevoke?<button type="button" className={cx(styles.btn,styles.btnSmall,styles.btnDanger)} disabled={revoke.phase==='busy'} onClick={onRevoke}>{revoke.phase==='busy'?'Återkallar…':'Återkalla nyckeln'}</button>:'Återkallas under Integration.'}</>}</dd>
+      <dt>Nyckeln</dt><dd><code>{value.key.name}</code> · rättigheter {SCOPE_TEXT} · {revoke.phase==='done'?<Chip tone="danger">återkallad</Chip>:'gäller tills den återkallas'}</dd>
     </dl>
+    <TopUp value={value} permissions={permissions} revoked={revoke.phase==='done'}/>
+    <section className={cx(styles.panel,styles.panelDanger)} aria-labelledby="demo-revoke-title">
+      <div><h3 id="demo-revoke-title" className={styles.panelTitle}>Återkalla demon</h3>
+        <p className={cx(styles.small,styles.muted)}>{revoke.phase==='done'?'Nyckeln är återkallad: länken fungerar inte längre och demospelarens sessioner har stängts.'
+          :'Nyckeln har ingen utgångstid och gäller tills du återkallar den. Då slutar länken fungera och demospelarens sessioner stängs direkt.'}</p></div>
+      {revoke.phase==='done'?<Chip tone="danger">återkallad</Chip>:permissions.canRevoke?<button type="button" className={cx(styles.btn,styles.btnDanger)} disabled={revoke.phase==='busy'} onClick={onRevoke}>{revoke.phase==='busy'?'Återkallar…':'Återkalla nyckeln'}</button>
+        :<span className={cx(styles.small,styles.muted)}>Återkallas under Integration (kräver rollen admin).</span>}
+    </section>
     {revoke.phase==='error'&&<div className={cx(styles.note,styles.noteDanger)} role="alert">{revoke.message}</div>}
-    {revoke.phase==='done'&&<div className={cx(styles.note,styles.noteWarn)}>Nyckeln är återkallad: länken och demospelarens sessioner har stängts.</div>}
-    <div className={styles.footer}><span className={cx(styles.small,styles.muted)}>Nyckelns hemlighet visas inte här; rotera den under Integration om bolaget ska använda nyckeln själv.</span><button type="button" className={cx(styles.btn,styles.btnGhost)} onClick={onReset}>Skapa en ny demo</button></div>
+    <div className={styles.footer}><span className={cx(styles.small,styles.muted)}>Demonyckelns hemlighet lämnar aldrig servern. Ska bolaget integrera själv skapas en egen partnernyckel under Integration.</span><button type="button" className={cx(styles.btn,styles.btnGhost)} onClick={onReset}>Skapa en ny demo</button></div>
   </div>;
+}
+
+// Frivillig påfyllning efter lanseringen: apikeys/credit för demospelaren i kvittot.
+function TopUp({value,permissions,revoked}:{value:DemoLaunch;permissions:DemoPermissions;revoked:boolean}) {
+  const [amount,setAmount]=useState('');
+  const [state,setState]=useState<TopUpState>({phase:'idle'});
+  const [known,setKnown]=useState<Saldo>({balance:value.receipt.balance,currency:value.receipt.currency});
+  const currency=known.currency??value.receipt.currency,playerId=value.receipt.playerId,busy=state.phase==='busy';
+  const checked=readCreditAmount(amount);
+  const blocked=revoked?'Nyckeln är återkallad.':!permissions.canCredit?'Din inloggning får inte fylla på demosaldo. Det kräver rollen admin.':!playerId?'Demospelaren saknas i kvittot, så saldot kan inte fyllas på här.':'';
+  const submit=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    if(blocked||checked.amount===null||busy||!playerId)return;
+    const before=known,sent=checked.amount;
+    setState({phase:'busy'});
+    try{
+      const receipt=await creditDemo({fetchImpl:fetch,keyId:value.key.id,playerId,amount:sent});
+      // Utan saldo i svaret är saldot okänt, inte det gamla.
+      const after={balance:receipt.balance,currency:receipt.balance===null?currency:receipt.currency};
+      setKnown(after);setState({phase:'done',amount:sent,before,after});setAmount('');
+    }catch(error){setState({phase:'error',message:error instanceof Error?error.message:'Okänt fel.'});}
+  };
+  return <section className={styles.panel} aria-labelledby="demo-topup-title">
+    <div><h3 id="demo-topup-title" className={styles.panelTitle}>Fyll på demosaldo <span className={styles.faint}>(frivilligt)</span></h3>
+      <p className={cx(styles.small,styles.muted)}>Saldo nu: {formatMoney(known.balance,currency)}. Påfyllningen går till demospelaren via <code>apikeys/credit</code>.</p></div>
+    <form className={styles.topUp} onSubmit={submit}>
+      <div className={styles.field}><label htmlFor="demo-topup">Belopp{currency?` (${currency})`:''}</label>
+        <input id="demo-topup" className={styles.input} inputMode="decimal" autoComplete="off" value={amount} disabled={Boolean(blocked)||busy} onChange={event=>setAmount(event.target.value)}/></div>
+      <button type="submit" className={styles.btn} disabled={Boolean(blocked)||busy||checked.amount===null}>{busy?'Fyller på…':'Fyll på'}</button>
+    </form>
+    {blocked?<p className={styles.missing}>{blocked}</p>:amount.trim()&&checked.missing&&<p className={styles.missing}>{checked.missing}</p>}
+    {state.phase==='done'&&<div className={styles.note} role="status">{state.after.balance!==null
+      ?<>Påfyllt {formatMoney(state.amount,state.after.currency)}: saldo före <b>{formatMoney(state.before.balance,state.before.currency)}</b>, efter <b>{formatMoney(state.after.balance,state.after.currency)}</b>.</>
+      :<>Påfyllningen på {formatMoney(state.amount,state.after.currency)} är skickad. Svaret innehöll inget saldo; saldot syns i spelet.</>}</div>}
+    {state.phase==='error'&&<div className={cx(styles.note,styles.noteDanger)} role="alert">{state.message}</div>}
+  </section>;
 }
 
 function Summary({state,company,room,dealer,done,onStep}:{state:DemoState;company:DemoCompany|null;room:DemoRoom|null;dealer:DemoDealer|null;done:boolean;onStep:(step:number)=>void}) {
@@ -128,7 +176,7 @@ function Summary({state,company,room,dealer,done,onStep}:{state:DemoState;compan
     {label:'Bolag',value:company?.name,text:company&&<code>{company.slug}</code>,step:1},
     {label:'Spelbord',value:room?.name,text:room&&<code>{room.id}</code>,step:2},
     {label:'Dealer',value:dealer?.name,text:dealer&&<code>{dealer.id}</code>,step:3},
-    {label:'Demo',value:state.form.name.trim()||undefined,text:state.form.name.trim()&&`${demoDisplayName(state.form)} · ${state.form.language} · ${state.form.currency}`,step:4},
+    {label:'Demo',value:state.form.name.trim()||undefined,text:state.form.name.trim()&&<><code>{demoKeyName(state.form)}</code> · {safeDisplayName(state.form)} · {state.form.language} · {state.form.currency}</>,step:4},
   ];
   return <aside className={styles.card} aria-labelledby="demo-summary-title"><div className={styles.cardHead}><h2 id="demo-summary-title">Din demo</h2><span className={styles.aside}>{done?'klar':`steg ${state.step} av ${DEMO_STEPS.length}`}</span></div>
     <div className={styles.rows}>{rows.map(row=><div key={row.label} className={styles.row}><div><div className={styles.rowLabel}>{row.label}</div><div className={cx(styles.rowValue,!row.value&&styles.faint)}>{row.value??'–'}</div>{row.text&&<div className={styles.rowText}>{row.text}</div>}</div>
@@ -182,7 +230,7 @@ export function DemoBuilder() {
     }catch(error){setLaunch({phase:'error',message:error instanceof Error?error.message:'Okänt fel.',key:(error as {key?:DemoKey}).key??null});}
   };
   const revokeKey=async(key:DemoKey)=>{
-    if(revoke.phase==='busy')return;
+    if(revoke.phase==='busy'||!window.confirm(`Återkalla nyckeln ${key.name}? Demolänken slutar fungera och demospelarens sessioner stängs.`))return;
     setRevoke({phase:'busy'});
     try{await revokeDemoKey({fetchImpl:fetch,keyId:key.id});setRevoke({phase:'done'});}
     catch(error){setRevoke({phase:'error',message:error instanceof Error?error.message:'Okänt fel.'});}
