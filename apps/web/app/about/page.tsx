@@ -5,7 +5,7 @@ import { AboutLounge } from "@/components/about/about-lounge"
 import "./about.css"
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://croupier-frontend.vercel.app"),
+  metadataBase: new URL("https://www.scoutgaming.tech"),
   title: "Om Scout · Människorna bakom nästa kapitel",
   description: "Lär känna Scout Gaming. Från fantasy sports till AI live casino, med människor och idéer från Stockholm, Malta och Lviv.",
   openGraph: {

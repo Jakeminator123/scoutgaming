@@ -8,5 +8,6 @@ export function studioDocumentNavigationMetadata(request: Request): {
   originPresent: boolean; actionPresent: boolean;
 };
 export function studioDocumentNavigationHeaders(request: Request): Headers;
+export function assistantRequestConfiguration(env?: Record<string, string | undefined>): (NativeStudioRequestConfiguration & { unifiedUi?: true }) | null;
 export function normalizeNativeStudioRequest(request: Request, config: NativeStudioRequestConfiguration | null): Request;
 export function normalizeNativeStudioPageRequest(request: Request, config: NativeStudioRequestConfiguration | null): Request;

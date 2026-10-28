@@ -1,7 +1,7 @@
 import {readAssistantData,assistantNavigation} from './assistant-reads.mjs';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {canonicalStudioJson,validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
+import {assistantRequestConfiguration,normalizeNativeStudioRequest} from './studio-native-request.mjs';
 import {assertNativeStudioRequest,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {assistantConfiguration,ASSISTANT_MODELS,PUBLIC_KNOWLEDGE,assistantJson,askAssistant,assistantFailure as fail} from './assistant-model.mjs';
 import {readAssistantContext} from './assistant-context.mjs';
@@ -121,11 +121,9 @@ export function createAssistantApi({config,runtime=studioNativeRuntime,configura
   }};
 }
 export async function assistantEndpoint(request){
-  const origins=[process.env.CROUPIER_PUBLIC_ORIGIN,process.env.CROUPIER_LAB_UI_ORIGIN];
   try{
-    if(origins.some(value=>!value||new URL(value).origin!==value||new URL(value).protocol!=='https:'))return json({error:'assistant_unavailable'},503);
-    const config={allowedOrigins:origins,publicHosts:origins.map(value=>new URL(value).host),
-      apiBase:process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio/api/admin':'/api/admin',authBase:process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio/api/auth':'/api/auth'};
+    const config=assistantRequestConfiguration();
+    if(!config)return json({error:'assistant_unavailable'},503);
     return await createAssistantApi({config}).handle(request);
   }catch{return json({error:'assistant_unavailable'},503);}
 }
