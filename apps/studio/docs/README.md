@@ -3,8 +3,8 @@
 Så här arbetar du i Admin (`/admin`) i dag. Orden förklaras i
 [ordlistan](TERMINOLOGI.md). En **mall** heter i Admin i dag
 **Sammansättning** (ibland **Spelmall** eller **Gemensam mall**); bolagets
-**paket** är avsnittet **Spelmallar för bolaget**. Hjälptexten i Admin kommer
-från [guide.json](guide.json).
+**paket** är avsnittet **Spelmallar för bolaget**. Admins **Hjälp** listar vad
+varje sida gör och länkar hit och till ordlistan.
 
 ## Menyn
 
@@ -23,7 +23,7 @@ från [guide.json](guide.json).
 | System | Kopplingar & användning | `/admin/structure` | Vad som använder vad: bolag, dealers, bord, bakgrunder och mallar |
 | System | Integrationer | `/admin/admin/api` | Partnernycklar och API |
 | System | Konton & åtkomst | `/admin/admin/accounts` | Intern personal och roller |
-| System | Hjälp | `/admin/guide` | Den här guiden i kort form |
+| System | Hjälp | `/admin/guide` | Vad varje sida gör, med länkar till den här guiden och ordlistan |
 
 Portalraden överst leder till Admin, Partnerportalen (**Spelbolag**) och
 **Spelarlobby**; intern personal når alla tre med samma konto.
