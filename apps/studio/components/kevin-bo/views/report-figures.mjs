@@ -1,5 +1,6 @@
 // Siffror ur snapshot.reports (apps/studio/lib/partner-game-readout.mjs) för de
 // senaste N dagarna. Inga värden hittas på: utan ett "ready"-aggregat finns inga tal.
+// Belopp visas alltid i en valuta i taget; flera valutor räknas aldrig ihop.
 const round = value => Math.round(value * 100) / 100;
 
 export function reportsReady(reports) {
@@ -13,54 +14,68 @@ function addAmounts(target, source) {
     bucket.net = round(bucket.staked - bucket.returned);
   }
 }
-const total = (amounts, key) => round(Object.values(amounts).reduce((sum, value) => sum + value[key], 0));
+const amountsOf = (reports, day) => day.amounts ?? { [reports.currency ?? '']: { staked: day.staked, returned: day.returned } };
+// Störst insats först, så att standardvalutan är den bolaget mest spelar i.
+const byStake = amounts => Object.keys(amounts).sort((left, right) => (amounts[right].staked - amounts[left].staked) || left.localeCompare(right));
 
 // Per spelbord och totalt för de sista `days` dagarna i fönstret (dagarna är
-// kronologiska i aggregatet; den sista är i dag). Belopp summeras per valuta;
-// `currency` finns bara när en enda valuta förekommer, annars är `mixed` satt.
+// kronologiska i aggregatet; den sista är i dag). Belopp summeras per valuta.
 export function reportFigures(reports, days = 7) {
   if (!reportsReady(reports)) return null;
-  const fallback = reports.currency ?? '';
-  const amountsOf = day => day.amounts ?? { [fallback]: { staked: day.staked, returned: day.returned } };
   const rooms = reports.rooms.map(room => {
     const window = room.days.slice(-days), amounts = {};
-    for (const day of window) addAmounts(amounts, amountsOf(day));
-    const staked = total(amounts, 'staked'), returned = total(amounts, 'returned');
-    return { roomId: room.roomId, rounds: window.reduce((sum, day) => sum + day.rounds, 0), staked, returned, net: round(staked - returned), amounts, perDay: window.map(day => day.rounds) };
+    for (const day of window) addAmounts(amounts, amountsOf(reports, day));
+    return { roomId: room.roomId, rounds: window.reduce((sum, day) => sum + day.rounds, 0), amounts, perDay: window.map(day => day.rounds) };
   });
   const amounts = {};
   for (const room of rooms) addAmounts(amounts, room.amounts);
-  const currencies = Object.keys(amounts).sort();
-  return { days, currency: currencies.length === 1 ? currencies[0] || null : null, currencies, mixed: currencies.length > 1, truncated: reports.truncated === true,
-    seqWindow: Number.isSafeInteger(reports.seqWindow) ? reports.seqWindow : null,
-    rounds: rooms.reduce((sum, room) => sum + room.rounds, 0), staked: total(amounts, 'staked'), returned: total(amounts, 'returned'), net: total(amounts, 'net'),
-    amounts, rooms: new Map(rooms.map(room => [room.roomId, room])) };
+  const currencies = byStake(amounts).filter(Boolean);
+  return { days, currencies, mixed: currencies.length > 1, truncated: reports.truncated === true,
+    rounds: rooms.reduce((sum, room) => sum + room.rounds, 0), amounts, rooms: new Map(rooms.map(room => [room.roomId, room])) };
 }
 
-// Ett belopp per valuta som text: "600 USD" eller "600 USD · 20 EUR". Utan
-// belopp (inga rundor) visas 0 i rapportens valuta när den är känd, annars 0.
-export function amountText(amounts, key, language = 'sv', currency = null) {
-  const format = value => new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'sv-SE', { maximumFractionDigits: 0 }).format(value);
-  const entries = Object.entries(amounts ?? {}).sort(([left], [right]) => left.localeCompare(right));
-  if (!entries.length) return currency ? `${format(0)} ${currency}` : format(0);
-  return entries.map(([code, value]) => code ? `${format(value[key])} ${code}` : format(value[key])).join(' · ');
+// Den valda valutan om den finns i perioden, annars den största.
+export function reportCurrency(figures, chosen) {
+  if (!figures) return null;
+  return figures.currencies.includes(chosen) ? chosen : figures.currencies[0] ?? (Object.keys(figures.amounts)[0] || null);
+}
+// Ett belopp i en valuta (0 när perioden saknar rundor i valutan).
+export function amountIn(figure, key, currency) {
+  const bucket = figure?.amounts?.[currency ?? ''] ?? (currency === null ? Object.values(figure?.amounts ?? {})[0] : null);
+  return bucket ? bucket[key] : 0;
+}
+export function formatMoney(value, currency, language = 'sv') {
+  const text = new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'sv-SE', { maximumFractionDigits: 0 }).format(value);
+  return currency ? `${text} ${currency}` : text;
 }
 
-// Varningen när läsfönstret inte nådde hela perioden. Journalen delas av alla
-// bolag, så "de senaste N raderna" nämns bara när det faktiskt avkortats.
+// Rundor och netto per dag för diagrammet, i den valda valutan.
+export function reportDays(reports, days = 7, currency = null, language = 'sv') {
+  if (!reportsReady(reports)) return [];
+  const width = Math.max(0, ...reports.rooms.map(room => room.days.length)), take = Math.min(days, width);
+  const rows = Array.from({ length: take }, () => ({ day: '', rounds: 0, net: 0 }));
+  for (const room of reports.rooms) {
+    const window = room.days.slice(-take), offset = take - window.length;
+    window.forEach((day, index) => {
+      const row = rows[offset + index], bucket = amountsOf(reports, day)[currency ?? ''] ?? (currency === null ? Object.values(amountsOf(reports, day))[0] : null);
+      row.day = day.day; row.rounds += day.rounds;
+      if (bucket) row.net = round(row.net + bucket.staked - bucket.returned);
+    });
+  }
+  const format = new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'sv-SE', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return rows.map(row => ({ ...row, label: row.day ? format.format(new Date(row.day + 'T12:00:00Z')) : '' }));
+}
+
+// När läsningen inte räckte hela perioden. Inget om hur journalen lagras.
 export function reportsTruncatedNotice(figures, language = 'sv') {
   if (!figures?.truncated) return null;
-  const en = language === 'en', rows = figures.seqWindow ? new Intl.NumberFormat(en ? 'en-GB' : 'sv-SE').format(figures.seqWindow) : null;
-  if (!rows) return en ? 'The journal is longer than the read window; the oldest rounds in the period may be missing.' : 'Journalen är längre än läsfönstret; de äldsta rundorna i perioden kan saknas.';
-  return en ? `The figures are based on the latest ${rows} journal rows (shared by every company), so the oldest rounds in the period may be missing.`
-    : `Siffrorna bygger på de senaste ${rows} journalraderna (journalen delas av alla bolag), så de äldsta rundorna i perioden kan saknas.`;
+  return language === 'en' ? 'The period is longer than what could be read now; the oldest rounds may be missing.'
+    : 'Perioden är längre än vad som kunde läsas nu; de äldsta rundorna kan saknas.';
 }
 
 // Varför det inte finns siffror, med användarens ord.
 export function reportsUnavailableReason(reports, language = 'sv') {
   const en = language === 'en';
-  if (!reports) return en ? 'Shown to roles with reports.read.' : 'Visas för roller med behörigheten reports.read.';
-  if (reports.reason === 'table-missing') return en ? 'The game journal is not installed in this environment.' : 'Spelets journal finns inte i den här miljön.';
-  if (reports.reason === 'no-pool') return en ? 'No game database is connected to the portal here.' : 'Ingen speldatabas är ansluten till portalen här.';
-  return en ? 'The game journal could not be read right now.' : 'Spelets journal kunde inte läsas just nu.';
+  if (!reports) return en ? 'Shown to roles that may see finance.' : 'Visas för roller som får se ekonomi.';
+  return en ? 'Figures for rounds and stakes are not available here yet.' : 'Siffror för rundor och insatser finns inte här ännu.';
 }
