@@ -42,6 +42,25 @@ export function studioDocumentNavigationHeaders(request) {
 
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 
+// Origins trusted by the assistant endpoints; the same rule as the native Admin
+// configuration. Unified UI (www) trusts only CROUPIER_PUBLIC_ORIGIN and ignores
+// CROUPIER_LAB_UI_ORIGIN, so a legacy alias host never becomes trusted there.
+// The split Lab UI still needs both, distinct. Returns null when invalid (503).
+export function assistantRequestConfiguration(env = process.env) {
+  const unifiedUi = env.CROUPIER_VERCEL_UNIFIED_UI === '1';
+  const origins = unifiedUi ? [env.CROUPIER_PUBLIC_ORIGIN] : [env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN];
+  for (const value of origins) {
+    let url; try { url = new URL(value); } catch { return null; }
+    if (url.origin !== value || url.protocol !== 'https:' || url.username || url.password
+      || ['localhost','127.0.0.1','[::1]'].includes(url.hostname)) return null;
+  }
+  if (new Set(origins).size !== origins.length) return null;
+  const studio = env.CROUPIER_LAB_BASE_PATH === '/studio';
+  return Object.freeze({ allowedOrigins: origins, ...(unifiedUi ? { unifiedUi: true } : {}),
+    publicHosts: origins.map(origin => new URL(origin).host),
+    apiBase: studio ? '/studio/api/admin' : '/api/admin', authBase: studio ? '/studio/api/auth' : '/api/auth' });
+}
+
 // Next's route Request may omit its configured basePath. Unified UI accepts
 // only its public origin. Separate deployments can retain the Lab transport
 // URL after a public frontend rewrite; only that configured pair is reconciled.
