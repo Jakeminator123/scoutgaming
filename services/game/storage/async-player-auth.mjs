@@ -1,7 +1,7 @@
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../../packages/studio-access/server/account-credentials.mjs';
-import { backofficePlayerSource,readBackofficePlayerSource } from '../bo-player-session.mjs';
+import { readBackofficePlayerSource } from '../bo-player-session.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied
 // one exact origin. Web still expects its own public Host behind the proxy.
@@ -116,15 +116,6 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     (await db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)').run(digest(token),account.player_id,now+maxAge*1000,account.source_stamp??null,account.display_name??null));
     return cookie(req,token,maxAge,sameSite);
   }
-  async function fromBackoffice(req,existing,maxAge=86400) {
-    return db.transaction(async () => {
-      const source=backofficePlayerSource(existing?.stamp,existing?.authEpoch);
-      // The existing product advisory lock serializes this with native logout.
-      // Per-request epoch checks also reject a delayed, already-issued cookie.
-      if(typeof authEpoch!=='function' || (await authEpoch(existing.id))!==existing.authEpoch)throw Error('Backoffice session expired');
-      return issue(req,{...await linkIdentity(existing),source_stamp:source},maxAge,'Lax');
-    });
-  }
   async function fromPartner(req,claims,maxAge=21600) {
     if(typeof claims?.sub!=='string'||!claims.sub||typeof claims?.partner!=='string'||!claims.partner)throw Error('Invalid Partner launch claims.');
     const displayName=typeof claims.displayName==='string'&&claims.displayName ? claims.displayName : 'spelaren';
@@ -153,8 +144,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
       const cleared=sharedBackofficeOrigin ? [cookie(req,'',0),
         'bo_jwt=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure,
         'lab_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure] : cookie(req,'',0);
-      const state='bo_game_state=; Path=/api/auth/bo/callback; HttpOnly; SameSite=Lax; Max-Age=0'+secure;
-      reply(200,{ok:true},{'Set-Cookie':[...(Array.isArray(cleared)?cleared:[cleared]),state]});return true;
+      reply(200,{ok:true},{'Set-Cookie':Array.isArray(cleared)?cleared:[cleared]});return true;
     }
     if(identity && req.url==='/api/auth/register'){reply(403,{error:'Use your existing Scout account. New accounts are managed in the backoffice.'});return true;}
     try {
@@ -248,5 +238,5 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     }catch(e){reply(400,{error:e.message});}
     return true;
   }
-  return {user,session,binding,bindingById,handle,fromBackoffice,fromPartner,partnerAllowed};
+  return {user,session,binding,bindingById,handle,fromPartner,partnerAllowed};
 }

@@ -5,8 +5,6 @@ import { createServer } from 'node:http';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
 import { playerAuth } from '../services/game/storage/async-player-auth.mjs';
-import { backofficeGameAuth } from '../services/game/storage/async-bo-game-auth.mjs';
-import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createAccountCredentialResolver, effectiveAccountRole } from '../packages/studio-access/server/account-credentials.mjs';
 import { createPgliteStore } from './fixtures/pglite-pool.mjs';
 
@@ -25,6 +23,16 @@ async function fixture() {
   const revoke=id=>users.prepare('INSERT INTO bo_auth_epochs(user_id,epoch) VALUES(?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(id);
   const count=async table=>(await players.prepare(`SELECT count(*) AS n FROM ${table}`).get()).n;
   return {users,players,password,identity,resolver,admin,player,local,authEpoch,revoke,count,close:()=>store.close()};
+}
+// A player session issued by the retired BO handoff: nothing mints `bo:<epoch>:<stamp>`
+// provenance any more, but rows that still exist must keep their epoch checks.
+async function retainedBackofficeSession(f,account,playerId) {
+  let id=(await f.players.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(account.id))?.player_id;
+  if(!id){id=playerId;await f.player(id);await f.players.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(account.id,id);}
+  const token=randomBytes(32).toString('hex');
+  await f.players.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)')
+    .run(createHash('sha256').update(token).digest('hex'),id,Date.now()+86400000,`bo:${account.authEpoch}:${account.stamp}`,null);
+  return 'player_session='+token;
 }
 test('resolver preserves credentials and resolves admin aliases and game-only roles',async()=>{
   const f=await fixture();
@@ -96,7 +104,7 @@ test('shared-origin logout revokes its BO epoch while separate-origin logout rev
       let revocations=0,revocationFails=false;
       const auth=playerAuth(f.players,async()=>{await f.player('own');return {id:'own'};},f.identity,{gameOrigin:origin,sharedBackofficeOrigin,authEpoch:f.authEpoch,backofficeLogout:async()=>{revocations++;if(revocationFails)throw Error('Private storage error');await f.revoke(1);}});
       const account={...await f.identity.find('operator'),authEpoch:0};
-      const cookie=(await auth.fromBackoffice(req,account)).split(';')[0],other=(await auth.fromBackoffice(req,account)).split(';')[0];
+      const cookie=await retainedBackofficeSession(f,account,'own'),other=await retainedBackofficeSession(f,account,'own');
       const response=()=>({writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=JSON.parse(body);}});
       let res=response();await auth.handle({...req,headers:{...req.headers,origin:'https://attacker.invalid',cookie}},res);
       assert.equal(res.status,403);assert.equal(res.headers['Set-Cookie'],undefined);assert.equal(await auth.user({...req,headers:{cookie}}),'own');
@@ -113,105 +121,14 @@ test('shared-origin logout revokes its BO epoch while separate-origin logout rev
       assert.equal(await auth.user({...req,headers:{cookie:other}}),sharedBackofficeOrigin?null:'own',
         'N1 logout revokes the same BO epoch in another browser; a separate game-origin logout does not');
       const cleared=[res.headers['Set-Cookie']].flat();
-      assert.equal(cleared.length,sharedBackofficeOrigin?4:2);
+      assert.equal(cleared.length,sharedBackofficeOrigin?3:1);
       assert.ok(cleared.every(value=>value.includes('Max-Age=0')&&value.includes('HttpOnly')&&value.includes('Secure')));
       assert.equal(cleared.some(value=>value.startsWith('bo_jwt=')),sharedBackofficeOrigin);
       assert.equal(cleared.some(value=>value.startsWith('lab_session=')),sharedBackofficeOrigin);
-      assert.ok(cleared.some(value=>value.startsWith('bo_game_state=; Path=/api/auth/bo/callback;')));
       assert.equal(await f.count('players'),1);
       assert.equal(await f.count('craig_player_links'),1);
     } finally {await f.close();}
   }
-});
-
-for(const boundary of ['before issuance','after issuance']) test('completed N1 logout must not be undone by a delayed callback '+boundary, {timeout:15000}, async()=>{
-  const f=await fixture();await f.admin();
-  const deferred=()=>{let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve};};
-  const authorized=deferred(),resume=deferred();
-  let pending;
-  try {
-    const db=f.players,boDb=f.users;
-    const origin='https://www.fixture.invalid',scope={environment:'fixture',workspaceId:'croupier'};
-    const auth=playerAuth(db,async()=>{await f.player('own');return {id:'own'};},f.identity,{authEpoch:f.authEpoch});
-    const account=await f.identity.find('operator');
-    const claims={sub:account.name,aud:'backoffice',role:'admin',source_stamp:account.stamp,auth_epoch:0,exp:Math.floor(Date.now()/1000)+3600};
-    // Credential verification is a fixture boundary; session issuance, SQL and
-    // the native logout action below use their real implementations.
-    const boSession=async req=>req.headers.cookie?.includes('bo_jwt=fixture')
-      && (await f.authEpoch(account.id))===claims.auth_epoch ? claims:null;
-    const handle=backofficeGameAuth({db,identity:f.identity,boSession,validLaunch:()=>false,
-      publicUrl:origin,boUrl:origin,publicGamePath:'/blackjack',auth:{...auth,async fromBackoffice(...args){
-        // Deterministic interleaving: the callback already passed its BO check,
-        // but the browser has not received any new player_session cookie.
-        const issued=boundary==='after issuance'?await auth.fromBackoffice(...args):null;
-        authorized.resolve();await resume.promise;return issued??auth.fromBackoffice(...args);
-      }}});
-    async function request(address,cookie='bo_jwt=fixture') {
-      const url=new URL(address,origin),req={url:url.pathname+url.search,method:'GET',headers:{host:url.host,cookie},socket:{encrypted:true}};
-      const response={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
-      await handle(req,response);return response;
-    }
-    const start=await request('/api/auth/bo/start?next=/play/profil');assert.equal(start.status,303);
-    const state=new URL(start.headers.Location).searchParams.get('state');
-    const grant=await request(start.headers.Location);assert.equal(grant.status,303);
-    pending=request(grant.headers.Location,'bo_jwt=fixture; bo_game_state='+state);
-    await authorized.promise;
-    const actions=createStudioNativeAuthActions({boDb,gameDb:db,scope,publicOrigin:origin,
-      authorize:async()=>({user:account.name,role:'admin',scope})});
-    const logout=await actions.handle(new Request(origin+'/studio/api/auth/logout',{method:'POST',
-      headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',cookie:'bo_jwt=fixture'},body:'{}'}));
-    assert.equal(logout.status,200);
-    assert.equal(await f.authEpoch(account.id),1);
-    assert.equal(await f.count('player_sessions'),boundary==='after issuance'?1:0);
-    assert.equal(await f.count('bo_game_handoffs'),0);
-    resume.resolve();const callback=await pending;
-    const cookie=[callback.headers['Set-Cookie']??[]].flat().find(value=>value.startsWith('player_session='))?.split(';')[0]??'';
-    assert.equal(await auth.user({headers:{cookie}}),null,
-      'a delayed handoff response must not restore a valid player session after successful N1 logout');
-  } finally {resume.resolve();await pending?.catch(()=>{});await f.close();}
-});
-
-test('cross-origin handoff freezes the authorizing epoch and rejects legacy or malformed provenance',async()=>{
-  const f=await fixture();await f.admin();
-  try {
-    const db=f.players;
-    const auth=playerAuth(db,async()=>{await f.player('own');return {id:'own'};},f.identity,{authEpoch:f.authEpoch});
-    const account=await f.identity.find('operator'),game='https://game.fixture.invalid',bo='https://bo.fixture.invalid';
-    let claimsEpoch;
-    const handle=backofficeGameAuth({db,auth,identity:f.identity,validLaunch:()=>false,publicUrl:game,boUrl:bo,publicGamePath:'/blackjack',
-      boSession:async()=>({sub:account.name,role:'admin',aud:'backoffice',source_stamp:account.stamp,
-        auth_epoch:claimsEpoch===undefined?await f.authEpoch(account.id):claimsEpoch,exp:Math.floor(Date.now()/1000)+3600})});
-    async function request(address,cookie='') {
-      const url=new URL(address,game),response={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
-      await handle({url:url.pathname+url.search,method:'GET',headers:{host:url.host,cookie},socket:{encrypted:true}},response);return response;
-    }
-    async function grant() {
-      const start=await request('/api/auth/bo/start?next=/play/profil');assert.equal(start.status,303);
-      const state=new URL(start.headers.Location).searchParams.get('state'),authorized=await request(start.headers.Location);
-      assert.equal(authorized.status,303);return {address:authorized.headers.Location,cookie:'bo_game_state='+state};
-    }
-    const old=await grant();
-    assert.equal((await db.prepare('SELECT source_stamp FROM bo_game_handoffs').get()).source_stamp,`bo:0:${account.stamp}`);
-    await f.revoke(account.id);
-    assert.equal((await request(old.address,old.cookie)).status,401,'an old BO code cannot adopt the newer epoch at callback');
-    assert.equal(await f.count('player_sessions'),0);
-    const fresh=await grant(),accepted=await request(fresh.address,fresh.cookie);
-    assert.equal(accepted.status,303,'cross-origin callback needs its state cookie, not a BO cookie on the game host');
-    const cookie=accepted.headers['Set-Cookie'].find(value=>value.startsWith('player_session=')).split(';')[0];
-    assert.equal(await auth.user({headers:{cookie}}),'own');
-    assert.equal((await db.prepare('SELECT source_stamp FROM player_sessions').get()).source_stamp,`bo:1:${account.stamp}`);
-    for(const source of [account.stamp,`credential:${account.stamp}`,`bo:-1:${account.stamp}`,`bo:01:${account.stamp}`,
-      `bo:9007199254740992:${account.stamp}`,`bo:1:${account.stamp}:extra`]) {
-      const invalid=await grant();await db.prepare('UPDATE bo_game_handoffs SET source_stamp=?').run(source);
-      assert.equal((await request(invalid.address,invalid.cookie)).status,401,'unversioned or malformed handoffs require a new login');
-    }
-    for(const epoch of [-1,Infinity,NaN,Number.MAX_SAFE_INTEGER+1]) {
-      claimsEpoch=epoch;const start=await request('/api/auth/bo/start?next=/play/profil');
-      assert.match((await request(start.headers.Location)).headers.Location,/^\/admin\/login\?/);
-    }
-    assert.equal(await f.count('player_sessions'),1,'invalid codes create no sessions');
-    await f.revoke(account.id);assert.equal(await auth.user({headers:{cookie}}),null,'every later read checks the frozen epoch');
-  } finally {await f.close();}
 });
 
 test('N1 revocation preserves new credential, local, partner and other-account sessions while denying ambiguous legacy stamps',async()=>{
@@ -230,8 +147,8 @@ test('N1 revocation preserves new credential, local, partner and other-account s
       return [response.headers['Set-Cookie']].flat().find(value=>value.startsWith('player_session=')).split(';')[0];
     }
     const account={...await f.identity.find('operator'),authEpoch:0};
-    const boCookie=(await auth.fromBackoffice(req,account)).split(';')[0];
-    const otherCookie=(await auth.fromBackoffice(req,{...await f.identity.find('other'),authEpoch:0})).split(';')[0];
+    const boCookie=await retainedBackofficeSession(f,account,'linked-1');
+    const otherCookie=await retainedBackofficeSession(f,{...await f.identity.find('other'),authEpoch:0},'linked-2');
     const credentialCookie=await login('operator'),localCookie=await login('player');
     await f.player('partner-player');
     const partnerCookie=(await auth.fromPartner(req,{sub:'partner-player',partner:'fixture-key',
@@ -250,9 +167,8 @@ test('N1 revocation preserves new credential, local, partner and other-account s
     assert.equal(await auth.user({headers:{cookie:credentialCookie}}),ownId);
     assert.equal(await auth.user({headers:{cookie:localCookie}}),'player-1');
     assert.equal(await auth.user({headers:{cookie:partnerCookie}}),'partner-player');
-    await assert.rejects(async()=>auth.fromBackoffice(req,account),/expired/,'issuance refuses an old epoch');
     assert.equal(await f.count('player_sessions'),sessionCount,'revocation does not mass-delete rows or wallets');
-    assert.equal(created,2);
+    assert.equal(created,0,'logins reuse the existing Scout links');
   } finally {await f.close();}
 });
 

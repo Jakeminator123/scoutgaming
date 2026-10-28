@@ -16,7 +16,6 @@ export const presentationPublicModules = Object.freeze([
   {source: 'packages/presentation/contracts/operator-rooms-contract.mjs', paths: ['/operator-rooms-contract.mjs', '/packages/presentation/contracts/operator-rooms-contract.mjs']},
   {source: 'packages/presentation/contracts/operator-preview-contract.mjs', paths: ['/operator-preview-contract.mjs', '/packages/presentation/contracts/operator-preview-contract.mjs']},
   {source: 'packages/presentation/runtime/published-scene.mjs', paths: ['/published-scene.mjs', '/packages/presentation/runtime/published-scene.mjs']},
-  {source: 'packages/navigation/player-handoff.mjs', paths: ['/player-handoff.mjs', '/packages/navigation/player-handoff.mjs']},
   {source: 'packages/presentation/runtime/player-choices.mjs', paths: ['/player-choices.mjs', '/packages/presentation/runtime/player-choices.mjs']},
   {source: 'packages/presentation/contracts/dealer-clip-guide.mjs', paths: ['/dealer-clip-guide.mjs', '/packages/presentation/contracts/dealer-clip-guide.mjs']},
   {source: 'packages/presentation/contracts/dealer-voice-catalog.mjs', paths: ['/dealer-voice-catalog.mjs', '/packages/presentation/contracts/dealer-voice-catalog.mjs']},
