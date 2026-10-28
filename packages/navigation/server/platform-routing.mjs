@@ -9,28 +9,15 @@ import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath
 export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../../server-transport/paths.mjs';
 export {exactPlatformOrigin, platformConfiguration} from '../../server-transport/configuration.mjs';
 
-// Launch payload only. The signature stays the engine's; the claim name is partner.
-export function launchHasPartnerClaim(token) {
-  if (typeof token !== 'string' || token.length > 16384) return false;
-  const part = token.split('.');
-  if (part.length !== 3 || part[1].length === 0 || part[1].length > 12000) return false;
-  try {
-    const payload = JSON.parse(Buffer.from(part[1], 'base64url').toString());
-    return typeof payload?.partner === 'string' && payload.partner.length > 0;
-  } catch { return false; }
-}
-
-// A signed launch with claims.partner wins over ?operator=. An invalid slug is omitted.
-// Without an operator parameter the original search is returned unchanged.
+// A partner key names no company: ?operator= chooses the company, also on a signed
+// partner launch. Binding a key to an operator comes later (after O02/O03). Only an
+// invalid slug is omitted; without an operator parameter the search is returned unchanged.
 export function launchBackendSearch(url) {
-  if (!url.searchParams.has('operator')) return url.search;
-  if (launchHasPartnerClaim(url.searchParams.get('launch')) || typeof requestedOperator(url.searchParams) !== 'string') {
-    const params = new URLSearchParams(url.search);
-    params.delete('operator');
-    const text = params.toString();
-    return text ? `?${text}` : '';
-  }
-  return url.search;
+  if (!url.searchParams.has('operator') || typeof requestedOperator(url.searchParams) === 'string') return url.search;
+  const params = new URLSearchParams(url.search);
+  params.delete('operator');
+  const text = params.toString();
+  return text ? `?${text}` : '';
 }
 
 const AUTH = new Set([
