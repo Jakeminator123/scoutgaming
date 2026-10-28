@@ -4,7 +4,7 @@ const fields = {
   bet: ['windowId', 'seat', 'field', 'chip'], undo: ['windowId'], clear: ['windowId'],
   doubleBets: ['windowId'], allSeats: ['windowId', 'chip'], repeat: ['windowId'], ready: ['windowId'],
   act: ['roundId', 'turnSeq', 'box', 'handIndex', 'action'],
-  insurance: ['roundId', 'phase', 'take'], next: ['roundId'], pause: [], refill: [],
+  insurance: ['roundId', 'phase', 'take'], next: ['roundId'], pause: [], refill: [], wait: [],
 };
 const betting = new Set(['bet', 'undo', 'clear', 'doubleBets', 'allSeats', 'repeat']);
 const errorStatuses = {
@@ -66,6 +66,7 @@ function validResult(value, op) {
     && (!value.started || id(value.roundId));
   if (op === 'act' && Object.hasOwn(value, 'debits')) return exact(value, ['op', 'version', 'debits'])
     && list(value.debits, 0, 28, debit => exact(debit, ['kind', 'amount']) && ['double', 'split'].includes(debit.kind) && positive(debit.amount));
+  if (op === 'wait') return exact(value, ['op', 'version', 'waiting']) && typeof value.waiting === 'boolean';
   return exact(value, ['op', 'version']);
 }
 function validEnvelope(value, intent, roomId) {

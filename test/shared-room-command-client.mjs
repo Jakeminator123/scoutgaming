@@ -41,7 +41,7 @@ test('same-origin POST is fixed; successful response returns only result/replay 
   assert.equal(h.client.state, 'idle'); assert.equal(h.ids(), 1);
 });
 
-test('all fourteen intents cross the actual server parser and result projection without client game-state writes', async () => {
+test('all fifteen intents cross the actual server parser and result projection without client game-state writes', async () => {
   const intents = [
     { op: 'join', memberGen: 0, seats: [0], seatGens: { 0: 0 } }, { op: 'leave', memberGen: 1 },
     { op: 'bet', windowId: 'window-a', seat: 0, field: 'main', chip: 5 }, { op: 'undo', windowId: 'window-a' },
@@ -49,6 +49,7 @@ test('all fourteen intents cross the actual server parser and result projection 
     { op: 'allSeats', windowId: 'window-a', chip: 5 }, { op: 'repeat', windowId: 'window-a' }, ready,
     { op: 'act', roundId: 'round-a', turnSeq: 1, box: 0, handIndex: 0, action: 'stand' },
     { op: 'insurance', roundId: 'round-a', phase: 'insurance', take: false }, { op: 'next', roundId: 'round-a' }, { op: 'pause' }, { op: 'refill' },
+    { op: 'wait' },
   ];
   const calls = [], origin = 'https://player.example.test';
   const handle = createSharedRoomCommand({ origin, service: { async command(_req, { input }) {
@@ -58,6 +59,7 @@ test('all fourteen intents cross the actual server parser and result projection 
     if (['bet', 'undo', 'clear', 'doubleBets', 'allSeats', 'repeat'].includes(input.op)) out.result.reserved = 5;
     if (input.op === 'act') out.result.debits = [{ kind: 'double', amount: 5 }];
     if (input.op === 'pause') out.snapshot = null;
+    if (input.op === 'wait') out.result.waiting = true;
     return out;
   } } });
   const h = fixture((url, init) => handle(new Request(origin + url, { ...init,
@@ -67,8 +69,8 @@ test('all fourteen intents cross the actual server parser and result projection 
     assert.equal(reply.status, 'ok', intent.op); assert.equal(reply.result.op, intent.op);
     assert.equal(Object.hasOwn(reply, 'snapshot'), false); assert.equal(h.client.state, 'idle');
   }
-  assert.equal(calls.length, 14); assert.equal(h.ids(), 14);
-  assert.deepEqual(calls.map(input => input.commandId), Array.from({ length: 14 }, (_, i) => `command-${i + 1}`));
+  assert.equal(calls.length, 15); assert.equal(h.ids(), 15);
+  assert.deepEqual(calls.map(input => input.commandId), Array.from({ length: 15 }, (_, i) => `command-${i + 1}`));
 });
 
 test('only one intent may be sending; concurrent sends and retries mint no additional ID', async () => {
