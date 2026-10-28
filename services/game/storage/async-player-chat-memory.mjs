@@ -53,7 +53,7 @@ export async function createPlayerChatMemory(db, { now = Date.now, studioScope }
         || (await db.prepare('SELECT 1 FROM player_chat_memory_requests LIMIT 1').get()))) {
       reject('player_memory_secret_invalid', 500);
     }
-    (await db.prepare('INSERT OR IGNORE INTO player_chat_memory_meta VALUES (?,?)').run('hmac-v1', randomBytes(32).toString('hex')));
+    (await db.prepare('INSERT INTO player_chat_memory_meta VALUES (?,?) ON CONFLICT DO NOTHING').run('hmac-v1', randomBytes(32).toString('hex')));
     const value = (await db.prepare('SELECT value FROM player_chat_memory_meta WHERE key=?').get('hmac-v1'))?.value;
     // Never silently replace a damaged secret: doing so strands existing memory.
     if (!/^[a-f0-9]{64}$/.test(value ?? '')) reject('player_memory_secret_invalid', 500);
@@ -78,7 +78,7 @@ export async function createPlayerChatMemory(db, { now = Date.now, studioScope }
     (await db.prepare('DELETE FROM player_chat_memory_profiles WHERE touched<=?').run(at - PLAYER_CHAT_MEMORY_LIMITS.retentionDays * DAY));
   }
   async function ensureProfile({ playerRef, dealerId }, at) {
-    (await db.prepare('INSERT OR IGNORE INTO player_chat_memory_profiles VALUES (?,?,?,?,?)')
+    (await db.prepare('INSERT INTO player_chat_memory_profiles VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING')
       .run(playerRef, dealerId, '[]', randomUUID(), at));
     return (await db.prepare('SELECT * FROM player_chat_memory_profiles WHERE player_ref=? AND dealer_id=?').get(playerRef, dealerId));
   }
