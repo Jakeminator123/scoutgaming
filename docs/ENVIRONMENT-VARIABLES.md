@@ -142,7 +142,7 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `OPENCLAW_PRODUCT_SPEECH_URL` | valfri, bara lokalt | Directors egen relämottagare i labbet; sätts inte på Render |
 | `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` | nekas | Lokalt fjärrläge som skickar vidare till en annan Director; stänger av Gateway-inloggningen och sätts aldrig på Render |
 
-Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Bara panelen, inte Blueprint, äger värdet för `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`.
+Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Blueprint deklarerar `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` med `sync: false` och `OPENCLAW_SPEECH_TIMEOUT_MS` med `20000`; de hemliga värdena sätts bara i panelen.
 
 ## Gateway `croupier-lab-openclaw`
 
@@ -156,7 +156,7 @@ Privat tjänst; registerposten är `render-openclaw-gateway`.
 | `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH` | valfri | `18789`, `/data/openclaw`, `/data/openclaw/openclaw.json` |
 | `OPENCLAW_DASHBOARD_ORIGIN` | valfri | Directors exakta HTTPS-origin utan `/openclaw` |
 | `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Bara lokalt |
-| `CROUPIER_SPEECH_VISION` | valfri, sätts i panelen | Bildstöd i talet, opt-in; satt i panelen |
+| `CROUPIER_SPEECH_VISION` | valfri, sätts i panelen | Bildstöd i talet, opt-in; Blueprint deklarerar den med `sync: false` och värdet sätts i panelen |
 
 ## Preview: skillnader mot produktionen
 
