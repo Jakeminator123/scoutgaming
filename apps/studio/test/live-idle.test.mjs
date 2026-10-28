@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLiveIdleController } from '../lib/live-idle.mjs';
+import { createLiveIdleController } from '../../../packages/presentation/runtime/live-idle.mjs';
 import { createDefaultIdlePolicy } from '../../../packages/presentation/runtime/idle-policy.mjs';
 
 function fixture(patch = () => {}, options = {}) {

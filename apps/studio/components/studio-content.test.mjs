@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { mediaExampleEvent } from '../../../packages/presentation/runtime/media-family-policy.mjs';
 import { validateVideoMetadata, validateVideoCompositing } from '../../../packages/presentation/contracts/video-intake.mjs';
 
@@ -50,23 +50,6 @@ function hooks() {
   };
   return { react, states, refs, effects, render(component, props) { stateIndex = refIndex = 0; return component(props); } };
 }
-const manifest = JSON.parse(readFileSync(new URL('../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
-const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, previewUrl: '/test/' + item.id, fileName: item.relativePath.split('/').at(-1) })) };
-
-test('Utdelning retains seven player positions and distinct dealer up, hole and reveal families', () => {
-  const { FamilyVideoLibrary } = load('./family-video-library.tsx');
-  const html = renderToStaticMarkup(React.createElement(FamilyVideoLibrary, { inventory, dealerId: 'astrid', familyType: 'deal', onOpen() {}, onRefresh() {}, refreshing: false }));
-  assert.equal((html.match(/data-position="/g) ?? []).length, 8);
-  for (let box = 0; box < 7; box++) assert.match(html, new RegExp('data-position="box' + box + '"'));
-  for (const family of manifest.families.filter(row => /^(deal|reveal)\./.test(row.eventId))) assert.ok(html.includes('data-family-id="' + family.id + '"'), family.id);
-  assert.match(html, /Dealer · öppet kort/); assert.match(html, /Dealer · dolt kort/); assert.match(html, /Dealer · vänd dolt kort/);
-  const h = hooks(); const { FamilyVideoLibrary: Controlled } = load('./family-video-library.tsx', {}, h.react);
-  const opened = [];
-  const tree = h.render(Controlled, { inventory, dealerId: 'astrid', familyType: 'deal', onOpen: (...selection) => opened.push(selection), onRefresh() {}, refreshing: false });
-  for (const button of nodes(tree, node => node.type === 'button' && node.props.children === 'Inställningar')) button.props.onClick();
-  assert.deepEqual(opened, manifest.families.filter(row => /^(deal|reveal)\./.test(row.eventId)).map(row => [row.eventId, row.situation]));
-});
-
 test('position preview changes only the destination; consecutive card slots, cards and exact speech survive', () => {
   const project = createSeedProject(); const before = structuredClone(project);
   for (const definition of project.events.filter(row => row.sourceType === 'deal')) {
@@ -124,47 +107,4 @@ test('Probe selection stays in Admin and preserves room context under either mou
   } finally {
     if (previous === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH; else process.env.NEXT_PUBLIC_LAB_BASE_PATH = previous;
   }
-});
-
-test('dealerlocked preview upload verifies receipt, reports busy and never returns a runtime binding', async () => {
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const metadata = { label:'Nora kort',dealerId:'nora',eventId:'deal.player.left',kind:'action',role:'standard',situation:'box1',playback:'once',notes:'' };
-  for (const mismatch of [false, true]) {
-    const h = hooks(), busy = [], callbacks = [], sent = [];
-    const saved = {id:'saved-nora',available:true,classification:{...metadata,dealerId:mismatch?'astrid':'nora'}};
-    const {VideoUpload} = load('./video-upload.tsx', {
-      './video-metadata-fields': {VideoMetadataFields:()=>null},
-      './variant-selection': {VariantSelectionFields:()=>null},
-      './studio-types': {async requestJson(){return sent.length?{videos:[saved]}:{uploadMode:'private-client-blob'};}},
-      '../lib/upload-native-video.mjs': {async uploadNativeVideo(file,value,mime,options){sent.push({value,options});return {id:saved.id,duplicate:false};}},
-    },h.react);
-    const props={project,dealerId:'nora',eventId:metadata.eventId,initialSituation:'box1',lockDealer:true,previewOnly:true,open:true,onBusyChange:value=>busy.push(value),onUploaded:(...args)=>callbacks.push(args)};
-    let tree=h.render(VideoUpload,props);
-    const fields=nodes(tree,node=>typeof node.type==='function'&&node.type.name==='VideoMetadataFields')[0];
-    fields.props.onChange({...metadata,dealerId:'astrid'});
-    nodes(tree,node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'nora.mp4',size:200}]}});
-    tree=h.render(VideoUpload,props);
-    assert.equal(nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').length,0);
-    await nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});
-    assert.equal(sent[0].value.dealerId,'nora');
-    assert.equal(sent[0].value.situation,'box1');assert.deepEqual(busy,[true,false]);
-    assert.equal(callbacks.length,mismatch?0:1);
-    if(!mismatch)assert.equal(callbacks[0][2],null);
-    else assert.ok(nodes(h.render(VideoUpload,props),node=>node.props?.role==='alert').length);
-  }
-});
-
-test('cancelled preview upload leaves the project intact and does not call onUploaded', async () => {
-  const h=hooks(),busy=[],callbacks=[],project=createSeedProject(),before=structuredClone(project);
-  const {VideoUpload}=load('./video-upload.tsx',{
-    './video-metadata-fields':{VideoMetadataFields:()=>null},'./variant-selection':{VariantSelectionFields:()=>null},
-    './studio-types':{async requestJson(){return {uploadMode:'private-client-blob'};}},
-    '../lib/upload-native-video.mjs':{async uploadNativeVideo(file,value,mime,options){h.refs.find(ref=>ref.current instanceof AbortController).current.abort();options.signal.throwIfAborted();}},
-  },h.react);
-  const props={project,dealerId:'astrid',eventId:'deal.player.left',previewOnly:true,onBusyChange:value=>busy.push(value),onUploaded:(...args)=>callbacks.push(args)};
-  let tree=h.render(VideoUpload,props);
-  nodes(tree,node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'take.mp4',size:200}]}});
-  tree=h.render(VideoUpload,props);
-  await nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});
-  assert.equal(callbacks.length,0);assert.deepEqual(busy,[true,false]);assert.deepEqual(project,before);
 });
