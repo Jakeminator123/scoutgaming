@@ -206,11 +206,16 @@ async function play(item) {
       const target=item.timelineTime();
       if(target>=item.dur){finish(true);return;}
       // Catch up after buffering/backgrounding; never replay the beginning of an expired turn.
-      // A take at a table's tempo (Emil 28 Oct) that came up a little late catches up by running a little faster (at most
-      // 40 % for a moment) instead of seeking: a seek skipped his reach for the card, and at 2.5x 60 ms late was a seek
+      // A take at a table's tempo (Emil 28 Oct) that came up a little late catches up by running a little faster instead of
+      // seeking (a seek skipped his reach for the card, and at 2.5x 60 ms late was a seek). The rate is set ONCE, on its
+      // first frame, so that it ends with its slot (and once more halfway if it is still off by two frames): a rate changed on
+      // every frame made Chrome drop ~40 % of the frames at 2x (measured, prova-jamnhet.mjs).
       const far=.4*(item.tempo??1);
       if(!v.seeking&&Math.abs(v.currentTime-target)>far){v.currentTime=target;}
-      else if(item.tempo&&item.baseRate)v.playbackRate=item.baseRate*Math.min(1.4,Math.max(.85,1+(target-v.currentTime)*1.5));
+      else if(item.tempo&&item.baseRate&&(item.retimed??0)<2&&(!item.retimed||(v.currentTime>item.dur/2&&Math.abs(target-v.currentTime)>2/24))){
+        const left=item.dur-target;
+        if(left>.1){item.retimed=(item.retimed??0)+1;v.playbackRate=item.baseRate*Math.min(1.4,Math.max(.85,(item.dur-v.currentTime)/left));}
+      }
     }
     if(!v.seeking)item.onFrame?.(frame?.mediaTime ?? v.currentTime, Number.isFinite(v.duration) ? v.duration : item.dur);
     // An idle with its successor prepared hands over on its last frame (VILA, the successor's first frame too), not on
