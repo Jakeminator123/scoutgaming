@@ -312,6 +312,10 @@ Små PR:er, en sak i taget; docs, UI och server blandas inte. Varje steg har ett
 | **H verktygskedja och struktur** | React, TypeScript och byggen mellan `apps/studio` och `apps/studio/client`; "ett repo, en sajt"; Node- och Next-versioner | egen plan efter O03 (orkestratorn) | ren klon, låst installation, båda frontendbyggena |
 | **Tal** | dealer-generisk talkedja (text → röst → läppsynk) konfigurerad per dealer via registret; Dragan och Astrid som exempel, inte specialfall; Röst och tal får livemärke och "Använd i spelet" | egen aktivitet (Jakobs beslut 2026-10-28) | – |
 
+Efter att Admin-kedjan (#519, #512, #532, #518) är mergad:
+
+- F16: Johns Bets bordsgrafik i produktionen (f00be01d) är ungefär dubbelt så bred som PAOW:s räckvidd (boxarna x 490–1 495 mot landningarna x 740–1 238 i en 3 107 px bild), därför hamnar markörerna fel. Åtgärd: byt till en bordsgrafik ritad efter PAOW:s landningar (bordsmallens 'Johns Bet · Grön filt', 1920×1404, eller Skapa med AI › Bordsgrafik i Johns Bets scenmall) och sätt scenmallens placering till dator {width 0.5, x 0, y 0.35}, mobil {width 1.58, x 0, y 0.35}. Jakob publicerar i produktionen.
+
 ## 10. Beslut
 
 Tagna 2026-10-28 (Jakob gav Admin-arkitekten fria händer för ordlistan och godkände namn, dotfiler och godkännande):
@@ -394,8 +398,8 @@ Beslutsord: **behåll** (samma komponent, ny plats), **flytta**, **slå ihop**, 
 | 53 | Dold grupp `tables`, actions utan handler | – | `studio-administration.tsx:466-508` (UI borta i #500) | ta bort ur kontraktet efter orkestratorns ok | – | – | ingen anropare (kartan) |
 | 54 | tournament, pitboss, operator-create-demo | – | `studio-admin-contract.mjs` | ta bort efter orkestratorns ok | – | – | ingen anropare |
 | 55 | Inloggning | Logga in | `/admin/login` | behåll | – | `/studio/api/auth` | #497 |
-| 67 | Skapa bakgrund med AI | Scenmallar och material › Bakgrunder › Skapa bakgrund med AI | ny (`ai-background-dialog.tsx`, inte inkopplad) | ny efter O03 | Scenmallar och material › Bakgrunder | `OPENAI_API_KEY` och `CROUPIER_AI_IMAGE_ENABLED=1` → `POST /studio/api/layer-assets/generate` (1–3 förslag, sparar inget) → befintlig layer-asset-uppladdning | Jakob 28 okt; godkännandet är människan (Använd), sedan befintlig grind: scenmall och publicering |
-| 68 | Skapa bordsgrafik med AI | Bordsgrafik › Skapa bordsgrafik med AI | ny (samma dialog, `role="table"`) | ny efter O03 | Scenmallar och material › Bordsgrafik | samma väg; servern ritar insatsboxarna ur den filmade profilen och scenmallens placering (`filmed-table-template.mjs`); etiketten bär dealer och placeringshash, och scenmallens bordsval spärrar fel mall | bara Blackjack-dealers med filmad profil; målbild 4.5 |
+| 67 | Skapa bakgrund med AI | Scenmallar och material › Bakgrunder › Skapa med AI | knappen bredvid uppladdningen (`registered-material-library.tsx`), dialogen `ai-background-dialog.tsx` i kitet | ny | Scenmallar och material › Bakgrunder | `OPENAI_API_KEY` och `CROUPIER_AI_IMAGE_ENABLED=1` → `POST /studio/api/layer-assets/generate` (1–3 förslag, sparar inget) → befintlig layer-asset-uppladdning | Jakob 28 okt; godkännandet är människan (Använd), sedan befintlig grind: scenmall och publicering |
+| 68 | Skapa bordsgrafik med AI | Bordsgrafik › Skapa med AI | samma knapp och dialog, `role="table"` | ny | Scenmallar och material › Bordsgrafik | samma väg; servern ritar insatsboxarna ur den filmade profilen och scenmallens placering (`filmed-table-template.mjs`); etiketten bär dealer och placeringshash; scenmallens bordsval, Tilldelningens publicering (förkontroll i klienten) och servern (422 `ai_table_misfit`) spärrar fel mall | bara Blackjack-dealers med filmad profil; målbild 4.5 |
 
 ### Nivå 2: Partnerportalen
 
