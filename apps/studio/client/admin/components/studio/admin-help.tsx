@@ -18,6 +18,7 @@ const sources:[string,string,string][]=[
   ['Dealers › Inställningar','POST /studio/api/dealers/{archive,delete}; PUT /studio/api/project','doc.project dealers[], dealerTrash[], dealerSets[]; media_records; Blob'],
   ['Scenmallar','GET /admin/_data/catalog + /studio/api/videos; PUT /studio/api/project; A:operator-package publish-scene-layout','doc.project lanes[]; operator_packages'],
   ['Bakgrunder och bordsgrafik','POST /studio/api/layer-assets/upload; A:material-trash','doc.project layerAssets[], layerAssetTrash[]; Blob backgrounds/, tables/'],
+  ['Bakgrunder och bordsgrafik › Skapa med AI','GET/POST /studio/api/layer-assets/generate (bara förslag); Använd laddar upp som ovan','sparar inget själv; det valda förslaget blir layerAssets[] med etiketten "AI · …"'],
   ['Bolag och spelbord','GET /admin/_data/catalog; A:resource-lifecycle; GET /studio/api/admin/workspace/companies','operators, operator_roles, operator_memberships, operator_packages; doc.administration rooms[]'],
   ['Papperskorg för spelbord: egen flik bredvid Alla spelbord, och under Bolag › Spelbord','GET /admin/_data/catalog (rooms[].state = archived); GET /api/admin/resource-lifecycle; A:room-lifecycle {archived:false}','doc.administration rooms[].state, archivedAt; spelbordet återställs pausat'],
   ['Bolag › Tilldelning','A:operator-package {operatorId, lanes, expectedPackageRevision}','operator_packages (ny revision), fryst presentation'],
@@ -45,6 +46,10 @@ export function AdminHelp() {
       </Card>
       <Card title="Orden">
         <KV items={[['Spelbord','bolagets ingång till ett spel; öppet eller pausat'],['Bordsgrafik','bilden av bordet'],['Scenmall','hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter'],['Tilldelning','det bolaget får använda; varje publicering blir en ny version'],['Vila','dealerns grundloop mellan händelserna'],['Tagning','en inspelning av en replik'],['Insatsprofil','Casual, Privé eller High'],['Delat bord','flera spelare vid samma spelbord; enda spelvägen']]}/>
+      </Card>
+      <Card title="Skapa med AI">
+        <p className="m-0 text-[13.5px]">Under Scenmallar och material › Bakgrunder eller Bordsgrafik tar AI fram förslag efter din beskrivning. Du väljer ett och klickar Använd. Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en scenmall som publiceras.</p>
+        <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Bordsgrafik ritas efter en filmad dealers landningar och passar bara scenmallar med samma landningar och placering; annars går den inte att välja eller publicera. AI kräver <code>CROUPIER_AI_IMAGE_ENABLED=1</code> på servern; utan den står det "Inte påslaget".</p>
       </Card>
       <Card title="Flödet för en ny dealer">
         <ol className="m-0 grid list-none gap-2 p-0">{adminDealerSteps.map((step,index)=><li key={step} className="flex items-center gap-2.5 text-[13.5px]"><span className="grid size-6 place-items-center rounded-full bg-sg-hover text-[11px] font-bold text-sg-muted">{index+1}</span>{step}</li>)}</ol>
