@@ -6,6 +6,14 @@ import {createBackgroundPlayback} from '../../../packages/presentation/runtime/b
 import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import {compositionAnchorFrames,projectAnchorRects} from './composition-anchors.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+// K04 (rerun 4 and the production measure, 28 Oct 2026): a film waits at most LAYER_WAIT_MS for its background and
+// table; a layer stops holding films after LAYER_DEADLINE_MS and shows whenever it arrives. A failed layer is
+// requested again after each LAYER_RETRY_MS. No layer ever fails a film.
+const LAYER_WAIT_MS = 3000, LAYER_DEADLINE_MS = 12000, LAYER_RETRY_MS = [2000, 6000];
+// The shared table's link rule (K04 F7): only a known fast link is fast; unknown, 2g/3g or saveData is slow.
+const FAST_LINK_MBPS = 5;
+const fastLink = link => Boolean(link) && !link.saveData && Number.isFinite(link.downlink) && link.downlink >= FAST_LINK_MBPS
+  && !['slow-2g', '2g', '3g'].includes(link.effectiveType);
 const fail = () => {throw Error('Invalid layer composition');};
 function roomLayerSource(src,id){
   const match=new RegExp(`^/api/presentation/room-layers/[a-z][a-z0-9-]{0,62}/[a-z0-9_-]{1,128}/([1-9][0-9]{0,15})/${id}$`).exec(src);
@@ -55,11 +63,14 @@ export function clipCompositing(value) {
 }
 // Same exact decoded dealer frame and clock as local-film-player. The shared
 // Nora compositor only changes pixels; card, speech and clip selection stay owned.
-export function createLayerComposition(document, initial, {loadRuntime=()=>import(/* webpackIgnore: true */ '/composition-runtime/compositor.js'),backgroundPlaybackOptions={}}={}) {
+export function createLayerComposition(document, initial, {loadRuntime=()=>import(/* webpackIgnore: true */ '/composition-runtime/compositor.js'),backgroundPlaybackOptions={},
+  connection=globalThis.navigator?.connection??null}={}) {
   const host=document.querySelector('#scene');if(!host)return null;
   document.documentElement.dataset.presentationStandard='three-layer';
   let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,framing=null,frameNumber=0,preparation=0,raf=null,closed=false;
   const mounts=new Map(),selected=new Map(),pending=new Map(),cancelLoads=new Map();
+  // deferred: a background film that waits for the dealer's first frame on a slow link (dealerShown).
+  const deferred=new Map();let dealerShown=false;
   // One silent scheduler and at most one running event clip per layer role.
   const PLAYBACK_ROLES=['background','table'],players=new Map(),events=new Map();let backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
@@ -164,7 +175,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(backgroundVisible&&playbackAllowed(role))player.start();
   }
   function releaseLayer(role){
-    cancelLoads.get(role)?.();cancelLoads.delete(role);pending.delete(role);
+    cancelLoads.get(role)?.();cancelLoads.delete(role);pending.delete(role);deferred.delete(role);
     const node=mounts.get(role);if(!node)return;
     node.pause?.();compositor?.release?.(node);node.removeAttribute?.('src');if(node.tagName==='VIDEO')node.load?.();node.remove();mounts.delete(role);
   }
@@ -173,21 +184,45 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     selected.set(role,id);
     if(!current||!current[role].enabled)return;
     const asset=current.assets.find(row=>row.id===id&&row.role===role);if(!asset)return;
-    const node=document.createElement(asset.contentType.startsWith('video/')?'video':'img');
+    const video=asset.contentType.startsWith('video/'),node=document.createElement(video?'video':'img');
     node.className=`presentation-plane presentation-${role}`;node.dataset.layerAsset=asset.id;node.setAttribute('aria-hidden','true');
-    if(node.tagName==='VIDEO'){node.muted=true;node.loop=true;node.playsInline=true;node.preload='auto';node.autoplay=role!=='background'||backgroundVisible;}
+    // K04 (production: a 3.97 MB background film beside the dealer's 0.9 MB idle film): on a slow or unknown link the
+    // background film loads nothing until the dealer's first frame; the compositor shows a dark surface until then.
+    const defer=video&&role==='background'&&!dealerShown&&!fastLink(connection);
+    if(video){node.muted=true;node.loop=true;node.playsInline=true;node.preload=defer?'none':'auto';node.autoplay=!defer&&(role!=='background'||backgroundVisible);}
     else node.alt='';
     // Independent source planes appear through the mandatory keyed dealer layer.
-    if(node.style)node.style.visibility=current.dealer.enabled?'hidden':'';node.src=asset.src;host.append(node);mounts.set(role,node);
-    if(node.addEventListener){const event=node.tagName==='VIDEO'?'loadeddata':'load';pending.set(role,new Promise((resolve,reject)=>{
-      if(node.tagName==='VIDEO'?node.readyState>=2:node.complete&&node.naturalWidth){resolve();return;}
-      let settled=false;
-      const timer=setTimeout(()=>finish(Error('Layer media unavailable')),12000);
-      function finish(error){if(settled)return;settled=true;clearTimeout(timer);node.removeEventListener(event,ready);node.removeEventListener('error',bad);
-        if(cancelLoads.get(role)===cancel)cancelLoads.delete(role);error?reject(error):resolve();}
-      const ready=()=>finish(),bad=()=>finish(Error('Layer media unavailable')),cancel=()=>finish(Error('Layer media cancelled'));
-      cancelLoads.set(role,cancel);node.addEventListener(event,ready,{once:true});node.addEventListener('error',bad,{once:true});
-    }));void pending.get(role).catch(()=>{});}
+    if(node.style)node.style.visibility=current.dealer.enabled?'hidden':'';host.append(node);mounts.set(role,node);
+    if(defer){deferred.set(role,()=>{node.preload='auto';node.autoplay=backgroundVisible;load(role,node,asset,{hold:false});
+      if(backgroundVisible)Promise.resolve(node.play?.()).catch(()=>{});});return;}
+    load(role,node,asset,{hold:true});
+  }
+  // hold: a film may wait (LAYER_WAIT_MS) for this layer. A deferred background never holds one.
+  function load(role,node,asset,{hold}){
+    node.src=asset.src;if(!node.addEventListener)return;
+    const video=node.tagName==='VIDEO',type=video?'loadeddata':'load';
+    if(video?node.readyState>=2:node.complete&&node.naturalWidth)return;
+    let release,retries=0,retryTimer,deadline;
+    const entry=new Promise(resolve=>{release=resolve;});
+    const done=()=>{clearTimeout(deadline);deadline=undefined;if(pending.get(role)===entry)pending.delete(role);release();};
+    const stop=()=>{clearTimeout(retryTimer);retryTimer=undefined;node.removeEventListener(type,loaded);node.removeEventListener('error',failed);
+      if(cancelLoads.get(role)===cancel)cancelLoads.delete(role);};
+    const cancel=()=>{stop();done();};
+    // It shows on the next composed frame; a held dealer frame is repainted now.
+    const loaded=()=>{cancel();paintHeld();};
+    const failed=()=>{done();if(retries>=LAYER_RETRY_MS.length){stop();return;}
+      clearTimeout(retryTimer);retryTimer=setTimeout(()=>{retryTimer=undefined;node.src=asset.src;},LAYER_RETRY_MS[retries++]);};
+    node.addEventListener(type,loaded);node.addEventListener('error',failed);cancelLoads.set(role,cancel);
+    if(hold){pending.set(role,entry);deadline=setTimeout(done,LAYER_DEADLINE_MS);}
+  }
+  // A film waits at most LAYER_WAIT_MS for its layers; one still loading then stops holding films.
+  function layersSettled(){
+    if(!pending.size)return Promise.resolve();
+    return new Promise(resolve=>{
+      let timer;const finish=()=>{clearTimeout(timer);resolve();};
+      timer=setTimeout(()=>{pending.clear();finish();},LAYER_WAIT_MS);
+      void Promise.all(pending.values()).then(finish);
+    });
   }
   function set(role,id) {if(!closed&&current&&current[role].allowed.includes(id)){
     players.get(role)?.pause();
@@ -206,7 +241,8 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     const revision=++preparation;stopAnimation();key=null;framing=sourceFraming?validateDealerFraming(sourceFraming):null;
     const nextKey=clipCompositing(compositing);
     runtime??=loadRuntime();const {Compositor}=await runtime;
-    await Promise.all(pending.values());if(closed||revision!==preparation)return false;
+    if(closed||revision!==preparation)return false;
+    await layersSettled();if(closed||revision!==preparation)return false;
     if(!compositor){const canvas=document.createElement('canvas');canvas.className='presentation-composed-film';host.append(canvas);compositor=new Compositor(canvas);}
     // Talking/variant crops must not make bets and resting cards jump.
     if(referenceFraming===null&&(kind===undefined||kind==='idle'))referenceFraming=framing??{scale:1,x:0,y:0};
@@ -235,6 +271,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     drawDealerFrame(context,source,targetWidth,targetHeight,framing??undefined);
     actorFrame.src=`presented-frame-${++frameNumber}`;
     paintHeld();compositor.canvas.style.visibility='';host.dataset.presentationClipMode='green-screen';
+    if(!dealerShown){dealerShown=true;for(const resume of [...deferred.values()])resume();deferred.clear();}
     if(raf===null&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);
     return true;
   }

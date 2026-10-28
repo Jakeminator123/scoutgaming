@@ -30,10 +30,11 @@ function checked(raw, roomId) {
   if (s.me.seats.some(i => s.owners[i] !== s.me.id) || new Set(s.me.seats).size !== s.me.seats.length) fail();
   return freeze(s);
 }
-export function createSharedRoomController({ roomId, commands, view, presentation, now = Date.now }) {
-  if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation) fail();
+export function createSharedRoomController({ roomId, commands, view, presentation, now = Date.now, reconnect = null }) {
+  if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation || (reconnect !== null && typeof reconnect !== 'function')) fail();
   let snapshot = null, chip = null, focusSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
   let closed = false, connected = false, presenting = false, sending = false, restoring = false, restoreGeneration = 0, waiting = null, notice = 'Ansluter till bordet…';
+  let offline = false;
   const serverTime = () => now() + clockOffset;
   function available() {
     const s = snapshot, result = { join:false, leave:false, bet:false, undo:false, clear:false, doubleBets:false, allSeats:false, repeat:false,
@@ -53,13 +54,15 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     const inWindow = !s.deadline || serverTime() < s.deadline;
     result.join = bets && !paused; result.leave = own && !player?.leaving;
     result.bet = result.undo = result.doubleBets = result.allSeats = result.repeat = bets && own && inWindow && !paused;
-    result.clear = bets && own;
+    // K04 B5: the server lets clear through READY, the deadline and a pause, and clear withdraws ready
+    // (coordinator.mjs BET_OPS); it refuses a leaving player. The server stays the authority.
+    result.clear = s.phase === 'bets' && own && !player?.leaving;
     result.ready = result.bet && s.me.seats.some(i => s.bets[i].main > 0);
     result.next = s.phase === 'settled' && typeof s.roundId === 'string' && serverTime() >= (s.plan?.endAt ?? 0);
     result.refill = !paused; result.pause = !paused;
     return result;
   }
-  function draw() { view.render({ snapshot, chip, focusSeat, can:available(), busy:sending || Boolean(waiting) || presenting,
+  function draw() { view.render({ snapshot, chip, focusSeat, can:available(), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed,
     retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
@@ -127,17 +130,17 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       restoring = false;
       activeSignal?.removeEventListener('abort',disconnected);
       // Include time spent queued and checking the binding in the table clock.
-      snapshot = next; activeSignal = signal; connected = true; clockOffset = next.serverNow-receivedAt;
+      snapshot = next; activeSignal = signal; connected = true; offline = false; clockOffset = next.serverNow-receivedAt;
       disconnected = () => { connected = false; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
       activeSignal?.addEventListener('abort',disconnected,{once:true});
       if (!next.settings.chips.includes(chip)) chip = next.settings.chips[0];
       if (!sending && !waiting && commands.state === 'idle') notice = '';
       confirmed(); draw(); schedule();
     },
-    async present(value,{signal} = {}) {
+    async present(value,{signal,superseded} = {}) {
       signal?.throwIfAborted(); if (closed) return;
       presenting = true; draw();
-      try { await presentation.present(value,{signal}); signal?.throwIfAborted(); }
+      try { await presentation.present(value,{signal,superseded}); signal?.throwIfAborted(); }
       finally { presenting = false; if (!closed) { draw(); schedule(); } }
     },
     dispatch(op,args) { const selected = intent(op,args); return selected ? execute(() => commands.send(selected)) : Promise.resolve(); },
@@ -145,12 +148,16 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     selectChip(value) { if (!closed && snapshot?.settings.chips.includes(value) && !sending && !waiting && commands.state === 'idle') { chip = value; draw(); } },
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
     fail() { if (!closed) { api.stop(); notice = 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
+    // The socket's reconnect budget is spent: the last server state stays on screen without controls, and the
+    // player reconnects here instead of reloading the page (the socket also does so when the page or network returns).
+    offline() { if (closed) return; offline = true; connected = false; clearTimeout(clockTimer); notice = 'Anslutningen till bordet bröts.'; draw(); },
+    reconnect() { if (closed || !offline || !reconnect) return; offline = false; notice = 'Återansluter…'; draw(); reconnect(); },
     stop() {
       if (closed) return; closed = true; connected = false; restoring = false; ++restoreGeneration; clearTimeout(clockTimer);
       activeSignal?.removeEventListener('abort',disconnected); commands.stop(); presentation.close(); view.close();
     },
     get state() { return Object.freeze({snapshot,chip,waiting:waiting ? {...waiting} : null,closed,connected}); },
   };
-  view.bind({dispatch:api.dispatch,selectChip:api.selectChip,focusSeat:api.focusSeat,retry:api.retry}); draw(); return Object.freeze(api);
+  view.bind({dispatch:api.dispatch,selectChip:api.selectChip,focusSeat:api.focusSeat,retry:api.retry,reconnect:api.reconnect}); draw(); return Object.freeze(api);
 }
 

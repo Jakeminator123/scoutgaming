@@ -54,7 +54,7 @@ test('an Astrid settled collect cancels the probe, reports the completed round, 
   await f.publish(observed);
   assert.deepEqual(f.names(), ['observeCommitted', 'cancel', 'getPlayer', 'readPlayerResults', 'completedRound', 'partner', 'publishNativeRound']);
   assert.deepEqual(f.calls[1], ['cancel', scope], 'activity cancel keeps its default reason');
-  assert.deepEqual(f.calls[3], ['readPlayerResults', f.db, 'player-1', {}, 'EUR']);
+  assert.deepEqual(f.calls[3], ['readPlayerResults', f.db, 'player-1', {}, 'EUR', { shared: false }]);
   assert.equal(f.calls[3][1], f.db);
   assert.deepEqual(f.calls[4], ['completedRound', scope, { roundId: 'collected-shoe-1-7', sequence: 7, hands: expectedHands }]);
   assert.equal(f.calls[0][1], observed);

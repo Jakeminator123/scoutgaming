@@ -17,7 +17,8 @@ test('Partner display names normalize as bounded untrusted presentation data', (
   for (const value of [42, {}, []]) assert.throws(() => normalizeDisplayName(value), /displayName/);
 });
 
-test('BO and signed Partner launch default to original Astrid, without review motion', async t => {
+// L1 (O02): a partner key names no company, so the launch carries only its token and lands in the lobby.
+test('BO and signed Partner launch carry only the launch token, without dealer or review motion', async t => {
   const store = await createPgliteStore(), { db, boDb } = store;
   t.after(() => store.close());
   const partner = installPartnerApi({ db, boDb, publicUrl: 'https://example.invalid',
@@ -38,7 +39,7 @@ test('BO and signed Partner launch default to original Astrid, without review mo
     const url = new URL(result.url);
     assert.equal(url.origin, 'https://example.invalid');
     assert.equal(url.pathname, '/');
-    assert.equal(url.searchParams.get('dealer'), 'astrid');
+    assert.deepEqual([...url.searchParams.keys()], ['launch']);
     assert.equal(url.searchParams.get('launch'), 'isolated-test-token');
     assert.equal(url.searchParams.has('performance'), false);
     assert.equal(url.searchParams.has('motion'), false);

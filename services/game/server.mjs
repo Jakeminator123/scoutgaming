@@ -92,7 +92,7 @@ await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
-const { publicGameStart } = await import('./game-start.mjs');
+const { launchGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
@@ -464,7 +464,7 @@ async function authoritativeChatStatus(playerId, session, request, { allowCurren
     dealerId: request.dealerId, sessionRevision: request.sessionRevision, roundRevision: String(view.version),
     displayName: session?.displayName ?? player?.name ?? 'spelaren',
     ...(process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
-      ? { playResults: (await readPlayerResults(db, playerId, game, player.currency)) } : {}),
+      ? { playResults: (await readPlayerResults(db, playerId, game, player.currency, { shared: false })) } : {}),
     round: view.round, occupiedBoxes, publishedEvents, policy: chatSpeechPolicy(request.dealerId),
   };
 }
@@ -631,7 +631,7 @@ const server = createServer(async (req, res) => {
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
       // A partner launch is a blackjack start and lands on the one public game start.
-      const destination = neonStudioEnabled ? publicGameStart(u.searchParams,{origin:u.origin,games:['blackjack']})
+      const destination = neonStudioEnabled ? launchGameStart(u.searchParams,{origin:u.origin})
         : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
       if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;

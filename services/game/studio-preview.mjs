@@ -124,7 +124,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       const getPlayer=()=>sessionTable.player(playerId);
       const s={id,owner,project,lane,inventory,records,snapshot,assets,dealerAvailability,expires,table,getPlayer,command:sessionTable.command,active:0,closed:false};
       // The presentation API reads this session's committed receipt, never a product table.
-      s.api=createPresentationApi({readNativeReceipt:player=>sessionTable.receipt(player),env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true});
+      s.api=createPresentationApi({readNativeReceipt:player=>sessionTable.receipt(player),env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true,savedDealerConfiguration:true});
       s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);table=null;
       return json(201,{...metadata(s),entryUrl:`/studio-preview/${id}`});
     }finally{pending.set(owner,pending.get(owner)-1);if(!pending.get(owner))pending.delete(owner);if(table)table.close();}

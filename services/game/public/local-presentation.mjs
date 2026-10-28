@@ -13,8 +13,9 @@ const FAILURE_NOTICE_MS = 6000;
 const unavailableMedia = error => error?.code === 'local_film_unavailable' && error.retryable === false;
 // K04 F5: how many server answers for a shared plan's filmed steps are asked for at a time.
 const SELECT_AHEAD = 2;
-// K04 F5b: how many of those answered clip files are downloaded and verified ahead at a time.
-const WARM_AHEAD = 2;
+// K04 F5b: how many of those answered clip files are downloaded and verified ahead at a time, on a fast link.
+// K04 F7: one at a time when the link is slow or unknown (no Network Information, or below FAST_LINK_MBPS).
+const WARM_AHEAD = 2, FAST_LINK_MBPS = 5;
 // A shared room's window moved while a read or download ran (K04 F4/F4b). The verified
 // buffer reports a download's server code in serverCode. Not a failure of the dealer.
 const STALE_ROOM = 'shared_room_presentation_stale';
@@ -26,8 +27,10 @@ const untilAborted = (work, signal) => !signal ? work : new Promise((resolve, re
   work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
 });
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets', idleConfigRead = true,
+  connection = globalThis.navigator?.connection ?? null }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
+  if (typeof idleConfigRead !== 'boolean') throw new TypeError('Invalid idle configuration policy');
   const preview=Boolean(transport?.context);
   const request=transport?.request??((...args)=>globalThis.fetch(...args));
   const mediaUrl=transport?.mediaUrl??(video=>video.src||`/api/presentation/videos/${video.id}`);
@@ -62,11 +65,34 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   };
   const stepKey = event => ['deal', 'reveal'].includes(event?.type) && Number.isSafeInteger(event.shoeDraw)
     ? [event.type, event.shoeDraw, event.to ?? '', event.box ?? ''].join(':') : null;
+  // A planned filmed step names its exact take (shared-room-presentation.mjs timeline) in this dealer's verified media.
+  const plannedVideo = event => event?.filmedTake?.sha256 ? config.inventory.videos.find(row => row.sha256 === event.filmedTake.sha256 && row.available && owned(row)) ?? null : null;
+  // K04 F7 (rerun 4 on 6a158180, 400 kbit/s): lookahead files (two 1.1-1.6 MB takes at a time, more at every plan)
+  // shared the link with the dealer's first idle film (912 kB), which never finished: the dealer was not shown in three
+  // of four runs. Until the dealer has shown a frame, its idle file is downloaded first and kept pinned (an action that
+  // stops the idle playback keeps its bytes), and no lookahead file or prepared step starts before it is verified or
+  // has failed. A slow or unknown link then warms one file at a time.
+  let dealerSeen = false, idleFirst = null, deferredPrepare = null;
+  const lookaheadOpen = () => dealerSeen || !idleFirst;
+  const warmLimit = () => connection && !connection.saveData && Number.isFinite(connection.downlink) && connection.downlink >= FAST_LINK_MBPS
+    && !['slow-2g', '2g', '3g'].includes(connection.effectiveType) ? WARM_AHEAD : 1;
+  const resumeLookahead = () => {
+    if (closed || !lookaheadOpen()) return;
+    const event = deferredPrepare; deferredPrepare = null; prepare(event); ahead?.load?.();
+  };
+  const seenDealer = () => { if (!dealerSeen) { dealerSeen = true; resumeLookahead(); } };
+  const idleFirstFor = video => {
+    if (dealerSeen || idleFirst || closed || typeof player.warmLocalClip !== 'function' || !/^[a-f0-9]{64}$/.test(video?.sha256 ?? '')) return;
+    const first = { controller: new AbortController() }; idleFirst = first;
+    Promise.resolve().then(() => player.warmLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, first.controller.signal))
+      .catch(() => {}).finally(() => { if (idleFirst === first) { idleFirst = null; resumeLookahead(); } });
+  };
   const prepare = event => {
     if (!event || queueVersion !== version() || closed) return;
+    if (!lookaheadOpen()) { deferredPrepare = event; return; }
     // A planned filmed step names its exact take (shared-room-presentation.mjs timeline): that file is prepared in
     // the hidden element before its time (K public/shared-table.js:310, app.js:118-125), not the family's standard.
-    const exact = event.filmedTake?.sha256 ? config.inventory.videos.find(row => row.sha256 === event.filmedTake.sha256 && row.available && owned(row)) : null;
+    const exact = plannedVideo(event);
     const family = exact ? null : config.inventory.families?.find(row => row.dealerId === dealerId && (
       event.type === 'speak' ? row.eventId.startsWith('speak.') && row.situation === event.line :
       event.type === 'reveal' ? row.eventId === 'reveal.dealer' :
@@ -229,19 +255,24 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const queued = new Set(), files = [];
     let loading = 0;
     const load = () => {
-      while (loading < WARM_AHEAD && files.length && !controller.signal.aborted) {
+      while (lookaheadOpen() && loading < warmLimit() && files.length && !controller.signal.aborted) {
         const video = files.shift(); loading++;
         Promise.resolve().then(() => player.warmLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, controller.signal))
           .catch(() => {}).finally(() => { loading--; load(); });
       }
     };
-    const warm = answer => {
+    const queue = list => {
       if (typeof player.warmLocalClip !== 'function' || controller.signal.aborted) return;
-      const { video, transitions } = answer?.result ?? {};
-      for (const file of [transitions?.before, video, transitions?.after])
+      for (const file of list)
         if (typeof file?.sha256 === 'string' && /^[a-f0-9]{64}$/.test(file.sha256) && !queued.has(file.sha256)) { queued.add(file.sha256); files.push(file); }
       load();
     };
+    const warm = answer => { const { video, transitions } = answer?.result ?? {}; queue([transitions?.before, video, transitions?.after]); };
+    ahead.load = load;
+    // K04 F5c (rerun 4): a plan after the player's decision starts with its filmed step, and its files were only
+    // warmed once the server's answer came (median 3.3 s in staging). The planned takes are this plan's own exact
+    // files: they download from the plan's start, in order. The answer still decides what plays, and when.
+    queue(events.map(plannedVideo));
     for (const step of steps.values()) {
       const start = step.start;
       step.start = () => { const first = !step.promise, promise = start(); if (first) promise.then(warm, () => {}); return promise; };
@@ -268,9 +299,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // selected: this clip came from /api/presentation/select for the current version in the same step. That call
   // already checked the frozen package (published rooms resolve the context after selecting; a shared room checks
   // its committed receipt and context), so the film does not read the configuration a second time. Idle films and
-  // Studio rehearsal keep their own per-play read.
+  // Studio rehearsal keep their own per-play read, except on a shared table (idleConfigRead=false).
   async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {}, selected = false } = {}) {
     const own = new AbortController(); active = own;
+    if (kind === 'idle') idleFirstFor(video);
     const ownSerial = serial, ownVersion = version();
     const stillCurrent = () => active === own && !closed && !own.signal.aborted && serial === ownSerial && version() === ownVersion;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
@@ -281,7 +313,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
       onProgress?.({phase:'prepare'});
-      if (preview || (context && !selected)) {
+      // idleConfigRead=false: a shared table, whose server-confirmed binding stands for its package (see its option).
+      if (preview || (context && !selected && idleConfigRead)) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw await configurationConflict(current);
         if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');
@@ -343,7 +376,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onFrame: () => { if (epoch !== serial || closed) return;
         idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
-        onIdle(); },
+        seenDealer(); onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (staleRoom(error)) { idleRun = 0; return; }
@@ -378,7 +411,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onFrame: () => { if (epoch !== serial || closed) return;
         idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
-        idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
+        idle.presented(clip.playId); seenDealer(); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; if (idle.mode === 'rotation') idle.updateScene({phase:readIdlePhase()}); idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
@@ -540,5 +573,5 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (early && !closed && !packageChanged) selectAhead(events, queueVersion);
     },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { pendingRule = null; closed = true; upcoming = []; dropAhead(); player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
+    close() { pendingRule = null; closed = true; upcoming = []; dropAhead(); idleFirst?.controller.abort(); deferredPrepare = null; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
 }

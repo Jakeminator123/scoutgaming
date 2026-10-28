@@ -785,7 +785,22 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}} = {}) {
+// External comparison with Kevin's table (28 Oct 2026, B3): every idle film read the package configuration again,
+// twice through the engine's global lock per player and clip. A shared table's binding is confirmed by the server for
+// its window, and its WS binding and 409 stale catch a package change, so its idle films skip that read.
+test('a shared table whose binding is confirmed plays its idle films without reading the package again',async t=>{
+  const ownIdle={id:'linnea-frozen',fileName:'Linneas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-linnea/7/linnea'};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,entry:{operator:'north',roomId:'room-linnea',packageRevision:7},idleConfigRead:false});
+  const paths=()=>f.requests.map(request=>new URL(request.url,'https://game.invalid').pathname);
+  f.controller.start();await settle();assert.deepEqual(paths(),['/api/presentation/config'],'startup only');
+  f.controller.state({action:true});const played=f.controller.present(source);await settle();
+  assert.deepEqual(paths().slice(1),['/api/presentation/select']);f.jobs.at(-1).resolve();assert.equal(await played,true);
+  f.controller.state({action:false});await settle();
+  assert.deepEqual(paths(),['/api/presentation/config','/api/presentation/select'],'the next idle play reads nothing');
+  assert.ok(f.jobs.length>=2,'the idle film still plays');
+});
+
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, idleConfigRead, connection} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -802,7 +817,8 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false,
+    ...(idleConfigRead === undefined ? {} : {idleConfigRead}), ...(connection === undefined ? {} : {connection}) });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
@@ -1680,7 +1696,7 @@ test('configuration requires explicit identity and each dealer uses only its sav
   project.dealerIdlePolicies=[{dealerId:'linnea',policy}];
   const inventory={families:[],videos:[{id,dealer:'linnea',available:true,sha256:'c'.repeat(64),fileName:id+'.mp4',
     classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',playback:'once',label:'Grundloop',notes:''}}]};
-  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
+  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,savedDealerConfiguration:true});
   async function get(query){
     const req=Readable.from([]);req.method='GET';req.url='/api/presentation/config'+query;req.headers={};
     const res={writeHead(status){this.status=status;},end(raw){this.body=JSON.parse(raw);}};
@@ -2241,10 +2257,11 @@ test('a shared configuration that is not bound to this dealer does not lend its 
   assert.deepEqual(player.prepared, []);
 });
 
-test('the answered clip files of a shared plan are downloaded two at a time before their steps, and nothing plays or shows', async t => {
+test('on a fast link the answered clip files of a shared plan are downloaded two at a time before their steps, and nothing plays or shows', async t => {
   const files = { 7: roomVideo('deal-take', 'a'), 9: roomVideo('reveal-take', 'b'), 11: roomVideo('hit-take', 'c') };
   const player = roomPlayer();
-  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, customInventory: { videos: Object.values(files), families: [] } });
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, customInventory: { videos: Object.values(files), families: [] },
+    connection: { downlink: 10, effectiveType: '4g', saveData: false } });
   const base = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     if (url !== '/api/presentation/select') return base(url, options);
@@ -2302,4 +2319,94 @@ test(`a stale room-idle download is silent and the next snapshot brings the same
   assert.equal(f.jobs.length, 2, 'the next snapshot brings the dealer back without a reload'); assert.equal(f.jobs[1].take.media.sha256, video.sha256);
   f.jobs[1].reject(Object.assign(new Error('Local film unavailable'), { code: 'local_film_unavailable', status: 404, retryable: false })); await settle(); await settle();
   assert.match(f.status.textContent, /^Idle: /, 'a missing file is still reported'); assert.equal(errors.length, 1);
+});
+
+// K04 F7 (rerun 4 on 6a158180, 400 kbit/s): the lookahead downloaded two 1.1-1.6 MB takes at a time, more at every
+// plan, beside the dealer's first idle film (912 kB). The idle never finished and the dealer was not shown in three of
+// four runs (183 s in the fourth; 68.6 s before #481; 54.9 s with every clip download blocked). Fast 3G: 50.7 s
+// against 23.2 s. The dealer's idle file now goes first, and a slow or unknown link warms one file at a time.
+function slowRoomPlayer() {
+  const player = roomPlayer(), base = player.playLocalClip;
+  player.idleShown = false;
+  player.playLocalClip = (take, options) => {
+    if (take.media.sha256 !== idleFile.sha256) return base(take, options);
+    player.plays.push(take.media.sha256);
+    return new Promise((resolve, reject) => {
+      player.showIdle = () => { player.idleShown = true; options.onReceipt?.({ state: 'start' }); options.onReceipt?.({ state: 'presented' }); };
+      options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
+    });
+  };
+  return player;
+}
+const idleFile = { id: 'astrid-idle', fileName: 'Astrids grundloop', sha256: 'd'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/astrid' };
+async function slowLinkRoom(t, { connection } = {}) {
+  const files = { 7: roomVideo('deal-take', 'a'), 9: roomVideo('reveal-take', 'b'), 11: roomVideo('hit-take', 'c') };
+  const player = slowRoomPlayer();
+  // The room's saved baseline (resumeOwnIdle), not the seed project's rotation policy.
+  const f = await controllerFixture(t, { player, ownIdle: idleFile, idlePolicy: { familyId: 'astrid/none' }, entry: roomEntry, configExtra: roomConfig, idleConfigRead: false,
+    customInventory: { videos: Object.values(files), families: [] }, ...(connection ? { connection } : {}) });
+  const base = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    const event = JSON.parse(options.body).event, video = files[event.shoeDraw];
+    return Response.json({ video, standard: video, transitions: null, projectRevision: 'p', configurationSource: 's', decision: { requestId: 'r' + event.shoeDraw, sourceEvent: event, media: {} } });
+  };
+  const step = (shoeDraw, type = 'deal') => ({ ...(type === 'deal' ? source : { type: 'reveal', to: 'dealer' }), shoeDraw, filmedTake: { profileId: 'p', takeKey: 'k' + shoeDraw, sha256: files[shoeDraw].sha256 } });
+  return { f, player, files, plan: [step(7), step(9, 'reveal'), step(11)] };
+}
+
+test('the dealer’s idle file downloads before any lookahead file; a slow or unknown link then warms one file at a time', async t => {
+  const { f, player, files, plan } = await slowLinkRoom(t);
+  f.controller.start(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [idleFile.sha256], 'the idle file is pinned first');
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true }); for (let i = 0; i < 8; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [idleFile.sha256], 'no lookahead file while the idle file loads');
+  assert.deepEqual(player.prepared, [], 'the next step is not prepared either');
+  assert.equal(player.warming[0].signal.aborted, false, 'an action that stops the idle playback keeps its download');
+  player.warming[0].finish(); for (let i = 0; i < 6; i++) await settle();
+  assert.deepEqual(player.prepared, [files[7].sha256], 'the deferred step is prepared once the idle file is in');
+  assert.deepEqual(player.warming.slice(1).map(row => row.sha256), [files[7].sha256], 'then one file at a time');
+  player.warming[1].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.slice(1).map(row => row.sha256), [files[7].sha256, files[9].sha256]);
+  assert.equal(player.peak, 1, 'never two lookahead files at once on an unknown link');
+});
+
+test('once the dealer has been shown, the lookahead no longer waits for later idle films', async t => {
+  const { f, player, files, plan } = await slowLinkRoom(t, { connection: { downlink: 0.4, effectiveType: '2g', saveData: false } });
+  f.controller.start(); for (let i = 0; i < 4; i++) await settle();
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  player.showIdle(); assert.equal(f.proofs > 0, true, 'the dealer shows its idle');
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true }); for (let i = 0; i < 8; i++) await settle();
+  assert.deepEqual(player.prepared, [files[7].sha256]); assert.deepEqual(player.warming.slice(1).map(row => row.sha256), [files[7].sha256]);
+  assert.equal(player.peak, 1, 'a 2g link warms one file at a time');
+});
+
+// K04 F5c (rerun 4): 0 of 19 filmed steps of a plan after the player's decision reached start (hit card, reveal after
+// stand, dealer draws). The plan starts with its filmed step at once, and each file was only warmed when the server's
+// selection answered (median 3.3 s, p90 5.4 s in staging). The plan already names each step's exact take: its files
+// are downloaded from the start of the plan, in order, before any answer. The answer still decides what plays.
+test('a plan after a decision downloads its planned takes before the server answers; the answer still decides the film', async t => {
+  const reveal = roomVideo('reveal-take', 'b'), draw = roomVideo('dealer-take', 'c'), files = { 9: reveal, 10: draw };
+  const player = roomPlayer(), answers = [];
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, customInventory: { videos: [reveal, draw], families: [] } });
+  const base = globalThis.fetch;
+  globalThis.fetch = (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    const event = JSON.parse(options.body).event, video = files[event.shoeDraw];
+    return new Promise(resolve => answers.push({ shoeDraw: event.shoeDraw, answer: () => resolve(Response.json({ video, standard: video, transitions: null,
+      projectRevision: 'p', configurationSource: 's', decision: { requestId: 'r' + event.shoeDraw, sourceEvent: event, media: {} } })) }));
+  };
+  const take = video => ({ profileId: 'p', takeKey: video.id, sha256: video.sha256 });
+  const plan = [{ type: 'reveal', to: 'dealer', shoeDraw: 9, filmedTake: take(reveal) }, { type: 'deal', to: 'dealer', box: null, shoeDraw: 10, faceDown: false, filmedTake: take(draw) }];
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true }); for (let i = 0; i < 6; i++) await settle();
+  assert.equal(answers.length, 2, 'both selections are asked for at once');
+  assert.deepEqual(player.prepared, [reveal.sha256], 'the reveal take is prepared before its step');
+  assert.deepEqual(player.warming.map(row => row.sha256), [reveal.sha256], 'the planned takes download before any answer, one at a time');
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [reveal.sha256, draw.sha256], 'the dealer draw follows before its answer');
+  assert.deepEqual(player.plays, [], 'nothing plays before its step and its answer');
+  const playing = f.controller.present({ type: 'reveal', to: 'dealer', shoeDraw: 9 }); await settle();
+  assert.deepEqual(player.plays, [], 'the reveal waits for the server’s answer');
+  answers.find(row => row.shoeDraw === 9).answer(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.plays, [reveal.sha256], 'then it starts with its prepared file'); player.finish(); assert.equal(await playing, true);
 });

@@ -52,7 +52,7 @@ test('retired legacy HTTP returns 410 while cloud configuration preserves saved 
   const saved=await f.repository.saveDocument('project',{value:next,expectedRevision:original.revision,actor:'fixture-admin'});
   assert.notEqual(saved.revision,original.revision);
   const api=createPresentationApi({store:f.policy.projectStore(),legacyControls:f.media.legacyControls,
-    registryLoader:async()=>({videos:[],families:[]})});
+    registryLoader:async()=>({videos:[],families:[]}),savedDealerConfiguration:true});
   const server=createServer((req,res)=>{api(req,res,new URL(req.url,'http://metadata.qa.invalid').pathname,'isolated-qa-player').catch(()=>{res.writeHead(503);res.end();});});
   try{
     server.listen(0,'127.0.0.1');await once(server,'listening');

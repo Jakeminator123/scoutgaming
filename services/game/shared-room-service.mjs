@@ -11,6 +11,15 @@ import { createFilmedStepReader } from './shared-room-filmed-steps.mjs';
 const unavailable = () => Object.assign(new Error('shared_room_service_unavailable'), { statusCode: 503 });
 const stopped = () => new DOMException('Shared room service stopped', 'AbortError');
 const timestamp = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+const roomUnavailable = () => Object.assign(new Error('shared_room_unavailable'), { statusCode: 503, code: 'shared_room_unavailable' });
+// Isolated room and delivery faults (B3): identity, counts and times only, never error details.
+const projectFaults = (rooms, blocked) => Object.freeze((Array.isArray(rooms) ? rooms : [])
+  .filter(room => typeof room?.roomId === 'string' && /^[a-z0-9_-]{1,128}$/.test(room.roomId))
+  .map(room => Object.freeze({ roomId: room.roomId, failures: Number.isSafeInteger(room.failures) ? room.failures : 0,
+    ...(blocked ? { blocked: room.blocked === true } : {}),
+    since: timestamp(room.since), lastErrorAt: timestamp(room.lastErrorAt), retryAt: timestamp(room.retryAt) })));
+const projectContention = value => Object.freeze({ count: Number.isSafeInteger(value?.count) && value.count >= 0 ? value.count : 0,
+  lastAt: timestamp(value?.lastAt) });
 
 /** Application-owned, single-use composition. It installs no HTTP listener and
  * never creates/closes a pool. Await start before readiness, and close BEFORE
@@ -67,9 +76,16 @@ export function createSharedRoomService({
     try { current = runtime.health(); } catch { current = { failed: true }; }
     return Object.freeze({ state, ready: state === 'running' && current?.running === true && current.failed === false,
       failed: failed || current?.failed !== false, inFlight: reads.size > 0 || current?.inFlight === true,
-      lastSuccessAt: timestamp(current?.lastSuccessAt), lastErrorAt: timestamp(current?.lastErrorAt) });
+      lastSuccessAt: timestamp(current?.lastSuccessAt), lastErrorAt: timestamp(current?.lastErrorAt),
+      rooms: projectFaults(current?.rooms, true), outbox: projectFaults(current?.outbox, false), contention: projectContention(current?.contention) });
   }
   function requireReady() { if (!health().ready) throw unavailable(); }
+  // A room fault never closes the service; only a room that keeps failing refuses commands.
+  function requireRoomReady(roomId) {
+    let fault = null;
+    try { fault = typeof runtime.roomHealth === 'function' ? runtime.roomHealth(roomId) : null; } catch { throw unavailable(); }
+    if (fault?.blocked === true) throw roomUnavailable();
+  }
   function read(work, signal) {
     const combined = signal ? AbortSignal.any([lifetime.signal, signal]) : lifetime.signal;
     // Track the actual port operation, not the channel's timeout race. Closing
@@ -96,7 +112,7 @@ export function createSharedRoomService({
       // return before its caller commits, so it must never publish hints here.
       assertSharedPostgresOwner();
       const binding = await access.authorize(request, { roomId, signal: active });
-      active.throwIfAborted(); requireReady();
+      active.throwIfAborted(); requireReady(); requireRoomReady(roomId);
       const admission = { binding, signal: active, presentationVer: 0 }, token = Object.freeze({});
       admissions.set(token, admission);
       try {
@@ -149,6 +165,11 @@ export function createSharedRoomService({
     readSnapshot: (roomId, actorId, { signal }) => read(() => runtime.coordinator.snapshot(roomId, actorId, {client:true}), signal),
     // K04 F5c: a native filmed plan carries its step choices (shared-room-filmed-steps.mjs).
     readPresentation: (roomId, { signal }) => read(async () => filmedSteps(roomId, await receiver.current(roomId)), signal),
+    // Presence of an open, revalidated socket: the bound actor in the bound room only.
+    touch: (binding, { signal }) => read(() => {
+      if (typeof runtime.coordinator.seen !== 'function') throw unavailable();
+      return runtime.coordinator.seen(binding.roomId, binding.actorId);
+    }, signal),
   });
   const upgrade = createUpgrade({ origin, engineOrigin, WebSocketServer, channel: {
     async prepare(request) {

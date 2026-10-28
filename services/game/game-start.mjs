@@ -1,4 +1,5 @@
 import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
+import {requestedOperator} from '../../packages/navigation/operator-entry.mjs';
 
 // The engine sends players to the one public game start, /game, and names the
 // game. Its /blackjack and /play/roulette documents stay behind that address.
@@ -12,4 +13,13 @@ export function publicGameStart(input,{origin,games = ['blackjack','roulette']} 
   const query = approvedGameQuery(source,{origin,includeLaunch:false});
   query.delete('game');
   return '/game?'+new URLSearchParams([['game',game],...query]);
+}
+
+// A partner launch is a blackjack start. A partner key names no company, so without
+// ?operator= the player lands in the lobby (L1): a dealer, lane or table without a
+// company is never a game. Older launch URLs still carry dealer=astrid.
+export function launchGameStart(input,{origin} = {}) {
+  const source = new URLSearchParams(input instanceof URLSearchParams ? input : new URLSearchParams(input));
+  if (requestedOperator(source) === undefined) for (const key of ['dealer','presentation','lane','table','rehearsal']) source.delete(key);
+  return publicGameStart(source,{origin,games:['blackjack']});
 }
