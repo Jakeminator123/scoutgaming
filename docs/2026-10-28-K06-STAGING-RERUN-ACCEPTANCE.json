@@ -1,0 +1,188 @@
+{
+  "kind": "k06-staging-acceptance/v1",
+  "date": "2026-10-28",
+  "branch": "jakob/claude-k06-k07-rerun",
+  "codeShas": {
+    "allSteps": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2",
+    "frozenCandidate": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2 (main vid körningen; ingen kodändring mellan stegen, processbytena är Restart service på samma deploy)"
+  },
+  "complements": "2026-10-27-K06-STAGING-ACCEPTANCE.json; punkterna i dess remaining är omprovade här enligt docs/2026-10-28-K07-REVIEW.md, avsnittet om vad omkörningarna måste visa (punkt 3–6)",
+  "mainAtWriting": "0db26a9b (#462). 13aa5a01..0db26a9b ändrar inte blackjackmotorn: dokumentation, apps/studio/docs/guide.json, roulettens media-specification.json och borttagna oanvända filer. Inte provat i denna körning.",
+  "status": {
+    "activity": "K06",
+    "result": "IN_PROGRESS",
+    "reason": "K05 är inte VERIFIED. Dessutom: nativebordet behåller inte M0 för en aktiv hand när en publicering byter material (fynd F1), partnerrollen kunde inte provas i stagingen, och Jakobs visuella godkännande saknas. Se remaining."
+  },
+  "sources": "Sammanfattat från stagingagentens råkvitton run/receipt-k06r.json (huvudkörning, 187 anrop), run/receipt-k06s.json (komplettering, 63 anrop), loggarna k06r.log och k06s.log samt run/receipt-gates.json i underagentens lokala arbetsmapp (scratchpad/k06-k07-rerun), inte i Git. Varje anrop har x-vercel-id och rndr-id. Här finns inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID; spelarna heter N1, N2, N3 (nativebord) och S1, S2 (delat bord).",
+  "rawSha256": {
+    "k06r.mjs": "7e50425af3ad56953214b5cac591c63b054d93ad84c4448d460fd51e18490693",
+    "receipt-k06r.json": "f9f90a42300bb49fd4a0367000778ffef7bf5832385db4fd094f0f110c36203d",
+    "k06r.log": "574f389723ae284ab3441e107bab7e03ef0c107e165bff0578aebaed44c27e2b",
+    "k06s.mjs": "e89535b6f30de5c7ca10a4bb134552007f6f7eb51e34229c6bc45b03b290efee",
+    "receipt-k06s.json": "4ad8026c38bcb79e08408c3f5d039fd9116086257b50dad619fdfcdac5f851c7",
+    "k06s.log": "2b418e28168bccb13e1cb94ce0f4981e05820a5e25877d01b5cefd26dab13cd6",
+    "receipt-gates.json": "03f0b14dfab5932e9212cb2f51d5b1a712fd62413d8b4d85a5ce9f1e9ef2406d",
+    "render.mjs": "89af5381c42b8d42717c9d9909225044aba9c39852534b3f89e8994430568d93",
+    "lib.mjs": "6234d493680e1230cffcc2a98aaf5b9ae558e1af434aae5cc09e3ea380a0a3b8"
+  },
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployment": "dpl_CHmwFT918RMhmjM81xwT3NJD1u4z",
+      "sha": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2",
+      "createdAt": "2026-10-27T23:06:52.658Z",
+      "readyAt": "2026-10-27T23:09:06.690Z",
+      "readBy": "Vercel REST v13/deployments (GET) före och efter; samma deployment hela körningen"
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "sharedTableFlag": 1,
+      "deploy": {"id": "dep-dbgisep42hec73f77cu0", "sha": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2", "trigger": "api", "liveAt": "2026-10-27T23:06:40Z", "unchangedAfterRun": true},
+      "gates": [
+        {"label": "pre-k07-13aa5a01", "at": "2026-10-28T00:09:47.764Z", "passed": 32, "total": 32, "versionSha": ["13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2"]},
+        {"label": "post-k06-13aa5a01", "at": "2026-10-28T00:47:17.002Z", "passed": 32, "total": 32, "versionSha": ["13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2"]}
+      ],
+      "versionCheck": {"mainRun": ["13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2", "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2"], "supplement": ["13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2", "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2"]},
+      "restarts": [
+        {"run": "huvudkörning", "method": "Restart service (POST /v1/services/{id}/restart), ingen build och ingen ny deploy", "requestedAt": "2026-10-28T00:30:40.570Z", "event": {"type": "server_restarted", "at": "2026-10-28T00:30:42.144Z"}, "newRuntime": {"runtimeId": "5590ce37", "instance": "g6gvt", "listeningAt": "2026-10-28T00:31:26.125Z"}, "oldRuntime": {"runtimeId": "c35cd234", "instance": "mhg4x", "closedAt": "2026-10-28T00:34:28.596Z"}, "checksAfter": "2026-10-28T00:34:33Z"},
+        {"run": "komplettering", "method": "Restart service (POST /v1/services/{id}/restart), ingen build och ingen ny deploy", "requestedAt": "2026-10-28T00:41:01.271Z", "event": {"type": "server_restarted", "at": "2026-10-28T00:41:03.232Z"}, "newRuntime": {"runtimeId": "9bafc868", "instance": "dxhd5", "listeningAt": "2026-10-28T00:41:24.375Z"}, "oldRuntime": {"runtimeId": "5590ce37", "instance": "g6gvt", "closedAt": "2026-10-28T00:44:26.417Z"}, "checksAfter": "2026-10-28T00:44:34Z"}
+      ],
+      "restartNote": "Render startar en ny process och tömmer den gamla i cirka tre minuter. Kontrollerna efter bytet gjordes först när den gamla processens publika lyssnare (listener 2) hade stängts enligt motorns egen cloud_gateway_lifecycle-logg, läst via Renders logg-API."
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "database": "croupier_staging",
+      "access": "endast SELECT (Neon MCP) 2026-10-28T00:28Z–00:50Z"
+    }
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "operatorB": "qa-k06k07-9dd2d3a4-b (isolering; rum room-930c39d1-beeb-535a-b79e-06b6aff127bd)",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "neighbourRoom": "room-cb4c4696-f671-c546-eb15-6fb67d09feea (samma operatörspaket; ingen rumskonfiguration)",
+    "dealer": "paow",
+    "adminAccount": "stagingens Admin-konto (staging-admin); ingen Admin-utloggning",
+    "players": "syntetiska N1, N2, N3, S1, S2; användarnamn och UUID utelämnas"
+  },
+  "run": {
+    "main": {"startedAt": "2026-10-28T00:29:03.286Z", "finishedAt": "2026-10-28T00:36:14.103Z", "requests": 187, "httpStatus": {"200": 146, "401": 13, "404": 6, "409": 19, "422": 2}, "unexpectedStatus": 0, "note": "Alla 401/404/422 och de två 409 shared_room_presentation_stale/package_changed i felproven var förväntade. Sjutton 409 studio_presentation_idle_package_changed för N1:s gamla paketkontext är fynd F1 och syns som underkända kontroller."},
+    "supplement": {"startedAt": "2026-10-28T00:39:49.872Z", "finishedAt": "2026-10-28T00:44:39.839Z", "requests": 63, "httpStatus": {"200": 62}, "aborted": 1, "note": "Det avbrutna valet räknas som aborted, inte som status."}
+  },
+  "material": {
+    "line": "paow.speak.other.slot-blackjack (replik blackjack, svenska)",
+    "M0": {"mediaId": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3", "take": "blackjack_7", "sha256": "63752fce450f9e5409e3498c236e3a752a0250fbac6dc6e4a550717f4339d461", "review": "approved", "frames": 50},
+    "M1": {"mediaId": "17bf71dd-7510-4306-a6db-c48eff564a66", "take": "blackjack_3", "sha256": "29faed8811c71cf6b82edeb17e7638c2b36fa94bc4806a41189c30db27c925af", "review": "approved", "frames": 66},
+    "inventory": {"P11": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1 (46 videor, M0 med, M1 inte)", "P13": "7f5638583916d10bd968bcdf55509ea3c358d2e000b04dd7504c62f6b5f4af24 (46 videor, M1 med, M0 inte)", "P15": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1 (återställt, lika med P11)"},
+    "writer": "Admin PUT /studio/api/project (byter vald tagning på repliken) → POST /studio/api/admin/operator-package (fryser presentationen i ett nytt paket; rummets konfiguration binds om automatiskt) → POST /studio/api/admin/room-game-config save-draft → publish. En room-game-config-publicering ensam byter inte material: den återanvänder paketets frysta presentation (apps/studio/lib/room-game-config-api.mjs, publish-grenen)."
+  },
+  "configs": {
+    "C0": {"configVersion": "room-config-ab6bdd80-f780-4aa1-b3f2-a79c3db879c5", "packageRevision": 11, "gameConfig": {"language": "sv", "limitPreset": "casual"}, "limits": {"min": 1, "max": 500, "sideMax": 50}, "material": "native-film-v2-f38cb6a3f…, 46 media, M0", "bodyMd5": "2972af8cf2c1ea7f7f1c0014e17b1759", "role": "head och öppet fönster före provet"},
+    "C1": {"configVersion": "room-config-ba72aa32-dc41-437a-8a27-b5cf9aedc12b", "packageRevision": 12, "gameConfig": {"language": "sv", "limitPreset": "casual"}, "material": "native-film-v2-7680eacc6…, 46 media, M1", "bodyMd5": "00a6285b199a85fbb0de993835596a1a", "role": "automatisk ombindning vid paketpubliceringen 00:29:26Z"},
+    "C2": {"configVersion": "room-config-6ab912fd-ab14-4e43-aeba-a198973902ec", "packageRevision": 13, "gameConfig": {"language": "sv", "limitPreset": "prive"}, "limits": {"min": 5, "max": 2000, "sideMax": 200}, "material": "native-film-v2-7680eacc6…, 46 media, M1", "bodyMd5": "8c2523cc28ae5a2ee7237784aa073e1e", "role": "publicerad 00:29:28Z mitt i N1:s hand och S1:s runda; band nästa fönster"},
+    "C4": {"configVersion": "room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932", "packageRevision": 15, "gameConfig": {"language": "sv", "limitPreset": "casual"}, "limits": {"min": 1, "max": 500, "sideMax": 50}, "material": "native-film-v2-b9b86f471…, 46 media, M0", "bodyMd5": "d9926b70c00fc2dc2af5544d487c7020", "role": "återställning 00:35:28Z; head och öppet fönster efter provet", "note": "Samma 46 media som C0. Materialrevisionen skiljer sig från C0 eftersom den frysta presentationen bär projektets nya revision."},
+    "timers": "betMs 20000 och actionMs 15000 i alla fyra"
+  },
+  "checks": [
+    {"id": "K06R-0", "name": "room published at C0/P11; slot blackjack bound to the M0 take; an approved alternative take exists", "result": "pass", "at": "2026-10-28T00:29:05.892Z", "evidence": "Head C0 room-config-ab6bdd80 (casual, paket 11), projekt studio-c3d173ec. Repliken blackjack har tre tagningar: blackjack_7 (M0, approved), blackjack_3 (M1, approved), blackjack_1 (rejected)."},
+    {"id": "K06R-B1", "name": "bad-media-id (publication): fabricated UUID and another dealer's UUID refused 422 by the project writer's media-binding check; project and published head unchanged", "result": "pass", "at": "2026-10-28T00:29:06.822Z", "evidence": "PUT /studio/api/project med påhittat UUID: 422. Med en annan dealers media (dealer qa-k06k07-9dd2d3a4): 422. Projektrevision och head C0/P11 oförändrade."},
+    {"id": "K06R-1", "name": "native hand H0 started under P11; deal and speak:blackjack resolve M0", "result": "pass", "at": "2026-10-28T00:29:11.046Z", "evidence": "N1 /game → kontext paket 11; inventarie 8e67e3bf… (46 videor, M0 med, M1 inte). Giv draw 2–5: f1aefbda, 6134db90, ec8534ad, 3ae61b24 (200, SHA = registret). speak:blackjack → ab57d7ca (M0). Hand i beslutsfas, version 1, saldo 995."},
+    {"id": "K06R-B2", "name": "bad-media-id (native media): fabricated UUID and a UUID that is not in the hand's package give 4xx and no video bytes", "result": "pass", "at": "2026-10-28T00:29:11.050Z", "evidence": "registered-video paket 11 med M1 (finns inte i paketet): 404 studio_presentation_idle_media_unavailable, inga bytes. Påhittat UUID: 404, inga bytes."},
+    {"id": "K06R-2", "name": "shared round R started under the open window's config (= head C0); binding and inventory = P11 with the M0 take", "result": "pass", "at": "2026-10-28T00:29:16.627Z", "evidence": "S1 plats 0 och 1, runda 6965c256 under C0 (1–500/50). /api/presentation/shared-room/{rum}/binding → paket 11; shared config-inventarie 8e67e3bf… (M0 med, M1 inte); room-video M0 200."},
+    {"id": "K06R-3", "name": "Admin save (project) → publish package → room-game-config save-draft (flipped limits) → publish: new package and config with material M1", "result": "pass", "at": "2026-10-28T00:29:27.857Z", "evidence": "00:29:16.6–00:29:27.8Z: PUT project 200 (studio-6c7aa2ce, repliken → M1); operator-package 200 → paket 12 med automatisk C1 room-config-ba72aa32 (casual, M1); room-game-config save-draft 200 (publication.ready true) och publish 200 → paket 13, C2 room-config-6ab912fd (prive, M1)."},
+    {"id": "K06R-4a", "name": "native H0 after publication: same state; P11 context still resolves M0", "result": "fail", "at": "2026-10-28T00:29:28.895Z", "finding": "F1", "evidence": "Handens tillstånd oförändrat (version 1, saldo 995, samma vyhash). Men varje presentationsanrop med handens kontext paket 11 svarar 409 studio_presentation_idle_package_changed: giv-omval (4/4), speak:blackjack och /api/presentation/config. Den aktiva nativehanden behåller alltså inte M0; klienten visar ”Presentationspaketet har ändrats. Ladda om spelet.” och fortsätter efter omladdning under paket 13 (M1)."},
+    {"id": "K06R-4b", "name": "new window after publication binds P13/M1: inventory has the alternative take and not the M0 take; speak:blackjack resolves M1", "result": "pass", "at": "2026-10-28T00:29:30.811Z", "evidence": "N2 (ny spelare) och N1 (ny /game) får paket 13; inventarie 7f563858… ≠ 8e67e3bf…, M1 med och M0 inte; speak:blackjack → 17bf71dd (M1); HEAD registered-video M1 200."},
+    {"id": "K06R-B3", "name": "bad-media-id (native media): the M0 take is refused in the P13 context (UUID from another package), no bytes", "result": "pass", "at": "2026-10-28T00:29:30.821Z", "evidence": "registered-video paket 13 med M0: 404 studio_presentation_idle_media_unavailable, inga bytes."},
+    {"id": "K06R-4c", "name": "shared round R after publication keeps C0 (configVersion, limits) and M0 (binding P11, inventory with the M0 take)", "result": "pass", "at": "2026-10-28T00:29:35.529Z", "evidence": "Runda 6965c256 i beslutsfas efter publiceringen: configVersion C0, limits 1–500/50, binding paket 11, inventarie 8e67e3bf…; room-video M0 levererades."},
+    {"id": "K06R-B4", "name": "bad-media-id (shared media): the M1 take is refused during R, with R's package and with the new package revision, no bytes", "result": "pass", "at": "2026-10-28T00:29:35.538Z", "evidence": "room-video M1 med paket 11: 404 studio_presentation_idle_media_unavailable. Med paket 13 medan R är bunden till paket 11: 409 shared_room_presentation_stale. Inga bytes."},
+    {"id": "K06R-I1", "name": "interrupted-presentation (native) on H0", "result": "fail", "at": "2026-10-28T00:29:37.374Z", "finding": "F1", "evidence": "Provet blev ogiltigt av F1: H0:s kontext paket 11 svarade redan 409 innan någon byte överfördes, så avbrottet prövade inget. Saldo 995 och ledger (2 rader) oförändrade. Ersatt av K06S-I1."},
+    {"id": "K06R-I2", "name": "interrupted-presentation (shared): aborted room media mid-round leaves round and config untouched; retry delivers the exact bytes", "result": "pass", "at": "2026-10-28T00:29:40.327Z", "evidence": "room-video M0 avbruten efter 30 720 bytes mitt i runda R; därefter samma roundId, C0, beslutsfas; ny hämtning 200, 284 915 bytes, sha256 63752fce… = M0."},
+    {"id": "K06R-W1", "name": "wrong-role: a player session and an anonymous caller are refused on room-game-config read/save/publish, operator-package, players/status and project save; a player cannot obtain a Studio session; wrong operator/room refused; nothing changed", "result": "pass", "at": "2026-10-28T00:29:43.025Z", "evidence": "Spelarsession (N2) och anonym: 401 på alla sex (GET och POST save-draft/publish room-game-config, POST operator-package, POST players/status som försökte spärra N1, PUT project). N2:s spelaruppgifter mot /studio/api/auth/login: 401. Admin GET room-game-config operatör A + operatör B:s rum: 404; save-draft operatör B + operatör A:s rum: 404. Efteråt: head C2/paket 13, inget utkast, samma administrationsrevision, N1 aktiv. Partnerroll: se remaining."},
+    {"id": "K06R-4d", "name": "shared next window after R binds C2 (flipped limits) and M1 (binding P13, inventory with the alternative take)", "result": "pass", "at": "2026-10-28T00:30:35.488Z", "evidence": "R avräknad av tick 00:30:31.9Z (S1 förlorade 2). next 200 → fönster 2dc8ec8a bundet till C2 (5–2000/200), binding paket 13, inventarie 7f563858… (M1 med, M0 inte)."},
+    {"id": "K06R-5a", "name": "Restart service on the same SHA mid native hand: version equal; H0 state, balance and view identical; P11 still resolves M0", "result": "fail", "at": "2026-10-28T00:34:34.331Z", "finding": "F1", "evidence": "Omstartsdelen höll: /__cloud/version 13aa5a01 före och efter, ny process 5590ce37, gamla c35cd234 stängd 00:34:28.6Z; H0 efteråt version 1, saldo 995 och samma vyhash bb89baa6… som före. Mediedelen underkänd av F1 (paket 11 → 409). Ren omstart av nativehand: K06S-2a."},
+    {"id": "K06R-5b", "name": "Restart service mid shared round R1: same room, roundId, seats, configVersion C2 and limits; binding P13", "result": "pass", "at": "2026-10-28T00:34:35.465Z", "evidence": "R1 20efc0f0 (sju boxar à 5 under C2) i beslutsfas vid omstarten (turnSeq 1, actionDeadline 00:31:54.4Z). Efter att gamla processen stängt: samma roundId, ägare, C2, limits och binding paket 13; rundan fortfarande i beslutsfas (turnSeq 6). Fem turn.autostand under bytet, var och en tillämpad en gång 109–246 ms efter förfallotiden (Neon). S1 saldo 963 före; 973 efter avräkning (payout 10)."},
+    {"id": "K06R-6a", "name": "native H0 finishes under P11 after publication and restart", "result": "fail", "at": "2026-10-28T00:35:14.892Z", "finding": "F1", "evidence": "Spelet gick klart (stand, avräkning, collect 200; saldo 995, förlust) men reveal, giv draw 6, speak:lose och speak:placebets med kontext paket 11 gav 409. Handens resterande media under paket 13 efter omladdning är inte provat."},
+    {"id": "K06R-6b", "name": "native next window (relaunched) runs under P13/M1", "result": "pass", "at": "2026-10-28T00:35:16.927Z", "evidence": "N1 H1 under paket 13: giv f1aefbda, 6134db90, ec8534ad, 3ae61b24; speak:goodluck c16b8b1f; reveal b07c94b6; speak:lose 65bfca97; speak:placebets fa4a9ac5; alla 200 och i inventariet 7f563858…"},
+    {"id": "K06R-7a", "name": "two consecutive native games, same player, same room, same SHA, no relaunch; every event resolves a media id", "result": "pass", "at": "2026-10-28T00:35:20.844Z", "evidence": "N2, en /game-laddning, paket 13. G1: giv draw 2–5 (f1aefbda, 6134db90, ec8534ad, 3ae61b24), goodluck c16b8b1f, reveal b07c94b6, giv draw 6 eba5e1ba, lose 65bfca97, placebets fa4a9ac5. G2: giv draw 7–10 (samma fyra), goodluck c16b8b1f, reveal b07c94b6, giv draw 11 eba5e1ba, lose 65bfca97, placebets fa4a9ac5. Alla 200 med SHA ur inventariet. Saldo 995 → 990."},
+    {"id": "K06R-7b", "name": "two consecutive shared rounds R1, R2 for the same player without leaving (both bound to C2/P13)", "result": "pass", "at": "2026-10-28T00:36:11.397Z", "evidence": "S1 utan att lämna: R1 20efc0f0 (staked 35, returned 10) och R2 3b8d6c5a (en box à 5), båda C2 och binding paket 13."},
+    {"id": "K06R-8", "name": "restored: slot blackjack back on the M0 take, limits back to the original preset; new native window and next shared window serve the original inventory", "result": "pass", "at": "2026-10-28T00:36:13.470Z", "evidence": "00:35:22–00:35:28Z: PUT project 200 (studio-a5f8325f, repliken → M0), operator-package 200 → paket 14, room-game-config casual → paket 15, C4 room-config-e0be09e9. Ny /game: paket 15, inventarie 8e67e3bf… = före provet, speak:blackjack → ab57d7ca. Delat bord: efter R2 band nästa fönster C4 med binding paket 15 och samma inventarie; S1 lämnade, rummet tomt."},
+    {"id": "K06S-0", "name": "supplement: native hand H started on the restored head; deal media resolve from its package", "result": "pass", "at": "2026-10-28T00:39:53.575Z", "evidence": "N3 paket 15, inventarie 8e67e3bf…, giv draw 2–5 = samma fyra media-ID, version 1, saldo 995."},
+    {"id": "K06S-I1", "name": "interrupted-presentation (native, valid context): a media transfer and a selection aborted mid-hand; table, balance and ledger unchanged; retry delivers the exact bytes and the same media ids, no new debit", "result": "pass", "at": "2026-10-28T00:39:56.724Z", "evidence": "Givklipp f1aefbda avbrutet efter 30 720 bytes; ett deal-val avbrutet efter 25 ms (AbortError). Därefter samma vyhash, saldo 995/995/995 och Admin-transaktioner 2/2/2 med samma hash. Ny hämtning 200, 1 620 131 bytes, sha256 b515a540… = registret; omval gav samma fyra media-ID. Neon: N3 har bara open och start −5."},
+    {"id": "K06S-2a", "name": "Restart service on the same SHA mid native hand (old runtime closed first): hand state, balance and view identical; same package context resolves the same media", "result": "pass", "at": "2026-10-28T00:44:35.840Z", "evidence": "Ny process 9bafc868 00:41:24.4Z, gamla 5590ce37 stängd 00:44:26.4Z. /__cloud/version 13aa5a01 före och efter. H: version 1, saldo 995, samma vyhash; giv draw 2–5 med kontext paket 15 → samma fyra media-ID och SHA; inventarie oförändrat."},
+    {"id": "K06S-2b", "name": "Restart service mid shared round: same roundId, seats, configVersion, limits and binding; round advanced only by recorded ticks", "result": "pass", "at": "2026-10-28T00:44:37.078Z", "evidence": "S2 sju boxar à 1 under C4, runda e43c8c44 i beslutsfas vid omstarten (turnSeq 1, actionDeadline 00:41:14.9Z). Efteråt samma roundId, ägare, C4, limits 1–500/50 och binding paket 15; rundan avräknad under bytet av sex turn.autostand och en round.settle, alla tillämpade en gång 37–199 ms efter förfallotiden. S2: −7, payout 14,50 → 1 007,50."},
+    {"id": "K06S-3", "name": "native hand finishes after the restart with media per event from the same package", "result": "pass", "at": "2026-10-28T00:44:38.504Z", "evidence": "Reveal b07c94b6, giv draw 6 eba5e1ba, speak:lose 65bfca97, speak:placebets fa4a9ac5; alla 200 ur inventariet för paket 15. Saldo 995."}
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "kräver beslut eller kodrättning före K06 VERIFIED",
+      "summary": "På nativebordet behåller en aktiv hand inte sitt material när en publicering byter paketets frysta presentation. Efter publiceringen svarar /api/presentation/select, /api/presentation/config och registered-video 409 studio_presentation_idle_package_changed för handens gamla paketrevision; klienten ber spelaren ladda om och fortsätter samma hand under det nya paketet. En hand kan därmed börja med M0:s giv och sluta med M1:s reveal och tal. Det delade bordet binder materialet per fönster på servern och behåller M0 (K06R-4c).",
+      "code": [
+        "packages/presentation/server/frozen-dealer-presentation.mjs:196-198 (en äldre paketrevision serveras bara om sameFrozenPackage, dvs. samma frysta presentation)",
+        "packages/presentation/server/frozen-dealer-presentation.mjs:68 (409 studio_presentation_idle_package_changed)",
+        "services/game/public/local-presentation.mjs:22, 151, 330 och services/game/public/app.mjs:231 (klientens omladdningsuppmaning)"
+      ],
+      "why27OctPassed": "2026-10-27-K06-kvittots K06-3b/3c höll eftersom den publiceringen bara ändrade limits; paket 7 och 8 hade samma frysta presentation, så sameFrozenPackage släppte igenom det äldre paketet.",
+      "options": "Antingen binda nativehanden till sin startrevision på servern (som det delade bordets fönster) så att samma spelare kan läsa den tills handen är avräknad, eller besluta att omladdning är policyn för nativebordet och skriva in det i O01/K06-kriteriet. En kodändring i packages/presentation/server ger en ny kandidat."
+    }
+  ],
+  "fieldTable": [
+    {"field": "limitPreset (insatsgränser)", "writer": "Admin room-game-config save-draft + publish", "storedRevision": "C0 casual → C2 prive → C4 casual (Neon shared_table_configs, C4 head)", "publishedPackage": "11 → 13 → 15", "runtimeValue": "delat bord: aktiv runda R behöll 1–500/50 efter C2 (K06R-4c); nästa fönster 5–2000/200 (K06R-4d)", "afterRestart": "R1 under C2 behöll 5–2000/200 och C2 över omstarten (K06R-5b)", "activeHand": "delat bord: C0 kvar för aktiv runda; nativebordet har ingen configVersion (granskningen: icke-blockerande)"},
+    {"field": "betMs/actionMs (timers)", "writer": "samma publicering", "storedRevision": "20000/15000 i C0, C1, C2 och C4", "publishedPackage": "11 → 15", "runtimeValue": "oförändrat värde; deadlines över omstart: varje turn.autostand tillämpad en gång efter förfallotiden", "afterRestart": "K06R-5b och K06S-2b", "activeHand": "ingen värdeskillnad att särskilja"},
+    {"field": "material (vald tagning för repliken blackjack)", "writer": "PUT /studio/api/project + operator-package (+ automatisk ombindning av rumskonfigurationen)", "storedRevision": "M0 blackjack_7 → M1 blackjack_3 → M0", "publishedPackage": "11 → 12/13 → 14/15", "runtimeValue": "delat bord: aktiv runda R löste M0 efter publiceringen, nästa fönster M1 (K06R-4c/4d); nativebordet: ny session M1 (K06R-4b), aktiv hand 409 (F1)", "afterRestart": "nativebordet: paket 15-kontexten löste samma media efter omstart (K06S-2a)", "activeHand": "delat bord pass; nativebordet fail (F1)"},
+    {"field": "language", "writer": "samma publicering", "storedRevision": "sv i alla", "publishedPackage": "11 → 15", "runtimeValue": "svenska godkända tagningar valda (goodluck, lose, placebets, blackjack)", "afterRestart": "samma", "activeHand": "oförändrat värde"}
+  ],
+  "neon": {
+    "at": "2026-10-28T00:36Z–00:50Z",
+    "target": "red-violet-36066351/br-plain-voice-b9yu49xi/croupier_staging (read-only SELECT via Neon MCP)",
+    "configs": "se configs ovan (packageRevision, limitPreset, materialrevision, antal media och om M0/M1 ingår, md5 av kroppen)",
+    "ticks": [
+      {"round": "6965c256 (R)", "kind": "round.settle", "dueAt": "00:30:31.782Z", "committedAt": "00:30:31.936Z"},
+      {"round": "20efc0f0 (R1)", "kind": "turn.autostand ×5", "dueAt": "00:31:54.418Z, 00:32:27.350Z, 00:33:00.170Z, 00:33:33.023Z, 00:34:05.818Z", "lagMs": "246, 136, 167, 109, 114", "note": "under omstarten i huvudkörningen"},
+      {"round": "20efc0f0 (R1)", "kind": "round.settle", "dueAt": "00:35:12.984Z", "committedAt": "00:35:13.037Z"},
+      {"round": "3b8d6c5a (R2)", "kind": "round.settle", "dueAt": "00:36:08.763Z", "committedAt": "00:36:08.816Z"},
+      {"round": "e43c8c44 (kompletteringen)", "kind": "turn.autostand ×6 + round.settle", "dueAt": "00:41:14.882Z … 00:44:19.106Z", "lagMs": "113, 96, 49, 37, 199, 48, 92", "note": "under omstarten i kompletteringen; varje tick-id förekommer en gång"}
+    ],
+    "ledger": {
+      "N1": {"balance": "990", "rows": ["open:1000", "start:-5 (H0, 00:29:09Z)", "start:-5 (H1, 00:35:16Z)"], "note": "inga rader under publicering, avbrott, felprov och omstart"},
+      "N2": {"balance": "990", "rows": ["open:1000", "start:-5 (G1)", "start:-5 (G2)"]},
+      "N3": {"balance": "995", "rows": ["open:1000", "start:-5"], "note": "inga rader under avbrott och omstart"},
+      "S1": {"balance": "968.00", "rows": ["open:1000", "consume:stake:-2 (R)", "consume:stake:-35 (R1)", "payout:10 (R1)", "consume:stake:-5 (R2)"]},
+      "S2": {"balance": "1007.50", "rows": ["open:1000", "consume:stake:-7", "payout:14.5"]},
+      "global": {"duplicateSourceKeys": 0, "negativeBalances": 0, "balanceNotEqualLedgerSum": 0}
+    },
+    "finalState": {"head": "room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932", "packageRevision": 15, "openWindowConfig": "room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932", "owners": "all null", "phase": "bets", "projectRevision": "studio-a5f8325f-4f20-4472-b17b-4b9d0d44d288", "slotBlackjack": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3 (M0)", "operatorBPackage": 1}
+  },
+  "twoConsecutiveGames": {
+    "pass": true,
+    "candidate": "13aa5a015bde99c172bd0d8dd3bacc5d8bed3ad2",
+    "native": "N2, paket 13, G1 och G2 utan ny /game-laddning, media-ID per händelse i K06R-7a",
+    "shared": "S1, R1 och R2 utan att lämna bordet, båda C2/paket 13 (K06R-7b)"
+  },
+  "o02ContractChecks": [
+    {"id": "wrong-role", "result": "pass (spelarsession och anonym)", "checks": ["K06R-W1"], "note": "partnerroll ej provad, se remaining"},
+    {"id": "bad-media-id", "result": "pass", "checks": ["K06R-B1", "K06R-B2", "K06R-B3", "K06R-B4"], "note": "/api/presentation/select tar inget media-ID (servern väljer per händelse); felaktiga ID provades därför mot projektskrivaren och medievägarna"},
+    {"id": "interrupted-presentation", "result": "pass", "checks": ["K06S-I1", "K06R-I2"], "note": "K06R-I1 ogiltig av F1"}
+  ],
+  "remaining": [
+    "F1: nativebordets aktiva hand behåller inte M0 över en publicering som byter material (409 studio_presentation_idle_package_changed, omladdning till det nya paketet). Kräver beslut om policyn eller en kodrättning (se findings) och därefter omprov av K06R-4a/5a/6a.",
+    "Partnerrollen i wrong-role är inte provad: stagingens Vercel-projekt saknar e-postleverans, så en partnerinbjudan kan aldrig få lösenord, och SQL-skrivning är inte tillåten. Studio har bara rollen admin (packages/studio-access/studio-access-policy.mjs:8, users/invite tar bara admin i apps/studio/lib/studio-admin-accounts.mjs:63), så en Admin-session med lägre roll finns inte. Proven visar 401 för spelarsession och anonym, inte 403/404.",
+    "Handens resterande media efter omladdning till det nya paketet (klientens väg vid F1) är inte provad i webbläsare.",
+    "K05 är inte VERIFIED, så status.mjs tillåter inte K06 VERIFIED.",
+    "Giv-, hål- och revealklippen är reviewStatus unreviewed; visuellt godkännande av Jakob saknas, liksom bedömning av M1-tagningen blackjack_3 i spel. Johns Bet i produktionen dokumenteras efter K05."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Projektdokumentet: repliken blackjack bytt till blackjack_3 (studio-6c7aa2ce) och tillbaka till blackjack_7 (studio-a5f8325f); bindningen är densamma som före provet, revisionen är ny.",
+      "Operatör A: paket 12–15 och rumskonfigurationerna room-config-ba72aa32 (casual, M1), room-config-6ab912fd (prive, M1) och room-config-e0be09e9 (casual, M0). Grannrummet room-cb4c4696 följde med i paketen; dess gamla utkast (baspaket 1) är orört.",
+      "Slutligt publicerat läge: head room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932, paket 15, sv, casual 1–500/50, betMs 20000, actionMs 15000, 46 media med samma inventarie som före provet (8e67e3bf…); rummets öppna fönster är bundet till samma konfiguration och rummet är tomt.",
+      "Fem nya syntetiska spelare (N1, N2, N3, S1, S2), demo-USD; alla lämnade bordet.",
+      "Två Restart service på samma deploy (00:30:40Z och 00:41:01Z); ingen ny deploy, inga env-ändringar, inga nya Admin-konton."
+    ],
+    "production": "orörd; Johns Bet orörd",
+    "sqlWrites": "inga"
+  },
+  "secretsExported": false
+}
