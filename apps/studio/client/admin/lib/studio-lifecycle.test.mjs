@@ -79,6 +79,19 @@ test('changed selection/hash/revision invalidates review and stale actions make 
   await assert.rejects(client.deleteClip(f.project, f.inventory, 'paow-v2', a, () => false), /studio_conflict/);
   assert.equal(calls, 0);
 });
+test('permanent clip deletion sends the exact id, hash and revision to delete-check and delete', async () => {
+  const f = fixture(); f.video.classification.archived = true;
+  const calls = [];
+  const client = createLifecycleClient({ fetchImpl: async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    if (url.endsWith('/videos/delete-check')) return Response.json({ allowed: true });
+    return Response.json({ project: f.project, inventory: { videos: [{ ...f.video, deletion: { state: 'deleted' } }] } });
+  } });
+  assert.equal((await client.checkClipDeletion(f.project, f.inventory, 'paow-v2', a)).allowed, true);
+  await client.deleteClip(f.project, f.inventory, 'paow-v2', a);
+  assert.deepEqual(calls.map(call => call.url), ['/studio/api/videos/delete-check', '/studio/api/videos/delete']);
+  for (const call of calls) assert.deepEqual(call.body, { id: a, sha256, expectedRevision: 'studio.clip.1' });
+});
 test('archived dealer must be restored before individual media; archive drafts protect permanent deletion', () => {
   const f = fixture(), dealer = f.project.dealers.pop();
   f.video.classification.archived = true;
