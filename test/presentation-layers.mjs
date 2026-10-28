@@ -213,10 +213,13 @@ test('replaced and closed composition loads release their own listeners, timers 
     background:{enabled:true,mode:'video',default:background.id,allowed:[background.id]},table:{enabled:true,default:table.id,allowed:[table.id]},
     assets:[background,table].map(({id,role,label})=>({id,role,label,contentType:'video/mp4',src:`/api/presentation/room-layers/north/room-a/1/${id}`}))};
   const host={dataset:{},append:node=>mounted.add(node)},document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>new Node(tag)};
-  const composition=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:class{constructor(){compositors++;}}})});
+  // A known fast link loads the background film at once (a slow link defers it; see the K04 layer proofs below).
+  const composition=createLayerComposition(document,descriptor,{connection:{downlink:10,effectiveType:'4g',saveData:false},
+    loadRuntime:async()=>({Compositor:class{constructor(){compositors++;}}})});
   assert.equal(timers.size,2);const old=[...mounted];
-  const preparing=composition.prepareClip({mode:'alpha'});await Promise.resolve();
-  const cancelled=assert.rejects(preparing,/Layer media cancelled/);composition.replace(descriptor);await cancelled;
+  const preparing=composition.prepareClip({mode:'alpha'});await Promise.resolve();await Promise.resolve();
+  // A replaced preparation reports that it is no longer current; a layer never fails the film.
+  composition.replace(descriptor);assert.equal(await preparing,false);
   assert.equal(timers.size,2,'only the replacement owns load deadlines');
   for(const node of old){assert.equal(node.listeners.size,0);assert.equal(node.src,'');assert.equal(node.loads,1);node.dispatchEvent(new Event('loadeddata'));}
   assert.equal(compositors,0);const current=[...mounted];composition.close();composition.close();
@@ -233,3 +236,76 @@ function createPartnerBrandingApi(options) {
   };
   return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
 }
+
+// K04 (rerun 4 and the production measure, 28 Oct 2026): every film waited in prepareClip for the background and the
+// table. A layer that missed its 12 s deadline left a rejected promise in `pending`, so every later film failed until
+// the layer was rendered again; the production table PNG (1.63 MB) misses it at 400 kbit/s. The production background
+// is a 3.97 MB film loaded with preload=auto beside the dealer's first idle film.
+const fastLink={downlink:10,effectiveType:'4g',saveData:false};
+const flushLayers=async()=>{for(let i=0;i<6;i++)await Promise.resolve();};
+function layerHarness({backgroundType='image/png',tableType='image/png',connection=fastLink}={}){
+  const nodes=new Map(),rendered=[];
+  class Node extends EventTarget{
+    constructor(tag){super();this.tagName=tag.toUpperCase();this.dataset={};this.style={setProperty(){}};this.listeners=new Set();this.sources=[];this.loads=0;this.readyState=0;this.complete=false;this.naturalWidth=0;this.videoWidth=0;this.plays=0;}
+    get src(){return this.sources.at(-1)??'';}set src(value){this.sources.push(value);}
+    addEventListener(type,listener,options){this.listeners.add(listener);super.addEventListener(type,listener,options);}
+    removeEventListener(type,listener,options){this.listeners.delete(listener);super.removeEventListener(type,listener,options);}
+    setAttribute(){}removeAttribute(name){if(name==='src')this.sources.push('');}pause(){}load(){this.loads++;}play(){this.plays++;return Promise.resolve();}remove(){}
+    getContext(){return{clearRect(){},drawImage(){},fillRect(){}};}
+    loaded(width,height){if(this.tagName==='VIDEO'){this.videoWidth=width;this.videoHeight=height;this.readyState=4;this.dispatchEvent(new Event('loadeddata'));}
+      else{this.naturalWidth=width;this.naturalHeight=height;this.complete=true;this.dispatchEvent(new Event('load'));}}
+  }
+  const background=asset('background',1),table=asset('table',2),types={background:backgroundType,table:tableType};
+  const descriptor={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},
+    background:{enabled:true,mode:backgroundType.startsWith('video/')?'video':'image',default:background.id,allowed:[background.id]},table:{enabled:true,default:table.id,allowed:[table.id]},
+    assets:[background,table].map(({id,role,label})=>({id,role,label,contentType:types[role],src:`/api/presentation/room-layers/north/room-a/1/${id}`}))};
+  const host={dataset:{},append(node){if(node.dataset?.layerAsset)nodes.set(node.dataset.layerAsset===background.id?'background':'table',node);}};
+  const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>new Node(tag)};
+  const composition=createLayerComposition(document,descriptor,{connection,loadRuntime:async()=>({Compositor:class{
+    constructor(canvas){this.canvas=canvas;}render(_scene,_actor,assets){rendered.push([...assets.keys()].sort());}dispose(){}}})});
+  return{composition,rendered,node:role=>nodes.get(role),video:{videoWidth:1920,videoHeight:1080},assets:{background,table}};
+}
+async function settledWithin(t,promise,ms){let value='pending';promise.then(result=>{value=result;},error=>{value=error;});
+  await flushLayers();for(let at=0;at<ms&&value==='pending';at+=250){t.mock.timers.tick(250);await flushLayers();}return value;}
+
+test('a layer that has not loaded holds a film for at most three seconds, never fails a later one and shows once it arrives',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const h=layerHarness();h.node('background').loaded(720,1280);
+  let done='pending';h.composition.prepareClip({mode:'alpha'}).then(value=>{done=value;},error=>{done=error;});
+  await flushLayers();t.mock.timers.tick(2999);await flushLayers();assert.equal(done,'pending','a short wait for the table');
+  t.mock.timers.tick(1);await flushLayers();assert.equal(done,true,'the film plays without the table');
+  t.mock.timers.tick(20000);await flushLayers();
+  assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),0),true,'a late layer never holds or fails a later film');
+  h.composition.renderFrame(h.video,0);assert.deepEqual(h.rendered.at(-1),['background'],'the table is not drawn before it arrives');
+  assert.equal(h.node('table').src,`/api/presentation/room-layers/north/room-a/1/${h.assets.table.id}`,'it keeps loading');
+  h.node('table').loaded(1672,941);assert.deepEqual(h.rendered.at(-1),['background','table'],'and shows once it arrives');
+  h.composition.close();
+});
+
+test('a layer that fails to load is requested again a bounded number of times and never fails a film',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const h=layerHarness(),table=h.node('table');h.node('background').loaded(720,1280);table.dispatchEvent(new Event('error'));
+  assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),0),true,'a failed layer does not hold the film');
+  assert.equal(table.sources.length,1);
+  t.mock.timers.tick(2000);assert.equal(table.sources.length,2,'requested again');table.dispatchEvent(new Event('error'));
+  t.mock.timers.tick(6000);assert.equal(table.sources.length,3,'and once more');table.dispatchEvent(new Event('error'));
+  t.mock.timers.tick(60000);assert.equal(table.sources.length,3,'then it stays without the table');assert.equal(table.listeners.size,0);
+  assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),0),true);h.composition.close();
+});
+
+test('on a slow or unknown link the background film waits for the dealer’s first frame; a fast link loads it at once',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  for(const [connection,deferred] of [[null,true],[{downlink:0.4,effectiveType:'2g',saveData:false},true],[{...fastLink,effectiveType:'3g'},true],
+    [{...fastLink,saveData:true},true],[fastLink,false]]){
+    const h=layerHarness({backgroundType:'video/mp4',connection}),background=h.node('background'),src=`/api/presentation/room-layers/north/room-a/1/${h.assets.background.id}`;
+    h.node('table').loaded(1672,941);
+    assert.equal(background.preload,deferred?'none':'auto',JSON.stringify(connection));assert.equal(background.src,deferred?'':src);
+    assert.equal(background.autoplay,!deferred);
+    assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),deferred?0:3000),true,'a deferred background never holds the film');
+    h.composition.renderFrame(h.video,0);
+    assert.deepEqual(h.rendered.at(-1),['table'],'a dark surface until the background has a frame');
+    assert.equal(background.preload,'auto');assert.equal(background.src,src,'the dealer’s first frame starts the background film');
+    background.loaded(1920,1080);assert.deepEqual(h.rendered.at(-1),['background','table']);
+    assert.equal(await settledWithin(t,h.composition.prepareClip({mode:'alpha'}),0),true);h.composition.close();
+  }
+});
