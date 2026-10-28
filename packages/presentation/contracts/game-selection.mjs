@@ -6,28 +6,23 @@ import { isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '.
 import {validateComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
-const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'dragge', mediaCollection: 'layer-packs-preview' });
 export function gamePresentationForDealer(dealerId, renderer) {
-  if (!isActiveDealerId(dealerId) || !['portrait-video', 'layered'].includes(renderer)) throw Error('Registered cloud presentation required');
-  return renderer === 'layered' ? 'layered' : 'local';
+  if (!isActiveDealerId(dealerId) || renderer !== 'portrait-video') throw Error('Registered cloud presentation required');
+  return 'local';
 }
-const layerPreviewDealers = ['dragge'];
 
 
 // Package lanes that the saved catalogue can serve, in package order.
 export function packageLaneIds(allowedLanes, lanes = GAME_LANES) {
   if (!Array.isArray(allowedLanes)) throw Error('Invalid allowed lanes');
-  const fallbackLayer = LAYER_PREVIEW_LANE;
-  const catalogue = fallbackLayer && !lanes.some(lane => lane.id === fallbackLayer.id) ? [...lanes, fallbackLayer] : lanes;
-  return [...new Set(allowedLanes)].filter(id => isGameLane(id, catalogue));
+  return [...new Set(allowedLanes)].filter(id => isGameLane(id, lanes));
 }
 
 // allowedLanes only narrows the catalogue. An empty intersection keeps the
 // saved active lane; the caller decides whether that deserves a warning.
 export function gameLaneSelection(query, activeLane = null, lanes = GAME_LANES, allowedLanes) {
   lanes = validateGameLanes(lanes);
-  const fallbackLayer = LAYER_PREVIEW_LANE;
-  const published = fallbackLayer && !lanes.some(row => row.id === fallbackLayer.id) ? [...lanes, fallbackLayer] : lanes;
+  const published = lanes;
   const permitted = allowedLanes === undefined ? [] : packageLaneIds(allowedLanes, published);
   if (permitted.length) {
     lanes = permitted.map(id => published.find(lane => lane.id === id));
@@ -37,11 +32,8 @@ export function gameLaneSelection(query, activeLane = null, lanes = GAME_LANES, 
   const explicit = params.getAll('lane').length === 1 ? params.get('lane') : null;
   const lane = lanes.find(row => row.id === (isGameLane(explicit, lanes) ? explicit : activeLane));
   if (!lane) throw Error('No configured game lane');
-  if (lane.renderer === 'layered' && params.has('dealer') && (params.getAll('dealer').length !== 1 || !layerPreviewDealers.includes(params.get('dealer')))) throw Error('Dealer is not available in this preview');
-  const layeredDealer = lane.renderer === 'layered' && params.getAll('dealer').length === 1 && layerPreviewDealers.includes(params.get('dealer'))
-    ? params.get('dealer') : null;
   const dealer = lane.renderer === 'indexed-video' && params.getAll('dealer').length === 1 && isActiveDealerId(params.get('dealer'))
-    ? params.get('dealer') : layeredDealer || (lane.renderer === 'layered' ? LAYER_PREVIEW_LANE.dealer : lane.dealer);
+    ? params.get('dealer') : lane.dealer;
   const presentation = gamePresentationForDealer(dealer, lane.renderer);
   return { lane: lane.id, dealer, presentation };
 }
@@ -107,20 +99,6 @@ function keptStrings(list, accept, max) {
 // Missing project lane → the standard lane. Portrait lanes can only offer the
 // dealer that lane already renders; an indexed lane can offer any of the four.
 export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitDealerIds = [] } = {}) {
-  if (laneId === 'layer-preview') {
-    return {
-      dealers: ['dragge'],
-      dealerDefault: 'dragge',
-      tableColors: [],
-      tableDefault: null,
-      background: {
-        enabled: true,
-        mode: 'image',
-        allowed: ['a_nearly_still__seamless_loop_ambient_background_plate_for_a-383b1b5f'],
-        default: 'a_nearly_still__seamless_loop_ambient_background_plate_for_a-383b1b5f',
-      },
-    };
-  }
   const found = Array.isArray(projectLanes) ? projectLanes.find(row => row && row.id === laneId) : undefined;
   const layers = found?.layers && typeof found.layers === 'object' ? found.layers : STANDARD_PRESENTATION_LAYERS;
   const renderable = !serverLane ? CHOICE_DEALERS
@@ -152,14 +130,9 @@ export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitD
 export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
   if (!dataset?.gameLane) throw Error('No configured game presentation');
   const registry = dataset.gameRegisteredDealers === undefined ? [] : validatePublicRegisteredDealers(JSON.parse(dataset.gameRegisteredDealers));
-  const extra = dataset.gamePresentation !== 'layered';
   if (!isGameLaneId(dataset.gameLane) || !isActiveDealerId(dataset.gameDealer)
-    || !['local', 'layered'].includes(dataset.gamePresentation)) throw Error('Invalid game presentation');
-  if (extra && (dataset.gamePresentation !== 'local' || dataset.gameLocalDealer !== dataset.gameDealer
-    || !registry.some(row => row.id === dataset.gameDealer))) throw Error('Invalid game presentation');
-  if (dataset.gamePresentation === 'layered') {
-    if (dataset.gameLane !== 'layer-preview' || !layerPreviewDealers.includes(dataset.gameDealer)) throw Error('Invalid game presentation');
-  }
+    || dataset.gamePresentation !== 'local' || dataset.gameLocalDealer !== dataset.gameDealer
+    || !registry.some(row => row.id === dataset.gameDealer)) throw Error('Invalid game presentation');
   const selection = { lane: dataset.gameLane, dealer: dataset.gameDealer, presentation: dataset.gamePresentation };
   if (dataset.gameLocalDealer !== undefined) {
     if (dataset.gamePresentation !== 'local' || dataset.gameLocalDealer !== dataset.gameDealer) throw Error('Invalid game presentation');

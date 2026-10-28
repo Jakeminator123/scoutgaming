@@ -99,10 +99,10 @@ test('retired dealer media, public aliases and Blob pointers are gone from the c
  // The game's remaining public assets still resolve.
  for(const url of ['/assets/cardback.png','/speech-media.json'])assert.ok(resolvePublicMedia(url),url);
 });
-test('old Paow preview cannot return through a registry entry without preview choices',async t=>{
+test('the retired layered preview cannot return through a registry entry',async t=>{
  const {dealerVersionPath}=await import('../services/game/public/dealer-version-switcher.mjs');
  const previous=globalThis.document;t.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
  globalThis.document={documentElement:{dataset:{gamePresentation:'layered',gameLane:'layer-preview',gameRegisteredDealers:JSON.stringify([{id:'paow',label:'PAOW'}])}}};
  assert.throws(()=>dealerVersionPath('paow',1),/not registered/);
- assert.match(dealerVersionPath('dragge',1),/dealer=dragge/);
+ assert.throws(()=>dealerVersionPath('dragge',1),/not registered/);
 });

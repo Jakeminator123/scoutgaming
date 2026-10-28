@@ -81,7 +81,7 @@ async function dealClientFixture(error='moving_deal_speech_unavailable',status=4
     document:{querySelectorAll:()=>buttons},probeClient:null,localPresentation:{state:s=>states.push(s)},
     updatePoseState(){},DEALER:{key:'dragan'},entrySelection:{},clientSessionRevision:'session-1',
     chatPresentationContext:()=>({roomId:'room-1'}),crypto:{randomUUID:()=>`request-${calls.length+1}`},
-    layeredPresentationEnabled:false,observedTableView:null,nativeObservation:{command(){}},
+    observedTableView:null,nativeObservation:{command(){}},
     setBanner:value=>{context.banner=value;},setChatStatus:value=>{context.chatStatus=value;},renderBets(){},
     apiFetch:async(_path,options)=>{
       const payload=JSON.parse(options.body);calls.push(payload);

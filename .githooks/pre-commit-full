@@ -72,7 +72,7 @@ run_node_tests presentation card-view test/card-view.mjs test/background-playbac
 run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs test/preview-table.mjs
 run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
-run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
+run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/partner-metadata.mjs
 # Complete package sets, once per full run (including CI).
 run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
@@ -105,7 +105,7 @@ run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs
 run_node_tests gameplay generation-media test/generation-media.mjs test/qa-process-guard.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/paow-filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-coverage.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
-run_node_tests gameplay local-presentation test/local-presentation.mjs test/idle-rotation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/abort-signals.mjs test/presentation-select-dealers.mjs
+run_node_tests gameplay local-presentation test/local-presentation.mjs test/idle-rotation.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/abort-signals.mjs test/presentation-select-dealers.mjs
 run_node_tests gameplay player-results test/player-results.mjs
 # Real engine over HTTP on PostgreSQL. Without the harness these skip with a reason;
 # CI runs exactly this list through tools/run-engine-qa.mjs (owned TLS cluster), which

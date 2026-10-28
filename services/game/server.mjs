@@ -53,7 +53,6 @@ import { statSync, createReadStream, existsSync, realpathSync, closeSync } from 
 import { join, normalize, extname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
-import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
@@ -418,7 +417,6 @@ const port = sharedRoomQa?.port ?? Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
 const host = sharedRoomQa?.host ?? process.env.HOST ?? '0.0.0.0';
-const layerPacksRoute = createLayerPacksRoute();
 // Source files change constantly while this is being built; Chrome happily
 // serves a cached app.mjs for a reload, so a change looks like it did nothing.
 // Media (clips, audio, art) is content-addressed enough to keep caching.
@@ -606,7 +604,6 @@ const server = createServer(async (req, res) => {
   if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
   const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
   if(compositionModule){res.writeHead(compositionModule.status,Object.fromEntries(compositionModule.headers));res.end(req.method==='HEAD'?undefined:Buffer.from(await compositionModule.arrayBuffer()));return;}
-  if (await layerPacksRoute(req, res, pathname)) return;
   if (pathname === '/api/studio-game/command') {
     if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
     const request = new Request(`${process.env.CROUPIER_PUBLIC_ORIGIN}${req.url}`, { method: req.method, headers: req.headers,

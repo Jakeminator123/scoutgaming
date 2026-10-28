@@ -1,14 +1,13 @@
 # packages/presentation
 
-Paketet äger presentationskompositorn, layer-previewn, rena projekt- och mediakontrakt samt urvals- och vilereglerna,
+Paketet äger presentationskompositorn, rena projekt- och mediakontrakt samt urvals- och vilereglerna,
 och används av både Admin (`apps/studio`) och spelmotorn (`services/game`). En mall (i Admin "Sammansättning"
 eller "Spelmall", `lane` i koden) är en presentation; ett sparat lane-ID är en kompatibilitetsidentitet, inte en
 extra produktnivå. Begreppen står i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och lagrings- och
 uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
-- `compositor/` — spelare, kompositor, brygga, geometri och lanes. Den fristående redigeraren (`app.js`, `index.html`, `viewer.*`) är borttagen; den serverades aldrig.
+- `compositor/` — kompositor (`compositor.js`) och geometri (`geometry.js`). Den fristående redigeraren, spelaren, bryggan och lagerpaketen (`/layer-packs`) är borttagna.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
-- `docs/` — referens för den fristående kompositorexporten; ingen separat produktplan.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
 - `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, legacy-klipp och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
 - `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `apps/studio/lib/presentation-selection.mjs` och `services/game/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
@@ -19,22 +18,20 @@ Dessa läser paketet:
 
 - `apps/web/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/web/public/composition-runtime/`.
 - `services/game/composition-runtime.mjs` serverar `/composition-runtime/*`.
-- `services/game/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
 - `apps/studio/tools/prepare-preview.mjs` kopierar `compositor.js` och `geometry.js` till `apps/studio/preview-build`, och Studio serverar bara dem under `/preview/*` (Admins sammansättningsförhandsvisning). Den fristående förhandsvisningssidan med katalog och medier är borttagen.
 - `apps/studio/lib`, `apps/studio/components`, `services/game/presentation-api.mjs`, `services/game/storage` och `services/game/studio-preview.mjs` importerar `runtime/`.
 - `services/game/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter bara de exakta kontrakts-/runtimeadresserna i `public-modules.mjs`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren genererar både kanoniska och äldre outputadresser och anpassar relativa importer för varje kopia.
 
 Flyttade browsermoduler använder relativa importer som når samma `/packages/...`-källa både från den gamla URL:en och från paketets kanoniska URL. Röstkatalogens JSON och filmprofilernas inbäddade proveniens behåller sina bytes. Rena spelval ligger i `contracts/game-selection.mjs`; definitioner och ID-predicate importeras direkt från `game-lanes.mjs` respektive `game-lane-id.mjs`.
 
-Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/presentation-runtime/*` och Studio `/preview/*` (publikt `/studio/preview/*`). Katalogens designnamn, mediehashar och schema-ID:n behålls. Importvägarna följer den kanoniska källan.
+Publika adresser är stabila: `/composition-runtime/*`, `/presentation-runtime/*` och Studio `/preview/*` (publikt `/studio/preview/*`). Katalogens designnamn, mediehashar och schema-ID:n behålls. Importvägarna följer den kanoniska källan.
 
 ## Byggkällor och kompatibilitet
 
 `apps/studio/preview-build/` är en genererad kopia av renderarmodulerna och
 byggs om med `node apps/studio/tools/prepare-preview.mjs`.
 
-`compositor/` innehåller både aktiv motor och fristående referens-UI. Bedöm
-konsumenterna var för sig före radering. `runtime/` behåller äldre klipp- och
+`runtime/` behåller äldre klipp- och
 filmfamiljsregler för deras verkliga konsumenter; de anger inte hur varje ny
 registrerad dealer måste organiseras. Radera inte kortkalibrering eller
 publicerade identiteter för att en mall pensioneras.

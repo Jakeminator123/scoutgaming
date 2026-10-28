@@ -423,7 +423,7 @@ test('selected definition changes are isolated from other frozen lanes; branding
   assert.equal(final.lanes[0].label, frozen.lanes[0].label); assert.equal(final.lanes[1].label, 'VIP updated');
 });
 
-test('unavailable runtime refuses before writer locks; an unrelated layered catalogue can acquire an own portrait lane', async () => {
+test('unavailable runtime refuses before writer locks; an unrelated catalogue lets the room acquire its own portrait lane', async () => {
   const f = await fixture(); let version = 1, fetches = 0;
   const guarded = wrapNativePresentationRepository(f.repository, { env: { CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid' }, fetchImpl: async () => { fetches++; return Response.json(version === 4 ? capability4 : { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' }); } });
   const blocked = createPresentationRoomApi({ repository: guarded, scope, videoRegistry:f.videoRegistry, runtimeCapabilities: presentation => guarded.withMutationContext(async () => capability4, [{ kind:'administration',value:{rooms:[{schemaVersion:2}]} },{kind:'presentation-package',value:presentation}]) });
@@ -434,11 +434,12 @@ test('unavailable runtime refuses before writer locks; an unrelated layered cata
   assert.deepEqual(f.pool.snapshot(), before); assert.equal(f.pool.trace.slice(queryCount).filter(row => row.marker === 'save-document').length, 0);
   version = 4; assert.equal((await prep()).ready, true); assert.ok(fetches >= 3);
   const admin = await f.repository.readDocument('administration');
-  await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: admin.revision, value: { ...admin.value, gameLane: 'layer-preview', gameLanes: [{ schemaVersion: 1, id: 'layer-preview', label: 'Layer', dealer: 'paow', renderer: 'layered', mediaCollection: 'layer-packs-preview' }] } });
+  const unrelated = { schemaVersion: 1, id: 'unrelated-lane', label: 'Unrelated', dealer: 'elin', renderer: 'portrait-video', mediaCollection: 'elin-presentation' };
+  await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: admin.revision, value: { ...admin.value, gameLane: unrelated.id, gameLanes: [unrelated] } });
   assert.equal((await f.prepare()).ready, true);
   const created = await f.create(await f.payload()); assert.match(created.room.gameLaneId, /^room-lane-/);
   const current = (await f.repository.readDocument('administration')).value;
-  assert.equal(current.gameLane, 'layer-preview'); assert.equal(current.gameLanes.find(row => row.id === created.room.gameLaneId).renderer, 'portrait-video');
+  assert.equal(current.gameLane, unrelated.id); assert.equal(current.gameLanes.find(row => row.id === created.room.gameLaneId).renderer, 'portrait-video');
 });
 
 test('unified room endpoint publishes while retaining fresh role, Origin and exact query/body/scope boundaries', async () => {

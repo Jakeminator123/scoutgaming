@@ -80,25 +80,21 @@ if(lobbyReturn){
   }
 }
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,name:label,registered:true};
-if (entrySelection.presentation === 'layered') for (const [id, name] of [['dragge', 'Dragge']]) DEALERS[id] = {key:id,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer];
 if (!DEALER) { presentationStartup.fail(); throw new Error('Dealer is not registered'); }
-const layeredPresentationEnabled = entrySelection.presentation === 'layered';
-if (!['local', 'layered'].includes(entrySelection.presentation)) {
+if (entrySelection.presentation !== 'local') {
   presentationStartup.fail();
   throw new Error('Presentation requires registered cloud media');
 }
 const localPresentationEnabled = true;
 if (entrySelection.lane === 'mobile-phone') document.title = 'Standardsammansättning · Croupier Blackjack';
-if (entrySelection.lane === 'layer-preview') document.title = 'Layer Preview Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;
 if (localPresentationEnabled) {
-  document.documentElement.dataset.presentation = layeredPresentationEnabled ? 'layered' : 'local';
+  document.documentElement.dataset.presentation = 'local';
   $('#supervisor')?.removeAttribute('src');
   $('#supervisor')?.load();
 }
-if(!studioPreview) document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let movingSpeechAvailable=false, nextDealChat=null, nextDealControls=null, activeDealSpeech=null;
@@ -192,36 +188,23 @@ speechPoseGate = createSpeechPoseGate({
 });
 if (localPresentationEnabled) {
   try {
-    if (layeredPresentationEnabled) {
-      const { createLayeredPresentation } = await import('./layered-presentation.mjs');
-      localPresentation = await createLayeredPresentation({
-        host: $('#scene'),
-        dealerId: DEALER.key,
-        rehearsal: new URLSearchParams(location.search).get('rehearsal') === '1',
-        receipt: entry => nativeObservation.emit('playback', entry),
-        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'layered-owner'),
-        onReady: () => presentationStartup.ready(DEALER.key),
-      });
-      localCards = null;
-    } else {
-      const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([
-        import('./performance-player.mjs'),
-        import('./local-presentation.mjs'),
-        import('./local-card-overlay.mjs'),
-      ]);
-      performancePlayer = new PerformancePlayer({ host: $('#scene') });
-      localPresentation = await createLocalPresentation({
-        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection, transport: gameApi,
-        version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
-        idlePhase: () => ['decisions', 'insurance'].includes(round?.phase) ? 'decide' : 'bets',
-        receipt: entry => nativeObservation.emit('playback', entry),
-        onIdle: () => presentStandardIdle('local-primary-frame'),
-        onError: () => presentationStartup.fail(),
-        onGestureWait: waiting => presentationStartup.waitForGesture(DEALER.key, waiting),
-        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
-      });
-      localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
-    }
+    const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([
+      import('./performance-player.mjs'),
+      import('./local-presentation.mjs'),
+      import('./local-card-overlay.mjs'),
+    ]);
+    performancePlayer = new PerformancePlayer({ host: $('#scene') });
+    localPresentation = await createLocalPresentation({
+      player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection, transport: gameApi,
+      version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
+      idlePhase: () => ['decisions', 'insurance'].includes(round?.phase) ? 'decide' : 'bets',
+      receipt: entry => nativeObservation.emit('playback', entry),
+      onIdle: () => presentStandardIdle('local-primary-frame'),
+      onError: () => presentationStartup.fail(),
+      onGestureWait: waiting => presentationStartup.waitForGesture(DEALER.key, waiting),
+      onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
+    });
+    localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
   } catch (error) {
@@ -229,7 +212,7 @@ if (localPresentationEnabled) {
     console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
     if(error.code==='studio_presentation_idle_package_changed'){ status.textContent=error.message+' '; const reload=document.createElement('button');reload.type='button';reload.textContent='Ladda om';reload.onclick=()=>location.reload();status.append(reload); }
-    else status.textContent = layeredPresentationEnabled ? 'Lagerpaket saknas · 2D-reserv' : 'Lokal video kunde inte startas · 2D-reserv';
+    else status.textContent = 'Lokal video kunde inte startas · 2D-reserv';
     $('#scene').append(status);
   }
 }
@@ -533,16 +516,6 @@ async function tableCommand(op, extra = {}) {
         if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
         throw e;
       }
-    }
-  }
-  if (layeredPresentationEnabled && Array.isArray(out.presentation)) {
-    const consumed = localPresentation?.consume?.({ roundId: String(out.version), presentation: out.presentation });
-    if (consumed?.unsupported?.length) {
-      nativeObservation.emit('playback', {
-        event: 'layered-unsupported',
-        count: consumed.unsupported.length,
-        types: [...new Set(consumed.unsupported.map(item => item.type))],
-      });
     }
   }
   const previousVersion = tableVersion;
