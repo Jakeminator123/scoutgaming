@@ -27,7 +27,7 @@ Orörda är också:
 
 **Raderingskandidater:** Astrid (data, media och filer), dealerna i papperskorgen och bolagen utöver Johns Bet med deras rum, paket och media, med förbehållet ovan. Jakob prioriterar radering framför arkiv.
 
-**Regelkonflikt:** [AGENTS.md](../../AGENTS.md#data-media-och-avveckling) säger "Bevara … Astrids märkta legacy-referens". Jakobs riktning är att Astrid försvinner helt, så regeln måste ändras av Jakob innan steg 4–5 och K1 körs.
+**Regeln i AGENTS.md** är ändrad enligt Jakobs beslut 28 oktober: Astrid, också hennes märkta legacy-referens, tas bort helt ([AGENTS.md](../../AGENTS.md#data-media-och-avveckling)).
 
 ## 1. Inventering
 
@@ -64,7 +64,7 @@ Scope `environment_id='production'`, `workspace_id='croupier'` (den enda i produ
 
 Dragans talbank (`CROUPIER_MOVING_SPEECH_BANK_RECORD`) och allt som talkedjan har skrivit, till exempel `runtime/generated/` och `runtime/conversation-replies/`, behålls. Objekt utan register hittas med en läsande listning av storen `store_AqwvebTbBHarOjvG` i steg 0.
 
-**Repot.** PR:en för ren start tar bort 622 av Astrids 706 filer (88,4 MB). De 84 som står kvar är presentationsbanken `media/dealers/astrid/runtime/presentation/**` och `runtime/composited/astrid-green-speak/speak.json`. De har aktiva konsumenter, se K1.
+**Repot.** PR:en för ren start (#474) tog bort 622 av Astrids 706 filer (88,4 MB). Repo-PR 2 tar bort de sista 84: presentationsbanken `media/dealers/astrid/runtime/presentation/**` och `runtime/composited/astrid-green-speak/speak.json` (166 MiB), efter K1. Samma PR tar bort spelets och sajtens media utan konsument (M1–M3, 11,2 MiB): `assets/table.png`, `assets/room-extended.png`, `scene/dealer-fallback.png`, `scene/scene.jpg`, `cards/back-scout.png` och `site/runtime/backoffice/img/` (6 filer). Produktionen läser katalogen ur Neon och byten ur Blob, inte ur repot, så raderingen påverkar inte drift före steg 7. Admins legacyklippinventering läste `review/astrid-green-speak/speak.json` ur katalogen; den tål nu att posten saknas, och den ändringen måste vara driftsatt (Vercel och `croupier-v3`) innan steg 6–7 körs.
 
 ## 2. Korsreferenser som styr ordningen
 
@@ -161,7 +161,7 @@ Följ konsumenterna först: route → UI → tjänst → adapter → data.
 | 4 | **Dealers: papperskorg och permanent radering** | `POST /dealers/archive-check` och `/dealers/archive` för `astrid`. Efter 15 minuter `POST /dealers/delete-check` och sedan `/dealers/delete` för astrid och de 6 i papperskorgen. Kör S3 före Astrids `delete`. `anna-jonsson` raderas först efter rouletteexporten och Jakobs val om dess bytes (steg 0.4). | Spärras tills GPU-sessionen i avsnitt 2, punkt 8 är släppt. `delete` raderar dealerns klipp i Blob (`pending → Blob → deleted`; raden står kvar som gravsten) och sist papperskorgsposten. `studio_dealer_published` betyder att en kvarvarande paketrevision binder dealern; stoppa och rapportera. |
 | 5 | **SQL S3: retained bank** | Se nedan. | Astrids 6 retained-poster är borta. |
 | 6 | **Katalog utan Astrids övriga runtime-filer** | Efter repo-PR:en, med `ops/neon-studio/runtime-media-import.mjs`: `prepareRuntimeMediaImport` → `planRuntimeMediaImport` (läsande; ger `planHash` och `operation:'replace'`) → `applyRuntimeMediaImport({confirm:true})`, via körskriptet `ops/neon-studio/runtime-media-import-run.mjs` (se körinstruktionen nedan). | Katalogen får en ny revision. `/review/astrid-*`, `/lab/astrid-*` och `/dealers/astrid*` ger 404, medan spelets tillgångar ger 200. |
-| 7 | **Efter K1: katalog utan Astrids bank** | Samma import med en källa utan presentationsbank. Repo-PR 2 raderar de sista 84 filerna. Är repo-PR 2 redan mergad när steg 6 körs blir steg 6 och 7 en enda import. | `blobIndex` saknar `dealers/astrid/`. |
+| 7 | **Efter K1: katalog utan Astrids bank** | Samma import med en källa utan presentationsbank. Repo-PR 2 raderar de sista 84 filerna. Är repo-PR 2 redan mergad när steg 6 körs blir steg 6 och 7 en enda import. | `blobIndex` saknar `dealers/astrid/`. M1–M3-adresserna (`/assets/table.png`, `/scene.jpg`, `/dealer-fallback.png`, `/kevin-cards/back-scout.png`, `/bo/img/*`) ger 404, medan `/assets/cardback.png` och `/speech-media.json` ger 200. |
 
 **Körinstruktion, steg 6 och 7.** Kör i Jakobs terminal från en ren checkout av exakt den `main`-SHA som ska importeras. Scope anges alltid uttryckligen. `prepare` läser ingen databas, `plan` läser bara och vägrar skriva över en tidigare plan, och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Utdata innehåller koder, hashar och antal, aldrig anslutningssträngen.
 
@@ -244,7 +244,7 @@ Följande raderas inte:
 
 ## 6. Jakobs uttryckliga go, punkt för punkt
 
-1. Ändra regeln i AGENTS.md om Astrids legacy-referens.
+1. ~~Ändra regeln i AGENTS.md om Astrids legacy-referens.~~ Gjort i repo-PR 2 enligt beslutet 28 oktober.
 2. Neon-branch eller snapshot (steg 0.1) och pg_dump (steg 0.2).
 3. Blob-listning med token, och beslut om nedladdning eller ingen kopia (steg 0.3).
 4. Arkivera rum och bolag för west-bet, paow-studio, godmorgon-bet och nordic-bet (steg 1–2).

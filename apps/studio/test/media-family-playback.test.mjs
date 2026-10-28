@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import manifest from '../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
+import { syntheticPresentationManifest } from '../../../test/fixtures/presentation-bank.mjs';
 import { createSeedProject, validateProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
 import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent, upsertMediaVariantPolicy } from '../../../packages/presentation/runtime/media-family-policy.mjs';
 import { createPresentationDirector } from '../lib/presentation-director.mjs';
 import { presentationDecisionResponse } from '../lib/presentation-decision-http.mjs';
 
+const manifest = syntheticPresentationManifest();
 const inventory = () => ({ families: structuredClone(manifest.families), videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true, previewUrl: `/api/videos/${item.id}` })) });
 const settings = { baseUrl: '', gatewayKey: '', adviceTimeoutMs: 50 };
 const noFetch = () => assert.fail('Standard/rules preview must not contact a provider');

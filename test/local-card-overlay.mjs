@@ -12,14 +12,6 @@ import { filmedTransferTiming } from '../services/game/public/card-presentation/
 import { layoutGameOverlay } from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import { defaultBlackjackTableGeometry, defaultBlackjackAutoScale } from '../packages/presentation/contracts/composition-settings.mjs';
 
-test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
-  assert.equal(calibration.videos.length, 10);
-  for (const video of calibration.videos) {
-    const bytes = readFileSync(new URL(`../media/dealers/astrid/runtime/presentation/${video.path}`, import.meta.url));
-    assert.equal(createHash('sha256').update(bytes).digest('hex'), video.sha256, video.path);
-  }
-});
-
 test('cursor exposes only presented draws, preserves hole privacy, and rejects stale/replaced clips', () => {
   const { svg, cards } = setup(), cursor = createCardCursor(cards), round = fixture();
   cursor.sync(round);
@@ -258,7 +250,6 @@ test('hidden card matches the filmed opaque Scout back, without exposing its val
   // The Vercel frontend serves the card back from apps/web/public; the cloud engine serves no /media/ path.
   const served=readFileSync(new URL('../apps/web/public/images/cards/back-scout.png',import.meta.url));
   assert.equal(createHash('sha256').update(served).digest('hex'),'9c2b32897d9f910575b0818937600c4aa64f04c4de383ca4ed610f72d3ad8720');
-  assert.deepEqual(served,readFileSync(new URL('../media/game/runtime/cards/back-scout.png',import.meta.url)));
   assert.ok(!all(hole).some(n=>n.tag==='text'));
 });
 

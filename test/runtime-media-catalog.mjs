@@ -10,6 +10,7 @@ import {createRegisteredDealerIdle} from '../packages/presentation/server/regist
 import {createRegisteredVoiceLines} from '../apps/studio/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
+import {withSyntheticBank} from './fixtures/presentation-bank.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import {createSeedProject,addDealer} from '../packages/presentation/contracts/studio-model.mjs';
 const source=fileURLToPath(new URL('../',import.meta.url));
@@ -19,7 +20,8 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   t.after(async()=>{assert.equal(dirname(root),resolve(tmpdir()));await rm(root,{recursive:true,force:true});});
   await assert.rejects(access(join(root,'media')));
   const scope={environment:'catalog_test',workspaceId:'croupier'},pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
-  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
+  // A historical catalogue still carries a bank; the repository's own catalogue no longer does.
+  pool.seedRuntimeCatalog(scope,withSyntheticBank(readRuntimeCatalogFixture()));
   const project=addDealer(createSeedProject(),'paow','PAOW');
   const id='11111111-1111-4111-8111-111111111111',sha256='b'.repeat(64);
   const line=project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');
@@ -43,18 +45,16 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   assert.equal(legacy.clips.some(row=>row.dealerId==='paow'),false);
 });
 
-test('deployment catalog builds after Amira source removal without changing Astrid metadata',async t=>{
+test('deployment catalog rebuilds from the layout alone and matches the committed documents',async t=>{
  const {readFile,writeFile}=await import('node:fs/promises');
  const root=await mkdtemp(join(tmpdir(),'croupier-retired-catalog-'));t.after(()=>rm(root,{recursive:true,force:true}));
  const put=async(path,content)=>{const file=join(root,path);await mkdir(dirname(file),{recursive:true});await writeFile(file,content);};
  await put('media/layout.json',await readFile(join(source,'media/layout.json')));
  const legacy=JSON.parse(await readFile(join(source,'media/catalog/legacy.json'),'utf8'));
- for(const [path,content]of Object.entries(legacy.entries))if(!path.includes('/amira/'))await put(path,content);
- await put('media/dealers/astrid/runtime/presentation/lab-video-manifest.json',await readFile(join(source,'media/catalog/presentation.json')));
- const result=await buildRuntimeMediaCatalog(root);assert.equal(result.metadataSources,2);
- const generated=JSON.parse(await readFile(join(root,'media/catalog/legacy.json'),'utf8'));
- assert.equal(Object.keys(generated.entries).some(path=>path.includes('/amira/')),false);
- for(const [path,content]of Object.entries(generated.entries))assert.equal(content,legacy.entries[path]);
+ for(const [path,content]of Object.entries(legacy.entries))await put(path,content);
+ const result=await buildRuntimeMediaCatalog(root);assert.equal(result.metadataSources,Object.keys(legacy.entries).length);
+ for(const name of ['presentation.json','legacy.json'])
+  assert.equal(await readFile(join(root,'media/catalog',name),'utf8'),await readFile(join(source,'media/catalog',name),'utf8'),name);
 });
 test('deployment catalog without a presentation bank keeps game metadata and writes the empty presentation',async t=>{
  const {readFile,writeFile}=await import('node:fs/promises'),{createHash}=await import('node:crypto');
@@ -86,19 +86,22 @@ test('deployment catalog without a presentation bank keeps game metadata and wri
  await put('media/layout.json',JSON.stringify(layout));
  await assert.rejects(buildRuntimeMediaCatalog(root),/presentation bank/);
 });
-test('retired dealer aliases and Blob pointers disappear while Astrid remains registered',async()=>{
+test('retired dealer media, public aliases and Blob pointers are gone from the committed registers',async()=>{
  const {readFile}=await import('node:fs/promises');const {resolvePublicMedia}=await import('../tools/media-layout.mjs');
- assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/speak.json'));
- for(const url of ['/review/astrid-green-speak/win.mp4','/review/astrid-seam-repair/back-fc3615057eaa.mp4','/lab/astrid-pilot.mp4','/dealers/astrid-hands/streams/index.json'])assert.equal(resolvePublicMedia(url),null);
- const index=JSON.parse(await readFile(join(source,'media/blob-index.json'),'utf8'));
- for(const dealer of ['vera','mei','amira','johanna']){
+ assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);
+ for(const url of ['/review/astrid-green-speak/speak.json','/assets/table.png','/assets/room-extended.png','/scene.jpg','/dealer-fallback.png',
+  '/kevin-cards/back-scout.png','/bo/img/scout-mark.png','/review/astrid-green-speak/win.mp4','/review/astrid-seam-repair/back-fc3615057eaa.mp4','/lab/astrid-pilot.mp4','/dealers/astrid-hands/streams/index.json'])assert.equal(resolvePublicMedia(url),null);
+ const index=JSON.parse(await readFile(join(source,'media/blob-index.json'),'utf8')),layout=JSON.parse(await readFile(join(source,'media/layout.json'),'utf8'));
+ assert.equal(layout.files.some(row=>row.path.startsWith('dealers/')),false,'no dealer media remains in the layout');
+ assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/')),false,'no dealer media remains in the Blob index');
+ for(const dealer of ['vera','mei','amira','johanna','astrid']){
   assert.equal(index.files.some(row=>row.logicalPath.startsWith(`dealers/${dealer}/`)),false);
   assert.equal(index.files.some(row=>row.logicalPath===`site/runtime/backoffice/img/${dealer}-portrait.jpg`),false);
   for(const url of [`/lab/${dealer}-pilot.mp4`,`/lab/${dealer}-pilot-debug.mp4`,`/bo/img/${dealer}-portrait.jpg`])assert.equal(resolvePublicMedia(url),null);
  }
  assert.equal(resolvePublicMedia('/dealer-hands/streams/index.json'),null);
- assert.equal(index.files.some(row=>row.logicalPath==='dealers/astrid/runtime/composited/2026-09-09/mei-push.mp4'),false);
- assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
+ // The game's remaining public assets still resolve.
+ for(const url of ['/assets/cardback.png','/speech-media.json'])assert.ok(resolvePublicMedia(url),url);
 });
 test('old Paow preview cannot return through a registry entry without preview choices',async t=>{
  const {dealerVersionPath}=await import('../services/game/public/dealer-version-switcher.mjs');

@@ -86,7 +86,7 @@ export function backendPlatformPath(value) {
     || /^\/bo\/(?:gen|thumbs|img)\//.test(path)
     || ['/speech-stream', '/lipsync-worker', '/moving-speech-stream'].includes(path) || movingWorkerSocketPath(path)
     || PUBLIC_MEDIA.test(path)
-    || ['/scene.jpg', '/dealer-fallback.png', '/speech-media.json'].includes(path);
+    || path === '/speech-media.json';
 }
 
 // A bare game start is a lobby entry, not a global dealer choice. Explicit

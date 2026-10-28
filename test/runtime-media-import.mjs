@@ -66,7 +66,7 @@ test('prepare preserves exact four-file metadata and filters only index paths ab
   assert.deepEqual(prepared.value.layout,layout);
   for(const [path,text] of Object.entries(legacy.entries))assert.equal(prepared.value.legacy.entries[path],text);
   const jsonRows=index.files.filter(row=>paths.has(row.logicalPath)&&['public','private'].includes(row.access)&&row.storage?.contentType==='application/json');
-  assert.equal(jsonRows.length,2);assert.equal(jsonRows.reduce((sum,row)=>sum+row.size,0),67216);
+  assert.ok(jsonRows.length>0);assert.equal(jsonRows.length,Object.keys(legacy.entries).length);
   for(const row of jsonRows){
     const text=prepared.value.legacy.entries['media/'+row.logicalPath];assert.equal(Buffer.byteLength(text),row.size);assert.equal(hash(Buffer.from(text)),row.sha256);
   }
@@ -84,7 +84,8 @@ test('provided metadata reader is used for every exact JSON tuple and corrupt by
   const seen=[];
   const reader=async row=>{seen.push(row.logicalPath);assert.equal(Object.isFrozen(row),true);return readFile(new URL('../media/'+row.logicalPath,import.meta.url));};
   const imported=await prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes:reader});
-  assert.equal(seen.length,2);assert.equal(new Set(seen).size,2);assert.equal(imported.revision,prepared.revision);
+  const served=Object.keys(prepared.value.legacy.entries).length;assert.ok(served>0);
+  assert.equal(seen.length,served);assert.equal(new Set(seen).size,served);assert.equal(imported.revision,prepared.revision);
   for(const readMetadataBytes of [async()=>Buffer.from('{}'),async()=>new Uint8Array(),async()=>'{"not":"bytes"}'])
     await assert.rejects(prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes}),error=>['studio_runtime_import_metadata_identity_invalid','studio_runtime_import_metadata_bytes_required'].includes(error.code));
   await assert.rejects(prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes:async()=>{throw Error('PRIVATE credential');}}),
@@ -327,7 +328,9 @@ test('a reviewed replace can remove the presentation bank while the game and sit
   const source=await prepareRuntimeMediaImport({scope,sourceRoot:await banklessSource(t)});
   assert.deepEqual([source.value.presentation.families,source.value.presentation.items],[[],[]]);
   assert.ok(source.value.blobIndex.files.some(row=>row.access==='public'&&row.logicalPath.startsWith('game/')));
-  const pool=memoryPool(),current=changed();pool.seed(scope,{revision:current.revision,value:current.value});
+  const {withSyntheticBank}=await import('./fixtures/presentation-bank.mjs');
+  const value=withSyntheticBank(prepared.value),current={value,revision:runtimeCatalogRevision(value)};assert.ok(value.presentation.items.length>0);
+  const pool=memoryPool();pool.seed(scope,current);
   const review=await plan(pool,source);
   assert.equal(review.operation,'replace');assert.equal(review.expectedRevision,current.revision);assert.equal(review.counts.presentation,0);
   const result=await apply(pool,review,{prepared:source});assert.equal(result.changed,true);assert.equal(result.previousRevision,current.revision);
