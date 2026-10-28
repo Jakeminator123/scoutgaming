@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { forbidden, notFound, redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { PartnerOperatorWorkspace } from '@/components/kevin-bo/partner-operator-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
 
@@ -56,14 +56,9 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, 
     // A partner login cannot repair an expired administrator credential.
     if (status === 401) redirect(internalSessionPresent(request)
       ? nextStudioLoginRedirect(returnPath, new URL(publicAbsoluteUrl(h, '/admin')).origin) : partnerLoginAbsoluteUrl(h, returnPath));
-    // A company the account is not a member of: HTTP 403 (app/forbidden.tsx), never a workspace.
-    if (status === 403) forbidden();
     if (status === 404) notFound();
     throw error;
   }
-  // The server decided the view's permission (partner-data.mjs `denied`): a role
-  // without it gets HTTP 403, not a 200 page carrying the shell.
-  if (data.denied) forbidden();
   const user = data.session.user;
   if (typeof user !== 'string' || !user) throw new Error('workspace_identity_unavailable');
   if (route.operatorSlug === null) {
@@ -71,7 +66,9 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, 
       accessClass={data.session.accessClass === 'internal-admin' ? 'internal-admin' : 'partner'}
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
+  // The server decided the view's permission (partner-data.mjs `denied`): the shell renders
+  // its 403 card for that view, and the snapshot carries only what the role may read.
   return <PartnerOperatorWorkspace surface="partner"
-    initialSnapshot={data.snapshot} initialView={route.view}
+    initialSnapshot={data.snapshot} initialView={route.view} {...(data.denied ? { denied: data.denied } : {})}
     {...(initialRoomId===undefined?{}:{initialRoomId})} {...(initialRoomScope===undefined?{}:{initialRoomScope})} apiBase={data.apiBase} user={user} />;
 }

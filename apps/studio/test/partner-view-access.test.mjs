@@ -97,7 +97,11 @@ test('a redaktör is denied Team, Spelare, Ekonomi and Integration by direct add
     assert.deepEqual(loaded.snapshot.denied, loaded.denied);
     assert.deepEqual(loaded.snapshot.team, []); assert.equal(loaded.snapshot.invitations, 0);
     assert.equal(loaded.snapshot.reports, undefined); assert.deepEqual(loaded.snapshot.publications, []);
-    assert.equal(JSON.stringify(loaded.snapshot).includes('john-admin'), false, 'no member identity leaks to a denied view');
+    // The denied view's own data is absent, as is anything about members or other companies.
+    const text = JSON.stringify(loaded.snapshot);
+    assert.doesNotMatch(text, /john-admin|john-viewer|admin@partner|viewer@partner/, 'no member identity leaks to a denied view');
+    assert.doesNotMatch(text, /south-room|south-admin|Souths/, 'nothing from another company');
+    assert.doesNotMatch(text, /"status":"ready"|api_keys|integrations:/);
   }
   for (const view of ['overview', 'rooms', 'help']) {
     const loaded = await page(f, f.editor, view);

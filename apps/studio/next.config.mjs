@@ -33,9 +33,6 @@ export default {
   }),
   experimental: {
     externalDir: true,
-    // forbidden() in app/forbidden.tsx: a Partnerportalen view the role may not
-    // open answers HTTP 403 instead of a 200 page with a notice.
-    authInterrupts: true,
     // Limit local Windows build workers; retain deployment/CI defaults.
     ...(process.platform === 'win32' && !process.env.CI ? { cpus: 4 } : {}),
   },

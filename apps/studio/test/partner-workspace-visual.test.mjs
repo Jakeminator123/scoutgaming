@@ -74,9 +74,23 @@ test('the shell names the company, Partnerportalen, the assignment revision and 
   assert.deepEqual(partnerNavigation('en', ['overview.read', 'team.read']).map(item => item.label), ['Overview', 'Help and contact', 'Team'].sort((a, b) => ['Overview', 'Team', 'Help and contact'].indexOf(a) - ['Overview', 'Team', 'Help and contact'].indexOf(b)));
 });
 
+test('a denied view renders the 403 card with role and permission inside the shell, never the view or its data', () => {
+  const denied = { view: 'team', permission: 'team.read', role: { id: 'partner-editor', label: 'redaktör' } };
+  const html = render({ initialView: 'team', denied, initialSnapshot: realSnapshot({ role: denied.role, permissions: [...roleOf('partner-editor').permissions], view: 'team', denied }) });
+  assert.match(html, /role="alert"/); assert.match(html, />403</);
+  assert.match(html, /Rollen redaktör saknar behörigheten team\.read/);
+  assert.match(html, /href="\/partner\/johnsspelbolag"[^>]*>Till översikten</);
+  assert.doesNotMatch(html, /data-team="stub"/);
+  // The shell stays: company, menu for the role and the role word.
+  assert.deepEqual(menuOf(html), ['Översikt', 'Spelbord', 'Hjälp och kontakt']); assert.match(html, /class="name">Johns Bet</); assert.match(html, /class="small">redaktör</);
+  const allowed = render({ initialView: 'team' });
+  assert.match(allowed, /data-team="stub"/); assert.doesNotMatch(allowed, />403</);
+  // A denial for another view than the one shown does not hide the shown view.
+  assert.doesNotMatch(render({ initialView: 'overview', denied }), />403</);
+});
+
 test('a role without a section sees Inte anslutet with the permission named, never invented rooms or assignment', () => {
-  // A denied view never reaches the workspace (the page answers 403); a role that lacks
-  // tables.read or presentations.read gets a snapshot without those sections.
+  // A role that lacks tables.read or presentations.read gets a snapshot without those sections.
   const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], presentations: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined, summary: {} }) });
   assert.match(narrow, /Visas för roller med behörigheten tables\.read/); assert.match(narrow, /Visas för roller med behörigheten presentations\.read/);
   assert.doesNotMatch(narrow, /0 av 0/); assert.doesNotMatch(narrow, /Oak|Lounge|Johns bord/);

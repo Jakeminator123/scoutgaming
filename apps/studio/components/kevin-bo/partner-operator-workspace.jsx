@@ -10,7 +10,7 @@ import { PartnerReports } from './views/reports.jsx';
 import { PartnerIntegration } from './views/integration.jsx';
 import { PartnerHelp } from './views/help.jsx';
 import { TeamView } from './views/team.jsx';
-import { Card } from './views/ui.jsx';
+import { Btn, Card, Chip } from './views/ui.jsx';
 import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { partnerView, resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
 import { partnerPackageProfiles } from '../../lib/partner-package-view.mjs';
@@ -35,10 +35,10 @@ export function PartnerOperatorWorkspace(props) {
   return <PartnerSession key={`${props.surface}:${props.initialSnapshot?.operator?.id}:${props.user}`} {...props}/>;
 }
 
-function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomScope,initialView='overview'}) {
+function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomScope,initialView='overview',denied=null}) {
   const preferences=usePartnerPreferences(),{copy,language,theme}=preferences;
   const [snapshot,setSnapshot]=React.useState(()=>validatePartnerSnapshot(initialSnapshot));
-  // The server rendered this view (a denied view never reaches here: it answers 403); the client never reloads it on mount.
+  // The server rendered this view (or its 403 card); the client never reloads it on mount.
   const served=partnerView(initialView)??'overview';
   const [view,setView]=React.useState(served);
   const [message,setMessage]=React.useState('');
@@ -73,7 +73,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
       const raw=window.location.hash.slice(1);
       const candidate=raw?partnerView(raw):route?.view;
       if(!candidate){if(raw)setMessage(copy.notConnected);return;}
-      // A view the role may not open is the server's decision: let it answer 403.
+      // A view the role may not open is the server's decision: let it render the 403 card.
       if(!allowed(candidate)){if(candidate!==served)window.location.reload();return;}
       const request=partnerRoomRequest(new URLSearchParams(window.location.search));
       setView(candidate);setMessage('');setRoomRequest(request);
@@ -114,6 +114,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
   const revision=operatorPackageRevision(snapshot),assignment=snapshot.assignment;
   const role=snapshot.role?.label??(admin?copy.admin:copy.member);
   const summary=assignment?[[assignment.dealers.length,copy.dealers],[assignment.lanes.length,copy.lanes],[assignment.tables.length,copy.tables],[assignment.backgrounds.length,copy.backgrounds]].map(([count,word])=>`${count} ${word}`).join(' · '):null;
+  const deniedHere=denied&&denied.view===view?denied:null;
   return <div className="partner-portal" onClick={navigateLink} data-surface="partner" data-theme={theme} lang={language}>
     <div className="shell">
       <aside className="side">
@@ -137,17 +138,29 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
       </aside>
       <main className="main">
         {appearanceDirty&&view!=='rooms'&&<div className="page" style={{marginBottom:16}}><div className="note warn" role="status"><a href={viewPath('rooms')} style={{textDecoration:'underline'}}>{copy.draftKept} →</a></div></div>}
-        <ViewBoundary key={`workspace:${snapshot.operator.id}:${snapshot.generatedAt}`}><PartnerOperatorView roomSelection={roomSelection} onRoomSelectionChange={onRoomSelectionChange} runtime={runtime} view={view} copy={copy} language={language} notify={notify} apiBase={apiBase} user={user} onAppearanceDirty={onAppearanceDirty} onAppearanceSaved={saved=>setSnapshot(current=>{
+        {deniedHere?<DeniedView denied={deniedHere} copy={copy} href={viewPath('overview')}/>
+          :<ViewBoundary key={`workspace:${snapshot.operator.id}:${snapshot.generatedAt}`}><PartnerOperatorView roomSelection={roomSelection} onRoomSelectionChange={onRoomSelectionChange} runtime={runtime} view={view} copy={copy} language={language} notify={notify} apiBase={apiBase} user={user} onAppearanceDirty={onAppearanceDirty} onAppearanceSaved={saved=>setSnapshot(current=>{
             if(current?.preview!==false||current.operator.id!==saved.operatorId||!saved.presentation)return current;
             const previous=Number(current.packageRevision??current.operator.packageRevision);
             if(Number.isSafeInteger(previous)&&saved.packageRevision<=previous)return current;
             return {...current,packageRevision:String(saved.packageRevision),operator:{...current.operator,packageRevision:String(saved.packageRevision)},draft:null,
               branding:saved.branding,presentation:saved.presentation,presentations:partnerPackageProfiles(saved.presentation,saved.branding,current.operator.id)};
-          })}/></ViewBoundary>
+          })}/></ViewBoundary>}
       </main>
     </div>
     {message&&<div className="toast" role="status">{message}</div>}
   </div>;
+}
+
+// The server refused this view for the role (partner-data.mjs `denied`); the shell stays,
+// the view's data was never read, and the card names the role and the permission.
+function DeniedView({denied,copy,href}) {
+  return <div className="page"><Card className="denied" role="alert">
+    <Chip tone="danger">403</Chip>
+    <h2>{copy.deniedTitle}</h2>
+    <p className="muted">{copy.deniedBody.replace('{role}',denied.role?.label??'—').replace('{permission}',denied.permission)}</p>
+    <Btn href={href}>{copy.toOverview}</Btn>
+  </Card></div>;
 }
 
 export function PartnerOperatorView({runtime,view,copy,language,notify,apiBase,user,initialRoomId,roomSelection,onRoomSelectionChange,onAppearanceSaved,onAppearanceDirty}) {

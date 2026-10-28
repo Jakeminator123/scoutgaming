@@ -14,11 +14,7 @@ const redirects = require('next/dist/client/components/redirect.js');
 const { notFound } = require('next/dist/client/components/not-found.js');
 const { addPathPrefix } = require('next/dist/shared/lib/router/utils/add-path-prefix.js');
 const { transformSync } = require('next/dist/build/swc');
-// Next's real forbidden(): experimental.authInterrupts is on in next.config.mjs.
-process.env.__NEXT_EXPERIMENTAL_AUTH_INTERRUPTS = '1';
-const { forbidden } = require('next/dist/client/components/forbidden.js');
-const FORBIDDEN = 'NEXT_HTTP_ERROR_FALLBACK;403';
-const navigation = { ...redirects, notFound, forbidden };
+const navigation = { ...redirects, notFound };
 
 function load(file, overrides) {
   const url = new URL(file, import.meta.url);
@@ -125,8 +121,7 @@ test('permission, configuration and unexpected failures propagate without an una
   for (const statusCode of [403, 503, 500]) {
     const failure = Object.assign(new Error('fixture failure'), { statusCode });
     const loaded = pages(async () => { throw failure; });
-    // A refused company answers Next's 403 interrupt; other failures keep their own error.
-    await assert.rejects(renderPage(loaded.partner), error => statusCode === 403 ? error.digest === FORBIDDEN : error === failure);
+    await assert.rejects(renderPage(loaded.partner), error => error === failure);
   }
 });
 
@@ -152,15 +147,17 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
   }
 });
 
-test('a view the role may not open answers HTTP 403 through forbidden(), never a 200 page with the shell', async () => {
+test('a denied view reaches the client only as the 403 notice, with the snapshot the role may read', async () => {
   const denied = { view: 'team', permission: 'team.read', role: { id: 'partner-editor', label: 'redaktör' } };
   const snapshot = { preview: false, operator: { id: 'john-id', slug: 'johns-spelbolag' }, team: [], denied };
   const loaded = pages(async () => ({ snapshot, denied, apiBase: '/studio/api/partner/snapshot', session: { user: 'john-editor', accessClass: 'partner' } }));
-  await assert.rejects(renderPage(loaded.partner, ['johns-spelbolag', 'team']), error => error.digest === FORBIDDEN);
+  const element = await renderPage(loaded.partner, ['johns-spelbolag', 'team']);
+  assert.equal(element.type, loaded.PartnerOperatorWorkspace);
+  assert.deepEqual(element.props.denied, denied);
+  assert.equal(element.props.initialView, 'team');
   const allowed = pages(async () => ({ snapshot: { ...snapshot, denied: undefined }, apiBase: '/studio/api/partner/snapshot', session: { user: 'john-editor', accessClass: 'partner' } }));
-  const element = await renderPage(allowed.partner, ['johns-spelbolag', 'rooms']);
-  assert.equal(element.type, allowed.PartnerOperatorWorkspace);
-  assert.equal(element.props.denied, undefined); assert.equal(element.props.initialView, 'rooms');
+  const open = await renderPage(allowed.partner, ['johns-spelbolag', 'rooms']);
+  assert.equal(open.props.denied, undefined); assert.equal(open.props.initialView, 'rooms');
 });
 
 test('room deep links pass the exact query only after authorizing the registered operator',async()=>{
@@ -173,7 +170,7 @@ test('room deep links pass the exact query only after authorizing the registered
     assert.equal(requests.at(-1).operatorSlug,'north-casino');
   }
   const denied=pages(async()=>{throw Object.assign(new Error('denied'),{statusCode:403});});
-  await assert.rejects(renderPage(denied.partner,['north-casino','rooms'],{room:'vip-room'}),error=>error.digest===FORBIDDEN);
+  await assert.rejects(renderPage(denied.partner,['north-casino','rooms'],{room:'vip-room'}),error=>error.statusCode===403);
 });
 
 test('expired N1 session keeps a safe exact room link through login recovery',async()=>{
@@ -256,7 +253,7 @@ test('an admin cookie alone loads real partners and never invokes the fixture ad
     const failed = pages(fixture, adminHeaders, async () => { throw failure; });
     await assert.rejects(renderPage(failed.partner), error => statusCode === 401
       ? redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/admin/login?returnTo=%2Fpartner'
-      : statusCode === 404 ? error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404' : statusCode === 403 ? error.digest === FORBIDDEN : error === failure);
+      : statusCode === 404 ? error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404' : error === failure);
   }
 });
 
@@ -321,7 +318,7 @@ test('authorized partner menus pass raw room and scope together without masking 
     }
   }
   const denied=pages(async()=>{throw Object.assign(new Error('denied'),{statusCode:403});});
-  await assert.rejects(renderPage(denied.partner,['north-casino','team'],{scope:'company'}),error=>error.digest===FORBIDDEN);
+  await assert.rejects(renderPage(denied.partner,['north-casino','team'],{scope:'company'}),error=>error.statusCode===403);
 });
 
 test('N1 and partner login recovery retain company or exact room context on every recognized operator menu',async()=>{

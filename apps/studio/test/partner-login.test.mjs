@@ -155,8 +155,7 @@ test('actual browser partner login returns to the authorized operator and room w
   const {once} = await import('node:events');
   const {build} = await import('esbuild');
   const redirects = require('next/dist/client/components/redirect.js');
-  // forbidden() is Next's 403 interrupt; the fixture server answers it as the same status.
-  const navigation = {...redirects,notFound:require('next/dist/client/components/not-found.js').notFound,forbidden:()=>{throw Object.assign(new Error('forbidden'),{statusCode:403});}};
+  const navigation = {...redirects,notFound:require('next/dist/client/components/not-found.js').notFound};
   const bundle = (await build({absWorkingDir:fileURLToPath(new URL('../',import.meta.url)),write:false,bundle:true,format:'iife',
     define:{'process.env.NODE_ENV':'"production"'},stdin:{resolveDir:fileURLToPath(new URL('../',import.meta.url)),loader:'tsx',
       contents:'import React from "react";import {createRoot} from "react-dom/client";import {PartnerLogin} from "./components/partner-login";createRoot(document.getElementById("root")).render(React.createElement(PartnerLogin,JSON.parse(document.getElementById("props").textContent)));'},
