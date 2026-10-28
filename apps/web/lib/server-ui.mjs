@@ -3,7 +3,8 @@ import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,gameLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
 import {decorateGameEntryHtml} from '../../../services/game/public/game-entry-contract.mjs';
 import {gameEntryEnabled, approvedGameQuery, playerLoginDestination, requestedGame, rouletteDocumentPath, GAME_START_PATHS} from '../../../packages/navigation/game-entry.mjs';
-import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
+import { OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../../../packages/navigation/operator-entry.mjs';
+import {playerLobbyPath} from '../../../packages/navigation/player-lobby.mjs';
 
 // /game is the only game document this frontend serves. /player-login is the
 // player sign-in shell that the engine, the player area and roulette return to.
@@ -78,6 +79,10 @@ export async function platformUiDocument(request, {env = process.env, directory 
       const session = await read('/api/auth/session');
       if (typeof session?.authenticated !== 'boolean') throw Error('Invalid session');
       if (!session.authenticated) return new Response(null,{status:303,headers:{...headers,Location:playerLoginDestination(url)}});
+      // No company, no game (L1): a signed-in player's operatorless link (for
+      // example /game?dealer=paow) lands in the lobby without asking the engine,
+      // so no dealer is shown and no saved project is read.
+      if (requestedOperator(url.searchParams) === undefined && !url.searchParams.has('launch')) return new Response(null,{status:303,headers:{...headers,Location:playerLobbyPath(url.searchParams,url.hash)}});
       return proxyOperatorGame(request,url,config,fetchImpl,headers);
     } catch {
       return new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
