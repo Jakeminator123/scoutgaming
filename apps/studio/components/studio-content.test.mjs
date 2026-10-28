@@ -5,10 +5,8 @@ import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { mediaExampleEvent } from '../../../packages/presentation/runtime/media-family-policy.mjs';
-import { validateVideoMetadata, validateVideoCompositing } from '../../../packages/presentation/contracts/video-intake.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -37,11 +35,6 @@ function load(file, mocks = {}, hookReact = React) {
   });
   return module.exports;
 }
-function nodes(node, predicate) {
-  if (!node || typeof node !== 'object') return [];
-  if (Array.isArray(node)) return node.flatMap(child => nodes(child, predicate));
-  return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
-}
 function hooks() {
   const states = [], refs = [], effects = []; let stateIndex = 0, refIndex = 0;
   const react = { ...React, useEffect: effect => effects.push(effect), useMemo: fn => fn(), useCallback: fn => fn,
@@ -67,25 +60,6 @@ test('position preview changes only the destination; consecutive card slots, car
   assert.equal(mediaExampleEvent(speech, 'greeting').line, 'greeting');
   assert.deepEqual(project, before);
 });
-
-test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {
-  const { VideoCompositingFields, VideoMetadataFields } = load('./video-metadata-fields.tsx');
-  const values = []; let tree = VideoCompositingFields({ value: { mode: 'opaque' }, onChange: value => values.push(value) });
-  assert.deepEqual(nodes(tree,node=>node.type==='option').map(node=>node.props.value),['green-screen','alpha'],'only keying or source alpha; no baked background retention');
-  assert.match(renderToStaticMarkup(tree),/Äldre bakgrundsinställning behöver uppdateras/);
-  nodes(tree, node => node.type === 'input')[0].props.onChange({ target: { valueAsNumber: .23 } });
-  assert.equal(validateVideoCompositing(values[0]).mode, 'green-screen');
-  tree = VideoCompositingFields({ value: values[0], onChange: value => values.push(value) });
-  const inputs = nodes(tree, node => node.type === 'input');
-  inputs[0].props.onChange({ target: { valueAsNumber: 1.7 } }); assert.equal(values.at(-1).threshold, 1);
-  inputs[1].props.onChange({ target: { valueAsNumber: -1 } }); assert.equal(values.at(-1).softness, 0.001);
-  const metadata = { label: 'Min rörelse', dealerId: 'astrid', eventId: 'deal.player.left', kind: 'action', role: 'alternative', situation: 'box1', playback: 'once', notes: '' };
-  tree = VideoMetadataFields({ project: createSeedProject(), value: metadata, onChange: value => values.push(value) });
-  nodes(tree, node => typeof node.type === 'function' && node.type.name === 'VideoCompositingFields')[0].props.onChange({ mode: 'green-screen', threshold: 0.4, softness: 0.2, despill: 0.1 });
-  assert.equal(validateVideoMetadata(values.at(-1)).situation, 'box1'); assert.equal(values.at(-1).eventId, metadata.eventId);
-});
-
-
 
 test('display naming is separate from file identity and situation URL survives variant changes', () => {
   const { studioHref, selectionHref } = load('./studio-types.ts');

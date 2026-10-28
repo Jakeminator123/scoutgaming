@@ -9,7 +9,6 @@
 // initialDealerId?: string — explicit query dealer; absent or unknown values stay unselected
 // initialEventId?: string — query event; unknown values fall back to the first event
 // initialVariantId?: string — query variant; unknown values fall back to the line default
-// connectedLane?: boolean — save notice mentions the live lane when true
 // unsavedSocialRef?: ref — social draft included in the beforeunload guard
 // overview?: boolean — dealer query only; event stays in component state until an editor link
 // onInvalidate?: ref — Studio playback reset; tree, guide and activity omit it
@@ -18,16 +17,11 @@
 // updateProject(edit): clone, apply, clear messages, invalidate
 // modelEdit(edit): replace the project or surface the thrown error
 // dirty: boolean — project JSON differs from the last saved JSON
-// saving: boolean — save request in flight
-// save(): Promise<boolean> — true only when the current draft was saved; false on error, duplicate request or newer edits
 // exportProject(): void — download the project JSON
 // error / setError: string — visible error
 // notice / setNotice: string — visible confirmation
-// conflict / setConflict: boolean — HTTP 409 while saving
 // savedJson / setSavedJson: string — last saved project JSON
 // videos / setVideos: VideoInventory
-// refreshVideos(): Promise<void> — POST /api/videos/rescan
-// refreshingVideos: boolean
 // dealerId: DealerId
 // selectDealer(id): set dealer, clear variant, replaceState the query
 // eventId: string
@@ -48,7 +42,7 @@
 // activities: ActivityEntry[] — sessionStorage after mount
 // recordActivity(draft): append a log entry and persist it
 // clearActivities(): empty the log and persist that
-// projectRef: latest project for async upload handlers
+// projectRef: latest project for async handlers
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { appendActivity, type ActivityDraft, type ActivityEntry } from '../lib/activity-log.mjs';
@@ -60,7 +54,7 @@ import { publishShellStatus } from './page-template.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { stripLabBasePath } from '../lib/lab-url.mjs';
-import { activeStudioDealers, requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
 import type { ConnectionStatus, DirectorMode } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 
@@ -80,7 +74,6 @@ type SessionOptions = {
   initialDealerId?: string;
   initialEventId?: string;
   initialVariantId?: string;
-  connectedLane?: boolean;
   unsavedSocialRef?: { readonly current: UnsavedSocialDraft | null };
   onInvalidate?: RefObject<((stopSocial?: boolean) => void) | null>;
   observation?: StudioObservation;
@@ -88,14 +81,12 @@ type SessionOptions = {
 };
 
 export function useStudioProjectSession(options: SessionOptions) {
-  const { initialProject, initialVideos, initialStatus, connectedLane = false, observation } = options;
+  const { initialProject, initialVideos, initialStatus, observation } = options;
   const [project, setProjectState] = useState(initialProject);
-  const [conflict, setConflict] = useState(false);
   const [videos, setVideos] = useState(initialVideos);
-  const [refreshingVideos, setRefreshingVideos] = useState(false);
   const projectRef = useRef(project);
   // The ref advances with each mutation, before React renders. Both sequential
-  // functional edits and async save callbacks therefore see the newest draft.
+  // functional edits and async callbacks therefore see the newest draft.
   const setProject = useCallback((change: StudioProject | ((current: StudioProject) => StudioProject)) => {
     const next = typeof change === 'function' ? change(projectRef.current) : change;
     projectRef.current = next;
@@ -106,8 +97,6 @@ export function useStudioProjectSession(options: SessionOptions) {
   const [eventId, setEventId] = useState(() => initialProject.events.length ? resolveStudioEventId(initialProject, options.initialEventId) : '');
   const [variantId, setVariantId] = useState(() => options.initialVariantId ?? '');
   const [mode, setMode] = useState<DirectorMode>('off');
-  const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
@@ -176,37 +165,6 @@ export function useStudioProjectSession(options: SessionOptions) {
     try { setProject(current => edit(current)); options.onInvalidate?.current?.(); setError(''); setNotice(''); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Ändringen kunde inte göras.'); }
   }
-  async function refreshVideos() {
-    options.onInvalidate?.current?.();
-    setRefreshingVideos(true);
-    setError('');
-    try { setVideos(await requestJson<VideoInventory>('/api/videos/rescan', { method: 'POST' })); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Videomapparna kunde inte läsas.'); }
-    finally { setRefreshingVideos(false); }
-  }
-  async function save(): Promise<boolean> {
-    if (savingRef.current) return false;
-    savingRef.current = true;
-    options.onInvalidate?.current?.();
-    setSaving(true); setError(''); setNotice('');
-    const submitted = projectRef.current;
-    try {
-      const response = await requestJson<{ project: StudioProject }>('/api/project', { method: 'PUT', body: JSON.stringify({ project: submitted, expectedRevision: submitted.revision }) });
-      if (!response.project) throw new Error('Servern returnerade inte det sparade projektet.');
-      const unchanged = projectRef.current === submitted;
-      setSavedJson(JSON.stringify(response.project));
-      setConflict(false);
-      setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
-      setNotice(!unchanged ? 'Sparat. Nyare ändringar finns kvar i utkastet.' : connectedLane
-        ? 'Sparat. Ladda om spelfliken mellan händer efter ändrad grundloop eller originalmotorns klippval.'
-        : 'Projektet är sparat.');
-      recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat', owner: 'Du / projektlagringen',
-        reason: 'Regler och kopplingar sparades.',
-        data: { revision: response.project.revision } });
-      return unchanged;
-    } catch (cause) { if ((cause as { statusCode?: number })?.statusCode === 409) setConflict(true); setError(cause instanceof Error ? cause.message : 'Projektet kunde inte sparas.'); return false; }
-    finally { savingRef.current = false; setSaving(false); }
-  }
   function exportProject() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'croupier-lab-project.json'; anchor.click(); URL.revokeObjectURL(url);
@@ -235,9 +193,9 @@ export function useStudioProjectSession(options: SessionOptions) {
   }, [activities, activitiesReady]);
 
   return {
-    project, setProject, updateProject, modelEdit, dirty, saving, save, exportProject,
-    error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
-    videos, setVideos, refreshVideos, refreshingVideos,
+    project, setProject, updateProject, modelEdit, dirty, exportProject,
+    error, setError, notice, setNotice, savedJson, setSavedJson,
+    videos, setVideos,
     dealerId, selectDealer, eventId, selectEvent, variantId, setVariantId, selectVariant, assignSelection,
     mode, changeMode, status: initialStatus, event, observedEvent, line, variant, media, dealer,
     activities, recordActivity, clearActivities, setActivities, projectRef,

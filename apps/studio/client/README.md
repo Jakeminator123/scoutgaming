@@ -10,7 +10,6 @@ lobbyn (`/lobby`). Klienten har ett eget låst React-/TypeScript-bygge; Studio
 | `lobby/` | Lobbyn, med skilda katalogadaptrar för intern visning och publik spelaringång |
 | `runtime/` | Navigations- och bildadaptrar, gemensam CSS och den publika lobbykatalogen |
 | `build.mjs` | Typkontrollerar admin och lobby och bygger tre browserpaket till `apps/studio/design-preview-build/` |
-| `source-provenance.json` | Ursprungliga källhashar; historik, inget krav att återställa gamla UI-vägar |
 
 `apps/studio/tools/prepare-design-preview.mjs` installerar paketets låsta
 npm-beroenden vid behov och bygger klienten i Studios `dev` och `build`.

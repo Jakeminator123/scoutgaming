@@ -12,7 +12,6 @@ export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlo
 export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string[];
 export function bindNativeFilmedBank(project:StudioProject,inventory:VideoInventory,dealerId:string):StudioProject;
 export function bindClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,options?:{variantId?:string;durationMs?:number;asAlternative?:boolean}):StudioProject;
-export function selectCompositionLayer(project:StudioProject,room:Room,role:'background'|'table',assetId:string):StudioProject;
 export function roomChoicesPath(operator:Catalog['administration']['operators'][number]|undefined,room:Room|undefined):string|null;
 export function navigationKeepsStudioTab(event:Pick<MouseEvent,'button'|'metaKey'|'ctrlKey'|'shiftKey'|'altKey'>,anchor:Pick<HTMLAnchorElement,'target'|'hasAttribute'>):boolean;
 export type CompositionUse = {roomId:string;roomName:string;operatorName:string};
