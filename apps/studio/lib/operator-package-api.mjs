@@ -16,6 +16,8 @@ import {sceneLayoutPublication} from '../../../packages/presentation/contracts/s
 import {refreshFrozenDealerIdle} from '../../../packages/presentation/server/refresh-frozen-dealer-idle.mjs';
 import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
+import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -99,10 +101,12 @@ function idleRefreshPresentation(current,administration,body){
   if((branding.dealer??lane.layers.dealer.default)!==body.dealerId)sceneConflict();
   return presentation;
 }
-function publishedScenePresentation(current,administration,projectDocument,body){
+// Company material is stripped first and merged again by the caller, so the
+// AI table guard and the geometry rules see only Admin's own frozen material.
+function publishedScenePresentation(current,administration,projectDocument,body,materialRows=[]){
   if(!current||current.operatorId!==body.operatorId||current.revision!==body.expectedPackageRevision)sceneConflict();
   if(projectDocument?.revision!==body.expectedProjectRevision||projectDocument.value?.revision!==body.expectedProjectRevision)sceneConflict();
-  const presentation=readPackagePresentation(current);
+  const frozen=readPackagePresentation(current),presentation=frozen&&materialRows.length?withoutOperatorMaterials(frozen,materialRows):frozen;
   const lane=presentation?.lanes.find(row=>row.id===body.compositionId);
   if(!lane||!current.lanes.includes(body.compositionId))sceneConflict();
   const saved=normalizeProject(projectDocument.value).lanes?.find(row=>row.id===body.compositionId);
@@ -123,11 +127,26 @@ function freeze(value){
   return value;
 }
 
-export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory } = {}) {
+// materials: optional sql => operator material store (Bolagets eget material).
+// Without it, or without migration 021, every publication is unchanged.
+export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory, materials = null } = {}) {
   const handlers = new Map();
   async function store() {
     return openWritableOperatorStore({ pool, scope, now, storeFactory });
   }
+  const materialRows = async (sql, operatorId) => materials ? readOperatorMaterialRows(materials(sql), operatorId) : [];
+  // The merge is negotiated before SQL; the transaction proves the same rows.
+  function mergedMaterials(presentation, rows, {administration, pack, branding, allowExtended}) {
+    if (!materials) return {presentation};
+    const merged = mergeOperatorMaterialsForPublication({presentation, rows, rooms:publicationRooms(administration, pack?.operatorId, pack),
+      fits:presentationFits({branding, base:presentation, allowExtended})});
+    return {presentation:merged.presentation, materialWarnings:merged.warnings, materialFingerprint:operatorMaterialFingerprint(rows)};
+  }
+  async function assertSameMaterials(client, operatorId, fingerprint) {
+    if (materials && operatorMaterialFingerprint(await materialRows(client, operatorId)) !== fingerprint) sceneConflict();
+  }
+  const warningsOf = prepared => prepared.materialWarnings?.length ? {materialWarnings:structuredClone(prepared.materialWarnings)} : {};
+  const canExtend = () => typeof repository?.withMutationContext === 'function';
   const preparedValues = new WeakSet();
   const preparations = new Map();
   async function prepareIdleRefresh(context){
@@ -142,8 +161,10 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const previous=idleRefreshPresentation(current,snapshot.administrationDocument.value,body);
     const captured=refreshFrozenDealerIdle({presentation:previous,snapshot,inventory:await videoRegistry.loadCaptured(snapshot),dealerId:body.dealerId});
     await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
+    const merged=mergedMaterials(captured.presentation,await materialRows(pool,body.operatorId),
+      {administration:snapshot.administrationDocument.value,pack:current,branding:current.branding,allowExtended:canExtend()});
     const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,expectedPackageRevision:body.expectedPackageRevision,
-      projectRevision:snapshot.projectDocument.revision,administrationRevision:snapshot.administrationDocument.revision,...captured});
+      projectRevision:snapshot.projectDocument.revision,administrationRevision:snapshot.administrationDocument.revision,...captured,...merged});
     preparedValues.add(value);return value;
   }
   async function prepareSceneLayout(context){
@@ -155,10 +176,13 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if(!operator||operator.status!=='active')sceneConflict();
     const current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
     if(!administration)sceneConflict();
-    const candidate=publishedScenePresentation(current,administration.value,projectDocument,body);
+    const rows=await materialRows(pool,body.operatorId);
+    const candidate=publishedScenePresentation(current,administration.value,projectDocument,body,rows);
+    const merged=mergedMaterials(candidate.presentation,rows,{administration:administration.value,pack:current,branding:current.branding,allowExtended:canExtend()});
+    assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation:merged.presentation});
     const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,
       expectedPackageRevision:body.expectedPackageRevision,projectRevision:body.expectedProjectRevision,
-      administrationRevision:administration.revision,...candidate});
+      administrationRevision:administration.revision,...candidate,...merged});
     preparedValues.add(value);return value;
   }
   async function prepare(context) {
@@ -196,7 +220,9 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, blackjackLanes),
       requiredRouletteIdleDealerIds:selectedRegisteredIdleDefaults(source, rouletteLanes)});
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
-    const value = Object.freeze({operatorId, lanes:Object.freeze([...lanes]), ...captured, expectedPackageRevision:current?.revision ?? null});
+    const merged = mergedMaterials(captured.presentation, await materialRows(pool, operatorId),
+      {administration:snapshot.administrationDocument.value, pack:current, branding:current?.branding ?? {}, allowExtended:canExtend()});
+    const value = freeze({operatorId, lanes:[...lanes], ...captured, ...merged, expectedPackageRevision:current?.revision ?? null});
     preparedValues.add(value);
     return value;
   }
@@ -223,12 +249,13 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const project=await repository.readDocument('project'),administration=await repository.readDocument('administration');
         if(!operator||operator.status!=='active'||project?.revision!==prepared.projectRevision||administration?.revision!==prepared.administrationRevision)sceneConflict();
         idleRefreshPresentation(current,administration.value,body);
+        await assertSameMaterials(client,body.operatorId,prepared.materialFingerprint);
         await assertCapturedPresentationMedia(repository,prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation:prepared.presentation});
         const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(prepared.presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-        return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId}};
+        return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId},...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     if(context.body?.action==='publish-scene-layout'){
@@ -240,14 +267,18 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
         const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
         if(!operator||operator.status!=='active'||administration?.revision!==prepared.administrationRevision||projectDocument?.revision!==prepared.projectRevision)sceneConflict();
-        const {presentation,affectedRooms}=publishedScenePresentation(current,administration.value,projectDocument,body);
+        const rows=await materialRows(client,body.operatorId);
+        if(materials&&operatorMaterialFingerprint(rows)!==prepared.materialFingerprint)sceneConflict();
+        const candidate=publishedScenePresentation(current,administration.value,projectDocument,body,rows),affectedRooms=candidate.affectedRooms;
+        const {presentation}=mergedMaterials(candidate.presentation,rows,{administration:administration.value,pack:current,branding:current.branding,allowExtended:canExtend()});
         if(canonicalStudioJson(presentation)!==canonicalStudioJson(prepared.presentation))sceneConflict();
+        assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation});
         // Preserve every other branding field, including unrelated published room choices.
         // A saved branding draft is neither read nor published.
         const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-        return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms};
+        return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms,...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     const expectedPackageRevision = requestedPackageRevision(context.body);
@@ -263,6 +294,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const current = await operators.getCurrentPackage(prepared.operatorId);
         if (projectDocument?.revision !== prepared.projectRevision || administrationDocument?.revision !== prepared.administrationRevision
           || (current?.revision ?? null) !== prepared.expectedPackageRevision) throw new StudioStorageError('studio_conflict', 409);
+        await assertSameMaterials(client, prepared.operatorId, prepared.materialFingerprint);
         await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administrationDocument.value, operatorId:prepared.operatorId,
           currentPackage:current, presentation:prepared.presentation});
@@ -270,7 +302,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
           expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
           games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
           branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation,encoding)});
-        return result(published, prepared.presentation);
+        return {...result(published, prepared.presentation), ...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     // Local fixture/legacy adapters retain original-four behavior. A registered

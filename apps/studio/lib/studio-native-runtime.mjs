@@ -39,6 +39,7 @@ import { presentationCapabilitiesForVersion } from '../../../packages/presentati
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
+import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
@@ -202,6 +203,8 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const preparations = new Map();
     const lanePackages = createOperatorPackageApi({
       pool, repository, videoRegistry, scope: config.scope,
+      // Bolagets eget material in every package publication; empty without 021.
+      materials: sql => createOperatorMaterialStore({ sql, scope: config.scope }),
       project: async () => (await gamePolicy.readSaved()).project,
       gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });

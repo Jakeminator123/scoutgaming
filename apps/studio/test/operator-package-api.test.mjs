@@ -209,7 +209,7 @@ function nativePool(){
     async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const value=await client.query(sql,values);await client.query('COMMIT');return value;}finally{client.release();}}
   };return pool;
 }
-async function nativeFixture({dealer='linnea'}={}){
+async function nativeFixture({dealer='linnea',materials=null}={}){
   const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
   pool.seedRuntimeCatalog(nativeScope,readRuntimeCatalogFixture());
   const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='linnea'?'Linnea':'Nora'),lane=defaultPresentationLane(dealer);
@@ -232,12 +232,12 @@ async function nativeFixture({dealer='linnea'}={}){
     },
     async verifyCapturedMedia(preconditions){io++;assert.ok(preconditions.length > 0);await changeDuringVerification();}
   };
-  const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
+  const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock,materials});
   const context={body:{operatorId:'north',lanes:[lane.id]},actor:{user:'tester'},scope:nativeScope};
   const prepare=()=>api.preparations.get('POST /studio/api/admin/operator-package')(context);
   const publish=prepared=>api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})});
   const direct=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
-  return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
+  return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,videoRegistry,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
 }
 
 const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
@@ -797,4 +797,126 @@ test('publish-scene-layout refuses a moved placement for an AI table drawn for t
   const redrawn=await placementFixture({dealer:'paow',tableLabel:drawnForPaow(moved)});
   const receipt=await redrawn.publish(await redrawn.prepare());
   assert.equal(receipt.packageRevision,10);assert.equal(receipt.presentation.lanes[0].composition.desktop.table.width,.8);
+});
+
+// Bolagets eget material across all four publishers. The material store runs
+// real SQL on PGlite (with or without 021); the publishers keep their SQL facade.
+import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
+import {createOperatorMaterialStore} from '../lib/operator-material-store.mjs';
+import {operatorTableBinding} from '../lib/operator-material-publication.mjs';
+import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
+import {canonicalStudioJson} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {randomUUID} from 'node:crypto';
+
+const ownBackground='0d0d0d0d-0000-4000-8000-00000000b001',ownTable='0d0d0d0d-0000-4000-8000-00000000c001';
+const ownAsset=(id,role,sha)=>({schemaVersion:1,id,role,label:role==='table'?'Bolagets bord':'Bolagets bakgrund',sha256:sha.repeat(64),size:4096,
+  contentType:'image/png',width:1920,height:1080,pathname:`croupier/media/${role==='table'?'tables':'backgrounds'}/${id}/${sha.repeat(64)}.png`});
+async function materialDatabase({with021=true}={}){
+  const pool=await createPglitePool({migrations:[]}),plan=await planStudioMigrations({pool});
+  await applyStudioMigrations({pool,expectedTarget:plan.target,confirm:true,deferOptional:with021?[]:['021']});
+  await (await createOperatorStore({sql:pool,scope:nativeScope,now:clock})).createOperator({actor:'fixture',operatorId:'north',slug:'north',name:'North'});
+  return {pool,store:createOperatorMaterialStore({sql:pool,scope:nativeScope,now:clock})};
+}
+// The company may change background and table; the background layer is an image layer.
+async function unlockOwnMaterial(f){
+  const doc=await f.repository.readDocument('project'),lane=doc.value.lanes.find(row=>row.id===f.lane.id);
+  lane.layers.background={enabled:true,mode:'image',default:null,allowed:[]};lane.operatorAdjustable=['table.color','table','background','branding'];
+  lane.composition=defaultCompositionSettings();
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  return lane;
+}
+const has=(presentation,id,role)=>presentation.assets.some(row=>row.id===id)&&presentation.lanes.every(lane=>lane.layers[role].allowed.includes(id));
+async function approve(store,materialId,role,tableBinding){
+  const audit=()=>({actorId:'staff-1',accessClass:'internal-admin',requestId:randomUUID()});
+  await store.appendMaterial({actor:'staff-1',audit:audit(),operatorId:'north',materialId,expectedRevision:0,state:'pending',source:'upload',
+    asset:ownAsset(materialId,role,role==='table'?'7':'6'),...(tableBinding?{tableBinding}:{})});
+  await store.appendMaterial({actor:'staff-1',audit:audit(),operatorId:'north',materialId,expectedRevision:1,state:'approved'});
+}
+
+test('approved company material survives every publisher: Admin package, scene layout, idle refresh and branding',async t=>{
+  const db=await materialDatabase();t.after(()=>db.pool.end());
+  const f=await nativeFixture({dealer:'paow',materials:()=>db.store});
+  const lane=await unlockOwnMaterial(f);
+  await approve(db.store,ownBackground,'background');
+  await approve(db.store,ownTable,'table',operatorTableBinding('paow',lane));
+  const kept=(presentation,step)=>{assert.ok(has(presentation,ownBackground,'background'),step+': background');assert.ok(has(presentation,ownTable,'table'),step+': table');};
+  const stored=async()=>readPackagePresentation(await f.direct.getCurrentPackage('north'));
+  // 1. Admin's package publication freezes the project and adds the company's material.
+  const first=await f.publish();assert.equal(first.packageRevision,1);assert.equal(first.materialWarnings,undefined);
+  kept(first.presentation,'admin package');kept(await stored(),'admin package stored');
+  // Fixture only: a live room on this template, the same frozen branding.
+  const room={schemaVersion:2,id:'room-own',name:'Eget rum',operatorId:'north',presentationLaneId:lane.id,gameLaneId:'johns-game',state:'live'};
+  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  const rev1=await f.direct.getCurrentPackage('north');
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:rev1.lanes,games:['blackjack'],tables:[room.id],branding:rev1.branding});
+  // 2. Saved scene layout: a change that keeps dealer and table placement.
+  const doc=await f.repository.readDocument('project');doc.value.lanes[0].composition.tableFront=true;
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  const saved=await f.repository.readDocument('project');
+  const scene={...f.context,body:{action:'publish-scene-layout',operatorId:'north',compositionId:lane.id,expectedPackageRevision:2,expectedProjectRevision:saved.revision}};
+  const sceneReceipt=await f.api.handlers.get('POST /studio/api/admin/operator-package')({...scene,prepared:await f.api.preparations.get('POST /studio/api/admin/operator-package')(scene)});
+  assert.equal(sceneReceipt.packageRevision,3);assert.equal(sceneReceipt.presentation.lanes[0].composition.tableFront,true);
+  kept(sceneReceipt.presentation,'scene layout');kept(await stored(),'scene layout stored');
+  // 3. Idle refresh: only the saved idle selection changes.
+  const alternate={...structuredClone(f.record),id:'10000000-0000-4000-8000-000000000099',sha256:'d'.repeat(64)};
+  alternate.classification.label='Extra idle';alternate.pathname=`croupier/media/dealers/paow/review/uploads/${alternate.id}/${alternate.sha256}.mp4`;
+  await f.repository.registerMedia(alternate,{actor:'tester'});
+  const idleDoc=await f.repository.readDocument('project');
+  idleDoc.value.dealerIdlePolicies=[{dealerId:'paow',policy:{schemaVersion:1,familyId:'paow/idle.ready/ready',base:[{videoId:mediaId,weight:100,durationMs:1625}],
+    variants:[{videoId:alternate.id,use:'rotation',automatic:null,durationMs:1625}],
+    rotation:{clips:[mediaId,alternate.id].map(videoId=>({videoId,phase:'any',from:'rest',to:'rest',weight:20,head:false,calm:true}))}}}];
+  await f.repository.saveDocument('project',{value:idleDoc.value,expectedRevision:idleDoc.revision,actor:'tester'});
+  const idle={...f.context,body:{action:'refresh-dealer-idle',operatorId:'north',roomId:room.id,dealerId:'paow',expectedPackageRevision:3}};
+  const idleReceipt=await f.api.handlers.get('POST /studio/api/admin/operator-package')({...idle,prepared:await f.api.preparations.get('POST /studio/api/admin/operator-package')(idle)});
+  assert.equal(idleReceipt.packageRevision,4);assert.ok(idleReceipt.presentation.playback.media.some(row=>row.id===alternate.id));
+  kept(idleReceipt.presentation,'idle refresh');kept(await stored(),'idle refresh stored');
+  // 4. The company's branding publication chooses its own background.
+  const readAdministration=()=>f.repository.readDocument('administration');
+  const branding=createPartnerBrandingApi({store:f.direct,readAdministration,readProject:async()=>(await f.repository.readDocument('project')).value,
+    withWriteContext:work=>f.repository.transaction(()=>f.repository.withTransactionClient(async client=>work({
+      store:await createOperatorStore({sql:client,scope:nativeScope,now:clock,transaction:callback=>f.repository.withTransactionClient(callback)}),
+      readAdministration,reauthorize:async()=>true,materials:db.store})))});
+  const view=await branding.write({operatorId:'north',actor:'partner-1',expectedRevision:4,branding:{background:ownBackground}});
+  assert.equal(view.packageRevision,5);assert.equal(view.branding.background,ownBackground);
+  kept(view.presentation,'branding');kept(await stored(),'branding stored');
+  // 5. Admin publishes the package again: the company's choice and material stay.
+  const again=await f.publish();assert.equal(again.packageRevision,6);kept(again.presentation,'admin again');
+  assert.equal((await f.direct.getCurrentPackage('north')).branding.background,ownBackground);
+  // Revoked material and a moved placement leave the next package, with a warning naming the room.
+  const audit={actorId:'staff-1',accessClass:'internal-admin',requestId:randomUUID()};
+  await db.store.appendMaterial({actor:'staff-1',audit,operatorId:'north',materialId:ownBackground,expectedRevision:2,state:'revoked'});
+  const movedDoc=await f.repository.readDocument('project');movedDoc.value.lanes[0].composition.desktop.table.y=.1;movedDoc.value.lanes[0].composition.mobile.table.y=.1;
+  await f.repository.saveDocument('project',{value:movedDoc.value,expectedRevision:movedDoc.revision,actor:'tester'});
+  const movedSaved=await f.repository.readDocument('project');
+  const moved={...f.context,body:{action:'publish-scene-layout',operatorId:'north',compositionId:lane.id,expectedPackageRevision:6,expectedProjectRevision:movedSaved.revision}};
+  const movedReceipt=await f.api.handlers.get('POST /studio/api/admin/operator-package')({...moved,prepared:await f.api.preparations.get('POST /studio/api/admin/operator-package')(moved)});
+  assert.equal(movedReceipt.packageRevision,7);
+  for(const id of [ownBackground,ownTable])assert.equal(movedReceipt.presentation.assets.some(row=>row.id===id),false,id);
+  assert.deepEqual(movedReceipt.materialWarnings.map(row=>[row.materialId,row.code,row.reason,row.rooms.map(item=>item.id)]),
+    [[ownTable,'operator_material_table_mismatch','placement',[room.id]]]);
+});
+
+test('a material decision between preparation and commit is a conflict; nothing is published',async t=>{
+  const db=await materialDatabase();t.after(()=>db.pool.end());
+  const f=await nativeFixture({dealer:'paow',materials:()=>db.store});await unlockOwnMaterial(f);
+  await approve(db.store,ownBackground,'background');
+  const prepared=await f.prepare();assert.ok(has(prepared.presentation,ownBackground,'background'));
+  await db.store.appendMaterial({actor:'staff-1',audit:{actorId:'staff-1',accessClass:'internal-admin',requestId:randomUUID()},operatorId:'north',materialId:ownBackground,expectedRevision:2,state:'revoked'});
+  await assert.rejects(f.publish(prepared),error=>error.statusCode===409);
+  assert.equal(await f.direct.getCurrentPackage('north'),null);
+});
+
+test('without 021 every publication is exactly the publication without company material',async t=>{
+  const db=await materialDatabase({with021:false});t.after(()=>db.pool.end());
+  assert.equal(await db.store.available(),false);
+  const f=await nativeFixture({dealer:'paow',materials:()=>db.store});await unlockOwnMaterial(f);
+  const plain=createOperatorPackageApi({pool:f.pool,scope:nativeScope,repository:f.repository,videoRegistry:f.videoRegistry,now:clock});
+  const expected=await plain.preparations.get('POST /studio/api/admin/operator-package')(f.context),prepared=await f.prepare();
+  assert.deepEqual(prepared.materialWarnings,[]);
+  assert.equal(canonicalStudioJson(prepared.presentation),canonicalStudioJson(expected.presentation));
+  const receipt=await f.publish(prepared);assert.equal(receipt.materialWarnings,undefined);
+  assert.equal(canonicalStudioJson((await f.direct.getCurrentPackage('north')).branding),canonicalStudioJson(withPackagePresentation({},expected.presentation)),
+    'the same frozen envelope byte for byte');
 });

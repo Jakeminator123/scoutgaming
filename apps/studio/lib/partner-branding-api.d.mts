@@ -33,7 +33,8 @@ export function createPartnerBrandingApi(options:{
  store:Store;readProject():Promise<unknown>;
  readAdministration():Promise<{revision:string;value:unknown}>;
  withWriteContext<T>(work:(context:{store:Store;readAdministration():Promise<{revision:string;value:unknown}>;reauthorize():Promise<boolean>;
-   withMutationContext?<T>(work:()=>Promise<T>,descriptor:PresentationMutation):Promise<T>})=>Promise<T>,options?:{presentationMutation?:PresentationMutation}):Promise<T>;
+   withMutationContext?<T>(work:()=>Promise<T>,descriptor:PresentationMutation):Promise<T>;
+   materials?:{listMaterials(operatorId:string):Promise<readonly unknown[]>}})=>Promise<T>,options?:{presentationMutation?:PresentationMutation}):Promise<T>;
 }):{
  read(input:{operatorId:string}):Promise<PartnerBrandingView>;
  readState(input:{operatorId:string}):Promise<PartnerBrandingView>;

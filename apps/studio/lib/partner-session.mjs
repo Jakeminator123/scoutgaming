@@ -16,6 +16,7 @@ import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './stu
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
 import { wrapNativePresentationRepository } from './presentation-runtime-readiness.mjs';
+import { createOperatorMaterialStore } from './operator-material-store.mjs';
 
 // Opaque partner sessions are stored in the existing lab_sessions table.
 // The digest is purpose-prefixed so a lab_session or bo_jwt value can never
@@ -450,8 +451,9 @@ async function brandingResponse(prepared, config) {
       if(!locked.rows.length)fail(404);
       const source=await createOperatorStore({sql:client,scope:config.scope,now:config.now,
         transaction:callback=>repository.withTransactionClient(callback)});
+      // Bolagets eget material joins every branding publication; empty without 021.
       return await work({store:source,readAdministration,reauthorize:()=>reauthorize(source),
-        withMutationContext:repository.withMutationContext});
+        withMutationContext:repository.withMutationContext,materials:createOperatorMaterialStore({sql:client,scope:config.scope,now:config.now})});
       } catch(error) {
         if(Number.isInteger(error?.statusCode))throw new StudioStorageError('partner_request_rejected',error.statusCode);
         throw error;

@@ -12,6 +12,7 @@ import { partnerPresentationDealerChoices } from './partner-presentation-choices
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
 import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
+import { brandingPackageWithMaterials } from './operator-material-publication.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
 // 8000 bytes, 200 nodes and depth 6. It has no key whitelist.
@@ -268,6 +269,13 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const presentation=readPackagePresentation(pack);
     return [...nativeFilmedPlanningMutations(pack),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
   }
+  // Bolagets eget material: the locked package with the company's current
+  // approved material merged in. Without a material store (or 021) it is the
+  // locked package itself, so the frozen presentation stays byte for byte.
+  async function withCompanyMaterials(context,pack,document) {
+    if(typeof context.materials?.listMaterials!=='function')return pack;
+    return (await brandingPackageWithMaterials({store:context.materials,pack,presentation:readPackagePresentation(pack),administration:document?.value})).pack;
+  }
   async function checkPublication(context,pack) {
     // Native callers already negotiated this exact operator before SQL. Check
     // the locked payload again; the mutation context forbids HTTP under lock.
@@ -308,7 +316,8 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         await context.store.saveBrandingDraft({...input,branding});
       }else{
         if(!await cleanDraft(draft,pack,context.store)||draft.basePackageRevision!==pack.revision)fail(409);
-        const branding=await validateDraft(pack,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
+        const source=input.action==='publish'?await withCompanyMaterials(context,pack,document):pack;
+        const branding=await validateDraft(source,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
         await checkPublication(context,{...pack,branding});
@@ -336,7 +345,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         const locked=await load(operatorId,context.store);
         const document=presentation?await administrationSnapshot(context.readAdministration):null;
         if (locked.revision !== current.revision || document?.revision !== captured?.revision) fail(409);
-        const nextBranding=await prepareBranding(locked,branding,document);
+        const nextBranding=await prepareBranding(await withCompanyMaterials(context,locked,document),branding,document);
         await checkPublication(context,{...locked,branding:nextBranding});
         let published;
         try {
