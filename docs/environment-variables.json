@@ -39,7 +39,6 @@
         "OPENCLAW_PRODUCT_SPEECH_URL",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN",
         "CROUPIER_CLOUD_DATA_ROOT",
-        "CROUPIER_CLOUD_LAB_CHILD",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
@@ -67,10 +66,6 @@
         "BO_URL",
         "LAB_PUBLIC_URL",
         "CROUPIER_GAME_ORIGIN",
-        "LAB_STUDIO_DATA_DIR",
-        "CROUPIER_PRESENTATION_STUDIO_DIR",
-        "CROUPIER_GENERATIONS_DIR",
-        "CROUPIER_GENERATED_SPEECH_DIR",
         "OPENCLAW_SPEECH_TIMEOUT_MS",
         "CROUPIER_DATABASE",
         "CROUPIER_GAME_DATABASE_URL",
@@ -116,20 +111,26 @@
         "NODE_PATH",
         "LD_PRELOAD",
         "NODE_EXTRA_CA_CERTS",
-        "NODE_TLS_REJECT_UNAUTHORIZED"
+        "NODE_TLS_REJECT_UNAUTHORIZED",
+        "CROUPIER_CLOUD_LAB_CHILD",
+        "LAB_STUDIO_DATA_DIR",
+        "CROUPIER_PRESENTATION_STUDIO_DIR",
+        "CROUPIER_GENERATIONS_DIR",
+        "CROUPIER_GENERATED_SPEECH_DIR",
+        "CROUPIER_DATA_DIR"
       ]
     },
     "vercel-entry": {
       "sources": [
         "apps/web/tools/player-ui-build.mjs"
       ],
-      "required": [
+      "required": [],
+      "frontendPreviewBuildCommand": "node apps/web/tools/player-ui-build.mjs --frontend-preview (standalone; same key)",
+      "deploymentStatus": "Standalone player UI build tool. The Vercel web build does not read CROUPIER_GAME_ORIGIN: apps/web/tools/prepare-platform-ui.mjs passes CROUPIER_BACKEND_ORIGIN (via platformConfiguration) as the origin. The key is only needed when the tool runs on its own.",
+      "firstBoot": [],
+      "conditional": [
         "CROUPIER_GAME_ORIGIN"
       ],
-      "frontendPreviewBuildCommand": "node apps/web/tools/player-ui-build.mjs --frontend-preview (same required env; no new keys)",
-      "deploymentStatus": "Live player UI build. The retired Vercel project is gone; this service names the build tool that still reads the key.",
-      "firstBoot": [],
-      "conditional": [],
       "managed": [],
       "blocked": []
     },
@@ -238,7 +239,8 @@
     "render-openclaw-director": {
       "sources": [
         "services/openclaw/lab/deploy/start-director.mjs",
-        "services/openclaw/lab/src/gateway-rpc.mjs"
+        "services/openclaw/lab/src/gateway-rpc.mjs",
+        "packages/director/configuration.mjs"
       ],
       "blueprint": {
         "path": "services/openclaw/lab/render.yaml",
@@ -265,10 +267,21 @@
         "OPENCLAW_SPEECH_DEEP_MODEL",
         "OPENCLAW_SPEECH_TIMEOUT_MS",
         "OPENCLAW_STUDIO_ADMIN_DEVICE_KEY",
-        "OPENCLAWAPI_KEY"
+        "OPENCLAWAPI_KEY",
+        "OPENCLAW_PRODUCT_SPEECH_URL",
+        "OPENCLAW_DASHBOARD_ORIGIN",
+        "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK",
+        "LAB_COMPANION_ENABLED",
+        "LAB_COMPANION_FUN_ENABLED",
+        "LAB_COMPANION_WEB_ENABLED"
       ],
-      "managed": [],
-      "blocked": []
+      "managed": [
+        "RENDER_EXTERNAL_URL"
+      ],
+      "blocked": [
+        "LAB_REMOTE_URL",
+        "LAB_REMOTE_TOKEN"
+      ]
     },
     "render-openclaw-gateway": {
       "sources": [
@@ -377,7 +390,9 @@
         "apps/studio/lib/dealer-import-model.mjs",
         "packages/studio-registry/server/media-runtime.mjs",
         "packages/presentation/server/legacy-clip-inventory.mjs",
-        "apps/studio/lib/studio-media-runtime.mjs"
+        "apps/studio/lib/studio-media-runtime.mjs",
+        "apps/studio/lib/studio-render-persistence.mjs",
+        "packages/presentation/server/generated-speech-runtime.mjs"
       ],
       "project": "scoutgaming (Vercel service studio)",
       "gitBranch": "main",
@@ -394,7 +409,6 @@
         "CROUPIER_VERCEL_INGRESS_SECRET",
         "CROUPIER_LAB_BASE_PATH",
         "CROUPIER_STREAM_LANE",
-        "BO_URL",
         "CROUPIER_STUDIO_NATIVE_ADMIN",
         "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_ENVIRONMENT_ID",
@@ -405,7 +419,6 @@
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
-        "LAB_STUDIO_DATA_DIR",
         "LAB_PUBLIC_URL",
         "OPENCLAWAPI_KEY",
         "RUNWAY_API_KEY",
@@ -416,16 +429,32 @@
         "OPENCLAW_MODEL_BASE_URL",
         "OPENAI_API_KEY",
         "CARTESIA_API_KEY",
-        "CROUPIER_VERCEL_FRONTEND_ORIGIN"
+        "CROUPIER_VERCEL_FRONTEND_ORIGIN",
+        "CROUPIER_DATABASE",
+        "CROUPIER_GENERATED_SPEECH",
+        "CROUPIER_CLOUD_GENERATED_SPEECH",
+        "CROUPIER_GENERATED_SPEECH_STREAMING",
+        "HOST",
+        "CROUPIER_CLOUD_RUNTIME",
+        "PUBLIC_URL"
       ],
-      "managed": [],
+      "managed": [
+        "NODE_ENV"
+      ],
       "blocked": [
         "CROUPIER_ZONES_DATABASE_URL",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN",
         "RUNPOD_API_KEY",
         "RUNPOD_ENDPOINT_ID",
         "GEMINI_API_KEY",
-        "ELEVENLABS_API_KEY"
+        "ELEVENLABS_API_KEY",
+        "LAB_STUDIO_DATA_DIR",
+        "DEMO_GUEST_ACCESS",
+        "CROUPIER_GENERATED_SPEECH_PREVIEW",
+        "CROUPIER_GENERATED_SPEECH_DIR",
+        "CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID",
+        "CROUPIER_SPEECH_FULLFILE_RESERVE_USD",
+        "CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD"
       ],
       "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation."
     },
