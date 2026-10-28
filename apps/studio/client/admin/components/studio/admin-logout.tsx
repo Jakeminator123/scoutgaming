@@ -3,8 +3,9 @@ import {LogOut} from 'lucide-react';
 import {createStudioLoginClient,StudioLoginUiError} from '../../../../lib/studio-login-client.mjs';
 import {studioHistory} from '../../../../lib/studio-history.mjs';
 
-// The one logout in Admin. An editor with unsaved changes may refuse it, exactly
-// as it refuses a menu link, before the session is ended.
+// The one logout in Admin: in the sidebar, and in the portal bar below 600 px where
+// the sidebar is hidden. An editor with unsaved changes may refuse it, exactly as
+// it refuses a menu link, before the session is ended.
 export function AdminLogout() {
   const writing=useRef(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
