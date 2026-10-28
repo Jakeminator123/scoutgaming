@@ -1,0 +1,218 @@
+/* Partnerportalen: skalet och primitiverna, efter den godkända skissen
+   (ny-admin-skiss/app/globals.css). Allt är fäst under .partner-portal och
+   ändrar inga globala Studio-stilar. Mörk sidomeny, lime för aktivt val,
+   ljust innehåll; data-theme="dark" vänder innehållet. */
+.partner-portal{--ink:#1b1c1e;--ink-2:#24262a;--ink-line:#33363b;--ink-text:#e6e8eb;--ink-muted:#8b9098;--lime:#d6ff3a;--lime-soft:#f1ffb3;--on-lime:#1b1c1e;
+--bg:#f4f5f7;--surface:#ffffff;--surface-2:#f7f8fa;--line:#e3e5e9;--line-2:#eef0f3;--text:#1b1c1e;--muted:#666c75;--faint:#8d939b;
+--ok:#1f8a4c;--ok-bg:#e6f6ec;--warn:#9a6200;--warn-bg:#fff3d6;--danger:#b4232c;--danger-bg:#fde8ea;--info:#2a5db0;--info-bg:#e6eefb;--accent-bg:#f4ffcf;
+--radius:12px;--radius-s:8px;--shadow:0 1px 2px rgba(20,22,26,.05),0 8px 24px -16px rgba(20,22,26,.25);
+--font:var(--sg-next-body,"Segoe UI Variable Text","Segoe UI",Inter,system-ui,sans-serif);--mono:var(--sg-next-mono,"Cascadia Code",ui-monospace,Consolas,monospace);
+color-scheme:light;isolation:isolate;min-height:100vh;background:var(--bg);color:var(--text);font:400 14px/1.5 var(--font);-webkit-font-smoothing:antialiased;text-align:left}
+.partner-portal[data-theme="dark"]{--bg:#141517;--surface:#1d1f23;--surface-2:#24262b;--line:#2f3238;--line-2:#2a2d32;--text:#e6e8eb;--muted:#9aa0a8;--faint:#747a83;
+--ok:#6ad48f;--ok-bg:#163322;--warn:#ffcf6e;--warn-bg:#3a2d10;--danger:#ff9aa5;--danger-bg:#3a1f23;--info:#8db4ff;--info-bg:#1d2a44;--accent-bg:#2b3313;--lime-soft:#3a4318;
+--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.6);color-scheme:dark}
+/* Spelbordets utseende (partner-appearance.module.css) läser Studios --sg-tokens; här pekar de på portalens. */
+.partner-portal{--sg-bg:var(--bg);--sg-surface:var(--surface);--sg-surface-2:var(--surface-2);--sg-hover:var(--surface-2);--sg-border:var(--line);--sg-text:var(--text);--sg-muted:var(--muted);--sg-lime:var(--lime);--sg-font-body:var(--font)}
+.partner-portal *{box-sizing:border-box}
+.partner-portal a{color:inherit;text-decoration:none}
+.partner-portal button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.partner-portal h1,.partner-portal h2,.partner-portal h3,.partner-portal h4,.partner-portal p{margin:0}
+.partner-portal code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.partner-portal :focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.partner-portal .side :focus-visible{outline-color:var(--lime)}
+
+/* Skalet */
+.partner-portal .shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.partner-portal .side{position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;background:var(--ink);color:var(--ink-text);padding:18px 12px 12px;overflow:auto}
+.partner-portal .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px;min-width:0}
+.partner-portal .brand .mark{width:30px;height:30px;border-radius:8px;background:var(--lime);color:var(--on-lime);display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.partner-portal .brand .name{font-weight:700;font-size:15px;letter-spacing:-.01em;line-height:1.1;overflow-wrap:anywhere}
+.partner-portal .brand .sub{color:var(--ink-muted);font-size:12px}
+.partner-portal .context{margin:0 0 14px;padding:10px 12px;background:var(--ink-2);border:1px solid var(--ink-line);border-radius:10px;font-size:12.5px;display:grid;gap:4px}
+.partner-portal .context .small{color:var(--ink-muted)}
+.partner-portal .context b{display:block;font-size:13.5px}
+.partner-portal .context select{margin-top:6px;width:100%;background:var(--ink);color:var(--ink-text);border:1px solid var(--ink-line);border-radius:7px;padding:6px 8px;font:inherit;font-size:12.5px}
+.partner-portal .side nav{display:grid;gap:2px}
+.partner-portal .side a.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--ink-text);font-weight:500;font-size:13.5px}
+.partner-portal .side a.nav:hover{background:var(--ink-2)}
+.partner-portal .side a.nav[aria-current="page"]{background:var(--lime);color:var(--on-lime);font-weight:600}
+.partner-portal .side .foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--ink-line);display:grid;gap:10px;font-size:12.5px}
+.partner-portal .side .who{display:flex;align-items:center;gap:10px;min-width:0}
+.partner-portal .side .who>div{min-width:0}
+.partner-portal .side .who>div>div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.partner-portal .side .foot .small{color:var(--ink-muted)}
+.partner-portal .side .avatar{width:30px;height:30px;border-radius:50%;background:var(--lime);color:var(--on-lime);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.partner-portal .side .prefs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;color:var(--ink-muted);font-size:12px}
+.partner-portal .side .prefs label{display:flex;align-items:center;gap:5px}
+.partner-portal .side .prefs select{background:var(--ink-2);color:var(--ink-text);border:1px solid var(--ink-line);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
+.partner-portal .side .prefs a{color:var(--ink-muted)}
+.partner-portal .side .prefs a:hover{color:var(--ink-text)}
+.partner-portal .side .foot [aria-busy]>div{display:flex;gap:14px;flex-wrap:wrap}
+.partner-portal .side .foot button{color:var(--ink-muted);font-size:12px;padding:0}
+.partner-portal .side .foot button:hover{color:var(--ink-text)}
+.partner-portal .side .foot [role="status"],.partner-portal .side .foot [role="alert"]{font-size:12px}
+.partner-portal .main{min-width:0;padding:28px 32px 64px}
+.partner-portal .page{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+.partner-portal .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.partner-portal .eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px}
+.partner-portal .eyebrow a:hover{color:var(--text);text-decoration:underline}
+.partner-portal .page-head h1{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15;display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap}
+.partner-portal .intro{margin-top:6px;color:var(--muted);max-width:68ch}
+.partner-portal .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.partner-portal .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ink-text);padding:10px 16px;border-radius:8px;font-size:13.5px;z-index:40;max-width:min(90vw,520px)}
+
+/* Flikar */
+.partner-portal .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 4px;overflow-x:auto}
+.partner-portal .tabs a,.partner-portal .tabs button{padding:10px 12px;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.partner-portal .tabs a:hover,.partner-portal .tabs button:hover{color:var(--text)}
+.partner-portal .tabs [aria-selected="true"],.partner-portal .tabs [aria-current="true"]{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.partner-portal .tabs .count{margin-left:6px;font-size:11px;color:var(--faint)}
+
+/* Kort och raster */
+.partner-portal .grid{display:grid;gap:16px}
+.partner-portal .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.partner-portal .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.partner-portal .grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.partner-portal .grid.main-aside{grid-template-columns:minmax(0,1fr) 320px}
+.partner-portal .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);min-width:0}
+.partner-portal .card.flat{box-shadow:none}
+.partner-portal .card.tight{padding:12px 14px}
+.partner-portal .card.link{display:grid;gap:12px;color:inherit}
+.partner-portal .card.link:hover{border-color:var(--faint)}
+.partner-portal .card.selected{border-color:var(--text);box-shadow:0 0 0 2px var(--lime)}
+.partner-portal .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.partner-portal .card-head h2,.partner-portal .card-head h3{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.partner-portal .card-head .aside{color:var(--muted);font-size:12.5px}
+.partner-portal .stack{display:grid;gap:12px;min-width:0}
+.partner-portal .muted{color:var(--muted)}
+.partner-portal .small{font-size:12.5px}
+.partner-portal .faint{color:var(--faint)}
+.partner-portal .strong{font-weight:600}
+.partner-portal .mt{margin-top:12px}
+.partner-portal .mt-l{margin-top:20px}
+
+/* Rader med etikett, text och åtgärd */
+.partner-portal .rows{display:grid}
+.partner-portal .row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line-2);color:inherit}
+.partner-portal .row:first-child{border-top:0;padding-top:0}
+.partner-portal .row:last-child{padding-bottom:0}
+.partner-portal .row .title{font-weight:600}
+.partner-portal .row .text{color:var(--muted);font-size:13px}
+.partner-portal .row.link:hover .title{text-decoration:underline}
+
+/* Etiketter */
+.partner-portal .chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.partner-portal .chip.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.partner-portal .chip.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.partner-portal .chip.danger{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.partner-portal .chip.info{background:var(--info-bg);color:var(--info);border-color:transparent}
+.partner-portal .chip.accent{background:var(--accent-bg);color:var(--text);border-color:transparent}
+.partner-portal .chip.ink{background:var(--ink);color:var(--ink-text);border-color:transparent}
+.partner-portal .chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* Knappar */
+.partner-portal .btn,.partner-portal .sg-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-weight:600;font-size:13px;white-space:nowrap;cursor:pointer}
+.partner-portal .btn:hover,.partner-portal .sg-btn:hover{border-color:var(--faint)}
+.partner-portal .btn.primary,.partner-portal .sg-btn-primary{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+.partner-portal .btn.primary:hover,.partner-portal .sg-btn-primary:hover{filter:brightness(1.04)}
+.partner-portal .btn.ink{background:var(--ink);border-color:var(--ink);color:var(--ink-text)}
+.partner-portal .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.partner-portal .btn.ghost:hover{background:var(--surface-2);color:var(--text)}
+.partner-portal .btn.danger{color:var(--danger)}
+.partner-portal .btn.small{min-height:30px;padding:4px 10px;font-size:12.5px}
+.partner-portal .btn[aria-disabled="true"],.partner-portal .btn:disabled,.partner-portal .sg-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Tabeller */
+.partner-portal .scroll-x{overflow-x:auto}
+.partner-portal .table{width:100%;border-collapse:collapse;font-size:13.5px}
+.partner-portal .table th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.partner-portal .table td{padding:11px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.partner-portal .table tr:last-child td{border-bottom:0}
+.partner-portal .table tr.link:hover td{background:var(--surface-2)}
+.partner-portal .table td.num,.partner-portal .table th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Nyckel–värde */
+.partner-portal .kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;font-size:13.5px;margin:0}
+.partner-portal .kv dt{color:var(--muted)}
+.partner-portal .kv dd{margin:0;overflow-wrap:anywhere}
+
+/* Tomläge och notiser */
+.partner-portal .empty{padding:28px 20px;text-align:center;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);background:var(--surface-2)}
+.partner-portal .empty h3{color:var(--text);font-size:14px;margin-bottom:4px}
+.partner-portal .empty .chip{margin-bottom:10px}
+.partner-portal .note{padding:10px 12px;border-radius:8px;background:var(--info-bg);color:var(--info);font-size:13px}
+.partner-portal .note.warn{background:var(--warn-bg);color:var(--warn)}
+.partner-portal .note.accent{background:var(--accent-bg);color:var(--text)}
+.partner-portal .note.danger{background:var(--danger-bg);color:var(--danger)}
+.partner-portal .denied{display:grid;gap:10px;justify-items:start;max-width:640px}
+.partner-portal .denied h2{font-size:18px}
+
+/* Formfält */
+.partner-portal .field{display:grid;gap:6px;font-size:13px}
+.partner-portal .field label{font-weight:600}
+.partner-portal .field .hint{color:var(--muted);font-size:12.5px}
+.partner-portal .input,.partner-portal select.input,.partner-portal textarea.input{width:100%;min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.partner-portal .choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.partner-portal .choice{position:relative;display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left;color:inherit}
+.partner-portal .choice .swatch{height:64px;border-radius:6px;display:grid;place-items:center;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.02em;background:var(--surface-2);overflow:hidden}
+.partner-portal .choice .swatch img,.partner-portal .choice .swatch video{width:100%;height:100%;object-fit:cover}
+.partner-portal .choice .name{font-weight:600;font-size:13px;overflow-wrap:anywhere}
+.partner-portal .choice .meta{color:var(--muted);font-size:12px}
+.partner-portal .choice[aria-pressed="true"]{border-color:var(--text);box-shadow:0 0 0 2px var(--lime)}
+.partner-portal .choice:disabled,.partner-portal .choice[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.partner-portal .locked{position:relative}
+.partner-portal .locked .lock{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px}
+
+/* Siffror och små staplar */
+.partner-portal .stat{display:grid;gap:2px}
+.partner-portal .stat .v{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.partner-portal .stat .l{font-size:12.5px;color:var(--muted)}
+.partner-portal .bars{display:flex;align-items:flex-end;gap:3px;height:36px;min-width:84px}
+.partner-portal .bars i{flex:1;background:var(--lime);border-radius:2px 2px 0 0;min-height:2px;opacity:.9}
+.partner-portal .bars i.zero{background:var(--line)}
+.partner-portal .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.partner-portal .seg button{padding:6px 12px;color:var(--muted);font-size:12.5px;font-weight:600}
+.partner-portal .seg button[aria-pressed="true"]{background:var(--ink);color:var(--ink-text)}
+
+/* Åtgärdsmeny (⋯) och bekräftelse */
+.partner-portal .menu{position:relative;display:inline-block}
+.partner-portal .menu-list{position:absolute;right:0;top:calc(100% + 4px);min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:grid;z-index:20}
+.partner-portal .menu-list button{text-align:left;padding:8px 10px;border-radius:6px;font-size:13px;width:100%}
+.partner-portal .menu-list button:hover{background:var(--surface-2)}
+.partner-portal .menu-list button.danger{color:var(--danger)}
+.partner-portal .menu-list button:disabled{color:var(--faint);cursor:not-allowed}
+.partner-portal .dialog-backdrop{position:fixed;inset:0;background:rgba(10,12,16,.45);z-index:50;display:grid;place-items:center;padding:20px}
+.partner-portal .dialog{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--surface);border-radius:14px;padding:22px 24px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);display:grid;gap:12px}
+.partner-portal .dialog h2{font-size:18px}
+.partner-portal .dialog ul{margin:0;padding-left:20px;color:var(--muted);font-size:13px}
+
+/* Spelbordets utseende (dagens editor) inuti portalen */
+.partner-portal .kevin-appearance{min-width:0}
+.partner-portal .kevin-appearance input,.partner-portal .kevin-appearance select{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;min-height:38px;font:inherit;padding:8px 10px}
+.partner-portal .kevin-appearance-state{color:var(--muted);font-size:13px}
+.partner-portal .appearance-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.partner-portal .appearance-tabs button{padding:10px 12px;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.partner-portal .appearance-tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.partner-portal [hidden]{display:none!important}
+
+@media (max-width:980px){
+  .partner-portal .grid.c3,.partner-portal .grid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .partner-portal .grid.main-aside{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .partner-portal .shell{grid-template-columns:1fr}
+  .partner-portal .side{position:static;height:auto;padding:10px 12px}
+  .partner-portal .side .context{display:none}
+  .partner-portal .side nav{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+  .partner-portal .side a.nav{white-space:nowrap;padding:7px 10px;font-size:13px}
+  .partner-portal .side .foot{margin-top:8px;padding-top:8px;grid-template-columns:1fr;gap:8px}
+  .partner-portal .brand{padding-bottom:8px}
+  .partner-portal .main{padding:18px 16px 48px}
+  .partner-portal .grid.c2,.partner-portal .grid.c3,.partner-portal .grid.c4{grid-template-columns:1fr}
+  .partner-portal .page-head h1{font-size:22px}
+  .partner-portal .row{grid-template-columns:1fr;gap:6px}
+  .partner-portal .kv{grid-template-columns:1fr;gap:2px 0}
+  .partner-portal .kv dt{margin-top:8px}
+  .partner-portal .menu-list{right:auto;left:0}
+}
+@media (prefers-reduced-motion:reduce){.partner-portal *{transition:none!important}}

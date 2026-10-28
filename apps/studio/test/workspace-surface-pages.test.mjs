@@ -62,8 +62,8 @@ test('the Partner catch-all uses exact public login returns outside the technica
     authorized.push({ request, options });
     throw Object.assign(new Error('fixture login required'), { statusCode: 401 });
   });
-  for (const [path, expected, returnTo = expected] of [[undefined, '/partner'], [['demo-north', 'overview'], '/partner/demo-north/overview', '/partner/demo-north'],
-    [['demo-south', 'team'], '/partner/demo-south/team']]) {
+  for (const [path, expected, returnTo = expected] of [[undefined, '/partner'], [['demo-north'], '/partner/demo-north'],
+    [['demo-south', 'team'], '/partner/demo-south/team'], [['demo-south', 'reports'], '/partner/demo-south/reports']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.partner, path), error => {
         const login = new URL(redirectLocation(error, basePath));
@@ -91,8 +91,30 @@ test('the Partner catch-all rejects unknown paths before loading and unknown ope
     await assert.rejects(renderPage(loaded[surface], path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
   assert.equal(reads, 0);
-  await assert.rejects(renderPage(loaded.partner, ['unknown-operator', 'overview']), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
+  await assert.rejects(renderPage(loaded.partner, ['unknown-operator']), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   assert.equal(reads, 1);
+});
+
+test('Kevins retired partner addresses redirect to the new view before anything is read, keeping one safe room selector', async () => {
+  let reads = 0;
+  const loaded = pages(async () => { reads++; assert.fail('a legacy address never reaches the data layer'); });
+  for (const [path, query, expected] of [
+    [['north-casino', 'overview'], undefined, '/partner/north-casino'],
+    [['north-casino', 'tables'], undefined, '/partner/north-casino/rooms'],
+    [['north-casino', 'presentation'], { room: 'vip-room' }, '/partner/north-casino/rooms?room=vip-room'],
+    [['north-casino', 'game-tables'], { scope: 'company' }, '/partner/north-casino/rooms?scope=company'],
+    [['north-casino', 'backgrounds'], { room: ['a', 'b'] }, '/partner/north-casino/rooms'],
+    [['north-casino', 'transactions'], undefined, '/partner/north-casino/reports'],
+    [['north-casino', 'statistics'], undefined, '/partner/north-casino/reports'],
+    [['north-casino', 'shoes'], undefined, '/partner/north-casino'],
+    [['north-casino', 'roulette'], undefined, '/partner/north-casino/rooms'],
+  ]) {
+    await assert.rejects(renderPage(loaded.partner, path, query), error => {
+      assert.equal(redirects.getURLFromRedirectError(error), expected, path.join('/'));
+      return true;
+    });
+  }
+  assert.equal(reads, 0);
 });
 
 test('permission, configuration and unexpected failures propagate without an unauthenticated shell or login downgrade', async () => {
@@ -109,16 +131,33 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
     requests.push({ request, options });
     return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'fixture-admin', role: 'admin', accessClass: 'internal-admin', privateTestField: 'never-pass' } };
   });
-  for (const [surface, path, view, uiSurface] of [['partner', ['johns-spelbolag', 'presentation'], 'theme', 'partner'],
-    ['partner', ['johns-spelbolag', 'tables'], 'bj', 'partner'], ['partner', ['johns-spelbolag', 'integration'], 'api', 'partner']]) {
+  for (const [surface, path, view, uiSurface] of [['partner', ['johns-spelbolag', 'rooms'], 'rooms', 'partner'],
+    ['partner', ['johns-spelbolag'], 'overview', 'partner'], ['partner', ['johns-spelbolag', 'players'], 'players', 'partner'],
+    ['partner', ['johns-spelbolag', 'reports'], 'reports', 'partner'], ['partner', ['johns-spelbolag', 'help'], 'help', 'partner'],
+    ['partner', ['johns-spelbolag', 'team'], 'team', 'partner'], ['partner', ['johns-spelbolag', 'integration'], 'integration', 'partner']]) {
     const element = await renderPage(loaded[surface], path);
     assert.equal(element.type, loaded.PartnerOperatorWorkspace);
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
     assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
+    assert.equal(element.props.denied, undefined);
     assert.equal(JSON.stringify(element.props).includes('never-pass'), false, 'private session fields stay server-side');
-    assert.equal(requests.at(-1).options.operatorSlug, 'johns-spelbolag');
+    // The server reads the view so its permission is checked before the shell renders.
+    assert.deepEqual({ ...requests.at(-1).options }, { operatorSlug: 'johns-spelbolag', view });
   }
+});
+
+test('a denied view reaches the client only as the 403 notice, with the snapshot the role may read', async () => {
+  const denied = { view: 'team', permission: 'team.read', role: { id: 'partner-editor', label: 'redaktör' } };
+  const snapshot = { preview: false, operator: { id: 'john-id', slug: 'johns-spelbolag' }, team: [], denied };
+  const loaded = pages(async () => ({ snapshot, denied, apiBase: '/studio/api/partner/snapshot', session: { user: 'john-editor', accessClass: 'partner' } }));
+  const element = await renderPage(loaded.partner, ['johns-spelbolag', 'team']);
+  assert.equal(element.type, loaded.PartnerOperatorWorkspace);
+  assert.deepEqual(element.props.denied, denied);
+  assert.equal(element.props.initialView, 'team');
+  const allowed = pages(async () => ({ snapshot: { ...snapshot, denied: undefined }, apiBase: '/studio/api/partner/snapshot', session: { user: 'john-editor', accessClass: 'partner' } }));
+  const open = await renderPage(allowed.partner, ['johns-spelbolag', 'rooms']);
+  assert.equal(open.props.denied, undefined); assert.equal(open.props.initialView, 'rooms');
 });
 
 test('room deep links pass the exact query only after authorizing the registered operator',async()=>{
@@ -271,11 +310,11 @@ test('authorized partner menus pass raw room and scope together without masking 
   for(const menu of ['rooms','team','integration','overview']){
     for(const query of [{scope:'company'},{scope:['company','company']},{scope:''},{scope:'unknown'},
       {scope:'company',room:''},{scope:'company',room:['vip-room','other-room']},{scope:'company',room:'foreign-room'}]){
-      const element=await renderPage(loaded.partner,['north-casino',menu],query);
+      const element=await renderPage(loaded.partner,menu==='overview'?['north-casino']:['north-casino',menu],query);
       assert.equal(element.props.initialRoomScope,query.scope);
       assert.equal(element.props.initialRoomId,query.room);
       assert.equal(element.props.initialSnapshot,snapshot);
-      assert.deepEqual({...requests.at(-1)},{operatorSlug:'north-casino'});
+      assert.deepEqual({...requests.at(-1)},{operatorSlug:'north-casino',view:menu});
     }
   }
   const denied=pages(async()=>{throw Object.assign(new Error('denied'),{statusCode:403});});
@@ -286,10 +325,11 @@ test('N1 and partner login recovery retain company or exact room context on ever
   for(const cookie of ['partner_session=expired','bo_jwt=expired; partner_session=present']){
     const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid',cookie}));
     for(const menu of ['rooms','team','integration','overview']){
-      const path='/partner/north-casino/'+menu,canonical=resolveWorkspaceSurfacePath(path).canonicalPath;
+      const segments=menu==='overview'?['north-casino']:['north-casino',menu];
+      const path='/partner/'+segments.join('/'),canonical=resolveWorkspaceSurfacePath(path).canonicalPath;
       for(const query of [{scope:'company'},{room:'vip-room'}]){
         for(const basePath of ['','/studio']){
-          await assert.rejects(renderPage(loaded.partner,['north-casino',menu],query),error=>{
+          await assert.rejects(renderPage(loaded.partner,segments,query),error=>{
             const login=new URL(redirectLocation(error,basePath),'https://game.fixture.invalid');
             assert.equal(login.pathname,cookie.startsWith('bo_jwt')?'/admin/login':'/partner/login');
             assert.equal(login.searchParams.get('returnTo'),canonical+'?'+new URLSearchParams(query));return true;
@@ -321,10 +361,10 @@ test('a Partner cookie uses live scoped data and never exposes the server sessio
     reads++;
     return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'north-member', accessClass: 'partner', privateField: 'never-pass' } };
   }, new Headers({ host: 'studio.fixture.invalid', cookie: 'partner_session=isolated' }));
-  const workspace = await renderPage(loaded.partner, ['north', 'overview']);
+  const workspace = await renderPage(loaded.partner, ['north']);
   assert.equal(workspace.type, loaded.PartnerOperatorWorkspace);
   assert.equal(workspace.props.initialSnapshot, snapshot);
-  assert.equal(workspace.props.initialView, 'ops');
+  assert.equal(workspace.props.initialView, 'overview');
   assert.equal(workspace.props.apiBase, '/studio/api/partner/snapshot');
   assert.equal(workspace.props.user, 'north-member');
   assert.equal(workspace.props.session, undefined);

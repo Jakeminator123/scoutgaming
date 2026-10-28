@@ -68,7 +68,7 @@ for (const schemaVersion of [1,2]) test('owned room preview ignores guessed runt
   assert.match(html,/\/game\?game=blackjack&amp;operator=north&amp;table=room-live/);
   assert.doesNotMatch(html,/lane=|room-other-owner|room-preview|room-other-presentation/);
   const empty=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot:{...snapshot,tables:[]},view:'test'}));
-  assert.match(empty,/Inget publicerat spelrum/);
+  assert.match(empty,/Inget öppet spelbord/);
   assert.doesNotMatch(empty,/\/play\/blackjack/);
 });
 
@@ -87,10 +87,10 @@ test('compact published summary follows the selected owned room and its exact ov
   const snapshot={operator:{id:'north-id',slug:'north'},packageRevision:9,roomBindings:'operator-owned-v2',presentation,
     branding:{lane:'mobile-phone',dealer:'astrid',roomOverrides:{vip:{dealer:'elin'}}},tables:[{id:'vip',name:'VIP',operatorId:'north-id',status:'active',presentationId:'mobile-phone'}]};
   const sv=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip'}));
-  assert.match(sv,/VIP/);assert.match(sv,/Elin/);assert.match(sv,/table=vip/);assert.match(sv,/Version 9/);
+  assert.match(sv,/VIP/);assert.match(sv,/Elin/);assert.match(sv,/table=vip/);assert.match(sv,/revision 9/);
   assert.doesNotMatch(sv,/Second composition|image\/png|video\/webm|lane=/);
   const en=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip',language:'en'}));
-  assert.match(en,/Published composition/);assert.match(en,/Three separate layers/);assert.doesNotMatch(en,/<dt>Bakgrund|Provspela|Publicerat/);
+  assert.match(en,/Published scene template/);assert.match(en,/Three separate layers/);assert.doesNotMatch(en,/<dt>Bakgrund|Provspela|Publicerat/);
 });
 
 test('Admin may choose every allowed layer of a layered composition while material compatibility still applies',()=>{

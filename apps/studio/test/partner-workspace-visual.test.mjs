@@ -2,176 +2,249 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { partnerCopy, partnerNavigation } from '../components/kevin-bo/partner-copy.mjs';
+import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
+import { PARTNER_PERMISSIONS } from '../../../packages/studio-access/server/partner-access-policy.mjs';
+import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { PartnerPackageView } from '../components/partner-package-view.mjs';
+import { jsxRequire } from './fixtures/jsx-require.mjs';
 
 const require = createRequire(import.meta.url);
-const { transformSync } = require('next/dist/build/swc');
+const postcss = require('postcss');
 const sourceUrl = new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url);
-const source = readFileSync(sourceUrl, 'utf8');
-const actionsUrl = new URL('../components/partner-session-actions.tsx', import.meta.url);
-const actionsCode = transformSync(readFileSync(actionsUrl, 'utf8'), { filename: 'partner-session-actions.tsx',
-  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-const actionsModule = { exports: {} }, actionsRequire = createRequire(actionsUrl);
-vm.runInNewContext(actionsCode, { module: actionsModule, exports: actionsModule.exports,
-  require: name => name.endsWith('.css') ? {} : actionsRequire(name) });
+const actions = jsxRequire(sourceUrl)('../partner-session-actions.tsx');
+const DAY = 24 * 60 * 60 * 1000, today = Date.UTC(2026, 9, 28, 12);
+const roleOf = id => STANDARD_OPERATOR_ROLES.find(role => role.id === id);
 
-function components({ language = 'sv', theme = 'light' } = {}) {
-  const compiled = transformSync(source, { filename: 'partner-operator-workspace.jsx',
-    jsc: { parser: { syntax: 'ecmascript', jsx: true }, transform: { react: { runtime: 'automatic' } } },
-    module: { type: 'commonjs' } });
-  const localRequire = createRequire(sourceUrl), module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, structuredClone, URL, URLSearchParams,
-    require: name => {
-      if (name.endsWith('.css')) return {};
-      if (name === '../partner-session-actions') return actionsModule.exports;
-      if (name === './views/team.jsx') return { TeamView: () => null };
-      if (name === './partner-copy.mjs') return { partnerNavigation, usePartnerPreferences: () => ({
-        language, theme, copy: partnerCopy(language), setLanguage() {}, setTheme() {},
-      }) };
-      return localRequire(name);
-    },
-  }, { filename: 'partner-operator-workspace.jsx' });
-  return module.exports;
+function components({ language = 'sv', theme = 'light', hooks } = {}) {
+  const overrides = {
+    '../partner-session-actions': actions,
+    './views/team.jsx': { TeamView: () => React.createElement('section', { 'data-team': 'stub' }) },
+    './partner-copy.mjs': { partnerNavigation, usePartnerPreferences: () => ({ language, theme, copy: partnerCopy(language), setLanguage() {}, setTheme() {} }) },
+    ...(hooks ? { react: hooks } : {}),
+  };
+  return jsxRequire(sourceUrl, overrides)('./partner-operator-workspace.jsx');
 }
 
+function days(values) {
+  return Array.from({ length: 30 }, (_, index) => {
+    const value = values[index - (30 - values.length)] ?? 0;
+    return { day: new Date(today - (29 - index) * DAY).toISOString().slice(0, 10), rounds: value, staked: value * 50, returned: value * 45 };
+  });
+}
 function realSnapshot(overrides = {}) {
-  const operator = { id: 'john', slug: 'johnsspelbolag', name: 'Johnsspelbolag', packageRevision: '7' };
-  return { preview: false, accessClass: 'internal-admin', viewer: { user: 'jakob', accessClass: 'internal-admin' },
-    operator, operators: [operator], permissions: [], packageRevision: '7', generatedAt: '2026-10-11T12:00:00Z',
-    presentations: [{ id: 'lane-john', operatorId: 'john', name: 'Johns lane', dealer: 'Nora' }],
-    tables: [{ id: 'room-john', operatorId: 'john', name: 'Johns bord', game: 'blackjack', status: 'active', presentationId: 'lane-john' }],
-    team: [], players: [], transactions: [], reports: [], unavailableSections: ['players', 'transactions', 'reports'],
-    ...overrides };
+  const operator = { id: 'john', slug: 'johnsspelbolag', name: 'Johns Bet', packageRevision: '7' };
+  return { schemaVersion: 2, preview: false, mode: 'live', accessClass: 'partner', viewer: { user: 'john-admin', accessClass: 'partner' },
+    operator, operators: [operator], role: { id: 'partner-admin', label: 'administratör' }, permissions: [...PARTNER_PERMISSIONS], view: 'overview',
+    packageRevision: '7', publishedAt: Date.UTC(2026, 9, 20, 9), generatedAt: '2026-10-28T12:00:00Z',
+    presentations: [{ id: 'lane-john', operatorId: 'john', name: 'Johns lane', dealer: 'paow' }],
+    tables: [
+      { id: 'room-john', operatorId: 'john', name: 'Johns bord', game: 'blackjack', state: 'live', status: 'active', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: 'config-3', settings: { language: 'en', limitPreset: 'casual' }, playUrl: '/game?game=blackjack&operator=johnsspelbolag&table=room-john' },
+      { id: 'room-vip', operatorId: 'john', name: 'VIP-bordet', game: 'blackjack', state: 'pending', status: 'pending', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: null, playUrl: null },
+    ],
+    team: [], invitations: 0, draft: null, publications: [{ revision: 7, publishedAt: Date.UTC(2026, 9, 20, 9) }, { revision: 6, publishedAt: Date.UTC(2026, 9, 1) }],
+    assignment: { games: ['blackjack'], dealers: [{ id: 'paow', label: 'PAOW' }], lanes: [{ id: 'lane-john', label: 'Johns lane' }], backgrounds: [{ id: 'bg-lounge', label: 'Lounge' }], tables: [{ id: 'oak', label: 'Oak' }, { id: 'felt', label: 'Green felt' }] },
+    reports: { status: 'ready', from: today - 30 * DAY, to: today, windowDays: 30, currency: 'USD', truncated: false,
+      rooms: [{ roomId: 'room-john', rounds: 12, staked: 600, returned: 540, net: 60, days: days([0, 3, 2, 1, 2, 3, 1]) }, { roomId: 'room-vip', rounds: 0, staked: 0, returned: 0, net: 0, days: days([]) }] },
+    summary: { activeTables: 1 }, ...overrides };
 }
+const render = (props, options) => renderToStaticMarkup(React.createElement(components(options).PartnerOperatorWorkspace, { surface: 'partner', user: 'john-admin', apiBase: '/studio/api/partner/snapshot', initialSnapshot: realSnapshot(), ...props }));
+const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/class="nav"[^>]*>([^<]+)</g)].map(match => match[1]);
 
-test('real partner headers link staff to Admin and the lobby without granting member navigation', () => {
-  for (const language of ['sv', 'en']) {
-    const { PartnerOperatorWorkspace } = components({ language });
-    const render = accessClass => renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, {
-      surface: 'partner', user: 'jakob', initialSnapshot: realSnapshot({ accessClass }), initialView: 'overview',
-    }));
-    const staff = render('internal-admin');
-    assert.match(staff, /href="\/admin"/);
-    assert.match(staff, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
-    assert.doesNotMatch(staff, /href="\/(?:control|play)"/);
-    assert.doesNotMatch(render('partner'), /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
+test('the shell names the company, Partnerportalen, the assignment revision and the role word; the menu follows the role', () => {
+  const editor = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions] }) });
+  assert.deepEqual(menuOf(editor), ['Översikt', 'Spelbord', 'Hjälp och kontakt']);
+  assert.match(editor, /class="name">Johns Bet</); assert.match(editor, /class="sub">Partnerportalen</);
+  assert.match(editor, /Tilldelning från Scoutgaming/); assert.match(editor, /<b>revision 7<\/b>/);
+  assert.match(editor, /1 dealers · 1 scenmallar · 2 bordsgrafik · 1 bakgrunder/);
+  assert.match(editor, /class="small">redaktör</);
+  assert.match(editor, /aria-current="page"[^>]*>Översikt</);
+  const viewer = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-viewer', label: 'läsare' }, permissions: [...roleOf('partner-viewer').permissions] }) });
+  assert.deepEqual(menuOf(viewer), ['Översikt', 'Spelbord', 'Spelare', 'Ekonomi', 'Team', 'Integration', 'Hjälp och kontakt']);
+  assert.match(viewer, /class="small">läsare</);
+  for (const [, href] of viewer.matchAll(/class="nav" href="([^"]+)"/g)) assert.match(href, /^\/partner\/johnsspelbolag(?:\/|$)/);
+  for (const html of [editor, viewer]) {
+    assert.doesNotMatch(html, /Planerat|Spelrum|Sammansättning|Operatörspersonal|Intern administratör|Nivå 2|Spelbolag|Partnerportal[^e]|kevin-bo/);
+    assert.doesNotMatch(html, /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
+    assert.match(html, /Byt konto/); assert.match(html, /Logga ut/);
   }
+  assert.deepEqual(partnerNavigation('sv', ['team.roles.assign']).map(item => item.id), []);
+  assert.deepEqual(partnerNavigation('en', ['overview.read', 'team.read']).map(item => item.label), ['Overview', 'Help and contact', 'Team'].sort((a, b) => ['Overview', 'Team', 'Help and contact'].indexOf(a) - ['Overview', 'Team', 'Help and contact'].indexOf(b)));
 });
 
-test('John shell strings are supplied in Swedish and English with a safe fallback', () => {
+test('a denied view renders the 403 card with role and permission inside the shell, never the view or its data', () => {
+  const denied = { view: 'team', permission: 'team.read', role: { id: 'partner-editor', label: 'redaktör' } };
+  const html = render({ initialView: 'team', denied, initialSnapshot: realSnapshot({ role: denied.role, permissions: [...roleOf('partner-editor').permissions], view: 'team', denied }) });
+  assert.match(html, /role="alert"/); assert.match(html, />403</);
+  assert.match(html, /Rollen redaktör saknar behörigheten team\.read/);
+  assert.match(html, /href="\/partner\/johnsspelbolag"[^>]*>Till översikten</);
+  assert.doesNotMatch(html, /data-team="stub"/);
+  // The shell stays: company, menu for the role and the role word.
+  assert.deepEqual(menuOf(html), ['Översikt', 'Spelbord', 'Hjälp och kontakt']); assert.match(html, /class="name">Johns Bet</); assert.match(html, /class="small">redaktör</);
+  const allowed = render({ initialView: 'team' });
+  assert.match(allowed, /data-team="stub"/); assert.doesNotMatch(allowed, />403</);
+  // A denial for another view than the one shown does not hide the shown view.
+  assert.doesNotMatch(render({ initialView: 'overview', denied }), />403</);
+});
+
+test('a role without a section sees Inte anslutet with the permission named, never invented rooms or assignment', () => {
+  // A role that lacks tables.read or presentations.read gets a snapshot without those sections.
+  const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], presentations: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined, summary: {} }) });
+  assert.match(narrow, /Visas för roller med behörigheten tables\.read/); assert.match(narrow, /Visas för roller med behörigheten presentations\.read/);
+  assert.doesNotMatch(narrow, /0 av 0/); assert.doesNotMatch(narrow, /Oak|Lounge|Johns bord/);
+  assert.deepEqual(menuOf(narrow), ['Översikt', 'Hjälp och kontakt']);
+  const allowed = render({ initialView: 'team' });
+  assert.match(allowed, /data-team="stub"/); assert.doesNotMatch(allowed, />403</);
+});
+
+test('internal staff get Admin and lobby links; company members do not', () => {
+  for (const language of ['sv', 'en']) {
+    const staff = render({ user: 'jakob', initialSnapshot: realSnapshot({ accessClass: 'internal-admin', viewer: { user: 'jakob', accessClass: 'internal-admin' }, role: { id: 'internal-admin', label: 'Scoutgamings personal' } }) }, { language });
+    assert.match(staff, /href="\/admin"/);
+    assert.match(staff, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
+    assert.match(staff, /Scoutgamings personal/);
+    assert.doesNotMatch(staff, /href="\/(?:control|play)"/);
+    assert.doesNotMatch(render({}, { language }), /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
+  }
+  const dark = render({}, { language: 'en', theme: 'dark' });
+  assert.match(dark, /class="partner-portal" data-surface="partner" data-theme="dark" lang="en"/);
+  assert.match(dark, /Switch account/); assert.match(dark, /Log out/);
+  const several = render({ initialSnapshot: realSnapshot({ operators: [realSnapshot().operator, { id: 'amber', slug: 'amber-house', name: 'Amber House' }] }) });
+  assert.match(several, /id="partner-operator"/); assert.match(several, /Amber House/);
+  assert.doesNotMatch(render({}), /id="partner-operator"/);
+});
+
+test('the overview shows real figures from the game journal and says Inte anslutet otherwise', () => {
+  const html = render({});
+  assert.match(html, /<h1>Översikt<\/h1>/);
+  assert.match(html, /1 av 2<\/span><span class="l">spelbord öppna i lobbyn/);
+  assert.match(html, /class="v">12<\/span><span class="l">rundor senaste 7 dagarna/);
+  assert.match(html, /600 USD/); assert.match(html, /60 USD/);
+  assert.match(html, /href="\/game\?game=blackjack&amp;operator=johnsspelbolag&amp;table=room-john"/);
+  assert.match(html, /öppet/); assert.match(html, /pausat/); assert.match(html, /inte i lobbyn/);
+  assert.match(html, /PAOW · casual · en/); assert.match(html, /config-3/);
+  assert.match(html, /Lounge/); assert.match(html, /Oak, Green felt/); assert.match(html, /Johns lane/);
+  assert.match(html, /Senaste tilldelning: revision 7/); assert.match(html, /20 okt\. 2026/);
+  assert.doesNotMatch(html, /Spelkoppling återstår|playersToday|roundsToday|Planerat/);
+  const unconnected = render({ initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'table-missing' }, draft: { revision: 3, basePackageRevision: 7 }, invitations: 2 }) });
+  assert.equal((unconnected.match(/Inte anslutet/g) ?? []).length >= 3, true);
+  assert.match(unconnected, /Spelets journal finns inte i den här miljön/); assert.doesNotMatch(unconnected, /shared_table_audit/, 'no table name in user text');
+  assert.doesNotMatch(unconnected, /600 USD|class="v">12</);
+  assert.match(unconnected, /Sparat utkast 3/); assert.match(unconnected, /2 inbjudan väntar/);
+  assert.match(unconnected, /href="\/partner\/johnsspelbolag\/rooms"[^>]*class="row link"/);
+  const withoutRight = render({ initialSnapshot: realSnapshot({ reports: undefined, role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions] }) });
+  assert.match(withoutRight, /reports\.read/);
+});
+
+test('Spelare, Ekonomi, Integration and Hjälp render honest content without invented numbers', () => {
+  const players = render({ initialView: 'players' });
+  assert.match(players, /<h1>Spelare<\/h1>/); assert.match(players, /steg F efter O03/); assert.doesNotMatch(players, /<td|preview-area|\d+ USD|\d{4,}/);
+  const reports = render({ initialView: 'reports' });
+  assert.match(reports, /<h1>Ekonomi<\/h1>/); assert.match(reports, /ur spelets journal/); assert.match(reports, /600 USD/); assert.match(reports, /540 USD/);
+  assert.match(reports, /revision 7<\/b><span class="small muted"> · publicerad nu/); assert.match(reports, /revision 6/);
+  assert.match(reports, /steg F/); assert.match(reports, /Avräkning/); assert.match(reports, /aria-pressed="true"[^>]*>7 dagar/);
+  // Two currencies in the period: amounts per currency, never one added-up sum.
+  const base = realSnapshot().reports, withAmounts = (room, code) => ({ ...room, days: room.days.map(day => ({ ...day, amounts: day.rounds ? { [code]: { staked: day.staked, returned: day.returned } } : {} })) });
+  const mixedRooms = [withAmounts(base.rooms[0], 'USD'), withAmounts({ ...base.rooms[1], rounds: 1, staked: 20, returned: 0, net: 20, days: days([0, 0, 0, 0, 0, 0, 1]).map(day => ({ ...day, staked: day.rounds * 20, returned: 0 })) }, 'EUR')];
+  const mixed = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...base, currency: null, currencies: ['EUR', 'USD'], rooms: mixedRooms } }) });
+  assert.match(mixed, /Flera valutor i perioden \(EUR, USD\)/); assert.match(mixed, /20 EUR · 600 USD/); assert.doesNotMatch(mixed, /620/);
+  // The read window did not reach the whole period: Ekonomi and Översikt both say so, naming the row count only then.
+  const cut = { ...base, truncated: true, seqWindow: 100000 };
+  for (const view of ['reports', 'overview']) {
+    const html = render({ initialView: view, initialSnapshot: realSnapshot({ reports: cut }) });
+    assert.match(html, /role="status"[^>]*>Siffrorna bygger på de senaste 100 000 journalraderna/, view);
+    assert.doesNotMatch(render({ initialView: view }), /journalraderna|läsfönstret/, view + ' without truncation');
+  }
+  assert.match(render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { ...cut, seqWindow: undefined } }) }), /Journalen är längre än läsfönstret/);
+  const noReports = render({ initialView: 'reports', initialSnapshot: realSnapshot({ reports: { status: 'not-connected', reason: 'read-failed' } }) });
+  assert.match(noReports, /kunde inte läsas just nu/); assert.doesNotMatch(noReports, /600 USD|540 USD/);
+  const integration = render({ initialView: 'integration' });
+  assert.match(integration, /<h1>Integration<\/h1>/); assert.match(integration, /<code>\/game\?operator=johnsspelbolag<\/code>/);
+  assert.match(integration, /inte ansluten/); assert.match(integration, /api_keys/); assert.doesNotMatch(integration, /Spelarkonton för den här operatören|\/admin\/admin\/players/);
+  const help = render({ initialView: 'help' });
+  assert.match(help, /<h1>Hjälp och kontakt<\/h1>/); assert.match(help, /Begär material/);
+  assert.match(help, /href="mailto:\?subject=Beg%C3%A4ran%20om%20material%20fr%C3%A5n%20Johns%20Bet/);
+  assert.match(help, /Vad rollen administratör får göra/); assert.match(help, /Låst av Scoutgaming/);
+});
+
+test('shell strings exist in both languages and the snapshot validator rejects fixtures and foreign resources', () => {
   const sv = partnerCopy('sv'), en = partnerCopy('en');
   assert.deepEqual(Object.keys(sv), Object.keys(en));
   for (const copy of [sv, en]) for (const [key, value] of Object.entries(copy)) assert.ok(typeof value === 'string' && value, key);
   assert.equal(partnerCopy('unsupported'), sv);
-  assert.equal(en.overview, 'Overview');
-  assert.equal(sv.overview, 'Översikt');
-});
-
-test('real partner navigation has John groups and no legacy fixture product pages', () => {
-  const nav = partnerNavigation('en');
-  assert.deepEqual([...new Set(nav.map(item => item.group))], ['Operator']);
-  for (const id of ['pit', 'roulette', 'baccarat', 'shoes', 'stats', 'voice', 'clips', 'archive']) assert.equal(nav.some(item => item.id === id), false, id);
-  assert.equal(nav.some(item => item.id === 'team'), false);
-  assert.equal(partnerNavigation('sv', ['team.read']).some(item => item.id === 'team'), true);
-  assert.equal(partnerNavigation('sv', ['team.roles.assign']).some(item => item.id === 'team'), false);
-});
-
-test('real overview uses actual package and configuration data, not fixture game metrics', () => {
-  const { PartnerLiveOverview } = components();
-  for (const language of ['sv', 'en']) {
-    const copy = partnerCopy(language);
-    const html = renderToStaticMarkup(React.createElement(PartnerLiveOverview, { snapshot: realSnapshot(), copy }));
-    assert.match(html, />7<\/strong>/);
-    assert.match(html, /Johns lane/);
-    assert.match(html, /Johns bord/);
-    assert.ok(html.includes(copy.configured));
-    assert.ok(html.includes(copy.unavailableBody));
-    assert.match(html, /href="\/partner\/johnsspelbolag\/rooms"/);
-    assert.doesNotMatch(html, /paused|Pausat|GGR|€|EUR|Öppna insatser|Spelare online|Fixture operations/);
+  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), preview: true, mode: 'fixture' }));
+  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), operators: [] }));
+  for (const key of ['tables', 'team', 'presentations']) {
+    assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: [{ id: 'foreign', operatorId: 'other' }] }), key);
+    assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: null }), key);
   }
+  assert.throws(() => createPartnerWorkspaceContext(realSnapshot(), { surface: 'internal', user: 'john-admin' }));
+  assert.throws(() => createPartnerWorkspaceContext({ ...realSnapshot(), viewer: { user: 'someone-else' } }, { surface: 'partner', user: 'john-admin' }));
+  assert.equal(operatorPackageRevision(realSnapshot()), '7');
+  assert.throws(() => render({ initialSnapshot: { ...realSnapshot(), preview: true } }), /verklig partnerarbetsyta/);
 });
 
-test('empty unpublished operators do not imply a live package or assigned tables', () => {
-  const { PartnerLiveOverview } = components();
-  const snapshot = realSnapshot({ operator: { id: 'john', slug: 'johnsspelbolag', name: 'Johnsspelbolag' }, packageRevision: '', presentations: [], tables: [] });
-  const html = renderToStaticMarkup(React.createElement(PartnerLiveOverview, { snapshot, copy: partnerCopy('sv') }));
-  assert.match(html, /Inget publicerat paket/);
-  assert.match(html, /Inga spelrum ännu/);
-  assert.doesNotMatch(html, /Johns bord|Johns lane|Konfigurerat/);
-});
-
-test('real administrator shell exposes same-account links, theme, language and grouped navigation', () => {
-  const { PartnerOperatorWorkspace } = components({ language: 'en', theme: 'dark' });
-  const html = renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
-  assert.match(html, /data-preview="operator" data-theme="dark" lang="en"/);
-  assert.match(html, /href="\/admin"/);
-  assert.match(html, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
-  assert.match(html, /Internal administrator/);
-  assert.match(html, /Switch account/);
-  assert.match(html, /Log out/);
-  assert.match(html, /<h1[^>]*>Overview<\/h1>/);
-  assert.equal((html.match(/<details/g) || []).length, 1);
-  assert.match(html, /<summary[^>]*>Operator<\/summary>/);
-  assert.match(html, /aria-current="page"/);
-  assert.doesNotMatch(html, /Intern förhandsvisning|Exempeloperatör|Fixture operations|Demo North|Demo South/);
-});
-
-test('member shell keeps internal links out and unsupported real pages never show fixtures', () => {
-  const { PartnerOperatorWorkspace } = components();
-  for (const initialView of ['players', 'tx', 'reports', 'api', 'roulette']) {
-    const snapshot = realSnapshot({ accessClass: 'partner', viewer: { user: 'john', accessClass: 'partner' } });
-    const html = renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, { surface: 'partner', initialSnapshot: snapshot, user: 'john', apiBase: '/api/partner/snapshot', initialView }));
-    assert.match(html, /Inte anslutet/);
-    assert.match(html, /Operatörspersonal/);
-    assert.match(html, /Byt konto/);
-    assert.match(html, /Logga ut/);
-    assert.doesNotMatch(html, /href="\/(?:control|play)"|Fixture operations|Intern förhandsvisning|Planerat/);
-  }
-});
-
-test('scoped partner entry styles define every class the entry component uses and load no external resources', () => {
+test('portal CSS is fenced under .partner-portal, loads nothing external, and the directory CSS defines every class it uses', () => {
+  const portalCss = readFileSync(new URL('../components/kevin-bo/partner-portal.css', import.meta.url), 'utf8');
+  postcss.parse(portalCss).walkRules(rule => {
+    if (rule.parent.type === 'atrule' && /keyframes$/.test(rule.parent.name)) return;
+    for (const selector of postcss.list.comma(rule.selector)) assert.ok(selector.startsWith('.partner-portal'), selector);
+  });
   const entrySource = readFileSync(new URL('../components/partner-workspace.tsx', import.meta.url), 'utf8');
   const entryCss = readFileSync(new URL('../components/partner-workspace.module.css', import.meta.url), 'utf8');
-  const shellCss = readFileSync(new URL('../components/kevin-bo/john-foundation.css', import.meta.url), 'utf8');
   for (const [, name] of entrySource.matchAll(/styles\.(\w+)/g)) assert.ok(entryCss.includes(`.${name}`), name);
-  for (const css of [entryCss, shellCss]) assert.doesNotMatch(css, /@import|fonts\.googleapis|https?:\/\//);
+  for (const css of [entryCss, portalCss]) assert.doesNotMatch(css, /@import|fonts\.googleapis|https?:\/\//);
+  const workspace = readFileSync(sourceUrl, 'utf8');
+  assert.doesNotMatch(workspace, /window\.BO_|ReactDOM|createRoot\(|import\(|fetch\(|new WebSocket|new EventSource|localStorage|normalizeView|INTERNAL_LINKS|owner==='planned'/);
 });
 
-test('all live partner composition names share localized labels while frozen data and room IDs stay unchanged', () => {
-  const named = [['mobile-phone','Mobile Phone Lane'],['layer-preview','Layer Preview Lane'],['company-custom','Norrsken']];
-  const snapshot = realSnapshot({
-    presentations: named.map(([id,name]) => ({id,name,operatorId:'john',dealer:'astrid'})),
-    presentation: {schemaVersion:1,projectRevision:'frozen-label-fixture',assets:[],lanes:named.map(([id,label]) => ({...defaultPresentationLane('astrid'),id,label}))},
-    branding: {lane:'mobile-phone'}, roomBindings:'operator-owned-v2',
-    tables: named.map(([presentationId],index) => ({id:'room-'+index,operatorId:'john',name:'Spelrum '+index,game:'blackjack',status:'active',presentationId})),
-  });
-  const before=JSON.stringify(snapshot);
-  for(const language of ['sv','en']) {
-    const {PartnerOperatorWorkspace,PartnerLiveOverview}=components({language}),copy=partnerCopy(language);
-    const expected=language==='en'?['Standard composition','Layer composition','Norrsken']:['Standardsammansättning','Lagersammansättning','Norrsken'];
-    const page=view=>renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace,{surface:'partner',initialSnapshot:snapshot,user:'jakob',apiBase:'/studio/api/partner/snapshot',initialView:view}));
-    const overview=page('ops');
-    for(const label of expected) {
-      assert.ok(overview.includes('<li>'+label+'</li>'));
-      assert.ok(overview.includes('<td>'+label+'</td>'));
-    }
-    const tableOnly=renderToStaticMarkup(React.createElement(PartnerLiveOverview,{snapshot,copy,language,tablesOnly:true}));
-    for(const label of expected) assert.ok(tableOnly.includes('<td>'+label+'</td>'));
-    const rooms=page('bj'),integration=page('api');
-    assert.ok(rooms.includes('<p>'+expected[0]+'</p>'));
-    assert.ok(integration.includes(copy.apiBody));
-    for(const markup of [overview,tableOnly,rooms,integration]) assert.doesNotMatch(markup,/Mobile Phone Lane|Layer Preview Lane/);
-    for(const [index,room] of snapshot.tables.entries()) {
-      const preview=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:room.id,language}));
-      assert.ok(preview.includes('<p>'+expected[index]+'</p>'));
-      assert.ok(preview.includes('/game?game=blackjack&amp;operator=johnsspelbolag&amp;table='+room.id));
-      assert.doesNotMatch(preview,/Mobile Phone Lane|Layer Preview Lane/);
-    }
-    assert.equal(JSON.stringify(snapshot),before);
-  }
+function harness(language = 'sv') {
+  const slots = []; let cursor = 0;
+  const hooks = { ...React,
+    useState: value => { const index = cursor++; if (!(index in slots)) slots[index] = typeof value === 'function' ? value() : value; return [slots[index], next => { slots[index] = typeof next === 'function' ? next(slots[index]) : next; }]; },
+    useRef: value => { const index = cursor++; if (!(index in slots)) slots[index] = { current: value }; return slots[index]; },
+    useMemo: work => work(), useCallback: work => work, useEffect: () => {} };
+  return { hooks, reset: () => { cursor = 0; }, module: components({ language, hooks }) };
+}
+
+test('a verified own-company saved receipt updates the package view and clears the waiting draft without replacing team or rooms', () => {
+  const { module, reset } = harness();
+  const snapshot = realSnapshot({ team: [{ id: 'staff', operatorId: 'john' }], draft: { revision: 2, basePackageRevision: 7 } });
+  const props = { surface: 'partner', initialSnapshot: snapshot, apiBase: '/studio/api/partner/snapshot', user: 'john-admin', initialView: 'rooms' };
+  const session = module.PartnerOperatorWorkspace(props).type;
+  const walk = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(walk)];
+  const view = () => { reset(); return walk(session(props)).find(node => node.type?.name === 'PartnerOperatorView'); };
+  const before = view().props.runtime.snapshot;
+  const lane = defaultPresentationLane('astrid'); lane.dealers = ['astrid', 'vera']; lane.layers.dealer.allowed = ['astrid', 'vera'];
+  const receipt = { operatorId: 'john', packageRevision: 8, branding: { lane: lane.id, dealer: 'vera' }, presentation: { schemaVersion: 1, projectRevision: 'frozen-r1', lanes: [lane], assets: [] } };
+  view().props.onAppearanceSaved({ ...receipt, operatorId: 'other' }); assert.deepEqual(view().props.runtime.snapshot, before);
+  view().props.onAppearanceSaved(receipt); const after = view().props.runtime.snapshot;
+  assert.equal(after.packageRevision, '8'); assert.equal(after.operator.packageRevision, '8'); assert.equal(after.presentations[0].dealer, 'vera'); assert.equal(after.draft, null);
+  assert.deepEqual(after.team, before.team); assert.deepEqual(after.tables, before.tables); assert.deepEqual(after.operators, before.operators);
+  view().props.onAppearanceSaved({ ...receipt, packageRevision: 7, branding: { dealer: 'astrid' } }); assert.deepEqual(view().props.runtime.snapshot, after);
+});
+
+test('the room editor keeps its element identity across menu and history view changes', () => {
+  const slots = []; let cursor = 0;
+  const hooks = { ...React, useState: value => { const index = cursor++; if (!(index in slots)) slots[index] = typeof value === 'function' ? value() : value; return [slots[index], next => { slots[index] = typeof next === 'function' ? next(slots[index]) : next; }]; }, useEffect: callback => callback() };
+  const module = components({ hooks });
+  const roomSelection = { roomId: 'room-john', unavailable: false }, onRoomSelectionChange = () => {};
+  const runtime = createPartnerWorkspaceContext(realSnapshot(), { surface: 'partner', user: 'john-admin', notify() {} });
+  const base = { runtime, copy: partnerCopy('sv'), apiBase: '/api/partner', language: 'sv', roomSelection, onRoomSelectionChange, user: 'john-admin' };
+  const render = view => { cursor = 0; return module.PartnerOperatorView({ ...base, view }); };
+  const room = tree => tree.props.children[0];
+  const first = room(render('rooms')), away = room(render('overview')), back = room(render('rooms'));
+  assert.equal(first.props.hidden, false); assert.equal(away.props.hidden, true); assert.equal(back.props.hidden, false);
+  assert.equal(first.type, away.type); assert.equal(first.props.children.type, away.props.children.type);
+  assert.equal(away.props.children.props.active, false); assert.equal(back.props.children.props.active, true);
+  assert.equal(back.props.children.props.selection, roomSelection); assert.equal(back.props.children.props.onSelectionChange, onRoomSelectionChange);
+});
+
+test('overview and Ekonomi markup are stable across server time zones', () => {
+  const previous = process.env.TZ;
+  const draw = () => ['overview', 'reports'].map(initialView => render({ initialView })).join('');
+  try { process.env.TZ = 'UTC'; const utc = draw(); process.env.TZ = 'Europe/Stockholm'; assert.equal(draw(), utc); }
+  finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
 });

@@ -34,7 +34,8 @@ const ACTIONS = {
   'team.invite': ['Medlem inbjuden', 'Member invited'], 'team.role': ['Roll ändrad', 'Role changed'],
   'team.suspend': ['Medlem avstängd', 'Member suspended'], 'team.reactivate': ['Medlem återaktiverad', 'Member reactivated'],
 };
-export function PartnerJournal({ base, operatorSlug, operatorId, language = 'sv', version = 0 }) {
+// `actions` narrows the shown rows (for example the publications only); the page is still read whole.
+export function PartnerJournal({ base, operatorSlug, operatorId, language = 'sv', version = 0, actions = null }) {
   const en = language === 'en';
   const [open, setOpen] = React.useState(false);
   const [refresh, setRefresh] = React.useState(0);
@@ -54,18 +55,18 @@ export function PartnerJournal({ base, operatorSlug, operatorId, language = 'sv'
     if (open) void load();
     return () => { request.current += 1; };
   }, [open, load, version, refresh]);
-  return h('div', { className: 'page-b' }, h('section', { className: 'panel', 'aria-label': en ? 'Change journal' : 'Ändringsjournal' },
-    h('div', { className: 'panel-h' }, h('h2', null, en ? 'Change journal' : 'Ändringsjournal'),
-      h('button', { type: 'button', className: 'btn sm', 'aria-expanded': open, onClick: () => setOpen(value => !value) }, open ? (en ? 'Hide journal' : 'Dölj journal') : (en ? 'Show journal' : 'Visa journal')),
-      open ? h('button', { type: 'button', className: 'btn sm', disabled: state.status === 'loading', onClick: () => setRefresh(value => value + 1) }, en ? 'Refresh' : 'Uppdatera') : null),
+  return h('div', { className: 'stack' }, h('section', { className: 'card flat', 'aria-label': en ? 'Change journal' : 'Ändringsjournal' },
+    h('div', { className: 'card-head' }, h('h2', null, en ? 'Change journal' : 'Ändringsjournal'),
+      h('button', { type: 'button', className: 'btn small', 'aria-expanded': open, onClick: () => setOpen(value => !value) }, open ? (en ? 'Hide journal' : 'Dölj journal') : (en ? 'Show journal' : 'Visa journal')),
+      open ? h('button', { type: 'button', className: 'btn small', disabled: state.status === 'loading', onClick: () => setRefresh(value => value + 1) }, en ? 'Refresh' : 'Uppdatera') : null),
     open ? h(React.Fragment, null,
-      h('p', { className: 'note' }, en ? 'Saved changes for this operator. Logging starts when this feature is activated; older changes are not reconstructed.' : 'Sparade ändringar för detta bolag. Loggningen börjar när funktionen aktiveras; äldre ändringar återskapas inte.'),
+      h('p', { className: 'note' }, en ? 'Saved changes for this operator. Logging starts when this feature is activated; older changes are not reconstructed.' : 'Bolagets journal. Loggningen börjar när funktionen aktiveras; äldre ändringar återskapas inte.'),
       state.status === 'error' ? h('p', { className: 'note', role: 'alert' }, en ? 'The journal could not be loaded. Access may have changed. Refresh to try again.' : 'Journalen kunde inte hämtas. Behörigheten kan ha ändrats. Uppdatera för att försöka igen.') : null,
       state.status === 'loading' ? h('p', { className: 'note', role: 'status' }, en ? 'Loading changes…' : 'Hämtar ändringar…') : null,
       state.status === 'ready' && state.entries.length === 0 ? h('p', { className: 'note' }, en ? 'No recorded changes yet.' : 'Inga registrerade ändringar ännu.') : null,
-      state.entries.length ? h('div', { className: 'scroll-x' }, h('table', { className: 'tbl' },
+      state.entries.length ? h('div', { className: 'scroll-x' }, h('table', { className: 'table' },
         h('thead', null, h('tr', null, (en ? ['Time', 'Actor', 'Change', 'Resource', 'Revision'] : ['Tid', 'Aktör', 'Ändring', 'Resurs', 'Revision']).map(label => h('th', { key: label, scope: 'col' }, label)))),
-        h('tbody', null, state.entries.map(row => h('tr', { key: row.id },
+        h('tbody', null, state.entries.filter(row => !actions || actions.includes(row.action)).map(row => h('tr', { key: row.id },
           h('td', null, h('time', { dateTime: new Date(row.atMs).toISOString() }, new Date(row.atMs).toLocaleString(en ? 'en-GB' : 'sv-SE'))),
           h('td', null, row.actor, h('small', { style: { display: 'block' } }, row.accessClass === 'internal-admin' ? (en ? 'Internal administrator' : 'Intern administratör') : row.accessClass)),
           h('td', null, ACTIONS[row.action]?.[en ? 1 : 0] || row.action),

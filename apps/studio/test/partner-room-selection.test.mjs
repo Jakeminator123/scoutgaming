@@ -5,8 +5,11 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {availablePartnerRooms,initialPartnerRoomSelection} from '../lib/partner-room-selection.mjs';
 import {partnerCopy,partnerNavigation} from '../components/kevin-bo/partner-copy.mjs';
+import {PARTNER_PERMISSIONS} from '../../../packages/studio-access/server/partner-access-policy.mjs';
+import {workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
+import {jsxRequire} from './fixtures/jsx-require.mjs';
 const require=createRequire(import.meta.url);
-const {PartnerRoomWorkspace}=require('../components/kevin-bo/views/rooms.jsx');
+const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../components/kevin-bo/views/rooms.jsx');
 const operator={id:'north',slug:'north-casino',name:'North'};
 const snapshot={operator,presentations:[],tables:[
   {id:'main-room',name:'Main',operatorId:'north',status:'active'},
@@ -25,21 +28,22 @@ test('room deep links resolve exact registered ownership and active status witho
 test('unavailable room links render no default preview or appearance controls',()=>{
   for(const initialRoomId of ['foreign-room','missing',['main-room','vip-room']]){
     const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId,apiBase:'/studio/api/partner/snapshot'}));
-    assert.match(html,/Det begärda rummet är inte tillgängligt/);
+    assert.match(html,/Det begärda spelbordet är inte tillgängligt/);
     assert.doesNotMatch(html,/Hämtar utseende|kevin-package/);
   }
 });
 test('the exact room is selected in server markup before client hydration',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'vip-room',apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/<option value="vip-room" selected="">VIP<\/option>/);
-  assert.doesNotMatch(html,/Foreign|Paused|Archived|Rummet är inte tillgängligt/);
+  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
+  assert.doesNotMatch(html,/Foreign|Archived|spelbordet är inte tillgängligt/i);
+  assert.match(html,/Paused[\s\S]*pausat|pausat[\s\S]*Paused/);
   assert.match(html,/Hämtar utseende/);
 });
 
 test('controlled room selection renders the current scope instead of its original room',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'main-room',selection:{roomId:'vip-room',unavailable:false},onSelectionChange(){},apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/<option value="vip-room" selected="">VIP<\/option>/);
-  assert.doesNotMatch(html,/<option value="main-room" selected/);
+  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
+  assert.equal((html.match(/aria-pressed="true"/g)||[]).length,1);
 });
 
 function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-casino/rooms?room=main-room',accessClass='internal-admin'}={}) {
@@ -60,11 +64,12 @@ function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-cas
     addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(fn);},
     removeEventListener(type,fn){listeners.get(type)?.delete(fn);},
     dispatchEvent(event){for(const fn of listeners.get(event.type)??[])fn(event);return !event.defaultPrevented;}};
-  const localRequire=createRequire(sourceUrl),module={exports:{}};
-  require('node:vm').runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,structuredClone,window,
-    require:name=>name==='react'?hooks:name.endsWith('.css')?{}:name==='../partner-session-actions'?{PartnerSessionActions:()=>null}:name==='./partner-copy.mjs'?{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}:localRequire(name)});
-  const initialSnapshot={...snapshot,tables:snapshot.tables.filter(room=>room.operatorId===operator.id),preview:false,accessClass,operators:[operator,{id:'south',slug:'south-casino',name:'South'}],team:[],presentations:[],players:[],transactions:[],reports:[]};
-  const props={surface:'partner',initialSnapshot,initialRoomId,initialRoomScope,initialView:'bj',apiBase:'/studio/api/partner/snapshot',user:'test'};
+  const stubs={react:hooks,'../partner-session-actions':{PartnerSessionActions:()=>null},'./partner-copy.mjs':{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}};
+  const nested=jsxRequire(sourceUrl,stubs),module={exports:{}};
+  require('node:vm').runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,structuredClone,window,Intl,
+    require:name=>name.endsWith('.css')?{}:Object.hasOwn(stubs,name)?stubs[name]:nested(name)});
+  const initialSnapshot={...snapshot,tables:snapshot.tables.filter(room=>room.operatorId===operator.id),preview:false,accessClass,operators:[operator,{id:'south',slug:'south-casino',name:'South'}],team:[],presentations:[],permissions:[...PARTNER_PERMISSIONS],role:{id:'partner-admin',label:'administratör'}};
+  const props={surface:'partner',initialSnapshot,initialRoomId,initialRoomScope,initialView:'rooms',apiBase:'/studio/api/partner/snapshot',user:'test'};
   const Session=module.exports.PartnerOperatorWorkspace(props).type;
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...React.Children.toArray(tree.props?.children).flatMap(walk)];
   const render=()=>{cursor=0;return Session(props);};
@@ -72,7 +77,7 @@ function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-cas
   const lobby=()=>nodes().find(node=>node.type==='a'&&node.props.href.startsWith('/lobby'));
   const settle=()=>{render();const pending=queue;queue=[];for(const item of pending){effects[item.i]?.cleanup?.();effects[item.i]={deps:item.deps,cleanup:item.effect()};}return render();};
   return {window,history,view,lobby,render,nodes,settle,selection:()=>view().props.roomSelection,choose:id=>view().props.onRoomSelectionChange({roomId:id,unavailable:false}),
-    go:view=>nodes().find(node=>node.type==='select'&&node.props['aria-label']==='Sida').props.onChange({target:{value:view}})};
+    go:view=>{const path=workspaceSurfacePath('partner',view,operator.slug);nodes().find(node=>node.type==='a'&&node.props.className==='nav'&&node.props.href.split('?')[0]===path).props.onClick({button:0,preventDefault(){}});}};
 }
 
 test('staff lobby follows current room through menu changes, reload and back/forward',()=>{
@@ -80,10 +85,10 @@ test('staff lobby follows current room through menu changes, reload and back/for
   assert.equal(h.lobby().props.href,'/lobby?operator=north-casino&room=main-room');
   h.choose('vip-room');assert.equal(h.lobby().props.href,'/lobby?operator=north-casino&room=vip-room');
   assert.equal(new URL(h.window.location.href).searchParams.get('room'),'vip-room');
-  h.go('api');assert.equal(h.selection().roomId,'vip-room');
+  h.go('integration');assert.equal(h.selection().roomId,'vip-room');
   for(const link of h.nodes().filter(node=>node.type==='a'&&node.props.href.startsWith('/partner/north-casino'))) assert.equal(new URL(link.props.href,h.window.location.origin).searchParams.get('room'),'vip-room');
   assert.equal(h.nodes().find(node=>node.type?.name==='PartnerSessionActions').props.returnTo,'/partner/north-casino/integration?room=vip-room');
-  h.go('bj');
+  h.go('rooms');
   assert.equal(h.lobby().props.href,'/lobby?operator=north-casino&room=vip-room');
   h.choose('main-room');h.history.go(-1);assert.equal(h.selection().roomId,'vip-room');
   h.history.go(1);assert.equal(h.selection().roomId,'main-room');
@@ -99,7 +104,7 @@ test('staff lobby rejects invalid scope, keeps company defaults explicit and nev
   const h=sessionHarness();h.choose('');assert.equal(h.lobby().props.href,'/lobby?operator=north-casino');
   h.choose('foreign-room');assert.equal(h.lobby(),undefined);
   assert.equal(sessionHarness({accessClass:'partner'}).lobby(),undefined);
-  const picker=h.nodes().find(node=>node.type?.name==='OperatorScope');picker.props.onOperatorChange('south');
+  const picker=h.nodes().find(node=>node.type==='select'&&node.props.id==='partner-operator');picker.props.onChange({target:{value:'south'}});
   assert.equal(h.window.assigned,'/partner/south-casino/rooms');
 });
 
@@ -122,7 +127,7 @@ test('company defaults require one explicit scope and never hide an invalid room
 
 test('company scope and invalid requests survive menu URLs, reload and history without a silent fallback',()=>{
   const h=sessionHarness();h.settle();h.choose('');
-  assert.equal(h.window.location.search,'?scope=company');h.go('api');
+  assert.equal(h.window.location.search,'?scope=company');h.go('integration');
   assert.equal(h.window.location.pathname,'/partner/north-casino/integration');assert.equal(h.window.location.search,'?scope=company');
   const reload=sessionHarness({initialRoomId:undefined,initialRoomScope:'company',path:'/partner/north-casino/integration?scope=company'});reload.settle();
   assert.deepEqual(reload.selection(),{roomId:'',unavailable:false});
@@ -131,8 +136,8 @@ test('company scope and invalid requests survive menu URLs, reload and history w
   h.history.go(1);assert.equal(h.selection().roomId,'vip-room');
   for(const query of ['room=','room=missing','room=foreign-room','room=main-room&room=vip-room','scope=company&scope=company','scope=company&room=']){
     const bad=sessionHarness({path:'/partner/north-casino/rooms?'+query});bad.settle();assert.equal(bad.lobby(),undefined,query);
-    bad.go('api');assert.equal(bad.selection().unavailable,true);assert.equal(bad.lobby(),undefined,query);
-    bad.go('bj');assert.equal(bad.selection().unavailable,true);
+    bad.go('integration');assert.equal(bad.selection().unavailable,true);assert.equal(bad.lobby(),undefined,query);
+    bad.go('rooms');assert.equal(bad.selection().unavailable,true);
     bad.choose('vip-room');assert.equal(bad.selection().roomId,'vip-room');assert.equal(bad.window.location.search,'?room=vip-room');
   }
 });
@@ -163,7 +168,7 @@ function actualAppearance(session) {
     const code=transformSync(require('node:fs').readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:name==='PartnerAppearance'?'typescript':'ecmascript',tsx:name==='PartnerAppearance',jsx:name!=='PartnerAppearance'},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
     const local=createRequire(file),module={exports:{}};
     require('node:vm').runInNewContext(code,{module,exports:module.exports,fetch:()=>assert.fail('No server write belongs in a navigation test'),
-      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-layer-picker'?{AppearanceLayerPicker:()=>null}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:local(key)});
+      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-layer-picker'?{AppearanceLayerPicker:()=>null}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
   const wrapper=mount('../components/kevin-bo/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;

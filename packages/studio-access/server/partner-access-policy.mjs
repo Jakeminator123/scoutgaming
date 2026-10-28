@@ -21,6 +21,13 @@ export const PARTNER_PERMISSIONS = Object.freeze([
 // The only permission that can grant another operator administrator.
 export const OPERATOR_ADMIN_PERMISSION = 'team.roles.assign';
 
+// Partnerportalen: the permission each view requires. The menu hides a view
+// the role lacks, and the server refuses its direct address with the same map.
+export const PARTNER_VIEW_PERMISSIONS = Object.freeze({
+  overview: 'overview.read', rooms: 'tables.read', players: 'players.read', reports: 'reports.read',
+  team: 'team.read', integration: 'integrations.read', help: 'overview.read',
+});
+
 const permissions = new Set(PARTNER_PERMISSIONS);
 const id = value => typeof value === 'string' && value.trim() === value
   && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(value);
