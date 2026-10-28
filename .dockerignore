@@ -9,8 +9,10 @@
 .githooks
 .claude
 .cursor
-.croupier-inbox
+.vercel
 arkiv
+random-stuff-jakob
+open-claw
 **/.DS_Store
 **/*.log
 
@@ -25,15 +27,14 @@ node_modules
 .env.*
 **/.env
 **/.env.*
-inbox-token.txt
 **/*.pem
 **/*.p12
 **/*.pfx
 
-# Not runtime inputs: media bytes come from Blob, registers from Neon, and the
-# presentation preview is built only for Studio.
+# Not runtime inputs: media bytes come from Blob, registers from Neon, and
+# Studio, documentation, tests and migration notes are never copied.
 media
-packages/presentation/preview
 docs
 test
 apps
+migrering

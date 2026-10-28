@@ -5,38 +5,25 @@
 # are noise for text search. Inventories and cleanup start from `git ls-files`,
 # which ignores this file and shows every tracked file.
 
-# Tracked binary media, 3D files and archives.
+# Tracked binary media, fonts and raw frames.
 *.mp4
 *.mov
 *.webm
-*.mkv
 *.mp3
 *.wav
-*.ogg
-*.flac
 *.png
 *.jpg
 *.jpeg
 *.webp
 *.gif
 *.glb
-*.gltf
-*.blend
-*.fbx
-*.obj
-*.stl
-*.usdz
-*.bin
-*.h264
-*.webpseq
-*.zip
-*.7z
-*.sqlite
-*.sqlite3
-*.db
+*.woff2
+*.yuv
 
-# Large generated media registers; open them explicitly when needed.
-/media/layout.json
+# Vendored minified third-party code.
+/services/game/public/vendor/
+
+# Large generated media register; open it explicitly when needed.
 /media/blob-index.json
 # Raw media source and staging material.
 /media/**/source/
