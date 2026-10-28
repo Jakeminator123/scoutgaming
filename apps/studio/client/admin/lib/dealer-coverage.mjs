@@ -1,0 +1,27 @@
+import {clipSlots,currentClipId} from './connected-studio.mjs';
+import {NATIVE_ROOM_SPEECH_SLOTS} from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
+
+// What a dealer needs before publication (native-room-game-material.mjs:115-122): the whole deal bank,
+// idle and the ten speech slots. Counted from the project's lines[] and the media register, per slot.
+const bound=(project,inventory,dealerId,slot)=>Boolean(currentClipId(project,dealerId,slot,undefined,inventory));
+export function dealerCoverage(project,inventory,dealerId){
+  const slots=clipSlots(project,inventory,dealerId,'blackjack').filter(slot=>!slot.planned&&!slot.intakeOnly&&!slot.localOnly);
+  const count=rows=>({bound:rows.filter(slot=>bound(project,inventory,dealerId,slot)).length,total:rows.length});
+  const deal=count(slots.filter(slot=>/^(?:deal|reveal)\./.test(slot.eventId)));
+  const speech=count(slots.filter(slot=>slot.sourceType==='speak'&&NATIVE_ROOM_SPEECH_SLOTS.includes(slot.situation)));
+  const idle=count(slots.filter(slot=>slot.eventId==='idle.ready'));
+  const optional=count(slots.filter(slot=>slot.sourceType==='speak'&&!NATIVE_ROOM_SPEECH_SLOTS.includes(slot.situation)||slot.eventId==='transition.shoe'));
+  const complete=deal.total>0&&deal.bound===deal.total&&idle.total>0&&idle.bound===idle.total&&speech.total>0&&speech.bound===speech.total;
+  const anyClip=slots.some(slot=>bound(project,inventory,dealerId,slot));
+  return {deal,speech,idle,optional,complete,anyClip,speechProfile:project.dealers.find(row=>row.id===dealerId)?.speechProfile??null};
+}
+/** Scene templates that allow the dealer (lanes[].layers.dealer.allowed). */
+export function dealerTemplates(project,dealerId){
+  return (project.lanes??[]).filter(lane=>lane.layers.dealer.allowed.includes(dealerId)).map(lane=>({id:lane.id,label:lane.label,isDefault:lane.layers.dealer.default===dealerId}));
+}
+/** Rooms and companies that use the dealer, from the registered catalog. */
+export function dealerUses(catalog,dealerId){
+  const rooms=catalog.administration.rooms.filter(room=>room.state!=='archived'&&room.dealerIds.includes(dealerId));
+  const operatorIds=[...new Set(rooms.map(room=>room.operatorId))];
+  return {rooms,operators:catalog.administration.operators.filter(operator=>operatorIds.includes(operator.id))};
+}

@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { parseByteRange } from './preview-files.mjs';
-import { designPreviewPages, designPreviewReturnTo } from './design-preview-paths.mjs';
+import { isDesignPreviewPage, designPreviewReturnTo } from './design-preview-paths.mjs';
 import { adminDocumentHref } from '../../../packages/navigation/admin-workspace-routes.mjs';
 
 const labRoot = studioRoots().appRoot;
@@ -17,7 +17,7 @@ export function designPreviewFile(segments = []) {
   if (!Array.isArray(segments) || segments.length > 8
     || segments.some(part => typeof part !== 'string' || !/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(part) || part.includes('..'))) return null;
   const path = segments.join('/');
-  if (designPreviewPages.has(path)) return 'admin/index.html';
+  if (isDesignPreviewPage(path)) return 'admin/index.html';
   if (path === 'lobby') return 'lobby/index.html';
   if (segments[0] !== '_assets' || !['admin', 'lobby', 'fonts'].includes(segments[1]) || segments.length < 3) return null;
   const file = segments.slice(1).join('/');

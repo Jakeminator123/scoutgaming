@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Plus, RefreshCw, RotateCcw, Trash2, Upload, Users } from 'lucide-react';
 import { addDealer } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { DealerArchiveImpact } from '../../../../lib/dealer-archive-impact.mjs';
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
 import { createLifecycleClient, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
 import { dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';
-import { navigate, useSearchParams } from '../../../runtime/navigation';
+import { dealerCoverage, dealerTemplates, dealerUses } from '../../lib/dealer-coverage.mjs';
+import Link, { navigate, useSearchParams } from '../../../runtime/navigation';
 import { ConfirmAcknowledgement, ConfirmDialog } from './confirm-dialog';
+import { DealerIdentityPortrait } from './dealer-identity-portrait';
+import { HubPage, Card, Chip, ActionMenu, Empty } from '../ui/hub';
 
 const client = createStudioClient(), lifecycle = createLifecycleClient();
 const dealerSlug = (name:string) => name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40).replace(/-$/,'');
+const dealerHref=(id:string,flik='klipp',extra:Record<string,string>={})=>'/admin/dealers/'+encodeURIComponent(id)+'?'+new URLSearchParams({flik,...extra});
 // One confirmation per action. The server check runs inside the open dialog and
 // is bound to one dialog request as well as its project revision and target.
 type Review = { request:number; id:string; name:string; revision:string; kind:'archive'|'restore'|'delete'; checking:boolean; impact?:DealerArchiveImpact; eligibility?:DeletionPlan; acknowledged:boolean; error:string };
@@ -24,7 +27,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const reviewSequence = useRef(0);
   const lock = useRef(false), current = useRef(workspace), createButton = useRef<HTMLButtonElement>(null);
   current.current = workspace;
-  const query = useSearchParams(), selectedId = query.get('dealer') ?? '';
+  const query = useSearchParams();
   const disabled = blocked || busy || loading || !workspace;
   const createRequested=query.get('view')==='create';
   useEffect(()=>{if(active&&createRequested)setCreating(true);},[active,createRequested]);
@@ -61,7 +64,8 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       catch {setWorkspace(null);}
       if(!confirmed)setError((cause as Error).message+' Läs om innan du försöker igen.');
     } finally {lock.current=false;setBusy(false);}
-    if(confirmed){setName('');setId('');setIdEdited(false);setCreating(false);setNotice(`${targetName} är sparad. Välj Lägg till klipp för att börja.`);onChanged();navigate('/admin/dealers?dealer='+encodeURIComponent(targetId));}
+    // The new dealer opens on Lägg till klipp: the next step in the dealer flow.
+    if(confirmed){setName('');setId('');setIdEdited(false);setCreating(false);setNotice(`${targetName} är sparad.`);onChanged();navigate(dealerHref(targetId,'klipp',{panel:'intake'}));}
   }
   function patchReview(request:number,patch:Partial<Review>) {
     setReview(value=>value&&value.request===request&&value.checking?{...value,checking:false,...patch}:value);
@@ -97,7 +101,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       confirmed=target.kind==='archive'?trashed&&!active:target.kind==='restore'?active&&!trashed:!active&&!trashed;
     } catch {setWorkspace(null);setError('Registret kunde inte läsas om. Åtgärden upprepas inte automatiskt; läs om för att se resultatet.');confirmed=false;}
     lock.current=false;setBusy(false);setReview(null);onChanged();
-    if(confirmed){setError('');setNotice(target.kind==='archive'?`${target.name} har flyttats till papperskorgen.`:target.kind==='restore'?`${target.name} är återställd som utkast. Rum öppnas inte automatiskt.`:`${target.name} och dealerns egna filer är permanent raderade.`);}
+    if(confirmed){setError('');setNotice(target.kind==='archive'?`${target.name} har flyttats till papperskorgen.`:target.kind==='restore'?`${target.name} är återställd som utkast. Spelbord öppnas inte automatiskt.`:`${target.name} och dealerns egna filer är permanent raderade.`);}
   }
   const dealers=workspace?.project.dealers??[], trash=workspace?.project.dealerTrash??[];
   const trashEntry=review?trash.find(row=>row.dealer.id===review.id):undefined;
@@ -107,39 +111,53 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const stale=Boolean(review&&workspace&&review.revision!==workspace.project.revision);
   const reviewError=stale?'Registret har ändrats sedan dialogen öppnades. Stäng och försök igen.':review?.error||plan?.error||'';
   const confirmLabel=review&&!review.checking&&!reviewError?plan?.confirmLabel:undefined;
-  return <section className="dealer-import" aria-labelledby="dealer-directory-title">
-    <header className="dealer-import-header"><div><p className="dealer-import-eyebrow">Studio</p><h1 id="dealer-directory-title">Dealers</h1><p>Skapa en dealer, lägg in filmklipp och se var personen används.</p></div>
-      <div className="dealer-import-actions"><button ref={createButton} className="dealer-import-primary" disabled={disabled} onClick={()=>setCreating(true)}><Plus size={16}/>Skapa dealer</button><button aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={16}/></button></div>
-    </header>
-    {blocked&&<p role="note">Spara ditt öppna Studio-utkast eller avsluta den pågående importen innan du ändrar dealerregistret.</p>}
-    {loading&&<p role="status">Läser dealers…</p>}
-    {error&&<p role="alert" className="dealer-import-error">{error}</p>}
-    {notice&&<p role="status" className="dealer-import-notice">{notice}</p>}
-    {creating&&<form className="dealer-import-panel" onSubmit={event=>void create(event)}><h2>Skapa dealer</h2><label>Dealerns namn<input autoFocus required maxLength={120} value={name} disabled={disabled} onChange={event=>{setName(event.target.value);if(!idEdited)setId(dealerSlug(event.target.value));}}/></label>
-      <details><summary>Detaljer</summary><label>Dealer-id<input required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" value={id} disabled={disabled} onChange={event=>{setIdEdited(true);setId(event.target.value);}}/></label></details>
-      <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={disabled||!name.trim()||!id} type="submit">{busy?'Sparar…':'Skapa och spara'}</button><button type="button" disabled={busy} onClick={()=>{setCreating(false);if(active&&!disabled)createButton.current?.focus();}}>Avbryt</button></div>
-    </form>}
-    {!loading&&workspace&&!dealers.length&&<p>Inga dealers ännu. Välj Skapa dealer.</p>}
-    <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Registrerade dealers">{dealers.map(dealer=>{
-      const rooms=workspace!.catalog.administration.rooms.filter(room=>room.state!=='archived'&&room.dealerIds.includes(dealer.id));
-      const count=workspace!.inventory.videos.filter(video=>(video.classification?.dealerId??(video as {dealer?:string}).dealer)===dealer.id&&!video.classification?.archived).length;
-      return <li key={dealer.id} className={'dealer-import-panel '+(selectedId===dealer.id?'border-sg-lime':'')}><h2><Users size={18}/>{dealer.label}</h2><p>{count} klipp · {rooms.length?`${rooms.length} kopplade rum`:'Inga rum kopplade ännu'}</p>
-        <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)}>Redigera dealer</a><a href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)+'&panel=intake'}><Upload size={15}/>Lägg till klipp</a><button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(dealer.id,dealer.label,'archive')}><Trash2 size={15}/>Ta bort</button></div>
-        {!!rooms.length&&<details><summary>Visa kopplingar</summary><ul>{rooms.map(room=><li key={room.id}><a href={'/admin/structure?operator='+encodeURIComponent(room.operatorId)+'&table='+encodeURIComponent(room.id)}>{workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name} · {room.name}</a></li>)}</ul></details>}
+  return <HubPage wide title="Dealers" intro="Dealern är arbetsobjektet för allt innehåll: klipp, tal, landningar och godkännande. En dealer med klipp och tal som räcker för spel kan tilldelas bolag under Bolag › Tilldelning."
+    actions={<><button ref={createButton} type="button" className="hub-btn primary" disabled={disabled} onClick={()=>setCreating(true)}>Ny dealer</button><button type="button" className="hub-btn" aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}>Uppdatera</button></>}>
+    {blocked&&<p role="note" className="hub-note warn">Spara det öppna utkastet i klippkartan eller avsluta den pågående importen innan du ändrar dealers.</p>}
+    {loading&&<p role="status" className="hub-muted">Läser dealers…</p>}
+    {error&&<p role="alert" className="hub-note warn">{error}</p>}
+    {notice&&<p role="status" className="hub-note accent">{notice}</p>}
+    {creating&&<Card title="Ny dealer" aside={<button type="button" className="hub-btn ghost small" disabled={busy} onClick={()=>{setCreating(false);if(active&&!disabled)createButton.current?.focus();}}>Avbryt</button>} className="hub-mt">
+      <form className="dealer-import-panel" style={{border:0,padding:0,background:'transparent'}} onSubmit={event=>void create(event)}>
+        <div className="hub-grid c2"><label>Namn<input autoFocus required maxLength={120} value={name} disabled={disabled} onChange={event=>{setName(event.target.value);if(!idEdited)setId(dealerSlug(event.target.value));}}/></label>
+        <label>Id<input required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" value={id} disabled={disabled} onChange={event=>{setIdEdited(true);setId(event.target.value);}}/><span className="hub-small hub-muted">små bokstäver; används i Blob-sökvägen dealers/&lt;id&gt;/</span></label></div>
+        <p className="hub-small hub-muted hub-mt">Det här är hela steget: dealers[] får id och namn. Klipp, tal och landningar läggs till på dealerns sida.</p>
+        <div className="hub-actions hub-mt"><button className="hub-btn primary" disabled={disabled||!name.trim()||!id} type="submit">{busy?'Sparar…':'Skapa och gå till Lägg till klipp'}</button></div>
+      </form>
+    </Card>}
+    {!loading&&workspace&&!dealers.length&&<Empty chip={null} title="Inga dealers ännu" text="Välj Ny dealer för att skapa den första."/>}
+    <ul className="hub-grid c3 hub-mt-l" style={{listStyle:'none',padding:0,margin:0}} aria-label="Registrerade dealers">{dealers.map(dealer=>{
+      const coverage=dealerCoverage(workspace!.project,workspace!.inventory,dealer.id),uses=dealerUses(workspace!.catalog,dealer.id),templates=dealerTemplates(workspace!.project,dealer.id);
+      return <li key={dealer.id} className="hub-card" style={{display:'grid',gap:12}}>
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <span className="hub-portrait big"><DealerIdentityPortrait dealer={dealer} className="h-14 w-14"/></span>
+          <div style={{minWidth:0}}><Link href={dealerHref(dealer.id)} className="hub-strong" style={{fontSize:16}}>{dealer.label}</Link><div className="hub-small hub-muted"><code>{dealer.id}</code> · {templates.length} scenmallar</div></div>
+          <span style={{marginLeft:'auto'}}><ActionMenu small name={dealer.label} actions={[
+            {id:'open',label:'Öppna dealern',onSelect:()=>navigate(dealerHref(dealer.id))},
+            {id:'intake',label:'Lägg till klipp',onSelect:()=>navigate(dealerHref(dealer.id,'klipp',{panel:'intake'}))},
+            {id:'archive',label:'Arkivera',disabled:disabled?'Vänta tills registret är läst':undefined,onSelect:()=>void openReview(dealer.id,dealer.label,'archive')},
+          ]}/></span>
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <Chip tone={coverage.complete?'ok':'warn'} dot>{coverage.complete?'Klipp och tal räcker för spel':'Inte godkänd'}</Chip>
+          <Chip tone={coverage.speechProfile?'ok':''}>{coverage.speechProfile?'röstprofil finns':'ingen röstprofil'}</Chip>
+        </div>
+        <div className="hub-coverage"><span>Giv <b>{coverage.deal.bound}/{coverage.deal.total}</b></span><span>Tal <b>{coverage.speech.bound}/{coverage.speech.total}</b></span><span>Vila <b>{coverage.idle.bound}/{coverage.idle.total}</b></span></div>
+        <div className="hub-small hub-muted">{uses.operators.length?`Används av ${uses.operators.map(row=>row.name).join(', ')} · ${uses.rooms.length} spelbord`:'Inte tilldelad något bolag'}</div>
       </li>;
     })}</ul>
-    {workspace&&<details className="dealer-import-panel"><summary>Papperskorg ({trash.length})</summary>{!trash.length?<p>Papperskorgen är tom.</p>:<>
-      <p>Återställ återför dealern som utkast. Radera permanent tar bort dealern och dess egna filer för alltid efter serverns kontroll.</p>
-      <ul>{trash.map(row=><li className="dealer-import-actions" key={row.dealer.id}><span>{row.dealer.label}{row.deletion?' · radering påbörjad':''}</span>
-        <button disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}><RotateCcw size={15}/>Återställ</button>
-        <button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}><Trash2 size={15}/>{row.deletion?'Slutför radering':'Radera permanent'}</button>
-      </li>)}</ul></>}</details>}
+    {workspace&&<Card title={`Papperskorg (${trash.length})`} className="hub-mt-l" aside="återställ eller radera permanent efter serverns kontroll">
+      {!trash.length?<p className="hub-muted hub-small">Papperskorgen är tom.</p>:<ul className="hub-rows" style={{listStyle:'none',padding:0,margin:0}}>{trash.map(row=><li className="hub-row" key={row.dealer.id}><div/><div className="hub-row-copy"><div className="hub-row-title">{row.dealer.label}</div>{row.deletion&&<div className="hub-row-text">radering påbörjad</div>}</div>
+        <div className="hub-actions"><button type="button" className="hub-btn small" disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}>Återställ</button>
+        <button type="button" className="hub-btn small danger" disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}>{row.deletion?'Slutför radering':'Radera permanent'}</button></div>
+      </li>)}</ul>}
+    </Card>}
     <ConfirmDialog open={review!==null} title={plan?.title??'Granska åtgärden'} description={plan?.summary} consequences={plan?.items??[]}
-      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, rum, bolag och sammansättningar…'}
+      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, spelbord, bolag och scenmallar…'}
       error={reviewError} busy={busy&&review!==null&&!review.checking} busyLabel={plan?.busyLabel}
       confirmLabel={confirmLabel} confirmDisabled={disabled&&!busy||Boolean(deletePlan?.requiresAcknowledgement&&!review?.acknowledged)}
       cancelLabel={stale||review?.error?'Stäng':plan?.cancelLabel} onConfirm={()=>void applyReview()} onCancel={()=>{if(!busy||review?.checking)setReview(null);}}>
       {deletePlan?.requiresAcknowledgement&&review&&!reviewError&&<ConfirmAcknowledgement checked={review.acknowledged} label={deletePlan.acknowledgement} disabled={busy} onChange={checked=>setReview(value=>value?{...value,acknowledged:checked}:value)}/>}
     </ConfirmDialog>
-  </section>;
+  </HubPage>;
 }

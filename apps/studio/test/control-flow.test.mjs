@@ -4,9 +4,9 @@ import { canonicalControlHref, compositionLabel } from '../../../packages/naviga
 import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 test('older workspace links keep company and room context', () => {
-  assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies?operator=op-one#team');
-  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), "/admin/rooms?dealer=paow&operator=north&table=room-one");
-  assert.equal(canonicalControlHref('/control/preview?composition=current'), "/admin/scenes?composition=current");
+  assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies/op-one#team');
+  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), "/admin/rooms/room-one?operator=north", 'the room nav owns its dealer selection');
+  assert.equal(canonicalControlHref('/control/preview?composition=current'), "/admin/scenes?tab=mallar&composition=current");
 });
 
 test('ambiguous or external document paths never become a navigation destination', () => {
@@ -16,14 +16,16 @@ test('ambiguous or external document paths never become a navigation destination
 test('Clips editor bookmarks preserve selection and fragments without changing the zoomable Admin map', () => {
   for(const prefix of ['/control','/studio/control'])for(const view of ['idle','clips','generate','speech','settings']) {
     const path=canonicalControlHref(prefix+'/clips?dealerId=saga&lane=portrait&view='+view+'&operator=north&room=one&room=two&table=three&game=roulette&category=speech&event=speak.goodluck#clip');
-    const url=new URL(path,'https://studio.invalid');assert.equal(url.pathname,view==='generate'?'/admin/dealer-studio':'/admin/clips');
-    assert.equal(url.searchParams.get('dealer'),'saga');assert.equal(url.searchParams.get('composition'),'portrait');
-    assert.equal(url.searchParams.get('view'),view==='generate'?'generate':null);assert.equal(url.searchParams.get('panel'),view==='speech'?'room':view==='settings'?'dealer':null);assert.deepEqual(url.searchParams.getAll('room'),['one','two']);
+    const url=new URL(path,'https://studio.invalid');assert.equal(url.pathname,'/admin/dealers/saga');
+    assert.equal(url.searchParams.has('dealer'),false,'the dealer sits in the path');assert.equal(url.searchParams.get('composition'),'portrait');
+    assert.equal(url.searchParams.get('flik'),view==='speech'?'tal':view==='settings'?'installningar':'klipp');
+    assert.equal(url.searchParams.get('panel'),view==='generate'?'generera':null);assert.equal(url.searchParams.has('view'),false);assert.deepEqual(url.searchParams.getAll('room'),['one','two']);
     assert.equal(url.searchParams.get('table'),'three');assert.equal(url.searchParams.get('game'),'roulette');
     assert.equal(url.searchParams.get('category'),'speech');assert.equal(url.searchParams.get('event'),'speak.goodluck');
     assert.equal(url.searchParams.has('dealerId'),false);assert.equal(url.searchParams.has('lane'),false);assert.equal(url.hash,'#clip');
   }
-  assert.equal(canonicalControlHref('/admin/clips?dealer=saga#map'),'/admin/clips?dealer=saga#map');
+  assert.equal(canonicalControlHref('/admin/clips?dealer=saga#map'),'/admin/dealers/saga?flik=klipp#map');
+  assert.equal(canonicalControlHref('/admin/dealers/saga?flik=klipp#map'),'/admin/dealers/saga?flik=klipp#map');
 });
 
 test('AI bookmarks open their resource and keep exact navigation context', () => {
@@ -31,19 +33,23 @@ test('AI bookmarks open their resource and keep exact navigation context', () =>
     ['openclaw','','models'],['openclaw','tab=chat&','agent'],
     ['openclaw','tab=models&','models'],['operator-chat','','agent'],['ops','tab=chat&','drift'],
   ]) assert.equal(canonicalControlHref(base+'/control/'+path+'?'+query+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&lane=portrait#selection'),
-    ({models:'/admin/ai/models?',agent:'/admin/dealer-agent?',drift:'/admin/drift?tab=speech&'}[tab])+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&composition=portrait#selection');
+    ({models:'/admin/system?flik=agenter&dealer=saga&',agent:'/admin/dealers/saga?flik=tal&verktyg=dialog&',drift:'/admin/dealers/saga?flik=tal&'}[tab])+'event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&composition=portrait#selection');
 });
 
 test('navigation keeps company and real room identity but never copies auth or diagnostic query', () => {
   const context=studioNavigationContextFromQuery(new URLSearchParams('operator=north&table=room-one&composition=scene-a&dealer=paow&token=private&debug=1'));
+  // The retired rehearsal page is the room's nav: the room sits in the path, the company follows, template, game and
+  // dealer come from the register. Navigation canonicalizes after the context is applied, so this is one address.
   const link=new URL(studioNavigationHref('/admin/rehearsal', context),'https://studio.invalid');
+  assert.equal(link.pathname,'/admin/rooms/room-one');
   assert.equal(link.searchParams.get('operator'),'north');
-  assert.equal(link.searchParams.get('table'),'room-one');
-  assert.equal(link.searchParams.get('composition'),'scene-a');
-  assert.equal(link.searchParams.get('dealer'),'paow');
-  assert.equal(link.searchParams.has('token'),false);
-  assert.equal(link.searchParams.has('debug'),false);
-  assert.equal(link.searchParams.has('lane'),false);
+  for(const key of ['table','composition','dealer','token','debug','lane'])assert.equal(link.searchParams.has(key),false,key);
+  // A dealer tool keeps the room context beside the dealer's nav.
+  const replies=new URL(studioNavigationHref('/admin/replies', context),'https://studio.invalid');
+  assert.equal(replies.pathname,'/admin/dealers/paow');assert.equal(replies.searchParams.get('flik'),'tal');
+  assert.equal(replies.searchParams.get('operator'),'north');assert.equal(replies.searchParams.get('table'),'room-one');
+  assert.equal(replies.searchParams.get('composition'),'scene-a');
+  for(const key of ['dealer','token','debug','lane'])assert.equal(replies.searchParams.has(key),false,key);
 });
 
 test('chosen composition names remain unchanged', () => {

@@ -1,7 +1,7 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
-import { designPreviewPages } from './design-preview-paths.mjs';
+import { isDesignPreviewPage } from './design-preview-paths.mjs';
 
 // Only fixed enums and booleans are exposed in transport diagnostics. Never
 // return header values, URLs, queries, cookies, identities or credentials.
@@ -28,7 +28,7 @@ export function studioDocumentNavigationHeaders(request) {
   const publicPath = pathname.startsWith('/studio/') ? pathname.slice('/studio'.length) : pathname;
   const adminDocument = publicPath === '/admin' || publicPath === '/admin/lobby'
     || publicPath === '/admin/login' || publicPath === '/admin/set-password'
-    || publicPath.startsWith('/admin/') && designPreviewPages.has(publicPath.slice('/admin/'.length));
+    || publicPath.startsWith('/admin/') && isDesignPreviewPage(publicPath.slice('/admin/'.length));
   // Vercel's fetch hop can replace navigate with cors before middleware too.
   // Accept that observed shape only without Origin and on known documents;
   // explicit Origin, API/action/body requests and frames keep their guards.
