@@ -192,7 +192,7 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     assert.equal((await signed('/api/v1/ping',{}, {timestamp:'not-a-number'})).status,401);
     assert.equal((await signed('/api/v1/demo-credit',{playerId:'synthetic-partner',amount:100})).status,200);
     partnerPlayer=(await store.db.prepare('SELECT player_id FROM partner_players WHERE key_id=?').get(partnerKey.id)).player_id;
-    const launch=await signed('/api/v1/launch',{playerId:'synthetic-partner'});assert.equal(launch.status,200);assert.match(launch.json.url,/\/game\?dealer=astrid&launch=/);
+    const launch=await signed('/api/v1/launch',{playerId:'synthetic-partner'});assert.equal(launch.status,200);assert.match(launch.json.url,/\/game\?launch=[^&]+$/);
     const partnerCommand={playerId:'synthetic-partner',op:'start',requestId:`partner-${suffix}`,version:0,bets};
     const concurrent=await Promise.all([signed('/api/v1/table',partnerCommand),signed('/api/v1/table',partnerCommand)]);assert.equal(concurrent[0].status,200);assert.deepEqual(concurrent[0].json,concurrent[1].json);
     assert.equal((await store.db.prepare('SELECT balance FROM players WHERE id=?').get(partnerPlayer)).balance,95);
