@@ -48,7 +48,7 @@ E4  J07 + O01 → J08      K01 + K04 → K05      J05 + J07 → J09      J08 + K
 E5  K04 + K06 → K07      J06 + J09 → J10      K07 + J10 → O02 → O03
 ```
 
-Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad som saknas för varje aktivitet står i [NEXT-AGENT](../docs/NEXT-AGENT.md#kvar-till-o03).
+Kvar är O03: releasen gick ut i produktionen 28 oktober och väntar på oberoende granskning och status. Vad som saknas står i [NEXT-AGENT](../docs/NEXT-AGENT.md#kvar-till-o03).
 
 ## När migreringen är klar
 
@@ -90,7 +90,7 @@ Klart: den integrerade produkten är levererad och verifierad i drift. Ingen fö
 
 Ingen av punkterna är en av de 20 aktiviteterna eller ger procent; status och vikter ändras inte. Ordningen är Jakobs beslut 28 oktober 2026 och gäller tills han ändrar den. Varje punkt levereras som vanlig PR med grön CI, provas i preview när orkestratorn bedömer att det behövs och kvitteras med verifierad Vercel- och Render-SHA.
 
-1. **F11 först.** Första runtime-PR:en efter O03: spelmotorn stänger det delade bordets anslutningar med 1012 vid SIGTERM, och ögonblicksbilder når spelare oavsett instans under Render-överlappet. Provas i preview. Till dess deployas `croupier-v3` bara när bordet är tomt.
+1. **F11 först.** Första runtime-PR:en efter O03 (#529): spelmotorn stänger det delade bordets anslutningar med 1012 vid SIGTERM, och ögonblicksbilder når spelare oavsett instans under Render-överlappet. Provas i preview. Till dess deployas `croupier-v3` bara när bordet är tomt.
 2. **Nya Admin:** nivå 2 (partnerportalen, #518), sedan nivå 1 (#519), sedan demo-byggaren (#512), enligt [ADMIN-FORENKLING](../docs/plans/ADMIN-FORENKLING.md).
 3. **Dealer-generisk talkedja, med Paow först** ([PAOW-LIPSYNC](../docs/plans/PAOW-LIPSYNC.md) (#528); läppsynken bevisades i två prov 28 oktober 2026 utan att något aktiverades: stillbild på 6,7 s via varm endpoint och rörligt tal med 160 munlappar på 3,3 s). En kedja för alla dealers i stället för Dragans egen. Stillbildsvägen finns redan i main (`speechProfile` med `reference.kind='video-frame'`) och kan bli Admin-konfiguration utan kod; rörligt tal per dealer kräver kod. Bara Jakob godkänner ljud och läppsynk.
 4. **Mobil och 3-rutors fönster:** F12–F15 (knappöverlapp vid 1440/1920, saldopanelen över insatsen vid 320×568, dubblerad beslutspanel), utan zoom och utan kamera per plats.
