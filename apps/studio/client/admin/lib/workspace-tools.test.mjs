@@ -27,18 +27,22 @@ function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'d
   return {exports:module.exports,requests,render(fn,props){cursor=0;return fn(props);},async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 
+// System › Integration mounts Administration with group "partners"; the old /admin/admin/api page resolves there.
 test('Integrationer opens the real NativeAdministration with the server-read actions',async()=>{
   const service=harness('../components/studio/connected-services.tsx','',{availableActions:['GET apikeys','POST apikeys/create'],gameOrigin:'https://game.invalid'});
-  const administration=service.exports.ConnectedServices({path:'/admin/admin/api'});
-  assert.equal(typeof administration.type,'function');
-  service.render(administration.type,administration.props);await service.settle();
-  const native=node(service.render(administration.type,administration.props),item=>item.type===components.NativeAdministration);
+  assert.equal(adminWorkspaceRoutes.adminDocumentHref('/admin/admin/api'),'/admin/system?flik=integration');
+  assert.equal(service.exports.ConnectedServices,undefined,'the separate service pages are gone');
+  const props={group:'partners'};
+  assert.equal(node(service.render(service.exports.Administration,props),item=>item.type===components.NativeAdministration),null,'nothing native mounts before the session is read');
+  await service.settle();
+  const native=node(service.render(service.exports.Administration,props),item=>item.type===components.NativeAdministration);
   assert.equal(native.props.initialGroup,'partners');assert.equal(Object.hasOwn(native.props,'initialDealerId'),false);
+  assert.equal(native.props.sections,undefined,'integration is not limited to an accounts section');
   assert.deepEqual(native.props.availableActions,['GET apikeys','POST apikeys/create']);
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
-  // The retired speech review is neither a workspace tool nor a connected service.
+  // There are no separate tool pages any more; the retired speech review resolves to the dealers.
+  assert.deepEqual(Object.keys(adminWorkspaceRoutes.ADMIN_WORKSPACE_TOOLS),[]);
   assert.equal(adminWorkspaceRoutes.adminToolName('/admin/media-review'),null);
-  const retired=service.exports.ConnectedServices({path:'/admin/media-review'});
-  assert.equal(node(retired,item=>item.type===components.NativeAdministration),null);
+  assert.equal(adminWorkspaceRoutes.adminDocumentHref('/admin/media-review'),'/admin/dealers');
 });

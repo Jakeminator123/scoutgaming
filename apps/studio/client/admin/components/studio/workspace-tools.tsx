@@ -1,9 +1,7 @@
 import {useEffect,useState} from 'react';
-import {DealerMaterialPage} from '../../../../components/dealer-material-page';
 import {AdminPublicationPage,type PublicationOperatorChoice} from '../../../../components/admin-publication-page';
 import type {OperatorDirectory} from '../../../../components/control-operator-directory';
 import {ControlRepliesPage} from '../../../../components/control-replies-page';
-
 import {ControlOpenClawChat} from '../../../../components/control-openclaw-chat';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { ConnectionStatus } from '../../../../components/studio-types';
@@ -13,7 +11,9 @@ import {labUrl} from '../../../../lib/lab-url.mjs';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
   operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
-export function WorkspaceTool({section}:{section:string}){
+// Studio tools mounted inside a nav: Team (companies) under Bolag, Svarsbibliotek (replies) and Dialogtest
+// (dealer-agent) under Dealers › Röst och tal. `overrides` supplies the dealer or company the nav owns.
+export function WorkspaceTool({section,overrides={}}:{section:'companies'|'replies'|'dealer-agent';overrides?:Record<string,string>}){
   const [,refreshContext]=useState(0);
   const [data,setData]=useState<Workspace|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
@@ -29,23 +29,16 @@ export function WorkspaceTool({section}:{section:string}){
   },[section,attempt]);
   if(error)return <section className="admin-system-page" role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setAttempt(value=>value+1)}>Försök igen</button></section>;
   if(!data)return <p role="status" className="admin-system-page">Läser sparade uppgifter…</p>;
-  const q=new URLSearchParams(location.search),get=(key:string)=>q.get(key)||undefined;
+  const q=new URLSearchParams(location.search);for(const [key,value] of Object.entries(overrides))q.set(key,value);
+  const get=(key:string)=>q.get(key)||undefined;
   const common={initialProject:data.project,initialVideos:data.videos,initialStatus:data.status,initialDealerId:get('dealer'),
     initialLaneId:get('composition')??get('lane'),initialOperatorId:get('operator'),initialTableId:get('table'),
     initialEventId:get('event'),initialVariantId:get('variant'),initialSituation:get('situation'),connectedLane:data.connectedLane};
-  const roomValues=q.getAll(q.has('room')?'room':'table');
-  const initialRoomId=roomValues.length>1?roomValues:roomValues[0];
-  const explicitRooms=q.getAll('room'),explicitTables=q.getAll('table');
-  const scopedRooms=explicitRooms.length===1&&explicitTables.length===1&&explicitRooms[0]===explicitTables[0]
-    ?explicitRooms:[...explicitRooms,...explicitTables];
-  const scopedRoomId=scopedRooms.length>1?scopedRooms:scopedRooms[0];
   let content;
   switch(section){
     case 'companies':content=<AdminPublicationPage {...common} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable}/>;break;
-    case 'dealer-studio':content=<DealerMaterialPage project={data.project} dealerId={get('dealer')} navigationContext={studioNavigationContextFromQuery(q)} disabled={!data.connectedLane}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
-    default:return <p role="alert">Verktyget finns inte.</p>;
   }
   return <div className="admin-workspace-tool">{content}</div>;
 }
