@@ -1,5 +1,5 @@
 import {ADMIN_WORKSPACE_TOOLS,ADMIN_RETIRED_DOCUMENTS,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
-export const designPreviewPages = new Set([...Object.keys(ADMIN_RETIRED_DOCUMENTS).map(path=>path.slice(7)),...Object.keys(ADMIN_WORKSPACE_TOOLS),'tools', '', 'structure', 'guide', 'deletion', 'rooms', 'dealers', 'clips', 'scenes', 'assets', 'drift', 'ekonomi',
+export const designPreviewPages = new Set([...Object.keys(ADMIN_RETIRED_DOCUMENTS).map(path=>path.slice(7)),...Object.keys(ADMIN_WORKSPACE_TOOLS),'tools', '', 'structure', 'guide', 'demo', 'deletion', 'rooms', 'dealers', 'clips', 'scenes', 'assets', 'drift', 'ekonomi',
   'admin/accounts', 'admin/players', 'admin/payments', 'admin/api', 'admin/log', 'ai/models', 'ai/chat', 'openclaw', 'players']);
 export function designPreviewReturnTo(value) {
   if(typeof value!=='string'||value.length>2048||/[\\#\x00-\x20]/.test(value)||value.startsWith('//'))return null;
