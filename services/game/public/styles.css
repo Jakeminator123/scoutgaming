@@ -227,7 +227,7 @@ html[data-shared-room="1"] #banner { top: auto; bottom: 19vh; max-width: calc(10
 .seat-shared-bet-side.staked { border-color: rgba(214,255,58,.7); color: #f2f1ed; }
 .seat-shared-bet:disabled { opacity: .5; cursor: default; box-shadow: none; }
 /* Leaving the seat is a small secondary control below the bets. */
-.seat-shared-leave { min-width: 44px; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: rgba(242,241,237,.82);
+.seat-shared-leave { min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: rgba(242,241,237,.82);
   font: 600 11px 'Space Grotesk', sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .seat-shared-leave:disabled { opacity: .4; cursor: default; }
 /* K04 F8: the sign-in link after an expired session. */
