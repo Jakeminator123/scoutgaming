@@ -88,8 +88,9 @@ test('retired or unknown dealer cannot open the chat panel and preserves context
   for (const initialDealerId of ['vera', 'mei', 'amira', 'johanna', 'unknown']) {
     const html = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, initialDealerId }));
     assert.match(html, /<h2>Välj dealer<\/h2>/);
-    assert.match(html, /dealer=astrid&amp;composition=shared&amp;operator=north&amp;table=room-a/);
-    assert.ok(!html.includes('dealer=' + initialDealerId));
+    // An active dealer opens its own nav (Röst och tal) with the room context; the inactive one is never offered.
+    assert.match(html, /\/admin\/dealers\/astrid\?flik=tal&amp;composition=shared&amp;operator=north&amp;table=room-a/);
+    assert.ok(!html.includes('/admin/dealers/' + initialDealerId) && !html.includes('dealer=' + initialDealerId));
   }
   assert.deepEqual(project, before);
 });
