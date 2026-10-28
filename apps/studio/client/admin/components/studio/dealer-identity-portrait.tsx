@@ -65,3 +65,20 @@ export function DealerIdentityPortrait({ dealer, className = '' }: DealerIdentit
       onError={() => { setFailedVideo(videoSource); playback.current?.finish(); }} />}
   </div>;
 }
+
+// Card avatar: supplied artwork, else a still from the dealer's bound idle clip, else initials on a
+// colour derived from the name. Pure presentation; reads no register of its own.
+const avatarTones=['#7c8cff','#ff8f5a','#4fd1a5','#f5b83d','#c084fc','#5ec4ff','#f472b6'];
+export function DealerAvatar({dealer,still,size=56,className=''}:{dealer:{id:string;label:string};still?:{url:string;image:boolean}|null;size?:number;className?:string}) {
+  const [failed,setFailed]=useState('');
+  const artwork=suppliedDealerArtwork({id:dealer.id,name:dealer.label});
+  const box={width:size,height:size,minWidth:size};
+  if(artwork)return <span className={`block overflow-hidden rounded-xl ${className}`} style={box}><DealerIdentityPortrait dealer={dealer} className="size-full rounded-none"/></span>;
+  if(still&&failed!==still.url)return <span className={`relative block overflow-hidden rounded-xl bg-sg-ink ${className}`} style={box}>
+    {still.image?<img src={still.url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" onError={()=>setFailed(still.url)}/>
+      :<video src={still.url+'#t=1'} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 size-full object-cover" onError={()=>setFailed(still.url)}/>}
+  </span>;
+  const initials=dealer.label.split(/\s+/).filter(Boolean).slice(0,2).map(word=>Array.from(word)[0]).join('').toUpperCase()||'?';
+  const tone=avatarTones[[...dealer.label].reduce((sum,char)=>sum+char.charCodeAt(0),0)%avatarTones.length];
+  return <span aria-hidden="true" className={`grid place-items-center rounded-xl font-bold text-white ${className}`} style={{...box,background:tone,fontSize:Math.round(size*0.34)}}>{initials}</span>;
+}

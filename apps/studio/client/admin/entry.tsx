@@ -17,6 +17,10 @@ import { SystemPage } from './components/studio/system-page';
 import { AdminHelp } from './components/studio/admin-help';
 import {adminDocumentHref} from '../../../../packages/navigation/admin-workspace-routes.mjs';
 import {adminMenuLinks,adminPageLabels,adminTabId} from './lib/admin-navigation';
+import {Search} from 'lucide-react';
+import {CommandPalette,openCommandPalette} from './components/ui/command';
+import {Toaster} from './components/ui/toast';
+import {Kbd,buttonVariants} from './components/ui/kit';
 
 // Pages that stay mounted once visited so their drafts and native forms survive menu changes.
 const keepMounted=new Set(['dealers','scenes','companies','company','room','system']);
@@ -63,7 +67,9 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming Admin <span className="studio-portal-divider">/</span> {pageTitle}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>
+      <header className="studio-portal-bar"><span>Scoutgaming Admin <span className="studio-portal-divider">/</span> {pageTitle}</span>
+        <button type="button" onClick={openCommandPalette} aria-keyshortcuts="Control+K Meta+K" className="ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime md:inline-flex"><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök dealers, bolag, spelbord…</span><Kbd>Ctrl K</Kbd></button>
+        <nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={retired?retired.split('?')[0]:route.page==='dealer'?'/admin/dealers':route.page==='company'||route.page==='room'?'/admin/companies':path} onChange={event => navigate(previewHref(event.target.value))}>
         <option value="/admin">Översikt</option>
@@ -73,7 +79,7 @@ function App() {
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
       {show('scenes')&&<ScenesPage part="head" tab={sceneTab} workspace={workspace.current}/>}
-      <div className="hub-map-mount" hidden={!mapShown}>
+      <div className="flex min-h-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
         {mapVisited&&lastMapRoute&&<Clips active={mapShown} dealerId={lastMapRoute.kind==='dealer'?lastMapRoute.dealerId:''} base={lastMapRoute.base} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>
           <ConnectedClipMap route={lastMapRoute} active={mapActive} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} onWorkspaceChange={workspaceChanged} refreshKey={studioRefresh}/>
         </Clips>}
@@ -83,8 +89,9 @@ function App() {
       {(visited.includes('companies')||visited.includes('company')||visited.includes('room'))&&<div hidden={!(show('companies')||show('company')||show('room'))}><CompaniesPage page={route.page==='company'?'company':route.page==='room'?'room':'companies'} id={route.id} active={show('companies')||show('company')||show('room')} disabled={studioDirty||importBusy} onChanged={materialChanged}/></div>}
       {visited.includes('system')&&<div hidden={!show('system')}><SystemPage active={show('system')} tab={adminTabId('system',query.get('flik'))}/></div>}
       {show('guide')&&<AdminHelp/>}
-      {show('unknown')&&<section className="hub-page" aria-labelledby="admin-missing-title"><h1 id="admin-missing-title">Sidan finns inte</h1><p className="hub-muted">Adressen hör inte till någon av Admins sex sidor.</p><p className="hub-mt"><Link className="hub-btn" href="/admin">Till översikten</Link></p></section>}
+      {show('unknown')&&<section className="px-8 pb-16 pt-7" aria-labelledby="admin-missing-title"><h1 id="admin-missing-title" className="m-0 text-[26px] font-bold tracking-[-0.02em]">Sidan finns inte</h1><p className="mt-1.5 text-sg-muted">Adressen hör inte till någon av Admins sidor.</p><p className="mt-4"><Link className={buttonVariants()} href="/admin">Till översikten</Link></p></section>}
     </main>
+    <CommandPalette/><Toaster/>
   </div>;
 }
 const bookmark = legacyControlBookmarkHref(location.pathname + location.search + location.hash);

@@ -1,5 +1,6 @@
 import Link from '../../../runtime/navigation';
-import {HubPage,Tabs,Card,Chip,Row,Empty,Note} from '../ui/hub';
+import {HubPage,Tabs,Card,Chip,Row,Empty,Note,pageClass} from '../ui/hub';
+import {buttonVariants,cn,plural} from '../ui/kit';
 import {adminSceneTabs} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import {RegisteredMaterialLibrary} from './registered-material-library';
@@ -13,21 +14,26 @@ export function ScenesPage(props:Head|Tail) {
   if(props.part==='head'){
     const lanes=props.workspace?.project.lanes??[],assets=props.workspace?.project.layerAssets??[],trash=props.workspace?.project.layerAssetTrash?.length??0;
     const rooms=props.workspace?.catalog.administration.rooms.filter(room=>room.state!=='archived')??[];
-    return <HubPage wide title="Scenmallar och material" intro="En scenmall placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
-      actions={props.tab==='mallar'?<Link className="hub-btn" href="/admin/companies?tab=spelbord">Spelbord som använder mallarna →</Link>:undefined}>
+    const dealerName=(id:string)=>props.workspace?.project.dealers.find(row=>row.id===id)?.label??'Okänd dealer';
+    return <HubPage wide continued title="Scenmallar och material" intro="En scenmall placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
+      actions={props.tab==='mallar'?<Link className={buttonVariants()} href="/admin/companies?tab=spelbord">Spelbord som använder mallarna →</Link>:undefined}>
       <Tabs items={adminSceneTabs} active={props.tab} param="tab" counts={props.workspace?{mallar:lanes.length,bakgrunder:assets.filter(asset=>asset.role==='background').length,bordsgrafik:assets.filter(asset=>asset.role==='table').length,papperskorg:trash}:{}}/>
-      {props.tab==='mallar'&&lanes.length>0&&<Card title="Scenmallar" aside="välj en mall i editorn nedan; bordsfärg visas inte" className="hub-mt" as="section">
-        <div className="hub-rows">{lanes.map(lane=>{const used=rooms.filter(room=>room.compositionId===lane.id);return <Row key={lane.id} chip={<Chip tone={used.length?'ok':''}>{used.length?`${used.length} spelbord`:'oanvänd'}</Chip>} title={lane.label} text={`dealers: ${lane.layers.dealer.allowed.join(', ')||'inga'} · ${lane.renderer} · ${used.map(room=>room.name).join(', ')}`} href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}`}/>;})}</div>
-      </Card>}
+      {props.tab==='mallar'&&lanes.length>0&&<div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3" role="list" aria-label="Scenmallar">{lanes.map(lane=>{const used=rooms.filter(room=>room.compositionId===lane.id);const dealers=lane.layers.dealer.allowed.map(dealerName);
+        return <Link key={lane.id} role="listitem" href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}`} className="group grid gap-2 rounded-xl border border-sg-border bg-sg-surface p-4 text-sg-text no-underline shadow-sg transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between gap-2"><span className="truncate font-semibold group-hover:underline">{lane.label}</span><Chip tone={used.length?'ok':''}>{used.length?plural(used.length,'spelbord','spelbord'):'oanvänd'}</Chip></div>
+          <div className="text-[12.5px] text-sg-muted">{dealers.length?`Dealers: ${dealers.join(', ')}`:'Inga dealers ännu'}</div>
+          {used.length>0&&<div className="truncate text-xs text-sg-faint">Används av {used.map(room=>room.name).join(', ')}</div>}
+        </Link>;})}</div>}
     </HubPage>;
   }
   const {tab,visible,disabled,onChanged,refreshKey}=props;
-  return <div className="hub-page is-wide" style={{paddingTop:0}}>
+  return <div className={cn(pageClass,'max-w-none pt-0')}>
     {(tab==='bakgrunder'||tab==='bordsgrafik')&&<RegisteredMaterialLibrary role={tab==='bakgrunder'?'background':'table'} base="/admin/scenes" visible={visible&&(tab==='bakgrunder'||tab==='bordsgrafik')} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey}/>}
-    {tab==='papperskorg'&&<div className="hub-stack hub-mt">
-      <Note>Papperskorgen för material visas per flik längst ned under Bakgrunder respektive Bordsgrafik (samma layerAssetTrash); återställ går, permanent radering är ett eget steg. Arkiverade dealers ligger under Dealers.</Note>
-      <div className="hub-grid c2"><Card title="Bakgrunder"><Link className="hub-btn" href="/admin/scenes?tab=bakgrunder#material-trash">Öppna papperskorgen för bakgrunder</Link></Card><Card title="Bordsgrafik"><Link className="hub-btn" href="/admin/scenes?tab=bordsgrafik#material-trash">Öppna papperskorgen för bordsgrafik</Link></Card></div>
-      <Empty chip={null} title="Arkiverade scenmallar" text="Scenmallar har ingen papperskorg i projektet; en mall tas bort när inget spelbord använder den."/>
+    {tab==='papperskorg'&&<div className="mt-3 grid gap-4">
+      <Note>Material i papperskorgen kan återställas; permanent radering är ett eget steg. Arkiverade dealers finns under Dealers.</Note>
+      <RegisteredMaterialLibrary role="background" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
+      <RegisteredMaterialLibrary role="table" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
+      <Empty chip={null} title="Scenmallar har ingen papperskorg" text="En scenmall tas bort när inget spelbord använder den."/>
     </div>}
   </div>;
 }

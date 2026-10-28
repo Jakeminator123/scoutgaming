@@ -61,5 +61,5 @@ export function Administration({group,section,sharedRead}:{group:string;section?
 // One journal read serves both the economy overview and the payment journal under System › Spelarkonton.
 export function EconomyPanel({active}:{active:boolean}) {
   const [journal]=useState(()=>sharedStudioAdminRead(['transactions']));
-  return <div className="hub-stack hub-mt-l"><ConnectedEconomy journal={journal} active={active}/><Administration group="finance" sharedRead={journal}/></div>;
+  return <div className="grid gap-4 mt-5"><ConnectedEconomy journal={journal} active={active}/><Administration group="finance" sharedRead={journal}/></div>;
 }

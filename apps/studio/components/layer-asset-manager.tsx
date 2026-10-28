@@ -13,10 +13,16 @@ export function validMaterialTrashImpact(value:unknown,id:string,archived:boolea
   &&row.rooms.every(item=>typeof item?.id==='string'&&typeof item.name==='string'&&typeof item.operatorId==='string')
   &&row.operators.every(item=>typeof item?.id==='string'&&typeof item.name==='string'));
 }
-export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,expanded=false,filterAsset,renderAsset}: {
+export type MaterialTrashPlanView={impact:MaterialTrashImpact;busy:boolean;onConfirm:()=>void;onCancel:()=>void};
+const files=(count:number)=>`${count} ${count===1?'fil':'filer'}`;
+/** `view` picks the library (files only), the trash (archived files only) or both, as before.
+ *  `renderPlan` lets the caller show the server's consequence check in its own confirmation dialog. */
+export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,expanded=false,filterAsset,renderAsset,view='all',renderPlan}: {
  project:StudioProject;role:'table'|'background';disabled:boolean;expanded?:boolean;
  filterAsset?:(asset:LayerAsset)=>boolean;
  renderAsset?:(asset:LayerAsset,actions:{disabled:boolean;onTrash:()=>void})=>ReactNode;
+ view?:'all'|'library'|'trash';
+ renderPlan?:(plan:MaterialTrashPlanView)=>ReactNode;
  onEdit?:(change:(project:StudioProject)=>StudioProject)=>void;
  onSaved:(project:StudioProject)=>void;onBusyChange?:(busy:boolean)=>void;
 }){
@@ -28,7 +34,7 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
  useEffect(()=>()=>{epoch.current++;callbacks.current.onBusyChange?.(false);},[]);
  useEffect(()=>{setPlan(null);},[project.revision]);
  const assets=(project.layerAssets??[]).filter(asset=>asset.role===role&&(!filterAsset||filterAsset(asset))),trash=(project.layerAssetTrash??[]).filter(entry=>entry.asset.role===role&&(!filterAsset||filterAsset(entry.asset)));
- const blocked=disabled||busy||uncertain,heading=<>Hantera {role==='table'?'bord':'bakgrunder'} · {assets.length} filer</>;
+ const blocked=disabled||busy||uncertain,heading=view==='trash'?<>Papperskorg · {role==='table'?'bordsgrafik':'bakgrunder'} · {files(trash.length)}</>:view==='library'?<>{role==='table'?'Bordsgrafik':'Bakgrunder'} · {files(assets.length)}</>:<>Hantera {role==='table'?'bord':'bakgrunder'} · {files(assets.length)}</>;
  const Container=expanded?'section':'details';
  async function run(id:string,archived:boolean,apply=false){
   if(blocked||lock.current||apply&&(!plan||plan.revision!==project.revision||plan.impact.id!==id||plan.impact.archived!==archived))return;
@@ -63,11 +69,15 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
   {!renderAsset&&<p>Flytta en fil till papperskorgen. Kontrollera först vilka sammansättningar och publicerade spelrum som påverkas. Ändringen sparas direkt.</p>}
   {error?<p role="alert">{error} <button type="button" disabled={disabled||busy} onClick={()=>void refresh()}>Läs in aktuella uppgifter</button></p>:null}
   {notice?<p role="status">{notice}</p>:null}
-  {assets.length?<ul className={renderAsset?'material-card-list':undefined}>{assets.map(asset=><li key={asset.id}>{renderAsset?renderAsset(asset,{disabled:blocked,onTrash:()=>void run(asset.id,true)}):<><strong>{asset.label}</strong> · {layerAssetReferences(project,asset.id).map(row=>row.label).join(', ')||'Oanvänd i utkast'} <button type="button" disabled={blocked} onClick={()=>void run(asset.id,true)}>Flytta till papperskorgen</button></>}</li>)}</ul>:<p>Inga filer i det här urvalet.</p>}
-  <details><summary>Papperskorg · {trash.length}</summary><p>Återställning lägger tillbaka filen i biblioteket. Gamla val och publiceringar återställs inte automatiskt.</p>
+  {view!=='trash'&&(assets.length?<ul className={renderAsset?'material-card-list':undefined}>{assets.map(asset=><li key={asset.id}>{renderAsset?renderAsset(asset,{disabled:blocked,onTrash:()=>void run(asset.id,true)}):<><strong>{asset.label}</strong> · {layerAssetReferences(project,asset.id).map(row=>row.label).join(', ')||'Oanvänd i utkast'} <button type="button" disabled={blocked} onClick={()=>void run(asset.id,true)}>Flytta till papperskorgen</button></>}</li>)}</ul>:<p>Inga filer i det här urvalet.</p>)}
+  {view==='all'?<details><summary>Papperskorg · {trash.length}</summary><p>Återställning lägger tillbaka filen i biblioteket. Gamla val och publiceringar återställs inte automatiskt.</p>
    {trash.length?<ul>{trash.map(entry=><li key={entry.asset.id}>{entry.asset.label} <button type="button" disabled={blocked} onClick={()=>void run(entry.asset.id,false)}>Återställ</button></li>)}</ul>:<p>Papperskorgen är tom.</p>}
-  </details>
-  {plan&&plan.revision===project.revision?<fieldset ref={confirmation} tabIndex={-1} disabled={blocked}><legend>{plan.impact.archived?'Flytta till papperskorgen':'Återställ'}: {plan.impact.label}</legend>
+  </details>:view==='trash'?<>
+   <p>Återställning lägger tillbaka filen i biblioteket. Gamla val och publiceringar återställs inte automatiskt.</p>
+   {trash.length?<ul className="material-trash-list">{trash.map(entry=><li key={entry.asset.id}><span>{entry.asset.label}</span> <button type="button" disabled={blocked} onClick={()=>void run(entry.asset.id,false)}>Återställ</button></li>)}</ul>:<p>Papperskorgen är tom.</p>}
+  </>:null}
+  {plan&&plan.revision===project.revision&&renderPlan?renderPlan({impact:plan.impact,busy,onConfirm:()=>void run(plan.impact.id,plan.impact.archived,true),onCancel:()=>setPlan(null)}):null}
+  {plan&&plan.revision===project.revision&&!renderPlan?<fieldset ref={confirmation} tabIndex={-1} disabled={blocked}><legend>{plan.impact.archived?'Flytta till papperskorgen':'Återställ'}: {plan.impact.label}</legend>
    {plan.impact.archived?<><p>Filen kopplas loss från {plan.impact.compositions.length} sammansättningar, även arkiverade dealerutkast. Berörda spelrum avpubliceras och flyttas till papperskorgen.</p>
     {plan.impact.compositions.length?<ul>{plan.impact.compositions.map((item,index)=><li key={item.id+':'+index}>{item.label}</li>)}</ul>:null}
     {plan.impact.rooms.length?<ul>{plan.impact.rooms.map(room=><li key={room.id}>{room.name} · {plan.impact.operators.find(operator=>operator.id===room.operatorId)?.name}</li>)}</ul>:<p>Inga publicerade spelrum påverkas.</p>}

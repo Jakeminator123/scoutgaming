@@ -4,13 +4,14 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {setTemplateDealers} from './dealer-directory.mjs';
+import {setTemplateDealers,dealerIdFromName} from './dealer-directory.mjs';
+import * as dealerDirectoryLib from './dealer-directory.mjs';
 import {lifecycleMessage} from './studio-lifecycle.mjs';
 import * as lifecycleActions from './lifecycle-actions.mjs';
 import * as dealerCoverage from './dealer-coverage.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
-// The shared ConfirmDialog is a function component; expand it so its texts and buttons are inspectable.
-const expand=node=>node&&typeof node==='object'&&typeof node.type==='function'?node.type(node.props):node;
+// The kit's dialogs and buttons are function components; expand them so their texts and buttons are inspectable.
+const expand=node=>{while(node&&typeof node==='object'&&typeof node.type==='function')node=node.type(node.props);return node;};
 const nodes=(raw,predicate)=>{const node=expand(raw);return !node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];};
 const text=raw=>{const node=expand(raw);return typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';};
 // Hookless stand-ins for the hub primitives: the harness shares one hook cursor with the directory.
@@ -21,11 +22,11 @@ const hub={
   Empty:({title,text})=>React.createElement('div',{role:'status'},React.createElement('h3',null,title),text),
   ActionMenu:({name,actions})=>React.createElement('span',{'aria-label':'Åtgärder för '+name},actions.map(a=>React.createElement('button',{key:a.id,type:'button',disabled:Boolean(a.disabled),onClick:a.onSelect},a.label))),
 };
-const tsx=name=>transformSync(readFileSync(new URL('../components/studio/'+name+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+const tsx=name=>transformSync(readFileSync(new URL('../components/'+(name.includes('/')?name:'studio/'+name)+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dragan') {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
   for(const dealer of additionalDealers){remote.project=addDealer(remote.project,dealer.id,dealer.label);remote.catalog.administration.dealers.push({id:dealer.id,name:dealer.label});}
-  const saves=[],changes=[],navigations=[],archives=[],checks=[],deletionChecks=[],deletions=[],slots=[],effects=[],module={exports:{}},dialogModule={exports:{}};
+  const saves=[],changes=[],navigations=[],toasts=[],archives=[],checks=[],deletionChecks=[],deletions=[],slots=[],effects=[],module={exports:{}},dialogModule={exports:{}},kitModule={exports:{}};
   let cursor=0,saveFailure='',readFailure=false,lifecycleFailure='',loads=0,eligibility={allowed:true,count:2};
   const props={active:true,onChanged:()=>changes.push(true)};
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};},useEffect(fn,deps){const index=cursor++;if(!slots[index]||deps.some((dep,i)=>dep!==slots[index].deps[i])){effects.push(()=>{slots[index]?.cleanup?.();slots[index]={deps,cleanup:fn()};});}}};
@@ -47,22 +48,27 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     remote={...remote,project:{...remote.project,revision:'studio.project.4',dealers:[],dealerTrash:[]}};
   }};
   const shared={URLSearchParams,AbortController,structuredClone,window:{addEventListener(){},removeEventListener(){}}};
-  runInNewContext(tsx('confirm-dialog'),{...shared,module:dialogModule,exports:dialogModule.exports,require:name=>name==='react'?hooks:name.endsWith('.module.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}:require(name)});
+  // The kit's dialog (ConfirmDialog, Dialog) shares the directory's hook cursor, like the hub stand-ins.
+  runInNewContext(tsx('ui/kit'),{...shared,module:kitModule,exports:kitModule.exports,require:name=>name==='react'?hooks:require(name)});
+  runInNewContext(tsx('ui/dialog'),{...shared,module:dialogModule,exports:dialogModule.exports,require:name=>name==='react'?hooks:name==='lucide-react'?new Proxy({},{get:()=>()=>null}):name==='./kit'?kitModule.exports:require(name)});
   runInNewContext(tsx('dealer-directory'),{...shared,module,exports:module.exports,require:name=>{
     if(name==='react')return hooks;
     if(name==='lucide-react')return new Proxy({},{get:()=>()=>null});
-    if(name==='./confirm-dialog')return dialogModule.exports;
+    if(name==='../ui/dialog')return dialogModule.exports;
+    if(name==='../ui/kit')return kitModule.exports;
+    if(name==='../ui/toast')return{toast:text=>toasts.push(text)};
+    if(name.includes('lib/dealer-directory'))return dealerDirectoryLib;
     if(name.includes('lifecycle-actions'))return lifecycleActions;
     if(name.includes('studio-model'))return{addDealer};
     if(name.includes('connected-studio'))return{createStudioClient:()=>client};
     if(name.includes('studio-lifecycle'))return{createLifecycleClient:()=>lifecycle,lifecycleMessage};
     if(name.includes('runtime/navigation'))return{__esModule:true,default:'a',useSearchParams:()=>new URLSearchParams(search),navigate:href=>navigations.push(href)};
     if(name==='../ui/hub')return hub;
-    if(name==='./dealer-identity-portrait')return{DealerIdentityPortrait:()=>null};
+    if(name==='./dealer-identity-portrait')return{DealerAvatar:()=>null};
     if(name.includes('dealer-coverage'))return dealerCoverage;
     return require(name);
   }});
-  const h={setArchiveCheck:handler=>archiveCheck=handler,props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
+  const h={setArchiveCheck:handler=>archiveCheck=handler,props,saves,toasts,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
     setLifecycleFailure:value=>lifecycleFailure=value,patchRemote:change=>{remote=change(structuredClone(remote));},loads:()=>loads,
     render(){cursor=0;return module.exports.DealerDirectory(props);},
     async settle(){for(let i=0;i<5;i++){h.render();while(effects.length)effects.shift()();await new Promise(resolve=>setImmediate(resolve));}},
@@ -107,21 +113,39 @@ test('cancelling dealer creation restores focus to its initiating button without
   assert.equal(focused,target);
   assert.equal(h.saves.length,0);assert.equal(h.changes.length,0);assert.equal(h.navigations.length,0);
 });
-test('create saves the identity once without copying media, voice or room membership',async()=>{
+test('create asks only for the name, saves the identity once without copying media, voice or room membership',async()=>{
   const h=harness();await h.settle();h.button('Ny dealer').props.onClick();
+  assert.deepEqual(nodes(h.dialog(),node=>node.type==='input').map(node=>node.props.type??'text'),['text'],'one name field and no id field');
+  assert.doesNotMatch(text(h.dialog()),/\bId\b|Blob|dealers\[\]/);
   h.input('Namn').props.onChange({target:{value:'Nora'}});
-  assert.ok(h.button('Skapa och gå till Lägg till klipp'));
+  assert.ok(h.dialogButton('Skapa dealer'));
   await nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
   assert.equal(h.saves.length,1);const saved=h.saves[0];
   assert.deepEqual(saved.dealers.find(row=>row.id==='nora'),{id:'nora',label:'Nora'});
   assert.ok(saved.lines.filter(row=>row.dealerId==='nora').every(row=>row.variants.every(variant=>variant.videoGenerationId===null)));
   assert.equal(saved.lanes?.some(lane=>lane.dealers.includes('nora'))??false,false);
-  assert.deepEqual(h.navigations,['/admin/dealers/nora?flik=klipp&panel=intake'],'the new dealer opens on its own clip intake');
+  assert.match(text(h.dialog()),/Nora är sparad/);assert.equal(h.navigations.length,0,'the dialog offers the next step instead of leaving');
+  h.dialogButton('Lägg till klipp').props.onClick();
+  assert.deepEqual(h.navigations,['/admin/dealers/nora?flik=klipp&panel=intake'],'the next step opens the new dealer on its own clip intake');
+  assert.deepEqual(h.toasts,['Nora är sparad.']);
+});
+test('the id is made from the name by the validation rule and never clashes with active or trashed dealers',async()=>{
+  const active=addDealer(addDealer(createEmptyProject(),'nora','Nora'),'ake','Åke');
+  const project={...active,dealerTrash:[{dealer:{id:'bjorn-ostlund',label:'Björn Östlund'}}]};
+  assert.equal(dealerIdFromName(project,'Nora'),'nora-2');assert.equal(dealerIdFromName(project,'Åke'),'ake-2');
+  assert.equal(dealerIdFromName(project,'Björn Östlund'),'bjorn-ostlund-2','the trash keeps its ids');
+  assert.equal(dealerIdFromName(project,'Märta Ödman'),'marta-odman');assert.equal(dealerIdFromName(project,'7even'),'dealer-7even');
+  assert.equal(dealerIdFromName(project,'Admin'),'admin-2','reserved names get a suffix');assert.equal(dealerIdFromName(project,'Vera'),'vera-2','retired names get a suffix');
+  assert.equal(dealerIdFromName(project,'!!!'),'dealer');assert.equal(dealerIdFromName(project,'x'.repeat(80)).length,40);
+  for(const name of ['Nora','Åke','Admin','Vera','7even','x'.repeat(80)])assert.doesNotThrow(()=>addDealer(active,dealerIdFromName(active,name),name));
+  const h=harness([],[{id:'nora',label:'Nora'}]);await h.settle();h.button('Ny dealer').props.onClick();h.input('Namn').props.onChange({target:{value:'Nora'}});
+  await nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
+  assert.deepEqual(h.saves[0].dealers.map(row=>row.id),['dragan','nora','nora-2'],'a second Nora gets the next free id');
 });
 test('lost create acknowledgement is reconciled without a duplicate write',async()=>{
   const h=harness();await h.settle();h.setSaveFailure('lost');h.button('Ny dealer').props.onClick();h.input('Namn').props.onChange({target:{value:'Nora'}});
   nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
-  assert.equal(h.saves.length,1);assert.match(text(h.render()),/Nora är sparad/);
+  assert.equal(h.saves.length,1);assert.match(text(h.dialog()),/Nora är sparad/);
 });
 test('revision conflicts preserve the creation form and never replay its write',async()=>{
   const h=harness();await h.settle();h.setSaveFailure('conflict');h.button('Ny dealer').props.onClick();h.input('Namn').props.onChange({target:{value:'Nora'}});

@@ -44,9 +44,11 @@ function harness({search='',pathname='/admin/system',data=session(),status=200}=
   const auth=compile('./admin-session.ts',()=>admin);
   const connected=compile('../components/studio/connected-services.tsx',name=>name.includes('admin-session')?auth:name.includes('runtime/navigation')?navigation:name.includes('studio-navigation')?studioNavigation:name.endsWith('.module.css')?{__esModule:true,default:{embedded:'embedded'}}:admin);
   const page=compile('../components/studio/taldrift-panel.tsx',name=>name.includes('admin-session')?auth:admin);
-  const hub=compile('../components/ui/hub.tsx',name=>name.includes('runtime/navigation')?navigation:admin);
+  // The hub layout builds on the kit (./kit, ./dialog, ./menu); those compile beside it, packages load as usual.
+  const ui={},uiRequire=name=>name.includes('runtime/navigation')?navigation:name.startsWith('./')?(ui[name]??=compile('../components/ui/'+name.slice(2)+'.tsx',uiRequire)):require(name);
+  const hub=compile('../components/ui/hub.tsx',uiRequire);
   markers.ResourceConnections=marker('ResourceConnections');
-  const system=compile('../components/studio/system-page.tsx',name=>name==='../ui/hub'?hub:name.includes('runtime/navigation')?navigation:name.includes('admin-navigation')?adminNavigation:name==='./connected-services'?connected:name==='./resource-connections'?{ResourceConnections:markers.ResourceConnections}:admin);
+  const system=compile('../components/studio/system-page.tsx',name=>name==='../ui/hub'?hub:name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.includes('runtime/navigation')?navigation:name.includes('admin-navigation')?adminNavigation:name==='./connected-services'?connected:name==='./resource-connections'?{ResourceConnections:markers.ResourceConnections}:admin);
   return {page,connected,hub,system,requests,markers,
     navigate(next,path=pathname){search=next;pathname=path;},
     render(fn,props={},key=fn.name){const o=owner(key);active=o;o.cursor=0;return fn(props);},

@@ -8,7 +8,7 @@ import type { DealerArchiveImpact } from '../../../../lib/dealer-archive-impact.
 import type { Catalog, VideoInventory } from '../../lib/connected-studio.mjs';
 import { clipLifecycleBlocker, createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
 import { clipArchivePlan, dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';
-import { ConfirmAcknowledgement, ConfirmDialog } from './confirm-dialog';
+import { ConfirmAcknowledgement, ConfirmDialog } from '../ui/dialog';
 import { ClipDeleteAction, type ClipDeleteResult } from './clip-delete-action';
 
 const client = createLifecycleClient();

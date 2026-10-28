@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import styles from './registered-studio.module.css';
+import { buttonVariants, cn } from '../ui/kit';
 import {lifecycleSnapshotKey, operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {PartnerAppearanceLoader} from '../../../../components/partner-appearance-loader.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
@@ -28,8 +27,17 @@ type Registry = { schemaVersion: 1; source: 'registered'; readAt: string; admini
   revisions: { project: string; administration: string };
 } };
 type State = { status: 'loading' } | { status: 'error'; authentication: boolean } | { status: 'ready'; value: Registry };
-const linkClass = 'inline-flex items-center gap-1 text-xs text-sg-lime hover:underline';
-const panelClass = 'rounded-lg border border-sg-line bg-sg-panel';
+const linkClass = 'inline-flex items-center gap-1 text-[13px] font-semibold text-sg-accent-text no-underline hover:underline';
+const panelClass = 'rounded-xl border border-sg-border bg-sg-surface shadow-sg';
+const ui = {
+  message: 'rounded-lg bg-sg-surface-2 px-3.5 py-2.5 text-[13px] text-sg-muted',
+  problem: 'rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn [&_button]:ml-2',
+  receipt: 'rounded-lg bg-sg-ok-bg px-3.5 py-2.5 text-[13px] text-sg-ok',
+  unpublished: 'rounded-xl border border-dashed border-sg-border bg-sg-surface-2 px-5 py-6 text-center text-[13px] text-sg-muted [&_h3]:mb-1 [&_h3]:text-[14px] [&_h3]:font-semibold [&_h3]:text-sg-text',
+  card: 'grid min-w-0 gap-4',
+  choice: 'flex cursor-pointer items-start gap-3 rounded-xl border border-sg-border bg-sg-surface p-3.5 text-[13px] leading-snug transition-colors hover:bg-sg-surface-2 has-[:checked]:border-sg-text has-[:checked]:shadow-[0_0_0_2px_var(--sg-lime)] [&_input]:mt-0.5 [&_input]:size-4 [&_input]:accent-[var(--sg-ink)]',
+  slot: 'empty:hidden',
+};
 const labels: Record<string, string> = { active: 'Aktivt', suspended: 'Avstängt', live: 'Öppet', preview: 'Förhandsvisning', pending: 'Pausat', draft: 'Utkast', archived: 'Arkiverat', blackjack: 'Blackjack', roulette: 'Roulette' };
 // The game settings API accepts live blackjack rooms published on a composition in the package.
 const gameSettingsRoom = (room: Room) => room.published && room.state === 'live' && room.game === 'blackjack';
@@ -37,8 +45,8 @@ const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ b
 
 /** The company's package (mode package), a new room (mode create) and the room editor (mode room, one
  *  section per tab). The company and room come from the nav's path, never from a dealer-library query. */
-export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'create'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void };
-export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged }: RegisteredStudioProps) {
+export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'create'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void };
+export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus }: RegisteredStudioProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
@@ -179,73 +187,72 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     rehearsalLabel: 'Öppna spelbordet',
   };
   const liveLabel = (value: string|null, label: string) => value ? label : '–';
-  const reloadButton=<button type="button" disabled={state.status === 'loading'||anyBusy||anyDraft} onClick={reload} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button>;
+  const reloadButton=<button type="button" disabled={state.status === 'loading'||anyBusy||anyDraft} onClick={reload} className={buttonVariants({size:'sm'})}><RefreshCw aria-hidden="true"/> Uppdatera</button>;
   // The published package revision (the publish precondition) and the room archive are read through the rooms
   // lifecycle, as on the retired /admin/rooms page. One reader per mount; compact, it stays silent until it has
   // a notice or a pending request. Tillgänglighet shows it in its own slot; every other mode mounts it last.
-  const lifecycleReader = operator && (mode !== 'room' || selectedRoom) ? <div id="room-lifecycle" className={styles.lifecycleSlot}>
+  const lifecycleReader = operator && (mode !== 'room' || selectedRoom) ? <div id="room-lifecycle" className={ui.slot}>
     <ControlResourceLifecycle operatorId={operator.id} kind="rooms" available refreshKey={lifecycleRefresh} compact request={roomRequest} onRequestHandled={()=>setRoomRequest(undefined)}
       disabled={disabled||roomBusy||gameBusy||createBusy||publishBusy||anyDraft} onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/>
   </div> : null;
   const stateSection = mode === 'room' && section === 'state';
   return <>
-    <section className={cn("flex flex-1 flex-col gap-6",styles.roomPage)} aria-live="polite">
+    <section className="flex min-w-0 flex-1 flex-col gap-5" aria-live="polite">
       {state.status === 'loading' ? <p role="status" className="text-sm text-sg-muted">Läser bolag, spelbord och dealers…</p>
         : state.status === 'error' ? <div role="alert" className={cn(panelClass, 'p-6')}>
           <h2 className="font-semibold">{state.authentication ? 'Inloggning krävs' : 'Uppgifterna kunde inte läsas'}</h2>
           <p className="my-3 text-sm text-sg-muted">{state.authentication ? 'Din interna session saknas eller har gått ut. Öppna administrationen igen för att logga in.' : 'Kontrollera anslutningen till Studio. Inga exempeldata har ersatt de saknade uppgifterna.'}</p>
           <a href="/admin" className={linkClass}>Öppna administrationen igen <ArrowUpRight size={13} /></a>
-        </div> : data && !operator ? <p role="alert" className={styles.message}>Bolaget {operatorId} finns inte bland de aktiva bolagen.</p>
+        </div> : data && !operator ? <p role="alert" className={ui.message}>Bolaget {operatorId} finns inte bland de aktiva bolagen.</p>
         : data && operator && <>
           {mode==='room' && <>
-            {roomId&&!selectedRoom&&<p role="alert" className={styles.message}>Spelbordet finns inte hos detta aktiva bolag.</p>}
+            {roomId&&!selectedRoom&&<p role="alert" className={ui.message}>Spelbordet finns inte hos detta aktiva bolag.</p>}
             {selectedRoom&&<>
-              {disabled&&<p role="status" className={styles.message}>Spara det pågående arbetet innan du ändrar spelbordets val.</p>}
+              {disabled&&<p role="status" className={ui.message}>Spara det pågående arbetet innan du ändrar spelbordets val.</p>}
               {section==='appearance'&&<>
-                {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className={styles.roomStatus} aria-label="Publicerat nu"><div><dt>Publicerat nu</dt><dd>{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}
-                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||createBusy||publishBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={setRoomStatus} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
-                  : <div className={styles.unpublished} role="status"><h3>Spelbordet saknar ett publicerat paket</h3><p>Utseendet kan väljas när bolagets scenmallar är publicerade under Bolag › Tilldelning.</p></div>}
-                <section className={styles.message} aria-label="Publicera (tills steg D)"><h3 className="font-semibold">Publicera (tills steg D)</h3>
-                  <p>Utseendet publiceras med knapparna ovan (Spara utkast · Granska publicering · Publicera granskat utkast), spelinställningarna under sin flik och tilldelningen under bolaget. En gemensam publicering kommer i steg D.</p>
-                  {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<><p>Uppdatera PAOWs sparade vilosekvens i bolagets publicerade spelbord. Övriga publicerade val och placeringar behålls.</p>
-                    <button type="button" className="studio-button" disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button>
-                    {operatorPackage.message&&<p role="status">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert">{operatorPackage.error}</p>}</>}
-                </section>
+                {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className="m-0 flex flex-wrap items-center gap-2 text-[12.5px] text-sg-muted" aria-label="Publicerat nu"><div className="flex items-center gap-2"><dt className="inline-flex items-center gap-1.5 font-semibold text-sg-text"><span className="size-1.5 rounded-full bg-sg-ok" aria-hidden="true"/>Publicerat nu</dt><dd className="m-0">{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}
+                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||createBusy||publishBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>{setRoomStatus(status);onRoomStatus?.(status);}} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
+                  : <div className={ui.unpublished} role="status"><h3>Spelbordet saknar ett publicerat paket</h3><p>Utseendet kan väljas när bolagets scenmallar är publicerade under Bolag › Tilldelning.</p></div>}
+                <details className="group rounded-xl border border-dashed border-sg-border px-4 py-3 text-[13px] text-sg-muted" aria-label="Publicera (tills steg D)"><summary className="cursor-pointer select-none font-semibold text-sg-muted hover:text-sg-text">Publicera (tills steg D)</summary>
+                  <div className="mt-2 grid gap-2"><p className="m-0">Utseendet publiceras med editorns egna knappar, spelinställningarna under sin flik och tilldelningen under bolaget. En gemensam publicering för hela spelbordet kommer i steg D.</p>
+                  {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<><p className="m-0">Uppdatera PAOWs sparade vilosekvens i bolagets publicerade spelbord. Övriga publicerade val och placeringar behålls.</p>
+                    <p className="m-0"><button type="button" className={buttonVariants({size:'sm'})} disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button></p>
+                    {operatorPackage.message&&<p role="status" className="m-0">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert" className="m-0 text-sg-warn">{operatorPackage.error}</p>}</>}
+                </div></details>
               </>}
               {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name}
                 disabled={disabled||lifecycleBusy||roomBusy||roomDirty||createBusy||publishBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
                 onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);onChanged?.();}}/>
-                :<div className={styles.unpublished} role="status"><h3>Spelinställningar kan sättas när spelbordet är öppet och publicerat</h3><p>Spelinställningar (språk, insatsprofil) gäller öppna, publicerade blackjack-spelbord. Öppna spelbordet under Tillgänglighet och publicera tilldelningen först.</p></div>)}
-              {section==='state'&&<div className={styles.lifecycleSlot}>
-                {selectedRoom.published&&<p><button type="button" className="studio-button" disabled={disabled||anyBusy||anyDraft} onClick={()=>{setRoomRequest({kind:'state',roomId:selectedRoom.id});scrollTo('room-lifecycle');}}>{selectedRoom.state==='live'?'Pausa spelbordet':'Öppna spelbordet'}</button> <span className="text-xs text-sg-muted">Pausa gäller direkt: läget läses levande ur registret, inte ur paketet. Pågående rundor spelas klart.</span></p>}
+                :<div className={ui.unpublished} role="status"><h3>Spelinställningar kan sättas när spelbordet är öppet och publicerat</h3><p>Spelinställningar (språk, insatsprofil) gäller öppna, publicerade blackjack-spelbord. Öppna spelbordet under Tillgänglighet och publicera tilldelningen först.</p></div>)}
+              {section==='state'&&<div className={ui.slot}>
+                {selectedRoom.published&&<p className="m-0 flex flex-wrap items-center gap-3"><button type="button" className={buttonVariants({variant:selectedRoom.state==='live'?'secondary':'primary'})} disabled={disabled||anyBusy||anyDraft} onClick={()=>{setRoomRequest({kind:'state',roomId:selectedRoom.id});scrollTo('room-lifecycle');}}>{selectedRoom.state==='live'?'Pausa spelbordet':'Öppna spelbordet'}</button><span className="text-xs text-sg-muted">Pausa gäller direkt. Pågående rundor spelas klart.</span></p>}
                 {lifecycleReader}
                 {selectedRoom.playUrl&&<p><a href={selectedRoom.playUrl} target="_blank" rel="noopener" className={linkClass}>Öppna spelbordet i spelet <ArrowUpRight size={13} aria-hidden="true"/></a></p>}
               </div>}
-              {selectedRoom.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bordsgrafik före nästa publicering.</p>}
+              {selectedRoom.materialWarning&&<p role="note" className={ui.problem}>Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bordsgrafik före nästa publicering.</p>}
             </>}
           </>}
-          {mode==='package' && <section id="room-publication" className={cn(panelClass,styles.companyCard)} aria-label="Tilldelning">
-            <header><div><p className={styles.detailEyebrow}>Tilldelning</p><h3>Scenmallar som {operator.name} får använda</h3></div>
-              <span className={styles.version}>{operator.packageRevision===null&&operatorPackage.revision===null?'Ingen publicering ännu':'Senast publicerat · version '+(operatorPackage.revision??operator.packageRevision)}</span></header>
-            <p>Tilldelningen publiceras som en ny version av bolagets paket. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna; spelbordets egna val sparas i spelbordets editor.</p>
-            {operatorPackage.needsRefresh&&<p role="status" className={styles.problem}>Uppgifterna behöver kontrolleras. <button type="button" className="studio-button" disabled={anyBusy} onClick={reload}>Läs in aktuella uppgifter</button></p>}
-            {!compositions.length&&<p role="status">Det finns inga sparade scenmallar. <a className={linkClass} href="/admin/scenes?tab=mallar">Skapa en scenmall</a> innan du skapar ett spelbord.</p>}
-            {!operatorPackage.chosen.length&&compositions.length>0&&<p role="status">Välj minst en scenmall för att publicera. Stäng bolagets spel genom att pausa eller arkivera spelborden.</p>}
+          {mode==='package' && <section id="room-publication" className={cn(panelClass,ui.card,'p-5')} aria-label="Tilldelning">
+            <header className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="m-0 text-[15px] font-semibold">Scenmallar som {operator.name} får använda</h3><p className="mb-0 mt-1 max-w-[70ch] text-[13px] text-sg-muted">Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Varje publicering blir en ny version av bolagets tilldelning.</p></div>
+              <span className="whitespace-nowrap rounded-full border border-sg-border px-2.5 py-1 text-xs font-semibold text-sg-muted">{operator.packageRevision===null&&operatorPackage.revision===null?'Ingen publicering ännu':'Senast publicerat · version '+(operatorPackage.revision??operator.packageRevision)}</span></header>
+            {operatorPackage.needsRefresh&&<p role="status" className={ui.problem}>Uppgifterna behöver kontrolleras. <button type="button" className={buttonVariants({size:'sm'})} disabled={anyBusy} onClick={reload}>Läs in aktuella uppgifter</button></p>}
+            {!compositions.length&&<p role="status" className={ui.message}>Det finns inga sparade scenmallar. <a className={linkClass} href="/admin/scenes?tab=mallar">Skapa en scenmall</a> innan du skapar ett spelbord.</p>}
+            {!operatorPackage.chosen.length&&compositions.length>0&&<p role="status" className={ui.message}>Välj minst en scenmall för att publicera. Stäng bolagets spel genom att pausa eller arkivera spelborden.</p>}
             <form onSubmit={event=>{event.preventDefault();void publishPackage();}}>
-              <fieldset className={styles.choices} disabled={disabled||anyBusy||operatorPackage.needsRefresh}><legend>Scenmallar som bolaget får använda</legend>
-                {compositions.map(row=><label className={styles.choice} key={row.id}><input type="checkbox" name="lanes" value={row.id} checked={operatorPackage.chosen.includes(row.id)}
-                  onChange={event=>{const checked=event.target.checked;updatePackage(operator.id,current=>togglePackageLane(current,row.id,checked));}}/><span><strong>{compositionLabel(row.name)}</strong><br/>{row.dealerIds.map(dealerName).join(', ')||'Inga dealers'}{operatorRooms.some(room=>room.compositionId===row.id)?' · används av '+operatorRooms.filter(room=>room.compositionId===row.id).map(room=>room.name).join(', '):''}</span></label>)}
-                {operatorPackage.chosen.filter(id=>!compositions.some(row=>row.id===id)).map(id=><label className={styles.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operator.id,current=>togglePackageLane(current,id,false))}/><span>Scenmall borttagen · {id}. Avmarkera efter att berörda spelbord arkiverats.</span></label>)}
+              <fieldset className="m-0 grid min-w-0 gap-2.5 border-0 p-0 sm:grid-cols-2 2xl:grid-cols-3" disabled={disabled||anyBusy||operatorPackage.needsRefresh}><legend className="mb-2 p-0 text-[13px] font-semibold text-sg-muted">Scenmallar som bolaget får använda</legend>
+                {compositions.map(row=><label className={ui.choice} key={row.id}><input type="checkbox" name="lanes" value={row.id} checked={operatorPackage.chosen.includes(row.id)}
+                  onChange={event=>{const checked=event.target.checked;updatePackage(operator.id,current=>togglePackageLane(current,row.id,checked));}}/><span className="min-w-0"><strong className="block text-sg-text">{compositionLabel(row.name)}</strong><span className="text-sg-muted">{row.dealerIds.map(dealerName).join(', ')||'Inga dealers'}{operatorRooms.some(room=>room.compositionId===row.id)?' · används av '+operatorRooms.filter(room=>room.compositionId===row.id).map(room=>room.name).join(', '):''}</span></span></label>)}
+                {operatorPackage.chosen.filter(id=>!compositions.some(row=>row.id===id)).map(id=><label className={ui.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operator.id,current=>togglePackageLane(current,id,false))}/><span>En borttagen scenmall. Avmarkera den när berörda spelbord har arkiverats.</span></label>)}
               </fieldset>
-              <div className={styles.publishAction}><p role="status">{publishBusy?'Publicerar…':publicationStatus}</p>
-                <button className={operatorPackage.message?'studio-button':'studio-button primary'} type="submit" disabled={packageBlocked}>{publishBusy?'Publicerar…':operatorPackage.message?'Publicera igen':'Publicera för '+operator.name}</button></div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-sg-line-2 pt-4"><p role="status" className="m-0 text-[13px] text-sg-muted">{publishBusy?'Publicerar…':publicationStatus}</p>
+                <button className={buttonVariants({variant:operatorPackage.message?'secondary':'primary'})} type="submit" disabled={packageBlocked}>{publishBusy?'Publicerar…':operatorPackage.message?'Publicera igen':'Publicera för '+operator.name}</button></div>
             </form>
-            {operatorPackage.error&&<p role="alert" className={styles.problem}>{operatorPackage.error}</p>}
-            {operatorPackage.message&&<p role="status" className={styles.receipt}><strong>Publiceringen är bekräftad.</strong> {operatorPackage.message}</p>}
-            <p><a href={'/partner/'+encodeURIComponent(operator.slug)+'/rooms'} className={linkClass}>Öppna Partnerportalen ↗</a> {reloadButton}</p>
+            {operatorPackage.error&&<p role="alert" className={ui.problem}>{operatorPackage.error}</p>}
+            {operatorPackage.message&&<p role="status" className={ui.receipt}><strong className="font-semibold">Publiceringen är bekräftad.</strong> {operatorPackage.message}</p>}
+            <p className="m-0 flex flex-wrap items-center gap-3"><a href={'/partner/'+encodeURIComponent(operator.slug)+'/rooms'} className={linkClass}>Öppna Partnerportalen ↗</a> {reloadButton}</p>
           </section>}
-          {mode==='create' && complete && <div id="room-create" className={styles.companyCard}><div className={styles.createHeader}><h2>Nytt spelbord hos {operator.name}</h2></div>
-            {compositions.length>0&&<label className={styles.compositionPick}>Scenmall<select aria-label="Scenmall" value={createComposition?.id??''} disabled={anyBusy||createDraft} onChange={event=>setNewRoomComposition(event.target.value)}>
+          {mode==='create' && complete && <div id="room-create" className={ui.card}><div><h2 className="m-0 text-[15px] font-semibold">Nytt spelbord hos {operator.name}</h2></div>
+            {compositions.length>0&&<label className="grid max-w-sm gap-1.5 text-[13px] font-semibold">Scenmall<select className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text" aria-label="Scenmall" value={createComposition?.id??''} disabled={anyBusy||createDraft} onChange={event=>setNewRoomComposition(event.target.value)}>
               {compositions.map(row=><option key={row.id} value={row.id}>{compositionLabel(row.name)}{operatorPackage.baseline.includes(row.id)?'':' · inte publicerad'}</option>)}
             </select></label>}
             <PresentationRoomCreate operator={{id:operator.id,slug:operator.slug,name:operator.name}} presentation={createComposition?{id:createComposition.id,label:compositionLabel(createComposition.name)}:null}
@@ -257,7 +264,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
           </div>}
           {!stateSection&&lifecycleReader}
         </>}
-      <footer className="mt-auto border-t border-sg-line pt-4 text-xs text-sg-muted">{state.status === 'ready' ? `Uppgifterna lästa ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'}{lifecycleSnapshot?' · Paket och livscykel lästa':''}</footer>
+      <footer className="mt-auto border-t border-sg-line-2 pt-3 text-xs text-sg-faint">{state.status === 'ready' ? `Uppgifterna lästa ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'}{lifecycleSnapshot?' · Paket och livscykel lästa':''}</footer>
     </section>
   </>;
 }

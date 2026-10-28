@@ -24,6 +24,8 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     useEffect(callback,deps){const store=current,index=store.cursor++;if(!store.effects[index]||deps.some((value,i)=>value!==store.effects[index].deps[i])){store.queue.push(()=>{store.effects[index]?.cleanup?.();store.effects[index]={deps,cleanup:callback()};});}}};
   const visibility=new Set(),doc={hidden:false,addEventListener:(name,fn)=>visibility.add(fn),removeEventListener:(name,fn)=>visibility.delete(fn)};
   const LayerLibrary=()=>null,LayerAssetManager=()=>null,module={exports:{}};
+  // The kit's menu and dialogs stay unexpanded elements; tests read their props (actions, open, children).
+  const ActionMenu=()=>null,Dialog=()=>null,ConfirmDialog=()=>null,Button=props=>React.createElement('button',props);
   const source=readFileSync(new URL('../components/studio/registered-material-library.tsx',import.meta.url),'utf8');
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URLSearchParams,AbortController,document:doc,location:{search},window:{addEventListener(){},removeEventListener(){}},require:name=>{
     if(name==='react')return hooks;
@@ -34,6 +36,10 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
     if(name.endsWith('/layer-library'))return {LayerLibrary};
     if(name.endsWith('/layer-asset-manager'))return {LayerAssetManager};
+    if(name==='../ui/hub')return {ActionMenu};
+    if(name==='../ui/dialog')return {Dialog,ConfirmDialog};
+    if(name==='../ui/kit')return {Button,buttonVariants:()=>'button',cn:(...names)=>names.filter(Boolean).join(' '),plural:(count,one,many)=>`${count} ${count===1?one:many}`};
+    if(name==='lucide-react')return new Proxy({},{get:()=>()=>null});
     if(name.includes('connected-studio.mjs'))return {createStudioClient:()=>({load:async()=>({project})})};
     return require(name);
   }});
@@ -48,7 +54,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     return renderWith(cards.get(asset.id),element.type,element.props);
   };
   render();await setImmediate();
-  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
+  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,ActionMenu,Dialog,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
 }
 
 test('real assets page scopes table upload and visible library to explicit game, with shared backgrounds',async()=>{
@@ -59,13 +65,15 @@ test('real assets page scopes table upload and visible library to explicit game,
     assert.equal(nodes(tree,node=>node.type==='li').length,0,'no duplicate gallery beside the lifecycle cards');
     assert.equal(nodes(tree,node=>node.type===h.LayerAssetManager)[0].props.project,h.project,'lifecycle manager retains complete dependency graph');
     assert.equal(nodes(tree,node=>node.props?.role==='tablist'||node.type==='h1').length,0,'the Scenes page owns the heading and the role tabs');
-    assert.equal(nodes(tree,node=>node.props?.id==='material-trash').length,1,'the trash has one anchor for the Scenes page link');
-    nodes(tree,node=>node.type==='select')[0].props.onChange({target:{value:'blackjack'}});tree=h.render();
+    assert.equal(nodes(tree,node=>node.type===h.LayerAssetManager)[0].props.view,'library','the trash lives only on the Papperskorg tab');
+    const pill=(tree,label)=>nodes(tree,node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)===label)[0];
+    assert.equal(pill(tree,'Roulette').props['aria-pressed'],true);
+    pill(tree,'Blackjack').props.onClick();tree=h.render();
     assert.deepEqual(h.navigated,['/admin/scenes?tab=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.game,'blackjack');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Blackjack board','Legacy board']);
     h.props.role='background';tree=h.render();
-    assert.equal(nodes(tree,node=>node.type==='select').length,0);
+    assert.equal(nodes(tree,node=>node.type==='button'&&node.props['aria-pressed']!==undefined).length,0,'backgrounds are shared by every game');
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.role,'background');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Shared background']);
   } finally{h.close();}
@@ -96,7 +104,11 @@ test('material card shows loading, failed media and a retry while keeping the ex
     assert.equal(img.key,'1');assert.equal(img.props.src,'/studio/api/layer-assets/'+asset.id);
     img.props.onLoad();tree=h.card(asset);
     assert.doesNotMatch(text(tree),/Läser förhandsvisning|Förhandsvisningen kunde inte läsas/);
-    assert.match(text(tree),/PNG/);assert.match(text(tree),new RegExp(asset.sha256));
+    const details=nodes(tree,node=>node.type===h.Dialog&&node.props.title==='Tekniska detaljer')[0];
+    assert.equal(details.props.open,false,'technical details stay folded behind the ⋯ menu');
+    assert.match(text(details),/PNG/);assert.match(text(details),new RegExp(asset.sha256));
+    nodes(tree,node=>node.type===h.ActionMenu)[0].props.actions.find(action=>action.id==='details').onSelect();
+    assert.equal(nodes(h.card(asset),node=>node.type===h.Dialog&&node.props.title==='Tekniska detaljer')[0].props.open,true);
     assert.deepEqual(asset,original,'presentation never rewrites media identity');
   }finally{h.close();}
 });
@@ -124,16 +136,24 @@ test('video card waits for an explicit play with sound and lets the user recover
 test('material card delegates trash to the guarded lifecycle action and respects its disabled state',async()=>{
   const h=await harness();try{
     let requested=0;const asset=h.project.layerAssets[0],actions={disabled:true,onTrash:()=>requested++};
-    let tree=h.card(asset,actions),button=nodes(tree,node=>node.type==='button'&&node.props['aria-label']?.startsWith('Flytta '))[0];
-    assert.equal(button.props.disabled,true);assert.equal(requested,0);
-    actions.disabled=false;tree=h.card(asset,actions);button=nodes(tree,node=>node.type==='button'&&node.props['aria-label']?.startsWith('Flytta '))[0];
-    button.props.onClick();assert.equal(requested,1);
+    const trash=tree=>nodes(tree,node=>node.type===h.ActionMenu)[0].props.actions.find(action=>action.id==='trash');
+    let tree=h.card(asset,actions);
+    assert.ok(trash(tree).disabled,'a running change disables the trash entry and says why');assert.equal(requested,0);
+    actions.disabled=false;tree=h.card(asset,actions);assert.equal(trash(tree).disabled,undefined);
+    trash(tree).onSelect();assert.equal(requested,1);
+  }finally{h.close();}
+});
+test('the trash tab shows only the archived files of the role, without upload',async()=>{
+  const h=await harness('?tab=papperskorg');try{
+    h.props.trashOnly=true;const tree=h.render();
+    assert.equal(nodes(tree,node=>node.type===h.LayerLibrary).length,0);
+    assert.equal(nodes(tree,node=>node.type===h.LayerAssetManager)[0].props.view,'trash');
   }finally{h.close();}
 });
 
 test('mounted material library follows alias context and keeps dealer and room while changing filters',async()=>{
   const h=await harness('?tab=bordsgrafik&game=blackjack&dealer=dragan&room=one');try{
-    nodes(h.render(),node=>node.type==='select')[0].props.onChange({target:{value:'roulette'}});
+    nodes(h.render(),node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)==='Roulette')[0].props.onClick();
     const query=new URLSearchParams(h.query());
     assert.equal(query.get('dealer'),'dragan');assert.equal(query.get('room'),'one');
     assert.equal(query.get('tab'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
