@@ -1,3 +1,6 @@
+import { installSharedRoomShortcuts } from './shared-room-shortcuts.mjs';
+import { sharedRoomResultPending } from './shared-room-results.mjs';
+
 // Existing table DOM; all visible money, seats and controls come from a server snapshot.
 const money = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
 const $ = (document,id) => document.getElementById(id);
@@ -40,6 +43,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   for(const node of document.querySelectorAll('[data-act]'))listen(node,()=>actions?.dispatch('act',{action:node.dataset.act}));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
   $(document,'ins-yes').textContent='Ja';$(document,'ins-no').textContent='Nej';
+  cleanups.push(installSharedRoomShortcuts(document));
   const slots=Array.from({length:7},(_,index)=>{
     // Admin table geometry positions the seat root; the controls keep 44 px touch
     // targets at any scale, and bet buttons only exist on the player's own seat.
@@ -74,10 +78,10 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   return Object.freeze({
     bind(value){actions=value;},
     render(value){
-      model=value;const s=value.snapshot,can=value.can,hints=value.hints??{};
+      model=value;const s=value.snapshot,can=value.can,hints=value.hints??{},resultPending=sharedRoomResultPending(value);
       // An empty status box stays away: it overlays the table beside the first seat.
       notice.textContent=value.notice;status.hidden=!value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;again.hidden=!value.offline;signIn.hidden=!value.signIn;
-      leave.disabled=!can.leave;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
+      leave.disabled=!can.leave;next.hidden=s?.phase!=='settled'||resultPending;next.disabled=!can.next;
       for(const [id,[,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.disabled=!can[op];
         // Redo waits for a main bet and Upprepa for a previous round; the tooltip names the reason.
         if(op==='ready'||op==='repeat')node.title=hints[op]??'';}
@@ -92,8 +96,8 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       $(document,'balance').textContent=money(s.me.available)+' demo';
       if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
-      $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
-      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Spelpaus aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      $(document,'last-win').textContent=s.me.lastSettlement&&!resultPending?money(s.me.lastSettlement.returned):'–';
+      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Spelpaus aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'&&!resultPending?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
       picker.value='';picker.disabled=!can.join;focus.value=String(value.focusSeat??s.me.seats[0]??3);
       const key=JSON.stringify(s.settings.chips);

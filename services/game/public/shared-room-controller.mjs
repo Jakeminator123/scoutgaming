@@ -73,7 +73,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   // Why a betting control stays closed while betting is open: the same texts as the server's NO_BETS and NO_REPEAT.
   const hints = can => can.bet ? { ready:can.ready ? '' : messages.NO_BETS, repeat:can.repeat ? '' : messages.NO_REPEAT, side:messages.NO_BETS }
     : { ready:'', repeat:'', side:'' };
-  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, signIn:expired,
+  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, presenting, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, signIn:expired,
     retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
@@ -159,7 +159,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     focusSeat(value) { if (!closed && seat(value)) { focusSeat=value; draw(); } },
     selectChip(value) { if (!closed && snapshot?.settings.chips.includes(value) && !sending && !waiting && commands.state === 'idle') { chip = value; draw(); } },
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
-    // K04 F8: a session the server refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
+    // K04 F8: a session the socket refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
     fail(code) { if (!closed) { api.stop(); expired = code === 'shared_room_unauthorized';
       notice = expired ? SIGN_IN_EXPIRED : 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
     // The socket's reconnect budget is spent: the last server state stays on screen without controls, and the
