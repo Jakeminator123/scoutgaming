@@ -25,11 +25,11 @@ Kodåtergång, när en deploy är fel:
 1. Frys läget: aktuell `main`-SHA, Vercels produktionsdeploy (`dpl_…` och dess commit) och spelmotorns `GET https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Grön CI bevisar inte att båda kör samma version.
 2. Välj en granskad tidigare SHA och kontrollera att den förstår installerat Neon-schema, frysta paket och sparade medieformat. Schema går inte tillbaka med koden.
 3. Spelmotorn: deploya SHA:n låst med Render REST, `POST /v1/services/srv-dbd6nfon74is73aiblf0/deploys` med `{"commitId":"<40 hex>"}`. Render MCP `trigger_deploy` tar branchens senaste commit och duger inte för återgång. Vercel: befordra en tidigare READY-deploy (panelens Instant Rollback eller `POST /v10/projects/<prj>/promote/<dpl_…>`); därefter får nya main-deployer inte produktionsdomänerna förrän en deploy befordras igen. Den varaktiga återgången är en revert-PR med full CI. Director och Gateway deployas bara om deras kod ändrats.
-4. Läs om `/__cloud/version`, `/__cloud/health`, `/__cloud/shared-room-health` (delat bord på) och det berörda flödet: Admin → publicering → lobby → spel. Render låter den gamla instansen svara i ungefär tre minuter efter bytet; mät först när versionen är stabil.
+4. Läs om `/__cloud/version`, `/__cloud/health` och det berörda flödet (med delat bord på: en spelad hand, eftersom `/__cloud/shared-room-health` inte är publikt nåbar): Admin → publicering → lobby → spel. Render låter den gamla instansen svara i ungefär tre minuter efter bytet; mät först när versionen är stabil.
 
 **Deploy med delat bord på (F11).** Under Render-överlappet får spelare på den gamla instansen inga ögonblicksbilder från bordet och missar dealerns spel tills anslutningen stängs med 1012. Tills rättningen är mergad deployas `croupier-v3` bara när bordet är tomt: `SELECT count(*) FROM croupier_game.shared_table_members WHERE active` och `SELECT count(*) FROM croupier_game.shared_wallet_reservations` ska båda vara 0, annars vänta en runda.
 
-**Delat bord av.** `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen sedan <O03: tid, dep-…>. Återgång till nativebordet: kontrollera att bordet är tomt enligt ovan, sätt flaggan till `0` med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>` startar ingen deploy) och deploya samma SHA låst. Reservationer som ändå står kvar ligger kvar i Neon tills flaggan slås på igen; de raderas aldrig för hand. Jakob har förgodkänt återgången flagga av och låst deploy av `3415c310` (D7, 2026-10-28).
+**Delat bord av.** `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`, live 13:53:25Z; bordet var tomt före). Återgång till nativebordet: kontrollera att bordet är tomt enligt ovan, sätt flaggan till `0` med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>` startar ingen deploy) och deploya samma SHA låst. Reservationer som ändå står kvar ligger kvar i Neon tills flaggan slås på igen; de raderas aldrig för hand. Jakob har förgodkänt återgången flagga av och låst deploy av `3415c310` (D7, 2026-10-28).
 
 Återställ inte gamla env-filer, gamla tjänster eller domänkopplingar som del av en kodåtergång. `croupier-v2` och `croupier-vercel-preview-qa` är raderade; det finns ingen äldre motor att gå tillbaka till. En ändrad miljövariabel, databasbehörighet eller talflagga har sin egen återgång och följer inte med koden. Render MCP:s env-skrivning sammanfogar nycklar och startar en deploy direkt.
 
@@ -68,14 +68,14 @@ Efter en restore eller PITR återöppnas inga rum och inget tal aktiveras automa
 
 ### Migrerat schema i produktionen
 
-Läst 28 oktober 2026 före O03 och <O03: tid> efter. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
+Läst 28 oktober 2026 före O03 och 14:21Z efter 011. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
 
 | Del | Läge | Verktyg |
 | --- | --- | --- |
 | Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte). Readiness `ready:true`, inga väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
-| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`)<O03: och `game-011-retire-lissabon`> | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start |
+| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`) och sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start |
 | Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*` | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
-| Katalog | 76 tabeller (`croupier_auth` 7, `croupier_game` 41, `croupier_studio` 28), 4 sekvenser, 2 vyer<O03: ; 74 tabeller efter 011> | `tools/o02-snapshot.mjs` |
+| Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/o02-snapshot.mjs` |
 | Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Flyttas eller tas bort efter O03 |
 | Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` är kvarlämnade QA-roller som tas bort efter O03 | Inventeras före restore i ett annat projekt |
 
@@ -83,7 +83,7 @@ Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 01
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)
 
-`ops/neon-game/011-retire-lissabon.sql` tar bort de tomma tabellerna `lissabon_profiles` och `lissabon_profile_sessions` och skriver ledgerraden `game-011-retire-lissabon`. Ingen kod läser eller skriver tabellerna. Den ingår inte i startup eller deploykrav. I O03 körde Jakob den <O03: tid>, utan skrivarstopp (D1), efter backupgrenen och restoreprovet ovan.
+`ops/neon-game/011-retire-lissabon.sql` tar bort de tomma tabellerna `lissabon_profiles` och `lissabon_profile_sessions` och skriver ledgerraden `game-011-retire-lissabon`. Ingen kod läser eller skriver tabellerna. Den ingår inte i startup eller deploykrav. I O03 kördes den 2026-10-28 av orkestratorn med Jakobs uttryckliga ja, utan skrivarstopp (D1), efter backupgrenen och restoreprovet ovan: förkontrollen ca 14:19Z (exit 0, ROLLBACK), sedan transaktionen (exit 0, COMMIT, ledgerraden 14:21:48Z). Efteråt finns lissabon-tabellerna inte, katalogen har 74 tabeller och `/__cloud/health` svarar 200. SQL, manifest och evidens står med hashar i [O03-kvittot](2026-10-28-O03-RELEASE-ACCEPTANCE.json), blocket `ddl`.
 
 `node tools/prepare-lissabon-retirement.mjs --evidence <privat-json>` bygger manifestet offline (`--readiness-sql` för förkontroller med ROLLBACK, `--sql` för hela transaktionen); verktyget ansluter aldrig till databasen. Evidensfilen binder `database`, `role`, `releaseSha`, `rollbackSha`, `consumerInventorySha256`, `backupSha256` och `restoreReceiptSha256`. Rollen måste vara schemaägaren `croupier_game`, och inga händelsetriggers får finnas. Förkontrollerna nekar fel ägare, ändrad produktchecksumma, icke-tomma tabeller och okända beroenden; låsen hålls genom transaktionen med `lock_timeout` 2 s. `DROP` låser `croupier_game.players` kort för de främmande nycklarnas triggrar, så spelarfrågor väntar högst två sekunder eller så avbryts transaktionen utan ändring. CI provar vägen med `node tools/run-shared-table-qa.mjs --lissabon-retirement --postgres-bin /usr/lib/postgresql/16/bin`.
 
