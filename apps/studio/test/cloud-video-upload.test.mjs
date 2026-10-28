@@ -9,7 +9,7 @@ import { buildLabVideoManifest, manifestJson } from '../../../tools/media/build-
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {readUploads} from '../lib/video-local-readers.mjs';
-import { loadVideoRegistry, getVideoResponse, getLabVideoResponse } from '../lib/video-registry.mjs';
+import { loadVideoRegistry, getVideoResponse, getLabVideoResponse } from './fixtures/local-video-registry.mjs';
 import { createPresentationApi } from '../../../services/game/presentation-api.mjs';
 import { NextRequest } from '../node_modules/next/server.js';
 

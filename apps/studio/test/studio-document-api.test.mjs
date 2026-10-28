@@ -5,7 +5,7 @@ import { createStudioDocumentApi } from '../lib/studio-document-api.mjs';
 import { createSeedProject, addDealer, defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
-import { createSocialPolicy } from '../lib/social-store.mjs';
+import { createSocialPolicy } from './fixtures/social-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../../test/fixtures/studio-memory-pool.mjs';
 
