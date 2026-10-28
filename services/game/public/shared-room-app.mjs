@@ -6,6 +6,14 @@ import { createSharedRoomCommandClient } from './shared-room-command-client.mjs'
 import { createSharedRoomController } from './shared-room-controller.mjs';
 import { createSharedRoomView } from './shared-room-view.mjs';
 import { mountSharedRoomPresentation } from './shared-room-presentation.mjs';
+import { canonicalGameDestination } from '../../../packages/navigation/game-entry.mjs';
+
+// The player's sign-in for this table (as auth-modal.mjs): /player-login with the table's own game query,
+// so blackjack-entry.mjs returns the player here after signing in. Never a launch token.
+function signInPath(location){
+  try{return canonicalGameDestination(new URL(location.href),{includeLaunch:false}).replace(/^\/game(?=\?|$)/,'/player-login');}
+  catch{return '/player-login';}
+}
 
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
@@ -166,7 +174,7 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
   let presentation,view,controller,socket,commands,closed=false;
-  const fail=()=>{startup.fail();controller?.fail();};
+  const fail=code=>{startup.fail();controller?.fail(code);};
   const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();controller?.stop();
     if(!controller){commands?.stop();view?.close();presentation?.close();}startup.close();};
   window.addEventListener('pagehide',close,{once:true});
@@ -177,11 +185,11 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
         startup=createPresentationStartup({document,dealerId});return startup;},onError:()=>{
         const caption=document.getElementById('caption');if(caption)caption.textContent='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
       }});
-    view=createView({document,onLayout:layout=>presentation.layout?.(layout)});
+    view=createView({document,onLayout:layout=>presentation.layout?.(layout),signInHref:signInPath(window.location)});
     controller=createSharedRoomController({roomId,commands,view,presentation,reconnect:()=>socket?.reconnect?.()});
     // A spent reconnect budget leaves the socket offline: the table keeps its last state and offers Återanslut.
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot:controller.restoreSnapshot,
-      present:controller.present,onError:()=>socket?.status?.().state==='offline'?controller.offline():fail(),callbackTimeoutMs:30000});
+      present:controller.present,onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
     socket.start();
     return Object.freeze({close,controller});
   }catch(error){fail();close();throw error;}

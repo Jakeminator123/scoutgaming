@@ -1,6 +1,6 @@
 # Masterplan: Kevins spelbeteenden in i mains produkt
 
-Kort, gällande plan. Status finns bara i [STATUS.md](STATUS.md), genererad från [status.json](status.json) (enda statuskällan). Läge, nästa steg och vem som agerar finns i [docs/NEXT-AGENT.md](../docs/NEXT-AGENT.md). Den fullständiga planen med avstämningar 21–27 oktober, prioriteringstabellen, frysta käll-SHA:er och O01-kontrakten finns oförändrad i [docs/history/MASTERPLAN-2026-10.md](../docs/history/MASTERPLAN-2026-10.md); den är historik, inte körorder.
+Kort, gällande plan. Status finns bara i [STATUS.md](STATUS.md), genererad från [status.json](status.json) (enda statuskällan). Läge, nästa steg och vem som agerar finns i [docs/NEXT-AGENT.md](../docs/NEXT-AGENT.md). Den fullständiga planen med avstämningar 21–27 oktober, prioriteringstabellen, frysta käll-SHA:er och O01-kontrakten finns oförändrad i den historiska planen (raderat; se `git show 29ed6626bf:docs/history/MASTERPLAN-2026-10.md`); den är historik, inte körorder.
 
 ## Syfte och avgränsning
 
@@ -48,7 +48,7 @@ E4  J07 + O01 → J08      K01 + K04 → K05      J05 + J07 → J09      J08 + K
 E5  K04 + K06 → K07      J06 + J09 → J10      K07 + J10 → O02 → O03
 ```
 
-Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad som saknas för varje aktivitet står i [NEXT-AGENT](../docs/NEXT-AGENT.md#vad-som-återstår-i-beroendeordning).
+Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad som saknas för varje aktivitet står i [NEXT-AGENT](../docs/NEXT-AGENT.md#kvar-till-o02-och-o03-i-ordning).
 
 ## När migreringen är klar
 
@@ -61,7 +61,7 @@ Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad so
 
 ### O01 — Lås kontrakt och funktionsansvar
 
-VERIFIED. Kontrakten för kommandon, händelser, lagring, presentation och configversion är låsta; underlaget finns i [K01/O01-svar.md](kevin-ks-migrering/K01/O01-svar.md) och i [den historiska planen](../docs/history/MASTERPLAN-2026-10.md#o01--lås-kontrakt-och-funktionsansvar).
+VERIFIED. Kontrakten för kommandon, händelser, lagring, presentation och configversion är låsta; underlaget finns i [K01/O01-svar.md](kevin-ks-migrering/K01/O01-svar.md) och i den historiska planen (raderat; se `git show 29ed6626bf:docs/history/MASTERPLAN-2026-10.md`).
 
 ### O02 — Oberoende samprov
 

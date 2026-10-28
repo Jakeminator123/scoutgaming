@@ -1147,6 +1147,33 @@ for (const kind of ['deal', 'speech']) test(`a missing ${kind} file ends its ste
   assert.equal(failed.state, kind === 'speech' ? 'failed' : 'fallback'); assert.equal(failed.renderer, kind === 'speech' ? 'none' : '2d');
 });
 
+// K04 F9 (omprov 5, 28 Oct 2026): a take that stalled after its card was on the table read
+// "Filmen kunde inte spelas." for about 8 s. Its step now ends quietly; the receipt keeps the stall.
+const stalledTake = () => Object.assign(new Error('Film playback stalled'), { code: 'local_film_stalled' });
+for (const cardShown of [true, false]) test(`a stalled deal take ${cardShown ? 'whose card is already on the table ends its step without text' : 'before its card shows keeps the failure line'}`, async t => {
+  const f = await controllerFixture(t, { standardVideo: { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) } });
+  f.controller.state({ action: true }); let asked = 0;
+  const result = f.controller.present(source, { shown: () => { asked++; return cardShown; } });
+  await settle(); assert.equal(f.jobs.length, 1);
+  f.jobs[0].reject(stalledTake());
+  assert.equal(await result, cardShown, 'a shown card reports no media error to the shared table');
+  assert.equal(f.jobs.length, 1, 'no standard film after a stall'); assert.equal(asked, 1);
+  assert.equal(f.status.textContent, cardShown ? '' : 'Filmen kunde inte spelas.');
+  const stalled = f.receipts.at(-1);
+  assert.deepEqual([stalled.state, stalled.code, stalled.reason, stalled.renderer, stalled.cardShown],
+    ['fallback', 'local_film_stalled', 'Film playback stalled', '2d', cardShown ? true : undefined]);
+});
+
+test('a stalled speech line and any other deal failure keep their failure line even when the card shows', async t => {
+  const f = await controllerFixture(t); f.controller.state({ speech: true });
+  const speech = f.controller.present({ type: 'speak', line: 'win' }, { shown: () => true }); await settle();
+  f.jobs[0].reject(stalledTake()); assert.equal(await speech, false); assert.equal(f.status.textContent, 'Talet kunde inte spelas.');
+  f.controller.state({ speech: false, action: true });
+  const deal = f.controller.present(source, { shown: () => true }); await settle();
+  f.jobs.at(-1).reject(missingFile()); assert.equal(await deal, false); assert.equal(f.status.textContent, 'Filmen kunde inte spelas.');
+  assert.equal(f.receipts.at(-1).cardShown, undefined);
+});
+
 test('a retryable film failure still plays the standard film and does not end the shared presentation', async t => {
   const standard = { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) };
   const f = await controllerFixture(t, { standardVideo: standard });

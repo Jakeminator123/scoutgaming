@@ -475,7 +475,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   // onUnavailable(): this step's exact media is missing or declared unavailable
   // (not a retryable playback failure); the shared table ends its film at once.
-  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, onUnavailable, startOffset, handoverAt, playbackRate, clockTime } = {}) {
+  // shown(): the caller's card for this step is already on the table (the shared table's card cursor).
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, onUnavailable, shown, startOffset, handoverAt, playbackRate, clockTime } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
@@ -579,14 +580,19 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (requireReload(error)) return false;
       // A line refused by the sound policy already shows the sound control.
       const soundBlocked = kind === 'speech' && error.code === 'local_film_sound_blocked';
-      if (!soundBlocked) showFailure(kind === 'speech' ? SPEECH_FAILED : FILM_FAILED);
+      // K04 F9: a take that stalls after its card is already on the table ends its step without text;
+      // the receipt still names the stall. Before the card shows, the failure line stays.
+      let cardShown = false;
+      if (error.code === 'local_film_stalled' && kind !== 'speech') { try { cardShown = shown?.() === true; } catch {} }
+      if (!soundBlocked && !cardShown) showFailure(kind === 'speech' ? SPEECH_FAILED : FILM_FAILED);
       const missing = unavailableMedia(error);
       receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message,
         ...(error.code ? { code: error.code } : {}), ...(Number.isInteger(error.status) ? { status: error.status } : {}), ...(error.serverCode ? { serverCode: error.serverCode } : {}),
-        ...(missing ? { unavailable: true } : {}), ...(soundBlocked ? { soundUnlocked } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+        ...(missing ? { unavailable: true } : {}), ...(soundBlocked ? { soundUnlocked } : {}), ...(cardShown ? { cardShown: true } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
         projectRevision: result?.projectRevision, configurationSource });
       if (missing) { try { onUnavailable?.(); } catch {} }
-      return false;
+      // The step's result is on the table: the shared table reports no media error for it.
+      return cardShown;
     }
   }
   control.onchange = () => { pendingRule = null; ++behaviourRequest; settlementContinuation=null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
