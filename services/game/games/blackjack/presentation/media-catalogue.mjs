@@ -50,7 +50,7 @@ export function parseCatalogue(text) {
 
 export const loadCatalogue = () => parseCatalogue(readFileSync(new URL('./k04-media.tsv', import.meta.url), 'utf8'));
 
-// Deferred (K05 / review 6329902583 p2): G13 lines without a main slot and the Table Studio greeting.
+// Deferred (K05 / review 6329902583 p2): G13 lines without a main slot and the Table Studio material.
 // One predicate for activation, planning and line binding: a deferred row is never bound or required.
 export const isDeferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
 

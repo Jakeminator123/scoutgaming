@@ -9,7 +9,7 @@
 // K01 TSV, path + bytes + sha256 of Kevin 5aa7ed10 files). They are NOT Neon ids or Blob
 // identities yet (K05); `observed` is whatever the binder verified (e.g. a local hash pass or,
 // later, the registry), and the revision changes if any of those hashes or timing inputs change.
-// The required set is activationSet (without K05's deferred rows) minus the six public/ JS files,
+// The required set is activationSet (without K05's deferred rows) minus the five public/ JS files,
 // which are source evidence pinned by CATALOGUE_SOURCE and never observed in runtime. That change
 // (K05-mappning.md 4b) changed every revision; revisions computed at 1148fa76 are no longer valid.
 //
