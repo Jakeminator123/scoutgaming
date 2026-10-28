@@ -558,7 +558,10 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     throw Error('unsupported native operator fixture query '+tag);
   }
   const pool={trace,base,snapshot:()=>copy(state),
-    async query(sql,values=[]) {trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
+    async query(sql,values=[]) {
+      // This schema has no migration 021: company material is not installed.
+      if(sql.includes('/* operator-materials:materials-ready */'))return result([{ledgered:0,present:false}]);
+      trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
     async connect() {
       const client=await base.connect(),id=++clientSequence;let working,readonly,mutating=false;
       return {release:()=>client.release(),async query(sql,values=[]) {

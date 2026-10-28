@@ -71,6 +71,8 @@ async function withBrowser(run){const {chromium}=await import(pathToFileURL(brow
 // Radix moves roving focus in a timeout after the key press; wait for it instead of sampling at once.
 const focusOn=(page,check)=>page.waitForFunction(check);
 const focused=page=>page.evaluate(()=>({role:document.activeElement?.getAttribute('role'),label:document.activeElement?.getAttribute('aria-label'),text:document.activeElement?.textContent?.trim(),inDialog:Boolean(document.activeElement?.closest('[role="dialog"]'))}));
+// Radix returns focus to the trigger after its close animation; poll briefly instead of sampling at once.
+async function hasFocus(locator,message){for(let i=0;i<100;i++){if(await locator.evaluate(element=>element===document.activeElement))return;await new Promise(resolve=>setTimeout(resolve,20));}assert.fail(message);}
 
 test('the table editor works with the keyboard: tabs, card choices, review dialog, actions menu; save → review → publish keep their order',{skip:!browserModule},()=>withBrowser(async browser=>{
   const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
@@ -99,12 +101,12 @@ test('the table editor works with the keyboard: tabs, card choices, review dialo
     for(let i=0;i<6;i++){await page.keyboard.press('Tab');assert.equal((await focused(page)).inDialog,true,'focus stays in the dialog');}
     await dialog.getByText('Utkastet är gemensamt för bolagets spelbord',{exact:false}).waitFor();
     await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
-    assert.equal(await review.evaluate(element=>element===document.activeElement),true,'focus returns to the publish button');
+    await hasFocus(review,'focus returns to the publish button');
     // Actions menu (Radix DropdownMenu): Enter opens, arrows move, Esc closes back to the trigger.
     const more=page.getByRole('button',{name:'Fler åtgärder'});await more.focus();await page.keyboard.press('Enter');
     const menu=page.getByRole('menu');await menu.waitFor();await page.keyboard.press('ArrowDown');
     await focusOn(page,()=>document.activeElement?.getAttribute('role')==='menuitem');
-    await page.keyboard.press('Escape');await menu.waitFor({state:'hidden'});assert.equal(await more.evaluate(element=>element===document.activeElement),true);
+    await page.keyboard.press('Escape');await menu.waitFor({state:'hidden'});await hasFocus(more,'focus returns to the actions button');
     // Publish from the dialog: the receipt replaces the step.
     await review.click();await dialog.waitFor();await page.locator('[data-action="publish"]').click();
     await page.getByRole('dialog',{name:'Publicerat · version 8'}).waitFor();

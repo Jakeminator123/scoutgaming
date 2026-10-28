@@ -63,6 +63,12 @@ const sources = Object.freeze([
   // Reader-first rollout: ordinary startup still accepts schemas through 019.
   { version:'020', file:'020-extended-presentation.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_packages','operator_branding_drafts'] },
+  // Bolagets eget material. Tolerant code first: without 021 the store reads
+  // nothing and refuses writes, so this version never blocks readiness. Applied
+  // only after Jakob's explicit yes.
+  { version:'021', file:'021-operator-materials.sql', deploymentOptional:true,
+    tables:['operator_materials','operator_material_policies','operator_ai_attempts'],
+    indexes:['operator_materials_time_idx','operator_ai_attempts_day_idx'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */

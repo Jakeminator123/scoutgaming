@@ -17,7 +17,7 @@ function asset(role,n) {
     sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};
   return {...row,pathname:layerAssetPath(row)};
 }
-function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eventMode=null,legacy=false,fullFrame=false,baked=false,tableClip=false}={}) {
+function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eventMode=null,legacy=false,fullFrame=false,baked=false,tableClip=false,limitPresets=null}={}) {
   const dealers=[['linnea','Linnea published'],['nora','Nora published'],['selma','Selma published'],['astrid','Astrid published'],['foreign','Draft only']];
   const project=dealers.reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
   const lane=defaultPresentationLane('linnea');lane.id='johns-presentation';lane.label='Published presentation';project.lanes=[lane];
@@ -85,7 +85,8 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
     branding:withPackagePresentation({name:'North',dealer:'nora',table:tableClip?project.layerAssets.at(-1).id:project.layerAssets[3].id,background:project.layerAssets[1].id},presentation)}};
   const calls={operators:0,packages:0,snapshots:0};
   const api=createPublicOperatorRooms({store:{getOperatorBySlug:async slug=>{calls.operators++;return slug===operator.slug?structuredClone(state.operator):null;},
-    getCurrentPackage:async()=>{calls.packages++;return structuredClone(state.pack);}},
+    getCurrentPackage:async()=>{calls.packages++;return structuredClone(state.pack);},
+    ...(limitPresets?{getPublishedRoomLimitPresets:async pack=>limitPresets(pack)}:{})},
     policy:{readGameConfiguration(){assert.fail('directory must select an explicit room snapshot');},
       readSaved:async()=>{calls.snapshots++;return structuredClone({project:state.project,administration:state.administration});}}});
   return {api,state,room,lane,presentation,calls};
@@ -114,6 +115,29 @@ test('public catalog freezes dealer and asset labels and honors company defaults
   assert.doesNotMatch(JSON.stringify(value),/never-expose|north-id|sha256|pathname|contentType|branding|_scoutPresentation|croupier\/media|Draft only/);
   assert.deepEqual(f.state.pack,before.pack);assert.deepEqual(f.state.administration,before.administration);
   assert.deepEqual(f.calls,{operators:1,packages:1,snapshots:1});
+});
+
+test("the public room carries its published bet profile key, for the lobby's picture only",async()=>{
+  const seen=[],f=fixture({limitPresets:pack=>{seen.push(pack.revision);return new Map([['room-north','high'],['room-other','casual']]);}});
+  const value=await f.api.read('north');
+  assert.equal(value.rooms[0].limitPreset,'high');assert.deepEqual(seen,[7],'read once, for the same package as the rooms');
+  assert.deepEqual(validatePublicOperatorRooms(value,{operatorSlug:'north'}),value);
+  assert.doesNotMatch(JSON.stringify(value),/room-other|casual|limits|chips|refill/);
+  // Without published game settings, or with a key this build does not know, the room has no profile.
+  for(const limitPresets of [null,()=>new Map(),()=>new Map([['room-north','vip']]),()=>new Map([['room-north','__proto__']])]) {
+    const room=(await fixture({limitPresets}).api.read('north')).rooms[0];
+    assert.equal(Object.hasOwn(room,'limitPreset'),false);
+  }
+  // Best effort: a failed profile read gives the default picture and a warning, never an unavailable catalogue.
+  const warnings=[],warn=console.warn;console.warn=(...args)=>warnings.push(args);
+  try {
+    const failing=fixture({limitPresets:()=>{throw Object.assign(Error('secret connection string'),{code:'57P01'});}});
+    const room=(await failing.api.read('north')).rooms[0];
+    assert.equal(Object.hasOwn(room,'limitPreset'),false);assert.equal(room.id,'room-north');
+    const res=await request(failing.api);assert.equal(res.status,200);
+  } finally {console.warn=warn;}
+  assert.deepEqual(warnings[0],['operator_rooms_limit_presets_unavailable',{operator:'north',code:'57P01'}]);
+  assert.doesNotMatch(JSON.stringify(warnings),/secret connection string/);
 });
 
 test('a tablePlayback clip is not a lobby table choice; a company table naming it falls back to the lane default',async()=>{
@@ -270,6 +294,17 @@ test('portable public decoder rejects wrong origin/context, extra/private fields
     v=>{v.rooms[0].dealers[0].table.allowed[0].src='/media/private';},v=>{v.rooms[0].dealers[0].table.default='foreign';},
     v=>{v.rooms[0].dealers[2].table.enabled=false;},v=>{v.packageRevision=null;},
   ]){const value=structuredClone(original);change(value);assert.throws(()=>validatePublicOperatorRooms(value),/Invalid operator rooms/);}
+  // Rooms are forward-compatible: an unknown room key from a newer engine is ignored and dropped, known keys stay strict.
+  const newer=structuredClone(original);Object.assign(newer.rooms[0],{futureField:{any:'value'},limitPreset:'high'});
+  const read=validatePublicOperatorRooms(newer,{operatorSlug:'north'});
+  assert.equal(Object.hasOwn(read.rooms[0],'futureField'),false,'an unknown room key is not passed on');
+  assert.equal(read.rooms[0].limitPreset,'high');assert.deepEqual({...read.rooms[0],limitPreset:undefined},{...original.rooms[0],limitPreset:undefined});
+  for(const change of [v=>{v.rooms[0].limitPreset='High';},v=>{v.rooms[0].game='poker';},v=>{delete v.rooms[0].playUrl;},
+    v=>{Object.defineProperty(v.rooms[0],'futureField',{enumerable:true,get(){throw Error('getter called');}});},
+    v=>{Object.defineProperty(v.rooms[0],'hidden',{enumerable:false,value:1});},
+    v=>{for(let i=0;i<30;i++)v.rooms[0]['future'+i]=i;},v=>{v.rooms[0].dealers[0].futureField=1;}]) {
+    const value=structuredClone(original);change(value);assert.throws(()=>validatePublicOperatorRooms(value),/Invalid operator rooms/);
+  }
   let getterCalled=false;const accessor=structuredClone(original);
   Object.defineProperty(accessor.operator,'name',{enumerable:true,get(){getterCalled=true;return 'secret';}});
   assert.throws(()=>validatePublicOperatorRooms(accessor));assert.equal(getterCalled,false);
