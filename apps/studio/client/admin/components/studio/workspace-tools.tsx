@@ -2,8 +2,6 @@ import {useEffect,useState} from 'react';
 import {DealerMaterialPage} from '../../../../components/dealer-material-page';
 import {AdminPublicationPage,type PublicationOperatorChoice} from '../../../../components/admin-publication-page';
 import type {OperatorDirectory} from '../../../../components/control-operator-directory';
-import {ControlEventsPage} from '../../../../components/control-events-page';
-import {ControlTreePage} from '../../../../components/control-tree-page';
 import {ControlRepliesPage} from '../../../../components/control-replies-page';
 import {ControlGuidePage} from '../../../../components/control-guide-page';
 
@@ -19,22 +17,18 @@ type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionSta
   operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
 export function WorkspaceTool({section}:{section:string}){
   const [,refreshContext]=useState(0);
-  // Refresh only when Events crosses the overview/editor boundary. Local editor
-  // selections must retain their draft; the existing history guard accepts exits first.
-  const eventsEditor=section==='events'&&Boolean(new URLSearchParams(location.search).get('event'));
-  const [loaded,setLoaded]=useState<{data:Workspace;eventsEditor:boolean}|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
-  const data=loaded?.eventsEditor===eventsEditor?loaded.data:null;
+  const [data,setData]=useState<Workspace|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
-    const controller=new AbortController();setLoaded(null);setError('');
+    const controller=new AbortController();setData(null);setError('');
     void (async()=>{try{
       const response=await fetch(labUrl('/api/admin/workspace/'+encodeURIComponent(section)),{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
       if(!response.ok)throw Error([401,403].includes(response.status)?'Logga in som nivå 1 för att öppna verktyget.':'Registret kunde inte läsas. Dina sparade uppgifter är kvar.');
       const value=await response.json();
       if(!value.project?.revision||!Array.isArray(value.project.dealers)||!Array.isArray(value.videos?.videos)||value.status?.configured!==true)throw Error('Serverns svar kunde inte verifieras.');
-      if(!controller.signal.aborted)setLoaded({data:value,eventsEditor});
+      if(!controller.signal.aborted)setData(value);
     }catch(cause){if(!controller.signal.aborted)setError((cause as Error).message);}})();
     return()=>controller.abort();
-  },[section,attempt,eventsEditor]);
+  },[section,attempt]);
   if(error)return <section className="admin-system-page" role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setAttempt(value=>value+1)}>Försök igen</button></section>;
   if(!data)return <p role="status" className="admin-system-page">Läser sparade uppgifter…</p>;
   const q=new URLSearchParams(location.search),get=(key:string)=>q.get(key)||undefined;
@@ -51,7 +45,6 @@ export function WorkspaceTool({section}:{section:string}){
   switch(section){
     case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
     case 'dealer-studio':content=<DealerMaterialPage project={data.project} dealerId={get('dealer')} navigationContext={studioNavigationContextFromQuery(q)} disabled={!data.connectedLane}/>;break;
-    case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
     case 'media-review':content=<ConnectedServices path="/admin/media-review" dealerId={get('dealer')}/>;break;
     case 'guide':content=<ControlGuidePage {...common}/>;break;

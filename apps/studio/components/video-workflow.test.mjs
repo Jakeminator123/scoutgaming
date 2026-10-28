@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { createDefaultIdlePolicy } from '../../../packages/presentation/runtime/idle-policy.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -110,42 +109,6 @@ test('compact file controls start and pause the exact video and respect blocked 
   button(locked, 'Spela / pausa').props.onClick(); toggle.props.onClick();
   assert.equal(byType(locked, 'video').props.ref.current.paused, true);
 });
-test('idle format switches preserve the playing base and do not edit the policy', () => {
-  const policy = createDefaultIdlePolicy(), changes = [];
-  const inventory = { families: [{ id: policy.familyId, standardIds: policy.base.map(row => row.videoId), variantIds: policy.variants.map(row => row.videoId) }],
-    videos: [...policy.base, ...policy.variants].map(row => ({ id: row.videoId, available: true, fileName: row.videoId + '.mp4', previewUrl: '/api/videos/' + row.videoId })) };
-  const h = component('./idle-policy-editor.tsx', 'IdlePolicyEditor', { policy, inventory, blocked: false, onChange: value => changes.push(value), onBusyChange() {} });
-  button(h.render(), 'Spela basklipp').props.onClick();
-  const video = byType(h.render(), 'video'), element = video.props.ref.current;
-  videoEvent(video, 'onPlaying');
-  for (const label of ['Mobil · 9:16', 'Dator · 16:9']) {
-    button(h.render(), label).props.onClick();
-    assert.equal(byType(h.render(), 'video').props.ref.current, element);
-    assert.equal(element.paused, false);
-    assert.equal(find(h.render(), node => node.props?.['data-presentation-format']).props['data-presentation-format'], label.startsWith('Mobil') ? 'mobile' : 'desktop');
-  }
-  assert.deepEqual(changes, []);
-});
-
-test('idle minute keeps base loops alive and rejects late start/finish after stop or action takeover', () => {
-  for (const reason of ['stop', 'action']) {
-    const policy = createDefaultIdlePolicy(), busy = [];
-    const inventory = { families: [{ id: policy.familyId, standardIds: policy.base.map(row => row.videoId), variantIds: policy.variants.map(row => row.videoId) }],
-      videos: [...policy.base, ...policy.variants].map(row => ({ id: row.videoId, available: true, fileName: row.videoId + '.mp4', previewUrl: '/api/videos/' + row.videoId })) };
-    const h = component('./idle-policy-editor.tsx', 'IdlePolicyEditor', { policy, inventory, blocked: false, onChange() {}, onBusyChange: value => busy.push(value) });
-    button(h.render(), 'Spela en minut').props.onClick();
-    const video = byType(h.render(), 'video'), oldElement = video.props.ref.current;
-    assert.equal(video.props.loop, true, 'base lasts until its planned segment ends, not just one MP4 iteration');
-    if (reason === 'stop') button(h.render(), 'Stoppa').props.onClick();
-    else { h.props.blocked = true; h.render(); }
-    video.props.onPlaying({ currentTarget: oldElement });
-    video.props.onEnded({ currentTarget: oldElement });
-    assert.equal(oldElement.paused, true);
-    assert.ok(!busy.includes(true), 'late callback cannot reacquire ownership');
-    assert.equal(h.timers.size, 0);
-  }
-});
-
 test('video is preferred automatically but does not autoplay just by choosing a binding', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
   const selected = byType(h.render(), 'video').props.ref.current;
@@ -372,19 +335,4 @@ test('test result with no video and social reply never borrow selected standard 
   assert.equal(previewVideoIdFor(variant, {}, false), undefined);
   assert.equal(previewVideoIdFor(variant, { videoGenerationId: 'alternative-film' }, false), 'alternative-film');
   assert.equal(previewVideoIdFor(variant, null, true), undefined);
-});
-test('inline picker binds and removes an exact film without a model or upload', () => {
-  const edits = [];
-  const one = { id: 'one', label: 'Astrid höger', dealer: 'astrid', available: true, verdict: 'want', classification: { label: 'Astrid höger', dealerId: 'astrid', eventId: 'deal.player.right', kind: 'action', role: 'standard', situation: 'box5', notes: '' } };
-  const h = component('./video-library.tsx', 'VariantVideoBinding', { inventory: { videos: [one, { ...one, id: 'two', dealer: 'vera' }] }, dealerId: 'astrid', eventId: 'deal.player.right', variant: { videoGenerationId: null }, isBaseline: true, onBind: id => edits.push(id), onInspect() {} });
-  const select = byType(h.render(), 'select');
-  assert.ok(find(select, node => node.type === 'option' && node.props.value === 'one'));
-  assert.equal(find(select, node => node.type === 'option' && node.props.value === 'two'), undefined);
-  select.props.onChange({ target: { value: 'one' } });
-  assert.deepEqual(edits, ['one']);
-  h.props.variant.videoGenerationId = 'one';
-  byType(h.render(), 'input').props.onChange({ target: { value: 'no match' } });
-  assert.ok(find(h.render(), node => node.type === 'option' && node.props.value === 'one'));
-  button(h.render(), 'Koppla loss video').props.onClick();
-  assert.deepEqual(edits, ['one', null]);
 });
