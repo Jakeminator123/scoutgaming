@@ -650,3 +650,72 @@ test('020 may be explicitly deferred and its exact source cannot mutate data or 
     await assert.rejects(loadStudioMigrations({directory}),refusal('studio_migration_invalid_source'));
   }
 });
+
+// --only/--skip: the operator approves an exact list; nothing else may run.
+async function optionalGap() {
+  const pool=await installed();pool.change(state=>{remove016(state);remove018(state);});pool.calls.length=0;
+  return pool;
+}
+const pendingOf=async pool=>(await planStudioMigrations({pool})).optionalPending.map(row=>row.version);
+
+test('--only applies exactly the named pending version and leaves the rest pending',async()=>{
+  const pool=await optionalGap(),before=pool.snapshot().ledger,printed=[];
+  assert.deepEqual(await pendingOf(pool),['016','018','019','020']);
+  const result=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['016'],onPlan:list=>printed.push(list)});
+  assert.equal(result.exitCode,0);assert.deepEqual(printed,[['016']]);
+  assert.deepEqual(result.selected,['016']);assert.deepEqual(result.appliedNow,['016']);
+  assert.deepEqual(result.optionalPending,['018','019','020']);
+  assert.deepEqual(pool.snapshot().ledger.map(row=>row.version),[...before.map(row=>row.version),'016'].sort());
+  assert.equal(pool.calls.some(row=>['ddl-018','ddl-019','ddl-020'].includes(row.marker)),false);
+});
+
+test('--only with explicit --skip of an independent earlier version applies only the selection',async()=>{
+  const pool=await optionalGap();
+  const result=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['019','018'],skip:['016']});
+  assert.equal(result.exitCode,0);assert.deepEqual(result.appliedNow,['018','019']);
+  assert.deepEqual(result.optionalPending,['016','020']);assert.equal(pool.calls.some(row=>row.marker==='ddl-016'),false);
+});
+
+test('--only refuses unknown, already applied, order breaks and conflicting skips without writing',async()=>{
+  for(const [only,skip,code] of [
+    [['999'],undefined,'migration_check_selection_unknown'],
+    [['015'],undefined,'migration_check_selection_not_pending'],
+    [['019'],undefined,'migration_check_selection_order'],
+    [['020'],['016'],'migration_check_selection_order'],
+    [['019'],['016','018'],'migration_check_skip_conflict'],
+    [['016'],['018'],'migration_check_skip_invalid'],
+    [['016','016'],undefined,'migration_check_selection_invalid'],
+    [['018'],['018'],'migration_check_selection_invalid'],
+  ]) {
+    const pool=await optionalGap(),before=pool.snapshot();let printed=false;
+    const result=await checkMigrationReadiness({pool,apply:true,confirm:true,only,skip,onPlan:()=>{printed=true;}});
+    assert.equal(result.exitCode,2,code);assert.equal(result.code,code);assert.equal(printed,false);
+    assert.deepEqual(pool.snapshot(),before);assert.equal(pool.calls.some(row=>row.marker==='lock'),false);
+  }
+});
+
+test('--only without --apply only previews the selection',async()=>{
+  const pool=await optionalGap(),before=pool.snapshot();
+  const result=await checkMigrationReadiness({pool,only:['016','018'],skip:[]});
+  assert.equal(result.exitCode,0);assert.deepEqual(result.selected,['016','018']);assert.equal(result.appliedNow,undefined);
+  assert.deepEqual(pool.snapshot(),before);assert.equal(pool.calls.some(row=>row.marker==='lock'),false);
+});
+
+test('plain --apply prints and applies exactly the full pending list',async()=>{
+  const pool=await optionalGap(),printed=[];
+  const result=await checkMigrationReadiness({pool,apply:true,confirm:true,onPlan:list=>printed.push(list)});
+  assert.deepEqual(printed,[['016','018','019','020']]);assert.deepEqual(result.appliedNow,['016','018','019','020']);
+  assert.deepEqual(result.optionalPending,[]);assert.equal(result.ready,true);
+});
+
+test('the runner refuses a pending set that differs from the approved list under its lock',async()=>{
+  for(const expectedVersions of [['016'],['016','018','019'],['018','016','019','020'],[]]){
+    const pool=await optionalGap(),before=pool.snapshot();
+    await assert.rejects(applyStudioMigrations({pool,expectedTarget:target,confirm:true,expectedVersions}),refusal('studio_migration_selection_mismatch'));
+    assert.deepEqual(pool.snapshot(),before);assert.equal(pool.calls.some(row=>row.marker?.startsWith('ddl-')),false);
+  }
+  for(const expectedVersions of [null,'016',['999'],['016','016'],[16]]){
+    const pool=await optionalGap();
+    await assert.rejects(applyStudioMigrations({pool,expectedTarget:target,confirm:true,expectedVersions}),refusal('studio_migration_invalid_selection'));
+  }
+});

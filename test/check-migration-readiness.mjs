@@ -201,3 +201,40 @@ test('apply runs only when confirmation is exactly true', async () => {
   assert.equal(applied.exitCode, 0);
   assertNoSecret(applied);
 });
+
+test('cli arguments accept --only/--skip lists and reject everything else', async () => {
+  const { parseMigrationArgs } = await import('../tools/check-migration-readiness.mjs');
+  assert.deepEqual(parseMigrationArgs([]), { apply: false, only: undefined, skip: undefined });
+  assert.deepEqual(parseMigrationArgs(['--apply', '--only', '021']), { apply: true, only: ['021'], skip: undefined });
+  assert.deepEqual(parseMigrationArgs(['--apply', '--only=018,019', '--skip', '016']), { apply: true, only: ['018', '019'], skip: ['016'] });
+  assert.deepEqual(parseMigrationArgs(['--only', '018', '--only', '019']), { apply: false, only: ['018', '019'], skip: undefined });
+  for (const args of [['--skip', '016'], ['--only'], ['--only', ''], ['--only', '21'], ['--only', '021,'], ['--apply', '--apply'], ['--force'], ['021']]) {
+    assert.equal(parseMigrationArgs(args), null, args.join(' '));
+  }
+  const usage = spawnSync(process.execPath, [script, '--skip', '016'], { env: cliEnv, encoding: 'utf8', timeout: 5000 });
+  assert.equal(usage.status, 2);
+  assert.equal(usage.stdout, '');
+  assert.equal(usage.stderr.trim(), 'migration_check_usage');
+});
+
+test('--only selection follows registry order and refuses before any planner write', async () => {
+  const { selectPendingMigrations } = await import('../tools/check-migration-readiness.mjs');
+  const registry = [
+    { version: '015', tables: [], fingerprintTables: ['moving'] },
+    { version: '016', deploymentOptional: true, tables: ['drift'] },
+    { version: '018', deploymentOptional: true, tables: [], fingerprintTables: ['gpu'] },
+    { version: '019', deploymentOptional: true, tables: [], fingerprintTables: ['moving', 'gpu'] },
+    { version: '021', deploymentOptional: true, tables: ['materials'] },
+  ];
+  const base = { registry, pending: [], optionalPending: ['016', '018', '019', '021'] };
+  assert.deepEqual(selectPendingMigrations({ ...base, only: ['021'], skip: ['016', '018', '019'] }),
+    { ok: true, selected: ['021'], deferOptional: ['016', '018', '019'] });
+  assert.deepEqual(selectPendingMigrations({ ...base, only: ['019', '018', '016'] }).selected, ['016', '018', '019']);
+  assert.equal(selectPendingMigrations({ ...base, only: ['021'] }).code, 'migration_check_selection_order');
+  assert.equal(selectPendingMigrations({ ...base, only: ['019'], skip: ['016', '018'] }).code, 'migration_check_skip_conflict');
+  assert.equal(selectPendingMigrations({ ...base, only: ['015'] }).code, 'migration_check_selection_not_pending');
+  assert.equal(selectPendingMigrations({ ...base, pending: ['015'], only: ['016'] }).code, 'migration_check_selection_order');
+  assert.equal(selectPendingMigrations({ ...base, pending: ['015'], only: ['016'], skip: ['015'] }).code, 'migration_check_skip_invalid');
+  assert.equal(selectPendingMigrations({ ...base, only: ['022'] }).code, 'migration_check_selection_unknown');
+  assert.equal(selectPendingMigrations({ ...base, only: [] }).code, 'migration_check_selection_invalid');
+});
