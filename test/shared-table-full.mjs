@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createPglitePool } from './fixtures/pglite-pool.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
-import { createTableCoordinator, FULL_TABLE } from '../services/game/games/blackjack/table/coordinator.mjs';
+import { createTableCoordinator, FULL_TABLE, WAIT_WRITE_AFTER_MS } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
 import { createSharedRoomService } from '../services/game/shared-room-service.mjs';
 import { createSharedRoomCommand } from '../services/game/shared-room-command.mjs';
@@ -69,10 +69,26 @@ async function setup(t, players = ['alice', 'bob', 'carol', 'dave']) {
       .filter(row => row.type === type).map(row => JSON.parse(row.payload)),
     member: async who => (await rows('SELECT body FROM croupier_game.shared_table_members WHERE room_id=$1')).find(m => m.actorId === who),
     idleDue: async () => (await table.dueTicks()).filter(d => d.kind === 'seat.idle').map(d => d.playerId),
+    rawRoom: async () => (await pool.query('SELECT body FROM croupier_game.shared_table_rooms WHERE room_id=$1', [ROOM])).rows[0].body,
+    // Another writer's room JSON (an engine without this change), straight into the row.
+    async writeRoom(edit) {
+      const r = await h.room(); edit(r);
+      await pool.query('UPDATE croupier_game.shared_table_rooms SET body=$2 WHERE room_id=$1', [ROOM, JSON.stringify(r)]);
+    },
+    receipts: async who => (await pool.query('SELECT command_id FROM croupier_game.shared_table_receipts WHERE room_id=$1 AND player_id=$2 ORDER BY command_id',
+      [ROOM, who])).rows.map(row => row.command_id),
   };
   return h;
 }
 const A = 'alice', B = 'bob';
+// The fields #547 added that an engine without it never writes. Its resetRound (main before #547) gives the
+// room a new windowId and leaves these as they were; a room it stored before #547 has none of them.
+const NEW_FIELDS = ['windowAt', 'lastAct', 'waiting'];
+async function oldEngineNext(h, who) {
+  const before = await h.room();
+  await h.next(who);
+  await h.writeRoom(r => { for (const key of NEW_FIELDS) { if (Object.hasOwn(before, key)) r[key] = before[key]; else delete r[key]; } });
+}
 // alice holds boxes 0-3 and bob 4-6, every box bet on: the table is full and the round is played.
 async function fullRound(h) {
   await h.join(A, [0, 1, 2, 3]); await h.join(B, [4, 5, 6]);
@@ -155,11 +171,20 @@ test('wait is idempotent: a replay repeats its receipt, a renewal only moves the
   assert.equal((await h.room()).waiting.carol, h.time);
   const replay = await h.send('carol', 'wait', {}, 'wait-1');
   assert.equal(replay.replay, true); assert.deepEqual(replay.result, first.result);
-  const at = h.time += 5000;
-  const renewed = await h.send('carol', 'wait', {}, 'wait-2');
-  assert.equal(renewed.replay, false); assert.equal(renewed.result.waiting, true);
+  // Renewals of a registration younger than WAIT_WRITE_AFTER_MS keep their receipts but write no room row.
+  const firstAt = h.time, stored = await h.rawRoom();
+  for (const [i, ms] of [1000, 2000, 5000, WAIT_WRITE_AFTER_MS - 1].entries()) {
+    h.time = firstAt + ms;
+    const renewed = await h.send('carol', 'wait', {}, `wait-burst-${i}`);
+    assert.equal(renewed.replay, false); assert.deepEqual(renewed.result, first.result);
+  }
+  assert.equal(await h.rawRoom(), stored, 'no room write for a fresh registration');
+  const at = h.time = firstAt + WAIT_WRITE_AFTER_MS;
+  await h.send('carol', 'wait', {}, 'wait-2');
   const after = await h.room();
-  assert.equal(after.waiting.carol, at, 'the renewal moves the registration');
+  assert.equal(after.waiting.carol, at, 'an older one is written: the renewal moves the registration');
+  assert.deepEqual((await h.receipts('carol')).filter(id => id.startsWith('wait')),
+    ['wait-1', 'wait-2', 'wait-burst-0', 'wait-burst-1', 'wait-burst-2', 'wait-burst-3'], 'every renewal keeps its receipt');
   assert.equal(after.version, before.version, 'the room version stays: no snapshot shows a registration');
   const { serverNow: _a, ...seenNow } = await h.snap(A), { serverNow: _b, ...seenBefore } = seen;
   assert.deepEqual(seenNow, seenBefore, 'a seated player sees nothing new');
@@ -209,6 +234,61 @@ test('a seat holder who neither bets nor sends a command for 90 s in the betting
   await h.drain();
   assert.deepEqual((await h.snap(B)).owners, Array(7).fill(null));
   assert.equal(h.exceeded, 0);
+});
+
+// Review of #547: the idle clock belongs to the betting window it was stamped for. A window opened without the
+// stamp (a room stored before #547, the old engine during a Render overlap, a rollback) gets no seat.idle.
+test('a room stored before #547 gets no idle release in its window, while the absence release still comes', async t => {
+  const h = await setup(t);
+  await h.join(A, [0, 1]); await h.join(B, [5]);
+  await h.writeRoom(r => { for (const key of NEW_FIELDS) delete r[key]; });
+  h.time = T0 + FULL_TABLE.idleSeatMs + 10000;
+  assert.deepEqual(await h.idleDue(), [], 'joined 100 s ago without a bet, and still no seat.idle');
+  h.time = T0 + 120000;
+  assert.deepEqual((await h.table.dueTicks()).map(d => [d.kind, d.playerId]).sort(), [['seat.release', A], ['seat.release', B]]);
+});
+
+test('a window the old engine opens during a deploy overlap gets no idle release; the next window this engine opens does', async t => {
+  const h = await setup(t);
+  await h.join(A, [0]); await h.join(B, [1]);
+  for (const [who, seat] of [[A, 0], [B, 1]]) await h.bet(who, seat);
+  await h.ready(A); await h.ready(B); await h.standAll();
+  h.time = T0 + 95000;                                          // the round and its settlement took 95 s
+  await oldEngineNext(h, B);
+  const old = await h.room();
+  assert.notEqual(old.windowAt.windowId, old.windowId, 'the stamp names the window before');
+  h.time += 250;                                                // this engine's next pass
+  assert.deepEqual(await h.idleDue(), [], 'nobody is released 250 ms into the window');
+  h.time += FULL_TABLE.idleSeatMs;
+  assert.deepEqual(await h.idleDue(), [], 'nor later: that window has no idle clock');
+  for (const [who, seat] of [[A, 0], [B, 1]]) await h.bet(who, seat);
+  await h.ready(A); await h.ready(B); await h.standAll();
+  await h.next(A);
+  const opened = h.time, stamped = await h.room();
+  assert.deepEqual(stamped.windowAt, { windowId: stamped.windowId, at: opened });
+  // A command stamped for another window does not count in this one.
+  await h.writeRoom(r => { r.lastAct[B] = { windowId: old.windowId, at: opened + 60000 }; });
+  h.time = opened + FULL_TABLE.idleSeatMs - 1;
+  assert.deepEqual(await h.idleDue(), []);
+  h.time = opened + FULL_TABLE.idleSeatMs;
+  assert.deepEqual((await h.idleDue()).sort(), [A, B]);
+  assert.equal(h.exceeded, 0);
+});
+
+test('a deploy onto a room the old engine played: its new window releases nobody, 250 ms or 90 s in (review scenario)', async t => {
+  const h = await setup(t);
+  await h.join(A, [0]); await h.join(B, [1]);
+  await h.writeRoom(r => { for (const key of NEW_FIELDS) delete r[key]; });
+  for (const [who, seat] of [[A, 0], [B, 1]]) await h.bet(who, seat);
+  await h.ready(A); await h.ready(B); await h.standAll();
+  await h.writeRoom(r => { for (const key of NEW_FIELDS) delete r[key]; });  // every write was the old engine's
+  h.time = T0 + 100000;
+  await oldEngineNext(h, A);
+  assert.equal(Object.hasOwn(await h.room(), 'windowAt'), false);
+  h.time += 250;
+  assert.deepEqual(await h.idleDue(), []);
+  h.time += FULL_TABLE.idleSeatMs;
+  assert.deepEqual(await h.idleDue(), []);
 });
 
 test('the box limit stays inside next\'s lock plan when it also ends a membership', async t => {
@@ -296,9 +376,18 @@ test('end to end: two players fill the seven boxes, a third waits through the re
   const full = await seen('carol', x => x.phase === 'round');
   assert.equal(waitingForSeat(full), true, 'carol sees a full table without a seat of her own');
 
-  // Carol's page renews her wait after each snapshot, as shared-room-app.mjs does after a restore.
+  // Carol's page renews her wait after each snapshot, as shared-room-app.mjs does after a restore. Its timers and
+  // sends are counted, so the end of the renewals is a state, not a guess after a delay.
+  const timers = new Set();
+  let sends = 0, inFlight = 0;
   waiting = createSharedRoomWaiting({ roomId: ROOM, refreshMs: 200, state: () => ({ snapshot: latest('carol'), connected: true, closed: false }),
-    createCommands: options => createSharedRoomCommandClient({ ...options, fetchImpl: fetchFor('carol') }) });
+    setTimer: (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; },
+    clearTimer: id => { clearTimeout(id); timers.delete(id); },
+    createCommands: options => {
+      const client = createSharedRoomCommandClient({ ...options, fetchImpl: fetchFor('carol') });
+      return { get state() { return client.state; }, stop: () => client.stop(),
+        async send(intent) { sends++; inFlight++; try { return await client.send(intent); } finally { inFlight--; } } };
+    } });
   sockets.carol.onFrame = () => waiting.update();
   const framesBefore = sockets[A].frames.length;
   waiting.update();
@@ -318,16 +407,19 @@ test('end to end: two players fill the seven boxes, a third waits through the re
   }
   const settled = await seen(A, x => x.phase === 'settled');
   assert.deepEqual(settled.owners, [A, A, A, A, B, B, B]);
-  await until(async () => (await room()).waiting?.carol === clock.time, 'the wait is renewed on the table clock');
+  // A renewal rewrites the registration once it is WAIT_WRITE_AFTER_MS old on the table clock, so it stays current.
+  await until(async () => clock.time - (await room()).waiting?.carol < WAIT_WRITE_AFTER_MS, 'the wait stays current on the table clock');
 
   await post(A, { op: 'next', roundId: settled.roundId });
   const opened = await seen('carol', x => x.phase === 'bets');
   assert.deepEqual(opened.owners, [null, A, A, A, B, B, B], 'alice keeps the three boxes played first, bob keeps his three');
   assert.equal(waitingForSeat(opened), false);
-  const before = await receipts();
+  // The snapshot with a free seat cancelled the next renewal, and a send still under way arms none.
+  await until(() => inFlight === 0 && timers.size === 0, 'the renewals stop at a free seat');
+  const sent = sends, before = await receipts();
   await post('carol', { op: 'join', memberGen: 0, seats: [0], seatGens: { 0: opened.seatGen[0] } });
   assert.deepEqual((await seen('carol', x => x.owners[0] === 'carol')).me.seats, [0], 'carol has a box');
-  await delay(500);
-  assert.equal(await receipts(), before + 1, 'only her join: a free seat ended the renewals');
+  assert.deepEqual([sends, inFlight, timers.size], [sent, 0, 0], 'no renewal after the seat was free');
+  assert.equal(await receipts(), before + 1, 'only her join');
   assert.deepEqual(errors.filter(error => error?.code !== 'shared_table_room_contention'), []);
 });

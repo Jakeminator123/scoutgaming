@@ -1533,10 +1533,12 @@ const fullTable=(version,extra={})=>snapshot(version,{owners:Array(7).fill('bob'
 test('the status line tells a viewer without a seat at a full table that he waits for one',()=>{
   const {document,nodes}=documentFixture(),view=createSharedRoomView({document});view.bind({dispatch(){},selectChip(){},retry(){}});
   const can={join:false,bet:false,leave:false,act:[],insurance:false},render=(s,notice='')=>view.render({snapshot:s,chip:.5,can,notice,busy:false,connected:true,serverNow:1000});
-  render(fullTable(1));assert.equal(nodes.get('banner').textContent,'Väntar på plats');
-  render(fullTable(2),'Skickar…');assert.equal(nodes.get('banner').textContent,'Skickar…','a command notice comes first');
-  render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(nodes.get('banner').textContent,'Väntar på plats','a paused account does not wait');
-  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.equal(nodes.get('banner').textContent,'Välj plats och lägg insatser');
+  // The text and its title (the full text where a phone clamps the line) always match.
+  const line=()=>{const banner=nodes.get('banner');assert.equal(banner.title,banner.textContent,'title follows text');return banner.textContent;};
+  render(fullTable(1));assert.equal(line(),'Väntar på plats');
+  render(fullTable(2),'Skickar…');assert.equal(line(),'Skickar…','a command notice comes first');
+  render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(line(),'Väntar på plats','a paused account does not wait');
+  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.equal(line(),'Välj plats och lägg insatser','a free seat ends the wait, title too');
   view.close();
 });
 test('the mounted table sends wait after a full table\'s snapshot, and not while the player has a seat',async t=>{

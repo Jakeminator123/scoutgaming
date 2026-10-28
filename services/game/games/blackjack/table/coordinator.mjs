@@ -17,6 +17,10 @@ export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
 // boxes after the round. A seat holder who neither bets nor sends a command for idleSeatMs in the betting window
 // gives up his boxes.
 export const FULL_TABLE = Object.freeze({ keepBoxes: 3, waitingMs: 30000, idleSeatMs: 90000 });
+// A renewed wait whose registration is younger than this writes no room row (its receipt is still kept), so
+// frequent waits cannot churn the row. The stored time stays under this plus the client's 10 s renewal
+// (public/shared-room-waiting.mjs), well inside FULL_TABLE.waitingMs.
+export const WAIT_WRITE_AFTER_MS = 10000;
 const { keepBoxes: KEEP_BOXES, waitingMs: WAITING_MS, idleSeatMs: IDLE_SEAT_MS } = FULL_TABLE;
 const PAUSE_MS = 86400000;                         // :350
 const emptyBets = () => Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));
@@ -163,7 +167,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const r = { contract: TABLE_CONTRACT, roomId, version: 0, configVersion, windowId: random.uuid(), phase: 'bets',
       owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: emptyBets(), ready: [], history: {}, deadline: null,
       roundId: null, roundPhase: null, insurance: {}, actionDeadline: null, plan: null, leaving: [], boxesAfterRound: {}, unplayed: {},
-      lastBets: {}, lastSettlement: {}, settledAt: null, presentationVer: 0, waiting: {}, lastAct: {}, windowAt: now(), game: created.state };
+      lastBets: {}, lastSettlement: {}, settledAt: null, presentationVer: 0, waiting: {}, lastAct: {}, game: created.state };
+    r.windowAt = { windowId: r.windowId, at: now() };
     for (const e of created.events) await openShoe(tx, roomId, e.payload);
     return r;
   }
@@ -221,10 +226,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         { playerId: p, boxes, reason: Object.hasOwn(r.boxesAfterRound, p) ? 'boxes changed' : 'unplayed', memberEnded }, parent);
       if (full.length) await audit(tx, r.roomId, r.roundId, 'seat.release', { playerId: p, boxes: full, reason: 'table full', waiting, memberEnded }, parent);
     }
-    const lastAct = Object.fromEntries(Object.entries(r.lastAct ?? {}).filter(([p]) => r.owners.includes(p)));
+    // K6: the new window is stamped with its own id (the seat.idle clock); commands of the window before it no longer count.
+    const windowId = random.uuid();
     Object.assign(r, { boxesAfterRound: {}, unplayed: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
-      deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null, waiting: {}, lastAct, windowAt: t,
-      windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
+      deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null, waiting: {}, lastAct: {}, windowAt: { windowId, at: t },
+      windowId, configVersion: await tx.config.latest(r.roomId) });
     const cfg = await tx.config.frozen(r.roomId, r.configVersion);
     // K04: placebets follows the betting window actually opened here, not collect or a poll.
     const seq = await audit(tx, r.roomId, null, 'presentation.window', { windowId: r.windowId, configVersion: r.configVersion });
@@ -527,8 +533,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (r.phase === 'settled') await resetRound(tx, r, parent);
       }
     }
-    // K6: any accepted command of a seat holder restarts his IDLE_SEAT_MS (the seat.idle tick).
-    if (owned(r, actorId).length) (r.lastAct ??= {})[actorId] = t;
+    // K6: any accepted command of a seat holder restarts his IDLE_SEAT_MS (the seat.idle tick), bound to this window.
+    if (owned(r, actorId).length) (r.lastAct ??= {})[actorId] = { windowId: r.windowId, at: t };
     r.version++;
     await tx.rooms.write(roomId, r);
     return { ...result, version: r.version };
@@ -537,11 +543,13 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // K6: a viewer without a box at a full table waits for one (resetRound). Sending it again only
   // renews its time, so the command is idempotent. A registration changes nothing a snapshot shows,
   // so the room version stays and no viewer gets a new frame; a new wait is audited, a renewal is
-  // not. A seated actor or a table with a free box registers nothing.
+  // not. A renewal of a registration younger than WAIT_WRITE_AFTER_MS writes nothing. A seated
+  // actor or a table with a free box registers nothing.
   async function waitForBox(tx, r, actorId, commandId, t) {
     const before = JSON.stringify(r.waiting ?? {});
     const waiting = Object.fromEntries(waitingAt(r, t).map(p => [p, r.waiting[p]]));
     const registered = r.owners.every(Boolean) && !r.owners.includes(actorId);
+    if (registered && Object.hasOwn(waiting, actorId) && t - waiting[actorId] < WAIT_WRITE_AFTER_MS) return { op: 'wait', waiting: true, version: r.version };
     if (registered && !Object.hasOwn(waiting, actorId))
       await audit(tx, r.roomId, r.phase === 'bets' ? null : r.roundId, 'player.wait', { playerId: actorId, commandId });
     if (registered) waiting[actorId] = t;
@@ -584,14 +592,18 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (r.phase === 'round' && r.roundPhase === 'decisions') add('turn.autostand', [r.roundId, publicView(r.game).turnSeq], r.actionDeadline);
     if (r.phase === 'round' && r.roundPhase === 'settled') add('round.settle', [r.roundId], r.plan.endAt);
     if (r.phase === 'settled') for (const p of r.leaving) add('seat.release', ['leave', r.roundId, p], r.settledAt, { playerId: p });
+    // K6: only a betting window stamped with its own id (resetRound, createRoom) has an idle clock. A window
+    // opened by an engine without that stamp (a room stored before it, the old instance during a Render overlap,
+    // a rollback) has none, so no seat.idle; the absence release still covers a player who left.
+    const opened = r.phase === 'bets' && r.windowAt?.windowId === r.windowId ? r.windowAt.at : null;
     for (const m of members) {
       if (!watched(r, m)) continue;
       const at = Math.max(seenOf(m.actorId) ?? -Infinity, m.joinedAt) + absentMs;
       add(r.phase === 'round' ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
-      // K6: in the betting window a seat holder without a main bet gives up his boxes IDLE_SEAT_MS after
-      // the window opened or his last command, whichever is later (a window stored before windowAt: his join).
-      if (r.phase !== 'bets' || owned(r, m.actorId).some(i => r.bets[i].main)) continue;
-      const since = Math.max(m.joinedAt, r.windowAt ?? -Infinity, r.lastAct?.[m.actorId] ?? -Infinity);
+      // A seat holder without a main bet gives up his boxes IDLE_SEAT_MS after the window opened, his join or his
+      // last command in this window, whichever is latest.
+      if (opened === null || owned(r, m.actorId).some(i => r.bets[i].main)) continue;
+      const act = r.lastAct?.[m.actorId], since = Math.max(opened, m.joinedAt, act?.windowId === r.windowId ? act.at : -Infinity);
       add('seat.idle', [r.windowId, m.actorId, m.memberGen], since + IDLE_SEAT_MS, { playerId: m.actorId });
     }
     return out;

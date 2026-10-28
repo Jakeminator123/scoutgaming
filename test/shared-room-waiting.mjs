@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WAIT_REFRESH_MS, WAITING_TEXT, createSharedRoomWaiting, waitingForSeat } from '../services/game/public/shared-room-waiting.mjs';
-import { FULL_TABLE } from '../services/game/games/blackjack/table/coordinator.mjs';
+import { FULL_TABLE, WAIT_WRITE_AFTER_MS } from '../services/game/games/blackjack/table/coordinator.mjs';
 
 // K6 (docs/plans/KEVIN-PORT.md, P-C): the client renews a viewer's wait for a seat while the shown table is full.
 const me = (extra = {}) => ({ id: 'carol', seats: [], memberGen: 0, active: false, available: 1000, pausedUntil: 0, ...extra });
@@ -52,6 +52,9 @@ test('a viewer waits for a seat only at a full table, without a seat and without
 
 test('a renewal comes well inside the server\'s registration: at least three fit in one', () => {
   assert.ok(WAIT_REFRESH_MS * 3 <= FULL_TABLE.waitingMs, `${WAIT_REFRESH_MS} ms against ${FULL_TABLE.waitingMs} ms`);
+  // The server skips the write of a registration younger than WAIT_WRITE_AFTER_MS, so a stored time can be that
+  // much plus one renewal old, and must still count.
+  assert.ok(WAIT_WRITE_AFTER_MS + WAIT_REFRESH_MS < FULL_TABLE.waitingMs, `${WAIT_WRITE_AFTER_MS} + ${WAIT_REFRESH_MS} ms against ${FULL_TABLE.waitingMs} ms`);
 });
 
 test('the wait is sent once the full table shows and renewed every interval while it stays full', async () => {
