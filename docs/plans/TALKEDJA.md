@@ -63,7 +63,7 @@ Jakob kör `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lip
 - **Prov:** enhetstester med två syntetiska banker (Dragan oförändrad, en andra dealer), `start.mjs --check` med båda.
 - **Preview:** deploy med låst SHA, rörligt tal av: motorn startar som förut. Med på kräver en bank i preview (Jakobs beslut, se T2).
 - **Risk:** medel. Kvittobundna kontroller (bank, kvitto, release, image-digest) får inte försvagas när de blir per dealer.
-- **Genomfört (PR på `jakob/claude-talkedja-t3`):** allt ovan utom avatarlistan i `moving-transport.mjs`, som flyttar till T3b. DDL: nej. Env: `CROUPIER_MOVING_SPEECH_BANK_RECORD` och `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` raderade, `CROUPIER_MOVING_SPEECH_BANK_RECORDS` ny, `dealerId` krävs i varje driftprofil på Vercel och Render.
+- **Genomfört (#549):** allt ovan utom avatarlistan i `moving-transport.mjs`, som flyttar till T3b. DDL: nej. Env: `CROUPIER_MOVING_SPEECH_BANK_RECORD` och `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` raderade, `CROUPIER_MOVING_SPEECH_BANK_RECORDS` ny, `dealerId` krävs i varje driftprofil på Vercel och Render.
 
 ### T4. Paows bank byggs (spår 2, GPU och Blob)
 

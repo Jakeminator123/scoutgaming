@@ -180,8 +180,11 @@ export async function runMovingDriftExecutorSqlChecks({pool}){
   const restart=await setup('restart'),oldInput=restart.request(),beforeRestart=await restart.snapshot();
   // Force only the tiny QA execution lease into the past, as the existing
   // drift expiry fixture does. Fresh controller objects use the real DB clock.
-  await pool.query(`UPDATE croupier_studio.moving_drift_control SET state=jsonb_set(state,'{execution,leaseUntilMs}',
+  await pool.query(`UPDATE croupier_studio.moving_drift_control SET state=jsonb_set(state,'{dealers,dragan,execution,leaseUntilMs}',
     to_jsonb(floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1000)) WHERE environment_id=$1`,[restart.scope.environment]);
+  const expired=(await pool.query(`SELECT (state#>>'{dealers,dragan,execution,leaseUntilMs}')::bigint<floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+    AS expired FROM croupier_studio.moving_drift_control WHERE environment_id=$1`,[restart.scope.environment])).rows[0]?.expired;
+  assert.equal(expired,true,'the QA lease is expired in the dealer slot');
   const restarted=restart.make();
   await assert.rejects(restarted.authorizeAdmission({revision:oldInput.driftAdmission.revision,profileId:'base'}),reject('drift_not_admitting'));
   const replacement=await restarted.claimExecution({holderId:'drift-sql-restarted',profileId:'base',leaseMs:60000});
