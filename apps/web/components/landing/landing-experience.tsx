@@ -79,7 +79,7 @@ export function LandingHero() {
       {/* A still image needs neither an autoplay decoder nor a 3D compositing layer. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/images/astrid-card-poster.jpg" width="640" height="960" decoding="async"
-        alt="Astrid vid blackjackbordet" className="aspect-[2/3] w-full object-cover" />
+        alt="Dealern vid blackjackbordet" className="aspect-[2/3] w-full object-cover" />
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink to-transparent px-6 pt-16 pb-6">
         <p className="font-mono text-xs tracking-widest text-lime uppercase">Blackjackpilot</p>
         <p className="mt-2 text-3xl font-semibold text-off">Hitta ditt bord</p>

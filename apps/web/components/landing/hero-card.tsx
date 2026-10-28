@@ -280,7 +280,7 @@ export function HeroCard() {
                   playsInline
                   preload="auto"
                   onEnded={markEnded("casino")}
-                  aria-label="Astrid, blond croupier i svart kavaj, hälsar välkommen vid blackjackbordet"
+                  aria-label="Dealern hälsar välkommen vid blackjackbordet"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div
@@ -302,8 +302,8 @@ export function HeroCard() {
                 </div>
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
                   <div>
-                    <p className="font-mono text-[10px] tracking-[0.25em] text-lime uppercase">{"// Croupier"}</p>
-                    <p className="font-serif text-3xl text-off">Astrid</p>
+                    <p className="font-mono text-[10px] tracking-[0.25em] text-lime uppercase">{"// Live-dealer"}</p>
+                    <p className="font-serif text-3xl text-off">Blackjack</p>
                   </div>
                   <span className="flex items-center gap-1 rounded-full bg-lime px-4 py-2 text-xs font-bold tracking-wider text-ink uppercase">
                     Spela <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
