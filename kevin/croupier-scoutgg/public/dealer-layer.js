@@ -13,6 +13,9 @@ uniform vec2 skin;   // his skin hue and saturation (0..1), picked from his rest
 uniform vec3 lift, gain;   // the room's grade on him: its black point, and a nudge toward its light
 uniform float finished;   // Emil's KLARA plates: already graded and despilled, so none of the clean-up below runs on them
 uniform sampler2D lipTex; uniform vec4 lipRect; uniform float lipOn;   // his talking mouth (lip-layer.js): colour above, mask below
+// Emil 28 Oct: the desktop table shows his face near full size, where the patch's server-side sharpening reads as grain
+// (Laplace variance 140 against 84-102 around it); .5 of a 5-tap cross blur brings it to the face's own. 0 on the phone.
+uniform float lipSoft;
 // How much of a source pixel is HIM (1) versus green screen (0). A wide band keeps
 // see-through hair strands soft instead of cutting them out.
 float gx(vec2 t){ vec3 k = texture2D(tex, t).rgb; return k.g - max(k.r, k.b); }
@@ -43,8 +46,16 @@ void main(){
   vec3 c = texture2D(tex, suv).rgb;
   // Speaking over a clip: the mouth patch for this very frame goes in before anything reads his colours (rorlig-lipsync.mjs).
   vec2 lu = (src - lipRect.xy) / lipRect.zw;
-  if (lipOn > .5 && lu.x > 0. && lu.x < 1. && lu.y > 0. && lu.y < 1.)
-    c = mix(c, texture2D(lipTex, vec2(lu.x, lu.y * .5)).rgb, clamp(texture2D(lipTex, vec2(lu.x, .5 + lu.y * .5)).r, 0., 1.));
+  if (lipOn > .5 && lu.x > 0. && lu.x < 1. && lu.y > 0. && lu.y < 1.) {
+    vec3 lc = texture2D(lipTex, vec2(lu.x, lu.y * .5)).rgb;
+    if (lipSoft > 0.) {   // the colour half only: its taps never reach the mask below
+      float v = min(lu.y * .5, .5 - 1. / 512.), vu = max(v - 1. / 512., 0.), vd = min(v + 1. / 512., .5 - 1. / 512.);
+      vec3 blur = (lc + texture2D(lipTex, vec2(lu.x - 1. / 256., v)).rgb + texture2D(lipTex, vec2(lu.x + 1. / 256., v)).rgb
+        + texture2D(lipTex, vec2(lu.x, vu)).rgb + texture2D(lipTex, vec2(lu.x, vd)).rgb) / 5.;
+      lc = mix(lc, blur, lipSoft);
+    }
+    c = mix(c, lc, clamp(texture2D(lipTex, vec2(lu.x, .5 + lu.y * .5)).r, 0., 1.));
+  }
   // Green = green clearly above both red and blue, at any brightness (catches the
   // dark green shading of the table rim too). Skin, white shirt and black suit are not.
   // The matte is softened ~1.5 px (a 5-tap cross) so edges blend instead of stair-stepping.
@@ -164,6 +175,9 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   gl.uniform1i(gl.getUniformLocation(prog, 'lipTex'), 1);
   const uLipRect = gl.getUniformLocation(prog, 'lipRect'), uLipOn = gl.getUniformLocation(prog, 'lipOn');
   gl.uniform1f(uLipOn, 0);
+  const uLipSoft = gl.getUniformLocation(prog, 'lipSoft');
+  let lipSoft = 0;
+  gl.uniform1f(uLipSoft, 0);
   const lipTexture = gl.createTexture();
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, lipTexture);
   for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
@@ -200,6 +214,8 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
     const lip = lips?.active() ? lips.at(name, raw, rest) : null;
     // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
     if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name ?? 'undefined(' + (v?.dataset.source || v?.currentSrc || '').split('/').pop().split('?')[0] + ')'}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }   // a clip the layer cannot name (a recorded line, an underscore) shows its file
+    const soft = document.documentElement.classList.contains('desk') ? .5 : 0;   // the desktop table only (desk-mode.js)
+    if (soft !== lipSoft) { lipSoft = soft; gl.uniform1f(uLipSoft, soft); lastStamp = ''; }
     const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
