@@ -4,7 +4,7 @@ import {Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis} from 'recha
 import {ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent} from '@/components/ui/chart';
 import {Page, PageHeader, Panel, Kpis, inputClass} from '../ops/ui';
 import {usePathname} from '../../../runtime/navigation';
-import {createStudioAdminClient, studioAdminActor, StudioAdminUiError} from '../../../../components/studio-administration';
+import {createStudioAdminClient, studioAdminActor, StudioAdminUiError, type SharedStudioAdminRead} from '../../../../components/studio-administration';
 import {JOURNAL_LIMIT, journalType, formatJournalAmount, readEconomyJournal, summarizeEconomyJournal, type JournalRow} from '../../lib/economy-journal.mjs';
 
 type State = {status:'loading'|'idle'} | {status:'error';message:string} | {status:'ready';journal:JournalRow[];readAt:number};
@@ -13,10 +13,12 @@ const countConfig = {count:{label:'Poster',color:'#3ad6c4'}};
 const date = (value:string) => new Intl.DateTimeFormat('sv-SE',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(value));
 const money = formatJournalAmount;
 
-export function ConnectedEconomy() {
+// The journal read is shared with the Betalningar tab; Uppdatera starts a new one.
+export function ConnectedEconomy({journal}:{journal:SharedStudioAdminRead}) {
   const path = usePathname();
   const [state,setState] = useState<State>({status:'loading'});
   const [refresh,setRefresh] = useState(0), [currency,setCurrency] = useState(''), [days,setDays] = useState(0);
+  const reload = () => {journal.refresh();setRefresh(value=>value+1);};
   useEffect(()=>{
     if(path!=='/admin/ekonomi'){setState({status:'idle'});return;}
     const controller = new AbortController(); setState({status:'loading'});
@@ -28,21 +30,25 @@ export function ConnectedEconomy() {
         if(!actor)throw new StudioAdminUiError(401);
         if(!Array.isArray(session.availableActions)||!session.availableActions.every((item:unknown)=>typeof item==='string'))throw new StudioAdminUiError(503);
         const client=createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>session,availableActions:session.availableActions,readIdentity:'response-headers-v1'});
-        const {payload}=await client.request('GET','transactions',undefined,controller.signal,actor);
-        const journal=readEconomyJournal(payload);
-        if(!controller.signal.aborted)setState({status:'ready',journal,readAt:Date.now()});
+        const read=await journal.read(client);
+        if(controller.signal.aborted)return;
+        // The shared read must belong to the session this view just verified.
+        if(read.actor.username!==actor.username||read.actor.role!==actor.role)throw new StudioAdminUiError(403);
+        const result=read.results.find(item=>item.action==='transactions');
+        if(!result||!('payload' in result))throw result?.error??new StudioAdminUiError(503);
+        setState({status:'ready',journal:readEconomyJournal(result.payload),readAt:Date.now()});
       }catch(error){if(!controller.signal.aborted)setState({status:'error',message:error instanceof StudioAdminUiError?error.message:'Journalen kunde inte läsas. Försök igen.'});}
     })();
     return()=>controller.abort();
-  },[path,refresh]);
+  },[path,refresh,journal]);
   const summary=useMemo(()=>state.status==='ready'?summarizeEconomyJournal(state.journal,{currency,days,now:state.readAt}):null,[state,currency,days]);
   const loading=state.status==='loading'||state.status==='idle';
   return <Page>
     <PageHeader eyebrow="Ekonomi" title="Ekonomisk översikt"
       description="Se kontorörelser och aktivitet. Öppna journalen när du behöver granska en enskild händelse."
-      aside={<button type="button" className="studio-button inline-flex items-center gap-2" disabled={loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw className="size-3.5" aria-hidden/>{loading?'Läser…':'Uppdatera'}</button>}/>
+      aside={<button type="button" className="studio-button inline-flex items-center gap-2" disabled={loading} onClick={reload}><RefreshCw className="size-3.5" aria-hidden/>{loading?'Läser…':'Uppdatera'}</button>}/>
     {loading&&<div role="status" className="rounded-lg border border-sg-line bg-sg-panel p-8 text-sm text-sg-muted">Läser ekonomins journal…</div>}
-    {state.status==='error'&&<div role="alert" className="rounded-lg border border-sg-line bg-sg-panel p-6"><p>{state.message}</p><button type="button" className="studio-button mt-3" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>}
+    {state.status==='error'&&<div role="alert" className="rounded-lg border border-sg-line bg-sg-panel p-6"><p>{state.message}</p><button type="button" className="studio-button mt-3" onClick={reload}>Försök igen</button></div>}
     {summary&&<>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <p className="max-w-2xl text-xs leading-relaxed text-sg-muted">Underlaget är de {summary.sourceCount} senaste journalposterna (högst {JOURNAL_LIMIT})

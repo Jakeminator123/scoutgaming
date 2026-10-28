@@ -9,7 +9,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
-import * as gameLanes from '../../../packages/presentation/contracts/game-lane-id.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 
@@ -40,7 +39,7 @@ class TestFormData {
 }
 
 function harness() {
-  const hooks = []; let cursor = 0, generatedKeys = 0;
+  const hooks = []; let cursor = 0;
   const listeners = new Map(); const pending = [];
   let deferUpdates = false;
   const deferredUpdates = [];
@@ -78,7 +77,6 @@ function harness() {
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
     module, exports: module.exports, window, DOMException, AbortController, URL, URLSearchParams,
-    crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
     require: name => name === 'react-dom' ? {flushSync(action) {
@@ -89,13 +87,10 @@ function harness() {
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
-            : name === '../lib/backoffice-navigation.mjs' ? navigation
-              : name === '../../../packages/presentation/contracts/game-lane-id.mjs' ? gameLanes : require(name),
+            : name === '../lib/backoffice-navigation.mjs' ? navigation : require(name),
   });
   return {
     ...module.exports, listeners, window,
-    get generatedKeys() { return generatedKeys; },
-    renderLane(props) { cursor = 0; return module.exports.TechnicalLaneCreate(props); },
     render(props) { cursor = 0; return module.exports.StudioAdministration(props); },
     pagehideSnapshot(props,persisted) {
       // Model batched event updates: a frozen snapshot is taken before they drain.
@@ -114,7 +109,7 @@ function nodes(node, predicate) {
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
 
-test('native administration preserves its standalone shell and embeds without a second main landmark', () => {
+test('native administration preserves its standalone shell, embeds without a second main landmark and leaves logout to the Admin menu', () => {
   const module = { exports: {} }, views = [];
   const nativeSource = readFileSync(new URL('./native-administration.tsx', import.meta.url), 'utf8');
   vm.runInNewContext(transformSync(nativeSource, {
@@ -125,31 +120,29 @@ test('native administration preserves its standalone shell and embeds without a 
     require: name => name === './studio-administration'
       ? { StudioAdministration: props => { views.push(props); return React.createElement('section', { 'data-native-view': true }); }, StudioAdminUiError: Error, createStudioAdminClient: () => ({ available: () => false, request: () => assert.fail('render must not send commands') }) }
       : name === './moving-drift-controls' ? { MovingDriftControls: () => React.createElement('section', { 'data-moving-drift': true }) }
-      : name === '../lib/studio-login-client.mjs'
-        ? { createStudioLoginClient: () => assert.fail('render must not change the session'), StudioLoginUiError: Error }
+      : name === '../lib/studio-login-client.mjs' ? assert.fail('the page has no session control of its own')
         : name.endsWith('.module.css')
           ? { __esModule: true, default: { shell: 'standalone-shell', embedded: 'embedded-shell' } } : require(name),
   });
-  const props = { apiBase: '/studio/api/admin', availableActions: ['GET overview'], gameOrigin: 'https://game.fixture.invalid', initialGroup: 'integrations' };
+  const sharedRead = { actions: ['players'] };
+  const props = { apiBase: '/studio/api/admin', availableActions: ['GET overview'], gameOrigin: 'https://game.fixture.invalid', initialGroup: 'integrations', sections: ['players'], sharedRead };
   const standalone = renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, props));
   assert.match(standalone, /^<main class="standalone-shell">/);
   assert.equal(renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, { ...props, embedded: false })), standalone);
   const embedded = renderToStaticMarkup(React.createElement('main', { 'data-admin-shell': true }, React.createElement(module.exports.NativeAdministration, { ...props, embedded: true })));
   assert.equal([...embedded.matchAll(/<main\b/g)].length, 1, 'the surrounding Admin owns the page landmark');
   assert.match(embedded, /<div class="embedded-shell"><section data-native-view="true">/);
+  assert.doesNotMatch(standalone + embedded, /Logga ut/);
   for (const view of views) {
-    for (const name of ['apiBase', 'availableActions', 'gameOrigin', 'initialGroup']) assert.equal(view[name], props[name]);
+    for (const name of ['apiBase', 'availableActions', 'gameOrigin', 'initialGroup', 'sections', 'sharedRead']) assert.equal(view[name], props[name]);
     assert.equal(view.readIdentity, 'response-headers-v1');
     assert.equal(typeof view.session, 'function');
-    assert.equal(view.sessionAction.type, 'button');
-    assert.equal(view.sessionAction.props.children, 'Logga ut');
+    assert.equal(Object.hasOwn(view, 'sessionAction'), false);
   }
   for (const view of views.slice(0, 2)) {
-    assert.equal(view.roomsHref, undefined);
     assert.equal(view.companyTeamLabel, undefined);
     assert.equal(view.showGroupNavigation, true);
   }
-  assert.equal(views[2].roomsHref, '/admin/rooms');
   assert.equal(views[2].companyTeamLabel, 'Bolag & team');
   assert.equal(views[2].showGroupNavigation, false);
   assert.equal(typeof views[2].renderOperations, 'function');
@@ -255,22 +248,17 @@ test('account status labels keep stored values and integration dates never revea
   assert.doesNotMatch(integration,/MUST-NOT-RENDER/);
 });
 
-test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
-  for (const group of ['tables', 'accounts', 'partners']) {
+test('administration notices label team compatibility without changing its editor', () => {
+  for (const group of ['accounts', 'partners']) {
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
-    const href = group === 'tables' ? '/admin/rooms' : '/admin/companies';
-    const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
+    const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === '/admin/companies')[0];
     assert.ok(original, group);
-    assert.equal(original.props.children, group === 'tables' ? 'Spelbolag & rum' : 'Bolag & team');
-    const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
-    const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/admin/companies'));
+    assert.equal(original.props.children, 'Bolag & team');
+    const embedded = h.render({ ...props, companyTeamLabel: 'Bolag & team (äldre editor)' });
+    const target = nodes(embedded, node => node.type === 'a').find(node => node.props.href === '/admin/companies');
     assert.ok(target, group);
-    assert.equal(target.props.children, group === 'tables' ? 'Spelbolag & rum' : 'Bolag & team (äldre editor)');
-    if (group === 'tables') {
-      assert.equal(links.some(node => node.props.href === '/admin/publication'), false);
-      assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
-    }
+    assert.equal(target.props.children, 'Bolag & team (äldre editor)');
+    assert.doesNotMatch(renderToStaticMarkup(embedded), /Spelbolag &amp; rum|spelmotorns gemensamma inställningar/);
     h.unmount();
   }
 });
@@ -323,7 +311,7 @@ function nativeReadFixture() {
 
 test('each work area retains native identity headers and only shows its own tabs', async () => {
   for (const readIdentity of ['session-preflight','response-headers-v1']) {
-    for (const group of navigation.BACKOFFICE_GROUPS) {
+    for (const group of navigation.BACKOFFICE_GROUPS.filter(group => group.id !== 'tables')) {
       const h=harness(), f=nativeReadFixture(), props={...f.props,readIdentity,initialGroup:group.id};
       h.render(props);h.effects();await flush();const tree=h.render(props);
       const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
@@ -519,19 +507,20 @@ test('native all-error reload clears previous actor, data and controls instead o
   assert.equal(f.state.sessions, 0); h.unmount();
 });
 
-test('render never mutates or requests providers/accounts; five groups expose ten implemented sections', () => {
+test('render never mutates or requests providers/accounts; four active groups expose seven sections and the retired room settings none', () => {
   const h = harness(); let calls = 0;
   const props = { apiBase: '/studio/api/admin', availableActions: allActions, session: async () => { ++calls; return actor('superadmin'); }, fetchImpl: async () => { ++calls; throw new Error('no'); } };
   const html = renderToStaticMarkup(h.render(props));
   assert.equal(calls, 0);
   assert.doesNotMatch(html, /iframe|localStorage|MUST-NOT-RENDER/);
-  assert.equal(navigation.BACKOFFICE_GROUPS.length, 5);
+  const retired = navigation.BACKOFFICE_GROUPS.find(group => group.id === 'tables');
   const sections = navigation.BACKOFFICE_GROUPS.flatMap(group => {
     const tree = h.StudioAdministrationView(viewProps('superadmin', group.id));
     return nodes(tree, node => node.props?.['data-admin-section']).map(node => node.props['data-admin-section']);
   });
-  assert.equal(sections.length, 10); assert.equal(new Set(sections).size, 10);
-  assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).sort());
+  assert.equal(sections.length, 7); assert.equal(new Set(sections).size, 7);
+  assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).filter(id => !retired.sections.includes(id)).sort());
+  assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'tables'))), /Okänd session eller administrationsgrupp/);
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
 
@@ -541,23 +530,14 @@ test('actual rendered native administration forms explicitly use POST, including
     const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', group.id)));
     for (const form of html.matchAll(/<form\b[^>]*>/g)) { assert.match(form[0], /method="post"/); ++forms; }
   }
-  assert.ok(forms >= 12); assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'accounts'))), /type="password"/);
+  assert.ok(forms >= 6); assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'accounts'))), /type="password"/);
 });
 
-test('legacy administration view tolerates absent historical sections without creating tier forms', () => {
-  const h = harness(), data = resources();
-  for (const key of ['tiers', 'pitboss', 'tournaments']) delete data.config.payload[key];
-  const before = structuredClone(data);
-  const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('superadmin', 'tables'), resources: data }));
-  assert.match(html, /Test room/);
-  assert.doesNotMatch(html, /Spara dealer/);
-  assert.deepEqual(data, before);
-});
 
 test('unknown identities/roles/groups fail closed, including inherited and prototype values', () => {
   const h = harness();
   for (const value of [null, [], {}, 'admin', actor('constructor'), actor('__proto__'), actor('player'), { username: '', role: 'reader' }, Object.create(actor('superadmin')), { username: 'x\u0000y', role: 'admin' }]) assert.equal(h.studioAdminActor(value), null);
-  for (const group of ['constructor', '__proto__', '/accounts', 'accounts?x=1', 'accounts/', null]) {
+  for (const group of ['constructor', '__proto__', '/accounts', 'accounts?x=1', 'accounts/', 'tables', null]) {
     assert.match(renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps(), group })), /Okänd session/);
   }
 });
@@ -589,15 +569,16 @@ test('menu changes fetch only displayed resources and keep a live identity check
       requests.push({ url, method: init.method });
       return reply(data[url.slice('/studio/api/admin/'.length)]?.payload);
     } };
-  for (const [group, menu, reads] of [
-    ['operations', 'Spelstatus & integritet', ['overview', 'shoes']],
-    ['tables', 'Spelmotor & rum', ['config']],
-    ['accounts', 'Konton & åtkomst', ['players', 'users']],
-    ['partners', 'Integrationer', ['apikeys', 'emails']],
-    ['finance', 'Betalningar & journal', ['transactions']],
+  for (const [initialGroup, group, reads] of [
+    ['operations', 'operations', ['overview', 'shoes']],
+    // The retired room settings open the default group; their config is never read.
+    ['tables', 'operations', ['overview', 'shoes']],
+    ['accounts', 'accounts', ['players', 'users']],
+    ['partners', 'partners', ['apikeys', 'emails']],
+    ['finance', 'finance', ['transactions']],
   ]) {
     h=harness(); requests.length=0; identities=0;
-    const scoped={...props,initialGroup:group};
+    const scoped={...props,initialGroup};
     h.render(scoped);h.effects();await flush();const tree=h.render(scoped);
     assert.deepEqual(requests, reads.map(action => ({ url: `/studio/api/admin/${action}`, method: 'GET' })), group);
     assert.equal(identities, reads.length + 1, group);
@@ -608,6 +589,57 @@ test('menu changes fetch only displayed resources and keep a live identity check
     h.unmount();
   }
   h.unmount();
+});
+
+test('an accounts page reads and shows only its own section under the page heading, with the same identity checks', async () => {
+  for (const [section, other] of [['players', 'users'], ['users', 'players']]) {
+    const h = harness(), f = nativeReadFixture(), requested = [];
+    const props = { ...f.props, initialGroup: 'accounts', sections: [section], fetchImpl: async (url, init) => { requested.push(url.split('/').at(-1)); return f.props.fetchImpl(url, init); } };
+    h.render(props); h.effects(); await flush(); const tree = h.render(props);
+    assert.deepEqual(requested, [section]); assert.equal(f.state.sessions, 0);
+    const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+    assert.deepEqual(Object.keys(view.props.resources), [section]);
+    const html = renderToStaticMarkup(tree);
+    assert.match(html, new RegExp(`data-admin-section="${section}"`)); assert.doesNotMatch(html, new RegExp(`data-admin-section="${other}"`));
+    assert.doesNotMatch(html, /<h1|sg-eyebrow/, 'the enclosing page owns the heading'); assert.match(html, /owner@example\.test · Administratör/);
+    h.unmount();
+  }
+  for (const changed of [actor('reader'), { username: 'other@example.test', role: 'admin' }]) {
+    const h = harness();
+    const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions, initialGroup: 'accounts', sections: ['users'],
+      session: () => assert.fail('No GET session'), fetchImpl: async () => nativeReply(resources().users.payload, 200, changed) };
+    h.render(props); h.effects(); await flush(); const tree = h.render(props), html = renderToStaticMarkup(tree);
+    if (changed.role === 'reader') { assert.match(html, /Behörigheten saknas/); assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0); }
+    else assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.actor.username, 'other@example.test', 'the read identity, never a cached one, is shown');
+    assert.doesNotMatch(html, /data-admin-section="players"/); h.unmount();
+  }
+});
+
+test('Ekonomi tabs share one identity-checked journal read per visit; an explicit reload reads again', async () => {
+  const h = harness(); let reads = 0;
+  const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions, initialGroup: 'finance', session: () => assert.fail('No GET session'),
+    fetchImpl: async (url, init) => { assert.equal(init.method, 'GET'); assert.ok(url.endsWith('/transactions')); reads++; return nativeReply(resources().transactions.payload); } };
+  const journal = h.sharedStudioAdminRead(['transactions']), client = h.createStudioAdminClient(props);
+  const overview = await journal.read(client);
+  assert.equal(reads, 1); assert.equal(await journal.read(client), overview);
+  const scoped = { ...props, sharedRead: journal };
+  h.render(scoped); h.effects(); await flush(); let tree = h.render(scoped);
+  assert.equal(reads, 1, 'Betalningar reuses the read of this visit');
+  const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+  assert.equal(view.props.resources.transactions.payload, overview.results[0].payload);
+  assert.equal(view.props.actor.username, actor('admin').username);
+  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(scoped);
+  assert.equal(reads, 2, 'an explicit reload reads the server again');
+  journal.refresh(); await journal.read(client); assert.equal(reads, 3, 'a new visit reads anew');
+  h.unmount();
+  // A shared read for other actions is never used in place of the view's own reads.
+  const other = harness(), unrelated = { actions: ['users'], read: () => assert.fail('mismatched shared read'), refresh() {} };
+  other.render({ ...props, sharedRead: unrelated }); other.effects(); await flush(); assert.equal(reads, 4); other.unmount();
+  // A failed read is not reused by the next tab.
+  let fail = true; const flaky = h.sharedStudioAdminRead(['transactions']);
+  const flakyClient = h.createStudioAdminClient({ ...props, fetchImpl: async () => fail ? reply({ error: 'PRIVATE' }, 503) : nativeReply(resources().transactions.payload) });
+  await assert.rejects(flaky.read(flakyClient), status(503)); fail = false;
+  assert.ok((await flaky.read(flakyClient)).results[0].payload);
 });
 
 test('each request checks live identity, role floors and self-role/self-removal before a write', async () => {
@@ -867,20 +899,14 @@ test('player lifecycle is create/status, never hard delete or reopening closed a
   assert.match(unavailable, /players\/status är ännu inte ansluten/); assert.doesNotMatch(unavailable, /Ändra spelarstatus/);
 });
 
-test('isolated legacy and active account forms emit established payloads with CAS and cleared password input', () => {
+test('active account forms emit established payloads and clear the password input', () => {
   const h = harness(); const calls = [];
-  let tree = h.StudioAdministrationView({ ...viewProps('admin', 'tables'), command: (action, body) => calls.push({ action, body }) });
+  const tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
   const formFor = text => nodes(tree, node => node.type === 'form' && buttons(node, text).length)[0];
-  formFor('Spara rum').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ state: 'pending' }) });
-  formFor('Spara dealer').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ dealer: 'mei' }) });
-  assert.equal(calls.length, 2); assert.ok(calls.every(call => call.body.expectedRevision === 'studio-v1'));
-  formFor('Spara aktiv spelkonfiguration').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ lane: 'mobile-phone' }) });
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { action: 'game-lane', body: { lane: 'mobile-phone', expectedRevision: 'studio-v1' } });
-  tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
   const playerForm = new Form({ username: 'test-one', name: 'Tester', password: 'temporary-password', currency: 'SEK', reason: 'Demo' });
   formFor('Skapa spelarkonto').props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
   assert.equal(playerForm.passwordInput.value, ''); assert.equal(calls.at(-1).body.password, 'temporary-password');
-  assert.equal(calls.at(-1).action, 'players/create');
+  assert.equal(calls.at(-1).action, 'players/create'); assert.equal(Object.hasOwn(calls.at(-1).body, 'expectedRevision'), false);
 });
 
 test('retired tournament, pitboss and empty legacy galleries are absent while source data remains intact', () => {
@@ -892,24 +918,18 @@ test('retired tournament, pitboss and empty legacy galleries are absent while so
   assert.equal(data.config.payload.tournaments.length, 1); assert.equal(data.config.payload.pitboss.randomWalkMin, 45);
 });
 
-test('secondary lane and account forms remain functional inside closed disclosures', () => {
+test('secondary account and partner forms remain functional inside closed disclosures', () => {
   const h = harness();
-  for (const [group, action] of [['tables', 'Lägg till spelkonfiguration'], ['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
-    let tree = h.StudioAdministrationView(viewProps('admin', group));
-    if (group === 'tables') tree = h.renderLane(nodes(tree, node => node.type === h.TechnicalLaneCreate)[0].props);
+  for (const [group, action] of [['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
+    const tree = h.StudioAdministrationView(viewProps('admin', group));
     const disclosure = nodes(tree, node => node.type === 'details' && buttons(node, action).length)[0];
     assert.ok(disclosure, action); assert.notEqual(disclosure.props.open, true);
     assert.ok(nodes(disclosure, node => node.type === 'form' && node.props.method === 'post').length);
   }
 });
 
-test('config writes disappear without valid revision while read data and honest limitations remain', () => {
+test('operations readouts keep honest certification limitations', () => {
   const h = harness();
-  for (const revision of [undefined, 1, {}, 'bad revision']) {
-    const data = resources(); data.config.payload.revision = revision;
-    const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('superadmin', 'tables'), resources: data }));
-    assert.match(html, /konfigurationsrevision saknas/); assert.doesNotMatch(html, /<form/); assert.match(html, /Test room/);
-  }
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
   assert.match(html, /Certifieringsunderlag: saknas/); assert.match(html,/Cut card efter 312/);assert.doesNotMatch(html, /CERTIFIED|VALID/);
 });
@@ -959,16 +979,16 @@ test('unmount aborts read transaction before fetch; no background mutation or la
   assert.equal(calls, 0); assert.equal(h.listeners.has('beforeunload'), false);
 });
 
-test('isolated legacy config: draft guard survives reload/conflict, protects native unload and cancelled local group change', async () => {
-  const h = harness(); const props = { initialGroup:'tables', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async (url, init) => init.method === 'POST' ? reply({ error: 'conflict' }, 409) : reply(url.endsWith('/config') ? config() : resources().overview.payload) };
+test('draft guard survives reload/conflict, protects native unload and cancelled local group change', async () => {
+  const h = harness(); const props = { initialGroup:'accounts', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async (url, init) => init.method === 'POST' ? reply({ error: 'conflict' }, 409) : reply(resources()[url.split('/').at(-1)].payload) };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   const nativeView = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
-  const firstForm = new Form({ state: 'live' }); nativeView().props.onDirty(firstForm);
+  const firstForm = new Form({ status: 'blocked', reason: 'Fixture' }); nativeView().props.onDirty(firstForm);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   h.window.confirm = () => false;
-  buttons(tree, 'Spelstatus & integritet')[0].props.onClick(); tree = h.render(props);
-  assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.group, 'tables');
-  nativeView().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, firstForm); await flush(); tree = h.render(props);
+  buttons(tree, 'Integrationer')[0].props.onClick(); tree = h.render(props);
+  assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.group, 'accounts');
+  nativeView().props.command('players/status', { playerId: 'player-active', status: 'blocked', reason: 'Fixture' }, firstForm); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /Uppgifterna har ändrats|Osparade formulärfält/); assert.equal(firstForm.resets, 0);
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/); assert.equal(firstForm.resets, 0); h.unmount();
@@ -1011,27 +1031,26 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
   }
 });
 
-test('isolated legacy config: cancelled group change during a GET preserves its read, draft, unload guard and original revision', async () => {
-  const h = harness(), waiting = deferred(), writes = []; let holding = false, signal;
-  const props = { initialGroup:'tables', apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+test('cancelled group change during a GET preserves its read, draft and unload guard', async () => {
+  const h = harness(), waiting = deferred(); let holding = false, signal;
+  const props = { initialGroup:'accounts', apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
     session: async () => actor('admin'), fetchImpl: async (url, init) => {
-      if (init.method === 'POST') { writes.push(JSON.parse(init.body)); return reply({}, 409); }
-      if (holding && url.endsWith('/config')) { signal = init.signal; return waiting.promise; }
+      if (init.method === 'POST') return reply({}, 409);
+      if (holding && url.endsWith('/players')) { signal = init.signal; return waiting.promise; }
       return nativeReply(resources()[url.split('/').at(-1)].payload);
     } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ state: 'live' });
+  const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ status: 'blocked' });
   const oldKey = view().key; view().props.onDirty(draft); tree = h.render(props); holding = true;
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  h.window.confirm = () => false; buttons(tree, 'Spelstatus & integritet')[0].props.onClick(); tree = h.render(props);
-  assert.equal(signal.aborted, false); assert.equal(view().props.group, 'tables'); assert.equal(view().key, oldKey);
+  h.window.confirm = () => false; buttons(tree, 'Integrationer')[0].props.onClick(); tree = h.render(props);
+  assert.equal(signal.aborted, false); assert.equal(view().props.group, 'accounts'); assert.equal(view().key, oldKey);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
-  holding = false; waiting.resolve(nativeReply({ ...config(), revision: 'studio-v2' })); await flush(); tree = h.render(props);
+  holding = false; waiting.resolve(nativeReply(resources().players.payload)); await flush(); tree = h.render(props);
   assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
-  view().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v2' }, draft); await flush(); tree = h.render(props);
-  assert.equal(writes[0].expectedRevision, 'studio-v1'); assert.equal(draft.resets, 0);
-  h.window.confirm = () => true; buttons(tree, 'Spelstatus & integritet')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
-  assert.equal(view().props.group, 'operations'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  assert.ok(view().props.resources.players.payload);
+  h.window.confirm = () => true; buttons(tree, 'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  assert.equal(view().props.group, 'partners'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
   prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, false); h.unmount();
 });
 
@@ -1092,36 +1111,31 @@ test('saving one form preserves other drafts; double command cannot send two wri
   assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/); h.unmount();
 });
 
-test('isolated legacy config: reload cannot silently rebase an edited config form; only confirmed discard remounts it', async () => {
-  const h = harness(); let revision = 'studio-v1'; const writes = [];
-  const props = { initialGroup:'tables', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
-    if (init.method === 'POST') { writes.push(JSON.parse(init.body)); return reply({ error: 'conflict' }, 409); }
-    return reply(url.endsWith('/config') ? { ...config(), revision } : resources().overview.payload);
-  } };
+test('reload keeps an edited form; only a confirmed discard remounts it', async () => {
+  const h = harness(); let reads = 0;
+  const props = { initialGroup:'accounts', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async url => { reads++; return reply(resources()[url.split('/').at(-1)].payload); } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   const native = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
-  const draft = new Form({ state: 'live' }); native().props.onDirty(draft); tree = h.render(props);
+  const draft = new Form({ status: 'blocked' }); native().props.onDirty(draft); tree = h.render(props);
   const oldKey = native().key;
-  revision = 'studio-v2'; buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.equal(native().props.resources.config.payload.revision, 'studio-v2'); assert.equal(native().key, oldKey);
-  native().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v2' }, draft); await flush(); tree = h.render(props);
-  assert.equal(writes[0].expectedRevision, 'studio-v1'); assert.equal(draft.resets, 0);
+  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.equal(reads, 4); assert.equal(native().key, oldKey); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
   h.window.confirm = () => false; buttons(tree, 'Kasta formulärutkast och läs om')[0].props.onClick(); tree = h.render(props);
   assert.equal(native().key, oldKey); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
   h.window.confirm = () => true; buttons(tree, 'Kasta formulärutkast och läs om')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.notEqual(native().key, oldKey); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/); h.unmount();
+  assert.notEqual(native().key, oldKey); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/); assert.equal(draft.resets, 0); h.unmount();
 });
 
-test('isolated legacy config: acknowledged write plus unavailable reload is not advertised as fully refreshed success', async () => {
+test('acknowledged write plus unavailable reload is not advertised as fully refreshed success', async () => {
   const h = harness(); let written = false;
-  const props = { initialGroup:'tables', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
+  const props = { initialGroup:'accounts', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
     if (init.method === 'POST') { written = true; return reply({ ok: true }); }
     if (written) return reply({ error: 'SECRET_DB_ERROR' }, 503);
-    return reply(url.endsWith('/config') ? config() : resources().overview.payload);
+    return reply(resources()[url.split('/').at(-1)].payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0]; const form = new Form({ state: 'live' });
-  native.props.onDirty(form); native.props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, form);
+  const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0]; const form = new Form({ status: 'blocked' });
+  native.props.onDirty(form); native.props.command('players/status', { playerId: 'player-active', status: 'blocked', reason: 'Fixture' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
   assert.match(html, /Skicka inte samma åtgärd igen/); assert.doesNotMatch(html, /Tillgänglig serverdata har lästs om|SECRET_DB_ERROR/); assert.equal(form.resets, 0); h.unmount();
 });
@@ -1172,100 +1186,13 @@ test('password command is single dispatch, never stores the password and does no
 });
 
 
-const laneCreateProps = overrides => ({ savedDealers, lanes:savedGameLanes, activeDealer:'astrid', revision:'studio-v1', busy:false, command(){ throw Error('unexpected write'); }, ...overrides });
-test('technical lane creation shows saved dealer labels and no free dealer or lane ID in the ordinary form', () => {
-  const h=harness(), tree=h.renderLane(laneCreateProps()), html=renderToStaticMarkup(tree);
-  assert.match(html, /Lägg till teknisk spelkonfiguration/);assert.match(html, /<select name="dealer"/);assert.match(html, /<option value="linnea">Linnea/);
-  assert.match(html, /<option value="astrid" selected="">Astrid/);
-  assert.doesNotMatch(html, /<input[^>]*name="(?:id|dealer|restoreId)"/);
-  assert.match(html, /Återställ ett tidigare tekniskt ID/);assert.equal(h.generatedKeys,0,'rendering must not mint IDs');
-  for (const role of ['reader','operator','staff']) {
-    const view=h.StudioAdministrationView(viewProps(role,'tables'));
-    assert.equal(nodes(view,node=>node.type===h.TechnicalLaneCreate).length,0);
-  }
-});
 
-test('automatic technical ID is generated once, ignores unsolicited restore fields and survives retry until successful reset', () => {
-  const h=harness(), calls=[], props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
-  let tree=h.renderLane(props); const form=new Form({name:'Linneas miljö',dealer:'linnea',restoreId:'unrequested-override'});
-  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  tree=h.renderLane(props);nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  assert.equal(h.generatedKeys,1);assert.equal(calls.length,2);assert.equal(calls[0].body.definition.id,calls[1].body.definition.id);
-  assert.match(calls[0].body.definition.id,/^lane-[a-f0-9-]+$/);assert.notEqual(calls[0].body.definition.id,form.fields.restoreId);
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{action:'game-lanes/create',body:{definition:{schemaVersion:1,id:'lane-10000000-0000-4000-8000-000000000001',label:'Linneas miljö',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'},expectedRevision:'studio-v1'}});
-  nodes(tree,node=>node.type==='form')[0].props.onReset();tree=h.renderLane(props);
-  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  assert.equal(h.generatedKeys,2);assert.notEqual(calls[2].body.definition.id,calls[0].body.definition.id);
-});
 
-test('exact prior ID restoration is explicit, validated, scoped to saved dealers and disabled while busy', () => {
-  const h=harness(),calls=[],props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
-  let tree=h.renderLane(props);nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
-  tree=h.renderLane(props);assert.equal(nodes(tree,node=>node.type==='input'&&node.props.name==='restoreId').length,1);
-  for(const fields of [{name:'Repair',dealer:'foreign',restoreId:'old-room-lane'},{name:'Repair',dealer:'nora',restoreId:'mobile-phone'},{name:'Repair',dealer:'nora',restoreId:'../../bad'}]){
-    nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:new Form(fields)});
-  }
-  assert.equal(calls.length,0);assert.equal(h.generatedKeys,0);
-  const form=new Form({name:'Återställd Nora',dealer:'nora',restoreId:'room-lane-9c162457d38b353be86e2731'});
-  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  assert.equal(calls.length,1);assert.equal(calls[0].body.definition.id,form.fields.restoreId);assert.equal(calls[0].body.definition.mediaCollection,'nora-presentation');
-  tree=h.renderLane({...props,busy:true});nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  assert.equal(calls.length,1);
-});
 
-test('unavailable or malformed saved dealer metadata never produces guessed selectable dealers', () => {
-  for(const data of [undefined,null,[...savedDealers,savedDealers[0]],savedDealers.map(row=>({...row,private:'hidden'})),savedDealers.map(row=>({...row,label:'bad\nlabel'}))]){
-    const h=harness(),tree=h.renderLane(laneCreateProps({savedDealers:data}));
-    assert.equal(nodes(tree,node=>node.type==='form').length,0);assert.match(renderToStaticMarkup(tree),/Dealerlistan.*kunde inte läsas/);
-    assert.equal(h.generatedKeys,0);
-  }
-});
 
-test('technical ID generation handles collisions and invalid UUID source without inventing a fallback', () => {
-  const h=harness(),keys=['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002'];
-  assert.equal(h.newTechnicalLaneId([{id:'lane-'+keys[0]}],()=>keys.shift()),'lane-10000000-0000-4000-8000-000000000002');
-  assert.throws(()=>h.newTechnicalLaneId([],()=> 'bad'));
-  assert.throws(()=>h.newTechnicalLaneId([{id:'lane-10000000-0000-4000-8000-000000000001'}],()=> '10000000-0000-4000-8000-000000000001'));
-});
 
-test('successful technical creation resets only its own form after authoritative reload and blocks double writes', async () => {
-  const h=harness();let writes=0;
-  const props={apiBase:'/api/admin',availableActions:allActions,initialGroup:'tables',session:async()=>actor('admin'),fetchImpl:async(url,init)=>{
-    if(init.method==='POST'){writes++;return reply({ok:true});}
-    return reply(config());
-  }};
-  h.render(props);h.effects();await flush();let tree=h.render(props),view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
-  const own=new Form(),other=new Form({state:'pending'});view.props.onDirty(own);view.props.onDirty(other);
-  const body={definition:{...savedGameLanes[0],id:'new-generated-lane'},expectedRevision:'studio-v1'};
-  view.props.command('game-lanes/create',body,own);view.props.command('game-lanes/create',body,own);
-  await flush();tree=h.render(props);
-  assert.equal(writes,1);assert.equal(own.resets,1);assert.equal(other.resets,0);
-  assert.match(renderToStaticMarkup(tree),/Osparade formulärfält/);h.unmount();
-});
 
-test('technical creation keeps an empty or unselected dealer registry explicit',()=>{
-  const empty=harness(),tree=empty.renderLane(laneCreateProps({savedDealers:[],activeDealer:undefined}));
-  assert.equal(nodes(tree,node=>node.type==='form').length,0);assert.match(renderToStaticMarkup(tree),/Inga dealers har registrerats/);
-  assert.equal(empty.generatedKeys,0);
-  for(const activeDealer of [undefined,'missing']){
-    const h=harness(),calls=[],p=laneCreateProps({savedDealers:[{id:'linnea',label:'Linnea'}],activeDealer,command:(...args)=>calls.push(args)});
-    const unselected=h.renderLane(p),dealer=nodes(unselected,node=>node.type==='select'&&node.props.name==='dealer')[0];
-    assert.equal(dealer.props.defaultValue,'');
-    assert.match(renderToStaticMarkup(unselected),/<option value=""[^>]*selected=""[^>]*>Välj dealer<\/option>/);
-    nodes(unselected,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:new Form({name:'Explicit room',dealer:''})});
-    assert.equal(calls.length,0);assert.equal(h.generatedKeys,0);
-  }
-});
 
-test('legacy config without a selected game lane never infers a dealer from a standard lane ID',()=>{
-  const h=harness();
-  for(const gameLane of [undefined,null,'original']){
-    const data=resources();data.config.payload.gameLane=gameLane;
-    const tree=h.StudioAdministrationView({...viewProps('admin','tables'),resources:data});
-    const creator=nodes(tree,node=>node.type===h.TechnicalLaneCreate)[0];
-    assert.equal(creator.props.activeDealer,undefined);
-  }
-});
 
 test('an expected actor change blocks POST before any command leaves the browser', async () => {
   const h=harness();let calls=0;

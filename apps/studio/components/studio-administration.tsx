@@ -3,10 +3,9 @@ import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
+import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
-import { isDealerId, registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
@@ -29,17 +28,18 @@ export type StudioAdministrationProps = {
   fetchImpl?: typeof fetch;
   /** Explicit public game origin from server configuration, never request JSON. */
   gameOrigin?: string;
-  sessionAction?: ReactNode;
   /** Group id from ?tab=. Unknown values open Spelstatus & integritet. */
   initialGroup?: string;
   /** Connected operations UI bound to the freshly read actor. */
   renderOperations?: (actor: StudioAdminActor) => ReactNode;
-  /** Enclosing backoffice destination; existing standalone links stay compatible. */
-  roomsHref?: string;
   /** Explain a legacy team editor when this view is embedded in the new Admin. */
   companyTeamLabel?: string;
   /** Admin owns pathname navigation; standalone shells keep their local group tabs. */
   showGroupNavigation?: boolean;
+  /** Only these sections of the group are read and shown; the enclosing page owns the heading. */
+  sections?: readonly string[];
+  /** A read shared with another view of the same page visit, used for the first load. */
+  sharedRead?: SharedStudioAdminRead;
 };
 type Resource = { payload?: JsonObject; error?: StudioAdminUiError };
 type Resources = Record<string, Resource>;
@@ -50,21 +50,24 @@ export type StudioPartnerResult =
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
 const CONFIG_COMMANDS = new Set(['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
-const GROUP_READS: Record<string, readonly string[]> = {
-  operations: ['overview', 'shoes'], tables: ['config'], accounts: ['players', 'users'],
-  partners: ['apikeys','emails'], finance: ['transactions'],
+const SECTION_READS: Record<string, readonly string[]> = {
+  ops: ['overview'], shoes: ['shoes'], players: ['players'], users: ['users'],
+  apikeys: ['apikeys'], emails: ['emails'], pay: ['transactions'],
 };
 const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
 const EMPTY_ACTIONS: readonly string[] = Object.freeze([]);
-// Keep historical groups in the storage/API contract while the active UI follows
-// the same destinations and names as the shared sidebar.
+// The retired `tables` group stays in the storage/API contract only; the UI
+// follows the same destinations and names as the shared sidebar.
 const ACTIVE_GROUPS = BACKOFFICE_GROUPS.filter(group => group.id !== 'tables').map(group => ({
   ...group,
   label: group.id === 'operations' ? 'Spelstatus & integritet' : group.id === 'accounts' ? 'Konton & åtkomst' : group.label,
   area: group.area === 'Administration' ? 'System' : group.area,
 }));
+function visibleSections(group: string, only?: readonly string[]): readonly string[] {
+  return ACTIVE_GROUPS.find(item => item.id === group)?.sections.filter(section => !only || only.includes(section)) ?? [];
+}
 
 function object(value: unknown): JsonObject | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as JsonObject : null;
@@ -264,6 +267,30 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
   return { identity, available, request, readGroup };
 }
 
+export type StudioAdminGroupRead = Awaited<ReturnType<ReturnType<typeof createStudioAdminClient>['readGroup']>>;
+export type SharedStudioAdminRead = {
+  readonly actions: readonly string[];
+  read: (client: Pick<ReturnType<typeof createStudioAdminClient>, 'readGroup'>) => Promise<StudioAdminGroupRead>;
+  refresh: () => void;
+};
+/** One identity-checked group read for several views of one page visit (Ekonomi's tabs).
+ * It carries no view's abort signal, so one view leaving cannot cancel another's data. */
+export function sharedStudioAdminRead(actions: readonly string[]): SharedStudioAdminRead {
+  let current: Promise<StudioAdminGroupRead> | null = null;
+  return Object.freeze({
+    actions: Object.freeze([...actions]),
+    read(client: Pick<ReturnType<typeof createStudioAdminClient>, 'readGroup'>) {
+      if (current) return current;
+      const pending = client.readGroup(actions);
+      current = pending;
+      // A failed read is never reused; the next view or retry reads again.
+      pending.catch(() => { if (current === pending) current = null; });
+      return pending;
+    },
+    refresh() { current = null; },
+  });
+}
+
 export function studioPartnerResult(action: string, payload: JsonObject, gameOrigin?: string): StudioPartnerResult | null {
   const clean = (value: unknown, max: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f-\u009f]/.test(value);
   if (action === 'apikeys/create' || action === 'apikeys/rotate') {
@@ -308,6 +335,7 @@ type AdministrationViewProps = {
   available: (method: Method, action: string) => boolean; command: Command;
   onDirty?: (form: HTMLFormElement) => void;
   onReload?: () => void;
+  sections?: readonly string[];
 };
 
 function ResourceNotice({ resource, onReload, reloadLabel }: { resource?: Resource; onReload?: () => void; reloadLabel: string }) {
@@ -317,87 +345,19 @@ function ResourceNotice({ resource, onReload, reloadLabel }: { resource?: Resour
 }
 function EmptyRows({ count }: { count: number }) { return count ? null : <p>Servern returnerade inga poster.</p>; }
 
-type SavedDealer = { id: string; label: string };
-export function savedDealerOptions(value: unknown): SavedDealer[] | null {
-  try {
-    registeredDealerIds({ dealers: value });
-    if (!Array.isArray(value) || value.some(row => !object(row) || Object.keys(row).sort().join(',') !== 'id,label'
-      || typeof row.label !== 'string' || !row.label.trim() || row.label !== row.label.trim()
-      || row.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(row.label))) return null;
-    return value.map(row => ({ id: row.id, label: row.label }));
-  } catch { return null; }
-}
-export function newTechnicalLaneId(lanes: JsonObject[], newKey: () => string = () => crypto.randomUUID()) {
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const key = newKey();
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(key)) break;
-    const id = 'lane-' + key;
-    if (isGameLaneId(id) && !lanes.some(lane => lane.id === id)) return id;
-  }
-  throw new Error('Ett unikt tekniskt ID kunde inte skapas. Försök igen.');
-}
-export function TechnicalLaneCreate({ savedDealers, lanes, activeDealer, revision, busy, command }: {
-  savedDealers: unknown; lanes: JsonObject[]; activeDealer: unknown; revision: unknown; busy: boolean; command: Command;
-}) {
-  const automaticId = useRef<string | null>(null);
-  const [restore, setRestore] = useState(false), [error, setError] = useState('');
-  const dealers = savedDealerOptions(savedDealers);
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy || !dealers?.length || !validRevision(revision)) return;
-    const form = event.currentTarget, dealer = value(form, 'dealer'), name = value(form, 'name');
-    if (!dealers.some(row => row.id === dealer)) { setError('Välj en dealer från det sparade biblioteket.'); return; }
-    if (!name || name.length > 80 || /[\u0000-\u001f\u007f-\u009f<>]/u.test(name)) { setError('Ange ett namn med högst 80 tecken.'); return; }
-    try {
-      const id = restore ? value(form, 'restoreId') : (automaticId.current ??= newTechnicalLaneId(lanes));
-      if (!isGameLaneId(id) || lanes.some(lane => lane.id === id)) {
-        setError('Det tekniska ID:t är ogiltigt eller finns redan. Läs om befintliga spelkonfigurationer.'); return;
-      }
-      setError('');
-      command('game-lanes/create', { definition: { schemaVersion: 1, id, label: name, renderer: 'portrait-video', dealer, mediaCollection: dealer + '-presentation' }, expectedRevision: revision }, form);
-    } catch { setError('Ett unikt tekniskt ID kunde inte skapas. Försök igen.'); }
-  }
-  return <details className={styles.disclosure}><summary>Lägg till teknisk spelkonfiguration</summary>
-    <p className={styles.notice}>För vanliga spelrum använder du Publicering → Skapa spelrum. Här hanteras den tekniska spelkonfigurationen.</p>
-    {!dealers ? <p role="status">Dealerlistan från den sparade studion kunde inte läsas. Läs om serverdata innan du skapar en spelkonfiguration.</p>
-      : !dealers.length ? <p role="status">Inga dealers har registrerats. Lägg till en dealer innan du skapar en spelkonfiguration.</p>
-      : <form method="post" className={styles.form} onSubmit={submit} onReset={() => { automaticId.current = null; setRestore(false); setError(''); }}>
-        <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
-        <label>Dealer<select name="dealer" required disabled={busy} defaultValue={dealers.some(row => row.id === activeDealer) ? String(activeDealer) : ''}>
-          <option value="" disabled>Välj dealer</option>
-          {dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}
-        </select></label>
-        <details className={styles.disclosure}><summary>Avancerat: tekniskt ID och återställning</summary>
-          <p>Tekniskt ID skapas automatiskt och behålls vid återförsök. {automaticId.current ? <code>{automaticId.current}</code> : null}</p>
-          <label><input type="checkbox" checked={restore} disabled={busy} onChange={event => { if (!busy) { setRestore(event.target.checked); setError(''); } }} />Återställ ett tidigare tekniskt ID</label>
-          {restore ? <label>Tidigare tekniskt ID<input name="restoreId" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} disabled={busy} /></label> : null}
-          {restore ? <p>Använd bara ett känt ID för en saknad spelkonfiguration. Välj samma dealer som den tidigare definitionen.</p> : null}
-        </details>
-        <button disabled={busy}>Lägg till spelkonfiguration</button>
-        {error ? <p role="alert">{error}</p> : null}
-      </form>}
-  </details>;
-}
-
 /** Pure presentation export also allows isolated render/role tests without a live server. */
-export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload }: AdministrationViewProps) {
-  const selected = BACKOFFICE_GROUPS.find(item => item.id === group);
-  if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
-  const config = resources.config?.payload;
-  const registeredDealers = savedDealerOptions(config?.savedDealers);
-  const lanes = rows(config?.gameLanes);
-  const activeLane = typeof config?.gameLane === 'string' && config.gameLane !== 'original' ? config.gameLane : null;
-  const revision = config?.revision;
-  function mayWrite(action: string, needsRevision = false) {
+export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload, sections: only }: AdministrationViewProps) {
+  if (!studioAdminActor(actor) || !ACTIVE_GROUPS.some(item => item.id === group)) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
+  function mayWrite(action: string) {
     const descriptor = studioAdminEndpoint('POST', `/studio/api/admin/${action}`);
-    return Boolean(descriptor && studioRoleMeetsMinimum(actor.role, descriptor.minimumRole) && available('POST', action) && (!needsRevision || validRevision(revision)));
+    return Boolean(descriptor && studioRoleMeetsMinimum(actor.role, descriptor.minimumRole) && available('POST', action));
   }
-  function submit(action: string, build: (form: HTMLFormElement) => JsonObject, needsRevision = false) {
+  function submit(action: string, build: (form: HTMLFormElement) => JsonObject) {
     return (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (busy || !mayWrite(action, needsRevision)) return;
+      if (busy || !mayWrite(action)) return;
       const form = event.currentTarget;
-      command(action, { ...build(form), ...(needsRevision ? { expectedRevision: revision } : {}) }, form);
+      command(action, build(form), form);
     };
   }
   function passwordSubmit(playerId: unknown) {
@@ -418,15 +378,12 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       command('players/password', { playerId, password, reason: String(fields.get('reason') ?? '').trim() }, form);
     };
   }
-  function configNotice() {
-    return config && !validRevision(revision) ? <p className={styles.notice}>Serverns konfigurationsrevision saknas. Inställningar kan läsas men inte sparas.</p> : null;
-  }
   function unavailableWrite(action: string) {
     const descriptor = studioAdminEndpoint('POST', `/studio/api/admin/${action}`);
     return descriptor && studioRoleMeetsMinimum(actor.role, descriptor.minimumRole) && !available('POST', action) ? <p className={styles.notice}>Ändringen {action} är ännu inte ansluten. Ingen åtgärd skickas.</p> : null;
   }
   const overview = resources.overview?.payload;
-  const sections = selected.sections.filter(section => meetsStudioAdminSectionRole(actor.role, section));
+  const sections = visibleSections(group, only).filter(section => meetsStudioAdminSectionRole(actor.role, section));
   function missing(resource: Resource | undefined, kind: string) {
     const reloadLabel = kind === 'players' ? 'Hämta spelarkonton' : kind === 'users' ? 'Hämta konton' : 'Hämta serverdata';
     return <ResourceNotice resource={resource} onReload={onReload} reloadLabel={reloadLabel} />;
@@ -452,49 +409,6 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
           <p>Certifieringsunderlag: saknas.</p></details>
         </>}
-      </>}
-      {section === 'lanes' && <>
-        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('game-lane')}
-        <p className={styles.notice}>Gemensamma grundinställningar för nya Blackjack-spel. Bolagets presentation och spelrum hanteras i Publicering. Pågående spel behåller sin konfiguration.</p>
-        {config && <>
-          <p>Aktiv spelkonfiguration: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
-          {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" className={styles.inlineForm} onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
-            <label>Spelkonfiguration för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
-            <button disabled={busy}>Spara aktiv spelkonfiguration</button>
-          </form>}
-          {mayWrite('game-lanes/create', true) && <TechnicalLaneCreate savedDealers={config.savedDealers} lanes={lanes}
-            activeDealer={lanes.find(lane => lane.id === activeLane)?.dealer} revision={revision} busy={busy} command={command} />}
-          {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera spelkonfigurationer · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas den sista konfigurationen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
-            lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,
-          }), true)}>
-            <span>{label(lane.label)}</span>
-            {lane.id === activeLane && lanes.length > 1 && <label>Ny aktiv spelkonfiguration<select name="replacement" required disabled={busy}>{lanes.filter(other => other.id !== lane.id).map(other => <option key={label(other.id)} value={label(other.id)}>{label(other.label)}</option>)}</select></label>}
-            <button disabled={busy}>Ta bort {label(lane.label)}</button>
-          </form>)}</details>}
-          <a href="/blackjack" target="_blank" rel="noopener">Öppna Blackjack ↗</a>
-        </>}
-      </>}
-      {section === 'rooms' && <>
-        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('room')}
-        {config && <><EmptyRows count={rows(config.rooms).length} />{rows(config.rooms).map((room, index) => <div className={styles.row} key={label(room.id, String(index))}>
-          <div><strong>{label(room.name, label(room.id))}</strong><p>{label(room.tier)} · {label(room.state)}</p></div>
-          {mayWrite('room', true) && <form method="post" onSubmit={submit('room', form => ({ id: room.id, state: value(form, 'state') }), true)}>
-            <label>Status<select name="state" defaultValue={label(room.state, 'pending')} disabled={busy}><option value="live">live</option><option value="preview">preview</option><option value="pending">pending</option></select></label>
-            <button disabled={busy}>Spara rum</button>
-          </form>}
-        </div>)}</>}
-      </>}
-      {section === 'dealers' && <>
-        <p className={styles.notice}>Standardval för den äldre indelningen classic, high och vip. Dealers i bolagens publicerade spelrum styrs av respektive presentation.</p>
-        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('tier')}
-        {config && Object.entries(object(config.tiers) ?? {}).filter(([tier]) => ['classic', 'high', 'vip'].includes(tier)).map(([tier, dealer]) => <div className={styles.row} key={tier}>
-          <div><strong>{tier}</strong><p>Dealer: {label(dealer)}</p></div>
-          {mayWrite('tier', true) && <form method="post" onSubmit={submit('tier', form => ({ tier, dealer: value(form, 'dealer') }), true)}>
-            <label>Dealer<select name="dealer" required defaultValue={registeredDealers?.some(row => row.id === dealer) ? String(dealer) : ''} disabled={busy || !registeredDealers?.length}><option value="" disabled>Välj registrerad dealer</option>{registeredDealers?.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-            <button disabled={busy || !registeredDealers?.length}>Spara dealer</button>
-          </form>}
-        </div>)}
-        <p className={styles.notice}>Klipp och beteenden redigeras i Dealer &amp; klipp.</p>
       </>}
       {section === 'players' && <>
         <p>Spelarkonton ger tillgång till nivå 3: spelarlobbyn och spelen. För adminåtkomst använder du Bjud in adminpersonal – nivå 1 under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
@@ -602,7 +516,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
 
 export function StudioAdministration(props: StudioAdministrationProps) {
   const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin, props.readIdentity]);
-  const [group, setGroup] = useState(() => backofficeGroupId(props.initialGroup));
+  const [group, setGroup] = useState(() => ACTIVE_GROUPS.find(item => item.id === props.initialGroup)?.id ?? 'operations');
   const [actor, setActor] = useState<StudioAdminActor | null>(null);
   const [resources, setResources] = useState<Resources>({});
   const [busy, setBusy] = useState(false);
@@ -617,9 +531,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   const alive = useRef(false);
   const writing = useRef(false);
   const changed = useRef(false);
-  // An edited config form retains the revision it was based on, even after reload.
-  // Reloading must not silently rebase stale fields onto newer server data.
-  const draftForms = useRef(new Map<HTMLFormElement, string | undefined>());
+  // Edited forms survive reloads until they are saved or explicitly discarded.
+  const draftForms = useRef(new Set<HTMLFormElement>());
 
   useEffect(() => {
     const owner = studioHistory(window), canLeave = () => !changed.current && !writing.current;
@@ -646,18 +559,19 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     return () => window.removeEventListener('pagehide', clearOneTime);
   }, []);
 
-  async function load(target: string, preserveNotice = false, preserveOneTimeActor?: StudioAdminActor): Promise<boolean> {
+  async function load(target: string, preserveNotice = false, preserveOneTimeActor?: StudioAdminActor, shared?: SharedStudioAdminRead): Promise<boolean> {
     const ticket = ++sequence.current;
     activeRead.current?.abort();
     const controller = new AbortController(); activeRead.current = controller;
     if (alive.current) { setBusy(true); setFatal(null); if (!preserveNotice) setNotice(''); if (!preserveOneTimeActor) setOneTime(null); }
     try {
-      const reads = GROUP_READS[target];
-      if (!reads) throw new StudioAdminUiError(400);
+      // Each view reads only the sections it shows.
+      const reads = visibleSections(target, props.sections).flatMap(section => SECTION_READS[section] ?? []);
+      if (!reads.length) throw new StudioAdminUiError(400);
       let initialActor: StudioAdminActor;
       let results: { action: string; payload?: JsonObject; error?: StudioAdminUiError }[];
       if (props.readIdentity === 'response-headers-v1') {
-        const current = await client.readGroup(reads, controller.signal);
+        const current = shared && shared.actions.join() === reads.join() ? await shared.read(client) : await client.readGroup(reads, controller.signal);
         initialActor = current.actor; results = current.results;
       } else {
         initialActor = await client.identity();
@@ -687,14 +601,14 @@ export function StudioAdministration(props: StudioAdministrationProps) {
 
   useEffect(() => {
     alive.current = true;
-    void load(group);
+    void load(group, false, undefined, props.sharedRead);
     return () => { alive.current = false; ++sequence.current; activeRead.current?.abort(); };
     // The client identity/transport and local group define this read transaction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, group]);
 
   function changeGroup(next: string) {
-    if (!BACKOFFICE_GROUPS.some(item => item.id === next) || writing.current || next === group) return;
+    if (!ACTIVE_GROUPS.some(item => item.id === next) || writing.current || next === group) return;
     if (changed.current && !window.confirm('Lämna osparade formulärfält och byta administrationsgrupp?')) return;
     // Invalidate before React's passive cleanup, including fetches that ignore
     // cancellation. A cancelled draft confirmation leaves the current read intact.
@@ -715,7 +629,6 @@ export function StudioAdministration(props: StudioAdministrationProps) {
 
   async function command(action: string, body: JsonObject, form?: HTMLFormElement) {
     if (writing.current || busy || !actor) { delete body.password; return; }
-    if (form && CONFIG_COMMANDS.has(action) && draftForms.current.has(form)) body.expectedRevision = draftForms.current.get(form);
     writing.current = true; setBusy(true); setNotice(''); setFatal(null); setOneTime(null);
     const resultEpoch = oneTimeEpoch.current;
     try {
@@ -732,7 +645,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         return;
       }
       if (form) {
-        if (['players/create', 'players/password', 'users/invite', 'tournament', 'apikeys/create', 'game-lanes/create'].includes(action)) form.reset();
+        if (['players/create', 'players/password', 'users/invite', 'apikeys/create'].includes(action)) form.reset();
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
@@ -753,18 +666,19 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }
 
   const activeGroup = ACTIVE_GROUPS.find(item => item.id === group);
-  const area = activeGroup?.area ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
+  const area = activeGroup?.area ?? 'Drift';
   const areaGroups = ACTIVE_GROUPS.filter(item => item.area === area);
-  const pageTitle = activeGroup?.label ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration';
+  const pageTitle = activeGroup?.label ?? 'Administration';
+  // A view limited to some sections sits under its page's own heading.
+  const ownHeading = !props.sections;
   useEffect(() => {
     publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
     return () => publishShellStatus(null);
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
-    <PageTemplate eyebrow={group === 'finance' ? 'EKONOMI' : area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
-    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
+    <PageTemplate eyebrow={ownHeading ? (group === 'finance' ? 'EKONOMI' : area.toUpperCase()) : null} title={ownHeading ? pageTitle : null} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
-    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/admin/rooms')}>Spelbolag &amp; rum</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
@@ -777,14 +691,14 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       {oneTime.kind === 'credit' && <><h3>Demo-saldo bekräftat</h3><p>{oneTime.playerId}: {oneTime.balance} {oneTime.currency}</p></>}
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
-    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
+    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
     {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
       {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
         key={actor.username+':'+actor.role}
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}
         read={async(query,signal)=>(await client.request('GET','shared-table-proof',undefined,signal,actor,query)).payload}
       />:null}
-      <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
+      <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} sections={props.sections} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { draftForms.current.add(form); changed.current = true; setDirty(true); }} />
     </>}
   </div>;
 }

@@ -2,7 +2,7 @@
 
 Status: live, avvecklas vid ren start (clean slate). Astrids avatarer och fullfilsväg tas bort då; `gateway/`-modulerna importeras av spelmotorn för allt genererat tal och flyttas innan katalogen kan raderas.
 
-MuseTalk-worker för läppsynk och de strömningsmoduler spelmotorn använder. Katalognamnet kommer från Astrids ursprungliga implementation; sessionsvägen tar också registrerade dealers med egna verifierade referensbilder. Ursprung i [SOURCE.md](SOURCE.md). Import- och latenshistoriken från september 2026 finns i [docs/history/astrid-gpu-worker](../../docs/history/astrid-gpu-worker/IMPLEMENTATION-HANDOFF-2026-09.md). Dragans rörliga tal har en egen worker i [moving-gpu-worker](../moving-gpu-worker/README.md).
+MuseTalk-worker för läppsynk och de strömningsmoduler spelmotorn använder. Katalognamnet kommer från Astrids ursprungliga implementation; sessionsvägen tar också registrerade dealers med egna verifierade referensbilder. Ursprung i [SOURCE.md](SOURCE.md). Dragans rörliga tal har en egen worker i [moving-gpu-worker](../moving-gpu-worker/README.md).
 
 ## Delar
 

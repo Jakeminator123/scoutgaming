@@ -2,6 +2,7 @@ import {legacyControlBookmarkHref} from '../../lib/control-workspace.mjs';
 import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
+import { AdminLogout } from './components/studio/admin-logout';
 import Link, { navigate, previewHref, usePathname, useSearchParams } from '../runtime/navigation';
 import {isStudioAdminRoute,adminToolName} from '../runtime/admin-routing.mjs';
 import { RegisteredStudio } from './components/studio/registered-studio';
@@ -62,7 +63,7 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?(path==='/admin/scenes'?'Sceneditor':'Klippkarta'):pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?(path==='/admin/scenes'?'Sceneditor':'Klippkarta'):pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={studio ? path : retired ? retired.split('?')[0] : path} onChange={event => navigate(previewHref(event.target.value))}>
         <option value="/admin">Översikt</option>

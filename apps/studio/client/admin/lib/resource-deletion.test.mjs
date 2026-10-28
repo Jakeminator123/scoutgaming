@@ -175,7 +175,7 @@ test('dependency overview has an accessible active Admin link and unique resourc
   const componentUrl=new URL('../components/studio/studio-sidebar.tsx',import.meta.url),componentRequire=createRequire(componentUrl),module={exports:{}};
   let pathname='/admin/structure';
   runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
-    require:name=>name.includes('admin-navigation')?adminNavigation:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
+    require:name=>name.includes('admin-navigation')?adminNavigation:name==='./admin-logout'?{AdminLogout:()=>null}:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
   const dependencyLinks=()=>{
     const links=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='a'&&node.props.href==='/admin/structure');
     assert.ok(links.length,'the dependency overview remains reachable');
@@ -183,10 +183,38 @@ test('dependency overview has an accessible active Admin link and unique resourc
     return links;
   };
   assert.ok(dependencyLinks().every(link=>link.props['aria-current']==='page'));
+  assert.equal(nodes(module.exports.StudioSidebar(),node=>node.type?.name==='AdminLogout').length,1,'the menu holds the one Admin logout');
   pathname='/admin';assert.ok(dependencyLinks().every(link=>link.props['aria-current']===undefined));
   assert.notEqual(resourceAnchor('media','a:b'),resourceAnchor('media','a_3Ab'));
   assert.notEqual(resourceAnchor('media','é'),resourceAnchor('dealer','é'));
   assert.ok(!resourceAnchor('media','é:#').includes('%'));
+});
+
+// Admin's single logout: the same guard as a menu link, one request, then the login page.
+test('the Admin menu logout respects unsaved editors, ends the N1 session once and reports a failure',async()=>{
+  const componentUrl=new URL('../components/studio/admin-logout.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
+  const slots=[];let cursor=0;
+  const hooks={...React,useRef(initial){const index=cursor++;return slots[index]??={current:initial};},
+    useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=next;}];}};
+  let allowed=false,assigned=[],requests=[],respond=()=>Response.json({ok:true});
+  const login={createStudioLoginClient:({authBase})=>({async request(action,body){requests.push({authBase,action,body});const response=respond();if(!response.ok)throw new LoginError(response.status);return {ok:true};}}),StudioLoginUiError:class extends Error{}};
+  class LoginError extends login.StudioLoginUiError{constructor(status){super('Inloggningstjänsten är tillfälligt otillgänglig.');this.status=status;}}
+  const history={studioHistory:()=>({canNavigate:href=>{assert.equal(href,'/admin/login');return allowed;}})};
+  const module={exports:{}};
+  runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,window:{location:{assign:href=>assigned.push(href)}},
+    require:name=>name==='react'?hooks:name.includes('studio-login-client')?login:name.includes('studio-history')?history:componentRequire(name)});
+  const render=()=>{cursor=0;return expand(module.exports.AdminLogout());};
+  const button=()=>nodes(render(),node=>node.type==='button')[0];
+  assert.equal(text(button()).trim(),'Logga ut');
+  await button().props.onClick();await new Promise(setImmediate);
+  assert.deepEqual(requests,[],'an editor with unsaved changes keeps the session');assert.deepEqual(assigned,[]);
+  allowed=true;respond=()=>new Response('{}',{status:503});
+  button().props.onClick();button().props.onClick();await new Promise(setImmediate);
+  assert.equal(requests.length,1,'a double click sends one logout');assert.deepEqual(assigned,[]);
+  assert.match(text(nodes(render(),node=>node.props?.role==='alert')[0]),/tillfälligt otillgänglig/);
+  respond=()=>Response.json({ok:true});button().props.onClick();await new Promise(setImmediate);
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1))),{authBase:'/studio/api/auth',action:'logout',body:{}});
+  assert.deepEqual(assigned,['/admin/login']);
 });
 
 function publishedFixture(){
