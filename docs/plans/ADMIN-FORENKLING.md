@@ -394,6 +394,8 @@ Beslutsord: **behåll** (samma komponent, ny plats), **flytta**, **slå ihop**, 
 | 53 | Dold grupp `tables`, actions utan handler | – | `studio-administration.tsx:466-508` (UI borta i #500) | ta bort ur kontraktet efter orkestratorns ok | – | – | ingen anropare (kartan) |
 | 54 | tournament, pitboss, operator-create-demo | – | `studio-admin-contract.mjs` | ta bort efter orkestratorns ok | – | – | ingen anropare |
 | 55 | Inloggning | Logga in | `/admin/login` | behåll | – | `/studio/api/auth` | #497 |
+| 67 | Skapa bakgrund med AI | Scenmallar och material › Bakgrunder › Skapa bakgrund med AI | ny (`ai-background-dialog.tsx`, inte inkopplad) | ny efter O03 | Scenmallar och material › Bakgrunder | `OPENAI_API_KEY` → `POST /studio/api/layer-assets/generate` (1–4 förslag, sparar inget) → befintlig layer-asset-uppladdning | Jakob 28 okt; godkännandet är människan (Använd), sedan befintlig grind: scenmall och publicering |
+| 68 | Skapa bordsgrafik med AI | Bordsgrafik › Skapa bordsgrafik med AI | ny (samma dialog, `role="table"`) | ny efter O03 | Scenmallar och material › Bordsgrafik | samma väg; servern ritar insatsboxarna ur den filmade profilen (`filmed-table-template.mjs`) | bara Blackjack-dealers med filmad profil; målbild 4.5 |
 
 ### Nivå 2: Partnerportalen
 
@@ -410,3 +412,4 @@ Beslutsord: **behåll** (samma komponent, ny plats), **flytta**, **slå ihop**, 
 | 64 | Serverkontroll av sex behörigheter | – | bara overview.read, team.*, presentations.configure kontrolleras (`PS:466`) | ny kontroll per vy | `partner-data.mjs`, `partner-session.mjs` | `partner-access-policy.mjs` | kartan: Sex av tolv |
 | 65 | Kevins vy-id:n, DESTINATIONS, INTERNAL_LINKS, DEFAULT_ROLES, source-provenance | – | `kevin-bo/navigation.mjs`, `team.jsx` | ta bort | – | – | död kod (kartan: Döda vägar) |
 | 66 | Operatörspersonal, Intern administratör, Partnerportal, Spelbolag, Partners | ordlistans ord | `partner-copy.mjs` | byt ord | – | – | TERMINOLOGI |
+| 69 | Önska bakgrund | Hjälp och kontakt › Begär material | finns inte | ny; bara en förfrågan till Scoutgaming, aldrig en tillgång i bolagets paket | `/help` | via Begär material (rad 63) tills steg C | AI-bilder skapas bara av Scoutgamings personal (rad 67) och når bolaget via tilldelning |
