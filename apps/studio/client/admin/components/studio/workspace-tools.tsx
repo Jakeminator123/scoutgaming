@@ -49,7 +49,7 @@ export function WorkspaceTool({section}:{section:string}){
   const scopedRoomId=scopedRooms.length>1?scopedRooms:scopedRooms[0];
   let content;
   switch(section){
-    case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
+    case 'companies':content=<AdminPublicationPage {...common} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable}/>;break;
     case 'dealer-studio':content=<DealerMaterialPage project={data.project} dealerId={get('dealer')} navigationContext={studioNavigationContextFromQuery(q)} disabled={!data.connectedLane}/>;break;
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;

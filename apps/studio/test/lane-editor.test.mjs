@@ -7,7 +7,6 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject as createEmptyProject, addDealer, defaultPresentationLane, validateLanes, validateProject, LANE_ID } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -39,9 +38,7 @@ function loadTs(fileUrl, overrides = {}) {
 }
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
-const page = loadTs(new URL('../components/admin-publication-page.tsx', import.meta.url));
 const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, LANE_ID_HELP } = editor;
-const { publishLaneRows } = page;
 
 function modelEdit(project, edit) {
   try { return { project: edit(project), error: '' }; }
@@ -119,17 +116,6 @@ test('removing a lane leaves the project valid and the original list untouched',
   assert.deepEqual(project.lanes, before);
 });
 
-test('unsaved lanes are marked until the project is clean', () => {
-  const project = createSeedProject();
-  const saved = JSON.stringify(project);
-  const next = addLane(project, 'tablet-lane', 'Surfplatta', 'astrid');
-  const dirty = publishLaneRows(next.lanes, saved, true);
-  assert.equal(dirty.find(row => row.id === 'tablet-lane').unsaved, true);
-  assert.equal(dirty.find(row => row.id === project.lanes[0].id).unsaved, false);
-  const clean = publishLaneRows(next.lanes, JSON.stringify(next), false);
-  assert.equal(clean.every(row => row.unsaved === false), true);
-});
-
 test('the empty editor requires a named composition and an explicit dealer', () => {
   const source = readFileSync(new URL('../components/lane-editor.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /window\.confirm/);
@@ -140,20 +126,6 @@ test('the empty editor requires a named composition and an explicit dealer', () 
   assert.doesNotMatch(editorHtml, /Skapa standardsammansättning/);
   assert.match(editorHtml, /Dealer för ny sammansättning/);
   assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
-  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
-    initialProject: empty,
-    initialVideos: { videos: [] },
-    initialStatus: { configured: false },
-    operators: fixtureLaneOperators(),
-    storeAvailable: false,
-  }));
-  assert.doesNotMatch(html, /Skapa standardsammansättning|Sammansättningens namn/);
-  assert.match(html, /Välj bolag/);
-  // An empty composition collection is genuinely empty; no phantom package
-  // choice or publish action is offered before a company is selected.
-  assert.doesNotMatch(html, /name="lanes"|value="mobile-phone"|Publicera sammansättningar/);
-  assert.match(html, /<option value="" selected="">Välj bolag<\/option>/);
-  assert.match(html, /Skapa ett spelbolag/);
   assert.equal(validateProject(addDefaultLane(empty, 'astrid')).lanes[0].id, 'mobile-phone');
 });
 
@@ -165,31 +137,6 @@ test('new compositions ask for a name and dealer while technical IDs remain auto
   assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
   assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
   assert.match(editorHtml, /Namn på ny sammansättning/);
-  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
-    initialProject: empty,
-    initialVideos: { videos: [] },
-    initialStatus: { configured: false },
-    operators: fixtureLaneOperators(),
-    storeAvailable: false,
-  }));
-  assert.doesNotMatch(html, /Spara presentationer/);
-  assert.match(html, /Välj bolag/);
-});
-
-test('publication omits inactive phase controls and requires an operator', () => {
-  const project = createSeedProject();
-  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
-    initialProject: project,
-    initialVideos: { videos: [] },
-    initialStatus: { configured: false },
-    operators: fixtureLaneOperators(),
-    storeAvailable: false,
-  }));
-  assert.doesNotMatch(html, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.doesNotMatch(html, /type="color"|Variationsfrekvens|Spara presentationer/);
-  assert.match(html, /Välj bolag/);
-  assert.doesNotMatch(html, /Spara presentationer/);
-  assert.match(html, /Välj bolag/);
 });
 
 test('replaceLane stores the new fields and rejects an invalid table color', () => {

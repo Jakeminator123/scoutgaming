@@ -5,7 +5,7 @@ export {adminNavigationGroups,adminSystemGroups} from '../../../../../packages/n
 import {adminNavigationGroups,adminSystemGroups} from '../../../../../packages/navigation/admin-navigation.mjs';
 // Contextual tools belong to their resource, never to a second tool directory.
 export const adminToolHomes:Record<string,string>={
-  companies:'/admin/companies',publication:'/admin/rooms',
+  companies:'/admin/companies',
   'dealer-studio':'/admin/clips','dealer-agent':'/admin/clips',
   'media-review':'/admin/clips',replies:'/admin/clips',events:'/admin/clips',guide:'/admin/guide',
 };

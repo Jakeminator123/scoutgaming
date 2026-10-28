@@ -1,6 +1,6 @@
 // Document destinations only. APIs and authentication retain their own contracts.
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
-  companies: 'Bolag & team', publication: 'Rum & publicering',
+  companies: 'Bolag & team',
   'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek', 'media-review': 'Talgranskning',
   events: 'Spelhändelser & regler', guide: 'Hjälp',
   'dealer-agent': 'Dialogtest',
