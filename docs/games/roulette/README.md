@@ -2,7 +2,7 @@
 
 Europeisk roulette med enkel nolla, spelbar i publicerade rum via `/play/roulette`. Spelmotorn (`services/game`, Render `croupier-v3`) äger dragning, saldo och kvitton. Det enda rouletterum som byggts är demorummet *Anna · Roulette · Demo* hos bolaget `scoutgaming-demo`; det tas bort vid ren start (clean slate), när bara Johns Bet blir kvar. Ingen komplett dealer- eller utfallsbank är godkänd.
 
-[Teknisk referens](TEKNIK.md) · [Klippkarta och signaler](KLIPPKARTA.md) · [Krav på utfallsbank](UTFALLSFILMER.md) · [Klipp och format](../KLIPP-OCH-FORMAT.md) · Historik: [oktober 2026](../../history/games/roulette/README-2026-10.md)
+[Teknisk referens](TEKNIK.md) · [Klippkarta och signaler](KLIPPKARTA.md) · [Krav på utfallsbank](UTFALLSFILMER.md) · [Klipp och format](../KLIPP-OCH-FORMAT.md)
 
 ## Regler
 

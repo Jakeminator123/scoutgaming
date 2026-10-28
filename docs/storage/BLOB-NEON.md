@@ -1,6 +1,6 @@
 # Klipp, Neon och Blob
 
-Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegreppen (dealer, bolag, rum, mall, paket, spelinställningar, klippkartan) står i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), uppspelningskontrakten i [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md). Planen och kvittona från 17 oktober 2026 (Kevin-underlag, Dragan-dubbletter, workerbygget) finns i [historiken](../history/BLOB-NEON-2026-10.md).
+Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegreppen (dealer, bolag, rum, mall, paket, spelinställningar, klippkartan) står i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), uppspelningskontrakten i [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md).
 
 ## Lagringsgränsen
 

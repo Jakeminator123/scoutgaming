@@ -2,8 +2,7 @@
 
 Ingång till de AI-dokument som gäller i dag. Kod, promptpaket och maskinlästa
 kontrakt ligger vid implementationen; dokumenten här förklarar ansvar och
-gränser. Daterad samordning, prov och ändringslogg till och med 27 oktober 2026
-finns i [historiken](../history/AI-AGENTFLODE-2026-10.md).
+gränser.
 
 | Behov | Läs här |
 | --- | --- |
@@ -11,7 +10,7 @@ finns i [historiken](../history/AI-AGENTFLODE-2026-10.md).
 | Spelarens tal: Director → Gateway → `croupier-speech` | [Produkttal](openclaw/PRODUCT-SPEECH-DEPLOYMENT-SV.md) |
 | Director, Gateway, nycklar och Render-drift | [Drift](openclaw/DEPLOYMENT.md) |
 | OpenClaws egen dashboard | [Dashboard](openclaw/DASHBOARD-SV.md) |
-| Astrids labbchatt, profil och minne | [Social chatt](openclaw/SOCIAL-CHAT.md) och [Companion](openclaw/COMPANION.md) |
+| Astrids labbchatt, profil och minne | [Astrids labbchatt](openclaw/ASTRID-LABBCHATT.md) (avvecklas) |
 | Runtimepaketet som Gateway-rollerna får | [Runtime-bundle](../../services/openclaw/lab/deploy/runtime-bundle/README.md) |
 | Medier och uppspelning | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Miljövariabler | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
@@ -48,5 +47,4 @@ modellbyte.
 - Ändringar i `packages/director` eller `services/openclaw/lab` når drift först
   när Director respektive Gateway har deployats om.
 - Astrid tas bort vid ren start. Hennes labbchatt och companion finns kvar i
-  koden tills dess. De ursprungliga kamera- och Slack-planerna för Astrid
-  ligger i [docs/history/AI](../history/AI/).
+  koden tills dess.

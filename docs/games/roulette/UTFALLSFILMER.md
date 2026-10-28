@@ -1,6 +1,6 @@
 # Roulette: krav på utfallsbank
 
-Krav på en framtida bank med 37 utfall. Inget av detta är implementerat; i dag visar spelet serverns utfall med det ritade hjulet och kulan i `wheel-motion.mjs`. Anna-proven, Runway-filmerna, trackingutredningen och genomförandeplanen från oktober finns i [historiken](../../history/games/roulette/UTFALLSFILMER-2026-10.md).
+Krav på en framtida bank med 37 utfall. Inget av detta är implementerat; i dag visar spelet serverns utfall med det ritade hjulet och kulan i `wheel-motion.mjs`.
 
 ## Vad banken ska innehålla
 

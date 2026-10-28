@@ -7,4 +7,4 @@ En ingång per spel. Koden avgör vad spelet gör; bolagets publicerade paket av
 - [Klipp och format](KLIPP-OCH-FORMAT.md): lagerroll, handling, pose, filformat, visningsprofil och godkännande för båda spelen.
 - [Partner-API v1](partner-api.md): HTTP-kontraktet för partnerintegrationer.
 
-Redigera respektive spels README och dess ämnesdokument här, och länka hit i stället för att kopiera mått eller regler. Mottagna planeringsunderlag, källregister och daterade analyser ligger i [docs/history/games](../history/games/); de är källbevis, inte gällande standarder.
+Redigera respektive spels README och dess ämnesdokument här, och länka hit i stället för att kopiera mått eller regler.

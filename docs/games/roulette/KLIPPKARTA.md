@@ -1,6 +1,6 @@
 # Roulette: signaler, filmfack och lager
 
-[Rouletteguiden](README.md) · [Teknisk referens](TEKNIK.md) · [Krav på utfallsbank](UTFALLSFILMER.md). Materialinventeringen och Anna-proven från 13 oktober finns i [historiken](../../history/games/roulette/KLIPPKARTA-2026-10.md).
+[Rouletteguiden](README.md) · [Teknisk referens](TEKNIK.md) · [Krav på utfallsbank](UTFALLSFILMER.md).
 
 ## Separation mellan spelen
 

@@ -1,6 +1,6 @@
 # Scoutgaming: lagring och uppspelning av presentationen
 
-Det här är det tekniska kontraktet för hur dealerns media lagras, fryses vid publicering och spelas upp i spelet. Det beskriver vad koden på `main` gör i dag. Produktord står i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), användarsteg i [Studio-guiden](../apps/studio/docs/README.md) och aktuellt läge, deploy-SHA och acceptans i [NEXT-AGENT](NEXT-AGENT.md). Daterade beslut, kvitton och experimentberättelser (Astrid, Dragan, Kevin, roulette) från oktober 2026 finns i [historikkopian](history/LOCAL-PRESENTATION-RUNTIME-2026-10.md).
+Det här är det tekniska kontraktet för hur dealerns media lagras, fryses vid publicering och spelas upp i spelet. Det beskriver vad koden på `main` gör i dag. Produktord står i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), användarsteg i [Studio-guiden](../apps/studio/docs/README.md) och aktuellt läge, deploy-SHA och acceptans i [NEXT-AGENT](NEXT-AGENT.md).
 
 Kodens kontrakt går före texten. Källorna ligger i `packages/presentation/contracts/` (rena format och validering), `packages/presentation/server/` (publicering, frysning, urval), `packages/presentation/runtime/` (spelarens scen) och `services/game/` (spelmotorn och spelarens sida).
 
