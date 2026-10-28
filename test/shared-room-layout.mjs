@@ -118,7 +118,7 @@ test('desktop seats stand on the filmed landings of an automatic table, on Admin
 });
 
 function viewDocument() {
-  const ids = ['scene', 'seats', 'chips', 'balance', 'total-bet', 'last-win', 'banner', 'deal-now', 'insurance', 'ins-yes', 'ins-no', 'actions', 'actions-top', 'hud-bottom', 'top-right', 'table-profile', 'limits', 'sound-btn'];
+  const ids = ['scene', 'seats', 'chips', 'balance', 'total-bet', 'last-win', 'banner', 'deal-now', 'insurance', 'ins-yes', 'ins-no', 'actions', 'actions-top', 'hud-bottom', 'top-right', 'table-profile', 'limits', 'sound-btn', 'pitboss'];
   const nodes = new Map(ids.map(id => { const node = new Element(); node.id = id; return [id, node]; }));
   const act = parent => ['hit', 'stand', 'double', 'split'].map(action => { const node = new Element('button'); node.dataset.act = action; parent.append(node); return node; });
   const top = act(nodes.get('actions-top')), mini = act(nodes.get('actions'));
@@ -231,4 +231,22 @@ test('a composition plane keeps its seat and card layout when the bottom control
   for (const node of [nodes.get('scene'), nodes.get('table2d')]) node.getBoundingClientRect = () => ({ left: 0, top: 0, width: 390, height: 700, right: 390, bottom: 700 });
   port.layout(value);assert.notDeepEqual(projections.at(-1), kept, 'a resize measures the bottom controls anew');
   port.close();
+});
+
+// Review of #536: the 24-hour pause asks first and is not called Spelpaus (the national self-exclusion register).
+test('the 24-hour pause is named Ta paus and dispatches only after Ja, pausa in its confirmation', () => {
+  const { document, nodes } = viewDocument(), calls = [];
+  const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args) });
+  view.render({ snapshot: seatedAt([3], { phase: 'round', roundId: 'r1' }), can: { ...everything, bet: false }, notice: '', connected: true });
+  const pause = nodes.get('pitboss'), ask = nodes.get('scene').children.find(node => node.id === 'shared-room-pause');
+  assert.equal(pause.attributes['aria-label'], 'Ta paus i 24 timmar'); assert.match(pause.textContent, /^Ta paus/); assert.doesNotMatch(pause.textContent, /Spelpaus/);
+  assert.equal(ask.tagName, 'DIALOG'); assert.equal(ask.hidden, true); assert.equal(ask.attributes['aria-labelledby'], 'shared-room-pause-title');
+  assert.ok(ask.textContent.startsWith('Pausa spelet i 24 timmar?Du kan inte spela vid bordet förrän pausen gått ut.'), ask.textContent);
+  const [cancel, accept] = ask.children.at(-1).children;
+  pause.click(); assert.equal(ask.hidden, false); assert.deepEqual(calls, [], 'opening the question sends nothing');
+  cancel.click(); assert.equal(ask.hidden, true); assert.deepEqual(calls, []);
+  pause.click(); accept.click(); assert.deepEqual(calls, [['pause']]); assert.equal(ask.hidden, true);
+  pause.disabled = true; pause.dispatchEvent(new Event('click')); assert.equal(ask.hidden, true, 'a running pause asks nothing');
+  assert.equal(nodes.get('banner').title, nodes.get('banner').textContent, 'the clamped status line keeps its full text');
+  view.close();
 });

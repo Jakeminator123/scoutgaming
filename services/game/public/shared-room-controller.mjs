@@ -6,7 +6,7 @@ const fail = () => { throw new TypeError('shared_room_invalid_controls'); };
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
 const messages = {
   STALE_COMMAND:'Bordet har ändrats. Använd de aktuella kontrollerna.', REQUEST_REUSED:'Kommandot kunde inte bekräftas. Ladda om sidan.',
-  PAUSED:'Din spelpaus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
+  PAUSED:'Din paus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
   INSUFFICIENT_BALANCE:'Ditt tillgängliga demosaldo räcker inte.', LIMITS:'Insatsen ligger utanför bordets gränser.',
   BETTING_CLOSED:'Insatsfönstret är stängt.', READY:'Du är redan redo. Vänta på de andra spelarna.',
   NO_BETS:'Lägg en insats först.', NO_REPEAT:'Det finns ingen tidigare insats att upprepa.',

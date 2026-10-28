@@ -1153,7 +1153,19 @@ html[data-shared-room="1"] #undo-btn, html[data-shared-room="1"] #double-btn { w
   #shared-room-actions > #banner { padding: 6px 10px; }
   .shared-room-actions { gap: 6px 8px; }
 }
-/* Spelpaus 24 timmar is responsible gaming: one of the seat controls, reachable in every phase. */
+/* Ta paus i 24 timmar is responsible gaming: one of the seat controls, reachable in every phase, confirmed in a dialog. */
 html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex; align-items: center; justify-content: center; gap: .45em; width: auto; height: auto; }
 .seat-shared.active .seat-shared-join[aria-disabled="true"] { cursor: default; }
 @media (max-width: 860px) { .shared-room-controls .shared-room-long { display: none; } }
+/* The pause confirmation: a modal dialog in the table's look; the page behind dims. */
+.shared-room-dialog { margin: auto; max-width: min(420px, calc(100vw - 32px)); padding: 20px 22px; border-radius: 16px; border: 1px solid rgba(214,255,58,.35);
+  background: rgba(10,11,13,.97); color: #F2F1ED; box-shadow: 0 24px 70px rgba(0,0,0,.6); font: 14px/1.5 Inter, sans-serif; }
+.shared-room-dialog::backdrop { background: rgba(10,11,13,.62); }
+.shared-room-dialog h2 { margin: 0 0 8px; font: 600 17px/1.3 'Space Grotesk', sans-serif; }
+.shared-room-dialog p { margin: 0 0 16px; color: #c9cbd2; }
+.shared-room-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.shared-room-dialog[hidden] { display: none; }
+/* A narrow phone keeps the status line to two lines; the full text stays in its title and for screen readers. */
+@media (max-width: 400px) {
+  #shared-room-actions > #banner { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+}

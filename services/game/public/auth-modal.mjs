@@ -39,7 +39,7 @@ $('form').onsubmit=async e=>{
 export function requestLogin(purpose){
   if(pending)return pending;
   // The dialog names the same table as the page heading (#table-profile), never a fixed stake profile.
-  $('.auth-eyebrow').textContent=document.getElementById('table-profile')?.textContent.trim()||'Blackjack';
+  const eyebrow=$('.auth-eyebrow');if(eyebrow)eyebrow.textContent=document.querySelector?.('#table-profile')?.textContent?.trim()||'Blackjack';
   generation++;capabilityReady=false;$('#auth-submit').disabled=true;$('#auth-error').textContent='Checking sign-in…';$('#auth-purpose').textContent=purpose;$('#auth-password').value='';playerEntry.hidden=true;dialog.returnValue='';
   pending=new Promise(resolve=>dialog.addEventListener('close',()=>{const ok=dialog.returnValue==='authenticated';pending=null;$('#auth-password').value='';resolve(ok);},{once:true}));dialog.showModal();void loadCapability(generation);return pending;
 }

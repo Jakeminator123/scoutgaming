@@ -59,13 +59,30 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   const profile=$(document,'table-profile');if(profile)profile.textContent='Blackjack';
   const labels={ 'undo-btn':['Ångra','undo'], 'clear-btn':['Rensa','clear'], 'double-btn':['Dubbla','doubleBets'],
     'max-btn':['Upprepa','repeat'], 'all-sides':['Alla platser','allSeats'], 'add-funds':['Fyll på demosaldo','refill'],
-    'pitboss':['Spelpaus 24 timmar','pause'], 'deal-now':['Redo','ready'] };
-  for(const [id,[label,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.textContent=label;node.setAttribute('aria-label',label);listen(node,()=>actions?.dispatch(op));}
+    'pitboss':['Ta paus i 24 timmar','pause'], 'deal-now':['Redo','ready'] };
+  // The 24-hour pause asks first (confirmPause); every other control acts at once.
+  for(const [id,[label,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.textContent=label;node.setAttribute('aria-label',label);listen(node,()=>op==='pause'?confirmPause():actions?.dispatch(op));}
   // The 24-hour pause is responsible gaming and the server takes it in every phase, also mid-round: it sits with the
-  // seat controls, outside the betting-window buttons that a round hides. A phone shows "Spelpaus"; its name keeps 24 h.
+  // seat controls, outside the betting-window buttons that a round hides. A phone shows "Ta paus"; its name keeps 24 h.
+  // Not "Spelpaus": that is the national self-exclusion register (spelpaus.se), which this pause must not be mistaken for.
   const pause=$(document,'pitboss');
-  if(pause&&topRight){pause.classList?.add('shared-room-button','shared-room-pause');pause.textContent='Spelpaus';
-    const hours=document.createElement('span');hours.className='shared-room-long';hours.textContent='24 timmar';pause.append(hours);extra.insertBefore?.(pause,sound??null);}
+  if(pause&&topRight){pause.classList?.add('shared-room-button','shared-room-pause');pause.textContent='Ta paus';
+    const hours=document.createElement('span');hours.className='shared-room-long';hours.textContent='i 24 timmar';pause.append(hours);extra.insertBefore?.(pause,sound??null);}
+  // The pause is confirmed in a modal dialog: keyboard and screen reader reach it, Escape and Avbryt cancel, and
+  // focus starts on Avbryt and returns to the pause button.
+  const ask=document.createElement('dialog');ask.id='shared-room-pause';ask.className='shared-room-dialog';
+  ask.setAttribute('aria-labelledby','shared-room-pause-title');ask.setAttribute('aria-describedby','shared-room-pause-text');
+  const askTitle=document.createElement('h2');askTitle.id='shared-room-pause-title';askTitle.textContent='Pausa spelet i 24 timmar?';
+  const askText=document.createElement('p');askText.id='shared-room-pause-text';askText.textContent='Du kan inte spela vid bordet förrän pausen gått ut.';
+  const askRow=document.createElement('div');askRow.className='shared-room-dialog-actions';
+  const cancelPause=button(document,'Avbryt',()=>closeAsk());cancelPause.className='shared-room-button';cancelPause.autofocus=true;
+  const acceptPause=button(document,'Ja, pausa',()=>{closeAsk();actions?.dispatch('pause');});acceptPause.className='shared-room-button shared-room-primary';
+  askRow.append(cancelPause,acceptPause);ask.append(askTitle,askText,askRow);ask.hidden=typeof ask.showModal!=='function';(document.body??scene).append(ask);
+  function closeAsk(){if(typeof ask.close==='function'){if(ask.open)ask.close();}else ask.hidden=true;}
+  function confirmPause(){
+    if(closed||pause?.disabled)return;
+    if(typeof ask.showModal==='function'){if(!ask.open)ask.showModal();cancelPause.focus?.();}else ask.hidden=false;
+  }
   const decisions=[...document.querySelectorAll('[data-act]')].filter(node=>!node.closest?.('#actions'));
   for(const node of decisions)listen(node,()=>actions?.dispatch('act',{action:node.dataset.act}));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
@@ -202,7 +219,9 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       if(profile)profile.textContent=tableProfileName(s.settings);
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
-      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Spelpaus aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
+      $(document,'banner').title=$(document,'banner').textContent;
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
       picker.value='';picker.disabled=!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
       const key=JSON.stringify(s.settings.chips);
@@ -238,6 +257,6 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       onScreen();keepFocusSoon();
     },
     get snapshot(){return model?.snapshot;},
-    close(){if(closed)return;closed=true;cleanups.forEach(fn=>fn());actions=null;},
+    close(){if(closed)return;closeAsk();closed=true;cleanups.forEach(fn=>fn());actions=null;},
   });
 }

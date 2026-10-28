@@ -53,7 +53,7 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
       assert.equal(state.windows, phone, `${viewport.width}: seat window chooser`);
       if (phone) assert.match(state.windowText, /^Visa platser \d–\d$/);
       assert.equal(state.leave, snapshot.me.seats.length > 0, `${viewport.width}, ${label}: Lämna platser`);
-      assert.equal(state.pause, true, `${viewport.width}, ${label}: Spelpaus is reachable in every phase`);
+      assert.equal(state.pause, true, `${viewport.width}, ${label}: Ta paus is reachable in every phase`);
       assert.equal(state.heading, 'Privé Blackjack');
       // K04 F15: one decision panel, never the native mini bar beside it.
       assert.equal(state.nativeBar, false);
@@ -74,7 +74,7 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
 
 // Review of #536: sit, bet, get ready, decide, insure and settle through real clicks (Playwright refuses a click that
 // lands on another element), the 24-hour pause in every phase, and cards that stay put between phases on a plane.
-test('Chrome shared-table play path: every phase\'s controls take a real click and Spelpaus works mid-round', { skip, timeout: 300000 }, async t => {
+test('Chrome shared-table play path: every phase\'s controls take a real click and the confirmed 24-hour pause works mid-round', { skip, timeout: 300000 }, async t => {
   const fixture = await openLayoutFixture(browserModule, { channel });
   t.after(() => fixture.close());
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
@@ -82,7 +82,19 @@ test('Chrome shared-table play path: every phase\'s controls take a real click a
       const { page, context, show } = await fixture.open(viewport, { plane });
       const last = () => page.evaluate(() => window.fixture.sent.at(-1));
       const button = name => page.getByRole('button', { name, exact: true });
-      const pauses = async phase => { await button('Spelpaus 24 timmar').click(); assert.equal((await last()).op, 'pause', `${viewport.width} ${phase}: pause`); };
+      // The 24-hour pause asks first: Avbryt and Escape send nothing and give focus back, Ja, pausa sends it.
+      const pauses = async phase => {
+        const before = await page.evaluate(() => window.fixture.sent.length), dialog = page.getByRole('dialog', { name: 'Pausa spelet i 24 timmar?' });
+        await button('Ta paus i 24 timmar').click(); await dialog.waitFor();
+        assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Avbryt', `${viewport.width} ${phase}: focus starts on Avbryt`);
+        assert.match(await dialog.textContent(), /Du kan inte spela vid bordet förrän pausen gått ut./);
+        await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+        await button('Ta paus i 24 timmar').click(); await button('Avbryt').click(); await dialog.waitFor({ state: 'hidden' });
+        assert.equal(await page.evaluate(() => window.fixture.sent.length), before, `${viewport.width} ${phase}: cancel sends nothing`);
+        assert.equal(await page.evaluate(() => document.activeElement?.id), 'pitboss', `${viewport.width} ${phase}: focus returns to the pause`);
+        await button('Ta paus i 24 timmar').click(); await button('Ja, pausa').click();
+        assert.equal((await last()).op, 'pause', `${viewport.width} ${phase}: pause`);
+      };
       const where = `${viewport.width}${plane ? ' plane' : ''}`;
       await show(tableSnapshot({ version: 1, others: { 1: 'bob' } }));
       await button('Välj plats 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
