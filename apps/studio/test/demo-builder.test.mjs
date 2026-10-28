@@ -250,36 +250,78 @@ test('/admin/demo is a served Admin page and a valid return address',()=>{
   assert.equal(designPreviewReturnTo('/studio/admin/demo?operator=johns-bet'),'/admin/demo?operator=johns-bet');
 });
 
-// Sidan som den renderas i steg 4 med ett komplett formulär: DemoBuilder:s tillstånd
-// (katalog, session, uppdatering, demon, lansering, återkallelse, krediter) i den ordning
-// komponenten anropar useState. Underkomponenterna i steg 4 har inga egna hooks.
-function renderDemoStep4(){
-  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
-  const file=new URL('../client/admin/components/studio/demo-builder.tsx',import.meta.url);
-  const {code}=require('next/dist/build/swc').transformSync(readFileSync(file,'utf8'),{filename:'demo-builder.tsx',
-    jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
-  let state=nextStep(chooseCompany(initialDemoState(),'op-johns'));
-  state=editDemo(nextStep(nextStep(chooseRoom(state,demoRooms(administration(),'op-johns')[0]))),'name','Johns demo');
-  const slots=[{status:'ready',value:administration()},{status:'ready',value:demoPermissions(adminSession())},0,state,{phase:'idle'},{phase:'idle'},{status:'ready',value:null}];
+// Sidan renderad på servern med kitets riktiga komponenter (components/ui, klientens React och paket).
+// Demo-byggarens egna hooks ersätts: useState ger tillstånden i `slots` i den ordning sidan anropar dem
+// (DemoBuilder: katalog, session, uppdatering, demon, lansering, återkallelse, krediter, bekräftelse;
+// därefter kvittots Kopiera och Fyll på när demon är klar). Kitets komponenter har riktiga hooks.
+const {transformSync}=createRequire(import.meta.url)('esbuild');
+const clientRequire=createRequire(new URL('../client/admin/components/ui/kit.tsx',import.meta.url));
+const ClientReact=clientRequire('react'),{renderToStaticMarkup}=clientRequire('react-dom/server');
+function renderDemo(slots){
   let slot=0;
-  const hooks={...React,useState:()=>[slots[slot++],()=>{}],useEffect:()=>{},useMemo:fn=>fn(),useRef:current=>({current})};
-  const Link=({href,children,...rest})=>React.createElement('a',{href,...rest},children);
-  const module={exports:{}};
-  vm.runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,require:name=>name==='react'?hooks
-    :name==='react/jsx-runtime'?require(name):name.endsWith('/runtime/navigation')?{__esModule:true,default:Link}
-    :name.endsWith('.module.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}
-    :name.endsWith('/lib/demo-builder.mjs')?demoLib:require(name)},{filename:'demo-builder.tsx'});
-  return renderToStaticMarkup(module.exports.DemoBuilder());
+  const hooks={...ClientReact,useState:()=>[slots[slot++],()=>{}],useEffect:()=>{},useMemo:fn=>fn(),useRef:current=>({current})};
+  const Link=({href,children,...rest})=>ClientReact.createElement('a',{href,...rest},children);
+  const navigation={__esModule:true,default:Link,usePathname:()=>'/admin/demo',useSearchParams:()=>new URLSearchParams()};
+  const modules=new Map();
+  const load=url=>{
+    if(modules.has(url.href))return modules.get(url.href).exports;
+    const module={exports:{}};modules.set(url.href,module);
+    const own=createRequire(url),demo=url.pathname.endsWith('/demo-builder.tsx');
+    const resolve=name=>name==='react'?(demo?hooks:ClientReact):name==='react/jsx-runtime'?clientRequire(name):name.endsWith('/runtime/navigation')?navigation
+      :name.endsWith('/lib/demo-builder.mjs')?demoLib:name.startsWith('.')&&!/\.m?js$/.test(name)?load(new URL(name+(name.endsWith('.tsx')?'':'.tsx'),url))
+      :name.startsWith('.')?own(name):clientRequire(name);
+    vm.runInNewContext(transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,require:resolve,URL,URLSearchParams,setTimeout,clearTimeout},{filename:url.pathname});
+    return module.exports;
+  };
+  return renderToStaticMarkup(ClientReact.createElement(load(new URL('../client/admin/components/studio/demo-builder.tsx',import.meta.url)).DemoBuilder));
 }
+const step4State=()=>{
+  const state=nextStep(chooseCompany(initialDemoState(),'op-johns'));
+  return editDemo(nextStep(nextStep(chooseRoom(state,demoRooms(administration(),'op-johns')[0]))),'name','Johns demo');
+};
+const renderDemoStep4=()=>renderDemo([{status:'ready',value:administration()},{status:'ready',value:demoPermissions(adminSession())},0,step4State(),{phase:'idle'},{phase:'idle'},{status:'ready',value:null},null]);
+// Synligt innehåll och de hopfällda tekniska detaljerna längst ner.
+const visible=html=>html.slice(0,html.indexOf('<details'));
+const technical=html=>html.slice(html.indexOf('<details'));
 
 test('Skapa demolänk is off with the reason while DEMO_LAUNCH_ENABLED is false; steps 1–3 and Din demo still show the choices',{skip:DEMO_LAUNCH_ENABLED&&'demolänken är påslagen'},()=>{
   assert.equal(DEMO_LAUNCH_ENABLED,false);
   const html=renderDemoStep4();
-  assert.match(html,/<h2>4\. Lansera<\/h2>/);
+  assert.match(html,/<h2[^>]*>4\. Lansera<\/h2>/);
   const button=html.match(/<button[^>]*>Skapa demolänk<\/button>/)?.[0];
   assert.ok(button,'knappen finns');assert.match(button,/disabled=""/,'knappen är inaktiv');
   assert.ok(html.includes(DEMO_LAUNCH_OFF_TEXT),'texten står vid knappen');
   assert.equal(DEMO_LAUNCH_OFF_TEXT,'Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget, efter O03; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.');
   for (const choice of ['Johns Bet','PAOW Blackjack','PAOW','Johns demo','demo-Johns demo'])assert.ok(html.includes(choice),'Din demo visar '+choice);
   assert.doesNotMatch(html,/landar direkt|vid spelbordet/,'inga löften om att demon sätter sig vid bordet');
+});
+
+test('identities stay in Tekniska detaljer: company, table, dealer and the server actions are not in the visible page',()=>{
+  const html=renderDemoStep4();
+  assert.ok(html.includes('<details'),'Tekniska detaljer finns');
+  for (const id of ['op-johns','johns-bet','room-paow','apikeys/']) {
+    assert.equal(visible(html).includes(id),false,id+' syns inte utanför Tekniska detaljer');
+    assert.ok(technical(html).includes(id),id+' finns i Tekniska detaljer');
+  }
+  assert.match(visible(html),/<h1[^>]*>Skapa demo/,'kitets sidrubrik');
+  assert.match(visible(html),/aria-current="step"[^>]*>.*4<\/span><span[^>]*>Lansera/,'stegraden står på Lansera');
+  assert.equal(html.includes('<dialog'),true,'Återkalla har sin bekräftelsedialog');
+  assert.doesNotMatch(html,/Återkalla nyckeln .*\?<\/h2>/,'bekräftelsen är stängd tills den öppnas');
+});
+
+test('the receipt keeps Kopiera, Fyll på and Återkalla; the demo player and key ids are only in Tekniska detaljer',()=>{
+  const state=step4State(),key={id:'key-1',name:'demo-Johns demo'};
+  const value={key,displayName:'Johns demo',link:`${ORIGIN}/game?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow&dealer=paow`,receipt:{playerRef:'p-77',playerId:'test-1a2b3c',balance:1000,currency:'EUR',expiresIn:21600}};
+  const html=renderDemo([{status:'ready',value:administration()},{status:'ready',value:demoPermissions(adminSession())},0,state,{phase:'done',value},{phase:'idle'},{status:'ready',value:null},null,
+    'idle','',{phase:'idle'},{balance:1000,currency:'EUR'}]);
+  assert.match(html,/<h2[^>]*>Demon är klar<\/h2>/);
+  assert.ok(html.includes(`value="${value.link.replaceAll('&','&amp;')}"`),'länken står i rutan');
+  for (const label of ['Kopiera','Fyll på','Återkalla nyckeln','Skapa en ny demo','6 timmar'])assert.ok(visible(html).includes(label),label);
+  for (const id of ['test-1a2b3c','p-77','key-1']) {
+    assert.equal(visible(html).replace(/value="[^"]*"/,'').includes(id),false,id+' syns inte i kvittot');
+    assert.ok(technical(html).includes(id),id+' finns i Tekniska detaljer');
+  }
+  assert.equal(visible(html).match(/ \(klart\)/g)?.length,DEMO_STEPS.length,'stegraden visar alla fyra steg klara');
+  assert.doesNotMatch(visible(html).slice(0,visible(html).indexOf('</ol>')),/<button/,'en klar demos steg går inte att välja');
+  assert.doesNotMatch(visible(html),/<button[^>]*>Ändra<\/button>/,'en klar demo ändras inte, den görs om');
 });
