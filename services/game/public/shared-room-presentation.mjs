@@ -40,9 +40,14 @@ function roomColor(document,color){
 const MAX_STEP_WAIT_MS = 5000, MAX_TIMER_MS = 2147483647;
 const stepLate = () => Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true });
 const DEALER_LOADING = 'Dealern laddas…', DEALER_UNAVAILABLE = 'Dealern kunde inte visas.';
+// The dealer rests in its decide phase while a player decides (as app.mjs on the native table), else between hands.
+export const sharedIdlePhase = snapshot => snapshot?.phase === 'round' && ['decisions', 'insurance'].includes(snapshot.round?.phase) ? 'decide' : 'bets';
+const readyOf = snapshot => snapshot.players?.some(p => p.id === snapshot.me.id && p.ready) === true;
 export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
+  // playing: a presentation runs on `state`. held: a newer state of it arrived meanwhile. resting: the dealer's last idle input.
+  let playing = false, held = false, resting;
   const timelineFor=presentation=>{
     if(!filmedProfile||presentation.kind!=='plan'||!Number.isFinite(presentation.startAt))return null;
     let planning={profile:filmedProfile,dealerId:dealerId??'filmed'};
@@ -53,15 +58,23 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
     const timeline=planFilmedTimeline({...planning,events:presentation.events,startAt:presentation.startAt,endAt:presentation.endAt});
     return timeline.complete?timeline:null;
   };
-  const pause=(ms,signal)=>new Promise((resolve,reject)=>{
-    const abort=()=>{clearTimeout(timer);reject(signal.reason);};
-    const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},Math.min(ms,MAX_STEP_WAIT_MS));
-    signal?.addEventListener('abort',abort,{once:true});
+  // hold.wake ends the wait early, without an error (K04 R2b).
+  const pause=(ms,signal,hold={})=>new Promise((resolve,reject)=>{
+    const abort=()=>{clearTimeout(timer);hold.wake=null;reject(signal.reason);};
+    const done=()=>{clearTimeout(timer);hold.wake=null;signal?.removeEventListener('abort',abort);resolve();};
+    const timer=setTimeout(done,Math.min(ms,MAX_STEP_WAIT_MS));
+    hold.wake=done;signal?.addEventListener('abort',abort,{once:true});
   });
   return Object.freeze({
     restoreSnapshot(snapshot,{signal,receivedAt=clock()} = {}) {
       signal?.throwIfAborted(); if(closed)return;
       const reconnect = !state || previousSignal?.aborted;
+      // K04 B1: a newer state of the presentation that plays (same connection, presentation, window, configuration
+      // and round: the same committed cards) waits for its end here. The film, the card cursor, the table clock
+      // and the dealer's state stay as they are; the controls already show the newer state.
+      if(playing&&!reconnect&&signal===previousSignal&&['presentationVer','roundId','windowId','configVersion'].every(key=>snapshot[key]===state[key])){
+        state=snapshot;held=true;return;
+      }
       previousSignal?.removeEventListener('abort',abortMedia);
       abortMedia=()=>{onPresentation(null);media.state({action:true,speech:false,command:'shared-disconnect'});};
       signal?.addEventListener('abort',abortMedia,{once:true});
@@ -72,9 +85,12 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       else if(snapshot.roundId!==state.roundId){cards.clear();cards.sync(snapshot.round);}
       else cards.sync(snapshot.round);
       state=snapshot;previousSignal=signal;offset=snapshot.serverNow-receivedAt;
-      media.state({ready:snapshot.players?.some(p=>p.id===snapshot.me.id&&p.ready)===true,action:false,speech:false});
+      // Only ready, the idle phase or a new connection changes the dealer's state. Every call stops and restarts the
+      // idle film (local-presentation.mjs state()), so another player's bet or ready leaves it playing.
+      const ready=readyOf(snapshot),rest=`${ready}:${sharedIdlePhase(snapshot)}`;
+      if(reconnect||rest!==resting){resting=rest;media.state({ready,action:false,speech:false});}
     },
-    async present(presentation,{signal} = {}) {
+    async present(presentation,{signal,superseded} = {}) {
       signal?.throwIfAborted();if(closed||!state)return;
       if(presentation.ver!==state.presentationVer||presentation.roomId!==state.roomId)throw new Error('shared_room_presentation_mismatch');
       onPresentation(presentation);
@@ -110,19 +126,32 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       const commit=index=>{if(committed.has(index))return;committed.add(index);showCommitted(presentation.events[index]);};
       const atTurn=()=>{if(closed||signal?.aborted)return;placeCurrent?.();for(let index=cursor;index<presentation.events.length;index++)commit(index);};
       if(turnAt!==null&&!turnPassed())turnTimer=setTimeout(atTurn,Math.min(MAX_TIMER_MS,Math.max(0,turnAt-tableNow())));
+      // K04 R2b (review of #481): a newer committed plan waits behind this one, a player's hit for instance. Once this
+      // plan's time is over on the table clock all of its cards are due (R2a: turnAt = endAt bounds every step), so a
+      // take that still plays is left and the rest of the plan shows its committed cards now. The newer plan's cards
+      // still wait for its own steps. A window or collect presentation (speech, no card) plays to its end.
+      let skipRest=false,leaveCurrent=null,supersedeTimer;const hold={};
+      const fastForward=()=>{if(closed||signal?.aborted||skipRest)return;skipRest=true;atTurn();leaveCurrent?.();hold.wake?.();};
+      const onSuperseded=()=>{
+        if(presentation.kind!=='plan'||skipRest)return;
+        const wait=presentation.endAt-tableNow();clearTimeout(supersedeTimer);
+        if(wait<=0)fastForward();else supersedeTimer=setTimeout(fastForward,Math.min(MAX_TIMER_MS,wait));
+      };
+      if(superseded?.aborted)onSuperseded();else superseded?.addEventListener('abort',onSuperseded,{once:true});
+      playing=true;
       try {
         for(const [index,event] of presentation.events.entries()){
           signal?.throwIfAborted();if(closed)return;cursor=index;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
-          if(unavailable||turnPassed()){commit(index);continue;}
+          if(unavailable||skipRest||turnPassed()){commit(index);continue;}
           const step=timeline?.eventIndex.get(index)??null;let timing={},dueAt=turnAt??Infinity;
           if(step){
             const placed=fitted?step.fit:step;
             if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(placed.playbackStartMs??placed.startMs));
             inRun=true;
             let phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});
-            if(phase.waitMs>0){await pause(Math.min(phase.waitMs,Math.max(0,dueAt-tableNow())),signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
-            if(phase.expired||turnPassed()){
+            if(phase.waitMs>0){await pause(Math.min(phase.waitMs,Math.max(0,dueAt-tableNow())),signal,hold);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
+            if(phase.expired||skipRest||turnPassed()){
               // Its time is over on the table clock: the committed card is shown, the take is never replayed from its start.
               commit(index);
               continue;
@@ -151,6 +180,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           const cancel=()=>{clearTimeout(timer);clearTimeout(dueTimer);const reason=new DOMException('Presentation closed','AbortError');rejectStall(reason);clip.abort(reason);};
           // Leave a step whose time is over before its current film part showed a frame. Not an error.
           const leave=()=>{if(left||clip.signal.aborted||closed||!accepting)return;left=true;clearTimeout(timer);clearTimeout(dueTimer);resolveLeft();clip.abort(stepLate());};
+          leaveCurrent=leave;
           if(Number.isFinite(dueAt))dueTimer=setTimeout(()=>{due=true;if(!shown)leave();},Math.min(MAX_TIMER_MS,Math.max(0,dueAt-tableNow())));
           const progress=value=>{
             if(clip.signal.aborted||closed||!accepting||!Number.isInteger(value?.clip)||value.clip<1||value.clip>4)return;
@@ -184,7 +214,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           } finally {
             accepting=false;clearTimeout(timer);clearTimeout(dueTimer);signal?.removeEventListener('abort',relay);
             if(cancelCurrentClip===cancel)cancelCurrentClip=null;
-            placeCurrent=null;
+            placeCurrent=null;if(leaveCurrent===leave)leaveCurrent=null;
             if(!closed&&(left?!signal?.aborted:!clip.signal.aborted)&&!committed.has(index)){
               committed.add(index);
               if(token!==undefined)cards.finish(token,event.shoeDraw,completed===true);
@@ -194,7 +224,15 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           }
         }
         restoredThrough=presentation.ver;completedSequence=true;
-      } finally {clearTimeout(turnTimer);if(completedSequence&&!closed&&!signal?.aborted){media.state({action:false,speech:false});}}
+      } finally {
+        clearTimeout(turnTimer);clearTimeout(supersedeTimer);superseded?.removeEventListener('abort',onSuperseded);playing=false;
+        if(completedSequence&&!closed&&!signal?.aborted){
+          // A state held during the plan reaches the cards and the dealer now.
+          if(held)cards.sync(state.round);
+          const ready=readyOf(state);resting=`${ready}:${sharedIdlePhase(state)}`;media.state({action:false,speech:false,ready});
+        }
+        held=false;
+      }
     },
     close(){if(closed)return;closed=true;previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},
   });
@@ -218,7 +256,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   let dealerShown=false;
   const dealerFrame=()=>{if(!dealerShown){dealerShown=true;placeholder.remove();}onReady(dealer.id);};
   let player;
-  let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection,restoreColor=()=>{};
+  let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection,latest,restoreColor=()=>{};
   const sound=document.getElementById('sound-btn');
   const onSound=()=>{muted=!muted;paintSound();media?.state({});};
   const paintSound=()=>{if(sound){sound.textContent=muted?'🔇':'🔊';sound.setAttribute('aria-label',muted?'Slå på dealerljud':'Stäng av dealerljud');sound.setAttribute('aria-pressed',String(!muted));}};
@@ -238,7 +276,10 @@ export async function mountSharedRoomPresentation({ document, window, selection,
       return requestPort(url,{...options,credentials:'same-origin',mode:'same-origin',redirect:'error',
         signal:combineAbortSignals([signal,currentConnection,options.signal,AbortSignal.timeout(10000)])});
     };
-    media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,
+    // K04 (comparison with Kevin's table, B4): the idle rotation learns when a player decides, as on the native table.
+    // Its idle films skip the per-play package read (two passes through the engine's global lock per player and
+    // clip): the server confirmed this binding for its window, and the WS binding and 409 stale catch a change.
+    media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,idlePhase:()=>sharedIdlePhase(latest),idleConfigRead:false,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:dealerFrame,onBusy:()=>{},
       onError:()=>{if(!dealerShown)placeholder.textContent=DEALER_UNAVAILABLE;onError('shared_room_media_unavailable');}});
     signal?.throwIfAborted();
@@ -277,7 +318,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const close=()=>{if(closed)return;closed=true;window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();placeholder.remove();};
   try{signal?.throwIfAborted();media.start();}catch(error){close();throw error;}
   return Object.freeze({
-    restoreSnapshot(snapshot,options){currentConnection=options?.signal;version=snapshot.presentationVer;if(currentPresentation?.ver!==version)currentPresentation=null;return ports.restoreSnapshot(snapshot,options);},
+    restoreSnapshot(snapshot,options){latest=snapshot;currentConnection=options?.signal;version=snapshot.presentationVer;if(currentPresentation?.ver!==version)currentPresentation=null;return ports.restoreSnapshot(snapshot,options);},
     present:ports.present,layout,
     close,
   });

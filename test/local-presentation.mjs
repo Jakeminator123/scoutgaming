@@ -785,7 +785,22 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}} = {}) {
+// External comparison with Kevin's table (28 Oct 2026, B3): every idle film read the package configuration again,
+// twice through the engine's global lock per player and clip. A shared table's binding is confirmed by the server for
+// its window, and its WS binding and 409 stale catch a package change, so its idle films skip that read.
+test('a shared table whose binding is confirmed plays its idle films without reading the package again',async t=>{
+  const ownIdle={id:'linnea-frozen',fileName:'Linneas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-linnea/7/linnea'};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,entry:{operator:'north',roomId:'room-linnea',packageRevision:7},idleConfigRead:false});
+  const paths=()=>f.requests.map(request=>new URL(request.url,'https://game.invalid').pathname);
+  f.controller.start();await settle();assert.deepEqual(paths(),['/api/presentation/config'],'startup only');
+  f.controller.state({action:true});const played=f.controller.present(source);await settle();
+  assert.deepEqual(paths().slice(1),['/api/presentation/select']);f.jobs.at(-1).resolve();assert.equal(await played,true);
+  f.controller.state({action:false});await settle();
+  assert.deepEqual(paths(),['/api/presentation/config','/api/presentation/select'],'the next idle play reads nothing');
+  assert.ok(f.jobs.length>=2,'the idle film still plays');
+});
+
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, idleConfigRead} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -802,7 +817,8 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false,
+    ...(idleConfigRead === undefined ? {} : {idleConfigRead}) });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }

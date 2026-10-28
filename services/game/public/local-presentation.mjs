@@ -26,8 +26,9 @@ const untilAborted = (work, signal) => !signal ? work : new Promise((resolve, re
   work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
 });
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets', idleConfigRead = true }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
+  if (typeof idleConfigRead !== 'boolean') throw new TypeError('Invalid idle configuration policy');
   const preview=Boolean(transport?.context);
   const request=transport?.request??((...args)=>globalThis.fetch(...args));
   const mediaUrl=transport?.mediaUrl??(video=>video.src||`/api/presentation/videos/${video.id}`);
@@ -268,7 +269,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // selected: this clip came from /api/presentation/select for the current version in the same step. That call
   // already checked the frozen package (published rooms resolve the context after selecting; a shared room checks
   // its committed receipt and context), so the film does not read the configuration a second time. Idle films and
-  // Studio rehearsal keep their own per-play read.
+  // Studio rehearsal keep their own per-play read, except on a shared table (idleConfigRead=false).
   async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {}, selected = false } = {}) {
     const own = new AbortController(); active = own;
     const ownSerial = serial, ownVersion = version();
@@ -281,7 +282,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
       onProgress?.({phase:'prepare'});
-      if (preview || (context && !selected)) {
+      // idleConfigRead=false: a shared table, whose server-confirmed binding stands for its package (see its option).
+      if (preview || (context && !selected && idleConfigRead)) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw await configurationConflict(current);
         if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');

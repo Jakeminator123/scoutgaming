@@ -17,6 +17,8 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
   // control lives in the clickable control bar instead of inside the message.
   const extra=document.createElement('div');extra.id='shared-room-controls';extra.style.cssText='position:absolute;right:12px;top:95px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;max-width:90%';scene.append(extra);
   const retry=button(document,'Försök igen',()=>actions?.retry());retry.id='shared-room-retry';retry.hidden=true;retry.style.cssText='min-height:44px';extra.append(retry);
+  // A lost connection is resumed here, not by reloading the page; the last server state stays on screen meanwhile.
+  const again=button(document,'Återanslut',()=>actions?.reconnect?.());again.id='shared-room-reconnect';again.hidden=true;again.style.cssText='min-height:44px';extra.append(again);
   const leave=button(document,'Lämna platser',()=>actions?.dispatch('leave')),next=button(document,'Nästa runda',()=>actions?.dispatch('next'));
   const picker=document.createElement('select');picker.setAttribute('aria-label','Välj eller lämna plats');
   picker.style.cssText='min-height:44px;max-width:160px';
@@ -54,7 +56,7 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
     bind(value){actions=value;},
     render(value){
       model=value;const s=value.snapshot,can=value.can;
-      notice.textContent=value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;
+      notice.textContent=value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;again.hidden=!value.offline;
       leave.disabled=!can.leave;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
       for(const [id,[,op]] of Object.entries(labels))if($(document,id))$(document,id).disabled=!can[op];
       for(const node of document.querySelectorAll('[data-act]'))node.disabled=!can.act.includes(node.dataset.act);

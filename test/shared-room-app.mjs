@@ -168,12 +168,12 @@ function documentFixture(){
     getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag),querySelector:selector=>nodes.get(selector.slice(1)),querySelectorAll:selector=>selector==='[data-act]'?acts:[]};
   return{document,nodes,acts};
 }
-async function bindingHarness(t,{fetchImpl=async url=>bindingResponse(url),createPresentation,document:givenDocument}={}){
+async function bindingHarness(t,{fetchImpl=async url=>bindingResponse(url),createPresentation,document:givenDocument,bindingRetryDelaysMs}={}){
   const {document:defaultDocument,nodes}=documentFixture(),document=givenDocument??defaultDocument;
   const window=new EventTarget();window.location={origin:'https://game.invalid'};
   const writes=[],mounts=[],renders=[];let socketOptions,stops=0;
   const commands={state:'idle',send:async intent=>{writes.push(intent);return{status:'rejected',httpStatus:409,code:'STALE_COMMAND'};},stop(){this.state='stopped';}};
-  const app=await mountSharedRoomApp({document,window,fetchImpl,createCommands:()=>commands,
+  const app=await mountSharedRoomApp({document,window,fetchImpl,createCommands:()=>commands,...(bindingRetryDelaysMs?{bindingRetryDelaysMs}:{}),
     createView:()=>({bind(){},render:value=>renders.push(value),close(){}}),
     createSocket:options=>{socketOptions=options;return{start(){},stop(){stops++;}};},
     createPresentation:async options=>{mounts.push(options);return createPresentation?createPresentation(options):
@@ -960,7 +960,8 @@ const playsFor=(ms,options)=>new Promise(resolve=>{
 function slowTable(t,{present,windowMs,filmedProfile=null,dealerId=null}){
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
   const seen=[],shown=[],states=[],renders=[],errors=[],mediaErrors=[],sockets=[];
-  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push({draw,at:Date.now()}),reveal(){},begin(){},frame(){},finish(){}};
+  const syncs=[];
+  const cards={restore(){},sync:round=>syncs.push(round),clear(){},close(){},show:draw=>shown.push({draw,at:Date.now()}),reveal(){},begin(){},frame(){},finish(){}};
   const media={state:value=>states.push(value),prepareSequence(){},close(){},
     present(event,options){seen.push({event,options,at:Date.now()});return present(event,options);}};
   const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile,dealerId,onError:code=>mediaErrors.push(code)});
@@ -973,7 +974,7 @@ function slowTable(t,{present,windowMs,filmedProfile=null,dealerId=null}){
   t.after(()=>{client.stop();controller.stop();});client.start();
   const plan={...missingGoodluckPlan(1000),talkId:'plan-slow',endAt:1000+windowMs};
   const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
-  return {seen,shown,states,renders,errors,mediaErrors,client,plan,
+  return {seen,shown,states,renders,errors,mediaErrors,client,plan,sockets,syncs,round,
     async open(){
       sockets[0].message({snapshot:seated(1,{serverNow:Date.now()}),presentation:null});await flushRender();
       sockets[0].message({snapshot:seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,
@@ -1205,4 +1206,216 @@ test('the dealer place reads Dealern laddas… until the first verified frame, a
   media.onError(new Error('Film playback stalled'));assert.equal(placeholder().textContent,'Dealern kunde inte visas.');
   media.onIdle();assert.equal(placeholder(),undefined);assert.equal(ready,1);
   media.onError(new Error('later'));assert.equal(placeholder(),undefined,'a later idle error does not bring the placeholder back');
+});
+
+// K04 B1 at table level (external review 28 Oct 2026): other players' bets and ready flags, wallet changes and
+// presence arrive as new states of the plan that plays. They reach the controls at once; the film, its card cursor
+// and the dealer's media state are left alone until the plan is over.
+test('twenty states of the playing plan reach the controls at once without touching its film, cards or media state',async t=>{
+  const h=slowTable(t,{windowMs:12000,present:(event,options)=>event.type==='speak'?playsFor(9000,options):slowDownload(options)});
+  await h.open();await h.until(3000);
+  const states=h.states.length,syncs=h.syncs.length,planState={id:'plan-slow',startAt:h.plan.startAt,endAt:h.plan.endAt,turnAt:h.plan.endAt};
+  for(let version=3;version<=22;version++){
+    h.sockets[0].message({snapshot:seated(version,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round:h.round,plan:planState,
+      actionDeadline:h.plan.endAt+15000,me:{...seated().me,available:1000-version}}),presentation:h.plan});
+    await flushRender();
+  }
+  assert.equal(h.renders.at(-1).snapshot.version,22);assert.equal(h.renders.at(-1).snapshot.me.available,978,'the newest balance shows during the film');
+  assert.equal(h.states.length,states,'no media state change while the plan plays');assert.equal(h.syncs.length,syncs,'the card cursor is not touched');
+  assert.equal(h.seen[0].options.signal.aborted,false,'the film plays on');assert.deepEqual(h.errors,[]);assert.equal(h.client.status().state,'running');
+  await h.until(h.plan.endAt+500);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);assert.equal(h.seen.filter(row=>row.event.type==='speak').length,1,'the plan played once');
+  assert.equal(h.syncs.length,syncs+1,'the newest state reaches the cards when the plan is over');
+  assert.deepEqual(h.states.at(-1),{action:false,speech:false,ready:false});assert.deepEqual(h.act(),['hit','stand']);
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+// K04 R2b (review of #481): a hit during a take that still played past turnAt queued its own plan behind the film,
+// so the player's card waited for the end of the take. Once the playing plan's time is over a newer plan leaves it.
+test('a hit during a take that plays past turnAt starts its own plan now; its card still waits for its step',async t=>{
+  const h=slowTable(t,{windowMs:12000,present:(event,options)=>event.type==='speak'?new Promise(resolve=>setTimeout(()=>resolve(playsFor(12500,options)),1000)):slowDownload(options)});
+  await h.open();await h.until(h.plan.endAt+500);
+  assert.deepEqual(h.act(),['hit','stand']);assert.equal(h.seen[0].options.signal.aborted,false,'turnAt alone never cuts the take');
+  const at=Date.now(),hit={roomId,ver:2,talkId:'plan-hit',auditSeq:2,status:'ready',kind:'plan',windowId:'window-1',configVersion:'cfg-1',language:'sv',
+    startAt:at,endAt:at+3000,lines:[],events:[{type:'deal',to:'box',box:0,shoeDraw:5,faceDown:false},{type:'turn',box:0,handIndex:0}]};
+  h.sockets[0].message({snapshot:seated(3,{phase:'round',roundId:'round-1',presentationVer:2,serverNow:at,round:h.round,
+    plan:{id:'plan-hit',startAt:hit.startAt,endAt:hit.endAt,turnAt:hit.endAt},actionDeadline:hit.endAt+15000}),presentation:hit});
+  await flushRender();await flushRender();
+  assert.equal(h.seen[0].options.signal.aborted,true,'the superseded take is left');assert.equal(h.seen[0].options.signal.reason.late,true);
+  assert.deepEqual(h.seen.filter(row=>row.event.type==='deal').map(row=>row.event.shoeDraw),[5],'the hit plan starts now, not when the old take ends');
+  assert.equal(h.renders.at(-1).snapshot.version,3);assert.deepEqual(h.act(),[],'its own turnAt opens the next decision');
+  assert.equal(h.shown.some(row=>row.draw===5),false,'no card before its step');
+  await h.until(hit.endAt-1);assert.equal(h.shown.some(row=>row.draw===5),false);
+  await h.until(hit.endAt+2);assert.ok(h.shown.some(row=>row.draw===5));assert.deepEqual(h.act(),['hit','stand']);
+  assert.equal(h.shown.filter(row=>row.draw===5).length,1);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+test('a superseded plan is left only once its time is over on the table clock; other presentations play to their end',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const shown=[],seen=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push([draw,Date.now()]),reveal(){},begin(){},frame(){},finish(){}};
+  const media={state(){},prepareSequence(){},close(){},present:(_event,options)=>{seen.push(options.signal);return playsFor(10000,options);}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});t.after(()=>ports.close());
+  const signal=new AbortController().signal,until=async at=>{while(Date.now()<at){t.mock.timers.tick(Math.min(250,at-Date.now()));await flushRender();}};
+  ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1,serverNow:Date.now()}),{signal});
+  const plan={roomId,ver:1,talkId:'p',kind:'plan',startAt:1000,endAt:3000,events:[{type:'deal',to:'box',box:0,shoeDraw:1,faceDown:false},{type:'deal',to:'box',box:0,shoeDraw:2,faceDown:false}]};
+  const superseded=new AbortController();let done=false;
+  const presenting=ports.present(plan,{signal,superseded:superseded.signal}).then(()=>{done=true;});
+  await flushRender();superseded.abort();await flushRender();
+  await until(2999);assert.equal(seen[0].aborted,false,'the plan’s own time is not over');assert.deepEqual(shown,[]);
+  await until(3000);assert.equal(seen[0].aborted,true);assert.deepEqual(shown,[[1,3000],[2,3000]]);await presenting;assert.equal(done,true);
+  ports.restoreSnapshot(seated(3,{presentationVer:2,serverNow:Date.now()}),{signal});
+  const window={roomId,ver:2,talkId:'w',kind:'window',startAt:Date.now(),endAt:Date.now(),events:[{type:'speak',line:'placebets'}],lines:[]};
+  const ended=new AbortController();ended.abort();done=false;
+  const speaking=ports.present(window,{signal,superseded:ended.signal}).then(()=>{done=true;});
+  await until(Date.now()+9000);assert.equal(seen[1].aborted,false,'a window speech is never cut');assert.equal(done,false);
+  await until(Date.now()+1500);await speaking;assert.equal(done,true);
+});
+
+// K04 fynd 3 (external review 28 Oct 2026): a network error, a timeout or a 503 from the binding read failed the
+// whole table at once. Transient failures are read again a bounded number of times with a growing wait; nothing
+// opens before the server has confirmed the binding.
+for(const failure of ['network','timeout',502,503,504])
+test(`a transient binding read failure (${failure}) is read again before any control opens`,async t=>{
+  let reads=0,h;const connected=[];
+  const fail=()=>failure==='network'?Promise.reject(new TypeError('Failed to fetch')):failure==='timeout'?Promise.reject(new DOMException('The operation timed out.','TimeoutError'))
+    :Promise.resolve(new Response(null,{status:failure}));
+  h=await bindingHarness(t,{bindingRetryDelaysMs:[1,1],fetchImpl:async url=>{reads++;connected.push(h.controller.state.connected);return [1,2,4].includes(reads)?fail():bindingResponse(url);}});
+  await h.restore(seated(1));
+  assert.equal(reads,5,'two failed binding reads and one failed confirmation are each read again');
+  assert.deepEqual(connected,[false,false,false,false,false],'no control while the binding is unconfirmed');
+  assert.equal(h.mounts.length,1);assert.equal(h.controller.state.connected,true);assert.equal(h.renders.at(-1).can.bet,true);
+});
+
+test('a binding read that keeps failing transiently stops after three attempts and opens nothing',async t=>{
+  let reads=0;
+  const h=await bindingHarness(t,{bindingRetryDelaysMs:[1,1],fetchImpl:async()=>{reads++;return new Response(null,{status:503});}});
+  await assert.rejects(h.restore(seated(1)),/shared_room_presentation_binding_unavailable/);
+  assert.equal(reads,3);assert.equal(h.mounts.length,0);assert.equal(h.controller.state.connected,false);
+});
+
+test('authorization, ownership and contract failures of the binding are never read again',async t=>{
+  for(const response of [()=>new Response(null,{status:401}),()=>new Response(null,{status:403}),()=>Response.json({error:'other_conflict'},{status:409}),
+    ()=>new Response(null,{status:500}),()=>Response.json({...presentationBinding(),owner:'preview'}),()=>new Response('{',{status:200})]){
+    let reads=0;
+    const h=await bindingHarness(t,{bindingRetryDelaysMs:[1,1],fetchImpl:async()=>{reads++;return response();}});
+    await assert.rejects(h.restore(snapshot()),reason=>reason.code!=='shared_room_presentation_stale');
+    assert.equal(reads,1);assert.equal(h.mounts.length,0);assert.equal(h.controller.state.connected,false);h.close();
+  }
+});
+
+test('a closed connection ends the binding retries at once',async t=>{
+  let reads=0;const connection=new AbortController();
+  const h=await bindingHarness(t,{bindingRetryDelaysMs:[60,60],fetchImpl:async()=>{reads++;throw new TypeError('Failed to fetch');}});
+  const restoring=h.restore(seated(1),connection.signal);await turn();await turn();connection.abort();
+  await assert.rejects(restoring,{name:'AbortError'});await delay(100);assert.equal(reads,1);assert.equal(h.controller.state.connected,false);
+});
+
+// K04 B5 (external review 28 Oct 2026): the server lets a ready player clear, which withdraws ready
+// (coordinator.mjs BET_OPS, clear), but the controls closed clear together with every other bet change.
+test('a ready player can clear the bets, which withdraws ready on the server; the server stays the authority',async t=>{
+  const h=harness(t),bets=[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)],can=()=>h.renders.at(-1).can;
+  const ready=(leaving=false)=>[{id:actor,seats:[0],ready:true,leaving}];
+  await h.restore(seated(10,{bets,players:ready()}));
+  assert.equal(can().clear,true);assert.equal(can().bet,false);assert.equal(can().ready,false);assert.equal(can().undo,false);
+  await h.controller.dispatch('clear');assert.deepEqual(h.calls.at(-1),{op:'clear',windowId:'window-1'});
+  await h.restore(seated(11,{bets,deadline:500,players:ready(),me:{...seated().me,pausedUntil:5000}}));
+  assert.equal(can().clear,true,'after the deadline and during a pause, as on the server');
+  await h.restore(seated(12,{bets,players:ready(true)}));assert.equal(can().clear,false,'never while leaving');
+  await h.restore(seated(13,{bets,players:ready(),phase:'settled',roundId:'round-1'}));assert.equal(can().clear,false,'only in the betting phase');
+  await h.restore(snapshot(14,{players:[]}));assert.equal(can().clear,false,'only with an own box');
+  assert.equal(h.calls.length,1);
+});
+
+// External comparison with Kevin's table (28 Oct 2026, B4): the shared table never passed the idle phase, so the
+// dealer's decide rest never played while players decided.
+test('the shared presentation tells the idle rotation when the table decides',async()=>{
+  const {document,nodes}=documentFixture(),window=new EventTarget();window.matchMedia=()=>({matches:false});window.fetch=async()=>Response.json({});
+  nodes.set('table2d',new Element());let options;
+  const selection={presentation:'local',dealer:'astrid',localDealer:'astrid',operator:'north',roomId,packageRevision:1,registeredDealers:[{id:'astrid',label:'Astrid'}]};
+  const port=await mountSharedRoomPresentation({document,window,selection,onReady(){},onError(){},createComposition:()=>null,
+    loadAdapters:async()=>[{PerformancePlayer:class{dispose(){}}},{createLocalPresentation:async value=>{options=value;return{state(){},start(){},close(){}};}},
+      {createLocalCardOverlay:()=>({restore(){},sync(){},clear(){},close(){}})}]});
+  const signal=new AbortController().signal;
+  assert.equal(options.idleConfigRead,false,'the confirmed binding stands for the package; idle films skip the read');
+  assert.equal(options.idlePhase(),'bets');
+  for(const [phase,expected] of [['decisions','decide'],['insurance','decide'],['dealer','bets']]){
+    port.restoreSnapshot(seated(2,{phase:'round',roundId:'round-1',round:{phase,active:0,hands:[{box:0,cards:[]}],dealer:[]}}),{signal});
+    assert.equal(options.idlePhase(),expected,phase);
+  }
+  port.restoreSnapshot(seated(3,{phase:'settled',roundId:'round-1',round:{phase:'decisions',active:0,hands:[],dealer:[]}}),{signal});
+  assert.equal(options.idlePhase(),'bets','a settled round rests as between hands');port.close();
+});
+
+// External comparison with Kevin's table (28 Oct 2026, B3): every WS state called media.state, which stopped the
+// dealer's idle film and started it again. Only ready, the idle phase or a new connection changes the dealer's state.
+test('a state that changes neither ready, the idle phase nor the connection leaves the dealer’s idle film alone',()=>{
+  const states=[];
+  const ports=createSharedRoomPresentationPorts({media:{state:value=>states.push(value),close(){}},cards:{restore(){},sync(){},clear(){},close(){}},clock:()=>1000});
+  const first=new AbortController(),bob={id:'bob',seats:[1],ready:false,leaving:false};
+  ports.restoreSnapshot(seated(1),{signal:first.signal});assert.deepEqual(states,[{ready:false,action:false,speech:false}]);
+  ports.restoreSnapshot(seated(2,{owners:[actor,'bob',null,null,null,null,null],players:[...seated().players,bob],bets:[{main:0,pp:0,tp:0},{main:5,pp:0,tp:0},...snapshot().bets.slice(2)]}),{signal:first.signal});
+  ports.restoreSnapshot(seated(3,{players:[...seated().players,{...bob,ready:true}]}),{signal:first.signal});
+  assert.equal(states.length,1,'another player’s bet or ready keeps the idle film');
+  ports.restoreSnapshot(seated(4,{players:[{id:actor,seats:[0],ready:true,leaving:false}]}),{signal:first.signal});
+  assert.deepEqual(states.at(-1),{ready:true,action:false,speech:false});assert.equal(states.length,2);
+  ports.restoreSnapshot(seated(5,{phase:'round',roundId:'round-1',round:{phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[]}}),{signal:first.signal});
+  assert.equal(states.length,3,'the decide phase begins');
+  first.abort();assert.equal(states.at(-1).command,'shared-disconnect');
+  ports.restoreSnapshot(seated(6,{phase:'round',roundId:'round-1',round:{phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[]}}),{signal:new AbortController().signal});
+  assert.deepEqual(states.at(-1),{ready:false,action:false,speech:false},'a new connection always releases the dealer');ports.close();
+});
+
+// External comparison with Kevin's table (28 Oct 2026): after the reconnect budget the table asked for a reload.
+// A lost connection now offers "Återanslut" (and reconnects by itself when the page or network returns).
+test('a connection lost beyond the budget offers Återanslut, keeps the last state and reconnects without a reload',async t=>{
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const sockets=[],renders=[];let actions,commandStops=0;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    frame(s){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:null})}));}
+    ended(code=1006){this.readyState=3;this.dispatchEvent(Object.assign(new Event('close'),{code}));}}
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1,maxReconnectAttempts:1}),
+    createCommands:()=>({state:'idle',stop(){commandStops++;}}),createView:()=>({bind(value){actions=value;},render:value=>renders.push(value),close(){}}),
+    createPresentation:async({onReady})=>{onReady('astrid');return{restoreSnapshot(){},present(){},close(){}};}});
+  t.after(app.close);sockets[0].frame(seated(1));
+  for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
+  sockets[0].ended(1000);for(let i=0;i<100&&sockets.length<2;i++)await delay(2);sockets[1].ended(1006);
+  for(let i=0;i<100&&!renders.at(-1)?.offline;i++)await delay(2);
+  assert.equal(renders.at(-1).offline,true);assert.match(renders.at(-1).notice,/bröts/);assert.doesNotMatch(renders.at(-1).notice,/Ladda om/);
+  assert.equal(app.controller.state.closed,false);assert.equal(app.controller.state.connected,false);assert.equal(commandStops,0);
+  assert.equal(app.controller.state.snapshot.version,1,'the last server state stays on screen');assert.equal(renders.at(-1).can.bet,false);
+  actions.reconnect();assert.equal(sockets.length,3);assert.equal(renders.at(-1).offline,false);
+  sockets[2].frame(seated(2));for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
+  assert.equal(app.controller.state.snapshot.version,2);assert.equal(renders.at(-1).can.bet,true);assert.equal(renders.at(-1).notice,'');
+});
+
+test('the view shows Återanslut only while the connection is lost',()=>{
+  const {document,nodes}=documentFixture();let reconnects=0;
+  const view=createSharedRoomView({document});view.bind({reconnect:()=>reconnects++});
+  const find=(node,text)=>node.children?.find?.(child=>child.textContent===text)??node.children?.map?.(child=>find(child,text)).find(Boolean);
+  const button=find(nodes.get('scene'),'Återanslut');assert.ok(button,'the control exists in the clickable control bar');
+  const can={join:false,leave:false,bet:false,undo:false,clear:false,doubleBets:false,allSeats:false,repeat:false,ready:false,insurance:false,next:false,refill:false,pause:false,act:[]};
+  view.render({snapshot:null,can,notice:'Anslutningen till bordet bröts.',offline:true});assert.equal(button.hidden,false);
+  button.click();assert.equal(reconnects,1);
+  view.render({snapshot:null,can,notice:'',offline:false});assert.equal(button.hidden,true);view.close();
+});
+
+test('a binding read still failing after its retries rereads the room through a fresh socket instead of failing the table',async t=>{
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const sockets=[],errors=[];let reads=0,down=true;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    frame(s){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:null})}));}}
+  const app=await mountSharedRoomApp({document,window,bindingRetryDelaysMs:[1,1],
+    fetchImpl:async url=>{reads++;return down?new Response(null,{status:503}):bindingResponse(url);},
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1,onError:error=>{errors.push(error);options.onError(error);}}),
+    createCommands:()=>({state:'idle',stop(){}}),createView:()=>({bind(){},render(){},close(){}}),
+    createPresentation:async({onReady})=>{onReady('astrid');return{restoreSnapshot(){},present(){},close(){}};}});
+  t.after(app.close);sockets[0].frame(seated(1));
+  for(let i=0;i<100&&sockets.length<2;i++)await delay(2);
+  assert.equal(reads,3);assert.equal(sockets.length,2,'the room is read again through a new socket');
+  assert.deepEqual(errors,[]);assert.equal(app.controller.state.closed,false);assert.equal(app.controller.state.connected,false);
+  assert.notEqual(document.documentElement.dataset.presentationStartup,'failed');
+  down=false;sockets[1].frame(seated(2));for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
+  assert.equal(app.controller.state.snapshot.version,2);assert.deepEqual(errors,[]);
 });

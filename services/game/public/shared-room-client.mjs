@@ -60,24 +60,46 @@ function readState(data, roomId, maxMessageBytes) {
   return frame;
 }
 
-/** Isolated read-only adapter. Nothing connects until start(); stop is terminal.
+// Renderer failures a fresh socket resolves: the room moved on during the binding read, or the binding read
+// kept failing transiently after its own retries (shared-room-app.mjs).
+const recoverable = new Set(['shared_room_presentation_stale', 'shared_room_presentation_binding_unavailable']);
+// A page and its network are optional wake-up sources; anything else is refused.
+const eventTarget = value => value && typeof value.addEventListener === 'function' && typeof value.removeEventListener === 'function';
+
+/** Isolated read-only adapter. Nothing connects until start(); only stop() ends it.
  * Native WebSocket uses the browser's same-host sessions cookie. This API has no
  * credential, subprotocol, storage, command or game/wallet write port.
  *
- * Renderers are serialized; snapshots also receive their local WS receivedAt.
- * They must honor abort
- * before committing asynchronous work. A presentation version is consumed BEFORE
- * present is called: a disconnect or renderer failure can never replay it on this
- * instance. Renderer failure/timeout is terminal, except the recognized stale
- * room binding conflict, which reconnects within the existing outage budget.
- * No product entry point mounts this adapter until shared commands replace legacy
- * controls together with it.
+ * Snapshots also receive their local WS receivedAt. Restores are serialized and one
+ * presentation plays at a time; ports must honor abort before committing asynchronous
+ * work. A presentation version is consumed BEFORE present is called: a disconnect or
+ * renderer failure can never replay it on this instance.
+ *
+ * K04 B1 (external review 28 Oct 2026): states are replaceable. A newer state of the
+ * same presentation replaces the pending one, and a state of the presentation that
+ * plays is restored at once, beside its film. A newer committed presentation waits for
+ * the playing one and tells it so through `superseded` (K04 R2b). More pending
+ * presentations than maxPendingStates are dropped: the film is aborted and the room is
+ * read again through a fresh socket, within the reconnect budget.
+ *
+ * K04 B2: every socket close this client did not ask for, the server's 1000 on release
+ * or shutdown included, reconnects through a new authenticated socket. The wait doubles
+ * from reconnectDelayMs up to maxReconnectDelayMs, within maxReconnectAttempts and
+ * reconnectBudgetMs per outage; `online` and a page that becomes visible skip the wait.
+ * A spent budget leaves the client offline until reconnect() (or online/visible). An
+ * outage caused by an authorization (1008) or contract close ends the client instead.
+ * Renderer failure or timeout is terminal, except the recognized stale room binding
+ * conflict and a binding read that kept failing transiently, which reconnect within
+ * the same outage budget.
  */
 export function createSharedRoomClient({
   roomId, browserOrigin, WebSocket = globalThis.WebSocket,
   restoreSnapshot, present, onError = () => {}, now = Date.now,
   maxMessageBytes = 256 * 1024, maxPendingStates = 4,
-  maxReconnectAttempts = 3, reconnectDelayMs = 250, connectTimeoutMs = 5000, callbackTimeoutMs = 10000,
+  maxReconnectAttempts = 20, reconnectDelayMs = 250, maxReconnectDelayMs = 5000, reconnectBudgetMs = 60000,
+  connectTimeoutMs = 5000, callbackTimeoutMs = 10000,
+  network = eventTarget(globalThis.window) ? globalThis.window : null,
+  page = eventTarget(globalThis.document) ? globalThis.document : null,
 } = {}) {
   let origin;
   try { origin = new URL(browserOrigin); } catch { throw new TypeError('shared_room_invalid_origin'); }
@@ -86,17 +108,24 @@ export function createSharedRoomClient({
     || ![WebSocket, restoreSnapshot, present, onError, now].every(port => typeof port === 'function')
     || !Number.isSafeInteger(maxMessageBytes) || maxMessageBytes < 256 || maxMessageBytes > 1024 * 1024
     || !Number.isSafeInteger(maxPendingStates) || maxPendingStates < 1 || maxPendingStates > 32
-    || !Number.isSafeInteger(maxReconnectAttempts) || maxReconnectAttempts < 0 || maxReconnectAttempts > 5
+    || !Number.isSafeInteger(maxReconnectAttempts) || maxReconnectAttempts < 0 || maxReconnectAttempts > 60
     || !Number.isSafeInteger(reconnectDelayMs) || reconnectDelayMs < 1 || reconnectDelayMs > 30000
+    || !Number.isSafeInteger(maxReconnectDelayMs) || maxReconnectDelayMs < 1 || maxReconnectDelayMs > 30000
+    || !Number.isSafeInteger(reconnectBudgetMs) || reconnectBudgetMs < 1 || reconnectBudgetMs > 600000
     || !Number.isSafeInteger(connectTimeoutMs) || connectTimeoutMs < 1 || connectTimeoutMs > 30000
-    || !Number.isSafeInteger(callbackTimeoutMs) || callbackTimeoutMs < 1 || callbackTimeoutMs > 30000) {
+    || !Number.isSafeInteger(callbackTimeoutMs) || callbackTimeoutMs < 1 || callbackTimeoutMs > 30000
+    || ![network, page].every(value => value === null || eventTarget(value))) {
     throw new TypeError('shared_room_invalid_options');
   }
   const socketURL = `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}/shared-room/${roomId}`;
-  let state = 'idle', connection, retryTimer, renderTimer, pumping = false, queue = [];
-  let retries = 0, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
+  let state = 'idle', connection, retryTimer, pumping = false, queue = [], playing = null;
+  let retries = 0, outageAt, outage, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
+  const timers = new Set();
   const current = candidate => state === 'running' && connection === candidate && !candidate.controller.signal.aborted;
   const report = code => { try { onError(Object.freeze({ code })); } catch {} };
+  // An outage keeps its most specific cause; only a spent budget reports it.
+  const causeOf = code => code === 1008 ? 'shared_room_unauthorized' : [1002, 1003, 1007, 1009].includes(code) ? 'shared_room_invalid_state' : undefined;
+  const renewed = () => { retries = 0; outageAt = outage = undefined; };
   function detach(candidate) {
     clearTimeout(candidate.connectTimer); candidate.controller.abort();
     for (const [type, listener] of Object.entries(candidate.listeners)) candidate.socket.removeEventListener(type, listener);
@@ -105,71 +134,102 @@ export function createSharedRoomClient({
   function finish(code) {
     if (state === 'stopped' || state === 'failed') return;
     state = code ? 'failed' : 'stopped';
-    clearTimeout(retryTimer); clearTimeout(renderTimer); retryTimer = renderTimer = undefined;
-    queue = [];
+    clearTimeout(retryTimer); retryTimer = undefined;
+    for (const timer of timers) clearTimeout(timer);
+    timers.clear(); queue = []; unlisten();
     const old = connection; connection = undefined;
     if (old) detach(old);
     if (code) report(code);
   }
   function retry() {
     if (state !== 'running') return;
-    if (retries >= maxReconnectAttempts) { finish('shared_room_reconnect_exhausted'); return; }
+    outageAt ??= now();
+    const wait = Math.min(maxReconnectDelayMs, reconnectDelayMs * 2 ** Math.min(retries, 16));
+    if (retries >= maxReconnectAttempts || now() - outageAt + wait > reconnectBudgetMs) {
+      const code = outage ?? 'shared_room_reconnect_exhausted';
+      if (code === 'shared_room_unauthorized' || code === 'shared_room_invalid_state') { finish(code); return; }
+      // Offline: no socket and no timer of its own. A renderer still settling keeps its deadline.
+      state = 'offline'; clearTimeout(retryTimer); retryTimer = undefined; queue = []; report(code); return;
+    }
     retries++;
-    retryTimer = setTimeout(() => { retryTimer = undefined; if (state === 'running') connect(); }, reconnectDelayMs);
+    retryTimer = setTimeout(() => { retryTimer = undefined; if (state === 'running') connect(); }, wait);
   }
-  function disconnected(candidate, code) {
+  function resume() {
+    if (state !== 'offline') return false;
+    state = 'running'; renewed(); connect(); return true;
+  }
+  // A network or page that comes back skips the remaining wait, and resumes an offline client with a fresh budget.
+  function awake() {
+    if (state === 'offline') resume();
+    else if (state === 'running' && retryTimer !== undefined) { clearTimeout(retryTimer); retryTimer = undefined; connect(); }
+  }
+  const shown = () => { if (page?.visibilityState === 'visible') awake(); };
+  function listen() { network?.addEventListener('online', awake); page?.addEventListener('visibilitychange', shown); }
+  function unlisten() { network?.removeEventListener('online', awake); page?.removeEventListener('visibilitychange', shown); }
+  function disconnected(candidate, cause) {
     if (!current(candidate)) return;
     connection = undefined; queue = []; detach(candidate);
-    if (code === 1000) finish();
-    else if (code === 1008) finish('shared_room_unauthorized');
-    else if ([1002, 1003, 1007, 1009].includes(code)) finish('shared_room_invalid_state');
-    else retry();
+    if (cause) outage = cause;
+    retry();
   }
-  async function render(port, value, candidate, timeoutMs = callbackTimeoutMs, receivedAt) {
+  async function render(port, value, candidate, timeoutMs, context) {
+    let timer;
     const timeout = new Promise((_, reject) => {
-      renderTimer = setTimeout(() => reject(Object.assign(new Error('shared_room_renderer_timeout'), { rendererTimeout: true })), timeoutMs);
+      timer = setTimeout(() => reject(Object.assign(new Error('shared_room_renderer_timeout'), { rendererTimeout: true })), timeoutMs);
+      timers.add(timer);
     });
     const work = Promise.resolve().then(() => {
       if (!current(candidate)) throw new DOMException('Shared room disconnected', 'AbortError');
-      return port(value, Object.freeze({ signal: candidate.controller.signal, roomId, receivedAt }));
+      return port(value, Object.freeze({ signal: candidate.controller.signal, roomId, ...context }));
     });
     // Do not race abort: an old async renderer must settle before a reconnect's
     // renderer begins. A stuck renderer terminates the entire instance on timeout.
     try { await Promise.race([work, timeout]); }
-    finally { clearTimeout(renderTimer); renderTimer = undefined; }
+    finally { clearTimeout(timer); timers.delete(timer); }
+  }
+  function failed(candidate, error) {
+    // The room can advance between its WS snapshot and the HTTP binding read.
+    // Reread through a fresh authenticated socket, with the same bounded outage
+    // budget. No failed binding authorizes controls.
+    if (current(candidate) && recoverable.has(error?.code)) disconnected(candidate);
+    else if (state === 'running' && (error?.rendererTimeout || current(candidate))) {
+      finish(error?.rendererTimeout ? 'shared_room_renderer_timeout' : 'shared_room_renderer_failed');
+    }
+  }
+  // A newer state of the playing presentation (same socket, presentation, window,
+  // configuration and round) carries no card and no film of its own.
+  const beside = (entry, run) => entry.candidate === run.candidate
+    && ['presentationVer', 'windowId', 'configVersion', 'roundId'].every(key => entry.frame.snapshot[key] === run.snapshot[key]);
+  function play(candidate, snapshot, presentation, budget) {
+    const run = { candidate, snapshot, ver: presentation.ver, superseded: new AbortController() };
+    playing = run;
+    if (queue.some(entry => entry.frame.snapshot.presentationVer > run.ver)) run.superseded.abort();
+    render(present, presentation, candidate, budget, { superseded: run.superseded.signal })
+      // Renew the allowance per outage only after current state was fully rendered.
+      // A retired socket completing late cannot renew this budget.
+      .then(() => { if (current(candidate)) renewed(); }, error => failed(candidate, error))
+      .finally(() => { if (playing === run) playing = null; void pump(); });
   }
   async function pump() {
     if (pumping) return; pumping = true;
     try {
       while (state === 'running' && queue.length) {
-        const { candidate, frame, receivedAt } = queue.shift();
-        if (!current(candidate)) continue;
-        const s = frame.snapshot, p = frame.presentation;
+        const entry = queue[0];
+        if (!current(entry.candidate)) { queue.shift(); continue; }
+        // One presentation at a time: a newer one, and every renderer of a new socket, waits until it settles.
+        if (playing && !beside(entry, playing)) break;
+        queue.shift();
+        const { candidate, frame, receivedAt } = entry, s = frame.snapshot, p = frame.presentation;
         if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer) continue;
         const replay = reconnectPresentation(s, p, { appliedVer });
         const presentationBudget = presentationTimeout(p, callbackTimeoutMs);
         // Capture monotonic floors before handing mutable data to the renderer.
         snapshotVersion = s.version; snapshotPresentationVer = s.presentationVer;
-        try {
-          await render(restoreSnapshot, s, candidate, callbackTimeoutMs, receivedAt);
-          if (!current(candidate)) continue;
-          if (replay.apply) {
-            appliedVer = p.ver;
-            await render(present, p, candidate, presentationBudget);
-          }
-          // Renew the allowance per outage only after current state was fully
-          // rendered. A retired socket completing late cannot renew this budget.
-          if (current(candidate)) retries = 0;
-        } catch (error) {
-          // The room can advance between its WS snapshot and the HTTP binding
-          // read. Reread through a fresh authenticated socket, with the same
-          // bounded outage budget. No failed binding authorizes controls.
-          if (current(candidate) && error?.code === 'shared_room_presentation_stale') {
-            disconnected(candidate, 1012);
-          } else if (state === 'running' && (error?.rendererTimeout || current(candidate))) {
-            finish(error?.rendererTimeout ? 'shared_room_renderer_timeout' : 'shared_room_renderer_failed');
-          }
-        }
+        try { await render(restoreSnapshot, s, candidate, callbackTimeoutMs, { receivedAt }); }
+        catch (error) { failed(candidate, error); continue; }
+        if (!current(candidate)) continue;
+        if (replay.apply) { appliedVer = p.ver; play(candidate, s, p, presentationBudget); }
+        else if (!playing) renewed();
       }
     } finally { pumping = false; }
   }
@@ -182,10 +242,18 @@ export function createSharedRoomClient({
       if (actorId !== undefined && frame.snapshot.me.id !== actorId) invalid();
     } catch { finish('shared_room_invalid_state'); return; }
     actorId ??= frame.snapshot.me.id;
-    if (frame.snapshot.version < snapshotVersion || frame.snapshot.presentationVer < snapshotPresentationVer
-      || frame.snapshot.presentationVer < appliedVer) return;
-    if (queue.length >= maxPendingStates) { finish('shared_room_backpressure'); return; }
-    queue.push({ candidate, frame, receivedAt }); void pump();
+    const s = frame.snapshot, tail = queue.at(-1)?.frame.snapshot;
+    // Never queue a state older than one already rendered or pending.
+    if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer
+      || (tail && (s.version < tail.version || s.presentationVer < tail.presentationVer))) return;
+    const entry = { candidate, frame, receivedAt };
+    if (tail?.presentationVer === s.presentationVer) queue[queue.length - 1] = entry;
+    else if (queue.length >= maxPendingStates) { disconnected(candidate, 'shared_room_backpressure'); return; }
+    else {
+      queue.push(entry);
+      if (playing?.candidate === candidate && s.presentationVer > playing.ver) playing.superseded.abort();
+    }
+    void pump();
   }
   function connect() {
     let socket;
@@ -200,19 +268,21 @@ export function createSharedRoomClient({
     candidate.listeners = {
       open: () => { if (current(candidate)) clearTimeout(candidate.connectTimer); },
       message: event => receive(candidate, event),
-      close: event => disconnected(candidate, event.code),
-      error: () => disconnected(candidate, 1006),
+      close: event => disconnected(candidate, causeOf(event.code)),
+      error: () => disconnected(candidate),
     };
     connection = candidate;
     for (const [type, listener] of Object.entries(candidate.listeners)) socket.addEventListener(type, listener);
-    if (socket.readyState !== 1) candidate.connectTimer = setTimeout(() => disconnected(candidate, 1006), connectTimeoutMs);
+    if (socket.readyState !== 1) candidate.connectTimer = setTimeout(() => disconnected(candidate), connectTimeoutMs);
   }
   return Object.freeze({
     start() {
-      if (state === 'running') return;
+      if (state === 'running' || state === 'offline') return;
       if (state !== 'idle') throw new Error('shared_room_client_stopped');
-      state = 'running'; connect();
+      state = 'running'; listen(); connect();
     },
+    /** Resumes an offline client with a fresh budget; true when a new socket was opened. */
+    reconnect() { return resume(); },
     stop() { finish(); },
     status() { return Object.freeze({ state, connected: Boolean(connection?.socket.readyState === 1), reconnectAttempts: retries,
       snapshotVersion, presentationVer: appliedVer }); },

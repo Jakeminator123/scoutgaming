@@ -11,6 +11,13 @@ const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.t
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const invalidBinding=()=>{throw new TypeError('shared_room_presentation_binding_invalid');};
 const abortError=()=>new DOMException('Shared room presentation replaced','AbortError');
+const unavailable=transient=>Object.assign(new Error('shared_room_presentation_binding_unavailable'),transient?{transient:true}:{});
+const pause=(ms,signal)=>new Promise((resolve,reject)=>{
+  if(signal.aborted){reject(signal.reason);return;}
+  const abort=()=>{clearTimeout(timer);reject(signal.reason);};
+  const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},ms);
+  signal.addEventListener('abort',abort,{once:true});
+});
 const selectionAttributes={lane:'gameLane',dealer:'gameDealer',presentation:'gamePresentation',localDealer:'gameLocalDealer',
   registeredDealers:'gameRegisteredDealers',operator:'gameOperator',roomId:'gameRoomId',packageRevision:'gamePackageRevision',
   branding:'gameBranding',composition:'gameComposition',choices:'gameChoices'};
@@ -34,6 +41,8 @@ function checkedBinding(value,snapshot,roomId){
     ||context.operatorSlug!==selection.operator||context.packageRevision!==selection.packageRevision||context.dealerId!==selection.dealer)invalidBinding();
   return {owner:'web',roomId,configVersion:value.configVersion,windowId:value.windowId,presentationContext:{...context},selection};
 }
+// Conflicts that a fresh socket can resolve (shared-room-client.mjs rereads the room within its outage budget).
+const recoverable=new Set(['shared_room_presentation_stale','shared_room_presentation_binding_unavailable']);
 const canonical=value=>JSON.stringify(value,(_key,item)=>object(item)?Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])):item);
 // A snapshot is the only input to this lazy owner. Controls become usable once
 // the presentation adapter is mounted and the server confirms the same binding
@@ -42,30 +51,52 @@ const canonical=value=>JSON.stringify(value,(_key,item)=>object(item)?Object.fro
 // startup limits (K04, 400 kbit/s), so it loads afterwards and the dealer
 // appears with its first verified frame. Every film keeps its exact hash,
 // package and identity checks; a media error never grants or revokes controls.
-function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError}){
+function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError,retryDelaysMs}){
   let current=null,job=null,generation=0,closed=false;
   const pending=new Set();
   function dispose(owned){
     if(!owned||owned.closed)return;
     owned.closed=true;owned.lifetime.abort();owned.port?.close();owned.startup.close();pending.delete(owned);
   }
-  async function read(snapshot,requestSignal){
-    if(!id(snapshot.configVersion)||!id(snapshot.windowId))invalidBinding();
+  async function readOnce(snapshot,requestSignal){
     const request=new AbortController();
     const combined=combineAbortSignals([signal,requestSignal,request.signal,AbortSignal.timeout(10000)]);
     try{
       combined.throwIfAborted();
       const query=new URLSearchParams({configVersion:snapshot.configVersion,windowId:snapshot.windowId});
-      const response=await fetchImpl(`/api/presentation/shared-room/${roomId}/binding?${query}`,{
-        method:'GET',credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json'},signal:combined});
+      let response;
+      try{
+        response=await fetchImpl(`/api/presentation/shared-room/${roomId}/binding?${query}`,{
+          method:'GET',credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json'},signal:combined});
+      }catch(error){
+        // A refused or dropped request, or this attempt's own 10 s limit. A closed connection or page is no retry.
+        if(!signal.aborted&&!requestSignal.aborted&&['TypeError','TimeoutError'].includes(error?.name))throw unavailable(true);
+        throw error;
+      }
       combined.throwIfAborted();
       if(response.status===409){
         const failure=await response.json().catch(()=>null);combined.throwIfAborted();
         if(failure?.error==='shared_room_presentation_stale')throw Object.assign(new Error('shared_room_presentation_stale'),{code:'shared_room_presentation_stale'});
       }
-      if(response.status!==200)throw new Error('shared_room_presentation_binding_unavailable');
+      if(response.status!==200)throw unavailable([502,503,504].includes(response.status));
       const value=await response.json();combined.throwIfAborted();return checkedBinding(value,snapshot,roomId);
     }finally{request.abort();}
+  }
+  // K04 (external review 28 Oct 2026, fynd 3): a network error, an attempt's 10 s limit or a 502/503/504 failed the
+  // table at once. Such a read is made again, at most retryDelaysMs.length more times with a growing wait. 401/403,
+  // any other status or 409, and an invalid or foreign binding stop as before; the stale window stays the recognized
+  // conflict. When the attempts are spent the socket rereads the room within its own reconnect budget. Nothing opens
+  // before the server has confirmed the binding.
+  async function read(snapshot,requestSignal){
+    if(!id(snapshot.configVersion)||!id(snapshot.windowId))invalidBinding();
+    for(let attempt=0;;attempt++){
+      try{return await readOnce(snapshot,requestSignal);}
+      catch(error){
+        if(!error?.transient)throw error;
+        if(attempt>=retryDelaysMs.length)throw Object.assign(error,{code:'shared_room_presentation_binding_unavailable'});
+        await pause(retryDelaysMs[attempt],requestSignal);
+      }
+    }
   }
   return Object.freeze({
     async restoreSnapshot(snapshot,{signal:connection,receivedAt=Date.now()}={}){
@@ -110,7 +141,7 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
         active.removeEventListener('abort',abortMount);abortMount=null;
         owned.startup.ready(binding.selection.dealer);
       }catch(error){
-        if(candidate){if(!active.aborted&&error?.code!=='shared_room_presentation_stale')candidate.startup.fail();dispose(candidate);}
+        if(candidate){if(!active.aborted&&!recoverable.has(error?.code))candidate.startup.fail();dispose(candidate);}
         throw error;
       }finally{
         if(abortMount)active.removeEventListener('abort',abortMount);
@@ -126,7 +157,9 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
 export async function mountSharedRoomApp({document=globalThis.document,window=globalThis.window,
   createSocket=createSharedRoomClient,createCommands=createSharedRoomCommandClient,
   createView=createSharedRoomView,createPresentation=mountSharedRoomPresentation,presentationTransport=null,
-  fetchImpl=(...args)=>window.fetch(...args)}={}) {
+  fetchImpl=(...args)=>window.fetch(...args),bindingRetryDelaysMs=[250,1000]}={}) {
+  if(!Array.isArray(bindingRetryDelaysMs)||bindingRetryDelaysMs.length>4||!bindingRetryDelaysMs.every(ms=>Number.isSafeInteger(ms)&&ms>=0&&ms<=5000))
+    throw new TypeError('shared_room_invalid_options');
   const dataset=document?.documentElement?.dataset,roomId=dataset?.gameRoomId;
   if(dataset?.sharedRoom!=='1'||!roomId||!/^[a-z0-9_-]{1,128}$/.test(roomId))throw new Error('shared_room_entry_required');
   const loading=document.getElementById('presentation-loading'),loadingText=loading?.textContent??'Visar spelbordet…';
@@ -139,15 +172,16 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   window.addEventListener('pagehide',close,{once:true});
   try {
     commands=createCommands({roomId});
-    presentation=boundPresentation({document,window,roomId,signal:lifetime.signal,fetchImpl,createPresentation,transport:presentationTransport,
+    presentation=boundPresentation({document,window,roomId,signal:lifetime.signal,fetchImpl,createPresentation,transport:presentationTransport,retryDelaysMs:bindingRetryDelaysMs,
       startupFor:dealerId=>{startup.close();if(loading){loading.hidden=false;loading.textContent=loadingText;}
         startup=createPresentationStartup({document,dealerId});return startup;},onError:()=>{
         const caption=document.getElementById('caption');if(caption)caption.textContent='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
       }});
     view=createView({document,onLayout:layout=>presentation.layout?.(layout)});
-    controller=createSharedRoomController({roomId,commands,view,presentation});
+    controller=createSharedRoomController({roomId,commands,view,presentation,reconnect:()=>socket?.reconnect?.()});
+    // A spent reconnect budget leaves the socket offline: the table keeps its last state and offers Återanslut.
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot:controller.restoreSnapshot,
-      present:controller.present,onError:fail,callbackTimeoutMs:30000});
+      present:controller.present,onError:()=>socket?.status?.().state==='offline'?controller.offline():fail(),callbackTimeoutMs:30000});
     socket.start();
     return Object.freeze({close,controller});
   }catch(error){fail();close();throw error;}
