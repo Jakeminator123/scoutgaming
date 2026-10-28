@@ -85,9 +85,9 @@ Dragans talbank (`CROUPIER_MOVING_SPEECH_BANK_RECORD`) och allt som talkedjan ha
 
 - **K1, katalog utan Astrid: byggd.** Kontraktet godtar en katalog med spelets och sajtens publika tillgångar och tom presentation (`source: 'scoutgaming-empty'`), och fortfarande produktionens nuvarande med banken (`9201007d…`); båda fallen har prov (`test/neon-runtime-catalog.mjs`, `test/runtime-media-catalog.mjs`, `test/runtime-media-import.mjs`, `apps/studio/test/neon-video-registry.test.mjs`). K1 (#480) och repo-PR 2 (#488) mergades tillsammans i `6ceb797af6` den 28 oktober; `build-lab-video-manifest --check` är struken ur `.githooks/pre-commit-full`, och `build-runtime-media-catalog --check` kontrollerar katalogen utan bank. Sedan #546 läser katalogbygget och Blob-exporten ingen bank från disk, arkivaliaset `emil/dealklipp-v1` är borta och det historiska migreringsverktyget `tools/migrate-media-layout.mjs` är raderat.
   - **Driftsatt före steg 6.** Vercel och `croupier-v3` måste köra en `main` som innehåller `6ceb797af6`. Det gjorde de vid kontrollen 28 oktober cirka 19 UTC: Vercels produktion `e83cd4819b` och `croupier-v3` (`/__cloud/version`) `6e9c8f4855`. Kontrollera igen före importen med `git merge-base --is-ancestor 6ceb797af6 <sha>`. Ingen ytterligare deploy krävs för steg 6.
-  - **K1b, efter steg 6 och minst ett verifierat dygn.** Banken läses i produktionen tills katalogen är bytt: Admins videoregister listar dess 51 poster ur katalogen, och återställningen i avsnitt 7 bygger på att koden fortfarande godtar en katalog med bank. Därefter tas bankformatet bort i en egen PR, och konsumenterna följs först:
+  - **K1b, efter steg 6 och minst ett verifierat dygn.** Banken läses i produktionen tills katalogen är bytt: Admins videoregister listar dess 51 poster ur katalogen, och en återställning från backup-branchen (avsnitt 7) ger tillbaka en katalog med bank, som koden då måste godta. Därefter tas bankformatet bort i en egen PR, och konsumenterna följs först:
     - `runtime-catalog.mjs` godtar bara tom presentation; `validateLabVideoManifest` och `readLabVideoManifest` i `video-manifest.mjs`;
-    - `registry-core.mjs`: bankläget (`presentationBankRoot`, `bankBlobIdentity`, familjeposterna "Astrid · …") och diskarkivlägena `archiveDir` och `snapshotPath`, som bara provfixturen `apps/studio/test/fixtures/local-video-registry.mjs` når;
+    - `registry-core.mjs`: bankläget (`presentationBankRoot`, `bankBlobIdentity`, familjeposterna "Astrid · …") och diskarkivlägena `archiveDir` och `snapshotPath`. De nås via provfixturen `apps/studio/test/fixtures/local-video-registry.mjs` men också via produktionsmodulen `services/game/storage/video-registry.mjs`, dit `services/game/presentation-api.mjs` skickar sina `registryOptions` (prov: `test/vercel-presentation-video-origin.mjs`). K1b följer den vägen och visar vilka alternativ motorn skickar innan lägena tas bort;
     - `PRESENTATION_BANK` i `media-layout.mjs`, `LAB_VIDEO_ARCHIVE` (`ops/cloud/config.mjs`, `container-entry.mjs`, miljöförteckningen), `tools/media/build-lab-video-manifest.mjs`, `apps/studio/schemas/lab-video-manifest.schema.json`, `test/fixtures/presentation-bank.mjs` och proven som bygger banker;
     - `ops/neon-studio/retained-bank.mjs` och `test/studio-retained-bank.mjs` efter S3;
     - ruttprefixen som bara den gamla katalogens adresser använde (`kevin-cards`, `bo`, `lab` i `packages/navigation/server/platform-routing.mjs` och `packages/studio-registry/server/media-runtime.mjs`), efter kontroll av övriga träffar;
@@ -168,7 +168,7 @@ Följ konsumenterna först: route → UI → tjänst → adapter → data.
 | 8 | **Blob**, sist och minst ett verifierat dygn efter steg 6 | Radera det från listan i steg 0 som Admin inte redan har raderat: retained-bank (6), katalogens `dealers/astrid/` (524), oregistrerade Astrid-objekt och lager som varken JB eller Dragan använder. Rouletterummets bord `7e31ab32-…` tas bara med efter Jakobs val i steg 0.4. Använd Blob-API med token på Jakobs dator, ett prefix i taget. Kör `HEAD` mot JB:s 53 klipp och 3 lager och mot Dragans bank före och efter. | JB:s och Dragans objekt ger 200. Inget under `dealers/dragan/` raderas. |
 | 9 | **Valfritt**, bara efter Jakobs beslut | PAOW:s 127 klipp utan referens: `POST /videos/archive` → `/videos/delete-check` → `/videos/delete`, ett klipp i taget. Lager: `POST /admin/material-trash`; Blob-bytes tas i steg 8. Auth-konton: `POST /admin/users/remove`, aldrig sig själv eller sista admin. Dessutom S1b, S2, S5 och S6. | – |
 
-**Körinstruktion, steg 6.** Kör i Jakobs terminal från en ren checkout av exakt den `main`-SHA som ska importeras. Scope anges alltid uttryckligen. `prepare` läser ingen databas, `plan` läser bara och vägrar skriva över en tidigare plan, och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Utdata innehåller koder, hashar och antal, aldrig anslutningssträngen.
+**Körinstruktion, steg 6.** Skapa först en Neon-branch från `br-flat-fog-b161a6r8` omedelbart före körningen, som i steg 0.1; utan den körs inte steg 6. Kör sedan i Jakobs terminal från en ren checkout av exakt den `main`-SHA som ska importeras. Scope anges alltid uttryckligen. `prepare` läser ingen databas, `plan` läser bara och vägrar skriva över en tidigare plan, och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Utdata innehåller koder, hashar och antal, aldrig anslutningssträngen.
 
 ```powershell
 $env:CROUPIER_STUDIO_ENVIRONMENT_ID = 'production'; $env:CROUPIER_STUDIO_WORKSPACE_ID = 'croupier'
@@ -182,7 +182,7 @@ node ops/neon-studio/runtime-media-import-run.mjs apply --plan arkiv/<datum>/neo
 Remove-Item Env:CROUPIER_RUNTIME_IMPORT_CONFIRM, Env:CROUPIER_GAME_DATABASE_URL
 ```
 
-`apply` stoppas utan skrivning om källfilerna, scope, målet, migreringsledgern eller katalogens revision har ändrats sedan planen. Koden godtar fortfarande den nuvarande katalogen med banken, så återställningen i avsnitt 7 fungerar med samma tre kommandon från den äldre SHA:n.
+`apply` stoppas utan skrivning om källfilerna, scope, målet, migreringsledgern eller katalogens revision har ändrats sedan planen. **Ingen väg tillbaka via Git.** Produktionens katalog (`9201007d…`) går inte att återskapa exakt med import från Git: `5bed596d0a` har layoutens 760 rader men saknar körskriptet, och `a2898e0767`, som har både skriptet och banken, har 111. Vägen tillbaka är branchen från körinstruktionens första steg.
 
 **SQL-fallback.** Kör varje block i en egen transaktion.
 - Räkna med `SELECT count(*)` och samma villkor före `DELETE`.
@@ -255,7 +255,7 @@ Följande raderas inte:
 5. S1a: radera 6 bolag med 21 paketrevisioner, efter rouletteexporten (steg 0.4). Dessförinnan: välj om rouletterummets bytes laddas ned (bordet `7e31ab32-…` och Annas 2 klipp) eller inte.
 6. Hur den öppna GPU-sessionen från 22 oktober ska släppas, om produktens återhämtning inte gör det (avsnitt 2, punkt 8).
 7. Permanent radering av dealerna, en i taget (steg 4), och S3 för retained bank.
-8. Byte av produktionens runtime-katalog (steg 6, som också omfattar steg 7).
+8. Byte av produktionens runtime-katalog (steg 6, som också omfattar steg 7), med en ny Neon-branch omedelbart före.
 9. Blob-radering per prefix (steg 8).
 10. Var för sig:
     - S1b (dragan-test, dess rum och bana);
@@ -263,12 +263,12 @@ Följande raderas inte:
     - oanvända lager och papperskorgen för material;
     - vilka auth-konton som tas bort;
     - S2, S5 och S6.
-11. Merge av K1b, K2, K3 och eventuellt K4. K1 och repo-PR 2 är mergade (#480 och #488). Git-historiken (filter-repo) är ett separat beslut.
+11. Merge av K1b, K2 och eventuellt K4. K1, repo-PR 2 och K3 är mergade (#480, #488 och #545). Git-historiken (filter-repo) är ett separat beslut.
 
 ## 7. Återställning
 
 - **Neon:** läs ur backup-branchen och skriv tillbaka exakta rader per tabell i omvänd ordning: bolag, paket, roller, utkast och logg. Alternativt `pg_restore --data-only --table=<tabell>` från dumpen till en tom kopia, följt av `INSERT … SELECT`. Hela branchen återställs med Neon `restore_snapshot` eller `reset_from_parent` bara efter Jakobs ja. Det skriver över allt som har hänt efter backupen, även talkedjans nya rader.
 - **Admin-steg:** arkiverade rum och bolag återställs via samma livscykelväg med `archived:false`. Ett återställt rum kommer tillbaka som `pending`, aldrig live. Dealers i papperskorgen kan återställas i Admin fram till `delete`.
-- **Katalogen:** importera den gamla revisionen igen från Git (`media/*.json` på `5bed596d0a`) med samma plan och apply.
+- **Katalogen:** går inte att importera exakt från Git (körinstruktionen för steg 6). Skriv tillbaka raden i `croupier_studio.runtime_media_catalogs` ur Neon-branchen som skapades omedelbart före steg 6. Koden godtar en katalog med bank fram till K1b.
 - **Blob:** en raderad blob går inte att återställa utan en egen kopia. Därför kommer steg 8 sist, efter verifiering, och bara med Jakobs val i steg 0.3. En gravsten i `media_records` kan inte peka på bytes igen. Återimport ger en ny tillgång och kräver nytt audiovisuellt godkännande.
 - **Repot:** Git-historiken innehåller alla raderade filer tills Jakob beslutar om filter-repo.

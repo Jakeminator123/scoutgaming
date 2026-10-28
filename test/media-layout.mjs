@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,rename,symlink,rm} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,rename,symlink,rm,lstat} from 'node:fs/promises';
 import {closeSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -12,6 +12,20 @@ test('public URL aliases serve the same descriptor bytes and forbid directory li
   for(const url of ['/assets/streams/a.h264','/media/game/runtime/assets/streams/a.h264']){const result=openPublicMedia(url,{repositoryRoot:root});assert.equal(readFileSync(result.fd).toString(),'immutable frame bytes');closeSync(result.fd);}
   const directory=join(root,'media/game/runtime/assets/streams'),outside=join(root,'alternate');await rename(directory,outside);await symlink(outside,directory,process.platform==='win32'?'junction':'dir');
   assert.throws(()=>openPublicMedia('/assets/streams/a.h264',{repositoryRoot:root}),/links/);
+});
+test('public media opens only exact published URLs, also through a canonical alias',async t=>{
+  const root=await mkdtemp(join(tmpdir(),'croupier-public-alias-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const canonicalPath='game/runtime/streams/take.h264',alias='game/runtime/streams/orig/take.h264';
+  await writeMediaLayoutFixture(root,{files:[
+    {path:canonicalPath,legacyPath:'web/public/streams/take.h264',access:'public',publicUrl:'/streams/take.h264',body:'stream bytes'},
+    {path:alias,legacyPath:'web/public/streams/orig/take.h264',access:'public',publicUrl:'/streams/orig/take.h264',canonicalPath},
+    {path:'game/source/3d/source.blend',legacyPath:'assets/3d/source.blend',access:'source',body:'private source'}]});
+  await assert.rejects(lstat(join(root,'media',alias)),{code:'ENOENT'},'the alias has no file of its own');
+  for(const url of ['/streams/take.h264','/streams/orig/take.h264','/media/'+alias]){
+    const opened=openPublicMedia(url,{repositoryRoot:root});assert.equal(readFileSync(opened.fd).toString(),'stream bytes',url);closeSync(opened.fd);
+  }
+  for(const url of ['/media/game/source/3d/source.blend','/streams/../streams/take.h264','/%2e%2e/source.blend','/streams/take.h264?token=x','/unknown.png'])
+    assert.equal(openPublicMedia(url,{repositoryRoot:root}),null,url);
 });
 test('unregistered relative paths stay unchanged and layout paths are unique',()=>{
   const root=process.cwd();
