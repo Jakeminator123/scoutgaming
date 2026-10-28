@@ -80,7 +80,7 @@ export async function registerImportDealer({id, name}, request) {
   const {project} = await request('/api/project');
   validateProject(project);
   if (project.dealers.length + (project.dealerTrash?.length ?? 0) >= MAX_DEALERS) {
-    throw Error(`Dealerregistret har nått gränsen ${MAX_DEALERS}, inklusive arkiverade dealers. Kontakta administrationen för att granska registret.`);
+    throw Error(`Dealers har nått gränsen ${MAX_DEALERS}, inklusive arkiverade dealers. Kontakta administrationen för att granska listan.`);
   }
   if (project.dealers.some(row => row.id === id) || project.dealerTrash?.some(row => row.dealer.id === id)) {
     throw Error('Dealer-id finns redan. Välj den befintliga dealern eller ett annat id.');

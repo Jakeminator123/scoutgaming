@@ -562,7 +562,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <div><dt>Wallet</dt><dd>{key.walletConfigured === true ? 'Ansluten' : 'Ej ansluten'}</dd></div>
           </dl><details className={styles.disclosure}><summary>Nyckelns rättigheter</summary><p>Nyckel och hemlighet är dolda.</p><p><code>{Array.isArray(key.scopes) ? key.scopes.filter(scope => typeof scope === 'string' && PARTNER_SCOPES.includes(scope)).join(', ') : '—'}</code></p></details></div>
           {!key.revoked_at && mayWrite('apikeys/revoke') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Återkalla partnernyckeln för ${label(key.name)}?`)) command('apikeys/revoke', { id: key.id }); }}>Återkalla partnernyckel</button>}
-          {!key.revoked_at && mayWrite('apikeys/rotate') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Byta HMAC-hemligheten för ${label(key.name)}? Den tidigare hemligheten slutar fungera.`)) command('apikeys/rotate', { id: key.id }); }}>Rotera hemlighet</button>}
+          {!key.revoked_at && mayWrite('apikeys/rotate') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Byta nyckeln för ${label(key.name)}? Den tidigare nyckeln slutar fungera.`)) command('apikeys/rotate', { id: key.id }); }}>Rotera hemlighet</button>}
           {!key.revoked_at && mayWrite('apikeys/launch') && Array.isArray(key.scopes) && key.scopes.includes('launch') && <form method="post" className={styles.form} onSubmit={submit('apikeys/launch', form => ({ id:key.id, playerId:value(form,'playerId'), displayName:value(form,'displayName'), currency:value(form,'currency'), language:value(form,'language') }))}>
             <h4>Starta partnerspel</h4><label>Partnerns spelar-ID<input name="playerId" required maxLength={256} disabled={busy} /></label>
             <label>Visningsnamn<input name="displayName" required maxLength={40} disabled={busy} /></label>
@@ -778,7 +778,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
       {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
         key={actor.username+':'+actor.role}
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}

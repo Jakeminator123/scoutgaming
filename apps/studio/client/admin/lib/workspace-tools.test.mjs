@@ -27,7 +27,7 @@ function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'d
   return {exports:module.exports,requests,render(fn,props){cursor=0;return fn(props);},async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 
-test('API & integrationer opens the real NativeAdministration with the server-read actions',async()=>{
+test('Integrationer opens the real NativeAdministration with the server-read actions',async()=>{
   const service=harness('../components/studio/connected-services.tsx','',{availableActions:['GET apikeys','POST apikeys/create'],gameOrigin:'https://game.invalid'});
   const administration=service.exports.ConnectedServices({path:'/admin/admin/api'});
   assert.equal(typeof administration.type,'function');

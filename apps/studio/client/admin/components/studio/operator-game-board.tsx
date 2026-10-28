@@ -15,7 +15,7 @@ type Props = {
 };
 
 export function OperatorGameBoard({company, companies, rooms, selectedId, disabled, removeDisabled, onCompanyChange, onSelect, onAdd, onRemove}: Props) {
-  return <section className={styles.board} aria-label={'Spelutbud för ' + company.name}>
+  return <section className={styles.board} aria-label={'Spelbolag & rum för ' + company.name}>
     <header className={styles.company}>
       <div className={styles.identity}>
         <span className={styles.logo}><Building2 size={27}/></span>

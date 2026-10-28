@@ -282,8 +282,8 @@ test('embedded navigation leaves group changes to the enclosing Admin while stan
       session:async()=>actor('admin'),fetchImpl:async url=>reply(data[url.slice('/studio/api/admin/'.length)]?.payload)};
     h.render(props);h.effects();await flush();const tree=h.render(props);
     assert.ok(nodes(tree,node=>node.type===h.StudioAdministrationView).length);
-    assert.equal(nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Backoffice-grupper').length,showGroupNavigation===false?0:1);
-    assert.equal(buttons(tree,'API & integrationer').length,showGroupNavigation===false?0:1);
+    assert.equal(nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Administration').length,showGroupNavigation===false?0:1);
+    assert.equal(buttons(tree,'Integrationer').length,showGroupNavigation===false?0:1);
     h.unmount();
   }
 });
@@ -330,8 +330,8 @@ test('each work area retains native identity headers and only shows its own tabs
       assert.ok(view&&Object.values(view.props.resources).every(resource=>resource.payload),group.id);
       assert.equal(view.props.actor.role,'admin');
       assert.equal(f.state.sessions,readIdentity==='response-headers-v1'?0:f.state.reads+1);
-      const expectedTabs={Drift:['Spelstatus & integritet','Betalningar & journal'],Administration:['Konton & åtkomst','API & integrationer']};
-      const menu=nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Backoffice-grupper')[0];
+      const expectedTabs={Drift:['Spelstatus & integritet','Betalningar & journal'],Administration:['Konton & åtkomst','Integrationer']};
+      const menu=nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Administration')[0];
       assert.deepEqual(nodes(menu,node=>node.type==='button').map(node=>node.props.children),expectedTabs[group.area],group.id);
       assert.equal(buttons(tree,'Spelmotor & rum').length,0,'retired room settings are never offered in the group menu');
       const html=renderToStaticMarkup(tree);
@@ -393,7 +393,7 @@ test('a server rejection after group preflight clears previously displayed nativ
     rejectReads = true;
     buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
     const html = renderToStaticMarkup(tree);
-    assert.match(html, notice); assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|private provider detail/);
+    assert.match(html, notice); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|private provider detail/);
     assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
     h.unmount();
   }
@@ -417,7 +417,7 @@ test('native identity change or revocation between concurrent reads discards the
     h.render(props); h.effects(); await flush();
     const tree = h.render(props), html = renderToStaticMarkup(tree);
     assert.match(html, notice);
-    assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|other@example.test/);
+    assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|other@example.test/);
     assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
     assert.equal(f.state.sessions, 0); assert.equal(f.state.reads, 2);
     assert.equal(bodies, 0, 'all response identities must agree before any body is read');
@@ -515,7 +515,7 @@ test('native all-error reload clears previous actor, data and controls instead o
   assert.match(renderToStaticMarkup(tree), /owner@example.test/);
   failed = true; buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /tillfälligt otillgänglig/);
-  assert.doesNotMatch(renderToStaticMarkup(tree), /Backoffice-grupper|owner@example.test/);
+  assert.doesNotMatch(renderToStaticMarkup(tree), /aria-label="Administration"|owner@example.test/);
   assert.equal(f.state.sessions, 0); h.unmount();
 });
 
@@ -593,7 +593,7 @@ test('menu changes fetch only displayed resources and keep a live identity check
     ['operations', 'Spelstatus & integritet', ['overview', 'shoes']],
     ['tables', 'Spelmotor & rum', ['config']],
     ['accounts', 'Konton & åtkomst', ['players', 'users']],
-    ['partners', 'API & integrationer', ['apikeys', 'emails']],
+    ['partners', 'Integrationer', ['apikeys', 'emails']],
     ['finance', 'Betalningar & journal', ['transactions']],
   ]) {
     h=harness(); requests.length=0; identities=0;
@@ -701,7 +701,7 @@ test('one-time credential display clears on explicit reload/group change and nev
   const props = {initialGroup:'accounts',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
     init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree,'API & integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree,'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   let native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
   native.props.command('apikeys/create',{name:'Example'}); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
@@ -931,7 +931,7 @@ test('revoked session clears old account data/controls, and explicit reload reco
   current = null;
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
   const html = renderToStaticMarkup(tree);
-  assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /owner@example.test|Backoffice-grupper/); assert.equal(count, 2);
+  assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /owner@example.test|aria-label="Administration"/); assert.equal(count, 2);
   current = actor('admin'); buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush();
   assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test · Administratör/); assert.equal(count, 4); h.unmount();
 });
@@ -947,7 +947,7 @@ test('a lower role or different identity mid-load fails closed instead of retain
       fetchImpl: async url => reply(data[url.slice('/api/admin/'.length)].payload) };
     h.render(props); h.effects(); await flush();
     const html = renderToStaticMarkup(h.render(props));
-    assert.match(html, notice); assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|other@example.test|superadmin/); h.unmount();
+    assert.match(html, notice); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|other@example.test|superadmin/); h.unmount();
   }
 });
 
@@ -1047,7 +1047,7 @@ test('POST and its reload block navigation and double writes; one-time results r
         const waiting = deferred(); pending.push({ action, ...waiting }); return waiting.promise;
       } };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
-    buttons(tree, 'API & integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    buttons(tree, 'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
     view().props.command('apikeys/create', { name: 'Fixture partner' });
     const duplicate = { name: 'Duplicate', password: 'discarded-fixture-password' }; view().props.command('apikeys/create', duplicate);
@@ -1067,7 +1067,7 @@ test('POST and its reload block navigation and double writes; one-time results r
     assert.equal(writes, 1); assert.equal(sessions, 1, 'only the POST has a session preflight'); assert.equal(tree.props['aria-busy'], false);
     if (mode === 'same') { assert.match(html, new RegExp(secret)); assert.equal(bodies, 2); }
     else assert.doesNotMatch(html, new RegExp(secret));
-    if (mode === 'mismatched') { assert.equal(bodies, 0); assert.doesNotMatch(html, /Backoffice-grupper/); }
+    if (mode === 'mismatched') { assert.equal(bodies, 0); assert.doesNotMatch(html, /aria-label="Administration"/); }
     else { assert.equal(buttons(tree, 'Konton & åtkomst')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
     h.unmount();
   }

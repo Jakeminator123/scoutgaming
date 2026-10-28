@@ -5,7 +5,7 @@ import { partnerLoginReturnTo } from '@/lib/partner-login-return.mjs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
-  title: 'Logga in · Partnerportal',
+  title: 'Logga in · Partnerportalen',
   referrer: 'no-referrer' as const,
   robots: { index: false, follow: false },
 };

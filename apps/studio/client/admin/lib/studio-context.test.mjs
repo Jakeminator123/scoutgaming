@@ -126,7 +126,7 @@ test('registered room view embeds the exact scoped Admin editor with publication
   assert.doesNotMatch(html,/data-room-create=/,'room creation opens only on request');
   assert.match(html,/data-lifecycle="rooms"/);assert.doesNotMatch(html,/data-lifecycle="operator"/);
   assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
-  assert.match(html,/Återställ borttaget spel/);assert.match(html,/Gemensam mall och tillåtna alternativ/);
+  assert.match(html,/Återställ borttaget spel/);assert.match(html,/Delad mall och tillåtna alternativ/);
   const blackjack=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions});
   assert.match(blackjack,/data-game-config="bj"/);
   for(const [room,composition] of [['roulette','two'],['bj','one']]){
@@ -298,7 +298,7 @@ test('the publication card publishes the acknowledged company package with the l
   const lifecycle=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
   const submit=()=>walk(h.render(),node=>node.type==='button'&&node.props.type==='submit')[0];
   const checkbox=id=>walk(h.render(),node=>node.type==='input'&&node.props.value===id)[0];
-  const known=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Publicerat · version \d+|Publicerar…|Spara det pågående Studio-arbetet först)$/;
+  const known=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Publicerat · version \d+|Publicerar…|Spara det pågående arbetet först)$/;
   const status=()=>walk(h.render(),node=>node.type==='p'&&node.props.role==='status'&&typeof node.props.children==='string'&&known.test(node.props.children))[0]?.props.children;
   assert.equal(submit().props.disabled,true,'no package baseline before the lifecycle readback');assert.equal(status(),'Läs in aktuell publicering');
   lifecycle().props.onChanged(lifecycleSnapshot());
@@ -373,7 +373,7 @@ test('the room status shows published materials only for the selected room and c
 });
 // Publication proofs for the company package on /admin/rooms. They were first written for the
 // retired publication page (/admin/publication) and follow the same operator-package contract.
-const knownStatus=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Avmarkera borttagna sammansättningar först|Publicerat · version \d+|Publicerar…|Spara det pågående Studio-arbetet först)$/;
+const knownStatus=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Avmarkera borttagna mallar först|Publicerat · version \d+|Publicerar…|Spara det pågående arbetet först)$/;
 const packageOperators=change=>lifecycleSnapshot({operators:lifecycleSnapshot().operators.map(row=>row.id==='a'?{...row,...change}:row)});
 async function publicationHarness({search='?operator=a&table=bj',props,dealerIds=['astrid']}={}){
   const requests=[],replies=[],extraRooms=[];
@@ -513,15 +513,15 @@ test('a room creation receipt advances the company package and blocks publicatio
 test('unsaved Studio work blocks the company publication until it is saved',async()=>{
   const p=await publicationHarness({props:{disabled:true}});
   p.lifecycle().props.onChanged(lifecycleSnapshot());
-  assert.equal(p.status(),'Spara det pågående Studio-arbetet först');assert.equal(p.submit().props.disabled,true);
+  assert.equal(p.status(),'Spara det pågående arbetet först');assert.equal(p.submit().props.disabled,true);
   await p.publish();assert.equal(p.requests.length,0);
 });
 
 test('a composition removed from Studio stays visible in the package and blocks publication until it is unchecked',async()=>{
   const p=await publicationHarness();
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
-  assert.equal(p.checkbox('retired').props.checked,true);assert.match(p.html(),/Sammansättning borttagen ur Studio · retired/);
-  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna sammansättningar först');
+  assert.equal(p.checkbox('retired').props.checked,true);assert.match(p.html(),/Mall borttagen · retired/);
+  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna mallar först');
   await p.publish();assert.equal(p.requests.length,0);
   p.checkbox('retired').props.onChange({target:{checked:false}});
   assert.equal(p.status(),'Urvalet är inte publicerat');assert.equal(p.submit().props.disabled,false);
@@ -533,7 +533,7 @@ test('a composition removed from Studio stays visible in the package and blocks 
 test('a removed composition blocks only the package publication; the PAOW idle refresh still publishes against the frozen package',async()=>{
   const p=await publicationHarness({dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
-  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna sammansättningar först');
+  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna mallar först');
   const paow=()=>walk(p.h.render(),node=>node.type==='button'&&node.props.children==='Publicera PAOWs viloklipp')[0];
   assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));

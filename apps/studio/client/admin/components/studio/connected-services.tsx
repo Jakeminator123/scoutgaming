@@ -54,7 +54,7 @@ function Administration({group,section}:{group:string;section?:AccountsSection})
     void (async()=>{
       try {
         const response=await fetch('/studio/api/auth/session',{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
-        if(!response.ok)throw Error([401,403].includes(response.status)?'Din N1-session saknas eller har gått ut. Logga in igen.':'Administrationen kunde inte nås.');
+        if(!response.ok)throw Error([401,403].includes(response.status)?'Din inloggning saknas eller har gått ut. Logga in igen.':'Administrationen kunde inte nås.');
         const value=await response.json();
         if(!Array.isArray(value.availableActions)||!value.availableActions.every((action:unknown)=>typeof action==='string'))throw Error('Serverns administrationsbehörigheter kunde inte verifieras.');
         let origin:string|undefined;

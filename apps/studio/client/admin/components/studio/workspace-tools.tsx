@@ -20,7 +20,7 @@ export function WorkspaceTool({section}:{section:string}){
     const controller=new AbortController();setData(null);setError('');
     void (async()=>{try{
       const response=await fetch(labUrl('/api/admin/workspace/'+encodeURIComponent(section)),{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
-      if(!response.ok)throw Error([401,403].includes(response.status)?'Logga in som nivå 1 för att öppna verktyget.':'Registret kunde inte läsas. Dina sparade uppgifter är kvar.');
+      if(!response.ok)throw Error([401,403].includes(response.status)?'Logga in som nivå 1 för att öppna verktyget.':'Uppgifterna kunde inte läsas. Dina sparade uppgifter är kvar.');
       const value=await response.json();
       if(!value.project?.revision||!Array.isArray(value.project.dealers)||!Array.isArray(value.videos?.videos)||value.status?.configured!==true)throw Error('Serverns svar kunde inte verifieras.');
       if(!controller.signal.aborted)setData(value);

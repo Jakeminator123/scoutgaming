@@ -17,7 +17,7 @@ export const BACKOFFICE_GROUPS = Object.freeze([
   { id: 'operations', label: 'Drift & spelintegritet', area: 'Drift', sections: ['ops', 'shoes'] },
   { id: 'tables', label: 'Spelmotor & rum', area: 'Drift', sections: ['lanes', 'rooms', 'dealers'] },
   { id: 'accounts', label: 'Interna konton & spelare', area: 'Administration', sections: ['players', 'users'] },
-  { id: 'partners', label: 'API & integrationer', area: 'Administration', sections: ['apikeys', 'emails'] },
+  { id: 'partners', label: 'Integrationer', area: 'Administration', sections: ['apikeys', 'emails'] },
   { id: 'finance', label: 'Betalningar & journal', area: 'Drift', sections: ['pay'] },
 ].map(group => Object.freeze({ ...group, sections: Object.freeze(group.sections) })));
 
