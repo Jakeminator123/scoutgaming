@@ -197,7 +197,7 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
     {notice && <p role="status" className="text-sg-lime">{notice}</p>}
     {invalidated && !busy && <button type="button" className={button} disabled={blocked} onClick={() => void onReload()}><RotateCcw size={13} /> Läs om registret</button>}
     {!bank ? <p>Ingen sådan dealer finns i de inlästa registren. En ny setversion måste registreras innan den får media och livscykelåtgärder.</p> : <>
-      <div className="rounded border border-sg-line p-3"><strong>{bank.dealer.label}</strong><p className="mt-1 text-sg-muted">Identitet: <code>{bank.dealer.id}</code> · {bank.archived ? 'I papperskorgen' : 'Aktiv'} · {bank.videos.length} mediafiler</p>
+      <div className="rounded border border-sg-line p-3"><strong>{bank.dealer.label}</strong><p className="mt-1 text-sg-muted" title={'Dealer-id: '+bank.dealer.id}>{bank.archived ? 'I papperskorgen' : 'Aktiv'} · {bank.videos.length===1?'1 mediafil':`${bank.videos.length} mediafiler`}</p>
         <p className="mt-2 text-sg-muted">Namnet är en etikett för denna identitet. Namn och versionsliknande ID:n skapar inte separata set.</p>
       </div>
       <nav className="flex gap-2" aria-label="Livscykelresurser"><button type="button" className={button} disabled={busy} aria-pressed={view === 'sets'} onClick={() => setView('sets')}>Set & kategorier</button><button type="button" className={button} disabled={busy} aria-pressed={view === 'clips'} onClick={() => setView('clips')}>Klipp & dealerarkiv</button></nav>
