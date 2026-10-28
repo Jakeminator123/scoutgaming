@@ -4,7 +4,10 @@
 // attempts) and every write fails with the fixed code operator_materials_unavailable.
 // The readiness check never errors, so it is safe inside a publication
 // transaction: a missing table must not abort the surrounding work.
-// Ownership is environment_id + workspace_id + operator_id, always bound first.
+// Ownership is environment_id + workspace_id + operator_id, always bound first;
+// a material id belongs to one company per workspace and never to Admin's project.
+// A row this code cannot read is returned as state 'corrupt' (skipped by the
+// merge with a warning), so one bad row does not stop the company's publications.
 import { createHash, randomUUID } from 'node:crypto';
 import { validateLayerAsset } from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { LANE_ID, RESERVED_LANE_IDS } from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -17,26 +20,18 @@ export const OPERATOR_MATERIAL_STATES = Object.freeze(['pending', 'approved', 'r
 export const OPERATOR_MATERIAL_SOURCES = Object.freeze(['upload', 'ai']);
 // v1: still images only. Videos and game-tagged tables wait for their own decision.
 export const OPERATOR_MATERIAL_TYPES = Object.freeze(['image/png', 'image/jpeg', 'image/webp']);
+// Waiting and approved material per company; rejected and revoked rows are history.
 export const MAX_OPERATOR_MATERIALS = 500;
+// Every material id a company has ever proposed, the bound of each read.
+export const MAX_OPERATOR_MATERIAL_IDS = 2000;
 export const MAX_OPERATOR_DAILY_AI_LIMIT = 100;
-const TRANSITIONS = Object.freeze({ pending: ['approved', 'rejected'], approved: ['revoked'], rejected: [], revoked: [] });
-const CODES = new Set(['operator_materials_unavailable', 'operator_materials_blocked', 'operator_ai_limit_reached', 'operator_materials_limit_reached']);
-
-// Fixed product codes outside the studio_ prefix; the class keeps the
-// StudioStorageError contract (status, instanceof) so transactions preserve them.
-export class OperatorMaterialError extends StudioStorageError {
-  constructor(code, statusCode) {
-    super('studio_storage_unavailable', statusCode);
-    if (CODES.has(code)) { this.code = code; this.message = code; }
-    this.name = 'OperatorMaterialError';
-  }
-}
+const TRANSITIONS = Object.freeze({ pending: ['approved', 'rejected'], approved: ['revoked'], rejected: [], revoked: [], corrupt: [] });
 
 const idPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const dealerPattern = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
-const unavailable = () => { throw new OperatorMaterialError('operator_materials_unavailable', 503); };
+const unavailable = () => fail('operator_materials_unavailable', 503);
 const corrupt = () => fail('studio_corrupt_operator_material');
 const plain = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
@@ -102,8 +97,11 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
     return rows.length === 1 && rows[0].ledgered === 1 && rows[0].present === true;
   }
   async function available() { return ready ??= await availableWith(query); }
-  function audit(input, classes) {
+  // Only a proposal may fall back to a system audit; decisions, policy and AI
+  // attempts name their actor, access class and request explicitly.
+  function audit(input, classes, { explicit = true } = {}) {
     const actor = validateActor(input?.actor);
+    if (explicit && input?.audit === undefined) fail('studio_invalid_data', 422);
     const context = input?.audit === undefined
       ? { actorId: 'actor-' + createHash('sha256').update(actor).digest('hex'), accessClass: 'system', requestId: randomUUID() }
       : input.audit;
@@ -111,36 +109,37 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
     return { actorId: idText(context.actorId), accessClass: context.accessClass, requestId: uuidText(context.requestId) };
   }
   function material(row) {
-    if (!row || row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId
-      || !OPERATOR_MATERIAL_STATES.includes(row.state) || !OPERATOR_MATERIAL_SOURCES.includes(row.source)
-      || !['background', 'table'].includes(row.role)) corrupt();
+    // The scope and the id are the row's identity; without them nothing is trusted.
+    if (!row || row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId) corrupt();
     const materialId = uuidText(row.material_id, 'studio_corrupt_operator_material', 503);
-    let asset, tableBinding = null;
+    const operatorId = idText(row.operator_id, 'studio_corrupt_operator_material', 503);
+    const revision = integer(row.revision, 1, Number.MAX_SAFE_INTEGER, 'studio_corrupt_operator_material', 503);
     try {
-      asset = validateOperatorMaterialAsset(JSON.parse(row.asset), materialId);
+      if (!OPERATOR_MATERIAL_STATES.includes(row.state) || !OPERATOR_MATERIAL_SOURCES.includes(row.source)
+        || !['background', 'table'].includes(row.role)) corrupt();
+      const asset = validateOperatorMaterialAsset(JSON.parse(row.asset), materialId);
       if (canonicalStudioJson(asset) !== row.asset || asset.role !== row.role) corrupt();
+      let tableBinding = null;
       if (row.table_binding !== null) {
         tableBinding = validateOperatorTableBinding(JSON.parse(row.table_binding));
         if (canonicalStudioJson(tableBinding) !== row.table_binding) corrupt();
       }
-    } catch { corrupt(); }
-    if ((row.role === 'table') !== (tableBinding !== null)) corrupt();
-    return Object.freeze({
-      operatorId: idText(row.operator_id, 'studio_corrupt_operator_material', 503), materialId,
-      revision: integer(row.revision, 1, Number.MAX_SAFE_INTEGER, 'studio_corrupt_operator_material', 503),
-      state: row.state, source: row.source, role: row.role,
-      asset: Object.freeze(asset), tableBinding: tableBinding && Object.freeze(tableBinding),
-      actorId: idText(row.actor_id, 'studio_corrupt_operator_material', 503), accessClass: row.access_class,
-      occurredAtMs: integer(row.occurred_at_ms, 0, Number.MAX_SAFE_INTEGER, 'studio_corrupt_operator_material', 503),
-    });
+      if ((row.role === 'table') !== (tableBinding !== null)) corrupt();
+      return Object.freeze({ operatorId, materialId, revision, state: row.state, source: row.source, role: row.role,
+        asset: Object.freeze(asset), tableBinding: tableBinding && Object.freeze(tableBinding),
+        actorId: idText(row.actor_id), accessClass: row.access_class, occurredAtMs: integer(row.occurred_at_ms, 0, Number.MAX_SAFE_INTEGER) });
+    } catch {
+      return Object.freeze({ operatorId, materialId, revision, state: 'corrupt', source: null, role: null, asset: null, tableBinding: null,
+        actorId: null, accessClass: null, occurredAtMs: Number.isSafeInteger(Number(row.occurred_at_ms)) ? Number(row.occurred_at_ms) : 0 });
+    }
   }
   const columns = 'environment_id,workspace_id,operator_id,material_id,revision,state,source,role,asset,table_binding,actor_id,access_class,occurred_at_ms';
   async function latest(txQuery, operatorId) {
     const rows = await txQuery(`/* operator-materials:list */ SELECT ${columns} FROM (
         SELECT DISTINCT ON (material_id) ${columns} FROM croupier_studio.operator_materials
         WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 ORDER BY material_id, revision DESC) current
-      ORDER BY occurred_at_ms, material_id LIMIT $4`, [operatorId, MAX_OPERATOR_MATERIALS + 1]);
-    if (rows.length > MAX_OPERATOR_MATERIALS) corrupt();
+      ORDER BY occurred_at_ms, material_id LIMIT $4`, [operatorId, MAX_OPERATOR_MATERIAL_IDS + 1]);
+    if (rows.length > MAX_OPERATOR_MATERIAL_IDS) corrupt();
     return rows.map(material);
   }
   function policy(row, operatorId) {
@@ -155,6 +154,15 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
       FROM croupier_studio.operator_material_policies WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3`, [operatorId]);
     if (rows.length > 1) corrupt();
     return policy(rows[0], operatorId);
+  }
+  // Admin's own material ids (project and its trash) can never become company material.
+  async function adminAssetId(txQuery, materialId) {
+    const rows = await txQuery(`/* operator-materials:admin-asset */ SELECT
+        EXISTS (SELECT 1 FROM croupier_studio.documents d, jsonb_array_elements(COALESCE(d.value->'layerAssets','[]'::jsonb)) a
+          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='project' AND a->>'id'=$3)
+        OR EXISTS (SELECT 1 FROM croupier_studio.documents d, jsonb_array_elements(COALESCE(d.value->'layerAssetTrash','[]'::jsonb)) t
+          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='project' AND t->'asset'->>'id'=$3) AS taken`, [materialId]);
+    return rows[0]?.taken === true;
   }
   async function countAttempts(txQuery, operatorId, day) {
     const rows = await txQuery(`/* operator-materials:count-ai */ SELECT count(*)::integer AS used FROM croupier_studio.operator_ai_attempts
@@ -201,9 +209,9 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
     const operatorId = idText(input.operatorId), materialId = uuidText(input.materialId);
     const expected = integer(input.expectedRevision, 0, Number.MAX_SAFE_INTEGER);
     const state = OPERATOR_MATERIAL_STATES.includes(input.state) ? input.state : fail('studio_invalid_data', 422);
-    const context = audit(input, ['internal-admin', 'partner', 'system']);
-    // Only Scoutgaming decides; a company can only propose.
-    if (state !== 'pending' && context.accessClass === 'partner') fail('studio_forbidden', 403);
+    // Only Scoutgaming staff decides, by name; a company can only propose.
+    if (state !== 'pending' && input.audit?.accessClass === 'partner') fail('studio_forbidden', 403);
+    const context = state === 'pending' ? audit(input, ['internal-admin', 'partner', 'system'], { explicit: false }) : audit(input, ['internal-admin']);
     let source, asset, binding;
     if (expected === 0) {
       if (state !== 'pending') fail('studio_invalid_data', 422);
@@ -219,12 +227,15 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
         if (!TRANSITIONS[current.state].includes(state)) fail('studio_conflict', 409);
         ({ source, asset } = current); binding = current.tableBinding;
       } else {
-        if ((await readPolicy(txQuery, operatorId)).blocked) throw new OperatorMaterialError('operator_materials_blocked', 403);
-        if (all.length >= MAX_OPERATOR_MATERIALS) throw new OperatorMaterialError('operator_materials_limit_reached', 409);
+        if ((await readPolicy(txQuery, operatorId)).blocked) fail('operator_materials_blocked', 403);
+        if (all.filter(row => ['pending', 'approved'].includes(row.state)).length >= MAX_OPERATOR_MATERIALS
+          || all.length >= MAX_OPERATOR_MATERIAL_IDS) fail('operator_materials_limit_reached', 409);
+        if (await adminAssetId(txQuery, materialId)) fail('studio_conflict', 409);
       }
+      // Another company's id fails on UNIQUE (workspace, material_id, revision): 409.
       const rows = await txQuery(`/* operator-materials:append */ INSERT INTO croupier_studio.operator_materials
-        (environment_id,workspace_id,operator_id,material_id,revision,state,source,role,asset,table_binding,event_id,actor_id,access_class,occurred_at_ms,request_id)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING ${columns}`,
+        (environment_id,workspace_id,operator_id,material_id,revision,state,source,role,asset,table_binding,event_id,actor_id,access_class,occurred_at_ms,request_id,first_revision)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,1) RETURNING ${columns}`,
       [operatorId, materialId, expected + 1, state, source, asset.role, canonicalStudioJson(asset), binding ? canonicalStudioJson(binding) : null,
         randomUUID(), context.actorId, context.accessClass, clock(), context.requestId]);
       if (rows.length !== 1) fail('studio_storage_unavailable');
@@ -241,7 +252,7 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
     const operatorId = idText(input.operatorId), expected = integer(input.expectedRevision, 0, Number.MAX_SAFE_INTEGER);
     const dailyAiLimit = integer(input.dailyAiLimit, 0, MAX_OPERATOR_DAILY_AI_LIMIT);
     if (typeof input.blocked !== 'boolean') fail('studio_invalid_data', 422);
-    const context = audit(input, ['internal-admin', 'system']);
+    const context = audit(input, ['internal-admin']);
     return withLock(operatorId, async txQuery => {
       if ((await readPolicy(txQuery, operatorId)).revision !== expected) fail('studio_conflict', 409);
       const values = [operatorId, expected + 1, dailyAiLimit, input.blocked, context.actorId, context.accessClass, clock()];
@@ -266,12 +277,12 @@ export function createOperatorMaterialStore({ sql, scope, now = Date.now, transa
   async function reserveAiAttempt(input = {}) {
     if (!plain(input)) fail('studio_invalid_data', 422);
     const operatorId = idText(input.operatorId), attemptId = uuidText(input.attemptId);
-    const context = audit(input, ['internal-admin', 'partner', 'system']);
+    const context = audit(input, ['internal-admin', 'partner']);
     return withLock(operatorId, async txQuery => {
       const current = await readPolicy(txQuery, operatorId), at = clock(), day = utcDay(at);
-      if (current.blocked) throw new OperatorMaterialError('operator_materials_blocked', 403);
+      if (current.blocked) fail('operator_materials_blocked', 403);
       const used = await countAttempts(txQuery, operatorId, day);
-      if (used >= current.dailyAiLimit) throw new OperatorMaterialError('operator_ai_limit_reached', 429);
+      if (used >= current.dailyAiLimit) fail('operator_ai_limit_reached', 429);
       await txQuery(`/* operator-materials:reserve-ai */ INSERT INTO croupier_studio.operator_ai_attempts
         (environment_id,workspace_id,operator_id,attempt_id,day,actor_id,access_class,occurred_at_ms)
         VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8)`, [operatorId, attemptId, day, context.actorId, context.accessClass, at]);

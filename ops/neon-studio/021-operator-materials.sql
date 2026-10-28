@@ -10,6 +10,10 @@
 -- layer-asset-contract.mjs; role and material_id repeat its own fields.
 -- table_binding is the dealer landing template a table graphic was drawn for
 -- (dealerId, profileId, laneId, templateSha256); a background has none.
+-- A material id belongs to exactly one company in its workspace: revision 1 is
+-- unique per workspace and every later revision refers to its own company's
+-- revision 1 (first_revision). The server creates the id; ids already used by
+-- Admin's project are refused by the application.
 -- Retain indefinitely until an explicit retention policy is approved. No application delete path.
 CREATE TABLE croupier_studio.operator_materials (
   environment_id text NOT NULL CHECK (environment_id ~ '^[a-z][a-z0-9_-]{0,62}$'),
@@ -27,13 +31,17 @@ CREATE TABLE croupier_studio.operator_materials (
   access_class text NOT NULL CHECK (access_class IN ('internal-admin','partner','system')),
   occurred_at_ms bigint NOT NULL CHECK (occurred_at_ms >= 0),
   request_id text NOT NULL CHECK (request_id ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'),
+  first_revision bigint NOT NULL CHECK (first_revision = 1),
   CHECK ((revision = 1) = (state = 'pending')),
   CHECK ((role = 'table') = (table_binding IS NOT NULL)),
   CHECK ((asset::jsonb ->> 'id') = material_id AND (asset::jsonb ->> 'role') = role),
   PRIMARY KEY (environment_id, workspace_id, operator_id, material_id, revision),
+  UNIQUE (environment_id, workspace_id, material_id, revision),
   UNIQUE (environment_id, workspace_id, operator_id, event_id),
   FOREIGN KEY (environment_id, workspace_id, operator_id)
-    REFERENCES croupier_studio.operators (environment_id, workspace_id, operator_id)
+    REFERENCES croupier_studio.operators (environment_id, workspace_id, operator_id),
+  FOREIGN KEY (environment_id, workspace_id, operator_id, material_id, first_revision)
+    REFERENCES croupier_studio.operator_materials (environment_id, workspace_id, operator_id, material_id, revision)
 );
 CREATE INDEX operator_materials_time_idx ON croupier_studio.operator_materials (environment_id, workspace_id, operator_id, occurred_at_ms DESC, event_id DESC);
 -- One row per company. A missing row means daily AI limit 0 (off) and not blocked.

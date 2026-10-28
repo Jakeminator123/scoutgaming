@@ -46,17 +46,23 @@ test('021 installs on PostgreSQL, stays optional for readiness and its constrain
   assert.equal(await storeFor(pool).available(), true);
   const id = randomUUID();
   const insert = values => pool.query(`INSERT INTO croupier_studio.operator_materials
-    (environment_id,workspace_id,operator_id,material_id,revision,state,source,role,asset,table_binding,event_id,actor_id,access_class,occurred_at_ms,request_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`, values);
+    (environment_id,workspace_id,operator_id,material_id,revision,state,source,role,asset,table_binding,event_id,actor_id,access_class,occurred_at_ms,request_id,first_revision)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, values);
   const row = (patch = {}) => Object.values({ env: scope.environment, ws: scope.workspaceId, operator: 'north', id, revision: 1, state: 'pending', source: 'upload',
-    role: 'background', asset: JSON.stringify(asset(id)), binding: null, event: randomUUID(), actor: 'staff-1', access: 'internal-admin', at: 1, request: randomUUID(), ...patch });
+    role: 'background', asset: JSON.stringify(asset(id)), binding: null, event: randomUUID(), actor: 'staff-1', access: 'internal-admin', at: 1, request: randomUUID(), first: 1, ...patch });
   for (const [patch, sqlState] of [[{ state: 'deleted' }, '23514'], [{ state: 'approved' }, '23514'], [{ revision: 2 }, '23514'],
     [{ asset: JSON.stringify(asset(randomUUID())) }, '23514'], [{ role: 'table' }, '23514'], [{ binding: JSON.stringify(binding) }, '23514'],
-    [{ source: 'scraped' }, '23514'], [{ access: 'player' }, '23514'], [{ operator: 'unknown' }, '23503']]) {
+    [{ source: 'scraped' }, '23514'], [{ access: 'player' }, '23514'], [{ first: 2 }, '23514'], [{ operator: 'unknown' }, '23503']]) {
     await assert.rejects(insert(row(patch)), error => error.code === sqlState, JSON.stringify(patch));
   }
   await insert(row());
   await assert.rejects(insert(row()), error => error.code === '23505', 'one revision per material');
+  // A material id belongs to one company per workspace: another company can
+  // neither create it nor append to it without its own first revision.
+  await assert.rejects(insert(row({ operator: 'south' })), error => error.code === '23505', 'another company cannot claim the id');
+  await assert.rejects(insert(row({ operator: 'south', revision: 2, state: 'approved' })), error => error.code === '23503', 'no revision without its own first revision');
+  await insert(row({ operator: 'north', revision: 2, state: 'approved' }));
+  await insert(row({ ws: otherWorkspace.workspaceId, operator: 'south' }));
   const policy = values => pool.query(`INSERT INTO croupier_studio.operator_material_policies
     (environment_id,workspace_id,operator_id,revision,daily_ai_limit,blocked,actor_id,access_class,updated_at_ms) VALUES ($1,$2,'south',1,$3,false,'staff-1',$4,1)`, values);
   for (const values of [[scope.environment, scope.workspaceId, -1, 'internal-admin'], [scope.environment, scope.workspaceId, MAX_OPERATOR_DAILY_AI_LIMIT + 1, 'internal-admin'],
@@ -109,6 +115,17 @@ test('the material journal is append-only, server-validated, decided only by Sco
   assert.deepEqual(table.tableBinding, binding);
   const decide = (state, expectedRevision, audit = admin(), id = materialId) => store.appendMaterial({ actor: 'staff-1', audit, operatorId: 'north', materialId: id, expectedRevision, state });
   await assert.rejects(decide('approved', 1, partner()), code('studio_forbidden', 403), 'a company cannot approve its own material');
+  await assert.rejects(store.appendMaterial({ actor: 'staff-1', operatorId: 'north', materialId, expectedRevision: 1, state: 'approved' }),
+    code('studio_invalid_data', 422), 'a decision names its actor explicitly');
+  await assert.rejects(decide('approved', 1, { ...admin(), accessClass: 'system' }), code('studio_invalid_data', 422), 'no system approvals');
+  // The id is the company's own: another company and Admin's project cannot reuse it.
+  await assert.rejects(store.appendMaterial({ actor: 'partner-2', audit: partner(), operatorId: 'south', materialId, expectedRevision: 0, state: 'pending', source: 'upload', asset: asset(materialId) }),
+    code('studio_conflict', 409), 'another company cannot register the same id');
+  const adminId = randomUUID(), trashedId = randomUUID();
+  await pool.query(`INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value,updated_at) VALUES ($1,$2,'project','project-1',$3::jsonb,now())`,
+    [scope.environment, scope.workspaceId, JSON.stringify({ revision: 'project-1', layerAssets: [asset(adminId)], layerAssetTrash: [{ asset: asset(trashedId), archivedAt: 'x' }] })]);
+  for (const id of [adminId, trashedId]) await assert.rejects(create(id), code('studio_conflict', 409), 'Admin\'s material ids are never company material');
+  assert.equal((await pool.query(`SELECT count(*)::integer AS n FROM croupier_studio.operator_materials WHERE operator_id='south'`)).rows[0].n, 0);
   await assert.rejects(store.appendMaterial({ actor: 'staff-1', audit: admin(), operatorId: 'north', materialId, expectedRevision: 1, state: 'approved', asset: asset(materialId, 'background', 'd') }),
     code('studio_invalid_data', 422), 'the asset never changes after creation');
   clock = day0 + 2;
@@ -130,9 +147,11 @@ test('the material journal is append-only, server-validated, decided only by Sco
   assert.deepEqual(await storeFor(pool, otherWorkspace).listMaterials('north'), [], 'another workspace sees nothing');
   await assert.rejects(storeFor(pool, otherWorkspace).appendMaterial({ actor: 'staff-1', audit: admin(), operatorId: 'north', materialId, expectedRevision: 3, state: 'revoked' }),
     code('studio_conflict', 409), 'the same ids in another workspace are a different company');
-  // A row that is not the store's own canonical form is never trusted.
+  // A row that is not the store's own canonical form is never trusted, but it
+  // does not stop the company's other material: it reads as 'corrupt'.
   await pool.query(`UPDATE croupier_studio.operator_materials SET asset=$1 WHERE material_id=$2 AND revision=3`, [JSON.stringify(asset(materialId), null, 1), materialId]);
-  await assert.rejects(store.listMaterials('north'), code('studio_corrupt_operator_material', 503));
+  assert.deepEqual((await store.listMaterials('north')).map(row => [row.materialId, row.revision, row.state, row.asset]), [[tableId, 2, 'rejected', table.asset], [materialId, 3, 'corrupt', null]]);
+  await assert.rejects(decide('approved', 3), code('studio_conflict', 409), 'a corrupt row takes no decisions');
 });
 
 test('policy defaults to off; the daily AI cap is counted under the company lock before any provider call', async t => {
@@ -141,8 +160,11 @@ test('policy defaults to off; the daily AI cap is counted under the company lock
   clock = day0;
   const reserve = (attemptId = randomUUID(), audit = partner()) => store.reserveAiAttempt({ actor: 'partner-1', audit, operatorId: 'north', attemptId });
   await assert.rejects(reserve(), code('operator_ai_limit_reached', 429), 'standard limit 0 means off');
-  await assert.rejects(store.setPolicy({ actor: 'partner-1', audit: partner(), operatorId: 'north', expectedRevision: 0, dailyAiLimit: 10, blocked: false }),
-    code('studio_invalid_data', 422), 'only Scoutgaming sets the limit');
+  for (const audit of [partner(), undefined, { ...admin(), accessClass: 'system' }]) {
+    await assert.rejects(store.setPolicy({ actor: 'staff-1', audit, operatorId: 'north', expectedRevision: 0, dailyAiLimit: 10, blocked: false }),
+      code('studio_invalid_data', 422), 'only named Scoutgaming staff sets the limit');
+  }
+  await assert.rejects(store.reserveAiAttempt({ actor: 'partner-1', operatorId: 'north', attemptId: randomUUID() }), code('studio_invalid_data', 422), 'an attempt names its actor');
   for (const dailyAiLimit of [-1, MAX_OPERATOR_DAILY_AI_LIMIT + 1, 1.5]) {
     await assert.rejects(store.setPolicy({ actor: 'staff-1', audit: admin(), operatorId: 'north', expectedRevision: 0, dailyAiLimit, blocked: false }), code('studio_invalid_data', 422));
   }
@@ -167,4 +189,18 @@ test('policy defaults to off; the daily AI cap is counted under the company lock
     code('operator_materials_blocked', 403), 'a blocked company proposes nothing new');
   assert.deepEqual(await store.getPolicy('north'), { operatorId: 'north', revision: 2, dailyAiLimit: 2, blocked: true, updatedAtMs: clock });
   await assert.rejects(store.reserveAiAttempt({ actor: 'partner-1', audit: partner(), operatorId: 'missing', attemptId: randomUUID() }), code('studio_operator_not_found', 404));
+});
+
+test('the production coupling: a store on the repository transaction client reads and writes with 021 in place', async t => {
+  const { pool } = await studioPool(); t.after(() => pool.end());
+  const repository = createStudioRepository({ pool, scope }), materialId = randomUUID();
+  // The same construction as the native runtime and the partner session: the
+  // guarded client, scope-first parameters, and the caller's transaction for locks.
+  const inTransaction = work => repository.transaction(() => repository.withTransactionClient(client =>
+    work(createOperatorMaterialStore({ sql: client, scope, now: () => clock, transaction: callback => repository.withTransactionClient(callback) }))));
+  await inTransaction(store => store.appendMaterial({ actor: 'partner-1', audit: partner(), operatorId: 'north', materialId, expectedRevision: 0, state: 'pending', source: 'upload', asset: asset(materialId) }));
+  await inTransaction(store => store.appendMaterial({ actor: 'staff-1', audit: admin(), operatorId: 'north', materialId, expectedRevision: 1, state: 'approved' }));
+  const rows = await inTransaction(store => store.listApprovedMaterials('north'));
+  assert.deepEqual(rows.map(row => [row.materialId, row.revision, row.state]), [[materialId, 2, 'approved']]);
+  assert.deepEqual(await inTransaction(store => store.listMaterials('south')), []);
 });
