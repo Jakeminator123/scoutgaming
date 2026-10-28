@@ -13,7 +13,7 @@ export async function serveAdminWorkspaceData(request,{authorize,runtime,connect
   const native=await runtime();
   const [saved,videos]=await Promise.all([native.gamePolicy.readSaved(),native.videoRegistry()]);
   let operators=[],directory=null;
-  if(section==='companies'||section==='publication'){
+  if(section==='companies'){
     const [listed,entries]=await Promise.all([native.listLaneOperators(),native.listOperatorDirectory()]);
     operators=listed;
     directory={operators:entries,standardRoles:STANDARD_OPERATOR_ROLES.map(role=>({id:role.id,label:role.label,permissions:[...role.permissions]}))};

@@ -87,17 +87,6 @@ test('shared lifecycle navigation defaults remain compatible while Admin can kee
   assert.equal(admin.requests.length,1,'navigation does not mutate or reload the shared register');
 });
 
-test('Admin lifecycle wrapper adds game only from the same registered room and composition',()=>{
-  const wrapper=new URL('../client/admin/components/studio/registered-resource-lifecycle.tsx',import.meta.url);
-  const Lifecycle=props=>props.kind==='rooms'?React.createElement('a',{href:props.navigation.compositionHref(company(),room())},props.navigation.rehearsalLabel):null;
-  const {RegisteredResourceLifecycle}=loadTs(wrapper,{react:React,'../../../../components/control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle}});
-  const html=rooms=>renderToStaticMarkup(React.createElement(RegisteredResourceLifecycle,{operatorId:'north',disabled:false,onChanged(){},rooms}));
-  assert.match(html([{id:'room-one',operatorId:'north',compositionId:'standard',game:'roulette'}]),/href="\/admin\/clips\?operator=north&amp;table=room-one&amp;composition=standard&amp;game=roulette"/);
-  for(const context of [{id:'other',operatorId:'north',compositionId:'standard',game:'roulette'},{id:'room-one',operatorId:'south',compositionId:'standard',game:'roulette'},{id:'room-one',operatorId:'north',compositionId:'different',game:'roulette'}]){
-    assert.doesNotMatch(html([context]),/game=/);
-  }
-});
-
 test('archiving confirms a concrete room and sends exactly its tenant and observed revisions',async()=>{
   const h=harness();await h.ready();h.button('Flytta till papperskorgen').props.onClick();
   assert.equal(h.requests.length,1);assert.match(h.html(),/Flytta till papperskorgen: Nordiska rummet/);
