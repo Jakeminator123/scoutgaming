@@ -34,10 +34,10 @@ Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, oc
 | Produktion | Render, workspace `tea-d19jsa63jp1c73ch0sc0` | spelmotor `croupier-v3` `srv-dbd6nfon74is73aiblf0` (manuell deploy efter grön CI); Director `croupier-lab-director` `srv-danhlpjtqb8s73bv530g`; Gateway `croupier-lab-openclaw` `srv-danhiv3tqb8s73burkq0` (privat tjänst) |
 | Produktion | Neon | org "Vercel: scoutgaming" `org-green-butterfly-00780270`, projekt `croupier-production` `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game` med scheman `public`, `croupier_auth`, `croupier_game`, `croupier_studio` |
 | Produktion | Blob | `croupier-media-private` `store_AqwvebTbBHarOjvG` |
-| Staging | Vercel | `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app; deployas från `main` via API |
-| Staging | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
-| Staging | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
-| Staging | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (endast syntetiskt material) |
+| Preview | Vercel | `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app; deployas med låst SHA via API |
+| Preview | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
+| Preview | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
+| Preview | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (endast syntetiskt material) |
 | Raderat | Render | `croupier-v2` och `croupier-vercel-preview-qa` raderades 2026-10-27 (Jakobs beslut). Äldre dokument som nämner dem beskriver historik. |
 
 Andra tjänster i samma Render-workspace och Neon-orgen `org-lucky-cake-48388035` hör till andra projekt; rör dem inte. Kevin har läsrollen `kevin_migration_readonly` i produktionens Neon och sin GitHub-åtkomst (Jakobs beslut 2026-10-27). Hans brancher (`kevin*`, `codex/kevin-*`) rörs aldrig; bra beteenden skrivs om i mains moduler.
@@ -51,11 +51,11 @@ Allt som är grönt går direkt till produktion, i denna ordning:
 3. Render `croupier-v3` deployas manuellt (Render MCP) efter varje grön merge; kontrollera `https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Director och Gateway deployas om när deras kod ändras.
 4. Admin-publicering (paket och rummets spelinställningar) sist, när koden är live.
 
-`CROUPIER_SHARED_TABLE_ENABLED` (delat bord) är `=1` i staging och osatt i produktionen; där sätts den bara som del av O03 efter Jakobs separata godkännande. Se [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
+`CROUPIER_SHARED_TABLE_ENABLED` (delat bord) är `=1` i produktionen sedan O03 (satt 2026-10-28 13:52Z, deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`) och i preview. Med bordet på deployas `croupier-v3` bara när bordet är tomt, tills F11 är rättad ([ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)). Se [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
 
-## Staging
+## Preview
 
-Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob startar och stoppar Render-tjänsten; en agent startar den bara under ett prov och säger till när provet är klart. Testkonton är syntetiska, utöver Jakobs egna inloggningar (Admin och spelare) som speglats dit från produktionen (Jakobs beslut 2026-10-28). Stagingens Admin-inloggning ligger i gitignorerad `.env.local` under nycklarna `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW`. Lösenord skrivs aldrig i Git eller chatt. Produktion och Johns Bet-demon rörs aldrig vid prov. Acceptanskvitton skrivs som `docs/*-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
+Preview är den tidigare stagingen, som behålls efter O03 (Jakobs beslut D5, 2026-10-28); resursnamnen i identitetstabellen är oförändrade. Den kör samma kod som produktionen mellan prov. Bara SHA:er från `main` eller `jakob/*` deployas dit, låst och via API, aldrig `kevin*`. Preview är inget obligatoriskt steg före produktion: orkestratorn avgör när en visuell koll behövs. Jakob startar och stoppar Render-tjänsten; en agent startar den bara under ett prov och säger till när provet är klart. Testkonton är syntetiska, utöver Jakobs egna inloggningar (Admin och spelare) som speglats dit från produktionen (Jakobs beslut 2026-10-28). Previews Admin-inloggning ligger i gitignorerad `.env.local` under nycklarna `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW`. Lösenord skrivs aldrig i Git eller chatt. Produktion och Johns Bet-demon rörs aldrig vid prov. Acceptanskvitton skrivs som `docs/*-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
 
 ## Köra och testa
 
@@ -63,7 +63,7 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 2. `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns adress och startar inga lokala servrar.
 3. Riktade prov: `node --test --test-concurrency=4 <filer>`. Sviter: `sh .githooks/pre-commit-full <svit>` med `studio`, `admin`, `contracts`, `database`, `presentation`, `access`, `speech`, `gameplay` eller `engine`. PGlite-proven (`test/fixtures/pglite-pool.mjs`) kör utan Postgres-installation; motorn över HTTP mot riktig Postgres körs med `node tools/run-engine-qa.mjs --postgres-bin <bin>`.
 4. Pre-commit (`.githooks/pre-commit`) kör riktade kontroller på ändrade filer; `node tools/precommit-checks.mjs --plan` visar urvalet. Full regression, Chrome och isolerad Postgres körs i CI (`.github/workflows/croupier.yml`) eller med `sh .githooks/pre-commit --full`.
-5. Riktig acceptans görs i staging: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Ljud och läppsynk bedöms av Jakob.
+5. Riktig acceptans görs i preview: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Ljud och läppsynk bedöms av Jakob.
 
 ## Leverera
 
