@@ -204,7 +204,11 @@ async function play(item) {
       const target=item.timelineTime();
       if(target>=item.dur){finish(true);return;}
       // Catch up after buffering/backgrounding; never replay the beginning of an expired turn.
-      if(!v.seeking&&Math.abs(v.currentTime-target)>.4){v.currentTime=target;}
+      // A take at a table's tempo (Emil 28 Oct) that came up a little late catches up by running a little faster (at most
+      // 40 % for a moment) instead of seeking: a seek skipped his reach for the card, and at 2.5x 60 ms late was a seek
+      const far=.4*(item.tempo??1);
+      if(!v.seeking&&Math.abs(v.currentTime-target)>far){v.currentTime=target;}
+      else if(item.tempo&&item.baseRate)v.playbackRate=item.baseRate*Math.min(1.4,Math.max(.85,1+(target-v.currentTime)*1.5));
     }
     if(!v.seeking)item.onFrame?.(frame?.mediaTime ?? v.currentTime, Number.isFinite(v.duration) ? v.duration : item.dur);
     // An idle with its successor prepared hands over on its last frame (VILA, the successor's first frame too), not on
@@ -247,7 +251,7 @@ async function play(item) {
     if (item.fit && Number.isFinite(v.duration) && Math.abs(v.duration - item.fit) > 0.02) {
       // Shorter clip: stretch it to the slot. Longer (Emil's takes at their own pace, slotted on Astrid's): speed it up.
       const rate = Math.min(2.6, Math.max(.6, v.duration / item.fit)), wall = item.timelineTime;   // up to Turbo (2.5x, a studio table's tempo)
-      v.playbackRate = rate; item.dur = v.duration;
+      v.playbackRate = rate; item.dur = v.duration; item.baseRate = rate;
       if (wall) item.timelineTime = () => wall() * rate;
     }
     const offset=item.timelineTime?.()??item.startOffset;
@@ -255,7 +259,7 @@ async function play(item) {
     // a chain clip that comes up late (the switch took a few frames) joins the chain in phase, from the frame the table
     // clock names: played from its first frame it ran behind the server's chain, was cut by the clock before its last
     // frame, never handed over, and the next clip came up late in turn (20 Oct, 3–12 frames behind on staging)
-    const seek=item.chain?(offset>1/24?Math.min(offset,Math.max(0,(v.duration||item.dur)-.04)):0):initialVideoOffset(offset,v.duration||item.dur);
+    const seek=item.chain?(offset>1/24?Math.min(offset,Math.max(0,(v.duration||item.dur)-.04)):0):item.tempo?(offset>.4*item.tempo?Math.min(offset,Math.max(0,(v.duration||item.dur)-.04)):0):initialVideoOffset(offset,v.duration||item.dur);
     if(seek) v.currentTime=seek;
     // Show the prepared layer BEFORE play(), so mobile WebKit does not start
     // decoding into an invisible layer and retain its first displayed frame.

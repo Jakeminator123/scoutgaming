@@ -323,7 +323,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
         // fit: a ready dealer's take is shorter than the slot (timed on Astrid's): the player stretches it to the slot.
         // A table's tempo (step.rate, Emil 28 Oct) gives a slot of frames/(24*rate): the same fit plays it rate times faster,
         // and every count of his frames here is media time (wall time * rate).
-        playNow({...step.clip,variant,kind:'shared-game',fit:dealer.ready&&currentDeal?(step.endAt-step.startAt)/1000:null,startOffset:Math.max(0,(now-step.startAt)/1000)*(step.rate??1), timelineTime:()=>Math.max(0,(time()-step.startAt)/1000),
+        playNow({...step.clip,variant,kind:'shared-game',tempo:step.rate??null,fit:dealer.ready&&currentDeal?(step.endAt-step.startAt)/1000:null,startOffset:Math.max(0,(now-step.startAt)/1000)*(step.rate??1), timelineTime:()=>Math.max(0,(time()-step.startAt)/1000),
           onStart:()=>{if(stepKey!==key)return;if(currentDeal)cards.beginDeal(step.seat,step.shoeDraw,step.track??step.seat);},
           onFrame:frame=>{if(stepKey!==key)return;frame-=lead;sourceFrame=frame;if(currentDeal){drawCards();cards.advanceDeal(frame);if(!landed&&frame>=DEAL_CONTACT[step.track??step.seat].contact){landed=true;audio?.play('land');}}},
         });

@@ -238,7 +238,10 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // (fas bets) are the betting's
     const calm=known.filter(i=>i.calm&&!i.fas),decide=(ready?.idle??[]).filter(i=>i.fas==='decide');
     const pool=calm.length||decide.length?phasePool([...calm,...decide],'decide'):(ready?.idle??[]).filter(i=>i.take==='andas');
-    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&pool.length);
+    // Emil 28 Oct: at a table's tempo (Normal, Fast, Turbo) he waits on his still instead: a hit could only start at the
+    // end of the 3 s wait take in progress (no cut mid-take, the poses differ), ~1.5 s after the button at every tempo;
+    // on his still it starts after the plan's lead. Slow (1x) keeps the chain.
+    const waiting=Boolean(tempo===1&&r.round&&['decisions','insurance'].includes(r.round.phase)&&pool.length);
     r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:pool.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
