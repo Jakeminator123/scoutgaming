@@ -111,7 +111,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
       <Dialog.Portal container={anchor.current?.closest<HTMLElement>('.preview-admin') ?? undefined}>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
         <Dialog.Content aria-busy={busy || undefined} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }} onPointerDownOutside={event => { if (busy) event.preventDefault(); }}
-          className="fixed left-1/2 top-1/2 z-50 flex max-h-[92dvh] w-[min(760px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border border-sg-line bg-sg-panel p-5 text-sm text-sg-text shadow-2xl">
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[92dvh] w-[calc(100vw-24px)] max-w-[760px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border border-sg-line bg-sg-panel p-5 text-sm text-sg-text shadow-2xl">
           <div className="flex items-start justify-between gap-3">
             <div>
               <Dialog.Title className="text-lg font-semibold">Skapa {noun} med AI</Dialog.Title>
