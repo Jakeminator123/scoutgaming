@@ -2,14 +2,14 @@
 # state belong here; build output is already in .gitignore and search noise in .ignore.
 .env*
 !.env.example
-!.env.*.example
+*.pem
+*.p12
+*.pfx
 .vercel/
 .claude/
-.croupier-inbox/
-inbox-token.txt
 /arkiv/
 /random-stuff-jakob/
 /inbox/local-device.json
-/open-claw/lab/data/
-/open-claw/lab/runtime/
+/open-claw/
 /services/openclaw/lab/data/
+/apps/studio/data/

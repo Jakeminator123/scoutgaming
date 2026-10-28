@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { dealerImportModelConfiguration } from './dealer-import-model.mjs';
-import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
+import { assistantRequestConfiguration, normalizeNativeStudioRequest } from './studio-native-request.mjs';
 
 export const PUBLIC_MODEL = Object.freeze({id:'gpt-6-luna',reasoningEffort:'low'});
 // This is an embed credential, restricted by D-ID to the site's allowed domains.
@@ -58,8 +58,7 @@ export function createPublicAssistant({config,configuration=dealerImportModelCon
  }catch(error){return json({error:original.signal.aborted?'cancelled':error.code??'unavailable'},original.signal.aborted?499:error.status??(error.statusCode===403?403:503));}finally{release?.();}};
 }
 export async function publicAssistantEndpoint(request){
- const origins=[process.env.CROUPIER_PUBLIC_ORIGIN,process.env.CROUPIER_LAB_UI_ORIGIN];
- try{if(origins.some(value=>!value||new URL(value).origin!==value||new URL(value).protocol!=='https:'))return json({error:'unavailable'},503);
-  return await createPublicAssistant({config:{allowedOrigins:origins,publicHosts:origins.map(value=>new URL(value).host),apiBase:'/studio/api/admin',authBase:'/studio/api/auth'}})(request);
+ try{const config=assistantRequestConfiguration();if(!config)return json({error:'unavailable'},503);
+  return await createPublicAssistant({config:{...config,apiBase:'/studio/api/admin',authBase:'/studio/api/auth'}})(request);
  }catch{return json({error:'unavailable'},503);}
 }
