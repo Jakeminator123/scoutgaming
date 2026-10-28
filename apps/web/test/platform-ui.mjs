@@ -392,11 +392,12 @@ test('platform tracing keeps player documents without retired BO HTML', async ()
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));
-  for (const path of ['/api/table', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
+  // /api/bo/speech-qa remains only for the engine's cloud startup probe (ops/cloud/access-check.mjs).
+  for (const path of ['/api/table', '/api/bo/speech-qa', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
-  // The retired Admin-to-player handoff and BO endpoints have no backend ingress.
-  for (const path of ['/api/bo/config', '/api/bo/speech-qa', `/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`]) {
+  // The retired Admin-to-player handoff and BO config have no backend ingress.
+  for (const path of ['/api/bo/config', `/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`]) {
     assert.equal(backendPlatformPath(new URL(path, config.publicOrigin).pathname), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
   }

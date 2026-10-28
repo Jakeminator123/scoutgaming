@@ -76,6 +76,10 @@ export function backendPlatformPath(value) {
     || path === '/api/dealer/observation'
     || path === '/api/dealer/transcription'
     || STUDIO_PREVIEW.test(path)
+    // The engine's operator speech-QA gate stays reachable only because the
+    // cloud startup probe (ops/cloud/access-check.mjs) expects its 403. It is
+    // retired with the engine's /api/bo in the server-side PR.
+    || path === '/api/bo/speech-qa'
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/rooms)?$/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/rooms\/[a-z][a-z0-9-]{0,63}\/preview(?:\/media\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/(?:dealer|table|background)\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})?$/.test(path)
