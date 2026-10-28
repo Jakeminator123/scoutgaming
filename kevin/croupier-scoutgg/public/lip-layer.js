@@ -151,12 +151,19 @@ export function createLipTracks() {
         // patch is for the same VILA pose
         for (const key of patchKeys(take, frame, rest, t.last))
           for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
-        // Emil 28 Oct (a table's tempo): a take at 2x or 2.5x shows 2-2.5 body frames per patch, so the frames between get
-        // the patch of the nearest frame of the same take (one or two frames of head movement away) instead of no mouth
-        for (let d = 1; best < 0 && d <= NEIGHBOURS; d++)
-          for (const f of [frame - d, frame + d])
-            for (const j of t.index.get(`${take}:${f}`) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
-        if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}` }; }
+        if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}`, ruta: e.tag.ruta }; }
+        // Emil 28 Oct (a table's tempo): a take at 2x or 2.5x shows 2-2.5 body frames per patch. A frame between gets the
+        // mouth of the nearest frame of the same take that has one, placed where HIS mouth is on this frame: the patches
+        // before and after give their places, and this frame's lies between them (his head moves smoothly); with only one
+        // of them its own place. Drawn at the neighbour's place, the mouth sat beside his own.
+        const near = d => { let b = -1; for (const j of t.index.get(`${take}:${frame + d}`) ?? []) if (Math.abs(j - k) <= REACH && (b < 0 || Math.abs(j - k) < Math.abs(b - k))) b = j; return b; };
+        let lo = -1, hi = -1, dl = 0, dh = 0;
+        for (let d = 1; d <= NEIGHBOURS && lo < 0; d++) { lo = near(-d); dl = d; }
+        for (let d = 1; d <= NEIGHBOURS && hi < 0; d++) { hi = near(d); dh = d; }
+        if (lo < 0 && hi < 0) continue;
+        const use = hi < 0 || (lo >= 0 && dl <= dh) ? lo : hi, e = t.frames[use];
+        const rect = lo >= 0 && hi >= 0 ? e.tag.rect.map((_, i) => t.frames[lo].tag.rect[i] + (t.frames[hi].tag.rect[i] - t.frames[lo].tag.rect[i]) * dl / (dl + dh)) : e.tag.rect;
+        return { bitmap: e.bitmap, rect, key: `${t.id}:${use}:${frame}`, ruta: e.tag.ruta, lant: true };
       }
       return null;
     },

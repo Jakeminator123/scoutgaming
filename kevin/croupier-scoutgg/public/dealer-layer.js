@@ -197,6 +197,12 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; lastSource = ''; reveal(); };
   img.src = still;
   const videos = [...stage.querySelectorAll('video')];
+  // The frame each video presents (requestVideoFrameCallback), not v.currentTime: the playback position runs ahead of the
+  // frame on screen, by a frame or two at a table's tempo (2x, 2.5x), and the mouth patch of that later frame landed beside
+  // his mouth (Emil 28 Oct). A time left from the clip before (far from the position) is not used.
+  const shown = new Map();
+  for (const x of videos) if (x.requestVideoFrameCallback) { const on = (_n, meta) => { shown.set(x, meta.mediaTime); x.requestVideoFrameCallback(on); }; x.requestVideoFrameCallback(on); }
+  const mediaTime = v => { const t = shown.get(v); return t != null && Math.abs(t - v.currentTime) < .25 ? t : v.currentTime; };
   let lastStamp = '', lastSource = '';
   const lipDebug = /[?&]lipdebug=1/.test(location.search) ? (globalThis.__lip = { frames: 0, hits: 0, misses: [] }) : null;
   function draw() {
@@ -207,16 +213,16 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
     // While he speaks over his clips, the patch for this frame is part of what is on screen: a new patch redraws too,
     // also on a still or a held last frame (the mouth moves while the body waits).
     const name = v ? /\/([a-z0-9]+(?:-[iuv]+)?)\.mp4/.exec(v.dataset.source || v.currentSrc || '')?.[1] : null;
-    const raw = v ? Math.floor(v.currentTime * 24 + 1e-5) : 0;
+    const now = v ? mediaTime(v) : 0, raw = v ? Math.floor(now * 24 + 1e-5) : 0;
     const atEnd = v && (v.ended || (Number.isFinite(v.duration) && v.currentTime >= v.duration - .05));
     // He rests on his still, or on the last frame of a clip that ends at rest: every clip but a deal take that ends in REDO.
     const rest = !v || (atEnd && !/^pos[a-z0-9]+(-i)?$/.test(name ?? ''));
     const lip = lips?.active() ? lips.at(name, raw, rest) : null;
     // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
-    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name ?? 'undefined(' + (v?.dataset.source || v?.currentSrc || '').split('/').pop().split('?')[0] + ')'}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }   // a clip the layer cannot name (a recorded line, an underscore) shows its file
+    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) { lipDebug.hits++; const o = lip.ruta == null || rest ? 'vila' : `${raw - lip.ruta}${lip.lant ? ' lånad' : ''}`; (lipDebug.offs ??= {})[o] = (lipDebug.offs[o] ?? 0) + 1; } if (v) { const a = Math.floor(v.currentTime * 24 + 1e-5) - raw; (lipDebug.ahead ??= {})[a] = (lipDebug.ahead[a] ?? 0) + 1; } else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name ?? 'undefined(' + (v?.dataset.source || v?.currentSrc || '').split('/').pop().split('?')[0] + ')'}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }   // a clip the layer cannot name (a recorded line, an underscore) shows its file
     const soft = document.documentElement.classList.contains('desk') ? .5 : 0;   // the desktop table only (desk-mode.js)
     if (soft !== lipSoft) { lipSoft = soft; gl.uniform1f(uLipSoft, soft); lastStamp = ''; }
-    const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
+    const stamp = (v ? `${v.currentSrc}@${now}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
       if (lip && lip.key !== lipKey) {
@@ -233,7 +239,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       const take = m?.[1], seat = take === 'posdealer' ? 'dealer' : take?.replace('pos', ''), track = seat && (m?.[2]?.includes('v') ? `${seat}v` : seat);
       const lead = m?.[2]?.includes('i') && !REST_TAKES.includes(track) ? inFrames : 0;   // a ready dealer's -i variant starts with his in-transition (not a take from rest)
       const at = seat && cardAt(seat);
-      const frame = v ? Math.floor(v.currentTime * 24 + 1e-5) - lead : 0;
+      const frame = v ? raw - lead : 0;
       const on = at && frame >= (land[track] ?? Infinity);
       // Follow his card frame by frame (the same track the game projects on), and once it rests keep cutting it out on its
       // resting outline: the game's card may lie a step beside it (its own place in the hand), so his prop's grey edge
