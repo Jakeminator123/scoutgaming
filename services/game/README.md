@@ -8,7 +8,10 @@
 | [storage/](storage/README.md) | PostgreSQL-pooler, läsarportar och publicerade presentationspaket |
 | `games/roulette/` | Rouletteregler, kommandon, åtkomst och lagring |
 | `generated-speech*`, `dealer-speech*`, `moving-speech-*`, `openclaw-chat.mjs` | Dealerchatt, tal och registrerade klipp |
-| `player-*`, `native-table.mjs`, `shoe-game.mjs` | Spelaridentitet, historik och serverägt spel |
+| `games/blackjack/round.mjs`, `core.mjs`, `table/` | Gemensamma handregler och V3:s delade bord |
+| `player-*`, `postgres-native-table.mjs`, `shoe-game.mjs`, `preview-table.mjs` | Spelaridentitet, historik och kvarvarande native-/provspelsadaptrar |
+
+Blackjack har en gemensam handregelklass men ännu olika kommando- och lagringsadaptrar. Nativeadaptern behövs bland annat av Admins Provspel och sparade rundor; den får inte raderas enbart för att det delade bordet är påslaget. [Blackjackguiden](../../docs/games/blackjack/README.md) beskriver gränsen, testerna och villkoren för fortsatt avveckling.
 
 ## Delade paket
 
