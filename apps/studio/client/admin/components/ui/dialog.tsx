@@ -61,14 +61,15 @@ export function Dialog({open,title,description,children,footer,onClose,busy=fals
   </DialogShell>;
 }
 
-/** The step row of a guided dialog: where you are and what comes next. */
-export function DialogSteps({steps,current,onSelect}:{steps:string[];current:number;onSelect?:(index:number)=>void}) {
-  return <ol aria-label="Steg" className="mb-4 flex flex-wrap items-center gap-1.5 p-0 text-[12.5px]">{steps.map((label,index)=>{
+/** The step row of a guided flow: where you are and what comes next. Done steps can be selected; `reachable`
+ *  (an index) also offers later steps whose choices are already made, as on Skapa demo. */
+export function DialogSteps({steps,current,onSelect,reachable=-1,className}:{steps:string[];current:number;onSelect?:(index:number)=>void;reachable?:number;className?:string}) {
+  return <ol aria-label="Steg" className={cn('mb-4 flex flex-wrap items-center gap-1.5 p-0 text-[12.5px]',className)}>{steps.map((label,index)=>{
     const state=index<current?'done':index===current?'now':'next';
-    const content=<><span className={cn('grid size-5 place-items-center rounded-full text-[11px] font-bold',state==='done'?'bg-sg-ok text-sg-surface':state==='now'?'bg-sg-ink text-sg-side-text':'bg-sg-hover text-sg-faint')}>{state==='done'?'✓':index+1}</span><span className={cn('font-semibold',state==='next'?'text-sg-faint':'text-sg-text')}>{label}</span></>;
+    const content=<><span className={cn('grid size-5 place-items-center rounded-full text-[11px] font-bold',state==='done'?'bg-sg-ok text-sg-surface':state==='now'?'bg-sg-text text-sg-surface':'bg-sg-hover text-sg-faint')} aria-hidden={state==='done'||undefined}>{state==='done'?'✓':index+1}</span><span className={cn('font-semibold',state==='next'?'text-sg-faint':'text-sg-text')}>{label}{state==='done'&&<span className="sr-only"> (klart)</span>}</span></>;
     return <li key={label} className="flex items-center gap-1.5" aria-current={state==='now'?'step':undefined}>
       {index>0&&<span className="h-px w-4 bg-sg-border" aria-hidden="true"/>}
-      {onSelect&&state==='done'?<button type="button" className={cn('flex items-center gap-1.5 rounded-md border-0 bg-transparent p-0.5',focusRing)} onClick={()=>onSelect(index)}>{content}</button>:<span className="flex items-center gap-1.5 p-0.5">{content}</span>}
+      {onSelect&&(state==='done'||state==='next'&&index<=reachable)?<button type="button" className={cn('flex cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent p-0.5 hover:[&>span:last-child]:underline',focusRing)} onClick={()=>onSelect(index)}>{content}</button>:<span className="flex items-center gap-1.5 p-0.5">{content}</span>}
     </li>;})}</ol>;
 }
 
