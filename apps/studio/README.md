@@ -71,14 +71,12 @@ components/   delade React-komponenter, bland annat Partnerportalens arbetsyta (
 lib/          serveradaptrar: lagring, behörighet, observation, tal
 policies/     appens egna policyer, till exempel social.seed.json
 schemas/      appens egna scheman (manifest, social policy)
-animations/   2D-rörelseprov för klippkartan
 test/         Studio-, API- och lagringsprov
 tools/        byggsteg för förhandsvisning och klient
 docs/         användarguiden, guide.json (Admin-hjälpens text) och TERMINOLOGI
 ```
 
-Se också [policies](policies/README.md), [scheman](schemas/README.md) och
-[rörelseprov](animations/README.md).
+Se också [policies](policies/README.md) och [scheman](schemas/README.md).
 
 ## Klippval och OpenClaw
 
