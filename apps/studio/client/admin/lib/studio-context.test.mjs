@@ -96,7 +96,7 @@ async function registeredStudioHtml(path,search='',{fetch:customFetch,props:extr
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(value){return slots[cursor++]??={current:value};},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
   runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{},getElementById:()=>null},
     fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='./operator-game-board'?boardModule.exports:name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
-      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
+      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register',...extraProps})};
@@ -172,6 +172,16 @@ test('company, partner and template links are scoped to the selected owner and n
   assert.match(other,/Bolag &amp; team/);assert.equal(hrefs(other).some(href=>href.includes('operator=a')),false);
 });
 
+
+test('the rooms lifecycle gets Studio links with the game only from the same registered room, company and composition',async()=>{
+  const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions},true);
+  const navigation=walk(h.render(),node=>node.props?.kind==='rooms')[0].props.navigation;
+  assert.equal(navigation.rehearsalLabel,'Provspela & följ');
+  assert.equal(navigation.compositionHref({id:'a'},{id:'bj',presentationLaneId:'one'}),'/admin/clips?operator=a&table=bj&composition=one&game=blackjack');
+  for(const [owner,room] of [[{id:'a'},{id:'other',presentationLaneId:'three'}],[{id:'b'},{id:'bj',presentationLaneId:'one'}],[{id:'a'},{id:'bj',presentationLaneId:'two'}]]){
+    assert.doesNotMatch(navigation.compositionHref(owner,room),/game=/,'another room, company or composition never lends its game');
+  }
+});
 
 test('room navigation protects local edits and in-flight operations, then carries exact accepted room context',async()=>{
   const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{},true);

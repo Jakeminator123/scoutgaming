@@ -13,5 +13,5 @@ export const adminToolHome=(tool:string|null)=>tool?adminToolHomes[tool]??'/admi
 export const adminPageLabels:Record<string,string> = {
   ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
   ...Object.fromEntries([...adminNavigationGroups,...adminSystemGroups].flatMap(group=>group.links.map(link=>[link.href,link.label]))),
-  '/admin':'Översikt','/admin/admin/operators':'Spelbolag','/admin/admin/players':'Spelarkonton',
+  '/admin':'Översikt','/admin/admin/players':'Spelarkonton',
 };

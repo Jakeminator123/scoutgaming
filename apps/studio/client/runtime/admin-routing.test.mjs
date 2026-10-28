@@ -74,13 +74,19 @@ test('old design links translate root queries and fragments without changing ext
 });
 
 test('direct Studio mount resolves to Admin without inventing a Control pathname',()=>{
-  for(const path of ['/admin','/admin/clips','/admin/admin/operators']){
+  for(const path of ['/admin','/admin/clips','/admin/admin/accounts']){
     assert.equal(adminPathname(path),path);
     assert.equal(adminPathname('/studio'+path),path);
   }
   for(const path of ['/control/clips','/studio/control/clips','/studio/administrator']){
     assert.equal(adminPathname(path),path);
   }
+});
+
+test('the retired company register opens Bolag & team with the same company and fragment',()=>{
+  for(const prefix of ['','/studio'])assert.equal(adminHref(prefix+'/admin/admin/operators?operator=b#team'),'/admin/companies?operator=b#team');
+  assert.equal(adminHref('/admin/admin/operators'),'/admin/companies');
+  for(const href of ['/admin/admin/operators-extra','/admin/admin/operators/details'])assert.equal(adminHref(href),href);
 });
 
 test('saved player-account aliases use the player accounts page while retaining exact query, fragment and explicit context',()=>{

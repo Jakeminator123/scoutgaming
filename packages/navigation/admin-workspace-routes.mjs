@@ -39,6 +39,7 @@ export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
   '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
   '/admin/videos':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
   '/admin/compositions':'/admin/scenes', '/admin/probe':'/admin/clips?panel=room',
+  '/admin/admin/operators':'/admin/companies',
 });
 const openClawHomes=Object.freeze({drift:'/admin/drift?tab=speech',models:'/admin/ai/models',
   agent:'/admin/dealer-agent',probe:'/admin/clips?panel=room',assistant:'/admin'});
