@@ -1,10 +1,11 @@
 # Fristående kompositorexport — integrationsreferens
 
 Kompositorkällan finns nu i `packages/presentation/` och används av Studio
-och spelruntime enligt [paketguiden](../README.md). Texten nedan beskriver den
-fristående referensredigerarens exporter och adaptergränser; den är inte en
-instruktion att installera om dagens gemensamma spelare. Referens-UI:t serveras
-inte som en separat produkt. Aktuell integration, publicering och mediaformat
+och spelruntime enligt [paketguiden](../README.md). Texten nedan beskriver
+exportformatet och adaptergränserna från den fristående referensredigeraren.
+Redigeraren och dess provspelare (`app.js`, `index.html`, `viewer.*`) är
+borttagna; texten är ingen instruktion att installera om dagens gemensamma
+spelare. Aktuell integration, publicering och mediaformat
 styrs av [runtimekontraktet](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 och [spelguiderna](../../../docs/games/README.md).
 
@@ -20,7 +21,6 @@ PROVORDNING FÖR EN NY FRISTÅENDE EXPORT
 5. Kör repots aktuella regression enligt `.githooks/pre-commit` och granska i riktig rehearsal innan en PR bedöms. Läs `AGENTS.md` vid integrationstillfället; äldre index-/synkauditnamn är ingen checklista för dagens registrerade klipp.
 
 VAD WEBBEXPORTEN INNEHÅLLER
-index.html / viewer.js / viewer.css: fristående provspelare.
 player.js: tillstånd VILA/REDO, två videoelement, klippkö, förladdning och visuella kvitton.
 compositor.js: WebGL-komposition, greenscreen, lager och statiska masker. CPU-reserv för lokal granskning när WebGL inte finns.
 bridge.js: explicit adapter för presentation[]-typen från services/game/partner-presentation.mjs.

@@ -75,11 +75,6 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "apps/web/public/images/astrid-table.png",
-    "maxBytes": 1628428,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "apps/web/public/videos/ai-casino-demo.mp4",
     "maxBytes": 4242696,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
