@@ -45,6 +45,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
     {label:adminDealerSteps[5],done:false,href:href('installningar')},
     {label:adminDealerSteps[6],done:uses.operators.length>0,href:uses.operators[0]?`/admin/companies/${encodeURIComponent(uses.operators[0].id)}?flik=tilldelning`:'/admin/companies'},
   ];
+  const technical:[string,string][]=dealer?[['Dealer-id',dealer.id],['Lagringsmapp',`dealers/${dealer.id}/`],...templates.map(lane=>['Scenmall '+lane.label,lane.id] as [string,string])]:[];
   const usedBy=uses.operators.length?`Används av ${uses.operators.map(row=>row.name).join(', ')}`:'Inte tilldelad något bolag';
   if(part==='head')return <HubPage wide continued
     title={<span className="inline-flex items-center gap-4">{dealer?<DealerAvatar dealer={dealer} still={dealerStill(workspace!.project,workspace!.inventory,dealer.id)} size={60}/>:null}<span>{label}</span></span>}
@@ -67,6 +68,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
       <span className="text-xs text-sg-faint">Skoövergångar och {plural(coverage.optional.total,'replik','repliker')} är frivilliga.</span>
     </div>}
     {tab==='installningar'&&coverage&&<ApprovalCard coverage={coverage} templates={templates}/>}
+    {tab==='installningar'&&dealer&&<TechnicalDetails items={technical}/>}
   </HubPage>;
   // Tail: what each tab shows below (or instead of) the clip map.
   if(!dealer)return null;
@@ -90,7 +92,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
       </div>
       <Card title="Alla kopplingar" aside="Samma läsning som System › Beroenden"><ResourceConnections embedded context={'?dealer='+encodeURIComponent(dealer.id)}/></Card>
     </div>}
-    <TechnicalDetails items={[['Dealer-id',dealer.id],['Lagringsmapp',`dealers/${dealer.id}/`],...templates.map(lane=>['Scenmall '+lane.label,lane.id] as [string,string])]}/>
+    {(tab==='landningar'||tab==='anvands')&&<TechnicalDetails items={technical}/>}
   </div>;
 }
 

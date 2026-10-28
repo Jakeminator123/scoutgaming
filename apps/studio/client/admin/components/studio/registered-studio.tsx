@@ -45,8 +45,10 @@ const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ b
 
 /** The company's package (mode package), a new room (mode create) and the room editor (mode room, one
  *  section per tab). The company and room come from the nav's path, never from a dealer-library query. */
-export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'create'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void };
-export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus }: RegisteredStudioProps) {
+export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'create'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void;
+  /** Create mode: a scene template already chosen in the guided dialog; the editor's own picker is then hidden. */
+  compositionId?: string };
+export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus, compositionId: chosenComposition }: RegisteredStudioProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
@@ -112,7 +114,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const selectedRoom = roomId ? operatorRooms.find(row => row.id === roomId) : undefined;
   const dealerName = (id: string) => data?.dealers.find(row => row.id === id)?.name ?? id;
   const compositions = complete?.compositions ?? [];
-  const createComposition = compositions.find(row => row.id === newRoomComposition) ?? compositions.find(row => row.id === operatorRooms[0]?.compositionId) ?? compositions[0];
+  const createComposition = compositions.find(row => row.id === (chosenComposition || newRoomComposition)) ?? compositions.find(row => row.id === operatorRooms[0]?.compositionId) ?? compositions[0];
   // Both room editors reload together on a register re-read; sibling keys stay distinct.
   const editorKey = operator && selectedRoom ? operator.id + ':' + selectedRoom.id + ':' + refresh : '';
   // Lifecycle snapshots carry the published package per company; a changed key re-reads the register.
@@ -251,8 +253,8 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
             {operatorPackage.message&&<p role="status" className={ui.receipt}><strong className="font-semibold">Publiceringen är bekräftad.</strong> {operatorPackage.message}</p>}
             <p className="m-0 flex flex-wrap items-center gap-3"><a href={'/partner/'+encodeURIComponent(operator.slug)+'/rooms'} className={linkClass}>Öppna Partnerportalen ↗</a> {reloadButton}</p>
           </section>}
-          {mode==='create' && complete && <div id="room-create" className={ui.card}><div><h2 className="m-0 text-[15px] font-semibold">Nytt spelbord hos {operator.name}</h2></div>
-            {compositions.length>0&&<label className="grid max-w-sm gap-1.5 text-[13px] font-semibold">Scenmall<select className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text" aria-label="Scenmall" value={createComposition?.id??''} disabled={anyBusy||createDraft} onChange={event=>setNewRoomComposition(event.target.value)}>
+          {mode==='create' && complete && <div id="room-create" className={ui.card}>{!chosenComposition&&<div><h2 className="m-0 text-[15px] font-semibold">Nytt spelbord hos {operator.name}</h2></div>}
+            {compositions.length>0&&!chosenComposition&&<label className="grid max-w-sm gap-1.5 text-[13px] font-semibold">Scenmall<select className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text" aria-label="Scenmall" value={createComposition?.id??''} disabled={anyBusy||createDraft} onChange={event=>setNewRoomComposition(event.target.value)}>
               {compositions.map(row=><option key={row.id} value={row.id}>{compositionLabel(row.name)}{operatorPackage.baseline.includes(row.id)?'':' · inte publicerad'}</option>)}
             </select></label>}
             <PresentationRoomCreate operator={{id:operator.id,slug:operator.slug,name:operator.name}} presentation={createComposition?{id:createComposition.id,label:compositionLabel(createComposition.name)}:null}

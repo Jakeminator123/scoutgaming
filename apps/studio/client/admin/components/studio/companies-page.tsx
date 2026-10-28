@@ -2,7 +2,8 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {ExternalLink,Plus} from 'lucide-react';
 import Link, {navigate,useSearchParams} from '../../../runtime/navigation';
 import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout,ActionMenu} from '../ui/hub';
-import {buttonVariants,cn,plural,TechnicalDetails} from '../ui/kit';
+import {Button,buttonVariants,cn,plural,TechnicalDetails} from '../ui/kit';
+import {Dialog,DialogSteps} from '../ui/dialog';
 import {DataTable,type Column} from '../ui/data-table';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
 import type {Catalog} from '../../lib/connected-studio.mjs';
@@ -77,7 +78,10 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?{bolag:operators.filter(row=>!row.archivedAt).length,spelbord:rooms.length,papperskorg:archived.length}:{}}/>
       {status}
       {tab==='bolag'&&<>
-        {create&&<Card title="Nytt bolag" aside={<Link href="/admin/companies?tab=bolag" className="font-semibold text-sg-muted no-underline hover:text-sg-text">Stäng</Link>} className="mb-4"><p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under fliken Tilldelning.</p><WorkspaceTool section="companies"/></Card>}
+        <Dialog open={create} size="lg" title="Nytt bolag" description="Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under Tilldelning." onClose={()=>navigate('/admin/companies?tab=bolag')}
+          footer={<><Button onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>{operators[0]&&<Link className={buttonVariants({variant:'primary'})} href={companyHref(operators[operators.length-1])}>Till bolagets tilldelning →</Link>}</>}>
+          <DialogSteps steps={['Namn och administratör','Tilldelning']} current={0}/>{create&&<WorkspaceTool section="companies"/>}
+        </Dialog>
         {catalog&&<Card><DataTable label="Bolag" rows={operators} rowKey={row=>row.id} filter={{placeholder:'Sök bolag',text:row=>row.name}} initialSort={{id:'name',dir:'asc'}} empty="Inga bolag i registret." columns={[
           {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator)}>{operator.name}</Link>},
           {id:'status',header:'Status',sort:row=>row.archivedAt?2:row.status==='active'?0:1,cell:operatorChip},
@@ -88,7 +92,9 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       </>}
       {tab==='spelbord'&&<>
         {filters('/admin/companies?tab=spelbord',operators.filter(row=>!row.archivedAt))}
-        {create&&(createOperator?<Card title={`Nytt spelbord hos ${createOperator.name}`} aside={<Link href={'/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):'')} className="font-semibold text-sg-muted no-underline hover:text-sg-text">Stäng</Link>} className="mb-4"><p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Byt bolag med filtret ovan. Spelbordet skapas med en scenmall och är pausat tills tilldelningen är publicerad och du öppnar det.</p><RegisteredStudio mode="create" operatorId={createOperator.id} disabled={disabled} onChanged={changed}/></Card>:<Empty chip={null} title="Inget aktivt bolag" text="Skapa ett bolag först."/>)}
+        {create&&!createOperator&&<Empty chip={null} title="Inget aktivt bolag" text="Skapa ett bolag först."/>}
+        <CreateRoomDialog open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
+          onClose={()=>navigate('/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):''))}/>
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
       {tab==='papperskorg'&&<>
@@ -117,7 +123,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {operator&&<>
         {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Upplåsning per val (dealer, bordsgrafik, bakgrund, språk, insatsprofil) kommer i steg A–C efter O03.</Note><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
-          {create&&<div className="mb-4"><RegisteredStudio mode="create" operatorId={operator.id} disabled={disabled} onChanged={changed}/></div>}
+          <CreateRoomDialog open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
         </Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
@@ -176,6 +182,37 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <RoomPreview room={room}/>
     </>}
   </HubPage>;
+}
+
+type Composition=Catalog['administration']['compositions'][number];
+// Nytt spelbord as a guided overlay: company → scene template with the saved scene beside the choice, and
+// game and name on the same step. The last step is the same room creation as before (RegisteredStudio create mode,
+// the presentation-room call); background and table graphics are chosen afterwards under Utseende,
+// because the creation call does not take them.
+function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,compositions,rooms,disabled,onChanged,onClose}:{open:boolean;operators:Operator[];initialOperator:string;fixedOperator?:boolean;compositions:Composition[];rooms:Room[];disabled:boolean;onChanged:()=>void;onClose:()=>void}) {
+  const [step,setStep]=useState(fixedOperator?1:0),[operatorId,setOperatorId]=useState(initialOperator),[compositionId,setCompositionId]=useState('');
+  useEffect(()=>{if(open){setStep(fixedOperator?1:0);setOperatorId(initialOperator);setCompositionId('');}},[open,initialOperator,fixedOperator]);
+  const operator=operators.find(row=>row.id===operatorId)??operators[0];
+  const composition=compositions.find(row=>row.id===compositionId)??compositions.find(row=>rooms.some(room=>room.operatorId===operator?.id&&room.compositionId===row.id))??compositions[0];
+  const steps=['Bolag','Scenmall, spel och namn'];
+  const choice=(on:boolean)=>cn('grid gap-1 rounded-xl border p-3.5 text-left text-[13px] transition-colors',on?'border-sg-text bg-sg-surface shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border bg-sg-surface hover:bg-sg-surface-2');
+  return <Dialog open={open} size="xl" title={operator?`Nytt spelbord hos ${operator.name}`:'Nytt spelbord'} description="Spelbordet skapas pausat. Det öppnas för spelare när tilldelningen är publicerad och du öppnar det under Tillgänglighet." onClose={onClose}
+    footer={<>{step>(fixedOperator?1:0)&&<Button onClick={()=>setStep(step-1)}>Tillbaka</Button>}<Button onClick={onClose}>Avbryt</Button>
+      {step===0&&<Button variant="primary" disabled={!operator} onClick={()=>setStep(1)}>Nästa: välj scenmall →</Button>}
+</>}>
+    <DialogSteps steps={steps} current={step} onSelect={index=>{if(index>=(fixedOperator?1:0))setStep(index);}}/>
+    {step===0&&<div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5" role="group" aria-label="Bolag">{operators.map(row=><button key={row.id} type="button" aria-pressed={row.id===operator?.id} className={choice(row.id===operator?.id)} onClick={()=>setOperatorId(row.id)}>
+      <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${row.packageRevision}`} · {plural(rooms.filter(room=>room.operatorId===row.id).length,'spelbord','spelbord')}</span></button>)}</div>}
+    {step===1&&operator&&<div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <div className="grid content-start gap-2.5" role="group" aria-label="Scenmall">{compositions.map(row=><button key={row.id} type="button" aria-pressed={row.id===composition?.id} className={choice(row.id===composition?.id)} onClick={()=>setCompositionId(row.id)}>
+        <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.dealerIds.length?plural(row.dealerIds.length,'dealer','dealers'):'Inga dealers'} · {plural(rooms.filter(room=>room.compositionId===row.id).length,'spelbord','spelbord')} använder mallen</span></button>)}
+        {!compositions.length&&<Empty chip={null} title="Inga scenmallar ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}</div>
+      {composition&&<div className="grid min-w-0 content-start gap-4">
+        <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
+        <RegisteredStudio mode="create" operatorId={operator.id} compositionId={composition.id} disabled={disabled} onChanged={onChanged}/>
+      </div>}
+    </div>}
+  </Dialog>;
 }
 
 // The company's archived rooms with Återställ through the existing rooms lifecycle action. The lifecycle
