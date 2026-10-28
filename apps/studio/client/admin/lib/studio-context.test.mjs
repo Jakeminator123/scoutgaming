@@ -375,11 +375,11 @@ test('the room status shows published materials only for the selected room and c
 // retired publication page (/admin/publication) and follow the same operator-package contract.
 const knownStatus=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Avmarkera borttagna sammansättningar först|Publicerat · version \d+|Publicerar…|Spara det pågående Studio-arbetet först)$/;
 const packageOperators=change=>lifecycleSnapshot({operators:lifecycleSnapshot().operators.map(row=>row.id==='a'?{...row,...change}:row)});
-async function publicationHarness({search='?operator=a&table=bj',props}={}){
+async function publicationHarness({search='?operator=a&table=bj',props,dealerIds=['astrid']}={}){
   const requests=[],replies=[],extraRooms=[];
   const registry=()=>({schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
     operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:row.id==='a'?4:null})),dealers:catalog.administration.dealers.map(row=>({...row,name:row.id})),
-    rooms:[...catalog.administration.rooms,...extraRooms].map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,dealerIds:['astrid'],dealers:[],dealerSource:'published'})),compositions,revisions:{project:'p1',administration:'a1'}}});
+    rooms:[...catalog.administration.rooms,...extraRooms].map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,dealerIds:[...dealerIds],dealers:[],dealerSource:'published'})),compositions,revisions:{project:'p1',administration:'a1'}}});
   const fetcher=async(url,options={})=>{
     if(options.method!=='POST')return Response.json(registry());
     requests.push({url,body:JSON.parse(options.body)});
@@ -528,6 +528,20 @@ test('a composition removed from Studio stays visible in the package and blocks 
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one']}));
   await p.publish();
   assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one'],expectedPackageRevision:4});
+});
+
+test('a removed composition blocks only the package publication; the PAOW idle refresh still publishes against the frozen package',async()=>{
+  const p=await publicationHarness({dealerIds:['astrid','paow']});
+  p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
+  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna sammansättningar först');
+  const paow=()=>walk(p.h.render(),node=>node.type==='button'&&node.props.children==='Publicera PAOWs viloklipp')[0];
+  assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
+  paow().props.onClick();await p.settle();
+  assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);
+  assert.match(p.html(),/PAOWs sparade viloklipp är publicerade\. Version 5\./);
+  assert.equal(p.submit().props.disabled,true,'the package publication stays blocked by the removed composition');
+  await p.publish();assert.equal(p.requests.length,1,'the blocked package form sends nothing');
 });
 
 function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}

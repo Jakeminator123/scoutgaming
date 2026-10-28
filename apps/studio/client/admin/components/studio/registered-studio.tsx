@@ -170,14 +170,16 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const operatorPackage = operator ? packages[operator.id] ?? packageEditor() : packageEditor();
   const selectionDirty = packageSelectionDirty(operatorPackage);
   const roomDraftBlocks = roomDirty || gameDirty;
-  // A published composition that Studio no longer has stays visible until it is unchecked; it is never republished silently.
+  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || createDraft || operatorPackage.needsRefresh || !operatorPackage.chosen.length;
+  // A published composition that Studio no longer has stays visible until it is unchecked; the package is never
+  // republished over it. The PAOW idle refresh works on the frozen package and is not affected.
   const retiredChosen = operatorPackage.chosen.some(id => !compositions.some(row => row.id === id));
-  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || createDraft || operatorPackage.needsRefresh || !operatorPackage.chosen.length || retiredChosen;
+  const packageBlocked = publishBlocked || retiredChosen;
   const publicationStatus = operatorPackage.needsRefresh ? 'Läs in aktuell publicering' : disabled ? 'Spara det pågående Studio-arbetet först'
     : roomDraftBlocks ? 'Spara rummets ändringar först' : retiredChosen ? 'Avmarkera borttagna sammansättningar först' : selectionDirty ? 'Urvalet är inte publicerat'
     : operatorPackage.message ? 'Publicerat · version ' + operatorPackage.revision : 'Redo att publicera';
   async function publishPackage() {
-    if (!operator || publishBlocked || publishLock.current) return;
+    if (!operator || packageBlocked || publishLock.current) return;
     const id = operator.id, lanes = [...operatorPackage.chosen], revision = operatorPackage.revision;
     publishLock.current = true; setPublishBusy(true);
     updatePackage(id, current => ({ ...current, message: '', error: '' }));
@@ -280,7 +282,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
                     {operatorPackage.chosen.filter(id=>!compositions.some(row=>row.id===id)).map(id=><label className={styles.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operator.id,current=>togglePackageLane(current,id,false))}/><span>Sammansättning borttagen ur Studio · {id}. Avmarkera efter att berörda rum arkiverats.</span></label>)}
                   </fieldset>
                   <div className={styles.publishAction}><p role="status">{publishBusy?'Publicerar…':publicationStatus}</p>
-                    <button className={operatorPackage.message?'studio-button':'studio-button primary'} type="submit" disabled={publishBlocked}>{publishBusy?'Publicerar…':operatorPackage.message?'Publicera igen':'Publicera för '+operator.name}</button></div>
+                    <button className={operatorPackage.message?'studio-button':'studio-button primary'} type="submit" disabled={packageBlocked}>{publishBusy?'Publicerar…':operatorPackage.message?'Publicera igen':'Publicera för '+operator.name}</button></div>
                 </form>
                 {operatorPackage.error&&<p role="alert" className={styles.problem}>{operatorPackage.error}</p>}
                 {operatorPackage.message&&<p role="status" className={styles.receipt}><strong>Publiceringen är bekräftad.</strong> {operatorPackage.message}</p>}
