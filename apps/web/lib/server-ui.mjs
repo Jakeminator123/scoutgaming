@@ -1,4 +1,3 @@
-import {playerHandoffDestination} from '../../../packages/navigation/player-handoff.mjs';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,gameLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
@@ -78,10 +77,6 @@ export async function platformUiDocument(request, {env = process.env, directory 
     try {
       const session = await read('/api/auth/session');
       if (typeof session?.authenticated !== 'boolean') throw Error('Invalid session');
-      if (session.backofficeHandoff===true) {
-        const handoff=playerHandoffDestination(url.pathname+url.search,{origin:url.origin});
-        if(handoff) return new Response(null,{status:303,headers:{...headers,Location:handoff}});
-      }
       if (!session.authenticated) return new Response(null,{status:303,headers:{...headers,Location:playerLoginDestination(url)}});
       return proxyOperatorGame(request,url,config,fetchImpl,headers);
     } catch {

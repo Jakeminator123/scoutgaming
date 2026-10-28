@@ -18,12 +18,12 @@ function memoryDb() {
     'SELECT 1 FROM player_chat_memory_meta WHERE key=?':key=>tables.meta.has(key)?[{'?column?':1}]:[],
     'SELECT 1 FROM player_chat_memory_profiles LIMIT 1':()=>tables.profiles.slice(0,1).map(()=>({'?column?':1})),
     'SELECT 1 FROM player_chat_memory_requests LIMIT 1':()=>tables.requests.slice(0,1).map(()=>({'?column?':1})),
-    'INSERT OR IGNORE INTO player_chat_memory_meta VALUES (?,?)':(key,value)=>{if(tables.meta.has(key))return {changes:0};tables.meta.set(key,value);return {changes:1};},
+    'INSERT INTO player_chat_memory_meta VALUES (?,?) ON CONFLICT DO NOTHING':(key,value)=>{if(tables.meta.has(key))return {changes:0};tables.meta.set(key,value);return {changes:1};},
     'SELECT value FROM player_chat_memory_meta WHERE key=?':key=>tables.meta.has(key)?[{value:tables.meta.get(key)}]:[],
     'DELETE FROM player_chat_memory_requests WHERE started<=?':at=>{const before=tables.requests.length;tables.requests=tables.requests.filter(row=>!(row.started<=at));return {changes:before-tables.requests.length};},
     "UPDATE player_chat_memory_requests SET state='expired' WHERE state='pending' AND started<=?":at=>update(tables.requests.filter(row=>row.state==='pending'&&row.started<=at),{state:'expired'}),
     'DELETE FROM player_chat_memory_profiles WHERE touched<=?':at=>{const before=tables.profiles.length;tables.profiles=tables.profiles.filter(row=>!(row.touched<=at));return {changes:before-tables.profiles.length};},
-    'INSERT OR IGNORE INTO player_chat_memory_profiles VALUES (?,?,?,?,?)':(player_ref,dealer_id,history,revision,touched)=>{
+    'INSERT INTO player_chat_memory_profiles VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING':(player_ref,dealer_id,history,revision,touched)=>{
       if(profile(player_ref,dealer_id).length)return {changes:0};tables.profiles.push({player_ref,dealer_id,history,revision,touched});return {changes:1};},
     'SELECT * FROM player_chat_memory_profiles WHERE player_ref=? AND dealer_id=?':profile,
     'SELECT * FROM player_chat_memory_requests WHERE player_ref=? AND dealer_id=? AND request_ref=?':(playerRef,dealerId,requestRef)=>tables.requests.filter(row=>owned(row,playerRef,dealerId)&&row.request_ref===requestRef),

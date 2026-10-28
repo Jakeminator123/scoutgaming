@@ -43,7 +43,7 @@ export async function createPlayerProbeStore(db, memory, { now = Date.now, rando
   };
   const rowFor = async scope => (await db.prepare('SELECT * FROM player_probe_profiles WHERE scope=?').get(scope));
   async function ensure(scope) {
-    (await db.prepare('INSERT OR IGNORE INTO player_probe_profiles(scope,epoch,generation,activity,reason) VALUES(?,0,?,?,?)')
+    (await db.prepare('INSERT INTO player_probe_profiles(scope,epoch,generation,activity,reason) VALUES(?,0,?,?,?) ON CONFLICT DO NOTHING')
       .run(scope, randomUUID(), now(), 'inactive'));
     return (await rowFor(scope));
   }
@@ -252,7 +252,7 @@ export async function createPlayerProbeStore(db, memory, { now = Date.now, rando
       return (await transaction(async () => {
         const profile=(await ensure(scope));
         if(expectedGeneration!==undefined && profile.generation!==expectedGeneration)return false;
-        const inserted = (await db.prepare('INSERT OR IGNORE INTO player_probe_sources VALUES(?,?,?,?)').run(scope, requestId, text, now())).changes;
+        const inserted = (await db.prepare('INSERT INTO player_probe_sources VALUES(?,?,?,?) ON CONFLICT DO NOTHING').run(scope, requestId, text, now())).changes;
         if (inserted) (await db.prepare('UPDATE player_probe_profiles SET messages=messages+1 WHERE scope=?').run(scope));
         // Retire only evidence related to an actual correction/denial. A casual
         // "not sure" or question must never wipe unrelated player memories.
@@ -314,7 +314,7 @@ export async function createPlayerProbeStore(db, memory, { now = Date.now, rando
       (await transaction(async () => {
         (await prune());const profile=(await ensure(scope));
         if(expectedGeneration!==undefined && profile.generation!==expectedGeneration)return false;
-        const changed = (await db.prepare('INSERT OR IGNORE INTO player_probe_rounds VALUES(?,?,?,?,?)').run(scope, roundId, sequence, JSON.stringify(hands), now())).changes;
+        const changed = (await db.prepare('INSERT INTO player_probe_rounds VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING').run(scope, roundId, sequence, JSON.stringify(hands), now())).changes;
         if (!changed) return;
         const rounds = (await db.prepare('SELECT * FROM player_probe_rounds WHERE scope=? ORDER BY sequence DESC LIMIT 2').all(scope));
         const win = row => { const rows = JSON.parse(row.hands); return rows.length === 1 && !rows[0].split && rows[0].cards.length === 2 && ['win','blackjack'].includes(rows[0].outcome) ? rows[0] : null; };

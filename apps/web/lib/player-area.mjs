@@ -1,4 +1,3 @@
-import {playerHandoffDestination} from '../../../packages/navigation/player-handoff.mjs';
 import {platformBackendHeaders, platformConfiguration} from '../../../packages/navigation/server/platform-routing.mjs';
 import {playerLobbyPath} from '../../../packages/navigation/player-lobby.mjs';
 
@@ -133,10 +132,6 @@ export async function playerAreaData(request, env = process.env, options = {}) {
   try { config = platformConfiguration(env); } catch { return empty; }
   if (!config?.backendOrigin) return empty;
   const sessionData = await readBackend(config, request, '/api/auth/session', {fetchImpl});
-  if(sessionData?.backofficeHandoff===true) {
-    const url=new URL(request.url),redirect=playerHandoffDestination(url.pathname+url.search,{origin:url.origin});
-    if(redirect) return {...empty,redirect};
-  }
 
   if (sessionData === null) return {session: null, player: null, results: null, profile: null};
   if (sessionData?.unavailable) return {...empty};
