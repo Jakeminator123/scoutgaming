@@ -6,7 +6,7 @@ export {readAdminSession} from '../../lib/admin-session';
 import {studioNavigationContextFromQuery,studioNavigationHref} from '../../../../lib/studio-navigation.mjs';
 import { OpenClawWorkspace } from '../../../../components/openclaw-workspace';
 import { NativeAdministration } from '../../../../components/native-administration';
-import { StudioAdministration, StudioAdminUiError } from '../../../../components/studio-administration';
+import { StudioAdministration, StudioAdminUiError, sharedStudioAdminRead, type SharedStudioAdminRead } from '../../../../components/studio-administration';
 import adminStyles from '../../../../components/studio-administration.module.css';
 import { ConnectedEconomy } from './connected-economy';
 
@@ -14,7 +14,7 @@ const groups: Record<string,string> = {
   '/admin/admin/accounts':'accounts', '/admin/admin/players':'accounts',
   '/admin/admin/api':'partners',
 };
-/** The accounts group is one server document; a page may show only players (nivå 3) or staff users (nivå 1). */
+/** An accounts page shows, and reads, only players (nivå 3) or only staff users (nivå 1). */
 export type AccountsSection='players'|'users';
 
 // Keep the shared Studio context and explicit ambiguous room/operator selectors
@@ -44,7 +44,7 @@ export function ServiceTabs({path,label,tabs}:{path:string;label:string;tabs:{id
   </div>;
 }
 
-function Administration({group,section}:{group:string;section?:AccountsSection}) {
+function Administration({group,section,sharedRead}:{group:string;section?:AccountsSection;sharedRead?:SharedStudioAdminRead}) {
   const [actions,setActions]=useState<string[]|null>(null);
   const [gameOrigin,setGameOrigin]=useState<string>();
   const [error,setError]=useState('');
@@ -66,16 +66,25 @@ function Administration({group,section}:{group:string;section?:AccountsSection})
   },[refresh]);
   // Keep the native readers, authorization and writes on their existing contracts.
   const content=group==='operations'
-    ?<div className={adminStyles.embedded}><StudioAdministration key={group} apiBase="/studio/api/admin" session={readAdminSession} availableActions={actions??undefined} gameOrigin={gameOrigin} initialGroup={group} readIdentity="response-headers-v1" roomsHref="/admin/rooms" companyTeamLabel="Bolag & team" showGroupNavigation={false}/></div>
-    :<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions??[]} gameOrigin={gameOrigin} initialGroup={group}/>;
-  return <section className="admin-system-page" data-admin-view={section}>{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:content}</section>;
+    ?<div className={adminStyles.embedded}><StudioAdministration key={group} apiBase="/studio/api/admin" session={readAdminSession} availableActions={actions??undefined} gameOrigin={gameOrigin} initialGroup={group} readIdentity="response-headers-v1" companyTeamLabel="Bolag & team" showGroupNavigation={false}/></div>
+    :<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions??[]} gameOrigin={gameOrigin} initialGroup={group} sections={section?[section]:undefined} sharedRead={sharedRead}/>;
+  return <section className="admin-system-page">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:content}</section>;
+}
+
+// Both Ekonomi tabs show the same journal: one read per visit serves whichever tab opens first.
+export function EconomyService({path}:{path:string}) {
+  const pathname=usePathname();
+  const [journal]=useState(()=>sharedStudioAdminRead(['transactions']));
+  // Leaving Ekonomi ends the visit; the next visit reads the journal anew.
+  useEffect(()=>{if(pathname!==path)journal.refresh();},[pathname,path,journal]);
+  return <ServiceTabs path={path} label="Ekonomi" tabs={[
+    {id:'overview',label:'Översikt',content:<ConnectedEconomy journal={journal}/>},
+    {id:'payments',label:'Betalningar',content:<Administration group="finance" sharedRead={journal}/>},
+  ]}/>;
 }
 
 export function ConnectedServices({path,section}:{path:string;section?:AccountsSection}) {
-  if(path==='/admin/ekonomi')return <ServiceTabs path={path} label="Ekonomi" tabs={[
-    {id:'overview',label:'Översikt',content:<ConnectedEconomy/>},
-    {id:'payments',label:'Betalningar',content:<Administration group="finance"/>},
-  ]}/>;
+  if(path==='/admin/ekonomi')return <EconomyService path={path}/>;
   if(path==='/admin/drift')return <ServiceTabs path={path} label="Drift" tabs={[
     {id:'status',label:'Spelstatus',content:<Administration group="operations"/>},
     {id:'speech',label:'Taldrift',content:<TaldriftPanel/>},

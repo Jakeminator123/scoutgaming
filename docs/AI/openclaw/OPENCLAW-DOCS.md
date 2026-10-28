@@ -95,5 +95,4 @@ node /app/openclaw.mjs config validate --json
 | HTTP-klient för råd och operatörssamtal | [openclaw.mjs](../../../packages/director/openclaw.mjs) |
 | Linjer, varianter och triggers | [catalog.json](../../../services/openclaw/lab/config/catalog.json) |
 
-Astrids labbfunktioner har egna guider: [social chatt](SOCIAL-CHAT.md) och
-[companion](COMPANION.md). Ingen av dem identifierar en spelare hos ett bolag.
+Astrids labbfunktioner (avvecklas) står i [ASTRID-LABBCHATT](ASTRID-LABBCHATT.md).

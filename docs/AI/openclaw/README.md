@@ -25,8 +25,7 @@ dokumentationen och ger inga nya verktyg.
 - [Produkttal: `croupier-speech`, transport och dealerpersona](PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Drift: tjänster, nycklar och Render](DEPLOYMENT.md)
 - [OpenClaws egen dashboard](DASHBOARD-SV.md)
-- [Astrids sociala labbchatt](SOCIAL-CHAT.md) och [companion: namn, minne, webbsökning](COMPANION.md)
-- [Pensionerad lokal anslutning](LOCAL-CONNECTION-SV.md)
+- [Astrids labbchatt och companion (avvecklas)](ASTRID-LABBCHATT.md)
 
 ## Kodens ansvar
 

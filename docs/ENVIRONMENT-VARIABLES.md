@@ -1,6 +1,6 @@
 # Miljövariabler per tjänst
 
-Läsbar referens till [`environment-variables.json`](environment-variables.json), som är den maskinkontrollerade listan. Här står namn, krav, var värdet sätts och vad det gör, aldrig värden. Daterade inventeringar, panelgranskningar och kontokontroller från oktober 2026 finns i [historiken](history/ENVIRONMENT-VARIABLES-2026-10.md).
+Läsbar referens till [`environment-variables.json`](environment-variables.json), som är den maskinkontrollerade listan. Här står namn, krav, var värdet sätts och vad det gör, aldrig värden.
 
 - Varje tillägg, borttagning eller betydelseändring uppdaterar både denna fil och JSON-registret i samma leverans ([AGENTS.md](../AGENTS.md#verifiering-och-säkerhet)).
 - `node tools/check-environment-variables.mjs` körs i hook och CI. Den kontrollerar att varje namn som de registrerade källfilerna läser finns i registret och att en staged env-ändring följs av båda filerna. Värden och leverantörspaneler kontrolleras inte.
@@ -183,23 +183,3 @@ Staging (se [START-HERE](../START-HERE.md#staging)) använder samma namn som pro
 ## Databasadresser i tester
 
 Tester med injicerad pool eller schemafunktion använder `fixtureDatabaseUrl()` i `test/fixtures/database-url.mjs`: adressen saknar inloggning och lösenordet skapas slumpmässigt vid körningen. `test/test-credential-fixtures.mjs` stoppar incheckade Neon-adresser med användare och lösenord i `test/` och `apps/studio/test/`. Lägg inte till scannerundantag för att dölja en sådan fixture.
-
-## Daterade avsnitt
-
-Rubrikerna finns kvar för länkar från andra dokument. Innehållet ligger i [ENVIRONMENT-VARIABLES-2026-10](history/ENVIRONMENT-VARIABLES-2026-10.md).
-
-### Runtime-rollens tabellbehörigheter — verifierat 19 oktober 2026
-
-[Kvittot](history/ENVIRONMENT-VARIABLES-2026-10.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026) för GRANT på `moving_drift_control`, med återgång.
-
-### Aktuellt miljöval för Admin — verifierat 18 oktober 2026
-
-[Inventeringen](history/ENVIRONMENT-VARIABLES-2026-10.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026) av Neon, Vercel och Blob 18 oktober.
-
-### Historisk läsande jämförelse, 17 oktober 2026
-
-[Jämförelsen](history/ENVIRONMENT-VARIABLES-2026-10.md#historisk-läsande-jämförelse-17-oktober-2026) av lokala profiler och molnet.
-
-### Dealerimportens begränsade rådgivare, 13 oktober 2026
-
-Gränserna för AI-förslagen i klippimporten (filantal, kontext, tokens, tidsgränser, `store:false`) står i [historiken](history/ENVIRONMENT-VARIABLES-2026-10.md#dealerimportens-begränsade-rådgivare-13-oktober-2026); variablerna står i Vercel-tabellen ovan.

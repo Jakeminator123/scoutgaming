@@ -1,6 +1,6 @@
 # Blackjack: dealerbank, mått och format
 
-[Till blackjackguiden](README.md). Planeringsunderlagen (dealerplanens fyra JSON-filer, Dealerverkstad Light) och deras källregister ligger frysta i [docs/history/games/blackjack](../../history/games/blackjack/KALLOR.json). De är underlag, inte produktregler; ett rum använder alltid sitt publicerade paket.
+[Till blackjackguiden](README.md). Ett rum använder alltid sitt publicerade paket.
 
 ## Två poser
 

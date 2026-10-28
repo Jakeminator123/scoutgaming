@@ -86,4 +86,5 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 | Miljövariabler | [ENVIRONMENT-VARIABLES](docs/ENVIRONMENT-VARIABLES.md) |
 | Lagrings- och uppspelningskontrakt | [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md) |
 | AI-verktyg och OpenClaw | [docs/AI](docs/AI/README.md) |
-| Historik och daterade kvitton (inte läge) | [docs/history](docs/history/README.md) |
+| Alla dokument: vad, för vem, när de uppdateras | [docs/README](docs/README.md) |
+| Daterade kvitton (bevis, inte läge) | `docs/<datum>-*-ACCEPTANCE.json` och `*-REVIEW.md` |

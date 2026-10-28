@@ -53,5 +53,4 @@ en Git-push eller en Vercel-deploy.
 Gatewayn kör som uid 1000 under `tini`. OpenClaw håller sin owner-lease upp
 till fem minuter efter senaste förnyelse; radera eller kringgå aldrig leasen.
 Om en deploy fastnar på leasen: utred loggarna innan nästa deploy och rör inte
-state eller lås. Övergången från den äldre root-imagen gjordes 18 oktober 2026
-och beskrivs i [historiken](../../history/AI/RENDER-START-2026-10.md).
+state eller lås.

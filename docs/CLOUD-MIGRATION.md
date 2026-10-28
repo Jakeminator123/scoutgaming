@@ -1,6 +1,6 @@
 # Drift och leverans
 
-Var produkten kör, hur en ändring når produktionen och hur man kontrollerar den. Identiteter och publiceringsordning står i [START-HERE](../START-HERE.md), migreringens status bara i [migrering/STATUS.md](../migrering/STATUS.md) och överlämningen i [NEXT-AGENT](NEXT-AGENT.md). Den tidigare migrationsöversikten med leveranskvitton från oktober 2026 finns i [historiken](history/CLOUD-MIGRATION-2026-10.md).
+Var produkten kör, hur en ändring når produktionen och hur man kontrollerar den. Identiteter och publiceringsordning står i [START-HERE](../START-HERE.md), migreringens status bara i [migrering/STATUS.md](../migrering/STATUS.md) och överlämningen i [NEXT-AGENT](NEXT-AGENT.md).
 
 ## Ytor och datalagring
 
@@ -40,7 +40,7 @@ curl -s https://croupier-v3.onrender.com/__cloud/version   # {schemaVersion:1, p
 
 ## Teknisk register-/runtimeflytt: avslutad i produktion
 
-Neon som produktregister och privat Blob som mediekälla är införda och driftsatta sedan 16–18 oktober 2026 (migrering 012 och framåt). Flytten återöppnas inte utan ett konkret runtimefel. Importkvitton och baselinen finns i [historiken](history/CLOUD-MIGRATION-2026-10.md#teknisk-register-runtimeflytt-avslutad-i-produktion).
+Neon som produktregister och privat Blob som mediekälla är införda och driftsatta sedan 16–18 oktober 2026 (migrering 012 och framåt). Flytten återöppnas inte utan ett konkret runtimefel.
 
 ## Separat produktarbete och öppna driftansvar
 
@@ -55,7 +55,3 @@ Inventering från oktober 2026, utanför masterplanen. Kontrollera mot koden inn
 | Tal och läppsynk | Rörligt tal är av. Automatisk lagring av resultat, riktig mikrofon och bild hela vägen samt kostnadsavstämning återstår; bara Jakob godkänner AV |
 | Backup | Extern fullbackup av Director- och Gateway-diskarna saknas |
 | Radering | Permanent klippradering med beroendespärr; äldre bankindexreferenser behöver konsumentkontroll |
-
-## Admin checkpoints C1C9
-
-Kontinuitetslistan för Admin (ansvar, navigation, spara/återläsa, behörighet, publicering, städning) var ingen grind och ersätts av masterplanens aktiviteter. Den daterade tabellen finns i [historiken](history/CLOUD-MIGRATION-2026-10.md#admin-checkpoints-c1c9).
