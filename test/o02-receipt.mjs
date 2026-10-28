@@ -98,3 +98,26 @@ test('D1 expects the K06 receipt\'s final state unless the flags override, and r
   assert.equal(evaluateDatabase(neon, expectedStagingHead({}, {}), role), null, 'no expectation stays missing');
   assert.equal(evaluateDatabase(null, fromReceipt, role), null);
 });
+
+test('the expectation is read from both K06 receipt shapes: RERUN-1 neon.finalState and RERUN-2 neon.finalRoom', () => {
+  const p1 = 'docs/2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json';
+  const p2 = 'docs/2026-10-28-K06-STAGING-RERUN-2-ACCEPTANCE.json';
+  const r1 = JSON.parse(readFileSync(new URL('../' + p1, import.meta.url), 'utf8'));
+  const r2 = JSON.parse(readFileSync(new URL('../' + p2, import.meta.url), 'utf8'));
+
+  assert.deepEqual(expectedStagingHead(r2, { k06Path: p2 }), {
+    publishedConfig: 'room-config-8082de33-5007-4430-a3d2-89326b8ece47', packageRevision: 23,
+    source: { publishedConfig: `${p2}#neon.finalRoom.head`, packageRevision: `${p2}#neon.finalRoom.operatorPackages.qa-k06k07-9dd2d3a4-a` } });
+  assert.equal(expectedStagingHead(r2, { operatorId: 'qa-k06k07-9dd2d3a4-b' }).packageRevision, 1, 'operator B\'s package is not operator A\'s');
+
+  assert.deepEqual(expectedStagingHead(r1, { k06Path: p1 }), {
+    publishedConfig: 'room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932', packageRevision: 15,
+    source: { publishedConfig: `${p1}#neon.finalState.head`, packageRevision: `${p1}#neon.finalState.packageRevision` } });
+
+  // Synthetic shapes: finalRoom without operator A keeps the head and leaves the package missing.
+  const partial = expectedStagingHead({ neon: { finalRoom: { head: 'room-config-x', operatorPackages: { other: 4 } } } });
+  assert.equal(partial.publishedConfig, 'room-config-x');
+  assert.equal(partial.packageRevision, null);
+  assert.equal(partial.source.packageRevision, null);
+  assert.equal(expectedStagingHead({ finalState: { head: 'room-config-y', packageRevision: 3 } }, { k06Path: 'k' }).source.publishedConfig, 'k#finalState.head');
+});
