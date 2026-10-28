@@ -110,7 +110,7 @@ function Result({value,company,room,dealer,language,permissions,revoke,onRevoke,
         <button type="button" className={cx(styles.btn,styles.btnPrimary)} onClick={copy}>{copied==='copied'?'Kopierad':'Kopiera'}</button></div>
       {copied==='manual'&&<p className={cx(styles.small,styles.muted,styles.mt)}>Urklipp är inte tillgängligt här. Länken är markerad: kopiera den med Ctrl+C.</p>}
     </div>
-    <p><b>Skicka till bolaget.</b> Den som öppnar länken loggas in som demospelaren <b>{value.displayName}</b> ({language==='sv'?'svenska':'engelska'}) och adressen pekar på spelbordet {room.name} hos {company.name} med {dealer.name}. Öppnar spelet lobbyn i stället visar den bolagets öppna spelbord att välja bland.</p>
+    <p><b>Skicka till bolaget.</b> Den som öppnar länken loggas in som demospelaren <b>{value.displayName}</b> ({language==='sv'?'svenska':'engelska'}) och landar direkt vid spelbordet {room.name} hos {company.name} med {dealer.name}: spelmotorn behåller bolaget i starten.</p>
     <dl className={styles.kv}>
       <dt>Startsaldo</dt><dd>{formatMoney(value.receipt.balance,value.receipt.currency)}</dd>
       <dt>Demospelare</dt><dd>{value.receipt.playerId?<code>{value.receipt.playerId}</code>:'–'}{value.receipt.playerRef&&<> · ref <code>{value.receipt.playerRef}</code></>}</dd>

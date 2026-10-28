@@ -25,7 +25,8 @@ const catalog=()=>({schemaVersion:1,source:'registered',readAt:'2026-10-28T10:00
   compositions:[]}});
 const administration=()=>readDemoCatalog(catalog());
 const adminSession=()=>({username:'jakob',role:'admin',gameOrigin:ORIGIN,availableActions:['GET apikeys','GET room-game-config','POST apikeys/create','POST apikeys/launch','POST apikeys/revoke']});
-const launchPayload=(extra={})=>({ok:true,authority:'render',url:`${ORIGIN}/game?launch=aaa.bbb.ccc`,playerRef:'p-77',playerId:'test-1a2b3c',balance:1000,currency:'EUR',expiresIn:21600,...extra});
+// Admin-servern projicerar launch-svaret (#516): bara ok, url, playerId, playerRef, balance, currency och expiresIn når webbläsaren.
+const launchPayload=(extra={})=>({ok:true,url:`${ORIGIN}/game?launch=aaa.bbb.ccc`,playerRef:'p-77',playerId:'test-1a2b3c',balance:1000,currency:'EUR',expiresIn:21600,...extra});
 
 test('steps: each step demands its choice, names the next step and never skips ahead',()=>{
   let state=initialDemoState();
