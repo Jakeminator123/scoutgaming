@@ -16,3 +16,5 @@ export function safeActivityData(value: unknown): unknown;
 export function appendActivity(entries: ActivityEntry[], entry: ActivityEntry): ActivityEntry[];
 export function decisionAttribution(mode: string, reason?: string, provider?: string): string;
 export function eventSummary(event: unknown): string;
+/** A log entry before the session assigns its id and time. */
+export type ActivityDraft = Omit<ActivityEntry, 'id' | 'time'>;

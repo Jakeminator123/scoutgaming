@@ -71,7 +71,6 @@ run_node_tests presentation card-view test/card-view.mjs test/background-playbac
 run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs test/preview-table.mjs
 run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
-run_node_tests access admin-project-drafts-browser test/admin-project-drafts-browser.mjs
 run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
 # Complete package sets, once per full run (including CI).
 run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs

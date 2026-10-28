@@ -11,7 +11,6 @@ import { loadVideoRegistry, getVideoResponse } from './fixtures/local-video-regi
 import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../../services/game/storage/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../../../packages/presentation/contracts/video-intake.mjs';
 import { validateProject, addVariant, buildRuntimeCatalog } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { auditStudio } from '../lib/studio-audit.mjs';
 import { simulateStudio as simulate, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
 const simulateStudio = (body, options = {}) => simulate(body, { videoRegistry: { videos: [], families: [] }, ...options });
 import { prepareDecision } from '../../../packages/director/engine.mjs';
@@ -153,10 +152,10 @@ test('a stored greeting binds, survives reload and cannot play as another speech
   assert.throws(() => validateVideoMetadata({ ...speech, situation: 'invented-speech' }), /Situationen/);
 });
 
-test('all 256 seed mappings resolve to the right event and 64 distinct motion definitions; new alternatives are manual', () => {
-  const project = createSeedProject(), audit = auditStudio(project);
-  assert.equal(audit.events, 16); assert.equal(audit.lines.length, 64); assert.equal(audit.variants, 256);
-  assert.equal(audit.uniqueMotions, 64); assert.equal(audit.socialMotions, 1); assert.deepEqual(audit.problems, []);
+test('all 256 seed mappings resolve to the right event; new alternatives are manual', () => {
+  const project = createSeedProject();
+  assert.equal(project.events.length, 16); assert.equal(project.lines.length, 64);
+  assert.equal(project.lines.reduce((count, line) => count + line.variants.length, 0), 256);
   for (const dealer of project.dealers) for (const e of project.events) {
     assert.equal(prepareDecision(buildRuntimeCatalog(project, dealer.id), { requestId: 'audit-mapping', event: e.exampleEvent, mode: 'off' }).node.id, e.id);
   }

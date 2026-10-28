@@ -9,17 +9,7 @@ export type PartnerInputStatus = {
   replay: false;
   readOnly: true;
 };
-export type PartnerInputEnvelope = {
-  id: string;
-  time: string;
-  source: 'partner';
-  kind: 'round' | 'status';
-  data: Record<string, unknown>;
-  upstreamId?: string;
-};
-export function createPartnerObserver(options?: Record<string, unknown>): {
+export function createPartnerObserver(options?: { env?: Record<string, string | undefined> | (() => Record<string, string | undefined>) }): {
   status(): PartnerInputStatus;
-  endpoint(request: Request): Promise<Response>;
 };
-export function partnerInputEndpoint(request: Request): Promise<Response>;
 export function partnerEnvironment(env: Record<string, string | undefined>): Record<PartnerEnvironmentName, string | undefined>;

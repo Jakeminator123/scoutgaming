@@ -68,7 +68,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
   mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
-  if (['/admin/media-review','/admin/dealer-agent','/admin/dealer-studio','/admin/replies','/admin/events'].includes(mapped.path)) return items.find(item => item.href === '/admin/clips') ?? null;
+  if (['/admin/media-review','/admin/dealer-agent','/admin/dealer-studio','/admin/replies'].includes(mapped.path)) return items.find(item => item.href === '/admin/clips') ?? null;
   const matches = items.filter(item => {
     const parts = hrefParts(item.href);
     if (parts.path !== mapped.path) return false;

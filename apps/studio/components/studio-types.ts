@@ -43,7 +43,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
 // Staff editor views use their active public document addresses. Dealer chat and
 // global model settings are separate Admin documents.
 export const viewPaths: Record<StudioView, string> = {
-  tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/admin/rehearsal',
+  tree: '/admin/clips', lab: '/admin/clips', videos: '/admin/videos', activity: '/admin/rehearsal',
   openclaw: '/admin/dealer-agent', guide: '/admin/guide', probe: '/admin/probe',
 };
 
