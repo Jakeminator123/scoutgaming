@@ -160,8 +160,23 @@ Följ konsumenterna först: route → UI → tjänst → adapter → data.
 | 3 | **SQL S1a: de 6 bolagen**, först när rouletteexporten (steg 0.4) är klar | Se nedan. | `operators` innehåller bara `johns-bet` och `dragan-test`. |
 | 4 | **Dealers: papperskorg och permanent radering** | `POST /dealers/archive-check` och `/dealers/archive` för `astrid`. Efter 15 minuter `POST /dealers/delete-check` och sedan `/dealers/delete` för astrid och de 6 i papperskorgen. Kör S3 före Astrids `delete`. `anna-jonsson` raderas först efter rouletteexporten och Jakobs val om dess bytes (steg 0.4). | Spärras tills GPU-sessionen i avsnitt 2, punkt 8 är släppt. `delete` raderar dealerns klipp i Blob (`pending → Blob → deleted`; raden står kvar som gravsten) och sist papperskorgsposten. `studio_dealer_published` betyder att en kvarvarande paketrevision binder dealern; stoppa och rapportera. |
 | 5 | **SQL S3: retained bank** | Se nedan. | Astrids 6 retained-poster är borta. |
-| 6 | **Katalog utan Astrids övriga runtime-filer** | Efter repo-PR:en, med `ops/neon-studio/runtime-media-import.mjs`: `prepareRuntimeMediaImport` → `planRuntimeMediaImport` (läsande; ger `planHash` och `operation:'replace'`) → `applyRuntimeMediaImport({confirm:true})`. Det finns ingen CLI, så det krävs ett litet körskript. | Katalogen får en ny revision. `/review/astrid-*`, `/lab/astrid-*` och `/dealers/astrid*` ger 404, medan spelets tillgångar ger 200. |
-| 7 | **Efter K1: katalog utan Astrids bank** | Samma import med en källa utan presentationsbank. Repo-PR 2 raderar de sista 84 filerna. | `blobIndex` saknar `dealers/astrid/`. |
+| 6 | **Katalog utan Astrids övriga runtime-filer** | Efter repo-PR:en, med `ops/neon-studio/runtime-media-import.mjs`: `prepareRuntimeMediaImport` → `planRuntimeMediaImport` (läsande; ger `planHash` och `operation:'replace'`) → `applyRuntimeMediaImport({confirm:true})`, via körskriptet `ops/neon-studio/runtime-media-import-run.mjs` (se körinstruktionen nedan). | Katalogen får en ny revision. `/review/astrid-*`, `/lab/astrid-*` och `/dealers/astrid*` ger 404, medan spelets tillgångar ger 200. |
+| 7 | **Efter K1: katalog utan Astrids bank** | Samma import med en källa utan presentationsbank. Repo-PR 2 raderar de sista 84 filerna. Är repo-PR 2 redan mergad när steg 6 körs blir steg 6 och 7 en enda import. | `blobIndex` saknar `dealers/astrid/`. |
+
+**Körinstruktion, steg 6 och 7.** Kör i Jakobs terminal från en ren checkout av exakt den `main`-SHA som ska importeras. Scope anges alltid uttryckligen. `prepare` läser ingen databas, `plan` läser bara och vägrar skriva över en tidigare plan, och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Utdata innehåller koder, hashar och antal, aldrig anslutningssträngen.
+
+```powershell
+$env:CROUPIER_STUDIO_ENVIRONMENT_ID = 'production'; $env:CROUPIER_STUDIO_WORKSPACE_ID = 'croupier'
+node ops/neon-studio/runtime-media-import-run.mjs prepare
+$env:CROUPIER_GAME_DATABASE_URL = '<från Neon-konsolen>'
+node ops/neon-studio/runtime-media-import-run.mjs plan --out arkiv/<datum>/neon/katalog-plan.json
+# Granska: operation 'replace', expectedRevision 9201007d…, revision som i prepare, counts.presentation 0 efter K1.
+$env:CROUPIER_RUNTIME_IMPORT_CONFIRM = '<planHash>'
+node ops/neon-studio/runtime-media-import-run.mjs apply --plan arkiv/<datum>/neon/katalog-plan.json --actor jakob
+Remove-Item Env:CROUPIER_RUNTIME_IMPORT_CONFIRM, Env:CROUPIER_GAME_DATABASE_URL
+```
+
+`apply` stoppas utan skrivning om källfilerna, scope, målet, migreringsledgern eller katalogens revision har ändrats sedan planen. Koden godtar fortfarande den nuvarande katalogen med banken, så återställningen i avsnitt 7 fungerar med samma tre kommandon från den äldre SHA:n.
 | 8 | **Blob**, sist och minst ett verifierat dygn efter steg 7 | Radera det från listan i steg 0 som Admin inte redan har raderat: retained-bank (6), katalogens `dealers/astrid/` (524), oregistrerade Astrid-objekt och lager som varken JB eller Dragan använder. Rouletterummets bord `7e31ab32-…` tas bara med efter Jakobs val i steg 0.4. Använd Blob-API med token på Jakobs dator, ett prefix i taget. Kör `HEAD` mot JB:s 53 klipp och 3 lager och mot Dragans bank före och efter. | JB:s och Dragans objekt ger 200. Inget under `dealers/dragan/` raderas. |
 | 9 | **Valfritt**, bara efter Jakobs beslut | PAOW:s 127 klipp utan referens: `POST /videos/archive` → `/videos/delete-check` → `/videos/delete`, ett klipp i taget. Lager: `POST /admin/material-trash`; Blob-bytes tas i steg 8. Auth-konton: `POST /admin/users/remove`, aldrig sig själv eller sista admin. Dessutom S1b, S2, S5 och S6. | – |
 

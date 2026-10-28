@@ -443,6 +443,22 @@
       "managed": [],
       "blocked": []
     },
+    "local-runtime-media-import": {
+      "sources": [
+        "ops/neon-studio/runtime-media-import-run.mjs"
+      ],
+      "required": [
+        "CROUPIER_STUDIO_ENVIRONMENT_ID",
+        "CROUPIER_STUDIO_WORKSPACE_ID"
+      ],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_RUNTIME_IMPORT_CONFIRM"
+      ],
+      "managed": [],
+      "blocked": []
+    },
     "local-emil-provider-check": {
       "sources": [
         "tools/check-provider-profile.mjs"

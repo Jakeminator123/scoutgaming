@@ -1,7 +1,10 @@
 import {isDealerId} from '../../presentation/contracts/dealer-identity.mjs';
 import {lstatSync,realpathSync,openSync,closeSync,fstatSync,constants} from 'node:fs';
 import {resolve,join,relative,extname,isAbsolute} from 'node:path';
+// The historical presentation bank. A catalogue may omit it; while a catalogue
+// still carries it, its items are indexed under this one logical prefix.
 export const PRESENTATION_BANK = 'media/dealers/astrid/runtime/presentation';
+export const PRESENTATION_BANK_PATH = PRESENTATION_BANK.slice('media/'.length);
 const indexes = new WeakMap();
 const MIME = { '.mp4':'video/mp4', '.webm':'video/webm', '.mp3':'audio/mpeg', '.wav':'audio/wav', '.ogg':'audio/ogg', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon', '.json':'application/json', '.glb':'model/gltf-binary', '.gltf':'model/gltf+json' };
 const safe = path => typeof path === 'string' && path.length > 0 && !path.includes('\\') && !path.includes('\0') && !path.includes(':') && !path.startsWith('/') && path.split('/').every(part => part && part !== '.' && part !== '..');

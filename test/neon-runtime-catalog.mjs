@@ -49,9 +49,38 @@ test('explicit empty catalogue is detached, exact and contains no historical ban
   assert.equal(isEmptyRuntimeMediaCatalog(broken),false);
   assert.throws(()=>validateRuntimeMediaCatalog(broken),{code:'studio_runtime_catalog_invalid'});
  }
- const mixed=readRuntimeCatalogFixture();mixed.presentation=value.presentation;
- assert.throws(()=>validateRuntimeMediaCatalog(mixed),{code:'studio_runtime_catalog_invalid'});
  for(const absent of [undefined,null,{}])assert.throws(()=>validateRuntimeMediaCatalog(absent),{code:'studio_runtime_catalog_invalid'});
+});
+
+// The game and site assets without any dealer rows or presentation bank.
+function withoutDealerBank(value=readRuntimeCatalogFixture()) {
+ const dealer=path=>path.startsWith('dealers/');
+ value.layout.files=value.layout.files.filter(row=>!dealer(row.path));
+ value.blobIndex.files=value.blobIndex.files.filter(row=>!dealer(row.logicalPath));
+ value.legacy.entries=Object.fromEntries(Object.entries(value.legacy.entries).filter(([path])=>!dealer(path.slice('media/'.length))));
+ value.presentation=createEmptyRuntimeMediaCatalog().presentation;
+ return value;
+}
+test('game and site assets without a presentation bank form a valid, non-empty catalogue',()=>{
+ const source=withoutDealerBank(),value=validateRuntimeMediaCatalog(source);
+ assert.deepEqual(value,source);assert.notEqual(value,source);assert.equal(isEmptyRuntimeMediaCatalog(value),false);
+ assert.ok(value.blobIndex.files.some(row=>row.access==='public'&&row.logicalPath.startsWith('game/')),'public game assets remain indexed');
+ assert.deepEqual([value.presentation.families,value.presentation.items],[[],[]]);
+ assert.equal(validateRuntimeCatalogRecord({revision:runtimeCatalogRevision(value),value}).revision,runtimeCatalogRevision(value));
+ // A bank may leave the presentation before its rows leave the layout.
+ const retiring=readRuntimeCatalogFixture();retiring.presentation=createEmptyRuntimeMediaCatalog().presentation;
+ assert.deepEqual(validateRuntimeMediaCatalog(retiring).presentation.items,[]);
+ const bank=readRuntimeCatalogFixture().presentation;
+ for(const change of [
+  v=>v.presentation.items.push(...bank.items.slice(0,1)),v=>v.presentation.families.push(...bank.families.slice(0,1)),
+  v=>v.presentation.extra=true,v=>v.presentation.source='other',v=>v.presentation.schemaVersion=2,
+  v=>v.blobIndex.files[0].storage.sha256='a'.repeat(64),v=>delete v.legacy.entries[Object.keys(v.legacy.entries)[0]],
+  // Only the exact empty catalogue may carry no media at all.
+  v=>{v.layout.files=[];v.blobIndex.files=[];v.legacy.entries={};v.layout.roots={old:'media/old'};},
+ ]) {
+  const broken=withoutDealerBank();change(broken);
+  assert.throws(()=>validateRuntimeMediaCatalog(broken),{code:'studio_runtime_catalog_invalid'});
+ }
 });
 
 test('an empty catalogue still requires its exact scoped persisted row and revision',async()=>{

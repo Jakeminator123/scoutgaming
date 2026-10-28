@@ -46,7 +46,7 @@ import {presentationCapabilitiesForVersion,PRESENTATION_CAPABILITY_VERSION_HEADE
 import {serveAdminWorkspaceData} from '../lib/admin-workspace-data.mjs';
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'studio-test' });
-async function fixture(t,{empty=false}={}) {
+async function fixture(t,{empty=false,bankless=false}={}) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-neon-registry-'));
   t.after(() => {
     assert.equal(dirname(resolve(root)), resolve(tmpdir())); assert.match(basename(root), /^croupier-neon-registry-/);
@@ -58,9 +58,9 @@ async function fixture(t,{empty=false}={}) {
   // while supplying the scoped empty directory used by the lifecycle test fixture.
   const connect=pool.connect.bind(pool);pool.connect=async()=>{const client=await connect(),query=client.query.bind(client);client.query=(sql,values)=>sql.includes('/* operator-store:list-operators */')?Promise.resolve({rows:[]}):query(sql,values);return client;};
   const repository = createStudioRepository({ pool, scope });
-  if(empty)seedSavedVideoProject(pool,scope,createEmptyProject());else seedSavedVideoProject(pool,scope);
-  const objects = new Map(), items = [], files = [], layout = [];
-  for (const family of empty?[]:MEDIA_FAMILY_DEFINITIONS) for (const relativePath of family.standardPaths) {
+  if(empty||bankless)seedSavedVideoProject(pool,scope,createEmptyProject());else seedSavedVideoProject(pool,scope);
+  const bank = !empty && !bankless, objects = new Map(), items = [], files = [], layout = [];
+  for (const family of bank?MEDIA_FAMILY_DEFINITIONS:[]) for (const relativePath of family.standardPaths) {
     const bytes = Buffer.from(`0000ftypisom00000fixture:${relativePath}`), sha256 = createHash('sha256').update(bytes).digest('hex'), id = videoIdFromSha256(sha256);
     const logicalPath = `dealers/astrid/runtime/presentation/${relativePath}`, directory = logicalPath.slice(0, logicalPath.lastIndexOf('/'));
     const pathname = mediaBlobPath(directory, id, sha256, 'mp4'); objects.set(pathname, bytes);
@@ -68,10 +68,17 @@ async function fixture(t,{empty=false}={}) {
     files.push({logicalPath, id, access:'source', sha256, size:bytes.length, storage:{provider:'vercel-blob',pathname,sha256,size:bytes.length,contentType:'video/mp4'}});
     layout.push({path:logicalPath, legacyPath:`fixture/${relativePath}`, access:'source', sha256, size:bytes.length});
   }
-  const families = (empty?[]:MEDIA_FAMILY_DEFINITIONS).map(family => ({id:family.id,dealerId:family.dealerId,eventId:family.eventId,situation:family.situation,playbackType:family.playbackType,
+  if (bankless) {
+    // A public game asset stays indexed while no dealer bank exists.
+    const bytes = Buffer.from('fixture-public-game-asset'), sha256 = createHash('sha256').update(bytes).digest('hex'), id = videoIdFromSha256(sha256);
+    const logicalPath = 'game/runtime/assets/table.png', pathname = mediaBlobPath('game/runtime/assets', id, sha256, 'png'); objects.set(pathname, bytes);
+    files.push({logicalPath, id, access:'public', sha256, size:bytes.length, legacyUrls:['/assets/table.png'], storage:{provider:'vercel-blob',pathname,sha256,size:bytes.length,contentType:'image/png'}});
+    layout.push({path:logicalPath, legacyPath:'web/public/assets/table.png', access:'public', sha256, size:bytes.length, publicUrl:'/assets/table.png'});
+  }
+  const families = (bank?MEDIA_FAMILY_DEFINITIONS:[]).map(family => ({id:family.id,dealerId:family.dealerId,eventId:family.eventId,situation:family.situation,playbackType:family.playbackType,
     standardIds: family.standardPaths.map(path => items.find(item => item.relativePath === path).id), variantIds:[]}));
   const runtimeCatalog=empty?createEmptyRuntimeMediaCatalog():{schemaVersion:1,layout:{schemaVersion:1,roots:{},files:layout},
-    presentation:{schemaVersion:2,source:'emil/dealklipp-v1',families,items},
+    presentation:bank?{schemaVersion:2,source:'emil/dealklipp-v1',families,items}:createEmptyRuntimeMediaCatalog().presentation,
     blobIndex:{schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files},legacy:{schemaVersion:2,entries:{}}};
   pool.seedRuntimeCatalog(scope,runtimeCatalog);
   await writeFile(join(archive,'lab-video-manifest.json'), JSON.stringify(runtimeCatalog.presentation));
@@ -244,6 +251,28 @@ test('empty scoped bank supports Admin intake, captured revisions and verified p
  await assert.rejects(f.registry.loadCaptured({...snapshot,runtimeCatalog:{...snapshot.runtimeCatalog,revision:'invalid'}}),e=>e.statusCode===503);
  await assert.rejects(createNeonVideoRegistry({repository:f.repository,scope,env:{...f.env,BLOB_READ_WRITE_TOKEN:''},options:f.options}).load(),{code:'studio_media_storage_unavailable'});
  assert.deepEqual((await f.repository.readRuntimeCatalog()).value,createEmptyRuntimeMediaCatalog(),'uploads never rewrite the immutable bank');
+});
+
+test('game assets without a presentation bank keep intake, captured inventory and verified private bytes',async t=>{
+ const f=await fixture(t,{bankless:true});
+ await rm(join(f.root,'media'),{recursive:true});
+ await f.repository.initializeDocument('administration',{actor:'Operator',value:{rooms:[],gameLanes:[],gameLane:null}});
+ const initial=await f.registry.load();
+ assert.deepEqual([initial.videos,initial.families],[[],[]]);assert.equal(initial.summary.snapshotReadable,true);
+ assert.match(initial.summary.notes[0],/Tom basbank/);
+ const saved=await f.repository.readDocument('project');
+ await f.repository.saveDocument('project',{actor:'Operator',expectedRevision:saved.revision,value:addDealer(saved.value,'newdealer','Synthetic dealer')});
+ const bytes=Buffer.from('0000ftypisom00000bankless-upload'),sha256=createHash('sha256').update(bytes).digest('hex'),id=randomUUID();
+ const record={id,sha256,size:bytes.length,contentType:'video/mp4',pathname:mediaBlobPath('dealers/newdealer/review/uploads',id,sha256,'mp4'),
+  classification:{dealerId:'newdealer',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Synthetic idle',notes:''}};
+ f.objects.set(record.pathname,bytes);await f.repository.registerMedia(record,{actor:'Operator'});
+ const inventory=await f.registry.load();
+ assert.deepEqual(inventory.videos.map(row=>[row.id,row.storage]),[[id,'private-blob']]);assert.deepEqual(inventory.families,[]);
+ const response=await f.registry.response(id,new Request('https://studio.example.invalid/studio/api/videos/'+id));
+ assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),bytes);
+ const snapshot=await f.repository.readPresentationSnapshot();
+ assert.deepEqual((await f.registry.loadCaptured(snapshot)).videos.map(row=>row.id),[id]);
+ assert.deepEqual((await f.repository.readRuntimeCatalog()).value,f.runtimeCatalog,'uploads never rewrite the catalogue');
 });
 
 test('captured registry preserves optional timing without rereading or rebuilding measured evidence',async t=>{

@@ -303,3 +303,62 @@ test('concurrent empty initialization has one winner and rollback leaves no row 
   assert.deepEqual(targetPool.snapshot(),before);
  }
 });
+
+// The game's and site's assets from this checkout, without dealer rows or a presentation bank.
+async function banklessSource(t){
+  const {mkdtemp,mkdir,writeFile,rm,copyFile}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join,dirname}=await import('node:path');
+  const {createEmptyPresentationManifest}=await import('../packages/studio-registry/server/video-manifest.mjs');
+  const dir=await mkdtemp(join(tmpdir(),'croupier-bankless-import-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+  const read=async path=>JSON.parse(await readFile(join(root,path),'utf8')),dealer=path=>path.startsWith('dealers/');
+  const put=async(path,value)=>{await mkdir(dirname(join(dir,path)),{recursive:true});await writeFile(join(dir,path),JSON.stringify(value,null,2)+'\n');};
+  const layout=await read('media/layout.json'),index=await read('media/blob-index.json'),legacy=await read('media/catalog/legacy.json');
+  layout.files=layout.files.filter(row=>!dealer(row.path));index.files=index.files.filter(row=>!dealer(row.logicalPath));
+  legacy.entries=Object.fromEntries(Object.entries(legacy.entries).filter(([path])=>!dealer(path.slice('media/'.length))));
+  await put('media/layout.json',layout);await put('media/blob-index.json',index);await put('media/catalog/legacy.json',legacy);
+  await put('media/catalog/presentation.json',createEmptyPresentationManifest());
+  const paths=new Set(layout.files.map(row=>row.path));
+  for(const row of index.files.filter(row=>paths.has(row.logicalPath)&&row.access!=='source'&&row.storage.contentType==='application/json')){
+    await mkdir(dirname(join(dir,'media',row.logicalPath)),{recursive:true});await copyFile(join(root,'media',row.logicalPath),join(dir,'media',row.logicalPath));
+  }
+  return dir;
+}
+
+test('a reviewed replace can remove the presentation bank while the game and site assets stay indexed',async t=>{
+  const source=await prepareRuntimeMediaImport({scope,sourceRoot:await banklessSource(t)});
+  assert.deepEqual([source.value.presentation.families,source.value.presentation.items],[[],[]]);
+  assert.ok(source.value.blobIndex.files.some(row=>row.access==='public'&&row.logicalPath.startsWith('game/')));
+  const pool=memoryPool(),current=changed();pool.seed(scope,{revision:current.revision,value:current.value});
+  const review=await plan(pool,source);
+  assert.equal(review.operation,'replace');assert.equal(review.expectedRevision,current.revision);assert.equal(review.counts.presentation,0);
+  const result=await apply(pool,review,{prepared:source});assert.equal(result.changed,true);assert.equal(result.previousRevision,current.revision);
+  const saved=pool.snapshot().catalogs.get(key(scope));
+  assert.equal(saved.revision,source.revision);assert.equal(runtimeCatalogJson(saved.value),runtimeCatalogJson(source.value));
+});
+
+test('the operator runner plans read-only, saves the review and applies only the confirmed plan hash',async t=>{
+  const {parseImportArguments,importScope,runRuntimeMediaImport}=await import('../ops/neon-studio/runtime-media-import-run.mjs');
+  assert.deepEqual(parseImportArguments(['plan','--out','plan.json']),{command:'plan',out:'plan.json',planFile:undefined,actor:undefined});
+  for(const argv of [[],['plan'],['plan','--plan','x'],['apply','--plan','x'],['apply','--plan','x','--actor','--plan'],['prepare','--out','x'],['import']])
+    assert.throws(()=>parseImportArguments(argv),{code:'runtime_import_usage'});
+  assert.throws(()=>importScope({CROUPIER_STUDIO_ENVIRONMENT_ID:'production'}),{code:'runtime_import_scope_required'});
+  assert.deepEqual(importScope({CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'runtime-import'}),scope);
+  const local=await runRuntimeMediaImport({command:'prepare',scope});assert.equal(local.revision,prepared.revision);
+  const pool=memoryPool(),current=changed();pool.seed(scope,{revision:current.revision,value:current.value});
+  const files=new Map(),io={readText:async path=>{if(!files.has(path))throw Error('missing');return files.get(path);},
+    writeText:async(path,text)=>{if(files.has(path))throw Error('exists');files.set(path,text);},schemaCheck};
+  const summary=await runRuntimeMediaImport({command:'plan',out:'plan.json',scope,pool,...io});
+  assert.deepEqual(Object.keys(summary).sort(),['counts','database','expectedRevision','operation','planHash','revision','role','scope']);
+  assert.equal(summary.operation,'replace');assert.doesNotMatch(JSON.stringify(summary),/127\.0\.0\.1/);
+  const [planPath]=files.keys();assert.equal(JSON.parse(files.get(planPath)).planHash,summary.planHash);
+  await assert.rejects(runRuntimeMediaImport({command:'plan',out:'plan.json',scope,pool,...io}),/exists/,'an earlier review is never overwritten');
+  const before=pool.snapshot(),applyPlan=overrides=>runRuntimeMediaImport({command:'apply',planFile:'plan.json',actor:'isolated-admin',scope,pool,...io,...overrides});
+  for(const confirm of [undefined,'','f'.repeat(64)])await assert.rejects(applyPlan({confirm}),{code:'runtime_import_confirmation_required'});
+  await assert.rejects(applyPlan({confirm:summary.planHash,planFile:'other.json'}),{code:'runtime_import_plan_unreadable'});
+  files.set(planPath,JSON.stringify({...JSON.parse(files.get(planPath)),revision:'f'.repeat(64)}));
+  await assert.rejects(applyPlan({confirm:summary.planHash}),{code:'runtime_import_source_changed'});
+  assert.deepEqual(pool.snapshot(),before);assert.ok(!pool.calls.some(row=>['insert','update','audit'].includes(row.tag)));
+  files.set(planPath,JSON.stringify({...JSON.parse(files.get(planPath)),revision:prepared.revision}));
+  const applied=await applyPlan({confirm:summary.planHash});
+  assert.deepEqual(applied,{scope,revision:prepared.revision,previousRevision:current.revision,changed:true,planHash:summary.planHash});
+  assert.equal(pool.snapshot().catalogs.get(key(scope)).revision,prepared.revision);
+});

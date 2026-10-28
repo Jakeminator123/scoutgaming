@@ -56,6 +56,36 @@ test('deployment catalog builds after Amira source removal without changing Astr
  assert.equal(Object.keys(generated.entries).some(path=>path.includes('/amira/')),false);
  for(const [path,content]of Object.entries(generated.entries))assert.equal(content,legacy.entries[path]);
 });
+test('deployment catalog without a presentation bank keeps game metadata and writes the empty presentation',async t=>{
+ const {readFile,writeFile}=await import('node:fs/promises'),{createHash}=await import('node:crypto');
+ const {PRESENTATION_BANK_PATH}=await import('../tools/media-layout.mjs');
+ const {mediaBlobPath,MEDIA_MIME}=await import('../packages/studio-registry/server/private-media-contract.mjs');
+ const {createEmptyRuntimeMediaCatalog,validateRuntimeMediaCatalog}=await import('../packages/studio-registry/server/runtime-catalog.mjs');
+ const root=await mkdtemp(join(tmpdir(),'croupier-bankless-catalog-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const put=async(path,content)=>{const file=join(root,path);await mkdir(dirname(file),{recursive:true});await writeFile(file,content);};
+ const speech=JSON.stringify({fixture:{win:{src:'fixture.mp4'}}}),bytes=Buffer.from(speech),sha256=createHash('sha256').update(bytes).digest('hex');
+ const layout={schemaVersion:1,roots:{},files:[
+  {path:'game/runtime/speech-media.json',legacyPath:'web/public/speech-media.json',access:'public',sha256,size:bytes.length,publicUrl:'/speech-media.json'},
+  {path:'game/runtime/assets/table.png',legacyPath:'web/public/assets/table.png',access:'public',sha256:'c'.repeat(64),size:12,publicUrl:'/assets/table.png'}]};
+ await put('media/layout.json',JSON.stringify(layout));await put('media/game/runtime/speech-media.json',speech);
+ assert.deepEqual(await buildRuntimeMediaCatalog(root),{files:2,metadataSources:1});
+ const presentation=JSON.parse(await readFile(join(root,'media/catalog/presentation.json'),'utf8'));
+ assert.deepEqual(presentation,createEmptyRuntimeMediaCatalog().presentation);
+ const legacy=JSON.parse(await readFile(join(root,'media/catalog/legacy.json'),'utf8'));
+ assert.deepEqual(legacy,{schemaVersion:2,entries:{'media/game/runtime/speech-media.json':speech}});
+ await buildRuntimeMediaCatalog(root,{check:true});
+ // The generated documents form a valid catalogue with an indexed public asset.
+ const blobIndex={schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files:layout.files.map(row=>{
+  const id=`${row.sha256.slice(0,8)}-${row.sha256.slice(8,12)}-${row.sha256.slice(12,16)}-${row.sha256.slice(16,20)}-${row.sha256.slice(20,32)}`,extension=row.path.split('.').at(-1);
+  return {logicalPath:row.path,id,sha256:row.sha256,size:row.size,access:row.access,legacyUrls:[row.publicUrl],
+   storage:{provider:'vercel-blob',pathname:mediaBlobPath(dirname(row.path),id,row.sha256,extension),sha256:row.sha256,size:row.size,contentType:MEDIA_MIME[extension]}};
+ })};
+ assert.equal(validateRuntimeMediaCatalog({schemaVersion:1,layout,blobIndex,presentation,legacy}).presentation.items.length,0);
+ // A layout that still lists a bank cannot silently become a catalogue without one.
+ layout.files.push({path:PRESENTATION_BANK_PATH+'/lab-video-manifest.json',legacyPath:'fixture/lab-video-manifest.json',access:'source',sha256:'d'.repeat(64),size:2});
+ await put('media/layout.json',JSON.stringify(layout));
+ await assert.rejects(buildRuntimeMediaCatalog(root),/presentation bank/);
+});
 test('retired dealer aliases and Blob pointers disappear while Astrid remains registered',async()=>{
  const {readFile}=await import('node:fs/promises');const {resolvePublicMedia}=await import('../tools/media-layout.mjs');
  assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/speak.json'));
