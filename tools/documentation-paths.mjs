@@ -16,7 +16,6 @@ const guides = new Set([
   "apps/web/README.md",
   "inbox/README.md",
   "packages/presentation/README.md",
-  "packages/presentation/docs/INTEGRATION.md",
   "services/astrid-gpu-worker/README.md",
   "services/astrid-gpu-worker/SOURCE.md",
   "services/astrid-gpu-worker/gateway/README.md",

@@ -41,3 +41,5 @@
 # Raw media source and staging material.
 /media/**/source/
 /media/**/staging/
+# Frozen Kevin import source: about 190 KB of JSON on one line. Open it explicitly.
+/apps/studio/lib/dealer-import-kevin-source-paow.json

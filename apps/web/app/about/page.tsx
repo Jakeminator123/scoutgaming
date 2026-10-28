@@ -70,10 +70,10 @@ export default function AboutPage() {
             <a className="about-product-row" href="https://scoutgaminggroup.com/ai-casino" target="_blank" rel="noreferrer">
               <span className="about-product-number">02</span>
               <div><span className="about-kicker">NÄSTA KAPITEL · UNDER UTVECKLING</span><h3>AI live casino<span className="about-product-mark" aria-hidden="true">♧</span></h3></div>
-              <p>Vi utforskar ett nytt slags spelbord med digitala värdar och lokala språk. Möt Astrid i vår blackjackpilot.</p>
+              <p>Live-dealer blackjack och roulette med bolagets egna dealers, bord och bakgrunder, på spelarens språk. Bolaget väljer och publicerar själv.</p>
               <ArrowUpRight className="about-row-arrow" aria-hidden="true" />
             </a>
-            <Link className="about-pilot-link" href="/lobby">Nyfiken på Astrid? Besök blackjackpiloten <ArrowUpRight size={17} aria-hidden="true" /></Link>
+            <Link className="about-pilot-link" href="/lobby">Nyfiken? Prova spelen i lobbyn <ArrowUpRight size={17} aria-hidden="true" /></Link>
           </div>
         </section>
 

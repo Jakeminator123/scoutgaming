@@ -26,9 +26,8 @@ export function createGameEntrySelector({ policy, packages = null, log = console
   if (typeof log !== 'function') throw new TypeError('Invalid game entry log');
   function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane, registry = saved.project?.dealers, portraitDealerIds = []) {
     const serverLane = gameLanes.find(row => row.id === selection.lane);
-    const extra = serverLane?.renderer !== 'layered';
     if (!isActiveDealerId(selection.dealer)) throw Object.assign(Error('presentation_dealer_unavailable'), {statusCode:503});
-    if (extra && (!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer && !portraitDealerIds.includes(selection.dealer))) {
+    if ((!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer && !portraitDealerIds.includes(selection.dealer))) {
       throw Object.assign(Error('presentation_dealer_unavailable'), { statusCode: 503 });
     }
     const presentation = serverLane ? gamePresentationForDealer(selection.dealer, serverLane.renderer) : selection.presentation;
@@ -58,7 +57,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
       const lane = gameLanes.find(row => row.id === selection.lane);
       const presentation = saved.project?.lanes?.find(row => row.id === selection.lane);
       const portraitDealerIds = (saved.project?.dealers ?? []).map(row => row.id).filter(isActiveDealerId);
-      const dealer = lane?.renderer === 'layered' ? selection.dealer : laneDealerSelection(params,lane,presentation?.layers.dealer,{portraitDealerIds});
+      const dealer = laneDealerSelection(params,lane,presentation?.layers.dealer,{portraitDealerIds});
       if (!dealer) return {status:404};
       return { status: 200, selection: withChoices({...selection,dealer}, saved, gameLanes, selection.lane, saved.project?.dealers, portraitDealerIds) };
     }

@@ -103,8 +103,9 @@ test('retired document addresses redirect permanently to /game by game and drop 
 test('the initial document selects the presentation before client JavaScript runs',async () => {
   const {readFile}=await import('node:fs/promises');
   const source=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
-  for (const [dealer,presentation] of [['astrid','local'],['elin','local'],['linnea','local'],['paow','layered']]) {
-    const html=decorateGameEntryHtml(source,env,{lane:presentation==='layered'?'layer-preview':'mobile-phone',dealer,presentation,...(presentation==='local'?{localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]}:{})});
+  for (const dealer of ['astrid','elin','linnea']) {
+    const presentation='local';
+    const html=decorateGameEntryHtml(source,env,{lane:'mobile-phone',dealer,presentation,localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]});
     assert.match(html,/data-presentation-startup="pending"/);
     assert.ok(html.includes('data-presentation="'+(presentation==='original'?'indexed':presentation)+'"'));
     assert.ok(html.indexOf('href="local-presentation.css"')<html.indexOf('</head>'));

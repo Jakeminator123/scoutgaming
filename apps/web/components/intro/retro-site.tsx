@@ -157,7 +157,7 @@ export function RetroSite() {
         </div>
 
         <div className="retro-status">
-          <span className="retro-status-text">Öppnar sida http://www.scoutgaming.se/live-casino/astrid.htm ...</span>
+          <span className="retro-status-text">Öppnar sida http://www.scoutgaming.se/live-casino/blackjack.htm ...</span>
           <span className="retro-progress">
             <i />
           </span>

@@ -12,10 +12,11 @@ const dataset={gameLane:portrait.id,gameDealer:'elin',gamePresentation:'local',g
 const selection={lane:portrait.id,dealer:'elin',presentation:'local',localDealer:'elin',registeredDealers:registry};
 const env={CROUPIER_STUDIO_NEON_POLICY:'1'};
 
-test('empty configuration has no local dealer or lane; layer preview is explicit',()=>{
+test('empty configuration has no local dealer or lane, and the retired layer preview lane is gone',()=>{
  assert.deepEqual(GAME_LANES,[]);assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});
  assert.throws(()=>gameLaneSelection(''),/configured/);assert.throws(()=>gameLaneFromDocument({}));
- assert.deepEqual(gameLaneSelection('?lane=layer-preview&dealer=dragge'),{lane:'layer-preview',dealer:'dragge',presentation:'layered'});
+ assert.throws(()=>gameLaneSelection('?lane=layer-preview&dealer=dragge'),/configured/);
+ assert.deepEqual(packageLaneIds(['layer-preview']),[]);
 });
 test('saved catalogues validate identity, media ownership and explicit active lane',()=>{
  assert.deepEqual(gameLaneConfiguration({gameLanes:[portrait],gameLane:portrait.id}),{gameLanes:[portrait],gameLane:portrait.id});
@@ -73,13 +74,11 @@ test('operator metadata is bounded and login carries only approved selectors',()
  assert.equal(gameLaneFromDocument(d).packageRevision,3);
  for(const change of [{gameOperator:'Bad'},{gameOperator:undefined},{gamePackageRevision:'0'},{gamePackageRevision:'1e3'},{gameBranding:'[]'},{gameBranding:'null'},{gameBranding:'{'}])assert.throws(()=>gameLaneFromDocument({...d,...change}));
 });
-test('layered presentation is accepted only in its explicit lane',()=>{
- for(const id of ['dragge'])assert.deepEqual(gameLaneFromDocument({gameLane:'layer-preview',gameDealer:id,gamePresentation:'layered'}),{lane:'layer-preview',dealer:id,presentation:'layered'});
+test('the retired layered presentation and layer-preview lane are rejected everywhere',()=>{
  assert.throws(()=>gameLaneFromDocument({...dataset,gamePresentation:'layered'}));
- assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:'astrid',gamePresentation:'layered'}));
- assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:'paow',gamePresentation:'layered'}));
- assert.throws(()=>gameLaneSelection('?lane=layer-preview&dealer=paow'),/not available/);
- assert.deepEqual(gameLaneSelection('?lane=layer-preview'),{lane:'layer-preview',dealer:'dragge',presentation:'layered'});
+ for(const id of ['dragge','paow'])assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:id,gamePresentation:'layered'}));
+ assert.throws(()=>validateGameLanes([{schemaVersion:1,id:'layer-preview',label:'Layer Preview Lane',renderer:'layered',dealer:'dragge',mediaCollection:'layer-packs-preview'}]),/Invalid lane definition/);
+ assert.throws(()=>gamePresentationForDealer('dragge','layered'));
 });
 
 test('retiring the active lane leaves an explicit empty choice even when other lanes remain',()=>{

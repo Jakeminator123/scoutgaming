@@ -32,12 +32,11 @@ export function decorateGameEntryHtml(html,env,selection,{offline = false} = {})
       if (selection.lane !== preview.presentationLaneId || ['operator','roomId','packageRevision','branding'].some(key => selection[key] !== undefined)) throw Error('Invalid game presentation');
       attributes += ' data-studio-preview="' + attributeText(JSON.stringify(preview)) + '"';
     }
-    if (!isGameLaneId(selection.lane) || !isDealerId(selection.dealer) || !['local','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
+    if (!isGameLaneId(selection.lane) || !isDealerId(selection.dealer) || selection.presentation !== 'local') throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
     attributes += ` data-presentation="${selection.presentation}" data-dealer="${selection.dealer}"`;
     const registry = validatePublicRegisteredDealers(selection.registeredDealers ?? []);
-    const extra = selection.presentation !== 'layered';
-    if (extra && (selection.presentation !== 'local' || selection.localDealer !== selection.dealer || !registry.some(row => row.id === selection.dealer))) throw Error('Invalid game presentation');
+    if (selection.localDealer !== selection.dealer || !registry.some(row => row.id === selection.dealer)) throw Error('Invalid game presentation');
     if (selection.localDealer !== undefined) {
       if (selection.presentation !== 'local' || selection.localDealer !== selection.dealer) throw Error('Invalid game presentation');
       attributes += ` data-game-local-dealer="${selection.localDealer}"`;

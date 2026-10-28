@@ -35,7 +35,7 @@ export function approvedGameQuery(input,{origin,includeLaunch = true} = {}) {
   const source = input instanceof URLSearchParams ? input : new URLSearchParams(input);
   const result = new URLSearchParams();
   const one = key => source.getAll(key).length === 1 ? source.get(key) : null;
-  const values = {game:value => GAMES.includes(value),dealer:isDealerId,presentation:value => ['local','layered'].includes(value),lane:isGameLaneId,
+  const values = {game:value => GAMES.includes(value),dealer:isDealerId,presentation:value => value === 'local',lane:isGameLaneId,
     rehearsal:value => value === '1',
     table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value),operator:isOperatorSlug};
   for (const [key,valid] of Object.entries(values)) {const value = one(key);if (valid(value)) result.set(key,value);}

@@ -8,8 +8,7 @@ import {approvedGameQuery} from '../../../packages/navigation/game-entry.mjs';
 export function dealerVersionPath(dealer, _version, observerSearch='') {
   const dataset=globalThis.document?.documentElement?.dataset;
   const registry=validatePublicRegisteredDealers(JSON.parse(dataset?.gameRegisteredDealers??'[]'));
-  const layered=dataset?.gamePresentation==='layered'&&dataset.gameLane==='layer-preview'&&dealer==='dragge';
-  if(!isActiveDealerId(dealer)||dataset?.gamePresentation==='layered'&&!layered||!registry.some(row=>row.id===dealer)&&!layered)throw Error('Dealer is not registered');
+  if(!isActiveDealerId(dealer)||(dataset?.gamePresentation??'local')!=='local'||!registry.some(row=>row.id===dealer))throw Error('Dealer is not registered');
   if(!isGameLaneId(dataset?.gameLane))throw Error('No configured game lane');
   if(dataset.gameChoices!==undefined){
     const choices=gameChoicesFromDocument(dataset.gameChoices,{registeredDealerIds:registry.map(row=>row.id)});
