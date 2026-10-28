@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import schema from '../../../packages/presentation/contracts/schemas/idle-policy.schema.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan, MAX_IDLE_VARIANTS } from '../../../packages/presentation/runtime/idle-policy.mjs';
 
@@ -12,17 +11,6 @@ test('the simple idle policy has two base loops and thirteen one-shot variants',
   assert.equal(policy.variants.length, 13);
   assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', ...Array(9).fill('manual')]);
   assert.equal(schema.properties.variants.maxItems, MAX_IDLE_VARIANTS);
-});
-
-test('idle policy entries use the correct physical manifest folders', async () => {
-  const policy = createDefaultIdlePolicy();
-  const manifest = JSON.parse(await readFile(new URL('../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
-  const family = manifest.families.find(item => item.id === policy.familyId);
-  assert.deepEqual(new Set(policy.base.map(item => item.videoId)), new Set(family.standardIds));
-  assert.ok(policy.variants.every(item => family.variantIds.includes(item.videoId)));
-  const items = new Map(manifest.items.map(item => [item.id, item]));
-  assert.ok(policy.base.every(item => items.get(item.videoId).relativePath.match(/^idle\/[^/]+\.mp4$/)));
-  assert.ok(policy.variants.every(item => items.get(item.videoId).relativePath.match(/^idle\/variant\/[^/]+\.mp4$/)));
 });
 
 test('old policies remain readable and descriptions are bounded plain data', () => {

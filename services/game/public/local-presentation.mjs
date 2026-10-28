@@ -13,6 +13,12 @@ const FAILURE_NOTICE_MS = 6000;
 const unavailableMedia = error => error?.code === 'local_film_unavailable' && error.retryable === false;
 // K04 F5: how many server answers for a shared plan's filmed steps are asked for at a time.
 const SELECT_AHEAD = 2;
+// K04 F5b: how many of those answered clip files are downloaded and verified ahead at a time.
+const WARM_AHEAD = 2;
+// A shared room's window moved while a read or download ran (K04 F4/F4b). The verified
+// buffer reports a download's server code in serverCode. Not a failure of the dealer.
+const STALE_ROOM = 'shared_room_presentation_stale';
+const staleRoom = error => error?.code === STALE_ROOM || error?.serverCode === STALE_ROOM;
 // Waits for work that this step does not own; leaving the step does not cancel it.
 const untilAborted = (work, signal) => !signal ? work : new Promise((resolve, reject) => {
   if (signal.aborted) { reject(signal.reason); return; }
@@ -40,7 +46,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
   let upcoming = [], queueVersion, ahead = null;
-  const owned = row => [row.dealer, row.dealerId, row.classification?.dealerId].includes(dealerId);
+  // K04 F5b (staging 28 Oct 2026): a room's shared configuration is bound to one dealer (config.dealer) and lists
+  // only that dealer's verified media, without per-video dealer fields. Such a row belongs to the bound dealer; a
+  // row that names an owner still needs this dealer, and an unbound configuration lends no unowned rows.
+  const boundDealer = config.dealer?.id === dealerId;
+  const owned = row => {
+    const owners = [row.dealer, row.dealerId, row.classification?.dealerId].filter(owner => owner !== undefined && owner !== null);
+    return owners.length ? owners.includes(dealerId) : boundDealer;
+  };
   const sameStep = (item, event) => item?.type === event.type && (event.type === 'speak' ? item.line === event.line : item.shoeDraw === event.shoeDraw);
   // The lookahead moves past this step, and past earlier steps that were left before their answer arrived.
   const advance = (event, requestVersion) => {
@@ -210,17 +223,43 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     }
     if (!steps.size) return;
     ahead = { version: requestVersion, controller, steps };
+    // K04 F5b: as each answer arrives, its exact files are downloaded and verified into the player's buffer,
+    // WARM_AHEAD at a time and in the plan's order. Nothing is decoded or shown; the step that plays a file
+    // later reads the same bytes. Dropping the answers cancels the files still loading.
+    const queued = new Set(), files = [];
+    let loading = 0;
+    const load = () => {
+      while (loading < WARM_AHEAD && files.length && !controller.signal.aborted) {
+        const video = files.shift(); loading++;
+        Promise.resolve().then(() => player.warmLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, controller.signal))
+          .catch(() => {}).finally(() => { loading--; load(); });
+      }
+    };
+    const warm = answer => {
+      if (typeof player.warmLocalClip !== 'function' || controller.signal.aborted) return;
+      const { video, transitions } = answer?.result ?? {};
+      for (const file of [transitions?.before, video, transitions?.after])
+        if (typeof file?.sha256 === 'string' && /^[a-f0-9]{64}$/.test(file.sha256) && !queued.has(file.sha256)) { queued.add(file.sha256); files.push(file); }
+      load();
+    };
+    for (const step of steps.values()) {
+      const start = step.start;
+      step.start = () => { const first = !step.promise, promise = start(); if (first) promise.then(warm, () => {}); return promise; };
+    }
     const order = [...steps.values()];
     const next = async () => { for (const step of order) { if (controller.signal.aborted) return; if (!step.promise) await step.start().catch(() => {}); } };
     for (let i = 0; i < SELECT_AHEAD; i++) void next();
   }
   function dropAhead() { ahead?.controller.abort(); ahead = null; }
   // A step plays the answer asked for it when its plan began, or asks now. Leaving the step ends the wait.
+  // K04 R1: an early answer that failed for any reason but a package change (network, 5xx, 409, the request's
+  // 10 s limit, or a dropped lookahead) is asked for once more within this step's own time, as before F5. Only
+  // that answer can fail the step; if the step's time runs out first it is left as late, without text.
   async function answerFor(event, requestVersion, signal) {
     const planned = ahead?.version === requestVersion ? ahead.steps.get(stepKey(event)) : undefined;
     if (planned) {
       try { return await untilAborted(planned.start(), signal); }
-      catch (error) { if (signal?.aborted || !planned.signal.aborted) throw error; }
+      catch (error) { if (signal?.aborted || error?.code === 'studio_presentation_idle_package_changed') throw error; }
     }
     return selection(event, requestVersion, signal);
   }
@@ -307,7 +346,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
-        if (error.code === 'shared_room_presentation_stale') { idleRun = 0; return; }
+        if (staleRoom(error)) { idleRun = 0; return; }
         if (requireReload(error)) return;
         onBusy();
         idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
@@ -343,7 +382,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; if (idle.mode === 'rotation') idle.updateScene({phase:readIdlePhase()}); idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
-        if (error.code === 'shared_room_presentation_stale') { idleRun = 0; return; }
+        if (staleRoom(error)) { idleRun = 0; return; }
         if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
         if (transientPlayback(error) && idleTransientRetries++ < 20) { retryIdleSoon(); return; }
         idle.failed(clip.playId); resumeIdle(); });

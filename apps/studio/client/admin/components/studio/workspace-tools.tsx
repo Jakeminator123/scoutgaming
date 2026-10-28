@@ -10,7 +10,6 @@ import type { ConnectionStatus } from '../../../../components/studio-types';
 import type { VideoInventory } from '../../../../../../packages/presentation/contracts/media-inventory.mjs';
 import {studioNavigationContextFromQuery} from '../../../../lib/studio-navigation.mjs';
 import {labUrl} from '../../../../lib/lab-url.mjs';
-import {ConnectedServices} from './connected-services';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
   operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
@@ -45,7 +44,6 @@ export function WorkspaceTool({section}:{section:string}){
     case 'companies':content=<AdminPublicationPage {...common} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable}/>;break;
     case 'dealer-studio':content=<DealerMaterialPage project={data.project} dealerId={get('dealer')} navigationContext={studioNavigationContextFromQuery(q)} disabled={!data.connectedLane}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
-    case 'media-review':content=<ConnectedServices path="/admin/media-review" dealerId={get('dealer')}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
     default:return <p role="alert">Verktyget finns inte.</p>;
   }

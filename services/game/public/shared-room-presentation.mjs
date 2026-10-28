@@ -103,11 +103,18 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // table reaches the player's turn on the server's clock, not the media's.
       let completedSequence=false,shiftMs=0,inRun=false,unavailable=false;
       const showCommitted=event=>{if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);};
+      // K04 R2a (review of #481): the decision opens at turnAt, so the whole plan shows by then. A film part that
+      // already shows frames plays on, but its card is placed at turnAt and every later card of the plan shows with
+      // it. Each committed card is shown once; nothing is moved or shown again after turnAt.
+      const committed=new Set();let cursor=0,placeCurrent=null,turnTimer;
+      const commit=index=>{if(committed.has(index))return;committed.add(index);showCommitted(presentation.events[index]);};
+      const atTurn=()=>{if(closed||signal?.aborted)return;placeCurrent?.();for(let index=cursor;index<presentation.events.length;index++)commit(index);};
+      if(turnAt!==null&&!turnPassed())turnTimer=setTimeout(atTurn,Math.min(MAX_TIMER_MS,Math.max(0,turnAt-tableNow())));
       try {
         for(const [index,event] of presentation.events.entries()){
-          signal?.throwIfAborted();if(closed)return;
+          signal?.throwIfAborted();if(closed)return;cursor=index;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
-          if(unavailable||turnPassed()){showCommitted(event);continue;}
+          if(unavailable||turnPassed()){commit(index);continue;}
           const step=timeline?.eventIndex.get(index)??null;let timing={},dueAt=turnAt??Infinity;
           if(step){
             const placed=fitted?step.fit:step;
@@ -117,7 +124,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
             if(phase.waitMs>0){await pause(Math.min(phase.waitMs,Math.max(0,dueAt-tableNow())),signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
             if(phase.expired||turnPassed()){
               // Its time is over on the table clock: the committed card is shown, the take is never replayed from its start.
-              showCommitted(event);
+              commit(index);
               continue;
             }
             // A separate entry clip must play whole. Anchor its exact take after
@@ -158,17 +165,18 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
             }
           };
           cancelCurrentClip=cancel;arm();
+          placeCurrent=()=>{if(token!==undefined&&!committed.has(index))cards.finish(token,event.shoeDraw,false);};
           try {
             const outcome=await Promise.race([stalled,leftStep,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
               onUnavailable:()=>{if(!clip.signal.aborted&&!closed&&accepting)unavailable=true;},
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
                 if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
-                if(event.type==='deal'||event.type==='reveal')token=cards.begin(video,source);},
+                if((event.type==='deal'||event.type==='reveal')&&!committed.has(index))token=cards.begin(video,source);},
               onFrame:time=>{if(clip.signal.aborted||closed||!accepting)return;
                 // Repeated frozen frames do not prove a live clip. A new verified
                 // fallback may start at zero, but selection alone renews no lease.
                 if(Number.isFinite(time)&&time>=0&&time>lastFrame){lastFrame=time;shown=true;arm();}
-                if(token!==undefined)cards.frame(token,time);}});})]);
+                if(token!==undefined&&!committed.has(index))cards.frame(token,time);}});})]);
             if(!left){
               clip.signal.throwIfAborted();completed=outcome;
               if(completed===false)onError('shared_room_media_unavailable');
@@ -176,7 +184,9 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           } finally {
             accepting=false;clearTimeout(timer);clearTimeout(dueTimer);signal?.removeEventListener('abort',relay);
             if(cancelCurrentClip===cancel)cancelCurrentClip=null;
-            if(!closed&&(left?!signal?.aborted:!clip.signal.aborted)){
+            placeCurrent=null;
+            if(!closed&&(left?!signal?.aborted:!clip.signal.aborted)&&!committed.has(index)){
+              committed.add(index);
               if(token!==undefined)cards.finish(token,event.shoeDraw,completed===true);
               else if(event.type==='deal')cards.show(event.shoeDraw);
               if(event.type==='reveal')cards.reveal(state.round);
@@ -184,7 +194,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           }
         }
         restoredThrough=presentation.ver;completedSequence=true;
-      } finally {if(completedSequence&&!closed&&!signal?.aborted){media.state({action:false,speech:false});}}
+      } finally {clearTimeout(turnTimer);if(completedSequence&&!closed&&!signal?.aborted){media.state({action:false,speech:false});}}
     },
     close(){if(closed)return;closed=true;previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},
   });

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { isDocumentationPath } from './documentation-paths.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const indexingFiles = new Set(['.ignore', '.cursorignore', '.cursorindexingignore']);
+const indexingFiles = new Set(['.ignore', '.cursorignore']);
 
 // Git exports repository-local variables to hooks. Child commands must discover
 // the repository from their explicit cwd, including temporary Git fixtures.

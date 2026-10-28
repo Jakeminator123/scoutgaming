@@ -76,10 +76,17 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
       const check=()=>{active.throwIfAborted();if(closed||epoch!==generation)throw abortError();};
       let candidate,abortMount;
       try{
+        // K04 F5b: a binding the server already confirmed for this exact window and configuration is reused.
+        // Reading it again before every plan held each snapshot for one more request (1-2.5 s in staging).
+        // A new window, another configuration or an unconfirmed binding is still read before media or controls.
+        if(current?.authorized&&!current.closed&&current.configVersion===snapshot.configVersion&&current.windowId===snapshot.windowId){
+          await current.port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();return;
+        }
         const binding=await read(snapshot,active);check();
         const key=canonical({presentationContext:binding.presentationContext,selection:binding.selection});
         if(current?.key===key){
-          await current.port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();return;
+          await current.port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();
+          current.configVersion=binding.configVersion;current.windowId=binding.windowId;return;
         }
         dispose(current);current=null;
         candidate={key,lifetime:new AbortController(),port:null,closed:false,authorized:false,mismatch:null,startup:startupFor(binding.selection.dealer)};
@@ -99,7 +106,7 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
         await port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();mismatch();
         const confirmed=await read(snapshot,active);check();mismatch();
         if(canonical(confirmed)!==canonical(binding))throw new Error('shared_room_presentation_binding_changed');
-        current=owned;pending.delete(owned);owned.authorized=true;
+        current=owned;pending.delete(owned);owned.authorized=true;owned.configVersion=binding.configVersion;owned.windowId=binding.windowId;
         active.removeEventListener('abort',abortMount);abortMount=null;
         owned.startup.ready(binding.selection.dealer);
       }catch(error){

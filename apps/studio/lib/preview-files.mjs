@@ -8,15 +8,8 @@ const labRoot = studioRoots().appRoot;
 export const previewBuildDirectory = resolve(labRoot, 'preview-build');
 
 const segmentPattern = /^[A-Za-z0-9._-]+$/;
-const contentTypes = new Map([
-  ['.html', 'text/html; charset=utf-8'],
-  ['.js', 'text/javascript'],
-  ['.css', 'text/css'],
-  ['.json', 'application/json'],
-  ['.mp4', 'video/mp4'],
-  ['.webp', 'image/webp'],
-  ['.png', 'image/png'],
-]);
+// Only the shared renderer modules are published (tools/prepare-preview.mjs).
+const contentTypes = new Map([['.js', 'text/javascript']]);
 
 export function previewRelativePath(segments) {
   if (!Array.isArray(segments) || segments.length === 0 || segments.length > 8) return null;

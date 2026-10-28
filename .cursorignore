@@ -1,11 +1,6 @@
-# Cursor: files the editor's AI may not read or index.
-# Git, builds and deploys are unaffected by this file. Secrets and local state
-# are listed even though .gitignore also covers them, because this file is what
-# keeps Cursor's AI from opening them.
-
-# Local secrets and private state.
-.env
-.env.*
+# Cursor: files the editor's AI may never read. Only secrets and private local
+# state belong here; build output is already in .gitignore and search noise in .ignore.
+.env*
 !.env.example
 !.env.*.example
 .vercel/
@@ -13,57 +8,9 @@
 .croupier-inbox/
 inbox-token.txt
 /arkiv/
-/media/.migration/
 /random-stuff-jakob/
-# Director/Gateway local state (the default data root is open-claw/lab).
+/inbox/local-device.json
+/media/.migration/
 /open-claw/lab/data/
 /open-claw/lab/runtime/
-/open-claw/lab/media/*
 /services/openclaw/lab/data/
-
-# Dependencies and generated output.
-node_modules/
-.next/
-.next-probe/
-.nuxt/
-.cache/
-.turbo/
-coverage/
-playwright-report/
-test-results/
-__pycache__/
-.venv/
-.lipsync-venv/
-vendor/
-*.tsbuildinfo
-*.log
-
-# Tracked binary media, 3D files and archives.
-*.mp4
-*.mov
-*.webm
-*.mkv
-*.mp3
-*.wav
-*.ogg
-*.flac
-*.png
-*.jpg
-*.jpeg
-*.webp
-*.gif
-*.glb
-*.gltf
-*.blend
-*.fbx
-*.obj
-*.stl
-*.usdz
-*.bin
-*.h264
-*.webpseq
-*.zip
-*.7z
-*.sqlite
-*.sqlite3
-*.db

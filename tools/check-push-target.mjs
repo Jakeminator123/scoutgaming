@@ -8,6 +8,15 @@ function knownAncestor(before, after) {
   return spawnSync('git', ['merge-base', '--is-ancestor', before, after], { encoding: 'utf8' }).status === 0;
 }
 
+// Reads the local remote-tracking ref only; the check never fetches. A deletion
+// therefore presumes a fresh `git fetch origin main` (GitHub deletes merged heads
+// itself, so this path is for cleaning up older merged branches by hand).
+function originMain(branch) {
+  const result = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}^{commit}`], { encoding: 'utf8' });
+  const value = result.status === 0 ? result.stdout.trim() : '';
+  return /^[a-f0-9]{40,64}$/.test(value) ? value : null;
+}
+
 // Masks all URL userinfo: user:password@, token@ and user@ alike.
 export function redactSecrets(text) {
   return String(text ?? '')
@@ -62,27 +71,58 @@ export function isAllowedHead(name, policy) {
   return name === policy.branch || featurePatterns(policy).some(pattern => matchesBranchPattern(name, pattern));
 }
 
-function refusal(policy) {
-  const patterns = featurePatterns(policy).join(', ');
-  return `Only updates to ${policy.branch} or feature branches (${patterns}) are allowed; no branch deletion, tags or other refs.`;
+// Long-lived and other owners' branches; `*` matches any characters, so `kevin*` covers kevin, kevin-x and kevin/x.
+export function isProtectedBranch(name, policy) {
+  const patterns = policy?.protectedBranches;
+  if (!Array.isArray(patterns) || patterns.some(pattern => typeof pattern !== 'string' || !pattern)) {
+    throw new Error('repository policy protectedBranches must list branch names or patterns.');
+  }
+  return name === policy.branch || patterns.some(pattern => {
+    const source = pattern.split('*').map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*');
+    return new RegExp(`^${source}$`).test(name);
+  });
 }
 
-export function validatePush(url, updates, policy, isAncestor = knownAncestor) {
+function refusal(policy) {
+  const patterns = featurePatterns(policy).join(', ');
+  return `Only updates to ${policy.branch} or feature branches (${patterns}) are allowed; deletion only of merged feature branches; no tags or other refs.`;
+}
+
+const zero = sha => /^0+$/.test(sha);
+
+function validateDeletion(name, remoteSha, policy, isAncestor, mainSha) {
+  if (name === policy.branch) throw new Error(`Branch deletion is not allowed for ${policy.branch}.`);
+  if (isProtectedBranch(name, policy)) throw new Error(`Branch deletion is not allowed for protected branch ${name}.`);
+  if (!isAllowedHead(name, policy)) throw new Error(refusal(policy));
+  if (zero(remoteSha)) throw new Error(`Branch deletion refused: ${name} does not exist on the remote.`);
+  const main = mainSha(policy.branch);
+  if (!main) throw new Error(`Branch deletion refused: refs/remotes/origin/${policy.branch} is missing. Run git fetch origin ${policy.branch} first.`);
+  if (!isAncestor(remoteSha, main)) {
+    throw new Error(`Branch deletion refused: ${name} is not merged into ${policy.branch} (origin/${policy.branch}). Run git fetch origin ${policy.branch}; unmerged branches are never deleted.`);
+  }
+}
+
+export function validatePush(url, updates, policy, isAncestor = knownAncestor, mainSha = originMain) {
   const repo = repositoryFromRemote(url);
   if (!repo || repo.toLowerCase() !== String(policy.repository || '').toLowerCase()) {
     throw new Error('GitLab is paused. Push only to the approved GitHub repository.');
   }
   featurePatterns(policy);
+  isProtectedBranch('', policy);
   for (const line of String(updates || '').trim().split(/\r?\n/).filter(Boolean)) {
     const parts = line.trim().split(/\s+/);
     if (parts.length !== 4) throw new Error(refusal(policy));
     const [, sha, remoteRef, remoteSha] = parts;
     if (!/^[a-f0-9]{40,64}$/.test(sha || '') || !/^[a-f0-9]{40,64}$/.test(remoteSha || '')) throw new Error(refusal(policy));
     if (remoteRef.startsWith('refs/tags/')) throw new Error('Tag updates are not allowed.');
-    if (/^0+$/.test(sha)) throw new Error('Branch deletion is not allowed.');
     const name = remoteRef.startsWith('refs/heads/') ? remoteRef.slice('refs/heads/'.length) : '';
+    if (zero(sha)) {
+      if (!name) throw new Error(refusal(policy));
+      validateDeletion(name, remoteSha, policy, isAncestor, mainSha);
+      continue;
+    }
     if (!name || !isAllowedHead(name, policy)) throw new Error(refusal(policy));
-    if (!/^0+$/.test(remoteSha) && !isAncestor(remoteSha, sha)) {
+    if (!zero(remoteSha) && !isAncestor(remoteSha, sha)) {
       throw new Error('Push would rewrite history, or the remote commit is not known locally. Fetch and inspect divergence; no force push.');
     }
   }

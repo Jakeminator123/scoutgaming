@@ -9,13 +9,15 @@ export function createLegacyClipInventory({ repositoryRoot, defaultDataDirectory
   validateContactTake, validateContinuation }) {
 const BASES = { astrid: 'dealers/astrid' };
 const indexedRegister = /(?:^|[\\/])dealers[\\/]astrid[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
+// The retired V2 speech manifest left the repository with the presentation bank (2026-10-28).
+const retiredSpeechManifest = /(?:^|[\\/])review[\\/]astrid-green-speak[\\/]speak\.json$/;
 const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 // Only the retired indexed registers may be absent from the catalog; a missing
 // catalog or any other unreadable entry still fails the whole inventory.
 const readOptionalJson = async (readMetadata, path) => {
   try { return await readMetadata(path); }
   catch (error) {
-    if (indexedRegister.test(String(path)) && String(error?.message || '').startsWith('Runtime metadata missing:')) return null;
+    if ((indexedRegister.test(String(path)) || retiredSpeechManifest.test(String(path))) && String(error?.message || '').startsWith('Runtime metadata missing:')) return null;
     throw error;
   }
 };

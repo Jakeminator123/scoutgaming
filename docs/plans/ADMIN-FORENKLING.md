@@ -1,283 +1,320 @@
-# Förenkling av Admin: en knapp för att publicera rummet
+# Målbild: Admin, Partnerportalen och spelaren
 
-> **Utkast, flyttat till repot 27 oktober kväll** från orkestratorns lokala arbetsmapp, oförändrat utom sökvägar. Det finns inte i [masterplanen](../../migrering/MASTERPLAN.md) och Jakob har inte beslutat omfattningen. Radnummer gäller `e7a4e251`; läs om koden innan något byggs.
+> **En målbild för alla tre nivåer**, verifierad mot `main` 34fc4cdc02 den 28 oktober 2026. Den ersätter utkastet från 27 oktober ("en knapp för att publicera rummet"), som lever vidare som leveranssteg D nedan, och Jakobs paket från claude.ai (README, NIVAER, MATRIS-N1-N2, N1-ADMIN, N2-OPERATORSPORTAL, BESLUTSKARTA, PR-ORDNING), som skrevs utan repotillgång och är inarbetat här med avvikelserna rättade. Läget i koden står i [ADMIN-KARTA.md](ADMIN-KARTA.md); skissen är [ADMIN-MALBILD-PROTOTYP.html](ADMIN-MALBILD-PROTOTYP.html) (en fil, exempeldata i minnet).
+>
+> Det här är ingen tracker: `migrering/status.json` är enda statuskällan, och den här planen finns inte i masterplanen. Bygget startar efter O03, nivå 2 först, och varje steg visas i staging innan det mergas. Jakob avgör UX. Koden på `main` vinner alltid över texten här.
 
-Underlag: `main` e7a4e251 (341a8344 + #440, som bara ändrar dokument och status). Allt nedan är läst i koden. Inget är ändrat. Radnummer gäller e7a4e251.
+## 1. Tre regler som allt annat följer
 
-Datamodellen ändras inte: operatörer, rum, sammansättningar (`lanes`), frysta paket (`operator_packages`) och rumskonfigurationer (`shared_table_configs`/`_heads`) står kvar. Ingen ny tabell och ingen ny runtime-kapabilitet behövs. Det som ändras är Admins flöde och en ny serveråtgärd som kombinerar befintliga skrivningar.
+1. **Admin skapar och tilldelar. Bolaget väljer. Spelaren spelar.** Allt ett bolag kan ändra är en delmängd av det Admin kan ändra på samma objekt, begränsad av tilldelningen (paketet) och av personens roll.
+2. **Samma komponenter, olika navigation, egen serverkontroll.** En dold meny är inte åtkomstkontroll. Varje skrivning kontrolleras på servern per bolag, resurs, åtgärd och revision.
+3. **Inga låtsasfunktioner.** Saknas datakoppling visas det rakt ut ("Inte anslutet"), aldrig påhittade siffror.
 
-`migrering/MASTERPLAN.md` innehåller inget avsnitt "Admin-förenkling", varken på 341a8344 eller e7a4e251. Om planen godkänns ska den läggas in där som ett eget scope.
+## 2. Jakobs beslut som styr målbilden
 
----
-
-## 0. Varför det känns överdrivet: läget i dag
-
-Rummet `/admin/rooms` har i dag **fem olika publiceringsknappar**. Alla höjer bolagets paketversion:
-
-| # | Knapp | Var | Vad den skriver |
-|---|---|---|---|
-| 1 | **Publicera för …** / **Publicera igen** under den hopfällda *Spelmallar för bolaget* | `registered-studio.tsx:303-322` | `POST operator-package {operatorId,lanes,expectedPackageRevision}`. Fryser om allt material från det sparade projektet (`operator-package-api.mjs:161-197, 248-269`) |
-| 2 | **Spara spelinställningar** → **Publicera spelinställningar** | `room-game-config.tsx:62-63` | `POST room-game-config` med `save-draft` och sedan `publish` (`room-game-config-api.mjs:110-133`) |
-| 3 | **Publicera PAOWs viloklipp** (hårdkodat `paow`) | `registered-studio.tsx:193-209, 287-292` | `POST operator-package {action:'refresh-dealer-idle'}` (`operator-package-api.mjs:86-100, 210-228`) |
-| 4 | **Spara utkast** → **Granska publicering** → **Publicera granskat utkast** (rummets bakgrund, dealer och bord) | `partner-appearance.tsx:179, 187` | `POST /studio/api/partner/branding` (save-draft, review, publish). Publicering höjer paketet +1 (`partner-appearance.tsx:139`, `operator-store.mjs:690-708`) |
-| 5 | **Publicera sparad placering** (i Sceneditor) | `scene-publication.tsx:44` | `POST operator-package {action:'publish-scene-layout'}` (`operator-package-api.mjs:77-84, 229-247`) |
-
-Utöver knapparna finns de här fällorna:
-
-- **Publiceringen syns inte förrän man letar.** Knapp 1 ligger i en hopfälld `<details>` med rubriken *Spelmallar för bolaget* (`registered-studio.tsx:303`). Knapp 2 visas bara när rummet redan är publicerat, live och blackjack (`registered-studio.tsx:45, 294`). Knapp 4:s publiceringsknapp visas först efter **Granska publicering**, eftersom panelen annars är dold (`partner-appearance.tsx:180`).
-- **Paketet ogiltigförklarar spelinställningarnas utkast utan att det syns.** Publiceringen kräver `draft.basePackageRevision === pack.revision` (`room-game-config-api.mjs:123`). Efter knapp 1, 3, 4 eller 5 svarar **Publicera spelinställningar** därför 409. Meddelandet lyder "Uppgifterna har ändrats. Läs in aktuella uppgifter" (`room-game-config-client.mjs:34`). Det fungerar först när man trycker **Spara spelinställningar** igen utan att ha ändrat något. K05-skriptet gör just så: det sparar utkastet igen vid aktuell paketversion (runbook, avsnittet "publicering via skript").
-- **Felmeddelandet pekar fel.** Om paketet stoppas av rummets talmaterial (se nästa punkt) visar knapp 1 texten "Kontrollera lagerfiler, vald grundloop och tillåtna val" (`operator-package-client.mjs:46`). Servern skickar bara en kod för `room-game-config` (`studio-admin-api.mjs:166-169`), och publiceringsfel är medvetet generiska (`room-game-config-api.test.mjs:207-217`).
-- **Spelinställningarna följer redan med paketet.** När ett rum har en publicerad konfiguration återberäknar varje paketpublicering den med samma språk och insatsprofil. Saknas giltigt material stoppas hela paketet atomiskt (`room-game-publication.mjs:129-148`, `operator-store.mjs:579-583, 594`). Ett separat steg 2 behövs alltså bara första gången och när språk eller insatsprofil ändras.
-- **Tre namn används för samma sak (lane).** UI:t säger "Sammansättning" (`connected-clip-map.tsx:354`), "Spelmall"/"Spelmallar för bolaget" (`registered-studio.tsx:303, 311, 324`) och "Gemensam mall" (`registered-studio.tsx:300`). TERMINOLOGI säger "mallar" och "Meny, rubrik och länk använder samma namn" (`TERMINOLOGI.md:30-31`). Menyn heter "Spelbolag & rum" (`packages/navigation/admin-navigation.mjs:10`) medan sidans rubrik är "Spelutbud" (`registered-studio.tsx:246`).
-- **Två meddelanden beskriver två publiceringssteg.** Röst & tal skriver "Publicera paketet igen och därefter spelinställningarna" (`studio-speech-panel.tsx:127`). Klippkartan skriver "Rumspublicering hanteras separat" (`connected-clip-map.tsx:274`).
-- **STEG 1–3 nås inte via normal routing.** `admin-publication-page.tsx:234-290` renderas bara för `section==='publication'`, men `/admin/publication` omdirigeras till `/admin/rooms` (`packages/navigation/admin-workspace-routes.mjs`, `destinations.publication`, och `entry.tsx:33-40`). `/admin/companies` använder bara grenen `companiesOnly` (`admin-publication-page.tsx:229-232`). **Utfört 2026-10-28:** STEG 1–3 är borttagna; sidan är nu bara Bolag & team och publiceringsproven ligger i `client/admin/lib/studio-context.test.mjs`.
-
----
-
-## 1. Målflöde: en knapp, **Publicera**, på rummet
-
-### 1.1 Vad Jakob ser
-
-Rumssidan (`/admin/rooms`) får ett enda innehåll när det finns ett aktivt bolag med ett rum:
-
-1. **Rubrik:** "PAOW Blackjack · Johns Bet". Bredvid står **Live · version 7 · publicerad 27 okt 18:40 av jakob** och en primär knapp, **Publicera**. Knappen är inaktiv med texten "Inget att publicera" när det sparade läget inte skiljer sig från live.
-2. **Scen och rummets val:** bakgrund, dealer och bord som i dag. Ändringar sparas som utkast men publiceras bara med **Publicera**.
-3. **Spelinställningar:** bordsspråk och insatsprofil. Fälten sparas med **Publicera**. Det finns ingen egen Spara- eller Publicera-knapp.
-4. **Avancerat** (hopfällt): mallar som bolaget får använda (dagens *Spelmallar för bolaget*), Bolag & team, Lägg till spel, Återställ borttaget spel, versionshistorik och tekniska ID.
-
-**Före publicering.** **Publicera** öppnar rutan *Det här ändras jämfört med live*:
-
-- **Tal:** en rad per replik som ändras, till exempel "Lycka till · sv: goodluck_1 → goodluck_3 (godkänd av jakob 27 okt)".
-- **Klipp:** antal giv-, visnings- och viloklipp som byts.
-- **Vila:** basloop och antal beteendeklipp, om de ändras.
-- **Placering:** "ändrad" eller "oförändrad".
-- **Inställningar:** till exempel "Språk en → sv" och "Insatsprofil Privé → Casual".
-- **Rummets val:** bakgrund, dealer och bord före → efter.
-- **Hinder** i rött, med länk till exakt rätt ställe. Exempel: "Försäkring · sv: ingen godkänd tagning → Öppna i Röst & tal" och "36 klipp saknar mätt speltid → Mät speltid".
-
-Knappen **Publicera nu** är aktiv bara när hinderlistan är tom.
-
-**Efter publicering:** ett kvitto med "Publicerat · version 8 · 27 okt 21:14 · av jakob". Under **Detaljer** visas `configVersion` och paketversionen före och efter. Kvittot har länken **Öppna rummet** (`playUrl`).
-
-**Vid fel:** ett meddelande på svenska och en kod, till exempel "Inget publicerades. Någon annan ändrade rummet efter förhandsvisningen. Läs in igen. *(studio_conflict · package)*". Klienten försöker aldrig igen automatiskt, vilket stämmer med regeln i `README.md:112`.
-
-### 1.2 Server: en orkestrerad åtgärd med ett kvitto
-
-**Ny åtgärd** `POST /studio/api/admin/operator-package` med `action:'publish-room'`. Den läggs på samma endpoint som `refresh-dealer-idle` och `publish-scene-layout` för att återanvända den befintliga preparation-kedjan (`operator-package-api.mjs:161-163`, `studio-admin-api.mjs:132-138`). Kroppen ska ha exakt dessa nycklar:
-
-```
-{action:'publish-room', operatorId, roomId, gameConfig:{language,limitPreset},
- expectedPackageRevision, expectedProjectRevision, expectedAdministrationRevision, previewToken}
-```
-
-**Steg 1: prepare** (utanför SQL-låset, som dagens paketpublicering):
-
-- Kontrollera att operatören är aktiv och att rummet är live och blackjack.
-- Kontrollera att `current.revision === expectedPackageRevision`. Annars svarar servern 409 och skriver ingenting.
-- Fånga materialet med samma `captureFrozenPresentation` och `selectedRegisteredIdleDefaults` som i dag (`operator-package-api.mjs:172-193`). `lanes` = bolagets nuvarande lanes; urvalet av mallar förblir en åtgärd under Avancerat.
-- Kör `videoRegistry.verifyCapturedMedia` för providerkontrollen.
-- Räkna fram kandidatpaketets branding med `withPackagePresentation(current.branding, presentation)`.
-- Räkna ut skillnaden och dess hash. Hashen ska vara lika med `previewToken`, annars svarar servern 409 `studio_release_preview_stale`. Detta följer partnergranskningens `reviewToken` (`partner-appearance.tsx:113`).
-
-**Steg 2: en SQL-transaktion med ett operatörslås och en versionsökning N→N+1.**
-
-1. Läs om project- och administration-revisionerna och paketet. Vid avvikelse svarar servern 409 `studio_conflict` med `step:'project' | 'administration' | 'package'`. Kontrollen är densamma som `operator-package-api.mjs:259-260`.
-2. `assertCapturedPresentationMedia` och `assertPublishedRoomBindings`, som `operator-package-api.mjs:261-263`.
-3. Lös rummets material mot **kandidatpaketet** (revision N+1) med `resolveNativeRoomGameMaterial`, plus samma kontroller som `room-game-config-api.mjs:58-89`: `validateRoomGameMaterial`, `recordedSpeechForVideo` och mediaposternas revision. Om materialet inte är klart svarar servern 422 `studio_room_game_material_unavailable` med `materialReason` från den fasta listan (`room-game-config-api.mjs:20-25`) och skriver ingenting.
-4. `operators.publishRoomGameConfig({expectedRevision:N, lanes, games, tables, branding:kandidat}, {roomId, gameConfig, material})`. Det är den befintliga J08-skrivaren (`operator-store.mjs:601-605`). Den ger en versionsökning och en auditrad. Den låser rummen och flyttar konfigurationens head med CAS (`room-game-publication.mjs:109-110, 179-184`). Andra rum återberäknas eller behålls som i dag (`room-game-publication.mjs:129-148`).
-5. Ta bort rummets `roomGameConfigs`-utkast i administration-dokumentet med CAS, som `room-game-config-api.mjs:129-130`.
-6. Svaret är ett kvitto: `{ok, operatorId, roomId, previousPackageRevision:N, packageRevision:N+1, configVersion, publishedAt (published_at_ms), actor, changes}`.
-
-**Tomgång (idle).** Ingen separat uppdatering behövs. Full infångning tar med `dealerIdlePolicies` (`frozen-dealer-idle.mjs:156-161`) och viloklippens standardval (`operator-package-api.mjs:190-192`). Endpointen `refresh-dealer-idle` får finnas kvar i koden, men knapp 3 tas bort.
-
-**Placering.** Full infångning tar med den sparade mallens `composition` (`frozen-presentation-capture.mjs:57, 81`). Knapp 5 blir därmed ett specialfall och flyttas till Avancerat.
-
-**Rummets val.** Två alternativ:
-
-- **(a) Första versionen:** Finns ett opublicerat utkast för rummets val stoppar åtgärden med 409 `studio_room_choices_draft_pending`. Förhandsvisningen visar då "Rummets val har ett opublicerat utkast".
-- **(b) Andra versionen:** utkastet tas med i samma transaktion. `changeBrandingDraft` och `publishWithin` kan dela `txQuery` (`operator-store.mjs:690-708`).
-
-Jag föreslår (a) först, eftersom PAOW, Blackjack Oak och Midnight sällan ändras. Version (b) kommer i PR C2 nedan.
-
-**Förhandsvisning:** `GET /studio/api/admin/room-release?operatorId&roomId`.
-
-- Endpointen läggs till i `STUDIO_ADMIN_ENDPOINTS` (`studio-admin-contract.mjs:26-27`) och i listan över tillåtna läsfrågor (`studio-admin-contract.mjs:68-84`, `studio-admin-api.mjs:85`).
-- Den returnerar live och kandidat per område (tal per replik och språk med `takeId` och granskning, klipp-id per fack, vila, placering, inställningar och rummets val), `ready` med hinder och kod, samtliga revisioner och `previewToken`.
-- Livevärdena läses ur den publicerade konfigurationens `material.media` (`room-game-publication.mjs:75-84`) och paketets presentation. Förhandsvisningen gör **ingen** provider-I/O, eftersom den kontrollen görs i POST-stegets prepare. Det håller sidan snabb.
-
-**Transaktionsalternativ i API-lagret.** Ny gren i `studio-admin-api.mjs:147-156` för `operator-package` med `publish-room`. Den behöver `presentationDocuments: ['project','administration']`, `presentationOperatorIds: [operatorId]` och `presentationMutation` som omfattar:
-
-- `presentation-package` (kandidaten),
-- `{kind:'administration', value:{roomGameConfigs:[]}}`,
-- `NATIVE_FILMED_PLANNING_MUTATION`.
-
-Det är samma byggstenar som de två befintliga grenarna använder (rad 150-152 och 156).
-
-### 1.3 Felkontrakt (409, 422 och 503)
-
-Alla fel returneras som `{error, code, step}`. `code` kommer alltid från en fast lista och innehåller aldrig rådata, vilket är samma princip som `room-game-config-api.test.mjs:355-369`. Inget fel lämnar en halv publicering, eftersom allt sker i en transaktion.
-
-| HTTP | code (step) | När | UI-text (kort) |
-|---|---|---|---|
-| 409 | `studio_conflict` (`package` / `project` / `administration` / `room_config_head`) | En revision har ändrats efter förhandsvisningen, eller en dubbel publicering har förlorat | "Inget publicerades. Rummet ändrades under tiden. Läs in och granska igen." |
-| 409 | `studio_release_preview_stale` (`preview`) | Kandidatens skillnad är inte den som visades | "Ändringarna är inte desamma som du granskade. Läs in igen." |
-| 409 | `studio_room_choices_draft_pending` (`room_choices`) | Rummets val har ett opublicerat utkast (version a) | "Rummets val har ett opublicerat utkast. Publicera eller kasta det först." |
-| 422 | `studio_room_game_material_unavailable` + `materialReason` (`material`) | Talet är inte godkänt eller kopplat, mätning saknas, banken är ofullständig och så vidare | Befintliga texter i `room-game-config.tsx:6-29`, plus länk till repliken eller **Mät speltid** |
-| 422 | `studio_release_invalid` (`request`) | Felaktig kropp | "Begäran var ogiltig. Ladda om sidan." |
-| 404 | `studio_room_not_found` (`room`) | Rummet är inte live eller tillhör ett annat bolag | "Rummet är inte tillgängligt för bolaget." |
-| 503 | `studio_presentation_runtime_update_required` (`runtime`) | Spelmotorn är för gammal (`studio-admin-api.mjs:170-172`) | "Spelmotorn behöver uppdateras. Inget publicerades." |
-| 503 | `studio_room_config_storage_missing` (`storage`) | Tabellerna i `croupier_game.shared_table_config*` saknas (migrering 009 är inte körd i produktion, se K05-runbook) | "Rumsinställningarnas lagring är inte installerad. Inget publicerades." |
-| 503 | `studio_media_registry_unavailable` (`media`) | Registret eller Blob-kontrollen är otillgänglig | "Klippregistret svarar inte. Försök igen senare." |
-
-Den nya koden `studio_room_config_storage_missing` kräver en läskontroll i transaktionen innan något skrivs (`to_regclass`). I dag skulle samma situation ge ett okänt SQL-fel.
-
-### 1.4 Endpoints som åtgärden bygger på
-
-- `operator-package` (prepare och transaktion, `operator-package-api.mjs:161-269`).
-- `room-game-config` (materiallogiken i `room-game-config-api.mjs:58-89`; själva endpointen behålls för utkast och för flerrumsläget).
-- `operator-store.publishRoomGameConfig` (`operator-store.mjs:601-605`).
-- `room-game-publication.prepareRoomGamePublication` och `writeRoomGamePublication` (oförändrade).
-
-Endpointen `presentation-room` (`presentation-room-api.mjs:217-335`) berörs inte. Den används bara för att skapa rum.
-
----
-
-## 2. Dölj sammansättning och lane för en operatör med ett rum
-
-- **Automatiskt val.** När det finns exakt ett aktivt bolag, en mall och ett rum visas varken bolagsväljare, spelkort eller mallväljare. Defaulten finns redan: första bolaget i `registered-studio.tsx:139`, första mallen i `:148`, och i klippkartan `connected-clip-map.tsx:354`. Begreppen ligger kvar i modellen och visas under **Avancerat** när det finns fler än ett.
-- **Automatiskt skapande:** behövs inte för Johns Bet, eftersom "PAOW Studio · Blackjack" redan finns. Finns ingen mall alls ska en enda knapp, **Skapa scen**, visas i stället för länken "Skapa en sammansättning" (`registered-studio.tsx:308`).
-- **Spelmallar för bolaget** flyttas in i rummets **Avancerat** under namnet **Mallar som bolaget får använda**. Det finns ingen egen Publicera-knapp där. Ändras urvalet publiceras det med rummets **Publicera**, eller med en egen knapp "Publicera mallurval" i Avancerat för flerbolagsfallet.
-- **Namn enligt TERMINOLOGI:**
-  - Synliga "Sammansättning", "Spelmall" och "Gemensam mall" blir **Mall** (scenens mall). Det tekniska ID:t visas under Detaljer (`TERMINOLOGI.md:32`).
-  - Sidrubriken "Spelutbud" (`registered-studio.tsx:246`) blir **Spelbolag & rum**, samma som i menyn. Om bolaget bara har ett rum blir rubriken rummets namn.
-  - "Paket" och "Publicerad version" blir **version** i UI:t.
-- **Dubbletter som tas bort:**
-  - I Admins rumsläge (`roomLayout` med `adminChoices`) tas **Granska publicering** och **Publicera granskat utkast** bort (`partner-appearance.tsx:179-187`). Partnerportalen (N2) behåller sin granskning oförändrad.
-  - I klippkartan ersätts *Rum och publicering* (`connected-clip-map.tsx:359-366`), med både **Rummets val** och **Granska rumspublicering**, av en statusrad: "Johns Bet · PAOW Blackjack · Live v7 · 3 ändringar ej publicerade → **Publicera i rummet**".
-  - Knapp 3 (PAOW-vila) och den hårdkodade `paow` (`registered-studio.tsx:193-209, 287-292`) tas bort.
-  - Knapp 5 flyttas till Sceneditorns Avancerat.
-- **Flera bolag förblir möjligt.** När antalet aktiva bolag, mallar eller rum är större än 1 visas dagens väljare, oförändrade, under **Avancerat**. Detsamma gäller `/admin/companies`.
-
----
-
-## 3. Klippkarta och Röst & tal efter #436/#437
-
-Det som fortfarande förvirrar:
-
-1. **Samma koppling har två namn.** Klippkortet säger **Kopplat i sparat utkast** (`connected-clip-card.tsx:72, 127`). Röst & tal säger **Standard: …** och **Sätt som standard i talfacket** (`studio-speech-panel.tsx:143, 151-152`). Inget av dem talar om vad som är **live**. Klippkartan säger uttryckligen att den inte jämför med det publicerade (`connected-clip-map.tsx:365`).
-2. **"Sätt som standard" kräver tre steg på tre ställen.** Utkastet ändras (`studio-speech-panel.tsx:87-89`), sedan **Spara utkast** i klippkartans rubrik (`connected-clip-map.tsx:348`), och sedan två publiceringar (`studio-speech-panel.tsx:88, 127`).
-3. **"17 fack" i rubriken** (`connected-clip-map.tsx:375`, `{slots.length} fack`) blandar obligatoriska och frivilliga fack. TERMINOLOGI säger att frivilliga beteenden inte ska visas som saknat material (`TERMINOLOGI.md:62-63`).
-4. **Varje kort har samma knapp, "Förhandsvisa och redigera"** (`connected-clip-card.tsx:130`). Det blir visuellt brus, och man ser inte vad som är klart.
-5. **AI-delarna syns för PAOW** fast de inte fungerar för PAOW ("I dag har bara Astrid en verifierad koppling", `studio-speech-panel.tsx:199`). Astrids "Tal vid inaktivitet" ligger kvar i klippkartan (`connected-clip-map.tsx:412`).
-6. **Olika namn i dokumentationen:** "Tal-klipp & ljud" (`README.md:264, 386`) och "Röst & tal" (`README.md:178`).
-
-Små förbättringar, i ordning efter nytta:
-
-- **Live-märke per replik i Röst & tal:** "Live: goodluck_1 · Utkast: goodluck_3". Datan hämtas från förhandsvisningen (`room-release`).
-- **"Använd i spelet"** ersätter **Sätt som standard i talfacket**. Knappen sätter standard **och** sparar utkastet med samma `bindClip` och spara-väg som i dag. Därefter visas "Ej publicerat → Publicera i rummet".
-- **Kortstatus:** **Kopplat i sparat utkast** blir **Standard (sparad)**. Har kortet ändrats sedan live läggs märket **Ändrat sedan publicering** till.
-- **Fackräknare:** "Krävs för spel: 10/10 tal · 34/34 giv · 1/1 vila · Frivilligt: 3". Frivilliga fack fälls ihop.
-- **Klick på kortet öppnar detaljpanelen.** Knappen **Förhandsvisa och redigera** byter namn till **Öppna** eller tas bort.
-- **Genererat tal, realtidstal och Testa dialog** fälls ihop under **Avancerat · AI-tal** för dealers utan verifierad röstprofil.
-- **Texterna "publicera paketet igen och därefter spelinställningarna"** (`studio-speech-panel.tsx:88, 127, 194`, `connected-clip-map.tsx:274`) blir "Publicera i rummet" med länk.
-
----
-
-## 4. Ren start: ordning
-
-Handoffen säger "Clean slate: först efter K05" (JOHN-HANDOFF, avsnittet 27 oktober kväll). K05 kräver dessutom migrering 009 i produktion innan rumspubliceringen kan göras (K05-runbook, "Hinder i produktion").
-
-**Viktig risk:** arkivering av en dealer flyttar **varje mall som bara tillåter dealern** till papperskorgen tillsammans med dealern, och berörda rum avpubliceras.
-
-- Regeln finns i `laneUsesDealer` (`apps/studio/lib/dealer-archive-impact.mjs:18-20`) och i `lifecycleProject` (`apps/studio/lib/dealer-lifecycle.mjs:19, 22, 38`).
-- Om "PAOW Studio · Blackjack" listar Dragan eller Astrid som tillåten dealer skulle arkivering av dem ta Johns Bets mall och avpublicera rummet.
-
-Ordning:
-
-1. **K05 klart:** tal godkänt, talfack kopplade, paketet publicerat och rummet publicerat, med dagens UI eller skriptet `--publish-package` och `--publish-room`.
-2. **Säkerhetskopia:**
-   - En Neon-gren eller snapshot av produktionen, till exempel `pre-clean-slate-YYYYMMDD`.
-   - Notera Johns Bets paketversion, `configVersion` och listan över id:n som ska arkiveras: operatörer, rum och dealers.
-   - Det finns i dag **inget** verktyg som laddar ner privat Blob till disk. `tools/export-media-blob.mjs` går åt andra hållet (lokalt → Blob). Permanent radering av dealerfiler ska därför vänta (steg 7).
-3. **Rensa mallen:** i Sceneditor → mallen "PAOW Studio · Blackjack" → **Tillåtna dealers**, behåll bara PAOW. Spara och **Publicera** rummet. Kontroll: förhandsvisningen ska bara visa ändringen "Dealers: … → PAOW".
-4. **Testrum hos Johns Bet** (om sådana finns): **Ta bort** på spelkortet, det vill säga arkivering av rummet (`registered-studio.tsx:269` → `room-lifecycle`).
-5. **Andra bolag:** Bolag & team → **Flytta till papperskorgen** (`resource-lifecycle-api.mjs:88-123`). Åtgärden går att ångra. Rum kopplas loss och historiken bevaras. Bolag och rum kan **inte** raderas permanent, eftersom API:t bara har arkivering och återställning. Ingen sådan funktion behöver byggas: arkiverade bolag syns inte i några aktiva val (`registered-studio.tsx:134-136`).
-6. **Dealers Astrid och Dragan:** Dealers → **Ta bort** (arkivering). AI-talet stängs av automatiskt (`dealer-lifecycle.mjs:9`). **Kontroll i bekräftelserutan:** den får inte lista något rum eller någon mall hos Johns Bet. Gör den det, avbryt och gå tillbaka till steg 3.
-7. **Kontrollera efteråt:**
-   - Lobbyn visar bara PAOW Blackjack.
-   - `/game` startar.
-   - Rumsinställningarna läses tillbaka med samma `configVersion` om inget annat är publicerat.
-   - Om du publicerar något nytt ska versionen öka med exakt 1.
-8. **Senare, efter en till två veckor:** papperskorg → **Radera permanent** för dealers (tidigast 15 minuter efter arkivering, `README.md:471`), och först sedan Blob-filerna har exporterats till en kopia.
-
-**Kod som blir död efteråt.** Den tas bort i ett senare steg. Följ konsumenterna först (AGENTS.md:56). Schemat lämnas orört.
-
-| Område | Platser (urval) | Beslut som krävs |
+| Datum | Beslut | Följd här |
 |---|---|---|
-| Astrid-probe (tal vid inaktivitet) | `connected-clip-map.tsx:412`, `components/probe-editor.tsx`, `lib/probe-server.mjs`, `app/api/probe/route.ts`, `services/game/probe-runtime.mjs`, `services/game/storage/async-probe-runtime.mjs`, `packages/director/product-probe.mjs`, `packages/presentation/contracts/probe-policy*` | Nej |
-| Filbyggaren (genererat tal) | `lib/studio-speech-build-service.mjs`, `app/api/speech-build/route.ts`, sektionen "Ny generering" i `studio-speech-panel.tsx` (cirka rad 200) | **Ja.** Det är den enda verifierade AI-röstkopplingen. Utan den finns inget AI-tal för PAOW förrän en ny röstprofil har verifierats |
-| Kamera och transkription | `services/game/astrid-transcription.mjs`, `services/game/public/astrid-camera-audio-worklet.mjs`, `test/astrid-camera*.mjs`, `astrid-wake-word.mjs`; flaggan `lissabon-stream-lane` (`README.md:322`) | Nej |
-| Moving speech med hårdkodad Dragan | `services/game/server.mjs:1317` (`moving_speech_test_dealer_required`), `services/game/moving-speech-*.mjs`, `services/moving-gpu-worker/`, `packages/presentation/contracts/filmed-profiles/registry.mjs:5` | **Ja** (GPU-spåret som helhet) |
-| Hårdkodade dealeruppsättningar | `media-catalogue.mjs:18`, `material-revision.mjs:37` (`dragge`, `astrid2`, `marten`); 59 filer med `'astrid'` utanför tester | Nej, men stort. Dela upp per paket |
-| Demobolag | `operator-package-api.mjs:19-29, 288-297` (`sg-test`, `operator-create-demo`), `PARTNER_PREVIEW_OPERATORS` | Nej |
-| Gamla publiceringsytor | STEG 1–3 i `admin-publication-page.tsx` (borttagen 2026-10-28; sidan är nu bara Bolag & team), knapp 3 i `registered-studio.tsx`, eventuellt `refresh-dealer-idle` | Nej |
+| 2026-10-27 | En produktväg (Vercel + Render + Neon + Blob), `main` enda produktvägen; `/control`, `/lab`, `/bo` pensionerade | inga nya kopior av Admin-flöden; alla gamla adresser omdirigeras |
+| 2026-10-28 | Delat bord blir enda spelvägen från O03; nativebordet pensioneras; "Slå på ljud" struken | nivå 3 i målbilden är bara delat bord; nativebordets lagerkedja och `/game?dealer=` försvinner med det |
+| 2026-10-28 | Varje spelare tillhör exakt ett bolag; byggs efter O03, före första riktiga bolaget | steg F; tills dess visar Spelare och Rapporter i nivå 2 ärliga tomlägen |
+| 2026-10-28 | Insatsprofil får ändras i nivå 2 bara om Admin låser upp det per bolag, bland profiler Admin godkänt; låst som standard | `allow.limit` i tilldelningen, låst som standard |
+| 2026-10-28 | Talkedjan (Dragans AI-tal med läppsynk) är pausad; efter migreringen byggs en dealer-generisk kedja; Dealer Forge orörd | Dealers › Röst och tal visar dagens verktyg oförändrade; inget byggs om där före den separata talaktiviteten; Skapa material flyttas in i navet men ändras inte |
+| 2026-10-28 | Händelseträdet är borttaget (#468) | frågan om Regler-fliken är borta; körreglerna är `studio-policy-panel` |
+| 2026-10-28 | Dealers blir ett nav som samlar **alla** dealerverktyg | avsnitt 4.2 |
+| 2026-10-28 | Nivå 2 får Johns operatörsmeny med ärliga tomlägen | avsnitt 5 |
+| 2026-10-28 | Radera hellre än arkivera; inga nya mappar eller trackers | en plan, en karta, en skiss; dubbla ytor tas bort, inte göms |
 
----
+## 3. Nivåerna: vem äger vad
 
-## 5. PR-lista, tester och risker
+| Nivå | Vem | Ingång | Äger | Gör | Ser |
+|---|---|---|---|---|---|
+| 1 Admin | Scoutgamings personal | `/admin` | dealers, klipp, tal, mallar, material, bolagen | skapar innehåll och rum, tilldelar till bolag, publicerar, låser upp val | allt, över alla bolag |
+| 2 Partnerportalen | bolagets personal (administratör, redaktör, läsare) | `/partner/<bolag>` | sitt team, sina val inom tilldelningen, sina rum | väljer dealer, bakgrund, bordsgrafik, språk och tillgänglighet inom det som är upplåst; publicerar sina rum; hanterar team; begär material | bara sitt bolag |
+| 3 Spelaren | spelare hos ett bolag | `/lobby`, `/game` | sitt konto, sin historik, sina lobbyval | spelar | bara publicerade rum hos sitt bolag |
 
-| PR | Innehåll | Storlek | Dagar |
+Regeln per inställning. Admin bestämmer läget per bolag (fliken *Bolagets val*, lagrat i paketet):
+
+| Inställning | Nivå 1 | Nivå 2 | Nivå 3 |
 |---|---|---|---|
-| **A** | Etiketter och dubbletter, bara klient: *Mall* i stället för sammansättning/spelmall, rubrik lika med meny, texterna om publicering i Röst & tal och klippkartan, kortstatus "Standard (sparad)", **Öppna**, statusrad i stället för *Rum och publicering*, AI-sektioner hopfällda för dealers utan profil. Rena strängtester ersätts (AGENTS.md:31) | S | 0,5 |
-| **B** | Server: `publish-room` och `GET room-release`, inklusive felkontrakt och kontroll av 009-lagringen. Filer: `operator-package-api.mjs`, ny `lib/room-release.mjs`, `studio-admin-contract.mjs`, `studio-access-policy.mjs`, `studio-admin-api.mjs`. Ingen schemaändring | L | 2,5 |
-| **C1** | Rumssidan: **Publicera** med granskningsruta och kvitto. `RoomGameConfig` blir bara fält. Admin-läget i `PartnerAppearance` utan granskningsknappar. *Spelmallar för bolaget* och väljarna flyttas till Avancerat och döljs när det bara finns ett av varje. Knapp 3 tas bort | M | 1,5 |
-| **C2** | Utkast för rummets val ingår i samma transaktion (alternativ b) | M | 1 |
-| **D** | Röst & tal och klippkartan: live-märke, **Använd i spelet**, fackräknare | M | 1 |
-| **E** | Dokument: README (Spelbolag & rum, Talgranskning `README.md:400`, rad 155-176), TERMINOLOGI (ordlista: mall = lane), handoff och K05-runbookens steg 3–4 | S | 0,5 |
-| **F** | Ren start, en driftåtgärd utan kod, enligt avsnitt 4 | S | 0,5 plus väntetid |
-| **G1–G4** | Död kod enligt tabellen ovan, en PR per område, efter beslut om AI-tal och GPU | M var | 2–3 |
+| Spel (blackjack, roulette) | skapar, tilldelar | ser tilldelade | ser publicerade |
+| Dealer | skapar, tilldelar, kan låsa per rum | väljer bland tilldelade om upplåst | ser |
+| Klipp, varianter, tal | skapar, godkänner | ser status, förhandsvisar, begär | hör och ser |
+| Mall (placering av lager) | skapar, tilldelar | ser vilken som används | ser |
+| Bordsgrafik, bakgrund | laddar upp, tilldelar | väljer bland tilldelade om upplåst | ser |
+| Bordsspråk | sätter standard | ändrar om upplåst | ser |
+| Insatsprofil | sätter, godkänner profiler | ändrar bara om upplåst (låst som standard) | ser |
+| Tillgänglighet (öppet/pausat) | pausar | pausar egna rum om upplåst | ser bara öppna |
+| Publicering | publicerar | publicerar egna rum med granskning | får ny version vid nästa runda |
+| Team | skapar bolag, utser administratör | administratör bjuder in redaktör och läsare | – |
+| API-nycklar | skapar, roterar, återkallar | ser status, begär rotation | – |
+| Spelare och transaktioner | ser alla, för support | ser egna, spärrar egna om rollen tillåter (efter steg F) | ser sig själv |
 
-**Summa:** A–F ungefär 7,5 arbetsdagar. G tillkommer med 2–3 dagar. B och C1 kan utvecklas och provas i staging parallellt med K05. De bör dock driftsättas efter att K05 är klart, så att Jakob inte byter flöde mitt i en produktionsprocedur.
+Där gränsen läcker i dag (fil:rad i kartan): spelarna är inte knutna till bolag; `/game?dealer=` utan bolag läser sparat i stället för publicerat (faller med nativebordet); Admin och portalen redigerar samma utseendeutkast per bolag; sex av tolv partnerbehörigheter kontrolleras aldrig på servern; rummens namn och läge läses levande ur administrationsdokumentet, inte ur paketet.
 
-### Teststrategi
+## 4. Nivå 1: Admin
 
-- **API** (förläng befintliga mönster):
-  - `apps/studio/test/operator-package-api.test.mjs`: åtgärderna med scope, CAS och återställning (rad 295-500) är mallen.
-  - `apps/studio/test/room-game-config-api.test.mjs`: J08-proven på rad 89-369 körs om mot `publish-room`, nämligen inaktuell revision, dubbel publicering med en vinnare, fel som rullar tillbaka paket, audit, config, head och utkast tillsammans, fel bolag och fel rum, och ändrad hash eller ändrat språk.
-  - Nya prov:
-    - En publicering ökar versionen med exakt 1 (i dag 2: 5→6→7 i J08-kvittot).
-    - Inaktuell förhandsvisning ger 409 utan skrivning.
-    - Saknad 009 ger 503 utan skrivning.
-    - `materialReason` kommer bara från den fasta listan.
-    - Andra rums konfigurationer återberäknas eller behålls.
-    - En avvisad eller väntande tagning stoppar publiceringen.
-- **Kedja:** `test/admin-publication-chain.mjs` får en variant som publicerar med `publish-room` och läser tillbaka i lobby och spelval.
-- **Klient:** `apps/studio/components/room-game-config.test.mjs`, `apps/studio/test/room-game-config-client.test.mjs` och `apps/studio/test/partner-appearance.test.mjs`. Det sistnämnda ska bevisa att N2 behåller **Granska publicering**.
-- **Acceptans i webbläsare (staging), samma steg som J08-kvittot:**
-  - Ett klick ger paket N→N+1 och en ny `configVersion`.
-  - En inaktuell flik får 409.
-  - Replay får 409.
-  - Grannrummet är oförändrat.
-  - Operatör B får 404.
-  - `/game` visar `data-game-package-revision = N+1`.
-  - Samma version läses tillbaka efter Render-redeploy.
-  - J08-harnessen (`j08-harness.mjs` i orkestratorns lokala arbetsmapp, inte i Git) kan återanvändas.
+### 4.1 Meny: från 17 sidor till 8
 
-### Detta får inte gå sönder
+Nya namn kräver inga nya adresser: alla omdirigeringar i `packages/navigation/admin-workspace-routes.mjs` och `apps/studio/middleware.ts` behålls, och gamla djuplänkar landar på rätt flik med bibehållen bolag, rum, dealer och revision.
 
-- **J08:s CAS och isolering:** operatörslås, rumslås (`room-game-publication.mjs:109-110`), CAS på head (`:179-184`), förbud mot att ändra andra rums bindningar (`:99-100`) och 404 mellan bolag (`room-game-config-api.mjs:46-52`).
-- **K05:s materialgrindar:**
-  - Samma `resolveNativeRoomGameMaterial`.
-  - Samma `recordedSpeechForVideo`-kontroll av godkänd exakt tagning (`room-game-config-api.mjs:79-80`).
-  - Samma revisionskontroll av mediaposter (`assertCapturedPresentationMedia`).
-  - Ingen ny, lösare väg och ingen reservdealer.
-- **Beständighet över omstart:** ingenting i minnet. Kvittot läses alltid tillbaka från `operator_packages` och `shared_table_configs`.
-- **Partnerportalen (N2):** granskningsflödet ändras inte.
-- **Flera bolag:** urvalet av mallar och provet "advanced republication" (`operator-package-api.test.mjs:546`) behålls.
+| Menyval | Ersätter i dag | Innehåll |
+|---|---|---|
+| **Översikt** | `/admin` | det som väntar: opublicerade utkast, ändrad tilldelning, inbjudningar som inte accepterats, dealers som inte är godkända. Varje rad leder till platsen där det åtgärdas. Inga genvägskort utan uppgift. |
+| **Spelbord** | rumsdelen av `/admin/rooms` | alla bolags rum, filter per bolag, en editor (4.3). |
+| **Bolag** | `/admin/companies`, bolagsdelen av `/admin/rooms`, `/admin/admin/api`, `/admin/players`, `/admin/ekonomi` | ett nav per bolag (4.4). |
+| **Dealers** | `/admin/dealers`, `/admin/clips` med alla flikar, `/admin/dealer-studio?view=generate`, `/admin/replies`, `/admin/dealer-agent` | ett nav per dealer med alla dealerverktyg (4.2). |
+| **Scenmallar** | `/admin/scenes` | egen sida, inte längre samma instans som klippkartan. Visar vilka rum och bolag som använder mallen. |
+| **Material** | `/admin/assets` | enda stället där bordsgrafik och bakgrunder laddas upp. |
+| **System** | `/admin/drift`, `/admin/ai/models`, `/admin/admin/accounts`, `/admin/structure`, `/admin/lobby` | Drift, AI-agenter, Scoutgamings personal, Beroenden, Intern lobby. |
+| **Hjälp** | `/admin/guide` | begrepp, vem som får ändra vad, länkar till guiden och ordlistan. |
 
-### Övriga risker
+### 4.2 Dealers: navet som samlar alla dealerverktyg
 
-- **Allt som är sparat går live.** Full omfrysning publicerar allt sparat i projektet, även ändringar man inte tänkte på. Förhandsvisningens skillnad är skyddet mot det.
-- **Tidsgräns på Vercel.** Providerkontrollen i prepare är lika tung som dagens paketpublicering. Förhandsvisningen gör ingen provider-I/O.
-- **Produktionen saknar 009.** Både dagens och den nya rumspubliceringen stoppas tills migreringen är körd.
-- **Kaskaden vid dealerarkivering** (avsnitt 4) kan avpublicera Johns Bet om steg 3 hoppas över.
+Dealern är arbetsobjektet för allt innehåll. Navet har en dealerväljare överst och flikar. Allt som i dag ligger utspritt på klippkartans flikar och Studio-verktygen samlas här, med samma komponenter och samma API:er som i dag:
+
+| Flik | Samlar i dag | Komponent i dag | Ändras |
+|---|---|---|---|
+| **Klipp** | Klippkarta (`/admin/clips`), Lägg till klipp (`?panel=intake`), Importassistenten (`?tool=import`), körregler (`studio-policy-panel`) | `connected-clip-map.tsx`, `clip-intake-panel.tsx`, `dealer-import-assistant.tsx` | en ingång "Lägg till klipp" (uppladdning och mappimport är två steg i samma flöde, inte två flikar); kortstatus "Standard (sparad)" och "Ändrat sedan publicering"; frivilliga fack hopfällda; fackräknare "Krävs för spel: 10/10 tal · 34/34 giv · 1/1 vila"; klick på kortet öppnar detaljpanelen |
+| **Röst och tal** | Röst & tal (`?panel=room`), Svarsbibliotek (`/admin/replies`), Dialogtest (`/admin/dealer-agent`), Taldrift (`/admin/drift?tab=speech`) | `studio-speech-panel.tsx`, `control-replies-page.tsx`, `control-openclaw-chat.tsx` + `gateway-panel.tsx`, `moving-drift-controls.tsx` | bara flyttas in; livemärke per replik ("Live: goodluck_1 · Utkast: goodluck_3"); "Använd i spelet" ersätter "Sätt som standard i talfacket" och sparar utkastet i samma steg. Talbygget, proben och AI-delarna rörs inte förrän talkedjan generaliseras (egen aktivitet efter O03) |
+| **Scen** | dealerns del av Sceneditorn | `studio-composition-panel.tsx` öppnad med dealern förvald | samma editor som under Scenmallar; här syns vilka mallar som tillåter dealern och knappen "Öppna i Scenmallar" |
+| **Skapa material** | Skapa material (`/admin/dealer-studio?view=generate`) | `dealer-forge-page.tsx` | bara flyttas in; orörd tills Jakob beslutat om nya dealers filmas eller genereras |
+| **Används av** | Kopplingar & användning filtrerat på dealern | `resource-connections.tsx` | läsvy: rum, bolag, mallar och tilldelningar som använder dealern |
+| **Inställningar** | Dealers › arkivera/radera, `?panel=dealer` (Dealer & användning), godkännande | `studio-lifecycle-panel.tsx`, `dealer-directory.tsx` | **en** livscykel i stället för två; nytt status "Godkänd" som krävs för att dealern ska kunna tilldelas (lagras i projektet; schema oförändrat) |
+
+Flödet för en ny dealer är en sekvens med tydliga klart-lägen: Skapa (namn, spel, språk) → Skapa material (valfritt) → Lägg till klipp → Klipp per situation → Röst och tal → Godkänn → Tilldela under Bolag › Tilldelat och publicera. Varje situation visar Klart / Saknar variant / Saknas, och Bolagens dealervy visar samma status i läsläge.
+
+Klippkartan organiseras per situation, inte per fil (grupperna Vila, Spelhandlingar, Repliker, Övergångar). Beteenden är dagens körregler (`studio-policy-panel`); ingen ny regelmodell.
+
+### 4.3 Spelbord: en editor, två nivåer
+
+Admins editor har flikarna Utseende, Dealer, Spelinställningar, Tillgänglighet, Bolagets val, Historik. Bolagets editor (avsnitt 5.2) är samma komponent med färre flikar och filtrerade val.
+
+*Bolagets val* är där Admin låser upp eller låser varje inställning för bolaget: dealer, bordsgrafik, bakgrund, bordsspråk, insatsprofil (låst som standard), tillgänglighet. Valen sparas i bolagets paket, inte på rummet.
+
+Publiceringen är gemensam för båda nivåerna och går via en kontrollerad serverväg (avsnitt 7). Granskningen visar ändringar, berörda rum, ersatt version och eventuell delad mall. Tills dess finns dagens åtta knappar kvar (kartan, avsnittet "Knappar som höjer paketrevisionen"); specialknappen *Publicera PAOWs viloklipp* tas bort först när ersättaren bevisligen bevarar övriga publicerade medier och placering.
+
+### 4.4 Bolag: navet för nivå 2 sett från nivå 1
+
+| Flik | Innehåll | Ersätter |
+|---|---|---|
+| Tilldelat | spel, dealers, mallar, material och upplåsta val för bolaget; publiceras som ny paketrevision | `A:operator-package` i `/admin/rooms` ("Spelmallar för bolaget") |
+| Spelbord | bolagets rum med länk till editorn, "Nytt rum för bolaget" (dagens "Lägg till spel") | listan i `/admin/rooms` |
+| Spelare | bolagets spelare och transaktioner; kräver steg F, tills dess "Inte anslutet" | `/admin/players`, `/admin/ekonomi` |
+| Team | medlemmar, roller, inbjudningar, sista-administratör-spärr | `/admin/companies` |
+| Integration | API-nycklar (skapa, rotera, återkalla), testsession, demokrediter | `/admin/admin/api` |
+| Journal | bolagets händelser | journalen i `/admin/companies` |
+| Inställningar | stäng av, flytta till papperskorg, återställ | livscykeln i `/admin/companies` |
+
+Knappen *Förhandsvisa portalen i läsläge* öppnar portalen som en läsare hos bolaget ser den, med serverbegränsning och loggning. Den är ingen rollväxlare.
+
+### 4.5 System
+
+Drift (status, skor, delade bordets prov; Taldrift flyttar till Dealers › Röst och tal), AI-agenter (modell per agent, OpenClaw-panelen under det namnet bara i detaljer), Scoutgamings personal (bara nivå 1-konton; egen komponent i stället för CSS-delning med Spelarkonton), Beroenden (var används dealer, material, mall och rum; visas också som *Används av* på varje objekt), Intern lobby (visar även opublicerat, bakom inloggning).
+
+### 4.6 Beslutskarta: dagens sidor och deras nya plats
+
+Alla omdirigeringar behålls. Kolumnen "i dag" är verifierad mot koden i kartan.
+
+| I dag | Adress | Beslut | Ny plats |
+|---|---|---|---|
+| Översikt | `/admin` | behålls | Översikt, med det som väntar |
+| Sceneditor | `/admin/scenes` | behålls, egen instans | Scenmallar; dealerns del som Dealers › Scen |
+| Klippkarta | `/admin/clips` | slås ihop | Dealers › Klipp |
+| Röst & tal | `/admin/clips?panel=room` | slås ihop | Dealers › Röst och tal |
+| Inställningar / Dealer & användning | `/admin/clips?panel=dealer` | slås ihop, en livscykel | Dealers › Inställningar |
+| Lägg till klipp | `/admin/clips?panel=intake` | slås ihop | Dealers › Klipp › Lägg till klipp |
+| Importassistent | `?tool=import` | slås ihop | andra steget i Lägg till klipp |
+| Dealers | `/admin/dealers` | behålls | navet; Astrid-kortet med legacyreferens tas bort i ren start |
+| Skapa material | `/admin/dealer-studio?view=generate` | slås ihop, orörd | Dealers › Skapa material |
+| Svarsbibliotek | `/admin/replies` | slås ihop | Dealers › Röst och tal |
+| Dialogtest | `/admin/dealer-agent` | slås ihop | Dealers › Röst och tal › Testa dialog |
+| Talgranskning | `/admin/media-review` | tas bort (#477) | – |
+| Bord & bakgrunder | `/admin/assets` | behålls, byter namn | Material |
+| Spelbolag & rum | `/admin/rooms` | delas upp | editorn till Spelbord; bolagsval, livscykel och paket till Bolag › Tilldelat; rubriken Spelutbud försvinner |
+| Bolag & team | `/admin/companies` | slås ihop | Bolag › Team, Journal, Inställningar; projektet och videolistan hämtas inte längre |
+| Integrationer | `/admin/admin/api` | slås ihop | Bolag › Integration |
+| Spelarkonton | `/admin/players` | slås ihop | Bolag › Spelare (efter steg F); egen komponent, inbäddad Logga ut bort |
+| Ekonomi | `/admin/ekonomi` | slås ihop | Bolag › Spelare; en läsning i stället för två |
+| Drift | `/admin/drift` | till System | System › Drift; dolda gruppen `tables` och dess actions tas bort |
+| Systeminställningar | `/admin/ai/models` | till System | System › AI-agenter |
+| Kopplingar & användning | `/admin/structure` | till System | System › Beroenden, plus *Används av* på objekten |
+| Konton & åtkomst | `/admin/admin/accounts` | till System | System › Scoutgamings personal |
+| Intern lobby | `/admin/lobby` | till System | System › Intern lobby (får en länk) |
+| Hjälp | `/admin/guide` | behålls | Hjälp |
+| Inloggning | `/admin/login` | behålls | sidtiteln "Croupier Admin" blir "Scoutgaming Admin" |
+| Publicera PAOWs viloklipp | `/admin/rooms` | tas bort i steg D | gemensam publicering |
+
+## 5. Nivå 2: Partnerportalen
+
+Målet: varje bolag får ett eget, litet adminsystem. Det ser ut som Admin och använder samma komponenter, visar bara det egna bolaget, erbjuder bara de val Admin har tilldelat och låst upp, och kontrollerar allt på servern per bolag, resurs, åtgärd och revision.
+
+### 5.1 Meny (Johns operatörsmeny)
+
+| Menyval | Behörighet (kodens namn) | Syfte | Data i dag |
+|---|---|---|---|
+| Översikt | overview.read | status för rummen, det som väntar, meddelanden från Admin (ny tilldelning), ingång till "Begär material" | snapshot (paketrevision, mallar, rum); spelsiffror saknas → tomläge |
+| Spelbord | tables.read | lista och editor; det dagliga arbetet | snapshot + branding; spelinställningar och tillgänglighet saknas i partner-API:t |
+| Dealers | presentations.read (dealers har ingen egen behörighet i dag) | de dealers Admin tilldelat: profil, språk, klippstatus, var de används, förhandsvisning, "Begär annan dealer"; inget redigerbart | paketets `registeredDealers` och mallarnas dealerval |
+| Spelare | players.read | bolagets spelare och transaktioner | saknas helt tills steg F → "Inte anslutet" |
+| Rapporter | reports.read | publiceringar ur journalen fungerar i dag; sessioner, omsättning och talanvändning som planerade kort utan siffror | journalen |
+| Team | team.read | medlemmar, roller, inbjudningar, avstängning, journal | finns (`team`, `journal`) |
+| Integration | integrations.read | status, startadress, nycklar maskerade med status, "begär rotation", testsession, kontakt | saknas; `api_keys` saknar bolag → status och kontakt visas, nycklar efter steg F |
+| Hjälp och kontakt | alla | begrepp, vad man får ändra, "Begär material" | statisk |
+
+Redaktör ser inte Team eller Spelare (partner-editor saknar team.read och players.read). Läsare ser bara läsvyer. Allt rollen inte får visas inte i menyn, **och direktadressen nekas på servern**. I dag kontrolleras bara overview.read, team.*, presentations.configure på servern; players.read, tables.read, tables.configure, presentations.read, reports.read och integrations.read måste börja kontrolleras när vyerna byggs (steg A).
+
+### 5.2 Spelbord: editorn
+
+Samma grundkomponent som Admins editor, med tre skillnader: färre flikar, varje val filtreras på tilldelningen, och låsta val visas som *Låst av Scoutgaming* i stället för att döljas.
+
+| Flik | Innehåll | Styrs av |
+|---|---|---|
+| Utseende | förhandsvisning (samma som spelaren ser), bordsgrafik, bakgrund | `allow.tableAsset`, `allow.background` |
+| Dealer | välj bland tilldelade dealers | `allow.dealer` |
+| Spelinställningar | bordsspråk, insatsprofil | `allow.language`, `allow.limit` (låst som standard) |
+| Tillgänglighet | öppet eller pausat; pausat rum syns inte i lobbyn, pågående rundor spelas klart | `allow.pause` (finns i Admin som `A:room-state`, saknas i partner-API:t) |
+| Historik | publicerade versioner med vem och vad | – |
+
+Publiceringsflödet: Ändra → Spara utkast → Granska → Publicera. Granskningen visar ändringarna, vilka rum som påverkas och ersatt version. **Så länge utkastet är ett per bolag** (`operator_branding_drafts`, en kedja per bolag) säger granskningen det rakt ut och listar alla bolagets rum; etiketten "bara detta rum" används inte förrän servern avgränsar skrivningen (steg D). Bolaget skapar inte nya rum själv; portalen erbjuder "Begär ett rum till".
+
+### 5.3 Tilldelningen: det portalen bygger på
+
+Bolagets paket (`operator_packages`) utökas från "vilka mallar" till hela tilldelningen:
+
+```
+paket (per bolag, versionerat, bara tillägg)
+  spel[]            blackjack, roulette
+  dealers[]         id, godkänd
+  mallar[]
+  bordsgrafik[]
+  bakgrunder[]
+  insatsprofiler[]  godkända profiler att välja bland
+  allow             dealer, tableAsset, background, language, limit, pause
+```
+
+Admin publicerar paketet som ny revision. Portalen läser den publicerade revisionen och visar "Tilldelning version N" i sidomenyn plus en rad på Översikt när en ny kommit. Ett rum kan bara referera till sådant som finns i paketet; servern avvisar annat. Datamodellen ändras inte (ingen ny tabell): tilldelningen ligger i paketets `branding`, som redan bär den frysta presentationen.
+
+### 5.4 Behörigheter
+
+Kodens tolv (`packages/studio-access/server/partner-access-policy.mjs:12-19`) och standardrollerna (`apps/studio/lib/operator-admin-api.mjs:16-25`) behålls:
+
+| Behörighet | partner-admin | partner-editor | partner-viewer | Kontrolleras på servern i dag |
+|---|---|---|---|---|
+| overview.read | x | x | x | ja |
+| tables.read / tables.configure | x / x | x / – | x / – | **nej** |
+| presentations.read / presentations.configure | x / x | x / x | x / – | nej / ja |
+| players.read | x | – | x | **nej** |
+| reports.read | x | – | x | **nej** |
+| integrations.read | x | – | x | **nej** |
+| team.read / team.invite / team.roles.assign / team.suspend | x | – | team.read | ja |
+
+Administratör utses bara av Admin och kan inte delegeras. Den sista administratören kan inte stängas av (409). Nya behörigheter som behövs: tables.pause (eller `allow.pause` + tables.configure), players.block, integration.request, material.request. De läggs till i samma lista, inte i en ny modell.
+
+### 5.5 Vad partner-API:t saknar (verifierat)
+
+| Behov | Finns i Admin som | Partner-API |
+|---|---|---|
+| läsa tilldelningen (hela paketet) | `A:operator-package`, `GET presentation-room` | snapshot ger paketets presentation och branding (`partner-package-view.mjs`) men ingen tilldelningsvy |
+| pausa eget rum | `A:room-state` | saknas |
+| byta dealer inom tilldelningen | `A:room-game-config` + branding | branding täcker bara dealerval per mall och rum (`roomOverrides`) |
+| spelinställningar (språk, insatsprofil) | `A:room-game-config` | saknas |
+| spelare och transaktioner | `A:players`, `A:transactions` (globala) | saknas; kräver steg F |
+| begära material | – | saknas; kan börja som journalpost (`operator_audit_events`) |
+| nyckelstatus, begära rotation | `A:apikeys` (globala) | saknas; `api_keys` saknar bolag |
+
+Bygg dem i den ordningen. Ingen av dem får gå via Admins endpoints med en partnersession.
+
+### 5.6 Acceptans
+
+- Direktanrop mot ett annat bolags resurs nekas utan dataläckage.
+- Redaktör kan inte nå Team eller Spelare via adress, inte bara via meny.
+- Ett val som inte finns i tilldelningen avvisas av servern även om det skickas direkt.
+- Publicering av rum A ändrar inte rum B utan att granskningen visade det.
+- Indragen behörighet mellan laddning och publicering stoppar publiceringen och bevarar utkastet.
+- Pausat rum försvinner ur lobbyn; pågående runda spelas klart.
+- Läsare ser publicerad version, aldrig ett utkast.
+- 390 px, 768 px och desktop; tangentbord; läsbara fel.
+
+## 6. Nivå 3: spelaren
+
+Nivå 3 ingår för gränsens skull. Spelarens egna val (språk, ljud, sparade val i `player-choices.mjs`) ändrar aldrig vad ett rum är, bara hur det visas för just den spelaren.
+
+Vad som ska gälla: spelaren ser bara publicerade, öppna rum hos sitt bolag; aldrig ett utkast, aldrig ett pausat rum, aldrig innehåll som inte är tilldelat bolaget. Målbilden räknar bara med delat bord (`shared-room-app.mjs`), som läser paketrevisionen, de publicerade spelinställningarna och klipp ur `media_records` + Blob.
+
+Det som saknas (kartan, Nivå 3): spelare är inte knutna till bolag (steg F); `/game?dealer=` utan bolag och `GET /api/presentation/config?dealerId=` lämnar ut sparat material (hanteras i O02; faller med nativebordet); rummens namn och läge läses levande ur administrationsdokumentet, inte ur paketet (bokförd avvikelse mot TERMINOLOGI; åtgärdas i steg D genom att rumslistan fryses i paketet eller genom att TERMINOLOGI skrivs om, Jakobs beslut). Lobbyns bolagsval (`?operator=`) behålls för demo; i drift kommer spelaren från bolagets sajt via testsession eller nyckel.
+
+## 7. En publicering för båda nivåerna (steg D)
+
+Från utkastet 27 oktober, verifierat: datamodellen ändras inte (bolag, rum, mallar, frysta paket och spelinställningar står kvar). Det som ändras är flödet och **en** orkestrerad serveråtgärd som kombinerar dagens skrivningar.
+
+**Vad Admin ser.** Rummet får en primär knapp **Publicera**, inaktiv med texten "Inget att publicera" när sparat läge inte skiljer sig från live. Knappen öppnar rutan *Det här ändras jämfört med live*: tal per replik (tagning före → efter, godkänd av vem), antal klipp som byts, vila, placering ändrad/oförändrad, inställningar (språk, insatsprofil), rummets val (bakgrund, dealer, bord) och hinder i rött med länk till rätt ställe ("Försäkring · sv: ingen godkänd tagning → Öppna i Röst och tal"). **Publicera nu** är aktiv bara när hinderlistan är tom. Efteråt ett kvitto: "Publicerat · version 8 · 27 okt 21:14 · av jakob", med `configVersion` och paketrevision före och efter under Detaljer och länken Öppna rummet.
+
+**Server.** Ny action `POST /studio/api/admin/operator-package` med `action:'publish-room'` på samma endpoint som `refresh-dealer-idle` och `publish-scene-layout`, för att återanvända preparation-kedjan (`operator-package-api.mjs:161-163`, `studio-admin-api.mjs:132-138`). Kropp: `{action, operatorId, roomId, gameConfig:{language,limitPreset}, expectedPackageRevision, expectedProjectRevision, expectedAdministrationRevision, previewToken}`.
+
+1. *Prepare* (utanför SQL-låset): bolaget aktivt, rummet live; `current.revision === expectedPackageRevision` annars 409; fånga materialet med samma `captureFrozenPresentation` och `selectedRegisteredIdleDefaults` som i dag; `videoRegistry.verifyCapturedMedia`; kandidatens branding med `withPackagePresentation`; skillnadens hash måste vara `previewToken`, annars 409 `studio_release_preview_stale` (som partnergranskningens `reviewToken`).
+2. *En SQL-transaktion* med bolagslås och N→N+1: läs om revisionerna (409 `studio_conflict` med `step`); `assertCapturedPresentationMedia`, `assertPublishedRoomBindings`; lös rummets material mot kandidaten med `resolveNativeRoomGameMaterial` plus dagens kontroller i `room-game-config-api.mjs:58-89` (422 `studio_room_game_material_unavailable` med `materialReason` ur den fasta listan); `operators.publishRoomGameConfig(...)` (den befintliga J08-skrivaren, rumslås och CAS på head); ta bort rummets `roomGameConfigs`-utkast med CAS; svara med kvitto `{ok, operatorId, roomId, previousPackageRevision, packageRevision, configVersion, publishedAt, actor, changes}`.
+3. *Rummets utseende:* första versionen stoppar med 409 `studio_room_choices_draft_pending` om bolaget har ett opublicerat utseendeutkast; andra versionen tar utkastet med i samma transaktion (`changeBrandingDraft` och `publishWithin` delar `txQuery`). Samma åtgärd används av portalen med partnersession, med samma kontroller.
+4. *Förhandsvisning:* `GET /studio/api/admin/room-release?operatorId&roomId` i `STUDIO_ADMIN_ENDPOINTS` och listan över tillåtna läsfrågor; returnerar live och kandidat per område, `ready` med hinder och kod, alla revisioner och `previewToken`; ingen provider-I/O.
+5. *Felkontrakt* `{error, code, step}` med fasta koder: 409 `studio_conflict` (package/project/administration/room_config_head), 409 `studio_release_preview_stale`, 409 `studio_room_choices_draft_pending`, 422 `studio_room_game_material_unavailable` + `materialReason`, 422 `studio_release_invalid`, 404 `studio_room_not_found`, 503 `studio_presentation_runtime_update_required`, 503 `studio_room_config_storage_missing` (kontroll med `to_regclass` innan något skrivs), 503 `studio_media_registry_unavailable`. Klienten försöker aldrig igen automatiskt.
+
+**Därefter tas bort:** knapparna 1, 3, 5 flyttar till Avancerat eller försvinner (vila och placering ingår i full infångning: `dealerIdlePolicies` i `frozen-dealer-idle.mjs:156-161`, `composition` i `frozen-presentation-capture.mjs:57,81`); knapp 2 blir fält som publiceras med Publicera; "Granska publicering"/"Publicera granskat utkast" i Admins rumsläge tas bort (portalen behåller sin granskning); klippkartans "Rum och publicering" blir en statusrad "Johns Bet · PAOW Blackjack · Live v7 · 3 ändringar ej publicerade → Publicera i rummet"; texterna "publicera paketet igen och därefter spelinställningarna" ersätts med "Publicera i rummet". Rumslistan fryses i paketet (eller TERMINOLOGI skrivs om, avsnitt 10).
+
+**Detta får inte gå sönder:** J08:s CAS och isolering (bolagslås, rumslås `room-game-publication.mjs:109-110`, CAS på head `:179-184`, förbud mot att ändra andra rums bindningar `:99-100`, 404 mellan bolag `room-game-config-api.mjs:46-52`); K05:s materialgrindar (samma `resolveNativeRoomGameMaterial`, samma `recordedSpeechForVideo`-kontroll, samma revisionskontroll av mediaposter, ingen reservdealer); beständighet över omstart (kvittot läses alltid ur `operator_packages` och `shared_table_configs`); portalens granskningsflöde; flera bolag (mallurvalet och provet "advanced republication" i `operator-package-api.test.mjs`).
+
+## 8. Språk
+
+Användarspråk; inga tekniska id:n eller tabeller byter namn.
+
+| Används i dag | Målbild |
+|---|---|
+| rum, spelrum, spelutbud, room, table, bj, game-tables | **Spelbord** i menyer och rubriker (ordet rum behålls i löptext och i TERMINOLOGI tills Jakob beslutar, avsnitt 10) |
+| bord som material | **Bordsgrafik** |
+| mall, spelmall, gemensam mall, sammansättning, lane, composition | **Scenmall** (TERMINOLOGI: mall) |
+| paketversion, publiceringsrevision | **Publicerad version** (teknisk revision under Detaljer) |
+| spelbolag, bolag, operator, partner, company, operatör | **Bolag**; portalen heter **Partnerportalen** |
+| forge, dealer-studio | **Skapa material** |
+| speech, voice, probe, media-review, taldrift | **Röst och tal** |
+| OpenClaw, ai/models, dealer-agent, operator-chat | **AI-agenter**, **Dialogtest** |
+| Croupier Admin, Croupier-konto, N1-session, Dealerregister, Ny arbetsyta | **Scoutgaming Admin**, konto, inloggning, Dealers, (tas bort) |
+| Nivå 1 / 2 / 3 i användartext | Admin / Partnerportalen / spelaren |
+
+## 9. Leveransordning
+
+Små PR:er, en sak i taget; docs, UI och server blandas inte. Varje steg har ett klart-kriterium som går att testa. Inga PR:er mergas av Admin-arkitekten: PR-nummer och head-SHA går till orkestratorn efter grön CI. Rena strängtester ersätts (AGENTS.md); prov för behörighet, isolering, sparning, samtidighet och spelregler behålls.
+
+### Före frysningen av O02-kandidaten (nivå 1, inget runtime, inga publiceringskontrakt)
+
+| PR | Innehåll | Filer | Klart när |
+|---|---|---|---|
+| **0 docs** | den här planen, kartan, skissen; gamla kartan raderad | `docs/plans/*`, `docs/NEXT-AGENT.md` (en rad) | mergad |
+| **P1 död klientkod** | `components/project-conflict.tsx`, `video-metadata-fields.tsx` + `video-intake.module.css`, `selectCompositionLayer`, `useStudioSession().save/rescan`, läskontraktets sektioner `compositions/videos/rehearsal/probe`, `client/source-provenance.json`, `lib/control-flow.d.mts`, `lib/media-file-types.d.mts`, reservlänken `/control/library`, klippkartans felhänvisning till Kopplingar & användning | `apps/studio/components/**`, `apps/studio/client/admin/**`, `apps/studio/lib/admin-workspace-data.mjs` | konsumentanalys i PR:en (git grep över apps, packages, services, ops, tools, test); `studio`- och `admin`-sviterna gröna |
+| **P2 ord** | menynamn = sidrubrik (Spelutbud, API & integrationer, Dealer & användning); "Dealerregister", "Ny arbetsyta", "Din N1-session", "Croupier Admin" enligt avsnitt 8; mallens fyra namn blir ett | klientkomponenter och `studio-login.tsx` | inga strängtester låser gamla ord; Jakob har sett skärmbilder |
+| **P3 startsida** | neutral Scoutgaming-startsida utan Astrid-material (`jakob/par-web-start-wip`, 50 filer, −18,8 MiB), allowlistraderna strukna | `apps/web/**`, `tools/repo-limits-allowlist.json` | `apps/web`-testerna gröna; skärmbild till Jakob före merge |
+| *(väntar på #477)* | Spelarkonton/Konton & åtkomst som två komponenter; Ekonomis dubbla läsning; dolda gruppen `tables` med actions tournament, pitboss, tier, room, game-lane(s) och de handlerlösa clip-*/gen-* | `studio-administration.tsx`, `connected-services.tsx`, `studio-admin-contract.mjs`, `studio-admin-data.mjs` | delar filer med #477; görs efter dess merge, före eller efter frysningen beroende på orkestratorn |
+
+### Efter O03 (nivå 2 först)
+
+| Steg | Innehåll | Filer | Klart när |
+|---|---|---|---|
+| **A nivå 2: meny och ärliga tomlägen** | Johns åtta menyval filtrerade på rollens behörigheter; Dealers, Spelare och Rapporter som vyer med ärliga tomlägen; Integration med status, maskerade nyckelnamn och kontakt; `DISCONNECTED`, `INTERNAL_LINKS`, döda förhandsvisningsgrenar bort; Kevin-djuplänkarna omdirigeras till rätt ny vy; serverkontroll av alla sex behörigheter som i dag saknar kontroll | `components/kevin-bo/**`, `lib/partner-data.mjs`, `lib/partner-session.mjs`, `packages/studio-access/server/partner-access-policy.mjs` | alla menyval nås av rätt roll och nekas av fel roll via meny **och** direktadress; inga påhittade värden; staging visad för Jakob och John |
+| **B nivå 2: editorn** | flikarna Utseende, Dealer, Spelinställningar, Tillgänglighet, Historik; val filtrerade på tilldelningen; *Låst av Scoutgaming*; granskningen säger att utkastet är gemensamt per bolag och listar alla rum; bordsfärg bort ur formuläret | `components/partner-appearance.tsx`, editorkomponenten från Admin | bolaget kan bara välja det som finns i paketet, servern avvisar annat, granskningen visar rätt påverkan |
+| **C partner-API** | läsa tilldelning, byta dealer inom tilldelning, spelinställningar, pausa eget rum, begära material (journalpost), nyckelstatus och begäran om rotation; varje åtgärd kontrollerar bolag, resurs, åtgärd och revision | `apps/studio/lib/partner-*.mjs`, `packages/operators/**` | acceptanslistan i 5.6 passerar mot staging |
+| **D en publicering** | avsnitt 7: `publish-room`, `room-release`, felkontrakt, kontroll av 009-lagringen; sedan tas de åtta knapparna och PAOW-knappen bort; rumslistan fryses i paketet | `operator-package-api.mjs`, ny `lib/room-release.mjs`, `studio-admin-contract.mjs`, `studio-access-policy.mjs`, `studio-admin-api.mjs`, `registered-studio.tsx`, `room-game-config.tsx`, `partner-appearance.tsx` | en publicering ökar versionen med exakt 1; inaktuell förhandsvisning ger 409 utan skrivning; saknad 009 ger 503; grannrummet oförändrat; bolag B får 404; `/game` visar `data-game-package-revision = N+1`; J08-harnessen återanvänd i staging |
+| **E nivå 1: meny och nav** | åtta menyval; Dealers blir nav med flikarna i 4.2; Bolag blir nav med flikarna i 4.4; `/admin/rooms` delas; Scenmallar egen instans; `viewPaths` och omdirigeringar rättade | `packages/navigation/admin-navigation.mjs`, `admin-workspace-routes.mjs`, `client/admin/entry.tsx`, `registered-studio.tsx`, `dealer-directory.tsx`, `connected-clip-map.tsx`, `workspace-tools.tsx` | varje uppgift nås från menyn utan djuplänk; gamla djuplänkar landar rätt med bibehållen bolag, rum, dealer och revision; staging visad för Jakob |
+| **F spelare knyts till bolag** | bolagsfält på `players`, inloggningsnamn unika per bolag, bolaget i sessionen, saldo per bolag, API-nycklar per bolag, bolag i varje skapväg, bolagskontroll i `/game` och delade bordets kommando/socket, lobby och `/player-login` med bolagskontext; `players/create` och `GET players` med bolag; Spelare-vyerna i båda nivåerna får data | `ops/neon-game/*.sql` (DDL, Jakob applicerar), `services/game/**`, `packages/storage/**`, Admin- och partner-API | schemamigrering före kravhöjning; en spelare hos A kan inte spela i B:s rum; negativa prov per väg |
+| **G städning** | dubbla livscykler (Dealers mot `panel=dealer`), fem uppladdningsingångar till en, `operator-create-demo` och `sg-test`, `nora`, `remote-ui`, döda Forge-exporter, mappnamnet `kevin-bo`, `lissabon_*`-tabellerna (011), `bo_*`-rester | per område | inga medier, revisioner eller tabeller raderas som bieffekt av UI-städning |
+| **H verktygskedja och struktur** | React, TypeScript och byggen mellan `apps/studio` och `apps/studio/client`; "ett repo, en sajt"; Node- och Next-versioner | egen plan efter O03 (orkestratorn) | ren klon, låst installation, båda frontendbyggena |
+| **Tal** | dealer-generisk talkedja (text → röst → läppsynk) konfigurerad per dealer via registret; Dragan och Astrid som exempel, inte specialfall; Röst och tal får livemärke och "Använd i spelet" | egen aktivitet (Jakobs beslut 2026-10-28) | – |
+
+## 10. Beslut som krävs av Jakob
+
+1. **Ordet för rum i menyer:** "Spelbord" (Johns skiss och paketet) eller "Rum" (TERMINOLOGI). Om Spelbord: TERMINOLOGI uppdateras så att *Bord* fortsatt bara betyder bordslagret ("Bordsgrafik").
+2. **Rumslistan i paketet:** fryses rummens namn och läge i paketet (så att spelet bara läser paketet, som TERMINOLOGI säger), eller skrivs TERMINOLOGI om så att rummets läge är ett levande fält?
+3. **Produktnamnet i Admin:** "Scoutgaming Admin" i stället för "Croupier Admin".
+4. **Astrid-kortet "Legacyreferens"** i Dealers: bort i P2 eller i ren start.
+5. **Dealer-godkännande** som krav för tilldelning (nytt statusfält i projektet): ja eller nej.
+6. **Nya dealers**: filmas eller genereras (avgör Skapa materials framtid); efter O03.
+
+## 11. Avvikelser mot Jakobs paket
+
+Paketet skrevs utan repotillgång; det här har rättats mot koden: `/admin/events`, `/admin/admin/operators` och fem testimporterade komponenter är redan borta; Talgranskning tas bort i #477; `lab/lib/*` finns inte (koden ligger i `apps/studio/lib`); `operator-membership` och `/api/partner/team` skriver samma tabell (verifierat); de tolv behörigheterna heter som i 5.4, inte som paketets förslag; `/play/blackjack` är en omdirigering; `A:room-state` och `A:operator-package` finns med samma form; händelseträdet är ingen fråga längre; nativebordet ingår inte i målbilden; "Operatör/Operatörsportal" i paketet heter här Bolag/Partnerportalen enligt TERMINOLOGI; skissen är uppdaterad så att Dealers-navet har fliken Scen och händelseträdet är borta.

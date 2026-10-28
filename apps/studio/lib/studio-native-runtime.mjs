@@ -25,7 +25,6 @@ import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 import { createRuntimeMetadataReader } from '../../../tools/runtime-media-catalog.mjs';
 import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
 import { createStudioAdminReadouts } from './studio-admin-readouts.mjs';
-import { createRegisteredVoiceLines } from './studio-voice-lines.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { createStudioGameAuthority } from './studio-game-authority.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
@@ -184,7 +183,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const layerUploads = createLayerUploadService({repository,scope:config.scope,ticketKey:Buffer.from(signer.v,'hex'),env});
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
     const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope,
-      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer,voiceLines:createRegisteredVoiceLines({env,repositoryRoot,repository}) });
+      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
     for(const [key,handler] of createStudioAdminReadouts({db:store.db,scope:config.scope}).handlers) {
       if(handlers.has(key))unavailable();handlers.set(key,handler);
     }

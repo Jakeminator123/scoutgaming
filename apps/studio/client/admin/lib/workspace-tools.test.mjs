@@ -27,18 +27,18 @@ function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'d
   return {exports:module.exports,requests,render(fn,props){cursor=0;return fn(props);},async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 
-test('Admin speech review opens the real NativeAdministration review with the selected dealer',async()=>{
-  const h=harness('../components/studio/workspace-tools.tsx','?dealer=dragan&tab=media-review');
-  h.render(h.exports.WorkspaceTool,{section:'media-review'});await h.settle();
-  const review=node(h.render(h.exports.WorkspaceTool,{section:'media-review'}),item=>item.type===components.ConnectedServices);
-  assert.ok(review,'speech review must render the connected administration service');
-  const service=harness('../components/studio/connected-services.tsx','',{availableActions:['GET config','GET voicelines','POST voiceline-review'],gameOrigin:'https://game.invalid'});
-  const administration=service.exports.ConnectedServices(review.props);
+test('API & integrationer opens the real NativeAdministration with the server-read actions',async()=>{
+  const service=harness('../components/studio/connected-services.tsx','',{availableActions:['GET apikeys','POST apikeys/create'],gameOrigin:'https://game.invalid'});
+  const administration=service.exports.ConnectedServices({path:'/admin/admin/api'});
   assert.equal(typeof administration.type,'function');
   service.render(administration.type,administration.props);await service.settle();
   const native=node(service.render(administration.type,administration.props),item=>item.type===components.NativeAdministration);
-  assert.equal(native.props.initialGroup,'media-review');assert.equal(native.props.initialDealerId,'dragan');
-  assert.deepEqual(native.props.availableActions,['GET config','GET voicelines','POST voiceline-review']);
+  assert.equal(native.props.initialGroup,'partners');assert.equal(Object.hasOwn(native.props,'initialDealerId'),false);
+  assert.deepEqual(native.props.availableActions,['GET apikeys','POST apikeys/create']);
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
+  // The retired speech review is neither a workspace tool nor a connected service.
+  assert.equal(adminWorkspaceRoutes.adminToolName('/admin/media-review'),null);
+  const retired=service.exports.ConnectedServices({path:'/admin/media-review'});
+  assert.equal(node(retired,item=>item.type===components.NativeAdministration),null);
 });

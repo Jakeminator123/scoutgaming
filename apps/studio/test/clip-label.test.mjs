@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { applyClipLabel, assignClipLabel, clipLabel } from '../lib/clip-label.mjs';
 import { createSeedProject, validateProject } from '../../../packages/presentation/contracts/studio-model.mjs';
+import { syntheticPresentationManifest } from '../../../test/fixtures/presentation-bank.mjs';
 
-const manifest = JSON.parse(readFileSync(new URL('../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
+const manifest = syntheticPresentationManifest();
 
 test('filmed variants keep their distinct original identities under the same situation',()=>{
   const names=['pos1','pos1-i','pos1-u','pos1-iu','pos1-v','pos1-iv'];

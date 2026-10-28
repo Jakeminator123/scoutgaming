@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scoutgaming · Admin och Partnerportalen · målbild (skiss)</title>
+<style>
+:root{color-scheme:light;--paper:#f4f4ef;--panel:#fff;--ink:#171c1a;--muted:#667068;--line:#dfe3da;--soft:#eef1e9;--lime:#d6ff3a;--lime-ink:#24300c;--accent:#506324;--green:#216342;--green-bg:#e9f5e9;--warn:#77500a;--warn-bg:#fff4dc;--red:#a02b29;--red-bg:#fff0ec;--blue:#1d4f91;--blue-bg:#e8f0fb;--sidebar:#19221d;--ui:Inter,"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 var(--ui)}
+button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:disabled{cursor:not-allowed;opacity:.5}
+a{color:var(--accent)}:focus-visible{outline:3px solid #719b20;outline-offset:2px}
+h1,h2,h3,p{margin:0}h1{font-size:30px;letter-spacing:-1.1px;font-weight:650;line-height:1.2}h2{font-size:17px;font-weight:650;letter-spacing:-.4px}h3{font-size:15px;font-weight:650}
+.muted{color:var(--muted)}.tiny{font-size:12px}.sm{font-size:13px}
+.demo{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:10px 24px;background:#e7ecdc;border-bottom:1px solid #d3dbc6;font-size:12px}
+.demo label{display:inline-flex;align-items:center;gap:8px;font-weight:600}.demo select{min-height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff}
+.layout{display:flex;flex-wrap:wrap;min-height:calc(100vh - 54px)}
+.side{flex:1 1 248px;background:var(--sidebar);color:#c9d3c4;padding:24px 14px;display:flex;flex-direction:column;gap:20px}
+.side.n1{background:#141c17}
+.brand{display:flex;align-items:center;gap:10px;padding:0 10px}.brand svg{color:var(--lime)}
+.wordmark{font-weight:650;font-size:19px;letter-spacing:-1px;color:#f4f7ef;line-height:1.1}.wordmark b{color:var(--lime);font-weight:650}
+.scope{background:#27312a;border:1px solid #3a453b;border-radius:10px;padding:12px}.scope strong{color:#f4f7ef;display:block}
+.nav{display:flex;flex-direction:column;gap:2px}.nav-title{font-size:11px;font-weight:600;color:#a6b39f;padding:0 12px 6px}
+.nav button{display:flex;align-items:center;gap:11px;min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#c9d3c4;text-align:left;font-size:13px;font-weight:500}
+.nav button:hover{background:#28352b;color:#f0f5e8}.nav button.active{background:var(--lime);color:var(--lime-ink);font-weight:650}
+.nav .badge{margin-left:auto;font-size:10px;border:1px solid #6079287a;padding:1px 5px;border-radius:4px}
+.user{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #3a453b;border-radius:10px;background:#222c25;font-size:12px}
+.avatar{width:32px;height:32px;border-radius:8px;background:var(--lime);color:var(--lime-ink);display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0}
+main{flex:999 1 560px;min-width:0;padding:32px 40px 64px}.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.level{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600}
+.level.n1{background:#141c17;color:var(--lime)}.level.n2{background:var(--blue-bg);color:var(--blue)}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}.pad{padding:20px 22px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.between{justify-content:space-between}.col{display:flex;flex-direction:column;gap:6px}
+.list>div{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 22px;border-top:1px solid var(--soft)}.list>div:first-child{border-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.btn{min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:9px;font-weight:600;font-size:13px;text-decoration:none;color:var(--ink)}
+.btn:hover:not(:disabled){background:var(--soft)}.btn.primary{background:var(--lime);border-color:var(--lime);color:#1a2606}.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}.btn.small{min-height:36px;padding:0 12px;font-size:12px}.btn.danger{color:var(--red)}.btn.dark{background:var(--sidebar);color:#f4f7ef;border-color:var(--sidebar)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--soft);color:#3f4a43}
+.tag.good{background:var(--green-bg);color:var(--green)}.tag.warn{background:var(--warn-bg);color:var(--warn)}.tag.red{background:var(--red-bg);color:var(--red)}.tag.blue{background:var(--blue-bg);color:var(--blue)}.tag.lock{background:#fff;border:1px solid var(--line)}
+.notice{padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:var(--soft);font-size:13px;color:#3f4a43}.notice.warn{background:var(--warn-bg);color:var(--warn);border-color:#e5c98c}.notice.blue{background:var(--blue-bg);color:var(--blue);border-color:#c3d6f1}.notice.red{background:var(--red-bg);color:var(--red);border-color:#e6b6ad}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}.tabs button{min-height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;font-weight:500;font-size:13px;color:var(--muted);margin-bottom:-1px}.tabs button.active{color:var(--ink);font-weight:650;border-bottom-color:var(--ink)}
+.opt{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.opt button{padding:9px;border-radius:10px;border:1px solid var(--line);background:#fff;text-align:left}.opt button.on{border:2px solid var(--accent);background:#f6f9ee;padding:8px}.opt .sw{display:block;height:44px;border-radius:6px}.opt .lb{display:block;padding-top:6px;font-weight:600;font-size:13px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}.field select,.field input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:400}
+.chk{display:flex;align-items:center;gap:12px;min-height:44px}.chk input{width:18px;height:18px}
+.scene{position:relative;height:260px;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.scene .lbl{position:absolute;top:12px;left:14px;font-size:11px;font-weight:600;color:#f4f7ef;background:#00000059;padding:3px 8px;border-radius:5px}
+.scene .dealer{width:110px;height:140px;border-radius:55px 55px 12px 12px;background:#c9cfc4;display:grid;place-items:center;font-size:11px;font-weight:600;color:#2b332e;margin-bottom:-20px}
+.scene .table{width:92%;height:100px;border-radius:50% 50% 0 0/70% 70% 0 0;display:grid;place-items:center;font-size:11px;font-weight:600;color:#f4f7ef}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--sidebar);color:#f4f7ef;padding:12px 16px;border-radius:10px;font-weight:600;font-size:13px;z-index:20}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.chips button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-weight:600;font-size:13px}.chips button.on{background:var(--sidebar);border-color:var(--sidebar);color:#f4f7ef}.chips button.dash{border-style:dashed;background:transparent;color:#3f4a43}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:13px}.kv dt{color:var(--muted);font-weight:600}.kv dd{margin:0}
+.stat{display:flex;flex-direction:column;gap:4px}.stat b{font-size:22px;letter-spacing:-.6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.cards>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+ol.steps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}ol.steps li{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;background:#fff}
+@media (max-width:720px){main{padding:20px 16px 48px}.opt{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="demo" role="region" aria-label="Demoinställningar">
+  <span><strong>Skiss · Admin (nivå 1) och Partnerportalen (nivå 2).</strong> Exempeldata i minnet, ingen server. Det du tilldelar i nivå 1 syns i nivå 2. Målbilden i text är docs/plans/ADMIN-FORENKLING.md; koden på main vinner alltid.</span>
+  <span class="row">
+    <label>Visa <select id="who"><option value="n1">Nivå 1 · Scout Gaming</option><option value="n2-admin">Nivå 2 · Johns Bet · administratör</option><option value="n2-editor">Nivå 2 · Johns Bet · redaktör</option><option value="n2-viewer">Nivå 2 · Johns Bet · läsare</option></select></label>
+    <button class="btn small" id="reset">Återställ</button>
+  </span>
+</div>
+<div id="app"></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=x=>JSON.parse(JSON.stringify(x));const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+
+// ===== Delad data. Nivå 1 äger katalogen; nivå 2 ser bara sin publicerade tilldelning. =====
+const OPS={john:{name:'Johns Bet',initials:'JB'},demo:{name:'Demooperatör',initials:'DO'}};
+const CATALOG={
+  games:[{id:'Blackjack'},{id:'Roulette'}],
+  dealers:[
+    {id:'paow',name:'PAOW',game:'Blackjack',langs:['Svenska','Engelska'],clips:{vila:'Klart',handlingar:'Klart',repliker:'Saknar Resultat'}},
+    {id:'astrid',name:'Astrid',game:'Blackjack',langs:['Svenska'],clips:{vila:'Klart',handlingar:'Klart',repliker:'Klart'}},
+    {id:'viktor',name:'Viktor',game:'Roulette',langs:['Engelska'],clips:{vila:'Klart',handlingar:'Saknas',repliker:'Saknas'}}
+  ],
+  scenes:[{id:'bj3',name:'Blackjack, tre lager'}],
+  tableAssets:[{id:'Oak',fill:'#8a5a32'},{id:'Obsidian',fill:'#3b434a'}],
+  backgrounds:[{id:'Midnight',fill:'#1f3a2c'},{id:'Velvet',fill:'#5a3a2e'}]
+};
+const ALLOW_LBL={dealer:'Välja dealer bland tilldelade',tableAsset:'Välja bordsgrafik',background:'Välja bakgrund',language:'Ändra bordsspråk',limit:'Ändra insatsprofil',pause:'Pausa egna spelbord'};
+let records,assign,team,invites,journal,approved,state;
+function mkTable(id,op,name,published,cfg){const live={dealer:'paow',tableAsset:'Oak',background:'Midnight',language:'Svenska',limit:'Standard',open:true,...cfg};
+  return{id,op,name,published,version:published?12:0,live,saved:clone(live),working:clone(live),history:published?[{v:12,text:'Bakgrund och bordsgrafik',who:'Redaktör B'},{v:11,text:'Dealer tilldelad',who:'Scout Gaming'}]:[]};}
+function mkAssign(version,pub){return{version,published:pub,working:clone(pub)};}
+function resetData(){
+  approved={paow:true,astrid:true,viktor:false};
+  assign={
+    john:mkAssign(4,{games:['Blackjack'],dealers:['paow','astrid'],scenes:['bj3'],tableAssets:['Oak','Obsidian'],backgrounds:['Midnight','Velvet'],allow:{dealer:true,tableAsset:true,background:true,language:true,limit:false,pause:true}}),
+    demo:mkAssign(2,{games:['Blackjack'],dealers:['astrid'],scenes:['bj3'],tableAssets:['Oak'],backgrounds:['Velvet'],allow:{dealer:false,tableAsset:true,background:false,language:false,limit:false,pause:true}})
+  };
+  records={'bj-paow':mkTable('bj-paow','john','PAOW Blackjack',true),'bj-prive':mkTable('bj-prive','john','PAOW Privé',false,{background:'Velvet',open:false}),'demo-bj':mkTable('demo-bj','demo','Demobord',true,{dealer:'astrid',background:'Velvet'})};
+  team={john:[{id:1,name:'Administratör A',role:'admin',status:'Aktiv',last:true},{id:2,name:'Redaktör B',role:'editor',status:'Aktiv'},{id:3,name:'Läsare C',role:'viewer',status:'Aktiv'}],demo:[{id:4,name:'Administratör D',role:'admin',status:'Aktiv',last:true}]};
+  invites={john:[{email:'[e-postadress]',role:'editor',sent:'[datum]'}],demo:[]};
+  journal={john:[{t:'[datum]',text:'Redaktör B publicerade PAOW Blackjack, version 12.'},{t:'[datum]',text:'Scout Gaming publicerade tilldelning version 4: Astrid tillagd.'},{t:'[datum]',text:'Administratör A bjöd in en redaktör.'}],demo:[{t:'[datum]',text:'Scout Gaming pausade Demobord.'}]};
+  state={level:'n1',role:'admin',page:'overview',op:'john',filter:'alla',table:null,tab:'look',review:false,toast:'',invite:false,material:false,dealer:'paow',dtab:'klipp',otab:'assign',stab:'drift',delChecked:false,talpar:{a:'Väntar',b:'Väntar',c:'Godkänt'}};
+}
+resetData();
+
+// ===== Nivå och behörighet =====
+const isN1=()=>state.level==='n1';
+const PERMS={
+  admin:['tables.read','tables.write','tables.publish','tables.pause','dealers.read','players.read','players.block','reports.read','team.read','team.invite','team.roles.assign','team.suspend','integration.read','integration.request','material.request'],
+  editor:['tables.read','tables.write','tables.publish','tables.pause','dealers.read','reports.read','integration.read','material.request'],
+  viewer:['tables.read','dealers.read','reports.read']
+};
+const ROLE_NAME={admin:'Administratör',editor:'Redaktör',viewer:'Läsare'};
+const can=p=>isN1()||PERMS[state.role].includes(p);
+const readOnly=()=>!can('tables.write');
+const curOp=()=>isN1()?state.op:'john';
+const pkg=op=>assign[op].published;          // det operatören ser
+const pkgWork=op=>assign[op].working;        // det Scout redigerar
+const pkgDirty=op=>!eq(assign[op].working,assign[op].published);
+const dealer=id=>CATALOG.dealers.find(d=>d.id===id)||{name:id};
+const fill=(list,id)=>(list.find(x=>x.id===id)||{}).fill||'#333';
+const table=()=>records[state.table];
+const dirty=r=>!eq(r.working,r.saved);const draft=r=>!eq(r.saved,r.live)||!r.published;
+const tablesOf=op=>Object.values(records).filter(r=>r.op===op);
+let toastTimer;function toast(t){state.toast=t;render();clearTimeout(toastTimer);toastTimer=setTimeout(()=>{state.toast='';render();},4500);}
+function go(page){const unsaved=Object.values(records).filter(dirty);if(unsaved.length&&!confirm('Du har osparade ändringar. Lämna ändå? Sparade utkast ligger kvar.'))return;unsaved.forEach(r=>r.working=clone(r.saved));state.page=page;state.table=null;state.review=false;state.material=false;render();window.scrollTo(0,0);}
+
+// ===== Sidomeny =====
+function side(){
+  const item=(id,label,perm,badge)=>!perm||can(perm)?`<button data-go="${id}" class="${state.page===id?'active':''}">${label}${badge!==undefined?`<span class="badge">${badge}</span>`:''}</button>`:'';
+  const brand=`<div class="brand"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M8 22V8H22M78 8H92V22M92 78V92H78M22 92H8V78" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M68 36C68 28 60 24 50 24C40 24 32 28 32 36C32 50 68 50 68 64C68 72 60 76 50 76C40 76 32 72 32 64" stroke="currentColor" stroke-width="9.5" stroke-linecap="square"/></svg>
+    <div><div class="wordmark">scout<b>/</b>gaming</div><div class="tiny" style="color:#a6b39f;margin-top:4px">${isN1()?'Scout Admin, nivå 1':'Operatörsportal, nivå 2'}</div></div></div>`;
+  if(isN1())return `<aside class="side n1" aria-label="Huvudmeny">${brand}
+    <div class="scope"><span class="tiny" style="color:#a6b39f">Scout Gaming</span><strong>Alla operatörer</strong><span class="tiny">Skapa, tilldela, publicera</span></div>
+    <nav class="nav">${item('overview','Översikt')}${item('tables','Spelbord',null,Object.keys(records).length)}${item('operators','Operatörer',null,Object.keys(OPS).length)}</nav>
+    <div><p class="nav-title">Innehåll</p><nav class="nav">${item('dealers','Dealers')}${item('scenes','Scenmallar')}${item('material','Material')}</nav></div>
+    <div><p class="nav-title">Scout</p><nav class="nav">${item('system','System')}${item('help','Hjälp')}</nav></div>
+    <div class="user"><span class="avatar">SG</span><span><span style="color:#f4f7ef;font-weight:600;display:block">Scout-personal</span><span style="color:#a6b39f">Administratör, exempel</span></span></div></aside>`;
+  return `<aside class="side" aria-label="Huvudmeny">${brand}
+    <div class="scope"><span class="tiny" style="color:#a6b39f">Din operatör</span><strong>Johns Bet</strong><span class="tiny">Tilldelning version ${assign.john.version}</span></div>
+    <div><p class="nav-title">Ert casino</p><nav class="nav">${item('overview','Översikt')}${item('tables','Spelbord',null,tablesOf('john').length)}${item('dealers','Dealers','dealers.read')}${item('players','Spelare','players.read')}${item('reports','Rapporter','reports.read')}</nav></div>
+    <div><p class="nav-title">Bolaget</p><nav class="nav">${item('team','Team','team.read')}${item('integration','Integration','integration.read')}${item('help','Hjälp och kontakt')}</nav></div>
+    <div class="user"><span class="avatar">JB</span><span><span style="color:#f4f7ef;font-weight:600;display:block">${ROLE_NAME[state.role]}</span><span style="color:#a6b39f">Johns Bet, exempel</span></span></div></aside>`;
+}
+const levelPill=()=>isN1()?`<span class="level n1">Nivå 1 · Scout Gaming · ser och styr allt</span>`:`<span class="level n2">Nivå 2 · Johns Bet · bara eget bolag, inom tilldelningen</span>`;
+const header=(title,sub,actions='')=>`<div class="head"><div class="col"><h1>${title}</h1>${sub?`<p class="muted">${sub}</p>`:''}</div>${actions}</div>`;
+const status=r=>r.published?(draft(r)?`<span class="tag warn">Utkast ovanpå v${r.version}</span>`:`<span class="tag good">Publicerad v${r.version}</span>`):`<span class="tag">Inte publicerat</span>`;
+const tagFor=s=>`<span class="tag ${s==='Klart'||s==='Godkänt'?'good':s==='Saknas'||s==='Underkänt'?'red':'warn'}">${s}</span>`;
+
+// ===== Översikt =====
+function overviewPage(){
+  if(isN1()){
+    const waiting=[];
+    Object.values(records).forEach(r=>{if(!r.published)waiting.push(['Inte publicerat',`${r.name} hos ${OPS[r.op].name}`,'Har aldrig publicerats och syns inte för spelare.','tables',r.id]);else if(draft(r))waiting.push(['Utkast',`${r.name} hos ${OPS[r.op].name}`,'Sparat utkast som inte är publicerat.','tables',r.id]);});
+    Object.keys(OPS).forEach(op=>{if(pkgDirty(op))waiting.push(['Tilldelning',OPS[op].name,'Tilldelningen är ändrad men inte publicerad.','operators',null,op]);if(invites[op].length)waiting.push(['Team',OPS[op].name,`${invites[op].length} inbjudan har inte accepterats.`,'operators',null,op]);});
+    if(!approved.viktor)waiting.push(['Godkännande','Viktor','Dealern är inte godkänd och kan inte tilldelas.','dealers',null,null,'viktor']);
+    waiting.push(['Granskning','Tal för PAOW','Talpar väntar på godkännande.','dealers',null,null,'paow']);
+    return levelPill()+header('Översikt','Det som väntar på Scout just nu. Allt här leder till platsen där det åtgärdas.')+
+    `<div class="grid"><section class="panel"><div class="pad"><h2>Väntar på dig</h2></div><div class="list">${waiting.map(([tag,t,s,page,tid,op,d])=>`<div><span class="tag ${tag==='Utkast'?'warn':tag==='Granskning'?'blue':''}">${tag}</span><div class="col" style="flex:1 1 220px;gap:2px"><strong>${esc(t)}</strong><span class="tiny muted">${s}</span></div><button class="btn small" data-go="${page}" ${tid?`data-open="${tid}"`:''} ${op?`data-op="${op}"`:''} ${d?`data-dealer="${d}"`:''}>Öppna</button></div>`).join('')}</div></section>
+    <div class="col" style="gap:16px"><section class="panel pad col" style="gap:10px"><h2>Börja med</h2><button class="btn primary" data-go="dealers">Lägg till klipp</button><button class="btn" data-go="operators">Tilldela innehåll till en operatör</button><button class="btn" data-go="dealers">Ny dealer</button></section>
+    <section class="panel pad col" style="gap:8px"><h2>Nivåerna</h2><p class="sm"><strong>Nivå 1, Scout:</strong> skapar och tilldelar.</p><p class="sm"><strong>Nivå 2, operatören:</strong> väljer inom tilldelningen.</p><p class="sm"><strong>Nivå 3, spelaren:</strong> ser bara publicerat.</p></section></div></div>`;
+  }
+  const rows=tablesOf('john').map(r=>`<div><strong style="flex:1 1 200px">${esc(r.name)}</strong><span>${status(r)}</span><button class="btn small" data-open="${r.id}">Öppna</button></div>`).join('');
+  return levelPill()+header('Ert casino, på ett ställe','Det som väntar hos Johns Bet.')+
+  `<div class="grid"><section class="panel"><div class="pad"><h2>Spelbord</h2></div><div class="list">${rows}</div></section>
+  <div class="col" style="gap:16px">
+    <section class="panel pad col" style="gap:10px"><h2>Från Scout</h2><p class="sm">Tilldelning version ${assign.john.version}: ${pkg('john').dealers.map(id=>dealer(id).name).join(', ')} är era dealers. ${pkg('john').allow.dealer?'Ni får välja dealer per spelbord.':'Dealern väljs av Scout.'}</p><button class="btn small" data-go="dealers">Se era dealers</button></section>
+    ${can('team.read')?`<section class="panel pad col" style="gap:10px"><h2>Team</h2><p class="sm">${invites.john.length} inbjudan har inte accepterats.</p><button class="btn small" data-go="team">Visa team</button></section>`:''}
+    <section class="panel pad col" style="gap:10px"><h2>Behöver ni något?</h2><p class="sm muted">Annan dealer, bakgrund eller bordsgrafik tilldelas av Scout.</p><button class="btn small" data-act="material">Begär material från Scout</button></section>
+  </div></div><div class="notice">Inga låtsassiffror. Rapporter visas under Rapporter när deras datakoppling finns.</div>`;
+}
+
+// ===== Spelbord =====
+function tablesPage(){
+  if(state.table)return tableEditor(table());
+  const ops=isN1()?Object.keys(OPS):['john'];
+  const list=Object.values(records).filter(r=>ops.includes(r.op)&&(state.filter==='alla'||r.op===state.filter));
+  const rows=list.map(r=>`<div><div class="col" style="flex:1 1 220px;gap:2px"><strong>${esc(r.name)}</strong><span class="tiny muted">${isN1()?OPS[r.op].name+' · ':''}Blackjack · ${esc(dealer(r.live.dealer).name)} · ${esc(r.live.background)} · ${r.live.open?'Öppet':'Pausat'}</span></div><span>${status(r)}</span><button class="btn small" data-open="${r.id}">Öppna spelbord</button></div>`).join('');
+  const chips=isN1()?`<div class="chips" aria-label="Filtrera på operatör">${[['alla','Alla'],...Object.keys(OPS).map(k=>[k,OPS[k].name])].map(([k,l])=>`<button class="${state.filter===k?'on':''}" data-filter="${k}">${l}</button>`).join('')}</div>`:'';
+  return levelPill()+header('Spelbord',isN1()?'Alla operatörers spelbord. Ett spelbord skapas alltid för en operatör och kan bara använda det som är tilldelat den.':'Ert spelutbud. Ett spelbord kan bara använda det Scout har tilldelat er.',isN1()?`<button class="btn primary" data-go="operators">Nytt spelbord via Operatörer</button>`:'')+chips+
+  `<section class="panel"><div class="list">${rows||'<div class="muted">Inga spelbord.</div>'}</div></section>${isN1()?'':`<p class="sm muted">Nya spelbord skapas av Scout. <button class="btn small ghost" data-act="material">Begär ett spelbord till</button></p>`}`;
+}
+function tableEditor(r){
+  const tabs=isN1()?[['look','Utseende'],['dealer','Dealer'],['settings','Spelinställningar'],['avail','Tillgänglighet'],['allow','Operatörens val'],['history','Historik']]:[['look','Utseende'],['dealer','Dealer'],['settings','Spelinställningar'],['avail','Tillgänglighet'],['history','Historik']];
+  const cfg=readOnly()?r.live:r.working;const changes=diff(r);
+  return levelPill()+`<button class="btn ghost" data-back style="align-self:flex-start;padding:0 4px;color:var(--accent)">Alla spelbord</button>
+  ${header(esc(r.name),`Blackjack hos ${OPS[r.op].name}`,`<span class="row">${status(r)}<button class="btn" data-act="preview">Provvisa</button></span>`)}
+  <div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${state.tab===id}" class="${state.tab===id?'active':''}" data-tab="${id}">${l}</button>`).join('')}</div>
+  ${readOnly()?`<div class="notice">Du har läsbehörighet. Du ser den publicerade versionen; ändringar och publicering är avstängda.</div>`:''}
+  ${{look:lookTab,dealer:dealerTab,settings:settingsTab,avail:availTab,allow:allowTab,history:historyTab}[state.tab](r,cfg)}
+  ${state.tab!=='history'&&state.tab!=='allow'&&!readOnly()?publishBar(r,changes):''}${state.review?reviewPanel(r,changes):''}`;
+}
+const scene=cfg=>`<div class="scene" style="background:${fill(CATALOG.backgrounds,cfg.background)}"><span class="lbl">Bakgrund: ${esc(cfg.background)}</span><div class="dealer">Dealer ${esc(dealer(cfg.dealer).name)}</div><div class="table" style="background:${fill(CATALOG.tableAssets,cfg.tableAsset)}">Bordsgrafik: ${esc(cfg.tableAsset)}</div></div>`;
+function choice(r,label,key,list,cfg,hint){
+  const p=pkg(r.op);const assigned=list.filter(o=>p[key==='tableAsset'?'tableAssets':'backgrounds'].includes(o.id));
+  const allowed=isN1()||p.allow[key];const locked=!allowed||readOnly();
+  return `<div class="col" style="gap:8px"><div class="row between"><h3>${label}</h3>${allowed?`<span class="tiny muted">${assigned.length} tilldelade</span>`:`<span class="tag lock">Låst av Scout</span>`}</div>
+  <div class="opt">${assigned.map(o=>`<button type="button" aria-pressed="${cfg[key]===o.id}" class="${cfg[key]===o.id?'on':''}" data-set="${key}" data-value="${o.id}" ${locked?'disabled':''}><span class="sw" style="background:${o.fill}"></span><span class="lb">${esc(o.id)}</span></button>`).join('')}</div><p class="tiny muted">${hint}</p></div>`;
+}
+function lookTab(r,cfg){
+  return `<div class="row" style="align-items:flex-start;gap:20px"><section class="panel pad col" style="flex:999 1 420px;gap:12px"><h2>Förhandsvisning</h2>${scene(cfg)}<p class="tiny muted">Schematisk bild. I produkten används samma spelare som spelarna ser.</p></section>
+  <section class="panel pad col" style="flex:1 1 300px;gap:20px">${choice(r,'Bordsgrafik','tableAsset',CATALOG.tableAssets,cfg,'Bordets bildlager. Det finns ingen separat bordsfärg.')}${choice(r,'Bakgrund','background',CATALOG.backgrounds,cfg,isN1()?'Fler alternativ tilldelas under Operatörer › Tilldelat.':'Ett nytt material måste först tilldelas av Scout.')}</section></div>`;
+}
+function dealerTab(r,cfg){
+  const p=pkg(r.op);const allowed=(isN1()||p.allow.dealer)&&!readOnly();
+  const rows=CATALOG.dealers.filter(d=>isN1()||p.dealers.includes(d.id)).map(d=>{const inPkg=p.dealers.includes(d.id);
+    return `<div><span class="avatar" style="background:#d3dbc6;color:#2b332e">${d.name[0]}</span><div class="col" style="flex:1 1 200px;gap:2px"><strong>${d.name}</strong><span class="tiny muted">${d.game} · ${d.langs.join(', ')}${!approved[d.id]?' · ej godkänd':''}</span></div>${cfg.dealer===d.id?'<span class="tag good">Vald</span>':inPkg?`<button class="btn small" data-set="dealer" data-value="${d.id}" ${allowed?'':'disabled'}>Välj</button>`:`<span class="tag lock">Inte tilldelad ${OPS[r.op].name}</span>`}</div>`;}).join('');
+  return `<section class="panel pad col" style="gap:14px;max-width:760px"><div class="row between"><h2>Dealer vid bordet</h2>${isN1()||p.allow.dealer?'':'<span class="tag lock">Låst av Scout</span>'}</div>
+  <p class="sm muted">${isN1()?'Bara dealers i operatörens publicerade tilldelning kan väljas, även av Scout. Tilldela först under Operatörer › Tilldelat.':'Ni väljer bland de dealers Scout har tilldelat Johns Bet. Klipp, tal och beteenden hanteras av Scout.'}</p>
+  <div class="list" style="border:1px solid var(--line);border-radius:12px">${rows}</div>${isN1()?'':'<button class="btn small ghost" data-act="material" style="align-self:flex-start">Begär annan dealer</button>'}</section>`;
+}
+function settingsTab(r,cfg){
+  const p=pkg(r.op);const sel=(key,label,opts)=>{const allowed=isN1()||p.allow[key];return `<label class="field">${label} ${allowed?'':'<span class="tag lock">Låst av Scout</span>'}<select data-set="${key}" ${allowed&&!readOnly()?'':'disabled'}>${opts.map(o=>`<option ${cfg[key]===o?'selected':''}>${o}</option>`).join('')}</select></label>`;};
+  return `<section class="panel pad col" style="gap:16px;max-width:640px"><h2>Spelinställningar</h2>${sel('language','Bordsspråk',['Svenska','Engelska'])}${sel('limit','Insatsprofil',['Standard','Låg','Hög'])}<p class="tiny muted">Regler och saldo ägs av spelmotorn. ${isN1()?'Vad operatören får ändra styrs under Operatörens val.':'Insatsprofilen är låst tills Scout och bolaget beslutat vem som får ändra den.'}</p></section>`;
+}
+function availTab(r,cfg){
+  const allowed=(isN1()||pkg(r.op).allow.pause)&&!readOnly();
+  return `<section class="panel pad col" style="gap:14px;max-width:640px"><h2>Tillgänglighet</h2><label class="chk"><input type="checkbox" data-set="open" ${cfg.open?'checked':''} ${allowed?'':'disabled'}>Bordet är öppet för spelare</label><p class="tiny muted">Ett pausat bord syns inte i lobbyn. Pågående rundor spelas klart.</p></section>`;
+}
+function allowTab(r){
+  const w=pkgWork(r.op);
+  return `<section class="panel pad col" style="gap:12px;max-width:680px"><div class="row between"><h2>Vad ${OPS[r.op].name} får ändra själva</h2><span class="tag blue">Gäller alla bolagets spelbord</span></div>
+  <p class="sm muted">Valen lagras i operatörens tilldelning och publiceras därifrån. Det som är avstängt visas för operatören som Låst av Scout.</p>
+  ${Object.keys(ALLOW_LBL).map(k=>`<label class="chk"><input type="checkbox" data-allow="${k}" ${w.allow[k]?'checked':''}>${ALLOW_LBL[k]}${k==='limit'?' <span class="tag warn">Obeslutat</span>':''}</label>`).join('')}
+  ${pkgDirty(r.op)?`<div class="notice warn">Tilldelningen är ändrad men inte publicerad. <button class="btn small" data-go="operators" data-op="${r.op}">Publicera under Operatörer › Tilldelat</button></div>`:'<p class="tiny muted">Inga opublicerade ändringar i tilldelningen.</p>'}</section>`;
+}
+const historyTab=r=>`<section class="panel" style="max-width:760px"><div class="list">${r.history.length?r.history.map(h=>`<div><strong style="min-width:90px">Version ${h.v}</strong><span style="flex:1 1 240px">${h.text}</span><span class="muted">${h.who}</span></div>`).join(''):'<div class="muted">Inga publiceringar ännu.</div>'}</div></section>`;
+const LBL={dealer:'Dealer',tableAsset:'Bordsgrafik',background:'Bakgrund',language:'Bordsspråk',limit:'Insatsprofil',open:'Tillgänglighet'};
+function diff(r){return Object.keys(LBL).filter(k=>!eq(r.working[k],r.live[k])).map(k=>{const f=v=>k==='dealer'?dealer(v).name:k==='open'?(v?'Öppet':'Pausat'):v;return `${LBL[k]}: ${f(r.live[k])} blir ${f(r.working[k])}`;});}
+function publishBar(r,changes){
+  const has=changes.length>0||!r.published;const isDirty=dirty(r);
+  const line=!has?'Publicerad version, inga ändringar':isDirty?'Osparade ändringar':r.published?'Utkast sparat, inte publicerat':'Inte publicerat ännu';
+  return `<section class="panel pad row between"><div class="col" style="flex:1 1 320px;gap:2px"><strong>${line}</strong>${changes.map(c=>`<span class="sm muted">${esc(c)}</span>`).join('')}</div>
+  <span class="row"><button class="btn" data-act="save" ${isDirty?'':'disabled'}>Spara utkast</button><button class="btn primary" data-act="review" ${has&&!isDirty&&can('tables.publish')?'':'disabled'}>Granska publicering</button></span></section>`;
+}
+function reviewPanel(r,changes){
+  const others=tablesOf(r.op).filter(o=>o.id!==r.id);
+  return `<section class="panel pad col" style="gap:14px;border:2px solid var(--accent)" aria-label="Granska publicering"><h2>Granska publicering</h2>
+  <div class="grid"><div class="col"><span class="tiny muted" style="font-weight:600">Ändringar</span>${changes.length?changes.map(c=>`<span>${esc(c)}</span>`).join(''):'<span>Första publiceringen av detta spelbord.</span>'}</div>
+  <div class="col"><span class="tiny muted" style="font-weight:600">Påverkar</span><span><strong>${esc(r.name)}</strong> <span class="muted">detta spelbord</span></span>${others.map(o=>`<span><strong>${esc(o.name)}</strong> <span class="muted">delar bolagets utseendeutkast i dag</span></span>`).join('')}</div></div>
+  ${others.length?`<div class="notice warn">Utseendeutkastet är i dag gemensamt för hela ${OPS[r.op].name}. Publiceringen tar därför med alla spelbord ovan tills servern avgränsar den per bord.</div>`:''}
+  <p class="sm muted">Pågående rundor behåller sin version. Ändringen gäller från nästa runda.</p>
+  <span class="row"><button class="btn" data-act="cancel-review">Avbryt</button><button class="btn primary" data-act="publish">Publicera</button></span></section>`;
+}
+
+// ===== Nivå 1: Operatörer =====
+function operatorsPage(){
+  const op=state.op,o=OPS[op],w=pkgWork(op),p=pkg(op);
+  const tabs=[['assign','Tilldelat'],['tables','Spelbord'],['players','Spelare'],['team','Team'],['integration','Integration'],['journal','Journal'],['settings','Inställningar']];
+  const chips=`<div class="chips" aria-label="Välj operatör">${Object.keys(OPS).map(k=>`<button class="${op===k?'on':''}" data-op="${k}">${OPS[k].name}</button>`).join('')}<button class="dash" data-act="new-op">Nytt bolag</button></div>`;
+  const group=(title,items,key)=>`<section class="panel"><h3 style="padding:12px 20px 8px">${title}</h3><div class="list">${items.map(it=>{const on=w[key].includes(it.id);const blocked=key==='dealers'&&!approved[it.id];
+    return `<div style="padding:10px 20px"><span style="flex:1 1 140px;font-weight:500">${esc(it.name||it.id)}${blocked?' <span class="tiny muted">ej godkänd</span>':''}</span><span class="tag ${on?'good':''}">${on?'Tilldelat':'Ej tilldelat'}</span><button class="btn small" data-assign="${key}" data-value="${it.id}" ${blocked?'disabled':''}>${on?'Ta bort':'Tilldela'}</button></div>`;}).join('')}</div></section>`;
+  let body='';
+  if(state.otab==='assign')body=`<p class="sm" style="max-width:720px">Det här har ${o.name} tillgång till. Operatören väljer bara bland det som finns här, och bara det som är upplåst nedan. Spelarna ser bara det som är publicerat på ett spelbord.</p>
+    <div class="grid">${group('Spel',CATALOG.games,'games')}${group('Dealers',CATALOG.dealers,'dealers')}${group('Scenmallar',CATALOG.scenes,'scenes')}${group('Bordsgrafik',CATALOG.tableAssets,'tableAssets')}${group('Bakgrunder',CATALOG.backgrounds,'backgrounds')}
+    <section class="panel pad col" style="gap:8px"><h3>Vad operatören får ändra själv</h3>${Object.keys(ALLOW_LBL).map(k=>`<label class="chk"><input type="checkbox" data-allow="${k}" ${w.allow[k]?'checked':''}>${ALLOW_LBL[k]}${k==='limit'?' <span class="tag warn">Obeslutat</span>':''}</label>`).join('')}</section></div>
+    <section class="panel pad row between">${pkgDirty(op)?`<span style="flex:1 1 320px"><strong>Tilldelningen är ändrad men inte publicerad.</strong> <span class="muted sm">Operatören ser fortfarande version ${assign[op].version}.</span></span><span class="row"><button class="btn" data-act="discard-assign">Ångra</button><button class="btn primary" data-act="publish-assign">Publicera tilldelning version ${assign[op].version+1}</button></span>`:`<span class="muted">Tilldelning version ${assign[op].version} är publicerad. Ändringar här blir en ny version.</span>`}</section>`;
+  else if(state.otab==='tables')body=`<section class="panel"><div class="list">${tablesOf(op).map(r=>`<div><strong style="flex:1 1 200px">${esc(r.name)}</strong><span class="muted" style="flex:1 1 120px">Dealer ${esc(dealer(r.live.dealer).name)}</span><span>${status(r)}</span><button class="btn small" data-go="tables" data-open="${r.id}">Öppna spelbord</button></div>`).join('')||'<div class="muted">Inga spelbord.</div>'}
+    <div><p class="sm muted" style="flex:1 1 320px">Nya spelbord kan bara använda det som är tilldelat ${o.name}.</p><button class="btn primary" data-act="new-table">Nytt spelbord för ${o.name}</button></div></div></section>`;
+  else if(state.otab==='players')body=`<div class="notice warn">Inte anslutet ännu. I dag skapar Scout spelarkonton under Spelarkonton, och de är inte knutna till operatören. I målbilden tillhör varje spelare en operatör och listas här, och operatören ser samma lista i sin portal.</div>`;
+  else if(state.otab==='team')body=teamList(op,true);
+  else if(state.otab==='integration')body=`<div class="grid"><section class="panel"><div class="pad row between"><h2>API-nycklar</h2><button class="btn small" data-act="new-key">Skapa nyckel</button></div><div class="list"><div><strong style="flex:0 0 110px">Produktion</strong><span class="muted" style="flex:1 1 120px">Slutar på …a91f</span><span class="tag good">Aktiv</span><span class="row"><button class="btn small">Rotera</button><button class="btn small danger">Återkalla</button></span></div><div><strong style="flex:0 0 110px">Test</strong><span class="muted" style="flex:1 1 120px">Slutar på …02c7</span><span class="tag good">Aktiv</span><span class="row"><button class="btn small">Rotera</button><button class="btn small danger">Återkalla</button></span></div></div></section>
+    <section class="panel pad col" style="gap:10px"><h2>Prova kopplingen</h2><p class="sm muted">Starta en testsession eller ge demokrediter till ett testkonto.</p><span class="row"><button class="btn">Starta testsession</button><button class="btn">Ge demokrediter</button></span></section></div><p class="sm muted">I operatörsportalen ser ${o.name} bara status och maskerade nycklar. Nycklarna hanteras här.</p>`;
+  else if(state.otab==='journal')body=`<section class="panel"><div class="list">${journal[op].map(j=>`<div><span class="muted" style="flex:0 0 90px">${j.t}</span><span style="flex:1 1 300px">${esc(j.text)}</span></div>`).join('')}</div></section>`;
+  else body=`<div class="col" style="gap:16px;max-width:760px"><section class="panel pad row between"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Stäng av operatören</h3><span class="sm muted">Teamet stängs ute tills bolaget återaktiveras.</span></div><button class="btn">Stäng av</button></section><section class="panel pad row between"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Flytta till papperskorgen</h3><span class="sm muted">Bolaget och dess spelbord kan återställas därifrån.</span></div><button class="btn danger">Flytta till papperskorgen</button></section></div>`;
+  return levelPill()+chips+header(o.name,`Aktiv operatör. ${tablesOf(op).length} spelbord, ${team[op].length} i teamet, tilldelning version ${assign[op].version}.`,`<button class="btn" data-act="preview-portal">Förhandsvisa portalen i läsläge</button>`)+
+  `<div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${state.otab===id}" class="${state.otab===id?'active':''}" data-otab="${id}">${l}${id==='assign'&&pkgDirty(op)?' •':''}</button>`).join('')}</div>${body}`;
+}
+
+// ===== Team (delas av båda nivåerna, olika rättigheter) =====
+function teamList(op,scout){
+  const canInvite=scout||can('team.invite'),canRoles=scout||can('team.roles.assign'),canSusp=scout||can('team.suspend');
+  const rows=team[op].map(m=>`<div><div class="col" style="flex:1 1 200px;gap:2px"><strong>${esc(m.name)}</strong><span class="tiny muted">${m.last?'Sista administratören. Kan inte stängas av.':m.role==='editor'?'Ändrar och publicerar spelbord':m.role==='viewer'?'Ser publicerat innehåll':'Alla bolagets behörigheter'}</span></div><span style="flex:0 0 130px">${ROLE_NAME[m.role]}</span><span class="tag ${m.status==='Aktiv'?'good':''}">${m.status}</span>
+    ${m.last?'':`<span class="row">${canRoles&&(scout||m.role!=='admin')?`<button class="btn small" data-role="${m.id}">Byt roll</button>`:''}${canSusp?`<button class="btn small ${m.status==='Aktiv'?'danger':''}" data-susp="${m.id}">${m.status==='Aktiv'?'Stäng av':'Återaktivera'}</button>`:''}</span>`}</div>`).join('');
+  const inv=invites[op].map((i,ix)=>`<div><div class="col" style="flex:1 1 200px;gap:2px"><strong>${esc(i.email)}</strong><span class="tiny muted">Inbjudan skickad ${i.sent}</span></div><span style="flex:0 0 130px">${ROLE_NAME[i.role]}</span><span class="tag warn">Inbjuden</span>${canInvite?`<span class="row"><button class="btn small" data-resend="${ix}">Skicka igen</button><button class="btn small" data-revoke="${ix}">Dra tillbaka</button></span>`:''}</div>`).join('');
+  const form=state.invite?`<div style="background:#f6f9ee"><label class="field" style="flex:2 1 240px">E-postadress<input type="email" id="inv-email" placeholder="namn@bolag.se"></label><label class="field" style="flex:1 1 160px">Roll<select id="inv-role"><option value="editor">Redaktör</option><option value="viewer">Läsare</option>${scout?'<option value="admin">Administratör</option>':''}</select></label><button class="btn dark" data-act="send-invite">Skicka inbjudan</button><button class="btn ghost" data-act="invite">Avbryt</button></div>`:'';
+  return `<section class="panel"><div class="pad row between"><h2>Team hos ${OPS[op].name}</h2>${canInvite?`<button class="btn primary" data-act="invite">Bjud in</button>`:''}</div><div class="list">${form}${rows}${inv}</div></section>
+  <p class="sm muted">${scout?'Bara Scout kan utse administratör. Den sista administratören kan inte stängas av.':'Administratör har alla bolagets behörigheter och utses bara av Scout. Redaktör ser inte Team eller Spelare. Den sista administratören kan inte stängas av.'}</p>`;
+}
+
+// ===== Nivå 1: Dealers =====
+function dealersN1(){
+  const d=dealer(state.dealer);const tabs=[['klipp','Klipp'],['tal','Röst och tal'],['scen','Scen'],['skapa','Skapa material'],['anv','Används av'],['inst','Inställningar']];
+  const chips=`<div class="chips" aria-label="Välj dealer">${CATALOG.dealers.map(x=>`<button class="${state.dealer===x.id?'on':''}" data-dealer="${x.id}">${x.name}</button>`).join('')}<button class="dash" data-act="new-dealer">Ny dealer</button></div>`;
+  const usedBy=Object.values(records).filter(r=>r.live.dealer===d.id);const assignedTo=Object.keys(OPS).filter(op=>pkg(op).dealers.includes(op&&d.id));
+  const groups=[['Vila',[['Grundloop','3 klipp','Klart'],['Blick och nickning','4 varianter','Klart']]],['Spelhandlingar',[['Utdelning, plats 1','2 varianter','Klart'],['Utdelning, plats 2–7','6 platser',d.id==='viktor'?'Saknas':'Saknar variant'],['Dealerns kort','Öppet och dolt',d.id==='viktor'?'Saknas':'Klart'],['Visa dolt kort','2 varianter',d.id==='viktor'?'Saknas':'Klart']]],['Repliker',[['Välkommen','Svenska',d.clips.repliker==='Klart'?'Klart':'Klart'],['Lycka till','2 tagningar',d.clips.repliker==='Saknas'?'Saknas':'Klart'],['Resultat','3 situationer',d.clips.repliker==='Klart'?'Klart':'Saknas']]],['Övergångar',[['Till och från skon','2 klipp','Klart'],['Tillbaka till vila','2 klipp','Klart']]]];
+  let body='';
+  if(state.dtab==='klipp')body=groups.map(([t,items])=>`<section class="col" style="gap:10px"><h3>${t}</h3><div class="cards">${items.map(([n,s,st])=>`<div><strong>${n}</strong><span class="tiny muted">${s}</span><span>${tagFor(st)}</span></div>`).join('')}</div></section>`).join('')+
+    `<div class="row" style="padding-top:6px;border-top:1px solid var(--line)"><button class="btn">Visa som karta</button><button class="btn">Körregler</button></div>`;
+  else if(state.dtab==='tal'){const tp={a:'Välkommen',b:'Lycka till',c:'Resultat, vinst'};body=`<div class="grid"><section class="panel pad col" style="gap:10px"><h2>Granskning</h2><p class="sm muted">Talpar som ska godkännas innan de används.</p>${Object.keys(tp).map(k=>`<div class="row" style="padding:10px 0;border-top:1px solid var(--soft)"><span style="flex:1 1 140px;font-weight:600">${tp[k]}</span>${tagFor(state.talpar[k])}<button class="btn small" data-tal="${k}" data-value="Godkänt">Godkänn</button><button class="btn small danger" data-tal="${k}" data-value="Underkänt">Underkänn</button></div>`).join('')}</section>
+    <section class="panel pad col" style="gap:10px"><h2>Bygg tal</h2><label class="field">Språk<select><option>Svenska</option><option>Engelska</option></select></label><button class="btn" style="align-self:flex-start">Bygg tal</button></section>
+    <section class="panel pad col" style="gap:10px"><h2>Svarsbibliotek</h2><p class="sm muted">Inspelade svar sorterade i kategorier.</p><button class="btn" style="align-self:flex-start">Öppna svarsbiblioteket</button></section>
+    <section class="panel pad col" style="gap:10px"><h2>Testa dialog</h2><p class="sm muted">Chatta med dealern och lyssna på genererat tal.</p><button class="btn" style="align-self:flex-start">Starta dialogtest</button></section></div>`;}
+  else if(state.dtab==='scen')body=`<section class="panel pad col" style="gap:12px"><h2>Scen för ${d.name}</h2><p class="sm muted">Placering av dealern, bordsgrafiken, korten och spelkontrollerna. Mallen delas mellan spelbord; en ändring påverkar alla bord som använder den.</p><div class="list" style="border:1px solid var(--line);border-radius:12px">${CATALOG.scenes.map(sc=>`<div><strong style="flex:1 1 200px">${sc.name}</strong><span class="muted" style="flex:1 1 160px">Används av ${Object.values(records).filter(r=>r.live.dealer===d.id).length} spelbord med ${d.name}</span><button class="btn small">Öppna sceneditorn</button></div>`).join('')}</div><p class="tiny muted">Samma editor som under Scenmallar, öppnad med dealern förvald.</p></section>`;
+  else if(state.dtab==='skapa')body=`<section class="panel pad col" style="gap:14px"><div class="row between"><div class="col" style="gap:2px"><h2>Skapa nytt material för ${d.name}</h2><p class="sm muted">Körs som jobb hos videotjänsten. Resultatet hamnar under Klipp när du godkänt det.</p></div><button class="btn primary">Starta nytt jobb</button></div>
+    <ol class="steps"><li><span class="tiny muted" style="font-weight:600">Steg 1</span><strong>Ankarbild</strong><span class="sm muted">Dealerns utseende som allt utgår från.</span></li><li><span class="tiny muted" style="font-weight:600">Steg 2</span><strong>Förhandsvisning</strong><span class="sm muted">Kort prov innan ett dyrt jobb.</span></li><li><span class="tiny muted" style="font-weight:600">Steg 3</span><strong>Genereringsjobb</strong><span class="sm muted">Klippen skapas och följs här.</span></li><li><span class="tiny muted" style="font-weight:600">Steg 4</span><strong>Välj pose</strong><span class="sm muted">Godkänd pose blir standard.</span></li></ol><div class="notice">Inga pågående jobb för ${d.name}.</div></section>`;
+  else if(state.dtab==='anv')body=`<section class="panel"><div class="list">${usedBy.map(r=>`<div><strong style="flex:1 1 200px">${esc(r.name)}</strong><span class="muted" style="flex:1 1 140px">${OPS[r.op].name}</span><span class="sm">Spelbord</span></div>`).join('')}${Object.keys(OPS).filter(op=>pkg(op).dealers.includes(d.id)).map(op=>`<div><strong style="flex:1 1 200px">${OPS[op].name}</strong><span class="muted" style="flex:1 1 140px">tilldelning v${assign[op].version}</span><span class="sm">Tilldelad</span></div>`).join('')||'<div class="muted">Används inte ännu.</div>'}</div></section>`;
+  else body=`<div class="col" style="gap:16px;max-width:760px"><section class="panel pad row between"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Godkännande</h3><span class="sm muted">${approved[d.id]?'Dealern är godkänd och kan tilldelas operatörer.':'Dealern är inte godkänd och kan inte tilldelas förrän klipp och tal är kompletta.'}</span></div><button class="btn ${approved[d.id]?'':'primary'}" data-act="approve">${approved[d.id]?'Dra tillbaka godkännande':'Godkänn dealer'}</button></section>
+    <section class="panel pad row between"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Arkivera dealer</h3><span class="sm muted">Kan inte väljas till nya spelbord. Publicerade bord påverkas inte.</span></div><button class="btn">Arkivera</button></section>
+    <section class="panel pad col" style="gap:10px"><div class="row between"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Radera dealer</h3><span class="sm muted">Kontrollerar först var dealern används.</span></div><button class="btn danger" data-act="del-check">Radera</button></div>${state.delChecked?`<div class="notice red" role="alert">${d.name} kan inte raderas: används av ${usedBy.length} spelbord och är tilldelad ${Object.keys(OPS).filter(op=>pkg(op).dealers.includes(d.id)).length} operatör(er). Arkivera i stället.</div>`:''}</section></div>`;
+  return levelPill()+chips+header(d.name,`${d.game}. ${approved[d.id]?'Godkänd.':'Inte godkänd.'} Används av ${usedBy.length} spelbord.`,`<button class="btn primary" data-act="add-clips">Lägg till klipp</button>`)+
+  (state.material?`<section class="panel pad col" style="gap:12px;border:2px solid var(--accent)"><h2>Lägg till klipp för ${d.name}</h2><label class="field" style="padding:22px;border:1px dashed #b9c2b3;border-radius:12px;background:#f6f9ee">Välj videofiler<input type="file" multiple accept="video/*"></label><p class="sm muted">AI föreslår situation för varje klipp. Inget sparas förrän du godkänt förslagen.</p><span class="row"><button class="btn">Importera en hel mapp med assistenten</button><button class="btn ghost" data-act="add-clips">Stäng</button></span></section>`:'')+
+  `<div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${state.dtab===id}" class="${state.dtab===id?'active':''}" data-dtab="${id}">${l}</button>`).join('')}</div>${body}`;
+}
+
+// ===== Nivå 2: Dealers, Spelare, Rapporter, Integration =====
+function dealersN2(){
+  const p=pkg('john');
+  return levelPill()+header('Era dealers','Tilldelade av Scout. Ni väljer dealer per spelbord; klipp, tal och beteenden sköter Scout.')+
+  `<div class="grid">${p.dealers.map(id=>{const d=dealer(id);return `<section class="panel pad col" style="gap:12px"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:18px;background:#d3dbc6;color:#2b332e">${d.name[0]}</span><div class="col" style="gap:2px"><h2>${d.name}</h2><span class="tiny muted">${d.game} · ${d.langs.join(', ')}</span></div></div>
+    <dl class="kv"><dt>Vila</dt><dd>${tagFor(d.clips.vila)}</dd><dt>Spelhandlingar</dt><dd>${tagFor(d.clips.handlingar)}</dd><dt>Repliker</dt><dd>${tagFor(d.clips.repliker)}</dd><dt>Används på</dt><dd>${tablesOf('john').filter(r=>r.live.dealer===d.id).map(r=>esc(r.name)).join(', ')||'Inget bord ännu'}</dd></dl><button class="btn small" style="align-self:flex-start" data-act="preview-dealer" data-value="${d.id}">Förhandsvisa</button></section>`;}).join('')}</div>
+  <div class="notice">Vill ni ha en annan dealer, ett annat språk eller nya repliker? <button class="btn small ghost" data-act="material">Begär från Scout</button></div>`;
+}
+const playersN2=()=>levelPill()+header('Spelare','Era spelare och deras transaktioner.')+`<div class="notice warn"><strong>Inte anslutet ännu.</strong> Spelare och transaktioner kopplas till operatören när integrationen är klar. Tills dess visas inga konton här, och inga låtsasdata.</div><section class="panel"><div class="list"><div class="tiny muted" style="font-weight:600"><span style="flex:1 1 200px">Spelare</span><span style="flex:0 0 110px">Status</span><span style="flex:1 1 160px">Senaste spel</span></div><div class="muted">Listan fylls på när kopplingen finns. Här kommer ni kunna spärra en spelare och se transaktioner, om er roll tillåter det.</div></div></section>`;
+function reportsN2(){
+  const pubs=journal.john.filter(j=>/publicerade/.test(j.text)).length;
+  const card=(t,v,sub,ok)=>`<section class="panel pad stat"><span class="tiny muted" style="font-weight:600">${t}</span><b>${v}</b><span class="tiny">${ok?sub:`<span class="tag warn">Inte anslutet</span> ${sub}`}</span></section>`;
+  return levelPill()+header('Rapporter','Det som har en datakoppling visas med siffror. Resten visas som planerat, utan påhittade värden.')+`<div class="grid">${card('Publiceringar',pubs,'Från journalen',true)}${card('Spelsessioner','–','Kräver spelarkoppling',false)}${card('Omsättning, demokrediter','–','Kräver transaktionskoppling',false)}${card('Dealerns talanvändning','–','Kräver mätning från spelservern',false)}</div>
+  <section class="panel"><div class="pad"><h2>Händelser</h2></div><div class="list">${journal.john.map(j=>`<div><span class="muted" style="flex:0 0 90px">${j.t}</span><span style="flex:1 1 300px">${esc(j.text)}</span></div>`).join('')}</div></section>`;
+}
+const integrationN2=()=>levelPill()+header('Integration','Hur era spelare når borden, och hur ni når Scout.')+`<div class="grid">
+  <section class="panel pad col" style="gap:10px"><h2>Status</h2><div class="row"><span class="tag blue">Testläge</span><span class="sm">Kopplingen är inte i drift. Spelare kan nås via testsession.</span></div><dl class="kv" style="margin-top:6px"><dt>Spel</dt><dd>${pkg('john').games.join(', ')}</dd><dt>Startadress</dt><dd>[launch-adress från Scout]</dd><dt>Plånbok och KYC</dt><dd>Hos er. Scout hanterar inga pengar.</dd></dl></section>
+  <section class="panel pad col" style="gap:10px"><h2>API-nycklar</h2><p class="sm muted">Skapas och roteras av Scout. Ni ser status och kan begära rotation.</p><div class="list" style="border:1px solid var(--line);border-radius:12px"><div><strong style="flex:0 0 110px">Produktion</strong><span class="muted" style="flex:1 1 120px">Slutar på …a91f</span><span class="tag good">Aktiv</span>${can('integration.request')?'<button class="btn small" data-act="rotate">Begär rotation</button>':''}</div><div><strong style="flex:0 0 110px">Test</strong><span class="muted" style="flex:1 1 120px">Slutar på …02c7</span><span class="tag good">Aktiv</span></div></div></section>
+  <section class="panel pad col" style="gap:10px"><h2>Prova</h2><p class="sm muted">Öppnar ett publicerat spelbord i en testsession med demokrediter.</p><button class="btn" data-act="testsession" style="align-self:flex-start">Starta testsession</button></section>
+  <section class="panel pad col" style="gap:10px"><h2>Kontakt</h2><p class="sm">Teknisk kontakt hos Scout: [kontakt]. Integrationsguide: [länk].</p></section></div>`;
+
+// ===== Nivå 1: Scenmallar, Material, System, Hjälp =====
+const scenesN1=()=>levelPill()+header('Scenmallar','Placering av dealer, bordsgrafik, kort och spelkontroller. En mall kan användas av flera spelbord.',`<button class="btn primary">Ny scenmall</button>`)+`<section class="panel"><div class="list">${CATALOG.scenes.map(s=>`<div><strong style="flex:1 1 200px">${s.name}</strong><span class="muted" style="flex:1 1 200px">Används av ${Object.values(records).length} spelbord, tilldelad ${Object.keys(OPS).filter(op=>pkg(op).scenes.includes(s.id)).length} operatörer</span><button class="btn small">Öppna sceneditorn</button></div>`).join('')}</div></section><div class="notice">En ändring i mallen påverkar alla spelbord som använder den. Granskningen visar vilka innan publicering.</div>`;
+const materialN1=()=>levelPill()+header('Material','Bordsgrafik och bakgrunder. Enda stället där material laddas upp. Dealerklipp finns under Dealers.',`<button class="btn primary">Ladda upp</button>`)+`<div class="cards">${[...CATALOG.tableAssets.map(a=>({...a,kind:'Bordsgrafik',key:'tableAssets'})),...CATALOG.backgrounds.map(a=>({...a,kind:'Bakgrund',key:'backgrounds'}))].map(a=>`<div><span style="display:block;height:60px;border-radius:8px;background:${a.fill}"></span><strong>${a.id}</strong><span class="tiny muted">${a.kind} · tilldelad ${Object.keys(OPS).filter(op=>pkg(op)[a.key].includes(a.id)).map(op=>OPS[op].name).join(', ')||'ingen'}</span></div>`).join('')}</div><p class="sm muted">Ett material är inte ett spelbord. Samma fil kan användas av flera spelbord utan nya kopior.</p>`;
+function systemN1(){
+  const tabs=[['drift','Drift'],['ai','AI-agenter'],['pers','Scout-personal'],['ber','Beroenden'],['lobby','Intern lobby']];
+  const body={drift:`<section class="panel"><div class="list"><div><strong style="flex:1 1 220px">Spelservern</strong><span class="muted" style="flex:1 1 200px">Spelmotor och livetrafik</span><span class="tag good">Ansluten</span></div><div><strong style="flex:1 1 220px">Skor</strong><span class="muted" style="flex:1 1 200px">Kortlekarnas status per spelbord</span><button class="btn small">Visa skor</button></div><div><strong style="flex:1 1 220px">Dealertal, GPU</strong><span class="muted" style="flex:1 1 200px">Snabbare tal, högre kostnad</span><button class="btn small">Av</button></div></div></section>`,
+    ai:`<section class="panel"><div class="list">${[['Dealerdialog','Svarar spelare och skapar tal'],['Klippförslag','Föreslår situation för uppladdade klipp'],['Importassistent','Mappar en hel mapp med dealermaterial']].map(([a,b])=>`<div><strong style="flex:0 0 160px">${a}</strong><span class="muted" style="flex:1 1 200px">${b}</span><span>[modell]</span><button class="btn small">Byt modell</button></div>`).join('')}</div></section>`,
+    pers:`<section class="panel"><div class="pad row between"><h2>Scout-personal</h2><button class="btn primary">Bjud in personal</button></div><div class="list"><div><strong style="flex:1 1 200px">Administratör A</strong><span style="flex:0 0 140px">Administratör</span><span class="tag good">Aktiv</span></div><div><strong style="flex:1 1 200px">Innehållsansvarig B</strong><span style="flex:0 0 140px">Redaktör</span><span class="tag good">Aktiv</span></div></div></section><p class="sm muted">Bara Scouts egna konton på nivå 1. Operatörernas team och spelare hanteras under Operatörer.</p>`,
+    ber:`<label class="field" style="max-width:560px">Sök dealer, material, scenmall eller spelbord<input type="search" value="PAOW"></label><section class="panel"><div class="list">${Object.values(records).filter(r=>r.live.dealer==='paow').map(r=>`<div><strong style="flex:1 1 200px">${esc(r.name)}</strong><span class="muted">Spelbord hos ${OPS[r.op].name}</span></div>`).join('')}<div><strong style="flex:1 1 200px">Blackjack, tre lager</strong><span class="muted">Scenmall</span></div></div></section>`,
+    lobby:`<section class="panel pad row between" style="max-width:760px"><div class="col" style="flex:1 1 320px;gap:2px"><h3>Intern lobby</h3><span class="sm muted">Visar lobbyn med allt registrerat innehåll, även opublicerat. Spelare ser bara publicerat.</span></div><button class="btn">Öppna intern lobby</button></section>`}[state.stab];
+  return levelPill()+header('System','Tekniska verktyg för Scout. De ligger inte i vägen för det dagliga arbetet.')+`<div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button role="tab" aria-selected="${state.stab===id}" class="${state.stab===id?'active':''}" data-stab="${id}">${l}</button>`).join('')}</div>${body}`;
+}
+function helpPage(){
+  const q=isN1()?[['Vad är skillnaden mellan nivå 1 och nivå 2?','Nivå 1 är Scouts egen arbetsyta: skapa dealers, klipp, mallar och material, tilldela till operatörer och publicera. Nivå 2 är operatörens portal: välja bland det som är tilldelat och upplåst, för egna spelbord.'],['Varför kan jag inte välja en dealer på ett spelbord?','Bara dealers i operatörens publicerade tilldelning kan väljas, även av Scout. Tilldela först under Operatörer › Tilldelat och publicera tilldelningen.'],['Vad är Operatörens val?','Vilka inställningar operatören får ändra själv. Lagras i tilldelningen, inte på spelbordet.'],['Vad händer när jag publicerar?','Granskningen visar ändringar och berörda spelbord. Pågående rundor spelas klart på den gamla versionen.']]
+  :[['Vad är ett spelbord?','Ett konkret spel hos er, med dealer, utseende och inställningar. Spelare ser bara publicerade spelbord.'],['Vad får vi ändra?','Det Scout har tilldelat och låst upp: bakgrund, bordsgrafik, dealer, bordsspråk och om bordet är öppet. Låsta val visas som Låst av Scout.'],['Vad händer när vi publicerar?','Ni granskar ändringarna och vilka bord som påverkas. Pågående rundor spelas klart.'],['Varför ser jag inte Team eller Spelare?','Redaktör och läsare har inte de behörigheterna. En administratör kan ändra roller.'],['Hur får vi nytt material?','Begär från Scout här i portalen. Scout godkänner och tilldelar; ni väljer sedan på spelbordet.']];
+  return levelPill()+header(isN1()?'Hjälp':'Hjälp och kontakt','Färre begrepp, tydligare ansvar.')+`<section class="panel pad col" style="gap:4px;max-width:760px">${q.map(([a,b])=>`<details><summary style="min-height:44px;display:flex;align-items:center;font-weight:600;cursor:pointer">${a}</summary><p class="sm muted" style="padding:0 0 12px">${b}</p></details>`).join('')}</section>${isN1()?'':'<div class="row"><button class="btn" data-act="material">Begär material från Scout</button><button class="btn" data-go="integration">Teknisk kontakt</button></div>'}`;
+}
+const teamN2=()=>levelPill()+header('Team','Vem som har åtkomst till Johns Bet.')+teamList('john',false);
+const materialDialog=()=>`<section class="panel pad col" style="gap:12px;border:2px solid var(--accent)"><h2>Begär material från Scout</h2><p class="sm muted">Scout godkänner och tilldelar; ärendet syns i journalen. E-post och ärendehantering är inte inkopplade i skissen.</p><label class="field">Vad behöver ni?<select><option>Annan dealer</option><option>Ny bakgrund</option><option>Ny bordsgrafik</option><option>Fler språk eller repliker</option><option>Ett spelbord till</option></select></label><span class="row"><button class="btn primary" data-act="send-material">Skicka till Scout</button><button class="btn ghost" data-act="material">Avbryt</button></span></section>`;
+
+// ===== Render =====
+function render(){
+  const n1={overview:overviewPage,tables:tablesPage,operators:operatorsPage,dealers:dealersN1,scenes:scenesN1,material:materialN1,system:systemN1,help:helpPage};
+  const n2={overview:overviewPage,tables:tablesPage,dealers:dealersN2,players:playersN2,reports:reportsN2,team:teamN2,integration:integrationN2,help:helpPage};
+  const pages=isN1()?n1:n2;const guard={dealers:'dealers.read',players:'players.read',reports:'reports.read',team:'team.read',integration:'integration.read'};
+  if(!pages[state.page]||(!isN1()&&guard[state.page]&&!can(guard[state.page])))state.page='overview';
+  $('#app').innerHTML=`<div class="layout">${side()}<main><div class="wrap">${pages[state.page]()}${state.material&&!isN1()?materialDialog():''}</div></main></div>${state.toast?`<div class="toast" role="status">${esc(state.toast)}</div>`:''}`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.op!==undefined){state.op=d.op;state.otab=d.go?'assign':state.otab;}
+  if(d.dealer!==undefined){state.dealer=d.dealer;state.delChecked=false;}
+  if(d.open!==undefined){state.page='tables';state.table=d.open;state.tab='look';state.review=false;return render();}
+  if(d.go)return go(d.go);
+  if(d.back!==undefined)return go('tables');
+  if(d.filter){state.filter=d.filter;return render();}
+  if(d.tab){state.tab=d.tab;state.review=false;return render();}
+  if(d.otab){state.otab=d.otab;state.invite=false;return render();}
+  if(d.dtab){state.dtab=d.dtab;state.delChecked=false;return render();}
+  if(d.stab){state.stab=d.stab;return render();}
+  if(d.dealer!==undefined)return render();
+  if(d.set&&b.tagName==='BUTTON'){table().working[d.set]=d.value;state.review=false;return render();}
+  if(d.assign){const w=pkgWork(state.op);const i=w[d.assign].indexOf(d.value);if(i>=0)w[d.assign].splice(i,1);else w[d.assign].push(d.value);return render();}
+  if(d.tal){state.talpar[d.tal]=d.value;return render();}
+  if(d.role){const m=team[curOp()].find(x=>x.id==d.role);m.role=m.role==='editor'?'viewer':m.role==='viewer'?(isN1()?'admin':'editor'):'editor';if(m.role==='admin'){team[curOp()].forEach(x=>{if(x.id!=m.id&&x.role==='admin')x.last=false;});}return toast(`${m.name} är nu ${ROLE_NAME[m.role].toLowerCase()}.`);}
+  if(d.susp){const m=team[curOp()].find(x=>x.id==d.susp);m.status=m.status==='Aktiv'?'Avstängd':'Aktiv';return toast(`${m.name} är ${m.status.toLowerCase()}.`);}
+  if(d.resend!==undefined)return toast('Inbjudan skickad igen.');
+  if(d.revoke!==undefined){invites[curOp()].splice(+d.revoke,1);return toast('Inbjudan tillbakadragen.');}
+  switch(d.act){
+    case 'save':{const r=table();r.saved=clone(r.working);return toast('Utkast sparat.');}
+    case 'review':state.review=true;return render();
+    case 'cancel-review':state.review=false;return render();
+    case 'publish':{const r=table();const ch=diff({working:r.saved,live:r.live}).join(', ')||'Första publiceringen';r.live=clone(r.saved);r.version++;r.published=true;r.history.unshift({v:r.version,text:ch,who:isN1()?'Scout Gaming':ROLE_NAME[state.role]});journal[r.op].unshift({t:'[datum]',text:`${isN1()?'Scout Gaming':ROLE_NAME[state.role]} publicerade ${r.name}, version ${r.version}.`});state.review=false;return toast(`Publicerat. Version ${r.version} gäller från nästa runda.`);}
+    case 'publish-assign':{const a=assign[state.op];a.published=clone(a.working);a.version++;journal[state.op].unshift({t:'[datum]',text:`Scout Gaming publicerade tilldelning version ${a.version}.`});return toast(`Tilldelning version ${a.version} publicerad. ${OPS[state.op].name} ser den nu i sin portal.`);}
+    case 'discard-assign':{const a=assign[state.op];a.working=clone(a.published);return render();}
+    case 'new-table':{const p=pkg(state.op);if(!p.dealers.length)return toast('Tilldela och publicera en dealer först.');const n=Object.keys(records).length+1;const id='t'+n;records[id]=mkTable(id,state.op,`Nytt spelbord ${n}`,false,{dealer:p.dealers[0],tableAsset:p.tableAssets[0]||'Oak',background:p.backgrounds[0]||'Midnight',open:false});state.page='tables';state.table=id;state.tab='look';return render();}
+    case 'approve':approved[state.dealer]=!approved[state.dealer];if(!approved[state.dealer]){Object.keys(OPS).forEach(op=>{const w=pkgWork(op);w.dealers=w.dealers.filter(x=>x!==state.dealer);});}return render();
+    case 'del-check':state.delChecked=true;return render();
+    case 'add-clips':state.material=!state.material;return render();
+    case 'new-dealer':return alert('Ny dealer: namn, spel och språk. Därefter Skapa material, Lägg till klipp, Röst och tal, Godkänn, Tilldela. Inte implementerad i skissen.');
+    case 'new-op':return alert('Nytt bolag: namn, slug, standardroller och en första administratör. Inte implementerad i skissen.');
+    case 'new-key':return toast('Ny nyckel skapad. Den visas bara en gång. (Skiss)');
+    case 'preview':return alert('Provvisning öppnar samma spelare som spelarna ser, med sparade val. Inte implementerad i skissen.');
+    case 'preview-dealer':return alert(`Förhandsvisning av ${dealer(d.value).name}: vila, utdelning och repliker. Inte implementerad i skissen.`);
+    case 'preview-portal':return alert('Öppnar operatörsportalen som en läsare hos bolaget ser den, med serverbegränsning och loggning. Ingen rollväxling. Byt till Nivå 2 överst för att se portalen i skissen.');
+    case 'invite':state.invite=!state.invite;return render();
+    case 'send-invite':{const em=$('#inv-email').value.trim()||'[e-postadress]';invites[curOp()].push({email:em,role:$('#inv-role').value,sent:'[datum]'});state.invite=false;journal[curOp()].unshift({t:'[datum]',text:`${isN1()?'Scout Gaming':ROLE_NAME[state.role]} bjöd in ${em}.`});return toast('Inbjudan skickad.');}
+    case 'material':state.material=!state.material;return render();
+    case 'send-material':state.material=false;journal.john.unshift({t:'[datum]',text:'Johns Bet begärde material från Scout.'});return toast('Skickat till Scout. Ni ser svaret i journalen.');
+    case 'rotate':return toast('Begäran om rotation skickad till Scout.');
+    case 'testsession':return alert('Startar en testsession med demokrediter via Scouts API. Inte implementerad i skissen.');
+  }
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='who'){const [lvl,role]=el.value.split('-');state.level=lvl;state.role=role||'admin';state.page='overview';state.table=null;state.review=false;state.material=false;Object.values(records).forEach(r=>r.working=clone(r.saved));return render();}
+  if(el.dataset.allow){pkgWork(isN1()&&state.page==='operators'?state.op:table().op).allow[el.dataset.allow]=el.checked;return render();}
+  if(el.dataset.set&&state.table){const r=table();r.working[el.dataset.set]=el.type==='checkbox'?el.checked:el.value;state.review=false;render();}
+});
+$('#reset').addEventListener('click',()=>{resetData();$('#who').value='n1';render();});
+render();
+</script>
+</body>
+</html>

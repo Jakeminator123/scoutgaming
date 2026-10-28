@@ -178,12 +178,11 @@ const authEntryConfig = authBase => ({
 const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/admin/' + mode,
   { headers: { host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', ...extra } });
 
-test('standalone auth documents move to configured public Studio before rendering with exact state and token', async () => {
+test('standalone auth documents move to configured public Studio before rendering with exact returnTo and token', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   for (const authBase of ['/api/auth', '/studio/api/auth']) {
     const config = authEntryConfig(authBase);
-    for (const kind of ['game', 'lab']) {
-      const returnTo = '/api/bo/' + kind + '-login?state=' + 'a'.repeat(64);
+    for (const returnTo of ['/studio/administration', '/admin/rooms?operator=north&table=room-one']) {
       const destination = nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'login'), config, { returnTo });
       let thrown; try { navigation.redirect(destination); } catch (error) { thrown = error; }
       const actual = new URL(locationFromNext(thrown, authBase === '/api/auth' ? '' : '/studio'));
@@ -204,7 +203,7 @@ test('standalone auth documents move to configured public Studio before renderin
 test('auth-entry redirects reject spoofed origins and retain only validated returnTo or scalar bearer', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   const config = authEntryConfig('/studio/api/auth'), request = entryRequest('studio.fixture.invalid', 'login');
-  for (const returnTo of ['https://attacker.invalid', '//attacker.invalid', '/studio?draft=private', '/api/bo/game-login?state=' + 'a'.repeat(63), ['x']]) {
+  for (const returnTo of ['https://attacker.invalid', '//attacker.invalid', '/studio?draft=private', '/api/bo/game-login?state=' + 'a'.repeat(63), '/api/bo/lab-login?state=' + 'a'.repeat(64), ['x']]) {
     const url = new URL(nextStudioAuthEntryRedirect(request, config, { returnTo }));
     assert.equal(url.searchParams.get('returnTo'), '/admin');
     assert.equal(url.origin, config.allowedOrigins[0]);
@@ -220,7 +219,7 @@ test('auth-entry redirects reject spoofed origins and retain only validated retu
 test('actual login and password SSR routes redirect standalone before any auth form and preserve public rewrite rendering', async () => {
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   for (const authBase of ['/api/auth', '/studio/api/auth']) for (const mode of ['login', 'set-password']) {
-    const config = authEntryConfig(authBase), token = 'b'.repeat(43), returnTo = '/api/bo/lab-login?state=' + 'a'.repeat(64);
+    const config = authEntryConfig(authBase), token = 'b'.repeat(43), returnTo = '/admin/rooms?operator=north&table=room-one';
     for (const [host, extra, moved] of [
       ['studio.fixture.invalid', {}, true], ['game.fixture.invalid', {}, false],
       ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}, false],
@@ -315,7 +314,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
-      for(const section of [{path:'/control/clips',target:'/admin/clips'}, {path:'/control/administration',target:'/admin/media-review',tab:'media-review'}]) for(const legacy of [false,true]) {
+      for(const section of [{path:'/control/clips',target:'/admin/clips'}, {path:'/control/administration',target:'/admin/clips',tab:'media-review'}]) for(const legacy of [false,true]) {
         const query={...(section.tab?{tab:section.tab}:{}),[legacy&&section.path==='/control/clips'?'dealerId':'dealer']:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid',view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'};
         const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+section.path+'?'+new URLSearchParams(query)),{basePath});
         assert.equal(new URL(target,'https://game.fixture.invalid').pathname,section.target);
@@ -526,7 +525,7 @@ test('retired Administration entries preserve context across mounts and flags wi
   for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://studio.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries({operations:'/admin/drift',accounts:'/admin/admin/accounts',partners:'/admin/admin/api',finance:'/admin/ekonomi',tables:'/admin/rooms','media-review':'/admin/media-review'})){
+    for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries({operations:'/admin/drift',accounts:'/admin/admin/accounts',partners:'/admin/admin/api',finance:'/admin/ekonomi',tables:'/admin/rooms','media-review':'/admin/clips'})){
       const query='tab='+tab+'&dealer=elin&operator=north&table=room-a&room=one&room=two&lane=portrait&game=roulette';
       const url=config.publicOrigin+basePath+entry+'?'+query+'#selected';
       for(const method of ['GET','HEAD']){

@@ -1,5 +1,5 @@
 import { presentationPublicModules, presentationPublicSource } from '../packages/presentation/public-modules.mjs';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once, EventEmitter, getEventListeners } from 'node:events';
@@ -18,11 +18,14 @@ import { videoIdFromSha256 } from '../packages/studio-registry/server/video-mani
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 import { nativeReceipts } from './fixtures/native-receipts.mjs';
+import { bindIdlePolicy, writeSyntheticPresentationBank } from './fixtures/presentation-bank.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import {fileURLToPath} from 'node:url';
-const fixtureArchive=fileURLToPath(new URL('../media/dealers/astrid/runtime/presentation',import.meta.url));
+// The repository carries no dealer bank; this file's archive is a synthetic one.
+const fixtureArchive=await mkdtemp(join(tmpdir(),'croupier-local-bank-'));
+const fixtureManifest=await writeSyntheticPresentationBank(fixtureArchive);
+after(()=>rm(fixtureArchive,{recursive:true,force:true}));
 // Archived media is explicitly injected test data, never an automatic runtime source.
 async function loadVideoRegistry(options={}) {
   const registry=await readVideoRegistry({archiveDir:options.env?.LAB_VIDEO_ARCHIVE??fixtureArchive,...options});
@@ -31,6 +34,7 @@ async function loadVideoRegistry(options={}) {
 }
 function createSeedProject(){
   const project=historicalProject();
+  project.idlePolicy=bindIdlePolicy(project.idlePolicy,fixtureManifest);
   project.dealerIdlePolicies=[{dealerId:'astrid',policy:structuredClone(project.idlePolicy)}];
   return project;
 }
@@ -324,7 +328,7 @@ test('explicit test archive feeds the same exact product and library media', asy
   const directory = await mkdtemp(join(tmpdir(), 'croupier-shared-archive-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const archiveDir = join(directory, 'archive'), media = Buffer.from('configured-archive-video-fixture');
-  const manifest = JSON.parse(await readFile(new URL('../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url)));
+  const manifest = structuredClone(fixtureManifest);
   const relativePath = 'deal/deal_pos4/deal_pos4.mp4';
   const entry = manifest.items.find(item => item.relativePath === relativePath);
   assert.ok(entry);
@@ -366,7 +370,7 @@ test('native player reads saved deal frequencies, caches retries and picks up an
   const registry = await loadVideoRegistry();
   const family = registry.families.find(row => row.situation === 'box0');
   const variant = registry.videos.find(row => family.variantIds.includes(row.id) && row.available);
-  assert.ok(variant, 'The current Astrid manifest has a real first-box variant.');
+  assert.ok(variant, 'The bank has a first-box variant.');
   project.mediaPolicy = [{ familyId: family.id, variants: [{ videoId: variant.id, priority: 10, triggerIds: [], selection: { model: false, random: false, rules: false }, frequencyPercent: 100 }] }];
   let saved = await store.save(project, project.revision), calls = 0;
   const committed = { ...source, box: 0, clip: { action: 'deal-left' } };
@@ -781,7 +785,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -790,7 +794,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'studio-selection-source', dealerIdle: {[dealerId]: ownIdle} }
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'studio-selection-source', dealerIdle: {[dealerId]: ownIdle}, ...(configExtra ?? {}) }
     : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'studio-selection-source', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
   const player = customPlayer ?? { playLocalClip(take, options) { return new Promise((resolve, reject) => {
@@ -798,7 +802,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
@@ -2094,4 +2098,208 @@ test('with answers slower than a take, the deals after goodluck play their film,
   assert.deepEqual(f.receipts.filter(row => row.state === 'skipped'), [], 'no step is left as late');
   assert.equal(f.status.textContent, '');
   ports.close();
+});
+
+// K04 R1 (review of #478): an early answer that failed (network, 5xx, 409 or the 10 s request limit) made its
+// step read "Filmen kunde inte spelas." when it began. The step asks once more within its own time, as before F5.
+const sharedStale = () => Response.json({ error: 'shared_room_presentation_stale' }, { status: 409 });
+const filmedStep = (shoeDraw, sha256 = 'd'.repeat(64)) => ({ ...source, shoeDraw, filmedTake: { profileId: 'p', takeKey: 'k' + shoeDraw, sha256 } });
+for (const [label, failure] of [
+  ['a 503', () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 })],
+  ['a stale 409', () => sharedStale()],
+  ['a network error', () => { throw new TypeError('fetch failed'); }],
+  ['the request time limit', () => { throw new DOMException('The operation timed out.', 'TimeoutError'); }]])
+test(`an early answer that failed with ${label} is asked for again within the step, which plays without error text`, async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, asked = []; let failing = true;
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    asked.push(JSON.parse(options.body).event.shoeDraw);
+    return failing ? failure() : base(url, options);
+  };
+  const step = filmedStep(7);
+  f.controller.state({ action: true }); f.controller.prepareSequence([step], { selectAhead: true }); await settle(); await settle();
+  assert.deepEqual(asked, [7]);
+  failing = false; const played = f.controller.present(plainEvent(step)); await settle(); await settle();
+  assert.deepEqual(asked, [7, 7], 'the step asks once more'); assert.equal(f.jobs.length, 1);
+  f.jobs[0].resolve(); assert.equal(await played, true);
+  assert.equal(f.status.textContent, ''); assert.deepEqual(f.receipts.filter(row => row.event === 'deal').map(row => row.state), ['selected']);
+});
+
+test('a step whose second answer does not arrive in time is left as late without text', async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, asked = []; let answer = () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 });
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    asked.push(JSON.parse(options.body).event.shoeDraw);
+    return answer(options);
+  };
+  f.controller.state({ action: true }); f.controller.prepareSequence([filmedStep(7), filmedStep(8)], { selectAhead: true }); await settle(); await settle();
+  assert.deepEqual(asked, [7, 8]);
+  answer = options => new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true }));
+  const step = new AbortController(), late = f.controller.present(plainEvent(filmedStep(7)), { signal: step.signal }); await settle(); await settle();
+  assert.deepEqual(asked, [7, 8, 7]);
+  step.abort(Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true }));
+  assert.equal(await late, false); assert.equal(f.status.textContent, '', 'no "Filmen kunde inte spelas."');
+  assert.deepEqual([f.receipts.at(-1).state, f.receipts.at(-1).late], ['skipped', true]);
+  assert.equal(f.receipts.some(row => row.state === 'fallback'), false);
+});
+
+test('an early answer that reports a package change fails its step at once and is not asked again', async t => {
+  const fresh = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } }), freshBase = globalThis.fetch;
+  let selects = 0;
+  globalThis.fetch = async (url, options) => url === '/api/presentation/select'
+    ? (selects++, Response.json({ error: 'Package changed', code: 'studio_presentation_idle_package_changed' }, { status: 409 })) : freshBase(url, options);
+  fresh.controller.state({ action: true }); fresh.controller.prepareSequence([filmedStep(7)], { selectAhead: true }); await settle(); await settle();
+  assert.equal(await fresh.controller.present(plainEvent(filmedStep(7))), false);
+  assert.equal(selects, 1, 'a package change is not asked again'); assert.match(fresh.status.textContent, /Ladda om spelet/);
+});
+
+// K04 R5: early answers that are dropped cancel their requests, and nothing later is asked for.
+for (const drop of ['the plan ends', 'a new plan begins', 'the tab is hidden', 'the presentation closes'])
+test(`early answers are dropped and their requests aborted when ${drop}`, async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, signals = [];
+  globalThis.fetch = (url, options) => url === '/api/presentation/select'
+    ? (signals.push(options.signal), new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true })))
+    : base(url, options);
+  f.controller.state({ action: true }); f.controller.prepareSequence([filmedStep(7), filmedStep(8), filmedStep(9)], { selectAhead: true }); await settle();
+  assert.equal(signals.length, 2); assert.equal(signals.some(signal => signal.aborted), false);
+  if (drop === 'the plan ends') f.controller.state({ action: false });
+  else if (drop === 'a new plan begins') f.controller.prepareSequence([filmedStep(10)]);
+  else if (drop === 'the tab is hidden') f.setHidden(true);
+  else f.controller.close();
+  assert.equal(signals.every(signal => signal.aborted), true, 'both requests in flight are aborted');
+  await settle(); await settle();
+  assert.equal(signals.length, 2, 'the third step is never asked for');
+});
+
+// K04 R5: a moved window during the base loop's package read is silent also for a dealer without any idle policy.
+test('a stale read of the base loop without any idle policy is silent and the next snapshot plays the same loop', async t => {
+  const ownIdle = { id: 'dragan-bound-idle', fileName: 'breath.mp4', sha256: 'b'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/dragan' };
+  const f = await controllerFixture(t, { dealerId: 'dragan', ownIdle, idlePolicy: false, entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch; let reply = () => sharedStale();
+  globalThis.fetch = async (url, options) => new URL(url, 'https://game.invalid').pathname === '/api/presentation/config' ? reply() : base(url, options);
+  f.controller.start(); await settle(); await settle();
+  assert.equal(f.jobs.length, 0); assert.equal(f.status.textContent ?? '', '', 'no idle error and no reload prompt'); assert.equal(f.proofs, 0);
+  assert.equal(f.elements.some(element => element.textContent === 'Ladda om'), false);
+  reply = () => base('/api/presentation/config?dealerId=dragan', {}); f.controller.state({ action: false }); await settle(); await settle();
+  assert.equal(f.jobs.length, 1, 'the next snapshot starts the same base loop'); assert.equal(f.jobs[0].take.media.sha256, ownIdle.sha256);
+  f.jobs[0].options.onReceipt({ state: 'presented' }); assert.equal(f.proofs, 1);
+  reply = () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 }); f.jobs[0].resolve(); await settle(); await settle();
+  assert.match(f.status.textContent, /^Idle: /, 'any other failure of the read still shows the idle error');
+});
+
+// K04 F5b (staging 28 Oct 2026, 1f66245b): 1 of 44 filmed steps reached 'start'. The room's shared configuration
+// lists its verified media without per-video dealer fields, and its families are empty, so owned() refused every
+// deal, hole, reveal and speech file: prepare() never called prepareLocalClip and each file was fetched only when
+// its step began (1.2-1.6 s), after the step was over. The answers asked for early (F5) arrived in time.
+const roomVideo = (id, hex) => ({ id, sha256: hex.repeat(64), fileName: id + '.mp4', src: '/api/presentation/room-video/north/room-a/7/astrid/' + id, available: true });
+function roomPlayer() {
+  const player = { prepared: [], warming: [], plays: [], peak: 0,
+    prepareLocalClip(take) { player.prepared.push(take.media.sha256); },
+    warmLocalClip(take, signal) {
+      return new Promise((resolve, reject) => {
+        const row = { sha256: take.media.sha256, signal, done: false, finish: () => { row.done = true; resolve(); } };
+        player.warming.push(row); player.peak = Math.max(player.peak, player.warming.filter(item => !item.done).length);
+        signal.addEventListener('abort', () => { row.done = true; reject(signal.reason); }, { once: true });
+      });
+    },
+    playLocalClip(take, options) {
+      player.plays.push(take.media.sha256);
+      return new Promise((resolve, reject) => {
+        options.onReceipt?.({ state: 'start' }); player.finish = () => resolve({ completed: true });
+        options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
+      });
+    } };
+  return player;
+}
+const roomEntry = { operator: 'north', roomId: 'room-a', packageRevision: 7 };
+const roomConfig = { dealer: { id: 'astrid', label: 'Astrid' } };
+
+test('a shared configuration without dealer fields still prepares the exact deal and reveal takes of the plan', async t => {
+  const deal = roomVideo('deal-take', 'a'), reveal = roomVideo('reveal-take', 'b'), foreign = { ...roomVideo('foreign-take', 'c'), dealer: 'nora' };
+  const player = roomPlayer();
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, selectedVideo: deal,
+    customInventory: { videos: [deal, reveal, foreign], families: [] } });
+  const take = video => ({ profileId: 'p', takeKey: video.id, sha256: video.sha256 });
+  const plan = [{ ...source, shoeDraw: 7, filmedTake: take(deal) }, { type: 'reveal', to: 'dealer', shoeDraw: 9, filmedTake: take(reveal) }];
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan);
+  assert.deepEqual(player.prepared, [deal.sha256], 'the deal take of the bound room is prepared before its step');
+  const played = f.controller.present(plainEvent(plan[0])); await settle(); await settle();
+  assert.deepEqual(player.plays, [deal.sha256]);
+  assert.deepEqual(player.prepared, [deal.sha256, reveal.sha256], 'the reveal take is prepared as the deal starts');
+  player.finish(); assert.equal(await played, true);
+  f.controller.prepareSequence([{ ...plan[0], filmedTake: take(foreign) }]);
+  assert.deepEqual(player.prepared, [deal.sha256, reveal.sha256], 'a row that names another dealer is never prepared');
+});
+
+test('a shared configuration that is not bound to this dealer does not lend its unowned rows', async t => {
+  const deal = roomVideo('deal-take', 'a'), player = roomPlayer();
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: { dealer: { id: 'nora', label: 'Nora' } }, customInventory: { videos: [deal], families: [] } });
+  f.controller.prepareSequence([{ ...source, shoeDraw: 7, filmedTake: { profileId: 'p', takeKey: 'deal', sha256: deal.sha256 } }]);
+  assert.deepEqual(player.prepared, []);
+});
+
+test('the answered clip files of a shared plan are downloaded two at a time before their steps, and nothing plays or shows', async t => {
+  const files = { 7: roomVideo('deal-take', 'a'), 9: roomVideo('reveal-take', 'b'), 11: roomVideo('hit-take', 'c') };
+  const player = roomPlayer();
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, customInventory: { videos: Object.values(files), families: [] } });
+  const base = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    const event = JSON.parse(options.body).event, video = files[event.shoeDraw];
+    return Response.json({ video, standard: video, transitions: null, projectRevision: 'p', configurationSource: 's', decision: { requestId: 'r' + event.shoeDraw, sourceEvent: event, media: {} } });
+  };
+  const step = (shoeDraw, type = 'deal') => ({ ...(type === 'deal' ? source : { type: 'reveal', to: 'dealer' }), shoeDraw, filmedTake: { profileId: 'p', takeKey: 'k' + shoeDraw, sha256: files[shoeDraw].sha256 } });
+  f.controller.state({ action: true }); f.controller.prepareSequence([step(7), step(9, 'reveal'), step(11)], { selectAhead: true });
+  for (let i = 0; i < 6; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [files[7].sha256, files[9].sha256], 'the first two answered files load at once');
+  assert.equal(player.peak, 2);
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [files[7].sha256, files[9].sha256, files[11].sha256], 'the next file loads when one is done');
+  assert.equal(player.peak, 2, 'never more than two at a time');
+  assert.deepEqual(player.plays, [], 'nothing plays before its step'); assert.deepEqual(f.receipts.filter(row => row.event !== 'configuration'), [], 'no receipt before its step');
+  f.controller.state({ action: false });
+  assert.equal(player.warming.slice(1).every(row => row.signal.aborted), true, 'a finished presentation cancels the files still loading');
+});
+
+test('warming verifies a clip into the shared buffer without a video element, and the step then reads it from the cache', async t => {
+  const { PerformancePlayer } = await import('../services/game/public/performance-player.mjs');
+  const { createVerifiedVideoBuffer } = await import('../services/game/public/verified-video-buffer.mjs');
+  const bytes = new TextEncoder().encode('verified clip'), sha256 = createHash('sha256').update(bytes).digest('hex');
+  let fetches = 0;
+  const buffer = createVerifiedVideoBuffer({ fetchImpl: async () => { fetches++; return new Response(bytes); }, createUrl: () => 'blob:clip', revokeUrl() {} });
+  const player = Object.assign(Object.create(PerformancePlayer.prototype), { localBuffer: buffer });
+  await player.warmLocalClip({ media: { src: '/clip', sha256 } }, new AbortController().signal);
+  assert.equal(fetches, 1); assert.deepEqual(buffer.snapshot(), { bytes: bytes.byteLength, entries: 1 });
+  const lease = await buffer.acquire({ src: '/clip', sha256 }); assert.equal(lease.cached, true); lease.release(); assert.equal(fetches, 1);
+  const cancelled = new AbortController(); cancelled.abort();
+  await assert.rejects(player.warmLocalClip({ media: { src: '/other', sha256: 'f'.repeat(64) } }, cancelled.signal), { name: 'AbortError' });
+});
+
+// K04 F4b (staging 28 Oct 2026, 1f66245b): 0.98 s after Nästa runda the room-idle download answered 409
+// shared_room_presentation_stale. The verified buffer reports that as local_film_unavailable with the server's
+// code in serverCode, so the status read "Idle: Local film unavailable", the dealer place "Dealern kunde inte
+// visas.", and the dealer did not return for at least 37 s.
+for (const withPolicy of [false, true])
+test(`a stale room-idle download is silent and the next snapshot brings the same dealer loop back (policy=${withPolicy})`, async t => {
+  const { createVerifiedVideoBuffer } = await import('../services/game/public/verified-video-buffer.mjs');
+  const stale = await createVerifiedVideoBuffer({ fetchImpl: async () => Response.json({ error: 'shared_room_presentation_stale' }, { status: 409 }) })
+    .acquire({ src: '/api/presentation/room-idle/north/room-a/7/linnea', sha256: 'a'.repeat(64) }).catch(error => error);
+  assert.deepEqual([stale.code, stale.status, stale.serverCode], ['local_film_unavailable', 409, 'shared_room_presentation_stale']);
+  const id = '00000000-0000-4000-8000-000000000093', familyId = 'linnea/idle.ready/ready';
+  const video = { id, fileName: 'idle.mp4', sha256: 'a'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/linnea', dealer: 'linnea', familyId, role: 'standard', available: true };
+  const idlePolicy = withPolicy ? { schemaVersion: 1, familyId, base: [{ videoId: id, weight: 100, durationMs: 1000 }], variants: [] } : false;
+  const errors = [];
+  const f = await controllerFixture(t, { dealerId: 'linnea', ownIdle: video, selectedVideo: video, idlePolicy, entry: roomEntry, onError: error => errors.push(error),
+    customInventory: { videos: [video], families: [{ id: familyId, dealerId: 'linnea', playbackType: 'idle-pool', standardIds: [id], variantIds: [] }] } });
+  f.controller.start(); await settle(); await settle(); assert.equal(f.jobs.length, 1);
+  f.jobs[0].reject(stale); await settle(); await settle();
+  assert.equal(f.status.textContent ?? '', '', 'no raw "Idle: Local film unavailable"'); assert.deepEqual(errors, [], 'the dealer place is not marked as failed');
+  assert.equal(f.jobs.length, 1, 'the loop waits for the room\'s next snapshot');
+  f.controller.state({ action: false }); await settle(); await settle();
+  assert.equal(f.jobs.length, 2, 'the next snapshot brings the dealer back without a reload'); assert.equal(f.jobs[1].take.media.sha256, video.sha256);
+  f.jobs[1].reject(Object.assign(new Error('Local film unavailable'), { code: 'local_film_unavailable', status: 404, retryable: false })); await settle(); await settle();
+  assert.match(f.status.textContent, /^Idle: /, 'a missing file is still reported'); assert.equal(errors.length, 1);
 });

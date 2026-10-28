@@ -388,12 +388,14 @@ test('platform tracing keeps player documents without retired BO HTML', async ()
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));
-  for (const path of ['/api/table', '/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
+  // /api/bo/speech-qa remains only for the engine's cloud startup probe (ops/cloud/access-check.mjs).
+  for (const path of ['/api/table', '/api/bo/speech-qa', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
-  for (const kind of ['game','lab']) {
-    const path = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
-    assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'backend',destination:config.backendOrigin+path});
+  // The retired Admin-to-player handoff and BO config have no backend ingress.
+  for (const path of ['/api/bo/config', `/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`]) {
+    assert.equal(backendPlatformPath(new URL(path, config.publicOrigin).pathname), false, path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
   }
   for (const path of ['/speech-stream', '/lipsync-worker']) {
     const route = platformRoute(new URL(path, config.publicOrigin), config);
@@ -577,7 +579,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   try {
-    for (const path of ['/api/bo/config', '/studio/api/project', '/studio/activity', '/api/presentation/select']) {
+    for (const path of ['/api/table', '/studio/api/project', '/studio/activity', '/api/presentation/select']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);
@@ -807,4 +809,17 @@ test('static redirects leave credentials and APIs to their authenticated handler
    }
   }
  }finally{for(const [key,value]of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+});
+
+test('public dealer media is dealer-independent while retired camera observation has no backend ingress', () => {
+  for (const path of ['/dealers/astrid/poster.jpg', '/dealers/linnea/poster.jpg', '/dealers/paow-v2/streams/index.json',
+    '/media/dealers/linnea/runtime/presentation/idle.mp4', '/media/game/runtime/table.png']) {
+    assert.equal(backendPlatformPath(path), true, path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'backend', path);
+  }
+  for (const path of ['/dealers/Linnea/poster.jpg', '/dealers/-linnea/poster.jpg', '/dealers/linnea-/poster.jpg', '/dealers', '/media/dealers/linnea/source/raw.mp4',
+    '/api/astrid/observation']) assert.equal(backendPlatformPath(path), false, path);
+  // The speech chain stays: player speech (Whisper transcription) and the
+  // engine's idle-talk route.
+  for (const path of ['/api/astrid/transcription', '/api/dealer/transcription', '/api/probe/presence']) assert.equal(backendPlatformPath(path), true, path);
 });

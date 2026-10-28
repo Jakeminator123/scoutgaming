@@ -238,7 +238,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
               'croupier-director':'Presentationsråd vid spelhändelser när rådgivning är aktiverad.',
               'croupier-chat':'Äldre frågechatt om sparat Studio-projekt.',
               'croupier-operator':'Administrationsagent i OpenClaws egen dashboard; separat från Adminroboten.',
-              'croupier-social':'Sociala samtal och sällskapsfunktioner för Astrid.',
+              'croupier-social':'Sociala samtal och sällskapsfunktioner med dealern.',
               'croupier-speech':'Produktens taltext; modell kan väljas separat per anrop.',
             } as Record<string,string>)[agent.id] ?? 'Registrerad agentroll.'}</p><p>Aktuell: <code>{agent.model.primary}</code></p>
             {agent.model.fallbacks.length > 0 && <details className={styles.details}><summary>Reservmodeller · {agent.model.fallbacks.length}</summary><p>Behålls när du sparar.</p><ol>{agent.model.fallbacks.map((fallback, index) => <li key={`${index}-${fallback}`}><code>{fallback}</code></li>)}</ol></details>}

@@ -1,76 +1,41 @@
-# Applies only when the repository root is the Docker build context.
-# The existing OpenClaw images use services/openclaw/lab/.dockerignore instead.
+# Root build context: ops/cloud/Dockerfile.game (croupier-v3) only. It copies
+# explicit paths; this file keeps everything else out of the context.
+# The Director uses services/openclaw/lab/Dockerfile.dockerignore, and the
+# Gateway and GPU workers use .dockerignore in their own build contexts.
 
-# Git, local agent state, and CI/development metadata.
+# Git, local agent state and CI/development metadata.
 .git
 .github
-.gitlab
 .githooks
 .agents
+.claude
 .cursor
 .croupier-inbox
 arkiv
 **/.DS_Store
 **/*.log
 
-# Rebuild dependencies and Next output inside a controlled image build.
+# Dependencies are installed inside the image.
 node_modules
 **/node_modules
 **/test-results
 **/coverage
 
-# Never send local keys or mutable player/studio data to a builder.
+# Never send local keys or mutable player data to a builder.
 .env
 .env.*
 **/.env
 **/.env.*
 inbox-token.txt
-_ENVIROMENT-INFO.md
 **/*.pem
 **/*.p12
 **/*.pfx
-lab/data
-web/data
-apps/studio/data
 services/game/data
-open-claw/lab/data
-services/openclaw/lab/data
 
-# Published runtime media use media/**/runtime; public code stays in web/public.
-# Source, staging and review material is preserved outside runtime images.
-media/.migration
-media/**/source
-media/**/staging
-media/**/review
-# Production reads these registers from scoped Neon. Keep authoring files in
-# the checkout, but exclude them from COPY . . in the cloud image.
-media/layout.json
-media/blob-index.json
-media/catalog
-# Retired 3D source trees, removed 2026-10-12. The names stay so a restored
-# checkout is not copied into an image.
-assets/astrid-3d
-assets/blackjack-3d
-content/staging
-content/bake
-content/raw-all
-content/raw-speak
-content/raw-speak2
-content/raw-super
-content/raw2
-content/encoded2
-emil/astrid-demo-v3-reference
-
-# Documentation, review sources, and tests are not runtime inputs.
+# Not runtime inputs: media bytes come from Blob, registers from Neon, and the
+# presentation preview is built only for Studio.
+media
+packages/presentation/preview
 docs
 test
-open-claw/lab/test
-services/openclaw/lab/test
-design-kit
-reference
-
-# Relocated Studio: retain old private/build guards for files left in place.
-apps/studio/.next
-apps/studio/.next-probe
-apps/studio/tsconfig.tsbuildinfo
-apps/studio/test
+apps
