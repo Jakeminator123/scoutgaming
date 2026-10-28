@@ -648,7 +648,7 @@ test('all config mutations carry exact string revision; no numeric/missing/proto
   assert.ok(requests.every(request => typeof request.body.expectedRevision === 'string'));
 });
 
-test('activated partner actions use explicit transient projections while paid speech QA stays gated', async () => {
+test('activated partner actions use explicit transient projections and the retired speech QA has no descriptor', async () => {
   const h = harness(); let fetches = 0;
   const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
   const responses = {
@@ -663,7 +663,7 @@ test('activated partner actions use explicit transient projections while paid sp
     const response = await client.request('POST',action,{});
     assert.ok(response.payload.oneTime); assert.doesNotMatch(JSON.stringify(response),/EXTRA_SECRET|ARBITRARY_TEXT|curlLines/);
   }
-  await assert.rejects(client.request('POST','speech-qa',{}),status(501));
+  await assert.rejects(client.request('POST','speech-qa',{}),status(400));
   assert.equal(fetches,4);
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'partners')));
   assert.doesNotMatch(html, /MUST-NOT-RENDER|wallet_url|type="password"/);

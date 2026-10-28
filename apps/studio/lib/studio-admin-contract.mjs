@@ -31,9 +31,6 @@ export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
     'operator-package', 'room-game-config', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'moving-drift']
     .map(action => adminEndpoint('POST', action)),
-  // These methods still require the existing opt-in operator gate, owner/budget
-  // checks and paid-work authority. A matching descriptor grants none of them.
-  ...['GET', 'POST', 'DELETE'].map(method => adminEndpoint(method, 'speech-qa')),
 ]);
 
 export const STUDIO_AUTH_ENDPOINTS = Object.freeze([

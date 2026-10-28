@@ -48,7 +48,6 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys/rotate', 'admin'],
   ['apikeys/launch', 'admin', ['game-authority']],
   ['apikeys/credit', 'admin', ['game-authority']],
-  ['speech-qa', 'admin', ['operator-speech-qa-gate']],
   ['moving-drift', 'admin', ['moving-drift-control']],
   ['operator-package', 'admin'], ['presentation-room', 'admin'],
   ['room-game-config', 'admin'], ['shared-table-proof', 'admin'],

@@ -178,7 +178,6 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if ((action === 'users/remove' || action === 'users/role') && sameIdentity(body?.username, preflightActor.username)) throw new StudioAdminUiError(403);
       if (action === 'users/role' && !isStudioRole(body?.role)) throw new StudioAdminUiError(400);
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
-      if (action === 'speech-qa') throw new StudioAdminUiError(501);
     }
     const response = await send(method, action, body, signal, query);
     if (!response.ok) throw new StudioAdminUiError(response.status);

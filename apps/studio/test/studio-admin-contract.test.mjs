@@ -77,12 +77,8 @@ test('unknown verbs, coercions, old routes and noncanonical paths fail closed', 
   }
 });
 
-test('speech-QA method descriptors retain the operator gate without launching a job', () => {
-  for (const method of ['GET', 'POST', 'DELETE']) {
-    const endpoint = studioAdminEndpoint(method, '/studio/api/admin/speech-qa');
-    assert.equal(endpoint.minimumRole, 'admin');
-    assert.deepEqual(endpoint.handlerRequirements, ['operator-speech-qa-gate']);
-  }
+test('the retired speech-QA stub has no descriptor and unknown verbs stay unmapped', () => {
+  for (const method of ['GET', 'POST', 'DELETE']) assert.equal(studioAdminEndpoint(method, '/studio/api/admin/speech-qa'), null);
   assert.equal(studioAdminEndpoint('DELETE', '/studio/api/admin/users/remove'), null);
   assert.deepEqual(studioAdminEndpoint('POST', '/studio/api/admin/users/remove').handlerRequirements,
     ['forbid-self-removal', 'revoke-changed-identity']);
