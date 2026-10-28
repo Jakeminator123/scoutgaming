@@ -802,6 +802,27 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
 
+test('a shared configuration rollover is not a revoked native package',async t=>{
+  const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});
+  globalThis.fetch=async()=>Response.json({error:'shared_room_presentation_stale'},{status:409});
+  await assert.rejects(createLocalPresentation({dealerId:'linnea',entry:{operator:'north',roomId:'room-a',packageRevision:1}}),{code:'shared_room_presentation_stale'});
+});
+
+for(const withPolicy of [false,true])test(`a stale shared idle read waits for an authoritative snapshot without latching reload (policy=${withPolicy})`,async t=>{
+  const id='00000000-0000-4000-8000-000000000093',familyId='linnea/idle.ready/ready';
+  const video={id,fileName:'idle.mp4',sha256:'a'.repeat(64),src:'/idle.mp4',dealer:'linnea',familyId,role:'standard',available:true};
+  const idlePolicy=withPolicy?{schemaVersion:1,familyId,base:[{videoId:id,weight:100,durationMs:1000}],variants:[]}:null;
+  const inventory={videos:[video],families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[id],variantIds:[]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:video,selectedVideo:video,idlePolicy,customInventory:inventory,entry:{operator:'north',roomId:'room-a',packageRevision:1}});
+  const fetchConfig=globalThis.fetch;
+  globalThis.fetch=async()=>Response.json({error:'shared_room_presentation_stale'},{status:409});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  assert.doesNotMatch(f.status.textContent??'',/Ladda om|Presentationspaketet/);
+  assert.equal(f.jobs.length,0);
+  globalThis.fetch=fetchConfig;f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,1,'next authorized snapshot can start the same published idle');
+});
+
 test('the local presenter exposes a detached frozen planning material',async t=>{
   const filmedMaterial={revision:'native-film-v2-'+'c'.repeat(64),film:{transitions:{toShoe:null,fromShoe:null}}};
   const current=await controllerFixture(t,{filmedMaterial});
