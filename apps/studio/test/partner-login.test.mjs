@@ -155,7 +155,8 @@ test('actual browser partner login returns to the authorized operator and room w
   const {once} = await import('node:events');
   const {build} = await import('esbuild');
   const redirects = require('next/dist/client/components/redirect.js');
-  const navigation = {...redirects,notFound:require('next/dist/client/components/not-found.js').notFound};
+  // forbidden() is Next's 403 interrupt; the fixture server answers it as the same status.
+  const navigation = {...redirects,notFound:require('next/dist/client/components/not-found.js').notFound,forbidden:()=>{throw Object.assign(new Error('forbidden'),{statusCode:403});}};
   const bundle = (await build({absWorkingDir:fileURLToPath(new URL('../',import.meta.url)),write:false,bundle:true,format:'iife',
     define:{'process.env.NODE_ENV':'"production"'},stdin:{resolveDir:fileURLToPath(new URL('../',import.meta.url)),loader:'tsx',
       contents:'import React from "react";import {createRoot} from "react-dom/client";import {PartnerLogin} from "./components/partner-login";createRoot(document.getElementById("root")).render(React.createElement(PartnerLogin,JSON.parse(document.getElementById("props").textContent)));'},
@@ -271,8 +272,8 @@ test('actual browser partner login returns to the authorized operator and room w
         assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo='+encodeURIComponent(target));
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+target);
-        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'bj'});
-        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'bj'});
+        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'rooms'});
+        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'rooms'});
         const cookies=await context.cookies();assert.equal(cookies.length,1);
         assert.equal(cookies[0].name,'partner_session');assert.equal(cookies[0].httpOnly,true);assert.equal(cookies[0].secure,true);assert.equal(cookies[0].sameSite,'Lax');
         assert.equal((await page.goto(origin+'/partner/south/rooms?room=room-7')).status(),403);

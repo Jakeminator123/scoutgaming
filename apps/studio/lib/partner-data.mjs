@@ -216,10 +216,14 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   if (!may('overview.read')) fail(403);
   const permissions = PARTNER_PERMISSIONS.filter(may);
   const role = roleOf(session, context);
-  // Vyns behörighet avgörs här, på servern. En nekad vy får skalet och ett
-  // 403-kort; dess data läses inte (varje avsnitt nedan är gated för sig).
+  // Vyns behörighet avgörs här, på servern: en nekad vy svarar sidan 403 på
+  // (`denied`), och snapshoten bär bara de avsnitt rollen får läsa:
+  // tables.read → spelbord och deras inställningar, presentations.read →
+  // scenmall/utseende/tilldelning/utkast, reports.read → ekonomi och
+  // publiceringar, team.read → team och inbjudningar.
   const required = PARTNER_VIEW_PERMISSIONS[view];
   const denied = may(required) ? null : { view, permission: required, role };
+  const canTables = may('tables.read'), canPresentations = may('presentations.read'), canReports = may('reports.read');
   const team = !may('team.read') ? [] : typeof operators.listMemberships === 'function'
     ? await teamFromStore(operators, operator.id, session)
     : membership ? [teamRow(membership, await roleFor(operators, operator.id, context), session, operator.id)] : [];
@@ -227,21 +231,21 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   if (pack?.operatorId && pack.operatorId !== operator.id) fail(403);
   const presentation = readPackagePresentation(pack);
   const branding = publicPackageBranding(pack?.branding);
-  const presentations = presentation ? partnerPackageProfiles(presentation, branding, operator.id)
+  const presentations = !canPresentations ? [] : presentation ? partnerPackageProfiles(presentation, branding, operator.id)
     : parseList(pack?.presentations ?? pack?.lanes).map(item => owned(item, operator.id, ['name', 'dealer', 'language', 'background', 'status'])).filter(Boolean);
-  const administration = presentation ? await roomAdministration(resolved) : null;
-  const gameLanes = presentation ? gameLaneConfiguration(administration).gameLanes : [];
+  const administration = presentation && canTables ? await roomAdministration(resolved) : null;
+  const gameLanes = administration ? gameLaneConfiguration(administration).gameLanes : [];
   const query = typeof resolved.pool?.query === 'function' ? (text, values) => resolved.pool.query(text, values) : null;
   const bindings = pack?.branding?.roomGameConfigVersions;
-  const rooms = presentation
+  const rooms = administration
     ? listPackageRooms({ administration, package: pack, operatorId: operator.id })
       .filter(room => isPresentationRoomLaneCompatible(gameLanes.find(lane => lane.id === room.gameLaneId),
         presentation.lanes.find(lane => lane.id === room.presentationLaneId), presentation,room.game??'blackjack'))
     : [];
-  const settings = presentation && may('tables.read')
+  const settings = administration
     ? await readPublishedRoomSettings({ query, operatorId: operator.id, rooms: rooms.map(room => ({ id: room.id, configVersion: bindings?.[room.id] })) }) : new Map();
   const dealerLabel = id => presentation?.registeredDealers?.find(dealer => dealer.id === id)?.label ?? id;
-  const tables = presentation
+  const tables = !canTables ? [] : presentation
     ? rooms.map(room => {
       const game = room.game ?? 'blackjack', live = room.state === 'live';
       let dealer = null; try { dealer = resolvePackageRoomDealer(pack, room, presentation); } catch { dealer = null; }
@@ -256,7 +260,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   const revision = revisionOf(pack);
   const current = { id: operator.id, slug: operator.slug, name: operator.name, ...(revision ? { packageRevision: revision } : {}) };
   const choices = visible.some(item => item.id === operator.id) ? visible : [current, ...visible];
-  const reports = may('reports.read') && ['overview', 'reports', 'rooms'].includes(view)
+  const reports = canReports && ['overview', 'reports', 'rooms'].includes(view)
     ? await readPartnerReports({ query, operatorId: operator.id, roomIds: tables.map(table => table.id), now }) : null;
   return {
     ...snapshotBase(session, now),
@@ -269,15 +273,15 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     ...(denied ? { denied } : {}),
     operators: choices.map(item => ({ id: item.id, slug: item.slug, name: item.name })),
     presentations,
-    ...(presentation ? { presentation, branding, roomBindings: 'operator-owned-v2' } : {}),
+    ...(presentation && canPresentations ? { presentation, branding, roomBindings: 'operator-owned-v2' } : {}),
     tables,
     team,
     invitations: team.filter(member => member.status === 'invited').length,
-    assignment: assignmentOf(pack, presentation, settings),
-    draft: may('tables.read') ? await draftOf(operators, operator.id) : null,
-    publications: may('reports.read') ? await publicationsOf(operators, operator.id) : [],
+    ...(canPresentations ? { assignment: assignmentOf(pack, presentation, settings) } : {}),
+    draft: canPresentations ? await draftOf(operators, operator.id) : null,
+    publications: canReports ? await publicationsOf(operators, operator.id) : [],
     ...(reports ? { reports } : {}),
-    summary: { activeTables: presentation ? tables.filter(table => table.status === 'active').length : tables.length },
+    summary: canTables ? { activeTables: presentation ? tables.filter(table => table.status === 'active').length : tables.length } : {},
   };
 }
 
