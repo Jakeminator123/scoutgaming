@@ -10,6 +10,7 @@ import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
@@ -714,6 +715,23 @@ test('partner result projection rejects malformed credentials and cross-origin/a
     assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'))),{kind:'launch',url,playerRef:'player'});
   }
   assert.throws(()=>h.studioPartnerResult('apikeys/credit',{playerId:'player',balance:NaN,currency:'EUR'}),status(503));
+});
+
+test('Integrationer launch projection is exactly the shared rule in lib/partner-launch-url.mjs (the Demo-builder uses it too)', () => {
+  const h = harness(), origin = 'https://game.example.test';
+  const urls = [`${origin}/game?launch=a.b.c`,`${origin}/blackjack?launch=a.b.c`,`${origin}/game?dealer=astrid&launch=a.b.c`,`${origin}/game?launch=a.b.c&dealer=linnea-2`,
+    `${origin}/game?dealer=Wrong&launch=a.b.c`,`${origin}/game?operator=north&launch=a.b.c`,`${origin}/game?launch=a.b.c&launch=a.b.c`,`${origin}/game?launch=bad`,
+    `${origin}/game?launch=a.b.c#x`,`${origin}/other?launch=a.b.c`,'http://game.example.test/game?launch=a.b.c','https://outside.test/game?launch=a.b.c',
+    `${origin}/game?launch=${'a'.repeat(16400)}.b.c`,'not a url'];
+  let accepted = 0;
+  for (const url of urls) {
+    const approved = approvedPartnerLaunchUrl(url, origin);
+    if (approved) { accepted++; assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin))),{kind:'launch',url:approved.href,playerRef:'player'}); }
+    else assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin),status(503),url);
+  }
+  assert.equal(accepted, 4);
+  assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`},origin),status(503),'playerRef is still required');
+  for (const gameOrigin of [undefined,'',`${origin}/`,'http://game.example.test']) assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`,playerRef:'player'},gameOrigin),status(503),String(gameOrigin));
 });
 
 test('partner forms retain explicit role/scopes/wallet boundaries and send only task fields', () => {
