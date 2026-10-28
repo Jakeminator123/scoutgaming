@@ -1,6 +1,6 @@
 # Render `croupier-v3`: spelmotorn
 
-Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud` och äger kort, sko, saldo, utbetalningar och delat bord. Admin, lobby och spelskal ligger på Vercel. Ingen Studio-process och ingen disk ingår. Daterade deploykvitton finns i [historiken](../../docs/history/RENDER-V3-2026-10.md) och [NEXT-AGENT](../../docs/NEXT-AGENT.md).
+Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud` och äger kort, sko, saldo, utbetalningar och delat bord. Admin, lobby och spelskal ligger på Vercel. Ingen Studio-process och ingen disk ingår. Läget och senaste deploy står i [NEXT-AGENT](../../docs/NEXT-AGENT.md).
 
 ## Tjänsten
 

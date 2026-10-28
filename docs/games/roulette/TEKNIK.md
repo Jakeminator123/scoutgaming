@@ -1,6 +1,6 @@
 # Roulette: kod och integration
 
-Läs [rouletteguiden](README.md) först. Detta beskriver befintlig kod; driftåtgärder kräver eget mandat. Den tidigare versionen med Annas talplan från 14 oktober finns i [historiken](../../history/games/roulette/TEKNIK-2026-10.md).
+Läs [rouletteguiden](README.md) först. Detta beskriver befintlig kod; driftåtgärder kräver eget mandat.
 
 ## Generatorn
 

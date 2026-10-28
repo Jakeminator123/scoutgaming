@@ -1,6 +1,6 @@
 # Backup och återställning
 
-Hur produktens data skyddas och hur man går tillbaka, för den enda produktvägen Vercel + Render + Neon + Blob. Identiteter står i [START-HERE](../START-HERE.md#identiteter), miljövariabler i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md), driften i [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [RENDER-V3](../ops/cloud/RENDER-V3.md). Daterade prov och kvitton från oktober 2026 finns i [historiken](history/ENVIRONMENT-RESTORATION-2026-10.md).
+Hur produktens data skyddas och hur man går tillbaka, för den enda produktvägen Vercel + Render + Neon + Blob. Identiteter står i [START-HERE](../START-HERE.md#identiteter), miljövariabler i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md), driften i [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [RENDER-V3](../ops/cloud/RENDER-V3.md).
 
 Allt här som rör produktionen (backup, restore, DDL, stopp av tjänster, radering) kräver Jakobs uttryckliga beslut. Agenter läser, provar i staging och förbereder.
 
@@ -130,36 +130,12 @@ Staging (`croupier-k06-k07-staging` i Vercel, Render, Neon och Blob, se [START-H
 
 ## Daterade kvitton
 
-Rubrikerna nedan finns kvar för länkar från status och historik. Innehållet ligger i [ENVIRONMENT-RESTORATION-2026-10](history/ENVIRONMENT-RESTORATION-2026-10.md).
+Rubrikerna finns kvar för länkar från [migrering/](../migrering/STATUS.md). Kvittona raderades ur `main` 28 oktober 2026 och läses med `git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`. Nya kvitton skrivs som `docs/<datum>-…-ACCEPTANCE.json`.
 
 ### J05: verifierad runtime och sparat spel — 26 oktober
 
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#j05-verifierad-runtime-och-sparat-spel--26-oktober): omstart i staging och återläst sparat spel.
-
-### Materialkontrakt och Renderkorrelation — 26 oktober
-
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#materialkontrakt-och-renderkorrelation--26-oktober): gatewaykorrelation, optional020 i staging.
-
-### Kompletterande omstartsprov — 25 oktober sen kväll
-
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#kompletterande-omstartsprov--25-oktober-sen-kväll): PR #398 och Render-502.
+Omstart i staging och återläst sparat spel.
 
 ### Molnsamprov 25 oktober kväll
 
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#molnsamprov-25-oktober-kväll): Admin, publicering, spel, backup och restore i staging.
-
-### Isolerad K06/K07-staging — historiskt beslut 22 oktober
-
-[Beslutet](history/ENVIRONMENT-RESTORATION-2026-10.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober) som skapade stagingen.
-
-### Verifierad provisionering 25 oktober
-
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#verifierad-provisionering-25-oktober) för stagingens Neon-projekt.
-
-### Konkret fortsättning, ännu inte utförd
-
-[Planen](history/ENVIRONMENT-RESTORATION-2026-10.md#konkret-fortsättning-ännu-inte-utförd) inför installationen, sedan genomförd.
-
-### Godkänt molnsteg och faktiskt installationskvitto 25 oktober
-
-[Kvittot](history/ENVIRONMENT-RESTORATION-2026-10.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober): roller, scheman och tom init i staging.
+Admin, publicering, spel, backup och restore i staging.
