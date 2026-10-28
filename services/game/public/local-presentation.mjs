@@ -11,6 +11,14 @@ const FAILURE_NOTICE_MS = 6000;
 // The exact file is missing (404/410) or declared unavailable by the server:
 // this step ends at once, without a fallback film or another attempt.
 const unavailableMedia = error => error?.code === 'local_film_unavailable' && error.retryable === false;
+// K04 F5: how many server answers for a shared plan's filmed steps are asked for at a time.
+const SELECT_AHEAD = 2;
+// Waits for work that this step does not own; leaving the step does not cancel it.
+const untilAborted = (work, signal) => !signal ? work : new Promise((resolve, reject) => {
+  if (signal.aborted) { reject(signal.reason); return; }
+  const abort = () => reject(signal.reason); signal.addEventListener('abort', abort, { once: true });
+  work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+});
 
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
@@ -31,8 +39,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   if (response.status === 409) throw await configurationConflict(response);
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
-  let upcoming = [], queueVersion;
+  let upcoming = [], queueVersion, ahead = null;
   const owned = row => [row.dealer, row.dealerId, row.classification?.dealerId].includes(dealerId);
+  const sameStep = (item, event) => item?.type === event.type && (event.type === 'speak' ? item.line === event.line : item.shoeDraw === event.shoeDraw);
+  // The lookahead moves past this step, and past earlier steps that were left before their answer arrived.
+  const advance = (event, requestVersion) => {
+    const index = queueVersion === requestVersion ? upcoming.findIndex(item => sameStep(item, event)) : -1;
+    upcoming = index < 0 ? [] : upcoming.slice(index + 1);
+  };
+  const stepKey = event => ['deal', 'reveal'].includes(event?.type) && Number.isSafeInteger(event.shoeDraw)
+    ? [event.type, event.shoeDraw, event.to ?? '', event.box ?? ''].join(':') : null;
   const prepare = event => {
     if (!event || queueVersion !== version() || closed) return;
     // A planned filmed step names its exact take (shared-room-presentation.mjs timeline): that file is prepared in
@@ -165,6 +181,49 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
+  // The server's selection for one committed instruction. It reads no card and starts no film.
+  async function selection(event, requestVersion, signal) {
+    const eventMode = selectionMode(event.type);
+    const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
+    if (selected.status === 409 && context) {
+      const failure = await selected.json().catch(() => null);
+      if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
+    }
+    if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
+    return { eventMode, result: await selected.json() };
+  }
+  // K04 F5 (staging 28 Oct 2026): a filmed step that asked for its answer only when its time began was left
+  // as late, because the answer outlasted the step. A shared plan is committed and published as a whole: the
+  // planned filmed steps (each named by its exact take) are asked for in order, SELECT_AHEAD at a time, when
+  // the plan begins. An answer is kept as data only. No receipt, card, frame or film follows from it until
+  // present() plays that same step at its own time; the native table keeps asking at the step.
+  function selectAhead(events, requestVersion) {
+    const controller = new AbortController(), steps = new Map();
+    for (const event of events) {
+      const key = stepKey(event);
+      if (!key || !event.filmedTake || steps.has(key)) continue;
+      const { filmedTake, ...committed } = event;
+      const step = { signal: controller.signal, promise: null,
+        start: () => { if (!step.promise) { step.promise = selection(committed, requestVersion, controller.signal); step.promise.catch(() => {}); } return step.promise; } };
+      steps.set(key, step);
+    }
+    if (!steps.size) return;
+    ahead = { version: requestVersion, controller, steps };
+    const order = [...steps.values()];
+    const next = async () => { for (const step of order) { if (controller.signal.aborted) return; if (!step.promise) await step.start().catch(() => {}); } };
+    for (let i = 0; i < SELECT_AHEAD; i++) void next();
+  }
+  function dropAhead() { ahead?.controller.abort(); ahead = null; }
+  // A step plays the answer asked for it when its plan began, or asks now. Leaving the step ends the wait.
+  async function answerFor(event, requestVersion, signal) {
+    const planned = ahead?.version === requestVersion ? ahead.steps.get(stepKey(event)) : undefined;
+    if (planned) {
+      try { return await untilAborted(planned.start(), signal); }
+      catch (error) { if (signal?.aborted || !planned.signal.aborted) throw error; }
+    }
+    return selection(event, requestVersion, signal);
+  }
   // timing: Kevin's per-step playback options for the exact take (startOffset, handoverAt, playbackRate, clockTime),
   // passed through to playLocalFilm; the shared ports derive them from the published plan and the profile.
   // selected: this clip came from /api/presentation/select for the current version in the same step. That call
@@ -291,6 +350,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function state(patch) {
     if (!document.hidden) idleTransientRetries = 0;
+    // A finished presentation, a disconnect or a hidden tab keeps no early answers.
+    if (Object.hasOwn(patch, 'action') && (!patch.action || patch.command)) dropAhead();
     if (Object.hasOwn(patch, 'action')) {
       if(patch.action && patch.command && patch.command!=='collect') {
         pendingRule=null;settlementContinuation=null;++behaviourRequest;
@@ -309,7 +370,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       idle.updateScene({speechReady:ready,phase:readIdlePhase(),revision:`${version()}:${mode}`});
       return; // Finish the current pose and its exit before presenting the speech-ready base.
     }
-    if (document.hidden) { pendingRule = null; ++behaviourRequest; upcoming = []; player.cancelLocalPreparation?.(); }
+    if (document.hidden) { pendingRule = null; ++behaviourRequest; upcoming = []; dropAhead(); player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
     idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}`, phase:readIdlePhase() });
     offerPendingRule();
@@ -334,32 +395,28 @@ export async function createLocalPresentation({ player, host, dealerId, version,
           onProgress({clip,...value});
       };
     };
-    let result;
+    let result, passed = false;
+    const pass = () => { if (!passed) { passed = true; advance(event, requestVersion); } };
     // The shared table left this step because its time on the table clock (or
     // the server's turn) was over before its film showed a frame: a late step,
-    // skipped without a fallback or error text, never a failed film.
+    // skipped without a fallback or error text, never a failed film. The next
+    // step's file is prepared all the same, also when no answer arrived (K04 F5).
     const leftLate = () => {
-      if (signal?.aborted && signal.reason?.late === true)
+      if (signal?.aborted && signal.reason?.late === true) {
         receipt({ event: kind, state: 'skipped', late: true, sourceEvent: event, reason: 'step_time_over', renderer: kind === 'speech' ? 'none' : '2d',
           requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId, projectRevision: result?.projectRevision, configurationSource });
+        if (!closed && token === serial) { pass(); prepare(upcoming[0]); }
+      }
       return false;
     };
     try {
-      const eventMode = selectionMode(event.type);
-      const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
-      if (selected.status === 409 && context) {
-        const failure = await selected.json().catch(() => null);
-        if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
-      }
-      if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
-      result = await selected.json();
+      const answer = await answerFor(event, requestVersion, signal);
+      const eventMode = answer.eventMode;
+      result = answer.result;
       if (signal?.aborted) return leftLate();
       if (token !== serial || requestVersion !== version()) return false;
       receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode: eventMode, projectRevision: result.projectRevision, configurationSource });
-      if (queueVersion === requestVersion && upcoming[0]?.type === event.type
-        && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
-      else upcoming = [];
+      pass();
       if (!result.video && kind === 'speech') {
         const reason = result.decision.media?.reason;
         if ([undefined, null, 'no_exact_video_2d', 'frozen_clip_missing'].includes(reason)) {
@@ -439,7 +496,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, observeEvents, start: resumeIdle,
     get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
-    prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
+    prepareSequence(events, { selectAhead: early = false } = {}) {
+      dropAhead(); queueVersion = version(); upcoming = events; prepare(upcoming[0]);
+      if (early && !closed && !packageChanged) selectAhead(events, queueVersion);
+    },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
+    close() { pendingRule = null; closed = true; upcoming = []; dropAhead(); player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
 }

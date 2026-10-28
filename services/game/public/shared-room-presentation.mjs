@@ -81,9 +81,20 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       if(presentation.ver<=restoredThrough)return;
       if(presentation.kind==='plan'&&presentation.endAt<=clock()+offset){cards.restore(state.round);restoredThrough=presentation.ver;return;}
       const timeline=timelineFor(presentation),fitted=Boolean(timeline?.fit);
+      const tableNow=()=>clock()+offset,elapsed=()=>tableNow()-presentation.startAt;
+      // The server opens the player's decision at turnAt and refuses it before (NOT_YOUR_TURN).
+      // From then on no step of this plan waits for media: the buttons open on the server's clock.
+      const turnAt=presentation.kind==='plan'&&state.phase==='round'&&['decisions','insurance'].includes(state.round?.phase)
+        &&Number.isFinite(state.plan?.turnAt)?state.plan.turnAt:null;
+      const turnPassed=()=>turnAt!==null&&tableNow()>=turnAt;
       // The lookahead names each planned step's exact take, so the next file is prepared before its time.
+      // K04 F5 (staging 28 Oct 2026): asked for only when its time began, a step's server answer (1-1.7 s)
+      // outlasted the step, so every filmed deal and reveal was left as late. This plan is already committed
+      // and published as a whole, so the server's answers for its filmed steps are asked for now. An answer
+      // only names the clip of a step of this plan: its card, receipt and film still wait for the step's own
+      // time on the table clock, and a step whose answer is still missing at the end of its time is left.
       media.prepareSequence?.(presentation.events.map((event,index)=>{const step=timeline?.eventIndex.get(index);
-        return step?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}));
+        return step?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}),{selectAhead:!turnPassed()});
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
       // unavailable: a step's exact media was missing (404/410) or declared
@@ -91,12 +102,6 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // shows its committed cards at once instead of loading more film, so the
       // table reaches the player's turn on the server's clock, not the media's.
       let completedSequence=false,shiftMs=0,inRun=false,unavailable=false;
-      const tableNow=()=>clock()+offset,elapsed=()=>tableNow()-presentation.startAt;
-      // The server opens the player's decision at turnAt and refuses it before (NOT_YOUR_TURN).
-      // From then on no step of this plan waits for media: the buttons open on the server's clock.
-      const turnAt=presentation.kind==='plan'&&state.phase==='round'&&['decisions','insurance'].includes(state.round?.phase)
-        &&Number.isFinite(state.plan?.turnAt)?state.plan.turnAt:null;
-      const turnPassed=()=>turnAt!==null&&tableNow()>=turnAt;
       const showCommitted=event=>{if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);};
       try {
         for(const [index,event] of presentation.events.entries()){

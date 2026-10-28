@@ -685,14 +685,14 @@ const frameMs=frames=>frames*1000/dragan.plane.fps;
 function timedPorts(t,{present,startAt,endAt,events,enableTimers=true,filmedMaterial}){
   if(enableTimers)t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
   startAt??=Date.now();endAt??=startAt+30000;
-  const seen=[],shown=[],prepared=[],revealed=[];
+  const seen=[],shown=[],prepared=[],prepareOptions=[],revealed=[];
   const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal:()=>revealed.push(Date.now()),begin:(_video,source)=>source.shoeDraw,frame(){},finish(){}};
-  const media={filmedMaterial,state(){},prepareSequence(value){prepared.push(value);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
+  const media={filmedMaterial,state(){},prepareSequence(value,options){prepared.push(value);prepareOptions.push(options);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
   const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
   const signal=new AbortController().signal;
   ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1,serverNow:Date.now()}),{signal});
   const plan={roomId,ver:1,talkId:'timed',kind:'plan',startAt,endAt,events};
-  return {seen,shown,prepared,revealed,plan,start:()=>ports.present(plan,{signal})};
+  return {seen,shown,prepared,prepareOptions,revealed,plan,start:()=>ports.present(plan,{signal})};
 }
 
 test('a filmed step starts at its own time on the table clock, names its exact take for the lookahead and carries the handover',async t=>{
@@ -706,6 +706,24 @@ test('a filmed step starts at its own time on the table clock, names its exact t
   assert.equal(options.startOffset,0);assert.ok(Math.abs(options.handoverAt-frameMs(66-1.5)/1000)<1e-9);assert.equal(options.playbackRate,undefined);
   assert.equal(options.clockTime(),0);t.mock.timers.tick(1000);assert.ok(Math.abs(options.clockTime()-1)<1e-9,'the clock is the table clock from the step start');
   await result;
+});
+
+// K04 F5: the plan's filmed steps are asked for when it begins, so no step waits for the server at its time.
+test('a timed plan asks for the answers of its filmed steps when it begins, not after the server turn',async t=>{
+  const h=timedPorts(t,{events:[{type:'speak',line:'goodluck'},filmedBox(6,1),filmedBox(0,2)]});
+  const result=h.start();await flushRender();
+  assert.deepEqual(h.prepareOptions,[{selectAhead:true}]);
+  assert.deepEqual(h.prepared[0].map(event=>event.filmedTake?.takeKey??null),[null,'7:i','1:v']);
+  t.mock.timers.tick(10000);await result;
+  const shown=[],options=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal(){},begin(){},frame(){},finish(){}};
+  const media={state(){},close(){},prepareSequence(_value,value){options.push(value);},present:()=>assert.fail('no film after the server turn')};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']},signal=new AbortController().signal;
+  ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});
+  ports.restoreSnapshot(seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,plan:{id:'late',startAt:Date.now()-5000,endAt:Date.now()+1000,turnAt:Date.now()-1}}),{signal});
+  await ports.present({roomId,ver:1,talkId:'late',kind:'plan',startAt:Date.now()-5000,endAt:Date.now()+1000,events:[filmedBox(6,1),filmedBox(0,2)]},{signal});
+  assert.deepEqual(options,[{selectAhead:false}],'past turnAt every card shows at once: nothing to ask for');assert.deepEqual(shown,[1,2]);
 });
 
 test('joined takes chain back to back: an early handover waits for the boundary before the next take',async t=>{
@@ -955,6 +973,43 @@ test('a clip that already plays at turnAt plays to its end; the steps after it s
   await h.until(1000+1000+12500+250);
   assert.deepEqual(h.seen.map(row=>row.event.type),['speak']);assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);
   assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+// Mocked timers replace the global setTimeout only.
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// K04 F3 (staging 28 Oct 2026, 43b7404e): hit/stand opened 1.1-2.6 s after turnAt. The controller and the
+// presentation took the server's clock only after the media binding read (GET /binding, 1-2.5 s in staging),
+// so both table clocks ran that much behind the server. The clock belongs to the moment the frame arrived.
+test('a slow binding read never moves the table clock: cards and hit/stand still come at the server turnAt',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const BINDING_MS=2500,SKEW_MS=40000,server=()=>Date.now()+SKEW_MS;
+  const shown=[],renders=[],errors=[],mediaErrors=[],sockets=[],restored=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push({draw,at:Date.now()}),reveal(){},begin(){},frame(){},finish(){}};
+  // Every clip is still loading: only the table clock can end the steps.
+  const media={state(){},prepareSequence(){},close(){},present:(_event,options)=>new Promise(resolve=>options.signal.addEventListener('abort',()=>resolve(false),{once:true}))};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,onError:code=>mediaErrors.push(code)});
+  const presentation={close:ports.close,present:ports.present,
+    restoreSnapshot:(value,options)=>{restored.push(options.receivedAt);return wait(BINDING_MS).then(()=>ports.restoreSnapshot(value,options));}};
+  const commands={state:'idle',send:async()=>({status:'ok',result:{op:'act',version:3}}),stop(){}};
+  const controller=createSharedRoomController({roomId,commands,view:{bind(){},render:value=>renders.push(value),close(){}},presentation,now:Date.now});
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}}
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,callbackTimeoutMs:30000,
+    restoreSnapshot:controller.restoreSnapshot,present:controller.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();controller.stop();});client.start();
+  const until=async at=>{while(Date.now()<at){t.mock.timers.tick(Math.min(50,at-Date.now()));await flushRender();}};
+  sockets[0].message({snapshot:seated(1,{serverNow:server()}),presentation:null});await until(Date.now()+BINDING_MS+100);
+  const plan={...missingGoodluckPlan(server()),talkId:'plan-binding'},turnAt=plan.endAt-SKEW_MS;
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+  const arrived=Date.now();
+  sockets[0].message({snapshot:seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:server(),round,
+    plan:{id:'plan-binding',startAt:plan.startAt,endAt:plan.endAt,turnAt:plan.endAt},actionDeadline:plan.endAt+15000}),presentation:plan});
+  await flushRender();assert.equal(restored.at(-1),arrived,'the socket hands over the arrival time of the frame');
+  await until(turnAt-1);assert.deepEqual(renders.at(-1).can.act,[]);assert.deepEqual(shown,[],'no card before the server turn time');
+  await until(turnAt+1);
+  assert.deepEqual(renders.at(-1).can.act,['hit','stand'],'the buttons open at the server turnAt, not one binding read later');
+  assert.deepEqual(shown.map(row=>row.draw),[1,2,3,4]);assert.ok(shown.every(row=>row.at<=turnAt+50),'every committed card shows at turnAt');
+  assert.deepEqual(errors,[]);assert.deepEqual(mediaErrors,[]);
 });
 
 test('a film part that shows frames plays on past its step time; a later part of the same step does not start after it',async t=>{
