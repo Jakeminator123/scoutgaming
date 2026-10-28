@@ -10,6 +10,11 @@ import {readPackagePresentation} from '../packages/presentation/server/presentat
 import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
+import {createStudioNativeAuth} from '../packages/studio-access/studio-native-auth.mjs';
+import {createStudioDocumentApi} from '../apps/studio/lib/studio-document-api.mjs';
+import {createStudioAdminApi} from '../apps/studio/lib/studio-admin-api.mjs';
+import {createOperatorPackageApi} from '../apps/studio/lib/operator-package-api.mjs';
+import {validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 
 // One package crosses actual N1/N2/public/game selectors. Only storage, account
 // rows, provider metadata and runtime capabilities are synthetic. This does not
@@ -428,3 +433,62 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.equal(write.origin, origin); assert.equal(write.site, 'same-origin', 'real HTTP preserves Fetch Metadata/CSRF protection');
     assert.deepEqual(errors, []); assert.deepEqual(escaped, []);
   });
+
+// N1 writes behind the real validator in one fixture: document CAS, package CAS and partner
+// sessions. Moved from the retired publication page's browser fixture; no component bundle is needed.
+test('N1 project and package writes use their revisions as CAS, reject partner sessions and leave the other company untouched', async () => {
+  const f = await createPublicationChain();
+  const authorize = createStudioNativeAuth(f.config);
+  const videoRegistry = {async loadCaptured(snapshot) {return {videos: snapshot.mediaRows.map(row => ({id: row.id,
+    dealer: row.classification.dealerId, sha256: row.sha256, bytes: row.size, classification: row.classification,
+    available: true, integrity: 'verified'}))};}, async verifyCapturedMedia() {}};
+  const packages = createOperatorPackageApi({pool: f.operators, scope: f.config.scope, repository: f.repository, videoRegistry,
+    storeFactory: async () => f.store, now: f.config.now});
+  const admin = createStudioAdminApi({authorize, allowedOrigins: f.config.allowedOrigins, publicHosts: f.config.publicHosts,
+    handlers: new Map([...packages.handlers]), preparations: packages.preparations, mutationTransaction: work => f.repository.transaction(work)});
+  const documents = createStudioDocumentApi({repository: f.repository, authorize, config: f.config,
+    validateProjectBindings: async project => validateProject(project), mutationTransaction: work => f.repository.transaction(work)});
+  const packageEndpoint = '/studio/api/admin/operator-package', projectEndpoint = '/studio/api/project';
+  const call = (path, {method = 'GET', body, cookie = f.auth.admin} = {}) => (path === projectEndpoint ? documents : admin).handle(new Request(f.origin + path,
+    {method, headers: {cookie, ...(method !== 'GET' ? {origin: f.origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json'} : {})},
+      ...(body ? {body: JSON.stringify(body)} : {})}));
+  const publish = (expectedPackageRevision, cookie) => call(packageEndpoint, {method: 'POST', cookie,
+    body: {operatorId: company.id, lanes: [compositionId], expectedPackageRevision}});
+  const project = async () => (await (await call(projectEndpoint)).json()).project;
+
+  // The existing room publication freezes North's first package revision.
+  const receipt = await publishWithExistingController(f);
+  assert.equal(receipt.packageRevision, 1);
+  const frozen = await f.store.getCurrentPackage(company.id);
+  const before = await project();
+  // Saving the project is document CAS and never publishes.
+  const changed = structuredClone(before); changed.lanes[0].label = 'C6 sparat bord';
+  const saved = await call(projectEndpoint, {method: 'PUT', body: {project: changed, expectedRevision: before.revision}});
+  assert.equal(saved.status, 200, await saved.clone().text());
+  const savedRevision = (await saved.json()).project.revision;
+  assert.notEqual(savedRevision, before.revision);
+  assert.equal((await project()).lanes[0].label, 'C6 sparat bord');
+  assert.deepEqual(await f.store.getCurrentPackage(company.id), frozen, 'saving cannot publish');
+  const staleSave = await call(projectEndpoint, {method: 'PUT', body: {project: before, expectedRevision: before.revision}});
+  assert.equal(staleSave.status, 409);
+  assert.equal((await project()).revision, savedRevision, 'a stale save writes nothing');
+  // Publishing freezes the saved composition; only the acknowledged revision is a valid CAS afterwards.
+  const published = await publish(1);
+  assert.equal(published.status, 200, await published.clone().text());
+  assert.equal((await published.json()).packageRevision, 2);
+  const acknowledged = await f.store.getCurrentPackage(company.id);
+  assert.equal(acknowledged.revision, 2);
+  assert.equal(readPackagePresentation(acknowledged).lanes[0].label, 'C6 sparat bord');
+  assert.equal((await publish(1)).status, 409, 'a stale package revision is refused');
+  assert.deepEqual(await f.store.getCurrentPackage(company.id), acknowledged, 'the refused write changed nothing');
+  // Partner sessions, including the company's own N2 administrator, and a missing session cannot use the N1 endpoints.
+  for (const cookie of [f.auth.north, f.auth.south, '']) {
+    assert.equal((await publish(2, cookie)).status, 401, 'the N1 package endpoint does not accept a partner or missing session');
+    const write = await call(projectEndpoint, {method: 'PUT', cookie, body: {project: changed, expectedRevision: savedRevision}});
+    assert.ok([401, 403].includes(write.status), 'the N1 document endpoint does not accept a partner or missing session');
+  }
+  assert.deepEqual(await f.store.getCurrentPackage(company.id), acknowledged, 'rejected access never writes the package');
+  assert.equal((await project()).revision, savedRevision, 'rejected access never writes the project');
+  assert.equal(await f.store.getCurrentPackage(otherCompany.id), null, 'the other company is unaffected throughout');
+  assert.equal(f.operators.tables.operator_packages.length, 2, 'exactly the two acknowledged publications exist');
+});
