@@ -3,7 +3,6 @@ import { registeredDealerIds } from '../../../packages/presentation/contracts/de
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createPlayerAdministration } from '../../../packages/storage/server/player-administration.mjs';
-import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
 import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../../packages/presentation/contracts/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
@@ -16,7 +15,7 @@ function bodyKeys(body, allowed, required = allowed) {
 // Actual domain handlers, not a forwarding proxy. Missing domains are not
 // registered; callers cannot turn a future descriptor into an active feature.
 export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy, canAssignDealer,
-  voiceLines = createRegisteredVoiceLines(), now = () => new Date().toISOString() } = {}) {
+  now = () => new Date().toISOString() } = {}) {
   if (!db?.prepare || !boDb?.prepare || !repository?.readDocument || !repository?.saveDocument) fail(503);
   scope = validateStudioScope(scope);
   const players = createPlayerAdministration({ db, boDb, now }), handlers = new Map(), gates = new Map();
@@ -92,30 +91,6 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     // never grants authority to delete shared media or historical job artifacts.
     value.gameLanes = remaining;
     value.gameLane = active;
-  });
-  register('GET', 'voicelines', async () => {
-    const [saved, registry, dealers] = await Promise.all([config(), voiceLines(), savedDealerSet()]);
-    return { ...registry, revision: saved.revision, dealers: registry.dealers.filter(dealer => dealers.has(dealer.dealer)).map(dealer => ({ ...dealer,
-      lines: dealer.lines.map(line => {
-        const review = saved.value.voiceReview?.[dealer.dealer]?.[line.key];
-        const matches = voiceReviewMatches(review, line.identity);
-        return { ...line, review: matches ? review.verdict : null,
-          reviewState: matches ? 'current-human-review' : review ? 'unbound-or-changed-media' : 'unreviewed',
-          productionApproved: false };
-      }) })) };
-  });
-  change('voiceline-review', ['dealer', 'line', 'verdict', 'expectedIdentity'], async (value, body, context) => {
-    if (!text(body.dealer, 40) || !text(body.line, 100) || !['approved', 'rejected', null].includes(body.verdict)) fail();
-    const [registry, dealers] = await Promise.all([voiceLines(), savedDealerSet()]);
-    if (!dealers.has(body.dealer)) fail(404);
-    const line = registry.dealers.find(row => row.dealer === body.dealer)?.lines.find(row => row.key === body.line);
-    if (!line) fail(404);
-    if (body.verdict !== null && (!line.reviewable || !studioVoiceIdentity(body.expectedIdentity)
-      || !studioVoiceIdentity(line.identity) || canonicalStudioJson(body.expectedIdentity) !== canonicalStudioJson(line.identity))) fail(409);
-    if (body.verdict === null && body.expectedIdentity !== null && !studioVoiceIdentity(body.expectedIdentity)) fail();
-    value.voiceReview ??= {}; value.voiceReview[body.dealer] ??= {};
-    if (body.verdict === null) delete value.voiceReview[body.dealer][body.line];
-    else value.voiceReview[body.dealer][body.line] = { verdict: body.verdict, identity: structuredClone(line.identity), by: trusted(context), at: now() };
   });
   register('GET', 'overview', async () => {
     const [saved, total, tx] = await Promise.all([

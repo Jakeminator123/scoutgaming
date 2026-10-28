@@ -300,8 +300,9 @@ test('game-only gateway keeps the Web-backed Vercel session check and misdirects
     assert.equal(await get('/__vercel/lab/session'), 200); assert.equal(checks, 1);
     for (const path of ['/studio/api/inputs/events', '/studio/api/project', '/studio/api/videos']) assert.equal(await get(path), 421, path);
     assert.equal(await get('/api/table'), 401);
-    assert.equal(await get('/api/auth/lab/start?next=%2Fstudio'), 401);
-    assert.equal(checks, 1); assert.equal(webRequests, 2);
+    // The retired Lab login is no longer an ingress path; it never reaches Web.
+    assert.equal(await get('/api/auth/lab/start?next=%2Fstudio'), 421);
+    assert.equal(checks, 1); assert.equal(webRequests, 1);
     authorityStatus = 401; assert.equal(await get('/__vercel/lab/session'), 401);
     authorityStatus = 503; assert.equal(await get('/__vercel/lab/session'), 503);
     assert.equal(checks, 3);

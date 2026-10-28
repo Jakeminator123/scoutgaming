@@ -17,7 +17,7 @@ test('native Backoffice groups cover every active surface exactly once', () => {
   assert.equal(ids.length, new Set(ids).size);
   assert.deepEqual([...ids].sort(), BACKOFFICE_SECTIONS.map(section => section.id).sort());
   assert.equal(backofficeGroupId('accounts'), 'accounts');
-  assert.equal(backofficeGroupId('media-review'), 'media-review');
+  assert.equal(backofficeGroupId('media-review'), 'operations', 'the retired speech review opens the default group');
   assert.equal(backofficeGroupId('missing'), 'operations');
   assert.equal(backofficeGroupId(undefined), 'operations');
   for (const group of BACKOFFICE_GROUPS) {

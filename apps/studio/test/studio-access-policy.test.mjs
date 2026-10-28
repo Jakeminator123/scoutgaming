@@ -63,7 +63,7 @@ test('administrator role preserves explicit lifecycle, owner and cancellation re
     ['forbid-self-role-change', 'revoke-changed-identity']);
   assert.deepEqual(studioAdminActionPolicy('users/remove').handlerRequirements,
     ['forbid-self-removal', 'revoke-changed-identity']);
-  assert.deepEqual(studioAdminActionPolicy('speech-qa').handlerRequirements, ['operator-speech-qa-gate']);
+  assert.equal(studioAdminActionPolicy('speech-qa'), null, 'the retired speech-QA stub has no role floor');
   assert.deepEqual(studioAdminActionPolicy('players/password').handlerRequirements,
     ['game-authority','player-lifecycle-and-ledger','cancel-player-runtime']);
   assert.deepEqual(studioAdminActionPolicy('players/status').handlerRequirements,

@@ -7,7 +7,6 @@ import {fileURLToPath} from 'node:url';
 import {buildRuntimeMediaCatalog} from '../tools/build-runtime-media-catalog.mjs';
 import {createStudioMediaRuntime} from '../apps/studio/lib/studio-media-runtime.mjs';
 import {createRegisteredDealerIdle} from '../packages/presentation/server/registered-dealer-idle.mjs';
-import {createRegisteredVoiceLines} from '../apps/studio/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
@@ -33,9 +32,6 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   for(const dealer of ['astrid','vera','amira','mei'])assert.equal(await idle(dealer,project),null,'catalog metadata cannot supply a missing saved baseline');
   assert.deepEqual(await idle('paow',project),{dealerId:'paow',mediaId:id,sha256,available:true});
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
-  const voices=await createRegisteredVoiceLines({env,repositoryRoot:root,repository})();
-  assert.deepEqual(voices.dealers.map(row=>row.dealer),['astrid']);
-  for(const dealer of voices.dealers)assert.equal(dealer.lines.length,0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
   const legacy=await media.legacyControls(project);
   for(const dealer of ['astrid'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));

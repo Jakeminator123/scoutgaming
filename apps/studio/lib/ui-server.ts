@@ -31,19 +31,11 @@ async function nativeUi(request: Request) {
   return native;
 }
 
-function login(error: unknown, request: Request) {
-  if ((error as {statusCode?: number})?.statusCode !== 401) throw error;
-  const config = remoteUiConfiguration();
-  const url = new URL(request.url);
-  const path = url.pathname;
-  const next = path.startsWith('/studio') ? path : `/studio${path === '/' ? '' : path}`;
-  redirect(`${config!.publicOrigin}/api/auth/lab/start?next=${encodeURIComponent(next + url.search)}`);
-}
-
 export async function authorizeUiPage(request: Request) {
   if (nativeStudioAdminEnabled()) { await nativeUi(request); return; }
   if (!remoteUiConfiguration()) { assertLocalPageRequest(request); return; }
-  try { await authorizeRemoteUi(request); } catch (error) { login(error, request); }
+  // The retired Lab login (/api/auth/lab/start) is gone; a missing session stays a 401.
+  await authorizeRemoteUi(request);
 }
 
 export async function studioUiInitialData(request: Request) {
@@ -56,5 +48,5 @@ export async function studioUiInitialData(request: Request) {
     return {project: saved.project, videos, status: {configured: true, provider: 'neon', message: 'Sparad Studio-policy läses från Neon.'}};
   }
   if (!remoteUiConfiguration()) { assertLocalPageRequest(request); return studioInitialData(); }
-  try { return await remoteUiInitialData(request); } catch (error) { return login(error, request); }
+  return await remoteUiInitialData(request);
 }

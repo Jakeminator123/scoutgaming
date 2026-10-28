@@ -35,7 +35,6 @@ export function launchBackendSearch(url) {
 
 const AUTH = new Set([
   '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/player/login', '/api/auth/player/register',
-  '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
 const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
 const SHARED_ROOM_PRESENTATION = /^\/api\/presentation\/shared-room\/[a-z0-9_-]{1,128}\/(?:binding|config|idle-advice)$/;
@@ -46,12 +45,14 @@ const ROOM_PRESENTATION_MEDIA = [
 ];
 const roomPresentationMediaPath=path=>ROOM_PRESENTATION_MEDIA.some(pattern=>{const match=pattern.exec(path);return match&&Number.isSafeInteger(Number(match[1]));});
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
-const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
 const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
-const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
+// Public dealer media follows the dealer identity syntax, never a list of names.
+// The engine still serves only cataloged public files and refuses retired routes.
+const DEALER_SEGMENT = '[a-z][a-z0-9]*(?:-[a-z0-9]+)*';
+const PUBLIC_MEDIA = new RegExp('^/(?:assets|dealer|dealers/' + DEALER_SEGMENT + '|sfx|kevin-cards|review|media/(?:dealers/' + DEALER_SEGMENT + '|game|site)/runtime)(?:/|$)');
 
 // Preview documents and commands share the signed transport. The backend still
 // requires the current Studio administrator and the session owner on every call.
@@ -74,11 +75,14 @@ export function backendPlatformPath(value) {
     || path === '/api/dealer/observation'
     || path === '/api/dealer/transcription'
     || STUDIO_PREVIEW.test(path)
-    || BACKOFFICE.has(path)
+    // The engine's operator speech-QA gate stays reachable only because the
+    // cloud startup probe (ops/cloud/access-check.mjs) expects its 403. It is
+    // retired with the engine's /api/bo in the server-side PR.
+    || path === '/api/bo/speech-qa'
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/rooms)?$/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/rooms\/[a-z][a-z0-9-]{0,63}\/preview(?:\/media\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/(?:dealer|table|background)\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})?$/.test(path)
-    || /^\/api\/(?:probe|chat\/memory|astrid\/(?:observation|transcription)|generated-speech)(?:\/|$)/.test(path)
+    || /^\/api\/(?:probe|chat\/memory|astrid\/transcription|generated-speech)(?:\/|$)/.test(path)
     || /^\/api\/presentation\/layers\/[a-z][a-z0-9-]{0,62}\/[a-f0-9-]{36}$/.test(path)
     || /^\/api\/presentation\/registered-idle\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}$/.test(path)
     || /^\/api\/presentation\/registered-video\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(path)
