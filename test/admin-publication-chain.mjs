@@ -260,13 +260,14 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.equal((await page.goto(origin + overview + roomQuery)).status(), 200);
     const workspace = page.locator('[data-surface="partner"]');
     await workspace.getByRole('heading', {name: 'Översikt', exact: true}).waitFor();
-    assert.equal(await workspace.locator('.kevin-package-revision').first().textContent(), 'Paketversion ' + receipt.packageRevision);
-    assert.equal(await workspace.locator('.side-role').textContent(), 'Operatörspersonal');
+    // The shell: company, "Tilldelning från Scoutgaming · revision N" and the role word (TERMINOLOGI).
+    assert.equal(await workspace.locator('.side .context b').textContent(), 'revision ' + receipt.packageRevision);
+    assert.equal(await workspace.locator('.side .foot .who .small').textContent(), 'administratör');
     const staffLinks = () => workspace.locator('a[href="/admin"], a[href^="/lobby"]');
     assert.equal(await staffLinks().count(), 0, 'ordinary N2 never receives staff portal links');
     const nav = workspace.getByRole('navigation');
     const brandingRead = page.waitForResponse(response => new URL(response.url()).pathname === '/studio/api/partner/branding');
-    await nav.getByRole('link', {name: 'Spelrum', exact: true}).click();
+    await nav.getByRole('link', {name: 'Spelbord', exact: true}).click();
     const brandingResponse = await brandingRead;
     assert.equal(brandingResponse.status(), 200);
     const branding = await brandingResponse.json();
@@ -274,18 +275,22 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.equal(branding.canConfigure, true); assert.deepEqual(branding.presentation, chain.partner.presentation);
     assert.ok(branding.rooms.some(room => room.id === receipt.room.id));
     await page.waitForURL(origin + rooms + roomQuery);
+    // Spelbord: the rooms are cards (aria-pressed marks the selected one), the published
+    // scene template is a region with the revision chip, the editor a region with tabs.
+    const roomCards = () => workspace.getByRole('group', {name: 'Spelbord', exact: true});
     const assertRoom = async (packageRevision = receipt.packageRevision) => {
-      const picker = workspace.getByRole('combobox', {name: 'Spelrum', exact: true});
-      await picker.waitFor(); assert.equal(await picker.inputValue(), receipt.room.id);
-      const publishedRoom = workspace.getByRole('region', {name: 'Publicerad sammansättning', exact: true});
+      const picked = roomCards().getByRole('button', {pressed: true});
+      await picked.waitFor(); assert.match(await picked.textContent(), new RegExp(receipt.room.name));
+      const publishedRoom = workspace.getByRole('region', {name: 'Publicerad scenmall', exact: true});
       assert.equal(await publishedRoom.getByRole('heading', {level: 2}).textContent(), receipt.room.name);
-      assert.equal(await publishedRoom.locator('.kevin-package-revision').textContent(), 'Version ' + packageRevision);
+      assert.equal(await publishedRoom.locator('.chip.accent').textContent(), 'revision ' + packageRevision);
       const play = publishedRoom.getByRole('link', {name: 'Provspela ' + receipt.room.name + ' ↗', exact: true});
       const url = new URL(await play.getAttribute('href'), origin);
       assert.equal(url.searchParams.get('operator'), company.slug); assert.equal(url.searchParams.get('table'), receipt.room.id);
-      const appearance = workspace.getByRole('region', {name: 'Utkast och publicering', exact: true});
+      const appearance = workspace.getByRole('region', {name: 'Spelbordets utseende och publicering', exact: true});
       await appearance.waitFor();
-      assert.equal(await appearance.getByRole('combobox', {name: 'Sammansättning', exact: true}).inputValue(), compositionId);
+      assert.equal(await appearance.getByRole('combobox', {name: 'Scenmall', exact: true}).inputValue(), compositionId);
+      assert.match(await appearance.textContent(), new RegExp('Publicerad version ' + packageRevision));
       assert.equal(await staffLinks().count(), 0);
     };
     await assertRoom();
@@ -296,14 +301,15 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     await page.goBack(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
     await page.goForward(); await page.waitForURL(origin + overview + roomQuery);
     await workspace.getByRole('heading', {name: 'Översikt', exact: true}).waitFor();
-    await nav.getByRole('link', {name: 'Spelrum', exact: true}).click(); await assertRoom();
-    await workspace.getByRole('combobox', {name: 'Spelrum', exact: true}).selectOption('');
+    await nav.getByRole('link', {name: 'Spelbord', exact: true}).click(); await assertRoom();
+    const companyCard = () => roomCards().getByRole('button', {name: /Bolagets standard/});
+    await companyCard().click();
     await page.waitForURL(origin + rooms + '?scope=company');
     await page.reload();
-    assert.equal(await workspace.getByRole('combobox', {name: 'Spelrum', exact: true}).inputValue(), '');
+    await roomCards().getByRole('button', {name: /Bolagets standard/, pressed: true}).waitFor();
     await page.goBack(); await page.waitForURL(origin + rooms + roomQuery); await assertRoom();
     await page.goForward(); await page.waitForURL(origin + rooms + '?scope=company');
-    assert.equal(await workspace.getByRole('combobox', {name: 'Spelrum', exact: true}).inputValue(), '');
+    await roomCards().getByRole('button', {name: /Bolagets standard/, pressed: true}).waitFor();
     assert.equal((await page.goto(origin + '/partner/' + otherCompany.slug + '/rooms' + roomQuery)).status(), 403);
     assert.equal(await page.locator('[data-surface="partner"]').count(), 0, 'foreign page never renders a workspace');
     // The same real loader distinguishes N1 from membership-bound N2; the
@@ -316,10 +322,19 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.deepEqual(await f.repository.readDocument('administration'), beforeAdministration, 'workspace visits never change room ownership');
     // Write through the real N2 workspace and HTTP handler. The selected room
     // owns the override; the frozen composition and company defaults stay intact.
+    // Table colour is no longer a partner choice (Jakob 2026-10-28) and this lane
+    // grants the company nothing else, so the editor shows every layer locked and the
+    // room draft is saved with the same command the editor sends; review and
+    // publication are then clicked in the editor.
     await useCookie(f.auth.north);
     await page.goto(origin + rooms + roomQuery); await assertRoom();
-    const appearance = workspace.getByRole('region', {name: 'Utkast och publicering', exact: true});
-    const color = '#445566', endpoint = origin + '/studio/api/partner/branding?operator=' + company.slug;
+    const appearance = workspace.getByRole('region', {name: 'Spelbordets utseende och publicering', exact: true});
+    assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).count(), 0, 'no table colour control for partners');
+    await appearance.getByRole('tab', {name: 'Dealer', exact: true}).click();
+    assert.equal(await appearance.locator('[data-locked]').count(), 3, 'background, table graphics and dealer are shown as locked, not hidden');
+    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /Låst av Scoutgaming/);
+    await appearance.getByRole('tab', {name: 'Utseende', exact: true}).click();
+    const color = '#445566', endpointPath = '/studio/api/partner/branding?operator=' + company.slug, endpoint = origin + endpointPath;
     const expectedBranding = {...branding.branding, roomOverrides: {[receipt.room.id]: {color}}};
     const southBefore = await f.store.getCurrentPackage(otherCompany.id);
     const oldEntry = decodeEntry(await (await f.request(chain.href, {cookie: ''})).text());
@@ -329,9 +344,7 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.ok(branding.presentation.lanes.find(lane => lane.id === compositionId).layers.table.colors.includes(color));
     const publishButton = appearance.getByRole('button', {name: 'Publicera granskat utkast', exact: true});
     assert.equal(await publishButton.isDisabled(), true);
-    await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).selectOption(color);
-    await appearance.getByText('Du har osparade ändringar.', {exact: true}).waitFor();
-    assert.equal(await publishButton.isDisabled(), true, 'unsaved changes cannot be published');
+    assert.equal(await appearance.getByRole('button', {name: 'Spara utkast', exact: true}).isDisabled(), true, 'nothing to change, nothing to save');
     const command = async (name, action) => {
       const pending = page.waitForResponse(response => response.url() === endpoint
         && response.request().method() === 'POST' && response.request().postDataJSON().action === action);
@@ -339,8 +352,11 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       const response = await pending; assert.equal(response.status(), 200, await response.text());
       return response.json();
     };
-    const draft = await command('Spara utkast', 'save-draft');
-    await appearance.getByText('Utkastet är sparat. Publicerad version är oförändrad.', {exact: true}).waitFor();
+    const saveDraft = await f.request(endpointPath, {cookie: f.auth.north, body: {action: 'save-draft', expectedDraftRevision: 0,
+      expectedPackageRevision: receipt.packageRevision, branding: expectedBranding}});
+    const saveDraftBody = await saveDraft.text();
+    assert.equal(saveDraft.status, 200, saveDraftBody);
+    const draft = JSON.parse(saveDraftBody);
     assert.equal(draft.packageRevision, receipt.packageRevision);
     assert.equal(draft.draftRevision, 1);
     assert.equal(draft.draft.basePackageRevision, receipt.packageRevision);
@@ -352,12 +368,14 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     const reloaded = page.waitForResponse(response => response.url() === endpoint && response.request().method() === 'GET');
     await page.reload(); await assertRoom();
     assert.deepEqual((await (await reloaded).json()).draft, draft.draft);
-    assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).inputValue(), color);
+    await appearance.getByText('Alla ändringar är sparade i utkastet.', {exact: true}).waitFor();
+    assert.match(await appearance.textContent(), /Sparat utkast 1/);
+    assert.ok((await roomCards().allTextContents()).some(text => /utkast/.test(text)), 'the saved draft is marked on the room cards');
     assert.equal(await appearance.getByRole('button', {name: 'Spara utkast', exact: true}).isDisabled(), true,
       'reloaded saved changes are clean');
     assert.equal(await publishButton.isDisabled(), true, 'reload cannot manufacture a publication review');
     const reviewed = await command('Granska publicering', 'review');
-    await appearance.getByText('Granskningen är klar. Kontrollera ändringar och berörda rum innan publicering.', {exact: true}).waitFor();
+    await appearance.getByText('Granskningen är klar. Kontrollera ändringar och berörda spelbord innan publicering.', {exact: true}).waitFor();
     assert.equal(reviewed.packageRevision, receipt.packageRevision);
     assert.equal(reviewed.draftRevision, draft.draftRevision);
     assert.deepEqual(reviewed.branding, expectedBranding);
@@ -366,15 +384,17 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     const reviewPanel = appearance.getByRole('region', {name: 'Granskning före publicering', exact: true});
     assert.match(await reviewPanel.textContent(), new RegExp(receipt.room.name));
     assert.match(await reviewPanel.textContent(), /#445566/);
+    assert.match(await reviewPanel.textContent(), /Utkastet är gemensamt för bolagets spelbord/, 'the review says one draft covers every table in the company');
     assert.deepEqual(f.operators.tables.operator_packages, beforePartner, 'review never publishes');
     const saved = await command('Publicera granskat utkast', 'publish');
     const nextRevision = receipt.packageRevision + 1;
     assert.equal(saved.packageRevision, nextRevision);
     assert.equal(saved.draft, null); assert.equal(saved.draftRevision, draft.draftRevision + 1);
     assert.deepEqual(saved.branding, expectedBranding);
-    await workspace.getByRole('region', {name: 'Publicerad sammansättning', exact: true})
-      .getByText('Version ' + nextRevision, {exact: true}).waitFor();
+    await workspace.getByRole('region', {name: 'Publicerad scenmall', exact: true})
+      .getByText('revision ' + nextRevision, {exact: true}).waitFor();
     await assertRoom(nextRevision);
+    assert.equal(await workspace.locator('.side .context b').textContent(), 'revision ' + nextRevision, 'the shell follows the new revision without a reload');
     assert.equal(await publishButton.isDisabled(), true, 'successful publication cannot be repeated without a new draft');
     const current = await f.store.getCurrentPackage(company.id);
     assert.equal(current.revision, nextRevision);
@@ -407,7 +427,7 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     assert.deepEqual(await f.store.getCurrentPackage(otherCompany.id), southBefore);
 
     await page.reload(); await assertRoom(nextRevision);
-    assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).inputValue(), color);
+    await appearance.getByText('Du ser den publicerade versionen.', {exact: true}).waitFor();
     assert.equal(await publishButton.isDisabled(), true);
     assert.equal((await f.publicRooms.read(company.slug)).packageRevision, nextRevision);
     await context.clearCookies();
