@@ -278,9 +278,10 @@ export function studioPartnerResult(action: string, payload: JsonObject, gameOri
     const query = [...url.searchParams.keys()];
     if (approved.origin !== gameOrigin || approved.protocol !== 'https:' || approved.username || approved.password
       || url.origin !== approved.origin || url.username || url.password || url.hash || !['/game', '/blackjack'].includes(url.pathname)
-      || query.length !== 2 || !query.includes('dealer') || !query.includes('launch')
-      // Any well-formed dealer identity; the engine owns which dealer a launch opens.
-      || !isDealerId(url.searchParams.get('dealer'))
+      // A launch opens the lobby (L1, O02); an engine deployed before that still adds a
+      // well-formed dealer, which its landing then ignores without a company.
+      || query.length !== (query.includes('dealer') ? 2 : 1) || !query.includes('launch')
+      || query.includes('dealer') && !isDealerId(url.searchParams.get('dealer'))
       || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.searchParams.get('launch') || '')
       || url.href.length > 16384 || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
     return { kind: 'launch', url: url.href, playerRef: payload.playerRef };
