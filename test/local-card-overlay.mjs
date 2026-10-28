@@ -31,6 +31,22 @@ test('cursor exposes only presented draws, preserves hole privacy, and rejects s
   cursor.clear(); cursor.frame(hidden, 10); cursor.finish(hidden, 4, true); assert.equal(draw(svg, 4), undefined);
 });
 
+// K04 F9: the shared table asks whether a stalled take's card already shows before it writes an error line.
+test('shown names only the current film whose card face or flip is already on the table', () => {
+  const { cards } = setup(), cursor = createCardCursor(cards), round = fixture();
+  cursor.sync(round);
+  const token = cursor.begin(calibration.videos.find(v => v.track === '4'), { to: 'box', box: 3, shoeDraw: 1, handIndex: 0 });
+  cursor.frame(token, firstFaceTime('4') - 1/24); assert.equal(cursor.shown(token), false);
+  cursor.frame(token, firstFaceTime('4')); assert.equal(cursor.shown(token), true); assert.equal(cursor.shown(token + 1), false);
+  const uncalibrated = cursor.begin({ sha256: 'not-the-measured-video' }, { to: 'box', box: 3, shoeDraw: 3, handIndex: 0 });
+  cursor.frame(uncalibrated, 4); assert.equal(cursor.shown(uncalibrated), false, 'an untracked film shows its card only when the step ends');
+  assert.equal(cursor.shown(token), false, 'a replaced film is no longer current');
+  cursor.finish(uncalibrated, 3, false); assert.equal(cursor.shown(uncalibrated), false);
+  round.dealer.push(card('K', '♥', 4)); cursor.sync(round);
+  const flip = cursor.begin(calibration.videos.find(v => v.track === 'flip'), { type: 'reveal', to: 'dealer', shoeDraw: 4 });
+  cursor.frame(flip, 30 / 24); assert.equal(cursor.shown(flip), false); cursor.frame(flip, 31 / 24); assert.equal(cursor.shown(flip), true);
+});
+
 test('restore, split and revealed hole follow the server snapshot without exposing new split draws', () => {
   const { svg, cards } = setup(), cursor = createCardCursor(cards);
   cursor.restore(fixture()); assert.ok(draw(svg, 1)); assert.equal(draw(svg, 4).attrs['data-card'], 'hidden');

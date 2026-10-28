@@ -147,6 +147,20 @@ test('frontend write errors close both sides with 1011 without retrying', async 
   }
 });
 
+// K04 F10: an engine that disappears without a close frame (a Render restart) reached the player as 1011.
+test('an upstream gone without a close frame reaches the client as service restart 1012; other codes keep their mapping', async () => {
+  for (const [upstreamCode, clientCode] of [[1006, 1012], [1005, 1012], [1011, 1011], [1001, 1001], [1000, 1000], [4001, 4001], [1004, 1011]]) {
+    const upstream = new FakeSocket(), frontend = new FakeSocket();
+    const bridge = bridgePlatformSocket(upstream, {closeTimeoutMs: 5}); bridge.attach(frontend);
+    upstream.close(upstreamCode); await bridge.done;
+    assert.deepEqual(frontend.codes, [clientCode], `upstream ${upstreamCode}`);
+  }
+  // Before the client attached, the restart is held and sent when it does.
+  const upstream = new FakeSocket(), frontend = new FakeSocket();
+  const bridge = bridgePlatformSocket(upstream, {closeTimeoutMs: 5}); upstream.close(1006);
+  await bridge.attach(frontend); assert.deepEqual(frontend.codes, [1012]);
+});
+
 test('early ready is retained once, close drains it, and bounded queue/backpressure closes both sides', async () => {
   const upstream = new FakeSocket(), frontend = new FakeSocket();
   const bridge = bridgePlatformSocket(upstream, {maxBufferedBytes: 10, closeTimeoutMs: 5});

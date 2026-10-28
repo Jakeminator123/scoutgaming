@@ -15,6 +15,12 @@ const messages = {
   AUTHORITY_REJECTED:'Din inloggning eller rumsbehörighet har ändrats. Ladda om sidan.',
   shared_room_authentication_required:'Logga in igen för att fortsätta.', shared_room_forbidden:'Du har inte längre tillgång till rummet.',
 };
+// The server repeats r.lastBets: the boxes with a main bet when the player's last round began. Those are the
+// boxes of me.lastSettlement's hands, so one that is still the player's own has a bet to repeat.
+const previous = s => Array.isArray(s.me.lastSettlement?.hands) && s.me.lastSettlement.hands.some(h => s.me.seats.includes(h?.box));
+// A side bet needs the main bet of its own box (coordinator.mjs bet: NO_BETS).
+const sideOpen = (s, box) => s.bets[box]?.main > 0;
+export const SIGN_IN_EXPIRED = 'Din session har gått ut. Logga in igen.';
 function checked(raw, roomId) {
   const s = structuredClone(raw), cfg = s?.settings;
   if (s?.contract !== 'blackjack-table/1' || s.roomId !== roomId || !integer(s.version) || !integer(s.presentationVer)
@@ -34,7 +40,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation || (reconnect !== null && typeof reconnect !== 'function')) fail();
   let snapshot = null, chip = null, focusSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
   let closed = false, connected = false, presenting = false, sending = false, restoring = false, restoreGeneration = 0, waiting = null, notice = 'Ansluter till bordet…';
-  let offline = false;
+  let offline = false, expired = false;
   const serverTime = () => now() + clockOffset;
   function available() {
     const s = snapshot, result = { join:false, leave:false, bet:false, undo:false, clear:false, doubleBets:false, allSeats:false, repeat:false,
@@ -54,6 +60,8 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     const inWindow = !s.deadline || serverTime() < s.deadline;
     result.join = bets && !paused; result.leave = own && !player?.leaving;
     result.bet = result.undo = result.doubleBets = result.allSeats = result.repeat = bets && own && inWindow && !paused;
+    // Local guards before the server's NO_BETS and NO_REPEAT (coordinator.mjs stays the authority).
+    result.repeat = result.repeat && previous(s);
     // K04 B5: the server lets clear through READY, the deadline and a pause, and clear withdraws ready
     // (coordinator.mjs BET_OPS); it refuses a leaving player. The server stays the authority.
     result.clear = s.phase === 'bets' && own && !player?.leaving;
@@ -62,7 +70,10 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     result.refill = !paused; result.pause = !paused;
     return result;
   }
-  function draw() { view.render({ snapshot, chip, focusSeat, can:available(), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed,
+  // Why a betting control stays closed while betting is open: the same texts as the server's NO_BETS and NO_REPEAT.
+  const hints = can => can.bet ? { ready:can.ready ? '' : messages.NO_BETS, repeat:can.repeat ? '' : messages.NO_REPEAT, side:messages.NO_BETS }
+    : { ready:'', repeat:'', side:'' };
+  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, signIn:expired,
     retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
@@ -87,6 +98,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     if (op === 'leave') return {op,memberGen:s.me.memberGen};
     if (['bet','undo','clear','doubleBets','allSeats','repeat','ready'].includes(op)) {
       if (op === 'bet' && (!seat(args.seat) || !s.me.seats.includes(args.seat) || !['main','pp','tp'].includes(args.field))) return null;
+      if (op === 'bet' && args.field !== 'main' && !sideOpen(s,args.seat)) return null;
       return {op,windowId:s.windowId,...(op === 'bet' ? {seat:args.seat,field:args.field,chip} : op === 'allSeats' ? {chip} : {})};
     }
     if (op === 'act') { const handIndex = s.round.active, box = s.round.hands[handIndex].box; return {op,roundId:s.roundId,turnSeq:s.turnSeq,box,handIndex,action:args.action}; }
@@ -147,7 +159,9 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     focusSeat(value) { if (!closed && seat(value)) { focusSeat=value; draw(); } },
     selectChip(value) { if (!closed && snapshot?.settings.chips.includes(value) && !sending && !waiting && commands.state === 'idle') { chip = value; draw(); } },
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
-    fail() { if (!closed) { api.stop(); notice = 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
+    // K04 F8: a session the server refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
+    fail(code) { if (!closed) { api.stop(); expired = code === 'shared_room_unauthorized';
+      notice = expired ? SIGN_IN_EXPIRED : 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
     // The socket's reconnect budget is spent: the last server state stays on screen without controls, and the
     // player reconnects here instead of reloading the page (the socket also does so when the page or network returns).
     offline() { if (closed) return; offline = true; connected = false; clearTimeout(clockTimer); notice = 'Anslutningen till bordet bröts.'; draw(); },

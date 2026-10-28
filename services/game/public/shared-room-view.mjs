@@ -5,7 +5,7 @@ function button(document,text,action) {
   const node=document.createElement('button'); node.type='button'; node.textContent=text;
   node.addEventListener('click',action); return node;
 }
-export function createSharedRoomView({ document, onLayout = () => {} }) {
+export function createSharedRoomView({ document, onLayout = () => {}, signInHref = '/player-login' }) {
   const required=['scene','seats','chips','balance','total-bet','last-win','banner','deal-now','insurance','ins-yes','ins-no'];
   if(required.some(id=>!$(document,id)))throw new Error('shared_room_dom_unavailable');
   let actions,model,closed=false;
@@ -19,6 +19,8 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
   const retry=button(document,'Försök igen',()=>actions?.retry());retry.id='shared-room-retry';retry.hidden=true;retry.style.cssText='min-height:44px';extra.append(retry);
   // A lost connection is resumed here, not by reloading the page; the last server state stays on screen meanwhile.
   const again=button(document,'Återanslut',()=>actions?.reconnect?.());again.id='shared-room-reconnect';again.hidden=true;again.style.cssText='min-height:44px';extra.append(again);
+  // K04 F8: an expired session links to the player's sign-in, which returns to this table (blackjack-entry.mjs).
+  const signIn=document.createElement('a');signIn.id='shared-room-sign-in';signIn.className='shared-room-sign-in';signIn.href=signInHref;signIn.textContent='Logga in';signIn.hidden=true;extra.append(signIn);
   const leave=button(document,'Lämna platser',()=>actions?.dispatch('leave')),next=button(document,'Nästa runda',()=>actions?.dispatch('next'));
   const picker=document.createElement('select');picker.setAttribute('aria-label','Välj eller lämna plats');
   picker.style.cssText='min-height:44px;max-width:160px';
@@ -45,20 +47,40 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
     const inside=document.createElement('div');inside.className='seat-inner seat-shared-inner';root.append(inside);
     const join=button(document,`Plats ${index+1}`,()=>actions?.dispatch('join',{seat:index}));join.className='spot seat-shared-join';inside.append(join);
     const bets=document.createElement('div');bets.className='seat-shared-bets';bets.hidden=true;bets.style.display='none';inside.append(bets);
+    // The main bet is the seat's betting spot, the side bets sit beside it as smaller targets.
     const fields=Object.fromEntries([['pp','Par'],['main','Insats'],['tp','21+3']].map(([field,label])=>{
-      const control=button(document,label,()=>actions?.dispatch('bet',{seat:index,field}));control.className='seat-shared-bet';bets.append(control);return[field,control];
+      const control=button(document,label,()=>actions?.dispatch('bet',{seat:index,field}));
+      control.className='seat-shared-bet '+(field==='main'?'seat-shared-bet-main':'seat-shared-bet-side');bets.append(control);return[field,control];
     }));
-    return {root,join,bets,fields};
+    // Leaving is a small control of its own; the seat circle only says the seat is yours.
+    const leaveSeat=button(document,'Lämna',()=>actions?.dispatch('join',{seat:index}));leaveSeat.className='seat-shared-leave';leaveSeat.hidden=true;leaveSeat.style.display='none';inside.append(leaveSeat);
+    return {root,join,bets,fields,leaveSeat};
   });
   seatsHost.replaceChildren(...slots.map(slot=>slot.root));
+  // A seat at the edge of a phone's table would cut off a side bet: its bet row moves inside the scene,
+  // after every render and after the presentation lays the seats out again on resize.
+  function onScreen(){
+    if(closed||typeof scene.getBoundingClientRect!=='function')return;
+    const edge=scene.getBoundingClientRect();
+    for(const slot of slots){
+      slot.bets.style.transform='';if(slot.bets.hidden||slot.root.hidden)continue;
+      const row=slot.bets.getBoundingClientRect(),shift=Math.round(Math.max(0,edge.left+8-row.left)-Math.max(0,row.right-(edge.right-8)));
+      if(shift)slot.bets.style.transform=`translateX(${shift}px)`;
+    }
+  }
+  const view=document.defaultView,resized=()=>view?.requestAnimationFrame?.(onScreen);
+  if(typeof view?.addEventListener==='function'){view.addEventListener('resize',resized);cleanups.push(()=>view.removeEventListener('resize',resized));}
   let chipKey='';
   return Object.freeze({
     bind(value){actions=value;},
     render(value){
-      model=value;const s=value.snapshot,can=value.can;
-      notice.textContent=value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;again.hidden=!value.offline;
+      model=value;const s=value.snapshot,can=value.can,hints=value.hints??{};
+      // An empty status box stays away: it overlays the table beside the first seat.
+      notice.textContent=value.notice;status.hidden=!value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;again.hidden=!value.offline;signIn.hidden=!value.signIn;
       leave.disabled=!can.leave;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
-      for(const [id,[,op]] of Object.entries(labels))if($(document,id))$(document,id).disabled=!can[op];
+      for(const [id,[,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.disabled=!can[op];
+        // Redo waits for a main bet and Upprepa for a previous round; the tooltip names the reason.
+        if(op==='ready'||op==='repeat')node.title=hints[op]??'';}
       for(const node of document.querySelectorAll('[data-act]'))node.disabled=!can.act.includes(node.dataset.act);
       for(const id of ['actions','actions-top'])if($(document,id))$(document,id).hidden=!can.act.length;
       // The insurance question shows from turnAt, when every card of its plan shows (K04 review of #481). At the
@@ -81,12 +103,20 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
         const own=s.owners[i]===s.me.id,occupied=s.owners[i]!==null;
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
         // Short visible label so 44 px pills fit the seat spacing; the full text stays in aria-label.
-        slot.join.textContent=own?'Lämna':String(i+1);slot.join.setAttribute('aria-label',own?`Lämna ${i+1}`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`);
-        slot.join.disabled=!can.join||(occupied&&!own);slot.join.setAttribute('aria-pressed',String(own));
+        // The own seat's circle reads "Du" and takes no click; "Lämna" beside the bets leaves it.
+        slot.join.textContent=own?'Du':String(i+1);slot.join.setAttribute('aria-label',own?`Plats ${i+1}, din plats`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`);
+        slot.join.disabled=own||!can.join||occupied;slot.join.setAttribute('aria-pressed',String(own));
+        slot.leaveSeat.hidden=!own;slot.leaveSeat.style.display=own?'':'none';slot.leaveSeat.disabled=!can.join;slot.leaveSeat.setAttribute('aria-label',`Lämna plats ${i+1}`);
         slot.bets.hidden=!own;slot.bets.style.display=own?'':'none';
-        for(const [field,node] of Object.entries(slot.fields)){node.disabled=!can.bet||!own;node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+money(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field])}`);}
+        for(const [field,node] of Object.entries(slot.fields)){
+          // A side bet opens once its box has a main bet; until then the tooltip says why.
+          const closedSide=field!=='main'&&!(s.bets[i].main>0);
+          node.disabled=!can.bet||!own||closedSide;node.title=closedSide?hints.side??'':'';
+          node.classList.toggle('staked',s.bets[i][field]>0);
+          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+money(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field])}`);}
       }
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});
+      onScreen();
     },
     get snapshot(){return model?.snapshot;},
     close(){if(closed)return;closed=true;cleanups.forEach(fn=>fn());actions=null;},
