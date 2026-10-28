@@ -35,7 +35,6 @@ export function launchBackendSearch(url) {
 
 const AUTH = new Set([
   '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/player/login', '/api/auth/player/register',
-  '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
 const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
 const SHARED_ROOM_PRESENTATION = /^\/api\/presentation\/shared-room\/[a-z0-9_-]{1,128}\/(?:binding|config|idle-advice)$/;

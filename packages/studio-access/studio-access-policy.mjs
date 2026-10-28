@@ -12,7 +12,6 @@ export const normalizeStudioRole = value => isAdministratorRole(value) ? 'admin'
 export const STUDIO_ADMIN_SECTIONS = Object.freeze([
   ['ops', 'Driftöversikt', 'admin'],
   ['lanes', 'Spel och lanes', 'admin'],
-  ['voice', 'Tal och synkgranskning', 'admin'],
   ['clips', 'Klipp och granskning', 'admin'],
   ['gens', 'Genererat material', 'admin'],
   ['apikeys', 'Partner och API-nycklar', 'admin'],

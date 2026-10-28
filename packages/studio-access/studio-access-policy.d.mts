@@ -1,7 +1,7 @@
 export type StudioRole = 'admin' | 'superadmin';
 /** Only admin is issued; superadmin is accepted for legacy stored identities. */
 export function normalizeStudioRole(value: unknown): 'admin' | null;
-export type StudioAdminSectionId = 'ops' | 'lanes' | 'voice' | 'clips' | 'gens' | 'apikeys'
+export type StudioAdminSectionId = 'ops' | 'lanes' | 'clips' | 'gens' | 'apikeys'
   | 'emails' | 'users' | 'rooms' | 'dealers' | 'pit' | 'tours' | 'players' | 'pay' | 'shoes';
 export type StudioAdminActionId = 'overview' | 'config' | 'clips'
   | 'generations' | 'gen-verdicts' | 'apikeys' | 'users' | 'players' | 'transactions' | 'emails' | 'shoes'
