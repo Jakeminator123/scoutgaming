@@ -79,7 +79,7 @@ export function backendPlatformPath(value) {
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/rooms)?$/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/rooms\/[a-z][a-z0-9-]{0,63}\/preview(?:\/media\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/(?:dealer|table|background)\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})?$/.test(path)
-    || /^\/api\/(?:probe|chat\/memory|generated-speech)(?:\/|$)/.test(path)
+    || /^\/api\/(?:probe|chat\/memory|astrid\/transcription|generated-speech)(?:\/|$)/.test(path)
     || /^\/api\/presentation\/layers\/[a-z][a-z0-9-]{0,62}\/[a-f0-9-]{36}$/.test(path)
     || /^\/api\/presentation\/registered-idle\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}$/.test(path)
     || /^\/api\/presentation\/registered-video\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(path)

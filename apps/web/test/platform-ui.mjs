@@ -814,15 +814,16 @@ test('static redirects leave credentials and APIs to their authenticated handler
  }finally{for(const [key,value]of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
 });
 
-test('public dealer media is dealer-independent while retired Astrid and Admin probe paths have no backend ingress', () => {
+test('public dealer media is dealer-independent while retired camera observation and Admin probe paths have no backend ingress', () => {
   for (const path of ['/dealers/astrid/poster.jpg', '/dealers/linnea/poster.jpg', '/dealers/paow-v2/streams/index.json',
     '/media/dealers/linnea/runtime/presentation/idle.mp4', '/media/game/runtime/table.png']) {
     assert.equal(backendPlatformPath(path), true, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'backend', path);
   }
   for (const path of ['/dealers/Linnea/poster.jpg', '/dealers/-linnea/poster.jpg', '/dealers/linnea-/poster.jpg', '/dealers', '/media/dealers/linnea/source/raw.mp4',
-    '/api/astrid/observation', '/api/astrid/transcription', '/studio/api/probe']) assert.equal(backendPlatformPath(path), false, path);
-  // The engine's own idle-talk client keeps its route until the server-side retirement.
-  assert.equal(backendPlatformPath('/api/probe/presence'), true);
+    '/api/astrid/observation', '/studio/api/probe']) assert.equal(backendPlatformPath(path), false, path);
+  // Player speech (Whisper transcription) stays; the engine's own idle-talk
+  // client keeps its route until the server-side retirement.
+  for (const path of ['/api/astrid/transcription', '/api/dealer/transcription', '/api/probe/presence']) assert.equal(backendPlatformPath(path), true, path);
   assert.equal(platformRoute(new URL('/studio/api/probe', config.publicOrigin), config).kind, 'lab');
 });
