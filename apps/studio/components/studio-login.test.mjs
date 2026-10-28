@@ -134,7 +134,7 @@ test('native password page binds the player entrance to configured game origin a
 test('native login page binds the configured game origin and never keeps a retired handoff return',async()=>{
   const pageSource=readFileSync(new URL('../app/admin/login/page.tsx',import.meta.url),'utf8');
   const pageCode=transformSync(pageSource,{filename:'page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
-  for(const authBase of ['/studio/api/auth','/api/auth']) for(const [returnTo,expected] of [['/admin/rooms?operator=north','/admin/rooms?operator=north'],[`/api/bo/game-login?state=${'a'.repeat(64)}`,'/admin']]){
+  for(const authBase of ['/studio/api/auth','/api/auth']) for(const [returnTo,expected] of [['/admin/rooms?operator=north','/admin/companies?tab=spelbord&operator=north'],['/admin/rooms/room-1?operator=north','/admin/rooms/room-1?operator=north'],[`/api/bo/game-login?state=${'a'.repeat(64)}`,'/admin']]){
     const gameOrigin='https://game.fixture.invalid',page={exports:{}};
     const overrides={
       '@/components/studio-login':{StudioLogin:()=>null},

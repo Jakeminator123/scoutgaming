@@ -10,12 +10,12 @@ import {layerAssetFitsGame} from '../../../../../../packages/presentation/contra
 import {createStudioClient} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
-export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey,visible=true}:{disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean}){
+// Mounted per tab under Scenmallar och material (Bakgrunder, Bordsgrafik); the trash per role sits at #material-trash.
+export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   const query=useSearchParams();
-  const role=query.get('tab')==='backgrounds'?'background':'table';
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
-  function select(key:'tab'|'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);navigate('/admin/assets?'+next);}
+  function select(key:'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);next.set('tab',role==='background'?'bakgrunder':'bordsgrafik');navigate(base+'?'+next);}
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [reload,setReload]=useState(0);
   const active=useRef(new Set<string>()),busyRef=useRef(false);
@@ -33,17 +33,16 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey,visible
   const blocked=disabled||busy||loading||Boolean(error);
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
-  return <section className="studio-material-workspace p-6 space-y-5" aria-label="Bord och bakgrunder" onPlayCapture={event=>{const media=event.target as HTMLMediaElement;if(preview.current!==media)preview.current?.pause();preview.current=media;if(!visible||document.hidden)media.pause();}}>
-    <h1 className="text-2xl font-semibold">Bord & bakgrunder</h1><p>Gemensamma material för dina rum. Förhandsvisa här och välj material i <a className="text-sg-lime underline" href="/admin/rooms">Spelbolag & rum</a>.</p>
+  return <section className="studio-material-workspace space-y-5" aria-label={role==='background'?'Bakgrunder':'Bordsgrafik'} onPlayCapture={event=>{const media=event.target as HTMLMediaElement;if(preview.current!==media)preview.current?.pause();preview.current=media;if(!visible||document.hidden)media.pause();}}>
+    <p className="hub-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en scenmall och välj per spelbord. Ladda upp png, jpg, webp, mp4 eller webm, högst 128 MB.</p>
     {disabled&&<p role="status">Spara eller lös klippkartans utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert">{error} <button className="studio-button" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</button></p>}{loading&&<p role="status">Läser det skyddade biblioteket…</p>}
-    <div role="tablist" aria-label="Bibliotekstyp">{(['table','background'] as const).map(value=><button key={value} role="tab" aria-selected={value===role} disabled={busy} className="studio-button" onClick={()=>select('tab',value==='table'?'tables':'backgrounds')}>{value==='table'?'Bord':'Bakgrunder'}</button>)}</div>
     {role==='table'&&<label className="studio-field">Spelet som bordet tillhör<select aria-label="Bordets spel" value={game} disabled={blocked} onChange={event=>select('game',event.target.value)}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>}
     {project&&<div className="space-y-5">
       <LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={(remote,id)=>{
         if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen kunde inte bekräftas för valt spel. Läs om innan du fortsätter.');return;}saved(remote);
       }}/>
-      <div className="studio-material-controls material-library"><LayerAssetManager key={role+game} project={project} role={role} disabled={blocked} expanded
+      <div className="studio-material-controls material-library" id="material-trash"><LayerAssetManager key={role+game} project={project} role={role} disabled={blocked} expanded
         filterAsset={asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved}
         renderAsset={(asset,actions)=><MaterialCard asset={asset} references={layerAssetReferences(project,asset.id).map(row=>row.label)} {...actions}/>}/></div>
     </div>}

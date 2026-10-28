@@ -7,11 +7,20 @@ import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../
 import {setTemplateDealers} from './dealer-directory.mjs';
 import {lifecycleMessage} from './studio-lifecycle.mjs';
 import * as lifecycleActions from './lifecycle-actions.mjs';
+import * as dealerCoverage from './dealer-coverage.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 // The shared ConfirmDialog is a function component; expand it so its texts and buttons are inspectable.
 const expand=node=>node&&typeof node==='object'&&typeof node.type==='function'?node.type(node.props):node;
 const nodes=(raw,predicate)=>{const node=expand(raw);return !node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];};
 const text=raw=>{const node=expand(raw);return typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';};
+// Hookless stand-ins for the hub primitives: the harness shares one hook cursor with the directory.
+const hub={
+  HubPage:({title,intro,actions,children})=>React.createElement('div',null,React.createElement('h1',null,title),intro,actions,children),
+  Card:({title,aside,children})=>React.createElement('section',null,title&&React.createElement('h2',null,title),aside,children),
+  Chip:({children})=>React.createElement('span',null,children),
+  Empty:({title,text})=>React.createElement('div',{role:'status'},React.createElement('h3',null,title),text),
+  ActionMenu:({name,actions})=>React.createElement('span',{'aria-label':'Åtgärder för '+name},actions.map(a=>React.createElement('button',{key:a.id,type:'button',disabled:Boolean(a.disabled),onClick:a.onSelect},a.label))),
+};
 const tsx=name=>transformSync(readFileSync(new URL('../components/studio/'+name+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dragan') {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
@@ -47,7 +56,10 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     if(name.includes('studio-model'))return{addDealer};
     if(name.includes('connected-studio'))return{createStudioClient:()=>client};
     if(name.includes('studio-lifecycle'))return{createLifecycleClient:()=>lifecycle,lifecycleMessage};
-    if(name.includes('runtime/navigation'))return{useSearchParams:()=>new URLSearchParams(search),navigate:href=>navigations.push(href)};
+    if(name.includes('runtime/navigation'))return{__esModule:true,default:'a',useSearchParams:()=>new URLSearchParams(search),navigate:href=>navigations.push(href)};
+    if(name==='../ui/hub')return hub;
+    if(name==='./dealer-identity-portrait')return{DealerIdentityPortrait:()=>null};
+    if(name.includes('dealer-coverage'))return dealerCoverage;
     return require(name);
   }});
   const h={setArchiveCheck:handler=>archiveCheck=handler,props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
@@ -61,19 +73,24 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
   };return h;
 }
 
-test('dealer library includes Dragan without a room and opens his own clip intake',async()=>{
+test('dealer library includes Dragan without a table and opens his own clip intake',async()=>{
   const h=harness();await h.settle();
-  assert.match(text(h.render()),/Dragan/);assert.match(text(h.render()),/Inga rum kopplade ännu/);
-  const link=nodes(h.render(),node=>node.type==='a'&&text(node)==='Lägg till klipp')[0];
-  assert.equal(link.props.href,'/admin/clips?dealer=dragan&panel=intake');
+  assert.match(text(h.render()),/Dragan/);assert.match(text(h.render()),/Inte tilldelad något bolag/);
+  assert.equal(nodes(h.render(),node=>node.type==='a'&&text(node)==='Dragan')[0].props.href,'/admin/dealers/dragan?flik=klipp');
+  h.button('Lägg till klipp').props.onClick();
+  assert.deepEqual(h.navigations,['/admin/dealers/dragan?flik=klipp&panel=intake']);
+  assert.equal(h.saves.length,0);
 });
 test('every registered dealer gets the same ordinary card without a name-bound legacy note',async()=>{
   const h=harness([],[{id:'astrid',label:'Astrid'}]);await h.settle();
-  const card=label=>nodes(h.render(),node=>node.type==='li'&&nodes(node,child=>child.type==='h2'&&text(child)===label).length)[0];
+  const card=label=>nodes(h.render(),node=>node.type==='li'&&nodes(node,child=>child.type==='a'&&text(child)===label).length)[0];
   const astrid=card('Astrid'),dragan=card('Dragan');
   for(const node of [astrid,dragan])assert.doesNotMatch(text(node),/Legacyreferens|trelagersversion|OpenClaw/);
   for(const [dealer,node] of [['astrid',astrid],['dragan',dragan]]){
-    assert.equal(nodes(node,child=>child.type==='a'&&text(child)==='Lägg till klipp')[0].props.href,`/admin/clips?dealer=${dealer}&panel=intake`);
+    assert.equal(nodes(node,child=>child.type==='a')[0].props.href,`/admin/dealers/${dealer}?flik=klipp`);
+    assert.deepEqual(nodes(node,child=>child.type==='button').map(text),['Öppna dealern','Lägg till klipp','Arkivera'],'every card has the same actions');
+    nodes(node,child=>child.type==='button'&&text(child)==='Lägg till klipp')[0].props.onClick();
+    assert.equal(h.navigations.at(-1),`/admin/dealers/${dealer}?flik=klipp&panel=intake`);
   }
   assert.equal(h.saves.length,0);
 });
@@ -81,40 +98,41 @@ test('cancelling dealer creation restores focus to its initiating button without
   const h=harness();await h.settle();
   let focused=null;
   const target={focus(){focused=target;}};
-  const trigger=h.button('Skapa dealer');
+  const trigger=h.button('Ny dealer');
   if(trigger.props.ref)trigger.props.ref.current=target;
   trigger.props.onClick();
-  assert.ok(h.input('Dealerns namn'));
+  assert.ok(h.input('Namn'));
   h.button('Avbryt').props.onClick();
-  assert.equal(h.input('Dealerns namn'),undefined);
+  assert.equal(h.input('Namn'),undefined);
   assert.equal(focused,target);
   assert.equal(h.saves.length,0);assert.equal(h.changes.length,0);assert.equal(h.navigations.length,0);
 });
 test('create saves the identity once without copying media, voice or room membership',async()=>{
-  const h=harness();await h.settle();h.button('Skapa dealer').props.onClick();
-  h.input('Dealerns namn').props.onChange({target:{value:'Nora'}});
+  const h=harness();await h.settle();h.button('Ny dealer').props.onClick();
+  h.input('Namn').props.onChange({target:{value:'Nora'}});
+  assert.ok(h.button('Skapa och gå till Lägg till klipp'));
   await nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
   assert.equal(h.saves.length,1);const saved=h.saves[0];
   assert.deepEqual(saved.dealers.find(row=>row.id==='nora'),{id:'nora',label:'Nora'});
   assert.ok(saved.lines.filter(row=>row.dealerId==='nora').every(row=>row.variants.every(variant=>variant.videoGenerationId===null)));
   assert.equal(saved.lanes?.some(lane=>lane.dealers.includes('nora'))??false,false);
-  assert.equal(h.navigations.at(-1),'/admin/dealers?dealer=nora');
+  assert.deepEqual(h.navigations,['/admin/dealers/nora?flik=klipp&panel=intake'],'the new dealer opens on its own clip intake');
 });
 test('lost create acknowledgement is reconciled without a duplicate write',async()=>{
-  const h=harness();await h.settle();h.setSaveFailure('lost');h.button('Skapa dealer').props.onClick();h.input('Dealerns namn').props.onChange({target:{value:'Nora'}});
+  const h=harness();await h.settle();h.setSaveFailure('lost');h.button('Ny dealer').props.onClick();h.input('Namn').props.onChange({target:{value:'Nora'}});
   nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
   assert.equal(h.saves.length,1);assert.match(text(h.render()),/Nora är sparad/);
 });
 test('revision conflicts preserve the creation form and never replay its write',async()=>{
-  const h=harness();await h.settle();h.setSaveFailure('conflict');h.button('Skapa dealer').props.onClick();h.input('Dealerns namn').props.onChange({target:{value:'Nora'}});
+  const h=harness();await h.settle();h.setSaveFailure('conflict');h.button('Ny dealer').props.onClick();h.input('Namn').props.onChange({target:{value:'Nora'}});
   nodes(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await h.settle();
-  assert.equal(h.saves.length,1);assert.equal(h.input('Dealerns namn').props.value,'Nora');assert.equal(h.navigations.length,0);
+  assert.equal(h.saves.length,1);assert.equal(h.input('Namn').props.value,'Nora');assert.equal(h.navigations.length,0);
   assert.match(text(h.render()),/En annan ändring/);
 });
 test('removal opens one dialog, checks the server impact inside it, then sends its exact revision and token',async()=>{
   const h=harness();await h.settle();assert.equal(h.dialog(),undefined);
-  h.button('Ta bort').props.onClick();
-  assert.ok(h.dialog());assert.match(text(h.dialog()),/Kontrollerar klipp, rum, bolag och sammansättningar/);assert.equal(h.dialogButton('Flytta till papperskorgen'),undefined);
+  h.button('Arkivera').props.onClick();
+  assert.ok(h.dialog());assert.match(text(h.dialog()),/Kontrollerar klipp, spelbord, bolag och scenmallar/);assert.equal(h.dialogButton('Flytta till papperskorgen'),undefined);
   await h.settle();
   assert.equal(h.checks.length,1);assert.equal(h.archives.length,0);assert.match(text(h.dialog()),/Ta bort Dragan\?/);assert.match(text(h.dialog()),/Källfiler och publiceringshistorik bevaras/);
   assert.match(text(h.dialog()),/0 klipp följer med till papperskorgen/);
@@ -124,13 +142,13 @@ test('removal opens one dialog, checks the server impact inside it, then sends i
   assert.match(text(h.render()),/Dragan har flyttats till papperskorgen/);
 });
 test('a pending Studio draft blocks dealer mutations even when a stale button handler is called',async()=>{
-  const h=harness();await h.settle();h.props.blocked=true;h.button('Ta bort').props.onClick();await h.settle();
-  assert.equal(h.checks.length,0);assert.equal(h.archives.length,0);assert.equal(h.button('Skapa dealer').props.disabled,true);
+  const h=harness();await h.settle();h.props.blocked=true;assert.equal(h.button('Arkivera').props.disabled,true);h.button('Arkivera').props.onClick();await h.settle();
+  assert.equal(h.checks.length,0);assert.equal(h.archives.length,0);assert.equal(h.button('Ny dealer').props.disabled,true);
 });
 
 test('restore confirmation names the saved compositions before any restore is submitted',async()=>{
   const h=harness([{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}]);await h.settle();
-  h.button('Ta bort').props.onClick();await h.settle();h.button('Flytta till papperskorgen').props.onClick();await h.settle();
+  h.button('Arkivera').props.onClick();await h.settle();h.button('Flytta till papperskorgen').props.onClick();await h.settle();
   h.button('Återställ').props.onClick();await h.settle();
   const review=text(h.dialog());
   assert.match(review,/Återställ Dragan\?/);assert.match(review,/sparade sammansättningar återförs som utkast/);
@@ -140,7 +158,7 @@ test('restore confirmation names the saved compositions before any restore is su
   h.dialogButton('Avbryt').props.onClick();assert.equal(h.dialog(),undefined);assert.equal(h.archives.length,1);
 });
 test('permanent deletion checks the server inside the dialog and requires the file acknowledgement, never an id',async()=>{
-  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
+  const h=harness();await h.settle();h.button('Arkivera').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
   h.button('Radera permanent').props.onClick();
   assert.match(text(h.dialog()),/Kontrollerar lagring och beroenden/);
   await h.settle();
@@ -157,7 +175,7 @@ test('permanent deletion checks the server inside the dialog and requires the fi
   assert.match(text(h.render()),/Dragan och dealerns egna filer är permanent raderade/);assert.match(text(h.render()),/Papperskorgen är tom/);
 });
 test('a server refusal keeps the dealer in the trash and explains the wait without any confirm button',async()=>{
-  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
+  const h=harness();await h.settle();h.button('Arkivera').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
   h.setEligibility({allowed:false,reason:'studio_media_upload_grant_active',retryAfterMs:9*60000});
   h.button('Radera permanent').props.onClick();await h.settle();
   const dialog=text(h.dialog());
@@ -177,12 +195,13 @@ test('template dealer choices remain explicit, preserve unrelated state and requ
 
 test('home create link opens the existing dealer form without a write and contextual tools retain their dealer',async()=>{
   const h=harness([],[],'?view=create');await h.settle();
-  assert.ok(h.input('Dealerns namn'));assert.equal(h.saves.length,0);
-  const links=nodes(h.render(),row=>row.type==='a');
-  const destinations=links.map(link=>new URL(link.props.href,'https://test.invalid')).filter(url=>url.pathname==='/admin/clips');
+  assert.ok(h.input('Namn'));assert.equal(h.saves.length,0);
+  h.button('Öppna dealern').props.onClick();h.button('Lägg till klipp').props.onClick();
+  const destinations=[...nodes(h.render(),row=>row.type==='a').map(link=>link.props.href),...h.navigations].map(href=>new URL(href,'https://test.invalid'));
   assert.ok(destinations.some(url=>url.searchParams.get('panel')==='intake'),'clip intake is reachable');
   assert.ok(destinations.some(url=>!url.searchParams.has('panel')),'dealer editor is reachable');
-  for(const url of destinations)assert.equal(url.searchParams.get('dealer'),'dragan');
+  for(const url of destinations){assert.equal(url.pathname,'/admin/dealers/dragan');assert.equal(url.searchParams.get('flik'),'klipp');assert.equal(url.searchParams.has('dealer'),false);}
+  assert.equal(h.saves.length,0);
 });
 
 
@@ -191,7 +210,7 @@ test('late lifecycle checks cannot fill a reopened dialog for the same or anothe
     const h=harness([],[{id:'nora',label:'Nora'}]),pending=[];
     h.setArchiveCheck((_project,id)=>new Promise(resolve=>pending.push({id,resolve})));
     await h.settle();
-    const open=id=>nodes(nodes(h.render(),node=>node.type==='li'&&node.key===id)[0],node=>node.type==='button')[0].props.onClick();
+    const open=id=>nodes(nodes(h.render(),node=>node.type==='li'&&node.key===id)[0],node=>node.type==='button'&&text(node)==='Arkivera')[0].props.onClick();
     open('dragan');await h.settle();h.dialog().props.onCancel({preventDefault(){}});
     open(target);await h.settle();assert.equal(pending[1].id,target);
     pending[0].resolve({...h.impact,mediaCount:99});await h.settle();
@@ -204,25 +223,25 @@ test('late lifecycle checks cannot fill a reopened dialog for the same or anothe
 });
 
 test('a repeated archive confirmation submits exactly one archive request',async()=>{
-  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();
+  const h=harness();await h.settle();h.button('Arkivera').props.onClick();await h.settle();
   const confirm=h.dialogButton('Flytta till papperskorgen').props.onClick;confirm();confirm();await h.settle();
   assert.equal(h.checks.length,1);assert.equal(h.archives.length,1);
   assert.match(text(h.render()),/Dragan har flyttats till papperskorgen/);
 });
 test('an uncertain or refused archive is settled by one registry read and is never repeated',async()=>{
   for(const failure of ['lost','conflict']){
-    const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();
+    const h=harness();await h.settle();h.button('Arkivera').props.onClick();await h.settle();
     h.setLifecycleFailure(failure);const reads=h.loads();
     h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
     assert.equal(h.archives.length,1,failure+' never repeats the archive');assert.equal(h.loads(),reads+1,failure+' reads the registry once');
-    assert.equal(h.dialog(),undefined);assert.equal(h.button('Skapa dealer').props.disabled,false,'the write lock is released');
+    assert.equal(h.dialog(),undefined);assert.equal(h.button('Ny dealer').props.disabled,false,'the write lock is released');
     const page=text(h.render());
     if(failure==='lost'){assert.match(page,/Dragan har flyttats till papperskorgen/);assert.doesNotMatch(page,/kunde inte bekräftas/);}
-    else{assert.doesNotMatch(page,/har flyttats till papperskorgen/);assert.match(page,/Registret eller urvalet har ändrats/);assert.ok(h.button('Ta bort'),'the refused dealer stays active');}
+    else{assert.doesNotMatch(page,/har flyttats till papperskorgen/);assert.match(page,/Registret eller urvalet har ändrats/);assert.ok(h.button('Arkivera'),'the refused dealer stays active');}
   }
 });
 test('a pending permanent deletion disables restore and only offers to finish the deletion',async()=>{
-  const h=harness();await h.settle();h.button('Ta bort').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
+  const h=harness();await h.settle();h.button('Arkivera').props.onClick();await h.settle();h.dialogButton('Flytta till papperskorgen').props.onClick();await h.settle();
   h.patchRemote(remote=>{remote.project.dealerTrash[0].deletion={state:'pending',requestedAt:'2026-10-11T12:00:00.000Z',mediaIds:[]};return remote;});
   h.props.refreshKey=1;await h.settle();
   assert.match(text(h.render()),/radering påbörjad/);assert.equal(h.button('Återställ').props.disabled,true);
