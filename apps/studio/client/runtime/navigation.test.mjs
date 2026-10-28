@@ -256,7 +256,7 @@ async function mountClipMap(h,{scene=false}={}){
         saveAttempts.push(structuredClone(next));
         if(next.revision!==workspace.project.revision)throw Object.assign(new Error('Revision conflict'),{statusCode:409});
         workspace.project=structuredClone({...next,revision:'fixture.scene.saved'});return structuredClone(workspace.project);}})}
-      :name==='lucide-react'||name.startsWith('./')||name==='../../../../components/studio-navigation'?components:componentRequire(name)});
+      :name==='lucide-react'||name.startsWith('./')||name==='../../../../components/studio-navigation'||name==='../../../../components/probe-editor'?components:componentRequire(name)});
   const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
   let scenePanel=null,sceneMounts=0;
   const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children,tree=element.type(element.props);

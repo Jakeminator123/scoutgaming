@@ -1,0 +1,18 @@
+.panel { max-width: 1000px; margin: auto; display: grid; gap: 18px; line-height: 1.55; }
+.panel h1 { margin: 6px 0; font-size: 26px; }
+.panel h2 { font-size: 20px; }
+.panel p { color: var(--muted); font-size: 13px; }
+.modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.modes button { border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 9px 18px; border-radius: 7px; cursor: pointer; }
+.modes button[aria-pressed=true] { border-color: var(--teal); background: var(--panel-hover); color: var(--text); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; padding-top: 14px; }
+.panel details { border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+.panel summary { cursor: pointer; }
+.trial { border-top: 1px solid var(--line); padding-top: 14px; }
+.trial blockquote { padding: 16px; margin: 14px 0; background: var(--panel-soft); border-left: 2px solid var(--teal); font-size: 18px; }
+.trial ul { padding: 0; list-style: none; }
+.trial li { padding: 14px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
+.trial li small { display: block; color: var(--muted); }
+.trial pre { overflow: auto; max-height: 260px; font-size: 11px; }
+.trial > a { display: inline-block; margin: 12px 0; }
+.panel input[type=checkbox] { margin-right: 8px; }

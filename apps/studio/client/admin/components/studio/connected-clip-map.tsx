@@ -16,6 +16,8 @@ import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin
 import { groupSlots, affectedRooms, slotCaption, slotExplanation, layoutClipCards, clipLibraryForSlot, clipVariantChoices } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioNavigation } from '../../../../components/studio-navigation';
+import { ProbeEditor } from '../../../../components/probe-editor';
+import { createDefaultProbePolicy } from '../../../../../../packages/presentation/contracts/probe-policy.mjs';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
 import { ClipDeleteAction } from './clip-delete-action';
 import { studioClipUsage } from '../../lib/studio-policy.mjs';
@@ -407,6 +409,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
       {panel==='roulette-media'&&data.inventory.videos.filter(video=>video.id===startVideoId).map(video=><RouletteIdleEditor key={`${dealer.id}:${video.id}:${panelEpoch}`} project={data.project} inventory={data.inventory} video={video} dealerId={dealer.id} blocked={locked||loading||!authorized} onEdit={edit} onSaved={updateInventory} onDirtyChange={setStartDirty} onBusyChange={childOperation}/>)}
       <div hidden={panel!=='room'}>{(panel==='room'||speechDealer===dealer.id)&&<StudioSpeechPanel active={active&&panel==='room'} game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onInventory={updateInventory} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/>}
         {panel==='room'&&<><details className="mt-5"><summary>Testa dialog · AI-chatt med genererat tal</summary><p className="mt-2 text-xs text-muted-foreground">Chattar med dealerns sparade AI-inställningar och genererade röst, inte med inspelade tagningar.</p><div className="studio-speech-tools"><a className="studio-button" href={'/admin/dealer-agent?'+context.toString()}>Testa dialog</a></div></details>
+          {dealer.id==='astrid'&&<details><summary>Tal vid inaktivitet · Astrid</summary><fieldset disabled={busy||loading||!authorized||configDirty}><ProbeEditor policy={data.project.probePolicy??createDefaultProbePolicy()} onChange={probePolicy=>edit({...data.project,probePolicy})}/></fieldset></details>}
         </>}
       </div>
       {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder dealern / sammansättningen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
