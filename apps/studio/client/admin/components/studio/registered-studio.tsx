@@ -173,9 +173,11 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const operatorPackage = operator ? packages[operator.id] ?? packageEditor() : packageEditor();
   const selectionDirty = packageSelectionDirty(operatorPackage);
   const roomDraftBlocks = roomDirty || gameDirty;
-  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || createDraft || operatorPackage.needsRefresh || !operatorPackage.chosen.length;
+  // A published composition that Studio no longer has stays visible until it is unchecked; it is never republished silently.
+  const retiredChosen = operatorPackage.chosen.some(id => !compositions.some(row => row.id === id));
+  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || createDraft || operatorPackage.needsRefresh || !operatorPackage.chosen.length || retiredChosen;
   const publicationStatus = operatorPackage.needsRefresh ? 'Läs in aktuell publicering' : disabled ? 'Spara det pågående Studio-arbetet först'
-    : roomDraftBlocks ? 'Spara rummets ändringar först' : selectionDirty ? 'Urvalet är inte publicerat'
+    : roomDraftBlocks ? 'Spara rummets ändringar först' : retiredChosen ? 'Avmarkera borttagna sammansättningar först' : selectionDirty ? 'Urvalet är inte publicerat'
     : operatorPackage.message ? 'Publicerat · version ' + operatorPackage.revision : 'Redo att publicera';
   async function publishPackage() {
     if (!operator || publishBlocked || publishLock.current) return;

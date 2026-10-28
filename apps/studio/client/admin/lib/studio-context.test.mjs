@@ -68,7 +68,7 @@ test('unknown explicit composition never falls back to the room template and a l
   assert.equal(roomOnly.lane.id,'one');assert.equal(roomOnly.dealer.id,'astrid');
 });
 
-async function registeredStudioHtml(path,search='',{fetch:customFetch,...overrides}={},interactive=false){
+async function registeredStudioHtml(path,search='',{fetch:customFetch,props:extraProps={},...overrides}={},interactive=false){
   let currentSearch=new URL(search||path,'https://scout.invalid'+path).search,currentHash=new URL(search||path,'https://scout.invalid'+path).hash,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
@@ -99,7 +99,7 @@ async function registeredStudioHtml(path,search='',{fetch:customFetch,...overrid
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
-  const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
+  const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register',...extraProps})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
   if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
   return renderToStaticMarkup(render());
@@ -160,13 +160,16 @@ test('an active company without registered rooms can still create its first room
   gameBoard(h.render()).props.onAdd();assert.match(renderToStaticMarkupOf(h),/data-room-create="one"/);
   assert.doesNotMatch(html,/data-room-editor=|data-game-config=/);
 });
-test('company team editor links to the supported Admin workspace',async()=>{
-  const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
-  const legacy=hrefs(html).filter(href=>href.startsWith('/admin/companies'));
-  assert.deepEqual(legacy,['/admin/companies?operator=a','/admin/companies?operator=b']);
-  assert.match(html,/Bolag &amp; team/);
-  const unknown=await registeredStudioHtml('/admin/unknown');
-  assert.equal(hrefs(unknown).some(href=>href.startsWith('/control')),false);assert.ok(hrefs(unknown).includes('/admin'));
+test('company, partner and template links are scoped to the selected owner and never carry another company or its room',async()=>{
+  const own=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions});
+  assert.ok(hrefs(own).includes('/partner/a/rooms?room=bj'));assert.ok(hrefs(own).includes('/admin/companies?operator=a'));
+  assert.equal(hrefs(own).some(href=>href.includes('operator=b')||href.startsWith('/control')),false);
+  const foreign=await registeredStudioHtml('/admin/rooms','?operator=a&table=other',{compositions});
+  assert.ok(hrefs(foreign).includes('/partner/a/rooms'));
+  assert.equal(hrefs(foreign).some(href=>/rooms\?room=/.test(href)),false,'a cross-owner room never becomes this company\'s partner context');
+  const other=await registeredStudioHtml('/admin/rooms','?operator=b',{compositions});
+  assert.deepEqual(hrefs(other).filter(href=>href.startsWith('/admin/companies')),['/admin/companies?operator=b']);
+  assert.match(other,/Bolag &amp; team/);assert.equal(hrefs(other).some(href=>href.includes('operator=a')),false);
 });
 
 
@@ -250,8 +253,6 @@ test('saved room bookmarks remove stale dealer context without changing the sele
     assert.equal(h.search,new URL(query.replace('&dealer=astrid',''),'https://scout.invalid').search);
     assert.equal(h.hash,'#choices');assert.equal(h.confirms,0);
   }
-  const library=await registeredStudioHtml('/admin/admin/operators','?dealer=astrid',{},true);library.render();
-  assert.equal(library.search,'?dealer=astrid');
 });
 
 test('selecting the active room is inert and preserves dirty guards even without explicit room URL context',async()=>{
@@ -360,4 +361,163 @@ test('the room status shows published materials only for the selected room and c
   assert.deepEqual(publishedMaterials(),['Salong · Astrid · Grön filt']);
   editor().props.onStatus(null);assert.deepEqual(publishedMaterials(),[]);
 });
+// Publication proofs for the company package on /admin/rooms. They were first written for the
+// retired publication page (/admin/publication) and follow the same operator-package contract.
+const knownStatus=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Avmarkera borttagna sammansättningar först|Publicerat · version \d+|Publicerar…|Spara det pågående Studio-arbetet först)$/;
+const packageOperators=change=>lifecycleSnapshot({operators:lifecycleSnapshot().operators.map(row=>row.id==='a'?{...row,...change}:row)});
+async function publicationHarness({search='?operator=a&table=bj',props}={}){
+  const requests=[],replies=[],extraRooms=[];
+  const registry=()=>({schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
+    operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:row.id==='a'?4:null})),dealers:catalog.administration.dealers.map(row=>({...row,name:row.id})),
+    rooms:[...catalog.administration.rooms,...extraRooms].map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,dealerIds:['astrid'],dealers:[],dealerSource:'published'})),compositions,revisions:{project:'p1',administration:'a1'}}});
+  const fetcher=async(url,options={})=>{
+    if(options.method!=='POST')return Response.json(registry());
+    requests.push({url,body:JSON.parse(options.body)});
+    const next=replies.shift();
+    return typeof next==='function'?next():next??Response.json({error:'studio_conflict'},{status:409});
+  };
+  const h=await registeredStudioHtml('/admin/rooms',search,{fetch:fetcher,props},true);
+  const settle=async()=>{for(let i=0;i<3;i++)await new Promise(resolve=>setImmediate(resolve));};
+  return {h,requests,replies,settle,addRoom:room=>extraRooms.push(room),
+    lifecycle:()=>walk(h.render(),node=>node.props?.kind==='rooms')[0],
+    submit:()=>walk(h.render(),node=>node.type==='button'&&node.props.type==='submit')[0],
+    checkbox:id=>walk(h.render(),node=>node.type==='input'&&node.props.value===id)[0],
+    status:()=>walk(h.render(),node=>node.type==='p'&&node.props.role==='status'&&typeof node.props.children==='string'&&knownStatus.test(node.props.children))[0]?.props.children,
+    html:()=>renderToStaticMarkupOf(h),
+    async publish(){walk(h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await settle();}};
+}
+
+test('a package conflict keeps the company draft and blocks every further write until the lifecycle readback',async()=>{
+  const p=await publicationHarness();
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  let conflict;p.replies.push(()=>new Promise(resolve=>{conflict=resolve;}));
+  const form=walk(p.h.render(),node=>node.type==='form')[0];
+  form.props.onSubmit({preventDefault(){}});form.props.onSubmit({preventDefault(){}});await p.settle();
+  assert.equal(p.requests.length,1,'the write lock admits one request');
+  assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one','two'],expectedPackageRevision:4});
+  assert.match(p.requests[0].url,/\/api\/admin\/operator-package$/);
+  conflict(Response.json({error:'studio_conflict'},{status:409}));await p.settle();
+  assert.match(p.html(),/Paketet kunde inte uppdateras/);
+  assert.equal(p.checkbox('two').props.checked,true,'the draft selection survives the conflict');
+  assert.equal(p.status(),'Läs in aktuell publicering');assert.equal(p.submit().props.disabled,true);
+  await p.publish();assert.equal(p.requests.length,1,'no automatic retry and no write before readback');
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:5,lanes:['one']}));
+  assert.equal(p.checkbox('two').props.checked,true,'the addition is rebased onto the newer package');
+  assert.equal(p.status(),'Urvalet är inte publicerat');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','two']}));
+  await p.publish();
+  assert.deepEqual(p.requests[1].body,{operatorId:'a',lanes:['one','two'],expectedPackageRevision:5},'the read-back revision is the new CAS precondition');
+  assert.equal(p.status(),'Publicerat · version 6');
+});
+
+test('each company publishes with its own revision; a new package sends null and drafts stay per company',async()=>{
+  const p=await publicationHarness();
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  gameBoard(p.h.render()).props.onCompanyChange('b');
+  assert.equal(p.checkbox('one').props.checked,false);assert.equal(p.checkbox('two').props.checked,false);
+  assert.equal(p.submit().props.disabled,true,'an empty selection cannot be published');assert.match(p.html(),/Ingen publicering ännu/);
+  p.checkbox('one').props.onChange({target:{checked:true}});
+  p.replies.push(Response.json({ok:true,operatorId:'b',packageRevision:1,lanes:['one']}));
+  await p.publish();
+  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'b',lanes:['one'],expectedPackageRevision:null}]);
+  assert.equal(p.status(),'Publicerat · version 1');
+  gameBoard(p.h.render()).props.onCompanyChange('a');
+  assert.equal(p.checkbox('two').props.checked,true,'company a keeps its unpublished draft');
+  assert.equal(p.status(),'Urvalet är inte publicerat');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','two']}));
+  await p.publish();
+  assert.deepEqual(p.requests[1].body,{operatorId:'a',lanes:['one','two'],expectedPackageRevision:4},'company a still sends its own displayed revision');
+});
+
+test('unconfirmed publish receipts keep every local addition and removal and block another write until readback',async()=>{
+  const receipt=()=>({ok:true,operatorId:'a',packageRevision:5,package_revision:5,lanes:['two']});
+  const invalid=[
+    ['missing receipt',()=>null],['missing success',row=>{delete row.ok;return row;}],['failed success',row=>({...row,ok:false})],
+    ['foreign company',row=>({...row,operatorId:'b'})],['missing choices',row=>{delete row.lanes;return row;}],
+    ['different choices',row=>({...row,lanes:['one']})],['duplicate choices',row=>({...row,lanes:['two','two']})],
+    ['stale revision',row=>({...row,packageRevision:4,package_revision:4})],['skipped revision',row=>({...row,packageRevision:999,package_revision:999})],
+    ['string revision',row=>({...row,packageRevision:'5',package_revision:'5'})],['conflicting revisions',row=>({...row,package_revision:6})],
+  ];
+  for(const [name,change] of invalid){
+    const p=await publicationHarness();
+    p.lifecycle().props.onChanged(lifecycleSnapshot());
+    p.checkbox('one').props.onChange({target:{checked:false}});p.checkbox('two').props.onChange({target:{checked:true}});
+    p.replies.push(Response.json(change(receipt())));
+    await p.publish();
+    assert.equal(p.requests.length,1,name);
+    assert.match(p.html(),/Dina val finns kvar/,name);assert.doesNotMatch(p.html(),/är publicerade/,name);
+    assert.equal(p.checkbox('one').props.checked,false,name);assert.equal(p.checkbox('two').props.checked,true,name);
+    assert.equal(p.status(),'Läs in aktuell publicering',name);
+    await p.publish();assert.equal(p.requests.length,1,name+' stays locked until readback');
+    p.lifecycle().props.onChanged(lifecycleSnapshot());
+    assert.equal(p.checkbox('one').props.checked,false,name+' preserves the removal after readback');
+    assert.equal(p.checkbox('two').props.checked,true,name+' preserves the addition after readback');
+    assert.equal(p.status(),'Urvalet är inte publicerat',name);
+  }
+});
+
+test('the exact receipt accepts server-sorted choices and clears the draft; a newer package readback withdraws the confirmation',async()=>{
+  const p=await publicationHarness();
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,package_revision:5,lanes:['two','one']}));
+  await p.publish();
+  assert.deepEqual(p.requests[0].body.lanes,['one','two']);
+  assert.match(p.html(),/Publiceringen är bekräftad/);assert.match(p.html(),/Version 5/);
+  assert.equal(p.status(),'Publicerat · version 5');assert.match(p.html(),/Senast publicerat · version 5/);
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:5,lanes:['one','two']}));
+  assert.match(p.html(),/Publiceringen är bekräftad/,'the same revision keeps this receipt');
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
+  assert.doesNotMatch(p.html(),/Publiceringen är bekräftad/,'a different revision is not this action receipt');
+  assert.match(p.html(),/Senast publicerat · version 6/);assert.equal(p.status(),'Redo att publicera');
+});
+
+test('a room creation receipt advances the company package and blocks publication until the lifecycle readback confirms it',async()=>{
+  const p=await publicationHarness();
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  p.checkbox('one').props.onChange({target:{checked:false}});p.checkbox('two').props.onChange({target:{checked:true}});
+  gameBoard(p.h.render()).props.onAdd();
+  const create=walk(p.h.render(),node=>typeof node.props?.onCreated==='function')[0];
+  assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the package form yields to the room draft');
+  const refreshBefore=p.lifecycle().props.refreshKey;
+  p.addRoom({id:'created',operatorId:'a',game:'blackjack',compositionId:'two'});
+  create.props.onCreated({packageRevision:5,room:{id:'created',operatorId:'a',presentationLaneId:'two',game:'blackjack'}});
+  await p.settle();p.h.render();await p.settle();
+  const refreshAfter=p.lifecycle().props.refreshKey;
+  assert.ok(refreshAfter>refreshBefore,'the lifecycle re-reads after the room receipt');
+  assert.equal(p.status(),'Läs in aktuell publicering');assert.equal(p.submit().props.disabled,true);
+  await p.publish();assert.equal(p.requests.length,0,'the advanced revision must be read back before another write');
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:5,lanes:['one','two']}));
+  assert.equal(p.lifecycle().props.refreshKey,refreshAfter,'a readback does not request itself again');
+  assert.equal(p.checkbox('one').props.checked,false,'the removal survives the rebase');assert.equal(p.checkbox('two').props.checked,true);
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['two']}));
+  await p.publish();
+  assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['two'],expectedPackageRevision:5});
+  assert.equal(p.status(),'Publicerat · version 6');
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(p.status(),'Publicerat · version 6','an older snapshot cannot roll the package editor back');
+});
+
+test('unsaved Studio work blocks the company publication until it is saved',async()=>{
+  const p=await publicationHarness({props:{disabled:true}});
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(p.status(),'Spara det pågående Studio-arbetet först');assert.equal(p.submit().props.disabled,true);
+  await p.publish();assert.equal(p.requests.length,0);
+});
+
+test('a composition removed from Studio stays visible in the package and blocks publication until it is unchecked',async()=>{
+  const p=await publicationHarness();
+  p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
+  assert.equal(p.checkbox('retired').props.checked,true);assert.match(p.html(),/Sammansättning borttagen ur Studio · retired/);
+  assert.equal(p.submit().props.disabled,true);assert.equal(p.status(),'Avmarkera borttagna sammansättningar först');
+  await p.publish();assert.equal(p.requests.length,0);
+  p.checkbox('retired').props.onChange({target:{checked:false}});
+  assert.equal(p.status(),'Urvalet är inte publicerat');assert.equal(p.submit().props.disabled,false);
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one']}));
+  await p.publish();
+  assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one'],expectedPackageRevision:4});
+});
+
 function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}
