@@ -28,7 +28,7 @@ Genomförandeplan för punkt 3 i masterplanens [Efter O03](../../migrering/MASTE
 | Rösterna ligger i Kevins ElevenLabs-konto (Pro, cirka 780 000 av 979 000 tecken använda 28 oktober). Tar det slut tystnar Dragan och Paow | Render `croupier-v3` `ELEVENLABS_API_KEY`; voiceId i `packages/presentation/contracts/dealer-voice-catalog.json` |
 | RunPod-mallen `5dkkc3wolw` för `zjsdlni6cn8dvo` har `MOVING_CALLBACK_ORIGIN=https://croupier-v2.onrender.com` (raderad). Workern avvisar varje jobb vars callback-värd inte stämmer | `services/moving-gpu-worker/contracts.py:102–109` |
 | Rörligt tal är av i produktionen | Render `CROUPIER_MOVING_SPEECH_ENABLED=0` |
-| Preview har ingen taluppsättning (inga talnycklar) och dess Blob tar bara syntetiskt material | [START-HERE](../../START-HERE.md#preview), Blob `store_7E06N1P4w9Mu1dZD` |
+| Preview har ingen taluppsättning (inga talnycklar) och dess Blob tar godkänt material (Jakobs beslut 2026-10-28) | [START-HERE](../../START-HERE.md#preview), Blob `store_7E06N1P4w9Mu1dZD` |
 
 Det som redan fungerar per dealer: talprofilen `dealers[].speechProfile` i projektet (`services/game/dealer-speech-runtime.mjs:82`), stillbildsvägen med `reference.kind = 'video-frame'` (`services/game/dealer-speech-reference.mjs:89` tar en ruta 1080×1920 ur ett registerklipp) och röstkatalogen per dealer.
 
@@ -53,7 +53,7 @@ Ordningen gäller. "DDL" körs av Jakob; "env" dokumenteras i [ENVIRONMENT-VARIA
 - **Filer:** `docs/ENVIRONMENT-VARIABLES.md` (preview-raden), ingen kod.
 - **DDL:** nej. **Env:** ja, på preview-Render `croupier-k06-k07-staging`: egna `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` med sina hemligheter, `CROUPIER_DEALER_SPEECH_PROFILES` och `OPENCLAW_PRODUCT_SPEECH_URL`/`_TOKEN`. Produktionens nycklar kopieras aldrig.
 - **Prov:** `node ops/cloud/start.mjs --check` på preview, sedan T1:s prov i preview.
-- **Risk:** kostnad. Preview-Blob tar bara syntetiskt material, så riktig Paow-media eller bank i preview kräver Jakobs beslut.
+- **Risk:** kostnad. Preview-Blob tar godkänt material (Jakobs beslut 2026-10-28), så riktig Paow-media får ligga där men kostnad för generering och bank i preview kräver fortfarande Jakobs beslut.
 
 ### Före T3: callback-adressen
 
