@@ -302,9 +302,9 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
 });
 
 test('saved room bookmarks land on the room nav with their owner, room and fragment',()=>{
-  // The old /admin/rooms editor query becomes the room nav path; table, composition and game leave the address,
-  // the company stays as context and the fragment follows (packages/navigation/admin-workspace-routes.mjs).
-  assert.equal(adminDocumentHref('/admin/rooms?operator=a&table=roulette&dealer=astrid&tag=a&tag=b#choices'),'/admin/rooms/roulette?operator=a&dealer=astrid&tag=a&tag=b#choices');
+  // The old /admin/rooms editor query becomes the room nav path; table, composition, game and the dealer selection leave
+  // the address, the company stays as context and the fragment follows (packages/navigation/admin-workspace-routes.mjs).
+  assert.equal(adminDocumentHref('/admin/rooms?operator=a&table=roulette&dealer=astrid&tag=a&tag=b#choices'),'/admin/rooms/roulette?operator=a&tag=a&tag=b#choices');
   assert.equal(adminDocumentHref('/admin/rooms?operator=a&table=other&composition=three&game=blackjack#choices'),'/admin/rooms/other?operator=a#choices','the nav resolves the registered owner, never the bookmarked one');
   assert.equal(adminDocumentHref('/admin/rooms?operator=a'),'/admin/companies?tab=spelbord&operator=a');
   assert.equal(adminDocumentHref('/admin/rooms?table=one&table=two'),'/admin/companies?tab=spelbord&table=one&table=two','an ambiguous room opens the list');

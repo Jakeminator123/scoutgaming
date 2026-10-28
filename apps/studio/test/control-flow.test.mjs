@@ -5,7 +5,7 @@ import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/s
 
 test('older workspace links keep company and room context', () => {
   assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies/op-one#team');
-  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), "/admin/rooms/room-one?dealer=paow&operator=north");
+  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), "/admin/rooms/room-one?operator=north", 'the room nav owns its dealer selection');
   assert.equal(canonicalControlHref('/control/preview?composition=current'), "/admin/scenes?tab=mallar&composition=current");
 });
 

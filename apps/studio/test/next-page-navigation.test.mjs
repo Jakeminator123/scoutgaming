@@ -290,9 +290,9 @@ test('Activity bookmarks retain only unambiguous observation identities across n
         assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,duplicate?'/admin/companies':'/admin/rooms/room-1');
         assert.equal(destination.hash,'#observation');
         if(duplicate){assert.equal(destination.searchParams.get('tab'),'spelbord');assert.equal(destination.searchParams.get('composition'),'portrait');}
-        for(const key of ['dealer','operator'])assert.equal(destination.searchParams.get(key),duplicate?null:query.get(key));
-        // The table nav owns its room; its template and game come from the register, never the bookmark.
-        for(const key of ['table','room','game'])assert.equal(destination.searchParams.has(key),false);
+        assert.equal(destination.searchParams.get('operator'),duplicate?null:query.get('operator'));
+        // The table nav owns its room and dealer selection; its template and game come from the register, never the bookmark.
+        for(const key of ['table','room','game','dealer'])assert.equal(destination.searchParams.has(key),false);
         if(!duplicate)assert.equal(destination.searchParams.has('composition'),false);
         for(const key of ['event','token','unknown','lane'])assert.equal(destination.searchParams.has(key),false);
         if(section==='/control/activity')assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
@@ -307,7 +307,7 @@ test('Activity bookmarks retain only unambiguous observation identities across n
 
 test('old activity URLs retain only observation context and canonicalize the composition alias', () => {
   const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/activity?'+query));
-  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), "/admin/rooms/room-1?dealer=vera&operator=operator-one");
+  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), "/admin/rooms/room-1?operator=operator-one", 'the room nav owns its dealer selection');
   assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), "/admin/companies?tab=spelbord&composition=chosen");
 });
 
@@ -504,8 +504,8 @@ test('retired publication and tool documents redirect with context in every nati
         const [pathname,query]=target.split('?');
         assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,pathname,section);
         for(const [key,value]of new URLSearchParams(query))assert.deepEqual(destination.searchParams.getAll(key),[value]);
-        // The nav's identity sits in the path; a table nav takes its template and game from the register.
-        const moved=owner==='table'?['room','table','game','composition']:owner?[owner]:[];
+        // The nav's identity sits in the path; a table nav takes its template, game and dealer from the register.
+        const moved=owner==='table'?['room','table','game','composition','dealer']:owner?[owner]:[];
         for(const [key,value]of Object.entries(context))assert.equal(destination.searchParams.get(key),moved.includes(key)?null:value,section+' '+key);
         assert.equal(destination.searchParams.has('lane'),false);
       }

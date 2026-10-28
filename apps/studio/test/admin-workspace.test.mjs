@@ -9,7 +9,7 @@ import {platformRoute} from '../../../packages/navigation/server/platform-routin
 import {normalizeNativeStudioPageRequest} from '../lib/studio-native-request.mjs';
 
 const tools=['companies','rooms','compositions','rehearsal','library','replies','clips','dealer-forge','administration','tree','videos','openclaw','activity','guide','zones','events','probe','operator-chat','preview','lanes'];
-// A room nav (/admin/rooms/<id>) owns its room; table, composition and game leave the address, the company stays.
+// A room nav (/admin/rooms/<id>) owns its room; table, composition, game and dealer leave the address, the company stays.
 const roomNav=url=>/^\/admin\/rooms\/[^/]+$/.test(url.pathname);
 test('every existing Control tool and registered N1 view has a served Admin destination',()=>{
   for(const path of [...tools.map(tool=>'/control/'+tool),...CONTROL_PREVIEW_VIEWS.map(view=>workspaceSurfacePath('control',view))]){
@@ -19,8 +19,8 @@ test('every existing Control tool and registered N1 view has a served Admin dest
     assert.equal(adminDocumentHref(to),to,'one redirect is enough: '+to);
     assert.equal(url.searchParams.has('lane'),false,to);
     const dealerNav=url.pathname.startsWith('/admin/dealers/');
-    if(dealerNav)assert.equal(url.pathname,'/admin/dealers/dragan',to);else assert.equal(url.searchParams.get('dealer'),'dragan',to);
-    if(roomNav(url)){assert.equal(url.pathname,'/admin/rooms/room-1',to);assert.equal(url.searchParams.has('table'),false,to);assert.equal(url.searchParams.has('composition'),false,to);}
+    if(dealerNav)assert.equal(url.pathname,'/admin/dealers/dragan',to);else if(!roomNav(url))assert.equal(url.searchParams.get('dealer'),'dragan',to);
+    if(roomNav(url)){assert.equal(url.pathname,'/admin/rooms/room-1',to);for(const key of ['table','composition','game','dealer'])assert.equal(url.searchParams.has(key),false,key+' leaves the room address: '+to);assert.equal(url.searchParams.get('operator'),'nord',to);}
     else {assert.equal(url.searchParams.get('table'),'room-1',to);assert.equal(url.searchParams.get('composition'),'portrait',to);}
   }
   // The embedded tools (Team, Svarsbibliotek, Dialogtest) are workspace sections, not pages: their old addresses open the navs.
@@ -89,8 +89,10 @@ test('Admin documents retain the existing navigation exception without opening A
   for(const bad of [new Request(request,{method:'POST'}),new Request(request,{headers:{...headers,origin:'https://foreign.invalid'}}),new Request(request,{headers:{...headers,'next-action':'fixture'}}),new Request('https://site.invalid/studio/api/admin/workspace/companies',{headers})])assert.throws(()=>normalizeNativeStudioPageRequest(bad,config),/studio_request_rejected/);
 });
 test('login restores the exact Admin page and context without accepting external returns or duplicate selectors',()=>{
-  const target='/admin/rooms/room-1?operator=nord&dealer=dragan';
+  // The room nav owns its room and dealer selection; only the company follows (Jakob 2026-10-28).
+  const target='/admin/rooms/room-1?operator=nord';
   assert.equal(studioLoginReturnTo('/studio'+target),target);
+  assert.equal(studioLoginReturnTo('/studio/admin/rooms/room-1?operator=nord&dealer=dragan'),target+'&dealer=dragan','a dealer written on the room nav itself is left alone');
   assert.equal(studioLoginReturnTo('/studio/admin/rooms?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack'),target,'an old rooms bookmark returns to the room nav');
   assert.equal(studioLoginReturnTo('/studio/admin/publication?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack'),target,'the retired publication page returns to the same room');
   assert.equal(studioLoginReturnTo('/admin/dealers?dealer=dragan&tool=import'),'/admin/dealers/dragan?flik=klipp&tool=import');
@@ -169,7 +171,7 @@ test('retired tool bookmarks retain exact context and never redirect mutations',
     ['videos','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],['probe','/admin/dealers/saga?flik=tal&operator=north&table=room-1&'+context+'&composition=portrait'],
     ['replies','/admin/dealers/saga?flik=tal&operator=north&table=room-1&'+context+'&composition=portrait'],['events','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],
     ['tree','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],['compositions','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
-    ['rehearsal','/admin/rooms/room-1?operator=north&dealer=saga&'+context],['preview','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
+    ['rehearsal','/admin/rooms/room-1?operator=north&'+context],['preview','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
     ['zones','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&'+context+'#selected');
