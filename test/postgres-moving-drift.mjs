@@ -7,15 +7,18 @@ import {createNativeStudioRequestHandlers} from '../apps/studio/lib/studio-nativ
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {pathToFileURL} from 'node:url';
-import {createPostgresMovingDriftStore} from '../services/game/postgres-moving-drift.mjs';
+import {createPostgresMovingDriftStore,jsonbTextBytes,MOVING_DRIFT_DEALER_LIMIT,MOVING_DRIFT_ROW_LIMIT} from '../services/game/postgres-moving-drift.mjs';
 import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 
-const profiles=[{id:'base',label:'Bas',endpointId:'endpoint-test',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}];
+const profiles=[{id:'base',label:'Bas',dealerId:'dragan',endpointId:'endpoint-test',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}];
+const dealerId='dragan';
+const paowProfiles=[{id:'paow',label:'Paow',dealerId:'paow',endpointId:'endpoint-paow',releaseDigest:'a'.repeat(64),bankHash:'c'.repeat(64)}];
 const command=(extra={})=>({mode:'saving',profileId:'base',expectedRevision:0,commandId:'first',...extra});
 const reject=code=>error=>error.code===code&&error.message===code;
-function fakePool({failOn,commit='COMMIT'}={}) {
-  const trace=[];let row=null,released=0,working;
-  return {trace,get released(){return released;},async connect(){return {
+const OFF={mode:'off',profileId:null,endsAtMs:null};
+function fakePool({failOn,commit='COMMIT',row=null}={}) {
+  const trace=[];let released=0,working;
+  return {trace,get released(){return released;},get row(){return row;},set row(value){row=value;},async connect(){return {
     async query(sql,values=[]) {
       const marker=/moving-drift:([a-z]+)/.exec(sql)?.[1]??sql.split(' ')[0];trace.push({marker,values});
       if(marker===failOn) throw new Error('private database credential');
@@ -31,7 +34,7 @@ function fakePool({failOn,commit='COMMIT'}={}) {
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {
   test('store is inert until called, scopes its lock and row, and masks driver errors',async()=>{
-    const pool=fakePool(),store=createPostgresMovingDriftStore({pool,environmentId:'isolated-drift'});
+    const pool=fakePool(),store=createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId});
     assert.deepEqual(pool.trace,[]);
     const controller=createMovingDriftController({store,profiles,capabilities:{connected:true}});
     await controller.command(command());
@@ -40,16 +43,143 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {
     assert.deepEqual(pool.trace.find(x=>x.marker==='read').values,['isolated-drift']);
     assert.equal(pool.released,1);
     const bad=fakePool({failOn:'write'});
-    await assert.rejects(createMovingDriftController({store:createPostgresMovingDriftStore({pool:bad,environmentId:'isolated-drift'}),profiles})
+    await assert.rejects(createMovingDriftController({store:createPostgresMovingDriftStore({pool:bad,environmentId:'isolated-drift',dealerId}),profiles})
       .command({mode:'off',expectedRevision:0,commandId:'stop'}),reject('drift_store_unavailable'));
     assert.equal(bad.trace.at(-1).marker,'ROLLBACK');
     assert.equal(bad.released,1);
   });
   test('transaction cannot report success on rolled-back COMMIT or asynchronous side effects',async()=>{
-    const pool=fakePool({commit:'ROLLBACK'}),store=createPostgresMovingDriftStore({pool,environmentId:'isolated-drift'});
+    const pool=fakePool({commit:'ROLLBACK'}),store=createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId});
     await assert.rejects(createMovingDriftController({store,profiles}).status(),reject('drift_store_unavailable'));
     await assert.rejects(store.transact(()=>Promise.resolve({state:{}})),reject('drift_invalid_state'));
-    assert.throws(()=>createPostgresMovingDriftStore({pool,environmentId:'production/other'}),reject('drift_invalid_configuration'));
+    for(const options of [{environmentId:'production/other',dealerId},{environmentId:'isolated-drift'},
+      {environmentId:'isolated-drift',dealerId:'Dragan'},{environmentId:'isolated-drift',dealerId:'__proto__'}])
+      assert.throws(()=>createPostgresMovingDriftStore({pool,...options}),reject('drift_invalid_configuration'));
+  });
+  test('two dealers share one environment row and lock but never read or change each other',async()=>{
+    const pool=fakePool(),make=(id,catalogue)=>createMovingDriftController({capabilities:{connected:true},profiles:catalogue,
+      store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId:id})});
+    const dragan=make('dragan',profiles),paow=make('paow',paowProfiles);
+    const saving=await dragan.command(command());
+    assert.equal(saving.desired.mode,'saving');assert.equal(saving.revision,1);
+    // Paow starts Off at its own revision 0, although the row has been written.
+    const paowStatus=await paow.status();
+    assert.equal(paowStatus.revision,0);assert.equal(paowStatus.desired.mode,'off');
+    await paow.command({mode:'saving',profileId:'paow',expectedRevision:0,commandId:'paow-first'});
+    const stopped=await paow.command({mode:'off',expectedRevision:1,commandId:'paow-stop'});
+    assert.equal(stopped.revision,2);
+    // A command never crosses dealers: Dragan's profile is unknown to Paow.
+    await assert.rejects(paow.command({mode:'saving',profileId:'base',expectedRevision:2,commandId:'cross'}),reject('drift_unknown_profile'));
+    const after=await dragan.status();
+    assert.equal(after.revision,saving.revision);assert.equal(after.operationId,saving.operationId);assert.equal(after.desired.mode,'saving');
+    const row=pool.row;
+    assert.deepEqual(Object.keys(row.state.dealers).sort(),['dragan','paow']);
+    assert.equal(row.state.schemaVersion,1);assert.equal(row.state.revision,row.revision);assert.deepEqual(row.state.desired,OFF);
+    assert.equal(row.state.dealers.dragan.desired.mode,'saving');assert.equal(row.state.dealers.paow.desired.mode,'off');
+    // An unchanged dealer state is not rewritten by a read.
+    const writes=pool.trace.filter(x=>x.marker==='write').length;await dragan.status();
+    assert.equal(pool.trace.filter(x=>x.marker==='write').length,writes);
+  });
+  test('a single-dealer row from before per-dealer state is replaced and every dealer starts Off',async()=>{
+    const legacy={schemaVersion:1,revision:7,operationId:'11111111-1111-4111-8111-111111111111',
+      desired:{mode:'saving',profileId:'base',endsAtMs:null},observation:null,updatedAtMs:1,lastCommand:null,
+      cost:{estimatedMicroUsd:null,source:null,quotedAtMs:null,shutdownTailMs:null},
+      execution:{holderId:'old-process',profileId:'base',fence:4,leaseUntilMs:1792404060000,catalogueFingerprint:'f'.repeat(64),observedAtMs:null}};
+    const pool=fakePool({row:{revision:'7',state:legacy}});
+    const controller=createMovingDriftController({profiles,capabilities:{connected:true,requireExecutor:true},
+      store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId})});
+    const status=await controller.status();
+    assert.equal(status.revision,0);assert.equal(status.desired.mode,'off');assert.equal(status.admission.allowed,false);
+    assert.equal(pool.row.revision,8);
+    assert.deepEqual(Object.keys(pool.row.state).sort(),['dealers','desired','revision','schemaVersion']);
+    assert.deepEqual(pool.row.state.desired,OFF);
+    // The old process's top-level lease is gone, so it cannot publish evidence.
+    await assert.rejects(controller.guardAdmission({phase:'reserve',sessionId:'session-1',endpointId:'endpoint-test',
+      admission:{revision:7,operationId:legacy.operationId,profileId:'base',endpointId:'endpoint-test'}}),reject('drift_not_admitting'));
+  });
+  test('malformed dealer containers and more than eight dealers fail closed without a write',async()=>{
+    const base={schemaVersion:1,revision:3,desired:OFF};
+    for(const dealers of [[],null,'dragan',{Dragan:{}},{dragan:[]},{dragan:null},
+      Object.fromEntries(Array.from({length:9},(_,i)=>['dealer-'+i,{schemaVersion:1,revision:0,desired:OFF}]))]) {
+      const pool=fakePool({row:{revision:'3',state:{...base,dealers}}});
+      await assert.rejects(createMovingDriftController({profiles,store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId})}).status(),
+        reject('drift_invalid_state'));
+      assert.equal(pool.trace.some(x=>x.marker==='write'),false);
+    }
+    const full=Object.fromEntries(Array.from({length:8},(_,i)=>['dealer-'+i,{schemaVersion:1,revision:0,desired:OFF}]));
+    const pool=fakePool({row:{revision:'3',state:{...base,dealers:full}}});
+    await assert.rejects(createMovingDriftController({profiles,store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId})}).status(),
+      reject('drift_invalid_state'));
+    assert.equal(pool.trace.some(x=>x.marker==='write'),false);
+  });
+  test('row size is measured as PostgreSQL measures it; a full dealer slot never blocks the others, even with eight workers each',async t=>{
+    const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');
+    const {readFile}=await import('node:fs/promises');
+    const pool=await createPglitePool({migrations:[]});t.after(()=>pool.end());
+    await pool.query('CREATE SCHEMA IF NOT EXISTS croupier_studio');
+    await pool.query(await readFile(new URL('../ops/neon-studio/016-moving-drift-control.sql',import.meta.url),'utf8'));
+    const hex=c=>c.repeat(64),long=(prefix,n)=>(prefix+'x'.repeat(n)).slice(0,n);
+    const stored=async environmentId=>(await pool.query('SELECT octet_length(state::text) AS bytes,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[environmentId])).rows[0];
+    // Seven fill their slots with maximum identifiers; the eighth arrives last and must still write.
+    async function fill(environmentId,{maximum,workers}){
+      const dealers=[];
+      for(let i=0;i<8;i++){
+        const id=maximum?long('d'+i+'-',40):'dealer-'+i;
+        const profile={id:maximum?long('p'+i+'-',32):'p'+i,label:'L'.repeat(80),dealerId:id,endpointId:maximum?long('e'+i,128):'endpoint'+i,releaseDigest:hex('a'),bankHash:hex('b')};
+        const controller=createMovingDriftController({profiles:[profile],capabilities:{connected:true,requireExecutor:true},
+          store:createPostgresMovingDriftStore({pool,environmentId,dealerId:id})});
+        const now=Number((await pool.query('SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n')).rows[0].n);
+        const execution=await controller.claimExecution({holderId:maximum?long('h'+i,128):'holder-'+i,profileId:profile.id});
+        let status=await controller.observe({revision:0,operationId:null,execution,observedAtMs:now,observedProfileIds:[profile.id],
+          workers:[],busyJobs:0,queuedJobs:0,applied:{revision:0,operationId:null,mode:'off',profileId:null,workersMin:0,workersMax:1}});
+        status=await controller.command({mode:'saving',profileId:profile.id,expectedRevision:status.revision,commandId:maximum?long('c'+i,64):'saving-'+i});
+        const observation={revision:status.revision,operationId:status.operationId,execution,observedAtMs:now,observedProfileIds:[profile.id],
+          busyJobs:0,queuedJobs:0,providerDeadlineMs:9007199254740991,budgetCoveredUntilMs:9007199254740991,
+          applied:{revision:status.revision,operationId:status.operationId,mode:'saving',profileId:profile.id,workersMin:0,workersMax:1},
+          workers:Array.from({length:workers},(_,w)=>maximum
+            ?{id:long('w'+i+'-'+w+'-',128),profileId:profile.id,state:'terminated',gpu:'G'.repeat(80),releaseDigest:hex('a'),bankHash:hex('b'),modelReady:false}
+            :{id:'pod-'+i+'-'+w,profileId:profile.id,state:'terminated',gpu:'',releaseDigest:null,bankHash:null,modelReady:false})};
+        const outcome=await controller.observe(observation).then(()=>'stored',error=>error.code);
+        dealers.push({controller,status,outcome});
+        const row=await stored(environmentId);
+        // The store's measure is exactly the CHECK's measure, and the row keeps its margin.
+        assert.equal(jsonbTextBytes(row.state),Number(row.bytes));
+        assert.ok(Number(row.bytes)<=MOVING_DRIFT_ROW_LIMIT,`${row.bytes} bytes`);
+      }
+      // Every dealer can still change its own state afterwards.
+      for(const [i,{controller,status}] of dealers.entries())
+        assert.equal((await controller.command({mode:'off',expectedRevision:status.revision,commandId:'off-'+i})).desired.mode,'off');
+      return dealers.map(dealer=>dealer.outcome);
+    }
+    // One observed worker per dealer (the observer reports at most one pod): every dealer fits.
+    assert.deepEqual(await fill('one-worker',{maximum:true,workers:1}),Array(8).fill('stored'));
+    // Eight maximum-length workers exceed one dealer's share: only that dealer's write is refused, cleanly before the database.
+    assert.deepEqual(await fill('eight-maximum-workers',{maximum:true,workers:8}),Array(8).fill('drift_invalid_state'));
+    // Eight ordinary workers per dealer fit for all eight dealers.
+    assert.deepEqual(await fill('eight-ordinary-workers',{maximum:false,workers:8}),Array(8).fill('stored'));
+    assert.ok(8*MOVING_DRIFT_DEALER_LIMIT+256<=MOVING_DRIFT_ROW_LIMIT&&MOVING_DRIFT_ROW_LIMIT<32768);
+  });
+  test('the dealer container satisfies the unchanged migration 016 table and its constraints in PostgreSQL',async t=>{
+    const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');
+    const {readFile}=await import('node:fs/promises');
+    const pool=await createPglitePool({migrations:[]});t.after(()=>pool.end());
+    await pool.query('CREATE SCHEMA IF NOT EXISTS croupier_studio');
+    await pool.query(await readFile(new URL('../ops/neon-studio/016-moving-drift-control.sql',import.meta.url),'utf8'));
+    await pool.query("INSERT INTO croupier_studio.moving_drift_control(environment_id,revision,state) VALUES('isolated-drift',5,$1::jsonb)",
+      [JSON.stringify({schemaVersion:1,revision:5,operationId:null,desired:{mode:'saving',profileId:'base',endsAtMs:null}})]);
+    const make=(id,catalogue)=>createMovingDriftController({capabilities:{connected:true},profiles:catalogue,
+      store:createPostgresMovingDriftStore({pool,environmentId:'isolated-drift',dealerId:id})});
+    const dragan=make('dragan',profiles),paow=make('paow',paowProfiles);
+    assert.equal((await dragan.status()).desired.mode,'off');
+    await dragan.command(command());
+    await paow.command({mode:'saving',profileId:'paow',expectedRevision:0,commandId:'paow-first'});
+    const {rows:[row]}=await pool.query("SELECT revision,state FROM croupier_studio.moving_drift_control WHERE environment_id='isolated-drift'");
+    assert.equal(Number(row.revision),8);assert.equal(row.state.revision,8);assert.deepEqual(row.state.desired,OFF);
+    assert.equal(row.state.dealers.dragan.desired.profileId,'base');assert.equal(row.state.dealers.paow.desired.profileId,'paow');
+    assert.equal((await dragan.status()).revision,1);assert.equal((await paow.status()).revision,1);
+    // The table's own checks still bind the row revision, so no writer can skip them.
+    await assert.rejects(pool.query("UPDATE croupier_studio.moving_drift_control SET revision=revision+1 WHERE environment_id='isolated-drift'"),
+      error=>error.code==='23514');
   });
 }
 
@@ -62,7 +192,7 @@ export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   assert.ok(['127.0.0.1','127.0.0.1/32','::1','::1/128'].includes(target.address));
   const environmentId='isolated-drift';
   assert.equal((await pool.query('SELECT count(*)::integer AS n FROM croupier_studio.moving_drift_control')).rows[0].n,0);
-  const make=(storeOptions={})=>createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId,...storeOptions}),profiles,capabilities:{connected:true}});
+  const make=(storeOptions={})=>createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId,dealerId,...storeOptions}),profiles,capabilities:{connected:true}});
   const pristine=make({environmentId:'initial-off-fixture'}),initial=await pristine.status();
   const confirmed=await pristine.observe({revision:0,operationId:null,observedAtMs:initial.serverNowMs,
     observedProfileIds:['base'],workers:[],queuedJobs:0,busyJobs:0,
@@ -77,7 +207,7 @@ export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   assert.equal(retried.revision,saved.revision);assert.equal(retried.operationId,saved.operationId);
   await assert.rejects(pool.query("UPDATE croupier_studio.moving_drift_control SET state='{}'::jsonb WHERE environment_id=$1",[environmentId]),error=>error.code==='23514');
   await assert.rejects(pool.query('UPDATE croupier_studio.moving_drift_control SET revision=revision+1 WHERE environment_id=$1',[environmentId]),error=>error.code==='23514');
-  const other=createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId:'other-fixture'}),profiles});
+  const other=createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId:'other-fixture',dealerId}),profiles});
   assert.equal((await other.status()).revision,0);
   assert.equal((await first.status()).revision,1);
   // Commit to real PostgreSQL, then inject loss of its response. Retrying must
@@ -93,7 +223,7 @@ export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   }};
   const uncertainEnvironment='uncertain-commit-fixture',uncertainCommand=command({commandId:'lost-ack'});
   await assert.rejects(make({pool:uncertainPool,environmentId:uncertainEnvironment}).command(uncertainCommand),reject('drift_store_unavailable'));
-  const committed=(await pool.query('SELECT state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[uncertainEnvironment])).rows[0].state;
+  const committed=(await pool.query('SELECT state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[uncertainEnvironment])).rows[0].state.dealers[dealerId];
   assert.equal(committed.revision,1);
   pool=await restart(pool);
   const retryAfterRestart=await make().command(winner);
@@ -104,7 +234,7 @@ export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   await assert.rejects(make({environmentId:uncertainEnvironment}).command({mode:'off',expectedRevision:0,commandId:'lost-ack'}),reject('drift_command_reused'));
   // Seed an already expired desired period, not provider/runtime data.
   await pool.query(`UPDATE croupier_studio.moving_drift_control
-    SET state=jsonb_set(jsonb_set(state,'{desired,mode}','"warm"'::jsonb),'{desired,endsAtMs}',
+    SET state=jsonb_set(jsonb_set(state,'{dealers,dragan,desired,mode}','"warm"'::jsonb),'{dealers,dragan,desired,endsAtMs}',
       to_jsonb(floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1000))
     WHERE environment_id=$1`,[environmentId]);
   pool=await restart(pool);
@@ -114,9 +244,22 @@ export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   assert.equal(recovered.admission.allowed,false);
   assert.equal(recovered.observed.status,'unknown');
   const row=(await pool.query('SELECT revision,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[environmentId])).rows[0];
-  assert.equal(Number(row.revision),recovered.revision);assert.equal(row.state.desired.mode,'off');
+  assert.equal(Number(row.revision),row.state.revision);assert.equal(row.state.dealers.dragan.revision,recovered.revision);
+  assert.equal(row.state.dealers.dragan.desired.mode,'off');assert.deepEqual(row.state.desired,{mode:'off',profileId:null,endsAtMs:null});
+  // Two dealers in one environment: concurrent commands on separate connections
+  // serialize on the environment lock and neither overwrites the other.
+  const dealerEnvironment='dealer-row-fixture';
+  const forDealer=(id,catalogue)=>createMovingDriftController({capabilities:{connected:true},profiles:catalogue,
+    store:createPostgresMovingDriftStore({pool,environmentId:dealerEnvironment,dealerId:id})});
+  const pair=await Promise.all([forDealer('dragan',profiles).command(command({commandId:'dealer-dragan'})),
+    forDealer('paow',paowProfiles).command({mode:'saving',profileId:'paow',expectedRevision:0,commandId:'dealer-paow'})]);
+  assert.deepEqual(pair.map(status=>status.revision),[1,1]);
+  const shared=(await pool.query('SELECT revision,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[dealerEnvironment])).rows[0];
+  assert.deepEqual(Object.keys(shared.state.dealers).sort(),['dragan','paow']);
+  assert.equal(shared.state.dealers.dragan.desired.profileId,'base');assert.equal(shared.state.dealers.paow.desired.profileId,'paow');
+  assert.equal((await forDealer('dragan',profiles).status()).operationId,pair[0].operationId);
   const apiChecks=await runMovingDriftAdminSqlChecks({pool,restart,createPool});pool=apiChecks.pool;
-  return {pool,checks:[...apiChecks.checks,'drift-jsonb-retry-after-ack-loss-and-restart','drift-initial-off-attestation','drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
+  return {pool,checks:[...apiChecks.checks,'drift-dealer-row-concurrency','drift-jsonb-retry-after-ack-loss-and-restart','drift-initial-off-attestation','drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
 }
 
 /** Called only after the caller's loopback/role/database guard above. */

@@ -6,7 +6,7 @@ import {createMovingDriftObserver} from '../services/game/moving-drift-observer.
 import {summarizeMovingWorkerHealth} from '../services/game/moving-speech-runpod.mjs';
 import {movingCapacityFixture} from './fixtures/moving-capacity.mjs';
 
-const profile={id:'base',label:'Bas',endpointId:'endpoint-base',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)};
+const profile={id:'base',label:'Bas',dealerId:'dragan',endpointId:'endpoint-base',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)};
 function fixture(executorOptions={}){
   let time=1800000000000,row=null,queue=Promise.resolve(),reads=0,cancels=0;
   const store={transact(fn){const task=queue.then(()=>{const result=fn(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);});queue=task.catch(()=>{});return task;}};
@@ -143,7 +143,7 @@ test('runtime factory binds one verified profile and injects a separate journal 
   let journalOptions,sessionOptions;
   const journal={listMovingSessions:async()=>[]};
   const configuration={profiles:[profile]},scope={environment:'isolated-drift',workspaceId:'qa'};
-  const options={pool:{},scope,configuration,endpointId:profile.endpointId,releaseDigest:profile.releaseDigest,bankHash:profile.bankHash,
+  const options={pool:{},scope,configuration,dealerId:'dragan',endpointId:profile.endpointId,releaseDigest:profile.releaseDigest,bankHash:profile.bankHash,
     provider:{release(){seen.provider++;},workerState(){seen.provider++;}},
     journalFactory:async args=>{journalOptions=args;return journal;},
     sessionFactory:args=>{sessionOptions=args;return f.sessions;},
@@ -168,10 +168,42 @@ test('runtime factory binds one verified profile and injects a separate journal 
   await runtime.controller.command(off(status));
   await assert.rejects(journalOptions.driftControl.guard({client,phase:'dispatch',sessionId:'session-1',endpointId:profile.endpointId,admission}),rejects('drift_not_admitting'));
   for(const change of [{configuration:null},{configuration:{profiles:[profile,{...profile,id:'comparison'}]}},
+    {dealerId:'paow'},{dealerId:undefined},{configuration:{profiles:[{...profile,dealerId:'paow'}]}},
     {endpointId:'other'},{releaseDigest:'f'.repeat(64)},{bankHash:'f'.repeat(64)}]){
     await assert.rejects(createMovingDriftRuntime({...options,...change}),rejects('drift_invalid_configuration'));
   }
   await runtime.close();assert.equal(seen.provider,0);
+});
+
+test('a second dealer gets its own profile, row slot and endpoint, and only its own open sessions keep it busy',async()=>{
+  const {createMovingDriftRuntime}=await import('../services/game/moving-drift-executor.mjs');
+  const paow={...profile,id:'paow',label:'Paow',dealerId:'paow',endpointId:'endpoint-paow',bankHash:'c'.repeat(64)};
+  const configuration={profiles:[profile,paow]},scope={environment:'isolated-drift',workspaceId:'qa'};
+  const open=[{sessionId:'dragan-session',endpointId:profile.endpointId},{sessionId:'paow-session',endpointId:paow.endpointId},
+    {sessionId:'stale-session',endpointId:'endpoint-retired'}];
+  const built=[];
+  for(const dealer of [profile,paow]){
+    const f=fixture(),seen={};
+    const runtime=await createMovingDriftRuntime({pool:{},scope,configuration,dealerId:dealer.dealerId,endpointId:dealer.endpointId,
+      releaseDigest:dealer.releaseDigest,bankHash:dealer.bankHash,provider:{release(){},workerState(){}},
+      journalFactory:async()=>({listMovingSessions:async()=>open}),
+      sessionFactory:args=>{seen.sessions=args;return f.sessions;},
+      observerFactory:args=>{seen.observer=args;return f.observer;},
+      storeFactory:args=>{(seen.stores??=[]).push(args.dealerId);return {transact:work=>Promise.resolve().then(()=>{
+        const next=work(structuredClone(seen.row??null),1800000000000);seen.row=structuredClone(next.state);return next.value;})};}});
+    built.push({dealer,runtime,seen,f});
+  }
+  for(const {dealer,runtime,seen} of built){
+    assert.deepEqual(seen.stores,[dealer.dealerId]);
+    assert.equal(seen.observer.profile,dealer);assert.equal(seen.sessions.endpointId,dealer.endpointId);
+    // Recovery skips only the other configured dealer's endpoint, never its own or a retired one.
+    assert.deepEqual(seen.sessions.foreignEndpointIds,[dealer===profile?paow.endpointId:profile.endpointId]);
+    const status=await runtime.tick();
+    assert.deepEqual(status.profiles,[{id:dealer.id,label:dealer.label}]);
+    // Own and retired-endpoint sessions count; the other dealer's session never does.
+    assert.equal(seen.row.observation.busyJobs,2);
+    await runtime.close();
+  }
 });
 
 test('connected expires with the provider observation even when the SQL heartbeat is newer',async()=>{

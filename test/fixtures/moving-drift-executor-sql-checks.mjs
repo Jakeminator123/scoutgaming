@@ -5,7 +5,7 @@ import {createPostgresMovingDriftStore} from '../../services/game/postgres-movin
 import {createSpeechJournal,GPU_RESERVATION_WINDOW_MS} from '../../services/game/postgres-speech-journal.mjs';
 import {canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 
-const profiles=Object.freeze([{id:'base',label:'SQL fixture',endpointId:'endpoint-fixture',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}]);
+const profiles=Object.freeze([{id:'base',label:'SQL fixture',dealerId:'dragan',endpointId:'endpoint-fixture',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}]);
 const capabilities=Object.freeze({connected:true,requireExecutor:true});
 const empty=Object.freeze({workers:0,busy:0,available:0});
 const reject=code=>error=>error?.code===code&&error.message===code;
@@ -45,13 +45,13 @@ export async function runMovingDriftExecutorSqlChecks({pool}){
       }};
       clients.set(wrapped,clientId);return wrapped;
     }};
-    const make=()=>createMovingDriftController({store:createPostgresMovingDriftStore({pool:tracedPool,environmentId:scope.environment}),profiles,capabilities});
+    const make=()=>createMovingDriftController({store:createPostgresMovingDriftStore({pool:tracedPool,environmentId:scope.environment,dealerId:'dragan'}),profiles,capabilities});
     const controller=make();
     const journal=await createSpeechJournal({pool:tracedPool,environmentId:scope.environment,driftControl:{scope,guard:async({client,...input})=>{
       const span={phase:input.phase,clientId:clients.get(client),start:trace.length};guardSpans.push(span);
       // The controller receives this exact already-transactional client. Its
       // store must neither connect elsewhere nor emit a nested BEGIN/COMMIT.
-      const sameClient=createMovingDriftController({store:createPostgresMovingDriftStore({environmentId:scope.environment,
+      const sameClient=createMovingDriftController({store:createPostgresMovingDriftStore({environmentId:scope.environment,dealerId:'dragan',
         transaction:work=>work(client)}),profiles,capabilities});
       try{
         const result=await sameClient.guardAdmission(input);
@@ -180,8 +180,11 @@ export async function runMovingDriftExecutorSqlChecks({pool}){
   const restart=await setup('restart'),oldInput=restart.request(),beforeRestart=await restart.snapshot();
   // Force only the tiny QA execution lease into the past, as the existing
   // drift expiry fixture does. Fresh controller objects use the real DB clock.
-  await pool.query(`UPDATE croupier_studio.moving_drift_control SET state=jsonb_set(state,'{execution,leaseUntilMs}',
+  await pool.query(`UPDATE croupier_studio.moving_drift_control SET state=jsonb_set(state,'{dealers,dragan,execution,leaseUntilMs}',
     to_jsonb(floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1000)) WHERE environment_id=$1`,[restart.scope.environment]);
+  const expired=(await pool.query(`SELECT (state#>>'{dealers,dragan,execution,leaseUntilMs}')::bigint<floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+    AS expired FROM croupier_studio.moving_drift_control WHERE environment_id=$1`,[restart.scope.environment])).rows[0]?.expired;
+  assert.equal(expired,true,'the QA lease is expired in the dealer slot');
   const restarted=restart.make();
   await assert.rejects(restarted.authorizeAdmission({revision:oldInput.driftAdmission.revision,profileId:'base'}),reject('drift_not_admitting'));
   const replacement=await restarted.claimExecution({holderId:'drift-sql-restarted',profileId:'base',leaseMs:60000});

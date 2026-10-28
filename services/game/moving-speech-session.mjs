@@ -34,19 +34,24 @@ function bounded(work, signal, ms, code) {
  */
 export function createMovingSpeechSession({ journal, scope, origin, endpointId, release, provider,
   budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
-  workerState, driftControl, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
+  workerState, driftControl, foreignEndpointIds = [], lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
   startupMs = Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs), idleMs = 15000,
   cleanupMs = 15000, pollMs = 500, connectionFactory = createMovingSpeechConnection } = {}) {
   if (!journal || ['reserveMovingSession', 'assertMovingSession', 'listMovingSessions'].some(name => typeof journal[name] !== 'function')
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
     || driftControl !== undefined && (!driftControl || typeof driftControl.pin !== 'function')
+    || !Array.isArray(foreignEndpointIds) || foreignEndpointIds.length > 8
+    || foreignEndpointIds.some(id => typeof id !== 'string' || !id || id === endpointId)
     || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
     || !positive(initialBudgetMicroUsd, totalBudgetMicroUsd)
     || !positive(currentDailyBudgetMicroUsd, 60000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
     || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
     || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
   const ownership = createSpeechJournalLease({ journal, resource: 'stream-session', holderId });
+  // Another configured dealer's endpoint belongs to that dealer's own recovery.
+  // Any other endpoint (retired, unknown) still stays unresolved here.
+  const foreign = new Set(foreignEndpointIds);
   let active = null;
 
   return Object.freeze({
@@ -58,6 +63,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       const recovered = [], unresolved = [];
       try {
         for (const saved of await journal.listMovingSessions({ scope })) {
+          if (saved.endpointId !== endpointId && foreign.has(saved.endpointId)) continue;
           if (!saved.jobId || saved.endpointId !== endpointId) {
             unresolved.push({ sessionId: saved.sessionId, reason: !saved.jobId ? 'submission_unresolved' : 'endpoint_changed' }); continue;
           }

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validMovingBudgetAmendment,freshMovingBudgetAmendment,MOVING_TRIAL_BUDGET,MOVING_BUDGET_MAX_MICRO_USD,MOVING_PROVIDER_BUDGET_MAX_MICRO_USD} from '../services/game/moving-speech-budget.mjs';
+import {validMovingBudgetAmendment,freshMovingBudgetAmendment,movingTrialBudget,MOVING_TRIAL_BUDGET_SERIES,MOVING_BUDGET_MAX_MICRO_USD,MOVING_PROVIDER_BUDGET_MAX_MICRO_USD} from '../services/game/moving-speech-budget.mjs';
+const DRAGAN_BUDGET = movingTrialBudget('dragan');
 // Recorded decision labels, not credentials. Kept apart from the authorization
 // field so generic secret scanners do not read the labels as API keys.
 const DECISION=Object.freeze({
@@ -19,8 +20,8 @@ const input={amendmentId:'11111111-1111-4111-8111-111111111111',budgetId:'dragan
   globalLimitMicroUsd:15000000,providerSpentMicroUsd:499028,otherReservedMicroUsd:11736667,windowReserveMicroUsd:2333334};
 test('one additional reservation fits the existing ID and cumulative human cap',()=>{
  assert.equal(validMovingBudgetAmendment(input),true);
- assert.equal(MOVING_TRIAL_BUDGET.budgetId,input.budgetId);
- assert.equal(input.newLimitMicroUsd-input.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(DRAGAN_BUDGET.budgetId,input.budgetId);
+ assert.equal(input.newLimitMicroUsd-input.expectedReservedMicroUsd,DRAGAN_BUDGET.reserveMicroUsd);
  assert.equal(freshMovingBudgetAmendment(input,1300000),true);
  assert.equal(freshMovingBudgetAmendment(input,1300001),false);
  assert.equal(freshMovingBudgetAmendment(input,999999),false);
@@ -41,8 +42,8 @@ test('historical third production trial permitted one additional 1.20 USD reserv
   newLimitMicroUsd:10800000,globalLimitMicroUsd:40000000,
   providerSpentMicroUsd:525826,otherReservedMicroUsd:21070001};
  assert.equal(validMovingBudgetAmendment(next),true);
- assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
- assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
+ assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,DRAGAN_BUDGET.reserveMicroUsd);
+ assert.equal(DRAGAN_BUDGET.reserveMicroUsd,1200000);
  assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,250000000);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
  for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:40000001},{globalLimitMicroUsd:250000001},
@@ -58,18 +59,18 @@ test('historical two-reply amendment required coverage for both unchanged reserv
   providerSpentMicroUsd:600000,otherReservedMicroUsd:24000000,windowReserveMicroUsd:2400000};
  assert.equal(validMovingBudgetAmendment(twoReplies),true);
  assert.equal(twoReplies.newLimitMicroUsd,13200000);
- assert.equal(twoReplies.newLimitMicroUsd-twoReplies.expectedReservedMicroUsd,2*MOVING_TRIAL_BUDGET.reserveMicroUsd);
- assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
+ assert.equal(twoReplies.newLimitMicroUsd-twoReplies.expectedReservedMicroUsd,2*DRAGAN_BUDGET.reserveMicroUsd);
+ assert.equal(DRAGAN_BUDGET.reserveMicroUsd,1200000);
  assert.equal(validMovingBudgetAmendment({...twoReplies,windowReserveMicroUsd:2333334}),false,'old one-trial reserve cannot cover two replies');
  assert.equal(validMovingBudgetAmendment({...twoReplies,newLimitMicroUsd:14400000}),false,'a third reply has no coverage in this amendment');
 });
 
 test('technical capacity permits funded amendments beyond 15 USD without granting them',()=>{
  assert.equal(MOVING_BUDGET_MAX_MICRO_USD,150000000);
- assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,MOVING_BUDGET_MAX_MICRO_USD);
-  assert.equal(MOVING_TRIAL_BUDGET.initialBudgetMicroUsd,13200000);
- assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,60000000);
- assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
+ assert.equal(DRAGAN_BUDGET.totalBudgetMicroUsd,MOVING_BUDGET_MAX_MICRO_USD);
+  assert.equal(DRAGAN_BUDGET.initialBudgetMicroUsd,13200000);
+ assert.equal(DRAGAN_BUDGET.currentDailyBudgetMicroUsd,60000000);
+ assert.equal(DRAGAN_BUDGET.reserveMicroUsd,1200000);
  const funded={...input,authorizationId:DECISION.d4,globalLimitMicroUsd:40000000,
   expectedLimitMicroUsd:13200000,expectedReservedMicroUsd:13200000,expectedReservationCount:11,
   newLimitMicroUsd:15600000,providerSpentMicroUsd:600000,otherReservedMicroUsd:24000000,windowReserveMicroUsd:2400000};
@@ -97,7 +98,7 @@ test('the durable grant still stops at 150 USD while provider accounting has its
   assert.equal(validMovingBudgetAmendment({...ceiling,...patch}),false,JSON.stringify(patch));
  assert.equal(validMovingBudgetAmendment({...ceiling,providerSpentMicroUsd:124800001}),false,'all provider coverage shares the same 150 USD cap');
  assert.deepEqual(ceiling,saved,'validation cannot rewrite historical amounts');
- assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,150000000);
+ assert.equal(DRAGAN_BUDGET.totalBudgetMicroUsd,150000000);
 });
 
 test('a funded 50 USD provider window retains old reservations without increasing journal capacity',()=>{
@@ -107,7 +108,7 @@ test('a funded 50 USD provider window retains old reservations without increasin
   providerSpentMicroUsd:1000000,otherReservedMicroUsd:42203335,windowReserveMicroUsd:2400000};
  const saved=structuredClone(next);
  assert.equal(validMovingBudgetAmendment(next),true);
- assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,DRAGAN_BUDGET.reserveMicroUsd);
  assert.equal(validMovingBudgetAmendment({...next,globalLimitMicroUsd:45000000}),false,'retained costs cannot be discarded to reuse the old cap');
  const exact={...next,providerSpentMicroUsd:5396665};
  assert.equal(validMovingBudgetAmendment(exact),true,'all retained costs and the new window fit exactly at50USD');
@@ -129,5 +130,17 @@ test('a funded 50 USD provider window retains old reservations without increasin
  assert.equal(validMovingBudgetAmendment({...evening,globalLimitMicroUsd:75000000}),false,'the 150 USD grant does not fit under the former 75 USD coverage');
  assert.deepEqual(next,saved,'validation cannot rewrite historical reservations');
  assert.equal(MOVING_BUDGET_MAX_MICRO_USD,150000000);
- assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,150000000);
+ assert.equal(DRAGAN_BUDGET.totalBudgetMicroUsd,150000000);
+});
+
+test('each dealer has its own cumulative budget ID in the series; the first dealer keeps its durable ID',()=>{
+ assert.equal(MOVING_TRIAL_BUDGET_SERIES,'test-20261017');
+ assert.equal(DRAGAN_BUDGET.budgetId,'dragan-test-20261017');
+ const paow=movingTrialBudget('paow');
+ assert.equal(paow.budgetId,'paow-test-20261017');
+ // A new dealer starts at the same initial grant and per-reply reserve; the daily ceiling is the environment's.
+ assert.deepEqual({...paow,budgetId:DRAGAN_BUDGET.budgetId},{...DRAGAN_BUDGET});
+ assert.equal(Object.isFrozen(paow),true);
+ for(const bad of [undefined,'','Dragan','dragan/other','-dragan','x'.repeat(41),'__proto__'])
+  assert.throws(()=>movingTrialBudget(bad),/invalid_moving_budget_dealer/);
 });
