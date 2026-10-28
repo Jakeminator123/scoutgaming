@@ -220,11 +220,30 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
+  // The committed instruction as the server published it, without a plan's choice fields.
+  const committedEvent = ({ filmedTake, filmedTransitions, ...event }) => event;
+  // K04 F5c (#506): a native room's delivered plan carries each filmed step's server choice: filmedTake
+  // { profileId, takeKey, id, sha256 } and filmedTransitions { before, after } ({ id, sha256 } | null), computed
+  // as POST /api/presentation/select computes it (median 3.3 s in staging, longer than the first step of a plan
+  // after the player's decision). The step plays that choice at once from this dealer's verified media of the
+  // bound configuration, matched by sha256, in select's own answer shape; its card still waits for the step's
+  // time. A choice missing or unknown here keeps select as the reserve.
+  const planAnswer = event => {
+    const take = event?.filmedTake, moves = event?.filmedTransitions;
+    if (!['deal', 'reveal'].includes(event?.type) || typeof take?.id !== 'string' || !moves || typeof moves !== 'object') return null;
+    const row = ref => ref === null ? null : config.inventory.videos.find(item => typeof ref?.sha256 === 'string' && item.sha256 === ref.sha256 && item.available && owned(item));
+    const video = row(take), before = row(moves.before), after = row(moves.after);
+    if (!video || before === undefined || after === undefined) return null;
+    const chosen = { ...video, filmedTake: { profileId: take.profileId, takeKey: take.takeKey } };
+    return { eventMode: selectionMode(event.type), result: { owner: 'web', projectRevision: config.projectRevision || config.revision, configurationSource,
+      video: chosen, standard: chosen, transitions: { before, after }, provider: 'filmed-deal-sequence',
+      decision: { requestId: null, sourceEvent: committedEvent(event), media: { reason: 'filmed_deal_sequence', profileId: take.profileId, takeKey: take.takeKey } } } };
+  };
   // The server's selection for one committed instruction. It reads no card and starts no film.
   async function selection(event, requestVersion, signal) {
     const eventMode = selectionMode(event.type);
     const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
-      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event: committedEvent(event), shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
     if (selected.status === 409 && context) {
       const failure = await selected.json().catch(() => null);
       if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
@@ -241,13 +260,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const controller = new AbortController(), steps = new Map();
     for (const event of events) {
       const key = stepKey(event);
-      if (!key || !event.filmedTake || steps.has(key)) continue;
-      const { filmedTake, ...committed } = event;
+      // A step whose plan already carries the server's choice needs no answer (K04 F5c, #506).
+      if (!key || !event.filmedTake || steps.has(key) || planAnswer(event)) continue;
+      const committed = committedEvent(event);
       const step = { signal: controller.signal, promise: null,
         start: () => { if (!step.promise) { step.promise = selection(committed, requestVersion, controller.signal); step.promise.catch(() => {}); } return step.promise; } };
       steps.set(key, step);
     }
-    if (!steps.size) return;
+    const chosen = events.map(event => planAnswer(event)?.result).filter(Boolean);
+    if (!steps.size && !chosen.length) return;
     ahead = { version: requestVersion, controller, steps };
     // K04 F5b: as each answer arrives, its exact files are downloaded and verified into the player's buffer,
     // WARM_AHEAD at a time and in the plan's order. Nothing is decoded or shown; the step that plays a file
@@ -272,7 +293,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // K04 F5c (rerun 4): a plan after the player's decision starts with its filmed step, and its files were only
     // warmed once the server's answer came (median 3.3 s in staging). The planned takes are this plan's own exact
     // files: they download from the plan's start, in order. The answer still decides what plays, and when.
-    queue(events.map(plannedVideo));
+    // A step that carries the server's choice warms its entry clip, take and exit clip the same way.
+    queue(events.flatMap(event => { const answer = planAnswer(event)?.result;
+      return answer ? [answer.transitions.before, answer.video, answer.transitions.after] : [plannedVideo(event)]; }));
     for (const step of steps.values()) {
       const start = step.start;
       step.start = () => { const first = !step.promise, promise = start(); if (first) promise.then(warm, () => {}); return promise; };
@@ -287,6 +310,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // 10 s limit, or a dropped lookahead) is asked for once more within this step's own time, as before F5. Only
   // that answer can fail the step; if the step's time runs out first it is left as late, without text.
   async function answerFor(event, requestVersion, signal) {
+    const chosen = planAnswer(event);
+    if (chosen) return chosen;
     const planned = ahead?.version === requestVersion ? ahead.steps.get(stepKey(event)) : undefined;
     if (planned) {
       try { return await untilAborted(planned.start(), signal); }

@@ -2410,3 +2410,59 @@ test('a plan after a decision downloads its planned takes before the server answ
   answers.find(row => row.shoeDraw === 9).answer(); for (let i = 0; i < 4; i++) await settle();
   assert.deepEqual(player.plays, [reveal.sha256], 'then it starts with its prepared file'); player.finish(); assert.equal(await playing, true);
 });
+
+// K04 F5c, server half (#506): a native room's delivered plan carries each filmed step's server choice,
+// filmedTake { profileId, takeKey, id, sha256 } and filmedTransitions { before, after } ({ id, sha256 } | null),
+// computed as POST /api/presentation/select would (median 3.3 s in staging). The step plays it at once from this
+// dealer's verified media, matched by sha256 in the bound configuration; select stays the reserve.
+function planStep(take, before = null, after = null) {
+  const ref = video => video ? { id: video.id, sha256: video.sha256 } : null;
+  return { type: 'reveal', to: 'dealer', shoeDraw: 9, filmedTake: { profileId: 'p', takeKey: 'flip', ...ref(take) }, filmedTransitions: { before: ref(before), after: ref(after) } };
+}
+async function planRoom(t, videos) {
+  const player = roomPlayer(), selects = [], answers = [];
+  const f = await controllerFixture(t, { player, entry: roomEntry, configExtra: roomConfig, customInventory: { videos, families: [] } });
+  const base = globalThis.fetch;
+  globalThis.fetch = (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    const event = JSON.parse(options.body).event; selects.push(event);
+    return new Promise(resolve => answers.push(video => resolve(Response.json({ video, standard: video, transitions: null, projectRevision: 'p', configurationSource: 's',
+      decision: { requestId: 'r', sourceEvent: event, media: {} } }))));
+  };
+  return { f, player, selects, answers };
+}
+
+test('after stand the reveal of a plan that carries its server choice reaches start without any select answer', async t => {
+  const reveal = roomVideo('reveal-take', 'b'), toShoe = roomVideo('to-shoe', 'e');
+  const { f, player, selects } = await planRoom(t, [reveal, toShoe]);
+  const step = planStep(reveal, toShoe), seen = [];
+  f.controller.state({ action: true }); f.controller.prepareSequence([step], { selectAhead: true }); for (let i = 0; i < 6; i++) await settle();
+  assert.deepEqual(selects, [], 'no select for a step the plan already chose');
+  assert.deepEqual(player.warming.map(row => row.sha256), [toShoe.sha256], 'its files warm as the plan arrives, in order');
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [toShoe.sha256, reveal.sha256]);
+  const playing = f.controller.present(step, { onSelected: (video, source) => seen.push([video.sha256, video.filmedTake, source]) });
+  for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.plays, [toShoe.sha256], 'the entry clip starts at once');
+  player.finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.plays, [toShoe.sha256, reveal.sha256], 'then the chosen take');
+  assert.deepEqual(seen, [[reveal.sha256, { profileId: 'p', takeKey: 'flip' }, { type: 'reveal', to: 'dealer', shoeDraw: 9 }]],
+    'the card follows the server’s pose chain; the committed event carries no choice fields');
+  const selected = f.receipts.find(row => row.event === 'reveal' && row.state === 'selected');
+  assert.equal(selected.provider, 'filmed-deal-sequence');
+  player.finish(); assert.equal(await playing, true); assert.deepEqual(selects, [], 'select was never needed');
+});
+
+test('a plan choice this dealer’s media cannot match falls back to select with the committed event only', async t => {
+  const reveal = roomVideo('reveal-take', 'b'), unknown = roomVideo('unknown-take', 'f');
+  const { f, player, selects, answers } = await planRoom(t, [reveal]);
+  for (const step of [planStep(unknown), planStep(reveal, unknown)]) {
+    selects.length = 0; answers.length = 0; const before = player.plays.length;
+    const playing = f.controller.present(step); for (let i = 0; i < 4; i++) await settle();
+    assert.deepEqual(selects, [{ type: 'reveal', to: 'dealer', shoeDraw: 9 }], 'select gets the committed event, never the plan’s choice');
+    assert.equal(player.plays.length, before, 'nothing plays before the answer');
+    answers[0](reveal); for (let i = 0; i < 4; i++) await settle();
+    assert.equal(player.plays.length, before + 1); assert.equal(player.plays.at(-1), reveal.sha256);
+    player.finish(); assert.equal(await playing, true);
+  }
+});

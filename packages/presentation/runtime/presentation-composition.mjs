@@ -7,9 +7,11 @@ import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '..
 import {compositionAnchorFrames,projectAnchorRects} from './composition-anchors.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 // K04 (rerun 4 and the production measure, 28 Oct 2026): a film waits at most LAYER_WAIT_MS for its background and
-// table; a layer stops holding films after LAYER_DEADLINE_MS and shows whenever it arrives. A failed layer is
-// requested again after each LAYER_RETRY_MS. No layer ever fails a film.
-const LAYER_WAIT_MS = 3000, LAYER_DEADLINE_MS = 12000, LAYER_RETRY_MS = [2000, 6000];
+// table (layersSettled); the layers still loading then stop holding films and show whenever they arrive. Without a
+// waiting film, a layer that has not loaded within LAYER_DEADLINE_MS of its request stops holding the films that
+// start later. A failed layer is requested again after each LAYER_RETRY_MS. No layer ever fails a film.
+// DEFERRED_LAYER_MS: a background film deferred for the dealer's first frame loads anyway after this long.
+const LAYER_WAIT_MS = 3000, LAYER_DEADLINE_MS = 12000, LAYER_RETRY_MS = [2000, 6000], DEFERRED_LAYER_MS = 20000;
 // The shared table's link rule (K04 F7): only a known fast link is fast; unknown, 2g/3g or saveData is slow.
 const FAST_LINK_MBPS = 5;
 const fastLink = link => Boolean(link) && !link.saveData && Number.isFinite(link.downlink) && link.downlink >= FAST_LINK_MBPS
@@ -70,7 +72,9 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,framing=null,frameNumber=0,preparation=0,raf=null,closed=false;
   const mounts=new Map(),selected=new Map(),pending=new Map(),cancelLoads=new Map();
   // deferred: a background film that waits for the dealer's first frame on a slow link (dealerShown).
-  const deferred=new Map();let dealerShown=false;
+  const deferred=new Map();let dealerShown=false,deferredTimer;
+  // The dealer's first frame, a dealer reported unavailable or DEFERRED_LAYER_MS without either releases them.
+  function releaseDeferred(){clearTimeout(deferredTimer);deferredTimer=undefined;for(const resume of [...deferred.values()])resume();deferred.clear();}
   // One silent scheduler and at most one running event clip per layer role.
   const PLAYBACK_ROLES=['background','table'],players=new Map(),events=new Map();let backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
@@ -193,7 +197,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     else node.alt='';
     // Independent source planes appear through the mandatory keyed dealer layer.
     if(node.style)node.style.visibility=current.dealer.enabled?'hidden':'';host.append(node);mounts.set(role,node);
-    if(defer){deferred.set(role,()=>{node.preload='auto';node.autoplay=backgroundVisible;load(role,node,asset,{hold:false});
+    if(defer){deferredTimer??=setTimeout(releaseDeferred,DEFERRED_LAYER_MS);deferred.set(role,()=>{node.preload='auto';node.autoplay=backgroundVisible;load(role,node,asset,{hold:false});
       if(backgroundVisible)Promise.resolve(node.play?.()).catch(()=>{});});return;}
     load(role,node,asset,{hold:true});
   }
@@ -271,7 +275,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     drawDealerFrame(context,source,targetWidth,targetHeight,framing??undefined);
     actorFrame.src=`presented-frame-${++frameNumber}`;
     paintHeld();compositor.canvas.style.visibility='';host.dataset.presentationClipMode='green-screen';
-    if(!dealerShown){dealerShown=true;for(const resume of [...deferred.values()])resume();deferred.clear();}
+    if(!dealerShown){dealerShown=true;releaseDeferred();}
     if(raf===null&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);
     return true;
   }
@@ -286,6 +290,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},
-    close(){if(closed)return;closed=true;setMovingSpeechLayer(null);geometryListeners.clear();closePlayers();++preparation;stopAnimation();
+    dealerUnavailable:()=>{if(!closed)releaseDeferred();},
+    close(){if(closed)return;closed=true;clearTimeout(deferredTimer);deferredTimer=undefined;setMovingSpeechLayer(null);geometryListeners.clear();closePlayers();++preparation;stopAnimation();
       for(const role of [...mounts.keys()])releaseLayer(role);compositor?.dispose();compositor?.canvas.remove();}};
 }
