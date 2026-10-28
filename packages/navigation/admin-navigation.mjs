@@ -21,7 +21,7 @@ export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','M�
 export const adminSceneTabs = [
   {id:'mallar',label:'Scenmallar'},{id:'bakgrunder',label:'Bakgrunder'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'papperskorg',label:'Papperskorg'},
 ];
-export const adminCompanyListTabs = [{id:'bolag',label:'Bolag'},{id:'spelbord',label:'Alla spelbord'}];
+export const adminCompanyListTabs = [{id:'bolag',label:'Bolag'},{id:'spelbord',label:'Alla spelbord'},{id:'papperskorg',label:'Papperskorg'}];
 export const adminCompanyTabs = [
   {id:'tilldelning',label:'Tilldelning'},{id:'spelbord',label:'Spelbord'},{id:'spelare',label:'Spelare och ekonomi'},
   {id:'team',label:'Team'},{id:'integration',label:'Integration'},{id:'journal',label:'Journal'},{id:'installningar',label:'Inställningar'},

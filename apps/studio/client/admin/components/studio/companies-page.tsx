@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Link, {useSearchParams} from '../../../runtime/navigation';
 import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout} from '../ui/hub';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
@@ -40,6 +40,8 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   },[active,refresh,page,id]);
   const changed=()=>{setRefresh(value=>value+1);onChanged();};
   const operators=catalog?.administration.operators??[],rooms=catalog?.administration.rooms.filter(room=>room.state!=='archived')??[],compositions=catalog?.administration.compositions??[];
+  // Archived rooms (Papperskorg) stay with their company until they are restored through A:room-lifecycle.
+  const archived=catalog?.administration.rooms.filter(room=>room.state==='archived')??[];
   const operatorName=(operatorId:string)=>operators.find(row=>row.id===operatorId)?.name??operatorId;
   const laneLabel=(laneId:string)=>compositions.find(row=>row.id===laneId)?.name??laneId;
   const status=error?<p role="alert" className="hub-note warn">{error} <button type="button" className="hub-btn small" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></p>:!catalog?<p role="status" className="hub-muted">Läser katalogen…</p>:null;
@@ -49,8 +51,8 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const list=filter?rooms.filter(room=>room.operatorId===filter):rooms;
     const createOperator=operators.find(row=>row.id===filter&&row.status==='active'&&!row.archivedAt)??operators.find(row=>row.status==='active'&&!row.archivedAt);
     return <HubPage wide title="Bolag och spelbord" intro="Ett nav per bolag: tilldelning, spelbord, spelare och ekonomi, team, integration, journal och inställningar. Alla bolags spelbord på en flik."
-      actions={tab==='bolag'?<Link className="hub-btn primary" href="/admin/companies?tab=bolag&view=create">Nytt bolag</Link>:<Link className="hub-btn primary" href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}>Nytt spelbord</Link>}>
-      <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?{bolag:operators.filter(row=>!row.archivedAt).length,spelbord:rooms.length}:{}}/>
+      actions={tab==='bolag'?<Link className="hub-btn primary" href="/admin/companies?tab=bolag&view=create">Nytt bolag</Link>:tab==='spelbord'?<Link className="hub-btn primary" href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}>Nytt spelbord</Link>:undefined}>
+      <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?{bolag:operators.filter(row=>!row.archivedAt).length,spelbord:rooms.length,papperskorg:archived.length}:{}}/>
       {status}
       {tab==='bolag'&&<>
         {create&&<Card title="Nytt bolag" aside={<Link href="/admin/companies?tab=bolag">Stäng</Link>} className="hub-mt"><p className="hub-small hub-muted">Skapa bolaget och bjud in dess första administratör. Tilldelningen görs sedan under bolagets flik Tilldelning.</p><WorkspaceTool section="companies"/></Card>}
@@ -66,6 +68,15 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
           {list.map(room=><tr key={room.id}><td><Link className="hub-strong" href={roomHref(room)}>{room.name}</Link><div className="hub-small hub-muted">{room.game} · <code>{room.id}</code></div></td><td><Link href={companyHref(operators.find(row=>row.id===room.operatorId)??{id:room.operatorId} as Operator,'spelbord')}>{operatorName(room.operatorId)}</Link></td><td>{room.dealers.map(dealer=>dealer.name).join(', ')||'–'}</td><td>{laneLabel(room.compositionId)}</td><td>{stateChip(room)}</td><td>{room.published?<Chip tone="ok">publicerat</Chip>:<Chip tone="warn">inte publicerat</Chip>}</td><td className="num"><Link className="hub-btn small" href={roomHref(room)}>Öppna</Link></td></tr>)}
           {!list.length&&<tr><td colSpan={7} className="hub-muted">Inga spelbord{filter?' hos bolaget':''}.</td></tr>}
         </tbody></table></div></Card>}
+      </>}
+      {tab==='papperskorg'&&<>
+        <Note>Arkiverade spelbord ligger kvar hos sitt bolag tills de återställs. Återställ görs per bolag nedan: spelbordet kommer tillbaka pausat och öppnas sedan under Tillgänglighet.</Note>
+        <div className="hub-actions" style={{marginTop:16,marginBottom:16}}><Link href="/admin/companies?tab=papperskorg" className={'hub-chip '+(!filter?'ink':'')}>Alla bolag</Link>{operators.filter(row=>archived.some(room=>room.operatorId===row.id)).map(operator=><Link key={operator.id} href={'/admin/companies?tab=papperskorg&operator='+encodeURIComponent(operator.id)} className={'hub-chip '+(filter===operator.id?'ink':'')}>{operator.name}</Link>)}</div>
+        {catalog&&<Card className="hub-mt"><div className="hub-table-wrap"><table className="hub-table"><thead><tr><th>Spelbord</th><th>Bolag</th><th>Scenmall</th><th></th></tr></thead><tbody>
+          {(filter?archived.filter(room=>room.operatorId===filter):archived).map(room=><tr key={room.id}><td><span className="hub-strong">{room.name}</span><div className="hub-small hub-muted">{room.game} · <code>{room.id}</code></div></td><td><Link href={companyHref(operators.find(row=>row.id===room.operatorId)??{id:room.operatorId} as Operator,'spelbord')}>{operatorName(room.operatorId)}</Link></td><td>{laneLabel(room.compositionId)}</td><td className="num">{filter===room.operatorId?<span className="hub-small hub-muted">återställ nedan</span>:<Link className="hub-btn small" href={'/admin/companies?tab=papperskorg&operator='+encodeURIComponent(room.operatorId)}>Återställ</Link>}</td></tr>)}
+          {!(filter?archived.filter(room=>room.operatorId===filter):archived).length&&<tr><td colSpan={4} className="hub-muted">Papperskorgen är tom{filter?' för bolaget':''}.</td></tr>}
+        </tbody></table></div></Card>}
+        {filter&&operators.some(row=>row.id===filter)&&<Card title={`Återställ hos ${operatorName(filter)}`} aside="A:room-lifecycle" className="hub-mt"><RoomTrash operatorId={filter} disabled={disabled} onChanged={changed}/></Card>}
       </>}
     </HubPage>;
   }
@@ -87,6 +98,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
             {own.map(room=><tr key={room.id}><td><Link className="hub-strong" href={roomHref(room)}>{room.name}</Link><div className="hub-small hub-muted">{room.game} · <code>{room.id}</code></div></td><td>{room.dealers.map(dealer=>dealer.name).join(', ')||'–'} · {laneLabel(room.compositionId)}</td><td>{stateChip(room)}</td><td>{room.published?<Chip tone="ok">publicerat</Chip>:<Chip tone="warn">inte publicerat</Chip>}</td><td className="num"><Link className="hub-btn small" href={roomHref(room)}>Öppna</Link></td></tr>)}
           </tbody></table></div>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll först, publicera tilldelningen, skapa sedan ett spelbord."/>}
         </Card>}
+        {tab==='spelbord'&&<Card title="Papperskorg" aside={`${archived.filter(room=>room.operatorId===operator.id).length} arkiverade spelbord · återställs pausade`} className="hub-mt"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
         {tab==='spelare'&&<div className="hub-grid c2">
           <Card title="Spelare"><Empty title="Inte anslutet · steg F" text="Spelare är inte knutna till bolag ännu (players saknar bolagskolumn). Byggs i steg F efter O03. Tills dess: alla spelarkonton under System." action={<Link className="hub-btn" href="/admin/system?flik=spelare">System › Spelarkonton</Link>}/></Card>
           <Card title="Rundor och omsättning per spelbord"><Empty title="Inte anslutet · steg F" text="Aggregat per spelbord ur shared_table_audit (wallet.settlement) läses inte i Admin ännu; ekonomin för alla bolag finns under System › Spelarkonton."/></Card>
@@ -127,6 +139,15 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <RoomPreview room={room}/>
     </>}
   </HubPage>;
+}
+
+// The company's archived rooms with Återställ through the existing A:room-lifecycle action (the former
+// "Återställ borttaget spel"). The lifecycle reader reports every read; only a new administration revision
+// (a restore) refreshes the catalog, so mounting the trash never loops into another catalog read.
+function RoomTrash({operatorId,disabled,onChanged}:{operatorId:string;disabled:boolean;onChanged:()=>void}) {
+  const revision=useRef<string|null>(null);
+  return <ControlResourceLifecycle operatorId={operatorId} kind="rooms" archiveOnly available disabled={disabled}
+    onChanged={snapshot=>{if(revision.current!==null&&revision.current!==snapshot.administrationRevision)onChanged();revision.current=snapshot.administrationRevision;}}/>;
 }
 
 // Read view of the scene template's operatorAdjustable: what the company may change on its rooms.
