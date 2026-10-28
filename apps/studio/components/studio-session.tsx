@@ -51,13 +51,11 @@
 // projectRef: latest project for async upload handlers
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
-import type { ActivityDraft } from './activity-log';
+import { appendActivity, type ActivityDraft, type ActivityEntry } from '../lib/activity-log.mjs';
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
 import { mediaExampleEvent, mediaLineForEvent } from '../../../packages/presentation/runtime/media-family-policy.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
-import { isAssetCompatible, type DealerId, type StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { videoFitsLine } from '../../../packages/presentation/contracts/video-intake.mjs';
+import type { DealerId, StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { publishShellStatus } from './page-template.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
@@ -255,25 +253,4 @@ export function useStudioSession(options: SessionOptions) {
     throw new Error('Dealervyn kräver en vald dealer och en sparad händelse med klippvariant.');
   }
   return { ...session, dealer, event, media, line, variant };
-}
-
-export function StudioMessages({ error, notice, setError, setNotice }: { error: string; notice: string; setError: (value: string) => void; setNotice: (value: string) => void }) {
-  return <>
-    {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Stäng felmeddelande" onClick={() => setError('')}>×</button></div> : null}
-    {notice ? <div className="feedback success" role="status"><span>{notice}</span><button className="icon-button" aria-label="Stäng meddelande" onClick={() => setNotice('')}>×</button></div> : null}
-  </>;
-}
-
-export function StudioContextIntro({ dealerLabel, pageLabel, eventHref, eventLabel }: { dealerLabel: string; pageLabel: string; eventHref: string; eventLabel: string }) {
-  return <span className="workspace-breadcrumb"><span>Blackjack</span><span> / </span><span>{dealerLabel}</span><span> / </span><strong>{pageLabel}</strong><span> / </span><a href={eventHref}>{eventLabel}</a></span>;
-}
-
-export function StudioBindingNotices({ project, videos, dealerId, eventId }: { project: StudioProject; videos: VideoInventory; dealerId: string; eventId: string }) {
-  const incompatible = project.lines.flatMap(item => item.variants.filter(candidate => !isAssetCompatible(project.events.find(event => event.id === item.eventId), project.assets.find(asset => asset.id === candidate.assetId))).map(candidate => ({ dealerId: item.dealerId, eventId: item.eventId, variantId: candidate.id })));
-  const invalidVideos = project.lines.filter(item => !videos.families?.some(family => family.dealerId === item.dealerId)).flatMap(item => item.variants.filter(candidate => candidate.videoGenerationId && !videoFitsLine(videos.videos.find(video => video.id === candidate.videoGenerationId), item.dealerId, item.eventId)));
-  const first = incompatible[0];
-  return <>
-    {incompatible.length ? <div className="feedback error" role="alert"><span><strong>{incompatible.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span>{first ? <a className="primary-button" href={studioHref('/admin/events', { dealerId: first.dealerId, eventId: first.eventId })}>Rätta första kopplingen →</a> : null}</div> : null}
-    {invalidVideos.length ? <div className="feedback error" role="alert"><span>{invalidVideos.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><a className="text-button" href={studioHref('/admin/videos', { dealerId, eventId })}>Granska i Videobanken →</a></div> : null}
-  </>;
 }

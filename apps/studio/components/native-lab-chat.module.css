@@ -1,9 +1,0 @@
-.panel { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); }
-.panel h4 { margin: 0 0 8px; }
-.note { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
-.field { display: grid; gap: 6px; width: 100%; font-size: 12px; }
-.field textarea { box-sizing: border-box; width: 100%; resize: vertical; min-height: 62px; max-height: 160px; padding: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 5px; font: inherit; }
-.messages { list-style: none; margin: 12px 0; padding: 0; max-height: 220px; overflow: auto; }
-.messages li { display: grid; gap: 3px; padding: 8px 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.messages strong { font-size: 10px; color: var(--muted); }

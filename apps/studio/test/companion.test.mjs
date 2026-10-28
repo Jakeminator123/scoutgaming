@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { companionRequest, labCompanionIdentity } from '../lib/companion-server.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
-import { createMemorySocialStore } from '../lib/social-store.mjs';
+import { createMemorySocialStore } from './fixtures/social-store.mjs';
 
 const settings = { remoteUrl: 'https://director.example.test', remoteToken: 'fixture-remote-token', companionEnabled: true };
 const request = (cookie, path = '/api/social/profile', body) => new Request(`http://127.0.0.1:4188${path}`, {

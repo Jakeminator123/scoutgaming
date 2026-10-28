@@ -12,7 +12,11 @@ commit `0d12b7a559d328a333598b7e583b980e88d7925c` (Kevin review delivery).
   from `public/`. Includes hole/flip measurements, now activated with their exact source media.
 - `game-cards.js`: source `public/game-cards.js`; helper imports and back
   asset URL adapted, with later presentation-only changes noted below.
-  `back-scout.png` is the source `public/media/cards/` image.
+  `back-scout.png` is the source `public/media/cards/` image. The browser loads
+  it from `/images/cards/back-scout.png`, which the Vercel frontend serves from
+  `apps/web/public/images/cards/` (byte-identical to `media/game/runtime/cards/`).
+  `/media/` is not served in the cloud: the engine answers 404 and the frontend
+  copies no media.
 - `renderer-support.js`: minimal product DOM/color/display-total adapters.
   No game engine, wallet, provider, login or server code imported.
 - `calibration.mjs`: source manifest positions/dimensions plus the ten

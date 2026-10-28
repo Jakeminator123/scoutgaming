@@ -71,14 +71,12 @@ components/   delade React-komponenter, bland annat Partnerportalens arbetsyta (
 lib/          serveradaptrar: lagring, behörighet, observation, tal
 policies/     appens egna policyer, till exempel social.seed.json
 schemas/      appens egna scheman (manifest, social policy)
-animations/   2D-rörelseprov för klippkartan
 test/         Studio-, API- och lagringsprov
 tools/        byggsteg för förhandsvisning och klient
 docs/         användarguiden, guide.json (Admin-hjälpens text) och TERMINOLOGI
 ```
 
-Se också [policies](policies/README.md), [scheman](schemas/README.md) och
-[rörelseprov](animations/README.md).
+Se också [policies](policies/README.md) och [scheman](schemas/README.md).
 
 ## Klippval och OpenClaw
 
@@ -120,15 +118,14 @@ och dess blueprint ligger i `services/openclaw/lab/`;
 riktiga presentationsfunktionen (`services/game/partner-presentation.mjs`) med
 syntetiska publika vyer. Det är inget spel- eller videotest.
 
-## Partner-SSE-observation (diagnostik)
+## Partnerreferens (diagnostik)
 
-`lib/partner-observer.mjs` kan läsa partnerns `/api/v1/events` med en signerad
-serveranslutning (`/api/inputs`, `/api/inputs/events`,
-`/api/inputs/reference`). Den är valfri, gör inga spelhandlingar och kräver
-`BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)). SSE-källan
-saknar replay: ett avbrott loggas som möjlig lucka och kräver ny anslutning.
-Mottagen instruktion, valt klipp och uppspelningskvitto är tre skilda saker.
+`/api/inputs/reference` (`lib/partner-reference.mjs`) provar kopplingen till
+partnern: behörighet, spelöppning och videokarta. Den är valfri, gör inga
+spelhandlingar och kräver `BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
+[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)).
+`lib/partner-observer.mjs` kontrollerar bara att nycklarna och adressen är
+giltiga; den öppnar ingen anslutning.
 
 ## Prov
 
@@ -142,9 +139,6 @@ npm --prefix apps/studio run build
   `sh .githooks/pre-commit-full <svit>`. Högst fyra testarbetare.
 - `node tools/check-orphan-tests.mjs` visar JS/TS-prov som ingen körlista tar
   med; `tools/orphan-tests-exceptions.json` namnger manuella prov med skäl.
-- `test/admin-project-drafts-browser.mjs` kör bundle- och API-provet i CI. De
-  interaktiva browserfallen kräver `CROUPIER_BROWSER_FIXTURE_MODULE` och
-  rapporteras annars som överhoppade.
 - Prov använder isolerade filer och simulerade modelltransporter, aldrig
   riktiga spelare eller modellnycklar. Lägg nya kontroller i ett befintligt
   beteendeprov när det räcker; behåll negativa prov för hemliga fält, åtkomst

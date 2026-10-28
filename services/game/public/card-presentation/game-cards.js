@@ -40,7 +40,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
     if (!card.r) {
       // Match Emil's filmed back at the hole/flip handoff, in every brand.
       group.append(svgNode('rect',{x:-width/2,y:-height/2,width,height,rx:3,fill:'#050404',stroke:'#050404','stroke-width':1}));
-      group.append(svgNode('image',{href:'/media/game/runtime/cards/back-scout.png',x:-width/2,y:-height/2,width,height,'aria-label':'Black Scout card back'}));
+      group.append(svgNode('image',{href:'/images/cards/back-scout.png',x:-width/2,y:-height/2,width,height,'aria-label':'Black Scout card back'}));
       return group;
     }
     if (!inkOnly) group.append(svgNode('rect', { x: -width/2, y: -height/2, width, height, rx: 4,
