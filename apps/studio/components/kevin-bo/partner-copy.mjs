@@ -5,7 +5,7 @@ import { PARTNER_VIEW_PERMISSIONS } from '../../../../packages/studio-access/ser
 export { PARTNER_ROLE_WORDS, partnerRoleWord } from '../../lib/partner-words.mjs';
 
 // Orden följer apps/studio/docs/TERMINOLOGI.md: Partnerportalen, bolag, spelbord,
-// bordsgrafik, scenmall, tilldelning, revision, utkast/publicerad,
+// bordsgrafik, scenmall, tilldelning, version, utkast/publicerad,
 // administratör/redaktör/läsare.
 const COPY = Object.freeze({
   sv: {
@@ -22,11 +22,12 @@ const COPY = Object.freeze({
     directoryNote: 'Listan hämtas från registrerade bolag. Inga exempeldata visas här.',
     theme: 'Tema', light: 'Ljust', dark: 'Mörkt', language: 'Språk', menu: 'Meny',
     overview: 'Översikt', rooms: 'Spelbord', players: 'Spelare', reports: 'Ekonomi', team: 'Team', integration: 'Integration', help: 'Hjälp och kontakt',
-    assignmentFrom: 'Tilldelning från Scoutgaming', revision: 'revision', packageMissing: 'Ingen publicerad tilldelning',
-    dealers: 'dealers', lanes: 'scenmallar', tables: 'bordsgrafik', backgrounds: 'bakgrunder', switchCompany: 'Byt bolag',
+    assignmentFrom: 'Tilldelning från Scoutgaming', revision: 'Version', packageMissing: 'Ingen publicerad tilldelning',
+    dealer: 'dealer', dealers: 'dealers', lane: 'scenmall', lanes: 'scenmallar', table: 'bordsgrafik', tables: 'bordsgrafik', background: 'bakgrund', backgrounds: 'bakgrunder', switchCompany: 'Byt bolag',
+    find: 'Sök', findHint: 'Sök sidor och spelbord', findEmpty: 'Inget matchar.', pages: 'Sidor', settings: 'Inställningar', companyDefault: 'Bolagets standard', close: 'Stäng',
     notConnected: 'Inte anslutet',
     deniedTitle: 'Den här sidan kräver en behörighet som rollen saknar',
-    deniedBody: 'Rollen {role} saknar behörigheten {permission}. Be bolagets administratör eller Scoutgaming om åtkomst.',
+    deniedBody: 'Rollen {role} får inte {permission}. Be bolagets administratör eller Scoutgaming om åtkomst.',
     toOverview: 'Till översikten',
     unsavedLeave: 'Du har osparade ändringar i spelbordets utseende. Lämna sidan och kasta dessa ändringar?',
     draftKept: 'Osparade ändringar finns kvar under Spelbord.',
@@ -45,11 +46,12 @@ const COPY = Object.freeze({
     directoryNote: 'This list comes from registered companies. No sample data is shown here.',
     theme: 'Theme', light: 'Light', dark: 'Dark', language: 'Language', menu: 'Menu',
     overview: 'Overview', rooms: 'Tables', players: 'Players', reports: 'Finance', team: 'Team', integration: 'Integration', help: 'Help and contact',
-    assignmentFrom: 'Assignment from Scoutgaming', revision: 'revision', packageMissing: 'No published assignment',
-    dealers: 'dealers', lanes: 'scene templates', tables: 'table graphics', backgrounds: 'backgrounds', switchCompany: 'Switch company',
+    assignmentFrom: 'Assignment from Scoutgaming', revision: 'Version', packageMissing: 'No published assignment',
+    dealer: 'dealer', dealers: 'dealers', lane: 'scene template', lanes: 'scene templates', table: 'table graphic', tables: 'table graphics', background: 'background', backgrounds: 'backgrounds', switchCompany: 'Switch company',
+    find: 'Search', findHint: 'Search pages and tables', findEmpty: 'Nothing matches.', pages: 'Pages', settings: 'Settings', companyDefault: 'Company default', close: 'Close',
     notConnected: 'Not connected',
     deniedTitle: 'This page needs a permission your role does not have',
-    deniedBody: 'The role {role} lacks the permission {permission}. Ask the company administrator or Scoutgaming for access.',
+    deniedBody: 'The role {role} may not {permission}. Ask the company administrator or Scoutgaming for access.',
     toOverview: 'To the overview',
     unsavedLeave: 'You have unsaved changes to the table appearance. Leave this page and discard those changes?',
     draftKept: 'Unsaved changes are kept under Tables.',
@@ -59,9 +61,12 @@ const COPY = Object.freeze({
 export function partnerCopy(language = 'sv') { return COPY[language === 'en' ? 'en' : 'sv']; }
 
 // Menyn är presentation: samma karta som servern använder för att neka en vy.
+// Spelare visas inte i menyn förrän spelare kopplats till bolag; adressen nekas eller
+// visas fortfarande av servern efter behörigheten players.read.
+const HIDDEN_VIEWS = new Set(['players']);
 export function partnerNavigation(language, permissions = []) {
   const copy = partnerCopy(language), allowed = new Set(permissions);
-  return PARTNER_VIEWS.filter(view => allowed.has(PARTNER_VIEW_PERMISSIONS[view])).map(id => ({ id, label: copy[id] }));
+  return PARTNER_VIEWS.filter(view => !HIDDEN_VIEWS.has(view) && allowed.has(PARTNER_VIEW_PERMISSIONS[view])).map(id => ({ id, label: copy[id] }));
 }
 
 // Presentation preferences only; business data and drafts remain server-owned.
