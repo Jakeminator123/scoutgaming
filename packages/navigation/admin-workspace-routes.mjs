@@ -2,7 +2,14 @@
 // Admin has six menu pages; every retired address lands on the right nav and tab with
 // its company, room, dealer, revision and fragment kept. Two pseudo-targets resolve
 // against the query: `dealer:<flik>` opens the dealer's nav, `rooms` the room list or editor.
-export const ADMIN_WORKSPACE_TOOLS = Object.freeze({});
+// The Studio tools embedded in the navs, and the sections GET /api/admin/workspace/<section>
+// serves for them (apps/studio/lib/admin-workspace-data.mjs): Team under Bolag, Svarsbibliotek
+// and Dialogtest under Dealers › Röst och tal. They have no pages of their own.
+export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
+  companies: Object.freeze({label:'Bolag'}),
+  replies: Object.freeze({label:'Svarsbibliotek'}),
+  'dealer-agent': Object.freeze({label:'Dialogtest'}),
+});
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const SYSTEM=flik=>'/admin/system?flik='+flik;
 const destinations = Object.freeze({
@@ -26,11 +33,6 @@ const administration = Object.freeze({accounts:SYSTEM('personal'),finance:SYSTEM
   partners:SYSTEM('integration'),tables:'rooms',operations:SYSTEM('drift'),
   // Retired speech review: recorded speech is reviewed under the dealer's Röst och tal.
   'media-review':'dealer:tal'});
-export function adminToolName(path) {
-  if(typeof path!=='string'||!/^\/(?:studio\/)?admin\//.test(path))return null;
-  const name=path.replace(/^\/(?:studio\/)?admin\//,'');
-  return Object.hasOwn(ADMIN_WORKSPACE_TOOLS,name)?name:null;
-}
 // Retired documents keep their bookmarks; canonical pages have a single menu home.
 const retired = Object.freeze({
   '/admin/material-library':'/admin/scenes', '/admin/deletion':SYSTEM('beroenden'),

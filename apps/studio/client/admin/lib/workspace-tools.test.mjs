@@ -41,8 +41,7 @@ test('Integrationer opens the real NativeAdministration with the server-read act
   assert.deepEqual(native.props.availableActions,['GET apikeys','POST apikeys/create']);
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
-  // There are no separate tool pages any more; the retired speech review resolves to the dealers.
-  assert.deepEqual(Object.keys(adminWorkspaceRoutes.ADMIN_WORKSPACE_TOOLS),[]);
-  assert.equal(adminWorkspaceRoutes.adminToolName('/admin/media-review'),null);
+  // The embedded tools are the workspace reader's sections, not pages; the retired speech review resolves to the dealers.
+  assert.deepEqual(Object.keys(adminWorkspaceRoutes.ADMIN_WORKSPACE_TOOLS),['companies','replies','dealer-agent']);
   assert.equal(adminWorkspaceRoutes.adminDocumentHref('/admin/media-review'),'/admin/dealers');
 });

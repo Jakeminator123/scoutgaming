@@ -59,5 +59,4 @@ export function withAdminContext(href,currentSearch){
   }
   return url.pathname+url.search+url.hash;
 }
-import {adminDocumentHref,adminToolName} from '../../../../packages/navigation/admin-workspace-routes.mjs';
-export {adminToolName};
+import {adminDocumentHref} from '../../../../packages/navigation/admin-workspace-routes.mjs';

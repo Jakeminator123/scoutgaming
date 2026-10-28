@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ADMIN_WORKSPACE_TOOLS,adminToolName,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {designPreviewPages,isDesignPreviewPage} from '../lib/design-preview-paths.mjs';
 import {studioLoginReturnTo} from '../lib/studio-login-client.mjs';
 import {CONTROL_PREVIEW_VIEWS,workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
@@ -23,10 +23,11 @@ test('every existing Control tool and registered N1 view has a served Admin dest
     if(roomNav(url)){assert.equal(url.pathname,'/admin/rooms/room-1',to);assert.equal(url.searchParams.has('table'),false,to);assert.equal(url.searchParams.has('composition'),false,to);}
     else {assert.equal(url.searchParams.get('table'),'room-1',to);assert.equal(url.searchParams.get('composition'),'portrait',to);}
   }
-  // There are no separate tool pages any more.
-  assert.deepEqual(Object.keys(ADMIN_WORKSPACE_TOOLS),[]);
-  for(const name of ['companies','replies','dealer-agent','dealer-studio'])assert.equal(adminToolName('/admin/'+name),null);
-  assert.equal(adminToolName('/partner/companies'),null);
+  // The embedded tools (Team, Svarsbibliotek, Dialogtest) are workspace sections, not pages: their old addresses open the navs.
+  assert.deepEqual(Object.keys(ADMIN_WORKSPACE_TOOLS),['companies','replies','dealer-agent']);
+  assert.deepEqual(Object.values(ADMIN_WORKSPACE_TOOLS).map(tool=>tool.label),['Bolag','Svarsbibliotek','Dialogtest']);
+  for(const name of ['replies','dealer-agent','dealer-studio'])assert.equal(adminDocumentHref('/admin/'+name),'/admin/dealers');
+  assert.equal(adminDocumentHref('/partner/companies'),'/partner/companies');
   assert.equal(adminDocumentHref('/control/zones'),'/admin/scenes?tab=mallar');
   // Each retired OpenClaw entry returns to its owning resource.
   assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealers/dragan?flik=tal&verktyg=dialog');
@@ -40,7 +41,6 @@ test('retired speech review bookmarks land on Röst och tal with their dealer co
   const target=adminDocumentHref('/control/administration?tab=media-review&dealer=dragan&lane=portrait');
   assert.equal(target,'/admin/dealers/dragan?flik=tal&composition=portrait');
   assert.equal(adminDocumentHref('/admin/media-review?dealer=dragan'),'/admin/dealers/dragan?flik=tal');
-  assert.equal(adminToolName('/admin/media-review'),null);
   assert.equal(studioLoginReturnTo(target),target);
   assert.equal(studioLoginReturnTo('/admin/media-review?dealer=dragan'),'/admin/dealers/dragan?flik=tal');
 });
@@ -97,9 +97,8 @@ test('login restores the exact Admin page and context without accepting external
   assert.equal(studioLoginReturnTo('/admin/dealers/dragan?flik=tal&verktyg=dialog'),'/admin/dealers/dragan?flik=tal&verktyg=dialog');
   for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','/admin/dealers/dragan?flik=klipp&flik=tal','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/admin');
 });
-// The workspace reader's sections are derived from ADMIN_WORKSPACE_TOOLS, which is now empty
-// (apps/studio/lib/admin-workspace-data.mjs:5), so Team, Svarsbibliotek and Dialogtest get 400.
-test('workspace reads saved data and lists company memberships only for company tools',{todo:'admin-workspace-data.mjs:5 no longer serves companies, replies or dealer-agent'},async()=>{
+// The workspace reader serves exactly the embedded tools' sections (ADMIN_WORKSPACE_TOOLS) plus the legacy read-only ones.
+test('workspace reads saved data and lists company memberships only for company tools',async()=>{
   let authorized=false,directories=0;
   const runtime=async()=>{assert.equal(authorized,true);return {gamePolicy:{readSaved:async()=>({project:{revision:'saved',dealers:[]}})},
     videoRegistry:async()=>({videos:[]}),listLaneOperators:async()=>[{id:'operator'}],listOperatorDirectory:async()=>{directories++;return [{id:'operator',members:[]}];}};};
@@ -134,7 +133,6 @@ test('material library bookmarks share one destination and preserve their select
     assert.equal(explicit.searchParams.get('tab'),'bordsgrafik');
     assert.deepEqual(platformRoute(new URL(source,'https://site.invalid'),{nativeStudio:true,publicOrigin:'https://site.invalid'}),{kind:'redirect',destination:'https://site.invalid'+target});
   }
-  assert.equal(adminToolName('/admin/material-library'),null);
 });
 
 test('duplicate selectors survive compatibility mapping for downstream validation',()=>{
@@ -193,7 +191,6 @@ test('merged dependency bookmarks redirect to System › Beroenden with their se
     for(const options of [{method:'POST',body:'fixture'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
   }
   for(const path of ['/admin/deletion/','/admin/deletions','/admin/deletion-extra','/admin/system?flik=beroenden&operator=north'])assert.equal(adminDocumentHref(path),path);
-  assert.equal(adminToolName('/admin/deletion'),null);assert.equal(adminToolName('/admin/structure'),null);
 });
 
 // Every retired Admin page (ADMIN-KARTA "Pensionerade adresser") lands on its menu page and tab in one redirect,
