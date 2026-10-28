@@ -123,3 +123,8 @@
   .visualPanel .saveBar .actions { width:100%; }
   .visualPanel .saveBar .actions>button { flex:1 1 140px; }
 }
+
+/* Partnerportalen: flikpaneler och läsvyer (Spelinställningar, Tillgänglighet). */
+.tabPanel { display:grid; gap:16px; min-width:0; }
+.facts { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:6px 18px; margin:0; font-size:.9rem; }
+.facts dt { opacity:.75; } .facts dd { margin:0; }

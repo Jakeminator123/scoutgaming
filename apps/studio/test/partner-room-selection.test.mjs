@@ -28,21 +28,22 @@ test('room deep links resolve exact registered ownership and active status witho
 test('unavailable room links render no default preview or appearance controls',()=>{
   for(const initialRoomId of ['foreign-room','missing',['main-room','vip-room']]){
     const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId,apiBase:'/studio/api/partner/snapshot'}));
-    assert.match(html,/Det begärda rummet är inte tillgängligt/);
+    assert.match(html,/Det begärda spelbordet är inte tillgängligt/);
     assert.doesNotMatch(html,/Hämtar utseende|kevin-package/);
   }
 });
 test('the exact room is selected in server markup before client hydration',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'vip-room',apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/<option value="vip-room" selected="">VIP<\/option>/);
-  assert.doesNotMatch(html,/Foreign|Paused|Archived|Rummet är inte tillgängligt/);
+  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
+  assert.doesNotMatch(html,/Foreign|Archived|spelbordet är inte tillgängligt/i);
+  assert.match(html,/Paused[\s\S]*pausat|pausat[\s\S]*Paused/);
   assert.match(html,/Hämtar utseende/);
 });
 
 test('controlled room selection renders the current scope instead of its original room',()=>{
   const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId:'main-room',selection:{roomId:'vip-room',unavailable:false},onSelectionChange(){},apiBase:'/studio/api/partner/snapshot'}));
-  assert.match(html,/<option value="vip-room" selected="">VIP<\/option>/);
-  assert.doesNotMatch(html,/<option value="main-room" selected/);
+  assert.match(html,/aria-pressed="true"[^>]*>[\s\S]*?VIP</);
+  assert.equal((html.match(/aria-pressed="true"/g)||[]).length,1);
 });
 
 function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-casino/rooms?room=main-room',accessClass='internal-admin'}={}) {
@@ -167,7 +168,7 @@ function actualAppearance(session) {
     const code=transformSync(require('node:fs').readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:name==='PartnerAppearance'?'typescript':'ecmascript',tsx:name==='PartnerAppearance',jsx:name!=='PartnerAppearance'},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
     const local=createRequire(file),module={exports:{}};
     require('node:vm').runInNewContext(code,{module,exports:module.exports,fetch:()=>assert.fail('No server write belongs in a navigation test'),
-      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-layer-picker'?{AppearanceLayerPicker:()=>null}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:local(key)});
+      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-layer-picker'?{AppearanceLayerPicker:()=>null}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
   const wrapper=mount('../components/kevin-bo/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
