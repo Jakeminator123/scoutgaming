@@ -3033,7 +3033,7 @@
    "id": "F15-duplicate-decision-bar-1440",
    "severity": "låg; kosmetisk",
    "blocking": false,
-   "observation": "Dubbla beslutsknappar vid 1440: en liten kopia av actionbaren (2x/+/−/↔) renderas uppe till vänster över rubriken samtidigt som huvudpanelen visas; huvudpanelen täcker dealerns kort",
+   "observation": "Dubbla beslutsknappar vid 1440: en liten kopia av actionbaren (2x/+/−/↔) renderas uppe till vänster över rubriken samtidigt som huvudpanelen visas; dealerns kort är synliga under huvudpanelen (rättat efter GPT-förgranskningen 2026-10-28)",
    "evidence": "o02/jakob-eyes/v3-decision-1440.png (utanför Git)",
    "disposition": "bokförd till mobil/3-rutors-arbetet efter O03",
    "verifiedBy": "scoutgaming-f1 (orkestratorn, egen läsning av skärmbilden)"

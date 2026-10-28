@@ -48,7 +48,7 @@ E4  J07 + O01 → J08      K01 + K04 → K05      J05 + J07 → J09      J08 + K
 E5  K04 + K06 → K07      J06 + J09 → J10      K07 + J10 → O02 → O03
 ```
 
-Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad som saknas för varje aktivitet står i [NEXT-AGENT](../docs/NEXT-AGENT.md#kvar-till-o02-och-o03-i-ordning).
+Den återstående kedjan är K04 → K05 → K06 → K07 → O02 → O03. Vad som saknas för varje aktivitet står i [NEXT-AGENT](../docs/NEXT-AGENT.md#kvar-till-o03).
 
 ## När migreringen är klar
 

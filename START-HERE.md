@@ -70,7 +70,7 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 1. `git fetch`, sedan egen branch `jakob/*` från färsk `origin/main` (Claude-underagenter: `jakob/claude-*` i en worktree under `.claude/worktrees`).
 2. Committa med repots hookar, aldrig `--no-verify`. Läs `node tools/security-status.mjs` före push och merge.
 3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`.
-4. Den obligatoriska kontrollen heter `CI` och kräver att branchen är à jour med `main`: `gh pr update-branch <nr>`, vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>` (under O02 även `--freeze <kandidat-sha>`).
+4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>` (under O02 även `--freeze <kandidat-sha>`).
 5. Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
 
 ## Kanoniska dokument
