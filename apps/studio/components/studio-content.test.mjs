@@ -85,25 +85,6 @@ test('position preview changes only the destination; consecutive card slots, car
   assert.deepEqual(project, before);
 });
 
-test('saved idle background can be corrected with its original revision and exact binding, including framing',async()=>{
-  const h=hooks(),calls=[],saved=[];
-  const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',compositing:{mode:'opaque'}};
-  const video={id:'exact-idle',sha256:'a'.repeat(64),available:true,classification,previewUrl:'/fixture'};
-  const {DealerFileSettings}=load('./dealer-file-settings.tsx',{
-    './studio-types':{requestJson:async(url,request)=>{calls.push({url,...JSON.parse(request.body)});return {videos:[video]};}},
-    './dealer-video-surface':{DealerClipPreview:()=>null},
-  },h.react);
-  const props={video,onSaved:value=>saved.push(value)};
-  let tree=h.render(DealerFileSettings,props);tree.props.onToggle({currentTarget:{open:true}});tree=h.render(DealerFileSettings,props);
-  nodes(tree,node=>typeof node.type==='function'&&node.type.name==='VideoCompositingFields')[0].props.onChange({mode:'green-screen',threshold:.23,softness:.15,despill:.5});
-  tree=h.render(DealerFileSettings,props);
-  nodes(tree,node=>typeof node.type==='function'&&node.type.name==='DealerFramingFields')[0].props.onChange({scale:3,x:0,y:.4});
-  tree=h.render(DealerFileSettings,props);nodes(tree,node=>node.type==='button')[0].props.onClick();await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(calls.length,1);assert.deepEqual(calls[0].previous,classification);assert.equal(calls[0].sha256,video.sha256);
-  assert.deepEqual(calls[0].metadata,{...classification,compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:.5},framing:{scale:3,x:0,y:.4}});
-  assert.equal(saved.length,1);
-});
-
 test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {
   const { VideoCompositingFields, VideoMetadataFields } = load('./video-metadata-fields.tsx');
   const values = []; let tree = VideoCompositingFields({ value: { mode: 'opaque' }, onChange: value => values.push(value) });

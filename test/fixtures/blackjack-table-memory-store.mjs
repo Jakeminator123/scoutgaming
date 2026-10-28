@@ -13,6 +13,17 @@ const clone = v => v === undefined ? undefined : structuredClone(v);
 const rkey = ({ roomId, actorId, commandId }) => JSON.stringify([roomId, actorId, commandId]);
 const mkey = (roomId, actorId) => `${roomId}\u0000${actorId}`;
 
+// Ledger, audit and outbox rows are append-only and receipts/ticks are insert-only: a unit of work or savepoint
+// copies those containers and shares their (never mutated) rows, so a copy no longer grows with the table's history.
+const APPEND_ONLY = ['ledger', 'audit', 'outbox'], INSERT_ONLY = ['receipts', 'ticks'];
+function cloneDb(s) {
+  const rest = { ...s }; for (const k of [...APPEND_ONLY, ...INSERT_ONLY]) delete rest[k];
+  const out = clone(rest);
+  for (const k of APPEND_ONLY) out[k] = s[k].slice();
+  for (const k of INSERT_ONLY) out[k] = { ...s[k] };
+  return out;
+}
+
 export function createMemoryTableStore({ hooks = {} } = {}) {
   let db = { rooms: {}, members: {}, presence: {}, receipts: {}, ticks: {}, pauses: {}, balances: {}, walletGen: {},
     reservations: {}, ledger: [], audit: [], shoes: {}, outbox: [], delivered: {},
@@ -44,8 +55,8 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
     const room = id => { if (!plan.rooms.includes(id)) throw new LockSetExceeded({ rooms: [id] }); };
     const player = id => { if (!plan.players.includes(id)) throw new LockSetExceeded({ players: [id] }); };
     return {
-      savepoint: async () => clone(get()),
-      rollbackTo: async sp => { set(clone(sp)); },
+      savepoint: async () => cloneDb(get()),
+      rollbackTo: async sp => { set(cloneDb(sp)); },
       rooms: {
         read: async id => { room(id); return clone(get().rooms[id]) ?? null; },
         write: async (id, state) => { room(id); maybeFail('rooms.write'); get().rooms[id] = clone(state); },
@@ -120,7 +131,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
     const release = await acquire();
     try {
       stats.units++;
-      let state = clone(db);
+      let state = cloneDb(db);
       const out = await work(makeTx(() => state, v => { state = v; }, plan));
       db = state;
       return clone(out);
@@ -152,8 +163,9 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       pending: async () => clone(db.outbox.filter(r => r.status === 'pending')),
       deliveredVer: async roomId => db.delivered[roomId] ?? 0,
       ack: async (row, status) => {
-        const r = db.outbox.find(x => x.roomId === row.roomId && x.ver === row.ver);
-        r.status = status;
+        const i = db.outbox.findIndex(x => x.roomId === row.roomId && x.ver === row.ver);
+        if (i < 0) throw new Error('unknown outbox row');
+        db.outbox[i] = { ...db.outbox[i], status }; // replace, never mutate a shared row
         if (status === 'delivered') db.delivered[row.roomId] = Math.max(db.delivered[row.roomId] ?? 0, row.ver);
       },
     },
@@ -178,7 +190,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       mutateRoom: (id, fn) => { fn(db.rooms[id]); },
       // Another wallet writer changing a reservation row directly (missing, shrunk or restored).
       mutateReservations: fn => { fn(db.reservations); },
-      tamperAudit: (seq, payload) => { db.audit[seq - 1].payload = payload; },
+      tamperAudit: (seq, payload) => { db.audit[seq - 1] = { ...db.audit[seq - 1], payload }; },
     },
   };
 }

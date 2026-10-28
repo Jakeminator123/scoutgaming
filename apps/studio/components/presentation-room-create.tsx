@@ -72,7 +72,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const needsComposition = current && !unresolved && ['presentation_lane_incompatible', 'presentation_package_too_large', 'presentation_room_environment_required'].includes(state.preflight?.reason ?? '');
   // Rooms are created and reviewed on Spelbolag & rum; the room link resolves its own composition.
   const reloadHref = labUrl('/admin/rooms?' + new URLSearchParams({ operator: operator?.id ?? '' }));
-  const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
+  const compositionHref = labUrl('/admin/scenes?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }

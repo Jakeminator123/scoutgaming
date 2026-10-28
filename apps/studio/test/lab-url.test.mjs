@@ -49,7 +49,6 @@ test('public root redirect admits exact Admin without accepting external or auth
     assert.throws(() => publicAbsoluteUrl(headers,path),/control_redirect_rejected/);
   }
   for(const path of ['/admin/publication?operator=north&room=room-1&game=roulette#review','/admin/companies?operator=north','/admin/guide?dealer=saga','/admin/videos?dealer=saga&event=idle.ready#clips','/admin/probe?dealer=astrid&event=idle.ready','/admin/replies?dealer=saga&category=greeting','/admin/events?dealer=saga&event=idle.ready&tab=variants','/admin/compositions?composition=portrait&operator=north&table=room-1&game=roulette','/admin/rehearsal?dealer=saga&composition=portrait&operator=north&table=room-1'])assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
-  assert.equal(publicAbsoluteUrl(headers, '/control/clips?dealer=vera'), 'https://public.example.invalid/control/clips?dealer=vera');
   for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/publication-extra','/admin/publication/../login','/admin/companies/edit','/admin/videos-extra','/admin/guide/edit','/admin/probe-extra','/admin/replies/edit','/admin/events-extra','/admin/compositions-extra','/admin/rehearsal/edit','/admin/tree','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
     assert.throws(() => publicAbsoluteUrl(headers, value), /control_redirect_rejected/);
   }

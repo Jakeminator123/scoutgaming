@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {loadVideoRegistry,getVideoResponse} from '../lib/video-registry.mjs';
+import {loadVideoRegistry,getVideoResponse} from './fixtures/local-video-registry.mjs';
 
 test('retained originals join exact families beside current bank bytes without replacing standards',async t=>{
   const {registry,repository,items}=await fixture(t);

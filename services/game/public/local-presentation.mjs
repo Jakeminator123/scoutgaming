@@ -160,7 +160,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   // timing: Kevin's per-step playback options for the exact take (startOffset, handoverAt, playbackRate, clockTime),
   // passed through to playLocalFilm; the shared ports derive them from the published plan and the profile.
-  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {} } = {}) {
+  // selected: this clip came from /api/presentation/select for the current version in the same step. That call
+  // already checked the frozen package (published rooms resolve the context after selecting; a shared room checks
+  // its committed receipt and context), so the film does not read the configuration a second time. Idle films and
+  // Studio rehearsal keep their own per-play read.
+  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {}, selected = false } = {}) {
     const own = new AbortController(); active = own;
     const ownSerial = serial, ownVersion = version();
     const stillCurrent = () => active === own && !closed && !own.signal.aborted && serial === ownSerial && version() === ownVersion;
@@ -172,7 +176,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
       onProgress?.({phase:'prepare'});
-      if (context || preview) {
+      if (preview || (context && !selected)) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw packageError();
         if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');
@@ -321,6 +325,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       };
     };
     let result;
+    // The shared table left this step because its time on the table clock (or
+    // the server's turn) was over before its film showed a frame: a late step,
+    // skipped without a fallback or error text, never a failed film.
+    const leftLate = () => {
+      if (signal?.aborted && signal.reason?.late === true)
+        receipt({ event: kind, state: 'skipped', late: true, sourceEvent: event, reason: 'step_time_over', renderer: kind === 'speech' ? 'none' : '2d',
+          requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId, projectRevision: result?.projectRevision, configurationSource });
+      return false;
+    };
     try {
       const eventMode = selectionMode(event.type);
       const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
@@ -331,7 +344,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       }
       if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
       result = await selected.json();
-      if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
+      if (signal?.aborted) return leftLate();
+      if (token !== serial || requestVersion !== version()) return false;
       receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode: eventMode, projectRevision: result.projectRevision, configurationSource });
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
@@ -368,16 +382,17 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         }))) throw new Error('Talfilmens granskning eller identitet stämmer inte');
         const current = ++attempt;
         try {
-          await film(video, { kind, signal, onProgress:progress(), timing, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
+          await film(video, { kind, signal, selected: true, onProgress:progress(), timing, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) { idle?.interruptPose?.(); onPresented?.(); } },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
-            onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
+            // A late take never starts; the next step's file is prepared all the same.
+            onEvent: event => { if (owns(current) && (event.state === 'start' || event.late === true)) prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
       };
       const transition = async (video, direction) => {
         if (!video) return;
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
-        await film(video, { kind: 'transition', signal, onProgress:progress(), onFrame:()=>idle?.interruptPose?.(), details: { direction, shoeDraw: event.shoeDraw,
+        await film(video, { kind: 'transition', signal, selected: true, onProgress:progress(), onFrame:()=>idle?.interruptPose?.(), details: { direction, shoeDraw: event.shoeDraw,
           requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
       };
@@ -395,7 +410,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (current) { idle?.resetPose?.(); retainRule(result, requestVersion); }
       return current;
     } catch (error) {
-      if (signal?.aborted || token !== serial) return false;
+      if (signal?.aborted) return leftLate();
+      if (token !== serial) return false;
       if (requireReload(error)) return false;
       // A line refused by the sound policy already shows the sound control.
       const soundBlocked = kind === 'speech' && error.code === 'local_film_sound_blocked';

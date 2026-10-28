@@ -8,7 +8,9 @@ const uploaded=(material,source,id='upload-uuid')=>({id,role:material.role,label
 
 test('the five supplied blackjack boards retain separate identities and original dimensions',()=>{
   const tables=MATERIALS.filter(row=>row.role==='table'&&row.game==='blackjack');
-  assert.deepEqual(tables.map(row=>row.label),['Blackjack · grön filt','Blackjack · svart filt','Blackjack · Oak','Blackjack · Purple Rain','Blackjack · Back to Basic']);
+  // Labels are display copy; identity is the id and the exact source signature.
+  assert.equal(tables.length,5);assert.ok(tables.every(row=>typeof row.label==='string'&&row.label.trim()));
+  assert.equal(new Set(tables.map(row=>row.label)).size,tables.length);
   assert.equal(new Set(MATERIALS.map(row=>row.id)).size,MATERIALS.length);
   assert.equal(new Set(tables.map(row=>row.sources[0].sha256)).size,5);
   assert.deepEqual(tables.map(row=>[row.sources[0].width,row.sources[0].height]),[[1672,941],[1672,941],[1672,941],[1672,941],[1774,887]]);
@@ -22,9 +24,8 @@ test('the five supplied blackjack boards retain separate identities and original
 });
 
 test('the three supplied environments have distinct image/video pairs under stable material IDs',()=>{
-  assert.deepEqual(BACKGROUND_MATERIALS.map(row=>[row.id,row.label]),[
-    ['studio-dark','Studio · mörk'],['lounge-warm','Lounge · varm'],['studio-teal','Studio · turkos'],
-  ]);
+  assert.deepEqual(BACKGROUND_MATERIALS.map(row=>row.id),['studio-dark','lounge-warm','studio-teal']);
+  assert.ok(BACKGROUND_MATERIALS.every(row=>typeof row.label==='string'&&row.label.trim()));
   const hashes=new Set();
   for(const material of BACKGROUND_MATERIALS) {
     assert.equal(material.role,'background');assert.equal(material.game,null);

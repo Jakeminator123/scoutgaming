@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
-import {mkdtemp, copyFile, cp, mkdir, symlink, unlink, rm, realpath, readFile} from 'node:fs/promises';
+import {access, mkdtemp, copyFile, cp, mkdir, symlink, unlink, rm, realpath, readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
@@ -12,6 +12,7 @@ const frontendRequire = createRequire(new URL('../apps/web/package.json', import
 const WebSocket = frontendRequire('ws');
 const {createPlatformNativeWebSocketServer} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/node-server')).href);
 import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
+import {PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, SHARED_ROOM_SOCKET} from '../packages/server-transport/paths.mjs';
 import {issueTicket, ticketAuthenticator} from '../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 import {createSpeechIngress} from '../apps/speech/service.mjs';
@@ -35,22 +36,20 @@ async function rejected(url, protocols = [], headers = {}) {
   });
 }
 
-test('Services routes both public sockets to the native Node entrypoint before the Next catch-all', async () => {
+test('Services routes every public socket to the native speech entrypoint before any other service', async () => {
   const deployment = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
   const speech = deployment.services.speech;
+  // Vercel's Node framework captures listen() from the declared entrypoint.
   assert.equal(speech.framework, 'node');
-  assert.equal(speech.root, 'apps/speech');
-  assert.equal(speech.entrypoint, 'server.mjs');
-  assert.equal(speech.functions['server.mjs'].maxDuration, 600);
-  for (const path of ['/speech-stream', '/lipsync-worker']) {
-    const rule = deployment.rewrites.find(value => value.source === path || value.source === '/(.*)');
-    assert.deepEqual(rule, {source: path, destination: {service: 'speech'}});
+  await access(new URL(`../${speech.root}/${speech.entrypoint}`, import.meta.url));
+  // The bridge closes sockets at 290 s, so the function must outlive it.
+  assert.ok(speech.functions[speech.entrypoint].maxDuration >= 300);
+  const firstOther = deployment.rewrites.findIndex(rule => rule.destination.service !== 'speech');
+  for (const source of [...Object.keys(PLATFORM_SOCKET_ENDPOINTS), `${MOVING_WORKER_SOCKET}:path*`, `${SHARED_ROOM_SOCKET}:path*`]) {
+    const at = deployment.rewrites.findIndex(rule => rule.source === source);
+    assert.ok(at >= 0 && at < firstOther, source);
+    assert.deepEqual(deployment.rewrites[at].destination, {service: 'speech'});
   }
-  assert.deepEqual(deployment.rewrites.filter(value => value.destination.service === 'speech').map(value => value.source),
-    ['/speech-stream', '/lipsync-worker', '/moving-speech-stream', '/lipsync-moving/:path*', '/shared-room/:path*']);
-  const entrypoint = await readFile(new URL('../apps/speech/server.mjs', import.meta.url), 'utf8');
-  assert.match(entrypoint, /createSpeechIngress\(\)/);
-  assert.match(entrypoint, /server\.listen\(/);
 });
 
 test('speech installs independently and configuration imports without WebSocket dependencies', async () => {

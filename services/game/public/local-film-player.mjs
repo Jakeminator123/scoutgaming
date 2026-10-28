@@ -11,7 +11,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
-    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery, gestureWaiting = false, soundWaiting = false, soundWindow;
+    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, late = false, recovery, gestureWaiting = false, soundWaiting = false, soundWindow;
     const gestureWait = waiting => { if (gestureWaiting !== waiting) { gestureWaiting = waiting; onGestureWait(waiting); } };
     const clearRecovery = () => { recovery?.remove(); recovery = null; gestureWait(false); };
     const seekable = seconds => Number.isFinite(video.duration) && video.duration > 0 ? Math.min(seconds, Math.max(0, video.duration - FILMED_SEEK_END_MARGIN_S)) : seconds;
@@ -25,7 +25,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     // the existing progress watchdog rather than cutting valid speech at 60 s.
     const deadline = setTimeout(() => finish(new Error('Film exceeded playback limit')), (MAX_RECORDED_SPEECH_SECONDS + 8) * 1000);
     const emit = (state, error) => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle',
-      ...(handedOver ? { handover: true } : {}), ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
+      ...(handedOver ? { handover: true } : {}), ...(late ? { late: true } : {}), ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
     const clean = () => {
       clearRecovery(); clearTimeout(soundWindow); soundWaiting = false;
       clearTimeout(watchdog); clearTimeout(deadline); signal?.removeEventListener('abort', abort);
@@ -40,15 +40,20 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
         duration: Number.isFinite(video.duration) ? video.duration : null,
         visibility: document.visibilityState ?? (document.hidden ? 'hidden' : 'visible') },
     });
+    // A take that the table clock or its handover ends before playback began
+    // ('playing') came too late for its place: K04 staging 28 Oct 2026 saw
+    // 'presented' and the end in the same millisecond. It is skipped, not a
+    // failed film: no fallback, no error text, and the receipt says late.
     const finish = error => {
       if (terminal) return; terminal = true;
-      if (!error && (!started || !presented || !(video.ended || handedOver))) {
+      late = !error && handedOver && presented && !started;
+      if (!error && !late && (!started || !presented || !(video.ended || handedOver))) {
         error = playbackError('Film ended without a presented frame',
           started && video.ended && !presented ? 'local_film_no_presented_frame' : 'local_film_incomplete');
       }
       if (presented) hold(video);
-      emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end', error); clean();
-      error ? reject(error) : resolve({ completed: true });
+      emit(error ? signal?.aborted ? 'interrupted' : 'error' : late ? 'skipped' : 'end', error); clean();
+      error ? reject(error) : resolve(late ? { completed: false, late: true } : { completed: true });
     };
     const arm = () => { clearTimeout(watchdog); if (!gestureWaiting && !soundWaiting) watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
     const abort = () => finish(new DOMException('Presentation cancelled', 'AbortError'));

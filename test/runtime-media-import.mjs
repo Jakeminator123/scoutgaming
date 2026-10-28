@@ -91,14 +91,12 @@ test('provided metadata reader is used for every exact JSON tuple and corrupt by
     error=>error.code==='studio_runtime_import_metadata_unavailable'&&!JSON.stringify(error).includes('credential'));
 });
 
-test('focused selection discovers importer/catalog tests and full mode retains their real hook registration',async()=>{
+// Hook registration of these files is enforced by tools/check-orphan-tests.mjs in CI.
+test('focused selection discovers importer/catalog tests and full mode runs the full hook',async()=>{
   const changes=[{status:'M',path:'ops/neon-studio/runtime-media-import.mjs'},{status:'M',path:'packages/studio-registry/server/runtime-catalog.mjs'}];
   const selected=focusedTests(changes,root);
   for(const file of ['test/runtime-media-catalog.mjs','test/runtime-media-import.mjs'])assert.ok(selected.includes(file));
   assert.deepEqual(checkPlan('full',{changes,root}),[['sh','.githooks/pre-commit-full']]);
-  const hook=await readFile(new URL('../.githooks/pre-commit-full',import.meta.url),'utf8');
-  const registered=hook.split(/\r?\n/).filter(line=>line.startsWith('run_node_tests ')).flatMap(line=>line.split(/\s+/).slice(1));
-  for(const file of ['test/runtime-media-catalog.mjs','test/runtime-media-import.mjs'])assert.ok(registered.includes(file));
 });
 
 test('plan is read-only, scope-bound and discloses excluded/source-only counts without claiming Blob reads',async()=>{

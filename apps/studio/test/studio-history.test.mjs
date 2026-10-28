@@ -42,14 +42,14 @@ test('one document owner keeps capture until subscription and guard release, inc
 });
 test('last consumer release/remount during compensation retains the accepted entry and settles cleanup',()=>{
   for(const remount of [false,true]){
-    const window=new EventTarget(),entries=[{href:origin+'/control/clips?dealer=astrid',state:null}],queue=[];let index=0;
+    const window=new EventTarget(),entries=[{href:origin+'/admin/clips?dealer=astrid',state:null}],queue=[];let index=0;
     const location={get href(){return entries[index].href;},get pathname(){return new URL(this.href).pathname;},get search(){return new URL(this.href).search;},get hash(){return new URL(this.href).hash;}};
     const history={get state(){return entries[index].state;},replaceState(state,unused,href=location.href){entries[index]={state:structuredClone(state),href:new URL(href,location.href).href};},pushState(state,unused,href){const target=new URL(href,location.href).href;entries.splice(index+1);entries.push({state:structuredClone(state),href:target});index++;},go(delta){queue.push(delta);}};
     Object.assign(window,{history,location});const owner=studioHistory(window);
     const step=()=>{index+=queue.shift();window.dispatchEvent(new Event('popstate'));};
     let release=owner.guardTraversal(()=>false),unsubscribe=owner.subscribe(()=>{});
     owner.push('?dealer=vera');owner.push('?dealer=mei');const before=structuredClone(entries);
-    history.go(-1);step();assert.equal(owner.snapshotHref(),'/control/clips?dealer=mei');
+    history.go(-1);step();assert.equal(owner.snapshotHref(),'/admin/clips?dealer=mei');
     unsubscribe();release();
     if(remount){release=owner.guardTraversal(()=>false);unsubscribe=owner.subscribe(()=>{});}
     step();assert.equal(index,2);assert.equal(owner.isRestoring(),false);assert.deepEqual(entries,before);assert.deepEqual(queue,[]);
@@ -94,7 +94,7 @@ async function adminFixtureSource(){
         if(importer.endsWith('/workspace-tools.tsx')&&(args.path.includes('/components/')&&!args.path.endsWith('/control-replies-page')||args.path==='./connected-services'))return{path:args.path,namespace:'unused-admin-tool'};
         if(importer.endsWith('/control-replies-page.tsx')&&['./page-template.mjs','./dealer-video-surface'].includes(args.path))return{path:args.path,namespace:'reply-child'};
       });
-      builder.onLoad({filter:/.*/,namespace:'unused-admin-tool'},()=>({contents:'export const AdminPublicationPage=()=>null,ControlActivityPage=()=>null,ControlPreviewPage=()=>null,ControlEventsPage=()=>null,ControlTreePage=()=>null,ControlProbePage=()=>null,ControlVideosPage=()=>null,ControlGuidePage=()=>null,ControlOpenClawChat=()=>null,LabStudio=()=>null,ConnectedServices=()=>null;'}));
+      builder.onLoad({filter:/.*/,namespace:'unused-admin-tool'},()=>({contents:'export const DealerMaterialPage=()=>null,AdminPublicationPage=()=>null,ControlActivityPage=()=>null,ControlPreviewPage=()=>null,ControlEventsPage=()=>null,ControlTreePage=()=>null,ControlProbePage=()=>null,ControlVideosPage=()=>null,ControlGuidePage=()=>null,ControlOpenClawChat=()=>null,LabStudio=()=>null,ConnectedServices=()=>null;'}));
       builder.onLoad({filter:/.*/,namespace:'reply-child'},args=>({contents:args.path==='./page-template.mjs'?'export const PageTemplate=props=>props.children;':'export const DealerClipPreview=()=>null;'}));
     }}]}).then(result=>result.outputFiles[0].text);
 }

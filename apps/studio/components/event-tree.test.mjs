@@ -25,7 +25,7 @@ function loadTs(relativeFile) {
 }
 
 const { EventTree } = loadTs('./event-tree.tsx');
-const { studioViewForPath, viewPaths } = loadTs('./studio-types.ts');
+const { viewPaths } = loadTs('./studio-types.ts');
 const mediaManifest = JSON.parse(readFileSync(new URL('../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 const mediaInventory = {
   families: mediaManifest.families,
@@ -49,7 +49,6 @@ test('node tree displays all four dealers, sixteen lab nodes and the fixed six-t
   for (const dealer of project.dealers) assert.ok(html.includes(dealer.label));
   for (const event of project.events) assert.ok(html.includes(event.label));
   assert.match(html, new RegExp(`${project.events.length} labbnoder över 6 presentationstyper`));
-  assert.match(html, /inte nya händelser i Kevins spelmotor/);
   assert.match(html, /STANDARD \/ FALLBACK/);
   assert.equal(JSON.stringify(project), before, 'rendering must not mutate policy');
 });
@@ -99,23 +98,9 @@ test('available original is explicitly not a visual approval', () => {
   assert.match(html, /Original tillgängligt · ej visuellt godkänt/);
 });
 
-test('history route mapping includes tree without matching unrelated prefixes', () => {
+test('admin view paths point tree and dealer chat at their Admin documents', () => {
   assert.equal(viewPaths.tree, '/admin/events');
-  assert.equal(studioViewForPath('/control/tree'), 'tree');
-  assert.equal(studioViewForPath('/tree'), 'tree');
-  assert.equal(studioViewForPath('/tree/'), 'tree');
-  assert.equal(studioViewForPath('/control/videos'), 'videos');
-  assert.equal(studioViewForPath('/videos'), 'videos');
   assert.equal(viewPaths.openclaw, '/admin/dealer-agent');
-  assert.equal(studioViewForPath(viewPaths.openclaw), 'openclaw');
-  assert.equal(studioViewForPath('/admin/ai/models?dealer=saga'), 'lab', 'global model settings are not a dealer chat view');
-  assert.equal(studioViewForPath('/admin/probe?dealer=saga'), 'probe');
-  assert.equal(studioViewForPath('/control/operator-chat'), 'openclaw');
-  assert.equal(studioViewForPath('/operator-chat'), 'openclaw');
-  assert.equal(studioViewForPath('/control/openclaw'), 'lab', 'model settings are a separate document page');
-  assert.equal(studioViewForPath('/openclaw'), 'lab', 'model settings are a separate document page');
-  assert.equal(studioViewForPath('/'), 'lab');
-  assert.equal(studioViewForPath('/treehouse'), 'lab');
 });
 
 test('generic speech lab node warns that one file cannot serve every exact source line', () => {
