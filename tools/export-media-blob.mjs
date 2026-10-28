@@ -1,22 +1,19 @@
 import {readFile,writeFile,mkdir,rename,lstat} from 'node:fs/promises';
-import {openAsBlob} from 'node:fs';
+import {openAsBlob,createReadStream} from 'node:fs';
 import {dirname,join,resolve,extname} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {randomUUID} from 'node:crypto';
-import {readMediaLayout,repositoryRoot,presentationBankRoot,resolveMediaPath,validateMediaAliases,PRESENTATION_BANK_PATH} from './media-layout.mjs';
-import {hashFile} from './migrate-media-layout.mjs';
+import {createHash,randomUUID} from 'node:crypto';
+import {readMediaLayout,repositoryRoot,resolveMediaPath,validateMediaAliases} from './media-layout.mjs';
 import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../apps/studio/lib/cloud-media-store.mjs';
 const identity=hash=>`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
-/** Metadata-only dry run. UUIDs from the saved presentation registry stay exact.
- * Without a bank only public rows (and source rows on request) are exported. */
+// Streams the file; the result is compared with the layout's exact SHA-256.
+async function hashFile(file){const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);return hash.digest('hex');}
+/** Metadata-only dry run: public rows, and source rows on request. The ID is
+ * derived from the exact bytes; the repository carries no presentation bank. */
 export async function planBlobExport({root=repositoryRoot,includeSource=false,layout=readMediaLayout(root)}={}){
   validateMediaAliases(layout);
-  const bankPrefix=PRESENTATION_BANK_PATH+'/';
-  let bank;
-  try{bank=JSON.parse(await readFile(join(presentationBankRoot(root),'lab-video-manifest.json'),'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
-  const ids=new Map((bank?.items??[]).map(item=>[bankPrefix+item.relativePath,item.id]));
-  return {schemaVersion:1,namespace:'croupier/media',files:layout.files.filter(row=>(includeSource||row.access==='public'||row.path.startsWith(bankPrefix))&&MEDIA_MIME[extname(row.path).slice(1)]&&row.size>0).map(row=>{
-    const canonical=row.canonicalPath??row.path,extension=extname(row.path).slice(1),id=ids.get(row.path)??identity(row.sha256),pathname=mediaBlobPath(dirname(canonical).replaceAll('\\','/'),ids.get(canonical)??identity(row.sha256),row.sha256,extension);
+  return {schemaVersion:1,namespace:'croupier/media',files:layout.files.filter(row=>(includeSource||row.access==='public')&&MEDIA_MIME[extname(row.path).slice(1)]&&row.size>0).map(row=>{
+    const canonical=row.canonicalPath??row.path,extension=extname(row.path).slice(1),id=identity(row.sha256),pathname=mediaBlobPath(dirname(canonical).replaceAll('\\','/'),id,row.sha256,extension);
     return {logicalPath:row.path,id,sha256:row.sha256,size:row.size,access:row.access,legacyUrls:row.publicUrl?[row.publicUrl]:[],storage:{provider:'vercel-blob',pathname,sha256:row.sha256,size:row.size,contentType:MEDIA_MIME[extension]}};
   })};
 }

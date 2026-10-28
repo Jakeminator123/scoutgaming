@@ -12,4 +12,4 @@ export function readMediaLayout(root = repositoryRoot) {
   const layout = validateMediaLayout(JSON.parse(readFileSync(file, 'utf8')));
   cache.set(file,{key,layout}); return layout;
 }
-export const {presentationBankRoot,normalizePresentationArchive,resolveMediaAbsolutePath,resolveMediaPath,resolvePublicMedia,openPublicMedia} = createMediaLayout({repositoryRoot,readMediaLayout});
+export const {presentationBankRoot,resolveMediaAbsolutePath,resolveMediaPath,resolvePublicMedia,openPublicMedia} = createMediaLayout({repositoryRoot,readMediaLayout});

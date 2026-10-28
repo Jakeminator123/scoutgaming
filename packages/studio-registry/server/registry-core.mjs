@@ -21,7 +21,7 @@ const verified = new Map();
 export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previewUrl,uploadDirectory,readUploads,readClassifications,getPrivateMedia,mediaBlobIndex,isMediaConfigured=isCloudMediaConfigured}) {
   if(typeof isMediaConfigured!=='function')throw new TypeError('Explicit synchronous media configuration predicate required.');
   if(typeof defaultRepositoryRoot!=='string'||!isAbsolute(defaultRepositoryRoot)||![previewUrl,uploadDirectory,readUploads,readClassifications,getPrivateMedia].every(value=>typeof value==='function'))throw new TypeError('Explicit registry readers, root and URL formatter required.');
-  const {normalizePresentationArchive,presentationBankRoot}=createMediaLayout({repositoryRoot:defaultRepositoryRoot});
+  const {presentationBankRoot}=createMediaLayout({repositoryRoot:defaultRepositoryRoot});
   const {isMediaBlobIndexConfigured,verifiedMediaBlobStorage,getIndexedMediaBlobResponse,readMediaBlobIndex}=mediaBlobIndex;
 
 
@@ -59,7 +59,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
   }
 
   function selectArchive(options) {
-    if (Object.hasOwn(options, 'archiveDir')) return { path: normalizePresentationArchive(options.archiveDir,options.repositoryRoot??defaultRepositoryRoot), source: options.archiveDir ? 'explicit' : 'none' };
+    if (Object.hasOwn(options, 'archiveDir')) return { path: options.archiveDir, source: options.archiveDir ? 'explicit' : 'none' };
     // Legacy folder variables no longer auto-register local dealer banks.
     return isMediaBlobIndexConfigured(options)
       ? { path: presentationBankRoot(options.repositoryRoot ?? defaultRepositoryRoot), source: 'blob-bank' }

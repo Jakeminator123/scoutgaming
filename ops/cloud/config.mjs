@@ -7,7 +7,6 @@ import { readVercelIngressConfig } from './vercel-ingress.mjs';
 import { readStorageExportConfig } from './storage-export.mjs';
 import { createPostgresStore } from '../../services/game/storage/postgres-store.mjs';
 import { validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
-import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../packages/studio-registry/server/private-media-contract.mjs';
@@ -235,7 +234,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   let videoArchive;
   if (env.LAB_VIDEO_ARCHIVE !== undefined) {
     if (!isAbsolute(env.LAB_VIDEO_ARCHIVE)) fail('LAB_VIDEO_ARCHIVE');
-    videoArchive = resolve(normalizePresentationArchive(env.LAB_VIDEO_ARCHIVE, repository));
+    videoArchive = resolve(env.LAB_VIDEO_ARCHIVE);
   }
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
   const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');

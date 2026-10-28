@@ -143,9 +143,11 @@ export function createSharedRoomService({
         }, { serialize: true });
         // A new presentation is announced only by the receiver sink after its
         // durable version commits. Ordinary state-only changes can notify now.
-        if (!response.replay && response.snapshot && response.snapshot.presentationVer === admission.presentationVer) notifyRooms.add(roomId);
+        // K6: a waiting registration changes no snapshot, so no socket rereads for it.
+        const seen = !response.replay && parsed.op !== 'wait';
+        if (seen && response.snapshot && response.snapshot.presentationVer === admission.presentationVer) notifyRooms.add(roomId);
         for (const room of notifyRooms) channel.emitCommitted(room);
-        if (!response.replay) channel.emitActorsCommitted(admission.actors, { exceptRoom: roomId });
+        if (seen) channel.emitActorsCommitted(admission.actors, { exceptRoom: roomId });
         return response;
       } finally { admissions.delete(token); }
     }, combined);

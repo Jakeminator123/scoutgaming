@@ -13,7 +13,7 @@ const commands = {
   undo: { windowId: 'window:1' }, clear: { windowId: 'window:1' }, doubleBets: { windowId: 'window:1' },
   allSeats: { windowId: 'window:1', chip: 5 }, repeat: { windowId: 'window:1' }, ready: { windowId: 'window:1' },
   act: { roundId: 'round:1', turnSeq: 3, box: 3, handIndex: 2, action: 'stand' },
-  insurance: { roundId: 'round:1', phase: 'insurance', take: false }, next: { roundId: 'round:1' }, pause: {}, refill: {},
+  insurance: { roundId: 'round:1', phase: 'insurance', take: false }, next: { roundId: 'round:1' }, pause: {}, refill: {}, wait: {},
 };
 const body = (op, fields = {}) => ({ op, commandId: `request-${op}`, ...structuredClone(commands[op]), ...fields });
 const denied = fn => assert.throws(fn, { code: 'shared_room_invalid_command' });
@@ -125,6 +125,7 @@ test('result projection has explicit public fields and never traverses private l
     [{ op: 'insurance', version: 5, resolved: { ledger: { bob: 'secret' } } }, { op: 'insurance', version: 5 }],
     [{ op: 'act', version: 6, debits: [{ kind: 'double', amount: 5, ledgerId: 'secret' }] }, { op: 'act', version: 6, debits: [{ kind: 'double', amount: 5 }] }],
     [{ op: 'pause', pausedUntil: 900000, rooms: ['room-1', 'other-room'], ledgerId: 'secret' }, { op: 'pause', pausedUntil: 900000 }],
+    [{ op: 'wait', version: 7, waiting: true, registeredAt: 'secret' }, { op: 'wait', version: 7, waiting: true }],
   ];
   for (const op of ['bet', 'undo', 'clear', 'doubleBets', 'allSeats', 'repeat']) fixtures.push([{ op, version: 5, reserved: 10 }, { op, version: 5, reserved: 10 }]);
   for (const op of ['leave', 'next']) fixtures.push([{ op, version: 5 }, { op, version: 5 }]);
@@ -140,6 +141,7 @@ test('result projection has explicit public fields and never traverses private l
 test('malformed known result fields fail closed and projected collections never alias the source', () => {
   const bad = value => assert.throws(() => projectSharedRoomCommandResult(value), { code: 'shared_room_invalid_result' });
   for (const value of [null, [], { op: 'unknown' }, { op: 'next', version: -1 }, { op: 'ready', version: 1, started: 'true' }, { op: 'ready', version: 1, started: true }, { op: 'bet', version: 1, reserved: NaN }, { op: 'pause', pausedUntil: null }, { op: 'join', version: 1, memberGen: 1, seats: [0], seatGen: [0] }, { op: 'act', version: 1, debits: [{ kind: 'payout', amount: 1 }] }]) bad(value);
+  for (const value of [{ op: 'wait', version: 1 }, { op: 'wait', version: 1, waiting: 'yes' }, { op: 'wait', waiting: true }]) bad(value);
   const raw = { op: 'join', version: 1, memberGen: 1, seats: [0], seatGen: Array(7).fill(0) };
   const projected = projectSharedRoomCommandResult(raw); raw.seats[0] = 6; raw.seatGen[0] = 100;
   assert.deepEqual(projected.seats, [0]); assert.equal(projected.seatGen[0], 0);
