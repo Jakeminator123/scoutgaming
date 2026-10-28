@@ -8,7 +8,7 @@ import {createMovingDriftController} from '../../../services/game/moving-drift-c
 const origin='https://studio.example.invalid',path='/studio/api/admin/moving-drift';
 const scope={environment:'isolated-drift-api',workspaceId:'qa'};
 const session={user:'Jakob',role:'admin',accountId:'fixture-owner',scope};
-const profiles=[{id:'base',label:'Bas',endpointId:'private-endpoint-1',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}];
+const profiles=[{id:'base',label:'Bas',dealerId:'dragan',endpointId:'private-endpoint-1',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}];
 const enabled={CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify(profiles)};
 const stop=(extra={})=>({expectedRevision:0,commandId:'stop-1',mode:'off',...extra});
 const request=(body,options={})=>new Request(origin+path,{method:body===undefined?'GET':'POST',
@@ -30,8 +30,13 @@ function fixture(options={}) {
 test('configuration is explicit, bounded and cannot enable runtime/provider capabilities',async()=>{
   assert.equal(movingDriftAdminConfiguration({}),null);
   assert.equal(movingDriftAdminConfiguration({...enabled,CROUPIER_STUDIO_MOVING_DRIFT_API:'true'}),null);
+  const {dealerId:_dealer,...withoutDealer}=profiles[0],second={...profiles[0],id:'paow',dealerId:'paow',endpointId:'private-endpoint-2'};
   for(const raw of [undefined,'{}','[]','null','invalid',' '.repeat(8193),
-    JSON.stringify(Array(9).fill(profiles[0])),JSON.stringify([{...profiles[0],url:'private'}])]) {
+    JSON.stringify(Array(9).fill(profiles[0])),JSON.stringify([{...profiles[0],url:'private'}]),
+    // Every profile names exactly one dealer, and dealers never share a profile ID or endpoint.
+    JSON.stringify([withoutDealer]),JSON.stringify([{...profiles[0],dealerId:'Dragan'}]),JSON.stringify([{...profiles[0],dealerId:null}]),
+    JSON.stringify([profiles[0],{...second,dealerId:'dragan'}]),JSON.stringify([profiles[0],{...second,endpointId:profiles[0].endpointId}]),
+    JSON.stringify([profiles[0],{...second,id:profiles[0].id}])]) {
     assert.throws(()=>movingDriftAdminConfiguration({...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:raw}),e=>e.code==='drift_invalid_configuration');
   }
   let borrowed=0;
@@ -84,6 +89,17 @@ test('unconfigured or invalid optional control plane leaves other Admin actions 
     const unrelated=await api.handle(new Request(origin+'/studio/api/admin/players'));
     assert.equal(unrelated.status,200);assert.deepEqual(await unrelated.json(),{players:[]});
   }
+});
+
+test('one configured dealer addresses that dealer slot; several dealers keep the API closed until Admin selects one',async()=>{
+  const seen=[],store={transact:()=>assert.fail('construction reads no state')};
+  const f=fixture({service:{storeFactory:options=>{seen.push(options);return store;}}});
+  assert.equal(f.service.configured,true);
+  assert.deepEqual(seen.map(({environmentId,dealerId})=>({environmentId,dealerId})),[{environmentId:scope.environment,dealerId:'dragan'}]);
+  const second={...profiles[0],id:'paow',label:'Paow',dealerId:'paow',endpointId:'private-endpoint-2'};
+  const several=createMovingDriftAdminApi({scope,env:{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([profiles[0],second])},
+    storeFactory:()=>assert.fail('several dealers must not open a store')});
+  assert.equal(several.configured,false);assert.deepEqual([...several.handlers.keys()],[]);
 });
 
 test('API returns explicit public fields, private headers and repeatable CAS command results',async()=>{

@@ -11,7 +11,7 @@ import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../packages/studio-registry/server/private-media-contract.mjs';
-import { movingDriftConfiguration } from '../../packages/presentation/contracts/moving-drift.mjs';
+import { movingDriftConfiguration, MOVING_DRIFT_DEALER_ID } from '../../packages/presentation/contracts/moving-drift.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -172,30 +172,46 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     const prefix = 'CROUPIER_MOVING_SPEECH_';
     const workerOrigin = httpsOrigin(env[prefix + 'WORKER_ORIGIN'], prefix + 'WORKER_ORIGIN');
     if (workerOrigin !== httpsOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL')) fail(prefix + 'WORKER_ORIGIN');
-    const bankJson = env[prefix + 'BANK_RECORD'];
-    let bankRecord;
+    // One private, hash-bound bank manifest per dealer: {"<dealerId>": <record>}.
+    const banksName = prefix + 'BANK_RECORDS', banksJson = env[banksName];
+    let bankRecords;
     try {
-      if (typeof bankJson !== 'string' || Buffer.byteLength(bankJson) > 128 * 1024) throw Error();
-      bankRecord = validatePrivateMedia(JSON.parse(bankJson));
-      if (bankRecord.contentType !== 'application/json' || bankRecord.size > 128 * 1024
-        || !/^croupier\/media\/dealers\/[a-z][a-z0-9-]{0,39}\/runtime\/moving-bank\//.test(bankRecord.pathname)) throw Error();
-    } catch { fail(prefix + 'BANK_RECORD'); }
-    const endpointId = env[prefix + 'ENDPOINT_ID'], runpodKey = env[prefix + 'RUNPOD_API_KEY'];
+      if (typeof banksJson !== 'string' || Buffer.byteLength(banksJson) > 128 * 1024) throw Error();
+      const parsed = JSON.parse(banksJson), dealers = parsed && typeof parsed === 'object' ? Object.keys(parsed) : [];
+      if (Array.isArray(parsed) || Object.getPrototypeOf(parsed) !== Object.prototype || !dealers.length || dealers.length > 8
+        || dealers.some(dealerId => !MOVING_DRIFT_DEALER_ID.test(dealerId))) throw Error();
+      bankRecords = Object.fromEntries(dealers.map(dealerId => {
+        const record = validatePrivateMedia(parsed[dealerId]);
+        if (record.contentType !== 'application/json' || record.size > 128 * 1024
+          || !/^croupier\/media\/dealers\/[a-z][a-z0-9-]{0,39}\/runtime\/moving-bank\//.test(record.pathname)) throw Error();
+        return [dealerId, record];
+      }));
+    } catch { fail(banksName); }
+    for (const [dealerId, record] of Object.entries(bankRecords)) {
+      if (!record.pathname.startsWith(`croupier/media/dealers/${dealerId}/runtime/moving-bank/`)) fail(`${banksName} (bank of another dealer for ${dealerId})`);
+    }
+    const runpodKey = env[prefix + 'RUNPOD_API_KEY'];
     const image = env[prefix + 'IMAGE'], releaseSha256 = env[prefix + 'RELEASE_SHA256'], movingTicket = env[prefix + 'TICKET_SECRET'];
     const credential = (value, minimum) => typeof value === 'string' && value.length >= minimum && value.length <= 2048
       && !/[\s\u0000-\u001f\u007f-\u009f]/u.test(value);
-    if (!/^[a-z0-9]{6,64}$/.test(endpointId ?? '')) fail(prefix + 'ENDPOINT_ID');
     if (!credential(runpodKey, 1)) fail(prefix + 'RUNPOD_API_KEY');
     if (!/^ghcr\.io\/jakeminator123\/moving-gpu-worker@sha256:[a-f0-9]{64}$/.test(image ?? '')) fail(prefix + 'IMAGE');
     if (!/^[a-f0-9]{64}$/.test(releaseSha256 ?? '')) fail(prefix + 'RELEASE_SHA256');
     if (!credential(movingTicket, 32) || [workerSecret, ticketSecret, translationKey, cartesiaKey, runpodKey,
       env.RUNPOD_API_KEY, elevenLabsKey, blobToken, env.CROUPIER_VERCEL_INGRESS_SECRET].includes(movingTicket)) fail(prefix + 'TICKET_SECRET');
+    // Exactly one drift profile (own endpoint, this release) per bank, and no profile without a bank.
     let drift;
     try { drift = movingDriftConfiguration(env); }
     catch { fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES'); }
-    if (!drift || drift.profiles.length !== 1 || drift.profiles[0].endpointId !== endpointId
-      || drift.profiles[0].releaseDigest !== releaseSha256) fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES');
-    movingSpeech = Object.freeze({ bankRecord: JSON.stringify(bankRecord), endpointId, runpodKey, image, releaseSha256,
+    if (!drift || drift.profiles.some(profile => !/^[a-z0-9]{6,64}$/.test(profile.endpointId)
+      || profile.releaseDigest !== releaseSha256)) fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES');
+    for (const { dealerId } of drift.profiles) {
+      if (!Object.hasOwn(bankRecords, dealerId)) fail(`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES (profile without a bank for ${dealerId})`);
+    }
+    for (const dealerId of Object.keys(bankRecords)) {
+      if (!drift.profiles.some(profile => profile.dealerId === dealerId)) fail(`${banksName} (bank without a drift profile for ${dealerId})`);
+    }
+    movingSpeech = Object.freeze({ bankRecords: JSON.stringify(bankRecords), runpodKey, image, releaseSha256,
       ticketSecret: movingTicket, workerOrigin, driftProfiles: JSON.stringify(drift.profiles) });
   }
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
@@ -330,8 +346,7 @@ export function childSpecifications(config, env = process.env) {
           CROUPIER_MOVING_SPEECH_ENABLED: '1',
           CROUPIER_STUDIO_MOVING_DRIFT_API: '1',
           CROUPIER_STUDIO_MOVING_DRIFT_PROFILES: config.movingSpeech.driftProfiles,
-          CROUPIER_MOVING_SPEECH_BANK_RECORD: config.movingSpeech.bankRecord,
-          CROUPIER_MOVING_SPEECH_ENDPOINT_ID: config.movingSpeech.endpointId,
+          CROUPIER_MOVING_SPEECH_BANK_RECORDS: config.movingSpeech.bankRecords,
           CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY: config.movingSpeech.runpodKey,
           CROUPIER_MOVING_SPEECH_IMAGE: config.movingSpeech.image,
           CROUPIER_MOVING_SPEECH_RELEASE_SHA256: config.movingSpeech.releaseSha256,

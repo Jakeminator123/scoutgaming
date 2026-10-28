@@ -62,7 +62,7 @@ Scope `environment_id='production'`, `workspace_id='croupier'` (den enda i produ
 | `tables/` | 8 | 11,6 MB | JB:s 1 behålls (1,6 MB) |
 | Katalogens `dealers/astrid/` | 524 | 264,5 MB | Raderas |
 
-Dragans talbank (`CROUPIER_MOVING_SPEECH_BANK_RECORD`) och allt som talkedjan har skrivit, till exempel `runtime/generated/` och `runtime/conversation-replies/`, behålls. Objekt utan register hittas med en läsande listning av storen `store_AqwvebTbBHarOjvG` i steg 0.
+Dragans talbank (posten `dragan` i `CROUPIER_MOVING_SPEECH_BANK_RECORDS`) och allt som talkedjan har skrivit, till exempel `runtime/generated/` och `runtime/conversation-replies/`, behålls. Objekt utan register hittas med en läsande listning av storen `store_AqwvebTbBHarOjvG` i steg 0.
 
 **Repot.** PR:en för ren start (#474) tog bort 622 av Astrids 706 filer (88,4 MB). Repo-PR 2 tar bort de sista 84: presentationsbanken `media/dealers/astrid/runtime/presentation/**` och `runtime/composited/astrid-green-speak/speak.json` (166 MiB), efter K1. Samma PR tar bort spelets och sajtens media utan konsument (M1–M3, 11,2 MiB): `assets/table.png`, `assets/room-extended.png`, `scene/dealer-fallback.png`, `scene/scene.jpg`, `cards/back-scout.png` och `site/runtime/backoffice/img/` (6 filer). Produktionen läser katalogen ur Neon och byten ur Blob, inte ur repot, så raderingen påverkar inte drift före steg 7. Admins legacyklippinventering läste `review/astrid-green-speak/speak.json` ur katalogen; den tål nu att posten saknas, och den ändringen måste vara driftsatt (Vercel och `croupier-v3`) innan steg 6–7 körs.
 

@@ -5,7 +5,7 @@ import {createPostgresMovingDriftStore} from '../../services/game/postgres-movin
 import {createSpeechJournal,GPU_RESERVATION_WINDOW_MS} from '../../services/game/postgres-speech-journal.mjs';
 import {canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 
-const profiles=Object.freeze([{id:'base',label:'SQL fixture',endpointId:'endpoint-fixture',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}]);
+const profiles=Object.freeze([{id:'base',label:'SQL fixture',dealerId:'dragan',endpointId:'endpoint-fixture',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}]);
 const capabilities=Object.freeze({connected:true,requireExecutor:true});
 const empty=Object.freeze({workers:0,busy:0,available:0});
 const reject=code=>error=>error?.code===code&&error.message===code;
@@ -45,13 +45,13 @@ export async function runMovingDriftExecutorSqlChecks({pool}){
       }};
       clients.set(wrapped,clientId);return wrapped;
     }};
-    const make=()=>createMovingDriftController({store:createPostgresMovingDriftStore({pool:tracedPool,environmentId:scope.environment}),profiles,capabilities});
+    const make=()=>createMovingDriftController({store:createPostgresMovingDriftStore({pool:tracedPool,environmentId:scope.environment,dealerId:'dragan'}),profiles,capabilities});
     const controller=make();
     const journal=await createSpeechJournal({pool:tracedPool,environmentId:scope.environment,driftControl:{scope,guard:async({client,...input})=>{
       const span={phase:input.phase,clientId:clients.get(client),start:trace.length};guardSpans.push(span);
       // The controller receives this exact already-transactional client. Its
       // store must neither connect elsewhere nor emit a nested BEGIN/COMMIT.
-      const sameClient=createMovingDriftController({store:createPostgresMovingDriftStore({environmentId:scope.environment,
+      const sameClient=createMovingDriftController({store:createPostgresMovingDriftStore({environmentId:scope.environment,dealerId:'dragan',
         transaction:work=>work(client)}),profiles,capabilities});
       try{
         const result=await sameClient.guardAdmission(input);

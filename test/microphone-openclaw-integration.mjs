@@ -14,6 +14,8 @@ import { createMovingSpeechRuntime } from '../services/game/moving-speech-runtim
 import { readChatResponse } from '../packages/presentation/contracts/chat-response.mjs';
 import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
 import { microphoneControl, until } from './fixtures/microphone-control.mjs';
+// The single-dealer fixture is one lane of the per-dealer runtime.
+const oneLane = ({ bank, sessions, admissionCheck, ...options }) => ({ ...options, lanes: [{ bank, sessions, admissionCheck }] });
 
 const { WebSocket } = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -136,7 +138,7 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
     const target = new URL(url, base); assert.equal(target.origin, base, 'fixture cannot contact a provider');
     return fetch(target, input);
   };
-  runtime = createMovingSpeechRuntime({ server, origin: base, workerOrigin: 'https://worker.fixture.test', bank, releaseSha256: profileRevision, dealerRuntime,
+  runtime = createMovingSpeechRuntime(oneLane({ server, origin: base, workerOrigin: 'https://worker.fixture.test', bank, releaseSha256: profileRevision, dealerRuntime,
     ticketSecret: 'fixture-only-ticket-secret-32-characters', resolveOwner: async req => req.headers.cookie === 'owner=one' ? owner : 'other',
     readRegistry: async () => registry, readRest: async () => new Response(original),
     readEvidence: async () => ({ projectRevision: 1, mediaReferences: [{ id: videoId, sha256: digest(original) }],
@@ -156,7 +158,7 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
               rutor: rows.map(row => ({ tagning: row.take, ruta: row.frame, rect: [1, 2, 30, 40] })) }, Buffer.from([1, 2, 3]));
           }
         } };
-    } } });
+    } } }));
   mic = microphoneControl({ identity: () => ({ playerId: state.playerId, dealerId: 'dragan', sessionRevision: 'session-one', roundRevision: '7' }),
     presentationContext: () => context,
     fetchImpl: (url, input = {}) => loopbackFetch(url, { ...input, headers: { ...input.headers, Origin: base, Cookie: 'owner=one' } }),

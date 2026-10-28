@@ -16,6 +16,8 @@ const {WebSocket}=createRequire(new URL('../services/astrid-gpu-worker/gateway/p
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const h='a'.repeat(64),sessionId='1'.repeat(32),restId='11111111-1111-4111-8111-111111111111';
 const origin='https://moving-deal.fixture.invalid';
+// The single-dealer fixture is one lane of the per-dealer runtime.
+const oneLane=({bank,sessions,admissionCheck,...options})=>({...options,lanes:[{bank,sessions,admissionCheck}]});
 const context={operatorSlug:'fixture',roomId:'room-one',packageRevision:1,dealerId:'dragan'};
 const bets=Array.from({length:7},(_,box)=>({main:box===3?5:0,pp:0,tp:0}));
 async function until(check){
@@ -66,7 +68,7 @@ async function fixture(t,{stallAfterFirstChunk=false}={}){
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const address=`ws://127.0.0.1:${server.address().port}/moving-speech-stream`;
   const receipt=playerId=>{const row=store.state.presentations[playerId];return row&&{version:row.version,payload:row.payload};};
-  runtime=createMovingSpeechRuntime({server,origin,ticketSecret:'isolated-fixture-only'.repeat(3),bank,releaseSha256:h,
+  runtime=createMovingSpeechRuntime(oneLane({server,origin,ticketSecret:'isolated-fixture-only'.repeat(3),bank,releaseSha256:h,
     readPresentation:async playerId=>receipt(playerId),
     readEvidence:async()=>({projectRevision:1,mediaReferences:videos.map(v=>({id:v.id,sha256:v.sha256})),frozenContext}),
     readRegistry:async()=>registry,
@@ -93,7 +95,7 @@ async function fixture(t,{stallAfterFirstChunk=false}={}){
             });
           }
         }};
-    }}});
+    }}}));
   const grant={movingSpeech:{context,sessionRevision:'browser-one',ownerHash:hash('owner-one')}};
   const native=createPostgresNativeTableCommand({pool,
     publish:observation=>{

@@ -13,9 +13,9 @@ export {movingDriftConfiguration as movingDriftAdminConfiguration};
  * No provider/executor/observer/admission capability is exposed. The browser
  * cannot assert connected: a matching fresh executor lease/readback in SQL is required.
  */
-function nativeStore({pool,boDb,environmentId}) {
-  if(!boDb) return createPostgresMovingDriftStore({pool,environmentId});
-  return createPostgresMovingDriftStore({environmentId,transaction:work=>boDb.transaction(()=>work({
+function nativeStore({pool,boDb,environmentId,dealerId}) {
+  if(!boDb) return createPostgresMovingDriftStore({pool,environmentId,dealerId});
+  return createPostgresMovingDriftStore({environmentId,dealerId,transaction:work=>boDb.transaction(()=>work({
     async query(sql,values=[]) {
       if(sql.startsWith('SET LOCAL ')) {await boDb.exec(sql);return {rows:[]};}
       return {rows:await boDb.prepare(sql).all(...values)};
@@ -29,9 +29,14 @@ export function createMovingDriftAdminApi({pool,boDb,scope,env={},controllerFact
   try {
     const configuration=movingDriftConfiguration(env);
     if(!configuration) return Object.freeze({handlers:new Map(),gates:new Map(),configured:false});
+    // Drift state is per dealer, the same row slot and one-profile catalogue as
+    // the game's executor. This API addresses one dealer; with several profiles
+    // it stays closed until Admin chooses the dealer, rather than guessing one.
+    if(configuration.profiles.length!==1) throw Error('dealer_selection_required');
+    const [profile]=configuration.profiles;
     controller=controllerFactory({
-      store:storeFactory({pool,boDb,environmentId:scope.environment}),
-      profiles:configuration.profiles,capabilities:{connected:true,requireExecutor:true},
+      store:storeFactory({pool,boDb,environmentId:scope.environment,dealerId:profile.dealerId}),
+      profiles:[profile],capabilities:{connected:true,requireExecutor:true},
     });
     if(typeof controller?.status!=='function'||typeof controller?.command!=='function') throw Error('invalid_controller');
   } catch {

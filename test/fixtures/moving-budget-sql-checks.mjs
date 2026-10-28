@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomBytes,randomUUID } from 'node:crypto';
 import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS } from '../../services/game/postgres-speech-journal.mjs';
-import { MOVING_TRIAL_BUDGET } from '../../services/game/moving-speech-budget.mjs';
+import { movingTrialBudget } from '../../services/game/moving-speech-budget.mjs';
+const DRAGAN_BUDGET = movingTrialBudget('dragan');
 import { movingCapacityFixture } from './moving-capacity.mjs';
 import { loadStudioMigrations,planStudioMigrations,applyStudioMigrations,isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 
@@ -186,11 +187,11 @@ async function runInitialBudgetSqlChecks(client,version) {
   const lease=await journal.acquireLease({resource:'stream-session',holderId:'initial-budget-qa'});
   const request=()=>{
     const sessionId=randomBytes(16).toString('hex');
-    return {...MOVING_TRIAL_BUDGET,scope,ownerHash:'a'.repeat(64),requestId:randomUUID(),fingerprint:'b'.repeat(64),
+    return {...DRAGAN_BUDGET,scope,ownerHash:'a'.repeat(64),requestId:randomUUID(),fingerprint:'b'.repeat(64),
       binding:{schemaVersion:1,releaseSha256:'4'.repeat(64),dealerId:'dragan',workerAvatar:'dragan',profileRevision:'5'.repeat(64),
         sourceSetSha256:'6'.repeat(64),avatarSha256:'7'.repeat(64),bankReceiptSha256:'8'.repeat(64),sessionId,attemptId:'attempt-1',nonce:'9'.repeat(64)},
       mediaReferences:[{id,sha256,pathname:record.pathname,revision}],projectRevision,sessionId,endpointId:'initial-fixture',lease,
-      currentBudgetMicroUsd:MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,workerState:{workers:0,busy:0,available:0}};
+      currentBudgetMicroUsd:DRAGAN_BUDGET.currentDailyBudgetMicroUsd,workerState:{workers:0,busy:0,available:0}};
   };
   for(let attempt=1;attempt<=11;attempt++){
     const saved=await journal.reserveMovingSession(request());
@@ -275,36 +276,36 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   assert.equal((await second.authorizeMovingBudgetAmendment(args)).alreadyApplied,true);
   // The new runtime ceiling alone cannot raise the durable six-dollar limit.
   const historical=await history();
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const next={...amendment,amendmentId:randomUUID(),authorizationId:'fixture-total-40',observedAtMs:Date.now(),
     expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:5,
     newLimitMicroUsd:7200000,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
   await second.authorizeMovingBudgetAmendment({...args,amendment:next});
   assert.deepEqual(await history(),historical,'raising global authorization does not refund or rewrite reservations');
-  const nextAttempt=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  const nextAttempt=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
   assert.equal(nextAttempt.totalBudgetMicroUsd,7200000);assert.equal(nextAttempt.totalReservedMicroUsd,7200000);
   await finish(nextAttempt);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeProductionTrial=await history();
   const productionTrial={...next,amendmentId:randomUUID(),observedAtMs:Date.now(),
     expectedLimitMicroUsd:7200000,expectedReservedMicroUsd:7200000,expectedReservationCount:6,
     newLimitMicroUsd:8400000,otherReservedMicroUsd:16403334};
   await second.authorizeMovingBudgetAmendment({...args,amendment:productionTrial});
   assert.deepEqual(await history(),beforeProductionTrial,'another trial preserves every prior reservation');
-  const admitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  const admitted=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
   assert.equal(admitted.totalBudgetMicroUsd,8400000);assert.equal(admitted.totalReservedMicroUsd,8400000);
   await finish(admitted);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeSecondTrial=await history();
   const secondTrial={...productionTrial,amendmentId:randomUUID(),authorizationId:'fixture-trial-two',observedAtMs:Date.now(),
     expectedLimitMicroUsd:8400000,expectedReservedMicroUsd:8400000,expectedReservationCount:7,
     newLimitMicroUsd:9600000,providerSpentMicroUsd:525826,otherReservedMicroUsd:18736668};
   await second.authorizeMovingBudgetAmendment({...args,amendment:secondTrial});
   assert.deepEqual(await history(),beforeSecondTrial,'second production trial retains all consumed reservations');
-  const secondAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  const secondAdmitted=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
   assert.equal(secondAdmitted.totalBudgetMicroUsd,9600000);assert.equal(secondAdmitted.totalReservedMicroUsd,9600000);
   await finish(secondAdmitted);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeThirdTrial=await history();
   assert.equal(beforeThirdTrial.length,8);
   const thirdTrial={...secondTrial,amendmentId:randomUUID(),authorizationId:'fixture-trial-three',observedAtMs:Date.now(),
@@ -312,10 +313,10 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
     newLimitMicroUsd:10800000,otherReservedMicroUsd:21070001};
   await second.authorizeMovingBudgetAmendment({...args,amendment:thirdTrial});
   assert.deepEqual(await history(),beforeThirdTrial,'third production trial preserves all eight released reservations');
-  const thirdAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  const thirdAdmitted=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
   assert.equal(thirdAdmitted.totalBudgetMicroUsd,10800000);assert.equal(thirdAdmitted.totalReservedMicroUsd,10800000);
   await finish(thirdAdmitted);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeTwoReplies=await history();
   assert.equal(beforeTwoReplies.length,9);
   const reservationHistory=()=>pool.query('SELECT r.* FROM croupier_studio.gpu_reservations r JOIN croupier_studio.moving_speech_bindings b USING(environment_id,session_id) WHERE b.environment_id=$1 AND b.budget_id=$2 ORDER BY r.session_id,r.day',[scope.environment,budgetId]).then(r=>r.rows);
@@ -324,12 +325,12 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
     expectedLimitMicroUsd:10800000,expectedReservedMicroUsd:10800000,expectedReservationCount:9,
     newLimitMicroUsd:13200000,windowReserveMicroUsd:2400000};
   // Raising either runtime limit alone must not change the durable total ceiling.
-  await assert.rejects(second.reserveMovingSession({...request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd),currentBudgetMicroUsd:MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd}),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession({...request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd),currentBudgetMicroUsd:DRAGAN_BUDGET.currentDailyBudgetMicroUsd}),fail('generated_speech_total_budget_exhausted'));
   await second.authorizeMovingBudgetAmendment({...args,amendment:twoReplies});
   assert.deepEqual(await history(),beforeTwoReplies,'two-reply amendment preserves all nine historical bindings');
   assert.deepEqual(await reservationHistory(),priorCharges,'two-reply amendment does not reset or refund historical charges');
   for(let reply=1;reply<=2;reply++) {
-    const saved=await second.reserveMovingSession(request(MOVING_TRIAL_BUDGET.reserveMicroUsd,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+    const saved=await second.reserveMovingSession(request(DRAGAN_BUDGET.reserveMicroUsd,DRAGAN_BUDGET.totalBudgetMicroUsd));
     assert.equal(saved.totalBudgetMicroUsd,13200000);
     assert.equal(saved.totalReservedMicroUsd,10800000+reply*1200000);
     await finish(saved);
@@ -338,7 +339,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   assert.equal(afterTwoReplies.length,11);
   assert.deepEqual(afterTwoReplies.filter(row=>oldIds.has(row.session_id)),beforeTwoReplies);
   assert.deepEqual((await reservationHistory()).filter(row=>oldIds.has(row.session_id)),priorCharges);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   assert.deepEqual(await history(),afterTwoReplies,'a rejected extra reply creates no partial binding');
   const chargesBeforeCapacity=await reservationHistory();
   const fundedCapacity={...twoReplies,amendmentId:randomUUID(),authorizationId:'fixture-funded-capacity',observedAtMs:Date.now(),
@@ -347,13 +348,13 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   assert.deepEqual(await history(),afterTwoReplies,'schema capacity and amendment preserve every historical binding');
   assert.deepEqual(await reservationHistory(),chargesBeforeCapacity,'technical capacity does not refund any prior charge');
   for(let reply=1;reply<=2;reply++) {
-    const saved=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+    const saved=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
     assert.equal(saved.totalBudgetMicroUsd,15600000);
     assert.equal(saved.totalReservedMicroUsd,13200000+reply*1200000);
     await finish(saved);
   }
   const afterCapacity=await history();assert.equal(afterCapacity.length,13);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   assert.deepEqual(await history(),afterCapacity,'45 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
   const beforeProvider50=await history(),chargesBeforeProvider50=await reservationHistory();
   const provider50={...fundedCapacity,amendmentId:randomUUID(),authorizationId:'fixture-provider-accounting-50',observedAtMs:Date.now(),
@@ -363,10 +364,10 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   await second.authorizeMovingBudgetAmendment({...args,amendment:provider50});
   assert.deepEqual(await history(),beforeProvider50,'provider coverage adds no binding and rewrites no historical grant');
   assert.deepEqual(await reservationHistory(),chargesBeforeProvider50,'all prior charges remain reserved');
-  const providerAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  const providerAdmitted=await second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd));
   assert.equal(providerAdmitted.totalBudgetMicroUsd,16800000);assert.equal(providerAdmitted.totalReservedMicroUsd,16800000);
   await finish(providerAdmitted);
-  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  await assert.rejects(second.reserveMovingSession(request(1200000,DRAGAN_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const previousIds=new Set(beforeProvider50.map(row=>row.session_id));
   assert.deepEqual((await history()).filter(row=>previousIds.has(row.session_id)),beforeProvider50,'one new reservation leaves every previous binding intact');
   assert.deepEqual((await reservationHistory()).filter(row=>previousIds.has(row.session_id)),chargesBeforeProvider50);

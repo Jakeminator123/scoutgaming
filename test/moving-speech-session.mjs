@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createMovingSpeechSession } from '../services/game/moving-speech-session.mjs';
 import { createMovingSpeechRunPod, summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
 import { movingCapacityFixture } from './fixtures/moving-capacity.mjs';
-import { MOVING_TRIAL_BUDGET } from '../services/game/moving-speech-budget.mjs';
+import { movingTrialBudget } from '../services/game/moving-speech-budget.mjs';
+const DRAGAN_BUDGET = movingTrialBudget('dragan');
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;
@@ -109,8 +110,8 @@ test('aborted admission performs no provider submit and a later attempt can acqu
 });
 
 test('Dragan admission forwards its bounded initial grant independently of technical capacity',async()=>{
-  const f=fixture({configuration:MOVING_TRIAL_BUDGET}),attempt=await f.admit();
-  assert.equal(f.state.input.budgetId,MOVING_TRIAL_BUDGET.budgetId);
+  const f=fixture({configuration:DRAGAN_BUDGET}),attempt=await f.admit();
+  assert.equal(f.state.input.budgetId,DRAGAN_BUDGET.budgetId);
   assert.equal(f.state.input.initialBudgetMicroUsd,13200000);
   assert.equal(f.state.input.totalBudgetMicroUsd,150000000);
   assert.equal(f.state.input.reserveMicroUsd,1200000);

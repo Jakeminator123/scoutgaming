@@ -63,7 +63,16 @@ export function createMovingBankDownloads({origin, bank, read = getPrivateMedia,
   const base = new URL(origin);
   if (base.protocol !== 'https:' || base.origin !== origin) fail();
   const pending = new Map();
+  const capability = url => /^\/api\/moving-speech\/bank\/([a-f0-9]{64})\/(archive|receipt)$/.exec(url.pathname);
   return Object.freeze({
+    // Routing only, no authorization: true when this bank issued the URL's
+    // capability and it is still pending. response() makes every real check.
+    owns(request) {
+      try {
+        const url = new URL(request.url), match = capability(url);
+        return Boolean(match && !url.search && pending.has(match[1]));
+      } catch {return false;}
+    },
     issue({signal, authorize, ttlMs = MOVING_SPEECH_LIMITS.lifetimeMs} = {}) {
       if (typeof authorize !== 'function' || !(signal instanceof AbortSignal) || signal.aborted
         || !Number.isSafeInteger(ttlMs) || ttlMs < 1000 || ttlMs > MOVING_SPEECH_LIMITS.lifetimeMs) fail();
@@ -81,7 +90,7 @@ export function createMovingBankDownloads({origin, bank, read = getPrivateMedia,
       if (!url.pathname.startsWith(PREFIX)) return null;
       const denied = (status,diagnostic=null) => new Response(null,{status,headers:{'Cache-Control':'private, no-store',
         ...(diagnostic?{[MOVING_BANK_DIAGNOSTIC_HEADER]:diagnostic}:{})}});
-      const match = /^\/api\/moving-speech\/bank\/([a-f0-9]{64})\/(archive|receipt)$/.exec(url.pathname);
+      const match = capability(url);
       if (!match || url.search || request.method !== 'GET' || request.headers.has('range')
         || request.headers.has('origin') || request.headers.get('sec-fetch-site') === 'cross-site') return denied(403);
       const entry = pending.get(match[1]);
