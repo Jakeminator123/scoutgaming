@@ -96,7 +96,7 @@ Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 01
 - Neon äger identiteter och bindningar, Blob äger bytes. Lagringsgränsen och sökvägarna står i [BLOB-NEON](storage/BLOB-NEON.md).
 - Original raderas inte som bieffekt av import, papperskorg eller dedup. Permanent radering går genom Admins beroendekontroll och sker sist, efter att originalbytes är bevarade på annat håll.
 - En återställd databas pekar på samma Blob-objekt. Kontrollera att objekten finns (HEAD och SHA-256 mot registret) innan rum öppnas igen. Restoreproven omfattar inte Blob.
-- Preview har eget Blob-lager `store_7E06N1P4w9Mu1dZD` med bara syntetiskt material. Kopiera aldrig produktionsmedia eller produktionstoken dit.
+- Preview har eget Blob-lager `store_7E06N1P4w9Mu1dZD` där godkänt material (bakgrunder, bord, dealerklipp) får finnas, laddat via produktens egna uppladdnings- och publiceringsvägar. Produktionens Blob-token kopieras aldrig dit och inga riktiga spelardata förs över (Jakobs beslut 2026-10-28).
 
 ## Media och regression
 
@@ -150,7 +150,7 @@ Kör `node apps/studio/start.mjs --no-open` (skriver lobbyns adress, startar ing
 | PostgreSQL-prov | `node tools/studio-isolated-qa.mjs --download-postgres` (Linux/WSL, icke-root) eller `--postgres-bin <bin>`; spelmotorn över HTTP med `node tools/run-engine-qa.mjs --postgres-bin <bin>`. Verktygen skapar och tar bort egna kluster. |
 | Modultester utan Postgres | PGlite via `test/fixtures/pglite-pool.mjs`; en session, bevisar inte låsning mellan anslutningar. |
 | Webbläsarprov | Playwright och Chrome installeras separat; `CROUPIER_BROWSER_FIXTURE_MODULE` och `CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome`. Överhoppade prov redovisas separat. |
-| Riktig acceptans | Preview (syntetiska konton och material samt Jakobs speglade inloggningar), aldrig produktionen eller Johns Bet. |
+| Riktig acceptans | Preview (syntetiska konton, godkänt material samt Jakobs speglade inloggningar), aldrig produktionen eller Johns Bet. |
 
 En `--single-branch`-klon hämtar bara `main`; lägg till den egna branchen med `git remote set-branches --add origin <branch>` före push.
 

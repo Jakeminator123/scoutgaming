@@ -37,7 +37,7 @@ Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, oc
 | Preview | Vercel | `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app; deployas med låst SHA via API |
 | Preview | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
 | Preview | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
-| Preview | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (endast syntetiskt material) |
+| Preview | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (riktigt, godkänt material får ligga här; aldrig produktionstoken eller riktiga spelardata) |
 | Raderat | Render | `croupier-v2` och `croupier-vercel-preview-qa` raderades 2026-10-27 (Jakobs beslut). Äldre dokument som nämner dem beskriver historik. |
 
 Andra tjänster i samma Render-workspace och Neon-orgen `org-lucky-cake-48388035` hör till andra projekt; rör dem inte. Kevin har läsrollen `kevin_migration_readonly` i produktionens Neon och sin GitHub-åtkomst (Jakobs beslut 2026-10-27). Hans brancher (`kevin*`, `codex/kevin-*`) rörs aldrig; bra beteenden skrivs om i mains moduler.
