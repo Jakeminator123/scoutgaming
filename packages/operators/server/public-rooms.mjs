@@ -75,7 +75,14 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     const rooms = listPackageRooms({ administration: saved.administration, package: pack, operatorId: operator.id }).filter(room => room.state === 'live');
     // The bet profile in each room's published game settings, for the lobby's room picture. A store
     // without game settings, or a profile this build does not know, gives the room no profile.
-    const limitPresets = rooms.length && store.getPublishedRoomLimitPresets ? await store.getPublishedRoomLimitPresets(pack) : new Map();
+    // Best effort: the picture must never take the catalogue down, so a failed read gives the default
+    // picture and a warning (the failure code only), never a 503 for the rooms or Admin's catalogue.
+    let limitPresets = new Map();
+    if (rooms.length && store.getPublishedRoomLimitPresets) {
+      try { limitPresets = await store.getPublishedRoomLimitPresets(pack); }
+      catch (error) { console.warn('operator_rooms_limit_presets_unavailable', { operator: slug, code: error?.code ?? 'error' }); }
+      if (!(limitPresets instanceof Map)) limitPresets = new Map();
+    }
     // All choices in this response use the same saved snapshot and immutable
     // package. Delegate exact room ownership, version and renderer checks to
     // the actual game selector instead of duplicating its authority.

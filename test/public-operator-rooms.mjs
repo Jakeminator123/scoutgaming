@@ -128,7 +128,16 @@ test("the public room carries its published bet profile key, for the lobby's pic
     const room=(await fixture({limitPresets}).api.read('north')).rooms[0];
     assert.equal(Object.hasOwn(room,'limitPreset'),false);
   }
-  await assert.rejects(fixture({limitPresets:()=>{throw Error('storage down');}}).api.read('north'),/storage down/,'a storage failure is not hidden');
+  // Best effort: a failed profile read gives the default picture and a warning, never an unavailable catalogue.
+  const warnings=[],warn=console.warn;console.warn=(...args)=>warnings.push(args);
+  try {
+    const failing=fixture({limitPresets:()=>{throw Object.assign(Error('secret connection string'),{code:'57P01'});}});
+    const room=(await failing.api.read('north')).rooms[0];
+    assert.equal(Object.hasOwn(room,'limitPreset'),false);assert.equal(room.id,'room-north');
+    const res=await request(failing.api);assert.equal(res.status,200);
+  } finally {console.warn=warn;}
+  assert.deepEqual(warnings[0],['operator_rooms_limit_presets_unavailable',{operator:'north',code:'57P01'}]);
+  assert.doesNotMatch(JSON.stringify(warnings),/secret connection string/);
 });
 
 test('a tablePlayback clip is not a lobby table choice; a company table naming it falls back to the lane default',async()=>{
@@ -285,6 +294,17 @@ test('portable public decoder rejects wrong origin/context, extra/private fields
     v=>{v.rooms[0].dealers[0].table.allowed[0].src='/media/private';},v=>{v.rooms[0].dealers[0].table.default='foreign';},
     v=>{v.rooms[0].dealers[2].table.enabled=false;},v=>{v.packageRevision=null;},
   ]){const value=structuredClone(original);change(value);assert.throws(()=>validatePublicOperatorRooms(value),/Invalid operator rooms/);}
+  // Rooms are forward-compatible: an unknown room key from a newer engine is ignored and dropped, known keys stay strict.
+  const newer=structuredClone(original);Object.assign(newer.rooms[0],{futureField:{any:'value'},limitPreset:'high'});
+  const read=validatePublicOperatorRooms(newer,{operatorSlug:'north'});
+  assert.equal(Object.hasOwn(read.rooms[0],'futureField'),false,'an unknown room key is not passed on');
+  assert.equal(read.rooms[0].limitPreset,'high');assert.deepEqual({...read.rooms[0],limitPreset:undefined},{...original.rooms[0],limitPreset:undefined});
+  for(const change of [v=>{v.rooms[0].limitPreset='High';},v=>{v.rooms[0].game='poker';},v=>{delete v.rooms[0].playUrl;},
+    v=>{Object.defineProperty(v.rooms[0],'futureField',{enumerable:true,get(){throw Error('getter called');}});},
+    v=>{Object.defineProperty(v.rooms[0],'hidden',{enumerable:false,value:1});},
+    v=>{for(let i=0;i<30;i++)v.rooms[0]['future'+i]=i;},v=>{v.rooms[0].dealers[0].futureField=1;}]) {
+    const value=structuredClone(original);change(value);assert.throws(()=>validatePublicOperatorRooms(value),/Invalid operator rooms/);
+  }
   let getterCalled=false;const accessor=structuredClone(original);
   Object.defineProperty(accessor.operator,'name',{enumerable:true,get(){getterCalled=true;return 'secret';}});
   assert.throws(()=>validatePublicOperatorRooms(accessor));assert.equal(getterCalled,false);

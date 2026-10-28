@@ -282,6 +282,10 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       .filter(([roomId, version]) => typeof roomId === 'string' && typeof version === 'string');
     if (!bound.length) return new Map();
     if (bound.length > 256) fail('studio_corrupt_operator');
+    // query() always sends the store's scope as $1 (environment) and $2 (workspace). The game's config
+    // tables have no scope columns (room IDs are global; the package binding and body.operatorId scope the
+    // rows). The WHERE only types and references $1/$2, which filters nothing: PostgreSQL rejects a sent
+    // parameter whose type it cannot determine. The other shared_table_configs reads do the same.
     const rows = await query(`/* operator-store:room-limit-presets */
       SELECT c.room_id, c.version, c.body FROM croupier_game.shared_table_configs c
       JOIN unnest($3::text[], $4::text[]) AS b(room_id, version) ON b.room_id=c.room_id AND b.version=c.version

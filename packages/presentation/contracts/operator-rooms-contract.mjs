@@ -26,6 +26,20 @@ function rows(value, max, check) {
     ids.add(value[i].id);
   }
 }
+// Rooms are forward-compatible: a newer engine may add a room field before the lobby bundle that reads it
+// is deployed (Render deploys separately from Vercel). Unknown room keys are ignored and never passed on;
+// every known key is checked as strictly as before, and the rest of the catalogue stays exact. Add new
+// optional public fields on the room, never elsewhere, and list them in ROOM_OPTIONAL.
+const ROOM_REQUIRED = ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl'];
+const ROOM_OPTIONAL = ['game', 'limitPreset'];
+function roomFields(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || ![Object.prototype, null].includes(Object.getPrototypeOf(value)) || Object.getOwnPropertySymbols(value).length) fail();
+  const names = Object.getOwnPropertyNames(value);
+  if (names.length > 32 || Object.keys(value).length !== names.length || ROOM_REQUIRED.some(key => !Object.hasOwn(value, key))) fail();
+  for (const key of names) if (!Object.hasOwn(Object.getOwnPropertyDescriptor(value, key), 'value')) fail();
+  return [...ROOM_REQUIRED, ...ROOM_OPTIONAL.filter(key => Object.hasOwn(value, key))];
+}
 function layer(value, background) {
   exact(value, ['enabled', 'default', 'allowed', ...(background ? ['mode'] : [])]);
   if (typeof value.enabled !== 'boolean' || background && !['baked', 'image', 'video'].includes(value.mode)) fail();
@@ -42,9 +56,9 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
     || operatorSlug !== undefined && value.operator.slug !== operatorSlug) fail();
   text(value.operator.name, 120);
   if (value.packageRevision !== null && (!Number.isSafeInteger(value.packageRevision) || value.packageRevision < 1)) fail();
+  const roomKeys = [];
   rows(value.rooms, 128, room => {
-    exact(room, ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl', ...(Object.hasOwn(room,'game')?['game']:[]),
-      ...(Object.hasOwn(room,'limitPreset')?['limitPreset']:[])]);
+    roomKeys.push(roomFields(room));
     if (!['blackjack','roulette'].includes(Object.hasOwn(room,'game') ? room.game : 'blackjack')) fail();
     // The published bet profile's key (casual, prive, high), for the lobby's picture only. The format is
     // checked here; a key this build does not know is shown with the default picture, never rejected.
@@ -65,5 +79,7 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
       || room.playUrl !== `/play/${room.game ?? 'blackjack'}?` + new URLSearchParams({ operator: value.operator.slug, table: room.id }).toString()) fail();
   });
   if (value.packageRevision === null && value.rooms.length) fail();
-  return structuredClone(value);
+  // Only known fields leave the validator; an unknown room key never reaches the lobby.
+  const rooms = value.rooms.map((room, i) => Object.fromEntries(roomKeys[i].map(key => [key, room[key]])));
+  return structuredClone({ schemaVersion: value.schemaVersion, operator: value.operator, packageRevision: value.packageRevision, rooms });
 }
