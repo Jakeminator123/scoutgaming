@@ -14,5 +14,4 @@ without subsetting, instancing or editing glyphs.
 | Bundled file | Upstream file | SHA-256 of bundled WOFF2 |
 | --- | --- | --- |
 | `Inter-Variable.woff2` | `ofl/inter/Inter[opsz,wght].ttf` | `89968bdca822aedbd4f81d7b9264225e023b4ef7cd1ea59d0ce827a4be77dfb3` |
-| `CormorantGaramond-Variable.woff2` | `ofl/cormorantgaramond/CormorantGaramond[wght].ttf` | `372d9194e0f93bdbd2db43ebde9c1669920bacfc8b631d04523b58c525e217e8` |
 | `GeistMono-Variable.woff2` | `ofl/geistmono/GeistMono[wght].ttf` | `7af33a423ae3f15c02698334af1e1de36868afcf7735dcbc35d7032f6584e4c3` |

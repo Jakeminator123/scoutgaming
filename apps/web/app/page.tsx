@@ -1,75 +1,23 @@
-import { ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { FantasyModeProvider } from "@/components/landing/fantasy-mode"
-import { SiteNav } from "@/components/landing/site-nav"
-
-import { LandingExperience, LandingEffects, LandingHero } from "@/components/landing/landing-experience"
-
+// Server-rendered start page: plain markup, no client code, video or effects.
+// /lobby is served by the Studio service, so it is an ordinary link rather
+// than Next client navigation.
 export default function Home() {
   return (
-    <FantasyModeProvider>
-      <LandingExperience>
-        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-ink via-[#111418] to-steel2 text-off">
-          <LandingEffects />
-
-          <SiteNav />
-
-          <main className="relative z-10 flex flex-col items-center gap-12 px-6 pt-8 pb-32 md:px-16 lg:flex-row lg:items-center lg:justify-between lg:pt-12">
-            <div className="max-w-2xl">
-              <p className="mb-5 font-mono text-xs tracking-[0.25em] text-lime uppercase">
-                {"// Blackjackpilot · Scout Gaming Group"}
-              </p>
-              <h1 className="mb-6 text-[clamp(2.25rem,9vw,3rem)] leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
-                Välj ditt bord.
-                <br />
-                <span className="text-lime">Live blackjack</span>
-                <br />
-                i vår pilot.
-              </h1>
-              <p className="mb-10 max-w-xl text-base leading-relaxed text-off/75 md:text-lg">
-                Välj spelbolag, hitta ett blackjackrum och möt din dealer.
-                Bolaget bestämmer vilka dealers, bord och bakgrunder du kan välja. Du spelar med demokrediter.
-              </p>
-
-              <div className="mb-12 flex flex-wrap gap-4">
-                <Button
-                  asChild
-                  size="lg"
-                  className="rounded-full bg-lime px-8 text-sm font-semibold tracking-wide text-ink uppercase transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime),0_0_40px_var(--scout-lime2)]"
-                >
-                  <a href="/lobby">
-                    Välj bolag <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full border-2 border-off/70 bg-transparent px-8 text-sm font-semibold tracking-wide text-off uppercase transition-all duration-300 hover:border-lime hover:bg-off/10 hover:text-lime hover:shadow-[0_0_20px_var(--scout-lime)]"
-                >
-                  <a href="/videos/ai-casino-demo.mp4" target="_blank" rel="noreferrer">
-                    Se videon
-                  </a>
-                </Button>
-              </div>
-
-              <div className="flex gap-3" aria-hidden="true">
-                <div className="h-2.5 w-2.5 rounded-full bg-lime shadow-[0_0_8px_var(--scout-lime)]" />
-                <div className="h-2.5 w-2.5 rounded-full bg-off/30" />
-                <div className="h-2.5 w-2.5 rounded-full bg-off/30" />
-                <div className="h-2.5 w-2.5 rounded-full bg-off/30" />
-                <div className="h-2.5 w-2.5 rounded-full bg-off/30" />
-              </div>
-            </div>
-
-            <LandingHero />
-          </main>
-
-          <p className="absolute right-6 bottom-8 left-6 z-10 font-mono text-[10px] tracking-[0.2em] text-steel uppercase md:right-16 md:bottom-12 md:left-auto">
-            {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}
-          </p>
-        </div>
-      </LandingExperience>
-    </FantasyModeProvider>
+    <main className="flex min-h-dvh flex-col justify-center bg-gradient-to-br from-ink via-[#111418] to-steel2 px-4 py-12 text-off sm:px-8">
+      <div className="mx-auto w-full max-w-3xl">
+        <h1 className="text-[clamp(2.5rem,12vw,5rem)] leading-none font-semibold tracking-tight break-words">
+          Scoutgaming
+        </h1>
+        <p className="mt-6 max-w-xl text-lg leading-relaxed text-off/85">
+          Live-dealer blackjack för spelbolag.
+        </p>
+        <a
+          href="/lobby"
+          className="mt-10 inline-flex min-h-12 w-fit items-center gap-2 rounded-full bg-lime px-8 text-base font-semibold text-ink hover:bg-lime2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime"
+        >
+          Till lobbyn <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </main>
   )
 }

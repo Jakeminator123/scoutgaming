@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url';
-import {adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Keep local Windows builds responsive while other apps and agents are running.
@@ -9,16 +8,6 @@ const nextConfig = {
   outputFileTracingIncludes: { '/game': ['./runtime-ui/game.html'], '/player-login': ['./runtime-ui/blackjack.html'] },
   images: {
     unoptimized: true,
-  },
-  async redirects() {
-    // Retired lab bookmarks go straight to the Admin workspace. Game, lobby,
-    // Admin and Partner routing is owned by middleware and the Services config.
-    return [
-      ...['/lab', '/labb', '/labb-lissabon'].map(source => ({source, destination: adminDocumentHref('/control'), permanent: false})),
-      {source: '/labb/filmer', destination: adminDocumentHref('/control/videos'), permanent: false},
-      {source: '/labb/zoner', destination: adminDocumentHref('/control/zones'), permanent: false},
-      {source: '/labb/guide', destination: adminDocumentHref('/control/guide'), permanent: false},
-    ];
   },
   async headers() {
     return [

@@ -77,7 +77,7 @@ run_node_tests access speech-reply-library test/speech-reply-library.mjs test/sp
 run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access postgres-persistence test/postgres-persistence.mjs test/postgres-native-table.mjs
-run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs test/platform-room-socket.mjs test/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
+run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs test/platform-room-socket.mjs test/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs
 run_node_tests access media-layout test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs

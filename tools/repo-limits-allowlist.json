@@ -65,31 +65,6 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "apps/web/public/about/scout-lounge.mp4",
-    "maxBytes": 7402897,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/web/public/about/scout-lounge.png",
-    "maxBytes": 2069059,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/web/public/videos/ai-casino-demo.mp4",
-    "maxBytes": 4242696,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/web/public/videos/astrid-card.mp4",
-    "maxBytes": 1485005,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "apps/web/public/videos/fantasy-card.mp4",
-    "maxBytes": 1140806,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "media/dealers/astrid/runtime/presentation/astrid_startbild_spel_1080x1920.png",
     "maxBytes": 1628428,
     "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"

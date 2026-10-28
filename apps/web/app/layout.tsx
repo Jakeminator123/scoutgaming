@@ -13,15 +13,6 @@ const inter = localFont({
   variable: "--font-inter",
 })
 
-const cormorant = localFont({
-  src: "./fonts/CormorantGaramond-Variable.woff2",
-  weight: "400 600",
-  style: "normal",
-  display: "swap",
-  adjustFontFallback: "Times New Roman",
-  variable: "--font-cormorant",
-})
-
 const geistMono = localFont({
   src: "./fonts/GeistMono-Variable.woff2",
   weight: "100 900",
@@ -31,9 +22,9 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "Scout Gaming Group · Blackjackpilot med Astrid",
+  title: "Scoutgaming · Live-dealer blackjack för spelbolag",
   description:
-    "Möt Astrid i en blackjackpilot med serverstyrt spel och demokrediter. Inga riktiga pengar.",
+    "Live-dealer blackjack för spelbolag.",
 }
 
 export const viewport: Viewport = {
@@ -47,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="sv" className={`${inter.variable} ${cormorant.variable} ${geistMono.variable} bg-background`}>
+    <html lang="sv" className={`${inter.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
         <Analytics />
