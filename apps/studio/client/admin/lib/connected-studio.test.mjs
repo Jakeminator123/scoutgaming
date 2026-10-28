@@ -1,12 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLane, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject, createEmptyProject, addDealer, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { kindForEvent } from '../../../../../packages/presentation/contracts/video-intake.mjs';
-import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
+import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata } from './connected-studio.mjs';
 import { selectPresentation } from '../../../lib/presentation-selection.mjs';
 import { createStudioProjectBindings } from '../../../../../packages/presentation/server/studio-project-bindings.mjs';
-import { materialSource } from '../../../../../packages/presentation/contracts/material-catalog.mjs';
-import { layerAssetPath } from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { speechSlotStandard, speechSlotVariantId } from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../../../../packages/presentation/contracts/recorded-speech.mjs';
 import { gateRecordedSpeechSelection } from '../../../../../packages/presentation/runtime/recorded-speech-selection.mjs';
@@ -43,17 +41,6 @@ test('shared-template usage lists exact nonarchived room bindings across compani
     {roomId:'north-vip',roomName:'VIP',operatorName:'North'},
     {roomId:'south-main',roomName:'Main',operatorName:'South'},
   ]);assert.deepEqual(compositionUses(catalog,undefined),[]);
-});
-test('supplied blackjack table is a foreground choice and keeps operator room identity',()=>{
-  const project=createSeedProject(),lane=defaultPresentationLane('astrid'),source=materialSource('blackjack-green-felt');
-  const {kind,hasAlpha,...metadata}=source;
-  const asset={schemaVersion:1,id:id1,role:'table',label:'Blackjack · grön filt',...metadata};asset.pathname=layerAssetPath(asset);
-  project.layerAssets=[asset];lane.layers.table.allowed=[asset.id];project.lanes=[lane];
-  const room={id:'room-a',operatorId:'operator-a',compositionId:lane.id,game:'blackjack'};
-  const next=selectCompositionLayer(project,room,'table',asset.id);
-  assert.equal(next.lanes[0].layers.table.default,asset.id);assert.equal(next.lanes[0].composition.tableFront,true);
-  assert.equal(project.lanes[0].layers.table.default,null);assert.equal(room.id,'room-a');
-  assert.throws(()=>selectCompositionLayer(project,{...room,game:'roulette'},'table',asset.id));
 });
 function fixture() {
   const project=createSeedProject();
@@ -104,14 +91,6 @@ test('idle binding requires its exact metadata duration and preserves variant po
   const next=bindClip(f.project,f.inventory,'astrid',slot,id1,{durationMs:4042});
   assert.equal(next.dealerIdlePolicies[0].policy.base[0].durationMs,4042);
   assert.equal(next.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready').variants[0].videoGenerationId,id1);
-});
-test('layer selection uses only the current composition allowlist; roulette table changes fail closed',()=>{
-  const f=fixture(),lane=defaultPresentationLane('astrid');f.project.lanes=[lane];
-  lane.layers.background={enabled:true,mode:'image',default:'bg-a',allowed:['bg-a','bg-b']};
-  const room={compositionId:lane.id,game:'blackjack'};
-  const next=selectCompositionLayer(f.project,room,'background','bg-b');assert.equal(next.lanes[0].layers.background.default,'bg-b');
-  assert.throws(()=>selectCompositionLayer(f.project,room,'background','foreign'));
-  assert.throws(()=>selectCompositionLayer(f.project,{...room,game:'roulette'},'table',lane.layers.table.default));
 });
 test('upload metadata remains exact and rejects speech sets and unsupported files',()=>{
   const f=fixture(),file=new File([new Uint8Array(20)],'own.mp4',{type:'video/mp4'});

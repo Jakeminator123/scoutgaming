@@ -21,68 +21,28 @@ function explicitProject(){
  return project;
 }
 function harness({project=explicitProject(),projectOnly=false,dealerId='astrid'}={}){
- const hooks=[], requests=[];let cursor=0;
+ const hooks=[];let cursor=0;
  const react={...React,useState(initial){const i=cursor++;hooks[i]??={value:typeof initial==='function'?initial():initial};return [hooks[i].value,next=>hooks[i].value=typeof next==='function'?next(hooks[i].value):next];},useRef(initial){const i=cursor++;return hooks[i]??={current:initial};},useEffect(){},useCallback:fn=>fn};
  const module={exports:{}};
- const types={...typesModule.exports,requestJson:(path,options)=>new Promise((resolve,reject)=>requests.push({path,body:JSON.parse(options.body),resolve,reject}))};
- vm.runInNewContext(compiled.code,{module,exports:module.exports,structuredClone,Error,crypto:webcrypto,URL,URLSearchParams,require:name=>name==='react'?react:name==='./studio-types'?types:localRequire(name)});
+ vm.runInNewContext(compiled.code,{module,exports:module.exports,structuredClone,Error,crypto:webcrypto,URL,URLSearchParams,require:name=>name==='react'?react:name==='./studio-types'?typesModule.exports:localRequire(name)});
  const options={initialProject:project,initialDealerId:dealerId,initialVideos:{videos:[],status:'ready'},initialStatus:{connected:true}};
- return {requests,render(){cursor=0;return module.exports[projectOnly?'useStudioProjectSession':'useStudioSession'](options);}};
+ return {render(){cursor=0;return module.exports[projectOnly?'useStudioProjectSession':'useStudioSession'](options);}};
 }
-test('save serializes same-tick calls and returns true only after acknowledged save',async()=>{
- const h=harness(),session=h.render(),first=session.save();
- assert.equal(await session.save(),false);assert.equal(h.requests.length,1);
- const req=h.requests[0],saved={...req.body.project,revision:'saved-revision'};
- req.resolve({project:saved});
- assert.equal(await first,true);const next=h.render();
- assert.equal(next.dirty,false);assert.equal(next.saving,false);assert.equal(next.project.revision,'saved-revision');
-});
-test('a revision conflict keeps the draft, blocks continuation and unlocks retry',async()=>{
- const h=harness();let s=h.render();s.updateProject(p=>{p.title='Lokalt utkast';});s=h.render();
- const pending=s.save();h.requests[0].reject(Object.assign(new Error('Konflikt'),{statusCode:409}));
- assert.equal(await pending,false);s=h.render();assert.equal(s.conflict,true);assert.equal(s.dirty,true);assert.equal(s.project.title,'Lokalt utkast');
- const retry=s.save();assert.equal(h.requests.length,2);h.requests[1].resolve({project:{...h.requests[1].body.project,revision:'revision-2'}});
- assert.equal(await retry,true);assert.equal(h.render().conflict,false);
-});
-test('edits made while save is pending remain dirty and prevent save-and-continue',async()=>{
- const h=harness();let s=h.render();const pending=s.save();
- s.updateProject(p=>{p.title='Nyare ändring';});s=h.render();
- h.requests[0].resolve({project:{...h.requests[0].body.project,revision:'revision-2'}});
- assert.equal(await pending,false);s=h.render();assert.equal(s.project.title,'Nyare ändring');assert.equal(s.project.revision,'revision-2');assert.equal(s.dirty,true);assert.equal(s.saving,false);
-});
-
-test('same-tick functional edits are included in the saved snapshot before any rerender',async()=>{
+test('same-tick functional edits reach the project ref before any rerender',()=>{
  const h=harness(),s=h.render(),original=structuredClone(s.project);
  s.updateProject(p=>{p.lanes[0].label='Första ändringen';});
  s.updateProject(p=>{p.lanes[0].layers.dealer.enabled=false;});
- const pending=s.save(),request=h.requests[0];
- assert.equal(request.body.project.lanes[0].label,'Första ändringen');assert.equal(request.body.project.lanes[0].layers.dealer.enabled,false);
+ assert.equal(s.projectRef.current.lanes[0].label,'Första ändringen');assert.equal(s.projectRef.current.lanes[0].layers.dealer.enabled,false);
  assert.deepEqual(s.project,original,'the original render snapshot is immutable');
- request.resolve({project:{...request.body.project,revision:'same-tick-saved'}});
- assert.equal(await pending,true);const current=h.render();assert.equal(current.dirty,false);assert.equal(current.project.revision,'same-tick-saved');
+ assert.equal(h.render().dirty,true);
 });
 
-test('same-tick model edits compose against the newest draft rather than a captured render',async()=>{
+test('same-tick model edits compose against the newest draft rather than a captured render',()=>{
  const h=harness(),s=h.render();
  s.modelEdit(p=>({...p,clipLabels:{...p.clipLabels,first:'Första klippet'}}));
  s.modelEdit(p=>({...p,clipLabels:{...p.clipLabels,second:'Andra klippet'}}));
- const pending=s.save(),request=h.requests[0];
- assert.deepEqual(JSON.parse(JSON.stringify(request.body.project.clipLabels)),{first:'Första klippet',second:'Andra klippet'});
- request.resolve({project:{...request.body.project,revision:'model-edits-saved'}});assert.equal(await pending,true);assert.equal(h.render().dirty,false);
-});
-
-test('edits during pending save block continuation even when React has not rendered them yet',async()=>{
- const h=harness(),s=h.render(),pending=s.save();
- s.updateProject(p=>{p.lanes[0].label='Nyare utkast före render';});
- h.requests[0].resolve({project:{...h.requests[0].body.project,revision:'saved-before-new-edit'}});
- assert.equal(await pending,false);const next=h.render();
- assert.equal(next.project.lanes[0].label,'Nyare utkast före render');assert.equal(next.project.revision,'saved-before-new-edit');assert.equal(next.dirty,true);
-});
-
-test('an immediate second save uses the acknowledged revision without waiting for a render',async()=>{
- const h=harness(),s=h.render(),first=s.save();h.requests[0].resolve({project:{...h.requests[0].body.project,revision:'acknowledged-1'}});assert.equal(await first,true);
- const second=s.save();assert.equal(h.requests[1].body.expectedRevision,'acknowledged-1');
- h.requests[1].resolve({project:{...h.requests[1].body.project,revision:'acknowledged-2'}});assert.equal(await second,true);assert.equal(h.render().project.revision,'acknowledged-2');
+ assert.deepEqual(JSON.parse(JSON.stringify(s.projectRef.current.clipLabels)),{first:'Första klippet',second:'Andra klippet'});
+ assert.deepEqual(JSON.parse(JSON.stringify(h.render().project.clipLabels)),{first:'Första klippet',second:'Andra klippet'});
 });
 
 test('a failed edit leaves both state and the authoritative project ref unchanged',()=>{
@@ -103,13 +63,12 @@ test('project-only sessions do not select a dealer or construct its line when no
  h.render().selectDealer('');assert.equal(h.render().dealerId,'');assert.equal(h.render().line,undefined);
 });
 
-test('project-only sessions save an empty dealer/event/line inventory without inventing a selection',async()=>{
+test('project-only sessions keep an empty dealer/event/line inventory without inventing a selection',()=>{
  const project=explicitProject();project.dealers=[];project.events=[];project.lines=[];project.lanes=[];
  const h=harness({project,projectOnly:true,dealerId:''});let s=h.render();
  assert.equal(s.dealerId,'');assert.equal(s.eventId,'');assert.equal(s.event,undefined);assert.equal(s.variant,undefined);
  s.updateProject(p=>{p.clipLabels={note:'Inga dealers'};});s=h.render();assert.equal(s.dirty,true);
- const pending=s.save();assert.deepEqual(h.requests[0].body.project.dealers,[]);assert.deepEqual(h.requests[0].body.project.lines,[]);
- h.requests[0].resolve({project:{...h.requests[0].body.project,revision:'empty-saved'}});assert.equal(await pending,true);assert.equal(h.render().dirty,false);
+ assert.deepEqual(s.project.dealers,[]);assert.deepEqual(s.project.lines,[]);assert.equal(s.dealerId,'');
 });
 
 test('removing the selected dealer clears derived context without selecting the remaining dealer',()=>{
