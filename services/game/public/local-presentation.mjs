@@ -216,11 +216,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function dropAhead() { ahead?.controller.abort(); ahead = null; }
   // A step plays the answer asked for it when its plan began, or asks now. Leaving the step ends the wait.
+  // K04 R1: an early answer that failed for any reason but a package change (network, 5xx, 409, the request's
+  // 10 s limit, or a dropped lookahead) is asked for once more within this step's own time, as before F5. Only
+  // that answer can fail the step; if the step's time runs out first it is left as late, without text.
   async function answerFor(event, requestVersion, signal) {
     const planned = ahead?.version === requestVersion ? ahead.steps.get(stepKey(event)) : undefined;
     if (planned) {
       try { return await untilAborted(planned.start(), signal); }
-      catch (error) { if (signal?.aborted || !planned.signal.aborted) throw error; }
+      catch (error) { if (signal?.aborted || error?.code === 'studio_presentation_idle_package_changed') throw error; }
     }
     return selection(event, requestVersion, signal);
   }

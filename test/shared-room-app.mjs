@@ -309,6 +309,37 @@ for(const stage of ['binding','mount','confirmation'])test(`window rollover duri
   assert.ok(restores.at(-1).receivedAt>=receivedAt,'the binding forwards the WS receipt time');
 });
 
+// K04 R5: a moved window during mount or confirmation is not a failed start. The start screen keeps loading
+// (no alert, no reload button) until the fresh socket's binding makes it ready; any other conflict still fails it.
+for(const [stage,error] of [['mount','shared_room_presentation_stale'],['confirmation','shared_room_presentation_stale'],['confirmation','other_conflict']])
+test(`a ${error} during ${stage} ${error==='other_conflict'?'still fails':'never fails'} the start screen`,async t=>{
+  const {document,nodes}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const loading=nodes.get('presentation-loading');loading.textContent='Visar spelbordet…';
+  const sockets=[];let reads=0,stale=true;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(s){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:null})}));}}
+  const app=await mountSharedRoomApp({document,window,createCommands:()=>({state:'idle',stop(){this.state='stopped';}}),
+    createView:()=>({bind(){},render(){},close(){}}),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1}),
+    fetchImpl:async url=>{reads++;return stale&&stage==='confirmation'&&reads===2?Response.json({error},{status:409}):bindingResponse(url);},
+    createPresentation:async()=>{
+      if(stale&&stage==='mount')throw Object.assign(Error(error),{code:error});
+      return{restoreSnapshot(){},present(){},close(){}};
+    }});
+  t.after(app.close);sockets[0].message(seated(1));
+  const failed=()=>document.documentElement.dataset.presentationStartup==='failed'||loading.attributes.role==='alert'||/kunde inte/.test(loading.textContent);
+  if(error==='other_conflict'){
+    for(let i=0;i<100&&!failed();i++)await delay(2);
+    assert.equal(failed(),true,'a conflict that is not a moved window still fails the start');assert.equal(sockets.length,1);return;
+  }
+  for(let i=0;i<100&&sockets.length<2;i++)await delay(2);
+  assert.equal(sockets.length,2,'the moved window is read again through a new socket');
+  assert.equal(failed(),false,'the start screen is not marked as failed');assert.notEqual(document.documentElement.dataset.presentationStartup,'failed');
+  stale=false;sockets[1].message(seated(2,{windowId:'window-2'}));
+  for(let i=0;i<100&&document.documentElement.dataset.presentationStartup!=='ready';i++)await delay(2);
+  assert.equal(document.documentElement.dataset.presentationStartup,'ready');assert.equal(failed(),false);
+});
+
 for(const [status,error]of [[401,'shared_room_authentication_required'],[403,'shared_room_presentation_forbidden'],[409,'other_conflict']])
 test(`binding HTTP ${status} ${error} never gains recoverable stale authority`,async t=>{
   const h=await bindingHarness(t,{fetchImpl:async()=>Response.json({error},{status})});
@@ -1010,6 +1041,43 @@ test('a slow binding read never moves the table clock: cards and hit/stand still
   assert.deepEqual(renders.at(-1).can.act,['hit','stand'],'the buttons open at the server turnAt, not one binding read later');
   assert.deepEqual(shown.map(row=>row.draw),[1,2,3,4]);assert.ok(shown.every(row=>row.at<=turnAt+50),'every committed card shows at turnAt');
   assert.deepEqual(errors,[]);assert.deepEqual(mediaErrors,[]);
+});
+
+// K04 R2 (review of #478): a take that shows frames at turnAt plays to its end, and `presenting` kept hit/stand
+// closed until the plan was over, up to a whole take (about 2.75 s) past turnAt. The decision opens on the
+// server's clock; the film may still finish on screen, and every other control waits for it.
+test('hit/stand and insurance open at turnAt while a take still plays; every other control waits for the presentation',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  for(const phase of ['decisions','insurance']){
+    const playing=deferred();
+    const h=harness(t,{now:Date.now,presentation:{restoreSnapshot(){},present:()=>playing.promise,close(){}}});
+    const round={phase,active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+    await h.restore(seated(2,{phase:'round',roundId:'round-1',serverNow:Date.now(),round,plan:{id:'p',startAt:Date.now()-500,endAt:Date.now()+500,turnAt:Date.now()+500},
+      actionDeadline:Date.now()+15500,me:{...seated().me,insuranceDue:phase==='insurance'}}));
+    const presenting=h.controller.present({ver:1},{signal:new AbortController().signal});
+    const can=()=>h.renders.at(-1).can;
+    assert.deepEqual(can().act,[]);assert.equal(can().insurance,false);assert.equal(can().refill,false,'no control while the plan plays before turnAt');
+    t.mock.timers.tick(499);assert.deepEqual(can().act,[]);assert.equal(can().insurance,false);
+    t.mock.timers.tick(2);
+    if(phase==='decisions')assert.deepEqual(can().act,['hit','stand'],'hit/stand at turnAt although the take still plays');
+    else assert.equal(can().insurance,true,'insurance at turnAt although the take still plays');
+    assert.equal(h.renders.at(-1).busy,true);assert.equal(can().refill,false,'other controls still wait for the presentation');
+    if(phase==='decisions'){await h.controller.dispatch('act',{action:'stand'});assert.equal(h.calls.at(-1).action,'stand');}
+    playing.resolve();await presenting;
+    if(phase==='insurance')assert.equal(can().refill,true,'the rest opens when the presentation is over');
+  }
+});
+
+test('a take still playing at turnAt no longer holds hit/stand: the buttons open at turnAt and the film plays to its end',async t=>{
+  const h=slowTable(t,{windowMs:12000,present:(event,options)=>event.type==='speak'?new Promise(resolve=>setTimeout(()=>resolve(playsFor(12500,options)),1000)):slowDownload(options)});
+  await h.open();
+  await h.until(h.plan.endAt-1);assert.deepEqual(h.act(),[]);
+  await h.until(h.plan.endAt+2);
+  assert.deepEqual(h.act(),['hit','stand'],'the buttons open at the server turnAt');
+  assert.equal(h.renders.at(-1).busy,true,'the take still plays');assert.equal(h.seen[0].options.signal.aborted,false,'turnAt never cuts a take that shows frames');
+  assert.deepEqual(h.shown,[]);
+  await h.until(1000+1000+12500+250);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
 });
 
 test('a film part that shows frames plays on past its step time; a later part of the same step does not start after it',async t=>{

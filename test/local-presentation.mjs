@@ -2095,3 +2095,93 @@ test('with answers slower than a take, the deals after goodluck play their film,
   assert.equal(f.status.textContent, '');
   ports.close();
 });
+
+// K04 R1 (review of #478): an early answer that failed (network, 5xx, 409 or the 10 s request limit) made its
+// step read "Filmen kunde inte spelas." when it began. The step asks once more within its own time, as before F5.
+const sharedStale = () => Response.json({ error: 'shared_room_presentation_stale' }, { status: 409 });
+const filmedStep = (shoeDraw, sha256 = 'd'.repeat(64)) => ({ ...source, shoeDraw, filmedTake: { profileId: 'p', takeKey: 'k' + shoeDraw, sha256 } });
+for (const [label, failure] of [
+  ['a 503', () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 })],
+  ['a stale 409', () => sharedStale()],
+  ['a network error', () => { throw new TypeError('fetch failed'); }],
+  ['the request time limit', () => { throw new DOMException('The operation timed out.', 'TimeoutError'); }]])
+test(`an early answer that failed with ${label} is asked for again within the step, which plays without error text`, async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, asked = []; let failing = true;
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    asked.push(JSON.parse(options.body).event.shoeDraw);
+    return failing ? failure() : base(url, options);
+  };
+  const step = filmedStep(7);
+  f.controller.state({ action: true }); f.controller.prepareSequence([step], { selectAhead: true }); await settle(); await settle();
+  assert.deepEqual(asked, [7]);
+  failing = false; const played = f.controller.present(plainEvent(step)); await settle(); await settle();
+  assert.deepEqual(asked, [7, 7], 'the step asks once more'); assert.equal(f.jobs.length, 1);
+  f.jobs[0].resolve(); assert.equal(await played, true);
+  assert.equal(f.status.textContent, ''); assert.deepEqual(f.receipts.filter(row => row.event === 'deal').map(row => row.state), ['selected']);
+});
+
+test('a step whose second answer does not arrive in time is left as late without text', async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, asked = []; let answer = () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 });
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    asked.push(JSON.parse(options.body).event.shoeDraw);
+    return answer(options);
+  };
+  f.controller.state({ action: true }); f.controller.prepareSequence([filmedStep(7), filmedStep(8)], { selectAhead: true }); await settle(); await settle();
+  assert.deepEqual(asked, [7, 8]);
+  answer = options => new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true }));
+  const step = new AbortController(), late = f.controller.present(plainEvent(filmedStep(7)), { signal: step.signal }); await settle(); await settle();
+  assert.deepEqual(asked, [7, 8, 7]);
+  step.abort(Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true }));
+  assert.equal(await late, false); assert.equal(f.status.textContent, '', 'no "Filmen kunde inte spelas."');
+  assert.deepEqual([f.receipts.at(-1).state, f.receipts.at(-1).late], ['skipped', true]);
+  assert.equal(f.receipts.some(row => row.state === 'fallback'), false);
+});
+
+test('an early answer that reports a package change fails its step at once and is not asked again', async t => {
+  const fresh = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } }), freshBase = globalThis.fetch;
+  let selects = 0;
+  globalThis.fetch = async (url, options) => url === '/api/presentation/select'
+    ? (selects++, Response.json({ error: 'Package changed', code: 'studio_presentation_idle_package_changed' }, { status: 409 })) : freshBase(url, options);
+  fresh.controller.state({ action: true }); fresh.controller.prepareSequence([filmedStep(7)], { selectAhead: true }); await settle(); await settle();
+  assert.equal(await fresh.controller.present(plainEvent(filmedStep(7))), false);
+  assert.equal(selects, 1, 'a package change is not asked again'); assert.match(fresh.status.textContent, /Ladda om spelet/);
+});
+
+// K04 R5: early answers that are dropped cancel their requests, and nothing later is asked for.
+for (const drop of ['the plan ends', 'a new plan begins', 'the tab is hidden', 'the presentation closes'])
+test(`early answers are dropped and their requests aborted when ${drop}`, async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch, signals = [];
+  globalThis.fetch = (url, options) => url === '/api/presentation/select'
+    ? (signals.push(options.signal), new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true })))
+    : base(url, options);
+  f.controller.state({ action: true }); f.controller.prepareSequence([filmedStep(7), filmedStep(8), filmedStep(9)], { selectAhead: true }); await settle();
+  assert.equal(signals.length, 2); assert.equal(signals.some(signal => signal.aborted), false);
+  if (drop === 'the plan ends') f.controller.state({ action: false });
+  else if (drop === 'a new plan begins') f.controller.prepareSequence([filmedStep(10)]);
+  else if (drop === 'the tab is hidden') f.setHidden(true);
+  else f.controller.close();
+  assert.equal(signals.every(signal => signal.aborted), true, 'both requests in flight are aborted');
+  await settle(); await settle();
+  assert.equal(signals.length, 2, 'the third step is never asked for');
+});
+
+// K04 R5: a moved window during the base loop's package read is silent also for a dealer without any idle policy.
+test('a stale read of the base loop without any idle policy is silent and the next snapshot plays the same loop', async t => {
+  const ownIdle = { id: 'dragan-bound-idle', fileName: 'breath.mp4', sha256: 'b'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/dragan' };
+  const f = await controllerFixture(t, { dealerId: 'dragan', ownIdle, idlePolicy: false, entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const base = globalThis.fetch; let reply = () => sharedStale();
+  globalThis.fetch = async (url, options) => new URL(url, 'https://game.invalid').pathname === '/api/presentation/config' ? reply() : base(url, options);
+  f.controller.start(); await settle(); await settle();
+  assert.equal(f.jobs.length, 0); assert.equal(f.status.textContent ?? '', '', 'no idle error and no reload prompt'); assert.equal(f.proofs, 0);
+  assert.equal(f.elements.some(element => element.textContent === 'Ladda om'), false);
+  reply = () => base('/api/presentation/config?dealerId=dragan', {}); f.controller.state({ action: false }); await settle(); await settle();
+  assert.equal(f.jobs.length, 1, 'the next snapshot starts the same base loop'); assert.equal(f.jobs[0].take.media.sha256, ownIdle.sha256);
+  f.jobs[0].options.onReceipt({ state: 'presented' }); assert.equal(f.proofs, 1);
+  reply = () => Response.json({ error: 'shared_room_presentation_unavailable' }, { status: 503 }); f.jobs[0].resolve(); await settle(); await settle();
+  assert.match(f.status.textContent, /^Idle: /, 'any other failure of the read still shows the idle error');
+});
