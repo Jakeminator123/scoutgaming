@@ -149,8 +149,9 @@ genererat tal är avstängda. Roulette har ännu ingen inbäddad provstart.
 
 ### Talgranskning
 
-Öppna **Röst & tal → Inspelat tal** för vald dealer. Listan har en rad per
-replik i spelets ordning och därefter övriga repliker som har filer.
+Talgranskning görs i **Röst & tal → Inspelat tal** för vald dealer; den
+äldre sidan `/admin/media-review` finns inte längre och leder hit. Listan har
+en rad per replik i spelets ordning och därefter övriga repliker som har filer.
 
 1. Öppna en replik, välj **Svenska** eller **English** och välj tagning.
    Högsta tagningsnumret står först.
@@ -395,6 +396,7 @@ med …**. Spelet startar på `/game?game=blackjack|roulette&operator=…&table=
 
 `/control/*`, `/lab`, `/labb` och `/studio` leder till motsvarande `/admin`-sida
 med kontexten bevarad (`dealerId` blir `dealer`, `lane` blir `composition`);
+`/admin/media-review` leder till **Röst & tal**;
 `/bo`, `/v2`, `/demo` och `/casino.html` är borta. Se även
 [utvecklarreferensen](../README.md), [lagrings- och uppspelningskontrakt](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 och [läget](../../../docs/NEXT-AGENT.md).

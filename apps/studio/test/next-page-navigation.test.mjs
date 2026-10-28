@@ -314,7 +314,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
-      for(const section of [{path:'/control/clips',target:'/admin/clips'}, {path:'/control/administration',target:'/admin/media-review',tab:'media-review'}]) for(const legacy of [false,true]) {
+      for(const section of [{path:'/control/clips',target:'/admin/clips'}, {path:'/control/administration',target:'/admin/clips',tab:'media-review'}]) for(const legacy of [false,true]) {
         const query={...(section.tab?{tab:section.tab}:{}),[legacy&&section.path==='/control/clips'?'dealerId':'dealer']:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid',view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'};
         const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+section.path+'?'+new URLSearchParams(query)),{basePath});
         assert.equal(new URL(target,'https://game.fixture.invalid').pathname,section.target);
@@ -525,7 +525,7 @@ test('retired Administration entries preserve context across mounts and flags wi
   for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://studio.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries({operations:'/admin/drift',accounts:'/admin/admin/accounts',partners:'/admin/admin/api',finance:'/admin/ekonomi',tables:'/admin/rooms','media-review':'/admin/media-review'})){
+    for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries({operations:'/admin/drift',accounts:'/admin/admin/accounts',partners:'/admin/admin/api',finance:'/admin/ekonomi',tables:'/admin/rooms','media-review':'/admin/clips'})){
       const query='tab='+tab+'&dealer=elin&operator=north&table=room-a&room=one&room=two&lane=portrait&game=roulette';
       const url=config.publicOrigin+basePath+entry+'?'+query+'#selected';
       for(const method of ['GET','HEAD']){

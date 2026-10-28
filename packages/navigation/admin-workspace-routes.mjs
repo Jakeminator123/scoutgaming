@@ -1,7 +1,7 @@
 // Document destinations only. APIs and authentication retain their own contracts.
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
   companies: 'Bolag & team', publication: 'Rum & publicering',
-  'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek', 'media-review': 'Talgranskning',
+  'dealer-studio': 'Skapa material', replies: 'Svarsbibliotek',
   events: 'Spelhändelser & regler', guide: 'Hjälp',
   'dealer-agent': 'Dialogtest',
 });
@@ -25,7 +25,9 @@ const destinations = Object.freeze({
   publication:'/admin/rooms', // Merged into Spelbolag & rum.
 });
 const administration = Object.freeze({accounts:'/admin/admin/accounts',finance:'/admin/ekonomi',
-  partners:'/admin/admin/api',tables:'/admin/rooms',operations:'/admin/drift','media-review':'/admin/media-review'});
+  partners:'/admin/admin/api',tables:'/admin/rooms',operations:'/admin/drift',
+  // Retired speech review: recorded speech is reviewed under Röst & tal.
+  'media-review':'/admin/clips?panel=room'});
 export function adminToolName(path) {
   if(typeof path!=='string'||!/^\/(?:studio\/)?admin\//.test(path))return null;
   const name=path.replace(/^\/(?:studio\/)?admin\//,'');
@@ -39,6 +41,7 @@ export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
   '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
   '/admin/videos':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
   '/admin/compositions':'/admin/scenes', '/admin/probe':'/admin/clips?panel=room',
+  '/admin/media-review':'/admin/clips?panel=room',
 });
 const openClawHomes=Object.freeze({drift:'/admin/drift?tab=speech',models:'/admin/ai/models',
   agent:'/admin/dealer-agent',probe:'/admin/clips?panel=room',assistant:'/admin'});
@@ -59,8 +62,9 @@ export function adminDocumentHref(value) {
     const view=url.searchParams.get('view');
     target=view==='speech'?'/admin/clips?panel=room':view==='settings'?'/admin/clips?panel=dealer':'/admin/clips';
   }else if(control){
-    consumeTab=['openclaw','operator-chat','ops'].includes(section);
-    target=section==='administration'||section==='admin'
+    const administrationSection=section==='administration'||section==='admin';
+    consumeTab=['openclaw','operator-chat','ops'].includes(section)||administrationSection&&url.searchParams.get('tab')==='media-review';
+    target=administrationSection
       ? administration[url.searchParams.get('tab')]??'/admin/drift' : destinations[section];
     if(section==='openclaw'){target=url.searchParams.get('tab')==='chat'?'/admin/dealer-agent':'/admin/ai/models';consumeTab=true;}
     if(section==='lanes'&&url.searchParams.get('tab')==='companies')target='/admin/companies';

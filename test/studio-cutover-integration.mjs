@@ -57,11 +57,6 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
   for (const [index, username] of names.entries()) await pool.query('INSERT INTO croupier_auth.users(username,email,salt,hash,role,created_at) VALUES ($1,$2,$3,$4,$5,$6)',
     [username, `${username}@example.invalid`, salt, scryptSync(password, salt, 64).toString('hex'), roles[index], new Date().toISOString()]);
   const idle = dealerId => ({ dealerId, engineKey: 'idle-1/idle/idle', available: true });
-  const voiceIdentity = Object.fromEntries(['audioSha256','videoSha256','previewSha256','textSha256','indexSha256']
-    .map((key, index) => [key, String(index + 1).repeat(64)])); voiceIdentity.audioDelayMs = 200;
-  let currentVoiceIdentity = structuredClone(voiceIdentity);
-  const voiceLines = async () => ({ dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Synthetic review fixture',
-    identity: structuredClone(currentVoiceIdentity), reviewable: true, productionApproved: false }] }] });
   let runtime, cancellations = 0, settleErrors = [], server, studioOrigin, backendOrigin, cookies = {};
   let lastMail;
   const commandSecret = randomBytes(32).toString('hex'), mail = { send: async message => { lastMail = message; return { sent: true }; } };
@@ -103,7 +98,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     const allowedOrigins = [publicOrigin, studioOrigin];
     const config = { scope, allowedOrigins, publicHosts: allowedOrigins.map(origin => new URL(origin).host), apiBase: '/studio/api/admin', authBase: '/studio/api/auth' };
     const gameAuthority = createStudioGameAuthority({ env: { CROUPIER_PUBLIC_ORIGIN: studioOrigin, CROUPIER_BACKEND_ORIGIN: backendOrigin, CROUPIER_VERCEL_INGRESS_SECRET: commandSecret }, scope, fetchImpl: transport });
-    const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer, voiceLines });
+    const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
     const accounts = createStudioAdminAccounts({ boDb: store.boDb, gameDb: store.db, scope, gameAuthority, mail, publicOrigin: studioOrigin });
     const readouts = createStudioAdminReadouts({ db: store.db, scope });
     const handlers = new Map([...data.handlers, ...accounts.handlers, ...readouts.handlers]), gates = new Map([...data.gates, ...accounts.gates]);
@@ -308,27 +303,6 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await runtime.repository.listDocumentHistory('administration')).length, 1);
       assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_studio.audit_events WHERE environment_id=$1 AND action=$2', [scope.environment, 'save_document'])).rows[0].n, 2);
     });
-    await check('actual native voice review binds exact identities, current roles and saved CAS with changed-media approval invalidation', async () => {
-      const first = await call('/studio/api/admin/voicelines'); assert.equal(first.status, 200);
-      const lines = await first.json(), line = lines.dealers[0].lines[0];
-      const body = { dealer: 'astrid', line: 'goodluck', verdict: 'approved', expectedIdentity: line.identity, expectedRevision: lines.revision };
-      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', cookie: cookies.reader, body })).status, 401);
-      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', cookie: '', body })).status, 401);
-      const tampered = { ...body, expectedIdentity: { ...line.identity, audioSha256: '9'.repeat(64) } };
-      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body: tampered })).status, 409);
-      const saved = await call('/studio/api/admin/voiceline-review', { method: 'POST', body }); assert.equal(saved.status, 200);
-      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body })).status, 409);
-      const document = await runtime.repository.readDocument('administration');
-      assert.deepEqual(document.value.voiceReview.astrid.goodluck.identity, voiceIdentity);
-      assert.equal(document.value.voiceReview.astrid.goodluck.by, names[0]);
-      assert.equal((await (await call('/studio/api/admin/voicelines')).json()).dealers[0].lines[0].reviewState, 'current-human-review');
-      currentVoiceIdentity.audioSha256 = '8'.repeat(64);
-      try {
-        const changed = await (await call('/studio/api/admin/voicelines')).json(), changedLine = changed.dealers[0].lines[0];
-        assert.equal(changedLine.review, null); assert.equal(changedLine.reviewState, 'unbound-or-changed-media'); assert.equal(changedLine.productionApproved, false);
-        assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body: { ...body, expectedRevision: changed.revision } })).status, 409);
-      } finally { currentVoiceIdentity = structuredClone(voiceIdentity); }
-    });
     let player, invitedCookie;
     await check('native account creation and invite/resend execute actual SQL with isolated mail fixture', async () => {
       const created = await call('/studio/api/admin/players/create', { method: 'POST', body: { username: 'isolated-user', password, name: 'Isolated user' } });
@@ -419,7 +393,6 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await pool.query("SELECT count(*)::int n FROM croupier_auth.meta WHERE k LIKE 'studio-command:%'")).rows[0].n, 2);
       const readout = await call('/studio/api/admin/shoes'); assert.equal(readout.status, 200);
       assert.equal((await readout.json()).cutReached, 2);
-      assert.equal((await (await call('/studio/api/admin/voicelines')).json()).dealers[0].lines[0].reviewState, 'current-human-review');
     });
     await check('native HTTPS logout invalidates real JWT and epoch-bound player sessions after SQL restart', async () => {
       assert.equal((await call('/studio/api/admin/config', { cookie: cookies.revocable })).status, 200);

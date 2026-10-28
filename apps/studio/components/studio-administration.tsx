@@ -1,5 +1,4 @@
 'use client';
-import {DealerClipPreview} from './dealer-video-surface';
 import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
@@ -11,7 +10,6 @@ import { registeredDealerIds } from '../../../packages/presentation/contracts/de
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
-import { StudioNavigation } from './studio-navigation';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import { journalType, formatJournalAmount, readEconomyJournal } from '../client/admin/lib/economy-journal.mjs';
 import styles from './studio-administration.module.css';
@@ -34,7 +32,6 @@ export type StudioAdministrationProps = {
   sessionAction?: ReactNode;
   /** Group id from ?tab=. Unknown values open Spelstatus & integritet. */
   initialGroup?: string;
-  initialDealerId?: string;
   /** Connected operations UI bound to the freshly read actor. */
   renderOperations?: (actor: StudioAdminActor) => ReactNode;
   /** Enclosing backoffice destination; existing standalone links stay compatible. */
@@ -52,10 +49,10 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
   operations: ['overview', 'shoes'], tables: ['config'], accounts: ['players', 'users'],
-  partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
+  partners: ['apikeys','emails'], finance: ['transactions'],
 };
 const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
@@ -219,7 +216,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (!Array.isArray(payload.keys)) throw new StudioAdminUiError(503);
       payload = { keys: partnerMetadata(payload.keys) };
     }
-    const listField = { players: 'players', users: 'users', transactions: 'tx', voicelines: 'dealers' }[action as 'players' | 'users' | 'transactions' | 'voicelines'];
+    const listField = { players: 'players', users: 'users', transactions: 'tx' }[action as 'players' | 'users' | 'transactions'];
     if (listField && !Array.isArray(payload[listField])) throw new StudioAdminUiError(503);
     return { actor, payload };
   }
@@ -305,17 +302,11 @@ export function partnerMetadata(value: unknown): JsonObject[] {
   }));
 }
 
-export function studioAdminMediaUrl(value: unknown): string | null {
-  if (typeof value !== 'string' || !/^\/(dealer|dealers\/(astrid|amira|mei))\/[a-zA-Z0-9_./-]+\.(mp4|webm|mp3|wav)$/.test(value) || value.includes('..') || value.includes('//')) return null;
-  return value;
-}
-
 type AdministrationViewProps = {
   actor: StudioAdminActor; group: string; resources: Resources; busy: boolean;
   available: (method: Method, action: string) => boolean; command: Command;
   onDirty?: (form: HTMLFormElement) => void;
   onReload?: () => void;
-  dealerId?: string;
 };
 
 function ResourceNotice({ resource, onReload, reloadLabel }: { resource?: Resource; onReload?: () => void; reloadLabel: string }) {
@@ -388,10 +379,9 @@ export function TechnicalLaneCreate({ savedDealers, lanes, activeDealer, revisio
 }
 
 /** Pure presentation export also allows isolated render/role tests without a live server. */
-export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload, dealerId }: AdministrationViewProps) {
+export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload }: AdministrationViewProps) {
   const selected = BACKOFFICE_GROUPS.find(item => item.id === group);
   if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
-  const voiceDealers = rows(resources.voicelines?.payload?.dealers).filter(row => !dealerId || row.dealer === dealerId);
   const config = resources.config?.payload;
   const registeredDealers = savedDealerOptions(config?.savedDealers);
   const lanes = rows(config?.gameLanes);
@@ -605,23 +595,6 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {missing(resources.transactions, 'pay')}
         {resources.transactions?.payload && <TransactionJournal payload={resources.transactions.payload}/>}
       </>}
-      {section === 'voice' && <>
-        {missing(resources.voicelines, 'voice')}{configNotice()}{unavailableWrite('voiceline-review')}
-        {resources.voicelines?.payload && <><EmptyRows count={voiceDealers.length} />{dealerId && !voiceDealers.length ? <p>Inga registrerade talpar finns för vald dealer i den här granskningsbanken. Uppladdade klipp visas i dealerns klippbibliotek.</p> : null}{voiceDealers.map((dealer, index) => <div key={label(dealer.dealer, String(index))}>
-          <h4>{label(dealer.name, label(dealer.dealer))}</h4>
-          {rows(dealer.lines).map((line, lineIndex) => <details className={styles.review} key={label(line.key, String(lineIndex))}>
-            <summary><strong>{label(line.text, label(line.key))}</strong><span>{label(line.review, 'ej granskad')}</span></summary><p className={styles.notice}>{label(line.key)}</p>
-            {line.reviewState === 'unbound-or-changed-media' && <p>Tidigare bedömning gäller inte för nuvarande mediepar.</p>}
-            {studioAdminMediaUrl(line.preview) && <DealerClipPreview url={studioAdminMediaUrl(line.preview)!} label={`Förhandsvisning ${label(line.key)}`} />}
-            {studioAdminMediaUrl(line.audio) && <audio controls preload="none" src={studioAdminMediaUrl(line.audio)!} aria-label={`Ljud ${label(line.key)}`} />}
-            {mayWrite('voiceline-review', true) && line.reviewable === true && <form method="post" onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
-              <label>Bedömning<select name="verdict" defaultValue={label(line.review, '')} disabled={busy}><option value="">Ej granskad</option><option value="approved">Godkänd</option><option value="rejected">Underkänd</option></select></label><button disabled={busy}>Spara manuell granskning</button>
-            </form>}
-          </details>)}
-        </div>)}</>}
-        <p>Manuell bedömning är inte automatisk läppsynkscertifiering. Rehearsal i det riktiga spelet behövs fortfarande.</p>
-        <p className={styles.notice}>Betald speech-QA körs inte från den här ytan; den kräver separat operatörsgate.</p>
-      </>}
     </section>)}
   </div>;
 }
@@ -629,7 +602,6 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
 export function StudioAdministration(props: StudioAdministrationProps) {
   const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin, props.readIdentity]);
   const [group, setGroup] = useState(() => backofficeGroupId(props.initialGroup));
-  const [reviewDealerId,setReviewDealerId] = useState(props.initialDealerId || 'astrid');
   const [actor, setActor] = useState<StudioAdminActor | null>(null);
   const [resources, setResources] = useState<Resources>({});
   const [busy, setBusy] = useState(false);
@@ -647,10 +619,6 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   // An edited config form retains the revision it was based on, even after reload.
   // Reloading must not silently rebase stale fields onto newer server data.
   const draftForms = useRef(new Map<HTMLFormElement, string | undefined>());
-
-  useEffect(() => {
-    if (!changed.current && !writing.current) setReviewDealerId(props.initialDealerId || 'astrid');
-  }, [props.initialDealerId]);
 
   useEffect(() => {
     const owner = studioHistory(window), canLeave = () => !changed.current && !writing.current;
@@ -783,8 +751,6 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     }
   }
 
-  const reviewDealers = savedDealerOptions(resources.config?.payload?.savedDealers) ?? [];
-  const reviewDealerLabel = reviewDealers.find(row=>row.id===reviewDealerId)?.label ?? reviewDealerId;
   const activeGroup = ACTIVE_GROUPS.find(item => item.id === group);
   const area = activeGroup?.area ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
   const areaGroups = ACTIVE_GROUPS.filter(item => item.area === area);
@@ -797,7 +763,6 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <PageTemplate eyebrow={group === 'finance' ? 'EKONOMI' : area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
-    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{const dealer=event.target.value;if(busy||changed.current||writing.current||!reviewDealers.some(row=>row.id===dealer)||dealer===reviewDealerId)return;setReviewDealerId(dealer);const url=new URL(window.location.href);url.searchParams.set('dealer',dealer);studioHistory(window).push(url.pathname+url.search+url.hash);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
     {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/admin/rooms')}>Spelbolag &amp; rum</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
@@ -818,7 +783,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}
         read={async(query,signal)=>(await client.request('GET','shared-table-proof',undefined,signal,actor,query)).payload}
       />:null}
-      <StudioAdministrationView dealerId={group === 'media-review' ? reviewDealerId : undefined} key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
+      <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;
 }
