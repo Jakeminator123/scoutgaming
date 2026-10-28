@@ -33,6 +33,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
   const frozenStore = {
     getOperatorBySlug: async slug => listed.find(row => row.slug === slug) ?? null,
     getCurrentPackage: async id => packages.get(id) ?? null,
+    // The published bet profile per room, read for the captured package above (the lobby's room picture).
+    ...(typeof store.getPublishedRoomLimitPresets === 'function' ? { getPublishedRoomLimitPresets: pack => store.getPublishedRoomLimitPresets(pack) } : {}),
   };
   const roomReader = createPublicOperatorRooms({ store: frozenStore, policy: {
     readSaved: async () => saved,

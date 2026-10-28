@@ -4,9 +4,10 @@ import tailwind3 from 'tailwindcss3';
 import tailwind4 from '@tailwindcss/postcss';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve, sep, extname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { surfaceBundleOptions } from './surface-bundle.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const output = resolve(root, '../design-preview-build');
@@ -23,31 +24,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   const assetBase = publicLobby ? '/lobby' : '/admin';
   const assetSurface = publicLobby ? 'lobby' : surface;
   await mkdir(outdir, { recursive: true });
-  await build({ entryPoints: [resolve(source, 'entry.tsx')], outfile: resolve(outdir, 'app.js'),
-    bundle: true, minify: true, sourcemap: false, platform: 'browser', target: 'es2022', jsx: 'automatic',
-    // The shared room validator reaches this lazy game-only browser import.
-    // It is served by the game runtime and is never used by the design lobby.
-    external: ['/composition-runtime/compositor.js'],
-    define: { 'process.env.NODE_ENV': '"production"',
-      'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': JSON.stringify(surface==='admin'?'1':'0'),
-      'process.env.NEXT_PUBLIC_LAB_BASE_PATH': JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : '') },
-    alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
-      'react': resolve(root, 'node_modules/react'), 'react-dom': resolve(root, 'node_modules/react-dom'),
-      '@': source, 'next/link': resolve(root, 'runtime/navigation.tsx'),
-      'next/navigation': resolve(root, 'runtime/navigation.tsx'), 'next/image': resolve(root, 'runtime/image.ts') },
-    // Keep the imported internal design intact. The independent public bundle
-    // uses its own asset URLs, player readers and home link.
-    plugins: publicLobby ? [{ name: 'public-lobby-paths', setup(builder) {
-      builder.onLoad({ filter: /\.(?:tsx?|mjs)$/ }, async args => {
-        if (!args.path.startsWith(source + sep)) return;
-        const contents = (await readFile(args.path, 'utf8'))
-          .replaceAll('/admin/_assets/lobby/', '/lobby/_assets/lobby/')
-          .replaceAll('/admin/structure', '/')
-          .replaceAll('Till administrationen', 'Till startsidan');
-        return { contents, loader: extname(args.path) === '.mjs' ? 'js' : extname(args.path).slice(1) };
-      });
-    } }] : [],
-  });
+  await build({ ...surfaceBundleOptions(surface), outfile: resolve(outdir, 'app.js') });
   let css = await readFile(resolve(source, 'app/globals.css'), 'utf8');
   let plugins;
   if (surface === 'admin') {
