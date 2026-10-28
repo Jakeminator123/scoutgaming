@@ -46,7 +46,7 @@ Daterade bevis, skrivna en gång och lästa av status och `tools/o02-receipt.mjs
 
 | Mönster | Innehåll |
 | --- | --- |
-| `<datum>-<aktivitet>-…-ACCEPTANCE.json` | Sanerade acceptanskvitton med versions-, deploy- och databasidentiteter (J08, K04–K07, isolerat prov, O03-releasen) |
-| `<datum>-…-REVIEW.md` | Granskningar av kvittona (K04 F3–F5, K04/K05, K06/K07, K07) |
+| `<datum>-<aktivitet>-…-ACCEPTANCE.json` | Sanerade acceptanskvitton med versions-, deploy- och databasidentiteter (J08, K04–K07, O02, isolerat prov, O03-releasen) |
+| `<datum>-…-REVIEW.md` | Granskningar av kvittona (K04 F3–F5, K04/K05, K06/K07, K07, O02, O03) |
 
 Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git.
