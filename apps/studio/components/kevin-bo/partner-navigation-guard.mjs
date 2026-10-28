@@ -14,8 +14,3 @@ export function createPartnerLeaveGuard({isDirty, confirmLeave}) {
     },
   };
 }
-export function partnerWorkspaceView(view) {
-  if (['bj','theme','design','background','dealers','test'].includes(view)) return 'bj';
-  if (['players','tx','reports','stats','pit','shoes','roulette','baccarat'].includes(view)) return 'api';
-  return view;
-}

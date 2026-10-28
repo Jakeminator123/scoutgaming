@@ -37,7 +37,7 @@ function keysOf(body, required, optional = []) {
 // The slug is the /partner/{slug} address and the operator id. A reserved or
 // malformed slug would give an operator nobody can open.
 function operatorSlug(value) {
-  if (typeof value !== 'string' || workspaceSurfacePath('partner', 'ops', value) === null) fail(422);
+  if (typeof value !== 'string' || workspaceSurfacePath('partner', 'overview', value) === null) fail(422);
   return value;
 }
 

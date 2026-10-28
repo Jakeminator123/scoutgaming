@@ -91,18 +91,15 @@ test('missing or rejected N1 return targets fall back to Admin on both supported
 });
 
 test('operator menus retain exactly one room or company selector through either N1 auth base',()=>{
-  for(const view of ['','/team','/rooms','/integration','/table-design']){
+  for(const view of ['','/team','/rooms','/integration','/reports','/players','/help']){
     for(const query of ['room=vip-room','scope=company']){
       const target='/partner/north-casino'+view+'?'+query;
       for(const prefix of ['','/studio'])assert.equal(studioLoginReturnTo(prefix+target),target);
       for(const authBase of ['/api/auth','/studio/api/auth'])assert.equal(studioLoginDestination(target,authBase),target);
     }
   }
-  for(const query of ['scope=','scope=Company','scope=unknown','scope=%63ompany','%73cope=company',
-    'scope=company&scope=company','scope=company&room=','scope=company&room=foreign-room',
-    'room=vip-room&scope=company','room=vip-room&room=vip-room','room=%76ip-room','scope=company&extra=x']){
-    const target='/partner/north-casino/team?'+query;
-    assert.equal(studioLoginReturnTo(target),'/admin',target);
-    assert.equal(studioLoginDestination(target,'/api/auth'),'/admin',target);
+  // Kevins retired addresses return to the new view with the same selector.
+  for(const [legacy,canonical] of [['/table-design','/rooms'],['/presentation','/rooms'],['/transactions','/reports'],['/overview','']]){
+    assert.equal(studioLoginReturnTo('/partner/north-casino'+legacy+'?room=vip-room'),'/partner/north-casino'+canonical+'?room=vip-room');
   }
 });

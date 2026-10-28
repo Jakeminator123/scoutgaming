@@ -68,7 +68,7 @@ test('late responses from previous room never display in the next room',async()=
 });
 test('base dealer without frozen idle is disclosed and never replaced by another dealer clip',async()=>{
  const p=props(),data=descriptor();data.media.dealer=null;const h=harness(async()=>response(data));open(h.render(p)).props.onClick();h.render(p);await h.flush();
- const tree=h.render(p),html=renderToStaticMarkup(tree);assert.match(html,/saknar tillgänglig fryst grundloop/);assert.equal(h.compositions(tree)[0].props.dealer,null);
+ const tree=h.render(p),html=renderToStaticMarkup(tree);assert.match(html,/Dealern saknar vila i förhandsvisningen/);assert.equal(h.compositions(tree)[0].props.dealer,null);
 });
 test('English preview explains incomplete layers and permits retry after a temporary failure',async()=>{
  let count=0;const p={...props(),language:'en'},h=harness(async()=>response(count++?descriptor():{},count===1?503:200));
@@ -131,4 +131,13 @@ test('Admin preview loads the exact frozen descriptor initially, while inactive 
   assert.equal(calls.length,active?1:0);assert.equal(h.compositions(tree).length,active?1:0);
   if(active){assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=linnea&revision=7');assert.equal(calls[0].request.method??'GET','GET');assert.equal(calls[0].request.body,undefined);}
  }
+});
+
+test('Partnerportalen loads the scene directly and resumes it when the editor becomes active again',async()=>{
+  const calls=[],p={...props(),initiallyEnabled:true},h=harness(async url=>{calls.push(url);return response(descriptor());});
+  h.render(p);await h.flush();assert.equal(h.compositions(h.render(p)).length,1);assert.equal(calls.length,1);
+  h.render({...p,active:false});await h.flush();assert.equal(h.compositions(h.render({...p,active:false})).length,0);
+  h.render(p);await h.flush();assert.equal(h.compositions(h.render(p)).length,1,'the scene comes back without a button');
+  assert.equal(h.compositions(h.render(p))[0].props.minimal,true,'the stage hides the developer playback details');
+  assert.equal(walk(h.render(p),node=>node.type==='button'&&node.props.children==='Dator').length,1);
 });
