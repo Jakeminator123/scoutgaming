@@ -9,6 +9,7 @@ import {AI_IMAGE_ERROR_CODES,AI_IMAGE_MAX_PROPOSALS,AI_IMAGE_PROMPT_LENGTH,AI_IM
   AI_IMAGE_REFERENCE_TYPES,aiImageLabel} from '../../../lib/ai-image-contract.mjs';
 // The fit guard lives in the shared contract so publication runs the same check.
 export {AI_TABLE_MISFIT,aiTableFitsTemplate,aiTableMisfits,aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
+import {aiTableMisfits} from '../../../lib/ai-image-contract.mjs';
 
 export const AI_IMAGE_ENDPOINT='/api/layer-assets/generate';
 export const AI_IMAGE_MESSAGES=Object.freeze({
@@ -118,4 +119,19 @@ export async function prepareReferenceImage(file,{measure=browserMeasure,shrink=
     if (smaller&&smaller.size<AI_IMAGE_REFERENCE_MAX_BYTES) return fileDataUrl(smaller);
   }
   throw new Error('Inspirationsbilden kunde inte göras mindre än 2 MB. Välj en annan bild.');
+}
+
+// Before a company package is published: the saved project's chosen scene
+// templates, checked as the server checks them. Only a found misfit stops the
+// publish; an unreadable project leaves the decision to the server, which
+// refuses a misfit anyway (422 ai_table_misfit).
+export async function aiPackageMisfit({endpoint,lanes,fetchImpl=fetch,signal}) {
+  try {
+    const response=await fetchImpl(endpoint,{method:'GET',credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'},signal});
+    if (!response.ok) return null;
+    const project=(await response.json())?.project;
+    if (!Array.isArray(project?.lanes)) return null;
+    const chosen=new Set(lanes);
+    return aiTableMisfits(project.lanes.filter(lane=>chosen.has(lane?.id)),project.layerAssets)[0]??null;
+  } catch { return null; }
 }

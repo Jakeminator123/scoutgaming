@@ -408,12 +408,12 @@ test('the room status shows published materials only for the selected room and c
 // Publication proofs for the company package under Bolag › Tilldelning. They were first written for the retired
 // publication page (/admin/publication) and follow the same operator-package contract.
 const packageOperators=change=>lifecycleSnapshot({operators:lifecycleSnapshot().operators.map(row=>row.id==='a'?{...row,...change}:row)});
-async function publicationHarness({props={operatorId:'a',mode:'package'},dealerIds=['astrid']}={}){
+async function publicationHarness({props={operatorId:'a',mode:'package'},dealerIds=['astrid'],project=null}={}){
   const requests=[],replies=[],extraRooms=[];
   const value=()=>registry({operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:row.id==='a'?4:null})),
     rooms:[...catalog.administration.rooms,...extraRooms].map(row=>registryRoom({...row,dealerIds:[...dealerIds]})),compositions});
   const fetcher=async(url,options={})=>{
-    if(options.method!=='POST')return Response.json(value());
+    if(options.method!=='POST')return project&&/\/api\/project$/.test(url)?Response.json({project}):Response.json(value());
     requests.push({url,body:JSON.parse(options.body)});
     const next=replies.shift();
     return typeof next==='function'?next():next??Response.json({error:'studio_conflict'},{status:409});
@@ -543,6 +543,23 @@ test('unsaved Studio work blocks the company publication until it is saved',asyn
   p.lifecycle().props.onChanged(lifecycleSnapshot());
   assert.equal(p.status(),'Spara det pågående arbetet först');assert.equal(p.submit().props.disabled,true);
   await p.publish();assert.equal(p.requests.length,0);
+});
+
+test('an assigned scene template showing an AI table drawn for another dealer stops the company publish before the request',async()=>{
+  const {aiImageLabel}=await import('../../../lib/ai-image-contract.mjs');
+  const table={id:'t1',role:'table',label:aiImageLabel('Grön filt',{dealerId:'paow',placement:'0123abcd'})};
+  const lane=(id,dealers,tables)=>({id,dealers,layers:{table:{enabled:true,default:tables[0]??null,allowed:tables}}});
+  const p=await publicationHarness({project:{lanes:[lane('one',['astrid'],['t1']),lane('two',['astrid'],[])],layerAssets:[table]}});
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  await p.publish();
+  assert.equal(p.requests.length,0,'nothing is sent while a chosen template shows the misfit');
+  assert.match(p.html(),/Bordsgrafiken är ritad för en annan dealer än scenmallens\. Rita om bordet för den här scenmallen eller välj ett annat bord\. Inget publicerades\./);
+  assert.equal(p.checkbox('two').props.checked,true,'the draft selection is kept');
+  p.checkbox('one').props.onChange({target:{checked:false}});
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['two']}));
+  await p.publish();
+  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['two'],expectedPackageRevision:4}],'a template without the misfit publishes as before');
 });
 
 test('a composition removed from Studio stays visible in the package and blocks publication until it is unchecked',async()=>{

@@ -26,3 +26,4 @@ export function prepareReferenceImage(file:File,options?:{
   measure?:(file:File)=>Promise<{width:number;height:number}>;
   shrink?:(file:File,size:{width:number;height:number},quality:number)=>Promise<Blob|null>;
 }):Promise<string>;
+export function aiPackageMisfit(input:{endpoint:string;lanes:readonly string[];fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<import('../../../lib/ai-image-contract.mjs').AiTableMisfit|null>;

@@ -15,6 +15,7 @@ import {useSearchParams} from '../../../runtime/navigation';
 import {studioHistory} from '../../../../lib/studio-history.mjs';
 import {navigationKeepsStudioTab} from '../../lib/connected-studio.mjs';
 import {DealerFaces} from './dealer-identity-portrait';
+import {aiPackageMisfit, aiTableMisfitMessage} from '../../lib/ai-background.mjs';
 
 type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
 type Dealer = { id: string; name: string; archived: boolean };
@@ -161,6 +162,9 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     publishLock.current = true; setPublishBusy(true);
     updatePackage(id, current => ({ ...current, message: '', error: '' }));
     try {
+      // An AI table graphic outside the scene template it was drawn for: say so before sending. The server refuses it anyway.
+      const misfit = await aiPackageMisfit({ endpoint: labBasePath() + '/api/project', lanes, fetchImpl: fetch });
+      if (misfit) { updatePackage(id, current => ({ ...current, error: aiTableMisfitMessage(misfit) + ' Inget publicerades.' })); return; }
       const result = await publishOperatorPackage({ endpoint: labBasePath() + '/api/admin/operator-package', operatorId: id, lanes, revision, fetchImpl: fetch });
       if (!result.ok) { updatePackage(id, current => ({ ...current, needsRefresh: result.needsRefresh || current.needsRefresh, error: result.error })); return; }
       updatePackage(id, current => ({ ...current, chosen: lanes, baseline: lanes, revision: result.revision, needsRefresh: false, error: '', message: publishedPackageMessage(result.revision) }));
