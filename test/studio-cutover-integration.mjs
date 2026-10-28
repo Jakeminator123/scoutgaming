@@ -380,7 +380,18 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     const sessionRequest = cookie => ({ headers: { host: new URL(backendOrigin).host, cookie }, socket: { encrypted: true } });
     const n1Account = await runtime.identity.find(names[0]);
     const frozenN1 = { ...n1Account, authEpoch: await runtime.authEpoch(n1Account.id) };
-    const n1PlayerCookie = (await runtime.gameAuth.fromBackoffice(sessionRequest(''), frozenN1)).split(';')[0];
+    // A player session from the retired BO handoff (`bo:<epoch>:<stamp>`): nothing mints
+    // these any more, but a remaining row must keep its epoch binding.
+    let n1Linked = (await runtime.store.db.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(frozenN1.id))?.player_id;
+    if (!n1Linked) {
+      n1Linked = randomUUID();
+      await runtime.store.db.prepare('INSERT INTO players(id,name,created_at) VALUES (?,?,?)').run(n1Linked, frozenN1.name, new Date().toISOString());
+      await runtime.store.db.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(frozenN1.id, n1Linked);
+    }
+    const n1Token = randomBytes(32).toString('hex');
+    await runtime.store.db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)')
+      .run(createHash('sha256').update(n1Token).digest('hex'), n1Linked, Date.now() + 86400000, `bo:${frozenN1.authEpoch}:${frozenN1.stamp}`, null);
+    const n1PlayerCookie = 'player_session=' + n1Token;
     const n1PlayerId = await runtime.gameAuth.user(sessionRequest(n1PlayerCookie));
     assert.ok(n1PlayerId);
     await check('actual cluster restart preserves saved policy, native auth, account balance, history and nonce', async () => {
@@ -401,7 +412,6 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await call('/studio/api/auth/logout', { method: 'POST', body: {} })).status, 200);
       assert.equal((await call('/studio/api/admin/config')).status, 401);
       assert.equal(await runtime.gameAuth.user(sessionRequest(n1PlayerCookie)), null, 'a delayed cookie from before logout cannot restore authentication');
-      await assert.rejects(runtime.gameAuth.fromBackoffice(sessionRequest(''), frozenN1), /Backoffice session expired/, 'a frozen handoff cannot adopt the new epoch');
       assert.ok(await runtime.store.db.prepare('SELECT id FROM players WHERE id=?').get(n1PlayerId), 'logout preserves the player account');
       assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1025, 'logout does not change the existing wallet');
     });

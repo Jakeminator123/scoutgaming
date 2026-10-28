@@ -105,7 +105,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     administration: true, storage: 'postgres',
   }));
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
-  register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,hash IS NOT NULL AS active FROM users ORDER BY id').all() }));
+  register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,(hash IS NOT NULL)::integer AS active FROM users ORDER BY id').all() }));
   register('GET', 'apikeys', async () => ({ keys: await boDb.prepare('SELECT id,name,scopes,(wallet_url IS NOT NULL AND wallet_url<>\'\') AS wallet_configured,created_at,last_used,revoked_at FROM api_keys ORDER BY created_at DESC').all()
     .then(rows => rows.map(row => ({ ...row, scopes: (() => { try { const value = JSON.parse(row.scopes); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; } catch { return []; } })() }))) }));
 
