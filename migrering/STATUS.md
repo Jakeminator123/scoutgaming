@@ -1,6 +1,6 @@
 # Migrationsstatus
 
-Genererad från [status.json](status.json). Uppdaterad 2026-10-27.
+Genererad från [status.json](status.json). Uppdaterad 2026-10-28.
 
 **Verifierad migrering: 70% (14/20 aktiviteter).**
 
