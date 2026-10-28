@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { PARTNER_VIEWS } from '../../../../packages/navigation/workspace-surfaces.mjs';
 import { PARTNER_VIEW_PERMISSIONS } from '../../../../packages/studio-access/server/partner-access-policy.mjs';
+// Rollens ord bor i en ren modul (ingen React) så att servern kan läsa dem.
+export { PARTNER_ROLE_WORDS, partnerRoleWord } from '../../lib/partner-words.mjs';
 
 // Orden följer apps/studio/docs/TERMINOLOGI.md: Partnerportalen, bolag, spelbord,
 // bordsgrafik, scenmall, tilldelning, revision, utkast/publicerad,
@@ -55,15 +57,6 @@ const COPY = Object.freeze({
 });
 
 export function partnerCopy(language = 'sv') { return COPY[language === 'en' ? 'en' : 'sv']; }
-
-// Rollens ord (TERMINOLOGI): standardrollerna i apps/studio/lib/operator-admin-api.mjs.
-export const PARTNER_ROLE_WORDS = Object.freeze({
-  sv: Object.freeze({ 'partner-admin': 'administratör', 'partner-editor': 'redaktör', 'partner-viewer': 'läsare' }),
-  en: Object.freeze({ 'partner-admin': 'administrator', 'partner-editor': 'editor', 'partner-viewer': 'reader' }),
-});
-export function partnerRoleWord(roleId, fallback = '', language = 'sv') {
-  return PARTNER_ROLE_WORDS[language === 'en' ? 'en' : 'sv'][roleId] ?? (fallback || roleId || '');
-}
 
 // Menyn är presentation: samma karta som servern använder för att neka en vy.
 export function partnerNavigation(language, permissions = []) {

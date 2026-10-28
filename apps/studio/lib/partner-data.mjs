@@ -13,7 +13,7 @@ import { isPresentationRoomLaneCompatible } from '../../../packages/presentation
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { readPartnerReports, readPublishedRoomSettings } from './partner-game-readout.mjs';
-import { partnerRoleWord } from '../components/kevin-bo/partner-copy.mjs';
+import { partnerRoleWord } from './partner-words.mjs';
 
 export const INTERNAL_ROLE = Object.freeze({ id: 'internal-admin', label: 'Scoutgamings personal' });
 
