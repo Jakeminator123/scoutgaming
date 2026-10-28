@@ -1,6 +1,8 @@
 // Existing table DOM; all visible money, seats and controls come from a server snapshot.
 import { BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { SEAT_COUNT, WINDOW_SIZE, crowding, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
+import { installSharedRoomShortcuts } from './shared-room-shortcuts.mjs';
+import { sharedRoomResultPending } from './shared-room-results.mjs';
 const money = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
 const $ = (document,id) => document.getElementById(id);
 function button(document,text,action) {
@@ -87,6 +89,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   for(const node of decisions)listen(node,()=>actions?.dispatch('act',{action:node.dataset.act}));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
   $(document,'ins-yes').textContent='Ja';$(document,'ins-no').textContent='Nej';
+  cleanups.push(installSharedRoomShortcuts(document));
   const owns=index=>Boolean(model?.snapshot&&model.snapshot.owners[index]===model.snapshot.me.id);
   const slots=Array.from({length:7},(_,index)=>{
     // Admin table geometry positions the seat root; the controls keep 44 px touch
@@ -192,14 +195,14 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   return Object.freeze({
     bind(value){actions=value;},
     render(value){
-      model=value;const s=value.snapshot,can=value.can,hints=value.hints??{};
+      model=value;const s=value.snapshot,can=value.can,hints=value.hints??{},resultPending=sharedRoomResultPending(value);
       // An empty status box stays away: it overlays the table beside the first seat.
       notice.textContent=value.notice;status.hidden=!value.notice;retry.hidden=!value.retry;retry.disabled=value.busy;signIn.hidden=!value.signIn;
       // The sign shows while the table is lost: offline with Återanslut, or reconnecting by itself.
       sign.hidden=!(value.offline||value.reconnecting)||value.stopped===true;again.hidden=!value.offline;
       signText.textContent=value.offline?'Anslutningen till bordet bröts. Bordet visar senaste läget.':'Återansluter till bordet…';
       sign.dataset.state=value.offline?'offline':'reconnecting';
-      leave.disabled=!can.leave;leave.hidden=!s?.me.seats.length;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
+      leave.disabled=!can.leave;leave.hidden=!s?.me.seats.length;next.hidden=s?.phase!=='settled'||resultPending;next.disabled=!can.next;
       for(const [id,[,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.disabled=!can[op];
         // Redo waits for a main bet and Upprepa for a previous round; the tooltip names the reason.
         if(op==='ready'||op==='repeat')node.title=hints[op]??'';}
@@ -218,8 +221,8 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       // K06 O1: the heading names the room's stake profile instead of a fixed "Privé".
       if(profile)profile.textContent=tableProfileName(s.settings);
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
-      $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
-      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      $(document,'last-win').textContent=s.me.lastSettlement&&!resultPending?money(s.me.lastSettlement.returned):'–';
+      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'&&!resultPending?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
       $(document,'banner').title=$(document,'banner').textContent;
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
