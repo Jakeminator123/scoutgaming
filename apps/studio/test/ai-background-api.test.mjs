@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
-import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,aiImageEnabled,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
+import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,aiImageEnabled,aiImageSetup,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
 import {filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
 import {AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -30,7 +30,7 @@ function provider(calls,{respond}={}) {
 }
 function api({role='admin',calls=[],respond,limiter=createAiImageDailyLimit(),settings=env,logs=[],...rest}={}) {
   const flagged={CROUPIER_AI_IMAGE_ENABLED:'1',...settings};
-  return createAiBackgroundApi({authorize:staff(role),config,configuration:()=>aiImageConfiguration(flagged),enabled:()=>aiImageEnabled(flagged),
+  return createAiBackgroundApi({authorize:staff(role),config,setup:()=>aiImageSetup(flagged),enabled:()=>aiImageEnabled(flagged),
     log:event=>logs.push(event),limiter,fetchImpl:provider(calls,{respond}),...rest});
 }
 
@@ -55,11 +55,11 @@ test('wrong role, foreign scope, foreign origin and missing login are refused at
 });
 
 test('a missing key answers ai_image_unavailable and "not connected" status without calling the provider',async()=>{
-  for (const settings of [{},{OPENAI_API_KEY:''},{OPENCLAW_MODEL_API_KEY:'',OPENAI_API_KEY:KEY},{OPENAI_API_KEY:KEY,OPENCLAW_MODEL_API:'openai-completions'}]) {
+  for (const settings of [{},{OPENAI_API_KEY:''},{OPENAI_API_KEY:'   '},{OPENCLAW_MODEL_API_KEY:'',OPENAI_API_KEY:KEY}]) {
     const calls=[],handler=api({calls,settings});
     const response=await handler.handle(post(background));
     assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'ai_image_unavailable',code:'ai_image_unavailable'});
-    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:false,dailyLimit:0,remaining:0});
+    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:false,problem:'missing_key',dailyLimit:0,remaining:0});
     assert.equal(calls.length,0);
   }
 });
@@ -69,7 +69,7 @@ test('without CROUPIER_AI_IMAGE_ENABLED=1 the route answers ai_image_disabled, e
     const calls=[],handler=api({calls,settings:{OPENAI_API_KEY:KEY,CROUPIER_AI_IMAGE_ENABLED:flag}});
     const response=await handler.handle(post(background));
     assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'ai_image_disabled',code:'ai_image_disabled'});
-    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:false,configured:false,dailyLimit:0,remaining:0});
+    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:false,configured:false,problem:null,dailyLimit:0,remaining:0});
     assert.equal(calls.length,0,String(flag));
   }
   assert.equal(aiImageEnabled({}),false);assert.equal(aiImageEnabled({CROUPIER_AI_IMAGE_ENABLED:'1'}),true);
@@ -80,7 +80,7 @@ test('the daily cap answers ai_image_limit_reached before any provider call',asy
   const handler=api({calls,limiter,settings});
   assert.equal((await handler.handle(post({...background,count:2}))).status,200);
   assert.equal(calls.length,2);
-  assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:true,dailyLimit:2,remaining:0});
+  assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:true,problem:null,dailyLimit:2,remaining:0});
   const refused=await handler.handle(post(background));
   assert.equal(refused.status,429);assert.equal((await refused.json()).code,'ai_image_limit_reached');
   assert.equal(calls.length,2,'no call once the cap is reached');
@@ -333,4 +333,17 @@ test('the inspiration image is checked for dimensions on the server: over 1536 p
   const fits=await sharp({create:{width:1536,height:864,channels:3,background:felt}}).webp().toBuffer();
   assert.equal((await handler.handle(post({...background,reference:dataUrl('image/webp',fits)}))).status,200);
   assert.equal(calls[0].body.input[0].content[1].type,'input_image');
+});
+
+test('an invalid renderer, model, reasoning, cap or API form is "invalid setting", told apart from a missing key',async()=>{
+  for (const extra of [{CROUPIER_AI_IMAGE_RENDERER:'Bild 2'},{CROUPIER_AI_IMAGE_MODEL:'GPT 6'},{CROUPIER_AI_IMAGE_REASONING:'extreme'},{CROUPIER_AI_IMAGE_DAILY_LIMIT:'tio'},
+    {OPENCLAW_MODEL_API:'openai-completions'},{OPENCLAW_MODEL_BASE_URL:'http://api.openai.com/v1'}]) {
+    const calls=[],handler=api({calls,settings:{...env,...extra}});
+    const response=await handler.handle(post(background));
+    assert.equal(response.status,503,JSON.stringify(extra));assert.deepEqual(await response.json(),{error:'ai_image_misconfigured',code:'ai_image_misconfigured'});
+    assert.deepEqual(await (await handler.handle(get())).json(),{enabled:true,configured:false,problem:'invalid_setting',dailyLimit:0,remaining:0});
+    assert.equal(calls.length,0);
+  }
+  assert.deepEqual({...aiImageSetup({OPENAI_API_KEY:KEY})},{settings:aiImageConfiguration({OPENAI_API_KEY:KEY}),problem:null});
+  assert.equal(aiImageSetup({}).problem,'missing_key');
 });

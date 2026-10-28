@@ -81,7 +81,10 @@ test('proposal requests go to the one AI route and only fixed codes become text'
   assert.doesNotMatch(AI_IMAGE_MESSAGES.ai_image_budget_exhausted,/i morgon/);
   const unknown=await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1},{fetchImpl:async()=>Response.json({code:'provider_said',error:'secret provider text'},{status:500})}).catch(cause=>cause);
   assert.equal(aiImageErrorMessage(unknown),'Förslagen kunde inte skapas. Försök igen.');assert.doesNotMatch(aiImageErrorMessage(unknown),/secret|provider/);
-  assert.deepEqual(await readAiImageStatus({fetchImpl:async()=>Response.json({enabled:false,configured:false,dailyLimit:0,remaining:0})}),{enabled:false,configured:false,dailyLimit:0,remaining:0});
+  assert.deepEqual(await readAiImageStatus({fetchImpl:async()=>Response.json({enabled:false,configured:false,problem:null,dailyLimit:0,remaining:0})}),{enabled:false,configured:false,problem:null,dailyLimit:0,remaining:0});
+  assert.equal((await readAiImageStatus({fetchImpl:async()=>Response.json({enabled:true,configured:false,problem:'invalid_setting'})})).problem,'invalid_setting');
+  assert.equal((await readAiImageStatus({fetchImpl:async()=>Response.json({enabled:true,configured:false,problem:'<script>'})})).problem,null);
+  assert.equal(AI_IMAGE_MESSAGES.ai_image_misconfigured,'AI-inställningen är ogiltig. Kontakta den som driftar Scoutgaming.');
 });
 
 test('inspiration images: PNG, JPEG or WebP, shrunk in the browser to at most 1536 px and under 2 MB',async()=>{

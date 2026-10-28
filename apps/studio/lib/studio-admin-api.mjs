@@ -7,6 +7,7 @@ import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSA
 import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
 import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
 import { logStudioServerFailure } from './studio-error-log.mjs';
+import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 
 const MAX_BODY = 64 * 1024;
 const administrationMutations = new Set(['tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
@@ -177,6 +178,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         const code = 'studio_room_game_material_unavailable';
         return json({ error: code, code }, status);
       }
+      // A refused AI table graphic: fixed code, scene template, material and reason code.
+      const misfit = status === 422 ? aiTableMisfitBody(error) : null;
+      if (misfit) return json(misfit, status);
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }

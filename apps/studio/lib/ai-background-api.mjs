@@ -28,7 +28,7 @@ const BACKGROUND_REQUEST=Object.freeze({width:1920,height:1088});
 const BODY_LIMIT=4_400_000,PROVIDER_LIMIT=40*1024*1024,PROVIDER_ERROR_LIMIT=64*1024;
 const PIXEL_LIMIT=40_000_000,TIMEOUT_MS=240_000,MAX_OUTPUT_TOKENS=40_000;
 const HEADERS=Object.freeze({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
-const STATUS=Object.freeze({ai_image_invalid_request:400,ai_image_rejected:422,ai_image_limit_reached:429,ai_image_budget_exhausted:429,ai_image_unavailable:503,ai_image_disabled:503});
+const STATUS=Object.freeze({ai_image_misconfigured:503,ai_image_invalid_request:400,ai_image_rejected:422,ai_image_limit_reached:429,ai_image_budget_exhausted:429,ai_image_unavailable:503,ai_image_disabled:503});
 const REJECTED=new Set(['moderation_blocked','content_policy_violation']),BUDGET=new Set(['insufficient_quota','billing_hard_limit_reached']);
 
 class AiImageError extends Error { constructor(code) { super(code); this.code=code; } }
@@ -39,6 +39,14 @@ const aiResponse=code=>Response.json({error:code,code},{status:STATUS[code],head
 // Off by default: the key alone does not switch the feature on.
 export const aiImageEnabled=(env=process.env)=>env.CROUPIER_AI_IMAGE_ENABLED==='1';
 const MODEL_NAME=/^[a-z0-9][a-z0-9.-]{0,63}$/;
+// Missing key and invalid setting are told apart: the first is "Inte anslutet",
+// the second a configuration error for whoever runs Scoutgaming.
+export function aiImageSetup(env=process.env) {
+  const key=(env.OPENCLAW_MODEL_API_KEY??env.OPENAI_API_KEY)?.trim();
+  if (!key) return Object.freeze({settings:null,problem:'missing_key'});
+  const settings=aiImageConfiguration(env);
+  return Object.freeze(settings?{settings,problem:null}:{settings:null,problem:'invalid_setting'});
+}
 export function aiImageConfiguration(env=process.env) {
   const connection=openAiModelConnection(env);
   // The image tool exists only in the Responses API.
@@ -255,7 +263,7 @@ export async function renderAiProposal(bytes,{role,template,preset},{sharp}) {
 }
 const loadSharp=async()=>(await import('sharp')).default;
 
-export function createAiBackgroundApi({authorize,config,configuration=()=>aiImageConfiguration(),limiter=instanceLimit,fetchImpl=fetch,imageLibrary=loadSharp,enabled=()=>aiImageEnabled(),log=logAiProviderFailure,templateFor=(dealerId,composition)=>filmedTableTemplate(dealerId,composition?{composition}:{})}={}) {
+export function createAiBackgroundApi({authorize,config,setup=()=>aiImageSetup(),limiter=instanceLimit,fetchImpl=fetch,imageLibrary=loadSharp,enabled=()=>aiImageEnabled(),log=logAiProviderFailure,templateFor=(dealerId,composition)=>filmedTableTemplate(dealerId,composition?{composition}:{})}={}) {
   if (typeof authorize!=='function'||!config||!['/api/admin','/studio/api/admin'].includes(config.apiBase)) throw new StudioStorageError('studio_invalid_configuration',503);
   const scope=validateStudioScope(config.scope),path=`${config.apiBase==='/api/admin'?'/api':'/studio/api'}/layer-assets/generate`;
   // The same staff gate as the layer-asset upload: admin or superadmin in this scope.
@@ -273,8 +281,8 @@ export function createAiBackgroundApi({authorize,config,configuration=()=>aiImag
       if (!['GET','POST'].includes(request.method)) return new Response(null,{status:405,headers:{...HEADERS,Allow:'GET, POST'}});
       const principal=await staff(request);
       if (request.method==='GET') {
-        const on=enabled(),settings=on?configuration():null;
-        return Response.json({enabled:on,configured:Boolean(settings),dailyLimit:settings?.dailyLimit??0,remaining:settings?limiter.remaining(settings.dailyLimit):0},{headers:HEADERS});
+        const on=enabled(),{settings,problem}=on?setup():{settings:null,problem:null};
+        return Response.json({enabled:on,configured:Boolean(settings),problem,dailyLimit:settings?.dailyLimit??0,remaining:settings?limiter.remaining(settings.dailyLimit):0},{headers:HEADERS});
       }
       if (request.headers.get('origin')!==new URL(request.url).origin
         ||!['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) throw new StudioStorageError('studio_request_rejected',403);
@@ -282,8 +290,8 @@ export function createAiBackgroundApi({authorize,config,configuration=()=>aiImag
       const input=validateAiImageRequest(await readRequestJson(request));
       const template=input.role==='table'?templateFor(input.dealerId,input.sceneTemplate?.composition??null):null;
       if (input.role==='table'&&!template) invalid();
-      const settings=configuration();
-      if (!settings) aiFail('ai_image_unavailable');
+      const {settings,problem}=setup();
+      if (!settings) aiFail(problem==='invalid_setting'?'ai_image_misconfigured':'ai_image_unavailable');
       const image=await imageLibrary();
       const images=[];
       if (template) {

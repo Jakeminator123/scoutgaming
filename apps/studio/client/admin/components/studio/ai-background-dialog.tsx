@@ -59,8 +59,9 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
 
   const noun = table ? 'bordsgrafik' : 'bakgrund', place = table ? 'Bordsgrafik' : 'Bakgrunder';
   const text = prompt.replace(/\s+/g, ' ').trim();
-  const off = status?.enabled === false, offline = status?.enabled === true && !status.configured, exhausted = status?.configured === true && status.remaining < count;
-  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !offline && !exhausted && !unsupported;
+  const off = status?.enabled === false, misconfigured = status?.enabled === true && status.problem === 'invalid_setting';
+  const offline = status?.enabled === true && !status.configured && !misconfigured, exhausted = status?.configured === true && status.remaining < count;
+  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !misconfigured && !offline && !exhausted && !unsupported;
 
   function close(next: boolean) {
     if (next) { setOpen(true); setConfirmation(''); return; }
@@ -133,6 +134,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
           {status === null && !statusError ? <p role="status" className="text-sg-muted">Kontrollerar bildtjänsten…</p> : null}
           {statusError ? <p role="alert" className="text-sg-red">{statusError}</p> : null}
           {off ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte påslaget.</strong> AI-bilder är avstängda på den här servern. Manuell uppladdning fungerar som vanligt.</p> : null}
+          {misconfigured ? <p role="status" className="rounded border border-sg-line p-3"><strong>AI-inställningen är ogiltig.</strong> Kontakta den som driftar Scoutgaming.</p> : null}
           {offline ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte anslutet.</strong> OpenAI-nyckeln saknas på servern, så inga förslag kan skapas här ännu. Manuell uppladdning fungerar som vanligt.</p> : null}
           {status?.configured ? <p className="text-xs text-sg-muted">{status.remaining} av {status.dailyLimit} bilder kvar i dag på den här servern.</p> : null}
           {unsupported ? <p role="status" className="rounded border border-sg-line p-3">Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.</p> : null}

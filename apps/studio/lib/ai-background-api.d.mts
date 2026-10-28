@@ -15,6 +15,7 @@ export const AI_IMAGE_DEFAULT_DAILY_LIMIT: number;
 export const AI_IMAGE_RENDERER: string;
 export function aiImageEnabled(env?:Record<string,string|undefined>):boolean;
 export function logAiProviderFailure(event:{status:number|null;code:string|null}):void;
+export function aiImageSetup(env?:Record<string,string|undefined>):{readonly settings:AiImageConfiguration|null;readonly problem:'missing_key'|'invalid_setting'|null};
 export function aiImageConfiguration(env?:Record<string,string|undefined>):AiImageConfiguration|null;
 export function createAiImageDailyLimit(options?:{clock?:()=>number}):AiImageDailyLimit;
 export function validateAiImageRequest(body:unknown):AiImageRequest;
@@ -23,7 +24,7 @@ export function renderAiProposal(bytes:Uint8Array,input:{role:AiImageRole;templa
 export function createAiBackgroundApi(options:{
   authorize:(request:Request)=>Promise<{user:string;role:string;scope:unknown}|null>;
   config:{scope:unknown;apiBase:string;[key:string]:unknown};
-  configuration?:()=>AiImageConfiguration|null;
+  setup?:()=>{settings:AiImageConfiguration|null;problem:'missing_key'|'invalid_setting'|null};
   limiter?:AiImageDailyLimit;
   fetchImpl?:typeof fetch;
   imageLibrary?:()=>Promise<unknown>;

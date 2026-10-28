@@ -5,13 +5,15 @@ import {labUrl} from '../../../lib/lab-url.mjs';
 import {uploadCompositionLayer} from '../../../lib/studio-composition.mjs';
 import {layerUploadResponseError} from '../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
 import {registeredFilmedProfile} from '../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
-import {defaultCompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {AI_IMAGE_ERROR_CODES,AI_IMAGE_MAX_PROPOSALS,AI_IMAGE_PROMPT_LENGTH,AI_IMAGE_REFERENCE_FILE_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_EDGE,
-  AI_IMAGE_REFERENCE_TYPES,aiImageLabel,aiPlacementHash,aiTableLabelFit} from '../../../lib/ai-image-contract.mjs';
+  AI_IMAGE_REFERENCE_TYPES,aiImageLabel} from '../../../lib/ai-image-contract.mjs';
+// The fit guard lives in the shared contract so publication runs the same check.
+export {AI_TABLE_MISFIT,aiTableFitsTemplate,aiTableMisfits,aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
 
 export const AI_IMAGE_ENDPOINT='/api/layer-assets/generate';
 export const AI_IMAGE_MESSAGES=Object.freeze({
   ai_image_disabled:'Inte påslaget. AI-bilder är avstängda på den här servern.',
+  ai_image_misconfigured:'AI-inställningen är ogiltig. Kontakta den som driftar Scoutgaming.',
   ai_image_unavailable:'Inte anslutet. Bildtjänsten svarar inte eller saknar nyckel på servern. Försök igen senare.',
   ai_image_limit_reached:'Dagens gräns för AI-bilder på den här servern är nådd. Försök igen i morgon.',
   ai_image_budget_exhausted:'AI-budgeten är slut. Kontakta den som äger OpenAI-kontot.',
@@ -35,7 +37,8 @@ export async function readAiImageStatus({fetchImpl=fetch,signal}={}) {
   const response=await fetchImpl(labUrl(AI_IMAGE_ENDPOINT),{method:'GET',credentials:'same-origin',signal});
   if (!response.ok) throw new AiImageRequestError(await readCode(response));
   const body=await response.json();
-  return {enabled:body?.enabled===true,configured:body?.configured===true,dailyLimit:Number(body?.dailyLimit)||0,remaining:Number(body?.remaining)||0};
+  const problem=['missing_key','invalid_setting'].includes(body?.problem)?body.problem:null;
+  return {enabled:body?.enabled===true,configured:body?.configured===true,problem,dailyLimit:Number(body?.dailyLimit)||0,remaining:Number(body?.remaining)||0};
 }
 const validFit=fit=>/^[a-z0-9-]{1,40}$/.test(fit?.dealerId??'')&&/^[a-f0-9]{8}$/.test(fit?.placement??'');
 export async function requestAiProposals({role,prompt,preset,count,dealerId,sceneTemplate,reference},{fetchImpl=fetch,signal}={}) {
@@ -62,25 +65,6 @@ export function aiSceneTemplates(templates,dealerId) {
   return (templates??[]).filter(row=>typeof row?.id==='string'&&Array.isArray(row.dealers)&&row.dealers.includes(dealerId));
 }
 
-export const AI_TABLE_MISFIT=Object.freeze({
-  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än scenmallens. Skapa en ny bordsgrafik för den här scenmallen.',
-  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än scenmallens. Skapa en ny bordsgrafik eller återställ placeringen.',
-});
-const landings=id=>{const profile=registeredFilmedProfile(id);return profile?JSON.stringify([profile.positions,profile.card]):null;};
-// Guard for choosing a table in a scene template. An AI table graphic (label
-// "AI · … · <dealer> · <placement>") fits only a template whose dealers all
-// land where that dealer lands, with the same dealer and table placement.
-// Any other material, also a renamed AI graphic, is not affected.
-export function aiTableFitsTemplate(asset,lane) {
-  const fit=asset?.role==='table'?aiTableLabelFit(asset.label):null;
-  if (!fit) return {ok:true};
-  const drawn=landings(fit.dealerId),dealers=Array.isArray(lane?.dealers)?lane.dealers:[];
-  if (!drawn||!dealers.length||dealers.some(id=>landings(id)!==drawn)) return {ok:false,code:'ai_table_other_dealer',reason:AI_TABLE_MISFIT.ai_table_other_dealer};
-  let placement=null;
-  try { placement=aiPlacementHash(lane.composition??defaultCompositionSettings()); } catch { /* An unreadable placement never fits. */ }
-  if (placement!==fit.placement) return {ok:false,code:'ai_table_other_placement',reason:AI_TABLE_MISFIT.ai_table_other_placement};
-  return {ok:true};
-}
 
 export function dataUrlFile(dataUrl,name) {
   const match=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl??'');

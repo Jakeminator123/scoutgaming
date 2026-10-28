@@ -1,5 +1,5 @@
 import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
-export type AiImageErrorCode='ai_image_disabled'|'ai_image_unavailable'|'ai_image_limit_reached'|'ai_image_budget_exhausted'|'ai_image_rejected'|'ai_image_invalid_request';
+export type AiImageErrorCode='ai_image_disabled'|'ai_image_misconfigured'|'ai_image_unavailable'|'ai_image_limit_reached'|'ai_image_budget_exhausted'|'ai_image_rejected'|'ai_image_invalid_request';
 export type AiImageRole='background'|'table';
 export type AiImagePresetId='dark-studio'|'warm-lounge'|'light-studio'|'casino'|'free';
 export type AiTableFit={dealerId:string;placement:string};
@@ -18,3 +18,12 @@ export function sha256Hex(text:string):string;
 export function aiPlacementHash(composition:Pick<CompositionSettings,'mobile'|'desktop'>):string;
 export function aiImageLabel(prompt:string,fit?:AiTableFit|null):string;
 export function aiTableLabelFit(label:unknown):AiTableFit|null;
+export type AiTableMisfitCode='ai_table_other_dealer'|'ai_table_other_placement';
+export type AiTableFitResult={ok:true}|{ok:false;code:AiTableMisfitCode;reason:string};
+export type AiTableMisfit={compositionId:string;assetId:string;label:string;code:AiTableMisfitCode;reason:string};
+export const AI_TABLE_MISFIT_CODE: 'ai_table_misfit';
+export const AI_TABLE_MISFIT: Readonly<Record<AiTableMisfitCode,string>>;
+export function aiTableFitsTemplate(asset:{role:string;label:string}|null|undefined,lane:{dealers:readonly string[];composition?:CompositionSettings}|null|undefined):AiTableFitResult;
+export function aiTableMisfits(lanes:readonly {id:string;dealers:readonly string[];composition?:CompositionSettings;layers:{table:{enabled?:boolean;default:string|null;allowed:readonly string[]}}}[]|null|undefined,
+  assets:readonly {id:string;role:string;label:string}[]|null|undefined):AiTableMisfit[];
+export function aiTableMisfitMessage(misfit:{label?:string;code?:string;reason?:string}|null|undefined):string;

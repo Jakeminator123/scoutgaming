@@ -1,6 +1,9 @@
-// Browser-safe vocabulary for "Skapa bakgrund med AI", shared by the route and
-// the Admin dialog. Only these fixed codes and labels reach the browser.
-export const AI_IMAGE_ERROR_CODES = Object.freeze(['ai_image_disabled','ai_image_unavailable','ai_image_limit_reached','ai_image_budget_exhausted','ai_image_rejected','ai_image_invalid_request']);
+// Browser-safe vocabulary for "Skapa bakgrund med AI", shared by the route,
+// the Admin dialog and every publication path. Only these fixed codes and
+// labels reach the browser.
+import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+export const AI_IMAGE_ERROR_CODES = Object.freeze(['ai_image_disabled','ai_image_misconfigured','ai_image_unavailable','ai_image_limit_reached','ai_image_budget_exhausted','ai_image_rejected','ai_image_invalid_request']);
 export const AI_IMAGE_ROLES = Object.freeze(['background','table']);
 export const AI_IMAGE_PROMPT_LENGTH = Object.freeze({min:3,max:600});
 // Three WebP proposals of at most 700 KiB keep the answer under 3 MB, well
@@ -82,4 +85,46 @@ export function aiImageLabel(prompt,fit=null) {
 export function aiTableLabelFit(label) {
   const match=typeof label==='string'?TABLE_FIT.exec(label):null;
   return match?{dealerId:match[1],placement:match[2]}:null;
+}
+
+// The fit guard, shared by the scene template's table choice, the client's
+// publication and the server's publication paths. An AI table graphic (label
+// "AI · … · <dealer> · <placement>") fits only a template whose dealers all
+// land where that dealer lands, with the same dealer and table placement.
+// Any other material, also a renamed AI graphic, is not affected.
+export const AI_TABLE_MISFIT_CODE='ai_table_misfit';
+const REDRAW='Rita om bordet för den här scenmallen eller välj ett annat bord.';
+export const AI_TABLE_MISFIT=Object.freeze({
+  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än scenmallens. '+REDRAW,
+  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än scenmallens. '+REDRAW,
+});
+const landings=id=>{const profile=registeredFilmedProfile(id);return profile?JSON.stringify([profile.positions,profile.card]):null;};
+export function aiTableFitsTemplate(asset,lane) {
+  const fit=asset?.role==='table'?aiTableLabelFit(asset.label):null;
+  if (!fit) return {ok:true};
+  const drawn=landings(fit.dealerId),dealers=Array.isArray(lane?.dealers)?lane.dealers:[];
+  if (!drawn||!dealers.length||dealers.some(id=>landings(id)!==drawn)) return {ok:false,code:'ai_table_other_dealer',reason:AI_TABLE_MISFIT.ai_table_other_dealer};
+  let placement=null;
+  try { placement=aiPlacementHash(lane.composition??defaultCompositionSettings()); } catch { /* An unreadable placement never fits. */ }
+  if (placement!==fit.placement) return {ok:false,code:'ai_table_other_placement',reason:AI_TABLE_MISFIT.ai_table_other_placement};
+  return {ok:true};
+}
+// Every AI table graphic a template shows (its default and allowed tables)
+// that does not fit it. Works on a project ({lanes, layerAssets}) and on a
+// frozen package presentation ({lanes, assets}).
+export function aiTableMisfits(lanes,assets) {
+  const misfits=[];
+  for (const lane of Array.isArray(lanes)?lanes:[]) {
+    const table=lane?.layers?.table;
+    if (!table||table.enabled===false) continue;
+    for (const id of new Set([...(Array.isArray(table.allowed)?table.allowed:[]),...(table.default?[table.default]:[])])) {
+      const asset=(Array.isArray(assets)?assets:[]).find(row=>row?.id===id),fit=aiTableFitsTemplate(asset,lane);
+      if (!fit.ok) misfits.push({compositionId:lane.id,assetId:id,label:asset.label,code:fit.code,reason:fit.reason});
+    }
+  }
+  return misfits;
+}
+export function aiTableMisfitMessage(misfit) {
+  const reason=AI_TABLE_MISFIT[misfit?.code]??AI_TABLE_MISFIT[misfit?.reason]??'Ett AI-ritat bord passar inte scenmallen. '+REDRAW;
+  return (typeof misfit?.label==='string'&&misfit.label?misfit.label+': ':'')+reason;
 }
