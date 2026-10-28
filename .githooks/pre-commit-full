@@ -41,7 +41,7 @@ run_node_tests admin room-environment test/room-environment.mjs
 run_node_tests admin economy-journal apps/studio/client/admin/lib/economy-journal.test.mjs
 run_node_tests admin roulette-start-editor apps/studio/client/admin/lib/roulette-start-editor.test.mjs apps/studio/client/admin/lib/roulette-media-review.test.mjs apps/studio/client/admin/lib/roulette-idle-editor.test.mjs apps/studio/client/admin/lib/registered-material-library.test.mjs
 run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test.mjs apps/studio/client/runtime/navigation.test.mjs
-run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/service-navigation.test.mjs
+run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/studio-resource-lifecycle.test.mjs apps/studio/client/admin/lib/service-navigation.test.mjs
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs apps/studio/client/admin/lib/lifecycle-actions.test.mjs apps/studio/client/admin/lib/confirm-dialog.test.mjs
 run_check contracts migration-status 30 node migrering/status.mjs --check
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs test/prepare-lissabon-retirement.mjs
