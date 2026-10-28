@@ -27,23 +27,21 @@ function previewRoute(env, root, authorize=async()=>{}) {
   return {...module.exports,opens:()=>opens};
 }
 
-test('native preview retires local catalog, page and media before disk access but keeps both shared renderer modules',async t=>{
+test('preview serves only the two shared renderer modules, in every environment, after authorization',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-preview-route-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  for(const name of ['compositor.js','geometry.js'])await writeFile(join(root,name),'// shared renderer '+name);
-  for(const key of ['CROUPIER_STUDIO_NEON_POLICY','CROUPIER_CLOUD_RUNTIME','CROUPIER_STUDIO_NATIVE_ADMIN']){
+  for(const name of ['compositor.js','geometry.js','preview.js','catalog.json'])await writeFile(join(root,name),'// '+name);
+  for(const env of [{},{CROUPIER_STUDIO_NEON_POLICY:'1'},{CROUPIER_CLOUD_RUNTIME:'1'},{CROUPIER_STUDIO_NATIVE_ADMIN:'1'}]){
     let authorizations=0;
-    const route=previewRoute({[key]:'1'},root,async()=>{authorizations++;});
+    const route=previewRoute(env,root,async()=>{authorizations++;});
     for(const path of [['catalog.json'],['index.html'],['media','fixture.mp4'],['preview.js'],['media','compositor.js']])for(const method of ['GET','HEAD']){
       const response=await route[method](new Request('https://studio.example/preview/'+path.join('/'),{method}),{params:Promise.resolve({path})});
-      assert.equal(response.status,410,key+' '+path.join('/'));
+      assert.equal(response.status,404,JSON.stringify(env)+' '+path.join('/'));
       assert.equal(response.headers.get('cache-control'),'private, no-store');
-      const body=await response.text();
-      if(method==='GET')assert.match(body,/href="\/admin\/rooms"/);else assert.equal(body,'');
     }
-    assert.equal(route.opens(),0,'retired fixture never opens the deployed disk');
+    assert.equal(route.opens(),0,'other paths never open the deployed disk');
     for(const name of ['compositor.js','geometry.js']){
       const response=await route.GET(new Request('https://studio.example/preview/'+name),{params:Promise.resolve({path:[name]})});
-      assert.equal(response.status,200);assert.equal(await response.text(),'// shared renderer '+name);
+      assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'text/javascript');assert.equal(await response.text(),'// '+name);
     }
     assert.equal(route.opens(),2);assert.equal(authorizations,12);
   }
@@ -60,13 +58,15 @@ test('preview paths allow only single safe segments inside the build directory',
   assert.equal(previewRelativePath(['media', '']), null);
   assert.equal(previewRelativePath(['a/b.js']), null);
   assert.equal(previewRelativePath([]), null);
-  assert.equal(previewRelativePath(['index.html']), 'index.html');
+  assert.equal(previewRelativePath(['compositor.js']), 'compositor.js');
   const root = await mkdtemp(join(tmpdir(), 'croupier-preview-files-'));
   try {
+    await writeFile(join(root, 'compositor.js'), '// renderer');
     await writeFile(join(root, 'index.html'), '<!doctype html>');
-    const opened = await openPreviewFile(root, ['index.html']);
-    assert.equal(opened?.contentType, 'text/html; charset=utf-8');
-    assert.equal(opened?.file, resolve(root, 'index.html'));
+    const opened = await openPreviewFile(root, ['compositor.js']);
+    assert.equal(opened?.contentType, 'text/javascript');
+    assert.equal(opened?.file, resolve(root, 'compositor.js'));
+    assert.equal(await openPreviewFile(root, ['index.html']), null);
     assert.equal(await openPreviewFile(root, ['missing.js']), null);
     assert.equal(await openPreviewFile(root, ['..']), null);
   } finally {
@@ -75,16 +75,10 @@ test('preview paths allow only single safe segments inside the build directory',
   }
 });
 
-test('preview content types stay on the reviewed file kinds', () => {
-  assert.equal(previewContentType('index.html'), 'text/html; charset=utf-8');
-  assert.equal(previewContentType('preview.js'), 'text/javascript');
-  assert.equal(previewContentType('preview.css'), 'text/css');
-  assert.equal(previewContentType('catalog.json'), 'application/json');
-  assert.equal(previewContentType('clip.mp4'), 'video/mp4');
-  assert.equal(previewContentType('still.webp'), 'image/webp');
-  assert.equal(previewContentType('table.png'), 'image/png');
-  assert.equal(previewContentType('notes.txt'), null);
-  assert.equal(previewContentType('noext'), null);
+test('preview content types allow only JavaScript renderer modules', () => {
+  assert.equal(previewContentType('compositor.js'), 'text/javascript');
+  for (const name of ['index.html', 'preview.css', 'catalog.json', 'clip.mp4', 'still.webp', 'table.png', 'notes.txt', 'noext'])
+    assert.equal(previewContentType(name), null, name);
 });
 
 test('a single byte range is accepted and anything else is rejected', () => {

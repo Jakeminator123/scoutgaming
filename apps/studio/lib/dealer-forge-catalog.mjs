@@ -7,7 +7,7 @@ import { blackjackMediaSlots } from './dealer-media-library.mjs';
 
 export const FORGE_CANVAS = Object.freeze({ width: 1080, height: 1920, fps: 24 });
 export const FORGE_CARD = Object.freeze({ width: 79, height: 106 });
-// From packages/presentation/preview/site/catalog.json (Paow, lanes[0].dealer.metadata.positioner).
+// Frozen from the removed preview catalog (Paow, lanes[0].dealer.metadata.positioner).
 export const DEFAULT_POSITIONS = Object.freeze({
   1: Object.freeze({ cx: 110, cy: 1025 }), 2: Object.freeze({ cx: 253, cy: 1075 }), 3: Object.freeze({ cx: 396, cy: 1105 }),
   4: Object.freeze({ cx: 540, cy: 1115 }), 5: Object.freeze({ cx: 684, cy: 1105 }), 6: Object.freeze({ cx: 827, cy: 1075 }),

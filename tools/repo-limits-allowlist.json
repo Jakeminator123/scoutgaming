@@ -95,11 +95,6 @@
     "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
   },
   {
-    "path": "packages/presentation/preview/site/media/90e907d020cc385cb692830fabb512ee4503cbca51722603ab76fe5f877c71de.mp4",
-    "maxBytes": 3196171,
-    "reason": "Fanns på main när grinden infördes (2026-10-28)"
-  },
-  {
     "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png",
     "maxBytes": 1628428,
     "reason": "Fanns på main när grinden infördes (2026-10-28)"

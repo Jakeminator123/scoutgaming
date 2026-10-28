@@ -8,6 +8,8 @@ import { authorizeUiPage } from '../../../lib/ui-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const RENDERER_MODULES = new Set(['compositor.js', 'geometry.js']);
+
 function privateHeaders(extra: Record<string, string> = {}): Record<string, string> {
   return {
     'Cache-Control': 'private, no-store',
@@ -29,17 +31,10 @@ async function previewResponse(request: Request, segments: string[] | undefined,
     response.headers.set('Cache-Control', 'private, no-store');
     return response;
   }
-  const native = process.env.CROUPIER_STUDIO_NEON_POLICY === '1'
-    || process.env.CROUPIER_STUDIO_NATIVE_ADMIN === '1' || process.env.CROUPIER_CLOUD_RUNTIME === '1';
-  // CompositionPreview still imports the shared renderer here. These two code
-  // modules have no fixture metadata or media; every other legacy preview is gone.
-  const rendererCode = segments?.length === 1 && ['compositor.js', 'geometry.js'].includes(segments[0]);
-  if (native && !rendererCode) {
-    return new Response(head ? null : '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Äldre förhandsvisning avslutad</title><p>Den äldre lokala förhandsvisningen är avslutad. <a href="/admin/rooms">Provspela i Admin</a> med sparade sammansättningar och registrerade medier.</p></html>', {
-      status: 410, headers: privateHeaders({ 'Content-Type': 'text/html; charset=utf-8' }),
-    });
-  }
-  const opened = await openPreviewFile(previewBuildDirectory, Array.isArray(segments) ? segments : []);
+  // CompositionPreview imports the shared renderer here. These two code modules
+  // are all that is served; the old standalone preview site is removed.
+  if (segments?.length !== 1 || !RENDERER_MODULES.has(segments[0])) return new Response(null, { status: 404, headers: privateHeaders() });
+  const opened = await openPreviewFile(previewBuildDirectory, segments);
   if (!opened) return new Response(null, { status: 404, headers: privateHeaders() });
   const headers = privateHeaders({
     'Content-Type': opened.contentType,

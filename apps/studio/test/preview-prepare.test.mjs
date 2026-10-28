@@ -1,90 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { previewBuildDirectory } from '../lib/preview-files.mjs';
-import { preparePreview } from '../tools/prepare-preview.mjs';
+import { preparePreview, rendererModules } from '../tools/prepare-preview.mjs';
 
 const lab = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repo = resolve(lab, '../..');
-const previewRoot = join(repo, 'packages/presentation/preview');
-const webRoot = join(repo, 'packages/presentation/compositor');
+const webRoot = resolve(lab, '../../packages/presentation/compositor');
 
 async function removeTemp(path) {
   assert.ok(resolve(path).startsWith(resolve(tmpdir())));
   await rm(path, { recursive: true, force: true });
 }
 
-test('reviewed preview media is hashed into the private build directory with relative paths', async () => {
+test('the preview build holds exactly the shared renderer modules and drops stale files', async () => {
   assert.equal(previewBuildDirectory, join(lab, 'preview-build'));
   assert.ok(existsSync(join(dirname(previewBuildDirectory), 'next.config.mjs')));
   const output = await mkdtemp(join(tmpdir(), 'croupier-preview-'));
-  const sourcePreview = await readFile(join(previewRoot, 'site/preview.js'));
   try {
-    const result = await preparePreview({ previewRoot, webRoot, output });
-    assert.equal(result.mediaFiles > 0, true);
-    const catalog = JSON.parse(await readFile(join(output, 'catalog.json'), 'utf8'));
-    assert.deepEqual(catalog.lanes.map(lane => lane.name), ['Dragge']);
-    const seen = new Set();
-    for (const lane of catalog.lanes) {
-      assert.equal(Object.keys(lane.dealer.variants).length, 1);
-      const variant = lane.dealer.variants[lane.scene.variant];
-      assert.equal(variant.settings.width, 720);
-      for (const role of ['clips', 'posters']) for (const record of Object.values(variant[role])) seen.add(record.src);
-    }
-    for (const asset of catalog.assets) seen.add(asset.src);
-    assert.equal(seen.size, result.mediaFiles);
-    const hashes = JSON.parse(await readFile(join(output, 'media-hashes.json'), 'utf8'));
-    for (const name of await readdir(join(output, 'media'))) {
-      const digest = createHash('sha256').update(await readFile(join(output, 'media', name))).digest('hex');
-      assert.equal(digest, hashes[name], name);
-    }
-    const names = await readdir(output);
-    assert.ok(names.includes('player.js') && names.includes('geometry.js') && names.includes('compositor.js'));
-    assert.equal(await readFile(join(output, 'player.js'), 'utf8'), await readFile(join(webRoot, 'player.js'), 'utf8'));
-    const html = await readFile(join(output, 'index.html'), 'utf8');
-    const script = await readFile(join(output, 'preview.js'), 'utf8');
-    assert.match(html, /href="preview\.css"/);
-    assert.match(html, /src="preview\.js"/);
-    assert.match(script, /new URL\('\.\/', import\.meta\.url\)/);
-    assert.match(script, /new URL\('catalog\.json', import\.meta\.url\)/);
-    assert.doesNotMatch(html + script, /\/test/);
-    assert.match(script, /from '\.\/player\.js'/);
-    assert.equal(existsSync(join(lab, 'public', 'preview')), false);
-    assert.doesNotMatch(JSON.stringify(catalog), /C:\\|source_sha256|X-Studio-Token|\.env|imports\//);
-    assert.deepEqual(await readFile(join(previewRoot, 'site/preview.js')), sourcePreview);
-    const firstHtml = await readFile(join(output, 'index.html'));
-    await preparePreview({ previewRoot, webRoot, output });
-    assert.deepEqual(await readFile(join(output, 'index.html')), firstHtml);
+    await mkdir(join(output, 'media'), { recursive: true });
+    await writeFile(join(output, 'catalog.json'), '{}');
+    const result = await preparePreview({ webRoot, output });
+    assert.equal(result.modules, 2);
+    assert.deepEqual((await readdir(output)).sort(), [...rendererModules].sort());
+    for (const name of rendererModules)
+      assert.equal(await readFile(join(output, name), 'utf8'), await readFile(join(webRoot, name), 'utf8'), name);
   } finally {
     await removeTemp(output);
   }
 });
 
-test('a manipulated preview file fails the hash check before anything is published', async () => {
+test('a missing renderer module or an unlisted local import fails the build', async () => {
   const root = await mkdtemp(join(tmpdir(), 'croupier-preview-bad-'));
-  const brokenPreview = join(root, 'preview');
-  const output = join(root, 'out');
   try {
-    await cp(previewRoot, brokenPreview, { recursive: true });
-    const mediaDir = join(brokenPreview, 'site/media');
-    const name = (await readdir(mediaDir)).find(file => file.endsWith('.mp4'));
-    assert.ok(name);
-    const original = await readFile(join(previewRoot, 'site/media', name));
-    const target = join(mediaDir, name);
-    const bytes = await readFile(target);
-    bytes[0] ^= 0xff;
-    await writeFile(target, bytes);
-    await assert.rejects(
-      preparePreview({ previewRoot: brokenPreview, webRoot, output }),
-      error => error instanceof Error && error.message === `Hashen för ${name} stämmer inte med media-hashes.json.`,
-    );
-    assert.equal(existsSync(output), false);
-    assert.deepEqual(await readFile(join(previewRoot, 'site/media', name)), original);
+    const source = join(root, 'compositor');
+    await mkdir(source, { recursive: true });
+    await writeFile(join(source, 'compositor.js'), "import {x} from './geometry.js';\n");
+    await assert.rejects(preparePreview({ webRoot: source, output: join(root, 'out') }), { message: 'Webbmodulen saknas: geometry.js' });
+    await writeFile(join(source, 'geometry.js'), "import {y} from './player.js';\n");
+    await assert.rejects(preparePreview({ webRoot: source, output: join(root, 'out') }), { message: 'Renderaren importerar player.js, men filen kopierades inte.' });
   } finally {
     await removeTemp(root);
   }
