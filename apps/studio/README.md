@@ -41,8 +41,8 @@ node tools/admin-clips-fixture.mjs --ffmpeg <installerad-ffmpeg.exe>
 npm --prefix apps/studio run dev:client   # bygger om klienten när källan ändras
 ```
 
-`npm --prefix apps/studio run prepare:preview` bygger scenförhandsvisningens
-`/preview/`-resurser. `.next/`, `node_modules/`, `preview-build/` och
+`npm --prefix apps/studio run prepare:preview` kopierar renderarmodulerna
+`compositor.js` och `geometry.js` till `/preview/`. `.next/`, `node_modules/`, `preview-build/` och
 `design-preview-build/` är genererade och Git-ignorerade.
 
 ## Var saker ägs

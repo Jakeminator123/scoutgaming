@@ -9,7 +9,6 @@ uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTI
 - `compositor/` — spelare, kompositor, brygga, geometri och lanes. Den fristående redigeraren (`app.js`, `index.html`, `viewer.*`) är borttagen; den serverades aldrig.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
 - `docs/` — referens för den fristående kompositorexporten; ingen separat produktplan.
-- `preview/site/` — granskat byggmaterial för previewförberedaren, som också hämtar delade renderarmoduler.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
 - `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, legacy-klipp och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
 - `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `apps/studio/lib/presentation-selection.mjs` och `services/game/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
@@ -21,7 +20,7 @@ Dessa läser paketet:
 - `apps/web/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/web/public/composition-runtime/`.
 - `services/game/composition-runtime.mjs` serverar `/composition-runtime/*`.
 - `services/game/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
-- `apps/studio/tools/prepare-preview.mjs` bygger `apps/studio/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410.
+- `apps/studio/tools/prepare-preview.mjs` kopierar `compositor.js` och `geometry.js` till `apps/studio/preview-build`, och Studio serverar bara dem under `/preview/*` (Admins sammansättningsförhandsvisning). Den fristående förhandsvisningssidan med katalog och medier är borttagen.
 - `apps/studio/lib`, `apps/studio/components`, `services/game/presentation-api.mjs`, `services/game/storage` och `services/game/studio-preview.mjs` importerar `runtime/`.
 - `services/game/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter bara de exakta kontrakts-/runtimeadresserna i `public-modules.mjs`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren genererar både kanoniska och äldre outputadresser och anpassar relativa importer för varje kopia.
 
@@ -31,9 +30,8 @@ Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/pres
 
 ## Byggkällor och kompatibilitet
 
-`preview/site/` och `media-hashes.json` är granskade byggkällor. Behåll dem;
-`apps/studio/preview-build/` är den genererade kopian och kan byggas om med
-`node apps/studio/tools/prepare-preview.mjs`.
+`apps/studio/preview-build/` är en genererad kopia av renderarmodulerna och
+byggs om med `node apps/studio/tools/prepare-preview.mjs`.
 
 `compositor/` innehåller både aktiv motor och fristående referens-UI. Bedöm
 konsumenterna var för sig före radering. `runtime/` behåller äldre klipp- och
