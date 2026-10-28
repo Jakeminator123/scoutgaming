@@ -19,7 +19,7 @@ Regeln: **Admin skapar och tilldelar, bolaget väljer, spelaren spelar.** Allt e
 - **Lobbyn** (`/lobby`): spelarens katalog över bolagets öppna spelbord. **Spelet** (`/game?game=…`) är det autentiserade spelfönstret.
 - **Spelmotorn** (`services/game`, Render `croupier-v3`): äger kort, sko, regler, saldo och utbetalningar. Presentationen påverkar aldrig dem.
 - **Delat bord** (`shared-table`, `CROUPIER_SHARED_TABLE_ENABLED`): flera spelare vid samma spelbord i spelmotorn. Från O03 är det den enda spelvägen.
-- **Staging**: tillfällig provbänk med syntetiska konton fram till O03.
+- **Preview**: provbänken (tidigare staging) med syntetiska konton, som behålls efter O03 och deployas pinnat av orkestratorn; inget obligatoriskt steg före produktion.
 
 ## Det man skapar, tilldelar och publicerar
 
