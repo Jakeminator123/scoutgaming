@@ -20,7 +20,7 @@ Det finns en väg: inga lokala produktregister, ingen SQLite, inga parallella QA
 ## Från merge till produktion
 
 1. **Schema först.** Kod som kräver ny SQL mergas inte förrän Jakob har applicerat migreringen (`node tools/check-migration-readiness.mjs --apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending`). CI läser produktionens migreringsledger. En `deploymentOptional`-version kräver tolerant kod först, sedan godkänd migrering och sist en PR som gör versionen obligatorisk. Ändra aldrig ett redan applicerat schemas checksumma för att få grön CI.
-2. **Merge efter grön CI.** Den obligatoriska kontrollen heter `CI` och kräver att branchen är à jour med `main` (`gh pr update-branch`). Vercel deployar `main` automatiskt.
+2. **Merge efter grön CI.** Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main` (Jakob 28 oktober, rulesetet kräver inte strikt kontroll). Vercel deployar `main` automatiskt.
 3. **Spelmotorn deployas manuellt** efter varje grön merge: Render MCP `trigger_deploy` för `srv-dbd6nfon74is73aiblf0` eller panelen. Director och Gateway deployas om när `packages/director` eller `services/openclaw/lab` ändras.
 4. **Admin-publicering sist:** paket och rummets spelinställningar publiceras när koden är live.
 
@@ -32,7 +32,7 @@ curl -s https://croupier-v3.onrender.com/__cloud/version   # {schemaVersion:1, p
 ```
 
 - Jämför `commitSha` med `main` och med Vercels deploy. Grön CI eller "live" i Render är inget kvitto på att rätt kod kör.
-- Kör det ändrade flödet: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Riktig acceptans görs i staging med syntetiska konton.
+- Kör det ändrade flödet: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Riktig acceptans görs i staging med syntetiska konton och Jakobs speglade inloggningar.
 - Efter varje env-ändring på Render: läs `/__cloud/health` igen, eftersom Render MCP startar en deploy direkt.
 - Kvitton skrivs sanerade som `docs/<datum>-<aktivitet>-…-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
 
