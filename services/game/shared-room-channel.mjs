@@ -2,8 +2,12 @@
  * coordinator snapshot / K04 current projection, never raw room, audit or shoe state.
  * authorize(request,{roomId}) and revalidate(binding,{signal}) return the same fixed
  * server binding {actorId,sessionId,operatorId,roomId,packageRevision,expiresAt}.
- * Commit hints only request fresh reads; this module never acknowledges an outbox,
- * changes presence, or persists a receiver version. A client still gates presentation replay.
+ * Commit hints only request fresh reads; this module never acknowledges an outbox or
+ * persists a receiver version. A client still gates presentation replay.
+ * Presence (B4): an optional touch(binding,{signal}) port marks the bound player as seen
+ * in the bound room when a socket attaches and then once per presenceIntervalMs while it
+ * stays open, after the same revalidation as a read. It is never a game or wallet
+ * command; one touch at a time per socket, no touch after close.
  * origin is the allowed browser/UI origin. The future listener must validate its own
  * configured engine host and ingress before prepare; forwarded-host headers are not trusted.
  */
@@ -107,8 +111,9 @@ function bounded(work,controller,timeoutMs) {
   // Cleanup follows the race, even when a broken port never settles after abort.
   return Promise.race([task,aborted]).finally(()=>{clearTimeout(timer);controller.signal.removeEventListener('abort',cancel);});
 }
-export function createSharedRoomChannel({origin,authorize,revalidate,readSnapshot,readPresentation,now=Date.now,
-  readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128,consistencyTimeoutMs=10000}={}) {
+export function createSharedRoomChannel({origin,authorize,revalidate,readSnapshot,readPresentation,touch,now=Date.now,
+  readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128,consistencyTimeoutMs=10000,
+  presenceIntervalMs=10000}={}) {
   let parsed;try{parsed=new URL(origin);}catch{fail();}
   if(parsed.origin!==origin||!['https:','http:'].includes(parsed.protocol)
     ||![authorize,revalidate,readSnapshot,readPresentation,now].every(port=>typeof port==='function')
@@ -116,7 +121,9 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
     ||!Number.isSafeInteger(consistencyTimeoutMs)||consistencyTimeoutMs<1||consistencyTimeoutMs>30000
     ||!Number.isSafeInteger(maxBufferedBytes)||maxBufferedBytes<256||maxBufferedBytes>1024*1024
     ||!Number.isSafeInteger(maxReadAttempts)||maxReadAttempts<1||maxReadAttempts>5
-    ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000)fail();
+    ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000
+    ||touch!==undefined&&typeof touch!=='function'
+    ||!Number.isSafeInteger(presenceIntervalMs)||presenceIntervalMs<1||presenceIntervalMs>60000)fail();
   const rooms=new Map(),actors=new Map(),connections=new Set();let stopped=false;
   async function prepare(request) {
     if(stopped)fail();
@@ -135,10 +142,11 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(!socket||!['on','off','send','close'].every(key=>typeof socket[key]==='function')||socket.readyState!==1)fail();
       if(binding.expiresAt<=now()){socket.close(1008,'shared_room_unauthorized');fail('shared_room_unauthorized',403);}
       if(connections.size>=maxConnections){socket.close(1013,'shared_room_capacity');fail();}
-      let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer;
+      let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer,presenceTimer,presence;
       let sentVersion=-1,sentPresentation=-1;
       const cleanup=()=>{
-        if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);operation?.abort();
+        if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);clearTimeout(presenceTimer);
+        operation?.abort();presence?.abort();
         socket.off('message',inbound);socket.off('close',cleanup);socket.off('error',broken);
         connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);if(!group?.size)rooms.delete(roomId);
         const own=actors.get(binding.actorId);own?.delete(connection);if(!own?.size)actors.delete(binding.actorId);
@@ -194,11 +202,22 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         finally {running=false;operation=null;}
       }
       const requestRefresh=()=>{if(closed)return;generation++;dirty=true;if(!running)queueMicrotask(refresh);};
+      // The next touch is armed only after the previous one settled: at most one per interval.
+      async function beat() {
+        if(closed||!touch)return;presence=new AbortController();
+        try {
+          await bounded(async signal=>{await check(signal);if(closed||signal.aborted)fail();await touch(binding,{signal});},presence,readTimeoutMs);
+        } catch(error) {
+          // A revoked session closes like a read; a missed touch only ages presence.
+          if(!closed&&error?.statusCode===403){close(1008,'shared_room_unauthorized');return;}
+        } finally {presence=null;}
+        if(!closed){presenceTimer=setTimeout(beat,presenceIntervalMs);presenceTimer.unref?.();}
+      }
       const connection={close,requestRefresh,roomId};
       connections.add(connection);if(!rooms.has(roomId))rooms.set(roomId,new Set());rooms.get(roomId).add(connection);
       if(!actors.has(binding.actorId))actors.set(binding.actorId,new Set());actors.get(binding.actorId).add(connection);
       socket.on('message',inbound);socket.on('close',cleanup);socket.on('error',broken);
-      expire();requestRefresh();return Object.freeze({close});
+      expire();requestRefresh();void beat();return Object.freeze({close});
     }});
   }
   return Object.freeze({prepare,

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
 import { createSharedRoomChannel, projectSharedRoomSnapshot } from '../services/game/shared-room-channel.mjs';
+import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
 const origin='https://game.invalid';
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
@@ -243,4 +246,52 @@ test('client settings reject malformed money, timing, language and bootstrap val
   ])assert.throws(()=>projectSharedRoomSnapshot({...state,settings:{...cfg,...change}},binding()),{code:'shared_room_unavailable'});
   assert.throws(()=>projectSharedRoomSnapshot({...state,settings:null},binding()),{code:'shared_room_unavailable'});
   assert.throws(()=>projectSharedRoomSnapshot({...state,unopened:'false'},binding()),{code:'shared_room_unavailable'});
+});
+
+// B4: presence follows the open socket, not only commands. A touch is revalidated,
+// bound to the socket's own room and actor, rate-limited and stops on close.
+test('an open socket touches presence on attach and per interval; close stops it and revocation closes the socket',async t=>{
+  const touches=[];let mode='ok';
+  const h=setup(t,{presenceIntervalMs:5,touch:async(b,{signal})=>{assert.equal(signal.aborted,false);touches.push([b.roomId,b.actorId]);
+    if(mode==='fail')throw Object.assign(Error('presence write failed'),{statusCode:503});}});
+  const socket=await h.attach();
+  await until(()=>touches.length===1);assert.deepEqual(touches[0],['room-a','player-a']);
+  assert.ok(h.calls.filter(([kind])=>kind==='revalidate').length>=1,'a touch is revalidated like a read');
+  await delay(30);assert.ok(touches.length>=2&&touches.length<=8,`rate-limited touches: ${touches.length}`);
+  mode='fail';const failedAt=touches.length;await delay(20);
+  assert.ok(touches.length>failedAt,'a failed touch does not stop presence');assert.deepEqual(socket.closed,[]);
+  socket.close(1000,'done');const closedAt=touches.length;await delay(30);
+  assert.equal(touches.length,closedAt,'no presence after close');clean(socket);
+  // Revocation during a touch closes the socket like an unauthorized read.
+  mode='ok';const revoked=await h.attach('room-b');for(let n=0;n<200&&!touches.some(([room])=>room==='room-b');n++)await delay(2);
+  h.auth.set('room-b',{...h.auth.get('room-b'),sessionId:'session-other'});
+  for(let n=0;n<200&&!revoked.closed.length;n++)await delay(2);assert.deepEqual(revoked.closed,[{code:1008,reason:'shared_room_unauthorized'}]);
+});
+
+// B4 with the real coordinator (memory store): only the channel's presence keeps the
+// seat of a connected player who sends no command for longer than absentMs (120 s).
+test('a player with an open socket and no commands keeps the seat past 121 s; after close it is released as before',async t=>{
+  const store=createMemoryTableStore();store.test.fund('player-a',1000);let at=100000;
+  const table=createTableCoordinator({store,clock:{now:()=>at},random:deterministicRandom('presence')});
+  const touches=[];
+  const h=setup(t,{presenceIntervalMs:1,touch:async(b)=>{touches.push(at);await table.seen(b.roomId,b.actorId);}});
+  const send=(op,extra)=>table.command({actorId:'player-a'},{roomId:'room-a',op,commandId:`${op}-${at}`,...extra});
+  await send('join',{seats:[0],seatGens:{0:0},memberGen:0});
+  const {windowId}=await table.snapshot('room-a','player-a');
+  await send('bet',{seat:0,field:'main',chip:5,windowId});await send('ready',{windowId});
+  const socket=await h.attach();const applied=[];
+  const advance=async ms=>{
+    at+=ms;const seen=touches.length;
+    for(let n=0;n<500&&!socket.closed.length&&touches.length===seen;n++)await delay(1);
+    for(const due of await table.dueTicks(at))if((await table.tick(due)).outcome==='applied')applied.push(due.kind);
+  };
+  for(let step=0;step<13;step++)await advance(10000); // 130 s, no command
+  assert.deepEqual(socket.closed,[]);assert.ok(touches.length>=13);
+  assert.equal(applied.some(kind=>kind.startsWith('seat.')),false,applied.join());
+  const kept=await table.snapshot('room-a','player-a');
+  assert.equal(kept.phase,'settled');assert.deepEqual(kept.me.seats,[0]);assert.equal(kept.me.active,true);
+  socket.close(1000,'done');clean(socket);const last=touches.length;
+  at+=121000;for(const due of await table.dueTicks(at))if((await table.tick(due)).outcome==='applied')applied.push(due.kind);
+  assert.equal(touches.length,last);assert.ok(applied.includes('seat.release'),applied.join());
+  assert.deepEqual((await table.snapshot('room-a','player-a')).me.seats,[]);
 });

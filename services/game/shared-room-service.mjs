@@ -157,6 +157,11 @@ export function createSharedRoomService({
     revalidate: (binding, { signal }) => read(active => access.revalidate(binding, { signal: active }), signal),
     readSnapshot: (roomId, actorId, { signal }) => read(() => runtime.coordinator.snapshot(roomId, actorId, {client:true}), signal),
     readPresentation: (roomId, { signal }) => read(() => receiver.current(roomId), signal),
+    // Presence of an open, revalidated socket: the bound actor in the bound room only.
+    touch: (binding, { signal }) => read(() => {
+      if (typeof runtime.coordinator.seen !== 'function') throw unavailable();
+      return runtime.coordinator.seen(binding.roomId, binding.actorId);
+    }, signal),
   });
   const upgrade = createUpgrade({ origin, engineOrigin, WebSocketServer, channel: {
     async prepare(request) {
