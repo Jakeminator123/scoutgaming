@@ -71,9 +71,9 @@ async function fixture(t,{empty=false,bankless=false}={}) {
   if (bankless) {
     // A public game asset stays indexed while no dealer bank exists.
     const bytes = Buffer.from('fixture-public-game-asset'), sha256 = createHash('sha256').update(bytes).digest('hex'), id = videoIdFromSha256(sha256);
-    const logicalPath = 'game/runtime/assets/table.png', pathname = mediaBlobPath('game/runtime/assets', id, sha256, 'png'); objects.set(pathname, bytes);
-    files.push({logicalPath, id, access:'public', sha256, size:bytes.length, legacyUrls:['/assets/table.png'], storage:{provider:'vercel-blob',pathname,sha256,size:bytes.length,contentType:'image/png'}});
-    layout.push({path:logicalPath, legacyPath:'web/public/assets/table.png', access:'public', sha256, size:bytes.length, publicUrl:'/assets/table.png'});
+    const logicalPath = 'game/runtime/assets/fixture-table.png', pathname = mediaBlobPath('game/runtime/assets', id, sha256, 'png'); objects.set(pathname, bytes);
+    files.push({logicalPath, id, access:'public', sha256, size:bytes.length, legacyUrls:['/assets/fixture-table.png'], storage:{provider:'vercel-blob',pathname,sha256,size:bytes.length,contentType:'image/png'}});
+    layout.push({path:logicalPath, legacyPath:'web/public/assets/fixture-table.png', access:'public', sha256, size:bytes.length, publicUrl:'/assets/fixture-table.png'});
   }
   const families = (bank?MEDIA_FAMILY_DEFINITIONS:[]).map(family => ({id:family.id,dealerId:family.dealerId,eventId:family.eventId,situation:family.situation,playbackType:family.playbackType,
     standardIds: family.standardPaths.map(path => items.find(item => item.relativePath === path).id), variantIds:[]}));

@@ -66,7 +66,7 @@ test('deployment catalog without a presentation bank keeps game metadata and wri
  const speech=JSON.stringify({fixture:{win:{src:'fixture.mp4'}}}),bytes=Buffer.from(speech),sha256=createHash('sha256').update(bytes).digest('hex');
  const layout={schemaVersion:1,roots:{},files:[
   {path:'game/runtime/speech-media.json',legacyPath:'web/public/speech-media.json',access:'public',sha256,size:bytes.length,publicUrl:'/speech-media.json'},
-  {path:'game/runtime/assets/table.png',legacyPath:'web/public/assets/table.png',access:'public',sha256:'c'.repeat(64),size:12,publicUrl:'/assets/table.png'}]};
+  {path:'game/runtime/assets/fixture-table.png',legacyPath:'web/public/assets/fixture-table.png',access:'public',sha256:'c'.repeat(64),size:12,publicUrl:'/assets/fixture-table.png'}]};
  await put('media/layout.json',JSON.stringify(layout));await put('media/game/runtime/speech-media.json',speech);
  assert.deepEqual(await buildRuntimeMediaCatalog(root),{files:2,metadataSources:1});
  const presentation=JSON.parse(await readFile(join(root,'media/catalog/presentation.json'),'utf8'));
