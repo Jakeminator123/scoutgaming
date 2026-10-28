@@ -197,7 +197,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; lastSource = ''; reveal(); };
   img.src = still;
   const videos = [...stage.querySelectorAll('video')];
-  let lastStamp = '', lastSource = '';
+  let lastStamp = '', lastSource = '', useFrames = typeof VideoFrame === 'function';
   const lipDebug = /[?&]lipdebug=1/.test(location.search) ? (globalThis.__lip = { frames: 0, hits: 0, misses: [] }) : null;
   function draw() {
     const v = videos.find(x => x.classList.contains('on') && x.readyState >= 2);
@@ -207,16 +207,22 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
     // While he speaks over his clips, the patch for this frame is part of what is on screen: a new patch redraws too,
     // also on a still or a held last frame (the mouth moves while the body waits).
     const name = v ? /\/([a-z0-9]+(?:-[iuv]+)?)\.mp4/.exec(v.dataset.source || v.currentSrc || '')?.[1] : null;
-    const raw = v ? Math.floor(v.currentTime * 24 + 1e-5) : 0;
+    // Emil 28 Oct: the frame he is drawn from IS the frame his mouth is chosen for. v.currentTime runs a frame or two ahead
+    // of the frame the texture gets at a table's tempo (2x), so the mouth of a later frame sat on this one; a VideoFrame of
+    // the element holds the very frame uploaded, with its own timestamp (WebCodecs, as lip-layer.js needs anyway).
+    let vf = null;
+    if (v && useFrames) { try { vf = new VideoFrame(v); } catch { vf = null; } }
+    const mt = vf ? vf.timestamp / 1e6 : v ? v.currentTime : 0;
+    const raw = vf ? Math.round(mt * 24) : v ? Math.floor(mt * 24 + 1e-5) : 0;
     const atEnd = v && (v.ended || (Number.isFinite(v.duration) && v.currentTime >= v.duration - .05));
     // He rests on his still, or on the last frame of a clip that ends at rest: every clip but a deal take that ends in REDO.
     const rest = !v || (atEnd && !/^pos[a-z0-9]+(-i)?$/.test(name ?? ''));
     const lip = lips?.active() ? lips.at(name, raw, rest) : null;
     // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
-    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) { lipDebug.hits++; const o = lip.ruta == null || rest ? 'vila' : `${raw - lip.ruta}${lip.lant ? ' lånad' : ''}`; (lipDebug.offs ??= {})[o] = (lipDebug.offs[o] ?? 0) + 1; if (!rest && Math.abs(raw - (lip.ruta ?? raw)) >= 3 && (lipDebug.far ??= []).length < 40) lipDebug.far.push(`${name}:${raw}<-${lip.ruta} dk${lip.dk}`); } if (v) { const a = Math.floor(v.currentTime * 24 + 1e-5) - raw; (lipDebug.ahead ??= {})[a] = (lipDebug.ahead[a] ?? 0) + 1; } else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name ?? 'undefined(' + (v?.dataset.source || v?.currentSrc || '').split('/').pop().split('?')[0] + ')'}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }   // a clip the layer cannot name (a recorded line, an underscore) shows its file
+    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) { lipDebug.hits++; const o = lip.ruta == null || rest ? 'vila' : `${raw - lip.ruta}${lip.lant ? ' lånad' : ''}`; (lipDebug.offs ??= {})[o] = (lipDebug.offs[o] ?? 0) + 1; if (!rest && Math.abs(raw - (lip.ruta ?? raw)) >= 3 && (lipDebug.far ??= []).length < 40) lipDebug.far.push(`${name}:${raw}<-${lip.ruta} dk${lip.dk}`); } if (v) { const a = Math.floor(v.currentTime * 24 + 1e-5) - raw; if (vf && raw === 0) (lipDebug.first ??= []).length < 20 && lipDebug.first.push(vf.timestamp); (lipDebug.ahead ??= {})[a] = (lipDebug.ahead[a] ?? 0) + 1; } else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name ?? 'undefined(' + (v?.dataset.source || v?.currentSrc || '').split('/').pop().split('?')[0] + ')'}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }   // a clip the layer cannot name (a recorded line, an underscore) shows its file
     const soft = document.documentElement.classList.contains('desk') ? .5 : 0;   // the desktop table only (desk-mode.js)
     if (soft !== lipSoft) { lipSoft = soft; gl.uniform1f(uLipSoft, soft); lastStamp = ''; }
-    const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
+    const stamp = (v ? `${v.currentSrc}@${vf ? vf.timestamp : v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
       if (lip && lip.key !== lipKey) {
@@ -225,7 +231,11 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       }
       if (lip) gl.uniform4f(uLipRect, ...lip.rect);
       gl.uniform1f(uLipOn, lip ? 1 : 0);
-      if (stamp.split('|')[0] !== lastSource) { lastSource = stamp.split('|')[0]; gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
+      if (stamp.split('|')[0] !== lastSource) {
+        lastSource = stamp.split('|')[0];
+        // a browser whose WebGL does not take a VideoFrame uploads the element, and stops making frames
+        try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vf ?? src); } catch { useFrames = false; gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
+      }
       // Which take and frame is on screen decides whether his landed card is keyed out.
       // -v / -iv: the take that ends at rest (a hit, the dealer drawing more): its own track ('4v', 'dealerv') and
       // landing, at the same seat. These were missed before, so his white prop covered the hit card's face (Kevin, 10 Oct).
@@ -238,7 +248,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       // Follow his card frame by frame (the same track the game projects on), and once it rests keep cutting it out on its
       // resting outline: the game's card may lie a step beside it (its own place in the hand), so his prop's grey edge
       // and shadow must go too, not only its white (Kevin 11 Oct: "the second card was transparent for a second").
-      const face = at ? faceAt?.(track, v.currentTime - lead / 24) : null;
+      const face = at ? faceAt?.(track, mt - lead / 24) : null;
       (face?.q ?? [[0, 0], [0, 0], [0, 0], [0, 0]]).forEach(([x, y], i) => gl.uniform2f(uQuad[i], (at?.[0] ?? 0) + x, (at?.[1] ?? 0) + y));
       gl.uniform1f(uQuadOn, face ? 1 : 0);
       gl.uniform4f(uCard, at?.[0] ?? 0, at?.[1] ?? 0, keyHalf[0], keyHalf[1]);   // half-size of his resting prop, plus a margin
@@ -246,6 +256,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
+    vf?.close();
     requestAnimationFrame(draw);
   }
   requestAnimationFrame(draw);
