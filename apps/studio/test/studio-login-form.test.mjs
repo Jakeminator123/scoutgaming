@@ -333,6 +333,8 @@ test('actual browser expired Admin login restores the real room view through his
               dataReads.push(url.pathname);
               return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'Not found'})});
             }
+            // Decorative lobby portraits (scene template cards, avatars) are static artwork, not data; not served here.
+            if (/^\/admin\/_assets\/lobby\/images\/(?:dealers|lobby)\/[a-z-]+\.(?:jpg|png)$/.test(url.pathname)) return route.fulfill({status:404,body:''});
             // The documents are the dealer nav (the login return) and Scenmallar; the page itself navigates between them.
             const navDocument = ['/admin/dealers/' + dealerId,'/studio/admin/dealers/' + dealerId].includes(url.pathname);
             const document = navDocument || ['/admin/scenes','/studio/admin/scenes'].includes(url.pathname);

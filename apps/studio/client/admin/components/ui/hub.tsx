@@ -60,7 +60,7 @@ export function Steps({steps}:{steps:Step[]}) {
   const now=steps.findIndex(step=>!step.done);
   return <ol aria-label="Dealerflödet" className="mb-6 grid list-none auto-cols-fr grid-flow-col gap-1.5 p-0 max-md:auto-cols-[minmax(120px,1fr)] max-md:overflow-x-auto max-md:pb-1">{steps.map((step,index)=>{
     const state=step.done?'done':index===now?'now':'';
-    const content=<><span className={cn('grid size-5 place-items-center rounded-full text-[11px] font-bold',state==='done'?'bg-sg-ok text-sg-surface':state==='now'?'bg-sg-ink text-sg-side-text':'bg-sg-hover text-sg-faint')} aria-hidden="true">{state==='done'?'✓':index+1}</span><span className="block font-semibold leading-snug">{step.label}</span></>;
+    const content=<><span className={cn('grid size-5 place-items-center rounded-full text-[11px] font-bold',state==='done'?'bg-sg-ok text-sg-surface':state==='now'?'bg-sg-text text-sg-surface':'bg-sg-hover text-sg-faint')} aria-hidden="true">{state==='done'?'✓':index+1}</span><span className="block font-semibold leading-snug">{step.label}</span></>;
     return <li key={step.label} aria-current={index===now?'step':undefined} className={cn('rounded-xl border text-[12.5px]',state==='done'?'border-transparent bg-sg-ok-bg':state==='now'?'border-sg-text bg-sg-surface shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border bg-sg-surface')}>
       {step.href?<Link href={step.href} className={cn('flex h-full items-center gap-2 rounded-xl px-3 py-2.5 text-inherit no-underline',focusRing)}>{content}</Link>:<span className="flex items-center gap-2 px-3 py-2.5">{content}</span>}</li>;})}</ol>;
 }
