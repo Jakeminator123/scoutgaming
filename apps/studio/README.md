@@ -60,8 +60,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Lobbykatalogen | `packages/player-catalog/` | Katalogtester |
 | Sparade projekt, policy och mediemetadata | Neon (`croupier_studio`) med revisionslås och historik | Studio-API:ts konfliktprov |
 
-En presentationsbank byggs med `node tools/media/build-lab-video-manifest.mjs --root <bank>`;
-granska diffen och kör `--check`. En ny hash är inget visuellt godkännande.
+Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma presentationen. Produktionens nuvarande katalog med Astrids bank läses tills den byts i [REN-START](../../docs/plans/REN-START.md) steg 6.
 
 ## Mappar
 

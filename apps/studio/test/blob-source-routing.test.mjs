@@ -92,7 +92,7 @@ async function assertBytes(reader, value = bytes) {
   assert.equal(await head.text(), '');
 }
 
-test('canonical bank and old archive alias serve private Blob bytes without local films or approval upgrades', async t => {
+test('the canonical bank serves private Blob bytes without local films or approval upgrades', async t => {
   const f = await fixture(t);
   await assert.rejects(stat(f.film), { code: 'ENOENT' });
   const inventory = await loadVideoRegistry(f.options);
@@ -107,12 +107,11 @@ test('canonical bank and old archive alias serve private Blob bytes without loca
   assert.equal(video.familyId, f.item.familyId);
   assert.equal(f.calls.length, 0, 'inventory uses metadata rather than downloading films');
   await assertBytes((method, headers) => getVideoResponse(f.item.id, request(f.item.id, method, headers), f.options));
-  const aliasOptions = { ...f.options, env: { ...f.options.env, LAB_VIDEO_ARCHIVE: join(f.root, 'emil/dealklipp-v1') } };
-  const alias = await getVideoResponse(f.item.id, request(f.item.id), aliasOptions);
-  assert.equal(alias.status, 200);
-  assert.deepEqual(Buffer.from(await alias.arrayBuffer()), bytes);
-  assert.equal((await loadVideoRegistry(aliasOptions)).videos.find(entry => entry.id === f.item.id).reviewStatus, 'unreviewed');
-  assert.deepEqual(f.calls, [f.row.storage.pathname], 'ranges and aliases reuse verified private bytes');
+  const repeat = await getVideoResponse(f.item.id, request(f.item.id), f.options);
+  assert.equal(repeat.status, 200);
+  assert.deepEqual(Buffer.from(await repeat.arrayBuffer()), bytes);
+  assert.equal((await loadVideoRegistry(f.options)).videos.find(entry => entry.id === f.item.id).reviewStatus, 'unreviewed');
+  assert.deepEqual(f.calls, [f.row.storage.pathname], 'ranges and repeated reads reuse verified private bytes');
 });
 
 test('an opted-in bank rejects missing or mismatched provenance even with exact local bytes', async t => {
