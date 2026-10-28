@@ -19,13 +19,20 @@ test('preview documents and assets have exact route boundaries', () => {
 });
 
 test('login returns only to known preview documents; never assets, queries or another origin', () => {
-  for (const path of ['/admin', '/admin/structure', '/admin/lobby', '/admin/admin/accounts']) {
+  for (const path of ['/admin', '/admin/lobby', '/admin/system?flik=personal', '/admin/dealers/vera?flik=tal&verktyg=dialog', '/admin/companies/north', '/admin/rooms/room-1', '/admin/scenes?tab=mallar']) {
     assert.equal(studioLoginReturnTo(path), path);
     assert.equal(studioLoginReturnTo('/studio' + path), path);
     assert.equal(studioLoginDestination(path, '/api/auth'), path);
   }
-  for (const value of ['/admin/_assets/admin/app.js', '/admin/unknown', '/admin?returnTo=https://elsewhere.test', '//elsewhere.test/admin', '/admin/../api'])
-    assert.equal(studioLoginReturnTo(value), '/admin');
+  // Retired documents return to the page that replaced them.
+  for (const [path, canonical] of [['/admin/structure', '/admin/system?flik=beroenden'], ['/admin/admin/accounts', '/admin/system?flik=personal']]) {
+    assert.equal(studioLoginReturnTo(path), canonical);
+    assert.equal(studioLoginReturnTo('/studio' + path), canonical);
+    assert.equal(studioLoginDestination(path, '/api/auth'), canonical);
+  }
+  for (const value of ['/admin/_assets/admin/app.js', '/admin/unknown', '/admin?returnTo=https://elsewhere.test', '//elsewhere.test/admin', '/admin/../api',
+    '/admin/dealers/vera/edit', '/admin/scenes/x', '/admin/rooms/-x', '/admin/system?token=x', '/admin/dealers/vera?flik=tal&flik=klipp', '/admin/companies/north#x'])
+    assert.equal(studioLoginReturnTo(value), '/admin', value);
 });
 
 test('public admin documents and assets route to Studio without changing control', () => {
@@ -39,7 +46,7 @@ test('public admin documents and assets route to Studio without changing control
 
 test('native document login uses the public mounted path; resources fail without redirects or caching', async () => {
   for (const basePath of ['', '/studio']) {
-    for (const target of ['/admin', '/admin/lobby', '/studio/admin/rooms']) {
+    for (const target of ['/admin', '/admin/lobby', '/studio/admin/rooms/room-1']) {
       const response = designPreviewAuthRedirect(`/admin/login?returnTo=${encodeURIComponent(target)}`, { basePath });
       const expected = target.replace(/^\/studio/, '');
       assert.equal(response.status, 307);
@@ -57,7 +64,8 @@ test('native document login uses the public mounted path; resources fail without
   assert.equal(designPreviewAuthRedirect('/admin/login?returnTo=https%3A%2F%2Felsewhere.test', { basePath: '/studio' }).headers.get('location'), '/admin/login?returnTo=%2Fadmin');
   assert.equal(designPreviewAuthRedirect('https://public.example/api/auth/lab/start?next=%2Fstudio%2Fadmin'), null);
   const publicOrigin='https://public.example';
-  assert.equal(designPreviewAuthRedirect(publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms',{publicOrigin}).headers.get('location'),publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms');
+  assert.equal(designPreviewAuthRedirect(publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms%2Froom-1',{publicOrigin}).headers.get('location'),publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms%2Froom-1');
+  assert.equal(designPreviewAuthRedirect('/admin/login?returnTo=%2Fstudio%2Fadmin%2Frooms').headers.get('location'),'/admin/login?returnTo=%2Fadmin%2Fcompanies%3Ftab%3Dspelbord','a retired room list returns to its replacement');
   assert.equal(designPreviewAuthRedirect('https://foreign.invalid/admin/login?returnTo=%2Fadmin',{publicOrigin}),null);
   assert.equal(designPreviewAuthRedirect(publicOrigin+'/admin/login?returnTo=%2Fadmin',{publicOrigin}).headers.get('referrer-policy'),'no-referrer');
 });
@@ -98,7 +106,7 @@ test('staff permits Blob; public lobby permits D-ID; assets retain same-origin p
     }
     let authorizations = 0;
     const authorize = async () => { authorizations++; };
-    const documents = [[], ['clips'], ['structure'], ['dealers'], ['rooms'], ['assets'], ['admin', 'accounts']];
+    const documents = [[], ['dealers'], ['dealers', 'vera'], ['scenes'], ['companies'], ['companies', 'north'], ['rooms', 'room-1'], ['system'], ['guide']];
     for (const segments of [...documents, ['lobby'], ['_assets', 'admin', 'app.js'], ['_assets', 'lobby', 'app.js']]) {
       const response = await serveDesignPreview(new Request('https://studio.test/admin/' + segments.join('/')), segments, { root, authorize });
       assert.equal(response.status, 200);
@@ -236,7 +244,7 @@ test('lobby media validators let browsers keep ranged video and never stitch a r
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
-test('retired Admin library authorizes before redirecting to the registered assets surface',async()=>{
+test('retired Admin library authorizes before redirecting to the registered material tab of Scenes',async()=>{
   for(const prefix of ['/admin','/studio/admin'])for(const method of ['GET','HEAD']){
     const url='https://studio.test'+prefix+'/material-library?role=background&game=roulette&operator=north&room=vip';
     let authorized=0;
@@ -246,7 +254,7 @@ test('retired Admin library authorizes before redirecting to the registered asse
     const response=await serveDesignPreview(new Request(url,{method}),['material-library'],{authorize});
     assert.equal(authorized,1);assert.equal(response.status,307);assert.equal(await response.text(),'');
     const target=new URL(response.headers.get('location'),'https://studio.test');
-    assert.equal(target.pathname,'/admin/assets');assert.equal(target.searchParams.get('tab'),'backgrounds');
+    assert.equal(target.pathname,'/admin/scenes');assert.equal(target.searchParams.get('tab'),'bakgrunder');assert.equal(target.searchParams.has('role'),false);
     for(const [key,value] of [['game','roulette'],['operator','north'],['room','vip']])assert.equal(target.searchParams.get(key),value);
     assert.equal(response.headers.get('cache-control'),'private, no-store');
     assert.equal((await serveDesignPreview(new Request(url,{method:'POST'}),['material-library'],{authorize})).status,405);
@@ -254,28 +262,30 @@ test('retired Admin library authorizes before redirecting to the registered asse
   }
 });
 
-test('retired library login returns to canonical assets without accepting invalid context',()=>{
+test('retired library login returns to the canonical material tab without accepting invalid context',()=>{
   for(const prefix of ['/admin','/studio/admin']){
     const target=studioLoginReturnTo(prefix+'/material-library?role=background&game=roulette&room=vip');
-    assert.equal(target,'/admin/assets?role=background&game=roulette&room=vip&tab=backgrounds');
+    assert.equal(target,'/admin/scenes?tab=bakgrunder&game=roulette&room=vip');
     assert.equal(studioLoginReturnTo(prefix+'/material-library?role=table&role=background'),'/admin');
     assert.equal(studioLoginReturnTo(prefix+'/material-library?returnTo=https://outside.invalid'),'/admin');
   }
 });
 
 test('retired Admin pages authenticate before redirecting and retain explicit resource context',async()=>{
-  const cases=[['tools','/admin/dealers'],['admin/payments','/admin/ekonomi'],['admin/log','/admin/companies'],['admin/operators','/admin/companies'],
-    ['openclaw?tab=models','/admin/ai/models'],['openclaw?tab=agent','/admin/dealer-agent'],
-    ['openclaw?tab=probe','/admin/clips'],['openclaw?tab=drift','/admin/drift'],['openclaw?tab=assistant','/admin'],['ai/chat','/admin']];
-  for(const [old,destination] of cases)for(const method of ['GET','HEAD']){
+  // [old document, destination path, its tab, whether the dealer or company moves into the path]
+  const cases=[['tools','/admin/dealers',null],['admin/payments','/admin/system','spelare'],['admin/log','/admin/companies/north',null,'operator'],['admin/operators','/admin/companies/north',null,'operator'],
+    ['openclaw?tab=models','/admin/system','agenter'],['openclaw?tab=agent','/admin/dealers/nora','tal','dealer'],
+    ['openclaw?tab=probe','/admin/dealers/nora','tal','dealer'],['openclaw?tab=drift','/admin/dealers/nora','tal','dealer'],['openclaw?tab=assistant','/admin',null],['ai/chat','/admin',null]];
+  for(const [old,destination,flik,inPath] of cases)for(const method of ['GET','HEAD']){
     const url=new URL('https://studio.test/admin/'+old);
     url.searchParams.append('dealer','nora');url.searchParams.append('operator','north');url.searchParams.append('room','one');url.searchParams.append('room','two');
     const segments=url.pathname.slice('/admin/'.length).split('/');
     await assert.rejects(serveDesignPreview(new Request(url,{method}),segments,{authorize:async()=>{throw Error('denied');}}),/denied/);
     let authorized=0;const response=await serveDesignPreview(new Request(url,{method}),segments,{authorize:async()=>{authorized++;}});
     assert.equal(authorized,1);assert.equal(response.status,307);
-    const target=new URL(response.headers.get('location'),url);assert.equal(target.pathname,destination);
-    assert.equal(target.searchParams.get('dealer'),'nora');assert.equal(target.searchParams.get('operator'),'north');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
+    const target=new URL(response.headers.get('location'),url);assert.equal(target.pathname,destination,old);assert.equal(target.searchParams.get('flik'),flik,old);
+    assert.equal(target.searchParams.get('dealer'),inPath==='dealer'?null:'nora',old);assert.equal(target.searchParams.get('operator'),inPath==='operator'?null:'north',old);
+    assert.deepEqual(target.searchParams.getAll('room'),['one','two'],old);
     assert.equal(response.headers.get('cache-control'),'private, no-store');
   }
 });

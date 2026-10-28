@@ -71,7 +71,8 @@ test('chat panel receives the studio session props and opens the room with a ful
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/admin/rooms?dealer=elin')]);
+  // Without a selected table the rehearsal opens the table list, carrying the dealer.
+  assert.deepEqual(assigned, [labUrl('/admin/companies?tab=spelbord&dealer=elin')]);
 });
 
 // Explicit active dealers used by this isolated component fixture.
