@@ -64,16 +64,18 @@ function readState(data, roomId, maxMessageBytes) {
  * Native WebSocket uses the browser's same-host sessions cookie. This API has no
  * credential, subprotocol, storage, command or game/wallet write port.
  *
- * Renderers are serialized and receive {signal, roomId}. They must honor abort
+ * Renderers are serialized; snapshots also receive their local WS receivedAt.
+ * They must honor abort
  * before committing asynchronous work. A presentation version is consumed BEFORE
  * present is called: a disconnect or renderer failure can never replay it on this
- * instance. Renderer failure/timeout is terminal; it is not an automatic retry.
+ * instance. Renderer failure/timeout is terminal, except the recognized stale
+ * room binding conflict, which reconnects within the existing outage budget.
  * No product entry point mounts this adapter until shared commands replace legacy
  * controls together with it.
  */
 export function createSharedRoomClient({
   roomId, browserOrigin, WebSocket = globalThis.WebSocket,
-  restoreSnapshot, present, onError = () => {},
+  restoreSnapshot, present, onError = () => {}, now = Date.now,
   maxMessageBytes = 256 * 1024, maxPendingStates = 4,
   maxReconnectAttempts = 3, reconnectDelayMs = 250, connectTimeoutMs = 5000, callbackTimeoutMs = 10000,
 } = {}) {
@@ -81,7 +83,7 @@ export function createSharedRoomClient({
   try { origin = new URL(browserOrigin); } catch { throw new TypeError('shared_room_invalid_origin'); }
   if (!id(roomId) || origin.origin !== browserOrigin || !['http:', 'https:'].includes(origin.protocol)
     || (globalThis.location && globalThis.location.origin !== browserOrigin)
-    || ![WebSocket, restoreSnapshot, present, onError].every(port => typeof port === 'function')
+    || ![WebSocket, restoreSnapshot, present, onError, now].every(port => typeof port === 'function')
     || !Number.isSafeInteger(maxMessageBytes) || maxMessageBytes < 256 || maxMessageBytes > 1024 * 1024
     || !Number.isSafeInteger(maxPendingStates) || maxPendingStates < 1 || maxPendingStates > 32
     || !Number.isSafeInteger(maxReconnectAttempts) || maxReconnectAttempts < 0 || maxReconnectAttempts > 5
@@ -123,13 +125,13 @@ export function createSharedRoomClient({
     else if ([1002, 1003, 1007, 1009].includes(code)) finish('shared_room_invalid_state');
     else retry();
   }
-  async function render(port, value, candidate, timeoutMs = callbackTimeoutMs) {
+  async function render(port, value, candidate, timeoutMs = callbackTimeoutMs, receivedAt) {
     const timeout = new Promise((_, reject) => {
       renderTimer = setTimeout(() => reject(Object.assign(new Error('shared_room_renderer_timeout'), { rendererTimeout: true })), timeoutMs);
     });
     const work = Promise.resolve().then(() => {
       if (!current(candidate)) throw new DOMException('Shared room disconnected', 'AbortError');
-      return port(value, Object.freeze({ signal: candidate.controller.signal, roomId }));
+      return port(value, Object.freeze({ signal: candidate.controller.signal, roomId, receivedAt }));
     });
     // Do not race abort: an old async renderer must settle before a reconnect's
     // renderer begins. A stuck renderer terminates the entire instance on timeout.
@@ -140,7 +142,7 @@ export function createSharedRoomClient({
     if (pumping) return; pumping = true;
     try {
       while (state === 'running' && queue.length) {
-        const { candidate, frame } = queue.shift();
+        const { candidate, frame, receivedAt } = queue.shift();
         if (!current(candidate)) continue;
         const s = frame.snapshot, p = frame.presentation;
         if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer) continue;
@@ -149,7 +151,7 @@ export function createSharedRoomClient({
         // Capture monotonic floors before handing mutable data to the renderer.
         snapshotVersion = s.version; snapshotPresentationVer = s.presentationVer;
         try {
-          await render(restoreSnapshot, s, candidate);
+          await render(restoreSnapshot, s, candidate, callbackTimeoutMs, receivedAt);
           if (!current(candidate)) continue;
           if (replay.apply) {
             appliedVer = p.ver;
@@ -159,7 +161,12 @@ export function createSharedRoomClient({
           // rendered. A retired socket completing late cannot renew this budget.
           if (current(candidate)) retries = 0;
         } catch (error) {
-          if (state === 'running' && (error?.rendererTimeout || current(candidate))) {
+          // The room can advance between its WS snapshot and the HTTP binding
+          // read. Reread through a fresh authenticated socket, with the same
+          // bounded outage budget. No failed binding authorizes controls.
+          if (current(candidate) && error?.code === 'shared_room_presentation_stale') {
+            disconnected(candidate, 1012);
+          } else if (state === 'running' && (error?.rendererTimeout || current(candidate))) {
             finish(error?.rendererTimeout ? 'shared_room_renderer_timeout' : 'shared_room_renderer_failed');
           }
         }
@@ -168,6 +175,7 @@ export function createSharedRoomClient({
   }
   function receive(candidate, event) {
     if (!current(candidate)) return;
+    const receivedAt = now();
     let frame;
     try {
       frame = readState(event.data, roomId, maxMessageBytes);
@@ -177,7 +185,7 @@ export function createSharedRoomClient({
     if (frame.snapshot.version < snapshotVersion || frame.snapshot.presentationVer < snapshotPresentationVer
       || frame.snapshot.presentationVer < appliedVer) return;
     if (queue.length >= maxPendingStates) { finish('shared_room_backpressure'); return; }
-    queue.push({ candidate, frame }); void pump();
+    queue.push({ candidate, frame, receivedAt }); void pump();
   }
   function connect() {
     let socket;

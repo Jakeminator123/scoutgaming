@@ -12,6 +12,7 @@ import { createPresentationStartup } from '../services/game/public/presentation-
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
+import { DRAGAN_KEVIN_PROFILE as dragan } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/test/fixtures/local-video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
@@ -801,6 +802,27 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
+
+test('a shared configuration rollover is not a revoked native package',async t=>{
+  const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});
+  globalThis.fetch=async()=>Response.json({error:'shared_room_presentation_stale'},{status:409});
+  await assert.rejects(createLocalPresentation({dealerId:'linnea',entry:{operator:'north',roomId:'room-a',packageRevision:1}}),{code:'shared_room_presentation_stale'});
+});
+
+for(const withPolicy of [false,true])test(`a stale shared idle read waits for an authoritative snapshot without latching reload (policy=${withPolicy})`,async t=>{
+  const id='00000000-0000-4000-8000-000000000093',familyId='linnea/idle.ready/ready';
+  const video={id,fileName:'idle.mp4',sha256:'a'.repeat(64),src:'/idle.mp4',dealer:'linnea',familyId,role:'standard',available:true};
+  const idlePolicy=withPolicy?{schemaVersion:1,familyId,base:[{videoId:id,weight:100,durationMs:1000}],variants:[]}:null;
+  const inventory={videos:[video],families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[id],variantIds:[]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:video,selectedVideo:video,idlePolicy,customInventory:inventory,entry:{operator:'north',roomId:'room-a',packageRevision:1}});
+  const fetchConfig=globalThis.fetch;
+  globalThis.fetch=async()=>Response.json({error:'shared_room_presentation_stale'},{status:409});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  assert.doesNotMatch(f.status.textContent??'',/Ladda om|Presentationspaketet/);
+  assert.equal(f.jobs.length,0);
+  globalThis.fetch=fetchConfig;f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,1,'next authorized snapshot can start the same published idle');
+});
 
 test('the local presenter exposes a detached frozen planning material',async t=>{
   const filmedMaterial={revision:'native-film-v2-'+'c'.repeat(64),film:{transitions:{toShoe:null,fromShoe:null}}};
@@ -1959,4 +1981,117 @@ test('the lookahead prepares a planned step exact take instead of the family sta
   assert.deepEqual(prepared.map(take=>take.media.sha256),[exact.sha256,standard.sha256],'without a planned take the family standard is prepared as before');
   controller.prepareSequence([{...source,filmedTake:{sha256:'0'.repeat(64)}}]);
   assert.deepEqual(prepared.map(take=>take.media.sha256),[exact.sha256,standard.sha256,standard.sha256],'a take outside the inventory falls back to the standard');
+});
+
+// K04 F4 on top of #476: only shared_room_presentation_stale is a moved window. A package conflict, or any
+// other 409 from the configuration read, still reports a changed package that asks the player to reload.
+test('a package conflict at startup keeps its reload error after the shared stale split', async () => {
+  const start = request => createLocalPresentation({ player: {}, host: { append() {} }, dealerId: 'linnea', version: () => 1, receipt() {}, onIdle() {}, onBusy() {}, muted: () => true,
+    entry: { operator: 'north', roomId: 'room-linnea', packageRevision: 7 }, transport: { request } });
+  for (const response of [() => Response.json({ error: 'studio_presentation_idle_package_changed' }, { status: 409 }),
+    () => Response.json({ error: 'other_conflict', code: 'shared_room_presentation_stale' }, { status: 409 }), () => new Response('conflict', { status: 409 })])
+    await assert.rejects(start(async () => response()), { code: 'studio_presentation_idle_package_changed', message: /Ladda om spelet/ });
+});
+
+// K04 F5 (staging 28 Oct 2026, 43b7404e, no throttling): every filmed deal and reveal of a normal hand was
+// skipped as late, 0.4-1.5 s after its 'selected' receipt. Each step asked the server for its clip only when
+// its time began, and that answer (about 1-1.7 s) outlasted the step. The shared plan is committed as a whole,
+// so its filmed steps are asked for when it begins; each step still plays only at its own time.
+const plainEvent = ({ filmedTake, ...event }) => event;
+test('a shared plan asks for its filmed steps when it begins: no receipt, card or film before each step, which plays the answer it has', async t => {
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  const take = { profileId: 'profile', takeKey: 'take', sha256: 'd'.repeat(64) };
+  const hole = { type: 'deal', to: 'dealer', box: null, shoeDraw: 9, faceDown: true, card: null };
+  const plan = [{ type: 'speak', line: 'goodluck' }, { ...source, shoeDraw: 7, filmedTake: take }, { ...source, box: 2, shoeDraw: 8, filmedTake: take }, { ...hole, filmedTake: take }, { ...source, shoeDraw: 10 }];
+  const selects = () => f.requests.filter(request => request.url === '/api/presentation/select').map(request => JSON.parse(request.options.body));
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true }); await settle(); await settle();
+  assert.deepEqual(selects().map(body => body.event.shoeDraw), [7, 8, 9], 'only the planned filmed steps, in their order');
+  assert.deepEqual(selects().map(body => body.event), plan.slice(1, 4).map(plainEvent), 'each request is exactly the committed event its step sends');
+  assert.equal(selects()[2].event.card, null, 'the hole card stays hidden');
+  assert.deepEqual(f.receipts.filter(row => row.event === 'deal'), [], 'an early answer is not a presentation');
+  assert.equal(f.jobs.length, 0, 'nothing plays before its step');
+  const played = f.controller.present(plainEvent(plan[1])); await settle();
+  assert.equal(selects().length, 3, 'the step plays the answer it already has'); assert.equal(f.jobs.length, 1);
+  f.jobs[0].resolve(); assert.equal(await played, true);
+  assert.deepEqual(f.receipts.filter(row => row.event === 'deal').map(row => row.state), ['selected'], 'the selection is recorded when its step plays');
+  f.controller.prepareSequence([plan[1]]); await settle();
+  assert.equal(selects().length, 3, 'without selectAhead (the native table) each step asks at its time');
+  const unplanned = f.controller.present(plainEvent(plan[4])); await settle(); assert.equal(selects().length, 4); f.jobs[1].resolve(); assert.equal(await unplanned, true);
+});
+
+test('the plan asks two answers at a time; a step waits for its pending answer, and leaving it late prepares the next file', async t => {
+  const inventory = await loadVideoRegistry(), prepared = [];
+  const files = ['deal_pos1.mp4', 'deal_pos2.mp4', 'deal_pos3.mp4'].map(name => inventory.videos.find(video => video.fileName === name));
+  const f = await controllerFixture(t, { entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 }, prepared });
+  const base = globalThis.fetch, answers = [];
+  globalThis.fetch = (url, options) => url === '/api/presentation/select'
+    ? new Promise(resolve => answers.push({ shoeDraw: JSON.parse(options.body).event.shoeDraw, send: () => resolve(base(url, options)) })) : base(url, options);
+  const plan = files.map((file, index) => ({ ...source, box: index, shoeDraw: 7 + index, filmedTake: { profileId: 'p', takeKey: 'k' + index, sha256: file.sha256 } }));
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true }); await settle();
+  assert.deepEqual(answers.map(row => row.shoeDraw), [7, 8], 'two answers at a time');
+  assert.deepEqual(prepared.map(take => take.media.sha256), [files[0].sha256]);
+  const step = new AbortController(), first = f.controller.present(plainEvent(plan[0]), { signal: step.signal }); await settle();
+  assert.equal(answers.length, 2, 'the step waits for its own pending answer instead of asking again');
+  step.abort(Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true }));
+  assert.equal(await first, false); assert.equal(f.status.textContent, '');
+  assert.deepEqual([f.receipts.at(-1).state, f.receipts.at(-1).late], ['skipped', true]);
+  assert.deepEqual(prepared.map(take => take.media.sha256), [files[0].sha256, files[1].sha256], 'a step left before its answer still prepares the next file');
+  answers[0].send(); await settle(); await settle();
+  assert.deepEqual(answers.map(row => row.shoeDraw), [7, 8, 9], 'the next answer is asked when one arrives');
+  answers[1].send(); answers[2].send(); await settle(); await settle();
+  const second = f.controller.present(plainEvent(plan[1])); await settle(); await settle();
+  assert.equal(answers.length, 3); assert.equal(f.jobs.length, 1); f.jobs[0].resolve(); assert.equal(await second, true);
+  f.controller.state({ action: false }); const third = f.controller.present(plainEvent(plan[2])); await settle();
+  assert.equal(answers.length, 4, 'a finished presentation keeps no answers'); answers[3].send(); await settle(); await settle(); f.jobs.at(-1).resolve(); await third;
+});
+
+test('with answers slower than a take, the deals after goodluck play their film, and no card shows before its step', async t => {
+  const plays = [], cardLog = [];
+  const player = { playLocalClip(take, options) {
+    plays.push({ at: Date.now(), sha256: take.media.sha256 });
+    return new Promise((resolve, reject) => {
+      options.onReceipt?.({ state: 'start' }); options.onReceipt?.({ state: 'presented' }); options.onFrame?.(0);
+      const timer = setTimeout(() => resolve({ completed: true }), 400);
+      options.signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('cancelled', 'AbortError')); }, { once: true });
+    }); } };
+  const f = await controllerFixture(t, { player, entry: { operator: 'north', roomId: 'room-a', packageRevision: 7 } });
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
+  // Longer than either take (7:i 2750 ms, 1:v 1625 ms): asked at the step, no answer would arrive in time.
+  const ANSWER_MS = 3000, base = globalThis.fetch, asked = [];
+  globalThis.fetch = async (url, options) => {
+    if (url !== '/api/presentation/select') return base(url, options);
+    const event = JSON.parse(options.body).event; asked.push({ at: Date.now(), type: event.type, shoeDraw: event.shoeDraw ?? null });
+    await new Promise(resolve => setTimeout(resolve, ANSWER_MS));
+    const body = await (await base(url, options)).json(); body.decision.sourceEvent = event; return Response.json(body);
+  };
+  const cards = { restore() {}, sync() {}, clear() {}, close() {}, frame() {},
+    show: draw => cardLog.push(['show', draw, Date.now()]), reveal: () => cardLog.push(['reveal', null, Date.now()]),
+    begin: (_video, event) => { cardLog.push(['begin', event.shoeDraw, Date.now()]); return event.shoeDraw; }, finish: (_token, draw) => cardLog.push(['finish', draw, Date.now()]) };
+  const ports = createSharedRoomPresentationPorts({ media: f.controller, cards, clock: Date.now, filmedProfile: dragan, dealerId: 'dragan' });
+  const signal = new AbortController().signal;
+  const snapshot = (version, presentationVer) => ({ roomId: 'room-a', version, presentationVer, phase: 'round', roundId: 'round-1', windowId: 'window-1',
+    serverNow: Date.now(), players: [], me: { id: 'alice' }, round: null, plan: null });
+  ports.restoreSnapshot(snapshot(1, 0), { signal }); ports.restoreSnapshot(snapshot(2, 1), { signal });
+  const box = (target, shoeDraw) => ({ type: 'deal', to: 'box', box: target, shoeDraw, faceDown: false });
+  const presenting = ports.present({ roomId: 'room-a', ver: 1, talkId: 'talk-1', kind: 'plan', startAt: 1000, endAt: 31000,
+    events: [{ type: 'speak', line: 'goodluck' }, box(6, 1), box(0, 2)] }, { signal });
+  const until = async at => { while (Date.now() < at) { t.mock.timers.tick(Math.min(50, at - Date.now())); await settle(); await settle(); } };
+  // The mocked clock advances in 50 ms ticks; each time is within one tick of its plan time.
+  const near = (actual, expected, message) => assert.ok(actual.length === expected.length && actual.every((at, i) => at >= expected[i] && at <= expected[i] + 50), `${message ?? ''} ${JSON.stringify(actual)} ~ ${JSON.stringify(expected)}`);
+  await settle(); await settle();
+  assert.deepEqual(asked.filter(row => row.type === 'deal').map(row => [row.at, row.shoeDraw]), [[1000, 1], [1000, 2]], 'both filmed deals are asked for when the plan begins');
+  await until(4000 + 1); assert.deepEqual(cardLog, [], 'the answers arrived, but no card shows before its step');
+  // goodluck: answer at 4.0 s, plays 0.4 s; the chain anchors at 4.4 s; 7:i is due at 7.15 s, 1:v at 8.775 s.
+  await until(4400 + 60);
+  const selected = plays.find(row => row.at === 4000).sha256, steps = () => plays.filter(row => row.sha256 === selected).map(row => row.at);
+  near(steps(), [4000, 4400], 'the first deal plays at its step with the answer it already has');
+  assert.deepEqual(cardLog.map(([kind, draw]) => [kind, draw]), [['begin', 1]]); near(cardLog.map(row => row[2]), [4400]);
+  await until(7150 + 60);
+  near(steps(), [4000, 4400, 7150], 'the second deal plays at its own time');
+  await until(9000); await presenting;
+  const begun = cardLog.filter(([kind]) => kind === 'begin');
+  assert.deepEqual(begun.map(([, draw]) => draw), [1, 2]); near(begun.map(row => row[2]), [4400, 7150], 'each card begins with its own step, not with its answer');
+  assert.deepEqual(f.receipts.filter(row => row.state === 'skipped'), [], 'no step is left as late');
+  assert.equal(f.status.textContent, '');
+  ports.close();
 });
