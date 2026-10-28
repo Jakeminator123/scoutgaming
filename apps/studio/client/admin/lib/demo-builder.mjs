@@ -33,7 +33,7 @@ export const DEMO_CREDIT_MAX=100000;
 // Knappen "Skapa demolänk" och steg 4:s krav läser bara den här konstanten; launch, Fyll på
 // och Återkalla ligger kvar oförändrade bakom den och slås på genom att sätta true.
 export const DEMO_LAUNCH_ENABLED=false;
-export const DEMO_LAUNCH_OFF_TEXT='Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget, efter O03; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.';
+export const DEMO_LAUNCH_OFF_TEXT='Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.';
 const CONTROL=/[\u0000-\u001f\u007f-\u009f]/u;
 const ROOM_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const text=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max&&!CONTROL.test(value);

@@ -96,7 +96,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
     </div>
     <section aria-labelledby="demo-credits-title" className="grid gap-2.5"><h3 id="demo-credits-title" className="m-0 text-[13.5px] font-semibold text-sg-text">Saldo och giltighet</h3>
       <CreditsReadout credits={credits} company={company} room={room}/>
-      <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; tidigast efter O03). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
+      <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; kommer senare). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
     <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> hos <b>{company.name}</b> med <b>{dealer.name}</b>. Nyckel och hemlighet lämnar aldrig servern.</Note>
     {permissions.blocker&&<div role="note"><Note tone="warn">{permissions.blocker}</Note></div>}
@@ -269,7 +269,7 @@ export function DemoBuilder() {
     ['Skrivningar','apikeys/create och apikeys/launch; Fyll på: apikeys/credit; Återkalla: apikeys/revoke'],
   ];
   return <HubPage eyebrow={<Crumbs items={[{label:'Översikt',href:'/admin'},{label:'Skapa demo'}]}/>} title="Skapa demo"
-    chip={DEMO_LAUNCH_ENABLED?undefined:<Chip tone="warn" title={DEMO_LAUNCH_OFF_TEXT}>Demolänk efter O03</Chip>}
+    chip={DEMO_LAUNCH_ENABLED?undefined:<Chip tone="warn" title={DEMO_LAUNCH_OFF_TEXT}>Demolänk kommer senare</Chip>}
     intro={`Bygg en demo åt ett bolag i fyra steg${DEMO_LAUNCH_ENABLED?' och få en länk att skicka':''}. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.`}>
     <DialogSteps steps={DEMO_STEPS.map(step=>step.label)} current={done?DEMO_STEPS.length:effective.step-1} reachable={reachableStep(effective)-1} onSelect={done||busy?undefined:index=>go(index+1)} className="mb-5"/>
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">

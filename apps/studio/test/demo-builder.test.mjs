@@ -291,7 +291,7 @@ test('Skapa demolänk is off with the reason while DEMO_LAUNCH_ENABLED is false;
   const button=html.match(/<button[^>]*>Skapa demolänk<\/button>/)?.[0];
   assert.ok(button,'knappen finns');assert.match(button,/disabled=""/,'knappen är inaktiv');
   assert.ok(html.includes(DEMO_LAUNCH_OFF_TEXT),'texten står vid knappen');
-  assert.equal(DEMO_LAUNCH_OFF_TEXT,'Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget, efter O03; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.');
+  assert.equal(DEMO_LAUNCH_OFF_TEXT,'Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.');
   for (const choice of ['Johns Bet','PAOW Blackjack','PAOW','Johns demo','demo-Johns demo'])assert.ok(html.includes(choice),'Din demo visar '+choice);
   assert.doesNotMatch(html,/landar direkt|vid spelbordet/,'inga löften om att demon sätter sig vid bordet');
 });
