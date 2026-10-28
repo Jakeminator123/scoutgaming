@@ -33,10 +33,36 @@ function harness(t,options={}){
   const commands=options.commands??{state:'idle',send(intent){calls.push(intent);return send(intent);},retry(){return send();},stop(){this.state='stopped';}};
   const view={bind(value){this.actions=value;},render(value){renders.push(value);},close(){events.push('view-close');}};
   const presentation=options.presentation??{restoreSnapshot(s){events.push('restore:'+s.version);},present(p){events.push('present:'+p.ver);},close(){events.push('media-close');}};
-  const controller=createSharedRoomController({roomId,commands,view,presentation,now:()=>1000});
+  const controller=createSharedRoomController({roomId,commands,view,presentation,now:options.now??(()=>1000)});
   t.after(()=>controller.stop());
   return{controller,calls,renders,events,commands,view,setSend:fn=>send=fn,restore:(s,signal)=>controller.restoreSnapshot(s,{signal:signal??new AbortController().signal})};
 }
+
+test('binding latency counts toward the server turn and action deadline',async t=>{
+  let now=100;const gate=deferred();let restoredOptions;
+  const h=harness(t,{now:()=>now,presentation:{restoreSnapshot:async(_s,options)=>{restoredOptions=options;await gate.promise;},present(){},close(){}}});
+  const s=seated(2,{phase:'round',roundId:'round-2',serverNow:1000,plan:{turnAt:1100},actionDeadline:1300,
+    round:{phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']}});
+  const restoring=h.controller.restoreSnapshot(s,{receivedAt:100});now=300;
+  assert.deepEqual(h.renders.at(-1).can.act,[],'binding must still authorize controls');
+  gate.resolve();await restoring;
+  assert.equal(restoredOptions.receivedAt,100);
+  assert.equal(h.renders.at(-1).serverNow,1200);
+  assert.deepEqual(h.renders.at(-1).can.act,['hit','stand'],'binding delay must not postpone the turn');
+  now=450;await h.controller.dispatch('act',{action:'hit'});
+  assert.equal(h.calls.length,0,'the elapsed deadline must not be extended by binding latency');
+});
+
+test('a queued presentation uses receipt time and restores expired cards without playing old film',async()=>{
+  const calls=[];const ports=createSharedRoomPresentationPorts({clock:()=>500,
+    media:{state(){},present(){calls.push('film');},close(){}},
+    cards:{restore(){calls.push('cards');},sync(){},clear(){},close(){}}});
+  ports.restoreSnapshot(seated(1),{receivedAt:100});
+  ports.restoreSnapshot(seated(2,{presentationVer:1}),{receivedAt:100});calls.length=0;
+  try { await ports.present({roomId,ver:1,kind:'plan',startAt:1000,endAt:1100,events:[{type:'deal',shoeDraw:1}]});
+    assert.deepEqual(calls,['cards']);
+  } finally {ports.close();}
+});
 
 test('first join uses server generations and waits for WS; HTTP results cannot invent seats, balance or cards',async t=>{
   const h=harness(t);await h.restore(snapshot());
@@ -244,6 +270,50 @@ test('binding scope, owner, context and snapshot preconditions are checked befor
     const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(binding)});
     await assert.rejects(h.restore(snapshot()));assert.equal(h.mounts.length,0);assert.equal(h.controller.state.connected,false);h.close();
   }
+});
+
+test('a window rollover during binding exposes only the recognized recoverable conflict',async t=>{
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json({error:'shared_room_presentation_stale'},{status:409})});
+  await assert.rejects(h.restore(snapshot()),{code:'shared_room_presentation_stale'});
+  assert.equal(h.controller.state.connected,false);assert.equal(h.mounts.length,0);
+});
+
+for(const stage of ['binding','mount','confirmation'])test(`window rollover during ${stage} recovers the mounted app through fresh WS authority`,async t=>{
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const sockets=[],renders=[],closes=[],restores=[];let reads=0,mounts=0,stale=true;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(s){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:null})}));}}
+  const commands={state:'idle',stop(){this.state='stopped';}};
+  const app=await mountSharedRoomApp({document,window,createCommands:()=>commands,
+    createView:()=>({bind(){},render:value=>renders.push(value),close(){}}),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1}),
+    fetchImpl:async url=>{
+      reads++;
+      if(stale&&(stage==='binding'||stage==='confirmation'&&reads===2))return Response.json({error:'shared_room_presentation_stale'},{status:409});
+      return bindingResponse(url);
+    },
+    createPresentation:async()=>{
+      const mount=++mounts;
+      if(stale&&stage==='mount')throw Object.assign(Error('shared_room_presentation_stale'),{code:'shared_room_presentation_stale'});
+      return{restoreSnapshot:(_s,options)=>restores.push(options),present(){},close:()=>closes.push(mount)};
+    }});
+  t.after(app.close);sockets[0].message(seated(1));
+  for(let i=0;i<100&&sockets.length<2;i++)await delay(2);
+  assert.equal(sockets.length,2);assert.equal(app.controller.state.connected,false);
+  assert.equal(commands.state,'idle','retry must not stop the command client');
+  assert.deepEqual(renders.at(-1).can.act,[]);assert.equal(renders.at(-1).can.bet,false);
+  if(stage==='confirmation')assert.deepEqual(closes,[1],'the unconfirmed candidate is disposed');
+  stale=false;const receivedAt=Date.now();sockets[1].message(seated(2,{windowId:'window-2',serverNow:receivedAt}));
+  for(let i=0;i<100&&!app.controller.state.connected;i++)await delay(2);
+  assert.equal(app.controller.state.snapshot.windowId,'window-2');assert.equal(renders.at(-1).can.bet,true);
+  assert.ok(restores.at(-1).receivedAt>=receivedAt,'the binding forwards the WS receipt time');
+});
+
+for(const [status,error]of [[401,'shared_room_authentication_required'],[403,'shared_room_presentation_forbidden'],[409,'other_conflict']])
+test(`binding HTTP ${status} ${error} never gains recoverable stale authority`,async t=>{
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json({error},{status})});
+  await assert.rejects(h.restore(snapshot()),reason=>reason.code!=='shared_room_presentation_stale');
+  assert.equal(h.controller.state.connected,false);assert.equal(h.mounts.length,0);
 });
 
 test('an aborted binding fetch cannot mount late or replace a newer connection generation',async t=>{
@@ -615,14 +685,14 @@ const frameMs=frames=>frames*1000/dragan.plane.fps;
 function timedPorts(t,{present,startAt,endAt,events,enableTimers=true,filmedMaterial}){
   if(enableTimers)t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
   startAt??=Date.now();endAt??=startAt+30000;
-  const seen=[],shown=[],prepared=[],revealed=[];
+  const seen=[],shown=[],prepared=[],prepareOptions=[],revealed=[];
   const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal:()=>revealed.push(Date.now()),begin:(_video,source)=>source.shoeDraw,frame(){},finish(){}};
-  const media={filmedMaterial,state(){},prepareSequence(value){prepared.push(value);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
+  const media={filmedMaterial,state(){},prepareSequence(value,options){prepared.push(value);prepareOptions.push(options);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
   const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
   const signal=new AbortController().signal;
   ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1,serverNow:Date.now()}),{signal});
   const plan={roomId,ver:1,talkId:'timed',kind:'plan',startAt,endAt,events};
-  return {seen,shown,prepared,revealed,plan,start:()=>ports.present(plan,{signal})};
+  return {seen,shown,prepared,prepareOptions,revealed,plan,start:()=>ports.present(plan,{signal})};
 }
 
 test('a filmed step starts at its own time on the table clock, names its exact take for the lookahead and carries the handover',async t=>{
@@ -636,6 +706,24 @@ test('a filmed step starts at its own time on the table clock, names its exact t
   assert.equal(options.startOffset,0);assert.ok(Math.abs(options.handoverAt-frameMs(66-1.5)/1000)<1e-9);assert.equal(options.playbackRate,undefined);
   assert.equal(options.clockTime(),0);t.mock.timers.tick(1000);assert.ok(Math.abs(options.clockTime()-1)<1e-9,'the clock is the table clock from the step start');
   await result;
+});
+
+// K04 F5: the plan's filmed steps are asked for when it begins, so no step waits for the server at its time.
+test('a timed plan asks for the answers of its filmed steps when it begins, not after the server turn',async t=>{
+  const h=timedPorts(t,{events:[{type:'speak',line:'goodluck'},filmedBox(6,1),filmedBox(0,2)]});
+  const result=h.start();await flushRender();
+  assert.deepEqual(h.prepareOptions,[{selectAhead:true}]);
+  assert.deepEqual(h.prepared[0].map(event=>event.filmedTake?.takeKey??null),[null,'7:i','1:v']);
+  t.mock.timers.tick(10000);await result;
+  const shown=[],options=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal(){},begin(){},frame(){},finish(){}};
+  const media={state(){},close(){},prepareSequence(_value,value){options.push(value);},present:()=>assert.fail('no film after the server turn')};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']},signal=new AbortController().signal;
+  ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});
+  ports.restoreSnapshot(seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,plan:{id:'late',startAt:Date.now()-5000,endAt:Date.now()+1000,turnAt:Date.now()-1}}),{signal});
+  await ports.present({roomId,ver:1,talkId:'late',kind:'plan',startAt:Date.now()-5000,endAt:Date.now()+1000,events:[filmedBox(6,1),filmedBox(0,2)]},{signal});
+  assert.deepEqual(options,[{selectAhead:false}],'past turnAt every card shows at once: nothing to ask for');assert.deepEqual(shown,[1,2]);
 });
 
 test('joined takes chain back to back: an early handover waits for the boundary before the next take',async t=>{
@@ -885,6 +973,43 @@ test('a clip that already plays at turnAt plays to its end; the steps after it s
   await h.until(1000+1000+12500+250);
   assert.deepEqual(h.seen.map(row=>row.event.type),['speak']);assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);
   assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+// Mocked timers replace the global setTimeout only.
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// K04 F3 (staging 28 Oct 2026, 43b7404e): hit/stand opened 1.1-2.6 s after turnAt. The controller and the
+// presentation took the server's clock only after the media binding read (GET /binding, 1-2.5 s in staging),
+// so both table clocks ran that much behind the server. The clock belongs to the moment the frame arrived.
+test('a slow binding read never moves the table clock: cards and hit/stand still come at the server turnAt',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const BINDING_MS=2500,SKEW_MS=40000,server=()=>Date.now()+SKEW_MS;
+  const shown=[],renders=[],errors=[],mediaErrors=[],sockets=[],restored=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push({draw,at:Date.now()}),reveal(){},begin(){},frame(){},finish(){}};
+  // Every clip is still loading: only the table clock can end the steps.
+  const media={state(){},prepareSequence(){},close(){},present:(_event,options)=>new Promise(resolve=>options.signal.addEventListener('abort',()=>resolve(false),{once:true}))};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,onError:code=>mediaErrors.push(code)});
+  const presentation={close:ports.close,present:ports.present,
+    restoreSnapshot:(value,options)=>{restored.push(options.receivedAt);return wait(BINDING_MS).then(()=>ports.restoreSnapshot(value,options));}};
+  const commands={state:'idle',send:async()=>({status:'ok',result:{op:'act',version:3}}),stop(){}};
+  const controller=createSharedRoomController({roomId,commands,view:{bind(){},render:value=>renders.push(value),close(){}},presentation,now:Date.now});
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}}
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,callbackTimeoutMs:30000,
+    restoreSnapshot:controller.restoreSnapshot,present:controller.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();controller.stop();});client.start();
+  const until=async at=>{while(Date.now()<at){t.mock.timers.tick(Math.min(50,at-Date.now()));await flushRender();}};
+  sockets[0].message({snapshot:seated(1,{serverNow:server()}),presentation:null});await until(Date.now()+BINDING_MS+100);
+  const plan={...missingGoodluckPlan(server()),talkId:'plan-binding'},turnAt=plan.endAt-SKEW_MS;
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+  const arrived=Date.now();
+  sockets[0].message({snapshot:seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:server(),round,
+    plan:{id:'plan-binding',startAt:plan.startAt,endAt:plan.endAt,turnAt:plan.endAt},actionDeadline:plan.endAt+15000}),presentation:plan});
+  await flushRender();assert.equal(restored.at(-1),arrived,'the socket hands over the arrival time of the frame');
+  await until(turnAt-1);assert.deepEqual(renders.at(-1).can.act,[]);assert.deepEqual(shown,[],'no card before the server turn time');
+  await until(turnAt+1);
+  assert.deepEqual(renders.at(-1).can.act,['hit','stand'],'the buttons open at the server turnAt, not one binding read later');
+  assert.deepEqual(shown.map(row=>row.draw),[1,2,3,4]);assert.ok(shown.every(row=>row.at<=turnAt+50),'every committed card shows at turnAt');
+  assert.deepEqual(errors,[]);assert.deepEqual(mediaErrors,[]);
 });
 
 test('a film part that shows frames plays on past its step time; a later part of the same step does not start after it',async t=>{

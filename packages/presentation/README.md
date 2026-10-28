@@ -6,7 +6,7 @@ eller "Spelmall", `lane` i koden) är en presentation; ett sparat lane-ID är en
 extra produktnivå. Begreppen står i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och lagrings- och
 uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
-- `compositor/` — spelare, kompositor, brygga, geometri och den fristående redigeraren (`app.js`, `index.html`, `viewer.*`). Redigeraren följer med men serveras inte.
+- `compositor/` — spelare, kompositor, brygga, geometri och lanes. Den fristående redigeraren (`app.js`, `index.html`, `viewer.*`) är borttagen; den serverades aldrig.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
 - `docs/` — referens för den fristående kompositorexporten; ingen separat produktplan.
 - `preview/site/` — granskat byggmaterial för previewförberedaren, som också hämtar delade renderarmoduler.

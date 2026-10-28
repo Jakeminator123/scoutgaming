@@ -100,6 +100,32 @@ test('snapshot completes before presentation; adjacent async callbacks never ove
   assert.equal(h.peak(), 1);
 });
 
+test('snapshot receipt time survives the renderer queue and is not taken from wire data',async t=>{
+  const gate=deferred(),seen=[];let now=100;
+  const h=setup(t,{now:()=>now,restoreSnapshot:async(s,context)=>{seen.push([s.version,context.receivedAt]);if(s.version===1)await gate.promise;}});
+  h.client.start();h.sockets[0].message(frame(1,0));await turn();
+  now=200;const second=frame(2,0);second.receivedAt=999999;h.sockets[0].message(second);
+  now=500;gate.resolve();await until(()=>seen.length===2);
+  assert.deepEqual(seen,[[1,100],[2,200]]);
+});
+
+test('a stale binding rereads through a new socket without consuming its presentation',async t=>{
+  let stale=true;const restored=[],presented=[];
+  const h=setup(t,{restoreSnapshot:async(s,{signal})=>{restored.push(signal);if(stale)throw Object.assign(Error('window changed'),{code:'shared_room_presentation_stale'});},
+    present:p=>presented.push(p.ver)});
+  h.client.start();h.sockets[0].message(frame());await until(()=>h.sockets.length===2);
+  assert.equal(restored[0].aborted,true);assert.equal(h.client.status().presentationVer,0);assert.deepEqual(h.errors,[]);
+  stale=false;h.sockets[1].message(frame(2));await until(()=>presented.length===1);
+  assert.deepEqual(presented,[2]);assert.equal(h.client.status().reconnectAttempts,0);
+});
+
+test('persistent stale bindings exhaust the existing reconnect budget',async t=>{
+  const h=setup(t,{maxReconnectAttempts:1,restoreSnapshot:()=>{throw Object.assign(Error('stale'),{code:'shared_room_presentation_stale'});}});
+  h.client.start();h.sockets[0].message(frame());await until(()=>h.sockets.length===2);
+  h.sockets[1].message(frame(2));await until(()=>h.errors.length===1);
+  assert.deepEqual(h.errors,[{code:'shared_room_reconnect_exhausted'}]);assert.equal(h.sockets.length,2);
+});
+
 test('duplicates can refresh public wallet/presence but never replay presentation or restore an older snapshot', async t => {
   const h = setup(t); h.client.start(); const socket = h.sockets[0];
   socket.message(frame(2)); await until(() => h.calls.length === 2);

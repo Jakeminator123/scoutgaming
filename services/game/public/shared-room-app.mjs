@@ -59,12 +59,16 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
       const response=await fetchImpl(`/api/presentation/shared-room/${roomId}/binding?${query}`,{
         method:'GET',credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json'},signal:combined});
       combined.throwIfAborted();
+      if(response.status===409){
+        const failure=await response.json().catch(()=>null);combined.throwIfAborted();
+        if(failure?.error==='shared_room_presentation_stale')throw Object.assign(new Error('shared_room_presentation_stale'),{code:'shared_room_presentation_stale'});
+      }
       if(response.status!==200)throw new Error('shared_room_presentation_binding_unavailable');
       const value=await response.json();combined.throwIfAborted();return checkedBinding(value,snapshot,roomId);
     }finally{request.abort();}
   }
   return Object.freeze({
-    async restoreSnapshot(snapshot,{signal:connection}={}){
+    async restoreSnapshot(snapshot,{signal:connection,receivedAt=Date.now()}={}){
       signal.throwIfAborted();connection?.throwIfAborted();if(closed)throw abortError();
       const epoch=++generation;
       job?.abort();const work=new AbortController();job=work;
@@ -75,7 +79,7 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
         const binding=await read(snapshot,active);check();
         const key=canonical({presentationContext:binding.presentationContext,selection:binding.selection});
         if(current?.key===key){
-          await current.port.restoreSnapshot(snapshot,{signal:connection});check();return;
+          await current.port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();return;
         }
         dispose(current);current=null;
         candidate={key,lifetime:new AbortController(),port:null,closed:false,authorized:false,mismatch:null,startup:startupFor(binding.selection.dealer)};
@@ -92,14 +96,14 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
           onError:()=>{if(!owned.closed)onError();}});
         if(owned.closed){port.close();check();throw abortError();}
         owned.port=port;check();mismatch();
-        await port.restoreSnapshot(snapshot,{signal:connection});check();mismatch();
+        await port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();mismatch();
         const confirmed=await read(snapshot,active);check();mismatch();
         if(canonical(confirmed)!==canonical(binding))throw new Error('shared_room_presentation_binding_changed');
         current=owned;pending.delete(owned);owned.authorized=true;
         active.removeEventListener('abort',abortMount);abortMount=null;
         owned.startup.ready(binding.selection.dealer);
       }catch(error){
-        if(candidate){if(!active.aborted)candidate.startup.fail();dispose(candidate);}
+        if(candidate){if(!active.aborted&&error?.code!=='shared_room_presentation_stale')candidate.startup.fail();dispose(candidate);}
         throw error;
       }finally{
         if(abortMount)active.removeEventListener('abort',abortMount);
