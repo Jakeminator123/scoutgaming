@@ -31,12 +31,13 @@ function asRequest(request,engineOrigin,signal) {
  * ids, application registry or authentication fallback are introduced here.
  */
 export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketServer,
-  handshakeMs=2000,maxPayload=1024,maxPending=128}={}) {
+  handshakeMs=2000,maxPayload=1024,maxPending=128,closeGraceMs=1000}={}) {
   const engine=exactOrigin(engineOrigin);exactOrigin(origin);
   if(typeof channel?.prepare!=='function'||typeof channel?.close!=='function'
     ||!Number.isSafeInteger(handshakeMs)||handshakeMs<1||handshakeMs>30000
     ||!Number.isSafeInteger(maxPayload)||maxPayload<1||maxPayload>16384
-    ||!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>1024)throw unavailable();
+    ||!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>1024
+    ||!Number.isSafeInteger(closeGraceMs)||closeGraceMs<0||closeGraceMs>10000)throw unavailable();
   const Server=WebSocketServer??requireGateway('ws').WebSocketServer;
   const wss=new Server({noServer:true,perMessageDeflate:false,maxPayload,handleProtocols:()=>false});
   const pending=new Set(),clients=new Set(),seen=new WeakSet(),rejecting=new Set();
@@ -96,8 +97,16 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
     for(const record of pending){record.cancel();record.socket.destroy();}
     for(const socket of rejecting)socket.destroy();
     try {channel.close();}catch { /* Still release every transport after an application close failure. */ }
-    for(const client of clients)client.terminate();
-    return closing=new Promise(resolve=>wss.close(resolve));
+    // The channel's close frame (1012 on restart) must reach the browser: an immediate
+    // terminate would discard it and leave 1006. Each socket gets closeGraceMs to finish
+    // its closing handshake, then the transport goes regardless.
+    const closed=[...clients].map(client=>new Promise(resolve=>{
+      if(client.readyState===3){resolve();return;}
+      const timer=setTimeout(()=>client.terminate(),closeGraceMs);timer.unref?.();
+      client.once('close',()=>{clearTimeout(timer);resolve();});
+      if(client.readyState===1)try{client.close(1012,'shared_room_restart');}catch{client.terminate();}
+    }));
+    return closing=Promise.all(closed).then(()=>new Promise(resolve=>wss.close(resolve)));
   }
   return Object.freeze({handleUpgrade,close});
 }
