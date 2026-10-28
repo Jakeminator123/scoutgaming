@@ -1,149 +1,56 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 27 oktober 2026, kväll, efter PR #442–#448. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [history/JOHN-HANDOFF-2026-10.md](history/JOHN-HANDOFF-2026-10.md); kvällens revision av styrfiler och CI: [history/AUDIT-2026-10-27.md](history/AUDIT-2026-10-27.md); övrig historik i [docs/history](history/README.md).
+Uppdaterad 28 oktober 2026, morgon. Skriven för en agent som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) (produktväg, identiteter, leverans) och [AGENTS.md](../AGENTS.md). Jakobs aktuella instruktioner går före allt här. Alla dokument står i [docs/README](README.md); raderade dokument läses ur Git.
 
-## Läget i en skärm
+## Läget
 
-- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). Skriv inga procentsatser någon annanstans. Kvar enligt status.json 27 oktober: K04, K05 och K06 (IN_PROGRESS) samt K07, O02 och O03 (TODO).
-- **Produktion:** Vercel `scoutgaming` och Render `croupier-v3`, `croupier-lab-director` och `croupier-lab-openclaw` kör alla `main` `cc415cd8`. Render `croupier-v2` och `croupier-vercel-preview-qa` är raderade.
-- **Schema:** spelmigreringarna 008–010 och Studio-migrering 020 är applicerade i produktionen.
-- **Johns Bet (PAOW):** paketrevision 9 och spelkonfigurationen `room-config-133cfffc-fdad-47f2-9c85-51b08de4a325` är publicerade i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, med alla 15 PAOW-tagningar godkända och servermätta. Jakob spelade i produktionen och godkände (”allt funkade, hon pratar”) på dator och i datorwebbläsarens mobilvy, inte på fysisk telefon.
-- **Autoplay:** före första interaktionen visade statusraden råtexten ”Tal: play() failed …”. Rättningen är mergad i #446 (”Slå på ljud” i stället för rå text) men inte bekräftad i produktionen i något kvitto.
-- **Staging:** Render-stagingen kör `cc415cd8` med `CROUPIER_SHARED_TABLE_ENABLED=1`. K07-körningen på delat bord gav 19/19 kontroller på `cc415cd8`, med processbyte på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)).
-- **Mergat i kväll:** #442 (delade bord startar i enkel-origin-layouten), #443 (Studio-admin loggar orsaken bakom 503/500), #444 (SQLite steg 7; steg 8–9 återstår enligt SQLite-planen), #445 (K06/K04-kvitton, båda kvar IN_PROGRESS), #446 (autoplay) samt #447–#448 (styrfiler, CI och städning).
+- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). K04, K05, K06 och K07 är VERIFIED sedan 28 oktober; bevis, granskare och Jakobs scopebeslut står i `status.json`. Kvar: O02 och O03.
+- **Produktion:** Vercel `scoutgaming` deployar `main` automatiskt. Render `croupier-v3` körde `34fc4cdc` på morgonen 28 oktober; kontrollera aktuell SHA med `curl https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. #483 var mergad men ännu inte deployad då; den deployas före #477.
+- **Johns Bet (PAOW):** paket 11 och spelinställningen `room-config-4ad8301e…` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`. Paket 10 och 11 var Jakobs egna publiceringar. Produktionen kör nativebordet; `CROUPIER_SHARED_TABLE_ENABLED` är osatt där till O03.
+- **Staging:** Render och Vercel kör K04-kandidaten från omprov 5 (head i `status.json[K04]`, `689c690e`; #508 är inte provad där) med `CROUPIER_SHARED_TABLE_ENABLED=1`. Operatör `qa-k06k07-9dd2d3a4-a`, PAOW-rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`, paket 15. Jakob har ett syntetiskt spelarkonto där; inloggningen finns bara lokalt hos orkestratorn.
+- **Merge:** den obligatoriska kontrollen `CI` gäller på PR:ens head, men branchen behöver inte längre vara à jour med `main` (Jakob 28 oktober). Orkestratorn mergar grönt Jakob-ägt arbete och deployar `croupier-v3` efter varje grön main-CI som rör motorn (Jakobs ja 28 oktober).
 
-## Identiteter
+## Mergat i natt (27–28 oktober)
 
-Inga hemligheter här. Inloggningar och nycklar finns bara i gitignorerad `.env.local` på Jakobs dator, bland annat `RENDER_API_KEY` (läsning via Renders REST-API) och stagingens `STAGING_ADMIN_LOGIN_UN`/`STAGING_ADMIN_LOGIN_PW`. Skriv aldrig ut värdena.
+- **K04:** omprov 1 (#459), granskning (#460), F1/F2 (#465), omprov 2 (#475, underkänt: F3–F5), F3–F5 med den externa draften #476 som grund (#478), omprov 3 (#482, F5b och F4b), F5b, F4b, R1 och R2 (#481), omprov 4 (#501, nya fynd F5c och F7), F5c/F7/P2/P3 (#502–#508) och omprov 5 (#510) med granskarens del 4 i [K04-F3-F5-REVIEW](2026-10-28-K04-F3-F5-REVIEW.md) och Jakobs godkännande i staging 28 oktober. Kvar och icke-blockerande, bokförda till O02: F8 (text vid återkallad session), F9 (en stannad reveal-tagning), F10 (1011 i stället för 1012), hit-kortet 2 av 4, B1 oprovat.
+- **K05–K07:** K05-matrisen (#457), K07-granskningen (#456), K06/K07-omproven (#470) och deras granskning (#471).
+- **Städning och Admin:** #458, #466, #479 och #483 (motorn startar ingen handoff från Admin till spelaren, SQLite B1); Admin #464, #467 och #468; Admin-arkitektens karta och målbild (#486); Astrids media utan konsument (#474); grind mot repotillväxt (#463); pushpolicyn för mergade brancher (#485); kortbaksidan (#473); CI-regressionen (#469, #472).
 
-| Tjänst | Produktion | Staging (provbänk till O03) |
+## Kvar till O02 och O03, i ordning
+
+| # | Steg | Ägare |
 | --- | --- | --- |
-| GitHub | `Jakeminator123/scoutgaming`, repo-ID `1380630440`, målbranch `main` | samma |
-| Vercel, team `scoutgaming` `team_Scxorb9qtZHjNae1YEQnFCaT` | projekt `scoutgaming` `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`, www.scoutgaming.tech, deployar `main` automatiskt | projekt `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app, deployas från `main` via API |
-| Render, workspace `tea-d19jsa63jp1c73ch0sc0` | spelmotor `croupier-v3` `srv-dbd6nfon74is73aiblf0` (manuell deploy); Director `croupier-lab-director` `srv-danhlpjtqb8s73bv530g`; Gateway `croupier-lab-openclaw` `srv-danhiv3tqb8s73burkq0` (privat) | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, suspenderad mellan prov |
-| Neon, org "Vercel: scoutgaming" `org-green-butterfly-00780270` | `croupier-production` `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game` (scheman `public`, `croupier_auth`, `croupier_game`, `croupier_studio`) | `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databaser `croupier_staging` och `croupier_staging_restore` |
-| Vercel Blob | `croupier-media-private` `store_AqwvebTbBHarOjvG` | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD`, bara syntetiskt material |
-| Spel | Johns Bet: operatör `johns-bet`, rummet ovan, dealer `paow` | operatör `qa-k06k07-9dd2d3a4-a`, PAOW-rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e` |
+| 1 | Deploya #483 till `croupier-v3`, merga #477 (routningen för handoffen bort) och deploya igen. Avgör om #480 (K1, katalog utan Astrids bank) ingår före frysningen. Senare Admin-UX väntar till efter O03. | orkestratorn; Jakob för #480 |
+| 2 | Avgör Admin-arkitektens tre läckor på nivå 3: rätta före frysningen eller klassa i O02. (a) `/game?dealer=X` utan operatör läser sparat projekt (`packages/presentation/server/game-entry-selector.mjs:54–63`). (b) `GET /api/presentation/config?dealerId=X` ger sparad idle och hela videoregistret till inloggade spelare och gäster (`services/game/presentation-api.mjs:174–181`). (c) Rumsnamn läses live från administrationsdokumentet, inte paketet (`packages/presentation/server/package-rooms.mjs:19–26`). | Jakob beslutar, agent rättar |
+| 3 | Rätta `tools/o02-receipt.mjs`: rad 33 har inaktuell `room-config-38b14261`/paket 7, och rad 175 läser den borttagna `tools/no-sqlite-allowlist.json`. | agent |
+| 4 | Frys kandidaten och registrera F1–F8 i [O02-PLAN §2.2](plans/O02-PLAN.md): main-SHA, grön CI, containerkontroll, GitGuardian, inga öppna runtime-PR:er, staging på kandidaten med flaggan på, schemaledger. | orkestratorn |
+| 5 | Kör om K04-, K06- och K07-kvittona på kandidaten (F8). | agent |
+| 6 | O02-kriterierna enligt planen: K2-kedjan Admin → publicering → lobby → launch → spel → återanslutning → Restart service → återläsning; K06-fälten dealerval, idle, chips och rumsutseende via scoped `roomOverrides` (Jakobs scopebeslut); negativa fall K3a–K3g (fel roll för partner täcks av CI enligt Jakob); `/control`, `/lab` och `/bo` startar ingen alternativ produkt; testfixturer utan riktiga data; två följande spel; HTTP-spelreplay efter restore (§3.3, stagingstegen är förgodkända); SQLite-slutet (K13). | oberoende granskare, inte implementeraren |
+| 7 | Jakobs ögon V1–V7 (§3.4), bland annat fysisk telefon (V3, skjuten från K04) och trelagerslayout (V4). | Jakob |
+| 8 | O02-kvittot `docs/<datum>-O02-ACCEPTANCE.json`; därefter status. | granskaren; orkestratorn |
+| 9 | O03: färsk ägar-, head-, CI- och säkerhetskontroll; produktions-DDL i godkänd ordning (J09, `bo_game_handoffs`, `bo_lab_handoffs`, `lab_sessions`); `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen som del av releasen (väg B). | orkestratorn; Jakob för DDL och flaggan |
+| 10 | O03: release med verifierad Vercel- och Render-SHA, inloggning, Admin-sparning, launch och spel, och produktionens tre lager med inloggad spelare (skjutet från K04; Jakobs adminlogin får läsa med GET). Återställning dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md). Kvitto `docs/<datum>-O03-RELEASE-ACCEPTANCE.json`. | orkestratorn |
+| 11 | Efter O03: Jakob raderar stagingen. Nativebordet pensioneras med konsumentkontroll av `/api/table`, `native_presentations` och klientens enspelarväg. | Jakob; agent |
 
-Andra tjänster i samma Render-workspace (`sajtmaskin-dash`, `openclaw-sajtagenten`, `spelsajt-game-server`) och Neon-orgen `org-lucky-cake-48388035` hör till andra projekt; rör dem inte. Kevin har läsrollen `kevin_migration_readonly` i produktionens Neon.
+## Behörigheter
 
-## Vad som återstår, i beroendeordning
-
-Orkestratorn sätter VERIFIED i `status.json` först när kriterierna i [Kevins AKTIVITETER](../migrering/kevin-ks-migrering/AKTIVITETER.md) respektive [masterplanen](../migrering/MASTERPLAN.md#o02--oberoende-samprov) är bevisade, med full SHA, PR, oberoende granskare och kvitto. `node migrering/status.mjs --check` kräver att beroendena redan är VERIFIED. Kvitton skrivs sanerade som `docs/<datum>-<aktivitet>-…-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter, aldrig med kakor, sessioner eller nycklar.
-
-Råkvitton, skript och skärmbilder bakom kvittona finns bara lokalt hos orkestratorn. Det som gäller är de sanerade kvittona i `docs/` och planerna i `docs/plans/`.
-
-### K04 — Spelklient och presentation från händelser (IN_PROGRESS)
-
-- **Rättning av F3–F5 (#478, mergad 28 oktober):** bygger på #476. F3: klockan räknas från WebSocket-mottagningen. F4: `shared_room_presentation_stale` vid config- eller bindningsläsning är inget paketbyte. F5: en delad plans filmade steg hämtar serverns urval när planen börjar. K06 F1 kvarstår; migrationsstatus ändras inte.
-- **Omprov 3 på `1f66245b` ([omprovskvitto 3](2026-10-28-K04-BROWSER-RERUN-3-ACCEPTANCE.json); klientkoden är densamma på main `34fc4cdc`):** F3 godkänd. hit/stand öppnas 54–1 078 ms efter `turnAt` i elva händer, alla act ger 200, och ingen `NOT_YOUR_TURN` förekommer. F4 godkänd för bindning och config: 400 kbit/s och Fast 3G visar ingen paketändringstext, och en injicerad 409 på bindningen ger ny socket på 0,34 s. F1, F2, omladdning, tangentbord och tap, okänt media-ID och avbrutet tal är oförändrat godkända, och kortbaksidan ger 200.
-- **Omprov 4 på main `6a158180` efter #481 ([omprovskvitto 4](2026-10-28-K04-BROWSER-RERUN-4-ACCEPTANCE.json)):**
-  - **Godkänt:**
-    - hit/stand öppnas 189–937 ms efter `turnAt`, och alla planens kort syns senast +658 ms.
-    - Ingen falsk film-, idle- eller omladdningstext förekommer i 21 körningar.
-    - F4b är rättad: en 409 stale på idle-bytes ger ingen text, och dealern är tillbaka efter 7,9 s.
-    - Försäkringsrutan visas först vid `turnAt`.
-    - F1, F2, Fast 3G, omladdning, tangentbord och tap, saknat och okänt media samt avbrutet tal är godkända.
-  - **F5b är rättad för givarna:** 43 av 45 givsteg före `turnAt` når `start`, med median 286 ms från urval till start. ([K04-kvittot](2026-10-27-K04-STAGING-ACCEPTANCE.json)): händelsestyrd presentation, exakt materialbindning (46/46 UUID/SHA), återanslutning via API, två processbyten mitt i hand, negativa fall och alla tio talrepliker med godkända stagingtagningar. Kväll på `cc415cd8`, delat bord i headless Chromium ([K04-webbläsarkvittot](2026-10-27-K04-BROWSER-ACCEPTANCE.json)): omladdning mitt i hand på dator och mobil, beslut till resultat och nästa fönster, tangentbord och tap, okänt media-ID, avbrutet tal och Fast 3G. Jakobs produktionsspel ovan är underlag. 28 oktober på `13aa5a01` efter #451 ([omprovskvittot](2026-10-28-K04-BROWSER-RERUN-ACCEPTANCE.json)): saknat dealerklipp (fast text och fyra kort inom 0,1 s, hit/stand vid `turnAt`, ingen dealfilm i den handen), 400 kbit/s och Fast 3G till resultat och nästa fönster utan omladdningstext, samt webbläsarens autoplay-spärr på delat bord (startar ljudlöst; ett klick på ljudknappen släpper ljudet). Natt till 28 oktober på `43b7404e` efter #465 ([omprovskvitto 2](2026-10-28-K04-BROWSER-RERUN-2-ACCEPTANCE.json)): ingen filmfeltext och inga felkvitton för sena tagningar (F1), och på 400 kbit/s syns kort och hit/stand 1,1 s efter `turnAt` och spelarens stand accepteras (F2). Jakob godkände visuellt alla 35 giv-, hål- och revealklipp 01:55 UTC (kvittots `visualApproval`; registret kan inte lagra statusen). Det täcker även K06:s punkt om visuellt godkända giv- och revealklipp.
-- **Saknas:**
-  - Två fel från omprov 4 (fil och rad i kvittots `findings`). **F5c:** steg i planer efter beslutet (hit-kort, reveal efter stand, dealerns drag) får aldrig film; 0 av 19 når `start`, eftersom förval och förvärmning startar först vid planstart och urvalet tar median cirka 3,3 s i stagingen. **F7:** på 400 kbit/s visas dealern inte i tre av fyra körningar (omprov 3: 68,6 s). Förvärmningen av två klipp åt gången tränger undan idle-filmen; med klipphämtningen blockerad visas dealern efter 54,9 s, så felet ligger i klienten.
-  - Jakobs bedömning av klippen vid bordet och av omprovets skärmbilder.
-  - *Slå på ljud* i en riktig webbläsare (bara enspelarbordet, inte nåbart i stagingen med flaggan på) och fysisk telefon.
-  - Produktionens tre lager med inloggad spelare i ett kvitto.
-- **Vem:** agent rättar F5c och F7 och kör om normal (`DIAG=1`, hit), slow 400 kbit/s och shots2 i staging, först när Renders gamla instans har stängts; Jakob bedömer klippen vid bordet.
-- **Kvitto:** lägg ett nytt daterat kvitto efter omproven.
-
-### K05 — Exakt mediakoppling till Neon och Blob (IN_PROGRESS)
-
-- **Bevisat:** produktionen 27 oktober kväll ([K05-kvittot](2026-10-27-K05-PRODUCTION-ACCEPTANCE.json)): `cc415cd8`, Studio-migrering 020, paketrevision 9 och `room-config-133cfffc…`, de 15 godkända och servermätta tagningarnas media-ID och identitetshash, och Jakobs godkännande med tid och gräns (mobilvy, inte telefon). Blockeraren i `status.json` beskriver läget före detta och ändras bara efter granskning.
-- **Bevisat i kompletteringen (`matrix`, `negative`):** manifestmatrisen för 15/15 tagningar, där källbytesen i `c7138759` stämmer med Neons sha256 och storlek, med rumskonfigurationens material och med Blob-sökvägen, och där varje tagning är approved med tid. Negativt fall i staging på `13aa5a01`: en ogranskad, en avvisad och en okänd tagning ger 404 `studio_presentation_idle_media_unavailable` utan bytes. Paket 10 och 11 (`room-config-4ad8301e…`) publicerades efter kvittot; de 15 tagningarna finns kvar oförändrade.
-- **Saknas:**
-  - Inloggad läsning av produktionens tre lager (anonymt svarar de 401). Den väntar på Jakobs ja.
-  - En avvisad POST-publicering med ogranskad tagning i drift. Readiness-svaret i produktionen och kodproven täcker vägen; orkestratorn avgör om det räcker.
-  - Oberoende granskning.
-- **Vem:** Jakob godkänner den inloggade läsningen, en annan agent granskar och orkestratorn uppdaterar status.
-- **Kvitto:** komplettera K05-kvittot.
-
-### K06 — Admin till spel efter omstart (IN_PROGRESS; kräver K05 VERIFIED)
-
-- **Bevisat:** staging 27 oktober: Admin → publicering C0→C1 → aktiv hand behöll paket 7 över publicering och processbyte, nästa fönster fick paket 8 (13/13, [K06-kvittot](2026-10-27-K06-STAGING-ACCEPTANCE.json)). Delat bord på `cc415cd8`: aktiv runda behöll C1 när C2 publicerades, nästa fönster band C2, och processbytet skedde på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json), K06-S1–S3 och K07-e2). 28 oktober på `13aa5a01` ([omprovskvittot](2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json), 23 av 27 kontroller; de fyra underkända är samma fynd F1): en publicering som byter material (repliken blackjack från tagning `blackjack_7` till `blackjack_3`, paket 11 → 13), där den aktiva delade rundan behöll C0 och M0 och nästa fönster band C2 och M1. Dessutom wrong-role (spelarsession och anonym får 401, fel ägare och rum 404), bad-media-id (422 vid projektsparning, 404/409 utan bytes på medievägarna), interrupted-presentation, Restart service på samma SHA mitt i nativehand och mitt i delad runda (två gånger, kontroll först när den gamla processen stängt) samt två följande spel med media-ID per händelse. Stagingen är återställd till `blackjack_7` och casual (paket 15, `room-config-e0be09e9…`).
-- **Saknas:**
-  - Fynd F1 i omprovskvittot: på nativebordet behåller en aktiv hand inte M0 när publiceringen byter material. Handens gamla paketrevision svarar 409 `studio_presentation_idle_package_changed` (`packages/presentation/server/frozen-dealer-presentation.mjs:196-198`), och klienten ber spelaren ladda om till det nya paketet. Det kräver ett beslut om policyn eller en kodrättning, och därefter omprov.
-  - Partnerrollen i wrong-role: stagingen saknar e-postleverans, så en partnerinbjudan får aldrig lösenord.
-  - Visuellt godkända giv- och revealklipp.
-  - Johns Bet-kedjan i produktionen, dokumenterad efter K05.
-- **Vem:** Jakob eller orkestratorn beslutar om F1; agent rättar och kör om i staging; Jakob för det visuella.
-- **Kvitto:** omprovskvittot ovan; komplettera det efter F1.
-
-### K07 — Spelbeteenden och samtidighet (TODO; kräver K04 och K06 VERIFIED)
-
-- **Bevisat:** dagtid 27 oktober: enspelarbeteenden, idempotens, samtidiga kommandon, ledgerparitet mot Neon, utloggning och isolering ([J08-kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json), avsnitt `k07`). Kväll, flaggan på i staging: 19/19 på `cc415cd8` ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)), bland annat två spelare vid samma delade bord, g1 platsfrigivning (#426), g2 inga ticks i tysta rum, återanslutning efter processbyte på samma SHA, isolering och ledgerparitet mot read-only Neon. Oberoende granskning 28 oktober ([K07-granskningen](2026-10-28-K07-REVIEW.md)). Omkörning 28 oktober på `13aa5a01` ([omprovskvittot](2026-10-28-K07-STAGING-RERUN-ACCEPTANCE.json)): 19/19 med rättad förväntan (anonym 403 `shared_room_forbidden` i K07-a och K07-f), Restart service mitt i beslutsfasen och återanslutning först när den gamla processen stängt, ledgerhash med dokumenterad metod och Vercel-deployment `dpl_CHmwFT918RMhmjM81xwT3NJD1u4z`.
-- **Saknas:**
-  - Jämförelsen main mot kandidat som K07-kriterierna kräver, eller ett uttryckligt scopebeslut av Jakob (granskningens beslutsfråga 1).
-  - K04 och K06 VERIFIED.
-- **Vem:** Jakob för scopebeslutet; orkestratorn uppdaterar status.
-- **Kvitto:** omprovskvittot ovan.
-
-### O02 — Oberoende samprov (TODO; kräver K07 och J10)
-
-- **Bevisat:** J10 (ren klon, build, start och restore) är VERIFIED; SQL-restore till `croupier_staging_restore` gav identisk data 25 oktober.
-- **Saknas:**
-  - En fryst integrerad kandidat: Vercel- och Render-SHA, schema, paket/config och media.
-  - En oberoende granskare som kör Admin spara → publicera → lobby → launch → spel → återanslutning → omstart → återläsning.
-  - Negativa fall: fel rum/ägare/roll, inaktuellt paket, dubbelkommandon, samtidiga spelare, avbruten presentation och fel media-ID.
-  - Bevis att `/control`, `/lab` och `/bo` inte kan starta en alternativ produkt.
-  - HTTP-spelreplay efter restore.
-  - SQLite-steg 8–9 klara, eftersom en ren main är ett slutkrav.
-- **Vem:** en agent som inte har implementerat kandidaten; orkestratorn fryser kandidaten; Jakob för AV.
-- **Kvitto:** `docs/<datum>-O02-ACCEPTANCE.json`. Plan: [O02-PLAN](plans/O02-PLAN.md), skriven mot `e7a4e251`; läs om läget innan den används. Kvittoskriptet [tools/o02-receipt.mjs](../tools/o02-receipt.mjs) är read-only (GET mot staging, `BEGIN READ ONLY` mot Neon).
-
-### O03 — Integration och verifierad drift (TODO; kräver O02)
-
-- **Saknas:**
-  - Ägar-, head-, CI- och säkerhetskontroll av releasen.
-  - Schemaändringar i godkänd ordning, inklusive produktions-DDL som J09:s avveckling.
-  - `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen, om Jakob godkänner det.
-  - Release med verifierad Vercel- och Render-SHA, inloggning, Admin-sparning, launch och spel.
-  - Återställning dokumenterad mot faktiskt migrerat schema i [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md). Därefter raderar Jakob stagingen.
-- **Vem:** Jakob för DDL, produktionsflaggan och radering; orkestratorn för verifieringen.
-- **Kvitto:** `docs/<datum>-O03-RELEASE-ACCEPTANCE.json`.
-
-## Hur man levererar
-
-1. `git fetch`, sedan egen worktree och branch `jakob/*` från `origin/main` (Claude-underagenter: `jakob/claude-*` under `.claude/worktrees`). Node 24.21.0 via Volta. I en ny worktree behöver pre-commit `npm ci` i `apps/studio` och i det paket som provas.
-2. Committa med repots hookar, aldrig `--no-verify`. Läs `node tools/security-status.mjs` före push och merge.
-3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`.
-4. Den obligatoriska kontrollen heter `CI`, och regeln är strikt: branchen ska vara à jour med `main`. Kör `gh pr update-branch <nr>`, vänta på grön CI och merga sedan; auto-merge är avstängt. Ägarreglerna i AGENTS.md gäller.
-5. Vercel deployar `main` automatiskt. Render `croupier-v3` deployas manuellt efter grön merge (Render MCP eller dashboard); kontrollera `https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Director och Gateway deployas om när `packages/director` eller `services/openclaw/lab` ändras.
-6. Schemamigrering före kravhöjning (Jakob applicerar), Admin-publicering sist.
-
-## Behörigheter och vad som kräver Jakob
-
-Agenter får läsa Neon, Render-loggar, metrik och Vercel; köra prov i staging med syntetiska konton; öppna PR:er; starta Render-stagingen under ett prov och säga till när det är klart. Den orkestrerande sessionen mergar verifierat Jakob-ägt arbete efter grön CI och deployar `croupier-v3`. Underagenter mergar aldrig.
-
-Kräver Jakob:
-
-- publicering i produktionens Admin (paket, rumskonfiguration, tal);
-- produktions-DDL och migreringar (`node tools/check-migration-readiness.mjs --apply`);
-- radering av molnresurser (Render, Vercel, Neon, Blob, stagingen efter O03, ren start);
-- visuellt godkännande och AV/läppsynk; hash, testpass eller kodläsning räknas inte;
-- produktionsflaggor som `CROUPIER_SHARED_TABLE_ENABLED`, betald drift och nya konton.
-
-Aldrig: hemligheter i Git eller chatt, prov mot riktiga användares data eller Johns Bet, ändringar i Kevins brancher (`kevin*`, `codex/kevin-*`).
+Agenter får läsa Neon, Render-loggar och Vercel, prova i staging med syntetiska konton och öppna PR:er. Underagenter mergar aldrig. Jakob krävs för publicering i produktionens Admin, produktions-DDL, radering av molnresurser, produktionsflaggor, betald drift och allt visuellt eller AV; hash och testpass räknas inte som visuellt godkännande. Aldrig hemligheter i Git eller chatt, prov mot riktiga användare eller Johns Bet, eller ändringar i Kevins brancher.
 
 ## Kända fällor
 
-- **Strikt CI:** varje merge till `main` gör andra öppna PR:er inaktuella, och `gh pr update-branch` kör hela CI igen. Merga en i taget och samla små dokumentändringar i en PR.
-- **Windows:** filbevakningsprov (till exempel `apps/studio/test/watch-design-preview.test.mjs`) kan fallera lokalt av tidsskäl. Kör om innan du felsöker; CI på Linux avgör.
-- **Hemlighetsskanning:** GitGuardian och andra skannrar underkänner bokstavliga Postgres-URI:er i tester. Använd `fixtureDatabaseUrl()` i `test/fixtures/database-url.mjs`.
-- **Render MCP:** `update_environment_variables` sammanfogar nycklar i stället för att ersätta dem och startar en deploy automatiskt. Den kan inte läsa värden; läs via REST med `RENDER_API_KEY`.
-- **`CROUPIER_SHARED_TABLE_ENABLED`:** stagingen kör `=1`, produktionen har flaggan osatt till O03. Före #442 stoppade `=1` motorns start; kontrollera `/__cloud/health` efter varje env-ändring.
-- **Autoplay:** webbläsare blockerar ljud före första interaktionen. Tills `jakob/claude-speech-autoplay` är mergad syns rå feltext, och ett spel utan klick är inget talbevis.
-- **Namn:** `recordedSpeech` v2 är MP4-talformatet, inte Render-motorn v2. `croupier-v2` finns inte längre.
-- **Stora filer:** `apps/studio/lib/dealer-import-kevin-source-paow.json` och mediebinärer parsas; skriv inte ut dem.
+- **Interimspolicy till O03:** materialbytande publicering under pågående nativehand ger omladdning till det nya paketet. Publicera därför inte materialbyte för Johns Bet medan händer pågår.
+- **Prov i staging:** delat bord innebär att Jakobs hand stör mätningarna. Låt honom inte spela medan en harness kör.
+- **START-HERE, steg 4 under Leverera,** säger fortfarande att branchen måste vara à jour med `main`. Det gäller inte längre.
+- **Pre-push-hooken** (`tools/check-push-target.mjs`) tillåter sedan #485 bara radering av `jakob/*`-brancher som redan är mergade i `main`; GitHub raderar mergade headbrancher automatiskt.
+- **Render MCP:** `update_environment_variables` slår ihop nycklar och startar en deploy. Den läser inga värden; använd REST med `RENDER_API_KEY`.
+- **Windows:** `core.longpaths` är på i repot. Kvarblivna mappar tas bort med `Remove-Item -LiteralPath ('\\?\' + $p) -Recurse -Force`. Filbevakningsprov kan fallera lokalt; CI avgör.
+- **Hemlighetsskanning:** bokstavliga Postgres-URI:er i tester underkänns. Använd `fixtureDatabaseUrl()` i `test/fixtures/database-url.mjs`.
+- **Glappet mellan PAOW:s hand och skon i stagingen** kommer från stagingmallens standardplacering, inte från produktionen. Det blockerar inte.
+- **Talkedjan och Dealer Forge** är frysta till efter O03. Dragans tal är pausat, inget raderas.
+- **Namn:** `recordedSpeech` v2 är MP4-talformatet, inte Render-motorn v2.
 
 ## Separata spår efter migreringen
 
-- **Ren start (clean slate):** Jakobs beslut 27 oktober. När K05 är klar och som egen aktivitet med backup och Jakobs uttryckliga go: ta bort gamla Astrid-, Dragan- och testrum, alla operatörer utom Johns Bet (PAOW) och töm papperskorgen. Ändrat 28 oktober: Dragans dealer, talbank och hela talkedjan behålls som referens när AI-tal med läppsynk generaliseras till alla dealers. Följ avvecklingsreglerna i [AGENTS.md](../AGENTS.md#data-media-och-avveckling) och [masterplanens raderingsavsnitt](../migrering/MASTERPLAN.md#radera-med-ett-konkret-slutdatum). Stagingens bevisdata (rum `33b37ff3`) står kvar till O03. Planen med inventering, ordning, backup, verifiering och go-punkter: [plans/REN-START.md](plans/REN-START.md) (inget utfört). I repot är 622 av Astrids 706 filer borttagna och `media/layout.json`, `media/blob-index.json` och `media/catalog/legacy.json` ombyggda. Presentationsbanken `media/dealers/astrid/runtime/presentation/**` och `runtime/composited/astrid-green-speak/speak.json` står kvar tills katalogkontraktet tillåter en katalog utan Astrids bank (K1 i planen).
+- **Ren start:** [plans/REN-START.md](plans/REN-START.md). Astrid tas bort som dealer, inklusive legacyreferensen (Jakob: "radera allt sånt"); K1 är #480. Dragans dealer, talbank och talkedja behålls som referens när AI-tal med läppsynk görs dealergeneriskt.
 - **Admin-förenkling (UX):** `/admin`, `/partner` och spelarens väg ska vara enkla och begripliga. Kablagekartan över alla tre nivåerna är [ADMIN-KARTA](plans/ADMIN-KARTA.md); den enda målbilden med leveransordning är [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) med den klickbara skissen [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html). Admin-arkitekten (parallell session, grenar `jakob/par-*`) rensar dubbla ytor i små PR:er före frysningen och bygger målbilden efter O03, nivå 2 först och i staging före merge. Det finns inte i masterplanen; Jakob avgör UX.
-- **Övrigt:** SQLite-steg 8–9 (planen ligger utanför Git; ingen kod nämner SQLite längre, och `tools/check-no-sqlite.mjs` förbjuder det utanför dokumentation), Astrid-legacy (hårdkodat `'astrid'` i Admin-avbokning, utloggning, `/chat` och probe) och en inställning per dealer för proben (av, klipp efter N minuter eller AI-tal); Jakob har inte beslutat om den sista.
+- **Motorn efter O03:** `croupier-v3` blir ren kort-, sko- och matematiktjänst, och tal och presentation får en egen tjänst.
