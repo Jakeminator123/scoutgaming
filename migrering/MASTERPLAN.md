@@ -95,6 +95,7 @@ Ingen av punkterna är en av de 20 aktiviteterna eller ger procent; status och v
 3. **Dealer-generisk talkedja, med Paow först** ([PAOW-LIPSYNC](../docs/plans/PAOW-LIPSYNC.md) (#528); läppsynken bevisades i två prov 28 oktober 2026 utan att något aktiverades: stillbild på 6,7 s via varm endpoint och rörligt tal med 160 munlappar på 3,3 s). En kedja för alla dealers i stället för Dragans egen. Stillbildsvägen finns redan i main (`speechProfile` med `reference.kind='video-frame'`) och kan bli Admin-konfiguration utan kod; rörligt tal per dealer kräver kod. Bara Jakob godkänner ljud och läppsynk.
 4. **Mobil och 3-rutors fönster:** F12–F15 (knappöverlapp vid 1440/1920, saldopanelen över insatsen vid 320×568, dubblerad beslutspanel), utan zoom och utan kamera per plats.
 5. **Bindning nyckel → bolag:** partnerns API-nyckel binds till ett bolag, och motorn kräver att `operator` matchar nyckelns bolag efter verifierad signatur.
+   Plan: [NYCKEL-BOLAG](../docs/plans/NYCKEL-BOLAG.md) (datamodell, migrering 012, kodpunkter, prov och PR-sekvens).
 6. **L3:** rummens namn och state läses ur det publicerade paketet i stället för administrationsdokumentet.
 7. **Ren start steg 2** enligt [REN-START](../docs/plans/REN-START.md).
 8. **Kevins portplan P4–P14:** resterande beteenden skrivs om i mains moduler; P7 (gäståtkomst) och P13 (desktop) kräver Jakobs beslut.
