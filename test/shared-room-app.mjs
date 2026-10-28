@@ -1022,7 +1022,8 @@ test('a clip that already plays at turnAt plays to its end; the steps after it s
   const h=slowTable(t,{windowMs:12000,present:(event,options)=>event.type==='speak'?new Promise(resolve=>setTimeout(()=>resolve(playsFor(12500,options)),1000)):slowDownload(options)});
   await h.open();
   await h.until(h.plan.endAt+1000);
-  assert.equal(h.seen[0].options.signal.aborted,false,'a clip that shows frames is never cut by turnAt');assert.deepEqual(h.shown,[]);
+  assert.equal(h.seen[0].options.signal.aborted,false,'a clip that shows frames is never cut by turnAt');
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4],'K04 R2a: the committed cards show at turnAt, not when the clip ends');
   await h.until(1000+1000+12500+250);
   assert.deepEqual(h.seen.map(row=>row.event.type),['speak']);assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);
   assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
@@ -1097,9 +1098,58 @@ test('a take still playing at turnAt no longer holds hit/stand: the buttons open
   await h.until(h.plan.endAt+2);
   assert.deepEqual(h.act(),['hit','stand'],'the buttons open at the server turnAt');
   assert.equal(h.renders.at(-1).busy,true,'the take still plays');assert.equal(h.seen[0].options.signal.aborted,false,'turnAt never cuts a take that shows frames');
-  assert.deepEqual(h.shown,[]);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4],'K04 R2a: every committed card shows at turnAt with the buttons');
+  assert.ok(h.shown.every(row=>row.at<=h.plan.endAt+2));
   await h.until(1000+1000+12500+250);
   assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+// K04 R2a (review of #481): at turnAt hit/stand opened while the plan's cards could still be hidden: a film part
+// that shows frames plays on, the step loop waits for it, and only then did the remaining steps show their cards.
+test('at turnAt the card of a take that still plays and every later card of the plan show; the take plays to its end',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const log=[];let options;
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>log.push(['show',draw,Date.now()]),reveal:()=>log.push(['reveal',null,Date.now()]),
+    begin:(_video,event)=>{log.push(['begin',event.shoeDraw,Date.now()]);return 'token-'+event.shoeDraw;},
+    frame:token=>log.push(['frame',token,Date.now()]),finish:(token,draw)=>log.push(['finish',draw,Date.now()])};
+  const media={state(){},prepareSequence(){},close(){},present(event,value){
+    if(event.shoeDraw!==1)assert.fail('no film after turnAt');
+    options=value;value.onProgress({clip:1,phase:'prepare'});value.onSelected({id:'take'},event);value.onProgress({clip:1,phase:'play'});
+    return new Promise(resolve=>{let at=0;const tick=()=>{value.onProgress({clip:1,phase:'frame',time:at/1000});value.onFrame(at/1000);at+=250;if(at>3000)resolve(true);else setTimeout(tick,250);};tick();});}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});t.after(()=>ports.close());
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']},signal=new AbortController().signal;
+  ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});
+  const turnAt=Date.now()+1000;
+  ports.restoreSnapshot(seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,plan:{id:'p',startAt:Date.now(),endAt:turnAt,turnAt}}),{signal});
+  const events=[{type:'deal',to:'box',box:0,shoeDraw:1,faceDown:false},{type:'deal',to:'dealer',box:null,shoeDraw:2,faceDown:false},{type:'deal',to:'box',box:0,shoeDraw:3,faceDown:false}];
+  let done=false;const presenting=ports.present({roomId,ver:1,talkId:'turn',kind:'plan',startAt:Date.now(),endAt:turnAt,events},{signal}).then(()=>{done=true;});
+  await flushRender();
+  const until=async at=>{while(Date.now()<at){t.mock.timers.tick(Math.min(250,at-Date.now()));await flushRender();}};
+  await until(turnAt-1);
+  assert.deepEqual(log.filter(([kind])=>kind!=='frame'),[['begin',1,1000]],'before turnAt the first card follows its take');
+  await until(turnAt);
+  assert.deepEqual(log.filter(([kind,,at])=>kind!=='frame'&&at===turnAt),[['finish',1,turnAt],['show',1,turnAt],['show',2,turnAt],['show',3,turnAt]],
+    'the playing card is placed and every later card shows at turnAt');
+  assert.equal(options.signal.aborted,false,'the take is not cut');assert.equal(done,false,'it plays on');
+  await until(1000+3500);await presenting;assert.equal(done,true);
+  assert.deepEqual(log.filter(([kind,,at])=>at>turnAt),[],'no card is moved, shown or finished again after turnAt');
+});
+
+// K04 review of #481: the insurance box showed as soon as the snapshot carried insuranceDue, at the start of the
+// plan, before the dealer's up card was dealt on screen; it told the player of the dealer's ace before its step.
+test('the insurance box stays hidden until turnAt, when every card of the plan shows',()=>{
+  const {document,nodes}=documentFixture();const view=createSharedRoomView({document});view.bind({dispatch(){},selectChip(){},retry(){}});
+  const s=seated(2,{phase:'round',roundId:'round-1',serverNow:1000,round:{phase:'insurance',active:0,hands:[{box:0,cards:[]}],dealer:[]},
+    plan:{id:'p',startAt:1000,endAt:5000,turnAt:5000},actionDeadline:20000,me:{...seated().me,insuranceDue:true}});
+  const can={join:false,bet:false,leave:false,act:[],insurance:false},render=(snapshot,serverNow,insurance=false)=>
+    view.render({snapshot,chip:.5,can:{...can,insurance},notice:'',retry:false,busy:true,connected:true,serverNow});
+  render(s,1000);assert.equal(nodes.get('insurance').hidden,true,'not at the start of the plan');
+  render(s,4999);assert.equal(nodes.get('insurance').hidden,true,'not before turnAt');
+  render(s,5000,true);assert.equal(nodes.get('insurance').hidden,false,'at turnAt');assert.equal(nodes.get('ins-no').disabled,false);
+  render(s,9000);assert.equal(nodes.get('insurance').hidden,false,'a reconnect inside the insurance window shows it at once');
+  render({...s,me:{...s.me,insuranceDue:false}},9000);assert.equal(nodes.get('insurance').hidden,true,'answered or not due');
+  render({...s,round:{...s.round,phase:'decisions'}},9000);assert.equal(nodes.get('insurance').hidden,true,'not outside the insurance phase');
+  view.close();
 });
 
 test('a film part that shows frames plays on past its step time; a later part of the same step does not start after it',async t=>{
