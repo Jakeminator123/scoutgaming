@@ -308,16 +308,29 @@ test('focused selection includes the microphone consumer for fixture and camera 
   }
 });
 
+test('documentation and focused commits both run the repo-limit guard on the staged diff', () => {
+  const guard = [process.execPath, 'tools/check-repo-limits.mjs', '--cached'];
+  for (const changes of [[change('docs/NEXT-AGENT.md')], [change('media/new.png', 'A')], [change('tools/precommit-checks.mjs')]]) {
+    const plan = checkPlan(mode(changes), { changes });
+    assert.deepEqual(plan.slice(0, 2), [['git', 'diff', '--cached', '--check'], guard], changes[0].path);
+  }
+  assert.equal(mode([change('docs/NEXT-AGENT.md')]), 'documentation');
+  assert.ok(checkPlan('documentation', { changes: [] }).every(command => !command.includes('tools/check-repo-limits.mjs')));
+});
+
 test('cached checks keep the commit index while test subprocesses lose repository overrides', () => {
   const saved = process.env.GIT_INDEX_FILE;
   process.env.GIT_INDEX_FILE = 'temporary-commit-index';
   const seen = [];
   try {
-    assert.equal(runChecks([['git', 'diff', '--cached', '--check'], [process.execPath, '--test', 'fixture.mjs']], {
+    assert.equal(runChecks([['git', 'diff', '--cached', '--check'], [process.execPath, '--test', 'fixture.mjs'],
+      [process.execPath, 'tools/check-repo-limits.mjs', '--cached'], [process.execPath, 'other.mjs', '--cached']], {
       run(command, args, options) { seen.push(options.env); return {status: 0}; },
     }), 0);
     assert.equal(seen[0].GIT_INDEX_FILE, 'temporary-commit-index');
     assert.equal(seen[1].GIT_INDEX_FILE, undefined);
+    assert.equal(seen[2].GIT_INDEX_FILE, 'temporary-commit-index', 'the repo-limit guard judges the commit index');
+    assert.equal(seen[3].GIT_INDEX_FILE, undefined);
   } finally {
     if (saved === undefined) delete process.env.GIT_INDEX_FILE;
     else process.env.GIT_INDEX_FILE = saved;

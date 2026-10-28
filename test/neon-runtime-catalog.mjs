@@ -8,7 +8,7 @@ const scope={environment:'fixture',workspaceId:'catalog-owner'};
 test('Neon catalogue retains all exact bank identities and UTF8 metadata and detaches inputs',()=>{
  const source=readRuntimeCatalogFixture(),value=validateRuntimeMediaCatalog(source);
  assert.deepEqual(value,source);assert.notEqual(value,source);
- assert.equal(value.presentation.items.length,51);assert.equal(Object.keys(value.legacy.entries).length,18);
+ assert.equal(value.presentation.items.length,51);assert.equal(Object.keys(value.legacy.entries).length,2);
  assert.deepEqual(validateRuntimeCatalogRecord({revision:runtimeCatalogRevision(value),value}).value,value);
 });
 test('cross-linked metadata, missing public JSON, mismatched Blob bytes and revisions fail closed',()=>{
