@@ -5,7 +5,7 @@ Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (s
 | Verktyg | Vad |
 | --- | --- |
 | [tools/o02-freeze-check.mjs](../../tools/o02-freeze-check.mjs) | F1, F2, F5 automatiskt; F3 och F8 förifyllda; skriver `frozen-candidate.json` |
-| [tools/o02-receipt.mjs](../../tools/o02-receipt.mjs) | Granskarens kvittoskelett: GET mot staging, `BEGIN READ ONLY` mot Neon, kvitton ur Git på kandidaten |
+| [tools/o02-receipt.mjs](../../tools/o02-receipt.mjs) | Granskarens kvittoskelett: GET mot staging, `BEGIN READ ONLY` mot Neon, kvitton ur Git på `--receipts-ref` (standard `origin/main`) |
 | [tools/o02-snapshot.mjs](../../tools/o02-snapshot.mjs) | S0/S1/S0′-paritet för restore-replay |
 | [O02-RESTORE-REPLAY](O02-RESTORE-REPLAY.md) | Körklar kommandolista för §3 (inte körd) |
 
@@ -67,9 +67,10 @@ Skriptet skriver `automatic` (F1, F2, F5), `prefilled` (F3 och F8) och `manual` 
   ```
 
   Kriterier: F1, F8, E1, N1, R1, T1, C1, D1, B1, M1, S1, Q1 och I1 automatiskt; V1–V7 manuellt (pass bara via Jakobs manifest med `by:"Jakob"` och samma kandidat).
+- **`--receipts-ref <ref>`** (standard `origin/main`): omproven på kandidaten mergas som dokument efter frysningen och finns därför inte på `$SHA`. Kvittona i `docs/` läses ur ref:en, som måste ha `$SHA` som förfader och samma runtimeträd (`git diff --name-only $SHA <ref>` rör inget `RUNTIME_PREFIXES`); annars fail på F8 med fillistan. Ref:ens SHA står i kvittot (`receiptsRef`). D1 och C1 väntar sig config-huvud och paketrevision ur det nyaste K06-kvittots `neon.finalState`, eller `--expect-config`/`--expect-package`; källan står i kvittot.
 - **Kvittokontrakt:**
-  - I Git på kandidaten, nyaste per familj: `docs/<datum>-K04-BROWSER-RERUN-<n>-ACCEPTANCE.json` (RERUN-3 i dag, RERUN-4 på kandidaten), `docs/<datum>-K06-STAGING-RERUN[-<n>]-ACCEPTANCE.json` med `o02ContractChecks[]` (`wrong-role`, `bad-media-id`, `interrupted-presentation`) och `twoConsecutiveGames`, samt `docs/<datum>-K07-STAGING-RERUN[-<n>]-ACCEPTANCE.json` med `checks[]` och `candidate`.
-  - Utanför Git i `$O2/o02/`: `frozen-candidate.json`, `restore-replay/receipt.json`, `jakob-eyes/manifest.json` och `negative/receipt.json` (`{candidate, cases:[{id, result: pass|fail|booked, note}]}`).
+  - I Git på `--receipts-ref`, nyaste per familj: `docs/<datum>-K04-BROWSER-RERUN-<n>-ACCEPTANCE.json` (RERUN-3 i dag, RERUN-4 på kandidaten), `docs/<datum>-K06-STAGING-RERUN[-<n>]-ACCEPTANCE.json` med `o02ContractChecks[]` (`wrong-role`, `bad-media-id`, `interrupted-presentation`), `twoConsecutiveGames` och `neon.finalState` (`head`, `packageRevision`), samt `docs/<datum>-K07-STAGING-RERUN[-<n>]-ACCEPTANCE.json` med `checks[]` (S1 kräver `K07-g1`, `K07-g2` och `K07-g2a`, alla pass) och `candidate`.
+  - Utanför Git i `$O2/o02/`: `frozen-candidate.json`, `restore-replay/receipt.json`, `jakob-eyes/manifest.json` och `negative/receipt.json` (`{candidate, cases:[{id, result: pass|booked, note}]}` med exakt K3a–K3g, K4, K4b, K6, K8 och L1–L5, var och en med en note; saknade eller extra id:n ger fail).
 - **Torrkörning** mot `c8a26b64` med `--github` utan Neon: fail=3, missing=8, pass=2, manual=7. F1 fail (öppen runtime-PR #491, ingen containerkörning). F8 fail (kvittona 183/454 filer bort). S1 fail av samma skäl. Q1 och R1 pass. M1 visar alla tio repliker utlösta i kvittona men väntar på Jakobs manifest. Skriptet skrev bara kvittofilen.
 - **Rapport:** observerat resultat per kriterium, testmiljö (SHA, `dep-`/`dpl_`, Neon-scope, Blob `store_7E06N1P4w9Mu1dZD`) och kvarvarande brister, varje fynd blockerande eller inte med motivering. Sanerat kvitto: `docs/<datum>-O02-ACCEPTANCE.json`.
 
