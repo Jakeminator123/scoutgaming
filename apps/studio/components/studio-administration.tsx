@@ -6,7 +6,7 @@ import { flushSync } from 'react-dom';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
-import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { isDealerId, registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
@@ -279,7 +279,8 @@ export function studioPartnerResult(action: string, payload: JsonObject, gameOri
     if (approved.origin !== gameOrigin || approved.protocol !== 'https:' || approved.username || approved.password
       || url.origin !== approved.origin || url.username || url.password || url.hash || !['/game', '/blackjack'].includes(url.pathname)
       || query.length !== 2 || !query.includes('dealer') || !query.includes('launch')
-      || !['vera','astrid','amira','mei'].includes(url.searchParams.get('dealer') || '')
+      // Any well-formed dealer identity; the engine owns which dealer a launch opens.
+      || !isDealerId(url.searchParams.get('dealer'))
       || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.searchParams.get('launch') || '')
       || url.href.length > 16384 || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
     return { kind: 'launch', url: url.href, playerRef: payload.playerRef };

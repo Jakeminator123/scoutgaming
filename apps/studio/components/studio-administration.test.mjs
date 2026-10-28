@@ -666,9 +666,16 @@ test('partner result projection rejects malformed credentials and cross-origin/a
   }
   for (const url of ['https://outside.test/game?dealer=astrid&launch=a.b.c','http://game.example.test/game?dealer=astrid&launch=a.b.c',
     'https://game.example.test/other?dealer=astrid&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=a.b.c&launch=x.y.z',
-    'https://game.example.test/game?dealer=wrong&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=bad',
+    'https://game.example.test/game?dealer=Wrong&launch=a.b.c','https://game.example.test/game?dealer=..%2Fastrid&launch=a.b.c',
+    'https://game.example.test/game?dealer=admin&launch=a.b.c','https://game.example.test/game?dealer=&launch=a.b.c',
+    'https://game.example.test/game?dealer=astrid&launch=bad',
     'https://game.example.test/game?dealer=astrid&launch=a.b.c#secret']) {
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
+  }
+  // Dealer-independent: any well-formed registered identity, not a historical name list.
+  for (const dealer of ['astrid','dragan','linnea-2']) {
+    const url=`https://game.example.test/game?dealer=${dealer}&launch=a.b.c`;
+    assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'))),{kind:'launch',url,playerRef:'player'});
   }
   assert.throws(()=>h.studioPartnerResult('apikeys/credit',{playerId:'player',balance:NaN,currency:'EUR'}),status(503));
 });

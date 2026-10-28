@@ -171,7 +171,7 @@ En underkänd tagning spelas inte.
 ### Röst och AI-tal
 
 Under **Inspelat tal** följer **Genererat tal · AI-röst**. Generering och
-realtidstal kräver en verifierad röstprofil (i dag Astrid); andra dealers har
+realtidstal kräver en verifierad röstprofil; dealers utan en sådan har
 **Förbered röstprofil för realtidstal**. Att spara en röstprofil gör inget
 betalt prov och godkänner ingen läppsynk. **Testa dialog** öppnar Dialogtest
 (`/admin/dealer-agent`).
