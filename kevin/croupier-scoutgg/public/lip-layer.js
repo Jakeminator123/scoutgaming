@@ -7,8 +7,8 @@
 // A patch is chosen by the body frame on screen (its take and frame), anywhere in the talk within REACH frames of where
 // the clock says the talk is: a clip that runs late (a slow phone, a decoder catching up) still gets the mouth made for
 // exactly that frame, only a little later against the sound.
-// NEIGHBOURS: how many body frames away a patch may be borrowed when the frame on screen has none (a take at tempo 2.5).
-const FPS = 24, REACH = 48, NEIGHBOURS = 2;
+// BORROW: how many body frames away in the same take a patch may be borrowed when the frame on screen has none.
+const FPS = 24, REACH = 48, BORROW = 48;
 
 /** Splits an Annex B stream into access units at each delimiter (NAL type 9): [{data, key}] in order. */
 export function splitAccessUnits(buf) {
@@ -68,6 +68,11 @@ export function createLipTracks() {
   const early = new Map();
   let time = () => Date.now();
   const supported = lipsSupported();
+  // Emil 28 Oct: where HIS mouth is on every body frame of every take (lapprutor.json, made from his lip-sync avatar by
+  // metodik lapprutor.py: the same rect the worker sends with a patch). Every patch is drawn at the place of the frame on
+  // screen, so one borrowed from another frame (a table's tempo shows 2-2.5 frames per patch) sits on his mouth.
+  let places = null;
+  const placeOf = (take, frame) => { const ids = places?.takes[take]; const i = ids?.[Math.min(frame, ids.length - 1)]; return i == null ? null : places.pool[i]; };
 
   // A new map for a talk (the plan changed under it) is a new version: its patches replace older ones, never the reverse.
   async function piece(t, meta, bytes = null) {
@@ -142,31 +147,37 @@ export function createLipTracks() {
      * dealer rests (his still, or a take that ended at rest). → {bitmap, rect, key} or null.
      */
     at(take, frame, rest) {
+      const own = rest ? null : placeOf(take, frame);
       for (const t of talks.values()) {
         const n = time() - t.shift;
         if (!t.lips || n < t.kartaStart || n >= t.endAt + 600) continue;
         const k = Math.floor((n - t.kartaStart) * FPS / 1000);
-        let best = -1;
-        // at rest on a clip's last frame the layer may count one frame past the map (floor of its end time): that frame's
-        // patch is for the same VILA pose
-        for (const key of patchKeys(take, frame, rest, t.last))
-          for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
-        if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}`, ruta: e.tag.ruta }; }
-        // Emil 28 Oct (a table's tempo): a take at 2x or 2.5x shows 2-2.5 body frames per patch. A frame between gets the
-        // mouth of the nearest frame of the same take that has one, placed where HIS mouth is on this frame: the patches
-        // before and after give their places, and this frame's lies between them (his head moves smoothly); with only one
-        // of them its own place. Drawn at the neighbour's place, the mouth sat beside his own.
-        const near = d => { let b = -1; for (const j of t.index.get(`${take}:${frame + d}`) ?? []) if (Math.abs(j - k) <= REACH && (b < 0 || Math.abs(j - k) < Math.abs(b - k))) b = j; return b; };
+        const nearest = key => { let b = -1; for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (b < 0 || Math.abs(j - k) < Math.abs(b - k))) b = j; return b; };
+        const hit = (j, rect, extra = {}) => { const e = t.frames[j]; return { bitmap: e.bitmap, rect: rect ?? e.tag.rect, key: `${t.id}:${j}${rect ? ':' + frame : ''}`, ruta: e.tag.ruta, dk: j - k, ...extra }; };
+        // this very frame's patch
+        let best = nearest(`${take}:${frame}`);
+        if (best >= 0) return hit(best, own);
+        // Emil 28 Oct (a table's tempo): else the patch of the nearest body frame of the same take that has one (at 2x the
+        // next frame, on a held last frame the take's last), at this frame's place (own); without the table, between the
+        // places of the patches before and after it (his head moves smoothly). Before: a held-frame rule took the take's
+        // last patch whenever the frame was past it, and drew it at its own place, beside his mouth.
+        // a dealer without the table borrows only from the next two frames, as before (a late piece shows no mouth)
+        const far = places ? BORROW : 2;
         let lo = -1, hi = -1, dl = 0, dh = 0;
-        for (let d = 1; d <= NEIGHBOURS && lo < 0; d++) { lo = near(-d); dl = d; }
-        for (let d = 1; d <= NEIGHBOURS && hi < 0; d++) { hi = near(d); dh = d; }
-        if (lo < 0 && hi < 0) continue;
-        const use = hi < 0 || (lo >= 0 && dl <= dh) ? lo : hi, e = t.frames[use];
-        const rect = lo >= 0 && hi >= 0 ? e.tag.rect.map((_, i) => t.frames[lo].tag.rect[i] + (t.frames[hi].tag.rect[i] - t.frames[lo].tag.rect[i]) * dl / (dl + dh)) : e.tag.rect;
-        return { bitmap: e.bitmap, rect, key: `${t.id}:${use}:${frame}`, ruta: e.tag.ruta, lant: true };
+        for (let d = 1; d <= far && lo < 0; d++) { lo = nearest(`${take}:${frame - d}`); dl = d; }
+        for (let d = 1; d <= far && hi < 0; d++) { hi = nearest(`${take}:${frame + d}`); dh = d; }
+        if (lo >= 0 || hi >= 0) {
+          const use = hi < 0 || (lo >= 0 && dl <= dh) ? lo : hi;
+          const between = lo >= 0 && hi >= 0 ? t.frames[use].tag.rect.map((_, i) => t.frames[lo].tag.rect[i] + (t.frames[hi].tag.rect[i] - t.frames[lo].tag.rect[i]) * dl / (dl + dh)) : null;
+          return hit(use, own ?? between ?? t.frames[use].tag.rect, { lant: true });
+        }
+        // at rest: his still's patch
+        if (rest && (best = nearest('vila')) >= 0) return hit(best);
       }
       return null;
     },
+    /** The avatar's mouth places (lapprutor.json): {pool: [[x, y, w, h]], takes: {take: [pool index per frame]}}. */
+    setPlaces(p) { places = p?.pool && p?.takes ? p : null; },
     /** True when the talk is silent at this moment (a pause, its ramp in or out): no mouth patch on purpose. */
     silentNow() {
       for (const t of talks.values()) {

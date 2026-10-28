@@ -110,7 +110,7 @@ export const DEALERS = {
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
   astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg?v=20261014',
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
-    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true, preloadHits: true },
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true, preloadHits: true, lipPlaces: '/media/dealers/astrid2/lapprutor.json' + V },
 };
 
 function pick() {

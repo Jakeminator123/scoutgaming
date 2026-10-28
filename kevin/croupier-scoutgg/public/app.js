@@ -46,6 +46,8 @@ let playing = null;              // the clip play() is on, and whether it has st
 const voiceOvers = new Set();    // answers still talking as sound after the table took the screen
 // A ready dealer speaking his lines over his clips (server/rorlig-lipsync.mjs): the mouth patches for the dealer layer.
 const lips = dealer.ready ? createLipTracks() : null;
+// Emil 28 Oct: a dealer with the table of his mouth places (lip-layer.js setPlaces) gets every patch drawn on his mouth
+if (lips && dealer.lipPlaces) fetch(dealer.lipPlaces).then(r => r.ok ? r.json() : null).then(p => lips.setPlaces(p)).catch(() => {});
 
 // ------------------------------------------------------------------ spelaren ---
 const queue = [];           // { url, sound, text, kind }
