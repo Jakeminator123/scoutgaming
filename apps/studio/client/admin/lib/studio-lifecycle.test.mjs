@@ -101,3 +101,25 @@ test('unconfirmed response stays uncertain and is not counted as a completed cli
   await assert.rejects(client.archiveClips({ ...f, dealerId: 'paow-v2', ids: [a], archived: true }), error => { assert.deepEqual(error.completed, []); return error.code === 'studio_lifecycle_response_invalid'; });
   assert.equal(calls, 1);
 });
+
+test('dealer restore and purge send only the exact revision; stale or pending targets make no request', async () => {
+  const f = fixture(), dealer = f.project.dealers.pop(), calls = [];
+  f.project.revision = 'studio.project.7'; f.project.dealerTrash = [{ dealer, lines: [] }];
+  const restored = { ...addDealer(createEmptyProject(), dealer.id, dealer.label), revision: 'studio.project.8' };
+  const purged = { ...createEmptyProject(), revision: 'studio.project.9' };
+  const client = createLifecycleClient({ fetchImpl: async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    return Response.json({ project: url.endsWith('/dealers/archive') ? restored : purged, inventory: { videos: [] } });
+  } });
+  await client.dealerLifecycle(f.project, dealer.id, false);
+  assert.deepEqual(calls[0], { url: '/studio/api/dealers/archive', body: { dealerId: dealer.id, expectedRevision: 'studio.project.7', archived: false } }, 'restore carries no impact token');
+  await client.deleteDealer(f.project, dealer.id);
+  assert.deepEqual(calls[1], { url: '/studio/api/dealers/delete', body: { dealerId: dealer.id, expectedRevision: 'studio.project.7' } });
+  const active = addDealer(createEmptyProject(), dealer.id, dealer.label), impact = { dealerId: dealer.id, token, mediaCount: 0, speechEnabled: false, compositions: [], rooms: [], operators: [] };
+  await assert.rejects(client.dealerLifecycle(active, dealer.id, true, impact, () => false), /studio_conflict/);
+  await assert.rejects(client.dealerLifecycle(f.project, dealer.id, false, undefined, () => false), /studio_conflict/);
+  await assert.rejects(client.deleteDealer(f.project, dealer.id, () => false), /studio_conflict/);
+  f.project.dealerTrash[0].deletion = { state: 'pending', requestedAt: '2026-10-11T12:00:00.000Z', mediaIds: [] };
+  await assert.rejects(client.dealerLifecycle(f.project, dealer.id, false), /studio_invalid_request/, 'a started purge cannot be restored');
+  assert.equal(calls.length, 2);
+});
