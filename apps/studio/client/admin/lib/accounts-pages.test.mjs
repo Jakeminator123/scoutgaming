@@ -95,7 +95,7 @@ test('Drift keeps game status, shoe proof and integrity through the native reade
 });
 
 test('a denied or unverifiable session blocks Drift exactly as before',async()=>{
-  for(const [options,expected] of [[{status:401},/Din N1-session saknas/],[{status:503},/Administrationen kunde inte nås/],[{data:{availableActions:'GET overview'}},/kunde inte verifieras/]]){
+  for(const [options,expected] of [[{status:401},/Din inloggning saknas/],[{status:503},/Administrationen kunde inte nås/],[{data:{availableActions:'GET overview'}},/kunde inte verifieras/]]){
     const h=harness(options);
     const tree=await administration(h,{path:'/admin/drift'});
     assert.ok(node(tree,item=>item.props?.role==='alert'));assert.match(renderToStaticMarkup(tree),expected);

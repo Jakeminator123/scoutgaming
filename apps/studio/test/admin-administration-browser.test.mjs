@@ -21,7 +21,7 @@ window.__historyOwner.guardTraversal(()=>{window.__traversals++;return true;});`
   builder.onLoad({filter:/.*/,namespace:'unused'},()=>({contents:'export default ()=>null;export const DealerMaterialPage=()=>null,PlayerAccountsPage=()=>null,AdminStaffPage=()=>null,StudioSidebar=()=>null,RegisteredStudio=()=>null,ConnectedClipMap=()=>null,RegisteredMaterialLibrary=()=>null,AdminHome=()=>null,DealerDirectory=()=>null,ResourceConnections=()=>null,AdminHelp=()=>null,ResourceDeletion=()=>null,WorkspaceToolsHome=()=>null,AdminPublicationPage=()=>null,ControlActivityPage=()=>null,ControlPreviewPage=()=>null,ControlEventsPage=()=>null,ControlTreePage=()=>null,ControlProbePage=()=>null,ControlRepliesPage=()=>null,ControlVideosPage=()=>null,ControlGuidePage=()=>null,ControlOpenClawChat=()=>null,LabStudio=()=>null,OpenClawWorkspace=()=>null,ConnectedEconomy=()=>null,MovingDriftControls=()=>null,DealerClipPreview=()=>null;'}));
 }}]}).then(result=>result.outputFiles[0].text);}
 // The retired speech review (/admin/media-review) is gone; the N1 refusal
-// belongs to every connected Administration page, here API & integrationer.
+// belongs to every connected Administration page, here Integrationer.
 async function fixture(browser){
   const context=await browser.newContext(),failures=[],reads=[],writes=[];
   await context.addInitScript(studioHistoryBootstrap);
@@ -39,5 +39,5 @@ async function fixture(browser){
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
 
 test('actual Admin refuses the Administration surface when its N1 session expires',{skip:!browserModule},()=>withBrowser(async browser=>{
-  const f=await fixture(browser);try{await f.page.getByText('Din N1-session saknas eller har gått ut. Logga in igen.',{exact:true}).waitFor();assert.equal(f.writes.length,0);assert.equal(f.reads.some(row=>row.path.startsWith('/studio/api/admin/')),false);}finally{await f.close();}
+  const f=await fixture(browser);try{await f.page.getByText('Din inloggning saknas eller har gått ut. Logga in igen.',{exact:true}).waitFor();assert.equal(f.writes.length,0);assert.equal(f.reads.some(row=>row.path.startsWith('/studio/api/admin/')),false);}finally{await f.close();}
 }));

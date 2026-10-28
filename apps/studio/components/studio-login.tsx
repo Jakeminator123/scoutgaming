@@ -45,8 +45,8 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
   }
   return <main className={styles.page}>
     <section className={styles.card} aria-busy={!ready || busy}>
-      <h1>{mode === 'set-password' ? 'Välj lösenord' : 'Logga in i Croupier Admin'}</h1>
-      {mode === 'login' && <p>Administratörer använder samma Croupier-konto och lösenord i spelet och Admin. Spelarkonton har bara tillgång till spelet. Konton hanteras i Admin.</p>}
+      <h1>{mode === 'set-password' ? 'Välj lösenord' : 'Logga in i Scoutgaming Admin'}</h1>
+      {mode === 'login' && <p>Administratörer använder samma konto och lösenord i spelet och Admin. Spelarkonton har bara tillgång till spelet. Konton hanteras i Admin.</p>}
       {!ready && <p role="status">Inloggningen laddas. Vänta tills formuläret är klart.</p>}
       <noscript><p>Aktivera JavaScript för att använda den säkra inloggningen.</p></noscript>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}

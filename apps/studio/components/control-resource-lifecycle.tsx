@@ -127,7 +127,7 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
     {!loading&&snapshot&&!operator?<p role="status">Bolaget finns inte i den aktuella förteckningen.</p>:null}
     {kind==='rooms'&&operator?<>
       {!archiveOnly&&<div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Papperskorg ({rooms.filter(room=>room.archivedAt).length})</button></div>}
-      {!visible.length?<p>{archiveOnly?'Inga borttagna spel.':showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
+      {!visible.length?<p>{archiveOnly?'Inga borttagna spel.':showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en mall nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
         <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>

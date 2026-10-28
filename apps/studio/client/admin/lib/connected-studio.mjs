@@ -281,7 +281,7 @@ export function compositionUses(catalog, compositionId) {
 
 export function uploadMetadata(project, dealerId, slot, file, compositing) {
   if(slot.game==='roulette'){
-    if(slot.eventId==='roulette.reference')throw Error('PNG kan provas lokalt. Dealerregistrets beständiga PNG-stöd är ännu inte aktiverat.');
+    if(slot.eventId==='roulette.reference')throw Error('PNG kan provas lokalt men kan ännu inte sparas under Dealers.');
     const registered=rouletteClipSlots().find(row=>!row.planned&&row.id===slot.id&&row.eventId===slot.eventId&&row.situation===slot.situation);
     if(!registered)throw Error('Detta roulettefack är planerat och har ännu inget uppladdningskontrakt.');
     const image=slot.eventId==='roulette.reference';
@@ -332,7 +332,7 @@ export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativ
       return validateProject(result.project);
     },
     async upload(file, metadata, signal) {
-      if(metadata.mediaType==='image')throw Error('PNG kan provas lokalt. Dealerregistrets beständiga PNG-stöd är ännu inte aktiverat.');
+      if(metadata.mediaType==='image')throw Error('PNG kan provas lokalt men kan ännu inte sparas under Dealers.');
       const mode = await json('/studio/api/videos', { signal });
       if (mode.uploadMode !== 'private-client-blob') throw Error('Den skyddade uppladdningen är otillgänglig i denna miljö.');
       const contentType = /\.png$/i.test(file.name) ? 'image/png' : /\.mp4$/i.test(file.name) ? 'video/mp4' : 'video/webm';

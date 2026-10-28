@@ -360,7 +360,7 @@ Varje borttagning öppnar en bekräftelseruta som visar konsekvenserna och kör
 serverns kontroll. Du skriver aldrig in något ID. **Avbryt** eller Esc ändrar
 ingenting; nekar servern visas orsaken.
 
-- **Klipp** (klippkartans **Dealer & användning**): **Radera** flyttar klippet
+- **Klipp** (klippkartans **Inställningar**): **Radera** flyttar klippet
   till **Arkiv**; **Radera valda** och **Radera alla** gör samma sak i grupp. I
   arkivet finns **Återställ** och **Radera permanent**. Permanent radering
   kräver att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter)

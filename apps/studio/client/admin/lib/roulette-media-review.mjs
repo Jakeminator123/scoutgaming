@@ -26,7 +26,7 @@ export async function saveRouletteReview(video,dealerId,form,{fetchImpl=fetch,si
   const response=await fetchImpl('/studio/api/videos/classify',{method:'POST',credentials:'same-origin',signal,
     headers:{'Content-Type':'application/json'},body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification,metadata})});
   let inventory;try{inventory=await response.json();}catch{throw Error('Granskningen kan ha sparats. Läs om filmregistret innan du försöker igen.');}
-  if(!response.ok)throw Error(response.status===409?'Filmklassificeringen har ändrats. Läs om registret; formuläret är kvar.':response.status===401||response.status===403?'N1-sessionen saknas. Logga in och läs om.':'Filmgranskningen kunde inte sparas. Formuläret är kvar.');
+  if(!response.ok)throw Error(response.status===409?'Filmklassificeringen har ändrats. Läs om registret; formuläret är kvar.':response.status===401||response.status===403?'Inloggningen saknas. Logga in och läs om.':'Filmgranskningen kunde inte sparas. Formuläret är kvar.');
   const saved=inventory.videos?.find(row=>row.id===video.id);
   const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'
     ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;

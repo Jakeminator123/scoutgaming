@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { nextStudioAuthEntryRedirect } from '@/lib/next-page-navigation.mjs';
 import { notFound, redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
-export const metadata = {title:'Logga in · Croupier Admin',referrer:'no-referrer'};
+export const metadata = {title:'Logga in · Scoutgaming Admin',referrer:'no-referrer'};
 export default async function Page({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
   if (!nativeStudioAdminEnabled()) notFound();
   const config = nativeStudioAdminConfiguration();

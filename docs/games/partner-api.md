@@ -6,7 +6,7 @@ The engine implements this API in `services/game/storage/async-partner-api.mjs` 
 
 ## 1. Authentication (every request)
 
-Each partner gets an API key and a secret from Admin (**API & integrationer**). Every request carries three headers:
+Each partner gets an API key and a secret from Admin (**Integrationer**). Every request carries three headers:
 
 | Header | Value |
 |---|---|
@@ -59,7 +59,7 @@ One authenticated player can currently place bets on several boxes in the same r
 
 
 ### Getting a test session without writing code
-In Admin, **API & integrationer** can create and rotate a key, mint a test launch for it and add demo funds (internal-wallet keys only).
+In Admin, **Integrationer** can create and rotate a key, mint a test launch for it and add demo funds (internal-wallet keys only).
 
 ### POST /api/v1/table (scope: play)
 Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.

@@ -32,7 +32,7 @@ const roleLabel = (role: { label: string }) => ROLE_LABELS[role.label] ?? role.l
 const PERMISSION_LABELS: Record<string, string> = {
   'overview.read': 'Se översikt', 'players.read': 'Se spelare', 'team.read': 'Se team', 'team.invite': 'Bjuda in medlemmar',
   'team.roles.assign': 'Tilldela roller', 'team.suspend': 'Stänga av medlemmar', 'tables.read': 'Se spelrum', 'tables.configure': 'Konfigurera spelrum',
-  'presentations.read': 'Se sammansättningar', 'presentations.configure': 'Anpassa sammansättningar', 'reports.read': 'Se rapporter', 'integrations.read': 'Se integrationer',
+  'presentations.read': 'Se mallar', 'presentations.configure': 'Anpassa mallar', 'reports.read': 'Se rapporter', 'integrations.read': 'Se integrationer',
 };
 function defaultRole(operator: OperatorDirectoryEntry) {
   const wanted = operator.members.length ? 'partner-viewer' : 'partner-admin';
