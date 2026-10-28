@@ -50,6 +50,27 @@ test('other placements are computed the same way, and a phone/desktop mismatch g
   assert.equal(filmedTableTemplate('paow',{composition:skewed}),null);
 });
 
+// Facit: the table-template work's bordsmatt-paow.json (2026-10-28), measured
+// independently with the runtime's layoutGameOverlay. Its graphic is 1920 px
+// wide at desktop 50 % / y 35 % and phone 158 % / y 35 %; rows are
+// [seat, centre u, centre v, box x, box y, box width, box height] in table px.
+const PAOW_FACIT=[['1',476.25,397.13,417.75,322.88,117,148.5],['2',637.13,453.38,578.63,379.13,117,148.5],['3',798,487.13,739.5,412.88,117,148.5],
+  ['4',960,498.38,901.5,424.13,117,148.5],['5',1122,487.13,1063.5,412.88,117,148.5],['6',1282.88,453.38,1224.38,379.13,117,148.5],
+  ['7',1443.75,397.13,1385.25,322.88,117,148.5],['dealer',960,250.88,901.5,176.63,117,148.5]];
+test('the same computation reproduces the PAOW table measurements (bordsmatt-paow.json) for its placement',()=>{
+  const composition=defaultCompositionSettings();
+  composition.desktop.table={width:.5,x:0,y:.35};composition.mobile.table={width:1.58,x:0,y:.35};
+  const template=filmedTableTemplate('paow',{composition,width:1920});
+  assert.ok(Math.abs(template.plane.scale-1.125)<1e-3);assert.deepEqual(template.plane.offset,{x:-313.33,y:672});
+  assert.deepEqual(template.card,{width:87.75,height:119.25});
+  for (const [id,u,v,x,y,width,height] of PAOW_FACIT) {
+    const seat=id==='dealer'?template.dealer:template.seats.find(row=>row.id===id);
+    for (const [actual,expected] of [[seat.center.x,u],[seat.center.y,v],[seat.box.x,x],[seat.box.y,y],[seat.box.width,width],[seat.box.height,height]]) {
+      assert.ok(Math.abs(actual-expected)<=.011,`${id}: ${actual} vs ${expected}`);
+    }
+  }
+});
+
 test('dealers without a filmed profile and impossible sizes get no template',()=>{
   for (const dealerId of ['astrid','ny-dealer','',null,undefined]) assert.equal(filmedTableTemplate(dealerId),null);
   assert.equal(filmedTableTemplate('paow',{width:100}),null);assert.equal(filmedTableTemplate('paow',{width:5000}),null);
