@@ -33,11 +33,10 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CROUPIER_PUBLIC_ORIGIN` | krävs | web, studio, speech | `https://www.scoutgaming.tech`; även länkar i mejl |
 | `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com` |
 | `CROUPIER_VERCEL_INGRESS_SECRET` | krävs, Sensitive | web, studio, speech | Signerar anrop till spelmotorn; samma värde som på Render |
-| `CROUPIER_LAB_UI_ORIGIN` | valfri | web, studio | Separat Studio-origin; behövs inte med `CROUPIER_VERCEL_UNIFIED_UI=1` |
+| `CROUPIER_LAB_UI_ORIGIN` | krävs när `CROUPIER_LAB_REMOTE_UI=1` | web, studio | Studiozonens egen origin; `apps/studio/lib/remote-ui.mjs` kräver att den skiljer sig från den publika originen och från spelmotorns, annars svarar Studio 503 |
 | `CROUPIER_LAB_REMOTE_UI` | krävs, `1` | studio | Studio bakom den publika originen |
 | `CROUPIER_LAB_BASE_PATH` | krävs, `/studio`; byggtid | studio | basePath; `NEXT_PUBLIC_LAB_BASE_PATH` härleds vid bygget |
 | `CROUPIER_STREAM_LANE` | krävs, `lissabon-stream-lane` | studio | Anslutnings-ID mot spelmotorn |
-| `BO_URL` | krävs | studio | Publik origin för inloggning och överlämning |
 | `LAB_PUBLIC_URL` | villkorlig | studio | Betrodd proxy-origin för sessionskontrollen; ingen lokal Studio-process |
 | `CROUPIER_STUDIO_NEON_POLICY` | krävs, `1` | web, studio | Neon är registret; ingen disk- eller seedreserv |
 | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` | krävs | studio | Serverägt scope (`production`/`croupier`); samma som på spelmotorn |
@@ -51,10 +50,17 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CARTESIA_API_KEY` | valfri | studio | Röstprov i Admin |
 | `CROUPIER_STUDIO_MOVING_DRIFT_API`, `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` | villkorlig | web, studio | Driftväljaren för rörligt tal, se nedan |
 | `CROUPIER_VERCEL_FRONTEND_ORIGIN` | valfri | studio | Betrott proxyursprung för en separat förhandsfrontend; tom i produktionen |
-| `CROUPIER_GAME_ORIGIN` | krävs vid bygget | web (`vercel-entry`) | Spelserverns exakta HTTPS-origin för `apps/web/tools/player-ui-build.mjs` |
+| `CROUPIER_GAME_ORIGIN` | sätts inte på Vercel | web (`vercel-entry`) | Behövs bara när `apps/web/tools/player-ui-build.mjs` körs fristående. Vercel-bygget (`prepare-platform-ui.mjs`) tar originen från `CROUPIER_BACKEND_ORIGIN` |
+| `CROUPIER_DATABASE` | krävs, `postgres` | studio | `studio-render-persistence.mjs` svarar 503 utan `postgres` och en Neon-adress |
+| `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` | valfri, av | studio | Läses av `generated-speech-runtime.mjs` via Studios talväg; bara `1` slår på, så osatt och `0` är samma sak. Talet körs på Render |
+| `BO_URL` | sätts inte | – | Läses inte på Vercel; bara spelmotorn härleder den |
+| `CROUPIER_ASTRID_CAMERA`, `CROUPIER_PLAYER_ACCOUNTS` | sätts inte | – | Läses bara av spelmotorn |
 | `CROUPIER_NEON_*` (16 namn), `CROUPIER_MEDIA_STORE_ID` | värdhanterad | projektet | Injiceras av Vercels Neon- och Blob-kopplingar; koden läser dem inte |
 | `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` | nekas | web, studio | Talleverantörerna bor på Render; Vercel ska inte ha kopior |
 | `CROUPIER_ZONES_DATABASE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | nekas | studio | Hör till spelmotorn respektive Director |
+| `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW` | nekas | studio | `1` stänger av molntalet respektive slår på den lokala förhandsvisningen |
+| `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_GENERATED_SPEECH_DIR`, `LAB_STUDIO_DATA_DIR` | nekas | studio | Talbudget och endpoint hör till Render; diskvägarna är pensionerade |
+| `NODE_ENV`; `HOST`, `CROUPIER_CLOUD_RUNTIME`, `PUBLIC_URL` | värdhanterad; sätts inte | studio | Läses av den delade talmodulen för att känna igen molnet; Vercel sätter `NODE_ENV` |
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
@@ -126,11 +132,17 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `OPENCLAW_PRODUCT_SPEECH_TOKEN` | villkorlig, sätts privat | Spelmotorns talrelä; samma värde som på `croupier-v3`, skilt från `LAB_API_TOKEN` |
 | `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL` | krävs ett av dem | Gatewayns adress (Blueprint hämtar `hostport` från Gateway) |
 | `HOST`, `PORT`, `LAB_DATA_DIR` | valfri | `0.0.0.0`, `4188`, `/data/catalog` |
-| `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_SPEECH_AGENT` | valfri | OpenClaw-rollerna `croupier-director`, `croupier-chat`, `croupier-speech` |
+| `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_SPEECH_AGENT` | valfri | OpenClaw-rollerna `openclaw/croupier-director`, `openclaw/croupier-chat`, `openclaw/croupier-speech` (Blueprint och kodens standard) |
 | `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_SPEECH_TIMEOUT_MS` | valfri | Råd 8000 ms; tal 20000 ms tillsammans med spelmotorn |
 | `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_DEEP_MODEL` | valfri | `adaptive` tillåter en fördjupning med `gpt-6-sol` (Blueprint); kodens standard är `fixed` |
 | `OPENCLAW_DASHBOARD_ENABLED` | valfri | Gatewayns inloggning via Director |
 | `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` | valfri, hemlig | Ed25519-nyckel (base64 PKCS8) för Admins modellval; bara på Director |
+| `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Utan origin används `RENDER_EXTERNAL_URL` (värdhanterad) när `OPENCLAW_DASHBOARD_ENABLED=true`; loopback bara lokalt |
+| `LAB_COMPANION_ENABLED`, `LAB_COMPANION_FUN_ENABLED`, `LAB_COMPANION_WEB_ENABLED` | valfri | Följeslagarfunktionerna; bara `false` stänger av |
+| `OPENCLAW_PRODUCT_SPEECH_URL` | valfri, bara lokalt | Directors egen relämottagare i labbet; sätts inte på Render |
+| `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` | nekas | Lokalt fjärrläge som skickar vidare till en annan Director; stänger av Gateway-inloggningen och sätts aldrig på Render |
+
+Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Bara panelen, inte Blueprint, äger värdet för `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`.
 
 ## Gateway `croupier-lab-openclaw`
 
@@ -144,7 +156,7 @@ Privat tjänst; registerposten är `render-openclaw-gateway`.
 | `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH` | valfri | `18789`, `/data/openclaw`, `/data/openclaw/openclaw.json` |
 | `OPENCLAW_DASHBOARD_ORIGIN` | valfri | Directors exakta HTTPS-origin utan `/openclaw` |
 | `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Bara lokalt |
-| `CROUPIER_SPEECH_VISION` | valfri | Bildstöd i talet, opt-in |
+| `CROUPIER_SPEECH_VISION` | valfri, sätts i panelen | Bildstöd i talet, opt-in; satt i panelen |
 
 ## Staging: skillnader mot produktionen
 
