@@ -267,7 +267,7 @@ Användarspråk; inga tekniska id:n eller tabeller byter namn.
 
 | Används i dag | Målbild |
 |---|---|
-| rum, spelrum, spelutbud, room, table, bj, game-tables | **Spelbord** i menyer och rubriker (ordet rum behålls i löptext och i TERMINOLOGI tills Jakob beslutar, avsnitt 10) |
+| rum, spelrum, spelutbud, room, table, bj, game-tables | **Spelbord** (beslutat 2026-10-28; äldre dokument säger rum) |
 | bord som material | **Bordsgrafik** |
 | mall, spelmall, gemensam mall, sammansättning, lane, composition | **Scenmall** (TERMINOLOGI: mall) |
 | paketversion, publiceringsrevision | **Publicerad version** (teknisk revision under Detaljer) |
@@ -306,14 +306,18 @@ Små PR:er, en sak i taget; docs, UI och server blandas inte. Varje steg har ett
 | **H verktygskedja och struktur** | React, TypeScript och byggen mellan `apps/studio` och `apps/studio/client`; "ett repo, en sajt"; Node- och Next-versioner | egen plan efter O03 (orkestratorn) | ren klon, låst installation, båda frontendbyggena |
 | **Tal** | dealer-generisk talkedja (text → röst → läppsynk) konfigurerad per dealer via registret; Dragan och Astrid som exempel, inte specialfall; Röst och tal får livemärke och "Använd i spelet" | egen aktivitet (Jakobs beslut 2026-10-28) | – |
 
-## 10. Beslut som krävs av Jakob
+## 10. Beslut
 
-1. **Ordet för rum i menyer:** "Spelbord" (Johns skiss och paketet) eller "Rum" (TERMINOLOGI). Om Spelbord: TERMINOLOGI uppdateras så att *Bord* fortsatt bara betyder bordslagret ("Bordsgrafik").
-2. **Rumslistan i paketet:** fryses rummens namn och läge i paketet (så att spelet bara läser paketet, som TERMINOLOGI säger), eller skrivs TERMINOLOGI om så att rummets läge är ett levande fält?
-3. **Produktnamnet i Admin:** "Scoutgaming Admin" i stället för "Croupier Admin".
-4. **Astrid-kortet "Legacyreferens"** i Dealers: bort i P2 eller i ren start.
-5. **Dealer-godkännande** som krav för tilldelning (nytt statusfält i projektet): ja eller nej.
-6. **Nya dealers**: filmas eller genereras (avgör Skapa materials framtid); efter O03.
+Tagna 2026-10-28 (Jakob gav Admin-arkitekten fria händer för ordlistan och godkände namn, dotfiler och godkännande):
+
+1. **Spelbord** är ordet för `room` i menyer, rubriker och ny text; bordslagret heter **bordsgrafik**. TERMINOLOGI är omskriven.
+2. **Spelbordets namn och läge fryses i paketet** i steg D, så att spelet bara läser paketet. Tills dess beskriver TERMINOLOGI undantaget ärligt.
+3. **Scoutgaming Admin** ersätter "Croupier Admin" (P2).
+4. **Dotfil-städningen** görs som egen PR.
+5. **Dealer-godkännande**: ett enkelt statusfält "godkänd" i projektet (inget schema), krav för tilldelning. Bolaget tilldelas en **uppsättning** dealers, bordsgrafik, bakgrunder och insatsprofiler att välja bland, aldrig bara en.
+6. **Astrid-kortet "Legacyreferens"** i Dealers tas bort i ren start tillsammans med Astrid som dealer.
+
+Kvar: **nya dealers filmas eller genereras** (avgör Skapa materials framtid); efter O03.
 
 ## 11. Avvikelser mot Jakobs paket
 
