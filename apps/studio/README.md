@@ -120,15 +120,14 @@ och dess blueprint ligger i `services/openclaw/lab/`;
 riktiga presentationsfunktionen (`services/game/partner-presentation.mjs`) med
 syntetiska publika vyer. Det är inget spel- eller videotest.
 
-## Partner-SSE-observation (diagnostik)
+## Partnerreferens (diagnostik)
 
-`lib/partner-observer.mjs` kan läsa partnerns `/api/v1/events` med en signerad
-serveranslutning (`/api/inputs`, `/api/inputs/events`,
-`/api/inputs/reference`). Den är valfri, gör inga spelhandlingar och kräver
-`BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)). SSE-källan
-saknar replay: ett avbrott loggas som möjlig lucka och kräver ny anslutning.
-Mottagen instruktion, valt klipp och uppspelningskvitto är tre skilda saker.
+`/api/inputs/reference` (`lib/partner-reference.mjs`) provar kopplingen till
+partnern: behörighet, spelöppning och videokarta. Den är valfri, gör inga
+spelhandlingar och kräver `BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
+[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)).
+`lib/partner-observer.mjs` kontrollerar bara att nycklarna och adressen är
+giltiga; den öppnar ingen anslutning.
 
 ## Prov
 
