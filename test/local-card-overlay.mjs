@@ -254,7 +254,11 @@ test('hidden card matches the filmed opaque Scout back, without exposing its val
   assert.equal(face.children[0].attrs.fill,'#050404');
   assert.equal(face.children[0].attrs.width,'63');assert.equal(face.children[0].attrs.height,'85');
   assert.equal(face.children[1].tag,'image');
-  assert.equal(face.children[1].attrs.href,'/media/game/runtime/cards/back-scout.png');
+  assert.equal(face.children[1].attrs.href,'/images/cards/back-scout.png');
+  // The Vercel frontend serves the card back from apps/web/public; the cloud engine serves no /media/ path.
+  const served=readFileSync(new URL('../apps/web/public/images/cards/back-scout.png',import.meta.url));
+  assert.equal(createHash('sha256').update(served).digest('hex'),'9c2b32897d9f910575b0818937600c4aa64f04c4de383ca4ed610f72d3ad8720');
+  assert.deepEqual(served,readFileSync(new URL('../media/game/runtime/cards/back-scout.png',import.meta.url)));
   assert.ok(!all(hole).some(n=>n.tag==='text'));
 });
 
