@@ -33,8 +33,12 @@ test('a native N1 login starts no player handoff on the actual isolated engine a
   assert.equal(session.authenticated,false,'an administrator cookie is not a player session');
   assert.equal(session.backofficeHandoff,undefined,'the engine advertises no handoff');
   for(const entry of ['/blackjack?table=room-evening','/play/roulette?table=room-evening']) {
-    const location=(await request(entry,{cookie:boCookie})).headers.get('location')??'';
+    const admin=await request(entry,{cookie:boCookie}),anonymous=await request(entry);
+    const location=admin.headers.get('location')??'';
     assert.equal(location.startsWith('/api/auth/bo/'),false,`${entry} does not redirect into a handoff`);
+    // An Admin cookie without a player session gets exactly the ordinary player flow.
+    assert.equal(admin.status,anonymous.status,`${entry}: same status as without a cookie`);
+    assert.equal(location,anonymous.headers.get('location')??'',`${entry}: same destination as without a cookie`);
   }
   const state='a'.repeat(64),code='b'.repeat(64);
   for(const path of ['/api/auth/bo/start?next=%2Fplay%2Fprofil',`/api/bo/game-login?state=${state}`,`/api/auth/bo/callback?state=${state}&code=${code}`,

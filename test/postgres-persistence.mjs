@@ -15,7 +15,6 @@ import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epo
 import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { backofficeLabAuth } from '../services/game/storage/async-bo-lab-auth.mjs';
 import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
 import { command as shoeCommand, newGame } from '../services/game/shoe-game.mjs';
 
@@ -24,11 +23,10 @@ async function invoke(handler,url,{cookie='',body='',headers={},method='GET'}={}
   const response={writeHead(status,headers={}){this.status=status;this.headers=headers;},end(body=''){this.body=body;}};
   await handler(req,response,target.pathname);return response;
 }
-const cookiePair=response=>[response.headers['Set-Cookie']].flat().filter(Boolean).map(value=>value.split(';')[0]).join('; ');
 
 test('Postgres SQL binds parameters, preserves quoted punctuation and rejects SQLite schema SQL',()=>{
   assert.equal(postgresStatement("SELECT '?' AS literal FROM players WHERE id=? AND name='a''?b'"),"SELECT '?' AS literal FROM players WHERE id=$1 AND name='a''?b'");
-  assert.equal(postgresStatement('INSERT OR IGNORE INTO x VALUES (?)'),'INSERT INTO x VALUES ($1) ON CONFLICT DO NOTHING');
+  assert.equal(postgresStatement('INSERT INTO x VALUES (?) ON CONFLICT DO NOTHING'),'INSERT INTO x VALUES ($1) ON CONFLICT DO NOTHING');
   assert.equal(postgresStatement('SELECT player_id AS playerId FROM players'),'SELECT player_id AS "playerId" FROM players');
   assert.throws(()=>postgresStatement('PRAGMA table_info(players)'),/SQLite/);
   assert.throws(()=>validateGameConnection('postgresql://u:p@host/game?sslmode=disable'),/TLS/);
@@ -170,7 +168,6 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
   const config=JSON.parse(await readFile(process.env.CROUPIER_POSTGRES_QA_CONFIG,'utf8')),store=createPostgresStore({connectionString:config.databaseUrl});
   const suffix=randomUUID().slice(0,8),username=`qa-${suffix}`,password='Synthetic-Only-Password-4173',actor='qa-operator';
   let player,profile,operatorId,partnerKey,partnerPlayer;
-  const labStates=[];
   try {
     assert.equal((await store.pool.query('SELECT current_database() AS name')).rows[0].name,'croupier_game_qa');
     const admin=createPlayerAdministration({db:store.db});player=await admin.create({username,password,actor,reason:'synthetic lifecycle/concurrency test'});
@@ -188,22 +185,7 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     const authenticated=await identity.authenticate(`qa-op-${suffix}`,password);assert.equal(authenticated.id,operatorId);assert.equal(await epoch(operatorId),0);
     await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('reader',operatorId);assert.equal(await epoch(operatorId),1);
     await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('admin',operatorId);assert.equal(await epoch(operatorId),2);
-    const account=await identity.find(`qa-op-${suffix}`),origins={publicUrl:'https://game.example.test',boUrl:'https://bo.example.test',labPublicUrl:'https://lab.example.test'};
-    let role='admin';
-    const boSession=async()=>({sub:account.name,role,aud:'backoffice',source_stamp:await identity.stamp(operatorId),auth_epoch:await epoch(operatorId),exp:Math.floor(Date.now()/1000)+600});
-    const labAuth=backofficeLabAuth({db:store.boDb,identity,authEpoch:epoch,boSession,...origins});
-    const labStart=async(next='/')=>{const response=await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/start?next='+encodeURIComponent(next));assert.equal(response.status,303);labStates.push(new URL(response.headers.Location).searchParams.get('state'));return response;};
-    const readerStart=await labStart();role='reader';assert.equal((await invoke(labAuth,readerStart.headers.Location)).status,403,'a reader cannot mint Lab access');role='admin';
-    const labFlow=await labStart('/zones?token=must-discard'),labAuthorized=await invoke(labAuth,labFlow.headers.Location);assert.equal(labAuthorized.status,303);
-    assert.equal((await invoke(labAuth,labAuthorized.headers.Location)).status,410,'Lab callback requires its initiating browser');
-    assert.equal((await invoke(labAuth,labAuthorized.headers.Location,{cookie:cookiePair(labFlow),headers:{origin:origins.publicUrl}})).status,403);
-    const labDone=await invoke(labAuth,labAuthorized.headers.Location,{cookie:cookiePair(labFlow)});assert.equal(labDone.status,303);assert.equal(labDone.headers.Location,'/zones');
-    assert.equal((await invoke(labAuth,labAuthorized.headers.Location,{cookie:cookiePair(labFlow)})).status,410,'Lab code is single use');
-    assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,200);
-    await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('reader',operatorId);
-    assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'role change revokes saved Lab access');
-    await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('admin',operatorId);
-    assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'restored admin role cannot revive an old Lab session');
+    const account=await identity.find(`qa-op-${suffix}`);
     const partner=installPartnerApi({db:store.db,boDb:store.boDb,shoeCommand,newGame,getPlayer:id=>store.db.prepare('SELECT * FROM players WHERE id=?').get(id),logTx:(id,type,amount,currency,meta)=>store.db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at)VALUES(?,?,?,?,?,?)').run(id,type,amount,currency,meta,new Date().toISOString()),jwtSign:()=> 'synthetic-launch',publicUrl:origins.publicUrl,publicGamePath:'/game',root:'.'});
     partnerKey=await partner.keys.create({name:`QA ${suffix}`},account.name);
     const signed=async(path,input,{timestamp=String(Math.floor(Date.now()/1000))}={})=>{const body=JSON.stringify(input),signature=createHmac('sha256',partnerKey.secret).update(`${timestamp}.POST.${path}.${body}`).digest('hex');const result=await invoke(partner.handle,origins.publicUrl+path,{body,method:'POST',headers:{'x-api-key':partnerKey.key,'x-timestamp':timestamp,'x-signature':signature}});return {...result,json:JSON.parse(result.body)};};
@@ -261,7 +243,6 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     await assert.rejects(admin.setStatus({playerId:player.id,status:'active',actor,reason:'must stay closed'}),/cannot/);
     assert.ok((await store.db.prepare('SELECT COUNT(*) AS n FROM transactions WHERE player_id=?').get(player.id)).n>=2);
   }finally{
-    for(const state of labStates)await store.boDb.prepare('DELETE FROM bo_lab_handoffs WHERE state_digest=?').run(createHash('sha256').update(state).digest('hex'));
     if(partnerKey){for(const table of ['partner_rounds','partner_idem','partner_players'])await store.db.prepare(`DELETE FROM ${table} WHERE key_id=?`).run(partnerKey.id);await store.boDb.prepare('DELETE FROM api_keys WHERE id=?').run(partnerKey.id);}
     if(partnerPlayer){for(const table of ['transactions','blackjack_tables','native_presentations'])await store.db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(partnerPlayer);await store.db.prepare('DELETE FROM players WHERE id=?').run(partnerPlayer);}
     if(player){

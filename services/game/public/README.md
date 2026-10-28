@@ -11,6 +11,7 @@ presentationsmodulerna används även från andra produktdelar.
 | `performance-player.mjs`, `local-film-player.mjs`, `speech-*`, `astrid-*` | Filmuppspelning, tal, kamerafunktioner och Astrids presentation. |
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
+| `bo/speech-qa.*` | Kvarvarande behörighetsstyrd tal-QA. `/api/bo/speech-qa` är undantaget när äldre BO-skrivningar stängs i Studio-läget. |
 
 ## Bevara verifierad presentation
 

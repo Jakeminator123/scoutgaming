@@ -13,7 +13,6 @@ import { isAdministratorRole } from '../../packages/studio-access/server/account
 import { playerAuth, playerPostOriginOk } from './storage/async-player-auth.mjs';
 import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
-import { backofficeLabAuth } from './storage/async-bo-lab-auth.mjs';
 import { readPlayerResults } from './storage/async-player-results.mjs';
 import { createPlayerChatMemory } from './storage/async-player-chat-memory.mjs';
 import { createPlayerProbeStore } from './storage/async-player-probe-store.mjs';
@@ -393,7 +392,6 @@ function boPostOriginOk(req) {
   return origin === expected && (!fetchSite || fetchSite === 'same-origin');
 }
 const LEGACY_STUDIO_RETURNS = new Set(['/studio', '/studio/administration', '/control', '/control/administration']);
-const LEGACY_STUDIO_HANDOFF = /^\/api\/bo\/lab-login\?state=[a-f0-9]{64}$/;
 const LEGACY_STUDIO_TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 function legacyBackofficeRedirect(req, pathname) {
   let destination = null;
@@ -402,7 +400,7 @@ function legacyBackofficeRedirect(req, pathname) {
   } else if (pathname === '/bo/login.html') {
     const returnTo = new URL(req.url, 'http://local').searchParams.get('returnTo');
     destination = '/admin/login';
-    if (returnTo && (LEGACY_STUDIO_RETURNS.has(returnTo) || LEGACY_STUDIO_HANDOFF.test(returnTo))) {
+    if (returnTo && LEGACY_STUDIO_RETURNS.has(returnTo)) {
       destination += `?returnTo=${encodeURIComponent(returnTo)}`;
     }
   } else if (pathname === '/bo/set-password.html') {
@@ -481,9 +479,6 @@ const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CRO
 const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
-const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
-  authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
-  labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const playerSession = async req => (await auth.session(req));
 async function previewPlayer(req,res) {
@@ -634,7 +629,6 @@ const server = createServer(async (req, res) => {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
   }
-  if((await boLabAuth(req,res)))return;
   { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
     if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
