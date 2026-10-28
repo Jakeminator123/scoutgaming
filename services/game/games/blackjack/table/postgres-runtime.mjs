@@ -11,26 +11,41 @@ import { assertSharedPostgresOwner } from '../../../../../packages/storage/serve
 // No sink means no outbox acknowledgement. K04 supplies the version-aware sink
 // described in ports.mjs; snapshots/polls never drive ticks or delivery here.
 //
-// Fault isolation (B3): a system fault (database unreachable, missing schema,
-// invalid clock, or anything that cannot be attributed to one room) fails the
-// pass and health.failed until a later pass succeeds. A fault in one room's tick,
-// due-check or outbox row only marks that room: it is reported to onError with
-// code shared_table_room_failed, retried after a bounded backoff, and blocked for
-// commands after roomBlockAfter consecutive failures. Other rooms keep running
-// and readiness stays open. A room recovers when a pass no longer fails for it.
+// Fault isolation (B3). Four classes, none of them carries error details into health:
+// - system (database unreachable, missing schema, invalid clock, or anything without a
+//   room identity) fails the pass and health.failed until a later pass succeeds;
+// - contention (lock/statement timeout, serialization failure, deadlock) is neutral:
+//   the global A lock makes it say nothing about the room. The room is skipped for the
+//   rest of that pass, nothing is counted against it, no backoff grows; a separate
+//   counter and a shared_table_room_contention report record it;
+// - a room fault in a tick or due-check marks only that room: reported with code
+//   shared_table_room_failed, retried after a bounded backoff, blocked for commands
+//   after roomBlockAfter consecutive failures. It recovers when a pass no longer fails;
+// - an outbox (presentation) fault only defers that room's delivery with its own
+//   backoff (shared_table_outbox_failed). It never pauses ticks or blocks commands (K04).
+// Other rooms keep running and readiness stays open for every class but system.
 const SYSTEM_SQLSTATE = /^(08|28|3D|3F|42|53|57P|58|XX)/;
+const CONTENTION_SQLSTATE = new Set(['55P03', '57014', '40001', '40P01']);
 const SYSTEM_NODE_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EPIPE', 'EHOSTUNREACH', 'ENETUNREACH']);
 const SYSTEM_MESSAGE = /connection terminated|connection (?:is )?closed|client has encountered a connection error|timeout exceeded when trying to connect|schema is not installed|cannot use a pool after calling end/i;
-export function isSharedTableSystemFault(error, seen = new Set()) {
+function someError(error, test, seen = new Set()) {
   if (!error || typeof error !== 'object' || seen.has(error)) return false;
   seen.add(error);
-  const code = typeof error.code === 'string' ? error.code : '';
-  if (SYSTEM_NODE_CODES.has(code) || /^[0-9A-Z]{5}$/.test(code) && SYSTEM_SQLSTATE.test(code)) return true;
-  if (typeof error.message === 'string' && SYSTEM_MESSAGE.test(error.message)) return true;
-  if (Array.isArray(error.errors) && error.errors.some(item => isSharedTableSystemFault(item, seen))) return true;
-  return isSharedTableSystemFault(error.cause, seen);
+  if (test(error)) return true;
+  if (Array.isArray(error.errors) && error.errors.some(item => someError(item, test, seen))) return true;
+  return someError(error.cause, test, seen);
+}
+const codeOf = error => typeof error.code === 'string' ? error.code : '';
+export function isSharedTableSystemFault(error) {
+  return someError(error, item => SYSTEM_NODE_CODES.has(codeOf(item))
+    || /^[0-9A-Z]{5}$/.test(codeOf(item)) && SYSTEM_SQLSTATE.test(codeOf(item))
+    || typeof item.message === 'string' && SYSTEM_MESSAGE.test(item.message));
+}
+export function isSharedTableContention(error) {
+  return !isSharedTableSystemFault(error) && someError(error, item => CONTENTION_SQLSTATE.has(codeOf(item)));
 }
 const roomIdOf = value => typeof value === 'string' && value.length > 0 && value.length <= 128 ? value : null;
+const byRoom = ([a], [b]) => a < b ? -1 : a > b ? 1 : 0;
 
 export function createPostgresTableRuntime({
   pool, walletMode, clock = { now: Date.now }, random = secureRandom(), sink,
@@ -58,20 +73,24 @@ export function createPostgresTableRuntime({
   let state = 'stopped', timer = null, starting = null, stopping = null, inFlight = null, background = null;
   let lastSuccessAt = null, lastErrorAt = null, failed = false;
   // roomId -> { failures, since, lastErrorAt, retryAt }; no error details are kept.
-  const roomFaults = new Map();
-  const roomView = (roomId, fault) => Object.freeze({ roomId, failures: fault.failures,
-    blocked: fault.failures >= roomBlockAfter, since: fault.since, lastErrorAt: fault.lastErrorAt, retryAt: fault.retryAt });
+  const roomFaults = new Map(), outboxFaults = new Map();
+  const contention = { count: 0, lastAt: null };
+  const faultView = (roomId, fault) => ({ roomId, failures: fault.failures, since: fault.since, lastErrorAt: fault.lastErrorAt, retryAt: fault.retryAt });
+  const roomView = (roomId, fault) => Object.freeze({ ...faultView(roomId, fault), blocked: fault.failures >= roomBlockAfter });
+  const backoff = failures => Math.min(roomBackoffMaxMs, intervalMs * 2 ** Math.min(failures - 1, 30));
 
   // A fresh snapshot only: no SQL, clock reads, timers or raw error details.
   // inFlight describes the pump; state also covers startup and reporting drain.
   // A pass without a system fault clears failed; historical timestamps survive
-  // stop/start. rooms lists the isolated room faults, sorted and sanitized.
+  // stop/start. rooms/outbox list isolated faults, sorted and sanitized.
   function health() {
     return Object.freeze({ state, running: state === 'running', inFlight: inFlight !== null,
       lastSuccessAt, failed, lastErrorAt,
-      rooms: Object.freeze([...roomFaults].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([id, fault]) => roomView(id, fault))) });
+      rooms: Object.freeze([...roomFaults].sort(byRoom).map(([id, fault]) => roomView(id, fault))),
+      outbox: Object.freeze([...outboxFaults].sort(byRoom).map(([id, fault]) => Object.freeze(faultView(id, fault)))),
+      contention: Object.freeze({ ...contention }) });
   }
-  // Commands for a room that keeps failing are refused until a pass recovers it.
+  // Commands for a room whose ticks keep failing are refused until a pass recovers it.
   function roomHealth(roomId) {
     const fault = roomFaults.get(roomId);
     return fault ? roomView(roomId, fault) : null;
@@ -81,31 +100,43 @@ export function createPostgresTableRuntime({
     catch { return null; } // Diagnostics must never replace the original outcome.
   }
   function recordFailure() { failed = true; lastErrorAt = healthTime(); }
+  async function report(message, cause, fields) {
+    const alarm = Object.assign(new Error(message, { cause }), fields);
+    try { await onError(alarm); } catch { /* A broken reporter cannot change a room outcome. */ }
+  }
+  function mark(faults, roomId, at) {
+    const before = faults.get(roomId), failures = (before?.failures ?? 0) + 1, retryAt = at + backoff(failures);
+    faults.set(roomId, { failures, since: before?.since ?? at, lastErrorAt: at, retryAt });
+    return { failures, retryAt };
+  }
 
   async function runPass() {
-    const at = checkedClock.now(), ticks = [], errors = [], failedRooms = new Map(), systemRooms = new Set();
-    const resting = roomId => (roomFaults.get(roomId)?.retryAt ?? -Infinity) > at;
-    // True when the failure is isolated to its room; otherwise it is a system
-    // fault of the whole pass (no room identity, or a database/schema fault).
-    const isolate = (roomId, error) => {
+    const at = checkedClock.now(), ticks = [], errors = [];
+    const failedRooms = new Map(), failedDelivery = new Map(), contended = new Map(), systemRooms = new Set();
+    const resting = (faults, roomId) => (faults.get(roomId)?.retryAt ?? -Infinity) > at;
+    // Returns false for a system fault (the caller fails the pass); otherwise the
+    // failure is contention (neutral) or recorded against its room or delivery.
+    const isolate = (roomId, error, faults, failures) => {
       const id = roomIdOf(roomId);
       if (!id || isSharedTableSystemFault(error)) { if (id) systemRooms.add(id); return false; }
+      if (isSharedTableContention(error)) { if (!contended.has(id)) contended.set(id, error); return true; }
       // A resting room is already marked; its due-check repeats the known fault.
-      if (!resting(id) && !failedRooms.has(id)) failedRooms.set(id, error);
+      if (!resting(faults, id) && !failures.has(id)) failures.set(id, error);
       return true;
     };
-    const due = await coordinator.dueTicks(at, { onRoomError(roomId, error) { if (!isolate(roomId, error)) throw error; } });
+    const tickFault = (roomId, error) => isolate(roomId, error, roomFaults, failedRooms);
+    const due = await coordinator.dueTicks(at, { onRoomError(roomId, error) { if (!tickFault(roomId, error)) throw error; } });
     // One snapshot, one attempt per descriptor. A failed transaction remains due;
     // only the coordinator can record a domain-level blocked receipt. A resting
-    // room, or one that already failed in this pass, is skipped until later.
+    // room, or one that failed or met contention in this pass, waits until later.
     for (const descriptor of due) {
       const roomId = roomIdOf(descriptor?.roomId);
-      if (roomId && (resting(roomId) || failedRooms.has(roomId))) continue;
+      if (roomId && (resting(roomFaults, roomId) || failedRooms.has(roomId) || contended.has(roomId))) continue;
       let actors, result;
       try {
         result = await coordinator.tick(descriptor, { captureActors: value => { actors = value; } });
         ticks.push(result);
-      } catch (error) { if (!isolate(roomId, error)) errors.push(error); continue; }
+      } catch (error) { if (!tickFault(roomId, error)) errors.push(error); continue; }
       if (onTickCommitted && result.outcome === 'applied' && !result.replay) {
         try {
           if (!Array.isArray(actors)) throw new Error('Committed tick actors missing');
@@ -119,28 +150,38 @@ export function createPostgresTableRuntime({
         }
       }
     }
-    let outbox = null;
+    let outbox = null, delivered = false;
     if (sink) {
       try {
-        outbox = await coordinator.deliverOutbox(sink, { skipRoom: roomId => resting(roomId) || failedRooms.has(roomId) });
-        for (const item of outbox.failed) if (!isolate(item.row?.roomId, item.error)) errors.push(item.error);
+        // Presentation delivery is independent of the game: only its own backoff defers it.
+        outbox = await coordinator.deliverOutbox(sink, { skipRoom: roomId => resting(outboxFaults, roomId) || failedDelivery.has(roomId) });
+        for (const item of outbox.failed) if (!isolate(item.row?.roomId, item.error, outboxFaults, failedDelivery)) errors.push(item.error);
+        delivered = true;
       } catch (error) { errors.push(error); }
     }
-    // Room bookkeeping also runs when the same pass has a system fault.
+    // Bookkeeping also runs when the same pass has a system fault.
     for (const [roomId, error] of failedRooms) {
-      const before = roomFaults.get(roomId), failures = (before?.failures ?? 0) + 1;
-      const retryAt = at + Math.min(roomBackoffMaxMs, intervalMs * 2 ** Math.min(failures - 1, 30));
-      roomFaults.set(roomId, { failures, since: before?.since ?? at, lastErrorAt: at, retryAt });
-      const alarm = Object.assign(new Error('Shared table room failed', { cause: error }),
+      const { failures, retryAt } = mark(roomFaults, roomId, at);
+      await report('Shared table room failed', error,
         { code: 'shared_table_room_failed', roomId, failures, blocked: failures >= roomBlockAfter, retryAt });
-      try { await onError(alarm); } catch { /* A broken reporter cannot change the room outcome. */ }
     }
-    // A room that was eligible in this pass and did not fail has recovered.
+    for (const [roomId, error] of failedDelivery) {
+      const { failures, retryAt } = mark(outboxFaults, roomId, at);
+      await report('Shared table presentation delivery failed', error, { code: 'shared_table_outbox_failed', roomId, failures, retryAt });
+    }
+    for (const [roomId, error] of contended) {
+      contention.count++; contention.lastAt = at;
+      await report('Shared table room met lock contention', error, { code: 'shared_table_room_contention', roomId });
+    }
+    // A room that was eligible in this pass and did not fail has recovered; contention
+    // and system faults prove nothing either way.
     for (const [roomId, fault] of [...roomFaults])
-      if (!failedRooms.has(roomId) && !systemRooms.has(roomId) && fault.retryAt <= at) roomFaults.delete(roomId);
+      if (!failedRooms.has(roomId) && !systemRooms.has(roomId) && !contended.has(roomId) && fault.retryAt <= at) roomFaults.delete(roomId);
+    if (delivered) for (const [roomId, fault] of [...outboxFaults])
+      if (!failedDelivery.has(roomId) && !systemRooms.has(roomId) && !contended.has(roomId) && fault.retryAt <= at) outboxFaults.delete(roomId);
     if (errors.length === 1) throw errors[0];
     if (errors.length) throw new AggregateError(errors, 'Shared table pump failed');
-    return { ticks, outbox, rooms: [...failedRooms.keys()] };
+    return { ticks, outbox, rooms: [...failedRooms.keys()], outboxRooms: [...failedDelivery.keys()], contended: [...contended.keys()] };
   }
 
   function pump() {

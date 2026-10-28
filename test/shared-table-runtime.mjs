@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPostgresTableRuntime, isSharedTableSystemFault } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
+import { createPostgresTableRuntime, isSharedTableSystemFault, isSharedTableContention } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 import { runPostgresTransactionOwner } from '../packages/storage/server/postgres-transaction-context.mjs';
@@ -79,20 +79,20 @@ test('health reports sanitized pump failure and recovery without doing work', as
     options: { clock: { now() { clockReads++; return at; } } } });
   t.after(() => h.runtime.stop());
   assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
-    lastSuccessAt: null, failed: false, lastErrorAt: null, rooms: [] });
+    lastSuccessAt: null, failed: false, lastErrorAt: null, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   assert.equal(clockReads, 0);
   await h.runtime.start();
   at = 20; await h.runtime.pump();
   assert.deepEqual(h.runtime.health(), { state: 'running', running: true, inFlight: false,
-    lastSuccessAt: 20, failed: false, lastErrorAt: null, rooms: [] });
+    lastSuccessAt: 20, failed: false, lastErrorAt: null, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   failure = new Error('private SQL connection and credentials must not appear in health');
   at = 30; await assert.rejects(h.runtime.pump(), error => error === failure);
   assert.deepEqual(h.runtime.health(), { state: 'running', running: true, inFlight: false,
-    lastSuccessAt: 20, failed: true, lastErrorAt: 30, rooms: [] });
+    lastSuccessAt: 20, failed: true, lastErrorAt: 30, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   failure = null; at = 40; h.timer.fire(); await flush();
   const recovered = h.runtime.health();
   assert.deepEqual(recovered, { state: 'running', running: true, inFlight: false,
-    lastSuccessAt: 40, failed: false, lastErrorAt: 30, rooms: [] });
+    lastSuccessAt: 40, failed: false, lastErrorAt: 30, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   const calls = structuredClone(h.calls), reads = clockReads, jobs = [...h.timer.pending];
   assert.ok(Object.isFrozen(recovered));
   assert.throws(() => { recovered.state = 'stopped'; }, TypeError);
@@ -112,7 +112,7 @@ test('readiness is single-flight and a failed schema check never starts work', a
   await assert.rejects(h.runtime.pump(), /not running/);
   gate.reject(missing); await assert.rejects(first, error => error === missing);
   assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
-    lastSuccessAt: null, failed: true, lastErrorAt: 100000, rooms: [] });
+    lastSuccessAt: null, failed: true, lastErrorAt: 100000, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   assert.equal(h.calls.due, 0); assert.equal(h.timer.pending.size, 0);
   h.store.assertInstalled = async () => {};
   await h.runtime.start(); assert.equal(h.timer.delay(), 0);
@@ -145,12 +145,12 @@ test('stop drains the active pass, clears its timer and leaves the supplied pool
   let stopped = false; const stopping = h.runtime.stop().then(() => { stopped = true; });
   await flush(); assert.equal(stopped, false);
   assert.deepEqual(h.runtime.health(), { state: 'stopping', running: false, inFlight: true,
-    lastSuccessAt: null, failed: false, lastErrorAt: null, rooms: [] });
+    lastSuccessAt: null, failed: false, lastErrorAt: null, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   await assert.rejects(h.runtime.pump(), /not running/);
   await assert.rejects(h.runtime.start(), /Await stop/);
   gate.resolve(); await stopping;
   assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
-    lastSuccessAt: 100000, failed: false, lastErrorAt: null, rooms: [] });
+    lastSuccessAt: 100000, failed: false, lastErrorAt: null, rooms: [], outbox: [], contention: { count: 0, lastAt: null } });
   assert.equal(seen.length, 1); assert.equal(h.timer.pending.size, 0);
   await h.runtime.start(); assert.equal(h.timer.pending.size, 1);
   await h.runtime.stop(); assert.equal(h.timer.pending.size, 0);
@@ -303,24 +303,71 @@ test('system faults still fail the whole pass and readiness; unattributed errors
     assert.equal(isSharedTableSystemFault(roomFault), false, roomFault.message);
 });
 
-test('room-scoped due-check and outbox failures are isolated; resting rooms are skipped for delivery', async t => {
-  const skipped = [];
+test('a due-check fault marks its room; an outbox fault only defers that room\'s delivery and never its ticks or commands', async t => {
+  let at = 1000, failDelivery = true; const delivering = [], ticked = [];
   const h = setup({ coordinator: {
-    async dueTicks(_, { onRoomError }) { await onRoomError('due-room', new Error('corrupt room row')); return [{ roomId: 'ok-room', tickId: 'ok' }]; },
+    async dueTicks(_, { onRoomError }) { if (at === 1000) await onRoomError('due-room', new Error('corrupt room row'));
+      return [{ roomId: 'ok-room', tickId: 'ok' }, { roomId: 'sink-room', tickId: 's' }]; },
+    async tick(d) { ticked.push(d.roomId); return { outcome: 'applied', replay: false }; },
     async deliverOutbox(_, { skipRoom }) {
-      for (const room of ['due-room', 'sink-room', 'ok-room']) if (skipRoom(room)) skipped.push(room);
-      return { delivered: [], superseded: [], failed: [{ row: { roomId: 'sink-room', ver: 2 }, error: new Error('receiver rejected row') }] };
+      const failed = [];
+      for (const room of ['due-room', 'sink-room', 'ok-room']) {
+        if (skipRoom(room)) continue; delivering.push(room);
+        if (room === 'sink-room' && failDelivery) failed.push({ row: { roomId: room, ver: 2 }, error: new Error('receiver rejected row') });
+      }
+      return { delivered: [], superseded: [], failed };
     },
-  }, options: { sink: async () => 'applied' } });
+  }, options: { sink: async () => 'applied', clock: { now: () => at }, intervalMs: 100 } });
   t.after(() => h.runtime.stop()); await h.runtime.start();
   const result = await h.runtime.pump();
-  assert.deepEqual(result.rooms.sort(), ['due-room', 'sink-room']); assert.deepEqual(skipped, ['due-room']);
-  assert.deepEqual(h.runtime.health().rooms.map(room => room.roomId), ['due-room', 'sink-room']);
+  assert.deepEqual(result.rooms, ['due-room']); assert.deepEqual(result.outboxRooms, ['sink-room']);
+  assert.deepEqual(ticked, ['ok-room', 'sink-room'], 'a presentation fault does not pause the game');
+  assert.deepEqual(h.runtime.health().rooms.map(room => room.roomId), ['due-room']);
+  assert.deepEqual(h.runtime.health().outbox, [{ roomId: 'sink-room', failures: 1, since: 1000, lastErrorAt: 1000, retryAt: 1100 }]);
+  assert.equal(h.runtime.roomHealth('sink-room'), null, 'commands are never blocked by delivery');
+  assert.deepEqual(h.errors.map(error => [error.code, error.roomId]), [['shared_table_room_failed', 'due-room'], ['shared_table_outbox_failed', 'sink-room']]);
   assert.equal(h.runtime.health().failed, false);
+  // Delivery backoff grows on its own; ticks keep running in the meantime.
+  for (const [time, failures] of [[1050, 1], [1100, 2], [1300, 3], [1700, 4]]) {
+    at = time; await h.runtime.pump();
+    assert.equal(h.runtime.health().outbox[0].failures, failures); assert.equal(h.runtime.roomHealth('sink-room'), null);
+  }
+  assert.equal(delivering.filter(room => room === 'sink-room').length, 4, 'not delivered while resting at 1050');
+  assert.equal(ticked.filter(room => room === 'sink-room').length, 5);
+  failDelivery = false; at = 2500; await h.runtime.pump();
+  assert.deepEqual(h.runtime.health().outbox, []); assert.deepEqual(h.runtime.health().rooms, []);
   const system = setup({ coordinator: { async dueTicks(_, { onRoomError }) {
     await onRoomError('room-a', Object.assign(new Error('gone'), { code: '08006' })); return []; } } });
   t.after(() => system.runtime.stop()); await system.runtime.start();
   await assert.rejects(system.runtime.pump(), /gone/); assert.equal(system.runtime.health().failed, true);
+});
+
+test('lock and statement timeouts, serialization failures and deadlocks are neutral: skipped, counted, never blocking', async t => {
+  let at = 1000; const attempts = [];
+  const contention = code => Object.assign(new Error('contention ' + code), { code });
+  const codes = ['55P03', '57014', '40001', '40P01'];
+  for (const code of codes) assert.equal(isSharedTableContention(contention(code)), true, code);
+  assert.equal(isSharedTableContention(new Error('wrapped', { cause: contention('57014') })), true);
+  assert.equal(isSharedTableContention(contention('57P01')), false, 'an admin shutdown stays a system fault');
+  let n = 0;
+  const h = setup({ coordinator: {
+    async dueTicks() { return [{ roomId: 'busy-room', tickId: 'b1' }, { roomId: 'busy-room', tickId: 'b2' }, { roomId: 'calm-room', tickId: 'c' }]; },
+    async tick(d) { attempts.push(d.tickId); if (d.roomId === 'busy-room' && n < 6) throw contention(codes[n++ % 4]);
+      return { outcome: 'applied', replay: false }; },
+  }, options: { clock: { now: () => at }, intervalMs: 100, roomBlockAfter: 1 } });
+  t.after(() => h.runtime.stop()); await h.runtime.start();
+  for (let pass = 0; pass < 6; pass++) {
+    const result = await h.runtime.pump(); at += 1;
+    assert.deepEqual(result.contended, ['busy-room']); assert.deepEqual(result.rooms, []);
+    assert.equal(h.runtime.roomHealth('busy-room'), null, 'even roomBlockAfter=1 never blocks on contention');
+    assert.deepEqual(h.runtime.health().rooms, []); assert.equal(h.runtime.health().failed, false);
+  }
+  assert.deepEqual(h.runtime.health().contention, { count: 6, lastAt: 1005 });
+  assert.equal(attempts.filter(id => id === 'b2').length, 0, 'the rest of a contended room waits for the next pass');
+  assert.equal(attempts.filter(id => id === 'c').length, 6);
+  assert.ok(h.errors.every(error => error.code === 'shared_table_room_contention' && error.roomId === 'busy-room'));
+  // The next pass is immediate, without backoff: the room proceeds once the lock is free.
+  await h.runtime.pump(); assert.deepEqual(attempts.slice(-3), ['b1', 'b2', 'c']);
 });
 
 test('real coordinator: an unreadable room does not stop another room from starting its round', async t => {

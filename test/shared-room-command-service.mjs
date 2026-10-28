@@ -40,7 +40,7 @@ function fixture(t, hooks = {}) {
     createRuntime(options) {
       runtimeOptions = options;
       return { async start() { running = true; }, async stop() { running = false; }, withLockedRead() { assert.fail('Unexpected direct reader'); },
-        health: () => ({running, failed:false, rooms:hooks.roomFaults??[]}), roomHealth: room => (hooks.roomFaults??[]).find(fault => fault.roomId===room) ?? null,
+        health: () => ({running, failed:false, rooms:hooks.roomFaults??[], outbox:hooks.outbox??[], contention:hooks.contention}), roomHealth: room => (hooks.roomFaults??[]).find(fault => fault.roomId===room) ?? null,
         coordinator: { async command(context, input) {
           assert.equal(state.active, true); assert.equal(input.roomId, 'room-a');
           trace.push('table-locks');
@@ -265,10 +265,13 @@ test('reservation release tick without outbox refreshes B; revoked B receives no
 
 test('an isolated room fault keeps the service ready; only a blocked room refuses commands before any transaction', async t => {
   const fault = { roomId: 'room-a', failures: 1, blocked: false, since: 10, lastErrorAt: 10, retryAt: 260, error: 'private detail' };
-  const h = fixture(t, { roomFaults: [fault] }); await h.service.start();
+  const h = fixture(t, { roomFaults: [fault], outbox: [{ roomId: 'room-b', failures: 2, since: 5, lastErrorAt: 6, retryAt: 7, error: 'private detail' }],
+    contention: { count: 4, lastAt: 9, error: 'private detail' } }); await h.service.start();
   const health = h.service.health();
   assert.equal(health.ready, true); assert.equal(health.failed, false);
   assert.deepEqual(health.rooms, [{ roomId: 'room-a', failures: 1, blocked: false, since: 10, lastErrorAt: 10, retryAt: 260 }]);
+  assert.deepEqual(health.outbox, [{ roomId: 'room-b', failures: 2, since: 5, lastErrorAt: 6, retryAt: 7 }]);
+  assert.deepEqual(health.contention, { count: 4, lastAt: 9 });
   assert.doesNotMatch(JSON.stringify(health), /private detail/);
   await h.command(); assert.equal(h.state.writes, 1, 'a first failure does not close the room');
   fault.failures = 3; fault.blocked = true;
