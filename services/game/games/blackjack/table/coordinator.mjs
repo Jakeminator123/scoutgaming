@@ -18,9 +18,9 @@ export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
 // gives up his boxes.
 export const FULL_TABLE = Object.freeze({ keepBoxes: 3, waitingMs: 30000, idleSeatMs: 90000 });
 // A renewed wait whose registration is younger than this writes no room row (its receipt is still kept), so
-// frequent waits cannot churn the row. The stored time stays under this plus the client's 10 s renewal
-// (public/shared-room-waiting.mjs), well inside FULL_TABLE.waitingMs.
-export const WAIT_WRITE_AFTER_MS = 10000;
+// frequent waits cannot churn the row. A renewal then finds the stored time at most this plus the client's
+// 10 s interval old (public/shared-room-waiting.mjs), so one lost renewal still lands inside FULL_TABLE.waitingMs.
+export const WAIT_WRITE_AFTER_MS = 5000;
 const { keepBoxes: KEEP_BOXES, waitingMs: WAITING_MS, idleSeatMs: IDLE_SEAT_MS } = FULL_TABLE;
 const PAUSE_MS = 86400000;                         // :350
 const emptyBets = () => Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));

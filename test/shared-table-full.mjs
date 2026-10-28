@@ -171,9 +171,10 @@ test('wait is idempotent: a replay repeats its receipt, a renewal only moves the
   assert.equal((await h.room()).waiting.carol, h.time);
   const replay = await h.send('carol', 'wait', {}, 'wait-1');
   assert.equal(replay.replay, true); assert.deepEqual(replay.result, first.result);
-  // Renewals of a registration younger than WAIT_WRITE_AFTER_MS keep their receipts but write no room row.
+  // Renewals of a registration younger than WAIT_WRITE_AFTER_MS (5 s) keep their receipts but write no room row.
+  assert.equal(WAIT_WRITE_AFTER_MS, 5000);
   const firstAt = h.time, stored = await h.rawRoom();
-  for (const [i, ms] of [1000, 2000, 5000, WAIT_WRITE_AFTER_MS - 1].entries()) {
+  for (const [i, ms] of [1000, 2000, 4000, WAIT_WRITE_AFTER_MS - 1].entries()) {
     h.time = firstAt + ms;
     const renewed = await h.send('carol', 'wait', {}, `wait-burst-${i}`);
     assert.equal(renewed.replay, false); assert.deepEqual(renewed.result, first.result);

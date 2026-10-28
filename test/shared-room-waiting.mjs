@@ -52,9 +52,11 @@ test('a viewer waits for a seat only at a full table, without a seat and without
 
 test('a renewal comes well inside the server\'s registration: at least three fit in one', () => {
   assert.ok(WAIT_REFRESH_MS * 3 <= FULL_TABLE.waitingMs, `${WAIT_REFRESH_MS} ms against ${FULL_TABLE.waitingMs} ms`);
-  // The server skips the write of a registration younger than WAIT_WRITE_AFTER_MS, so a stored time can be that
-  // much plus one renewal old, and must still count.
-  assert.ok(WAIT_WRITE_AFTER_MS + WAIT_REFRESH_MS < FULL_TABLE.waitingMs, `${WAIT_WRITE_AFTER_MS} + ${WAIT_REFRESH_MS} ms against ${FULL_TABLE.waitingMs} ms`);
+  // The server skips the write of a registration younger than WAIT_WRITE_AFTER_MS, so a renewal can find the stored
+  // time that much plus one interval old. One lost or timed-out renewal adds another interval, and must still count.
+  assert.equal(WAIT_WRITE_AFTER_MS, 5000);
+  assert.ok(WAIT_WRITE_AFTER_MS + 2 * WAIT_REFRESH_MS < FULL_TABLE.waitingMs,
+    `${WAIT_WRITE_AFTER_MS} + 2 × ${WAIT_REFRESH_MS} ms against ${FULL_TABLE.waitingMs} ms`);
 });
 
 test('the wait is sent once the full table shows and renewed every interval while it stays full', async () => {
