@@ -171,5 +171,17 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
           media:[...expected.values()],assets}};
     }));
   }
-  return Object.freeze({authorize,revalidate,revalidateLocked,readPresentationContextLocked});
+  // Speech lag (28 Oct 2026): the immutable package a room's frozen config is bound to, read on this scoped
+  // repository only to derive that config's own speech clips (shared-room-filmed-steps.mjs). It grants
+  // nothing: no session, room or media access follows from it, and the caller checks the config's binding.
+  async function readPackage(operatorId,packageRevision,{signal}={}) {
+    if(!id(operatorId)||!Number.isSafeInteger(packageRevision)||packageRevision<1)deny();
+    aborted(signal);
+    return repository.transaction(()=>repository.withTransactionClient(async client=>{
+      aborted(signal);
+      const sql={async query(text,values){aborted(signal);const result=await client.query(text,values);aborted(signal);return result;}};
+      return (await createOperatorStore({sql,scope,now})).getPackage(operatorId,packageRevision);
+    }));
+  }
+  return Object.freeze({authorize,revalidate,revalidateLocked,readPresentationContextLocked,readPackage});
 }

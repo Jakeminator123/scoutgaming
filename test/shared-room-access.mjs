@@ -309,3 +309,14 @@ test('actual channel prepare composes with access before any game/presentation r
     h.state.session=null;await assert.rejects(channel.prepare(request()),denied);
   } finally {channel.close();h.assertReleased();}
 });
+
+test('the package port reads exactly one operator package revision and grants nothing',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read();
+  const current=await h.access.readPackage(binding.operatorId,binding.packageRevision);
+  assert.equal(current.revision,binding.packageRevision);assert.equal(current.operatorId,binding.operatorId);
+  const earlier=await h.access.readPackage(binding.operatorId,1);assert.equal(earlier.revision,1);
+  assert.equal(await h.access.readPackage(binding.operatorId,99),null);
+  for(const [operatorId,revision] of [['bad id',1],[binding.operatorId,0],[binding.operatorId,'1']])
+    await assert.rejects(h.access.readPackage(operatorId,revision),{statusCode:403});
+  h.assertReleased();
+});
