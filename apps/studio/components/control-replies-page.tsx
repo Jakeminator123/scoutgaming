@@ -94,8 +94,10 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
       return true;
     });
     const unsubscribe=history.subscribe(event=>{if(event)restore();});
-    window.addEventListener('beforeunload',unload);
-    return()=>{window.removeEventListener('beforeunload',unload);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
+    // Admin's in-app navigation (menu, navs, tabs) asks here before it would unmount a draft or a write in flight.
+    const beforeNavigate=(event:Event)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}};
+    window.addEventListener('beforeunload',unload);window.addEventListener('studio:before-navigate',beforeNavigate);
+    return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('studio:before-navigate',beforeNavigate);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
   },[]);
   function choose(nextDealer:string,nextCategory:string){
     if(studioHistory(window).isRestoring())return;
