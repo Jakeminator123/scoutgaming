@@ -1,0 +1,431 @@
+{
+  "kind": "k07-staging-acceptance/v1",
+  "date": "2026-10-28",
+  "branch": "jakob/claude-o02-k06k07",
+  "codeSha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+  "candidate": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+  "producedBy": "Claude Opus 5.5, utförarens underagent till orkestratorn scoutgaming-f1 (session f5909847-3066-4ff1-8098-4921235c9134); har inte granskat",
+  "supersedes": "2026-10-28-K07-STAGING-RERUN-ACCEPTANCE.json (13aa5a01) för O02; det kvittot står kvar som historik",
+  "status": {
+    "activity": "K07",
+    "result": "ingen statusändring",
+    "reason": "Omprov på den frysta O02-kandidaten f3780593. Kvittot ändrar inte status.json; K07 blir VERIFIED efter K04 och K06 och den oberoende O02-granskningen."
+  },
+  "scopeDecisions": [
+    "K07:s jämförelse main mot kandidat är struken (Jakobs beslut 2026-10-28, O02-PLAN §0): kandidaten är main."
+  ],
+  "sources": "Sammanfattat från råkvittot receipt-k07r2.json (60 anrop med x-vercel-id och rndr-id), k07r2.log, ledger-k07r2.json, neon-k07.json och receipt-gates.json i utförarens arbetsmapp o02-f3780593/k06-k07-rerun-2/ (utanför Git). Inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID; spelarna heter A och B.",
+  "rawSha256": {
+    "k07r2.mjs": "b5507462b52d35a1c9026c127cb380feb2c1d1c13d3acdc9f9c3fc0332cf89d8",
+    "receipt-k07r2.json": "96d09d6c7bf7efb8f3d266dc4ebc61954cebfbbcd0b88d756aeb8e1374f8c2a0",
+    "k07r2.log": "281fe3e5317ae0e95d5bb5bb5e3d6e36c56a9e0cc3687de05c4493600c6ed641",
+    "ledger-k07r2.json": "c96073810f28195fedd9d2d0858ece00e38a409f3bc582cc9a660da4828c2636",
+    "ledger2.mjs": "821a05c23383adbd4652b888bd765db5da8061e679f9b9a1ffc2e956bc3a7516",
+    "neon-k07.json": "e6f33d82d7b8bd60eaf62458746b495a0c1fc718876db25b3a1baf681356bffe",
+    "receipt-gates.json": "f34c78714716c4b51df0f7677e961ee21d5328c287229fb92b2cc33a6f975b04",
+    "render.mjs": "89af5381c42b8d42717c9d9909225044aba9c39852534b3f89e8994430568d93",
+    "lib.mjs": "6234d493680e1230cffcc2a98aaf5b9ae558e1af434aae5cc09e3ea380a0a3b8",
+    "gate.mjs": "39bb9bd4f992883f72db5266c5602c02d93a930d9b2c47f8f85ce16a0a8cc0b2"
+  },
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployment": "dpl_4p3Qzn2xNEwKkuFKVYtHHM2uWYrQ",
+      "url": "croupier-k06-k07-staging-17sbowjlv-scoutgaming.vercel.app",
+      "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+      "createdAt": "2026-10-28T09:52:07.235Z",
+      "readyAt": "2026-10-28T09:54:10.243Z",
+      "readBy": "Vercel REST v13/deployments (GET) 12:23Z före körningen"
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "sharedTableFlag": 1,
+      "deploy": {
+        "id": "dep-dbgsbhnf3r2c73aig40g",
+        "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "trigger": "api",
+        "finishedAt": "2026-10-28T09:52:39Z",
+        "unchangedAfterRun": true
+      },
+      "gates": [
+        {
+          "label": "pre-k07-f3780593",
+          "at": "2026-10-28T12:23Z",
+          "passed": 32,
+          "total": 32,
+          "versionSha": [
+            "f3780593bbb3f8e7f893f6ac2c1e878c232aae76"
+          ],
+          "vercelPlayerLogin": 200
+        }
+      ],
+      "versionCheck": {
+        "start": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "end": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+        "after": "12:55:53Z health 200, version f3780593"
+      },
+      "processReplacement": {
+        "method": "Restart service (POST /v1/services/{id}/restart via Renders REST-API), ingen build och ingen ny deploy",
+        "requestedAt": "2026-10-28T12:25:27.949Z",
+        "event": {
+          "type": "server_restarted",
+          "at": "2026-10-28T12:25:29.257Z"
+        },
+        "newRuntime": {
+          "runtimeId": "b0eac13c",
+          "instance": "hdc87",
+          "listeningAt": "2026-10-28T12:26:03.821Z"
+        },
+        "oldRuntime": {
+          "runtimeId": "d802d86f",
+          "instance": "9sgtc",
+          "closedAt": "2026-10-28T12:29:12.375Z"
+        },
+        "sameSha": true,
+        "note": "Kontrollerna efter bytet gjordes först när den gamla processens publika lyssnare (listener 2) hade stängts enligt motorns cloud_gateway_lifecycle-logg (Renders logg-API). Under överlappet höll HTTP-spelarna kontakten med join-omsändning var 45:e sekund."
+      }
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "database": "croupier_staging",
+      "access": "endast SELECT (Neon MCP) 12:23Z–12:56Z"
+    }
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "dealer": "paow",
+    "adminAccount": "stagingens Admin-konto (staging-admin)",
+    "players": "syntetiska A och B (prefix k07r2); användarnamn och UUID utelämnas",
+    "operatorBRoom": "room-930c39d1-beeb-535a-b79e-06b6aff127bd (isoleringsprov)"
+  },
+  "attempts": [
+    {
+      "n": 1,
+      "at": "2026-10-28T12:24:03Z–12:31:58Z",
+      "result": "detta kvitto",
+      "reason": "seatGen lästes read-only ur Neon före start (32,14,32,210,14,12,10); rummet var tomt och head = öppet fönster (e0be09e9)."
+    }
+  ],
+  "run": {
+    "startedAt": "2026-10-28T12:24:03.769Z",
+    "finishedAt": "2026-10-28T12:31:58.284Z",
+    "requests": 60,
+    "httpStatus": {
+      "200": 50,
+      "400": 1,
+      "403": 4,
+      "409": 5
+    },
+    "unexpected": 0,
+    "unexpectedList": [],
+    "note": "Varje 4xx var det förväntade svaret: 403 anonym, okänt rum och annan operatörs rum; 409 SEAT_TAKEN, REQUEST_REUSED, STALE_COMMAND och NOT_YOUR_TURN ×2; 400 ogiltig plats."
+  },
+  "configs": {
+    "C1": {
+      "configVersion": "room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932",
+      "packageRevision": 15,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      },
+      "betMs": 20000,
+      "actionMs": 15000,
+      "limits": {
+        "min": 1,
+        "max": 500,
+        "sideMax": 50
+      },
+      "chips": [
+        1,
+        5,
+        10,
+        25,
+        50,
+        100
+      ],
+      "role": "head och öppet fönster före körningen; band runda 1"
+    },
+    "C2": {
+      "configVersion": "room-config-99fa27e4-b77b-4816-806e-916bb3256181",
+      "packageRevision": 16,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "prive"
+      },
+      "limits": {
+        "min": 5,
+        "max": 2000,
+        "sideMax": 200
+      },
+      "chips": [
+        5,
+        10,
+        25,
+        50,
+        100,
+        500
+      ],
+      "role": "publicerad 12:24:13Z mitt i runda 1; band nästa fönster (runda 2)"
+    },
+    "C3": {
+      "configVersion": "room-config-b8f7dac0-ac31-4fb7-832d-d101d9c82729",
+      "packageRevision": 17,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      },
+      "role": "återställning efter körningen (12:31:58Z); head när K06-omprovet startade"
+    }
+  },
+  "checks": [
+    {
+      "id": "K07-a",
+      "name": "POST /api/shared-room/{room}/command is available (not 503); anonymous 403 shared_room_forbidden",
+      "result": "pass",
+      "at": "2026-10-28T12:24:06.927Z",
+      "evidence": "A:s join 200. Anonymt kommando 403 shared_room_forbidden."
+    },
+    {
+      "id": "K06-S1",
+      "name": "first shared window binds the current published head (C1)",
+      "result": "pass",
+      "at": "2026-10-28T12:24:06.928Z",
+      "evidence": "Fönstret band C1 room-config-e0be09e9 (casual 1–500/50, chips 1–100, betMs 20000, actionMs 15000) = Admins publicerade head."
+    },
+    {
+      "id": "K07-b1",
+      "name": "two synthetic players seated at the same shared table",
+      "result": "pass",
+      "at": "2026-10-28T12:24:07.440Z",
+      "evidence": "A plats 0 och 1, B plats 2; båda 200, båda online."
+    },
+    {
+      "id": "K07-c0",
+      "name": "seat held by another player is refused",
+      "result": "pass",
+      "at": "2026-10-28T12:24:07.810Z",
+      "evidence": "B:s försök på A:s plats 1: 409 SEAT_TAKEN."
+    },
+    {
+      "id": "K07-c1",
+      "name": "two players bet in the same window concurrently: both accepted",
+      "result": "pass",
+      "at": "2026-10-28T12:24:08.455Z",
+      "evidence": "Samtidiga insatser från A och B: 200/200 (version 1110 och 1111)."
+    },
+    {
+      "id": "K07-b2",
+      "name": "betting window opened by the first bet (deadline = first bet + betMs)",
+      "result": "pass",
+      "at": "2026-10-28T12:24:08.457Z",
+      "evidence": "deadline 1793190269711 = serverNow 1793190249918 + cirka betMs 20000."
+    },
+    {
+      "id": "K07-c2",
+      "name": "same request id twice: identical result, applied once; different input 409 REQUEST_REUSED",
+      "result": "pass",
+      "at": "2026-10-28T12:24:09.522Z",
+      "evidence": "Samma commandId två gånger parallellt: båda 200 med reserved 2 och version 1112, en replay=true; plats 0 main 2 (2 × 1). Annan input med samma id: 409 REQUEST_REUSED."
+    },
+    {
+      "id": "K07-c3",
+      "name": "stale window id refused (409 STALE_COMMAND), state unchanged",
+      "result": "pass",
+      "at": "2026-10-28T12:24:09.927Z",
+      "evidence": "Påhittat windowId: 409 STALE_COMMAND."
+    },
+    {
+      "id": "K07-b3",
+      "name": "round starts when all seated players are ready (or window.close tick)",
+      "result": "pass",
+      "at": "2026-10-28T12:24:11.027Z",
+      "evidence": "ready B (started false), ready A (started true); runda 54e90882 under C1."
+    },
+    {
+      "id": "K06-S2",
+      "name": "active shared round keeps C1 settings after Admin publishes C2",
+      "result": "pass",
+      "at": "2026-10-28T12:24:14.434Z",
+      "evidence": "Admin save-draft 200 och publish 200 gav C2 room-config-99fa27e4 (prive, paket 16) mitt i rundan; rundan 54e90882 behöll configVersion C1, limits 1–500/50 och chips 1–100."
+    },
+    {
+      "id": "K07-e1",
+      "name": "reconnect via a new session mid-round sees the same round, seats and config",
+      "result": "pass",
+      "at": "2026-10-28T12:24:15.103Z",
+      "evidence": "Ny inloggning för A mitt i rundan: samma roundId 54e90882, platser [A, A, B] och C1."
+    },
+    {
+      "id": "K07-c4",
+      "name": "two acts in the same decision window: one accepted, the stale one refused; other player refused",
+      "result": "pass",
+      "at": "2026-10-28T12:24:46.363Z",
+      "evidence": "Två stand med samma turnSeq: 200 och 409 NOT_YOUR_TURN. Den andra spelarens act på handen: 409 NOT_YOUR_TURN."
+    },
+    {
+      "id": "K07-g1",
+      "name": "after the round, the unplayed seat (A box 1) is released; played seats stay (PR #426)",
+      "result": "pass",
+      "at": "2026-10-28T12:25:24.410Z",
+      "evidence": "next 200; ägare [A, null, B]. A:s avräkning: staked 2, returned 0."
+    },
+    {
+      "id": "K06-S3",
+      "name": "the next shared window binds C2 (new published head) with its settings",
+      "result": "pass",
+      "at": "2026-10-28T12:25:24.414Z",
+      "evidence": "Nästa fönster 86c95116 band C2 room-config-99fa27e4 (prive 5–2000/200, chips 5–500)."
+    },
+    {
+      "id": "K07-e2",
+      "name": "after Restart service on the same SHA both players reconnect (new session for A) to the same room, seats and round 2 history",
+      "result": "pass",
+      "at": "2026-10-28T12:29:23.063Z",
+      "evidence": "Runda 2 053b5ce8 var i beslutsfasen (turnSeq 1, actionDeadline 1793190376152) när omstarten begärdes 12:25:27.9Z. Ny process b0eac13c lyssnade 12:26:03.8Z, den gamla d802d86f stängde 12:29:12.4Z. Därefter A med ny session och B med befintlig, båda 200; samma rum, platser, C2 och runda 053b5ce8, avräknad av ticks under bytet (Neon nedan). /__cloud/version f3780593 före och efter."
+    },
+    {
+      "id": "K07-g2a",
+      "name": "room left without owners",
+      "result": "pass",
+      "at": "2026-10-28T12:29:23.778Z",
+      "evidence": "leave 200/200; alla ägare null; rumsversion 1141."
+    },
+    {
+      "id": "K07-f",
+      "name": "isolation: operator-B room and unknown room refused, anonymous 403 shared_room_forbidden, invalid input 400",
+      "result": "pass",
+      "at": "2026-10-28T12:31:54.571Z",
+      "evidence": "Operatör B:s rum 403 shared_room_forbidden, okänt rum 403 shared_room_forbidden, anonym 403 shared_room_forbidden, ogiltig plats 400 shared_room_invalid_command."
+    },
+    {
+      "id": "K07-d",
+      "name": "ledger parity: HTTP (/api/player + Admin /transactions) = read-only Neon players.balance = sum(transactions); no duplicate source keys",
+      "result": "pass",
+      "at": "2026-10-28T12:33:14Z",
+      "evidence": "A 993 = 1000 − 2 − 5; B 994 = 1000 − 1 − 5 (inga vinster). HTTP-saldo = Neon players.balance = Σ transactions för båda. Sex rader; ledgerhash edaa7fa1…1bff är identisk för HTTP och Neon (metod: neon.ledger.ledgerHash). Alla fyra insatsrader har source_key. Hela databasen (187 spelare efter K06): 0 dubbla source_key, 0 negativa saldon, 0 saldo ≠ Σ ledger."
+    },
+    {
+      "id": "K07-g2",
+      "name": "silent room gets no due ticks: after both players left, 0 tick rows and room version unchanged over 150 s; ticks only while seated",
+      "result": "pass",
+      "at": "2026-10-28T12:32:27Z",
+      "evidence": "Tyst fönster 12:29:23.8Z–12:31:53.8Z: 0 tick-rader med förfallotid eller commit i fönstret (hela databasen) och rumsversion 1141 oförändrad (Neon 12:32:27Z). Körningens fyra ticks kom medan spelare satt: round.settle (runda 1) och 2× turn.autostand + round.settle (runda 2, under processbytet). Provet visar effekten, inte att dueTicks hoppar över medlems- och närvaroläsning."
+    }
+  ],
+  "neon": {
+    "at": "2026-10-28T12:33:14Z",
+    "target": "red-violet-36066351/br-plain-voice-b9yu49xi/croupier_staging (read-only SELECT via Neon MCP)",
+    "ticks": [
+      {
+        "kind": "round.settle",
+        "outcome": "applied",
+        "round": "54e90882",
+        "dueAt": "2026-10-28T12:25:23.951Z",
+        "lagMs": 200
+      },
+      {
+        "kind": "turn.autostand",
+        "outcome": "applied",
+        "round": "053b5ce8",
+        "dueAt": "2026-10-28T12:26:16.152Z",
+        "lagMs": 170,
+        "note": "under processbytet"
+      },
+      {
+        "kind": "turn.autostand",
+        "outcome": "applied",
+        "round": "053b5ce8",
+        "dueAt": "2026-10-28T12:26:49.050Z",
+        "lagMs": 194,
+        "note": "under processbytet"
+      },
+      {
+        "kind": "round.settle",
+        "outcome": "applied",
+        "round": "053b5ce8",
+        "dueAt": "2026-10-28T12:27:09.520Z",
+        "lagMs": 207,
+        "note": "under processbytet"
+      }
+    ],
+    "room": {
+      "room_id": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+      "version": 1141,
+      "owners": "all null",
+      "phase": "bets",
+      "openWindowConfig": "room-config-99fa27e4-b77b-4816-806e-916bb3256181",
+      "head": "room-config-b8f7dac0-ac31-4fb7-832d-d101d9c82729",
+      "readAt": "2026-10-28T12:32:27Z",
+      "note": "öppet fönster skapat efter runda 2 (C2); head återställd till casual efter körningen"
+    },
+    "ledger": {
+      "a": {
+        "http": 993,
+        "neon": 993,
+        "ledgerSum": 993
+      },
+      "b": {
+        "http": 994,
+        "neon": 994,
+        "ledgerSum": 994
+      },
+      "rowsByPlayer": {
+        "a": [
+          "open:1000",
+          "consume:stake:-2",
+          "consume:stake:-5"
+        ],
+        "b": [
+          "open:1000",
+          "consume:stake:-1",
+          "consume:stake:-5"
+        ]
+      },
+      "ledgerHash": {
+        "http": "edaa7fa12ae76cbdbf327e83d56be3de82ab80c7d5cc4d879426f1164eda1bff",
+        "neon": "edaa7fa12ae76cbdbf327e83d56be3de82ab80c7d5cc4d879426f1164eda1bff",
+        "equal": true,
+        "method": "rows {player_id,type,amount:Number,meta,at:ISO} sorted by at then player_id; canonical JSON with sorted keys (lib.mjs canonical/sha); sha256 hex"
+      },
+      "global": {
+        "duplicateSourceKeys": 0,
+        "negativeBalances": 0,
+        "ledgerMismatch": 0,
+        "players": 178,
+        "sourceKeyOnStakeRows": "4/4"
+      }
+    }
+  },
+  "restore": {
+    "save": 200,
+    "publish": [
+      200,
+      null
+    ],
+    "configVersion": "room-config-b8f7dac0-ac31-4fb7-832d-d101d9c82729",
+    "packageRevision": 17,
+    "gameConfig": {
+      "language": "sv",
+      "limitPreset": "casual"
+    }
+  },
+  "remaining": [
+    "K04 och K06 är inte VERIFIED, så status.mjs tillåter inte K07 VERIFIED; O02-granskningen återstår.",
+    "g2 visar effekten (inga ticks i tyst rum), inte att dueTicks ignorerar medlemmar och närvaro.",
+    "Produktionen kör utan CROUPIER_SHARED_TABLE_ENABLED; flaggan i produktionen hör till O03."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Operatör A: paket 16 (room-config-99fa27e4, prive) mitt i runda 1 och paket 17 (room-config-b8f7dac0, casual) efter körningen, så att presetet åter är casual. K06-omprovet fortsatte därifrån; slutläget står i K06-kvittots finalState.",
+      "Två nya syntetiska spelare (A och B, prefix k07r2), demo-USD; båda lämnade bordet.",
+      "En Restart service på samma deploy (12:25:28Z); ingen ny deploy och inga env-ändringar."
+    ],
+    "production": "orörd; Johns Bet orörd",
+    "sqlWrites": "inga"
+  },
+  "secretsExported": false
+}
