@@ -1,0 +1,162 @@
+{
+  "kind": "o03-release-acceptance/v1",
+  "activity": "O03",
+  "date": "2026-10-28",
+  "status": "DRAFT",
+  "note": "Sanerat kvitto för O03. Inga hemligheter, inga användarrader; bara aggregat, identiteter och hashar. Fält med null fylls av orkestratorn efter produktionsreleasen. Dumpen, anslutningssträngar och råa körloggar ligger privat utanför Git.",
+  "candidate": {
+    "sha": "f3780593bbb3f8e7f893f6ac2c1e878c232aae76",
+    "frozenAt": "2026-10-28T10:45:15Z",
+    "frozenBy": "scoutgaming-f1",
+    "o02Receipt": "docs/2026-10-28-O02-ACCEPTANCE.json",
+    "mainHeadAtRelease": null,
+    "runtimeDiffCandidateToMain": null,
+    "ci": {
+      "pushRunOnCandidate": { "id": 40667372034, "workflow": "Croupier GitHub checks", "conclusion": "success" },
+      "containerCheckOnCandidate": { "id": 40667597931, "workflow": "Render v3 container check", "conclusion": "success" }
+    },
+    "security": { "tool": "node tools/security-status.mjs", "checkedAt": null, "newOpen": null }
+  },
+  "before": {
+    "readAt": "2026-10-28T11:29:26Z",
+    "vercel": { "projectId": "prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD", "deploymentId": "dpl_GJFJVc69BNkamKuG6X6ChpWNntzx", "sha": "ac77f4a5e43bf085ffe952c6af6b2bdedf2e421c", "runtimeEquivalentToCandidate": true },
+    "render": { "serviceId": "srv-dbd6nfon74is73aiblf0", "deployId": "dep-dbgr0j8ae00c73d6s000", "sha": "3415c310ce7660a89a1ab11ccc1f8a6c36bf6286" },
+    "directorGateway": { "sha": "cc415cd8ab", "redeployed": false }
+  },
+  "vercelDeployment": {
+    "projectId": "prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD",
+    "id": null,
+    "sha": null,
+    "readyAt": null,
+    "action": null
+  },
+  "renderDeploy": {
+    "serviceId": "srv-dbd6nfon74is73aiblf0",
+    "id": null,
+    "sha": null,
+    "liveAt": null,
+    "method": "Render REST POST /v1/services/srv-dbd6nfon74is73aiblf0/deploys med commitId",
+    "tableEmptyBeforeDeploy": null,
+    "version": null,
+    "health": null,
+    "sharedRoomHealth": null
+  },
+  "sharedTableFlag": {
+    "service": "croupier-v3",
+    "key": "CROUPIER_SHARED_TABLE_ENABLED",
+    "before": "unset",
+    "after": "1",
+    "at": null,
+    "deployId": null,
+    "method": "Render REST PUT env-var (ingen auto-deploy), sedan låst deploy av samma SHA",
+    "authority": null
+  },
+  "ddl": {
+    "011": {
+      "file": "ops/neon-game/011-retire-lissabon.sql",
+      "ledgerVersion": "game-011-retire-lissabon",
+      "migrationChecksum": "d128b7ae3a7060320887274bb5b217ccb72af9da334fa9183d7773d5406aa939",
+      "decision": "D1: kör utan skrivarstopp (Jakob 2026-10-28)",
+      "appliedAt": null,
+      "by": "Jakob",
+      "preCheck": { "readinessSqlExit": null, "lissabonTablesRows": null, "eventTriggers": null },
+      "postCheck": { "lissabonTablesPresent": null, "gameLedger": null, "readiness": null, "health": null }
+    },
+    "notInO03": "D2: bo_game_handoffs, bo_lab_handoffs och lab_sessions står kvar; de har konsumenter i Admin och partnerportalen"
+  },
+  "backup": {
+    "authority": "Jakob via orkestratorn scoutgaming-f1, 2026-10-28 ca 15:35 lokal tid: \"ja gör du. Du har fulla privilegier\" (S0/S1, icke-destruktivt)",
+    "neonProject": "wandering-hill-60561912",
+    "mainTouched": false,
+    "backupBranch": {
+      "name": "backup-before-o03-20261028",
+      "id": "br-winter-sunset-b1dnm0kb",
+      "parent": "br-flat-fog-b161a6r8",
+      "parentLsn": "0/2F1E6850",
+      "parentTimestamp": "2026-10-28T13:08:33Z",
+      "createdAt": "2026-10-28T13:08:57Z",
+      "endpoint": "ep-falling-violet-b1u3t8pm"
+    },
+    "s0": {
+      "label": "S0prod",
+      "at": "2026-10-28T13:14:15.170Z",
+      "source": "backupgrenen, roll croupier_game",
+      "tables": 76,
+      "sequences": 4,
+      "totalSha256": "cd7eb8f9a491436319166d8adc16e553fc06da07954f03d5d35f9797e2b602ff",
+      "tool": "node tools/o02-snapshot.mjs"
+    },
+    "dump": {
+      "at": "2026-10-28T13:15:22.966Z",
+      "bytes": 2820676,
+      "sha256": "3883e587faca6d989b5ffc4d27d8508bf6cca681b973efa0cf0370f85d3fadcd",
+      "listEntries": 801,
+      "format": "custom",
+      "client": "pg_dump (PostgreSQL) 18.6",
+      "server": "18.6",
+      "storage": "privat, utanför Git"
+    },
+    "restore": {
+      "branch": { "name": "o03-restore-proof", "id": "br-delicate-sea-b1ukv9y2", "parent": "br-winter-sunset-b1dnm0kb", "endpoint": "ep-square-snow-b1v6kiy7" },
+      "database": "croupier_restore_o03",
+      "target": { "owner": "croupier_game", "appConnect": true, "publicConnect": false, "emptyBeforeRestore": true },
+      "at": "2026-10-28T13:16:33Z",
+      "command": "pg_restore --single-transaction --exit-on-error --no-owner --role=croupier_game --use-list (799 av 801 poster; två cloud_admin DEFAULT ACL utelämnade)",
+      "exit": 0,
+      "seconds": 43,
+      "postStep": "croupier_studio.moving_drift_control ägs av neondb_owner i produktionen; i kopian återställd som neondb_owner (ALTER OWNER, GRANT SELECT, INSERT, UPDATE TO croupier_game)"
+    },
+    "s1": {
+      "label": "S1restore",
+      "at": "2026-10-28T13:16:58.108Z",
+      "tables": 76,
+      "totalSha256": "cd7eb8f9a491436319166d8adc16e553fc06da07954f03d5d35f9797e2b602ff"
+    },
+    "parity": { "equal": true, "compareExit": 0, "differences": 0, "afterOwnerFixEqual": true },
+    "ledgerOnTarget": {
+      "studio": ["001", "002", "003", "004", "005", "006", "007", "008", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020"],
+      "game": ["product-v1", "sqlite-import-v1"],
+      "sharedTables": 15,
+      "equalToSource": true,
+      "readiness": { "ready": true, "pending": [], "optionalPending": [] }
+    },
+    "ownerAcl": { "objects": 94, "identical": true, "listingSha256": "cd33307e119eecc4206ebe38e15661f82fbd908c7e3eff58faa25e3863e4735c" },
+    "proofSha256": {
+      "s1RestoreProof": "5f4c127fa43e4d9598f2168a471c45f32b5544d4bb5d9b417a0923c50d464f20",
+      "restoreReceiptFor011": "7bf4dfb856f6f46f084a82720e1e089fde7cf5748705aa95481465c761e22033"
+    },
+    "limits": [
+      "Roller och lösenord ingår inte i dumpen; grenar ärver projektets roller",
+      "Databasnivåns ACL ingår inte (produktionen: PUBLIC och kevin_migration_readonly får ansluta; kopian är snävare)",
+      "PITR och grenåterställning provades inte",
+      "Blob ingår inte",
+      "S0 = S1 gäller backupgrenens tidpunkt, inte skrivningar i main efter LSN 0/2F1E6850"
+    ],
+    "producedBy": "O03 S0/S1-underagent åt scoutgaming-f1 (Claude Opus 5.5), 2026-10-28 13:08–13:23Z",
+    "verifiedBy": null
+  },
+  "verification": {
+    "login": { "what": "Vanlig inloggning: spelare på www.scoutgaming.tech och Admin på /admin", "by": "Jakob", "at": null, "result": null },
+    "adminSave": { "what": "Admin-sparning och återläsning: publicering av dragan-tests spelinställning (D3a) utan att ändra Johns Bets publicerade läge", "by": null, "at": null, "result": null, "auditEvent": null, "johnsBetPackageRevisionAfter": null, "johnsBetConfigHeadAfter": null },
+    "launch": { "what": "Lobby → Johns Bet → /play/blackjack → /game med operator och bord; delat bord laddas", "by": "Jakob", "at": null, "result": null },
+    "playedHand": { "what": "Ett spelat parti med Jakobs inloggade spelare, omladdning, saldot stämmer", "by": "Jakob", "at": null, "result": null, "auditRowsDelta": null, "reservationsAfter": null, "duplicateSourceKeys": null },
+    "threeLayers": { "what": "Produktionens tre lager (bakgrund, bord, dealer) med inloggad spelare, desktop och telefon", "by": "Jakob", "at": null, "result": null, "screenshots": [] },
+    "retiredPaths": { "what": "/control och /lab 307 till /admin, /bo 404", "by": "orkestratorn", "at": null, "result": null },
+    "logs": { "what": "15 min efter flaggan: inga shared_room_runtime_unavailable, inga 5xx-toppar", "by": "orkestratorn", "at": null, "result": null },
+    "rollbackTested": false,
+    "rollbackPrepared": "D7: flaggan av och låst deploy av 3415c310ce7660a89a1ab11ccc1f8a6c36bf6286 på croupier-v3, förgodkänd av Jakob 2026-10-28"
+  },
+  "strandedNativeRounds": [],
+  "strandedNativeRoundsNote": "D3b: fyra öppna nativerundor (1 i beslutsfasen med dragen insats, 3 avräknade men inte inkasserade) strandas när Johns Bet laddar det delade bordet. Demopengar, inga riktiga spelare. Fylls med rundornas id, fas och belopp i aggregat.",
+  "knownLimitations": [
+    { "id": "F11", "what": "Under Render-överlappet får spelare på den gamla instansen inga ögonblicksbilder av det delade bordet tills 1012", "condition": "croupier-v3 deployas bara när bordet är tomt (shared_table_members WHERE active = 0 och inga reservationer); rättningen är första runtime-PR:en efter O03 och provas i preview" },
+    { "id": "D3c", "what": "Talströmning (CROUPIER_GENERATED_SPEECH_STREAMING=1) tillsammans med delat bord är bara enhetsprovad; preview saknar taluppsättning", "condition": "förgodkänd återgång D7; delat bord använder inte tal" },
+    { "id": "F12-F15", "what": "Layout: knappöverlapp vid 1440/1920 (F12, F14), saldopanelen täcker insatsen vid 320×568 (F13), dubblerad beslutspanel (F15)", "condition": "mobil- och 3-rutorsarbetet efter O03" },
+    { "id": "L3", "what": "Rummens namn och state läses ur administrationsdokumentet, inte ur paketet", "condition": "Admin-målbilden efter O03" },
+    { "id": "O1", "what": "Rubriken PRIVÉ BLACKJACK visas alltid", "condition": "efter O03" },
+    { "id": "O4", "what": "Admins idle-knapp ger 422 utan rotationspolicy", "condition": "efter O03" },
+    { "id": "L1-503", "what": "Inloggad /game?dealer=<id> utan operator ger 503 i stället för lobbyn", "condition": "efter O03" }
+  ],
+  "producedBy": null,
+  "verifiedBy": null
+}

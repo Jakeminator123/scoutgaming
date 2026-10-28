@@ -102,6 +102,8 @@ Skriptet skriver `automatic` (F1, F2, F5), `prefilled` (F3 och F8) och `manual` 
 
 Kommandon för varje steg: [O02-RESTORE-REPLAY](O02-RESTORE-REPLAY.md). Bevisgränser i kvittot: Neon-PITR och globala roller ingår inte, R8b är en avsiktlig skrivning i kopian, och Blob-bytes återställs inte (de är oföränderliga; hash och HEAD visar att de nås).
 
+**Körd 28 oktober 2026** på `f3780593`: R1–R10 godkända, stagingen nere 12:58–13:05Z, S0 = S1 = S0′. Planens ACL-fråga i R5 (`ORDER BY 1 COLLATE "C"`, där `1` med `COLLATE` blir ett heltalsuttryck i stället för ett kolumnnummer och avvisas) rättades i #522 före körningen.
+
 ## 4. Jakobs ögon (V1–V7)
 
 Jakob ger varje punkt ett omdöme i `o02/jakob-eyes/manifest.json`: `{id, verdict: approved|rejected, by:"Jakob", at, candidate:"$SHA", screenshots:[{file, sha256}]}`. Skärmbilderna sparas privat i `o02/jakob-eyes/`. Viewport: desktop 1440×900, mobil 390×844 och 320×568, och fysisk telefon där det anges. Agenten tar bilderna; Jakob bedömer. Jakob spelar inte i staging medan en mätning pågår, eftersom det delade bordet stör mätningen.
@@ -160,4 +162,4 @@ Beslutet per läcka (rättad med PR och SHA, eller bokförd med Jakobs ok) skriv
 
 ## 6. Efter O02
 
-O03 följer [MASTERPLAN](../../migrering/MASTERPLAN.md#o03--integration-och-leverans): ägar-, head-, CI- och säkerhetskontroll, schema i godkänd ordning, release med verifierad Vercel- och Render-SHA och restore dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md). `CROUPIER_SHARED_TABLE_ENABLED` sätts i produktionen bara med Jakobs separata godkännande. Stagingen och `croupier_staging_restore_o02` raderas av Jakob efter O03.
+O03 följer [MASTERPLAN](../../migrering/MASTERPLAN.md#o03--integration-och-leverans): ägar-, head-, CI- och säkerhetskontroll, schema i godkänd ordning, release med verifierad Vercel- och Render-SHA och restore dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md). `CROUPIER_SHARED_TABLE_ENABLED` sätts i produktionen bara med Jakobs separata godkännande. Stagingen behålls som preview efter O03 (Jakobs beslut D5, se [START-HERE](../../START-HERE.md#preview)); restoremålet `croupier_staging_restore_o02` raderas av Jakob efter O03.

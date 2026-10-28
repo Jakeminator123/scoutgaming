@@ -43,7 +43,7 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 
 ## Data, media och avveckling
 
-- Behåll serverägda kort, sko, saldo och utbetalningar. Testa aldrig mot verkliga användares databas; använd isolerad miljö, syntetiska konton och separat hostname. Undantaget är Jakobs egna inloggningar som speglats till staging (se [START-HERE](START-HERE.md#staging)). Tillfällig lokal gäståtkomst kvarstår tills Jakob ändrar beslutet; detta är inte real-money-acceptans.
+- Behåll serverägda kort, sko, saldo och utbetalningar. Testa aldrig mot verkliga användares databas; använd isolerad miljö, syntetiska konton och separat hostname. Undantaget är Jakobs egna inloggningar som speglats till preview (se [START-HERE](START-HERE.md#preview)). Tillfällig lokal gäståtkomst kvarstår tills Jakob ändrar beslutet; detta är inte real-money-acceptans.
 - Scoped writers ska kontrollera behörighet, ägarskap och revision. Ett valt rum gör inte en delad mallskrivning rumsspecifik; använd avsett `roomOverrides`-kontrakt. Håll design-, lager-, dealer-, rum- och paketidentiteter åtskilda.
 - Ordinarie papperskorg/livscykel får inte radera historik eller källmedia som bieffekt. Frikoppla aktiva beroenden atomiskt; återställning får inte automatiskt återöppna rum eller aktivera tal. Följ befintliga livscykelkontrakt och negativa behörighetsprov.
 - Följ konsumenterna innan kod eller lagring avvecklas: route, UI, tjänst, adapter, data, build, test och dokumentation. Mappnamn, tom tabell eller grön build bevisar inte att produktionsdata kan raderas. Produktionsrensning/migrering kräver sitt uttryckliga mandat och återställningsunderlag.

@@ -86,6 +86,22 @@ Kräver O02.
 
 Klart: den integrerade produkten är levererad och verifierad i drift. Ingen förhandsmarkering av 100 %.
 
+## Efter O03
+
+Ingen av punkterna är en av de 20 aktiviteterna eller ger procent; status och vikter ändras inte. Ordningen är Jakobs beslut 28 oktober 2026 och gäller tills han ändrar den. Varje punkt levereras som vanlig PR med grön CI, provas i preview när orkestratorn bedömer att det behövs och kvitteras med verifierad Vercel- och Render-SHA.
+
+1. **F11 först.** Första runtime-PR:en efter O03: spelmotorn stänger det delade bordets anslutningar med 1012 vid SIGTERM, och ögonblicksbilder når spelare oavsett instans under Render-överlappet. Provas i preview. Till dess deployas `croupier-v3` bara när bordet är tomt.
+2. **Nya Admin:** nivå 2 (partnerportalen, #518), sedan nivå 1 (#519), sedan demo-byggaren (#512), enligt [ADMIN-FORENKLING](../docs/plans/ADMIN-FORENKLING.md).
+3. **Dealer-generisk talkedja, med Paow först** ([PAOW-LIPSYNC](../docs/plans/PAOW-LIPSYNC.md); läppsynken bevisades i två prov 28 oktober 2026 utan att något aktiverades: stillbild på 6,7 s via varm endpoint och rörligt tal med 160 munlappar på 3,3 s). En kedja för alla dealers i stället för Dragans egen. Stillbildsvägen finns redan i main (`speechProfile` med `reference.kind='video-frame'`) och kan bli Admin-konfiguration utan kod; rörligt tal per dealer kräver kod. Bara Jakob godkänner ljud och läppsynk.
+4. **Mobil och 3-rutors fönster:** F12–F15 (knappöverlapp vid 1440/1920, saldopanelen över insatsen vid 320×568, dubblerad beslutspanel), utan zoom och utan kamera per plats.
+5. **Bindning nyckel → bolag:** partnerns API-nyckel binds till ett bolag, och motorn kräver att `operator` matchar nyckelns bolag efter verifierad signatur.
+6. **L3:** rummens namn och state läses ur det publicerade paketet i stället för administrationsdokumentet.
+7. **Ren start steg 2** enligt [REN-START](../docs/plans/REN-START.md).
+8. **Kevins portplan P4–P14:** resterande beteenden skrivs om i mains moduler; P7 (gäståtkomst) och P13 (desktop) kräver Jakobs beslut.
+9. **Skalningstest:** tio bord med sju spelare (10×7) som grind, med de kända serialiseringspunkterna i motorn (globalt lås även vid läsning, auditlåset, den sekventiella schemaläggaren) mätta.
+10. **Preview får egen taluppsättning** när den generiska talkedjan byggs, med egna nycklar och egen budget; produktionens nycklar kopieras aldrig dit.
+11. **Städning (D6):** kvarlämnade QA-roller (`croupier_game_qa`, `croupier_studio_qa_abc92154cb15`) tas bort, `pg_stat_statements` flyttas ur schemat `croupier_game` eller tas bort, och `CROUPIER_ASTRID_CAMERA=1` på `croupier-v3` ses över (kamera och röst är en behållen produktfunktion, flaggan är Astrid-märkt). Jakob raderar O03:s Neon-grenar och restoremålen enligt [ENVIRONMENT-RESTORATION](../docs/ENVIRONMENT-RESTORATION.md#preview).
+
 ## Radera med ett konkret slutdatum
 
 Varje ändring anger vad som ersätts och vad som därför raderas. Följ konsumenterna hela vägen: route → komponent → tjänst → adapter → data → build/env/test/docs. Ett gammalt namn räcker inte som raderingsbevis, och en pensionerad implementation behålls inte för sitt namn eller sin historik.
