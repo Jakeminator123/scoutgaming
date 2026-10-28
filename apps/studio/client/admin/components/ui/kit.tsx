@@ -73,13 +73,16 @@ export function Kbd({children}:{children:ReactNode}) {
 export function Stat({label,value,hint,icon,tone=''}:{label:ReactNode;value:ReactNode;hint?:ReactNode;icon?:ReactNode;tone?:Tone}) {
   return <div className={cn(cardClass,'grid gap-1 p-4')}>
     <div className="flex items-center justify-between gap-2 text-[12.5px] font-medium text-sg-muted"><span>{label}</span>{icon&&<span className={cn('grid size-7 place-items-center rounded-lg [&_svg]:size-4',tone?badgeVariants({tone}).replace(/rounded-full|px-2\.5|py-0\.5/g,''):'bg-sg-surface-2 text-sg-muted')} aria-hidden="true">{icon}</span>}</div>
-    <div className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-sg-text tabular-nums">{value}</div>
+    <div className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-sg-text tabular-nums">{typeof value==='number'?formatNumber(value):value}</div>
     {hint&&<div className="text-xs text-sg-faint">{hint}</div>}
   </div>;
 }
 
+/** Swedish number formatting (1 234, 2,5) for counts and amounts shown in Admin. */
+export function formatNumber(value:number,options?:Intl.NumberFormatOptions) { return value.toLocaleString('sv-SE',options); }
+
 /** Plain-language plural: plural(1,'scenmall','scenmallar') → "1 scenmall". */
-export function plural(count:number,one:string,many:string) { return `${count} ${count===1?one:many}`; }
+export function plural(count:number,one:string,many:string) { return `${formatNumber(count)} ${count===1?one:many}`; }
 
 /** Technical identities stay out of names and cards; they live folded at the bottom of an object's page. */
 export function TechnicalDetails({items}:{items:[string,ReactNode][]}) {

@@ -1,5 +1,5 @@
 import {type ReactNode} from 'react';
-import {Eye} from 'lucide-react';
+import {Eye,Inbox,PlugZap} from 'lucide-react';
 import Link, {usePathname,useSearchParams} from '../../../runtime/navigation';
 import type {AdminTab} from '../../lib/admin-navigation';
 import {Badge,Card,cn,focusRing,type Tone} from './kit';
@@ -40,14 +40,17 @@ export function Chip({tone='',dot,children,title}:{tone?:Tone;dot?:boolean;child
   return <Badge tone={tone} dot={dot} title={title}>{children}</Badge>;
 }
 export function Row({chip,title,text,href,action}:{chip?:ReactNode;title:ReactNode;text?:ReactNode;href?:string;action?:ReactNode}) {
-  const body=<><div>{chip}</div><div className="min-w-0"><div className="font-semibold text-sg-text">{title}</div>{text&&<div className="text-[13px] text-sg-muted">{text}</div>}</div><div>{action??(href?<span className="text-[12.5px] font-semibold text-sg-muted group-hover/row:text-sg-text">Öppna →</span>:null)}</div></>;
+  const body=<><div>{chip}</div><div className="min-w-0"><div className="font-semibold text-sg-text">{title}</div>{text&&<div className="text-[13px] text-sg-muted">{text}</div>}</div><div>{action??(href?<span className="text-[12.5px] font-semibold text-sg-muted transition-colors duration-150 group-hover/row:text-sg-text">Öppna →</span>:null)}</div></>;
   const cls='group/row grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 border-t border-sg-line-2 py-3 text-inherit no-underline first:border-t-0 first:pt-0 last:pb-0 max-md:grid-cols-1 max-md:gap-1.5';
   return href?<Link href={href} className={cn(cls,'rounded-sm hover:[&_.font-semibold]:underline',focusRing)}>{body}</Link>:<div className={cls}>{body}</div>;
 }
 export function Rows({children,className}:{children:ReactNode;className?:string}) { return <div className={cn('grid',className)}>{children}</div>; }
 /** Honest empty state. The default chip says the surface is not connected; pass `chip={null}` for an ordinary "nothing here". */
-export function Empty({title,text,action,chip='Inte anslutet'}:{title:ReactNode;text?:ReactNode;action?:ReactNode;chip?:ReactNode|null}) {
-  return <div className="rounded-xl border border-dashed border-sg-border bg-sg-surface-2 px-5 py-7 text-center text-sg-muted" role="status">{chip&&<div className="mb-2.5"><Badge tone="warn">{chip}</Badge></div>}<h3 className="m-0 mb-1 text-[14px] font-semibold text-sg-text">{title}</h3>{text&&<p className="m-0 text-[12.5px]">{text}</p>}{action&&<div className="mt-3 flex justify-center">{action}</div>}</div>;
+/** `icon` replaces the default symbol (a plug for not connected, an empty tray otherwise). */
+export function Empty({title,text,action,chip='Inte anslutet',icon}:{title:ReactNode;text?:ReactNode;action?:ReactNode;chip?:ReactNode|null;icon?:ReactNode}) {
+  return <div className="grid justify-items-center rounded-xl border border-dashed border-sg-border bg-sg-surface-2 px-5 py-7 text-center text-sg-muted" role="status">
+    <span aria-hidden="true" className="mb-3 grid size-10 place-items-center rounded-full border border-sg-border bg-sg-surface text-sg-faint shadow-sm [&_svg]:size-[18px]">{icon??(chip?<PlugZap/>:<Inbox/>)}</span>
+    {chip&&<div className="mb-2.5"><Badge tone="warn">{chip}</Badge></div>}<h3 className="m-0 mb-1 text-[14px] font-semibold text-sg-text">{title}</h3>{text&&<p className="m-0 max-w-[56ch] text-[12.5px]">{text}</p>}{action&&<div className="mt-3 flex justify-center">{action}</div>}</div>;
 }
 export function KV({items}:{items:[ReactNode,ReactNode][]}) {
   return <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[13.5px] max-md:grid-cols-1 max-md:gap-y-0.5">{items.map(([key,value],index)=><div key={index} className="contents"><dt className="text-sg-muted max-md:mt-2">{key}</dt><dd className="m-0 min-w-0 [overflow-wrap:anywhere]">{value}</dd></div>)}</dl>;

@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {ExternalLink,Plus} from 'lucide-react';
 import Link, {navigate,useSearchParams} from '../../../runtime/navigation';
 import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout,ActionMenu} from '../ui/hub';
-import {Button,buttonVariants,cn,plural,TechnicalDetails} from '../ui/kit';
+import {Button,buttonVariants,cn,formatNumber,Loading,plural,TechnicalDetails} from '../ui/kit';
 import {Dialog,DialogSteps} from '../ui/dialog';
 import {DataTable,type Column} from '../ui/data-table';
 import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
@@ -62,7 +62,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   const rooms=groups.rooms,archived=groups.trashRooms,liveOperators=groups.companies,archivedOperators=groups.trashCompanies;
   const operatorName=(operatorId:string)=>operators.find(row=>row.id===operatorId)?.name??'Okänt bolag';
   const laneLabel=(laneId:string)=>compositions.find(row=>row.id===laneId)?.name??'Okänd scenmall';
-  const status=error?<p role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></p>:!catalog?<p role="status" className="mb-4 text-sg-muted">Läser katalogen…</p>:null;
+  const status=error?<p role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></p>:!catalog?<div className="mb-4 rounded-xl border border-sg-border bg-sg-surface p-5 shadow-sg"><Loading label="Läser katalogen…" rows={4}/></div>:null;
   const roomColumns=(withOperator:boolean):Column<Room>[]=>[
     {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><span className="flex items-center gap-3"><RoomPicture room={room} className="h-10 w-16 max-md:h-9 max-md:w-14"/><span className="min-w-0"><Link className={linkClass} href={roomHref(room)}>{room.name}</Link><span className="block text-[12.5px] text-sg-muted">{gameLabel(room.game)}</span></span></span>},
     ...(withOperator?[{id:'operator',header:'Bolag',sort:(room:Room)=>operatorName(room.operatorId),cell:(room:Room)=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>}]:[]),
@@ -91,7 +91,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
           {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator)}>{operator.name}</Link>},
           {id:'status',header:'Status',sort:row=>row.status==='active'?0:1,cell:operatorChip},
           {id:'package',header:'Tilldelning',sort:row=>row.packageRevision??-1,cell:version},
-          {id:'rooms',header:'Spelbord',align:'right',sort:row=>rooms.filter(room=>room.operatorId===row.id).length,cell:operator=>rooms.filter(room=>room.operatorId===operator.id).length},
+          {id:'rooms',header:'Spelbord',align:'right',sort:row=>rooms.filter(room=>room.operatorId===row.id).length,cell:operator=>formatNumber(rooms.filter(room=>room.operatorId===operator.id).length)},
           {id:'actions',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><span className="inline-flex items-center gap-2"><a className={buttonVariants({variant:'ghost',size:'sm'})} href={'/partner/'+encodeURIComponent(operator.slug)}>Partnerportalen<ExternalLink aria-hidden="true"/></a><Link className={buttonVariants({size:'sm'})} href={companyHref(operator)}>Öppna</Link></span>},
         ]}/></Card>}
       </>}
@@ -252,7 +252,7 @@ function OperatorAdjustable({laneId,operator,active}:{laneId:string;operator:Ope
   },[active,laneId]);
   const labels:Record<string,string>={table:'Bordsgrafik',background:'Bakgrund',dealer:'Dealer',branding:'Spelbordets utseende'};
   return <Card title="Vad bolaget får ändra på det här spelbordet" aside={<Link href={companyHref(operator,'tilldelning')} className="font-semibold text-sg-accent-text no-underline hover:underline">Ändra under Bolag › Tilldelning →</Link>}>
-    {state.status==='loading'&&<p role="status" className="m-0 text-sg-muted">Läser scenmallen…</p>}
+    {state.status==='loading'&&<Loading label="Läser scenmallen…" rows={4}/>}
     {state.status==='error'&&<Empty title="Oklart" text="Projektet kunde inte läsas, så bolagets val visas inte."/>}
     {state.status==='ready'&&(state.lane?<div className="grid">{(['dealer','table','background','branding'] as const).map(key=>{const unlocked=state.lane!.operatorAdjustable?.includes(key)??false;return <Row key={key} chip={unlocked?<Chip tone="ok">upplåst</Chip>:<Chip tone="ink">låst</Chip>} title={labels[key]??key} text={unlocked?'Bolaget väljer inom tilldelningen i Partnerportalen':'Låst av Scoutgaming'}/>;})}<Row chip={<Chip tone="ink">låst</Chip>} title="Bordsspråk och insatsprofil" text="Sätts av Admin under Spelinställningar; upplåsning per bolag kommer i steg C efter O03"/></div>:<Empty title="Oklart" text="Scenmallen finns inte i det sparade projektet."/>)}
     <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Valen gäller per scenmall i dag, inte per bolag; det ändras i steg C.</p>

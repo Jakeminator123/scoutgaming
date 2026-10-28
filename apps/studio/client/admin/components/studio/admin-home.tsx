@@ -3,7 +3,7 @@ import {Building2,LayoutGrid,Plus,Table2,Upload,UserRound,Users} from 'lucide-re
 import {Bar,BarChart,CartesianGrid,XAxis,YAxis} from 'recharts';
 import Link from '../../../runtime/navigation';
 import {HubPage,Card,Chip,Row,Empty,KV} from '../ui/hub';
-import {buttonVariants,cn,plural,Stat} from '../ui/kit';
+import {buttonVariants,cn,formatNumber,Loading,plural,Stat} from '../ui/kit';
 import {ChartContainer,ChartTooltip,ChartTooltipContent} from '../ui/chart';
 import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
 import {dealerCoverage,dealerStill} from '../../lib/dealer-coverage.mjs';
@@ -87,7 +87,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">
       <div className="grid content-start gap-5">
         <Card title="Väntar på dig" aside={data?plural(pending.length,'sak','saker'):undefined}>
-          {loading&&<p role="status" className="m-0 text-sg-muted">Läser register…</p>}
+          {loading&&<Loading label="Läser register…" rows={4}/>}
           {error&&<p role="alert" className="m-0 text-sg-muted">{error}</p>}
           {data&&!pending.length&&<Empty chip={null} title="Inget väntar" text="Alla dealers har sina klipp och alla spelbord är publicerade."/>}
           {pending.length>0&&<div className="grid">{pending.map(row=><Row key={row.type+row.title} chip={<Chip tone={row.kind}>{row.type}</Chip>} title={row.title} text={row.text} href={row.href}/>)}</div>}
@@ -113,13 +113,13 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
             <DealerAvatar dealer={dealer} still={dealerStill(data.project,data.inventory,dealer.id)} size={36}/><span className="min-w-0 flex-1 truncate font-semibold">{dealer.label}</span><Chip tone={coverage.complete?'ok':'warn'} dot>{coverage.complete?'redo':'klipp saknas'}</Chip></Link></li>;})}</ul>
         </Card>}
         <Card title="Spelhändelser" aside={<Link href="/admin/system?flik=drift" className="font-semibold text-sg-accent-text no-underline hover:underline">System →</Link>}>
-          {overview.status==='loading'&&<p role="status" className="m-0 text-[13px] text-sg-muted">Läser…</p>}
+          {overview.status==='loading'&&<Loading label="Läser spelhändelser…" rows={4}/>}
           {overview.status==='unavailable'&&<Empty title="Inte anslutet för din roll" text="Siffrorna kräver administratörsbehörighet; drift och skor finns under System › Drift."/>}
           {overview.status==='ready'&&(tx.length?<ChartContainer config={txConfig} className="aspect-auto h-56 w-full" aria-label="Antal journalhändelser per typ">
             <BarChart accessibilityLayer data={tx} layout="vertical" margin={{left:0,right:12}}>
               <CartesianGrid horizontal={false}/><XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false}/>
               <YAxis type="category" dataKey="label" width={130} tickLine={false} axisLine={false} tick={{fontSize:11}}/>
-              <ChartTooltip content={<ChartTooltipContent formatter={value=>`${value} händelser`}/>}/><Bar dataKey="n" fill="var(--color-n)" radius={[0,4,4,0]} isAnimationActive={false}/>
+              <ChartTooltip content={<ChartTooltipContent formatter={value=>`${typeof value==='number'?formatNumber(value):value} händelser`}/>}/><Bar dataKey="n" fill="var(--color-n)" radius={[0,4,4,0]} isAnimationActive={false}/>
             </BarChart>
           </ChartContainer>:<p className="m-0 text-[13px] text-sg-muted">Inga spelhändelser registrerade ännu.</p>)}
         </Card>
