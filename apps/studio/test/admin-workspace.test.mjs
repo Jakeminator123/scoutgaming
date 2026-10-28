@@ -52,9 +52,7 @@ test('legacy lanes bookmarks preserve the company tab instead of opening the roo
     assert.equal(adminDocumentHref(prefix+'/lanes?tab=publish&operator=nord&lane=portrait'),'/admin/companies?tab=spelbord&operator=nord&composition=portrait');
   }
 });
-// adminDocumentHref consumes the lanes tab but still tests the source tab before choosing the company nav
-// (packages/navigation/admin-workspace-routes.mjs:99), so this bookmark needs a second redirect.
-test('a legacy company lanes bookmark opens the company nav in one redirect',{todo:'admin-workspace-routes.mjs:99 checks the consumed tab'},()=>{
+test('a legacy company lanes bookmark opens the company nav in one redirect',()=>{
   const target=adminDocumentHref('/control/lanes?tab=companies&operator=nord&lane=portrait');
   assert.equal(target,'/admin/companies/nord?composition=portrait');assert.equal(adminDocumentHref(target),target);
 });

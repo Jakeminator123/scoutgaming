@@ -99,7 +99,8 @@ export function adminDocumentHref(value) {
     target=room?`/admin/rooms/${room}`:'/admin/companies?tab=spelbord';
     // The room nav owns its room: table, template, game and the dealer selection leave the address; the company stays.
     if(room)for(const key of ['table','room','composition','lane','game','dealer','dealerId'])remove.add(key);
-  } else if(target==='/admin/companies'&&!tab){
+  } else if(target==='/admin/companies'&&(!tab||consume.has('tab'))){
+    // A consumed source tab (lanes?tab=companies) never keeps the list open: one company opens its nav in one redirect.
     const operator=single(query.getAll('operator'));
     if(operator){target=`/admin/companies/${operator}`;remove.add('operator');}
   }

@@ -24,18 +24,22 @@ export function studioNavigationContextFromQuery(query) {
 
 // Preserve the selected clip across Studio pages, without copying unrelated
 // document parameters (for example an editor's tab or an authentication token).
+// The context is applied before the address is canonicalized, so a retired tab path
+// with a dealer becomes that dealer's nav (/admin/dealers/<id>?flik=…) in one step
+// instead of the dealer list with ?dealer=, which would need a second redirect.
 export function studioNavigationHref(path, context = {}) {
   if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//') || /[\\\r\n]/.test(path)) {
     throw new TypeError('Studio navigation requires a local path.');
   }
-  const url = new URL(canonicalControlHref(path), 'https://studio.invalid');
+  const url = new URL(path, 'https://studio.invalid');
   context = {...context, operatorId: context.operatorSlug ?? context.operatorId};
   for (const [key, parameter] of Object.entries(CONTEXT_PARAMETERS)) {
     const value = context[key];
     if (typeof value === 'string' && value) url.searchParams.set(parameter, value);
   }
-  const pathname = url.pathname.replace(/^\/studio(?=\/control(?:\/|$))/, '');
-  return labUrl(`${pathname}${url.search}${url.hash}`);
+  const canonical = new URL(canonicalControlHref(url.pathname + url.search + url.hash), 'https://studio.invalid');
+  const pathname = canonical.pathname.replace(/^\/studio(?=\/control(?:\/|$))/, '');
+  return labUrl(`${pathname}${canonical.search}${canonical.hash}`);
 }
 
 export function studioNavigationTabs(context = {}, hrefs = {}) {

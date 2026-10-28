@@ -38,14 +38,18 @@ test('AI bookmarks open their resource and keep exact navigation context', () =>
 
 test('navigation keeps company and real room identity but never copies auth or diagnostic query', () => {
   const context=studioNavigationContextFromQuery(new URLSearchParams('operator=north&table=room-one&composition=scene-a&dealer=paow&token=private&debug=1'));
+  // The retired rehearsal page is the room's nav: the room sits in the path, the company follows, template, game and
+  // dealer come from the register. Navigation canonicalizes after the context is applied, so this is one address.
   const link=new URL(studioNavigationHref('/admin/rehearsal', context),'https://studio.invalid');
+  assert.equal(link.pathname,'/admin/rooms/room-one');
   assert.equal(link.searchParams.get('operator'),'north');
-  assert.equal(link.searchParams.get('table'),'room-one');
-  assert.equal(link.searchParams.get('composition'),'scene-a');
-  assert.equal(link.searchParams.get('dealer'),'paow');
-  assert.equal(link.searchParams.has('token'),false);
-  assert.equal(link.searchParams.has('debug'),false);
-  assert.equal(link.searchParams.has('lane'),false);
+  for(const key of ['table','composition','dealer','token','debug','lane'])assert.equal(link.searchParams.has(key),false,key);
+  // A dealer tool keeps the room context beside the dealer's nav.
+  const replies=new URL(studioNavigationHref('/admin/replies', context),'https://studio.invalid');
+  assert.equal(replies.pathname,'/admin/dealers/paow');assert.equal(replies.searchParams.get('flik'),'tal');
+  assert.equal(replies.searchParams.get('operator'),'north');assert.equal(replies.searchParams.get('table'),'room-one');
+  assert.equal(replies.searchParams.get('composition'),'scene-a');
+  for(const key of ['dealer','token','debug','lane'])assert.equal(replies.searchParams.has(key),false,key);
 });
 
 test('chosen composition names remain unchanged', () => {

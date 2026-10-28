@@ -421,13 +421,14 @@ test('actual Admin middleware preserves document access with Node transport befo
 });
 
 test('retired Control URLs use the central Admin destination with room and material context intact',()=>{
-  for(const [section,destination,tab] of [['library','scenes','bakgrunder'],['lanes','companies',null],['preview','scenes','mallar'],['zones','scenes','mallar']]){
+  // One company in a company-list bookmark is that company's nav in one redirect; its identity sits in the path.
+  for(const [section,destination,tab] of [['library','scenes','bakgrunder'],['lanes','companies/north',null],['preview','scenes','mallar'],['zones','scenes','mallar']]){
     const query='dealer=dragan&operator=north&room=one&room=two&game=roulette&lane=portrait&role=background&token=private&tab='+(section==='lanes'?'companies':'backgrounds');
     for(const basePath of ['','/studio']) {
       const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/'+section+'?'+query),{basePath});
       const url=new URL(target,'https://game.fixture.invalid');
       assert.equal(url.pathname,'/admin/'+destination);assert.equal(url.searchParams.get('tab'),tab);
-      for(const [key,value] of [['dealer','dragan'],['operator','north'],['game','roulette'],['composition','portrait']])assert.equal(url.searchParams.get(key),value);
+      for(const [key,value] of [['dealer','dragan'],['operator','north'],['game','roulette'],['composition','portrait']])assert.equal(url.searchParams.get(key),section==='lanes'&&key==='operator'?null:value,section+' '+key);
       assert.deepEqual(url.searchParams.getAll('room'),['one','two']);assert.equal(url.searchParams.has('lane'),false);assert.equal(url.searchParams.has('token'),false);
       if(section==='library')assert.equal(url.searchParams.has('role'),false,'the role becomes the material tab');
       // The company list with one company resolves to that company's nav (at the latest in Admin).
@@ -436,7 +437,7 @@ test('retired Control URLs use the central Admin destination with room and mater
   }
 });
 
-test('a Control company bookmark resolves directly to the company nav',{todo:'lanes?tab=companies&operator= stops at /admin/companies?operator= and needs one more client redirect'},()=>{
+test('a Control company bookmark resolves directly to the company nav',()=>{
   const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid/control/lanes?tab=companies&operator=north'));
   assert.equal(new URL(target,'https://game.fixture.invalid').pathname,'/admin/companies/north');
 });

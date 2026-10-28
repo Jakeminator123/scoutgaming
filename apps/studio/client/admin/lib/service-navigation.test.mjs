@@ -140,9 +140,8 @@ test('the exported context link keeps ambiguous scope and excludes credentials',
   assert.equal(url.searchParams.has('token'),false);
 });
 
-// The old Ekonomi tabs built links from the Studio context only. The hub tab row copies every query
-// parameter (components/ui/hub.tsx Tabs), so a credential in the address follows every tab link.
-test('system tab links exclude credentials from the address',{todo:'hub Tabs copies every query parameter, including token'},()=>{
+// The hub tab row copies only the shared Studio context (components/ui/hub.tsx Tabs), never a credential.
+test('system tab links exclude credentials from the address',()=>{
   const h=harness({search:'?flik=spelare&token=secret'});
   const tabs=descendants(h.render(h.system.SystemPage,{active:true,tab:'spelare'})).find(row=>row.type===h.hub.Tabs);
   for(const link of descendants(h.render(h.hub.Tabs,tabs.props)).filter(row=>row.type==='a'))

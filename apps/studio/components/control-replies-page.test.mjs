@@ -86,7 +86,7 @@ test('unsaved categories guard filters, dealer changes, leaving and browser hist
   select(tree,'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('category'),'');assert.equal(h.state('dealerId'),'astrid');
   const nav=nodes(tree,node=>node.props?.active==='replies')[0],clipLink=nodes(nav.type(nav.props),node=>node.type==='a'&&node.props.children==='Klippkarta')[0],event={button:0,preventDefault(){this.blocked=true;}};clipLink.props.onClick(event);assert.equal(event.blocked,true);
   const unload={preventDefault(){this.blocked=true;}};h.listeners.get('beforeunload')(unload);assert.equal(unload.blocked,true);
-  h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/dealer=astrid/);
+  h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/\/admin\/dealers\/astrid\?/,'the vetoed traversal restores the dealer nav address');
   button(tree,'Ångra kategorival').props.onClick();tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('dealerId'),'elin');
 });
 
@@ -136,15 +136,25 @@ test('Admin replies component preserves exact Studio context through real naviga
   for(const[url,init]of h.calls){assert.equal(parseStudioRepliesRequest(init.method??'GET',new URL(url,'https://local.test')).kind,'list');assert.deepEqual([...new URL(url,'https://local.test').searchParams.keys()],['dealer','category']);}
 });
 
-// Svarsbiblioteket is mounted inside the dealer nav (/admin/dealers/<d>?flik=tal). studioNavigationHref canonicalizes the
-// retired tab paths before it adds the dealer (lib/studio-navigation.mjs:31, STUDIO_DEALER_TABS :4-10), so every tab and every
-// filter write becomes /admin/dealers?dealer=… (control-replies-page.tsx:101-102); Admin then redirects that to Klippkarta.
-test('the embedded reply library links to its dealer nav tabs and filtering never leaves the nav',{todo:'studio-navigation.mjs:31 and control-replies-page.tsx:101 write the dealer list address'},async()=>{
+// Svarsbiblioteket is mounted inside the dealer nav (/admin/dealers/<d>?flik=tal). studioNavigationHref applies the dealer
+// before it canonicalizes the retired tab paths, so every tab link and every filter or dealer write stays a nav address.
+test('the embedded reply library links to its dealer nav tabs and filtering never leaves the nav',async()=>{
   const h=await loaded(async()=>({items:[],nextCursor:null}),{...props,initialHref:'/admin/dealers/astrid?flik=tal'});
   const nav=nodes(h.render(),node=>node.props?.active==='replies')[0],links=nodes(nav.type(nav.props),node=>node.type==='a');
   const href=label=>new URL(links.find(link=>link.props.children===label).props.href,'https://local.test');
   assert.equal(href('Klippkarta').pathname,'/admin/dealers/astrid');assert.equal(href('Klippkarta').searchParams.get('flik'),'klipp');
-  assert.equal(href('Röst & tal').searchParams.get('flik'),'tal');
+  assert.equal(href('Röst & tal').searchParams.get('flik'),'tal');assert.equal(href('Svarsbibliotek').searchParams.get('flik'),'tal');
+  assert.equal(href('Inställningar').searchParams.get('flik'),'installningar');assert.equal(href('Skapa material').searchParams.get('panel'),'generera');
+  for(const link of links){const url=new URL(link.props.href,'https://local.test');assert.equal(url.pathname,'/admin/dealers/astrid',link.props.href);assert.equal(url.searchParams.has('dealer'),false,link.props.href);}
+  // The nav owns a dealer: the library offers no "no dealer" choice that would open the dealer list.
+  assert.equal(nodes(select(h.render(),'Dealer i svarsbiblioteket'),node=>node.type==='option'&&node.props.value==='').length,0);
   select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();
   assert.equal(h.window.location.pathname,'/admin/dealers/astrid');assert.equal(h.window.location.searchParams.get('flik'),'tal');
+  assert.equal(h.window.location.searchParams.get('category'),'game-win');
+  // Another dealer opens that dealer's nav on the same tab; Back restores the dealer from the path.
+  const before=h.window.location.href;
+  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();
+  assert.equal(h.window.location.pathname,'/admin/dealers/elin');assert.equal(h.window.location.searchParams.get('flik'),'tal');assert.equal(h.window.location.searchParams.has('dealer'),false);
+  h.window.location.href=before;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();
+  assert.equal(h.state('dealerId'),'astrid');assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');
 });
