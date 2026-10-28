@@ -1,4 +1,4 @@
-export type StudioLoginReturnTo = '/studio'|'/studio/administration'|`/api/bo/game-login?state=${string}`|`/api/bo/lab-login?state=${string}`;
+export type StudioLoginReturnTo = '/studio'|'/studio/administration';
 export function studioLoginReturnTo(value:unknown):StudioLoginReturnTo;
 export function studioLoginDestination(value:unknown,authBase?:'/studio/api/auth'|'/api/auth'|'/studio/api/partner'|'/api/partner'):string;
 export function studioPasswordToken(value:unknown):string|null;

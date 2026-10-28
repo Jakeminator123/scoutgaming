@@ -221,12 +221,12 @@ test('foreign Origin and ambiguous player cookies never revoke an arbitrary play
   }
 });
 
-test('native login accepts only exact one-use game and Lab handoff destinations', async () => {
-  for (const kind of ['game','lab']) {
-    const f = fixture(), returnTo = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
+test('native login accepts exact Admin destinations and refuses the retired game and Lab handoff', async () => {
+  for (const returnTo of ['/admin', '/studio/administration']) {
+    const f = fixture();
     assert.equal((await f.call('login',{user:'operator',pass:password,returnTo})).status,200);
   }
-  for (const returnTo of [`/api/bo/game-login?state=${'a'.repeat(63)}`,
+  for (const returnTo of [`/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`, `/api/bo/game-login?state=${'a'.repeat(63)}`,
     `/api/bo/lab-login?state=${'a'.repeat(64)}&token=secret`, '/api/bo/users', '//attacker.invalid']) {
     const f = fixture(); assert.equal((await f.call('login',{user:'operator',pass:password,returnTo})).status,400);
   }

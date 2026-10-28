@@ -1,7 +1,6 @@
 export const BACKOFFICE_SECTIONS = Object.freeze([
   { id: 'ops', label: 'Driftöversikt' },
   { id: 'lanes', label: 'Spelmotorns grundinställningar' },
-  { id: 'voice', label: 'Tal och synkgranskning' },
   { id: 'apikeys', label: 'Partner och API-nycklar' },
   { id: 'emails', label: 'E-postmallar · förhandsvisning' },
   { id: 'users', label: 'Användare och roller' },
@@ -20,7 +19,6 @@ export const BACKOFFICE_GROUPS = Object.freeze([
   { id: 'accounts', label: 'Interna konton & spelare', area: 'Administration', sections: ['players', 'users'] },
   { id: 'partners', label: 'API & integrationer', area: 'Administration', sections: ['apikeys', 'emails'] },
   { id: 'finance', label: 'Betalningar & journal', area: 'Drift', sections: ['pay'] },
-  { id: 'media-review', label: 'Talgranskning', area: 'Studio', sections: ['voice'] },
 ].map(group => Object.freeze({ ...group, sections: Object.freeze(group.sections) })));
 
 export function backofficeGroupId(value) {

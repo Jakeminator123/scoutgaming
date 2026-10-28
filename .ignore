@@ -38,3 +38,6 @@
 # Large generated media registers; open them explicitly when needed.
 /media/layout.json
 /media/blob-index.json
+# Raw media source and staging material.
+/media/**/source/
+/media/**/staging/

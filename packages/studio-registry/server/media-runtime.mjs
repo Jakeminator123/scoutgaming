@@ -86,7 +86,7 @@ function createStudioMediaRuntime({ repository, scope, env = process.env, reposi
     try { path = decodeURIComponent(pathname); } catch { return null; }
     if (/\.(?:m?js|css|html?|woff2?|ttf|map)$/i.test(path)) return null;
     if (!/^\/(?:media|dealers|assets|bo|kevin-cards|lab|review|sfx)\//.test(path)
-      && !['/scene.jpg', '/dealer-fallback.png', '/speech-media.json'].includes(path)) return null;
+      && path !== '/speech-media.json') return null;
     const current = { ...options, runtimeCatalog: await readRuntimeCatalog(repository) };
     const row = resolvePublicMedia(pathname, current);
     if (!row) return null;

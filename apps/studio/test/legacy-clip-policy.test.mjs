@@ -82,6 +82,9 @@ test('native inventory fails on a missing runtime catalog but accepts the retire
   const inventory = await load();
   assert.equal(inventory.reviewSafetyVerified, true);
   assert.deepEqual(inventory.clips.map(clip => [clip.id, clip.text, clip.available]), [['green:astrid:greeting', 'Exact greeting', true]]);
+  // The retired V2 speech manifest may also be absent; its rows simply disappear.
+  await write('media/catalog/legacy.json', { schemaVersion: 2, entries: { 'web/public/speech-media.json': '{}' } });
+  assert.deepEqual((await load()).clips, []);
   await write('media/catalog/legacy.json', { schemaVersion: 2, entries: greenSpeak });
   await assert.rejects(load(), /Runtime metadata missing: web\/public\/speech-media\.json/);
 });

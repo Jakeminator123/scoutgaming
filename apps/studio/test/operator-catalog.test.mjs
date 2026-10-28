@@ -1,10 +1,10 @@
-import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
+import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import manifest from '../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
+import { bindIdlePolicy, syntheticPresentationManifest } from '../../../test/fixtures/presentation-bank.mjs';
 import { } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { buildOperatorCatalog } from '../lib/operator-catalog.mjs';
 import { studioChat } from '../lib/studio-server.mjs';
@@ -12,6 +12,9 @@ import { prepareDecision, validateCatalog } from '../../../packages/director/eng
 import { createLabServer } from '../../../services/openclaw/lab/src/server.mjs';
 import { readSettings } from '../lib/director-settings.mjs';
 
+const manifest = syntheticPresentationManifest();
+// The saved idle policy points at the bank's idle family, bases and variants in order.
+const createSeedProject = () => { const project = createLegacyProject(); project.idlePolicy = bindIdlePolicy(project.idlePolicy, manifest); return project; };
 const inventory = () => ({ families: structuredClone(manifest.families), videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true, previewUrl: `/api/videos/${item.id}` })) });
 const message = { dealerId: 'astrid', message: 'Vilka videor och varianter finns?', conversationId: 'operator-manifest-fixture' };
 const settings = { remoteUrl: 'https://fixture.invalid', remoteToken: 'fixture-only-token' };

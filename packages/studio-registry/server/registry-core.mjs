@@ -4,11 +4,10 @@ import {access,lstat,open,realpath} from 'node:fs/promises';
 import {basename,isAbsolute,join,relative,resolve} from 'node:path';
 import {Readable} from 'node:stream';
 import {MEDIA_FILE_TYPES} from '../../shared/media-file-types.mjs';
-import {mediaDefinitionForPath,readLabVideoManifest,validateLabVideoManifest} from './video-manifest.mjs';
-import {isEmptyRuntimeMediaCatalog,createEmptyRuntimeMediaCatalog} from './runtime-catalog.mjs';
+import {mediaDefinitionForPath,readLabVideoManifest,validatePresentationManifest,isEmptyPresentationManifest} from './video-manifest.mjs';
 import {isCloudMediaConfigured,mediaBlobPath} from './private-media-contract.mjs';
 import {validateStudioMedia} from './storage-contract.mjs';
-import {createMediaLayout} from './media-layout.mjs';
+import {createMediaLayout,PRESENTATION_BANK_PATH} from './media-layout.mjs';
 export function exactHttpsOrigin(value) {
   if (typeof value !== 'string') return false;
   try {
@@ -51,9 +50,9 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
 
   async function readEntries(options) {
     try {
+      // A catalogue without a presentation bank has no families; uploads still join below.
       const snapshot = Object.hasOwn(options,'runtimeCatalog')
-        ? isEmptyRuntimeMediaCatalog(options.runtimeCatalog) ? createEmptyRuntimeMediaCatalog().presentation
-          : validateLabVideoManifest(options.runtimeCatalog?.presentation)
+        ? validatePresentationManifest(options.runtimeCatalog?.presentation)
         : await readLabVideoManifest(snapshotPath(options));
       return { entries: new Map(snapshot.items.map(item => [item.id, item])), families: snapshot.families };
     } catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
@@ -76,7 +75,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
     if(!selection.path||!isAbsolute(selection.path)||!samePath(resolve(selection.path),presentationBankRoot(root)))throw new RegistryError(503,'The active Blob bank requires the canonical video archive.');
     const placement=mediaDefinitionForPath(entry.relativePath);
     if(!placement||placement.definition.id!==entry.familyId||placement.role!==entry.role)throw new RegistryError(503,'Video does not match its registered family.');
-    const logicalPath=`dealers/astrid/runtime/presentation/${entry.relativePath}`;
+    const logicalPath=`${PRESENTATION_BANK_PATH}/${entry.relativePath}`;
     return {logicalPath,expected:{access:'source',id:entry.id,sha256:entry.sha256,size:entry.size,contentType:'video/mp4',
       pathname:mediaBlobPath(logicalPath.slice(0,logicalPath.lastIndexOf('/')),entry.id,entry.sha256,'mp4')}};
   }
@@ -198,7 +197,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
       total: 0, available: 0, missing: 0, unavailable: 0,
       configured: Boolean(selection.path), readable: false, snapshotReadable: false,
       archiveSource: selection.source, intakeCounts: { want: 0, no: 0, unrated: 0 },
-      notes: isEmptyRuntimeMediaCatalog(options.runtimeCatalog) ? [
+      notes: isEmptyPresentationManifest(options.runtimeCatalog?.presentation) ? [
         'Tom basbank. Uppladdade klipp läses från det sparade registret och privat Blob.',
         'Registrering är inte visuell acceptans; exakta bytes verifieras före uppspelning.',
       ] : [

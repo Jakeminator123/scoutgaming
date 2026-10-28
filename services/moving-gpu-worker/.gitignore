@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-.build/
-# Reviewed, hash-bound renderer source is part of this image, not a cache.
-!vendor/
-vendor/*
-!vendor/motor.py
-!vendor/rorlig.py

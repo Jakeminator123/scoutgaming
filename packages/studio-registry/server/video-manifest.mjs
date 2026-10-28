@@ -108,6 +108,22 @@ export function validateLabVideoManifest(manifest) {
   return manifest;
 }
 
+// A catalogue without a presentation bank: no dealer families and no bank items.
+// The game's and site's indexed assets are validated separately by the catalogue.
+const EMPTY_PRESENTATION_SOURCE = 'scoutgaming-empty';
+export function createEmptyPresentationManifest() {
+  return { schemaVersion: 1, source: EMPTY_PRESENTATION_SOURCE, families: [], items: [] };
+}
+export function isEmptyPresentationManifest(manifest) {
+  return isObject(manifest) && Object.keys(manifest).sort().join(',') === 'families,items,schemaVersion,source'
+    && manifest.schemaVersion === 1 && manifest.source === EMPTY_PRESENTATION_SOURCE
+    && Array.isArray(manifest.families) && !manifest.families.length && Array.isArray(manifest.items) && !manifest.items.length;
+}
+/** Either the explicit empty presentation or a complete locked bank; nothing in between. */
+export function validatePresentationManifest(manifest) {
+  return isEmptyPresentationManifest(manifest) ? manifest : validateLabVideoManifest(manifest);
+}
+
 export async function readLabVideoManifest(path) {
   const info = await lstat(path);
   if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_MANIFEST_BYTES) fail('Lab video manifest is unavailable.');

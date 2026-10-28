@@ -12,7 +12,6 @@ export const normalizeStudioRole = value => isAdministratorRole(value) ? 'admin'
 export const STUDIO_ADMIN_SECTIONS = Object.freeze([
   ['ops', 'Driftöversikt', 'admin'],
   ['lanes', 'Spel och lanes', 'admin'],
-  ['voice', 'Tal och synkgranskning', 'admin'],
   ['clips', 'Klipp och granskning', 'admin'],
   ['gens', 'Genererat material', 'admin'],
   ['apikeys', 'Partner och API-nycklar', 'admin'],
@@ -29,11 +28,11 @@ export const STUDIO_ADMIN_SECTIONS = Object.freeze([
 
 // Explicit existing BO floors: unknown actions never inherit the old admin default.
 export const STUDIO_ADMIN_ACTIONS = Object.freeze([
-  ['overview', 'admin'], ['config', 'admin'], ['voicelines', 'admin'],
+  ['overview', 'admin'], ['config', 'admin'],
   ['clips', 'admin'], ['generations', 'admin'], ['gen-verdicts', 'admin'],
   ['apikeys', 'admin'], ['users', 'admin'], ['players', 'admin'],
   ['transactions', 'admin'], ['emails', 'admin'], ['shoes', 'admin'],
-  ['voiceline-review', 'admin'], ['tournament', 'admin'],
+  ['tournament', 'admin'],
   ['pitboss', 'admin'], ['tier', 'admin'], ['room', 'admin'], ['game-lane', 'admin'],
   ['game-lanes/create', 'admin'], ['game-lanes/remove', 'admin'],
   ['clip-landing', 'admin'], ['clip-never', 'admin'],
@@ -48,7 +47,6 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys/rotate', 'admin'],
   ['apikeys/launch', 'admin', ['game-authority']],
   ['apikeys/credit', 'admin', ['game-authority']],
-  ['speech-qa', 'admin', ['operator-speech-qa-gate']],
   ['moving-drift', 'admin', ['moving-drift-control']],
   ['operator-package', 'admin'], ['presentation-room', 'admin'],
   ['room-game-config', 'admin'], ['shared-table-proof', 'admin'],
