@@ -14,7 +14,7 @@ const nextConfig = {
     // Retired lab bookmarks go straight to the Admin workspace. Game, lobby,
     // Admin and Partner routing is owned by middleware and the Services config.
     return [
-      ...['/lab', '/labb', '/studio-astrid', '/studio-lissabon', '/labb-lissabon'].map(source => ({source, destination: adminDocumentHref('/control'), permanent: false})),
+      ...['/lab', '/labb', '/labb-lissabon'].map(source => ({source, destination: adminDocumentHref('/control'), permanent: false})),
       {source: '/labb/filmer', destination: adminDocumentHref('/control/videos'), permanent: false},
       {source: '/labb/zoner', destination: adminDocumentHref('/control/zones'), permanent: false},
       {source: '/labb/guide', destination: adminDocumentHref('/control/guide'), permanent: false},
