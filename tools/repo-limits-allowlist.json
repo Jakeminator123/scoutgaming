@@ -360,11 +360,6 @@
     "reason": "Fanns på main när grinden infördes (2026-10-28)"
   },
   {
-    "path": "services/game/public/roulette/assets/anna-roulette-table-v1.png",
-    "maxBytes": 1079892,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "services/game/public/roulette/assets/roulette-bord.png",
     "maxBytes": 2229281,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"

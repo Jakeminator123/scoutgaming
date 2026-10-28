@@ -100,8 +100,6 @@ export async function applyMediaMigration(options={}) {
     if(await hashFile(destination)!==row.sha256)throw new Error(`Copy mismatch: ${row.legacyPath}`);
   }
   ledger.state='verified';await atomic(ledgerFile,ledger,root);await atomic(join(root,'media/layout.json'),layout,root);
-  // Preserve the Git privacy of untracked local sources after their physical move.
-  await writeFile(join(root,'media/.gitignore'),'.migration/\n'+layout.files.filter(row=>!row.tracked).map(row=>'/'+row.path.replace(/[\\*?\[\]!#]/g,'\\$&')).join('\n')+'\n');
   for(const row of layout.files){const source=inside(root,row.legacyPath),info=await exists(source);if(info){if(info.isSymbolicLink()){if(!row.copySource||resolve(dirname(source),await readlink(source)).toLowerCase()!==inside(root,row.copySource).toLowerCase())throw new Error('Old alias changed.');}else if(await hashFile(source)!==row.sha256)throw new Error(`Source changed during migration: ${row.legacyPath}`);await unlink(source);}}
   await emptyDirectories(root,layout.roots);ledger.state='complete';await atomic(ledgerFile,ledger,root);
   return {ledger:normalize(relative(root,ledgerFile)),files:layout.files.length,bytes:layout.files.reduce((n,row)=>n+row.size,0),state:'complete'};

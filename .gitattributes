@@ -6,7 +6,6 @@
 # Keep the same bytes on Linux and Windows checkouts.
 media/** -text
 media/layout.json text eol=lf
-media/.gitignore text eol=lf
 
 # Frozen migration fixtures are checked against the original Git blob bytes.
 test/fixtures/kevin-5aa7ed1/** text eol=lf
