@@ -59,3 +59,12 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 - Respektera `.ignore`; använd inte `rg --no-ignore`. Läs inte `random-stuff-jakob/jakob-docs/arkiv/` eller kopior av dess innehåll i återställningar, Git-historik eller externa säkerhetskopior utan Jakobs uttryckliga begäran om ett specifikt dokument. Ignoreringsfiler är inte OS-behörigheter; samma sekretessgräns gäller terminal/MCP.
 - Radera verifierat förbrukade rester. Tveksamt lokalt återställningsmaterial hör till kanoniska gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>`, inte nya parallella arkiv; följ `tools/retention-policy.json`. Sök inte igenom mediebinärer/genererade artefakter för vanliga dokumentfrågor. Konversationsexporter och hemligheter ska vara privata och utanför Git.
 - Produkttexter ska vara korta, begripliga och tillgängliga. Lägg tekniska detaljer där de hjälper användarens beslut; beskriv konsekvensen vid destruktiv åtgärd.
+
+## Hitta och radera skit
+
+- Börja i `git ls-tree -r -l origin/main | sort -k4 -rn`, största filen först. Börja aldrig i ripgrep, som hoppar över ignorerade filer.
+- En fil får bara finnas om något levande läser den. Bevisa det med `git grep -F <filnamn eller URL> origin/main -- apps packages services ops tools .github .githooks`. Dokumentation räknas inte, och inte heller ett prov som bara låser filen.
+- Kontrollera även strängbyggda sökvägar (`${base}/x.png`, relativa `url('assets/…')`), routinglistor, `publicUrl` i `media/layout.json`, `blob-index.json`, Dockerfiles och skript i `package.json`.
+- En `.d.mts` behöver en `.mjs` bredvid sig och en import från TypeScript. En tillgång i Neon eller Blob är levande bara om en klient faktiskt begär dess URL.
+- Radera filen, dess rad i `tools/repo-limits-allowlist.json`, dess manifestrader och dess prov i samma PR. Arkivera inte.
+- Kontrollera ägarskapet först: `gh pr list --json files` och uppdragets lista över vad som inte får röras.
