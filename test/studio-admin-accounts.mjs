@@ -142,7 +142,7 @@ test('missing Render authority does not advertise or register player/runtime/par
 });
 
 test('all runtime operations delegate the full transaction to Render with trusted actor/scope and original request', async () => {
-  const calls = [], f = fixture({gameAuthority:{execute:async value=>{calls.push(value);return {ok:true,playerId:'player',balance:10};}}});
+  const calls = [], f = fixture({gameAuthority:{execute:async value=>{calls.push(value);return {ok:true,playerId:'player',balance:10,url:'https://game.example.test/game?launch=a.b.c'};}}});
   const inputs = [['players/status',{playerId:'player',status:'blocked',reason:'operator request'}],['apikeys/revoke',{id:'key'}],
     ['apikeys/rotate',{id:'key'}],['apikeys/launch',{id:'key',playerId:'partner-player',displayName:'  A B ',currency:'EUR',language:'en'}],
     ['apikeys/credit',{id:'key',playerId:'partner-player',amount:100}]];
@@ -151,6 +151,17 @@ test('all runtime operations delegate the full transaction to Render with truste
   for (const item of calls) { assert.deepEqual(item.actor,{user:'operator',role:'admin'}); assert.deepEqual(item.scope,scope); assert.ok(item.request instanceof Request); }
   const gate = f.data.gates.get('cancel-player-runtime');
   assert.equal(gate(f.context('players/status',inputs[0][1])),true); assert.equal(gate(f.context('apikeys/credit',inputs[4][1])),false);
+});
+
+test('apikeys/launch is projected: key lines, signed string and note never reach the browser', async () => {
+  const engine = {ok:true,url:'https://game.example.test/game?launch=a.b.c',playerId:'partner-player',playerRef:'game-player',balance:100,currency:'EUR',expiresIn:21600,
+    curlLines:['curl -H X-Api-Key: EXTRA_SECRET'],signedString:'EXTRA_SECRET.POST./api/v1/launch',curlNote:'EXTRA_SECRET'};
+  const f = fixture({gameAuthority:{execute:async()=>structuredClone(engine)}});
+  const response = await f.call('apikeys/launch',{id:'key',playerId:'partner-player',displayName:'A B',currency:'EUR',language:'en'});
+  assert.doesNotMatch(JSON.stringify(response),/EXTRA_SECRET|curlLines|signedString|curlNote/);
+  assert.deepEqual(response,{ok:true,url:engine.url,playerId:'partner-player',playerRef:'game-player',balance:100,currency:'EUR',expiresIn:21600});
+  const noUrl = fixture({gameAuthority:{execute:async()=>({ok:true,playerId:'p',curlLines:['EXTRA_SECRET']})}});
+  await assert.rejects(noUrl.call('apikeys/launch',{id:'key'}),error=>error.statusCode===503);
 });
 
 test('invalid domain inputs do not reach Render and missing/failed acknowledgement is an error', async () => {

@@ -125,6 +125,13 @@ export function createStudioAdminAccounts({ boDb, gameDb, scope, gameAuthority, 
         if (result.id !== body.playerId || result.changed !== true) fail(503);
         return { ok: true, id: result.id, changed: true }; // Never echo credentials/provider payloads.
       }
+      if (action === 'apikeys/launch') {
+        // Explicit projection: the engine reply also carries curlLines/signedString/curlNote (API key and signature); never forward them.
+        const str = value => typeof value === 'string' ? value : undefined, num = value => typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+        if (!str(result.url)) fail(503);
+        return Object.fromEntries(Object.entries({ ok: true, url: result.url, playerId: str(result.playerId), playerRef: str(result.playerRef),
+          balance: num(result.balance), currency: str(result.currency), expiresIn: num(result.expiresIn) }).filter(([, value]) => value !== undefined));
+      }
       return result;
     });
     const ready = context => typeof gameAuthority.execute === 'function' && authorityActions.includes(context.endpoint.action);
