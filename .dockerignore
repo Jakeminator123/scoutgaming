@@ -7,7 +7,6 @@
 .git
 .github
 .githooks
-.agents
 .claude
 .cursor
 .croupier-inbox
@@ -30,7 +29,6 @@ inbox-token.txt
 **/*.pem
 **/*.p12
 **/*.pfx
-services/game/data
 
 # Not runtime inputs: media bytes come from Blob, registers from Neon, and the
 # presentation preview is built only for Studio.
