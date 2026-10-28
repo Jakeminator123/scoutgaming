@@ -4,6 +4,7 @@ import {createServer} from 'node:http';
 import {once} from 'node:events';
 import assert from 'node:assert/strict';
 import {mkdtemp, readFile, readdir, writeFile, rm} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/navigation/server/platform-routing.mjs';
@@ -48,7 +49,9 @@ test('published roulette browser contracts use exact backend routes without expo
     '/packages/presentation/contracts/policies/project.seed.json', '/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
-  }
+  }  // The shared card back is a tracked frontend file; /media/ is not served in the cloud.
+  assert.equal(platformRoute(new URL('/images/cards/back-scout.png', config.publicOrigin), config).kind, 'frontend');
+  assert.ok(existsSync(new URL('../public/images/cards/back-scout.png', import.meta.url)));
 });
 
 test('unified Studio configuration needs no second UI origin and retains distinct game authority', () => {

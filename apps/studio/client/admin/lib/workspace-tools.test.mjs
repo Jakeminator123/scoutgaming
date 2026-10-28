@@ -90,7 +90,7 @@ function publicationWorkspaceHarness(search) {
     if(name==='./room-game-config')return {RoomGameConfig:marker('RoomGameConfig')};
     if(name==='./control-resource-lifecycle')return {ControlResourceLifecycle:Lifecycle};
     if(name==='./control-operator-directory')return {ControlOperatorDirectory:marker('ControlOperatorDirectory')};
-    if(name==='./page-template')return {PageTemplate:marker('PageTemplate')};
+    if(name==='./page-template.mjs')return {PageTemplate:marker('PageTemplate')};
     if(name==='./project-conflict')return {ProjectConflict:marker('ProjectConflict')};
   });
   const {WorkspaceTool}=compile('../components/studio/workspace-tools.tsx',name=>{

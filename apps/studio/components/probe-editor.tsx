@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { PROBE_MODELS, PROBE_REASONS, type ProbePolicy } from '../../../packages/presentation/contracts/probe-policy.mjs';
 import { probeFixtures, type ProbeFact } from '../../../packages/presentation/contracts/probe-fixtures.mjs';
 import { requestJson } from './studio-types';
-import type { ActivityDraft } from './activity-log';
+import type { ActivityDraft } from '../lib/activity-log.mjs';
 import styles from './probe-editor.module.css';
 
 type Result={reason:string;choice:{speak:boolean;text:string;memoryIds:string[];topicId:string;reason:string}|null;metrics:Record<string,unknown>;usedMemories:ProbeFact[]};

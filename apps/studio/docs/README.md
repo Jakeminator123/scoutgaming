@@ -185,7 +185,7 @@ röst, ljud, munrörelser och återgång till vila innan du provar mikrofonen.
 Avsluta med **Stoppa drift** och vänta på bekräftat Av. Admins provspel har
 chatt och genererat tal avstängda.
 
-## Svarsbibliotek, Skapa material och Spelhändelser & regler
+## Svarsbibliotek och Skapa material
 
 - **Svarsbibliotek** (`/admin/replies`) visar sparade AI-svar med exakt text,
   ljud och video. Filtrera, lyssna och spara kategorier. Biblioteket startar
@@ -198,9 +198,8 @@ chatt och genererat tal avstängda.
   visas i krediter före start. Visas **Okänt – kontrollera Runway**: kontrollera
   portalen innan du beställer igen. **Generera** igen med samma inställningar
   efter ett fel ger samma jobb, inte en ny debitering.
-- **Spelhändelser & regler** (`/admin/events`) visar de exakta facken för
-  spelmotorns händelser och klippval med villkor. Interna händelse-ID:n ändras
-  inte av visningsnamnen.
+- Klippval och villkor ändrar du i **Studio → Klippkarta** under
+  **Körregler**. Den gamla adressen `/admin/events` leder dit.
 
 ## Sceneditor: mallen
 

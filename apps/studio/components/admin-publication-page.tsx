@@ -12,7 +12,7 @@ import { markPackagesStale, packageEditor, packageSelectionDirty, publishOperato
 import type { PackageEditor } from '../lib/operator-package-client.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
-import { PageTemplate } from './page-template';
+import { PageTemplate } from './page-template.mjs';
 import styles from './admin-publication-page.module.css';
 import { ProjectConflict } from './project-conflict';
 import { useStudioProjectSession } from './studio-session';

@@ -58,7 +58,8 @@ test('deployment catalog builds after Amira source removal without changing Astr
 });
 test('retired dealer aliases and Blob pointers disappear while Astrid remains registered',async()=>{
  const {readFile}=await import('node:fs/promises');const {resolvePublicMedia}=await import('../tools/media-layout.mjs');
- assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/win.mp4'));
+ assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/speak.json'));
+ for(const url of ['/review/astrid-green-speak/win.mp4','/review/astrid-seam-repair/back-fc3615057eaa.mp4','/lab/astrid-pilot.mp4','/dealers/astrid-hands/streams/index.json'])assert.equal(resolvePublicMedia(url),null);
  const index=JSON.parse(await readFile(join(source,'media/blob-index.json'),'utf8'));
  for(const dealer of ['vera','mei','amira','johanna']){
   assert.equal(index.files.some(row=>row.logicalPath.startsWith(`dealers/${dealer}/`)),false);

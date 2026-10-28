@@ -66,7 +66,7 @@ test('prepare preserves exact four-file metadata and filters only index paths ab
   assert.deepEqual(prepared.value.layout,layout);
   for(const [path,text] of Object.entries(legacy.entries))assert.equal(prepared.value.legacy.entries[path],text);
   const jsonRows=index.files.filter(row=>paths.has(row.logicalPath)&&['public','private'].includes(row.access)&&row.storage?.contentType==='application/json');
-  assert.equal(jsonRows.length,18);assert.equal(jsonRows.reduce((sum,row)=>sum+row.size,0),451589);
+  assert.equal(jsonRows.length,2);assert.equal(jsonRows.reduce((sum,row)=>sum+row.size,0),67216);
   for(const row of jsonRows){
     const text=prepared.value.legacy.entries['media/'+row.logicalPath];assert.equal(Buffer.byteLength(text),row.size);assert.equal(hash(Buffer.from(text)),row.sha256);
   }
@@ -84,7 +84,7 @@ test('provided metadata reader is used for every exact JSON tuple and corrupt by
   const seen=[];
   const reader=async row=>{seen.push(row.logicalPath);assert.equal(Object.isFrozen(row),true);return readFile(new URL('../media/'+row.logicalPath,import.meta.url));};
   const imported=await prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes:reader});
-  assert.equal(seen.length,18);assert.equal(new Set(seen).size,18);assert.equal(imported.revision,prepared.revision);
+  assert.equal(seen.length,2);assert.equal(new Set(seen).size,2);assert.equal(imported.revision,prepared.revision);
   for(const readMetadataBytes of [async()=>Buffer.from('{}'),async()=>new Uint8Array(),async()=>'{"not":"bytes"}'])
     await assert.rejects(prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes}),error=>['studio_runtime_import_metadata_identity_invalid','studio_runtime_import_metadata_bytes_required'].includes(error.code));
   await assert.rejects(prepareRuntimeMediaImport({scope,sourceRoot:root,readMetadataBytes:async()=>{throw Error('PRIVATE credential');}}),
