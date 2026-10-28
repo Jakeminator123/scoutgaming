@@ -17,7 +17,8 @@
 // the candidate SHA. Receipts are therefore read at --receipts-ref, which must descend from the
 // candidate without any runtime change (RUNTIME_PREFIXES); otherwise F8 fails with the file list.
 // D1 and C1 expect the room's config head and package revision from the newest K06 receipt's
-// neon.finalState unless --expect-config/--expect-package override them; the source is recorded.
+// neon.finalState (RERUN-1) or neon.finalRoom (RERUN-2) unless --expect-config/--expect-package
+// override them; the source is recorded.
 // Receipt contracts:
 //   in Git at --receipts-ref (newest per family, see RECEIPT_FAMILIES in tools/o02-freeze-check.mjs):
 //     docs/<date>-K04-BROWSER-RERUN-<n>-ACCEPTANCE.json   (RERUN-3 today; RERUN-4 on the frozen candidate)
@@ -78,16 +79,27 @@ export function checkReceiptsRef(git, candidate, ref) {
   return result;
 }
 
-// D1/C1 expectations: the flags win, otherwise the K06 receipt's final published state.
-export function expectedStagingHead(k06, { config = null, packageRevision = null, k06Path = null } = {}) {
-  const final = k06?.neon?.finalState ?? k06?.finalState ?? null;
-  const fromConfig = typeof final?.head === 'string' && final.head ? final.head : null;
-  const fromPackage = Number.isInteger(final?.packageRevision) ? final.packageRevision : null;
-  const at = `${k06Path ?? 'K06-kvittot'}#neon.finalState`;
+// D1/C1 expectations: the flags win, otherwise the K06 receipt's final published state. Two shapes:
+// RERUN-1 neon.finalState.{head, packageRevision}; RERUN-2 neon.finalRoom.{head, operatorPackages[operator A]}.
+export function expectedStagingHead(k06, { config = null, packageRevision = null, k06Path = null, operatorId = STAGING.operatorA } = {}) {
+  const shapes = [
+    { at: 'neon.finalState', node: k06?.neon?.finalState, pkgKey: 'packageRevision', pkg: n => n.packageRevision },
+    { at: 'neon.finalRoom', node: k06?.neon?.finalRoom, pkgKey: `operatorPackages.${operatorId}`, pkg: n => n.operatorPackages?.[operatorId] },
+    { at: 'finalState', node: k06?.finalState, pkgKey: 'packageRevision', pkg: n => n.packageRevision },
+  ].map(s => {
+    const n = s.node && typeof s.node === 'object' ? s.node : null;
+    const head = typeof n?.head === 'string' && n.head ? n.head : null;
+    const pkg = n && Number.isInteger(s.pkg(n)) ? s.pkg(n) : null;
+    return { ...s, head, pkgValue: pkg };
+  });
+  const shape = shapes.find(s => s.head !== null || s.pkgValue !== null) ?? null;
+  const fromConfig = shape?.head ?? null;
+  const fromPackage = shape?.pkgValue ?? null;
+  const at = `${k06Path ?? 'K06-kvittot'}#${shape?.at ?? 'neon.finalState'}`;
   return {
     publishedConfig: config ?? fromConfig, packageRevision: packageRevision ?? fromPackage,
     source: { publishedConfig: config ? '--expect-config' : fromConfig ? at + '.head' : null,
-      packageRevision: packageRevision !== null ? '--expect-package' : fromPackage !== null ? at + '.packageRevision' : null },
+      packageRevision: packageRevision !== null ? '--expect-package' : fromPackage !== null ? `${at}.${shape.pkgKey}` : null },
   };
 }
 
@@ -319,7 +331,7 @@ async function main() {
   const twoGames = docs.k06.json?.twoConsecutiveGames ?? null;
   ev(cChain, `${docs.k06.path}#twoConsecutiveGames`, twoGames);
   decide(cChain, expected.packageRevision !== null && inA?.packageRevision === expected.packageRevision && !inB && twoGames?.pass === true && onCandidate('k06') ? true : twoGames?.pass === false ? false : null,
-    'Förväntad paketrevision ur K06-kvittots neon.finalState eller --expect-package (publiceras något efter K06-omprovet anges den med flaggan efter läsning av operator_packages).');
+    'Förväntad paketrevision ur K06-kvittots neon.finalState/neon.finalRoom eller --expect-package (publiceras något efter K06-omprovet anges den med flaggan efter läsning av operator_packages).');
 
   // ---------- 7. Neon read-only ----------
   const cDb = crit('D1', `${MP.freeze} (schema); exakt en ekonomisk effekt`, 'Schema/ledger: migreringar, publicerad config-huvud, ledger = saldo per spelare, inga dubbla idempotensnycklar');
