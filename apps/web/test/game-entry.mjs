@@ -28,12 +28,19 @@ test('the game start validates the live session and preserves the engine documen
   let response=await platformUiDocument(request('/game?dealer=linnea&returnTo=https://evil.invalid'),options);
   assert.equal(response.status,303);assert.equal(response.headers.get('Location'),'/player-login?dealer=linnea');
   assert.equal(calls.length,1);assert.equal(calls[0].init.headers.get('x-croupier-public-origin'),env.CROUPIER_PUBLIC_ORIGIN);
-  authenticated=true;response=await platformUiDocument(request('/game?game=blackjack&dealer=linnea'),options);
+  authenticated=true;response=await platformUiDocument(request('/game?game=blackjack&operator=sg-test&dealer=linnea'),options);
   assert.equal(response.status,200);assert.equal(await response.text(),cloudHtml);
-  assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=linnea','the public game selector never reaches the engine document');
-  response=await platformUiDocument(request('/game?dealer=linnea&returnTo=https://evil.invalid'),options);
-  assert.equal(await response.text(),cloudHtml);assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=linnea');
-  status=404;response=await platformUiDocument(request('/game?dealer=amira'),options);assert.equal(response.status,404);status=200;
+  assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=linnea&operator=sg-test','the public game selector never reaches the engine document');
+  response=await platformUiDocument(request('/game?operator=sg-test&dealer=linnea&returnTo=https://evil.invalid'),options);
+  assert.equal(await response.text(),cloudHtml);assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=linnea&operator=sg-test');
+  // L1: a signed-in player's operatorless dealer link lands in the lobby; no dealer, no engine document.
+  const beforeLobby=calls.length;
+  for(const method of ['GET','HEAD']){
+    response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=paow&returnTo=https://evil.invalid',{method,headers:{cookie:'fixture-session=existing'}}),options);
+    assert.equal(response.status,303,method);assert.equal(response.headers.get('Location'),'/lobby?dealer=paow',method);assert.equal(await response.text(),'',method);
+  }
+  assert.ok(calls.slice(beforeLobby).every(call=>call.url.endsWith('/api/auth/session')),'the engine document is never asked without an operator');
+  status=404;response=await platformUiDocument(request('/game?operator=sg-test&dealer=amira'),options);assert.equal(response.status,404);status=200;
   authenticated=false;response=await platformUiDocument(request('/game?lane=mobile-phone'),options);assert.equal(response.headers.get('Location'),'/player-login?lane=mobile-phone');
   const beforeLogin=calls.length;response=await platformUiDocument(request('/player-login'),options);
   assert.equal(response.status,200);assert.match(await response.text(),/blackjack-entry.mjs/);assert.equal(calls.length,beforeLogin);
@@ -82,14 +89,14 @@ test('Neon flag makes /game the actual shared player; off keeps the local shell 
   assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/player-login'),options)).status,404);
   assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack'),options)).status,404);
   options.env = {...env,CROUPIER_STUDIO_NEON_POLICY:'1'};
-  const game = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=elin'),options);
+  const game = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?operator=sg-test&dealer=elin'),options);
   assert.equal(game.status,200);assert.match(await game.text(),/data-game-path="\/blackjack".*app.mjs/);
   const bare = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?returnTo=https://evil.invalid'),options);
   assert.equal(bare.status,303);assert.equal(bare.headers.get('Location'),'/lobby');assert.equal(await bare.text(),'');
   const login = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/player-login'),options);
   assert.equal(login.status,200);assert.match(await login.text(),/data-game-path="\/blackjack".*blackjack-entry.mjs/);
-  assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=elin',{method:'HEAD'}),options)).status,200);
-  assert.equal(await (await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=elin',{method:'HEAD'}),options)).text(),'');
+  assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?operator=sg-test&dealer=elin',{method:'HEAD'}),options)).status,200);
+  assert.equal(await (await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?operator=sg-test&dealer=elin',{method:'HEAD'}),options)).text(),'');
 });
 test('prepared player login and modal distinguish canonical game from account entry without raw media copies',async t => {
   const directory = await mkdtemp(join(tmpdir(),'game-address-build-'));t.after(() => rm(directory,{recursive:true,force:true}));
