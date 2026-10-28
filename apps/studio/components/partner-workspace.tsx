@@ -22,7 +22,7 @@ export function PartnerWorkspace({ user, operators, accessClass, apiBase = '/stu
   const matching = partners.filter(operator => `${operator.name} ${operator.slug}`.toLocaleLowerCase(language).includes(query.trim().toLocaleLowerCase(language)));
   return <div className={styles.portal} data-theme={theme} lang={language}>
     <aside className={styles.sidebar}>
-      <a className={styles.brand} href="/partner">scout<span>/</span>gaming<small>{copy.portal}</small></a>
+      <a className={styles.brand} href="/partner"><span aria-hidden="true">S</span><div>Scoutgaming<small>{copy.portal}</small></div></a>
       <nav aria-label={copy.portal}><a className={styles.active} href="/partner" aria-current="page">{copy.partners}</a></nav>
       {admin && <nav className={styles.levels} aria-label={copy.sameLogin}>
         <p>{copy.sameLogin}</p><a href="/admin">{copy.control}<span aria-hidden="true"> ↗</span></a>

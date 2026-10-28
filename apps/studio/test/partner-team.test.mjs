@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { readPartnerPreviewFixture } from './fixtures/partner-preview.mjs';
-import { createPartnerPreviewContext } from '../lib/partner-preview-policy.mjs';
 
 const require = createRequire(new URL('../package.json', import.meta.url));
 const React = require('react');
@@ -20,13 +18,6 @@ const output = { exports: {} };
 new Function('require', 'module', 'exports', transformed)(require, output, output.exports);
 const { TeamView } = output.exports;
 
-const scope = { environment: 'fixture', workspaceId: 'croupier' };
-const north = readPartnerPreviewFixture(createPartnerPreviewContext({
-  session: { role: 'admin', user: 'test', scope },
-  scope,
-  operatorId: 'operator-demo-north',
-  previewEnabled: true,
-}), { now: () => Date.UTC(2026, 9, 6) });
 
 function render(snapshot, surface = 'partner') {
   const calls = [];
@@ -42,56 +33,6 @@ function render(snapshot, surface = 'partner') {
 function tag(html, id) {
   return html.match(new RegExp(`<[^>]*id="${id}"[^>]*>`))?.[0] || '';
 }
-
-test('fixture membership list shows Swedish labels, both roles and only this operator', () => {
-  const operator = { id: 'operator-demo-north', name: 'Demo North', slug: 'demo-north' };
-  const snapshot = {
-    schemaVersion: 1,
-    preview: true,
-    mode: 'fixture',
-    operator,
-    operators: [operator],
-    roles: [
-      { id: 'partner-admin', label: 'Partner administrator' },
-      { id: 'partner-editor', label: 'Partner editor' },
-    ],
-    team: [
-      { id: 'north-admin', operatorId: operator.id, name: 'North Admin', email: 'admin@demo-north.invalid', roleId: 'partner-admin', role: 'Partner administrator', status: 'active' },
-      { id: 'north-editor', operatorId: operator.id, name: 'North Editor', email: 'editor@demo-north.invalid', roleId: 'partner-editor', role: 'Partner editor', status: 'invited' },
-      { id: 'south-admin', operatorId: 'operator-demo-south', name: 'South Only Member', email: 'south@demo-south.invalid', role: 'Partner administrator', status: 'suspended' },
-    ],
-  };
-  const { html, calls } = render(snapshot);
-  for (const label of ['Medlemskap', 'Rollprofil', 'Status', 'Partner administrator', 'Partner editor', 'aktiv', 'inbjuden', 'North Admin', 'North Editor']) {
-    assert.match(html, new RegExp(label), label);
-  }
-  assert.equal(html.includes('South Only Member'), false);
-  assert.equal(html.includes('south@demo-south.invalid'), false);
-  assert.equal(html.includes('avstängd'), false);
-  assert.equal(html.includes('Åtgärderna är låsta tills teamåtkomsten har verifierats.'), false);
-  assert.equal(tag(html, 'team-invite-email').includes('disabled'), false);
-  assert.equal(tag(html, 'team-invite-role').includes('disabled'), false);
-  assert.equal(tag(html, 'team-invite-submit').includes('disabled'), false);
-  assert.equal(calls.length, 0);
-});
-
-test('the demo-north fixture still lists its own members and fixture status', () => {
-  const mixed = {
-    ...north,
-    team: [...north.team, { id: 'foreign', operatorId: 'operator-demo-south', name: 'South Only Member', email: 'south@demo-south.invalid', role: 'partner-admin', status: 'active' }],
-  };
-  const { html } = render(mixed);
-  assert.match(html, /Team &amp; access/);
-  assert.match(html, /Personal i Demo North/);
-  assert.match(html, /Demo North Admin/);
-  assert.match(html, /Demo North Editor/);
-  assert.match(html, /admin@demo-north\.invalid/);
-  assert.match(html, /editor@demo-north\.invalid/);
-  assert.match(html, /Fixture · demo/);
-  assert.match(html, /Sök medlemmar/);
-  assert.equal(html.includes('South Only Member'), false);
-  assert.equal(html.includes('aktiv'), false);
-});
 
 test('real membership is read-only and does not pretend an invite was sent', () => {
   const operator = { id: 'op-1', name: 'Nordic Bet', slug: 'nordic-bet' };

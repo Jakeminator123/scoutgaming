@@ -1,81 +1,65 @@
 import { useEffect, useState } from 'react';
+import { PARTNER_VIEWS } from '../../../../packages/navigation/workspace-surfaces.mjs';
+import { PARTNER_VIEW_PERMISSIONS } from '../../../../packages/studio-access/server/partner-access-policy.mjs';
 
+// Orden följer apps/studio/docs/TERMINOLOGI.md: Partnerportalen, bolag, spelbord,
+// bordsgrafik, scenmall, tilldelning, revision, utkast/publicerad,
+// administratör/redaktör/läsare.
 const COPY = Object.freeze({
   sv: {
-    portal: 'Partnerportal', level: 'Nivå 2 · Spelbolag', partners: 'Partners', company: 'Spelbolag',
-    admin: 'Intern administratör', member: 'Operatörspersonal', signedIn: 'Inloggad som',
+    portal: 'Partnerportalen', level: 'Partnerportalen', partners: 'Bolag', company: 'Bolag',
+    admin: 'Scoutgamings personal', member: 'Bolagets team', signedIn: 'Inloggad som',
     switchAccount: 'Byt konto', logOut: 'Logga ut', loggingOut: 'Loggar ut…',
     logoutError: 'Utloggningen kunde inte bekräftas. Du är kvar på sidan. Försök igen.',
-    directoryIntroAdmin: 'Öppna ett riktigt spelbolag med samma administratörskonto. Åtkomsten kontrolleras för varje bolag.',
-    directoryIntroMember: 'Här finns de spelbolag ditt konto har åtkomst till.',
-    open: 'Öppna arbetsyta', directory: 'Alla partners', noPartners: 'Inga tillgängliga spelbolag',
-    search: 'Sök spelbolag', noMatches: 'Inga spelbolag matchar', noMatchesBody: 'Prova ett annat namn eller rensa sökningen.',
-    noPartnersBody: 'Ditt konto har ingen aktiv bolagskoppling. Be en intern administratör kontrollera åtkomsten.',
+    directoryIntroAdmin: 'Öppna ett bolag med samma konto. Åtkomsten kontrolleras för varje bolag.',
+    directoryIntroMember: 'Här finns de bolag ditt konto har åtkomst till.',
+    open: 'Öppna portalen', directory: 'Alla bolag', noPartners: 'Inga tillgängliga bolag',
+    search: 'Sök bolag', noMatches: 'Inga bolag matchar', noMatchesBody: 'Prova ett annat namn eller rensa sökningen.',
+    noPartnersBody: 'Ditt konto har ingen aktiv bolagskoppling. Be Scoutgaming kontrollera åtkomsten.',
     sameLogin: 'Samma konto', control: 'Admin', player: 'Spelarlobby',
-    directoryNote: 'Listan hämtas från registrerade bolag. Inga demonstrationer eller exempeldata visas här.',
-    theme: 'Tema', light: 'Ljust', dark: 'Mörkt', language: 'Språk', menu: 'Sida', overview: 'Översikt',
-    games: 'Spel', playersGroup: 'Spelare', finance: 'Ekonomi', settings: 'Inställningar',
-    tables: 'Spelrum', presentation: 'Sammansättning', design: 'Bordets utseende', background: 'Bakgrund',
-    dealers: 'Dealers & paket', test: 'Provbord', players: 'Spelare', tx: 'Transaktioner', reports: 'Rapporter',
-    team: 'Team & behörigheter', api: 'Integration', package: 'Publicerat paket', revision: 'Paketversion',
-    overviewIntro: 'Bolagets spelrum och publicerade sammansättningar. Aktuella spelresultat visas först när spelkopplingen är ansluten.',
-    tablesIntro: 'Välj spelrum eller bolagets standard. Här samlas sammansättning, provspel och publicering.',
-    packageMissing: 'Inget publicerat paket', packageMissingBody: 'Intern personal behöver publicera bolagets paket innan innehållet blir tillgängligt.',
-    profiles: 'Sammansättningar', tableCount: 'Spelrum', configured: 'Konfigurerat', draft: 'Utkast',
-    noTables: 'Inga spelrum ännu', noTablesBody: 'Intern personal skapar och publicerar bolagets spelrum i nivå 1.',
-    game: 'Spel', status: 'Konfigurationsstatus', profile: 'Sammansättning',
-    notConnected: 'Inte anslutet', unavailable: 'Spelkoppling återstår',
-    unavailableBody: 'Spelare, transaktioner och ekonomiska rapporter är ännu inte anslutna till partnerportalen. Inga exempelvärden visas.',
-    apiBody: 'Nyckelhantering och plånboksanslutning finns ännu inte i partnerportalen. Kontakta intern personal för integrationen.',
-    readOnlyScope: 'Endast detta spelbolags publicerade innehåll och tilldelade resurser visas.',
-    unsavedLeave: 'Du har osparade ändringar i sammansättningen. Lämna sidan och kasta dessa ändringar?',
-    roomSettings: 'Öppna spelrum', roomDefault: 'Bolagets standard', livePlay: 'Provspela publicerad version',
-    publication: 'Publicerat', roomChoices: 'Val för spelrum', draftKept: 'Osparade ändringar finns kvar i Spelrum.',
+    directoryNote: 'Listan hämtas från registrerade bolag. Inga exempeldata visas här.',
+    theme: 'Tema', light: 'Ljust', dark: 'Mörkt', language: 'Språk', menu: 'Meny',
+    overview: 'Översikt', rooms: 'Spelbord', players: 'Spelare', reports: 'Ekonomi', team: 'Team', integration: 'Integration', help: 'Hjälp och kontakt',
+    assignmentFrom: 'Tilldelning från Scoutgaming', revision: 'revision', packageMissing: 'Ingen publicerad tilldelning',
+    dealers: 'dealers', lanes: 'scenmallar', tables: 'bordsgrafik', backgrounds: 'bakgrunder', switchCompany: 'Byt bolag',
+    notConnected: 'Inte anslutet',
+    deniedTitle: 'Den här sidan kräver en behörighet som rollen saknar',
+    deniedBody: 'Rollen {role} saknar behörigheten {permission}. Be bolagets administratör eller Scoutgaming om åtkomst.',
+    toOverview: 'Till översikten',
+    unsavedLeave: 'Du har osparade ändringar i spelbordets utseende. Lämna sidan och kasta dessa ändringar?',
+    draftKept: 'Osparade ändringar finns kvar under Spelbord.',
   },
   en: {
-    portal: 'Partner portal', level: 'Level 2 · Operators', partners: 'Partners', company: 'Operator',
-    admin: 'Internal administrator', member: 'Operator staff', signedIn: 'Signed in as',
+    portal: 'Partner portal', level: 'Partner portal', partners: 'Companies', company: 'Company',
+    admin: 'Scoutgaming staff', member: 'Company team', signedIn: 'Signed in as',
     switchAccount: 'Switch account', logOut: 'Log out', loggingOut: 'Signing out…',
     logoutError: 'Sign-out could not be confirmed. You are still on this page. Please try again.',
-    directoryIntroAdmin: 'Open a real operator with the same administrator account. Access is checked separately for each operator.',
-    directoryIntroMember: 'These are the operators your account can access.',
-    open: 'Open workspace', directory: 'All partners', noPartners: 'No operators available',
-    search: 'Search operators', noMatches: 'No matching operators', noMatchesBody: 'Try another name or clear the search.',
-    noPartnersBody: 'Your account has no active operator membership. Ask an internal administrator to check your access.',
+    directoryIntroAdmin: 'Open a company with the same account. Access is checked separately for each company.',
+    directoryIntroMember: 'These are the companies your account can access.',
+    open: 'Open the portal', directory: 'All companies', noPartners: 'No companies available',
+    search: 'Search companies', noMatches: 'No matching companies', noMatchesBody: 'Try another name or clear the search.',
+    noPartnersBody: 'Your account has no active company membership. Ask Scoutgaming to check your access.',
     sameLogin: 'Same account', control: 'Admin', player: 'Player lobby',
-    directoryNote: 'This list comes from registered operators. No demonstrations or sample data are shown here.',
-    theme: 'Theme', light: 'Light', dark: 'Dark', language: 'Language', menu: 'Page', overview: 'Overview',
-    games: 'Games', playersGroup: 'Players', finance: 'Finance', settings: 'Settings',
-    tables: 'Game rooms', presentation: 'Composition', design: 'Table appearance', background: 'Background',
-    dealers: 'Dealers & package', test: 'Trial table', players: 'Players', tx: 'Transactions', reports: 'Reports',
-    team: 'Team & permissions', api: 'Integration', package: 'Published package', revision: 'Package version',
-    overviewIntro: 'Your game rooms and published compositions. Live game results become available when the game connection is integrated.',
-    tablesIntro: 'Choose a game room or company defaults. Composition, play testing and publishing are together here.',
-    packageMissing: 'No published package', packageMissingBody: 'Internal staff need to publish this operator’s package before its content is available.',
-    profiles: 'Compositions', tableCount: 'Game rooms', configured: 'Configured', draft: 'Draft',
-    noTables: 'No game rooms yet', noTablesBody: 'Internal staff create and publish your company’s game rooms in level 1.',
-    game: 'Game', status: 'Configuration status', profile: 'Composition',
-    notConnected: 'Not connected', unavailable: 'Game connection pending',
-    unavailableBody: 'Players, transactions and financial reports are not yet connected to the partner portal. No sample figures are shown.',
-    apiBody: 'Key management and wallet connections are not yet available in the partner portal. Contact internal staff for the integration.',
-    readOnlyScope: 'Only this operator’s published content and assigned resources are shown.',
-    unsavedLeave: 'You have unsaved composition changes. Leave this page and discard those changes?',
-    roomSettings: 'Open game rooms', roomDefault: 'Company defaults', livePlay: 'Play published version',
-    publication: 'Published', roomChoices: 'Game room choices', draftKept: 'Unsaved changes are kept in Game rooms.',
+    directoryNote: 'This list comes from registered companies. No sample data is shown here.',
+    theme: 'Theme', light: 'Light', dark: 'Dark', language: 'Language', menu: 'Menu',
+    overview: 'Overview', rooms: 'Tables', players: 'Players', reports: 'Finance', team: 'Team', integration: 'Integration', help: 'Help and contact',
+    assignmentFrom: 'Assignment from Scoutgaming', revision: 'revision', packageMissing: 'No published assignment',
+    dealers: 'dealers', lanes: 'scene templates', tables: 'table graphics', backgrounds: 'backgrounds', switchCompany: 'Switch company',
+    notConnected: 'Not connected',
+    deniedTitle: 'This page needs a permission your role does not have',
+    deniedBody: 'The role {role} lacks the permission {permission}. Ask the company administrator or Scoutgaming for access.',
+    toOverview: 'To the overview',
+    unsavedLeave: 'You have unsaved changes to the table appearance. Leave this page and discard those changes?',
+    draftKept: 'Unsaved changes are kept under Tables.',
   },
 });
 
 export function partnerCopy(language = 'sv') { return COPY[language === 'en' ? 'en' : 'sv']; }
 
-const NAVIGATION = Object.freeze([
-  ['ops', 'overview', 'company'], ['bj', 'tables', 'company'],
-  ['team', 'team', 'company'], ['api', 'api', 'company'],
-]);
-
+// Menyn är presentation: samma karta som servern använder för att neka en vy.
 export function partnerNavigation(language, permissions = []) {
   const copy = partnerCopy(language), allowed = new Set(permissions);
-  return NAVIGATION.filter(([id]) => id !== 'team' || allowed.has('team.read'))
-    .map(([id, label, group]) => ({ id, label: copy[label], group: copy[group] }));
+  return PARTNER_VIEWS.filter(view => allowed.has(PARTNER_VIEW_PERMISSIONS[view])).map(id => ({ id, label: copy[id] }));
 }
 
 // Presentation preferences only; business data and drafts remain server-owned.
