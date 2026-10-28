@@ -637,6 +637,8 @@
 .studio-sidebar nav>.studio-logout{display:flex;width:100%;align-items:center;gap:10px;padding:11px 10px;border:0;border-radius:5px;background:none;font:inherit;font-size:13px;line-height:1.45;color:#a3a8b0;text-align:left;cursor:pointer}
 .studio-sidebar nav>.studio-logout:hover{color:#e6e8eb}.studio-sidebar nav>.studio-logout:focus-visible{outline:2px solid var(--sg-lime);outline-offset:2px}.studio-sidebar nav>.studio-logout:disabled{cursor:wait;opacity:.7}
 .studio-logout-error{margin:4px 10px;color:#ffb547;font-size:12px;line-height:1.4}
+.studio-portal-bar>.studio-mobile-logout{display:none}.studio-mobile-logout .studio-logout{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid #2b2e33;border-radius:5px;background:none;color:inherit;font:inherit;font-size:13px;cursor:pointer}.studio-mobile-logout .studio-logout:focus-visible{outline:2px solid var(--sg-lime);outline-offset:2px}.studio-mobile-logout .studio-logout-error{margin:4px 0}
+@media(max-width:600px){.studio-portal-bar>.studio-mobile-logout{display:flex;flex-direction:column;align-items:flex-end}}
 /* Split account pages: own header above the native reader, which reads and shows one section. */
 .preview-admin .admin-accounts-page .admin-system-page{padding:0}
 
