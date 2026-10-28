@@ -97,5 +97,13 @@ test('the desktop table is retracted until DESKTOP_LAYOUT=1: every visitor gets 
   const desk = readFileSync(new URL('../public/desk-mode.js', import.meta.url), 'utf8'), html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
   assert.match(desk, /var want = globalThis\.DESKTOP_LAYOUT === true && \(forced === true \|\| forced !== false && keyed && w > 820\);/);
   assert.ok(html.indexOf('<script src="/layout-flag.js"></script>') >= 0 && html.indexOf('/layout-flag.js') < html.indexOf('/desk-mode.js'), 'the flag loads before desk-mode.js');
-  assert.match(server, /if \(p === "\/layout-flag\.js"\) \{[^\n]*DESKTOP_LAYOUT=\$\{process\.env\.DESKTOP_LAYOUT === "1"\}/);
+  const flag = server.slice(server.indexOf('if (p === "/layout-flag.js")'), server.indexOf('if (p === "/notice.js")'));
+  assert.match(flag, /let desk = flag === "1";/, 'DESKTOP_LAYOUT=1: everyone');
+  assert.match(flag, /res\.end\(`globalThis\.DESKTOP_LAYOUT=\$\{desk\};`\)/);
+});
+
+test('on staging only the Table Studio tables built with "Desktop table" get the desktop table (Emil 27 Oct)', () => {
+  const flag = server.slice(server.indexOf('if (p === "/layout-flag.js")'), server.indexOf('if (p === "/notice.js")'));
+  assert.match(flag, /perTable = flag === "tables" \|\| flag !== "0" && flag !== "1" && \/\^staging\\\.\/i\.test\(req\.headers\.host/, 'per table on a staging.* host unless the env says 0 or 1');
+  assert.match(flag, /studioTables\.get\(new URL\(req\.headers\.referer \?\? ""\)\.searchParams\.get\("table"\) \?\? ""\)\?\.layout === "desk"/, 'the page\'s own ?table=, saved with layout desk');
 });

@@ -29,6 +29,9 @@ html.desk .app::before {
 }
 /* a room not widened yet: its own plate in the frame over the blurred copy (the old desktop look) */
 html.desk:not(.room-wide) .app::before { display: none; }
+html.desk:not(.room-wide) .app::after { filter: blur(30px) brightness(.55) saturate(.9); }
+html.desk:not(.room-wide) .stage .still { -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent); }   /* the plate's edges melt into the blur (the still only: a mask on .stage would hide the header and the panels in it) */
 
 /* the frame */
 html.desk .stage {
@@ -46,44 +49,67 @@ html.desk .table-settings { max-width: none; }
 html.desk .status { position: fixed; top: calc(var(--gut) + 64px); left: calc(var(--fx) + var(--fw) / 2); }
 html.desk .caption { position: fixed; top: auto; bottom: calc(var(--sh) * .2); left: calc(var(--fx) + var(--fw) / 2); right: auto; transform: translateX(-50%); width: min(560px, var(--fw)); }
 html.desk #winToasts { position: fixed; top: calc(var(--sh) * .36); left: calc(var(--fx) + var(--fw) / 2); }
-html.desk .sound-chip { position: fixed; left: calc(var(--fx) + var(--fw) / 2); right: auto; bottom: var(--gut); transform: translateX(-50%); }
+html.desk .sound-chip { position: fixed; left: var(--gut); right: auto; bottom: var(--gut); top: auto; transform: none; }   /* bottom left over the room, not over box 4's name or her face */
 html.desk .gate { position: fixed; inset: 0; }
 
-/* the panels */
-html.desk .game-dock, html.desk .studio, html.desk .side { position: fixed; z-index: 4; width: var(--col); right: auto; left: auto;
-  border: 1px solid #ffffff14; border-radius: 14px; backdrop-filter: blur(10px); box-shadow: 0 18px 50px #0007; }
-/* the game (status, timer, chips, bets, decisions, result, balance): bottom right, at the height of the felt */
-html.desk .game-dock { top: auto; right: var(--gut); bottom: var(--gut); max-height: calc(100dvh - 2 * var(--gut) - 70px); overflow-y: auto;
-  container-type: inline-size; background: color-mix(in srgb, var(--design-surface) 88%, transparent); }
+/* the panels. Emil 27 Oct: the table takes the window and nothing sits beside it in a box any more. The chat lies
+   see-through over the room top right, under the header's buttons; the table's people and the info links top left
+   under the brand; the game panel bottom right, beside box 1. The dealer and room pickers are in Settings. */
+html.desk .studio { display: none; }
+html.desk .game-dock { position: fixed; z-index: 4; top: auto; left: auto; right: var(--gut); bottom: var(--gut); width: var(--col);
+  max-height: calc(100dvh - 2 * var(--gut) - 70px); overflow-y: auto; container-type: inline-size;
+  border: 1px solid #ffffff14; border-radius: 14px; backdrop-filter: blur(10px); box-shadow: 0 18px 50px #0007;
+  background: color-mix(in srgb, var(--design-surface) 82%, transparent); }
 /* choosing a box: the card sits where the game panel will be, the boxes on the felt stay free to click */
 html.desk .gate[data-step=boxes] { padding: 0; }
 html.desk .gate[data-step=boxes] .gate-card { position: fixed; right: var(--gut); bottom: var(--gut); width: var(--col); max-width: none; }
-/* the dealers */
-html.desk .studio { height: auto; max-height: 40dvh; padding: 12px; background: var(--panel-bg); }
-html.desk .studio-dealers { grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px; }   /* one row of faces */
-html.desk .studio-dealers button { font-size: 11px; line-height: 1.2; }
-html.desk body:has(.studio-back) .studio { padding-top: 12px; }
-html.desk body:has(.studio-back) .table-header { left: calc(var(--gut) + 168px); }
+html.desk body:has(.studio-back) .table-header { left: calc(var(--gut) + 184px); }
 html.desk .studio-back { top: var(--gut); left: var(--gut); }
-/* the table's people and the chat */
-html.desk .side { height: auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: #0b0c0ee0; }
-/* a short panel scrolls; the message field always stays at its foot */
-html.desk .side > * { flex: none; }
-html.desk .side .log { flex: 1 1 auto; min-height: 60px; }
-html.desk .side .compose { position: sticky; bottom: 0; z-index: 1; background: #0b0c0ef2; }
-html.desk .app.panel-closed .side { display: none; }
-html.desk #who { flex-basis: 84px; }
 
-/* two columns: dealers and chat on the left, under the header */
-html.desk-two .studio { left: var(--gut); top: calc(var(--gut) + 96px); }
-html.desk-two .side { left: var(--gut); top: calc(var(--gut) + 96px + var(--studio-h, 140px) + 12px); bottom: var(--gut); }
-html.desk-two .panel-show { top: auto; right: auto; left: var(--gut); bottom: var(--gut); }
-/* one column on the right: the dealers under the settings, the chat between them and the game */
-html.desk-one .table-header { right: calc(var(--col) + 3 * var(--gut)); }
-html.desk-one .table-settings { position: fixed; top: var(--gut); right: var(--gut); }
-html.desk-one .studio { right: var(--gut); top: calc(var(--gut) + 52px); }
-html.desk-one .side { right: var(--gut); top: calc(var(--gut) + 52px + var(--studio-h, 120px) + 10px); bottom: calc(var(--gut) + var(--dock-h, 260px) + 10px); }
-html.desk-one .panel-show { top: calc(var(--gut) + 52px + var(--studio-h, 120px) + 10px); right: var(--gut); bottom: auto; left: auto; }
+/* the chat: only the messages and the field, no panel. No filter or blur on .side itself: its people and links are
+   fixed to the window, and a filter would make .side their containing block. The oldest lines fade at the top. */
+html.desk {
+  --chat-w: clamp(260px, calc(100vw - var(--fx) - var(--fw) - var(--gut)), 400px);
+  --chat-top: calc(var(--gut) + 58px);
+}
+html.desk .side { position: fixed; z-index: 4; top: var(--chat-top); right: var(--gut); left: auto; bottom: auto; width: var(--chat-w);
+  height: auto; min-height: 0; max-height: min(46dvh, calc(100dvh - var(--chat-top) - var(--dock-h, 300px) - 2 * var(--gut) - 12px));
+  border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+html.desk .side > * { flex: none; }
+html.desk .side .log { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 2px 6px; gap: 6px;
+  scrollbar-width: none; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px); mask-image: linear-gradient(to bottom, transparent, #000 18px); }
+html.desk .side .log::-webkit-scrollbar { display: none; }
+html.desk .side .msg { max-width: 92%; padding: 6px 11px 7px; border: 0; border-radius: 12px; font-size: 14px; line-height: 1.35;
+  background: #08090b8c; backdrop-filter: blur(8px); text-shadow: 0 1px 2px #000a; }
+html.desk .side .her { background: #0b0c0ea6; box-shadow: inset 2px 0 0 var(--sp-lime); }
+html.desk .side .msg .name { font-size: 10px; margin-bottom: 1px; }
+html.desk .side .sys { color: #d8d8d2; text-shadow: 0 1px 3px #000; }
+html.desk .side .compose { padding: 6px 0 0; border: 0; gap: 6px; background: none; }
+html.desk .side .compose input { background: #08090bc0; border-color: #ffffff1f; backdrop-filter: blur(6px); padding: 9px 11px; font-size: 14px; }
+html.desk .side .compose button { padding: 0 14px; font-size: 13px; }
+html.desk #who { flex: 0 0 82px; }
+/* the chat icon folds it away (app.js); the people and the links stay */
+html.desk .app.panel-closed .side { display: flex; }
+html.desk .app.panel-closed .side :is(.log, .compose) { display: none; }
+html.desk .panel-show, html.desk .side-head .panel-hide, html.desk #toggleChat { display: none; }
+
+/* top left, under the brand: the info links, then who is at the table, then the hand log (folded) */
+/* the room top left is free up to about a quarter into the frame (her hair starts at a third) */
+html.desk { --left-w: clamp(250px, calc(var(--fx) + var(--fw) * .25 - var(--gut)), 380px); --left-top: calc(var(--gut) + 100px); }
+html.desk .side .side-head { position: fixed; top: var(--left-top); left: var(--gut); width: var(--left-w); padding: 0; border: 0; gap: 6px; flex-wrap: nowrap; }
+html.desk .side .side-head .ghost { flex: none; white-space: nowrap; padding: 5px 10px; border-radius: 30px; font-size: 12px; background: #0b0c0eb3; backdrop-filter: blur(6px); }
+html.desk .side .table-company { position: fixed; top: calc(var(--left-top) + 40px); left: var(--gut); width: var(--left-w); padding: 0; border: 0; }
+html.desk .side .table-company header { justify-content: flex-start; gap: 12px; margin-bottom: 6px; }
+html.desk .side .table-company h2 { text-shadow: 0 1px 3px #000; }
+html.desk .side #copyTableLink { padding: 4px 10px; font-size: 11px; background: #0b0c0eb3; }
+html.desk .side .player-tag { background: #0b0c0eb3; }
+html.desk .side .sidebar-hands { position: fixed; top: calc(var(--left-top) + 48px + var(--company-h, 60px)); left: var(--gut); width: var(--left-w);
+  max-height: 34dvh; overflow-y: auto; padding: 0; text-shadow: 0 1px 3px #000; }
+html.desk .side .events { position: fixed; top: calc(var(--left-top) + 48px + var(--company-h, 60px)); left: var(--gut); width: var(--left-w); max-height: 50dvh;
+  background: #0b0c0ee6; border-radius: 12px; }
+
+/* one column (a near-square window): the frame sits left of the game panel, the chat over the room above it */
+html.desk-one .sound-chip { left: auto; right: var(--gut); bottom: calc(var(--gut) + var(--dock-h, 260px) + 10px); }   /* box 7 sits at the left edge here */
 html.desk-one .audio-settings .settings-popover { right: var(--gut); top: calc(var(--gut) + 46px); width: min(396px, var(--col)); }
 
 /* the game panel is narrower than a phone on a 13" laptop: the chip rack and the buttons follow its width */

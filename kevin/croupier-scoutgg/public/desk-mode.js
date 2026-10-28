@@ -2,6 +2,8 @@
 // 0.9 of the scene's height wide, its top above the window (the approved mock-up
 // greenscreen/desktop/scener/bredB_s11_skala090_hela_bordet_som_mobil.mp4, metodik GREENSCREEN-DESKTOP.md), with the
 // room widened around it behind (rooms-wide/). Everything the phone shows under the table moves to the sides.
+// Emil 27 Oct: no side panels any more, the table takes the window: the chat lies see-through top right, the game
+// panel bottom right, the table's people and the links top left (desk.css).
 // The page switches by itself on every resize: the phone layout up to 820 px wide (as before), the desktop table above:
 //  - two columns (dealers and chat left, the game right) when both sides of the frame have room for one;
 //  - one column on the right (dealers, chat, game) with the frame to its left when only one fits;
@@ -55,14 +57,15 @@
   }
   apply();
   addEventListener('resize', apply);
-  // the chat panel fits between the dealer picker and (one column) the game panel, whatever their heights
-  function watch(id, prop) {
-    var el = document.getElementById(id);
+  // the chat stops above the game panel and the hand log sits under the table's people, whatever their heights
+  function watch(sel, prop) {
+    var el = document.querySelector(sel);
     if (el && window.ResizeObserver) new ResizeObserver(function () { html.style.setProperty(prop, el.offsetHeight + 'px'); }).observe(el);
   }
+  function watchAll() { watch('#gameDock', '--dock-h'); watch('.side .table-company', '--company-h'); }
   // this script runs inside the stage, before the game panel exists
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { watch('studio', '--studio-h'); watch('gameDock', '--dock-h'); });
-  else { watch('studio', '--studio-h'); watch('gameDock', '--dock-h'); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchAll);
+  else watchAll();
   // app.js calls this once it knows the dealer for sure (a studio table's own dealer, or Astrid's filmed table)
   window.deskMode = { setKeyed: function (k) { keyed = !!k; apply(); }, setRoom: function (room) { setRoom(room && room.id, room && room.wide); },
     get on() { return on; } };

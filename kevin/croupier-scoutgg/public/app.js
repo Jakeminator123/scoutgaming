@@ -631,6 +631,7 @@ let unread = 0;
 function noteUnread() { if (chatVisible() || document.hidden === false && chatVisible()) return; unread++; const b = $("#chatBadge"); if (b) { b.textContent = unread > 9 ? '9+' : String(unread); b.hidden = false; } }
 $("#chatIcon")?.addEventListener("click", () => {
   const app = document.querySelector('.app'), side = document.querySelector('.side');
+  if (window.deskMode?.on && chatVisible()) { $("#hidePanel")?.click(); return; }   // the desktop table: a second tap folds the see-through chat away (Emil 27 Oct)
   if (app.classList.contains('panel-closed')) { $("#showPanel")?.click(); }   // a closed panel comes back first
   else if (phone() && side.classList.contains('chat-open')) { side.classList.remove('chat-open'); $("#toggleChat").setAttribute('aria-expanded', 'false'); syncChatIcon(); return; }
   if (phone() && !side.classList.contains('chat-open')) { side.classList.add('chat-open'); $("#toggleChat").setAttribute('aria-expanded', 'true'); }
