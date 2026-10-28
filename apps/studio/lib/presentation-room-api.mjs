@@ -21,6 +21,8 @@ import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStora
 import { validatePresentationCapabilities } from '../../../packages/presentation/capability-contract.mjs';
 import { presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../../packages/presentation/contracts/presentation-material-game.mjs';
+import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
+import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
@@ -76,10 +78,11 @@ function roomEnvironment(project, id) {
 function requireRoomEnvironment(project, id) {
   if (!roomEnvironment(project, id).fixed) fail(422, 'studio_presentation_room_environment_required');
 }
-function preservePublishedRoomEnvironment(saved, id, captured) {
+// frozen: the published presentation without the company's own material, so
+// its approved backgrounds never read as a changed room environment.
+function preservePublishedRoomEnvironment(saved, id, captured, frozen = readPackagePresentation(saved.pack)) {
   if (!saved.administration.rooms.some(room => isPresentationRoom(room) && room.operatorId === saved.operator.id
     && room.presentationLaneId === id && saved.pack?.tables.includes(room.id))) return;
-  const frozen = readPackagePresentation(saved.pack);
   const previous = frozen?.lanes.find(lane => lane.id === id);
   const next = captured?.lanes.find(lane => lane.id === id);
   const environment = lane => ({ background: lane.layers.background, playback: lane.backgroundPlayback ?? { schemaVersion: 1, rules: [] },
@@ -120,8 +123,8 @@ function selectedDealerIds(lanes) {
 }
 // Only this selected saved definition changes. Other frozen lanes, assets and
 // dealer idle records cannot acquire unpublished edits as a side effect.
-function mergePresentation(current, selected) {
-  const old = current ? readPackagePresentation(current) : null;
+// old: the frozen presentation, without the company's own material.
+function mergePresentation(current, selected, old = current ? readPackagePresentation(current) : null) {
   if (current && !old) fail(409, 'studio_presentation_legacy_package_conflict');
   if (!old) return selected;
   const id = selected.lanes[0].id;
@@ -179,7 +182,8 @@ function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
     && capabilities.recordedEmbeddedAv !== 'embedded-mp4-av-v2') return false;
   return true;
 }
-export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
+// materials: optional sql => operator material store (Bolagets eget material).
+export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now, materials = null } = {}) {
   scope = validateStudioScope(scope);
   if (!repository?.transaction || !repository?.withTransactionClient || !repository?.saveDocument || !repository?.readPresentationSnapshot
     || canonicalStudioJson(scope) !== canonicalStudioJson(repository.scope) || typeof runtimeCapabilities !== 'function') fail(503);
@@ -194,8 +198,24 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     if (!projectDocument || !administrationDocument) fail(503);
     const project = normalizeProject(projectDocument.value), administration = validateStudioGameAdministration(administrationDocument.value);
     const pack = await operators.getCurrentPackage(operatorId);
-    return { operators, operator, project, administration, pack, projectRevision: projectDocument.revision, administrationRevision: administrationDocument.revision };
+    const materialRows = materials ? await readOperatorMaterialRows(materials(client), operatorId) : [];
+    return { operators, operator, project, administration, pack, materialRows, projectRevision: projectDocument.revision, administrationRevision: administrationDocument.revision };
   }
+  // Admin's frozen presentation with the company's merged material taken out;
+  // mergePresentation and the environment check compare only Admin's own data.
+  function adminFrozen(saved) {
+    const frozen = saved.pack ? readPackagePresentation(saved.pack) : null;
+    return frozen && saved.materialRows.length ? withoutOperatorMaterials(frozen, saved.materialRows) : frozen;
+  }
+  // The company's material goes back in, including the lane of the new room.
+  function withCompanyMaterial(saved, presentation, room) {
+    if (!materials) return { presentation };
+    const merged = mergeOperatorMaterialsForPublication({ presentation, rows: saved.materialRows,
+      rooms: [...publicationRooms(saved.administration, saved.operator.id, saved.pack), ...(room ? [room] : [])],
+      fits: presentationFits({ branding: saved.pack?.branding ?? {}, base: presentation, allowExtended: true }) });
+    return { presentation: merged.presentation, materialWarnings: merged.warnings, materialFingerprint: operatorMaterialFingerprint(saved.materialRows) };
+  }
+  const newRoom = body => ({ id: roomIdentity(scope, body), name: body.name, state: 'live', presentationLaneId: body.presentationLaneId, game: roomGame(body) });
   function receipt(saved, room, duplicate) {
     return { ok: true, duplicate, room: structuredClone(room), administrationRevision: saved.administrationRevision,
       packageRevision: saved.pack.revision, playUrl: roomPlayPath(room,saved.operator.slug) };
@@ -218,7 +238,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const body = intent(context.body); assertScope(context);
     const snapshotValue = await repository.readPresentationSnapshot();
     const existing = snapshotValue.administrationDocument.value.rooms?.find(room => room.id === roomIdentity(scope, body));
-    let captured = null, publicationPresentation = null;
+    let captured = null, publicationPresentation = null, company = {};
     if (!existing) {
       if (snapshotValue.projectDocument.revision !== body.expectedProjectRevision || snapshotValue.administrationDocument.revision !== body.expectedAdministrationRevision) fail(409);
       const saved = await repository.transaction(() => repository.withTransactionClient(async client => {
@@ -231,8 +251,9 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       if ((saved.pack?.revision ?? null) !== body.expectedPackageRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
       captured = await capture(snapshotValue, body.presentationLaneId,roomGame(body));
-      preservePublishedRoomEnvironment(saved, body.presentationLaneId, captured.presentation);
-      publicationPresentation = mergePresentation(saved.pack, captured.presentation);
+      const frozen = adminFrozen(saved);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId, captured.presentation, frozen);
+      ({ presentation: publicationPresentation, ...company } = withCompanyMaterial(saved, mergePresentation(saved.pack, captured.presentation, frozen), newRoom(body)));
     } else {
       if (!isPresentationRoom(existing) || intentHash(existing) !== intentHash(body) || existing.state !== 'live') fail(409);
       const saved = await repository.transaction(() => repository.withTransactionClient(client => snapshot(client, body.operatorId, snapshotValue)));
@@ -245,7 +266,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     if (!runtimeAccepts(runtime, publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
     const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation,
-      allowExtended:runtime.extendedPresentation==='bounded-envelope-v2', ...captured });
+      allowExtended:runtime.extendedPresentation==='bounded-envelope-v2', ...captured, ...company });
     preparedValues.add(value); return value;
   }
   preparations.set('POST /studio/api/admin/presentation-room', prepare);
@@ -261,11 +282,13 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     let selected = null, merged = null, packageReason = null, conflictCode = null, runtime = null;
     try {
       selected = await capture(snapshotValue, id,game);
-      merged = mergePresentation(saved.pack, selected.presentation);
+      const frozen = adminFrozen(saved);
+      merged = withCompanyMaterial(saved, mergePresentation(saved.pack, selected.presentation, frozen),
+        { id: 'room-preview', name: 'preview', state: 'live', presentationLaneId: id, game }).presentation;
       const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged,game);
       try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
       catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
-      preservePublishedRoomEnvironment(saved, id, selected.presentation);
+      preservePublishedRoomEnvironment(saved, id, selected.presentation, frozen);
     } catch (error) {
       if (error?.statusCode === 409) {
         packageReason = 'presentation_package_conflict';
@@ -318,9 +341,13 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
-      preservePublishedRoomEnvironment(saved, body.presentationLaneId, prepared.presentation);
+      // The same company material as negotiated; a decision in between is a conflict.
+      if (materials && operatorMaterialFingerprint(saved.materialRows) !== prepared.materialFingerprint) fail(409);
+      const frozen = adminFrozen(saved);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId, prepared.presentation, frozen);
       await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
-      const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation,roomGame(body));
+      const { presentation } = withCompanyMaterial(saved, mergePresentation(saved.pack, prepared.presentation, frozen), newRoom(body));
+      const plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation,roomGame(body));
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });
       const room = { schemaVersion: 2, id: roomId, name: body.name, operatorId: body.operatorId,
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live', ...(roomGame(body)==='roulette'?{game:'roulette'}:{}) };

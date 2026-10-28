@@ -69,6 +69,8 @@ export function operatorMemoryPool() {
     }
   }
   async function dispatch(text, values, client) {
+    // This schema has no migration 021: company material is not installed.
+    if (text.includes('/* operator-materials:materials-ready */')) return [{ ledgered: 0, present: false }];
     const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
     if (!tag) throw new Error(`untagged query: ${text}`);
     trace.push({ client: client?.id ?? 0, step: tag });
