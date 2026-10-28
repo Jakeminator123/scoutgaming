@@ -152,17 +152,22 @@ test('history keeps the empty state when every currency has zero rounds', () => 
 });
 
 
-test('verified N1 handoff precedes every player or wallet read, even with a foreign player session',async()=>{
+test('an Admin cookie without a player session gets the ordinary player flow on /play/profil and /play/historik, never a BO handoff',async()=>{
   for(const surface of ['profil','historik']) {
-    const path=surface==='lobby'?'/play?operator=swedish-games':'/play/'+surface;
-    const calls=[];
-    const page=await playerAreaPage(new Request('https://preview.example.test'+path,{headers:{cookie:'bo_jwt=verified; player_session=other'}}),env,surface,{fetchImpl:async(url)=>{
-      calls.push(new URL(url).pathname);
-      assert.equal(new URL(url).pathname,'/api/auth/session');
-      return Response.json({authenticated:false,guest:false,sharedCredentials:true,backofficeHandoff:true});
-    }});
-    assert.equal(page.redirect,'/api/auth/bo/start?next='+encodeURIComponent(path));
-    assert.equal(page.html,'');assert.equal(page.data.player,null);
-    assert.deepEqual(calls,['/api/auth/session']);
+    const results={};
+    for(const [kind,cookie] of [['none',''],['admin','bo_jwt=verified']]) {
+      const calls=[];
+      const page=await playerAreaPage(new Request('https://preview.example.test/play/'+surface,{headers:cookie?{cookie}:{}}),env,surface,{fetchImpl:async(url)=>{
+        calls.push(new URL(url).pathname);
+        assert.equal(new URL(url).pathname,'/api/auth/session');
+        // A stale engine may still send the retired flag during the deploy window.
+        return Response.json({authenticated:false,guest:false,sharedCredentials:true,...(kind==='admin'?{backofficeHandoff:true}:{})});
+      }});
+      assert.equal(String(page.redirect??'').includes('/api/auth/bo/'),false,'the engine has no BO handoff any more');
+      assert.equal(page.data.player,null);
+      assert.deepEqual(calls,['/api/auth/session']);
+      results[kind]=page.redirect??null;
+    }
+    assert.equal(results.admin,results.none,`/play/${surface}: an Admin cookie behaves like no cookie`);
   }
 });

@@ -19,7 +19,7 @@ test('only the approved GitHub branch can be pushed', () => {
   assert.doesNotThrow(() => validatePush(url, update.replace(sha('b'), sha('0')), policy, () => false));
   assert.throws(() => validatePush('git@gitlab.com:scout-gg/croupier.git', update, policy), /approved GitHub/);
   assert.throws(() => validatePush(url, update.replace(`refs/heads/${policy.branch}`, 'refs/heads/jakemanator123-github-work'), policy), /feature branches/);
-  assert.throws(() => validatePush(url, update.replace(sha('a'), sha('0')), policy), /deletion/);
+  assert.throws(() => validatePush(url, update.replace(sha('a'), sha('0')), policy, () => true, () => sha('e')), /deletion is not allowed for main/);
   assert.throws(() => validatePush('git@github.com:someone/else.git', update, policy), /approved GitHub/);
 });
 test('feature branches can be created and fast-forwarded', () => {
@@ -32,9 +32,26 @@ test('feature branches can be created and fast-forwarded', () => {
   assert.doesNotThrow(() => validatePush(https, feature('jakob/example', sha('c'), sha('0')), policy, () => true));
   assert.doesNotThrow(() => validatePush(`https://github.com/${policy.repository}.git`, `${update}\n${feature('jakob/claude-example')}`, policy, () => true));
 });
-test('push rejects deletion, tags, other branches and other repositories', () => {
-  assert.throws(() => validatePush(url, feature('jakob/example', sha('0'), sha('d')), policy), /deletion/);
-  assert.throws(() => validatePush(url, feature('main', sha('0')), policy), /deletion/);
+test('merged feature branches can be deleted; main, protected and unmerged branches cannot', () => {
+  const main = () => sha('e');
+  const deletion = name => `(delete) ${sha('0')} refs/heads/${name} ${sha('d')}`;
+  const calls = [];
+  const merged = (before, after) => { calls.push([before, after]); return true; };
+  assert.doesNotThrow(() => validatePush(url, deletion('jakob/claude-old'), policy, merged, main));
+  assert.deepEqual(calls, [[sha('d'), sha('e')]], 'the remote head is checked against origin/main');
+  assert.throws(() => validatePush(url, deletion('jakob/claude-open'), policy, () => false, main), /jakob\/claude-open is not merged into main/);
+  assert.throws(() => validatePush(url, deletion('jakob/claude-old'), policy, merged, () => null), /origin\/main is missing/);
+  assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/heads/jakob/gone ${sha('0')}`, policy, merged, main), /does not exist/);
+  assert.throws(() => validatePush(url, deletion('main'), policy, merged, main), /deletion is not allowed for main/);
+  assert.deepEqual(policy.protectedBranches.includes('kevin*'), true);
+  for (const name of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-export', 'jakob-gren', 'roulette-on-kevin-staging', 'codex/pr-automation']) {
+    assert.throws(() => validatePush(url, deletion(name), policy, merged, main), /protected branch/, name);
+  }
+  assert.throws(() => validatePush(url, deletion('codex/example'), policy, merged, main), /feature branches/);
+  assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/tags/Jakobs-v1 ${sha('d')}`, policy, merged, main), /Tag/);
+  assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/notes/commits ${sha('d')}`, policy, merged, main), /feature branches/);
+});
+test('push rejects tags, other branches and other repositories', () => {
   assert.throws(() => validatePush(url, `refs/tags/Jakobs-v1 ${sha('c')} refs/tags/Jakobs-v1 ${sha('0')}`, policy), /Tag/);
   assert.throws(() => validatePush(url, `refs/tags/Jakobs-v1 ${sha('c')} refs/tags/Jakobs-v1 ${sha('d')}`, policy), /Tag/);
   for (const name of ['kevin', 'john', 'emil', 'jakob-export', 'jakob', 'codex/example', 'cursor/a03-example', 'jakob/', 'jakob/../main', 'jakob/name.lock']) {

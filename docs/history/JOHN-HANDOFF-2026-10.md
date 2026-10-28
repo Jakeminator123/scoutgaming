@@ -768,7 +768,7 @@ Verifierat lokalt med Node 24.19 (paketet kräver 24.x): syntaxkontroll och 7/7 
 
 **Säkerhet:** befintlig skyddad GitGuardian-koppling kunde inte läsa incidenter/platsmetadata. Källbindning och monitorering är inte verifierade i denna kontroll; ingen full historisk täckning påstås. GitGuardians commitkontroll för den fullverifierade committen ecf2c8fe är godkänd; det ersätter inte incidentsynlighet. Slutlig CI-status för PR:ns aktuella head redovisas i GitHub.
 
-Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
+Karta, rotorsak, bokmärken och kvarvarande målbild stod i Admin-kartan från 22 oktober (raderad 28 oktober); aktuell karta och målbild: [docs/plans/ADMIN-KARTA.md](../plans/ADMIN-KARTA.md) och [docs/plans/ADMIN-FORENKLING.md](../plans/ADMIN-FORENKLING.md).
 
 ## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
 
