@@ -362,6 +362,7 @@ async function mergeFixture(run) {
 test('a clean merge stages only own edits, not the merged branch', async () => {
   await mergeFixture(async ({ root, write }) => {
     git(root, ['checkout', '-q', 'feature']);
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
     git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'merge', '-q', '--no-ff', '--no-commit', 'trunk']);
     assert.match(git(root, ['rev-parse', '-q', '--verify', 'MERGE_HEAD']), /^[a-f0-9]{40}/);
     assert.deepEqual(readStagedChanges(root), [], 'added, modified and deleted files from trunk are not this commit');
@@ -385,6 +386,7 @@ test('a conflicted merge checks resolutions that differ from both sides', async 
     git(root, ['add', '-A']);
     commit('trunk shared');
     git(root, ['checkout', '-q', 'feature']);
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
     await write('shared.mjs', 'export const v = 2;\n');
     git(root, ['add', '-A']);
     commit('feature shared');
@@ -412,4 +414,26 @@ test('merge-state inspection fails closed outside a repository', async () => {
     assert.equal(readMergeHead(root), null);
     assert.throws(() => readStagedChanges(root), /Cannot inspect staged changes/);
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('a merge of anything but main keeps every staged path', async () => {
+  await mergeFixture(async ({ root }) => {
+    git(root, ['checkout', '-q', 'feature']);
+    const merge = () => git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'merge', '-q', '--no-ff', '--no-commit', 'trunk']);
+    const all = [change('apps/studio/client/lobby/main.mjs', 'A'), change('gone.mjs', 'D'), change('kept.mjs')];
+    // No origin/main at all: nothing is known to be checked.
+    merge();
+    assert.deepEqual(readStagedChanges(root), all);
+    git(root, ['merge', '--abort']);
+    // origin/main behind the merged branch: trunk's newest commit was never checked on main.
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk~1']);
+    merge();
+    assert.deepEqual(readStagedChanges(root), all);
+    assert.equal(mode(readStagedChanges(root)), 'focused');
+    git(root, ['merge', '--abort']);
+    // Once origin/main contains it, the merged files are filtered again.
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
+    merge();
+    assert.deepEqual(readStagedChanges(root), []);
+  });
 });

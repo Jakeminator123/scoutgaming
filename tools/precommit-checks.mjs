@@ -59,12 +59,16 @@ export function readMergeHead(root, { env = isolatedGitEnvironment() } = {}) {
 // fork point. Those paths were already checked there, so only paths whose index
 // entry differs from BOTH HEAD and MERGE_HEAD are this commit's own work:
 // conflict resolutions and edits made during the merge. A deletion counts when
-// one side still has the file. An octopus merge compares with the first head,
-// which can only keep more paths, never fewer. Full CI still checks everything.
+// one side still has the file. This only holds when the merged commit is main
+// (or older main): any other branch was never checked, so all paths stay. An
+// octopus merge compares with the first head, which can only keep more paths.
+// Full CI still checks everything.
 export function readStagedChanges(root, { env = isolatedGitEnvironment() } = {}) {
   const changes = stagedDiff(root, env);
   const mergeHead = changes.length ? readMergeHead(root, { env }) : null;
   if (!mergeHead) return changes;
+  const onMain = spawnSync('git', ['merge-base', '--is-ancestor', mergeHead, 'refs/remotes/origin/main'], { cwd: root, encoding: 'utf8', env });
+  if (onMain.error || onMain.status !== 0) return changes;
   const differsFromMerged = new Set(stagedDiff(root, env, [mergeHead]).map(change => change.path));
   return changes.filter(change => differsFromMerged.has(change.path));
 }
