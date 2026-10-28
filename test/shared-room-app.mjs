@@ -465,8 +465,12 @@ test('fresh rule events are observed once; history, expiry and reconnect cannot 
   await ports.present({...p,ver:3,endAt:900},{signal:fresh.signal});assert.equal(observed.length,2,'expired presentation cannot trigger a rule');ports.close();
 });
 
+// Material-like timing (native material derives leadMs/cardMs from its own takes): the plan's turnAt
+// (65.6 s) lies after its seventeen three-second clips. The store's default 700/500 ms window is shorter
+// than its own clips, and since K04 F2 a decision plan's turnAt ends media that has not shown a frame.
 async function sevenSeatPlan() {
-  const store=createMemoryTableStore(),table=createTableCoordinator({store,clock:{now:()=>1000},random:deterministicRandom('shared-long-seven')});
+  const store=createMemoryTableStore();store.test.publish('v1',{leadMs:15000,cardMs:3100});
+  const table=createTableCoordinator({store,clock:{now:()=>1000},random:deterministicRandom('shared-long-seven')});
   store.test.fund(actor,1000);let n=0;
   const send=(op,extra={})=>table.command({actorId:actor},{roomId,op,commandId:`long-${++n}`,...extra});
   await send('join',{seats:[0,1,2,3,4,5,6],memberGen:0,seatGens:{0:0,1:0,2:0,3:0,4:0,5:0,6:0}});
@@ -796,6 +800,106 @@ test('a download whose byte count stops moving still fails closed after thirty s
   for(let i=0;i<5;i++){t.mock.timers.tick(5000);context.onProgress({clip:1,phase:'download',received:4096});await flushRender();assert.deepEqual(h.errors,[]);}
   t.mock.timers.tick(5000);await flushRender();
   assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);assert.equal(context.signal.aborted,true);
+});
+
+// K04 F2 on staging (28 Oct 2026, 13aa5a01, 400 kbit/s): turnAt came 56.5 s into the run, the server stood
+// for the player at 72 s and the first cards showed at 92 s. A 1.58 MB deal clip kept downloading from 59 to
+// 91 s after its step had passed the table clock; only steps that had not started were skipped.
+const slowDownload=options=>new Promise(resolve=>{
+  options.onProgress({clip:1,phase:'prepare'});options.onProgress({clip:1,phase:'play'});
+  // 50 kB/s keeps arriving, so the silence guard never ends this clip.
+  let received=0;const tick=()=>{if(options.signal.aborted)return;received+=50000;options.onProgress({clip:1,phase:'download',received});setTimeout(tick,1000);};
+  setTimeout(tick,1000);options.signal.addEventListener('abort',()=>resolve(false),{once:true});
+});
+const playsFor=(ms,options)=>new Promise(resolve=>{
+  options.onProgress({clip:1,phase:'prepare'});options.onProgress({clip:1,phase:'play'});
+  let at=0;const frame=()=>{options.onProgress({clip:1,phase:'frame',time:at/1000});options.onFrame(at/1000);};frame();
+  const tick=()=>{at+=250;frame();if(at>=ms){options.onProgress({clip:1,phase:'complete'});resolve(true);}else setTimeout(tick,250);};setTimeout(tick,250);
+});
+function slowTable(t,{present,windowMs,filmedProfile=null,dealerId=null}){
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const seen=[],shown=[],states=[],renders=[],errors=[],mediaErrors=[],sockets=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push({draw,at:Date.now()}),reveal(){},begin(){},frame(){},finish(){}};
+  const media={state:value=>states.push(value),prepareSequence(){},close(){},
+    present(event,options){seen.push({event,options,at:Date.now()});return present(event,options);}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile,dealerId,onError:code=>mediaErrors.push(code)});
+  const commands={state:'idle',send:async()=>({status:'ok',result:{op:'act',version:3}}),stop(){}};
+  const controller=createSharedRoomController({roomId,commands,view:{bind(){},render:value=>renders.push(value),close(){}},presentation:ports,now:Date.now});
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}}
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,callbackTimeoutMs:30000,
+    restoreSnapshot:controller.restoreSnapshot,present:controller.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();controller.stop();});client.start();
+  const plan={...missingGoodluckPlan(1000),talkId:'plan-slow',endAt:1000+windowMs};
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+  return {seen,shown,states,renders,errors,mediaErrors,client,plan,
+    async open(){
+      sockets[0].message({snapshot:seated(1,{serverNow:Date.now()}),presentation:null});await flushRender();
+      sockets[0].message({snapshot:seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,
+        plan:{id:'plan-slow',startAt:plan.startAt,endAt:plan.endAt,turnAt:plan.endAt},actionDeadline:plan.endAt+15000}),presentation:plan});
+      await flushRender();
+    },
+    async until(at){while(Date.now()<at){t.mock.timers.tick(Math.min(250,at-Date.now()));await flushRender();}},
+    act:()=>renders.at(-1).can.act,
+  };
+}
+
+test('at 400 kbit/s a deal clip still loading when its step time is over is left: its card shows now and hit/stand open at turnAt',async t=>{
+  const h=slowTable(t,{windowMs:27600,filmedProfile:dragan,dealerId:'dragan',present:(event,options)=>event.type==='speak'?playsFor(2500,options):slowDownload(options)});
+  await h.open();
+  // goodluck plays 1.0-3.5 s; the chain anchors after it (+1.8 s): 1:i, dealer:base, 1:base and hole:base
+  // are due at 6.25, 7.875, 9.5 and 11.125 s on the table clock.
+  const due=[1000+1800+3450,1000+1800+5075,1000+1800+6700,1000+1800+8325];
+  await h.until(due[0]-250);assert.deepEqual(h.shown,[],'the first deal is still within its time');
+  await h.until(due[0]);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1],'its committed card shows when the step time is over');
+  const first=h.seen.find(row=>row.event.shoeDraw===1).options.signal;assert.equal(first.aborted,true);assert.equal(first.reason.late,true);
+  await h.until(due[3]);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);
+  h.shown.forEach((row,i)=>assert.ok(row.at<=due[i]+250,`card ${row.draw} by its step time`));
+  assert.equal(h.seen.filter(row=>row.event.type==='deal').every(row=>row.options.signal.reason?.late===true),true);
+  assert.equal(h.states.at(-1).action,false,'the presentation is over; the dealer returns to idle');
+  assert.equal(h.renders.at(-1).busy,false);assert.deepEqual(h.act(),[],'the server has not opened the turn yet');
+  await h.until(h.plan.endAt-1);assert.deepEqual(h.act(),[]);
+  await h.until(h.plan.endAt+2);assert.deepEqual(h.act(),['hit','stand'],'the buttons open at turnAt');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[],'a late step is not a media error');assert.equal(h.client.status().state,'running');
+});
+
+test('a clip still loading at the server turn time is left: every committed card shows and hit/stand open at turnAt',async t=>{
+  const h=slowTable(t,{windowMs:12000,present:(_event,options)=>slowDownload(options)});
+  await h.open();
+  await h.until(h.plan.endAt-250);assert.deepEqual(h.shown,[]);assert.deepEqual(h.act(),[]);
+  await h.until(h.plan.endAt+2);
+  assert.deepEqual(h.seen.map(row=>row.event.type),['speak'],'no deal film is loaded after turnAt');
+  assert.equal(h.seen[0].options.signal.reason.late,true);
+  assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);assert.ok(h.shown.every(row=>row.at<=h.plan.endAt+250));
+  assert.deepEqual(h.act(),['hit','stand']);assert.equal(h.renders.at(-1).busy,false);
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+test('a clip that already plays at turnAt plays to its end; the steps after it show their cards without film',async t=>{
+  const h=slowTable(t,{windowMs:12000,present:(event,options)=>event.type==='speak'?new Promise(resolve=>setTimeout(()=>resolve(playsFor(12500,options)),1000)):slowDownload(options)});
+  await h.open();
+  await h.until(h.plan.endAt+1000);
+  assert.equal(h.seen[0].options.signal.aborted,false,'a clip that shows frames is never cut by turnAt');assert.deepEqual(h.shown,[]);
+  await h.until(1000+1000+12500+250);
+  assert.deepEqual(h.seen.map(row=>row.event.type),['speak']);assert.deepEqual(h.shown.map(row=>row.draw),[1,2,3,4]);
+  assert.deepEqual(h.act(),['hit','stand']);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
+});
+
+test('a film part that shows frames plays on past its step time; a later part of the same step does not start after it',async t=>{
+  let first;
+  const h=timedPorts(t,{events:[filmedBox(0,9)],present:(_event,options)=>{first=options;return playsFor(4000,options);}});
+  const pending=h.start();t.mock.timers.tick(700);await flushRender();assert.equal(h.seen.length,1);
+  // 1:iv is due 700+2750 ms after the start; its frames keep it until 4 s after it began.
+  for(let i=0;i<16;i++){t.mock.timers.tick(250);await flushRender();}
+  await pending;assert.equal(first.signal.aborted,false);assert.deepEqual(h.shown,[9]);
+  let second;
+  const parts=timedPorts(t,{events:[filmedBox(0,8)],enableTimers:false,present:(_event,options)=>{second=options;
+    return playsFor(4000,options).then(()=>{options.onProgress({clip:2,phase:'prepare'});return new Promise(()=>{});});}});
+  const later=parts.start();t.mock.timers.tick(700);await flushRender();
+  for(let i=0;i<16;i++){t.mock.timers.tick(250);await flushRender();}
+  await later;assert.equal(second.signal.reason?.late,true,'the next part of a step whose time is over is left');assert.deepEqual(parts.shown,[8]);
 });
 
 // K04-i-e on staging (27 Oct 2026, 400 kbit/s, 400 ms RTT): the 912 KB idle clip outlasted the 30 s

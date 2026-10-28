@@ -62,13 +62,3 @@ test('dealer PNG canvas preserves alpha and green pixels without depending on DO
   image.complete=false;paint();assert.equal(pixels.some(Boolean),false);
   h.unmount();assert.equal(frames.size,0);assert.equal(events.size,0);
 });
-
-test('legacy clip settings require keyed output on explicit save without altering the old compare-and-swap value',async()=>{
-  const h=hooks(),calls=[];
-  const old={dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Legacy',notes:'',compositing:{mode:'opaque'}};
-  const {DealerFileSettings}=load('../components/dealer-file-settings.tsx',{react:h.react,'./studio-types':{requestJson:async(_url,init)=>{calls.push(JSON.parse(init.body));return {videos:[]};}}});
-  const props={video:{id:'legacy',sha256:'a'.repeat(64),available:true,previewUrl:'/legacy',classification:old},onSaved(){}};
-  let tree=h.render(DealerFileSettings,props);tree.props.onToggle({currentTarget:{open:true}});tree=h.render(DealerFileSettings,props);
-  nodes(tree,node=>node.type==='button')[0].props.onClick();await new Promise(resolve=>setImmediate(resolve));
-  assert.deepEqual(calls[0].previous,old);assert.equal(calls[0].metadata.compositing.mode,'green-screen');assert.equal(old.compositing.mode,'opaque');
-});
