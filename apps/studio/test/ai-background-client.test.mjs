@@ -122,7 +122,7 @@ function loadTs(fileUrl) {
   vm.runInNewContext(output.code,{module,exports:module.exports,require:name=>{
     if (name.startsWith('./')||name.startsWith('../')) for (const suffix of ['','.tsx','.ts','.mjs','.js']) {
       const path=fileURLToPath(new URL(name+suffix,fileUrl));if(!existsSync(path))continue;
-      return /\.(mjs|js|json)$/.test(path)?localRequire(path):loadTs(pathToFileURL(path));
+      return /\.(mjs|js|json)$/.test(path)?localRequire(path):loadTs(pathToFileURL(path)).exports;
     }
     return localRequire(name);
   },process,URL,AbortController,Response,Request,Headers,fetch},{filename:fileURLToPath(fileUrl)});
@@ -133,8 +133,10 @@ test('the exported dialog renders its trigger and stays closed until opened',()=
   const {createElement}=localRequire('react'),{renderToStaticMarkup}=localRequire('react-dom/server');
   const html=props=>renderToStaticMarkup(createElement(AiBackgroundDialog,{onRegistered:()=>assert.fail('closed dialog cannot register'),...props}));
   const closed=html({});
-  assert.match(closed,/Skapa bakgrund med AI/);assert.doesNotMatch(closed,/Beskriv bakgrunden|role="dialog"/);assert.doesNotMatch(closed,/disabled=""/);
-  assert.match(html({role:'table',dealers:[{id:'paow',label:'PAOW'}]}),/Skapa bordsgrafik med AI<\/button>/);
+  // One trigger, "Skapa med AI", in the Admin kit; the kit's native dialog renders nothing until opened.
+  assert.match(closed,/Skapa med AI<\/button>/);assert.doesNotMatch(closed,/Beskriv bakgrunden|Skapa bakgrund med AI|role="dialog"/);assert.doesNotMatch(closed,/disabled=""/);
+  assert.match(closed,/<dialog[^>]*><\/dialog>/,'the closed dialog has no content');
+  assert.match(html({role:'table',dealers:[{id:'paow',label:'PAOW'}]}),/Skapa med AI<\/button>/);
   for (const props of [{role:'table',game:'roulette',dealers:[{id:'paow',label:'PAOW'}]},{role:'table',dealers:[{id:'astrid',label:'Astrid'}]},{disabled:true}]) {
     assert.match(html(props),/<button[^>]*disabled=""/,JSON.stringify(props));
   }

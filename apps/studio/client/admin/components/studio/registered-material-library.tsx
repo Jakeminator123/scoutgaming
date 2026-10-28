@@ -4,9 +4,10 @@ import type {StudioProject,LayerAsset} from '../../../../../../packages/presenta
 import {validateProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {LayerLibrary} from '../../../../components/layer-library';
 import {LayerAssetManager,type MaterialTrashPlanView} from '../../../../components/layer-asset-manager';
-import {Play,Sparkles} from 'lucide-react';
+import {Play} from 'lucide-react';
 import {ActionMenu} from '../ui/hub';
 import {Button,buttonVariants,cn,plural} from '../ui/kit';
+import {AiBackgroundDialog} from './ai-background-dialog';
 import {ConfirmDialog,Dialog} from '../ui/dialog';
 import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
@@ -38,6 +39,11 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
   const noun=role==='background'?'bakgrunder':'bordsgrafik';
+  // Upload and AI register through the same layer-asset commit; the returned project must hold the
+  // new asset with this role, fitting the chosen game, before the library accepts it.
+  function registered(remote:StudioProject,id:string){
+    if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen kunde inte bekräftas för valt spel. Läs om innan du fortsätter.');return;}saved(remote);
+  }
   const planDialog=(plan:MaterialTrashPlanView)=>{const impact=plan.impact,rooms=impact.rooms.map(room=>`${room.name} · ${impact.operators.find(operator=>operator.id===room.operatorId)?.name??'okänt bolag'}`);
     return <ConfirmDialog open title={impact.archived?`Flytta ${impact.label} till papperskorgen?`:`Återställ ${impact.label}?`} busy={plan.busy} busyLabel="Sparar…"
       description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Scenmallar och spelbord förblir oförändrade.'}
@@ -53,11 +59,10 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
     {!trashOnly&&role==='table'&&<div className="flex flex-wrap items-center gap-2" role="group" aria-label="Bordets spel">{(['blackjack','roulette'] as const).map(value=><button key={value} type="button" aria-pressed={game===value} disabled={blocked} onClick={()=>select('game',value)}
       className={cn('inline-flex h-8 items-center rounded-full border px-3 text-[12.5px] font-semibold',game===value?'border-transparent bg-sg-ink text-sg-side-text':'border-sg-border bg-sg-surface text-sg-muted hover:text-sg-text')}>{value==='blackjack'?'Blackjack':'Roulette'}</button>)}</div>}
     {project&&<div className="grid gap-5">
-      {!trashOnly&&<LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={(remote,id)=>{
-        if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen kunde inte bekräftas för valt spel. Läs om innan du fortsätter.');return;}saved(remote);
-      }} aside={<div className="grid min-w-[200px] place-content-center justify-items-center gap-1.5 rounded-xl border border-sg-border bg-sg-surface-2 px-5 py-4 text-center">
-        <button type="button" disabled aria-describedby={'ai-'+role} className={buttonVariants({variant:'ink'})}><Sparkles aria-hidden="true"/>Skapa med AI</button>
-        <span id={'ai-'+role} className="text-xs text-sg-faint">Kommer snart</span></div>}/>}
+      {!trashOnly&&<LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={registered}
+        aside={<div className="grid min-w-[200px] place-content-center justify-items-center gap-1.5 rounded-xl border border-sg-border bg-sg-surface-2 px-5 py-4 text-center">
+          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
+          <span className="text-xs text-sg-faint">{role==='background'?'Förslag efter din beskrivning':'Ritas efter dealerns landningar'}</span></div>}/>}
       <div className="material-library" id={trashOnly?'material-trash-'+role:undefined}><LayerAssetManager key={role+game+(trashOnly?':trash':'')} project={project} role={role} disabled={blocked} expanded view={trashOnly?'trash':'library'}
         filterAsset={trashOnly?undefined:asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved} renderPlan={planDialog}
         renderAsset={(asset,actions)=><MaterialCard asset={asset} references={layerAssetReferences(project,asset.id).map(row=>row.label)} {...actions}/>}/></div>

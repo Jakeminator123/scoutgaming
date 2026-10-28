@@ -1,12 +1,13 @@
 'use client';
-import * as Dialog from '@radix-ui/react-dialog';
-import {Check, ImagePlus, RefreshCw, Sparkles, X} from 'lucide-react';
+import {Check, ImagePlus, RefreshCw, Sparkles} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMAGE_REFERENCE_TYPES, aiImageLabel, type AiImagePresetId} from '../../../../lib/ai-image-contract.mjs';
 import {aiImageErrorMessage, aiSceneTemplates, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
 import type {AiTableFit} from '../../../../lib/ai-image-contract.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
+import {Dialog} from '../ui/dialog';
+import {Button, buttonVariants, cn} from '../ui/kit';
 
 export type AiBackgroundDialogProps = {
   /** Bakgrund (default) or filmed-dealer bordsgrafik. */
@@ -24,7 +25,9 @@ export type AiBackgroundDialogProps = {
 
 type Phase = 'form' | 'generating' | 'results' | 'saving';
 const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en scenmall som publiceras.';
-const field = 'min-w-0 w-full rounded border border-sg-line bg-sg-bg p-2 text-sm text-sg-text';
+const UNSUPPORTED = 'Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.';
+const field = 'min-w-0 w-full rounded-lg border border-sg-border bg-sg-surface px-3 py-2 text-[13.5px] text-sg-text';
+const notice = 'm-0 rounded-lg border border-sg-border bg-sg-surface-2 p-3';
 
 // Proposals are drafts in this dialog only. "Använd" registers one through the
 // existing layer-asset upload; it reaches no operator until a scene template
@@ -37,7 +40,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   const [dealerId, setDealerId] = useState(''), [templateId, setTemplateId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
   const [proposals, setProposals] = useState<AiProposal[]>([]), [selected, setSelected] = useState<string | null>(null), [fit, setFit] = useState<AiTableFit | null>(null);
   const [error, setError] = useState(''), [progress, setProgress] = useState<number | null>(null), [confirmation, setConfirmation] = useState('');
-  const request = useRef<AbortController | null>(null), anchor = useRef<HTMLSpanElement>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
+  const request = useRef<AbortController | null>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
   busyCallback.current = onBusyChange;
   const busy = phase === 'generating' || phase === 'saving';
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; request.current?.abort(); busyCallback.current?.(false); }; }, []);
@@ -108,120 +111,103 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
     } finally { if (request.current === controller) request.current = null; if (mounted.current) setProgress(null); }
   }
 
-  return <span ref={anchor} className="inline-flex flex-col gap-1">
-    <Dialog.Root open={open} onOpenChange={next => { if (!busy || next) close(next); }}>
-      <Dialog.Trigger asChild>
-        <button type="button" className="sg-btn sg-btn-secondary" disabled={disabled || unsupported}
-          title={unsupported ? 'Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.' : undefined}>
-          <Sparkles size={16} aria-hidden="true" />Skapa {noun} med AI
-        </button>
-      </Dialog.Trigger>
-      <Dialog.Portal container={anchor.current?.closest<HTMLElement>('.preview-admin') ?? undefined}>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-        <Dialog.Content aria-busy={busy || undefined} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }} onPointerDownOutside={event => { if (busy) event.preventDefault(); }}
-          className="fixed left-1/2 top-1/2 z-50 flex max-h-[92dvh] w-[calc(100vw-24px)] max-w-[760px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border border-sg-line bg-sg-panel p-5 text-sm text-sg-text shadow-2xl">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Dialog.Title className="text-lg font-semibold">Skapa {noun} med AI</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sg-muted">
-                AI tar fram förslag. Inget sparas förrän du väljer ett och klickar Använd. {PUBLICATION_NOTE}
-                {table ? ' Insatsboxarna ritas av servern exakt där dealerns kort landar.' : ''}
-              </Dialog.Description>
+  const footer = phase === 'saving' ? undefined : <>
+    {phase === 'generating' ? <Button onClick={() => request.current?.abort()}>Avbryt</Button> : null}
+    {phase === 'form' ? <Button variant="primary" disabled={!ready} onClick={() => void generate()}><Sparkles aria-hidden="true" />Skapa förslag</Button> : null}
+    {phase === 'results' ? <>
+      <Button disabled={!ready} onClick={() => void generate()}><RefreshCw aria-hidden="true" />Skapa nya</Button>
+      <Button variant="primary" disabled={!selected} onClick={() => void use()}><Check aria-hidden="true" />Använd</Button>
+    </> : null}
+  </>;
+
+  return <span className="inline-flex flex-col items-center gap-1">
+    <Button variant="ink" aria-haspopup="dialog" disabled={disabled || unsupported} title={unsupported ? UNSUPPORTED : undefined} onClick={() => close(true)}>
+      <Sparkles aria-hidden="true" />Skapa med AI
+    </Button>
+    <Dialog open={open} size="lg" busy={busy} ariaBusy={busy} onClose={() => close(false)} footer={footer} title={`Skapa ${noun} med AI`}
+      description={<>AI tar fram förslag. Inget sparas förrän du väljer ett och klickar Använd. {PUBLICATION_NOTE}{table ? ' Insatsboxarna ritas av servern exakt där dealerns kort landar.' : ''}</>}>
+      <div className="grid gap-4">
+        {status === null && !statusError ? <p role="status" className="m-0 text-sg-muted">Kontrollerar bildtjänsten…</p> : null}
+        {statusError ? <p role="alert" className="m-0 text-sg-danger">{statusError}</p> : null}
+        {off ? <p role="status" className={notice}><strong>Inte påslaget.</strong> AI-bilder är avstängda på den här servern. Manuell uppladdning fungerar som vanligt.</p> : null}
+        {misconfigured ? <p role="status" className={notice}><strong>AI-inställningen är ogiltig.</strong> Kontakta den som driftar Scoutgaming.</p> : null}
+        {offline ? <p role="status" className={notice}><strong>Inte anslutet.</strong> OpenAI-nyckeln saknas på servern, så inga förslag kan skapas här ännu. Manuell uppladdning fungerar som vanligt.</p> : null}
+        {status?.configured ? <p className="m-0 text-xs text-sg-muted">{status.remaining} av {status.dailyLimit} bilder kvar i dag på den här servern.</p> : null}
+        {unsupported ? <p role="status" className={notice}>{UNSUPPORTED}</p> : null}
+
+        {phase === 'form' || phase === 'generating' ? <div className="grid gap-4">
+          <label className="grid gap-1">
+            <span className="font-medium">Beskriv {table ? 'bordet' : 'bakgrunden'}</span>
+            <textarea className={field} rows={3} maxLength={AI_IMAGE_PROMPT_LENGTH.max} value={prompt} disabled={busy}
+              placeholder={table ? 'T.ex. mörkgrön filt med smal guldkant' : 'T.ex. lugn kvällsstudio med mjukt sidoljus'} onChange={event => setPrompt(event.target.value)} />
+            <span className="text-xs text-sg-muted">{text.length}/{AI_IMAGE_PROMPT_LENGTH.max} tecken. Text, logotyper, personer, kort och marker tas aldrig med.</span>
+          </label>
+          <fieldset className="grid gap-2" disabled={busy}>
+            <legend className="mb-1 font-medium">Förinställning</legend>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Förinställning">
+              {AI_IMAGE_PRESETS.map(row => <button key={row.id} type="button" role="radio" aria-checked={preset === row.id}
+                className={cn(buttonVariants({size: 'sm', variant: preset === row.id ? 'ink' : 'secondary'}), 'rounded-full')} onClick={() => setPreset(row.id)}>{row.label}</button>)}
             </div>
-            <Dialog.Close asChild><button type="button" className="sg-btn sg-btn-ghost" disabled={busy} aria-label="Stäng"><X size={16} aria-hidden="true" /></button></Dialog.Close>
+            {preset === 'free' ? <span className="text-xs text-sg-muted">Fri: bara din beskrivning styr stilen.</span> : null}
+          </fieldset>
+          {table && filmed.length ? <label className="grid gap-1">
+            <span className="font-medium">Dealer</span>
+            <select className={field} value={dealerId} disabled={busy} onChange={event => setDealerId(event.target.value)}>
+              {filmed.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+            </select>
+            <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
+          </label> : null}
+          {table && filmed.length ? <label className="grid gap-1">
+            <span className="font-medium">Scenmall</span>
+            <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
+              {scenes.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+              <option value="">Standardplacering (ingen scenmall)</option>
+            </select>
+            <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
+          </label> : null}
+          <div className="grid gap-1 rounded-lg border border-dashed border-sg-border p-3" onDragOver={event => { event.preventDefault(); }}
+            onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>
+            <span className="font-medium">Inspirationsbild · valfri</span>
+            {reference ? <div className="flex items-center gap-3">
+              <img src={reference} alt={'Inspirationsbild: ' + referenceName} className="h-16 w-24 rounded-md border border-sg-border object-cover" />
+              <span className="min-w-0 flex-1 truncate text-xs">{referenceName}</span>
+              <Button variant="ghost" size="sm" disabled={busy} onClick={() => { setReference(null); setReferenceName(''); }}>Ta bort</Button>
+            </div> : <label className={cn(buttonVariants(), 'w-fit focus-within:ring-2 focus-within:ring-sg-lime')}>
+              <ImagePlus aria-hidden="true" />Välj bild
+              <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
+            </label>}
+            <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
           </div>
+          <label className="grid w-fit gap-1">
+            <span className="font-medium">Antal förslag</span>
+            <select className={field} value={count} disabled={busy} onChange={event => setCount(Number(event.target.value))}>
+              {Array.from({length: AI_IMAGE_MAX_PROPOSALS}, (_, index) => index + 1).map(value => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </label>
+        </div> : null}
 
-          {status === null && !statusError ? <p role="status" className="text-sg-muted">Kontrollerar bildtjänsten…</p> : null}
-          {statusError ? <p role="alert" className="text-sg-red">{statusError}</p> : null}
-          {off ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte påslaget.</strong> AI-bilder är avstängda på den här servern. Manuell uppladdning fungerar som vanligt.</p> : null}
-          {misconfigured ? <p role="status" className="rounded border border-sg-line p-3"><strong>AI-inställningen är ogiltig.</strong> Kontakta den som driftar Scoutgaming.</p> : null}
-          {offline ? <p role="status" className="rounded border border-sg-line p-3"><strong>Inte anslutet.</strong> OpenAI-nyckeln saknas på servern, så inga förslag kan skapas här ännu. Manuell uppladdning fungerar som vanligt.</p> : null}
-          {status?.configured ? <p className="text-xs text-sg-muted">{status.remaining} av {status.dailyLimit} bilder kvar i dag på den här servern.</p> : null}
-          {unsupported ? <p role="status" className="rounded border border-sg-line p-3">Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.</p> : null}
-
-          {phase === 'form' || phase === 'generating' ? <div className="grid gap-4">
-            <label className="grid gap-1">
-              <span className="font-medium">Beskriv {table ? 'bordet' : 'bakgrunden'}</span>
-              <textarea className={field} rows={3} maxLength={AI_IMAGE_PROMPT_LENGTH.max} value={prompt} disabled={busy}
-                placeholder={table ? 'T.ex. mörkgrön filt med smal guldkant' : 'T.ex. lugn kvällsstudio med mjukt sidoljus'} onChange={event => setPrompt(event.target.value)} />
-              <span className="text-xs text-sg-muted">{text.length}/{AI_IMAGE_PROMPT_LENGTH.max} tecken. Text, logotyper, personer, kort och marker tas aldrig med.</span>
-            </label>
-            <fieldset className="grid gap-2" disabled={busy}>
-              <legend className="mb-1 font-medium">Förinställning</legend>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Förinställning">
-                {AI_IMAGE_PRESETS.map(row => <button key={row.id} type="button" role="radio" aria-checked={preset === row.id}
-                  className={'sg-btn ' + (preset === row.id ? 'sg-btn-primary' : 'sg-btn-secondary')} onClick={() => setPreset(row.id)}>{row.label}</button>)}
-              </div>
-              {preset === 'free' ? <span className="text-xs text-sg-muted">Fri: bara din beskrivning styr stilen.</span> : null}
-            </fieldset>
-            {table && filmed.length ? <label className="grid gap-1">
-              <span className="font-medium">Dealer</span>
-              <select className={field} value={dealerId} disabled={busy} onChange={event => setDealerId(event.target.value)}>
-                {filmed.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
-              </select>
-              <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
-            </label> : null}
-            {table && filmed.length ? <label className="grid gap-1">
-              <span className="font-medium">Scenmall</span>
-              <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
-                {scenes.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
-                <option value="">Standardplacering (ingen scenmall)</option>
-              </select>
-              <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
-            </label> : null}
-            <div className="grid gap-1 rounded border border-dashed border-sg-line p-3" onDragOver={event => { event.preventDefault(); }}
-              onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>
-              <span className="font-medium">Inspirationsbild · valfri</span>
-              {reference ? <div className="flex items-center gap-3">
-                <img src={reference} alt={'Inspirationsbild: ' + referenceName} className="h-16 w-24 rounded border border-sg-line object-cover" />
-                <span className="min-w-0 flex-1 truncate text-xs">{referenceName}</span>
-                <button type="button" className="sg-btn sg-btn-ghost" disabled={busy} onClick={() => { setReference(null); setReferenceName(''); }}>Ta bort</button>
-              </div> : <label className="sg-btn sg-btn-secondary w-fit cursor-pointer">
-                <ImagePlus size={16} aria-hidden="true" />Välj bild
-                <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
-              </label>}
-              <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
-            </div>
-            <label className="grid w-fit gap-1">
-              <span className="font-medium">Antal förslag</span>
-              <select className={field} value={count} disabled={busy} onChange={event => setCount(Number(event.target.value))}>
-                {Array.from({length: AI_IMAGE_MAX_PROPOSALS}, (_, index) => index + 1).map(value => <option key={value} value={value}>{value}</option>)}
-              </select>
-            </label>
-          </div> : null}
-
-          {phase === 'generating' ? <div className="grid gap-2">
-            <p role="status">Skapar förslag… Det kan ta ett par minuter.</p>
-            <div className="grid grid-cols-2 gap-3" aria-hidden="true">
-              {Array.from({length: count}, (_, index) => <div key={index} className={'animate-pulse rounded border border-sg-line bg-sg-bg ' + (table ? 'aspect-[3/4]' : 'aspect-video')} />)}
-            </div>
-          </div> : null}
-
-          {phase === 'results' || phase === 'saving' ? <div className="grid gap-2">
-            <p className="font-medium">Välj ett förslag</p>
-            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Förslag">
-              {proposals.map((row, index) => <button key={row.id} type="button" role="radio" aria-checked={selected === row.id} disabled={phase === 'saving'}
-                className={'relative overflow-hidden rounded border-2 bg-sg-bg ' + (selected === row.id ? 'border-sg-lime' : 'border-sg-line')} onClick={() => setSelected(row.id)}>
-                <img src={row.dataUrl} alt={`Förslag ${index + 1}`} className="block h-auto w-full" />
-                {selected === row.id ? <span className="absolute right-2 top-2 rounded-full bg-sg-lime p-1 text-sg-bg"><Check size={14} aria-hidden="true" /></span> : null}
-              </button>)}
-            </div>
-            {phase === 'saving' ? <p role="status">{progress === null ? `Sparar i ${place}…` : `Laddar upp · ${progress} %`}</p> : null}
-          </div> : null}
-
-          {error ? <p role="alert" className="text-sg-red">{error}</p> : null}
-
-          <div className="flex flex-wrap justify-end gap-2">
-            {phase === 'generating' ? <button type="button" className="sg-btn sg-btn-secondary" onClick={() => request.current?.abort()}>Avbryt</button> : null}
-            {phase === 'form' ? <button type="button" className="sg-btn sg-btn-primary" disabled={!ready} onClick={() => void generate()}><Sparkles size={16} aria-hidden="true" />Skapa förslag</button> : null}
-            {phase === 'results' ? <>
-              <button type="button" className="sg-btn sg-btn-secondary" disabled={!ready} onClick={() => void generate()}><RefreshCw size={16} aria-hidden="true" />Skapa nya</button>
-              <button type="button" className="sg-btn sg-btn-primary" disabled={!selected} onClick={() => void use()}><Check size={16} aria-hidden="true" />Använd</button>
-            </> : null}
+        {phase === 'generating' ? <div className="grid gap-2">
+          <p role="status" className="m-0">Skapar förslag… Det kan ta ett par minuter.</p>
+          <div className="grid grid-cols-2 gap-3" aria-hidden="true">
+            {Array.from({length: count}, (_, index) => <div key={index} className={'animate-pulse rounded-lg border border-sg-border bg-sg-surface-2 ' + (table ? 'aspect-[3/4]' : 'aspect-video')} />)}
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-    {confirmation ? <p role="status" className="text-xs text-sg-lime">{confirmation}</p> : null}
+        </div> : null}
+
+        {phase === 'results' || phase === 'saving' ? <div className="grid gap-2">
+          <p className="m-0 font-medium">Välj ett förslag</p>
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Förslag">
+            {proposals.map((row, index) => <button key={row.id} type="button" role="radio" aria-checked={selected === row.id} disabled={phase === 'saving'}
+              className={cn('relative overflow-hidden rounded-lg border-2 bg-sg-surface-2', selected === row.id ? 'border-sg-lime' : 'border-sg-border')} onClick={() => setSelected(row.id)}>
+              <img src={row.dataUrl} alt={`Förslag ${index + 1}`} className="block h-auto w-full" />
+              {selected === row.id ? <span className="absolute right-2 top-2 rounded-full bg-sg-lime p-1 text-sg-on-accent"><Check className="size-3.5" aria-hidden="true" /></span> : null}
+            </button>)}
+          </div>
+          {phase === 'saving' ? <p role="status" className="m-0">{progress === null ? `Sparar i ${place}…` : `Laddar upp · ${progress} %`}</p> : null}
+        </div> : null}
+
+        {error ? <p role="alert" className="m-0 rounded-lg bg-sg-danger-bg px-3 py-2 text-sg-danger">{error}</p> : null}
+      </div>
+    </Dialog>
+    {confirmation ? <p role="status" className="m-0 max-w-[32ch] text-center text-xs text-sg-ok">{confirmation}</p> : null}
   </span>;
 }

@@ -23,7 +23,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     useRef(value){const index=current.cursor++;return current.states[index]??={current:value};},
     useEffect(callback,deps){const store=current,index=store.cursor++;if(!store.effects[index]||deps.some((value,i)=>value!==store.effects[index].deps[i])){store.queue.push(()=>{store.effects[index]?.cleanup?.();store.effects[index]={deps,cleanup:callback()};});}}};
   const visibility=new Set(),doc={hidden:false,addEventListener:(name,fn)=>visibility.add(fn),removeEventListener:(name,fn)=>visibility.delete(fn)};
-  const LayerLibrary=()=>null,LayerAssetManager=()=>null,module={exports:{}};
+  const LayerLibrary=()=>null,LayerAssetManager=()=>null,AiBackgroundDialog=()=>null,module={exports:{}};
   // The kit's menu and dialogs stay unexpanded elements; tests read their props (actions, open, children).
   const ActionMenu=()=>null,Dialog=()=>null,ConfirmDialog=()=>null,Button=props=>React.createElement('button',props);
   const source=readFileSync(new URL('../components/studio/registered-material-library.tsx',import.meta.url),'utf8');
@@ -36,6 +36,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
     if(name.endsWith('/layer-library'))return {LayerLibrary};
     if(name.endsWith('/layer-asset-manager'))return {LayerAssetManager};
+    if(name==='./ai-background-dialog')return {AiBackgroundDialog};
     if(name==='../ui/hub')return {ActionMenu};
     if(name==='../ui/dialog')return {Dialog,ConfirmDialog};
     if(name==='../ui/kit')return {Button,buttonVariants:()=>'button',cn:(...names)=>names.filter(Boolean).join(' '),plural:(count,one,many)=>`${count} ${count===1?one:many}`};
@@ -54,7 +55,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     return renderWith(cards.get(asset.id),element.type,element.props);
   };
   render();await setImmediate();
-  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,ActionMenu,Dialog,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
+  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,AiBackgroundDialog,ActionMenu,Dialog,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
 }
 
 test('real assets page scopes table upload and visible library to explicit game, with shared backgrounds',async()=>{
@@ -90,6 +91,23 @@ test('upload readback cannot accept a table registered for another game; unspeci
   } finally{legacy.close();}
 });
 
+
+test('Skapa med AI sits beside the upload with the project dealers and scene templates and passes the same readback check',async()=>{
+  const h=await harness();try {
+    const aside=()=>nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.aside,ai=()=>nodes(aside(),node=>node.type===h.AiBackgroundDialog)[0];
+    assert.deepEqual([ai().props.role,ai().props.game,ai().props.disabled],['table','roulette',false]);
+    assert.equal(ai().props.dealers,h.project.dealers);assert.equal(ai().props.templates,h.project.lanes);
+    assert.doesNotMatch(text(aside()),/Kommer snart/);
+    ai().props.onRegistered(h.project,h.project.layerAssets[1].id);
+    assert.match(text(h.render()),/Registreringen kunde inte bekräftas för valt spel/,'a Blackjack table is refused on the Roulette tab');assert.equal(h.changed(),0);
+    ai().props.onRegistered(h.project,h.project.layerAssets[3].id);assert.equal(h.changed(),0,'a background is refused as table graphics');
+    ai().props.onRegistered(h.project,'10000000-0000-4000-8000-0000000000ff');assert.equal(h.changed(),0,'an id missing from the returned project is refused');
+    ai().props.onRegistered(h.project,h.project.layerAssets[0].id);assert.equal(h.changed(),1,'the Roulette table is accepted');
+    ai().props.onBusyChange(true);
+    assert.equal(nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.disabled,true,'a running AI request blocks upload and trash');
+    ai().props.onBusyChange(false);
+  } finally{h.close();}
+});
 
 test('material card shows loading, failed media and a retry while keeping the exact file identity',async()=>{
   const h=await harness();try{
