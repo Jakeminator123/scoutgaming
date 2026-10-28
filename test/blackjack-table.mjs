@@ -619,10 +619,11 @@ test('absence ticks carry the actor: two players absent at the same time are bot
   const t = setup();
   await t.join('kevin', [3]); await t.join('john', [4]);  // same joinedAt, same memberGen, same last seen
   t.time = 100000 + 120000;
-  const due = await t.table.dueTicks();
+  // Both are also past K6's 90 s without a bet; each has a seat.idle tick of his own, which then finds him gone.
+  const due = (await t.table.dueTicks()).filter(d => d.kind === 'seat.release');
   assert.equal(due.length, 2); assert.notEqual(due[0].tickId, due[1].tickId);
   const ran = await t.drain();
-  assert.deepEqual(ran.map(r => [r.kind, r.outcome]), [['seat.release', 'applied'], ['seat.release', 'applied']]);
+  assert.deepEqual(ran.map(r => [r.kind, r.outcome]), [['seat.release', 'applied'], ['seat.idle', 'superseded'], ['seat.release', 'applied'], ['seat.idle', 'superseded']]);
   const s = await t.snap();
   assert.equal(s.owners[3], null); assert.equal(s.owners[4], null);
   for (const p of ['kevin', 'john']) assert.equal((await t.snap(p)).me.active, false, p);

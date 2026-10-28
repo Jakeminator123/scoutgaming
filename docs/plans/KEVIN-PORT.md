@@ -1,6 +1,6 @@
 # Kevins och Emils presentationsförbättringar: selektiv överföring
 
-Plan för punkt 8 i masterplanens [Efter O03](../../migrering/MASTERPLAN.md#efter-o03), skriven 28 oktober 2026 mot `origin/main` 74fdb27f. Inget här är utfört. Varje PR i ordningen nedan är en vanlig PR med grön CI och provas i preview när orkestratorn bedömer att det behövs.
+Plan för punkt 8 i masterplanens [Efter O03](../../migrering/MASTERPLAN.md#efter-o03), skriven 28 oktober 2026 mot `origin/main` 74fdb27f. Utfört: P-E ([#541](https://github.com/Jakeminator123/scoutgaming/pull/541)) och P-C ([#547](https://github.com/Jakeminator123/scoutgaming/pull/547)). Varje PR i ordningen nedan är en vanlig PR med grön CI och provas i preview när orkestratorn bedömer att det behövs.
 
 **Regel ([AGENTS](../../AGENTS.md)):** Kevins grenar (`kevin`, `kevin-staging`, `kevin*`, `codex/kevin-*`) rörs aldrig. Vi läser dem med `git fetch`, `git log`, `git show` och `git diff`. Ett bra beteende skrivs om i mains egna moduler. Vi kopierar inga filer och gör inga merge eller cherry-picks.
 
@@ -20,7 +20,7 @@ Plan för punkt 8 i masterplanens [Efter O03](../../migrering/MASTERPLAN.md#efte
 | P8 | Vinstbesked per plats | Öppen, går in i **P-B** |
 | P9 | Förladdning i insatsfönstret | Öppen. Görs efter låsfixen (skalningstestet, punkt 9) |
 | P10 | `turnAt` vid kortets landning | Öppen. Hör ihop med tempot (K7) |
-| P11 | Fullt bord: högst 3 platser när någon väntar | Halvklar: osatsade platser släpps redan (`coordinator.mjs:232-237`). Resten går in i **P-C** |
+| P11 | Fullt bord: högst 3 platser när någon väntar | Klar i **P-C** (#547) |
 | P12 | Serverkedja för vilan, lika för alla tittare | Öppen. **Jakobs beslut** (koppla in `room-idle.mjs` eller radera den) |
 | P13 | Desktoplayout | Öppen. **Jakobs beslut.** Emils desktopbord (`adccb313`, `b50a3de4`, `c0f3838f`, `4adc3c63`) räknas hit |
 | P14 | Tyst tick | Öppen. Hör till skalningstestet (punkt 9) |
@@ -36,7 +36,7 @@ Här står bara sådant som är bättre än main. "Beslut" betyder att Jakob må
 | K3 | **Tydligare resultatyta.** Ett nettobelopp och "1 plats vann · 1 över 21 · dealern 19" visas över bordet, först när dealerns sista kort ligger öppet och hennes klipp är klara. En förlust visas lugnt, och bara en vinst får markering | `kevin:K/public/redesign.js:120-170` | `shared-room-view.mjs:95` (bara `last-win` som summa), `controller.mjs:69` (Nästa runda väntar redan på `plan.endAt`) | Resultatet syns inte innan korten gör det, och man ser vad som hände per plats (P8) | Låg | S–M | #536 | Nej |
 | K4 | **Nedräkning** i insats- och beslutsfönstret, markerad som brådskande vid 5 s eller mindre (P5) | `K/public/shared-table.js:259-276`. Kevins `round-clock.js` (prov `test/round-clock.test.mjs:4,11`) pausar klockan i klienten, vilket inte tas | `controller.mjs:81` (snapshotens `deadline` och `actionDeadline`) | Ingen tyst autostand efter 15 s | Låg. Visningen läser bara serverns tider och har ingen egen klocka | S | #536 | Nej |
 | K5 | **Chatten flyttad på mobil.** Chattikonen sitter uppe med de andra knapparna, och de tre senaste raderna svävar över bilden | `kevin:K/public/redesign.js:42-45,172-221` | Vid delat bord är chatten dold i dag (`shared-room-view.mjs:35`) | Dealern känns levande vid bordet | Vem dealern svarar vid ett bord med sju spelare, moderering och kostnad | M | Talkedjan (T3, T5) | **Ja**: ska det delade bordet ha chatt? |
-| K6 | **Fullt bord och väntande tittare.** En tittare utan plats vid fullt bord registreras som väntande i 30 s, och då behåller varje spelare högst 3 platser efter rundan, de som spelades först (P11). En spelare som varken satsar eller agerar på 90 s i insatsfönstret släpper sina platser | `kevin-staging:K/server/shared-table.mjs:45-47,283-292,489` (7ddb7de4), prov `K/test/ghost-seats.test.mjs:19,36,61` | `games/blackjack/table/coordinator.mjs:173-177` (`keptAfterRound`, `endingAtReset`), `:232-237`, `:527` (`watched`) | Ett fullt bord låser inte ute nya spelare | Medel. Låsplanen (`endingAtReset`) måste ta med 3-gränsen, annars `LockSetExceeded`. Väntandet måste vara ett idempotent kommando, eftersom kanalen bara läser | M | Inget öppet (F11 mergad, #529) | Nej, men Jakob kan justera 3 och 30 s |
+| K6 | **Fullt bord och väntande tittare.** En tittare utan plats vid fullt bord registreras som väntande i 30 s, och då behåller varje spelare högst 3 platser efter rundan, de som spelades först (P11). En spelare som varken satsar eller agerar på 90 s i insatsfönstret släpper sina platser | `kevin-staging:K/server/shared-table.mjs:45-47,283-292,489` (7ddb7de4), prov `K/test/ghost-seats.test.mjs:19,36,61` | Byggd i P-C (#547): `FULL_TABLE`, kommandot `wait` och ticken `seat.idle` i `games/blackjack/table/coordinator.mjs`, klienten i `public/shared-room-waiting.mjs` | Ett fullt bord låser inte ute nya spelare | Medel. Låsplanen (`endingAtReset`) måste ta med 3-gränsen, annars `LockSetExceeded`. Väntandet måste vara ett idempotent kommando, eftersom kanalen bara läser | M | Inget öppet (F11 mergad, #529) | Nej, men Jakob kan justera 3, 30 s och 90 s |
 | K7 | **Tempo per spelbord** (1×, 1,5×, 2×, 2,5×). Utdelningstagningarna spelas med `playbackRate`, motorns tider skalas, en sen tagning tas igen en gång, och en hit startar 0,8 s efter knappen | `kevin-staging:K/server/studio-tables.mjs:36-37,56-57,72-73`, `K/server/shared-table.mjs:134-153,241-245`, prov `K/test/table-tempo.test.mjs` (87d1291f, 86892006, 3be63841) | `coordinator.mjs:130-133` (`leadMs + draws·cardMs`), `local-film-player.mjs:159` (`playbackRate` finns), `filmed-deal-timeline.mjs` | Snabbare rundor för vana spelare | Filmad dealer i 2,5× kan se onaturlig ut. Läppsynken måste följa tempot (Emils 976b264d, 6dc38414, 883cc9ae lånar munlappar vid 2×), och main kräver exakt munlapp per ruta | M–L | P10, talkedjan T3 | **Ja**: produktval, och om tempot är en spelinställning |
 | K8 | **Underhållsbesked från drifthälsan.** Spelaren ser ett meddelande när läppsynken inte levererar, och det försvinner när allt är grönt igen | `kevin:K/server/runpod-notice.mjs:1-76`, `K/public/maintenance-notice.js`, prov `K/test/runpod-notice.test.mjs` (de31659c) | `services/game/moving-drift-observer.mjs` (arbetarnas läge), `public/app.mjs:1705` (`setMovingSpeechAvailable` döljer bara knapparna) | Spelaren förstår varför dealern tystnar, i stället för att undra | Låg. Texten får inte lova något, och RunPod-saldot är ett driftlarm, inte spelartext | S–M | T3 (driftprofil per dealer), tal vid delat bord | **Ja**: om spelaren ska se texten, och hur den lyder |
 | K9 | **Fast tabell för sidobetten** (Perfect Pairs, 21+3, ingen stege runt K-A-2) som komplement till fuzz-oraklet | `K/test/sidebet-payouts.test.mjs:5-17` | `games/blackjack/round.mjs:8-9,34-55`, `test/fuzz-blackjack.mjs:151-182` | Indirekt: utbetalningarna låses mot oavsiktliga ändringar | Ingen | S | Inget | Nej |
@@ -46,7 +46,7 @@ Här står bara sådant som är bättre än main. "Beslut" betyder att Jakob må
 
 - **Munlapp bunden till bildrutan.** Emil tar munnen för den ruta som faktiskt ritas, med `VideoFrame` av videoelementet (`K/public/dealer-layer.js:214-259`, 715fdfd8). Main gör det striktare. Rörligt tal avkodar kroppens rutor ur originalets exakta MP4, och PCM-klockan adresserar varje ruta (`packages/presentation/runtime/moving-speech-source-frames.mjs`). Varje munlapp måste ha rätt tagning, ruta och rektangel, annars avvisas den (`moving-speech-frame-layer.mjs:112-115`). Main har ingen fristående munklocka (`generated-speech-player.mjs:87`). Att generalisera per dealer är talkedjans T3 och T6, inte den här planen.
 - **Mjuk summa (7/17):** finns redan (`card-presentation/renderer-support.js:20-24`, prov `test/local-card-overlay.mjs:89`).
-- **Osatsade platser släpps efter rundan:** finns (`coordinator.mjs:232-237`).
+- **Osatsade platser släpps efter rundan:** finns (`coordinator.mjs`, `startRound` och `unplayed`).
 - **Nästa runda väntar på planens slut:** finns (`controller.mjs:69`).
 
 ### Tas inte
@@ -73,6 +73,7 @@ Ordningen gäller tills Jakob ändrar den. Kod byggs av en underagent på `jakob
 
 ### P-C. Fullt bord och väntande tittare (K6, P11)
 
+- **Läge:** byggd i #547. Värdena står i `FULL_TABLE` i `coordinator.mjs`: `keepBoxes: 3`, `waitingMs: 30000` och `idleSeatMs: 90000`. Klienten förnyar väntandet var 10 s. Ett fullt bord, en väntande och en ny plats efter rundan är provat lokalt genom HTTP-vägen, tjänsten och kanalen mot PGlite (`test/shared-table-full.mjs`). Preview återstår.
 - **Filer:** `games/blackjack/table/coordinator.mjs` (`keptAfterRound`, `endingAtReset`, `resetRound`, ett väntekommando), `shared-room-command-contract.mjs`, `shared-room-command.mjs`, och i klienten texten "Väntar på plats" i `shared-room-view.mjs`.
 - **Prov (PGlite, felar först):** en väntande inom 30 s ger högst 3 platser, de spelade först. Inget tas från en runda som pågår. Utan väntande behålls alla. 90 s inaktivitet i insatsfönstret släpper platserna, men en insats behåller dem. Låsordningen ska hålla (`test/postgres-shared-command.mjs`), och väntekommandot ska vara idempotent.
 - **Preview:** sju platser fyllda av två spelare, en tredje spelare väntar, och efter rundan har den tredje fått en plats.
@@ -110,5 +111,5 @@ Ordningen gäller tills Jakob ändrar den. Kod byggs av en underagent på `jakob
 2. K5: chatt vid det delade bordet.
 3. K7: tempo per spelbord, och i så fall som spelinställning.
 4. K8: om spelaren ska se underhållsbeskedet, och vad det ska säga.
-5. K6: gränserna 3 platser och 30 s. Utan beslut gäller Kevins värden.
+5. K6: gränserna 3 platser, 30 s och 90 s, och vilka platser som behålls. Utan beslut gäller Kevins värden och de platser dealern spelade först. Dealern ger och spelar från höger, så det är de högsta platsnumren. Kevins egen kod behöll de lägsta.
 6. P7 (gäståtkomst och "Bjud in"), P12 (serverkedjan för vilan: koppla in eller radera) och P13 (desktop).

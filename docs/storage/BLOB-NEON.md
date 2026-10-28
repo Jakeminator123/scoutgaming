@@ -88,7 +88,7 @@ Permanent radering är det sista steget och kräver att originalbytes är bevara
 - En aktiv GPU-session, giltig tallease eller oavslutad helfilsbegäran i miljön stoppar radering konservativt, eftersom äldre talsessioner saknar exakta indatareferenser.
 - Nya Forge-jobb kontrolleras atomiskt mot pending, deleted och arkiverad media under samma scopelås; ett sent providerutfall får aldrig återaktivera raderad media.
 
-"Inte vald i utkastet" är inget raderingsbevis. `tools/deduplicate-media.mjs` hanterar bara den äldre layouten och indexet, inte hela Neon-grafen. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
+"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
 
 ## Rörligt tal och talworkern
 

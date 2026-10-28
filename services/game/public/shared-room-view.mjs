@@ -225,6 +225,11 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
       picker.value='';picker.disabled=!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
       const key=JSON.stringify(s.settings.chips);
+      // K6: a viewer without a seat at a full table waits for one (shared-room-waiting.mjs renews the wait). The
+      // status line's title follows its final text.
+      const banner=$(document,'banner');
+      if(!value.notice&&!s.me.seats.length&&s.owners.every(owner=>owner!==null)&&!(s.me.pausedUntil>(value.serverNow??s.serverNow)))banner.textContent='Väntar på plats';
+      banner.title=banner.textContent;
       if(key!==chipKey){chipKey=key;chipHost.replaceChildren(...s.settings.chips.map(amount=>{const node=button(document,money(amount),()=>actions?.selectChip(amount));node.className='chip';node.dataset.value=String(amount);return node;}));}
       for(const node of chipHost.children){node.disabled=value.busy||!value.connected||value.retry;node.classList.toggle('sel',Number(node.dataset.value)===value.chip);node.setAttribute('aria-pressed',String(Number(node.dataset.value)===value.chip));}
       const several=s.me.seats.length>1,chosen=primarySeat(s,value.focusSeat);
