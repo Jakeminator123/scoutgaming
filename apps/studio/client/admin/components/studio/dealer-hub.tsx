@@ -75,9 +75,9 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
   return <div className={cn(pageClass,'max-w-none pt-0')}>
     {tab==='klipp'&&<DealerPreview dealerId={dealer.id} templates={templates} saved={saved}/>}
     {talVisited&&<div className="mt-5 grid gap-4" hidden={tab!=='tal'}>
-      <Note tone="warn">Talkedjan byggs om efter O03, likadant för alla dealers: text, röst och läppsynk. Verktygen nedan fungerar som i dag.</Note>
+      <Note tone="warn">Talkedjan byggs om, likadant för alla dealers: text, röst och läppsynk. Verktygen nedan fungerar som i dag.</Note>
       <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Tal vid inaktivitet" aside="Av · Automatiskt klipp · AI-tal"><Empty title="Inte anslutet · kommer med talkedjan efter O03" text="Inställningen finns i dag bara för hela projektet, inte per dealer. Inget sparas här förrän talkedjan är byggd för alla dealers."/></Card>
+        <Card title="Tal vid inaktivitet" aside="Av · Automatiskt klipp · AI-tal"><Empty title="Inte anslutet · kommer med talkedjan" text="Inställningen finns i dag bara för hela projektet, inte per dealer. Inget sparas här förrän talkedjan är byggd för alla dealers."/></Card>
         <Card title="Taldrift" aside="Talets GPU-läge i den här miljön"><TaldriftPanel/></Card>
       </div>
       <Card title="Svarsbibliotek" aside="Dealerns inspelade svar i kategorier"><WorkspaceTool section="replies" overrides={{dealer:dealer.id}}/></Card>
@@ -105,8 +105,8 @@ function ApprovalCard({coverage,templates}:{coverage:Coverage;templates:{id:stri
     [`Tillåten i minst en scenmall (${templates.length})`,templates.length>0],
   ];
   return <Card title="Godkännande" aside="Krävs för att dealern ska kunna tilldelas" className="mt-3">
-    <div className="grid">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">efter O03</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
-    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Checklistan visar läget; godkännandet sparas inte ännu. Tilldelning görs under Bolag › Tilldelning. Landningarna mäts i Admin efter O03; i dag finns de bara för två filmade dealers.</p>
+    <div className="grid">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">kommer senare</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
+    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Checklistan visar läget; godkännandet sparas inte ännu. Tilldelning görs under Bolag › Tilldelning. Mätningen av landningar i Admin kommer senare; i dag finns de bara för två filmade dealers.</p>
   </Card>;
 }
 
@@ -117,7 +117,7 @@ function DealerPreview({dealerId,templates,saved}:{dealerId:string;templates:{id
     {templates.length>1&&<label className="mb-3 grid gap-1.5 text-[13px] font-semibold">Scenmall<select value={lane?.id??''} onChange={event=>setLaneId(event.target.value)} className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text">{templates.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
     {!templates.length&&<Empty chip={null} title="Ingen scenmall tillåter dealern" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}
     {lane&&<SavedScenePreview active={open} presentationLaneId={lane.id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/>}
-    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Visar scenmallens sparade förval som spelaren ser dem vid det delade bordet, på dator. Mobilvyn kommer efter O03.</p>
+    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Visar scenmallens sparade förval som spelaren ser dem vid det delade bordet, på dator. Mobilvyn kommer senare.</p>
   </PreviewFlyout>;
 }
 
@@ -125,10 +125,10 @@ function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId
   const [open,setOpen]=useState(false);
   return <div className="mt-5 grid gap-4">
     <div className="grid gap-4 md:grid-cols-2">
-      <Card title="Var dealerns hand landar" aside={<Chip tone="warn">efter O03</Chip>}>
-        <p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Landningarna mäts och sparas i Admin efter O03. I dag finns de bara för två filmade dealers.</p>
+      <Card title="Var dealerns hand landar" aside={<Chip tone="warn">kommer senare</Chip>}>
+        <p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Att mäta och spara landningarna i Admin kommer senare. I dag finns de bara för två filmade dealers.</p>
         <KV items={[['Givklipp',`${dealBound}/${plural(dealTotal,'fack','fack')} kopplade`],['Mobil','3 av 7 platser i ett glidande fönster, ingen zoom'],['Mäts ur','givklippen: när kortet nuddar, landar och lämnar handen']]}/>
-        <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Efter O03">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Efter O03">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">efter O03</span></div>
+        <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Kommer senare">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Kommer senare">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">kommer senare</span></div>
       </Card>
       <Card title="Så ser det ut i scenen" aside="Dator">
         {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen scenmall tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}

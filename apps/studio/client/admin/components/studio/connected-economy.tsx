@@ -45,7 +45,7 @@ export function ConnectedEconomy({journal,active=true}:{journal:SharedStudioAdmi
   const summary=useMemo(()=>state.status==='ready'?summarizeEconomyJournal(state.journal,{currency,days,now:state.readAt}):null,[state,currency,days]);
   const loading=state.status==='loading'||state.status==='idle';
   return <div className="mt-6 grid min-w-0 gap-5">
-    <header className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="m-0 text-lg font-semibold tracking-[-0.01em]">Ekonomisk översikt</h2><p className="mb-0 mt-1 max-w-2xl text-[13px] text-sg-muted">Kontorörelser och aktivitet ur de senaste journalposterna, alla bolag (tills steg F). Journalen nedan visar varje händelse.</p></div>
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="m-0 text-lg font-semibold tracking-[-0.01em]">Ekonomisk översikt</h2><p className="mb-0 mt-1 max-w-2xl text-[13px] text-sg-muted">Kontorörelser och aktivitet ur de senaste journalposterna, alla bolag tillsammans (per bolag kommer senare). Journalen nedan visar varje händelse.</p></div>
       <Button disabled={loading} onClick={reload}><RefreshCw aria-hidden="true"/>{loading?'Läser…':'Uppdatera'}</Button></header>
     {loading&&<div role="status" className="rounded-xl border border-sg-border bg-sg-surface p-8 text-sm text-sg-muted">Läser ekonomins journal…</div>}
     {state.status==='error'&&<div role="alert" className="rounded-xl border border-sg-border bg-sg-surface p-6"><p className="m-0">{state.message}</p><button type="button" className={cn(buttonVariants(),'mt-3')} onClick={reload}>Försök igen</button></div>}

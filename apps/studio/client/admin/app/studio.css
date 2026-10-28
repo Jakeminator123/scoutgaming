@@ -675,3 +675,7 @@ body.preview-admin{overflow:hidden}
    text (made for the dark sidebar) reads as the accent ink on light surfaces. */
 .preview-admin [hidden]{display:none!important}
 .preview-admin main .text-sg-lime{color:var(--sg-accent-text)}
+
+/* Finish (2026-10-28): the portal bar fits one row on a phone, and motion respects the system setting. */
+@media(max-width:600px){.studio-portal-bar{flex-wrap:nowrap;padding:8px 12px;gap:8px}.studio-portal-bar nav{margin-left:0;min-width:0;flex-wrap:nowrap}.studio-portal-bar nav a{padding:5px 8px;font-size:12px;white-space:nowrap}.studio-portal-bar>.studio-mobile-logout{margin-left:auto}.studio-mobile-logout .studio-logout{min-height:32px;padding:0 8px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.preview-admin *,.preview-admin *::before,.preview-admin *::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}

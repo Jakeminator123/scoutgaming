@@ -57,10 +57,14 @@ export function receiptSha(json) {
 
 export const touchesRuntime = path => RUNTIME_PREFIXES.some(prefix => path.startsWith(prefix));
 
+// gh reports only the new path of a rename or copy, so a move out of a runtime prefix
+// (apps/web/x.ts -> docs/x.ts) looks like a docs change. Such files count as runtime.
+export const movedFile = f => ['RENAMED', 'COPIED'].includes(String(f?.changeType ?? '').toUpperCase());
+
 // gh pr list rows -> open PRs that change runtime files; drafts are listed but do not block.
 export function openRuntimePrs(prs) {
   return prs.map(p => ({ number: p.number, draft: Boolean(p.isDraft), author: p.author?.login ?? null, head: p.headRefOid ?? null,
-    runtimeFiles: (p.files ?? []).map(f => f.path).filter(touchesRuntime) })).filter(p => p.runtimeFiles.length);
+    runtimeFiles: (p.files ?? []).filter(f => touchesRuntime(f.path) || movedFile(f)).map(f => f.path) })).filter(p => p.runtimeFiles.length);
 }
 
 // Push (or dispatched) CI run of the main workflow on exactly this SHA; the newest wins.

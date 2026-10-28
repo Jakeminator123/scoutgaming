@@ -281,6 +281,10 @@
       "blocked": [
         "LAB_REMOTE_URL",
         "LAB_REMOTE_TOKEN"
+      ],
+      "panelOnlyValues": [
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN",
+        "OPENCLAW_STUDIO_ADMIN_DEVICE_KEY"
       ]
     },
     "render-openclaw-gateway": {
@@ -311,7 +315,13 @@
         "OPENCLAWAPI_KEY"
       ],
       "managed": [],
-      "blocked": []
+      "blocked": [],
+      "panelOnlyValues": [
+        "OPENCLAW_API_KEY",
+        "OPENCLAW_MODEL_API_KEY",
+        "OPENCLAW_DASHBOARD_ORIGIN",
+        "CROUPIER_SPEECH_VISION"
+      ]
     },
     "runpod-gpu-worker": {
       "sources": [],

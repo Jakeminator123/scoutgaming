@@ -25,7 +25,9 @@ const projectContention = value => Object.freeze({ count: Number.isSafeInteger(v
  * never creates/closes a pool. Await start before readiness, and close BEFORE
  * closing the application's pool. A stopped/failed instance cannot be restarted.
  * K04's receiver converts the frozen outbox row and commits its version before
- * the channel receives an invalidation hint. Only the coordinator acknowledges
+ * the channel receives an invalidation hint. Commits by another engine instance
+ * reach the channel through the runtime pass's room versions (observeRoom, F11);
+ * close() (SIGTERM) ends every socket with 1012 at once. Only the coordinator acknowledges
  * outbox rows. Commands share the scoped database transaction; no publication
  * writer or material fallback lives here.
  */
@@ -63,6 +65,10 @@ export function createSharedRoomService({
       if (state !== 'running') return;
       channel.emitCommitted(roomId);
       channel.emitActorsCommitted(actors, { exceptRoom: roomId });
+    }, onRoomObserved: ({ roomId, version, presentationVer }) => {
+      // F11: the runtime pass's own room read. Covers commits by another engine instance,
+      // whose hints never reach this channel (Render overlap during deploy/restart).
+      if (state === 'running') channel.observeRoom(roomId, { version, presentationVer });
     }, sink: async row => {
       // receiver.sink owns presentationForRow + the atomic receiver transaction.
       // Replayed 'applied' is only a reread hint, never a second application.

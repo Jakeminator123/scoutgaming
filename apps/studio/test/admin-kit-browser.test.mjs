@@ -46,6 +46,8 @@ async function withPage(run){
   }finally{await browser.close();}
 }
 const focused=page=>page.evaluate(()=>({tag:document.activeElement?.tagName,id:document.activeElement?.id,role:document.activeElement?.getAttribute('role'),text:document.activeElement?.textContent?.trim()}));
+// Radix moves menu focus in its own handlers; wait for the expected item instead of reading focus at once.
+const focusedText=async(page,text)=>{try{await page.waitForFunction(value=>document.activeElement?.textContent?.trim()===value,text,{timeout:3000});}catch{}return (await focused(page)).text;};
 
 test('the ⋯ menu opens from the keyboard, moves with the arrow keys, skips a disabled entry and closes on Esc',{skip:!browserModule},()=>withPage(async page=>{
   const trigger=page.getByRole('button',{name:'Åtgärder för Nora'});
@@ -54,9 +56,9 @@ test('the ⋯ menu opens from the keyboard, moves with the arrow keys, skips a d
   const menu=page.getByRole('menu');await menu.waitFor();
   assert.equal(await page.getByRole('menuitem').count(),3);
   assert.equal(await page.getByRole('menuitem',{name:/Godkänn/}).getAttribute('aria-disabled'),'true');
-  assert.equal((await focused(page)).text,'Öppna dealern');
-  await page.keyboard.press('ArrowDown');assert.equal((await focused(page)).text,'Arkivera','the disabled entry is skipped');
-  await page.keyboard.press('ArrowUp');assert.equal((await focused(page)).text,'Öppna dealern');
+  assert.equal(await focusedText(page,'Öppna dealern'),'Öppna dealern');
+  await page.keyboard.press('ArrowDown');assert.equal(await focusedText(page,'Arkivera'),'Arkivera','the disabled entry is skipped');
+  await page.keyboard.press('ArrowUp');assert.equal(await focusedText(page,'Öppna dealern'),'Öppna dealern');
   await page.keyboard.press('Escape');await menu.waitFor({state:'detached'});
   await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Åtgärder för Nora');
   await trigger.click();await page.getByRole('menuitem',{name:'Arkivera'}).click();

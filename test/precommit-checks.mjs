@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  parseStagedChanges, readStagedChanges, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests,
+  parseStagedChanges, readStagedChanges, readMergeHead, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests,
 } from '../tools/precommit-checks.mjs';
 
 const change = (path, status = 'M') => ({ path, status });
@@ -334,4 +334,106 @@ test('cached checks keep the commit index while test subprocesses lose repositor
     if (saved === undefined) delete process.env.GIT_INDEX_FILE;
     else process.env.GIT_INDEX_FILE = saved;
   }
+});
+
+async function mergeFixture(run) {
+  await fixture(async root => {
+    const commit = message => git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
+    const write = async (path, content) => { await mkdir(join(root, path, '..'), { recursive: true }); await writeFile(join(root, path), content); };
+    for (const [path, content] of Object.entries({ 'shared.mjs': 'export const v = 0;\n', 'gone.mjs': 'export {};\n',
+      'docs/guide.md': 'guide\n', 'kept.mjs': 'export const k = 0;\n' })) await write(path, content);
+    git(root, ['add', '-A']);
+    commit('base');
+    git(root, ['branch', '-M', 'trunk']);
+    git(root, ['checkout', '-qb', 'feature']);
+    await write('feature.mjs', 'export const f = 1;\n');
+    git(root, ['add', '-A']);
+    commit('feature');
+    git(root, ['checkout', '-q', 'trunk']);
+    await write('apps/studio/client/lobby/main.mjs', 'export const lobby = 1;\n');
+    await write('kept.mjs', 'export const k = 1;\n');
+    await rm(join(root, 'gone.mjs'));
+    git(root, ['add', '-A']);
+    commit('trunk');
+    await run({ root, write, commit });
+  });
+}
+
+test('a clean merge stages only own edits, not the merged branch', async () => {
+  await mergeFixture(async ({ root, write }) => {
+    git(root, ['checkout', '-q', 'feature']);
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
+    git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'merge', '-q', '--no-ff', '--no-commit', 'trunk']);
+    assert.match(git(root, ['rev-parse', '-q', '--verify', 'MERGE_HEAD']), /^[a-f0-9]{40}/);
+    assert.deepEqual(readStagedChanges(root), [], 'added, modified and deleted files from trunk are not this commit');
+    assert.equal(mode(readStagedChanges(root)), 'documentation');
+    // An edit made during the merge differs from both sides and is checked.
+    await write('kept.mjs', 'export const k = 2;\n');
+    await write('docs/guide.md', 'own guide\n');
+    git(root, ['add', '--', 'kept.mjs', 'docs/guide.md']);
+    assert.deepEqual(readStagedChanges(root), [change('docs/guide.md'), change('kept.mjs')]);
+    // Deleting a file the merged branch still has is own work too.
+    git(root, ['rm', '-q', '--', 'shared.mjs']);
+    assert.deepEqual(readStagedChanges(root), [change('docs/guide.md'), change('kept.mjs'), change('shared.mjs', 'D')]);
+    git(root, ['merge', '--abort']);
+    assert.deepEqual(readStagedChanges(root), [], 'no merge, nothing staged');
+  });
+});
+
+test('a conflicted merge checks resolutions that differ from both sides', async () => {
+  await mergeFixture(async ({ root, write, commit }) => {
+    await write('shared.mjs', 'export const v = 1;\n');
+    git(root, ['add', '-A']);
+    commit('trunk shared');
+    git(root, ['checkout', '-q', 'feature']);
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
+    await write('shared.mjs', 'export const v = 2;\n');
+    git(root, ['add', '-A']);
+    commit('feature shared');
+    const merge = spawnSync('git', ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'merge', '-q', '--no-ff', 'trunk'],
+      { cwd: root, encoding: 'utf8', env: isolatedGitEnvironment() });
+    assert.notEqual(merge.status, 0, 'the fixture must conflict');
+    assert.deepEqual(readStagedChanges(root), [change('shared.mjs', 'U')], 'an unresolved path is never dropped');
+    await write('shared.mjs', 'export const v = 3;\n');
+    git(root, ['add', '--', 'shared.mjs']);
+    const own = readStagedChanges(root);
+    assert.deepEqual(own, [change('shared.mjs')]);
+    assert.equal(mode(own), 'focused');
+    assert.ok(checkPlan('focused', { changes: own, root }).every(args => !args.includes('apps/studio/client/lobby/main.mjs')));
+    // Taking the merged side's version, or keeping our own, adds nothing new.
+    git(root, ['checkout', '-q', 'trunk', '--', 'shared.mjs']);
+    assert.deepEqual(readStagedChanges(root), []);
+    git(root, ['checkout', '-q', 'HEAD', '--', 'shared.mjs']);
+    assert.deepEqual(readStagedChanges(root), []);
+  });
+});
+
+test('merge-state inspection fails closed outside a repository', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'croupier-hook-nomerge-'));
+  try {
+    assert.equal(readMergeHead(root), null);
+    assert.throws(() => readStagedChanges(root), /Cannot inspect staged changes/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('a merge of anything but main keeps every staged path', async () => {
+  await mergeFixture(async ({ root }) => {
+    git(root, ['checkout', '-q', 'feature']);
+    const merge = () => git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'merge', '-q', '--no-ff', '--no-commit', 'trunk']);
+    const all = [change('apps/studio/client/lobby/main.mjs', 'A'), change('gone.mjs', 'D'), change('kept.mjs')];
+    // No origin/main at all: nothing is known to be checked.
+    merge();
+    assert.deepEqual(readStagedChanges(root), all);
+    git(root, ['merge', '--abort']);
+    // origin/main behind the merged branch: trunk's newest commit was never checked on main.
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk~1']);
+    merge();
+    assert.deepEqual(readStagedChanges(root), all);
+    assert.equal(mode(readStagedChanges(root)), 'focused');
+    git(root, ['merge', '--abort']);
+    // Once origin/main contains it, the merged files are filtered again.
+    git(root, ['update-ref', 'refs/remotes/origin/main', 'trunk']);
+    merge();
+    assert.deepEqual(readStagedChanges(root), []);
+  });
 });

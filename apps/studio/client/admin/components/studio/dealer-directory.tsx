@@ -149,7 +149,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         <div className="border-t border-sg-line-2 pt-3 text-[12.5px] text-sg-muted">{uses.operators.length?`Används av ${uses.operators.map(row=>row.name).join(', ')} · ${plural(uses.rooms.length,'spelbord','spelbord')}`:'Inte tilldelad något bolag'}</div>
       </li>;
     })}</ul>
-    {workspace&&<Card title={`Papperskorg (${trash.length})`} className="mt-8" aside="Återställ, eller radera permanent efter serverns kontroll">
+    {workspace&&<Card title={<span className="inline-flex items-center gap-2">Papperskorg<span className="rounded-full bg-sg-hover px-1.5 text-[11px] font-semibold tabular-nums text-sg-muted">{trash.length}</span></span>} className="mt-8" aside="Återställ, eller radera permanent efter serverns kontroll">
       {!trash.length?<p className="m-0 text-[12.5px] text-sg-muted">Papperskorgen är tom.</p>:<ul className="m-0 grid list-none p-0">{trash.map(row=><li className="flex flex-wrap items-center gap-3 border-t border-sg-line-2 py-3 first:border-t-0 first:pt-0" key={row.dealer.id}><div className="min-w-0 flex-1"><div className="font-semibold">{row.dealer.label}</div>{row.deletion&&<div className="text-[13px] text-sg-muted">radering påbörjad</div>}</div>
         <div className="flex flex-wrap gap-2"><Button size="sm" disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}>Återställ</Button>
         <Button size="sm" variant="danger" disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}>{row.deletion?'Slutför radering':'Radera permanent'}</Button></div>

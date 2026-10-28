@@ -125,3 +125,15 @@ test('catalog request reauthorizes before reads, accepts GET/HEAD only and never
   const query = await serveDesignCatalog(new Request(request.url + '?operator=other'), options);
   assert.equal(query.status, 400); assert.equal(reads, 2);
 });
+test('admin rooms carry only a known bet profile from their own saved game settings, for the room picture',async()=>{
+  const f=fixture(),other=f.administration.rooms.find(row=>row.id==='not-published');
+  f.administration.roomGameConfigs=[
+    {roomId:f.room.id,operatorId:f.room.operatorId,revision:'room-config-00000000-0000-4000-8000-000000000001',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'prive'}},
+    {roomId:other.id,operatorId:'another-operator',revision:'room-config-00000000-0000-4000-8000-000000000002',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'high'}},
+    {roomId:'__proto__',operatorId:f.room.operatorId,revision:'x',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'constructor'}},
+  ];
+  const result=await registeredDesignCatalog(f),rooms=result.administration.rooms;
+  assert.equal(rooms.find(row=>row.id===f.room.id).savedLimitPreset,'prive');
+  assert.equal(Object.hasOwn(rooms.find(row=>row.id===other.id),'savedLimitPreset'),false);
+  assert.ok(rooms.every(row=>row.savedLimitPreset===undefined||['casual','prive','high'].includes(row.savedLimitPreset)));
+});

@@ -114,12 +114,15 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
     fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='react'?hooks.react:name==='../ui/kit'?{cn:(...names)=>names.filter(Boolean).join(' '),buttonVariants:()=>'button'}
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
-      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
+      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
+      :name==='./dealer-identity-portrait'?portraitStubs(React):name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{hooks.reset();const tree=module.exports.RegisteredStudio(currentProps);hooks.flush();return tree;};
   render();await settle(1);
   return {render,listeners,allowLeave:value=>{allowLeave=value;},setProps(next){currentProps={...currentProps,...next};},
     get href(){return currentPath+currentSearch+currentHash;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
 }
+// Portraits are presentation only (their own test is dealer-artwork.test.mjs); the names stay as text.
+const portraitStubs=React=>({DealerAvatar:()=>null,DealerFaces:props=>React.createElement('span',{'data-dealer-faces':''},props.dealers.map(row=>row.label).join(', ')||props.empty||'–')});
 async function registeredStudioHtml(props,options){return renderToStaticMarkupOf(await mountRegisteredStudio(props,options));}
 function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}
 
@@ -142,6 +145,7 @@ async function companiesPageHtml({page,id,search='',...overrides}){
     :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:()=>null}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
+    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
   const render=()=>{hooks.reset();const tree=module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
   render();await settle(1);
@@ -153,7 +157,7 @@ test('the room nav mounts the exact scoped editor per tab; the company nav owns 
   assert.equal(hrefs(appearance).some(href=>/^\/admin\/(publication|rooms\?|clips)/.test(href)),false,'no function lives only on a retired page');
   assert.match(appearance,/data-room-editor="roulette"/);assert.match(appearance,/data-operator="a"/);assert.match(appearance,/data-admin-choices="true"/);assert.match(appearance,/data-room-layout="true"/);
   assert.doesNotMatch(appearance,/data-game-config=|data-room-create=|aria-label="Tilldelning"/,'the appearance tab mounts only the layer editor');
-  assert.match(appearance,/Publicera \(tills steg D\)/);
+  assert.match(appearance,/Publicera \(tills vidare\)/);
   assert.doesNotMatch(appearance,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"|Återställ borttaget spel/);
   assert.match(await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'game'},{compositions}),/data-game-config="bj"/);
   const rouletteGame=await registeredStudioHtml({operatorId:'a',roomId:'roulette',mode:'room',section:'game'},{compositions});
@@ -560,7 +564,7 @@ test('a removed composition never blocks the PAOW idle refresh, which publishes 
   const paow=()=>walk(p.h.render(),node=>node.type==='button'&&node.props.children==='Publicera PAOWs viloklipp')[0];
   assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
   assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the room editor carries no package form; the blocked assignment stays on its own tab');
-  assert.match(p.html(),/Publicera \(tills steg D\)/);
+  assert.match(p.html(),/Publicera \(tills vidare\)/);
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
   paow().props.onClick();await p.settle();
   assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);

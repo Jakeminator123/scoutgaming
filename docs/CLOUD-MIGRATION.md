@@ -13,7 +13,7 @@ Var produkten kör, hur en ändring når produktionen och hur man kontrollerar d
 | Talkedjan (Director och Gateway) | `packages/director`, `services/openclaw/lab` | Render `croupier-lab-director` och `croupier-lab-openclaw`, med diskar `/data/catalog` och `/data/openclaw` |
 | Produktregister: konton, spel, dealers, bolag, rum, mallar, paket, spelinställningar, mediekatalog, talrepliker | SQL i `ops/neon-game` och `ops/neon-studio` | Neon `croupier-production`, databas `croupier_game` |
 | Mediebytes | Sökvägar och regler i [BLOB-NEON](storage/BLOB-NEON.md) | Privat Vercel Blob `croupier-media-private` |
-| Provbänk till O03 | Samma kod | Staging i Vercel, Render, Neon och Blob, se [START-HERE](../START-HERE.md#staging) |
+| Preview (tidigare staging) | Samma kod som produktionen mellan prov, låst SHA från `main` eller `jakob/*` | Egna resurser i Vercel, Render, Neon och Blob, se [START-HERE](../START-HERE.md#preview) |
 
 Det finns en väg: inga lokala produktregister, ingen SQLite, inga parallella QA-ytor. `node apps/studio/start.mjs --no-open` skriver bara den publicerade lobbyns adress. `/control` och `/lab` svarar med redirect till `/admin`. Variablerna per tjänst står i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 
@@ -32,7 +32,7 @@ curl -s https://croupier-v3.onrender.com/__cloud/version   # {schemaVersion:1, p
 ```
 
 - Jämför `commitSha` med `main` och med Vercels deploy. Grön CI eller "live" i Render är inget kvitto på att rätt kod kör.
-- Kör det ändrade flödet: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Riktig acceptans görs i staging med syntetiska konton och Jakobs speglade inloggningar.
+- Kör det ändrade flödet: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Riktig acceptans görs i preview med syntetiska konton och Jakobs speglade inloggningar, när orkestratorn bedömer att det behövs.
 - Efter varje env-ändring på Render: läs `/__cloud/health` igen, eftersom Render MCP startar en deploy direkt.
 - Kvitton skrivs sanerade som `docs/<datum>-<aktivitet>-…-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
 

@@ -15,7 +15,8 @@
   background: var(--sg-surface);
   color: var(--sg-text);
   border: 1px solid var(--sg-border);
-  border-radius: 14px;
+  border-radius: 12px;
+  box-shadow: var(--sg-shadow);
   padding: 20px;
 }
 

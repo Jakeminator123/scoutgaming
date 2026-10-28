@@ -40,6 +40,17 @@ test('runtime PRs: drafts are listed but only open non-drafts block F5', () => {
   assert.equal(evaluateFreeze({ onMain: true, ci: { status: 'completed', conclusion: 'success' }, prs }).F5, false);
 });
 
+test('a rename or copy out of a runtime prefix still blocks F5', () => {
+  // gh lists only the new path: apps/web/x.ts -> docs/x.ts shows up as docs/x.ts RENAMED.
+  const prs = openRuntimePrs([
+    { number: 4, isDraft: false, files: [{ path: 'docs/x.ts', changeType: 'RENAMED' }] },
+    { number: 5, isDraft: false, files: [{ path: 'docs/y.md', changeType: 'COPIED' }, { path: 'docs/z.md', changeType: 'MODIFIED' }] },
+    { number: 6, isDraft: false, files: [{ path: 'docs/w.md', changeType: 'ADDED' }] },
+  ]);
+  assert.deepEqual(prs.map(p => [p.number, p.runtimeFiles]), [[4, ['docs/x.ts']], [5, ['docs/y.md']]]);
+  assert.equal(evaluateFreeze({ onMain: true, ci: { status: 'completed', conclusion: 'success' }, prs }).F5, false);
+});
+
 test('CI must be the newest push or dispatch run of the main workflow and completed green', () => {
   const runs = [
     { id: 1, name: 'Croupier GitHub checks', event: 'pull_request', status: 'completed', conclusion: 'success', created_at: '2026-10-28T03:00:00Z' },
