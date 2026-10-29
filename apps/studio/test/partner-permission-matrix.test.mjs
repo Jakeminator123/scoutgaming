@@ -49,7 +49,7 @@ const API_WRITES = [
   { id: 'team POST suspend', path: 'team', action: 'suspend', requires: [...TEAM_WRITE, 'team.suspend', ...TARGET_PERMISSIONS] },
   { id: 'team POST reactivate', path: 'team', action: 'reactivate', requires: [...TEAM_WRITE, 'team.suspend', ...TARGET_PERMISSIONS] },
   { id: 'team POST invite', path: 'team', action: 'invite', requires: [...TEAM_WRITE, 'team.invite', ...TARGET_PERMISSIONS] },
-  // Byta dealer inom tilldelningen: utseendets rätt; allow.dealer följer scenmallen (operatorAdjustable).
+  // Byta dealer inom tilldelningen: utseendets rätt; allow.dealer följer miljön (operatorAdjustable).
   { id: 'dealer POST', path: 'dealer', action: 'dealer', requires: BRANDING_WRITE },
 ];
 // Spelbordens skrivvägar (partner-table-api.mjs) går genom Studio-transaktionen och den nativa

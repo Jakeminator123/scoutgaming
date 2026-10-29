@@ -60,7 +60,7 @@ test('missing media is said, and Provspela still receives the saved revision',()
 
   const noBackground=saved();noBackground.lane.layers.background={...noBackground.lane.layers.background,default:null};
   const backgroundHtml=render(noBackground);
-  assert.match(backgroundHtml,/Mallen saknar bakgrund/);assert.match(backgroundHtml,/href="\/admin\/scenes\?tab=mallar&amp;composition=/);
+  assert.match(backgroundHtml,/Miljön saknar bakgrund/);assert.match(backgroundHtml,/href="\/admin\/scenes\?tab=mallar&amp;composition=/);
   handsRevision(backgroundHtml,noBackground.lane.id,'no background');
 
   const nothing=saved();nothing.inventory.videos=[];nothing.project.layerAssets=[];
@@ -69,13 +69,13 @@ test('missing media is said, and Provspela still receives the saved revision',()
   handsRevision(emptyHtml,nothing.lane.id,'nothing to draw');
 
   const gone=saved(),goneHtml=render(gone,{laneId:'gone'});
-  assert.match(goneHtml,/data-empty="Scenmallen finns inte i det sparade projektet"/);assert.doesNotMatch(goneHtml,/data-composition|data-note/);
+  assert.match(goneHtml,/data-empty="Miljön finns inte i det sparade projektet"/);assert.doesNotMatch(goneHtml,/data-composition|data-note/);
   handsRevision(goneHtml,'gone','the lane is missing from the saved project');
 });
 
 test('a dealer outside the saved template is said, and roulette links to its own clip map',()=>{
   const value=saved(),stranger=render(value,{dealerId:'stranger'});
-  assert.match(stranger,/Den sparade scenmallen tillåter inte den här dealern/);
+  assert.match(stranger,/Den sparade miljön tillåter inte den här dealern/);
   assert.match(stranger,/data-saved-scene="[^"]+" data-revision="saved:7" data-dealer="stranger"/);
   const roulette=saved();roulette.inventory.videos=[];
   const html=render(roulette,{game:'roulette'});

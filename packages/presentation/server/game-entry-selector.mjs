@@ -115,7 +115,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
         ...(presentationLane.backgroundPlayback?{backgroundPlayback:structuredClone(presentationLane.backgroundPlayback)}:{}),
         ...(presentationLane.tablePlayback?{tablePlayback:structuredClone(presentationLane.tablePlayback)}:{}),
-        assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(asset=>({id:asset.id,role:asset.role,label:materialLabel(asset),contentType:asset.contentType,src:`/api/presentation/layers/${slug}/${asset.id}`}))};
+        assets:frozen.assets.filter(asset=>layers[asset.role]?.allowed.includes(asset.id)).map(asset=>({id:asset.id,role:asset.role,label:materialLabel(asset),contentType:asset.contentType,src:`/api/presentation/layers/${slug}/${asset.id}`}))};
     }
     if (room) next.roomId = room.id;
     return {status:200,selection:next,...(game === 'roulette' ? {room:structuredClone(room)} : {})};

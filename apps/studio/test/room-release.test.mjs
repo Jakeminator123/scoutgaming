@@ -418,7 +418,7 @@ test('room release with the company appearance draft in the same transaction',as
     await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:start.revision,branding:{color:'#112233'}});
     const southPack=await f.direct.getCurrentPackage('south');
     await f.direct.saveBrandingDraft({actor:'partner-2',operatorId:'south',expectedDraftRevision:0,expectedPackageRevision:southPack.revision,branding:{color:'#445566'}});
-    // Utseendes egen granskning gäller: bordsfärgen går inte att ändra i den här mallen.
+    // Utseendes egen granskning gäller: bordsfärgen går inte att ändra i den här miljön.
     const misfit=await f.read('north-a','north',{actor:designer}),untouched=await f.persisted();
     assert.equal(misfit.ready,false);assert.deepEqual(misfit.appearanceDraft,{revision:1,included:true});
     assert.deepEqual(misfit.blockers,[{area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}]);
@@ -567,14 +567,14 @@ test('a live choice the new template removes does not stop a draft that leaves i
   const tables=async allowed=>{const doc=await f.raw.readDocument('project');
     await f.raw.saveDocument('project',{value:{...doc.value,layerAssets:[...(doc.value.layerAssets??[]).filter(row=>![green,blue].includes(row.id)),asset(green),asset(blue)],lanes:doc.value.lanes.map((lane,index)=>index?lane
       :{...lane,layers:{...lane.layers,table:{...lane.layers.table,allowed}}})},expectedRevision:doc.revision,actor:'fixture'});};
-  // Live: mallen har bordsgrafiken green och bolaget har valt den.
+  // Live: miljön har bordsgrafiken green och bolaget har valt den.
   await tables([green,blue]);
   await f.post({operatorId:'north',lanes:[f.lane]});
   const first=await f.direct.getCurrentPackage('north');
   await f.direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:first.revision,lanes:first.lanes,games:first.games,
     tables:first.tables,branding:{...first.branding,table:green}});
   await f.saveDraft('north-a',{language:'sv',limitPreset:'prive'});
-  // Den nya mallen tar bort green.
+  // Den nya miljön tar bort green.
   await tables([blue]);
   const live=await f.direct.getCurrentPackage('north');
   assert.equal(live.branding.table,green);
@@ -587,9 +587,9 @@ test('a live choice the new template removes does not stop a draft that leaves i
   assert.deepEqual(appearance.changes.filter(row=>row.roomId===null),[{roomId:null,key:'dealer',before:null,after:'dragan'}],'only the changed choice is reviewed');
   const receipt=await f.post(f.bodyOf(view),{actor:designer}),after=await f.direct.getCurrentPackage('north');
   assert.equal(receipt.appearanceDraftRevision,1);assert.equal(after.revision,live.revision+1);
-  // Samma utfall som publiceringen utan utkast: mallen tappar green, dealern är utkastets.
+  // Samma utfall som publiceringen utan utkast: miljön tappar green, dealern är utkastets.
   assert.equal(after.branding.dealer,'dragan');assert.equal(Object.hasOwn(after.branding,'table'),false);
-  // Motprov: utkastet ändrar bordsgrafiken till green, som mallen inte har. Det stoppas och skriver inget.
+  // Motprov: utkastet ändrar bordsgrafiken till green, som miljön inte har. Det stoppas och skriver inget.
   const published=await f.direct.getBrandingDraft('north');
   await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:published.revision,expectedPackageRevision:after.revision,
     branding:{table:green,dealer:'dragan'}});

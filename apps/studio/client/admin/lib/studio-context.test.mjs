@@ -229,7 +229,7 @@ test('partner and template links are scoped to the selected owner and never carr
   const other=await registeredStudioHtml({operatorId:'b',mode:'package'},{compositions});
   assert.ok(hrefs(other).includes('/partner/b/rooms'));assert.equal(hrefs(other).some(href=>href.includes('/partner/a')||href.includes('operator=a')),false);
   const empty=await registeredStudioHtml({operatorId:'b',mode:'package'},{compositions:[]});
-  assert.ok(hrefs(empty).includes('/admin/scenes?tab=mallar'),'without templates the assignment points to Scenmallar');
+  assert.ok(hrefs(empty).includes('/admin/scenes?tab=mallar'),'without templates the assignment points to Miljöer');
   for(const section of ['appearance','state']){
     const foreign=await registeredStudioHtml({operatorId:'a',roomId:'other',mode:'room',section},{compositions});
     assert.equal(hrefs(foreign).some(href=>/rooms\?room=|\/partner\//.test(href)),false,'a cross-owner room never becomes this company\'s partner context');

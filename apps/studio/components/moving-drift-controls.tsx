@@ -117,7 +117,7 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
           {stopVisible&&<button className="studio-button" type="button" disabled={busy||!canWrite||!view?.recent} onClick={()=>void apply(true)}>{status.capabilities.connected?'Stoppa drift':'Spara önskat Av'}</button>}
           {draft.dirty&&<button className="studio-button" type="button" disabled={busy} onClick={()=>{replaceDraft(driftDraft(status));setError('');setNotice('');}}>Läs in sparat val</button>}
         </div>
-        <p className={styles.helper}>Läget gäller miljöns taldrift. Ett sparat önskemål är inte en driftbekräftelse.</p>
+        <p className={styles.helper}>Läget gäller taldriften här. Ett sparat önskemål är inte en driftbekräftelse.</p>
         <details className={styles.details}><summary>Detaljer</summary><dl className={styles.facts}>
           <div><dt>Revision</dt><dd>{status.revision}</dd></div><div><dt>Senast observerad</dt><dd>{status.observed.atMs===null?'Saknas':time(status.observed.atMs)}</dd></div>
           <div><dt>Offert för sparad varmperiod</dt><dd>{view?.costLabel??'Okänd'}</dd></div>

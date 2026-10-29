@@ -12,7 +12,7 @@ test('the six menu pages and the three navs parse from the path; anything else i
   for(const path of ['/admin/rooms','/admin/clips','/admin/dealers/a/b','/admin/system/x','/admin/demo/x','/control/clips','/partner'])assert.equal(parseAdminPath(path).page,'unknown',path);
 });
 
-test('the clip map is a Studio route only under the dealer nav and under Scenmallar',()=>{
+test('the clip map is a Studio route only under the dealer nav and under Miljöer',()=>{
   for(const search of ['','?view=registered','?dealer=anna','?operator=north&table=north-roulette','?composition=scene','?lane=legacy']){
     assert.equal(isStudioAdminRoute('/admin',search),false);
     assert.equal(isStudioAdminRoute('/admin/dealers',search),false,'the dealer list never mounts the map');

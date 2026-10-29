@@ -119,7 +119,7 @@ export function Stat({label,value,hint,icon,tone=''}:{label:ReactNode;value:Reac
 /** Swedish number formatting (1 234, 2,5) for counts and amounts shown in Admin. */
 export function formatNumber(value:number,options?:Intl.NumberFormatOptions) { return value.toLocaleString('sv-SE',options); }
 
-/** Plain-language plural: plural(1,'scenmall','scenmallar') → "1 scenmall". */
+/** Plain-language plural: plural(1,'miljö','miljöer') → "1 miljö". */
 export function plural(count:number,one:string,many:string) { return `${formatNumber(count)} ${count===1?one:many}`; }
 
 /** A short Swedish date: "28 okt. 2026". */

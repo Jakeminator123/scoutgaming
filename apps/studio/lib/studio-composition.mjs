@@ -22,7 +22,9 @@ export function registerCompositionLayer(base,draft,remote,{id,role,laneId}) {
   if(!existing)project.layerAssets=[...(project.layerAssets??[]),structuredClone(asset)];
   const lanes=project.lanes??[];
   const lane=lanes.find(row=>row.id===laneId);
-  if(!lane)throw new Error('Filen är registrerad men den valda sammansättningen finns inte längre. Utkastet har behållits.');
+  if(!lane)throw new Error('Filen är registrerad men den valda miljön finns inte längre. Utkastet har behållits.');
+  // A miljöbild is chosen on the environment, never as one of its layers.
+  if(role==='illustration'){lane.illustration=id;project.lanes=lanes;validateProject(project);return {project,conflicts:result.conflicts};}
   const layer=lane.layers[role];
   layer.default=id;layer.enabled=true;
   if(!layer.allowed.includes(id))layer.allowed.push(id);

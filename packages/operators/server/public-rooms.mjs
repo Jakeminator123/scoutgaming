@@ -142,11 +142,13 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
       const limitPreset = limitPresets.get(room.id);
+      // The frozen lane's miljöbild; the package validator has already checked that it is an illustration in this package.
+      const illustration = typeof lane.illustration === 'string' && frozen.assets.some(item => item.id === lane.illustration && item.role === 'illustration') ? lane.illustration : null;
       // The shared table admits a blackjack seat only with the package's game settings binding and its published
       // head (services/game/shared-room-access.mjs room_config_missing): without them the room is being prepared.
       const preparing = game === 'blackjack' && roomSettingsMissing(pack, room.id, heads);
       result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
-        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}), ...(preparing ? { status: 'preparing' } : {}),
+        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}), ...(illustration ? { illustration } : {}), ...(preparing ? { status: 'preparing' } : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
         playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }

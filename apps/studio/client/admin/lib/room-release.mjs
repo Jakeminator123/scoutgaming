@@ -21,7 +21,7 @@ const languages = Object.freeze({en:'engelska', sv:'svenska'});
 const limits = Object.freeze({casual:'Casual', prive:'Privé', high:'High'});
 const roles = Object.freeze({background:'Bakgrund', dealer:'Dealer', table:'Bordsgrafik'});
 // Utseendets nycklar (packages/operators/contracts/branding.mjs PARTNER_BRANDING_FIELDS).
-const appearanceKeys = Object.freeze({...roles, lane:'Scenmall', color:'Färg'});
+const appearanceKeys = Object.freeze({...roles, lane:'Miljö', color:'Färg'});
 export const languageLabel = value => languages[value] ?? String(value ?? '–');
 export const limitLabel = value => limits[value] ?? String(value ?? '–');
 
@@ -36,7 +36,7 @@ const materialReasons = Object.freeze({
   native_material_speech_pose_unsupported:'talklippets pose stöds inte',
   native_material_bank_incomplete:'klippbanken är inte komplett',
   native_material_idle_missing:'vila saknas',
-  native_material_dealer_missing:'dealern saknas i scenmallen',
+  native_material_dealer_missing:'dealern saknas i miljön',
   native_material_video_unavailable:'ett klipp är inte tillgängligt',
   native_material_transition_pose_missing:'en övergång saknar pose',
   native_material_measurement_missing:'klippen är inte uppmätta',
@@ -52,30 +52,30 @@ export function materialReasonText(reason) {
 // Fasta skäl i studio_release_invalid.
 const invalidReasons = Object.freeze({
   studio_release_unchanged:'Inget skiljer sig från live, så inget publicerades.',
-  studio_room_binding_incompatible:'Ett öppet spelbord hos bolaget kan inte visas med den sparade scenmallen.',
-  studio_presentation_required:'Bolagets scenmallar är inte sparade eller saknas.',
+  studio_room_binding_incompatible:'Ett öppet spelbord hos bolaget kan inte visas med den sparade miljön.',
+  studio_presentation_required:'Bolagets miljöer är inte sparade eller saknas.',
   studio_dealer_idle_required:'Dealern saknar sparad vila.',
   studio_roulette_idle_required:'Roulettedealern saknar sparad vila.',
   studio_dealer_idle_policy_mismatch:'Dealerns vila stämmer inte med de sparade klippen.',
-  studio_dealer_background_required:'Scenmallen saknar bakgrund.',
-  studio_media_binding_invalid:'Ett klipp i scenmallen är felkopplat.',
-  studio_room_choices_draft_invalid:'Utseendeutkastet passar inte med de sparade scenmallarna.',
+  studio_dealer_background_required:'Miljön saknar bakgrund.',
+  studio_media_binding_invalid:'Ett klipp i miljön är felkopplat.',
+  studio_room_choices_draft_invalid:'Utseendeutkastet passar inte med de sparade miljöerna.',
   // "Använd i miljön och i spelbordet" (AI-dialogen, action adopt-room-material).
   studio_release_other_changes:'Spelbordet har andra sparade ändringar som inte är publicerade. Materialet ligger i biblioteket; publicera spelbordet med Publicera, där skillnaden visas.',
   studio_room_game_config_missing:'Spelbordet saknar publicerade spelinställningar. Publicera spelbordet en gång först.',
-  ai_adopt_other_template:'Spelbordet använder en annan scenmall än den bordet ritades för.',
-  ai_adopt_room_choice:'Bolaget eller spelbordet har ett eget val som döljer scenmallens standard. Välj materialet under Utseende.',
-  ai_adopt_other_room_table:'Ett annat öppet spelbord hos bolaget på samma scenmall visar ett annat bord och skulle få den nya bredden. Ta bort dess eget bordsval under Utseende eller ändra bredden i scenmallen.',
-  ai_adopt_template_table_misfit:'Ett annat AI-bord i scenmallen är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur mallen eller rita om det först.',
-  ai_adopt_template_missing:'Scenmallen finns inte längre.',
+  ai_adopt_other_template:'Spelbordet använder en annan miljö än den bordet ritades för.',
+  ai_adopt_room_choice:'Bolaget eller spelbordet har ett eget val som döljer miljöns standard. Välj materialet under Utseende.',
+  ai_adopt_other_room_table:'Ett annat öppet spelbord hos bolaget i samma miljö visar ett annat bord och skulle få den nya bredden. Ta bort dess eget bordsval under Utseende eller ändra bredden i miljön.',
+  ai_adopt_template_table_misfit:'Ett annat AI-bord i miljön är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur miljön eller rita om det först.',
+  ai_adopt_template_missing:'Miljön finns inte längre.',
   ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
-  ai_adopt_table_misfit:'Bordsgrafiken passar inte scenmallens dealers eller placering.',
-  ai_adopt_invalid:'Valet kunde inte läggas in i scenmallen.',
+  ai_adopt_table_misfit:'Bordsgrafiken passar inte miljöns dealers eller placering.',
+  ai_adopt_invalid:'Valet kunde inte läggas in i miljön.',
 });
 
 const conflictSteps = Object.freeze({
   package:'Bolagets publicering har ändrats sedan förhandsvisningen.',
-  project:'Scenmallarna har sparats om sedan förhandsvisningen.',
+  project:'Miljöerna har sparats om sedan förhandsvisningen.',
   administration:'Spelbordets uppgifter har ändrats sedan förhandsvisningen.',
   room_config_head:'Spelinställningarna har publicerats från ett annat håll.',
   media:'Ett klipp har ändrats medan publiceringen förbereddes.',
@@ -142,13 +142,13 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, deale
       return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
     }
     case 'ai_table_misfit':
-      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna scenmallen')};
+      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna miljön')};
     case 'studio_release_invalid': {
-      const text = invalidReasons[blocker.reason] ?? 'Scenmallarna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
+      const text = invalidReasons[blocker.reason] ?? 'Miljöerna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
       if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return {text, ...link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klippkarta')};
-      // Utkastet åtgärdas under Utseende, inte i scenmallarna.
+      // Utkastet åtgärdas under Utseende, inte i miljöerna.
       if (blocker.reason === 'studio_room_choices_draft_invalid') return {text, ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
-      return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Scenmallar')};
+      return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Miljöer')};
     }
     case 'studio_media_registry_unavailable': return {text:'Medieregistret svarar inte just nu. Läs in igen om en stund.', ...none};
     case 'studio_presentation_runtime_update_required': return {text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', ...none};
@@ -167,7 +167,7 @@ export function roomReleaseAreas(preview, {dealerName, rooms = []} = {}) {
     + (row.after?.approvedBy ? ', godkänd av ' + row.after.approvedBy : row.after ? ', inte godkänd' : ''));
   const clips = of('clips').map(row => (count(row.added) ? row.added : 0) + ' tillkommer, ' + (count(row.removed) ? row.removed : 0) + ' tas bort');
   const idle = of('idle').map(row => !row.before?.mediaId && !row.before?.policySha256 ? 'Vila läggs till' : !row.after?.mediaId && !row.after?.policySha256 ? 'Vila tas bort' : 'Vila byts');
-  const placement = of('placement').map(() => 'Placeringen i scenmallen är ändrad');
+  const placement = of('placement').map(() => 'Placeringen i miljön är ändrad');
   const settings = of('settings').map(row => {
     const parts = [];
     if (row.before?.language !== row.after?.language) parts.push('Språk ' + (row.before ? languageLabel(row.before.language) : '–') + ' → ' + languageLabel(row.after?.language));
@@ -183,7 +183,7 @@ export function roomReleaseAreas(preview, {dealerName, rooms = []} = {}) {
     + (origin[appearance?.folded.get(row.key)] ?? ''));
   const rebinding = (Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []).filter(row => row?.rebinds)
     .map(row => (row.name || row.id) + ' binds om och behåller sina spelinställningar');
-  const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra scenmallar eller dealers)');
+  const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra miljöer eller dealers)');
   const area = (key, label, rows) => ({area:key, label, changed:rows.length > 0, rows});
   return [area('speech', 'Tal per replik', speech), area('clips', 'Klipp', clips), area('idle', 'Vila', idle), area('placement', 'Placering', placement),
     area('settings', 'Inställningar', settings), area('roomChoices', 'Spelbordets val', choices),

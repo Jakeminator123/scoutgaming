@@ -74,13 +74,13 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   const groups=companyListGroups(operators,catalog?.administration.rooms??[]);
   const rooms=groups.rooms,archived=groups.trashRooms,liveOperators=groups.companies,archivedOperators=groups.trashCompanies;
   const operatorName=(operatorId:string)=>operators.find(row=>row.id===operatorId)?.name??'Okänt bolag';
-  const laneLabel=(laneId:string)=>compositions.find(row=>row.id===laneId)?.name??'Okänd scenmall';
+  const laneLabel=(laneId:string)=>compositions.find(row=>row.id===laneId)?.name??'Okänd miljö';
   const status=error?<p role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></p>:!catalog?<div className="mb-4 rounded-xl border border-sg-border bg-sg-surface p-5 shadow-sg"><Loading label="Läser katalogen…" rows={4}/></div>:null;
   const roomColumns=(withOperator:boolean):Column<Room>[]=>[
     {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><span className="flex items-center gap-3"><RoomPicture room={room} className="h-10 w-16 max-md:h-9 max-md:w-14"/><span className="min-w-0"><Link className={linkClass} href={roomHref(room)}>{room.name}</Link><span className="block text-[12.5px] text-sg-muted">{gameLabel(room.game)}</span></span></span>},
     ...(withOperator?[{id:'operator',header:'Bolag',sort:(room:Room)=>operatorName(room.operatorId),cell:(room:Room)=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>}]:[]),
     {id:'dealers',header:'Dealer',sort:room=>room.dealers.map(dealer=>dealer.name).join(', '),cell:room=><DealerFaces dealers={room.dealers.map(dealer=>({id:dealer.id,label:dealer.name}))}/>},
-    {id:'scene',header:'Scenmall',sort:room=>laneLabel(room.compositionId),cell:room=>laneLabel(room.compositionId)},
+    {id:'scene',header:'Miljö',sort:room=>laneLabel(room.compositionId),cell:room=>laneLabel(room.compositionId)},
     {id:'state',header:'Läge',sort:room=>room.state,cell:room=><span className="grid justify-items-start gap-1">{stateChip(room)}<RoomSettingsWarning room={room} compact/></span>},
     {id:'published',header:'Publicerat',sort:room=>room.published?1:0,cell:publishedChip},
     {id:'open',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:room=><Link className={buttonVariants({size:'sm'})} href={roomHref(room)}>Öppna</Link>},
@@ -155,7 +155,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
       {operator&&<>
-        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><div className="mb-4"><AssignmentField operatorId={operator.id} revision={operator.packageRevision} view={operator.assignment} disabled={disabled} onChanged={changed}/></div><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
+        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><div className="mb-4"><AssignmentField operatorId={operator.id} revision={operator.packageRevision} view={operator.assignment} disabled={disabled} onChanged={changed}/></div><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
           <CreateRoomDialog open={create} operators={[operator]} initialOperator={operator.id} fixedOperator disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Nytt spelbord väljer dealer, miljö och språk åt dig och publicerar allt i ett steg."/>}
@@ -205,15 +205,15 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     {room&&tab!=='spel'&&<RoomSettingsWarning room={room} className="mb-4"/>}
     {room&&operator&&<>
       {tab==='utseende'&&<RegisteredStudio mode="room" section="appearance" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed} onRoomStatus={setRoomStatus}/>}
-      {tab==='dealer'&&<Card title="Dealer" aside={plural(room.dealers.length,'dealer','dealers')+' i spelbordets scenmall'}>
-        <Note>Dealern väljs under Utseende tillsammans med bakgrund och bordsgrafik, i bolagets utkast. Vilka dealers som kan väljas styrs av scenmallen.</Note>
-        <div className="mt-3 grid">{room.dealers.map(dealer=><Row key={dealer.id} chip={<DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44} motion={false}/>} title={<span className="inline-flex flex-wrap items-center gap-2">{dealer.name}<Chip tone={room.dealerSource==='published'?'ok':''}>{room.dealerSource==='published'?'publicerad':'sparad'}</Chip></span>} text="Klipp, tal och landningar finns på dealerns sida" href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`}/>)}{!room.dealers.length&&<p className="m-0 text-[12.5px] text-sg-muted">Scenmallen tillåter ingen dealer ännu.</p>}</div>
+      {tab==='dealer'&&<Card title="Dealer" aside={plural(room.dealers.length,'dealer','dealers')+' i spelbordets miljö'}>
+        <Note>Dealern väljs under Utseende tillsammans med bakgrund och bordsgrafik, i bolagets utkast. Vilka dealers som kan väljas styrs av miljön.</Note>
+        <div className="mt-3 grid">{room.dealers.map(dealer=><Row key={dealer.id} chip={<DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44} motion={false}/>} title={<span className="inline-flex flex-wrap items-center gap-2">{dealer.name}<Chip tone={room.dealerSource==='published'?'ok':''}>{room.dealerSource==='published'?'publicerad':'sparad'}</Chip></span>} text="Klipp, tal och landningar finns på dealerns sida" href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`}/>)}{!room.dealers.length&&<p className="m-0 text-[12.5px] text-sg-muted">Miljön tillåter ingen dealer ännu.</p>}</div>
       </Card>}
       {tab==='spel'&&<RegisteredStudio mode="room" section="game" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/>}
       {tab==='tillganglighet'&&<><Note className="mb-4">Pausa gäller direkt. Ett pausat spelbord syns inte i lobbyn och pågående rundor spelas klart.</Note><RegisteredStudio mode="room" section="state" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/></>}
       {tab==='bolagets-val'&&<OperatorAdjustable laneId={room.compositionId} operator={operator} active={active&&tab==='bolagets-val'}/>}
       {tab==='historik'&&<Card title="Historik" aside="Bolagets publiceringar och utkast"><Footnote className="mb-3 mt-0">Journalen gäller hela bolaget; raderna för det här spelbordet nämner dess namn.</Footnote><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
-      <TechnicalDetails items={[['Spelbords-id',room.id],['Scenmall-id',room.compositionId],['Spellane-id',room.laneId],['Bolags-id',room.operatorId]]}/>
+      <TechnicalDetails items={[['Spelbords-id',room.id],['Miljö-id',room.compositionId],['Spellane-id',room.laneId],['Bolags-id',room.operatorId]]}/>
       <RoomPreview room={room} revision={revision}/>
     </>}
   </HubPage>;
@@ -329,10 +329,10 @@ function OperatorAdjustable({laneId,operator,active}:{laneId:string;operator:Ope
   },[active,laneId]);
   const labels:Record<string,string>={table:'Bordsgrafik',background:'Bakgrund',dealer:'Dealer',branding:'Spelbordets utseende'};
   return <Card title="Vad bolaget får ändra på det här spelbordet" aside={<AsideLink href={companyHref(operator,'tilldelning')}>Ändra i bolagets tilldelning</AsideLink>}>
-    {state.status==='loading'&&<Loading label="Läser scenmallen…" rows={4}/>}
+    {state.status==='loading'&&<Loading label="Läser miljön…" rows={4}/>}
     {state.status==='error'&&<Empty title="Oklart" text="Projektet kunde inte läsas, så bolagets val visas inte."/>}
-    {state.status==='ready'&&(state.lane?<div className="grid">{(['dealer','table','background','branding'] as const).map(key=>{const unlocked=state.lane!.operatorAdjustable?.includes(key)??false;return <Row key={key} chip={unlocked?<Chip tone="ok">upplåst</Chip>:<Chip tone="ink">låst</Chip>} title={labels[key]??key} text={unlocked?'Bolaget väljer inom tilldelningen i Partnerportalen':'Låst av Scoutgaming'}/>;})}<Row chip={<Chip tone="ink">per bolag</Chip>} title="Bordsspråk, insatsprofil och paus" text="Låses upp per bolag under Bolag › Tilldelat"/></div>:<Empty title="Oklart" text="Scenmallen finns inte i det sparade projektet."/>)}
-    <Footnote>Scenmallen avgör vad som kan låsas upp. Under Bolag › Tilldelat kan du stänga ett val för just det här bolaget.</Footnote>
+    {state.status==='ready'&&(state.lane?<div className="grid">{(['dealer','table','background','branding'] as const).map(key=>{const unlocked=state.lane!.operatorAdjustable?.includes(key)??false;return <Row key={key} chip={unlocked?<Chip tone="ok">upplåst</Chip>:<Chip tone="ink">låst</Chip>} title={labels[key]??key} text={unlocked?'Bolaget väljer inom tilldelningen i Partnerportalen':'Låst av Scoutgaming'}/>;})}<Row chip={<Chip tone="ink">per bolag</Chip>} title="Bordsspråk, insatsprofil och paus" text="Låses upp per bolag under Bolag › Tilldelat"/></div>:<Empty title="Oklart" text="Miljön finns inte i det sparade projektet."/>)}
+    <Footnote>Miljön avgör vad som kan låsas upp. Under Bolag › Tilldelat kan du stänga ett val för just det här bolaget.</Footnote>
   </Card>;
 }
 
@@ -340,6 +340,6 @@ function RoomPreview({room,revision}:{room:Room;revision?:string}) {
   const [open,setOpen]=useState(false);
   return <PreviewFlyout title={'Förhandsvisning · '+room.name} open={open} onOpenChange={setOpen}>
     <ScenePreview active={open} laneId={room.compositionId} dealerId={room.dealerIds[0]} game={room.game==='roulette'?'roulette':'blackjack'} revision={revision}/>
-    <Footnote>Visar den sparade scenmallen, inte spelbordets publicerade val. Dator; mobilvyn kommer senare.</Footnote>
+    <Footnote>Visar den sparade miljön, inte spelbordets publicerade val. Dator; mobilvyn kommer senare.</Footnote>
   </PreviewFlyout>;
 }

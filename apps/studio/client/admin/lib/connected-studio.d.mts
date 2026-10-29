@@ -9,15 +9,15 @@ export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};
 export type Room = { id:string; name:string; operatorId:string; game:string; compositionId:string; laneId:string; state:string; published:boolean; playable:boolean; dealerIds:string[]; dealers:{id:string;name:string}[]; dealerSource:'published'|'saved'; playUrl:string|null; materialWarning?:'catalog_game_material_mismatch';
   /** The published scene when the catalog can describe it (image only for a fixed image background). */
   environment?:{kind:string;fixed:boolean;label:string;image?:string}|null;
-  /** Bet profile in the room's saved game settings (draft); for the room picture only, never shown as a key. */
-  savedLimitPreset?:string;
+  /** The saved environment's miljöbild through Admin's layer route, for the room picture only. */
+  illustration?:string;
   /** A published blackjack room whose package binds no game settings: no seat can be taken (shown as "förbereds" when open). */
   settingsMissing?:true };
 export type Catalog = { source:'registered'; readAt:string; administration:{ revisions:{project:string;administration:string}; operators:{id:string;name:string;slug:string;status:string;archivedAt:string|null;packageRevision:number|null;
     /** Bolag › Tilldelat (partner-assignment.mjs adminAssignmentView); null utan fryst presentation. */
     assignment?:import('../components/studio/assignment-field').AssignmentView|null;
     /** Ett opublicerat utseendeutkast hos bolaget (cleanBrandingDraft); Nytt spelbord väntar då. */
-    appearanceDraft?:boolean}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[]; compositions:{id:string;name:string;dealerIds:string[];defaultDealerId:string}[] };
+    appearanceDraft?:boolean}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[]; compositions:{id:string;name:string;dealerIds:string[];defaultDealerId:string;illustration?:string}[] };
   /** Dealers with a drift profile and bank hash in this environment (studio-native-runtime withMovingSpeechDealers). */
   movingSpeech?:{dealerIds:string[]} };
 export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null; game?:'roulette'; intakeOnly?:boolean; planned?:boolean; localOnly?:boolean };

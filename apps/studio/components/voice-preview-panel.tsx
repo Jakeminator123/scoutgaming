@@ -55,7 +55,7 @@ export function VoicePreviewPanel({ latestReply = '', available = true }: { late
 
   if (!available) return <section className={styles.panel} aria-labelledby="voice-preview-heading">
     <div className={styles.heading}><span className="eyebrow">FRISTÅENDE LJUDPROV</span><h2 id="voice-preview-heading">Röstprov</h2></div>
-    <p>Det fristående röstprovet är inte tillgängligt i denna Studio-miljö.</p>
+    <p>Det fristående röstprovet är inte tillgängligt här.</p>
   </section>;
 
   return <section className={styles.panel} aria-labelledby="voice-preview-heading">

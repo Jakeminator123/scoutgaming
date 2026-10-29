@@ -1,14 +1,13 @@
 import {useState} from 'react';
 import {CircleDot,Spade} from 'lucide-react';
 import {cn} from '../ui/kit';
-import {roomLimitProfileImage} from '../../../../lib/room-limit-profiles.mjs';
 
-type PictureRoom={game:string;environment?:{image?:string}|null;savedLimitPreset?:string};
-// A room's picture on cards and rows: the published scene image when the catalog has one, else the
-// lobby illustration of the room's saved bet profile, else the game symbol on a quiet gradient.
-// Decorative only (empty alt); the room's name and facts sit beside it.
+type PictureRoom={game:string;illustration?:string|null;environment?:{image?:string}|null};
+// A room's picture on cards and rows: its environment's miljöbild (the saved one, through Admin's layer
+// route), else the published scene image when the catalog has one, else the game symbol on a quiet gradient.
+// The bet profile never picks a picture. Decorative only (empty alt); the room's name and facts sit beside it.
 export function RoomPicture({room,className}:{room:PictureRoom;className?:string}) {
-  const sources=[room.environment?.image,roomLimitProfileImage(room.savedLimitPreset)].filter((value):value is string=>Boolean(value));
+  const sources=[room.illustration,room.environment?.image].filter((value):value is string=>Boolean(value));
   const [failed,setFailed]=useState<string[]>([]);
   const source=sources.find(value=>!failed.includes(value));
   return <span aria-hidden="true" className={cn('relative block shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-sg-surface-2 to-sg-hover',className)}>

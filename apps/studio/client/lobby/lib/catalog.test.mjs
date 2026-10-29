@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseLobbyCatalog, loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor, roomIllustration } from './catalog.mjs';
-import { roomLimitProfiles } from '../../../lib/room-limit-profiles.mjs';
 
 function publication(slug, dealerId, label) {
   return { schemaVersion: 1, operator: { slug, name: `Bolag ${slug}` }, packageRevision: 2, rooms: [{
@@ -58,7 +57,7 @@ test('room artwork comes from the published background the game starts with, nev
   const multiple = parseLobbyCatalog(payload([source])).rooms[0];
   assert.equal(multiple.environmentFixed, false);
   assert.equal(multiple.environmentKind, 'variable');
-  assert.equal(multiple.environmentLabel, 'Flera miljöer');
+  assert.equal(multiple.environmentLabel, 'Flera bakgrunder');
   assert.equal(multiple.image, '/api/presentation/layers/alpha/' + background.id, "several choices show the default dealer's default");
   source.rooms[0].dealers[0].background.default = lounge.id;
   assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, '/api/presentation/layers/alpha/' + lounge.id);
@@ -68,35 +67,40 @@ test('room artwork comes from the published background the game starts with, nev
   // Without a published default background the card keeps the design illustration.
   source.rooms[0].dealerDefault = 'elin';
   const baked = parseLobbyCatalog(payload([source])).rooms[0];
-  assert.equal(baked.image, undefined); assert.equal(baked.environmentLabel, 'Flera miljöer');
+  assert.equal(baked.image, undefined); assert.equal(baked.environmentLabel, 'Flera bakgrunder');
   source.rooms[0].dealerDefault = 'nora'; source.rooms[0].dealers[0].background.default = null;
   assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, undefined);
 });
 
-test("each room's illustration follows its published bet profile, and an unknown profile keeps Salongen", async () => {
+test('the room picture is the miljöbild, then the published background, then the design illustration; the bet profile picks none', async () => {
   const lobby = '/admin/_assets/lobby/images/lobby/';
-  const expected = { casual: [lobby + 'room-studion.png', 'Nordisk studio med limegrön ljuslinje'],
-    prive: [lobby + 'room-salongen.png', 'Klassiskt blackjackrum i valnöt och mässing'],
-    high: [lobby + 'room-loungen.png', 'Neonlounge med blackjackbord'] };
-  // Admin's profile cards and the lobby share one mapping; every contract profile has its own picture.
-  assert.deepEqual(roomLimitProfiles().map(row => row.id), Object.keys(expected));
-  for (const profile of roomLimitProfiles()) assert.deepEqual(roomIllustration(profile.id), { image: profile.image, alt: profile.alt });
-  assert.equal(new Set(Object.values(expected).map(([image]) => image)).size, 3);
-  const fallback = { image: lobby + 'room-salongen.png', alt: expected.prive[1] };
-  for (const value of [undefined, null, '', 'vip', '__proto__', 'constructor', 3]) assert.deepEqual(roomIllustration(value), fallback);
-
-  // The profile is read from the published rooms the lobby receives (GET /admin/_data/catalog), per room.
+  const fallback = { image: lobby + 'room-salongen.png', alt: 'Klassiskt blackjackrum i valnöt och mässing' };
+  assert.deepEqual(roomIllustration(), fallback);
   const source = publication('alpha', 'nora', 'Nora Studio'), template = source.rooms[0];
-  source.rooms = [...Object.keys(expected), 'vip', null].map((limitPreset, i) => ({ ...template, id: `room-${i}`,
+  // Every profile, an unknown one and none: the same design illustration, never a per-profile picture.
+  source.rooms = ['casual', 'prive', 'high', 'vip', null].map((limitPreset, i) => ({ ...template, id: `room-${i}`,
     playUrl: `/play/blackjack?operator=alpha&table=room-${i}`, ...(limitPreset ? { limitPreset } : {}) }));
   const loaded = await loadLobbyCatalog({ fetchImpl: async () => Response.json(payload([source])) });
-  assert.deepEqual(loaded.rooms.map(room => [room.limitPreset, room.illustration.image, room.illustration.alt]), [
-    ...Object.entries(expected).map(([id, [image, alt]]) => [id, image, alt]),
-    ['vip', fallback.image, fallback.alt], [undefined, fallback.image, fallback.alt]]);
+  assert.deepEqual(loaded.rooms.map(room => [room.limitPreset, room.illustration.image]),
+    [['casual', fallback.image], ['prive', fallback.image], ['high', fallback.image], ['vip', fallback.image], [undefined, fallback.image]]);
   assert.equal(loaded.rooms.every(room => room.image === undefined), true, 'the illustration never becomes a published background');
-  // The public contract carries only a profile key; anything else closes the catalog.
+  // The published background comes before the design illustration, and the miljöbild before both.
+  const background = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
+  const layered = publication('alpha', 'nora', 'Nora Studio');
+  Object.assign(layered.rooms[0].dealers[0], { presentation: 'layered', independentLayers: true,
+    background: { enabled: true, default: background.id, allowed: [background], mode: 'image' } });
+  assert.equal(parseLobbyCatalog(payload([layered])).rooms[0].image, '/api/presentation/layers/alpha/' + background.id);
+  const illustration = '33333333-3333-3333-3333-333333333333';
+  layered.rooms[0].illustration = illustration;
+  const pictured = parseLobbyCatalog(payload([layered])).rooms[0];
+  assert.equal(pictured.image, '/api/presentation/layers/alpha/' + illustration);
+  assert.equal(pictured.environmentLabel, 'Salongen', 'the miljöbild changes the picture only, never the background facts');
+  // The public contract carries only a profile key and an illustration id; anything else closes the catalog.
   for (const limitPreset of ['', 'High', 'https://example.invalid/x.png', 7, null]) {
     assert.throws(() => parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, limitPreset }] }])));
+  }
+  for (const bad of ['', 'https://example.invalid/x.png', '../x', 7, null]) {
+    assert.throws(() => parseLobbyCatalog(payload([{ ...layered, rooms: [{ ...layered.rooms[0], illustration: bad }] }])));
   }
 });
 

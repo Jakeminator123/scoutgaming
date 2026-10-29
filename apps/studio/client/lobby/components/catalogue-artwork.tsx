@@ -9,7 +9,7 @@ type ArtworkProps = {
 };
 
 /** Public room imagery; dealer fallback stays neutral beside the verified portraits.
- * Without a published background a room shows its bet profile's illustration (catalog.mjs, roomIllustration). */
+ * `image` is the miljöbild or the published background; without either a room shows the design illustration (catalog.mjs, roomIllustration). */
 export function CatalogueArtwork({ name, kind, image, illustration, game = 'blackjack', className, selected = false, fadeDelay = 0 }: ArtworkProps) {
   const [failedSource, setFailedSource] = useState<string | null>(null);
   if (kind === 'dealer') return <div aria-hidden className={cn('relative flex items-center justify-center overflow-hidden bg-secondary text-brass', className)}

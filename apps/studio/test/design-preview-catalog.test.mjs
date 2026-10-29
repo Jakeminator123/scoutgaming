@@ -51,19 +51,32 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(playUrlFor(choice), '/game?game=blackjack&operator=north&table=' + f.room.id + '&dealer=linnea');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'linnea' }).dealer, null);
 });
-test("the lobby's room picture follows the published bet profile, never the saved draft", async () => {
-  const f = fixture(), read = [];
-  // The draft says High; the version the package binds says Casual.
+test("the lobby shows the published miljöbild, Admin the saved one, and no bet profile picks a picture", async () => {
+  const f = fixture();
   f.saved.administration.roomGameConfigs = [{ operatorId: f.room.operatorId, roomId: f.room.id, gameConfig: { language: 'sv', limitPreset: 'high' } }];
-  f.store.getPublishedRoomLimitPresets = async pack => { read.push(pack.revision); return new Map([[f.room.id, 'casual']]); };
+  f.store.getPublishedRoomLimitPresets = async () => new Map([[f.room.id, 'casual']]);
+  const plain = await registeredDesignCatalog(f);
+  assert.equal(plain.lobby.catalogs[0].rooms[0].limitPreset, 'casual');
+  assert.equal(Object.hasOwn(plain.administration.rooms.find(row => row.id === f.room.id), 'savedLimitPreset'), false, 'the bet profile is not a picture source');
+  assert.equal(parseLobbyCatalog(plain).rooms[0].illustration.image, '/admin/_assets/lobby/images/lobby/room-salongen.png');
+  assert.equal(parseLobbyCatalog(plain).rooms[0].image, undefined);
+  // Publish a miljöbild with the room's environment, and save a newer one in the project.
+  const picture = (id, label) => { const asset = { schemaVersion: 1, id, role: 'illustration', label, sha256: id.replaceAll('-', '').padEnd(64, 'a').slice(0, 64), size: 4096, contentType: 'image/webp', width: 1920, height: 1080 }; asset.pathname = layerAssetPath(asset); return asset; };
+  const published = picture('00000000-0000-4000-8000-0000000000a1', 'Studion · miljöbild v1'), saved = picture('00000000-0000-4000-8000-0000000000a2', 'Studion · miljöbild v2');
+  assert.match(published.pathname, /^croupier\/media\/illustrations\//);
+  const frozen = structuredClone(readPackagePresentation(f.pack)), laneId = f.room.presentationLaneId;
+  frozen.assets.push(published); frozen.lanes.find(lane => lane.id === laneId).illustration = published.id;
+  f.pack.branding = withPackagePresentation(f.pack.branding, frozen);
+  f.saved.project = { ...f.saved.project, layerAssets: [...(f.saved.project.layerAssets ?? []), saved],
+    lanes: f.saved.project.lanes.map(lane => lane.id === laneId ? { ...lane, illustration: saved.id } : lane) };
   const result = await registeredDesignCatalog(f);
-  assert.deepEqual(read, [7]);
-  assert.equal(result.lobby.catalogs[0].rooms[0].limitPreset, 'casual');
-  assert.equal(result.administration.rooms.find(row => row.id === f.room.id).savedLimitPreset, 'high', "Admin's own room picture keeps the draft");
+  assert.equal(result.lobby.catalogs[0].rooms[0].illustration, published.id);
   const room = parseLobbyCatalog(result).rooms[0];
-  assert.deepEqual(room.illustration, { image: '/admin/_assets/lobby/images/lobby/room-studion.png', alt: 'Nordisk studio med limegrön ljuslinje' });
-  delete f.store.getPublishedRoomLimitPresets;
-  assert.equal(parseLobbyCatalog(await registeredDesignCatalog(f)).rooms[0].illustration.image, '/admin/_assets/lobby/images/lobby/room-salongen.png');
+  assert.equal(room.image, '/api/presentation/layers/north/' + published.id, 'the lobby reads the published package, never the draft');
+  const adminRoom = result.administration.rooms.find(row => row.id === f.room.id);
+  assert.equal(adminRoom.illustration, '/studio/api/layer-assets/' + saved.id, "Admin's room picture follows the saved environment");
+  assert.equal(result.administration.compositions.find(row => row.id === laneId).illustration, '/studio/api/layer-assets/' + saved.id);
+  assert.doesNotMatch(JSON.stringify(result.lobby), /croupier\/media|sha256/);
 });
 // Preview 29 Oct 2026: a new room was open and published without game settings; the lobby offered it and the
 // shared table refused every seat for a minute. Admin now warns, the lobby says "förbereds" and offers no start.
@@ -180,19 +193,6 @@ test('catalog request reauthorizes before reads, accepts GET/HEAD only and never
   const query = await serveDesignCatalog(new Request(request.url + '?operator=other'), options);
   assert.equal(query.status, 400); assert.equal(reads, 2);
 });
-test('admin rooms carry only a known bet profile from their own saved game settings, for the room picture',async()=>{
-  const f=fixture(),other=f.administration.rooms.find(row=>row.id==='not-published');
-  f.administration.roomGameConfigs=[
-    {roomId:f.room.id,operatorId:f.room.operatorId,revision:'room-config-00000000-0000-4000-8000-000000000001',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'prive'}},
-    {roomId:other.id,operatorId:'another-operator',revision:'room-config-00000000-0000-4000-8000-000000000002',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'high'}},
-    {roomId:'__proto__',operatorId:f.room.operatorId,revision:'x',basePackageRevision:7,gameConfig:{language:'sv',limitPreset:'constructor'}},
-  ];
-  const result=await registeredDesignCatalog(f),rooms=result.administration.rooms;
-  assert.equal(rooms.find(row=>row.id===f.room.id).savedLimitPreset,'prive');
-  assert.equal(Object.hasOwn(rooms.find(row=>row.id===other.id),'savedLimitPreset'),false);
-  assert.ok(rooms.every(row=>row.savedLimitPreset===undefined||['casual','prive','high'].includes(row.savedLimitPreset)));
-});
-
 test('Admin sees an open appearance draft per company; a published or missing draft reads as none', async () => {
   const f = fixture();
   const draft = { operatorId: f.room.operatorId, revision: 2, basePackageRevision: 7, action: 'draft.save', branding: {}, sourcePackageRevision: null };
