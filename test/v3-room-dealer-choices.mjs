@@ -54,7 +54,7 @@ function fixture({schemaVersion=3,includeBaselineDealer=false,branding={}}={}) {
   return {select,api,draft,publish,pack:()=>structuredClone(pack),presentation,lane,room,administration};
 }
 function clientDocument(selection) {
-  const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
+  const html=decorateGameEntryHtml('<html lang="sv"></html>',selection),dataset={};
   for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) {
     dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
   }

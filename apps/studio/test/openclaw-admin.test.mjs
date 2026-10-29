@@ -7,10 +7,14 @@ import { createStudioNativeAuth } from '../../../packages/studio-access/studio-n
 import { nativeStudioAdminConfiguration } from '../lib/studio-native-runtime.mjs';
 
 const publicOrigin = 'https://public.example.invalid', labOrigin = 'https://studio.example.invalid';
-const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1', CROUPIER_STUDIO_NEON_POLICY:'1',
-  CROUPIER_PUBLIC_ORIGIN:publicOrigin, CROUPIER_LAB_UI_ORIGIN:labOrigin, CROUPIER_LAB_BASE_PATH:'/studio',
+const unified = nativeStudioAdminConfiguration({
+  CROUPIER_PUBLIC_ORIGIN:publicOrigin, CROUPIER_LAB_UI_ORIGIN:labOrigin,
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') });
+// Configuration is always unified now; the public-rewrite test below still exercises the
+// retired two-origin shape that the request normalizer reconciles, so it is built explicitly.
+const config = Object.freeze(Object.fromEntries(Object.entries({ ...unified, allowedOrigins:[publicOrigin, labOrigin],
+  publicHosts:[new URL(publicOrigin).host, new URL(labOrigin).host] }).filter(([key]) => key !== 'unifiedUi')));
 const scope = { environment:'fixture', workspaceId:'croupier' }, key = 'fixturepass';
 const model = { primary:'lab-provider/model-one', fallbacks:['lab-provider/model-two'] };
 const snapshot = { version:1, baseHash:'hmac-sha256:v1:fixture', gateway:{ connected:true, version:'2026.9.5', applied:true },

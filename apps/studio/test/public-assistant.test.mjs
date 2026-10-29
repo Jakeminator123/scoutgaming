@@ -50,17 +50,14 @@ test('public endpoint reconciles the configured Vercel same-origin rewrite',asyn
 test('unified assistant origins need only the public origin and never trust the legacy Lab alias',async()=>{
  const lab='https://lab.example.invalid';
  for(const legacy of [undefined,lab,'not-an-origin']){
-  const unified=assistantRequestConfiguration({CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:legacy,CROUPIER_LAB_BASE_PATH:'/studio'});
+  const unified=assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:legacy});
   assert.deepEqual({...unified},{allowedOrigins:[origin],unifiedUi:true,publicHosts:['www.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'});
  }
  for(const value of [undefined,'','http://www.example.invalid',origin+'/','https://www.example.invalid/x','https://user:pw@www.example.invalid','https://localhost','https://127.0.0.1'])
-  assert.equal(assistantRequestConfiguration({CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:value,CROUPIER_LAB_UI_ORIGIN:lab}),null);
- // The split Lab UI still requires both, distinct, exact HTTPS origins.
- assert.deepEqual(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:lab}).allowedOrigins,[origin,lab]);
- for(const legacy of [undefined,origin,'http://lab.example.invalid'])assert.equal(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:legacy}),null);
- const saved=Object.fromEntries(['CROUPIER_VERCEL_UNIFIED_UI','CROUPIER_PUBLIC_ORIGIN','CROUPIER_LAB_UI_ORIGIN'].map(name=>[name,process.env[name]]));
+  assert.equal(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:value,CROUPIER_LAB_UI_ORIGIN:lab}),null);
+ const saved=Object.fromEntries(['CROUPIER_PUBLIC_ORIGIN','CROUPIER_LAB_UI_ORIGIN'].map(name=>[name,process.env[name]]));
  try{
-  Object.assign(process.env,{CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin});delete process.env.CROUPIER_LAB_UI_ORIGIN;
+  Object.assign(process.env,{CROUPIER_PUBLIC_ORIGIN:origin});delete process.env.CROUPIER_LAB_UI_ORIGIN;
   assert.equal((await publicAssistantEndpoint(req(null))).status,200);
   process.env.CROUPIER_LAB_UI_ORIGIN=lab;
   assert.equal((await publicAssistantEndpoint(new Request(lab+'/studio/api/public-assistant',{headers:{origin:lab,'sec-fetch-site':'same-origin'}}))).status,403);

@@ -5,18 +5,19 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from '../apps/web/tools/player-ui-build.mjs';
-import { ENGINE_QA_SKIP, createEngineDatabase, freePort, startEngine } from './fixtures/engine-qa.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, freePort, installBaseStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 test('real entry serves login and preserves account/table identity across a server restart with an empty fixture database', { skip: ENGINE_QA_SKIP }, async t => {
   const directory=await mkdtemp(join(tmpdir(),'blackjack-entry-'));
   const database=await createEngineDatabase(t);
+  const studio=await installBaseStudioRuntime(t,database);
   const port=await freePort();
   const origin=`http://127.0.0.1:${port}`;
   let engine;
   const stop=async()=>{await engine?.stop();engine=null;};
   const start=async()=>{
-    engine=await startEngine(t,{database,port,preload:[new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href],
-      env:{NODE_ENV:'production',CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
+    engine=await startEngine(t,{database,port,preload:[...studio.preload,new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href],
+      env:{...studio.env,NODE_ENV:'production',CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
         CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'Synthetic-Operator-Test-Password',
         DEMO_GUEST_ACCESS:'',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',
         CROUPIER_STREAM_LANE:'lissabon-stream-lane',PUBLIC_URL:'https://game.example.invalid'}});
@@ -33,7 +34,9 @@ test('real entry serves login and preserves account/table identity across a serv
     assert.match(landing,/href="https:\/\/game.example.invalid\/blackjack"/);
     assert.doesNotMatch(landing,/localhost|127\.0\.0\.1|\{\{BLACKJACK_URL\}\}/);
     await start();
-    const entry=await fetch(origin+'/blackjack');assert.equal(entry.status,200);assert.match(await entry.text(),/blackjack-entry.mjs/);
+    // The canonical entry is fixed: an anonymous /blackjack goes to the player login, which serves the entry.
+    const anonymous=await fetch(origin+'/blackjack',{redirect:'manual'});assert.equal(anonymous.status,303);assert.match(anonymous.headers.get('location'),/^\/player-login/);
+    const entry=await fetch(origin+'/player-login');assert.equal(entry.status,200);assert.match(await entry.text(),/blackjack-entry.mjs/);
     const script=await fetch(origin+'/blackjack-entry.mjs'),loginScript=await script.text();assert.match(loginScript,/const destination = '\/lobby'/);assert.doesNotMatch(loginScript,/dealer=astrid&presentation=local/);
     const configuration=await(await fetch(origin+'/api/auth/session')).json();assert.equal(configuration.playerAccounts,true);assert.equal(configuration.guest,false);
     assert.equal((await post('/api/player',{})).status,401);

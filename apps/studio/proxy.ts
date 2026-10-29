@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { platformConfiguration, platformRoute, platformBackendHeaders, exactPlatformOrigin } from '../../packages/navigation/server/platform-routing.mjs';
+import { platformConfiguration, platformRoute, platformBackendHeaders } from '../../packages/navigation/server/platform-routing.mjs';
 import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from './lib/studio-native-request.mjs';
 import { legacyStudioDocumentHref } from './lib/legacy-studio-document.mjs';
-import { publicAbsoluteUrl } from './lib/lab-url.mjs';
 
-function legacyDocumentRedirect(request: NextRequest, publicOrigin?: string) {
-  const target = legacyStudioDocumentHref(request, {basePath: process.env.CROUPIER_LAB_BASE_PATH || ''});
+// Studio is mounted under the fixed basePath /studio on the one public origin;
+// no variable selects either (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+function legacyDocumentRedirect(request: NextRequest, publicOrigin: string) {
+  const target = legacyStudioDocumentHref(request, {basePath: '/studio'});
   if (!target) return null;
-  let origin = publicOrigin;
-  if (!origin && /^\/admin\/(?:login|set-password)(?:\?|$)/.test(target) && process.env.CROUPIER_STUDIO_NATIVE_ADMIN === '1') {
-    try { origin = exactPlatformOrigin(process.env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN'); }
-    catch { return new NextResponse(null, {status:503,headers:{'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}}); }
-  }
-  const response = NextResponse.redirect(new URL(target, origin ?? publicAbsoluteUrl(request.headers, '/admin')), 307);
+  const response = NextResponse.redirect(new URL(target, publicOrigin), 307);
   response.headers.set('Referrer-Policy', 'no-referrer');
   response.headers.set('Cache-Control', 'no-store');
   return response;
@@ -27,7 +23,6 @@ export function proxy(request: NextRequest) {
   if (metadata.controlDocument && metadata.crossSite) console.info('studio_document_transport', {
     stage: 'middleware', ...metadata,
   });
-  if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return legacyDocumentRedirect(request) ?? NextResponse.next();
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });
   // These retired top-level documents precede the generic frontend rejection.

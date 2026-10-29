@@ -20,14 +20,12 @@ export function platformConfiguration(env = process.env) {
   }
   const publicOrigin = exactPlatformOrigin(env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN');
   const backendOrigin = exactPlatformOrigin(env.CROUPIER_BACKEND_ORIGIN, 'CROUPIER_BACKEND_ORIGIN');
-  const unifiedUi = env.CROUPIER_VERCEL_UNIFIED_UI === '1';
-  const labUiOrigin = unifiedUi ? publicOrigin : exactPlatformOrigin(env.CROUPIER_LAB_UI_ORIGIN, 'CROUPIER_LAB_UI_ORIGIN');
+  // One public origin for game and Admin, native Admin on Vercel and Neon as the one
+  // registry are fixed; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed
+  // values). Studio is served from the public origin.
+  const labUiOrigin = publicOrigin;
   const secret = env.CROUPIER_VERCEL_INGRESS_SECRET;
-  if (new Set(unifiedUi ? [publicOrigin, backendOrigin] : [publicOrigin, backendOrigin, labUiOrigin]).size !== (unifiedUi ? 2 : 3)) throw Error('Public UI, backend transport and Lab UI origins must be distinct.');
-  if (unifiedUi && env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1') throw Error('Unified UI requires native Studio administration.');
+  if (publicOrigin === backendOrigin) throw Error('Public UI and backend transport origins must be distinct.');
   if (typeof secret !== 'string' || secret.length < 32 || /[\r\n]/.test(secret)) throw Error('A private ingress secret of at least 32 bytes is required.');
-  return { publicOrigin, backendOrigin, labUiOrigin, secret,
-    ...(unifiedUi ? { unifiedUi: true } : {}),
-    ...(env.CROUPIER_STUDIO_NATIVE_ADMIN === '1' ? { nativeStudio: true } : {}),
-    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { canonicalGame: true } : {}) };
+  return { publicOrigin, backendOrigin, labUiOrigin, secret, unifiedUi: true, nativeStudio: true, canonicalGame: true };
 }

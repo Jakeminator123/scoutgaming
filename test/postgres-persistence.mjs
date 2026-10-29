@@ -152,7 +152,8 @@ test('native project PUT and scoped memory serialize game then Studio without cr
 test('Postgres partner sessions require a current internal-wallet authority and fail closed',async()=>{
   const db={prepare(sql){return{async get(){return sql.includes('FROM player_sessions')?{player_id:'synthetic-player',source_stamp:'partner:synthetic-key'}:sql.includes('FROM players')?{status:'active'}:undefined;},async run(){return{changes:1};}};},async transaction(work){return work();}};
   let key={id:'synthetic-key',revoked_at:null,wallet_url:null};
-  const auth=playerAuth(db,()=>{throw Error('unexpected creation');},null,{partnerAuthority:async()=>key});
+  // This unstamped session is a legacy partner session, which the product refuses; enable it here to test the authority check alone.
+  const auth=playerAuth(db,()=>{throw Error('unexpected creation');},null,{partnerAuthority:async()=>key,allowLegacyPartnerSessions:true});
   const request={headers:{cookie:'player_session='+ 'a'.repeat(64)},socket:{}},claims={sub:'synthetic-player',partner:'synthetic-key'};
   assert.equal(await auth.user(request),'synthetic-player');assert.match(await auth.fromPartner(request,claims),/^player_session=/);
   for(const denied of [null,{...key,id:'another-key'},{...key,revoked_at:'revoked'},{...key,wallet_url:'https://wallet.example.invalid'}]){

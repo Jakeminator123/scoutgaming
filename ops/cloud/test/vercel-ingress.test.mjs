@@ -30,15 +30,14 @@ test('only a secret-authenticated exact Vercel origin can cross the backend tran
   assert.equal(vercelIngressRequest(request('/__vercel/lab/session'), ingress).accepted, false);
 });
 
-test('canonical blackjack launch crosses exact authenticated ingress only under the shared Neon flag', () => {
-  const native=readVercelIngressConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
-  assert.equal(native.canonicalGame,true);assert.equal(Object.hasOwn(ingress,'canonicalGame'),false);
+test('canonical blackjack launch (always on) crosses exact authenticated ingress only', () => {
+  const native=readVercelIngressConfig(env);
+  assert.equal(native.canonicalGame,true);assert.equal(ingress.canonicalGame,true);
   for (const path of ['/blackjack?launch=fixture.claim.signature','/blackjack/?dealer=mei&launch=fixture.claim.signature']) {
     for (const method of ['GET','HEAD']) {
       const input={...request(path),method},accepted=vercelIngressRequest(input,native);
       assert.equal(accepted.transported,true,path);assert.equal(accepted.headers.host,'preview.example.test');
       assert.equal(accepted.headers.cookie,'player_session=isolated');assert.equal(accepted.headers['x-croupier-vercel-secret'],undefined);
-      assert.equal(vercelIngressRequest(input,ingress).accepted,false,'off mode keeps blackjack outside authenticated game ingress');
       for (const extra of [{'x-croupier-vercel-secret':'wrong'},{'x-croupier-public-origin':'https://evil.test'},
         {'x-forwarded-host':'evil.test'},{'x-forwarded-proto':'http'}]) {
         assert.equal(vercelIngressRequest({...request(path,extra),method},native).accepted,false);

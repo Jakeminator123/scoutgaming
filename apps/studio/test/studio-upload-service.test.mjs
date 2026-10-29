@@ -130,7 +130,7 @@ async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fix
   t.after(() => {assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-upload-service-/);return rm(cacheDir,{recursive:true,force:true});});
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope}),objects=new Map(),tokenCalls=[];
   seedSavedVideoProject(pool,scope);
-  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-read-write-secret'},options={cacheDir,blobClient:{
+  const env={BLOB_READ_WRITE_TOKEN:'fixture-read-write-secret'},options={cacheDir,blobClient:{
     async get(path) {
       const content=objects.get(path);if(!content)return null;
       return {statusCode:200,stream:new Response(content).body,blob:{pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType,size:content.length}};

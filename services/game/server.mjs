@@ -65,7 +65,11 @@ import { rouletteDocument } from './games/roulette/http.mjs';
 const sharedRoomQa = consumeSharedRoomQaContext();
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../../..');
-const localMediaEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' && process.env.CROUPIER_CLOUD_RUNTIME !== '1';
+// Neon is the one Studio registry and private Blob the one media store on every
+// deployment; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// The local media layout is therefore never served.
+const neonStudioEnabled = true;
+const localMediaEnabled = false;
 const mediaLayout = localMediaEnabled && existsSync(join(mediaRepository, 'media/layout.json'))
   ? await import(pathToFileURL(join(mediaRepository, 'tools/media-layout.mjs')).href) : null;
 const publicAssetPath = (...parts) => {
@@ -90,12 +94,11 @@ let sharedRoomChat = null;
 const storage = sharedRoomQa?.storage ?? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL });
 await storage.db.assertInstalled();
-const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
 const { launchGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
-const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
+const gamePath = '/blackjack';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
@@ -103,7 +106,7 @@ const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./stud
 const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
 const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? (neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null);
 const studioMediaRuntime = sharedRoomQa?.studioMediaRuntime ?? (studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null);
-const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
+const speechReplyLibrary = studioPolicyRuntime
   ? (await import('../../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
     repository:(await import('../../packages/presentation/server/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
@@ -274,7 +277,7 @@ let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(process.env), root,
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(), root,
   nativeMode:!localMediaEnabled, operatorById: partnerOperatorById,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
@@ -517,8 +520,6 @@ async function chatSessionOwner(req, playerId) {
 // Opt-in operator rehearsal shares the real relay and its budget, but never
 // calls player APIs or persists synthetic conversations in either database.
 const operatorSpeechQa = createOperatorSpeechQa({
-  directory: studioPolicyRuntime ? undefined : process.env.CROUPIER_GENERATED_SPEECH_DIR,
-  journalRequired: Boolean(studioPolicyRuntime),
   gateStore: studioPolicyRuntime
     ? (await import('./postgres-operator-speech-qa.mjs')).createPostgresOperatorSpeechQa({pool:storage.pool,scope:studioPolicyRuntime.scope})
     : undefined,
@@ -1047,7 +1048,7 @@ const server = createServer(async (req, res) => {
     if(response){res.writeHead(response.status,Object.fromEntries(response.headers));if(!response.body){res.end();return;}
       const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
   }
-  const gameRedirect = gameEntryRedirect(new URL(req.url,gameOrigin),process.env);
+  const gameRedirect = gameEntryRedirect(new URL(req.url,gameOrigin));
   if (gameRedirect) {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }
     res.writeHead(307,{Location:gameRedirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); res.end(); return;
@@ -1137,7 +1138,7 @@ const server = createServer(async (req, res) => {
         if (refusal) { partnerRefused(req,res,refusal); return; }
       }
     }
-    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection),{enabled:sharedRoomsEnabled,selection});
+    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }

@@ -7,8 +7,8 @@ import { readVercelIngressConfig } from '../vercel-ingress.mjs';
 import { platformBackendHeaders, platformConfiguration } from '../../../packages/navigation/server/platform-routing.mjs';
 import { platformUiDocument } from '../../../apps/web/lib/server-ui.mjs';
 
-const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',
-  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_ORIGIN:'https://operator.example.test',
+const env = {CROUPIER_VERCEL_UI:'1',
+  CROUPIER_PUBLIC_ORIGIN:'https://operator.example.test',
   CROUPIER_BACKEND_ORIGIN:'https://isolated.onrender.com',CROUPIER_VERCEL_TRANSPORT_ORIGIN:'https://isolated.onrender.com',
   CROUPIER_VERCEL_INGRESS_SECRET:'operator-ingress-fixture-secret-'.repeat(3)};
 const config = platformConfiguration(env);
@@ -16,7 +16,7 @@ const cookie = 'fixture-player-session=existing';
 const query = 'operator=johns-spelbolag&table=room-06f0722d-74bf-49ca-8546-f6328ac69909';
 const entryPath = '/blackjack?'+query;
 
-async function fixture(t, canonical = true) {
+async function fixture(t) {
   let htmlRequests = 0;
   const web = createServer((req,res)=>{
     assert.equal(req.headers.host,'operator.example.test');
@@ -35,7 +35,7 @@ async function fixture(t, canonical = true) {
     htmlRequests++;res.writeHead(200,{'Content-Type':'text/html'});res.end(req.method==='HEAD'?undefined:'<html><body>Frozen Johanna fixture</body></html>');
   });
   web.listen(0,'127.0.0.1');await once(web,'listening');
-  const ingress = readVercelIngressConfig({...env,CROUPIER_STUDIO_NEON_POLICY:canonical?'1':'0'});
+  const ingress = readVercelIngressConfig(env);
   const gateway = createCloudGateway({singleOrigin:true,gameOrigin:env.CROUPIER_PUBLIC_ORIGIN,
     boOrigin:env.CROUPIER_PUBLIC_ORIGIN,labOrigin:env.CROUPIER_PUBLIC_ORIGIN},{
     vercelIngress:ingress,webPort:web.address().port,labPort:9});
@@ -94,10 +94,4 @@ test('operator HTML remains signed, exact, read-only, and restricted to approved
     assert.equal((await f.send(path)).status,421,path);
   }
   assert.equal(f.count(),initial,'rejections never reach Web');
-});
-
-test('operator HTML exception stays disabled outside canonical game mode',async t=>{
-  const f=await fixture(t,false);
-  for(const method of ['GET','HEAD'])assert.equal((await f.send(entryPath,method)).status,421);
-  assert.equal(f.count(),0);
 });
