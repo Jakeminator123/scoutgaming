@@ -296,10 +296,10 @@ async function mountClipMap(h,{scene=false}={}){
   };
   const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
   const link=label=>one(nodes(node=>typeof node.props?.href==='string'&&textWithoutControls(node)===label),'link labelled '+label);
-  // Blackjack opens the layers from the scene preview's inspector: Scenförhandsvisning, then Scen & lager.
+  // Scen & lager in the map's toolbar toggles the layers panel; the drawer itself has only Klipp, Körregel and Lägg till klipp.
   const press=label=>{const match=nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label);assert.ok(match.length,'button labelled '+label);match[0].props.onClick();};
   const has=label=>nodes(node=>node.type==='button'&&textWithoutControls(node)===label).length>0;
-  const openLayers=async()=>{if(!has('Scen & lager')){press('Scenförhandsvisning');await settle();}press('Scen & lager');await settle();};
+  const openLayers=async()=>{assert.equal(has('Scenförhandsvisning'),false,'Provspela is the dealer nav\'s flyout, not a map panel');press('Scen & lager');await settle();};
   const follow=async label=>{assert.equal(h.api.navigate(link(label).props.href),true,'link '+label+' is accepted');await settle();};
   // Under Miljöer the dealer is a selection; under the dealer nav it is the path and the map shows it.
   const dealerSelect=()=>nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer');
@@ -311,9 +311,9 @@ async function mountClipMap(h,{scene=false}={}){
     composition:()=>nodes(node=>node.type==='StudioCompositionPanel')[0]?.props.compositionId,
     scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
       hasPlacement:()=>scenePanel?.hasPlacement()??false,
-      // The dealer's clip map opens the environment's layers in its inspector; the scene preview panel replaces (unmounts) them.
+      // The dealer's clip map opens the environment's layers in its inspector; pressing Scen & lager again closes (unmounts) them.
       async open(){await openLayers();},
-      async leave(){press('Scenförhandsvisning');await settle();},
+      async leave(){press('Scen & lager');await settle();},
       async click(label){scenePanel.click(label);await settle();},
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
       remote(project){workspace.project=structuredClone(project);},
