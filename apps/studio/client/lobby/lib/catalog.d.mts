@@ -7,6 +7,8 @@ export type Room = {
   game: 'blackjack' | 'roulette'; presentation: string; dealerDefault: string; dealers: RoomDealer[]; playUrl: string;
   environmentLabel: string; environmentFixed: boolean; environmentKind: 'image' | 'video' | 'baked' | 'variable'; image?: string;
   limitPreset?: string; illustration: RoomIllustration;
+  /** An open room without published game settings: shown as "Förbereds", no game start. */
+  preparing?: boolean;
 };
 export type Operator = {
   id: string; name: string; monogram: string; accent: string; status: 'open' | 'empty';

@@ -42,6 +42,7 @@ import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
+import { createPermanentDeletionApi } from './permanent-deletion-api.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {materialTrashPlan} from './material-trash.mjs';
@@ -227,7 +228,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    for (const [key, handler] of createResourceLifecycleApi({ repository, scope: config.scope }).handlers) {
+    for (const [key, handler] of [...createResourceLifecycleApi({ repository, scope: config.scope }).handlers, ...createPermanentDeletionApi({ repository, scope: config.scope }).handlers]) {
       if (handlers.has(key)) unavailable(); handlers.set(key, handler);
     }
     const drift = createMovingDriftAdminApi({pool,boDb:store.boDb,scope:config.scope,env});
@@ -280,7 +281,7 @@ export function nativeStudioErrorResponse(error, context) {
   const lifecycleCodes=new Set(['studio_dealer_background_required','studio_conflict','studio_dealer_not_registered','studio_dealer_base_protected','studio_dealer_missing','studio_dealer_in_use','studio_dealer_published',
     'studio_dealer_delete_pending','studio_dealer_speech_enabled','studio_dealer_restore_conflict','studio_dealer_archived','studio_dealer_lifecycle_required',
     'studio_media_delete_coverage_incomplete','studio_media_upload_grant_active','studio_media_owned_elsewhere','studio_media_delete_failed','studio_media_already_deleted','studio_media_deletion_pending','studio_media_archive_required','studio_media_published','studio_retained_media_immutable',
-    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified',
+    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified','studio_dealer_voice_invalid',
     // Bolagets eget material: fixed codes, incl. 429 for the daily AI limit.
     'operator_materials_unavailable','operator_materials_blocked','operator_materials_limit_reached','operator_ai_limit_reached']);
   const body = inspectionMessage ? {error:inspectionMessage,code:error.code}
