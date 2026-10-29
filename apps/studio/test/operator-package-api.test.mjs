@@ -41,6 +41,12 @@ function apiFor(pool, project = createSeedProject(), storeFactory) {
   return { api, lane };
 }
 
+// The SG test company is created in the store directly; Admin has no demo-create action.
+async function createSgTest(pool) {
+  await (await createOperatorStore({ sql: pool, scope, now: clock }))
+    .createOperator({ actor: session.user, operatorId: 'sg-test', slug: 'sg-test', name: 'SG test game provider' });
+}
+
 function request(action, body, headers = {}) {
   return new Request(`${origin}/studio/api/admin/${action}`, {
     method: 'POST',
@@ -72,37 +78,33 @@ test('a pool with connect is the store client; query-only is 503', async () => {
 
 test('admin POST uses the session actor, refuses a query-only pool, and keeps the Origin gate', async () => {
   const pool = memoryPool();
+  await createSgTest(pool);
   let actor;
   const storeFactory = async options => {
     assert.equal(options.sql, pool);
     const store = await createOperatorStore(options);
-    return {
-      createOperator: input => { actor = input.actor; return store.createOperator(input); },
-      publishPackage: input => { actor = input.actor; return store.publishPackage(input); },
-      listOperators: () => store.listOperators(),
-    };
+    return { ...store, publishPackage: input => { actor = input.actor; return store.publishPackage(input); } };
   };
   const { api } = apiFor(pool, createSeedProject(), storeFactory);
-  const missingOrigin = new Request(`${origin}/studio/api/admin/operator-create-demo`, {
-    method: 'POST', headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }, body: '{}',
+  const body = { operatorId: 'sg-test', lanes: ['mobile-phone'] };
+  const missingOrigin = new Request(`${origin}/studio/api/admin/operator-package`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }, body: JSON.stringify(body),
   });
   assert.equal((await api.handle(missingOrigin)).status, 403);
   assert.equal(actor, undefined);
-  const created = await api.handle(request('operator-create-demo', {}));
-  assert.equal(created.status, 200);
+  const published = await api.handle(request('operator-package', body));
+  assert.equal(published.status, 200);
   assert.equal(actor, 'lane-actor');
-  assert.equal((await created.json()).operator.id, 'sg-test');
-  const duplicate = await api.handle(request('operator-create-demo', {}));
-  assert.equal(duplicate.status, 409);
+  assert.equal((await api.handle(request('operator-create-demo', {}))).status, 404, 'the retired demo-create action is gone');
 
   const queryOnly = apiFor({ query: pool.query });
-  assert.equal((await queryOnly.api.handle(request('operator-create-demo', {}))).status, 503);
+  assert.equal((await queryOnly.api.handle(request('operator-package', body))).status, 503);
 });
 
 test('publishing increases package_revision and an unknown lane id is 422', async () => {
   const pool = memoryPool();
   const { api } = apiFor(pool);
-  assert.equal((await api.handle(request('operator-create-demo', {}))).status, 200);
+  await createSgTest(pool);
   const first = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
   assert.equal(first.status, 200);
   const firstBody = await first.json();
@@ -120,7 +122,7 @@ test('publishing increases package_revision and an unknown lane id is 422', asyn
 test('publishing lanes carries the operator branding, games and tables forward', async () => {
   const pool = memoryPool();
   const { api } = apiFor(pool);
-  await api.handle(request('operator-create-demo', {}));
+  await createSgTest(pool);
   const direct = await createOperatorStore({ sql: pool, scope, now: clock });
   await direct.publishPackage({ actor: 'partner-admin', operatorId: 'sg-test', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['t1'], branding: { color: '#112233', name: 'North' } });
   const republished = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
@@ -136,8 +138,9 @@ test('publishing lanes carries the operator branding, games and tables forward',
 test('an empty project.lanes list never materializes a default publication', async () => {
   const project = createSeedProject();
   project.lanes = [];
-  const { api } = apiFor(memoryPool(), project);
-  await api.handle(request('operator-create-demo', {}));
+  const pool = memoryPool();
+  const { api } = apiFor(pool, project);
+  await createSgTest(pool);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['vip-table'] }))).status, 422);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 422);
 });
@@ -585,7 +588,7 @@ test('native SQL failure rolls back publisher and forged or mismatched preparati
 
 test('lane operator choices carry each current published assignment and never borrow another company package', async () => {
   const pool=memoryPool(),{api,lane}=apiFor(pool),store=await createOperatorStore({sql:pool,scope,now:clock});
-  await api.handle(request('operator-create-demo',{}));
+  await createSgTest(pool);
   await store.createOperator({actor:session.user,operatorId:'johns',slug:'johns',name:'Johns'});
   assert.deepEqual((await lane.listOperators()).map(row=>[row.id,row.publishedPackage]),[['johns',null],['sg-test',null]]);
   await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
@@ -693,7 +696,7 @@ test('malformed explicit editor revisions are refused before native reads or pro
 
 test('legacy adapter enforces explicit revisions and retains compatibility for omitted revisions',async()=>{
   const pool=memoryPool(),{api}=apiFor(pool);
-  assert.equal((await api.handle(request('operator-create-demo',{}))).status,200);
+  await createSgTest(pool);
   const body={operatorId:'sg-test',lanes:['mobile-phone'],expectedPackageRevision:null};
   const first=await api.handle(request('operator-package',body));assert.equal(first.status,200);assert.equal((await first.json()).packageRevision,1);
   assert.equal((await api.handle(request('operator-package',body))).status,409);
@@ -773,7 +776,7 @@ test('Admin package publication refuses an AI table graphic after a dealer swap,
   const pool=memoryPool(),project=createSeedProject(),lane=project.lanes[0];
   project.layerAssets=[aiTableAsset(drawnForPaow())];lane.layers.table={enabled:true,default:aiTableId,allowed:[aiTableId]};
   const {api}=apiFor(pool,project);
-  await api.handle(request('operator-create-demo',{}));
+  await createSgTest(pool);
   // The template's dealer is not the one the table was drawn for.
   const refused=await api.handle(request('operator-package',{operatorId:'sg-test',lanes:[lane.id]}));
   assert.equal(refused.status,422);
