@@ -1,7 +1,9 @@
 // Demo-byggaren (Admin, nivå 1): stegens tillstånd, urvalet ur katalogen och
 // demolänken. Läser GET /admin/_data/catalog och GET room-game-config; skriver
 // bara via dagens actions apikeys/create, apikeys/launch, apikeys/credit och apikeys/revoke.
-// En demo är en API-nyckel demo-<namn> plus en testsession på den nyckeln.
+// En demo är en API-nyckel demo-<namn> plus en testsession på den nyckeln. Nyckeln hör till
+// det valda bolaget (Nyckel→bolag, docs/plans/NYCKEL-BOLAG.md), så spelmotorn släpper in
+// demospelaren vid bolagets delade bord och nekar alla andra bolags.
 import {ROOM_LIMIT_PRESETS} from '../../../../../packages/presentation/contracts/room-game-config.mjs';
 import {isActiveDealerId} from '../../../../../packages/presentation/contracts/dealer-identity.mjs';
 import {isOperatorSlug} from '../../../../../packages/navigation/operator-slug.mjs';
@@ -28,12 +30,6 @@ export const DEMO_KEY_SCOPES=Object.freeze(['launch','play']);
 export const DEMO_KEY_PREFIX='demo-';
 export const DEMO_NAME_MAX=80-DEMO_KEY_PREFIX.length;
 export const DEMO_CREDIT_MAX=100000;
-// Avstängt tills partnernyckeln knyts till bolaget (efter O03): en partnerlanserad session
-// nekas i dag vid det delade bordet (403) och har ingen reserv till det vanliga bordet.
-// Knappen "Skapa demolänk" och steg 4:s krav läser bara den här konstanten; launch, Fyll på
-// och Återkalla ligger kvar oförändrade bakom den och slås på genom att sätta true.
-export const DEMO_LAUNCH_ENABLED=false;
-export const DEMO_LAUNCH_OFF_TEXT='Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.';
 const CONTROL=/[\u0000-\u001f\u007f-\u009f]/u;
 const ROOM_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const text=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max&&!CONTROL.test(value);
@@ -62,9 +58,9 @@ export function stepRequirement(state,step=state.step){
   if(step===1)return state.operatorId?ready():missing('Välj ett bolag.');
   if(step===2)return state.roomId?ready():missing('Välj ett spelbart spelbord.');
   if(step===3)return state.dealerId?ready():missing('Välj en dealer.');
-  return DEMO_LAUNCH_ENABLED?demoFormRequirement(state):missing(DEMO_LAUNCH_OFF_TEXT);
+  return demoFormRequirement(state);
 }
-// Steg 4:s formulär (namn och visningsnamn), oberoende av om demolänken är påslagen.
+// Steg 4:s formulär (namn och visningsnamn).
 export function demoFormRequirement(state){
   const name=demoNameBase(state.form);
   if(!name)return missing('Ge demon ett namn.');
@@ -147,11 +143,14 @@ export function demoCredits(receipt){
 // Länken ----------------------------------------------------------------------
 // Spelmotorns adress prövas med samma regel som Integrationer (lib/partner-launch-url.mjs);
 // därefter läggs bolag, spelbord och dealer till så att landningen pekar på spelbordet.
+// Motorn sätter nyckelns bolag i adressen; ett annat bolag än demons ger ingen länk, eftersom
+// motorn skulle neka den med "Nyckeln gäller ett annat bolag".
 export function demoLaunchLink(payload,{gameOrigin,operatorSlug,roomId,dealerId}){
   if(!payload||payload.ok!==true||typeof payload.url!=='string')throw new DemoError('Spelmotorn bekräftade inte testsessionen.');
   const url=approvedPartnerLaunchUrl(payload.url,gameOrigin),token=url?.searchParams.get('launch');
   if(!url||!token)throw new DemoError('Spelmotorns länk stämmer inte med den godkända speladressen.');
   if(!isOperatorSlug(operatorSlug)||!ROOM_ID.test(roomId??'')||(dealerId!==undefined&&dealerId!==null&&!isActiveDealerId(dealerId)))throw new DemoError('Bolaget, spelbordet eller dealern har ett ogiltigt id.');
+  if(url.searchParams.has('operator')&&url.searchParams.get('operator')!==operatorSlug)throw new DemoError('Spelmotorn knöt nyckeln till ett annat bolag än demons. Återkalla nyckeln och skapa demon igen.');
   const link=new URL(url.origin+url.pathname);
   link.searchParams.set('launch',token);link.searchParams.set('operator',operatorSlug);link.searchParams.set('table',roomId);
   if(dealerId)link.searchParams.set('dealer',dealerId);
@@ -196,9 +195,13 @@ const WHY={400:'servern avvisade uppgifterna. Kontrollera namn och visningsnamn.
   422:'servern avvisade uppgifterna.',503:'spelmotorn eller nyckeltjänsten är tillfälligt otillgänglig. Inget skapades lokalt.'};
 const WHY_FOR={credit:{400:'servern avvisade beloppet eller demospelaren.',
   503:'spelmotorn svarade inte, eller nyckeln är återkallad. Kontrollera saldot i spelet innan du försöker igen.'}};
+// Nyckel→bolag: apikeys/create nekar med en fast kod i stället för att skapa en nyckel utan bolag.
+const WHY_CODE={partner_key_operator_schema_pending:'databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012), så ingen nyckel skapades. Demolänkar kan skapas när Scoutgaming har lagt in den.',
+  partner_key_operator_invalid:'bolaget finns inte längre eller är avstängt, så ingen nyckel skapades. Läs in sidan och välj ett aktivt bolag.'};
 export function demoErrorMessage(step,status,payload){
   const code=typeof payload?.code==='string'&&/^[a-z][a-z0-9_]{0,100}$/.test(payload.code)?payload.code:'';
-  return `${WHAT[step]??'Åtgärden misslyckades'}: ${WHY_FOR[step]?.[status]??WHY[status]??'servern svarade oväntat.'}${code?` (${code})`:''}`;
+  const why=step==='create'&&Object.hasOwn(WHY_CODE,code)?WHY_CODE[code]:WHY_FOR[step]?.[status]??WHY[status]??'servern svarade oväntat.';
+  return `${WHAT[step]??'Åtgärden misslyckades'}: ${why}${code?` (${code})`:''}`;
 }
 
 // Anrop -----------------------------------------------------------------------
@@ -236,13 +239,14 @@ export async function postAdminAction(fetchImpl=fetch,action,body,signal){
   if(!response.ok)throw new DemoError(demoErrorMessage(step,response.status,payload),response.status);
   return payload;
 }
-// Två skrivningar i följd: nyckeln demo-<namn> med minsta rättigheter och purpose demo
-// (servern svarar då utan nyckel och hemlighet), sedan testsession på nyckeln.
+// Två skrivningar i följd: nyckeln demo-<namn> för det valda bolaget, med minsta rättigheter
+// och purpose demo (servern svarar då utan nyckel och hemlighet), sedan testsession på nyckeln.
 // Misslyckas lanseringen följer nyckeln med felet så att den kan återkallas.
-export async function launchDemo({fetchImpl=fetch,signal,form,permissions,operatorSlug,roomId,dealerId,onPhase}){
+export async function launchDemo({fetchImpl=fetch,signal,form,permissions,operatorId,operatorSlug,roomId,dealerId,onPhase}){
+  if(!ROOM_ID.test(operatorId??''))throw new DemoError('Välj ett registrerat bolag.');
   const name=demoKeyName(form),displayName=demoDisplayName(form);
   onPhase?.('create');
-  const created=await postAdminAction(fetchImpl,'apikeys/create',{name,scopes:[...DEMO_KEY_SCOPES],purpose:'demo'},signal);
+  const created=await postAdminAction(fetchImpl,'apikeys/create',{operatorId,name,scopes:[...DEMO_KEY_SCOPES],purpose:'demo'},signal);
   if(created?.ok!==true||!text(created.key?.id,256))throw new DemoError('Nyckelns kvitto saknade id. Kontrollera nycklarna under Integration.');
   const key={id:created.key.id,name:text(created.key.name,80)?created.key.name:name}; // Aldrig key/secret vidare.
   onPhase?.('launch');

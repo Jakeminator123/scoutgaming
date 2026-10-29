@@ -36,7 +36,7 @@ Det sparade läget är ett **utkast**; det publicerade är **live**. Spelaren se
 
 ## Konton
 
-**Personal** är Admins konton (`croupier_auth.users`). **Spelare** (`players`) har saldo och historik och tillhör ett bolag. En **API-nyckel** (`api_keys`) låter bolaget starta spelare från sin egen sajt; en **testsession** är en start med demokrediter. **Journalen** är bolagets händelselogg.
+**Personal** är Admins konton (`croupier_auth.users`). **Spelare** (`players`) har saldo och historik och tillhör ett bolag. En **API-nyckel** (`api_keys`) låter bolaget starta spelare från sin egen sajt; varje nyckel hör till exakt ett bolag, valt när Admin skapar den, och Partnerportalen visar bolagets egna nycklar maskerade. En **testsession** är en start med demokrediter. **Skapa demo** i Admin sätter ihop bolag, spelbord och dealer för en visning, och demolänken startar spelet med det valda bolagets nyckel. **Journalen** är bolagets händelselogg.
 
 ## Lagring
 

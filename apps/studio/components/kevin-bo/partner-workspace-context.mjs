@@ -8,6 +8,11 @@ export function validatePartnerSnapshot(snapshot) {
       throw Error('Arbetsytan innehåller fel bolagskontext.');
     }
   }
+  // Every API key names its company; a key without the workspace's company is never shown.
+  if (snapshot.apiKeys !== undefined && (!Array.isArray(snapshot.apiKeys?.keys)
+    || snapshot.apiKeys.keys.some(key => key?.operatorId !== snapshot.operator.id))) {
+    throw Error('Arbetsytan innehåller fel bolagskontext.');
+  }
   return snapshot;
 }
 

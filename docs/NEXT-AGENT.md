@@ -28,7 +28,7 @@ Nästa arbete, i ordning (bakgrund i [MASTERPLAN](../migrering/MASTERPLAN.md#eft
 4. **Admin:** N2 → N1 → demo → AI-grenen efter designrunda (#518, #519, #512; [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md)).
 5. **Städning:** syntetiskt prodkonto `o03v-3436cfb2` (saldo 995), staging-QA-rester, Vercel-previews, D6 (QA-roller, `pg_stat_statements`, `CROUPIER_ASTRID_CAMERA`, O03:s Neon-grenar och restoremål).
 6. **Dealer-generisk talkedja med Paow** ([PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md)): RunPod-callbacken (`MOVING_CALLBACK_ORIGIN`, pekar på raderade `croupier-v2`) rättas före rörligt tal. ElevenLabs-kontot (Kevins) är till 80 % förbrukat.
-7. **Bindning nyckel → bolag** (partnernyckel mot delat bord ger 403 i dag).
+7. **Bindning nyckel → bolag** ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)): A (#538) är live på `croupier-v3`, migrering 012 är applicerad i preview och produktion 2026-10-29, och B (Admin, partnerportalen, demolänken) är levererad i #561. Därefter C.
 8. **L3** (rumsnamn och state ur paketet), sedan O1, O4, L1-503.
 9. **Ren start steg 2.**
 10. **Kevins portplan** P4–P14 (skalningstest 10×7, preview med egen taluppsättning och pensionering av nativebordet följer i MASTERPLAN).

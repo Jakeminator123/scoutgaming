@@ -29,7 +29,7 @@ const sources:[string,string,string][]=[
   ['System › AI-agenter','GET/PATCH /studio/api/openclaw/admin','Director-tjänsten på Render (inte Neon); OPENAI_API_KEY-flaggan ur miljön'],
   ['System › Scoutgamings personal','A:users; users/invite, resend, role, remove','croupier_auth.users, tokens'],
   ['System › Spelarkonton','A:players, A:transactions; players/create, status, password','croupier_game.players, player_accounts, transactions, player_admin_events'],
-  ['System › Integration','A:apikeys, A:emails; apikeys/create, revoke, rotate, launch, credit','croupier_auth.api_keys (globala tills nycklarna knyts till bolag)'],
+  ['System › Integration','A:apikeys, A:emails; apikeys/create, revoke, rotate, launch, credit','croupier_auth.api_keys, varje nyckel för ett bolag (operator_id, spelmigrering 012); croupier_studio.operators för bolagsvalet'],
   ['System › Beroenden','GET /admin/_data/catalog + /studio/api/project + /studio/api/videos; A:resource-lifecycle','doc.project, doc.administration, operators, operator_packages'],
 ];
 
