@@ -224,6 +224,7 @@ export function createSharedRoomService({
     }, combined);
   }
   function emitChat(roomId, entry) { requireReady(); channel.emitChat(roomId, entry); }
+  function emitSpeech(roomId, entry, issue) { requireReady(); channel.emitSpeech(roomId, entry, issue); }
   function release() {
     if (cleanup) return cleanup;
     lifetime.abort(stopped());
@@ -274,7 +275,7 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health, command, chatMember, chatContext, emitChat, withSharedCommittedReceipt, withActiveRoomPresentation,
+  return Object.freeze({ start, close, stop: close, health, command, chatMember, chatContext, emitChat, emitSpeech, withSharedCommittedReceipt, withActiveRoomPresentation,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }
 

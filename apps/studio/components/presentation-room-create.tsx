@@ -62,7 +62,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     callbacks.current.onBusyChange?.(true);
     void controller.create(key).finally(()=>callbacks.current.onBusyChange?.(controller.getSnapshot().status==='busy'));
   }
-  const message = !storeAvailable ? 'Spelrum kräver en ansluten lagring.'
+  const message = !storeAvailable ? 'Spelbord kräver en ansluten lagring.'
     : !projectSaved ? 'Spara miljön först.'
       : !operator || !presentation ? 'Välj bolag och miljö.'
         : current ? state.message : null;
@@ -79,30 +79,30 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     : conflictCode === 'presentation_room_environment_conflict'
       ? { href: compositionHref, label: 'Skapa en separat miljö' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
-      ? { href: reloadHref, label: 'Kontrollera spelrummet' } : null;
+      ? { href: reloadHref, label: 'Kontrollera spelbordet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = enabled && (ready || unresolved) && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
 
   const rooms = current && enabled ? state.preflight?.rooms : undefined;
-  return <section className={styles.card+(visual?' '+styles.visual:'')} aria-label="Spelrum">
-    {!visual&&<div className={styles.heading}><div><span className={styles.eyebrow}>SPELARENS INGÅNG</span><h2>{visual?'Välj spel och namn':'Spelrum'}</h2></div>{rooms ? <span className={styles.count}>{rooms.length} befintliga rum</span> : null}</div>}
+  return <section className={styles.card+(visual?' '+styles.visual:'')} aria-label="Spelbord">
+    {!visual&&<div className={styles.heading}><div><span className={styles.eyebrow}>SPELARENS INGÅNG</span><h2>{visual?'Välj spel och namn':'Spelbord'}</h2></div>{rooms ? <span className={styles.count}>{rooms.length} befintliga spelbord</span> : null}</div>}
     {!visual && operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
-    {current && state.preflight?.environment ? <p><strong>Rummets miljö:</strong> {state.preflight.environment.label}
+    {current && state.preflight?.environment ? <p><strong>Spelbordets miljö:</strong> {state.preflight.environment.label}
       {state.preflight.environment.kind === 'baked' ? ' · inbakad miljö' : state.preflight.environment.fixed ? ' · fast bakgrund' : ' · behöver avgränsas'}</p> : null}
-    {!visual&&<p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>}
+    {!visual&&<p>Spelaren väljer ett spelbord i bolagets lobby. Återanvänd spelbordet när du ändrar utseende eller klipp.</p>}
     {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/lobby?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
-    {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
-      : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här miljön ännu.</p> : null}
-    <details className={styles.create} open={visual || rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
-    <p>Ange ett namn. Miljön publiceras och kopplas till rummet i samma steg.</p>
+    {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelbord">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
+      : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelbord för den här miljön ännu.</p> : null}
+    <details className={styles.create} open={visual || rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelbord</summary>
+    <p>Ange ett namn. Miljön publiceras och kopplas till spelbordet i samma steg.</p>
     <form className={styles.form} onSubmit={submit}>
       {visual?<div role="group" aria-label="Välj spel" className={styles.gameChoices}>{(['blackjack','roulette'] as const).map(game=><button key={game} className="sg-btn" type="button" aria-pressed={state.game===game} disabled={!enabled||!current||busy||unresolved||state.status==='loading'} onClick={()=>controller.setGame(game)}>{game==='blackjack'?'♠ Blackjack':'◉ Roulette'}</button>)}</div>:<label className={styles.field}>Spel
         <select value={current ? state.game : 'blackjack'} disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event=>controller.setGame(event.target.value)}>
           <option value="blackjack">Blackjack</option><option value="roulette">Roulette · enkel nolla</option>
         </select>
       </label>}
-      <label className={styles.field}>{visual?'Namn i bolagets utbud':'Rumsnamn'}
+      <label className={styles.field}>{visual?'Namn i bolagets utbud':'Spelbordets namn'}
         <input type="text" value={current ? state.name : ''} maxLength={100} required
           disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => { controller.setName(event.target.value);callbacks.current.onDraftChange?.(Boolean(controller.getSnapshot().name.trim())); }} autoComplete="off" />
       </label>
@@ -113,9 +113,9 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
             onClick={event => { if (!enabled) event.preventDefault(); }}>{needsEnvironment ? 'Välj och lås miljön i Miljöer' : 'Kontrollera miljön'}</a>
           : refresh ? <button className="sg-btn sg-btn-primary" type="button" disabled={!enabled}
           onClick={() => { if (enabled) void controller.refresh(); }}>Uppdatera uppgifter</button>
-          : receipt ? <a className="sg-btn sg-btn-primary" href={receipt.playUrl}>Öppna spelrummet</a>
+          : receipt ? <a className="sg-btn sg-btn-primary" href={receipt.playUrl}>Öppna spelbordet</a>
             : <button className="sg-btn sg-btn-primary" type="submit" disabled={!canCreate || busy}>
-              {busy ? 'Skapar…' : unresolved ? 'Försök igen' : visual ? 'Lägg till spel' : 'Skapa spelrum'}</button>}
+              {busy ? 'Skapar…' : unresolved ? 'Försök igen' : visual ? 'Lägg till spel' : 'Skapa spelbord'}</button>}
       </div>
     </form>
     </details>
@@ -123,6 +123,6 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     {message ? <p role={current && ['error', 'conflict', 'uncertain'].includes(state.status) ? 'alert' : 'status'}>{message}</p> : null}
     {recovery ? <p><a className="sg-btn sg-btn-primary" href={recovery.href} aria-disabled={!enabled}
       onClick={event => { if (!enabled) event.preventDefault(); }}>{recovery.label}</a></p> : null}
-    {receipt ? <p role="status">{receipt.room.name} är klart. <a href={receipt.playUrl}>Öppna spelrummet</a></p> : null}
+    {receipt ? <p role="status">{receipt.room.name} är klart. <a href={receipt.playUrl}>Öppna spelbordet</a></p> : null}
   </section>;
 }

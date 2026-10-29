@@ -37,7 +37,7 @@ test('verified material reasons explain the next action while publication stays 
   ['native_material_measurement_missing',/Mät omätta klipp/],['native_material_measurement_mismatch',/Mät omätta klipp/],
   ['native_material_speech_slot_missing',/godkänd talreplik för valt språk/],['native_material_speech_unbound',/godkänd talreplik för valt språk/],
   ['native_material_bank_incomplete',/klippbanken är ofullständig/],['native_material_idle_missing',/klippbanken är ofullständig/],
-  ['native_material_profile_missing',/filmprofilen saknar stöd/],['native_material_contract_unsupported',/filmprofilen saknar stöd/],
+  ['native_material_profile_missing',/Dealern använder PAOW:s landningar \(ingen egen filmad profil\)/],['native_material_contract_unsupported',/filmprofilen saknar stöd/],
   ['native_material_speech_timing_mismatch',/Kontrollera inspelningen/],['native_material_take_audio_truncated',/övergång behöver rättas och granskas/],
   ['native_material_timing_limit',/för långa uppspelningssekvenser/],
  ];

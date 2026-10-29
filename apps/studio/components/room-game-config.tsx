@@ -28,6 +28,7 @@ function publicationHelp(publication:RoomGameReceipt['publication'],dealers:Room
     case 'native_material_idle_missing':
       return 'Den publicerade klippbanken är ofullständig. Kontrollera att filmprofilens spelklipp och viloklipp finns med i paketet. Publicera sedan i spelbordet.';
     case 'native_material_profile_missing':
+      return 'Dealern använder PAOW:s landningar (ingen egen filmad profil).';
     case 'native_material_contract_unsupported':
       return 'Den valda filmprofilen saknar stöd för dessa spelinställningar. Profilens koppling till spelmotorn behöver rättas innan du kan publicera.';
     case 'native_material_speech_timing_mismatch':

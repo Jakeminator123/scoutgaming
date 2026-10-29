@@ -337,8 +337,8 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
-    // The merge guard shares the freeze prefixes and the branch policy.
-    if (/^tools\/(?:o02-freeze-check\.mjs|repository-policy\.json)$/.test(path)) add('test/merge-pr.mjs');
+    // The merge guard reads the branch policy.
+    if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
     if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
   }
   for (const path of fixtureConsumerTests(changes, root)) selected.add(path);

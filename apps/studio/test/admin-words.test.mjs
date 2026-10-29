@@ -6,31 +6,15 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Ordvakt för Admin: legacy-ord får inte stå i text som en administratör kan se.
-// Rätt ord: miljö (inte sammansättning), spelbord (inte spelrum, Rumsnamn), Scoutgaming
+// Rätt ord: miljö (inte sammansättning, scenmall), spelbord (inte spelrum, Rumsnamn), Scoutgaming
 // (inte Croupier); Astrid är raderad. Se apps/studio/docs/TERMINOLOGI.md.
 const require = createRequire(import.meta.url);
 const studio = fileURLToPath(new URL('..', import.meta.url));
 const repo = join(studio, '..', '..');
-export const LEGACY_WORDS = /sammansättning|spelrum|Rumsnamn|Astrid|Croupier/i;
+export const LEGACY_WORDS = /sammansättning|scenmall|spelrum|Rumsnamn|Astrid|Croupier/i;
 
-// Filerna ändras i öppna PR:er #641 och #644 (scenmall → miljö; room-game-config även i #656–#658).
-// Byt orden och ta bort raden när PR:en är mergad.
+// Filerna ändras i öppna PR:er (room-game-config i #656–#658). Byt orden och ta bort raden när PR:en är mergad.
 const PENDING = new Set([
-  'apps/studio/client/admin/components/studio/resource-connections.tsx',
-  'apps/studio/client/admin/components/studio/roulette-start-editor.tsx',
-  'apps/studio/client/admin/components/studio/saved-scene-preview.tsx',
-  'apps/studio/client/admin/components/studio/scene-publication.tsx',
-  'apps/studio/client/admin/components/studio/studio-composition-panel.tsx',
-  'apps/studio/client/admin/components/studio/studio-lifecycle-panel.tsx',
-  'apps/studio/components/background-playback-editor.tsx',
-  'apps/studio/components/composition-preview.tsx',
-  'apps/studio/components/control-operator-directory.tsx',
-  'apps/studio/components/control-resource-lifecycle.tsx',
-  'apps/studio/components/dealer-forge-page.tsx',
-  'apps/studio/components/lane-editor.tsx',
-  'apps/studio/components/layer-asset-manager.tsx',
-  'apps/studio/components/layer-selectors.tsx',
-  'apps/studio/components/presentation-room-create.tsx',
   'apps/studio/components/room-game-config.tsx',
 ]);
 
@@ -108,7 +92,7 @@ export function A(){ const id='croupier-director'; const url='/admin/spelrum?dea
   assert.deepEqual(texts.filter(row => legacyWord(row.text)).map(row => row.text), ['Spelrummet öppnas', 'Rumsnamn', 'Välj i Croupier', 'Schemat croupier_auth.users läses, inte Croupier.', 'Astrid']);
 });
 
-test('Admin shows no legacy words: sammansättning, spelrum, Rumsnamn, Astrid or Croupier', async () => {
+test('Admin shows no legacy words: sammansättning, scenmall, spelrum, Rumsnamn, Astrid or Croupier', async () => {
   assert.ok(files.length > 50, 'the guard reads Admin and the shared components');
   for (const path of PENDING) assert.ok(files.includes(path), `${path} finns inte; ta bort raden ur PENDING`);
   const found = await hits(files.filter(path => !PENDING.has(path)));

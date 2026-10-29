@@ -101,7 +101,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/presentation/server/presentation-package.mjs', 'packages/presentation/server/frozen-presentation-capture.mjs', 'packages/presentation/server/frozen-dealer-idle.mjs',
       'packages/presentation/server/package-rooms.mjs', 'packages/presentation/contracts/game-selection.mjs', 'packages/presentation/contracts/composition-settings.mjs',
       'packages/presentation/contracts/presentation-layers.mjs', 'packages/presentation/contracts/studio-model.mjs',
-      'packages/presentation/contracts/game-lane-id.mjs', 'packages/presentation/contracts/presentation-room.mjs',
+      'packages/presentation/contracts/game-lane-id.mjs', 'packages/presentation/contracts/presentation-room.mjs', 'packages/presentation/contracts/package-rooms.mjs',
       'packages/presentation/contracts/operator-lifecycle-key.mjs', 'packages/presentation/server/registered-dealer-idle.mjs',
       'packages/presentation/public-modules.mjs', 'packages/presentation/server/registered-idle-rules.mjs',
       'packages/navigation/game-entry.mjs', 'packages/navigation/server/platform-routing.mjs',
