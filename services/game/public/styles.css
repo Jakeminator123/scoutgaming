@@ -1195,6 +1195,8 @@ html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex
 .room-chat-player .room-chat-text, .room-chat-you .room-chat-text { color: #c9cbd2; }
 .room-chat-status { margin: 0; min-height: 0; font-size: 12px; color: #d9c06a; }
 .room-chat-status:empty { display: none; }
+.room-chat-sound { align-self: flex-start; font-size: 12px; }
+.room-chat-sound[hidden] { display: none; }
 .room-chat-form { display: flex; gap: 6px; }
 .room-chat-input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 999px; outline: none;
   background: rgba(10,11,13,.72); border: 1px solid rgba(242,241,237,.14); color: #F2F1ED; font: 13px 'Inter', sans-serif; }
