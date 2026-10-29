@@ -301,8 +301,9 @@ const step4State=()=>{
   return editDemo(nextStep(nextStep(chooseRoom(state,demoRooms(administration(),'op-johns')[0]))),'name','Johns demo');
 };
 const renderDemoStep4=()=>renderDemo([{status:'ready',value:administration()},{status:'ready',value:demoPermissions(adminSession())},0,step4State(),{phase:'idle'},{phase:'idle'},{status:'ready',value:null},null]);
-// Synligt innehåll och de hopfällda tekniska detaljerna längst ner.
-const visible=html=>html.slice(0,html.indexOf('<details'));
+// Synligt innehåll och de hopfällda tekniska detaljerna längst ner. En länks mål (href) syns inte för
+// användaren, så id:n i adresser räknas inte som synliga; text och övriga attribut gör det.
+const visible=html=>html.slice(0,html.indexOf('<details')).replace(/ href="[^"]*"/g,'');
 const technical=html=>html.slice(html.indexOf('<details'));
 
 test('Skapa demolänk is active at step 4 once the form is ready; nothing says the link comes later',()=>{
