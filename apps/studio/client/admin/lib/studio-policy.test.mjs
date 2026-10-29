@@ -48,7 +48,7 @@ test('the idle panel binds each dealer\'s whole frozen source through its button
     assert.deepEqual(next.idlePolicy,saved.idlePolicy);assert.equal(saved.dealerIdlePolicies[0].policy.variants.length,0);
     const active=render({project:next});assert.match(text(active),new RegExp(`${total} klipp är kopplade`));assert.equal(nodes(active).some(row=>row.type==='select'),false);
     assert.equal(button(active,label),undefined);assert.equal(button(active,'Uppdatera till urvalet'),undefined);
-    assert.equal(/Publicera PAOWs viloklipp/.test(text(active)),dealerId==='paow');
+    assert.match(text(active),/Publicera i spelbordet/);assert.match(text(active),/Avancerat › Publicera igen/,'rooms without Publicera are named');assert.doesNotMatch(text(active),/PAOWs viloklipp/,'idle is part of the room publication, for every dealer');
     button(active,'Återgå till enbart basklippet').props.onClick();assert.equal(changes[1].dealerIdlePolicies[0].policy.rotation,undefined);
     assert.equal(changes[1].dealerIdlePolicies[0].policy.variants.length,0);
     for(const patch of [{blocked:true},{inventory:{...inventory,videos:inventory.videos.slice(1)}}]){

@@ -68,6 +68,9 @@ async function fixture(browser,path){
   return {page,writes,async close(){await context.close();assert.deepEqual(failures,[]);}};
 }
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
+// The bundle is built before navigating, but the first render still runs the whole shell, the editor's
+// dynamic import and its branding GET; on a busy CI machine that has exceeded the 10 s default.
+const FIRST_RENDER=30000;
 // Radix moves roving focus in a timeout after the key press; wait for it instead of sampling at once.
 const focusOn=(page,check)=>page.waitForFunction(check);
 const focused=page=>page.evaluate(()=>({role:document.activeElement?.getAttribute('role'),label:document.activeElement?.getAttribute('aria-label'),text:document.activeElement?.textContent?.trim(),inDialog:Boolean(document.activeElement?.closest('[role="dialog"]'))}));
@@ -77,13 +80,22 @@ async function hasFocus(locator,message){for(let i=0;i<100;i++){if(await locator
 test('the table editor works with the keyboard: tabs, card choices, review dialog, actions menu; save → review → publish keep their order',{skip:!browserModule},()=>withBrowser(async browser=>{
   const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
   try{
-    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor();
-    const dealers=page.getByRole('radiogroup',{name:'Dealer'});await dealers.waitFor();
+    // First render: the heading shows while the editor loads (bundle, dynamic import and the branding
+    // GET), so wait for the editor's own tab list with a longer timeout than the later steps.
+    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor({timeout:FIRST_RENDER});
+    const tabs=page.getByRole('tablist',{name:'Spelbordets inställningar'});await tabs.waitFor({timeout:FIRST_RENDER});
+    assert.deepEqual((await tabs.getByRole('tab').allTextContents()).map(text=>text.trim()),['Utseende','Dealer','Spelinställningar','Tillgänglighet','Historik']);
     // Tabs (Radix, manual activation): arrows move focus, Enter opens the panel.
+    const dealers=page.getByRole('radiogroup',{name:'Dealer'});
     await page.getByRole('tab',{name:'Utseende'}).focus();await page.keyboard.press('ArrowRight');
+    await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Dealer');await page.keyboard.press('Enter');await dealers.waitFor();
+    await page.keyboard.press('End');
     await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Historik');await page.keyboard.press('Enter');
     await page.getByRole('heading',{name:'Publicerade versioner'}).waitFor();assert.equal(await dealers.isVisible(),false);
-    await page.keyboard.press('ArrowLeft');await page.keyboard.press('Enter');await dealers.waitFor();
+    // Game settings and availability are read-only until the partner API can change them.
+    await page.getByRole('tab',{name:'Spelinställningar'}).click();
+    await page.getByRole('heading',{name:'Spelinställningar'}).waitFor();await page.getByText('Låst av Scoutgaming.').first().waitFor();
+    await page.getByRole('tab',{name:'Dealer'}).focus();await page.keyboard.press('Enter');await dealers.waitFor();
     // Card choices (Radix RadioGroup): one tab stop, arrows choose, the status line follows.
     await page.getByRole('radio',{name:'Dealer: Astrid'}).focus();assert.equal(await page.getByRole('radio',{name:'Dealer: Astrid'}).getAttribute('aria-checked'),'true');
     // Radix checks the radio that receives arrow focus while the key is held, as a person presses it.
@@ -121,7 +133,8 @@ test('the table editor works with the keyboard: tabs, card choices, review dialo
 test('the ⌘K palette finds a table by name and opens its editor with the keyboard; the list opens from the breadcrumb',{skip:!browserModule},()=>withBrowser(async browser=>{
   const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
   try{
-    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor();
+    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor({timeout:FIRST_RENDER});
+    await page.getByRole('tablist',{name:'Spelbordets inställningar'}).waitFor({timeout:FIRST_RENDER});
     await page.keyboard.press('Control+k');const input=page.getByRole('combobox');await input.waitFor();
     assert.equal(await input.evaluate(element=>element===document.activeElement),true);
     await page.keyboard.type('Main');await page.keyboard.press('Enter');

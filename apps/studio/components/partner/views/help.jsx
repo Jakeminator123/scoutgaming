@@ -2,7 +2,7 @@
 // e-post till Scoutgaming; inget skickas härifrån och inget hamnar i tilldelningen).
 import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
-import { Btn, Card, KV, Note, Page } from './ui.jsx';
+import { Btn, Card, KV, Note, Page } from './ui.tsx';
 import { partnerPermissionWord } from '../../../lib/partner-words.mjs';
 import { partnerNavigation } from '../partner-copy.mjs';
 

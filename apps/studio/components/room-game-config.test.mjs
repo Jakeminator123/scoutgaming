@@ -48,7 +48,7 @@ test('verified material reasons explain the next action while publication stays 
   assert.match(html,/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
  }
  const measurement=render({ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
- assert.match(measurement,/Publicera sedan paketet igen/);assert.match(measurement,/inget nytt bild- eller talgodkännande/);
+ assert.match(measurement,/Publicera sedan i spelbordet/);assert.match(measurement,/inget nytt bild- eller talgodkännande/);
 });
 test('draft requirement is separate and unknown or mismatched reasons remain neutral',()=>{
  assert.match(render({ready:false,reason:'studio_room_game_draft_required'}),/Spara spelinställningarna som utkast/);

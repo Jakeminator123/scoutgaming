@@ -127,7 +127,9 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
-      :name==='./dealer-identity-portrait'?portraitStubs(React):name.startsWith('.')?componentRequire(name):require(name)});
+      :name==='./dealer-identity-portrait'?portraitStubs(React)
+      :name==='./room-release'?{RoomRelease:props=>React.createElement('section',{'data-room-release':props.roomId,'data-eligible':String(Boolean(props.eligible)),'data-blocked-by':props.blockedBy??''})}
+      :name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{hooks.reset();const tree=module.exports.RegisteredStudio(currentProps);hooks.flush();return tree;};
   render();await settle(1);
   return {render,listeners,allowLeave:value=>{allowLeave=value;},setProps(next){currentProps={...currentProps,...next};},
@@ -346,7 +348,7 @@ test('saved room bookmarks land on the room nav with their owner, room and fragm
 test('beforeunload guards drafts and writes in the layer editor and the game settings alike',async()=>{
   for(const section of ['appearance','game']){
     const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section});
-    const editor=()=>walk(h.render(),node=>section==='appearance'?node.props?.apiBase==='/studio/api/partner':node.props?.roomName!==undefined)[0];
+    const editor=()=>walk(h.render(),node=>section==='appearance'?node.props?.apiBase==='/studio/api/partner':node.props?.roomName!==undefined&&typeof node.props.onDirtyChange==='function')[0];
     const unload=()=>{const event={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};h.listeners.get('beforeunload')(event);return event;};
     assert.equal(unload().prevented,false,section);
     editor().props.onDirtyChange(true);h.render();
@@ -356,6 +358,19 @@ test('beforeunload guards drafts and writes in the layer editor and the game set
     editor().props.onBusyChange(false);h.render();assert.equal(unload().prevented,false,section);
     assert.equal(h.confirms,0);assert.equal(editor().props.roomId,'bj');
   }
+});
+
+test('the room publication is keyed by company and room, and holds the room lifecycle while it publishes',async()=>{
+  const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'});
+  const release=()=>walk(h.render(),node=>node.props?.['eligible']!==undefined&&typeof node.props.onPublished==='function')[0];
+  const reader=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
+  // En ny key per bolag och spelbord: kvitto, fel och ruta från ett spelbord följer aldrig med till ett annat.
+  assert.equal(release().key,'release:a:bj');
+  h.setProps({roomId:'roulette'});assert.equal(release().key,'release:a:roulette');
+  h.setProps({operatorId:'b',roomId:'other'});await settle(1);assert.equal(release().key,'release:b:other');
+  assert.equal(reader().props.disabled,false);
+  release().props.onBusyChange(true);assert.equal(reader().props.disabled,true,'the room cannot be opened or paused while it publishes');
+  release().props.onBusyChange(false);assert.equal(reader().props.disabled,false);
 });
 
 test('the assignment publishes the acknowledged company package with the lifecycle revision and re-reads it',async()=>{
@@ -544,7 +559,7 @@ test('the exact receipt accepts server-sorted choices and clears the draft; a ne
   assert.ok(receipt(),'the same revision keeps this receipt');
   p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
   assert.equal(receipt(),false,'a different revision is not this action receipt');
-  assert.match(revisionChip(p.h.render()),/\b6\b/);assert.equal(p.status(),ready);
+  assert.match(revisionChip(p.h.render()),/\b6\b/);assert.equal(p.status(),ready.replace(/\b4\b/,'6'),'back to the idle status, now naming the newer revision');
 });
 
 test('a room creation receipt advances the company package, re-reads the lifecycle and opens the new room nav',async()=>{
@@ -609,23 +624,63 @@ test('a composition removed from Studio stays visible in the package and blocks 
   assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one'],expectedPackageRevision:4});
 });
 
-test('a removed composition never blocks the PAOW idle refresh, which publishes against the frozen package',async()=>{
+test('an unchanged assignment is re-frozen only under Avancerat and a changed one only through the form button',async()=>{
+  const p=await publicationHarness();
+  const republish=()=>walk(p.h.render(),node=>node.type==='button'&&node.props?.['data-action']==='republish-package')[0];
+  const submitForm=async()=>{walk(p.h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await p.settle();};
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(p.submit().props.disabled,true,'an unchanged selection has nothing to publish in the form');
+  assert.equal(republish().props.disabled,false,'Avancerat re-freezes the unchanged selection');
+  await submitForm();assert.equal(p.requests.length,0,'the form never re-freezes an unchanged selection');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one']}));
+  republish().props.onClick();await p.settle();
+  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:4}],'the republish carries the CAS revision');
+  assert.match(p.status(),/\b5\b/);
+  assert.equal(textOf(p.submit()).trim(),'Publicera för a','the form button keeps its name after a receipt');assert.equal(textOf(republish()).trim(),'Publicera igen');
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  assert.equal(p.submit().props.disabled,false,'a changed selection is published by the form');assert.equal(republish().props.disabled,true,'Avancerat waits');
+  republish().props.onClick();await p.settle();assert.equal(p.requests.length,1,'Avancerat never publishes a changed selection');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','two']}));
+  await submitForm();
+  assert.deepEqual(p.requests[1].body,{operatorId:'a',lanes:['one','two'],expectedPackageRevision:5});
+  // A readback without a package revision is never a republish: the first publication is the form's and sends null.
+  const first=await publicationHarness();
+  const firstRepublish=()=>walk(first.h.render(),node=>node.type==='button'&&node.props?.['data-action']==='republish-package')[0];
+  first.lifecycle().props.onChanged(packageOperators({packageRevision:null,lanes:['one']}));
+  assert.equal(first.submit().props.disabled,false);assert.equal(firstRepublish().props.disabled,true);
+  first.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:1,lanes:['one']}));
+  await first.publish();
+  assert.deepEqual(first.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:null}]);
+});
+
+test('the room editor publishes through the room release and keeps the PAOW idle refresh under Avancerat',async()=>{
   const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
+  const tree=p.h.render();
+  assert.equal(walk(tree,node=>node.type==='form').length,0,'the room editor carries no package form; the assignment stays on its own tab');
+  const release=()=>walk(p.h.render(),node=>node.props?.eligible!==undefined&&node.props?.roomId==='bj');
+  assert.equal(release().length,1,'one room publication, scoped to the open room');
+  assert.equal(release()[0].props.operatorId,'a');assert.equal(release()[0].props.blockedBy,'');
   const isRefresh=node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle';
-  // The interim publication is a disclosure (TechnicalDetails) that holds the refresh button.
-  const later=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
-  const paow=()=>walk(later(),isRefresh)[0];
-  assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
-  assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the room editor carries no package form; the blocked assignment stays on its own tab');
-  assert.ok(later(),'the interim publication lives in its own disclosure');
+  const advanced=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
+  const paow=()=>walk(advanced(),isRefresh)[0];
+  assert.equal(advanced().props.title,'Avancerat','the idle refresh is advanced, beside the one Publicera');
+  // A scene template removed from Studio stops Publicera (studio_presentation_required) but never the idle refresh:
+  // it publishes against the frozen package, never Studio lanes.
+  assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package');
+  release()[0].props.onBusyChange(true);assert.equal(paow().props.disabled,true,'the room publication in flight locks the idle refresh');
+  release()[0].props.onBusyChange(false);assert.equal(paow().props.disabled,false);
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
   paow().props.onClick();await p.settle();
   assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);
-  assert.match(textOf(walk(later(),node=>node.props?.role==='status')),/\b5\b/,'the receipt names the new version');
+  assert.match(textOf(walk(advanced(),node=>node.props?.role==='status')),/\b5\b/,'the receipt names the new version');
   assert.equal(p.lifecycle().props.refreshKey,1,'the receipt re-reads the lifecycle');
-  // The frozen package is the precondition: the next refresh waits for the readback.
+  // The frozen package is the precondition: the next refresh sends the new revision.
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
   paow().props.onClick();await p.settle();
   assert.deepEqual(p.requests.slice(1).map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:5}]);
+  // A foreign receipt is never confirmed; the next write waits for the readback.
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:7,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'other'}}));
+  paow().props.onClick();await p.settle();
+  assert.equal(paow().props.disabled,true,'an unconfirmed receipt blocks the next refresh until readback');
 });
