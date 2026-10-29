@@ -1,6 +1,6 @@
 # Talkedjan: dealer-generisk, Paow först
 
-Genomförandeplan för punkt 3 i masterplanens [Efter O03](../../migrering/MASTERPLAN.md#efter-o03), skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [PAOW-LIPSYNC](PAOW-LIPSYNC.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. Inget här är utfört; varje steg är en egen PR med grön CI och orkestratorn mergar. Bara Jakob godkänner ljud och läppsynk.
+Genomförandeplan för talkedjan under [Efter O03](../NEXT-AGENT.md#efter-o03), skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [PAOW-LIPSYNC](PAOW-LIPSYNC.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. Inget här är utfört; varje steg är en egen PR med grön CI och orkestratorn mergar. Bara Jakob godkänner ljud och läppsynk.
 
 ## Målbild
 

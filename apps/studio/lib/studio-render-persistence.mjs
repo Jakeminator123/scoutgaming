@@ -7,7 +7,6 @@ import { createRegisteredDealerIdle } from '../../../packages/presentation/serve
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
 import { createNeonSocialStore } from './neon-project-store.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
-import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 import { StudioError } from './project-store.mjs';
 
 const createRenderStudioPolicy = createStudioPolicyRuntime({
