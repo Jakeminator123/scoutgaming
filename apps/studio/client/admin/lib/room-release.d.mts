@@ -26,7 +26,6 @@ export const ROOM_RELEASE_READ_PATH: string;
 export const ROOM_RELEASE_PUBLISH_PATH: string;
 export function languageLabel(value: unknown): string;
 export function limitLabel(value: unknown): string;
-export function materialReasonText(reason: unknown): string;
 export function roomReleaseErrorMessage(detail?: RoomReleaseErrorDetail): string;
 export function roomReleaseFailure(response: Response, phase?: 'read'|'publish'): Promise<RoomReleaseFailure>;
 export function roomReleaseBlocker(blocker: RoomReleaseBlocker, context?: { roomId?: string; dealerId?: string|null; dealerName?: string; rooms?: { id: string; name: string }[]; language?: string }): { text: string; href: string|null; linkLabel: string|null; run: 'measure'|'reload'|null; detail: string };

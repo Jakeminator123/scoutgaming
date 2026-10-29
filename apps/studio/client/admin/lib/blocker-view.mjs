@@ -10,8 +10,12 @@ const code = value => typeof value === 'string' && /^[a-z][a-z0-9_]{0,100}$/.tes
 const enc = encodeURIComponent;
 const roomHref = (roomId, flik) => id(roomId) ? '/admin/rooms/' + enc(roomId) + '?flik=' + flik : '/admin/companies';
 const dealerHref = (dealerId, flik) => id(dealerId) ? '/admin/dealers/' + enc(dealerId) + '?flik=' + flik : '/admin/dealers';
-const sceneHref = compositionId => '/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(compositionId) ? {composition:compositionId} : {})});
+const sceneHref = compositionId => '/admin/scenes?' + new URLSearchParams({tab:'miljoer', ...(id(compositionId) ? {composition:compositionId} : {})});
 const assignmentHref = operatorId => id(operatorId) ? '/admin/companies/' + enc(operatorId) + '?flik=tilldelning' : '/admin/companies';
+const environment = ctx => ({label:'Öppna miljön', href:sceneHref(ctx.compositionId)});
+const environments = Object.freeze({label:'Öppna Miljöer', href:'/admin/scenes?tab=miljoer'});
+const appearance = ctx => ({label:'Öppna Utseende', href:roomHref(ctx.roomId, 'utseende')});
+const clipMap = ctx => ({label:'Öppna Klippkartan', href:dealerHref(ctx.dealerId, 'klipp')});
 
 // Materialskälen (room-game-config-api.mjs) i fyra texter: mätning, tal, klippbank och tekniskt fel.
 const SPEECH = ['native_material_speech_slot_missing','native_material_speech_unbound','native_material_take_unrecognized'];
@@ -33,17 +37,17 @@ function material(reason, ctx) {
   const dealer = typeof ctx.dealerName === 'string' && ctx.dealerName.trim() ? ctx.dealerName.trim() : 'Dealern';
   if (MEASURE.includes(reason)) return {title:'Tidsmätning', text:'Klippen saknar aktuell tidsmätning.', action:{label:'Mät omätta klipp', href:dealerHref(ctx.dealerId, 'klipp'), run:'measure'}};
   if (SPEECH.includes(reason)) return {title:'Röst och tal', text:'En replik saknar godkänt tal på ' + language(ctx.language) + '.', action:{label:'Öppna Röst och tal', href:dealerHref(ctx.dealerId, 'tal')}};
-  if (BANK.includes(reason)) return {title:'Klipp', text:dealer + ' saknar klipp för ett fack.', action:{label:'Öppna Klippkartan', href:dealerHref(ctx.dealerId, 'klipp')}};
+  if (BANK.includes(reason)) return {title:'Klipp', text:dealer + ' saknar klipp för ett fack.', action:clipMap(ctx)};
   if (reason === 'native_material_profile_missing') return {title:'Landningar', text:dealer + ' saknar landningar.', action:{label:'Öppna Landningar', href:dealerHref(ctx.dealerId, 'landningar')}};
-  if (reason === 'native_material_dealer_missing') return {title:'Scenmall', text:'Dealern finns inte i scenmallen.', action:{label:'Öppna scenmallen', href:sceneHref(ctx.compositionId)}};
-  return {title:'Klipp', text:'Ett klipp är tekniskt fel' + (technical[reason] ? ': ' + technical[reason] : '') + '.', action:{label:'Öppna Klippkartan', href:dealerHref(ctx.dealerId, 'klipp')}};
+  if (reason === 'native_material_dealer_missing') return {title:'Miljö', text:'Dealern finns inte i miljön.', action:{label:'Öppna miljön', href:sceneHref(ctx.compositionId)}};
+  return {title:'Klipp', text:'Ett klipp är tekniskt fel' + (technical[reason] ? ': ' + technical[reason] : '') + '.', action:clipMap(ctx)};
 }
 
 const reload = {label:'Läs in igen', href:null, run:'reload'};
 const views = {
-  studio_presentation_room_environment_required:ctx => ({title:'Scenmall', text:'Scenmallen har flera bakgrunder. Välj en som standard.', action:{label:'Öppna scenmallen', href:sceneHref(ctx.compositionId)}}),
-  studio_presentation_room_environment_conflict:ctx => ({title:'Scenmall', text:'Scenmallen delas av andra spelbord. Använd en egen scenmall för det nya spelbordet.', action:{label:'Öppna scenmallen', href:sceneHref(ctx.compositionId)}}),
-  studio_presentation_shared_layer_conflict:ctx => ({title:'Tilldelning', text:'Bolagets tilldelning är äldre än scenmallen. Publicera tilldelningen igen.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
+  studio_presentation_room_environment_required:ctx => ({title:'Miljö', text:'Miljön har flera bakgrunder. Välj en som standard.', action:environment(ctx)}),
+  studio_presentation_room_environment_conflict:ctx => ({title:'Miljö', text:'Miljön delas av andra spelbord. Använd en egen miljö för det nya spelbordet.', action:environment(ctx)}),
+  studio_presentation_shared_layer_conflict:ctx => ({title:'Tilldelning', text:'Bolagets tilldelning är äldre än miljön. Publicera tilldelningen igen.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
   studio_operator_package_missing:ctx => ({title:'Tilldelning', text:'Bolaget har ingen publicerad tilldelning.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
   studio_presentation_game_lane_conflict:() => ({title:'Spelbord', text:'Spelbordet krockar med ett äldre spelbord. Läs in igen.', action:reload}),
   studio_conflict:() => ({title:'Ändrat', text:'Någon annan sparade just. Läs in igen.', action:reload}),
@@ -53,7 +57,7 @@ const views = {
   studio_release_other_changes:ctx => ({title:'Spelbord', text:'Spelbordet har andra opublicerade ändringar. Publicera visar dem.', action:{label:'Publicera', href:roomHref(ctx.roomId, 'utseende')}}),
   ai_table_misfit:ctx => ({title:'Bordsgrafik', text:'Bordsgrafiken är ritad för en annan dealer eller placering.', action:{label:'Skapa nytt bord med AI', href:sceneHref(ctx.compositionId)}}),
   studio_room_activation_blocked:ctx => ({title:'Tillgänglighet', text:'Spelbordet kan inte öppnas än.', action:{label:'Öppna spelbordet', href:roomHref(ctx.roomId, 'tillganglighet')}}),
-  composition_assigned:ctx => ({title:'Tilldelning', text:'Scenmallen är tilldelad ett bolag.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
+  composition_assigned:ctx => ({title:'Tilldelning', text:'Miljön är tilldelad ett bolag.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
   studio_presentation_runtime_update_required:() => ({title:'Drift', text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', action:null}),
   studio_room_config_storage_missing:() => ({title:'Drift', text:'Databasen saknar lagringen för spelinställningar. Kontakta drift.', action:null}),
   studio_media_registry_unavailable:() => ({title:'Drift', text:'Medieregistret svarar inte just nu. Försök igen om en stund.', action:null}),
@@ -62,21 +66,58 @@ const views = {
 for (const [alias, to] of [['studio_presentation_shared_dealer_conflict','studio_presentation_shared_layer_conflict'],
   ['studio_presentation_room_rejected','studio_presentation_game_lane_conflict'],['studio_presentation_room_binding_conflict','studio_presentation_game_lane_conflict'],
   ['studio_release_preview_stale','studio_conflict'],['studio_room_restore_blocked','studio_room_activation_blocked']]) views[alias] = views[to];
-export const BLOCKER_CODES = Object.freeze([...Object.keys(views), 'studio_room_game_material_unavailable', ...MATERIAL_REASONS]);
+
+// Skälen i studio_release_invalid (apps/studio/lib/room-release.mjs). ai_adopt_* kommer från "Använd i miljön
+// och i spelbordet" i AI-dialogen (apps/studio/lib/ai-material-adoption.mjs).
+const release = {
+  studio_release_unchanged:views.studio_release_unchanged,
+  studio_release_other_changes:views.studio_release_other_changes,
+  studio_room_game_config_missing:views.studio_room_game_config_missing,
+  studio_room_binding_incompatible:ctx => ({title:'Miljö', text:'Ett öppet spelbord hos bolaget kan inte visas med den sparade miljön.', action:environment(ctx)}),
+  studio_presentation_required:() => ({title:'Miljö', text:'Bolagets miljöer är inte sparade eller saknas.', action:environments}),
+  studio_dealer_idle_required:ctx => ({title:'Vila', text:'Dealern saknar sparad vila.', action:clipMap(ctx)}),
+  studio_roulette_idle_required:ctx => ({title:'Vila', text:'Roulettedealern saknar sparad vila.', action:clipMap(ctx)}),
+  studio_dealer_idle_policy_mismatch:ctx => ({title:'Vila', text:'Dealerns vila stämmer inte med de sparade klippen.', action:clipMap(ctx)}),
+  studio_dealer_background_required:ctx => ({title:'Miljö', text:'Miljön saknar bakgrund.', action:environment(ctx)}),
+  studio_media_binding_invalid:ctx => ({title:'Miljö', text:'Ett klipp i miljön är felkopplat.', action:environment(ctx)}),
+  // Utkastet åtgärdas under Utseende, inte i miljöerna.
+  studio_room_choices_draft_invalid:ctx => ({title:'Utseende', text:'Utseendeutkastet passar inte med de sparade miljöerna.', action:appearance(ctx)}),
+  ai_adopt_other_template:ctx => ({title:'Miljö', text:'Spelbordet använder en annan miljö än den bordet ritades för.', action:appearance(ctx)}),
+  ai_adopt_room_choice:ctx => ({title:'Utseende', text:'Bolaget eller spelbordet har ett eget val som döljer miljöns standard. Välj materialet under Utseende.', action:appearance(ctx)}),
+  ai_adopt_other_room_table:ctx => ({title:'Bordsgrafik', text:'Ett annat öppet spelbord hos bolaget i samma miljö visar ett annat bord och skulle få den nya bredden. Ta bort dess eget bordsval under Utseende eller ändra bredden i miljön.', action:environment(ctx)}),
+  ai_adopt_template_table_misfit:ctx => ({title:'Bordsgrafik', text:'Ett annat AI-bord i miljön är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur miljön eller rita om det först.', action:environment(ctx)}),
+  ai_adopt_template_missing:() => ({title:'Miljö', text:'Miljön finns inte längre.', action:environments}),
+  ai_adopt_material_missing:() => ({title:'Material', text:'Materialet finns inte i biblioteket eller passar inte Blackjack.', action:{label:'Öppna Material', href:'/admin/scenes?tab=material'}}),
+  ai_adopt_table_misfit:ctx => ({title:'Bordsgrafik', text:'Bordsgrafiken passar inte miljöns dealers eller placering.', action:{label:'Skapa nytt bord med AI', href:sceneHref(ctx.compositionId)}}),
+  ai_adopt_invalid:ctx => ({title:'Miljö', text:'Valet kunde inte läggas in i miljön.', action:environment(ctx)}),
+};
+export const RELEASE_REASONS = Object.freeze(Object.keys(release));
+export const BLOCKER_CODES = Object.freeze([...Object.keys(views), 'studio_room_game_material_unavailable', 'studio_release_invalid', ...MATERIAL_REASONS]);
 
 /**
  * En spärr som titel, en mening och en knapp. ctx: roomId, operatorId, dealerId, dealerName,
- * compositionId, language, materialReason (för studio_room_game_material_unavailable).
+ * compositionId, language, materialReason och reboundRoom {id, name} (för
+ * studio_room_game_material_unavailable), reason (för studio_release_invalid).
  */
 export function blockerView(blockerCode, ctx = {}) {
   const detail = code(blockerCode) ? blockerCode : '';
-  let view;
-  if (blockerCode === 'studio_room_game_material_unavailable') view = MATERIAL_REASONS.includes(ctx.materialReason) ? material(ctx.materialReason, ctx)
-    : {title:'Klipp', text:'Spelbordets inspelade material räcker inte.', action:{label:'Öppna Klippkartan', href:dealerHref(ctx.dealerId, 'klipp')}};
-  else if (MATERIAL_REASONS.includes(blockerCode)) view = material(blockerCode, ctx);
+  const materialReason = MATERIAL_REASONS.includes(ctx.materialReason) ? ctx.materialReason : '';
+  let view, reason = '';
+  if (blockerCode === 'studio_room_game_material_unavailable') {
+    view = materialReason ? material(materialReason, ctx)
+      : {title:'Klipp', text:'Spelbordets inspelade material räcker inte.', action:clipMap(ctx)};
+    reason = materialReason;
+    // Ett annat öppet spelbord som binds om av publiceringen och vars material inte räcker.
+    const room = ctx.reboundRoom;
+    if (id(room?.id)) view = {title:'Spelbord', text:'Spelbordet ' + (typeof room.name === 'string' && room.name.trim() ? room.name.trim() : room.id)
+      + ' kan inte bindas om. ' + view.text, action:{label:'Öppna spelbordet', href:roomHref(room.id, 'spel')}};
+  } else if (blockerCode === 'studio_release_invalid') {
+    view = Object.hasOwn(release, ctx.reason) ? release[ctx.reason](ctx) : {title:'Miljö', text:'Publiceringen kan inte göras med de sparade valen.', action:environments};
+    reason = code(ctx.reason) ? ctx.reason : '';
+  } else if (MATERIAL_REASONS.includes(blockerCode)) view = material(blockerCode, ctx);
   else if (Object.hasOwn(views, blockerCode)) view = views[blockerCode](ctx);
   else view = {title:'Hinder', text:'Något hindrar publiceringen.', action:null};
-  return {tone:'error', ...view, detail:[detail, MATERIAL_REASONS.includes(ctx.materialReason) ? ctx.materialReason : ''].filter(Boolean).join(' · ')};
+  return {tone:'error', ...view, detail:[detail, reason].filter(Boolean).join(' · ')};
 }
 
 /**

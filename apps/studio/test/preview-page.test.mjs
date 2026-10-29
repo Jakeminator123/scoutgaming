@@ -64,7 +64,7 @@ test('shared preview data authorization rejects unauthenticated and partner acce
     if(typeof error.redirect!=='string')return false;
     const target=new URL(error.redirect);
     return target.origin===config.allowedOrigins[0]&&target.pathname==='/admin/login'
-      &&target.searchParams.get('returnTo')==='/admin/scenes?tab=mallar';
+      &&target.searchParams.get('returnTo')==='/admin/scenes?tab=miljoer';
   });
   assert.equal(reads,0);
   role='admin';unauthenticated=false;
@@ -138,7 +138,7 @@ test('preview maps known failures without exposing server text and never retries
   for(const error of ['unknown server detail',{toString:null}])await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>previewResponse({error},503)}),/kunde inte startas/);
   await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>{throw Error('DO NOT DISPLAY');}}),/Kontrollera anslutningen/);
   let calls=0;
-  await assert.rejects(createStudioPreview({...previewRequest,expectedProjectRevision:''},{fetchImpl:async()=>{calls++;}}),/Spara sammansättningen/);
+  await assert.rejects(createStudioPreview({...previewRequest,expectedProjectRevision:''},{fetchImpl:async()=>{calls++;}}),/Spara miljön/);
   assert.equal(calls,0);
 });
 

@@ -232,7 +232,7 @@ test('preview return opens Admin with exact composition and dealer after closing
  const selection=gameLaneFromDocument(selected),preview=studioPreviewFromDocument(selected,'/studio-preview/'+id);
  for(const closeFails of [false,true]){
   const {link,events}=await returnLinkFixture({selection,preview,closeFails});
-  assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Sammansättning');
+  assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Miljö');
   for(const modifier of [{button:1},{button:0,ctrlKey:true},{button:0,metaKey:true},{button:0,shiftKey:true},{button:0,altKey:true}]){
    await link.onclick({...modifier,preventDefault(){assert.fail('modified click must retain normal browser behavior');}});assert.deepEqual(events,[]);
   }

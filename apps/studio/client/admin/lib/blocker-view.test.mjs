@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {blockerView,runBlockerAction,BLOCKER_CODES,MATERIAL_REASONS} from './blocker-view.mjs';
+import {blockerView,runBlockerAction,BLOCKER_CODES,MATERIAL_REASONS,RELEASE_REASONS} from './blocker-view.mjs';
 
 const RAW = /[a-z]+_[a-z_]+/;
 const ctx = {roomId:'north-a', operatorId:'north', dealerId:'paow', dealerName:'PAOW', compositionId:'lane-1', language:'sv'};
@@ -22,7 +22,7 @@ test('every blocker code is one Swedish line with a button to the right place an
   assert.equal(blockerView('studio_release_unchanged').tone, 'info', 'nothing to publish is not an error');
   assert.deepEqual(blockerView('studio_room_choices_draft_pending', ctx).action, {label:'Öppna Utseende', href:'/admin/rooms/north-a?flik=utseende'});
   assert.equal(blockerView('studio_presentation_shared_dealer_conflict', ctx).action.href, '/admin/companies/north?flik=tilldelning');
-  assert.equal(blockerView('studio_presentation_room_environment_required', ctx).action.href, '/admin/scenes?tab=mallar&composition=lane-1');
+  assert.equal(blockerView('studio_presentation_room_environment_required', ctx).action.href, '/admin/scenes?tab=miljoer&composition=lane-1');
   for (const unknown of ['studio_secret_detail', '__proto__', undefined]) {
     const view = blockerView(unknown, ctx);
     assert.equal(view.text, 'Något hindrar publiceringen.');assert.equal(view.action, null);
@@ -41,6 +41,28 @@ test('every material reason the server may send becomes one of a few texts with 
   assert.equal(blockerView('native_material_speech_unbound', ctx).text, 'En replik saknar godkänt tal på svenska.');
   assert.equal(blockerView('native_material_idle_missing', ctx).text, 'PAOW saknar klipp för ett fack.');
   assert.equal(blockerView('native_material_size_mismatch', ctx).text, 'Ett klipp är tekniskt fel: storleken stämmer inte.');
+});
+
+test('every release reason the server may send has a line and a button, in the word miljö', () => {
+  const sources = ['../../../lib/room-release.mjs', '../../../lib/ai-material-adoption.mjs'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+  const server = new Set([...sources.matchAll(/'(ai_adopt_[a-z_]+)'/g)].map(match => match[1]));
+  assert.ok(server.size >= 8);
+  for (const reason of server) assert.ok(RELEASE_REASONS.includes(reason), reason);
+  for (const reason of RELEASE_REASONS) {
+    const view = blockerView('studio_release_invalid', {...ctx, reason});
+    assert.match(view.text, /^[A-ZÅÄÖ].*\.$/, reason);
+    assert.doesNotMatch(view.title + ' ' + view.text + ' ' + (view.action?.label ?? ''), /[a-z]+_[a-z_]+|[Ss]cenmall/, reason);
+    if (reason !== 'studio_release_unchanged') assert.ok(view.action?.label && view.action.href?.startsWith('/admin/'), reason);
+    assert.equal(view.detail, 'studio_release_invalid · ' + reason);
+  }
+  assert.deepEqual(blockerView('studio_release_invalid', {...ctx, reason:'ai_adopt_room_choice'}).action, {label:'Öppna Utseende', href:'/admin/rooms/north-a?flik=utseende'});
+  assert.deepEqual(blockerView('studio_release_invalid', {...ctx, reason:'studio_dealer_idle_required'}).action, {label:'Öppna Klippkartan', href:'/admin/dealers/paow?flik=klipp'});
+  assert.equal(blockerView('studio_release_invalid', {...ctx, reason:'ai_adopt_template_missing'}).action.href, '/admin/scenes?tab=miljoer');
+  assert.equal(blockerView('studio_release_invalid', {...ctx, reason:'studio_release_unchanged'}).tone, 'info');
+  assert.equal(blockerView('studio_release_invalid', {...ctx, reason:'studio_secret_reason'}).text, 'Publiceringen kan inte göras med de sparade valen.');
+  const rebound = blockerView('studio_room_game_material_unavailable', {...ctx, materialReason:'native_material_idle_missing', reboundRoom:{id:'north-b', name:'Norr B'}});
+  assert.deepEqual([rebound.text, rebound.action], ['Spelbordet Norr B kan inte bindas om. PAOW saknar klipp för ett fack.', {label:'Öppna spelbordet', href:'/admin/rooms/north-b?flik=spel'}]);
+  for (const blocker of BLOCKER_CODES) assert.doesNotMatch(blockerView(blocker, ctx).text, /[Ss]cenmall/, blocker);
 });
 
 test('the measure button reads the clip registry and measures each unmeasured clip of the dealers once', async () => {

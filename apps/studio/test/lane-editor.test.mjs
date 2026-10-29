@@ -124,7 +124,7 @@ test('the empty editor requires a named composition and an explicit dealer', () 
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
   assert.doesNotMatch(editorHtml, /Skapa standardsammansättning/);
-  assert.match(editorHtml, /Dealer för ny sammansättning/);
+  assert.match(editorHtml, /Dealer för ny miljö/);
   assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
   assert.equal(validateProject(addDefaultLane(empty, 'astrid')).lanes[0].id, 'mobile-phone');
 });
@@ -136,7 +136,7 @@ test('new compositions ask for a name and dealer while technical IDs remain auto
   assert.match(editorHtml, /<option value="" selected="">Välj dealer<\/option>/);
   assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
   assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
-  assert.match(editorHtml, /Namn på ny sammansättning/);
+  assert.match(editorHtml, /Namn på ny miljö/);
 });
 
 test('replaceLane stores the new fields and rejects an invalid table color', () => {
@@ -163,7 +163,7 @@ test('replaceLane stores the new fields and rejects an invalid table color', () 
 test('composition metadata is disabled during writes', () => {
   const project = createSeedProject();
   const metadata = renderToStaticMarkup(React.createElement(CompositionMetadata, { project, selectedId: project.lanes[0].id, onSelect() {}, onEdit() {}, disabled: true }));
-  assert.match(metadata, /<fieldset[^>]*disabled=""[^>]*aria-label="Välj och namnge sammansättning"/);
+  assert.match(metadata, /<fieldset[^>]*disabled=""[^>]*aria-label="Välj och namnge miljö"/);
 });
 
 function compositionControls(initialProject = createSeedProject(), disabled = false) {

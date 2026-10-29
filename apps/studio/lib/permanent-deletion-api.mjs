@@ -131,7 +131,7 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
    const lanes=parse(row.lanes),tables=parse(row.tables);let presentation=null;
    try{presentation=readPackagePresentation({branding:parse(row.branding)});}catch{presentation=true;}
    if(lanes.length||tables.length||presentation)published.push({id:String(row.package_revision),
-    name:`version ${row.package_revision}: ${lanes.length} scenmallar, ${tables.length} spelbord`});
+    name:`version ${row.package_revision}: ${lanes.length} miljöer, ${tables.length} spelbord`});
   }
   if(published.length)blockers.push({code:'operator_published',items:published});
   if(lifecycle.rooms.length)blockers.push({code:'operator_rooms_in_trash',items:named(lifecycle.rooms.map(row=>row.room))});

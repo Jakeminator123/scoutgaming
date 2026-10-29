@@ -4,7 +4,7 @@ import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import { laneMaterialIds, validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
@@ -66,7 +66,7 @@ function roomEnvironment(project, id) {
   const dealers = new Set([...lane.dealers, ...lane.layers.dealer.allowed]);
   if (background.mode === 'baked' && !background.allowed.length && background.default === null) {
     return { kind: 'baked', fixed: dealers.size === 1,
-      label: dealers.size === 1 ? 'Miljö i dealerfilmen' : 'Miljön följer vald dealer' };
+      label: dealers.size === 1 ? 'Bakgrund i dealerfilmen' : 'Bakgrunden följer vald dealer' };
   }
   const asset = project.layerAssets?.find(row => row.id === background.default && row.role === 'background');
   const fixed = background.enabled && ['image', 'video'].includes(background.mode)
@@ -134,7 +134,7 @@ function mergePresentation(current, selected, old = current ? readPackagePresent
     if (assets.has(asset.id) && canonicalStudioJson(assets.get(asset.id)) !== canonicalStudioJson(asset)) fail(409, 'studio_presentation_shared_layer_conflict');
     assets.set(asset.id, asset);
   }
-  const used = new Set(lanes.flatMap(lane => ['background', 'table'].flatMap(role => lane.layers[role].allowed)));
+  const used = new Set(lanes.flatMap(laneMaterialIds));
   const base = { projectRevision: selected.projectRevision, lanes, assets: [...assets.values()].filter(asset => used.has(asset.id)) };
   if (old.schemaVersion === 1 && selected.schemaVersion === 1) return validatePresentationPackage({ schemaVersion: 1, ...base });
   const registry = new Map((old.registeredDealers ?? []).map(entry => [entry.id, entry]));

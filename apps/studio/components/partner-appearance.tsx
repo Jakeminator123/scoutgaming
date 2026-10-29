@@ -94,7 +94,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   const inherited = room && laneId === (branding.lane ?? server.presentation?.lanes[0]?.id) ? branding : {};
   const unsaved=dirty;
   useEffect(() => { onDirtyChange?.(unsaved); return () => onDirtyChange?.(false); }, [unsaved, branding, onDirtyChange]);
-  const labels: Record<string, string> = {lane:t('Scenmall','Scene template'),table:t('Bordsgrafik','Table graphics'),background:t('Bakgrund','Background'),dealer:'Dealer',color:t('Bordsfärg','Table colour')};
+  const labels: Record<string, string> = {lane:t('Miljö','Environment'),table:t('Bordsgrafik','Table graphics'),background:t('Bakgrund','Background'),dealer:'Dealer',color:t('Bordsfärg','Table colour')};
   const reviewValid = Boolean(review && server.draft && !dirty && !stale && review.draftRevision === draftRevision && review.packageRevision === server.packageRevision && sameAppearance(review.branding, branding));
   const canSave = editable && (dirty || stale);
   const canReview = editable && server.draft && !dirty && !stale;
@@ -220,14 +220,14 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
 
   const preview = <div data-appearance-preview="frozen-composition" className={styles.previewBox}><PartnerAppearancePreview onMedia={setPreviewMedia} compact initiallyEnabled active={visible && (roomLayout || Boolean(TAB_LAYERS[tab]))} server={server} branding={branding}
     scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setReviewOpen(false);setBlocked(true);setProblem(t('Spelbordets version har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The table version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
-  const sceneLayoutLink = roomLayout && adminChoices && lane ? <a className={styles.linkButton} href={'/admin/scenes?'+new URLSearchParams({operator:server.operatorId,table:room?.id??'',composition:lane.id,game:room?.game??'blackjack'})}><ExternalLink size={13} aria-hidden="true"/>{t('Placering i scenmallen','Placement in the scene template')}</a> : null;
+  const sceneLayoutLink = roomLayout && adminChoices && lane ? <a className={styles.linkButton} href={'/admin/scenes?'+new URLSearchParams({operator:server.operatorId,table:room?.id??'',composition:lane.id,game:room?.game??'blackjack'})}><ExternalLink size={13} aria-hidden="true"/>{t('Placering i miljön','Placement in the environment')}</a> : null;
 
   // One card grid per unlocked layer; a layer the company may not change is a quiet line, never a card.
   const anyPayload = previewMedia ?? Object.values(dealerMedia).find(Boolean) ?? null;
   const effectiveOf = (key: LayerKey) => selected[key] ?? inherited[key] ?? lane?.layers[key]?.default ?? undefined;
   const lockedText = (key: LayerKey) => key === 'background' && lane?.layers.background.mode === 'baked' ? t('inbakad i dealerfilmen', 'part of the dealer video')
     : key === 'dealer' && !dealerChoices.length ? t('ingen dealer är tilldelad det här spelet', 'no dealer is assigned to this game')
-    : roomLayout && !adminChoices ? t('låst i publicerat paket', 'locked in the published package') : roomLayout ? t('fast i scenmallen', 'fixed by the scene template') : t('låst av Scoutgaming', 'locked by Scoutgaming');
+    : roomLayout && !adminChoices ? t('låst i publicerat paket', 'locked in the published package') : roomLayout ? t('fast i miljön', 'fixed by the environment') : t('låst av Scoutgaming', 'locked by Scoutgaming');
   const unlocked = LAYERS.filter(key => allowed.has(key));
   const locked = LAYERS.filter(key => !allowed.has(key) && (key !== 'background' || lane?.layers.background.enabled !== false) && (key !== 'table' || lane?.layers.table.enabled !== false));
   const layerChoices = (key: LayerKey) => {

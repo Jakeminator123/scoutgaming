@@ -23,15 +23,16 @@ Det ett bolag kan ändra är en delmängd av det Admin kan ändra; spelaren ser 
 - **Replik** och **tagning** (`take`): en mening med exakt text, och en godkänd inspelning av den.
 - **Röst och tal** (`speech`): dealerns inspelade och genererade tal. **Röstprofil** (`speechProfile.voice`): dealerns sparade röst (ElevenLabs röst-ID och modell) i projektet i Neon; talet läser den, röstkatalogen föreslår bara.
 - **Landningar** (`landing`): var dealerns hand lägger korten i bild.
-- **Scenmall** (`lane`, `composition`): hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter.
-- **Placering** (`placement`): scenmallens skala och läge per lager, för dator och mobil.
+- **Miljö** (`lane`): hur bakgrund, dealer och bordsgrafik placeras, och vad miljön tillåter. Bakgrunden är ett lager i miljön, aldrig miljön själv.
+- **Miljöbild** (`lane.illustration`, material med rollen `illustration`): miljöns bild i lobbyn och Admin, aldrig i spelet; **Exportera miljöbild** ritar den sparade scenen för dator.
+- **Placering** (`placement`): miljöns skala och läge per lager, för dator och mobil.
 - **Bakgrund** och **bordsgrafik** (`layerAssets`, `tableAsset`): uppladdat **material**; bordsgrafik är bilden av bordet, aldrig ett spelbord.
 - **Tilldelning** (`assignment`): det bolaget får använda och välja.
 - **Paket** (`operator package`): den publicerade tilldelningen med en **version** som bara räknas uppåt; spelet läser bara paketet.
 - **Utkast** och **live** (`draft`, `live`): sparat respektive publicerat; **Publicera** gör utkastet live.
 - **Utseende** (`branding`): spelbordets valda bakgrund, dealer och bordsgrafik.
 - **Spelinställningar** (`roomGameConfigs`): spelbordets språk, insatsprofil och tider.
-- **Insatsprofil** (`limitPreset`): gränser och marker, i dag Casual, Privé och High.
+- **Insatsprofil** (`limitPreset`): gränser och marker, i dag Casual, Privé och High; bara insatser, ingen ort och ingen bild.
 - **Papperskorg** (`trash`): arkivering som går att ångra.
 - **Team** och **roll** (`operator_memberships`, `partner-admin|editor|viewer`): administratör, redaktör, läsare.
 - **Spelare** (`players`): konto med saldo, knutet till ett bolag.
@@ -53,7 +54,8 @@ Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på de
 | Lissabon | tabeller `lissabon_*`, `lissabon-stream-lane`, redirect `/labb-lissabon` | inget produktord |
 | Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-login.tsx` och `partner-team-loader.mjs` | bolag, bolagets team |
 | Rum, spelrum | kodnamnet `room`; i UI lobbyn (`client/lobby`) | spelbord |
-| Mall, sammansättning | `lane`, `composition` | scenmall |
+| Scenmall (Admin och portalen till 2026-10-29) | kodnamnet `lane`, `composition`; adressen `/admin/scenes?tab=mallar` | miljö |
+| Mall, sammansättning | `lane`, `composition` | miljö |
 | Nivå 1/2/3, intern administration | i UI `studio-administration.tsx` | Admin, Partnerportalen, spelaren |
 | Sammanhängande vilosekvens | i UI vilopanelen | vilosekvens |
 | K0x, J0x, O0x | kodkommentarer, testnamn; i UI importvarningen "K05-urvalet" | beskriv saken, inte koden |

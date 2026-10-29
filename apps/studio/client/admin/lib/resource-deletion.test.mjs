@@ -12,7 +12,7 @@ function fixture(){
   const rooms=[{id:'room-a',name:'Snö',operatorId:'company-a',game:'blackjack',compositionId:'shared',state:'live',published:true,dealerIds:['published-only']},
     {id:'room-b',name:'Snö igen',operatorId:'company-b',game:'roulette',compositionId:'shared',state:'pending',published:false,dealerIds:['dragan']}];
   const project={revision:'project-1',dealers:[{id:'dragan',label:'Dragan',speechProfile:{reference:{videoId:'clip'}}}],lines:[{dealerId:'dragan',eventId:'idle.ready',variants:[{id:'base',label:'Bas',videoGenerationId:'clip'}]}],
-    lanes:[{id:'shared',label:'Gemensam mall',layers:{background:{enabled:true,allowed:['snow'],default:'snow'},dealer:{enabled:true,allowed:['dragan'],default:'dragan'},table:{enabled:true,allowed:['board'],default:'board'}}}],
+    lanes:[{id:'shared',label:'Gemensam miljö',layers:{background:{enabled:true,allowed:['snow'],default:'snow'},dealer:{enabled:true,allowed:['dragan'],default:'dragan'},table:{enabled:true,allowed:['board'],default:'board'}}}],
     layerAssets:[{id:'snow',label:'Snöbild',role:'background',contentType:'image/png'},{id:'board',label:'Standardbord',role:'table',game:'blackjack',contentType:'image/png'}]};
   const inventory={videos:[{id:'clip',label:'Grundloop',dealer:'dragan',available:true,contentType:'video/mp4',classification:{dealerId:'dragan',eventId:'idle.ready'}},
     {id:'portrait',label:'Porträtt',available:true,contentType:'image/png',classification:{dealerId:'dragan',mediaType:'image',game:'roulette',eventId:'roulette.reference'}}]};
@@ -37,9 +37,17 @@ test('shared room layers are references; published dealer choices do not replace
   assert.equal(tree.rooms.find(row=>row.id==='room-a').choicesPath,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack');
   assert.equal(tree.rooms.find(row=>row.id==='room-a').playable,false);
 });
+test('a miljöbild is a use of its material, never a layer of the environment',()=>{
+  const {workspace,lifecycle}=fixture();
+  workspace.project.layerAssets.push({id:'picture',label:'Gemensam miljö · miljöbild v1',role:'illustration',contentType:'image/webp'});
+  workspace.project.lanes[0].illustration='picture';
+  const tree=buildResourceDeletionTree(workspace,lifecycle),picture=tree.materials.find(row=>row.id==='picture');
+  assert.equal(picture.role,'illustration');assert.deepEqual(picture.uses.map(row=>[row.kind,row.id]),[['composition','shared']]);
+  assert.equal(Object.values(tree.compositions[0].layers).some(layer=>layer.ids.includes('picture')),false);
+});
 test('archived identities, rooms, compositions and media remain visible without inventing a game or owner',()=>{
   const {workspace,lifecycle}=fixture();
-  workspace.project.dealerTrash=[{dealer:{id:'old',label:'Arkiverad dealer'},lines:[],compositions:[{id:'old-lane',label:'Arkiverad mall',layers:{background:{enabled:false,allowed:['old-picture'],default:null},dealer:{enabled:true,allowed:['old'],default:'old'},table:{enabled:false,allowed:[],default:null}}}],activeMediaIds:['archived-clip']}];
+  workspace.project.dealerTrash=[{dealer:{id:'old',label:'Arkiverad dealer'},lines:[],compositions:[{id:'old-lane',label:'Arkiverad miljö',layers:{background:{enabled:false,allowed:['old-picture'],default:null},dealer:{enabled:true,allowed:['old'],default:'old'},table:{enabled:false,allowed:[],default:null}}}],activeMediaIds:['archived-clip']}];
   workspace.project.layerAssetTrash=[{asset:{id:'old-picture',label:'Äldre bakgrund',role:'background'}}];
   workspace.inventory.videos.push({id:'archived-clip',label:'Arkiverat klipp',dealer:'old',available:true,classification:{archived:true}});
   lifecycle.rooms.push({id:'old-room',name:'Arkiverat rum',operatorId:'company-b',presentationLaneId:'old-lane',archivedAt:'2026-10-12',state:'archived'});
@@ -156,10 +164,10 @@ test('merged page opens the tab and item of the navigation context and keeps roo
   assert.ok(links.includes('/admin/rooms/room-b'),'each table links to its own nav');
   assert.ok(links.includes('/admin/companies/company-a')&&links.includes('/admin/companies/company-b'),'each company opens its own nav');
   assert.ok(links.includes('/admin/dealers/dragan?flik=anvands'),'a dealer opens the uses tab of its own nav');
-  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Ändra scenmallen')?.props.href,'/admin/scenes?tab=mallar&composition=shared','compositions open in the scene template tab');
-  assert.ok(links.includes('/admin/scenes?tab=bakgrunder'));assert.ok(links.includes('/admin/scenes?tab=bordsgrafik&game=blackjack'));
+  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Ändra miljön')?.props.href,'/admin/scenes?tab=miljoer&composition=shared','compositions open in the scene template tab');
+  assert.ok(links.includes('/admin/scenes?tab=material&filter=bakgrund'));assert.ok(links.includes('/admin/scenes?tab=material&filter=bordsgrafik&game=blackjack'));
   assert.ok(!links.some(href=>/^\/admin\/(assets|clips|structure|deletion)(\?|$)/.test(href)),'no link points at a retired address');
-  assert.deepEqual(nodes(view,row=>row.props?.role==='tab').map(text),['Bolag och spelbord','Dealers','Material','Scenmallar']);
+  assert.deepEqual(nodes(view,row=>row.props?.role==='tab').map(text),['Bolag och spelbord','Dealers','Material','Miljöer']);
   const dealers=harness(fixture(),'?dealer=dragan');await dealers.settle();
   assert.equal(nodes(dealers.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);
   assert.deepEqual(dealers.scrolled,[resourceAnchor('dealer','dragan')]);
@@ -171,7 +179,7 @@ test('refresh failure removes the old tree and incomplete lifecycle stays visibl
   const h=harness();h.tree.lifecycleAvailable=false;await h.settle();
   assert.match(text(h.render()),/Trädet är ofullständigt/);
   h.setFailure(true);nodes(h.render(),row=>row.type==='button')[0].props.onClick();await h.settle();
-  assert.match(text(h.render()),/Läsningen misslyckades/);assert.doesNotMatch(text(h.render()),/Gemensam mall/);
+  assert.match(text(h.render()),/Läsningen misslyckades/);assert.doesNotMatch(text(h.render()),/Gemensam miljö/);
 });
 test('dependency overview has an accessible active Admin link and unique resource anchors',()=>{
   assert.ok(designPreviewPages.has('deletion'));assert.ok(designPreviewPages.has('structure'));
@@ -230,7 +238,7 @@ function publishedFixture(){
   const f=fixture(),op=f.workspace.catalog.administration.operators[0];op.slug='company-a';
   f.lifecycle.operators[0].slug='company-a';
   f.workspace.catalog.lobby={catalogs:[{operator:{slug:'company-a',name:op.name},packageRevision:2,rooms:[{
-    id:'room-a',presentation:{id:'shared',label:'Publicerad mall'},dealerDefault:'published-only',dealers:[{
+    id:'room-a',presentation:{id:'shared',label:'Publicerad miljö'},dealerDefault:'published-only',dealers:[{
       id:'published-only',label:'Publicerad dealer',independentLayers:true,
       background:{enabled:true,mode:'image',default:'published-snow',allowed:[{id:'published-snow',label:'Publicerad snö'}]},
       table:{enabled:true,default:'board',allowed:[{id:'board',label:'Publicerat bord'}]},

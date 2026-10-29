@@ -184,7 +184,7 @@ test('phone autoScale: three seats land on their own filmed boxes, resumed outer
     boxes.forEach((box,i)=>{const seat=String(box+1),x=d.x+calibration.positions[seat].cx*d.scale;
       close(r.x+r.positions[seat].cx*r.scale,x);close(r.y+r.positions[seat].cy*r.scale,d.y+calibration.positions[seat].cy*d.scale);if(boxes[0]===2)close(r.seats[i].x,x);});
     // Never moved off its filmed box: a hand outside the zoomed phone frame is reported.
-    assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Sammansättning.');
+    assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Miljö.');
   }
   // At the plate's own size the filmed boxes are 52 px apart: the touch row overlaps.
   const small=run(.36,[2,3,4]);assert.equal(small.geometryWarning,'');

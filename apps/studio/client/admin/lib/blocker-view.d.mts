@@ -1,8 +1,9 @@
 export type BlockerAction = { label: string; href: string|null; run?: 'measure'|'reload' };
 export type BlockerView = { title: string; text: string; tone: 'error'|'info'; action: BlockerAction|null; detail: string };
 export type BlockerContext = { roomId?: string; operatorId?: string; dealerId?: string|null; dealerName?: string; compositionId?: string|null;
-  language?: string; materialReason?: string };
+  language?: string; materialReason?: string; reboundRoom?: { id: string; name?: string }|null; reason?: string };
 export const MATERIAL_REASONS: readonly string[];
+export const RELEASE_REASONS: readonly string[];
 export const BLOCKER_CODES: readonly string[];
 export function blockerView(code: unknown, ctx?: BlockerContext): BlockerView;
 export function runBlockerAction(action: BlockerAction|null|undefined, options?: { dealerIds?: string[]; fetchImpl?: typeof fetch; signal?: AbortSignal;
