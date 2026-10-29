@@ -171,7 +171,7 @@ export function DealerMaterialCreator({dealerId,initialIndex,initialState,active
 
   return <section aria-label="Skapa material" className={styles.workspace}>
       <h2>Skapa material{state?` · ${state.dealer.label}`:''}</h2>
-      <p className={styles.muted}>Utgå från dealerns grundbilder och skapa förslag på klipp, repliker och scenbilder. Granska resultatet i klippbiblioteket och provspela innan du använder det i en publicerad sammansättning.</p>
+      <p className={styles.muted}>Utgå från dealerns grundbilder och skapa förslag på klipp, repliker och scenbilder. Granska resultatet i klippbiblioteket och provspela innan du använder det i en publicerad miljö.</p>
       {error?<div className={`${styles.banner} ${styles.bad}`} role="alert">{error} {unavailable?<button type="button" className="sg-btn" data-action="reconnect" disabled={reading||busy} onClick={()=>void loadState(dealerId)}>{reading?'Ansluter…':'Försök ansluta igen'}</button>:null}</div>:null}
       {notice?<div className={`${styles.banner} ${styles.ok}`} role="status">{notice} <button type="button" className="sg-btn" onClick={()=>setNotice('')}>Ok</button></div>:null}
       {meta&&!meta.migrationReady?<div className={`${styles.banner} ${styles.warn}`}>Materialskapandet är inte färdigkonfigurerat. Kontakta administratören för att aktivera lagring av grundbilder och jobb.</div>:null}

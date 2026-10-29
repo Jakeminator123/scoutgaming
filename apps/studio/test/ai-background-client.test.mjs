@@ -69,7 +69,7 @@ test('proposal requests go to the one AI route and only fixed codes become text'
   assert.equal(sent[0].url,'/api/layer-assets/generate');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
   assert.deepEqual(JSON.parse(sent[0].init.body),{role:'background',prompt:'Filt',preset:'casino',count:2,reference:'data:image/png;base64,AAAA'});
   assert.deepEqual(result,{images:[image],remaining:7,fit:null},'malformed proposals are dropped');
-  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'mall'}},{fetchImpl});
+  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'miljö'}},{fetchImpl});
   assert.deepEqual(JSON.parse(sent[1].init.body),{role:'background',prompt:'Studio',preset:'free',count:1});
   const composition={mobile:{},desktop:{}};
   await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:{id:'paow-bord',composition}},{fetchImpl:tableAnswer});
@@ -178,12 +178,12 @@ test('choosing a table in a scene template blocks a misfit AI graphic and explai
   const {createElement}=localRequire('react'),{renderToStaticMarkup}=localRequire('react-dom/server');
   const placement=aiPlacementHash(defaultCompositionSettings()),asset=(id,label)=>({schemaVersion:1,id,role:'table',game:'blackjack',label,sha256:'a'.repeat(64),size:100,contentType:'image/webp',pathname:'x',width:1215,height:2074});
   const ai=asset('00000000-0000-4000-8000-0000000000a1',`AI · Grön filt · paow · ${placement}`),manual=asset('00000000-0000-4000-8000-0000000000a2','Blackjack · eget bord');
-  const lane=dealers=>({id:'mall',label:'Mall',dealers,layers:{table:{enabled:true,default:null,allowed:[]},background:{enabled:false,default:null,allowed:[],mode:'baked'}}});
+  const lane=dealers=>({id:'miljö',label:'Miljö',dealers,layers:{table:{enabled:true,default:null,allowed:[]},background:{enabled:false,default:null,allowed:[],mode:'baked'}}});
   const html=props=>renderToStaticMarkup(createElement(LayerAssetSelect,{role:'table',assets:[ai,manual],onChange:()=>{},...props}));
   const fits=html({lane:lane(['paow'])});
-  assert.doesNotMatch(fits,/passar inte scenmallen/);assert.doesNotMatch(fits,/<option[^>]*disabled=""[^>]*value="00000000-0000-4000-8000-0000000000a1"|value="00000000-0000-4000-8000-0000000000a1"[^>]*disabled=""/);
+  assert.doesNotMatch(fits,/passar inte miljön/);assert.doesNotMatch(fits,/<option[^>]*disabled=""[^>]*value="00000000-0000-4000-8000-0000000000a1"|value="00000000-0000-4000-8000-0000000000a1"[^>]*disabled=""/);
   const other=html({lane:lane(['astrid'])});
-  assert.match(other,/value="00000000-0000-4000-8000-0000000000a1" disabled=""/);assert.match(other,/passar inte scenmallen/);
+  assert.match(other,/value="00000000-0000-4000-8000-0000000000a1" disabled=""/);assert.match(other,/passar inte miljön/);
   assert.doesNotMatch(other,/value="00000000-0000-4000-8000-0000000000a2" disabled=""/,'manual material is never blocked');
   const chosen={...lane(['astrid']),layers:{...lane(['astrid']).layers,table:{enabled:true,default:ai.id,allowed:[ai.id]}}};
   assert.match(html({lane:chosen}),new RegExp('role="alert">'+ai.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+': Bordsgrafiken är ritad för en annan dealer'));
@@ -232,5 +232,5 @@ test('"Använd i miljön" without a spelbord saves the adopted scene template as
   const result=await adoptInTemplate({project,compositionId:lane,materials:[{role:'table',assetId:TABLE}]},{save:async next=>{saves.push(next);return next;}});
   assert.equal(saves.length,1);assert.equal(result.lanes[0].layers.table.default,TABLE);assert.deepEqual(result.lanes[0].layers.table.allowed,[TABLE]);
   assert.equal(project.lanes[0].layers.table.default,null,'the loaded project is not changed in place');
-  await assert.rejects(adoptInTemplate({project,compositionId:'saknas',materials:[{role:'table',assetId:TABLE}]},{save:async()=>assert.fail('nothing is saved')}),/Scenmallen finns inte/);
+  await assert.rejects(adoptInTemplate({project,compositionId:'saknas',materials:[{role:'table',assetId:TABLE}]},{save:async()=>assert.fail('nothing is saved')}),/Miljön finns inte/);
 });

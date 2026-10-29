@@ -2,9 +2,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const REVISION = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const INVALID = 'Provspelningen kunde inte öppnas. Servern gav ett ogiltigt svar.';
 const errors = {
-  studio_preview_revision_conflict: [409, 'Projektet har ändrats. Ladda om sammansättningen och granska ändringarna före provspelning.'],
+  studio_preview_revision_conflict: [409, 'Projektet har ändrats. Ladda om miljön och granska ändringarna före provspelning.'],
   studio_preview_limit: [429, 'För många provspelningar är öppna. Vänta en stund och försök igen.'],
-  studio_preview_lane_not_found: [404, 'Sammansättningen finns inte längre. Ladda om sidan.'],
+  studio_preview_lane_not_found: [404, 'Miljön finns inte längre. Ladda om sidan.'],
   studio_login_required: [401, 'Logga in som administratör igen för att provspela.'],
   studio_preview_forbidden: [403, 'Ditt konto saknar behörighet att provspela i Studio.'],
   studio_preview_origin_rejected: [403, 'Provspelningen måste startas från den inloggade adminytan.'],
@@ -19,7 +19,7 @@ const errors = {
 export async function createStudioPreview({presentationLaneId, expectedProjectRevision}, {fetchImpl = globalThis.fetch, signal, now = Date.now} = {}) {
   if (typeof presentationLaneId !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(presentationLaneId)
     || typeof expectedProjectRevision !== 'string' || !REVISION.test(expectedProjectRevision)) {
-    throw new Error('Spara sammansättningen före provspelning.');
+    throw new Error('Spara miljön före provspelning.');
   }
   let response;
   try {

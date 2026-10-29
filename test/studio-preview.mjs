@@ -292,3 +292,15 @@ test('preview exposes captured layer choices from baked defaults, with optional 
     assert.deepEqual(f.project,saved);
   }
 });
+
+test('a lane with a miljöbild still starts a preview and the illustration never becomes a layer choice',async t=>{
+  const f=fixture(t),lane=f.project.lanes[0];
+  const illustration={...f.layer,id:'20000000-0000-4000-8000-0000000000b1',role:'illustration',label:'Miljö · miljöbild v1',sha256:'f'.repeat(64),contentType:'image/webp',width:1920,height:1080};
+  illustration.pathname=layerAssetPath(illustration);f.project.layerAssets.push(illustration);lane.illustration=illustration.id;
+  const saved=structuredClone(f.project),session=await start(f);
+  const entry=await f.api.handle(f.request(session.entryUrl));assert.equal(entry.status,200,'Admins provspel opens for a project with a miljöbild');
+  const html=await entry.text();assert.match(html,/data-game-composition="/);
+  assert.equal(html.includes(illustration.id),false,'the miljöbild is shown in the lobby and Admin, never in the game');
+  assert.equal((await f.api.handle(f.request(`/api/studio-preview/${session.sessionId}/layers/${illustration.id}`))).status,404,'nor served as a preview layer');
+  assert.deepEqual(f.project,saved);
+});

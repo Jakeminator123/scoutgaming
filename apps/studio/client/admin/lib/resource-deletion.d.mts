@@ -9,7 +9,7 @@ export type PublishedRoomChoices={packageRevision:number;dealerDefault:string;de
 export type DeletionLayer={enabled:boolean;defaultId:string|null;ids:string[]};
 export type DeletionComposition=ResourceNode&{layers:Record<'background'|'dealer'|'table',DeletionLayer>|null;publishedTo:ResourceRef[]|null;historicalPackageReferences:number|null};
 export type DeletionDealer=ResourceNode&{mediaIds:string[]};
-export type DeletionMaterial=ResourceNode&{role:'background'|'table';game:string|null;contentType:string|null};
+export type DeletionMaterial=ResourceNode&{role:'background'|'table'|'illustration';game:string|null;contentType:string|null};
 export type DeletionMedia=ResourceNode&{kind:'video'|'image'|'audio';ownerIds:string[];primaryOwnerId:string|null;eventId:string;situation:string;game:string|null;available:boolean};
 export type ResourceDeletionTree={
   readAt:string;projectRevision:string;lifecycleAvailable:boolean;historyCoverage:'complete'|'incomplete'|'unavailable';warnings:string[];

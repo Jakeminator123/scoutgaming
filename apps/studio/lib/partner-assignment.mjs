@@ -1,14 +1,14 @@
 // Tilldelningen (ADMIN-FORENKLING 5.3): det Admin har gett bolaget i det
-// publicerade paketet. Spel, dealers, scenmallar, bordsgrafik, bakgrunder,
+// publicerade paketet. Spel, dealers, miljöer, bordsgrafik, bakgrunder,
 // insatsprofiler och `allow`, det bolaget själv får ändra. Datamodellen ändras
 // inte: Admins egna val ligger i paketets branding under `assignment`
 // ({ allow, limitPresets, languages }), som partnerns utseendeutkast aldrig kan
 // skriva (partner-branding-api.mjs tar bara PARTNER_BRANDING_FIELDS).
 //
-// `allow` kan bara smalna av, aldrig vidga, det den frysta scenmallen tillåter:
-// dealer, bordsgrafik och bakgrund kräver dessutom att mallens
+// `allow` kan bara smalna av, aldrig vidga, det den frysta miljön tillåter:
+// dealer, bordsgrafik och bakgrund kräver dessutom att miljöns
 // operatorAdjustable ger bolaget lagret. Språk, insatsprofil och paus finns
-// inte i mallen och är stängda tills Admin uttryckligen ger dem.
+// inte i miljön och är stängda tills Admin uttryckligen ger dem.
 import { materialLabel } from '../../../packages/presentation/contracts/material-catalog.mjs';
 import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
 import { PARTNER_ASSIGNMENT_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
@@ -56,7 +56,7 @@ export function partnerAssignment(pack, presentation, settings = new Map()) {
   };
 }
 
-// Admins fält (Bolag › Tilldelat): vad scenmallarna i paketet ger bolaget
+// Admins fält (Bolag › Tilldelat): vad miljöerna i paketet ger bolaget
 // (dealer, bordsgrafik, bakgrund), det Admin uttryckligen sagt och valen att
 // välja bland. null utan fryst presentation i paketet.
 export const ASSIGNMENT_LIMIT_PRESETS = Object.freeze(Object.keys(ROOM_LIMIT_PRESETS));
@@ -78,7 +78,7 @@ export function adminAssignmentView(pack, presentation) {
 
 // Admins skrivning av `assignment`: exakt { allow, limitPresets, languages }.
 // allow har alla sex nycklar som ja/nej; dealer, bordsgrafik och bakgrund får
-// bara vara ja om scenmallen ger bolaget lagret (smalnar av, vidgar aldrig).
+// bara vara ja om miljön ger bolaget lagret (smalnar av, vidgar aldrig).
 // Listorna är kända, unika värden; ett upplåst val kräver minst ett alternativ.
 export function validateAdminAssignment(value, presentation) {
   const reject = () => { throw Object.assign(new Error('assignment_invalid'), { statusCode: 422 }); };

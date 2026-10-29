@@ -52,7 +52,7 @@ test('Admins allow stänger bordsgrafik och bakgrund även i utseendets utkast f
       return {store,api:createPartnerBrandingApi({store,readProject:async()=>{throw Error('not the mutable project');}})};
     };
     const command=(target,extra={})=>target.api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding,...extra});
-    // Utan Admins allow-flagga följer valet scenmallen och sparas.
+    // Utan Admins allow-flagga följer valet miljön och sparas.
     const open=api({});await command(open);assert.equal((await open.store.getBrandingDraft('north')).revision,1,key);
     // Med flaggan false nekas samma val, och inget utkast sparas.
     const closed=api({[key]:false});

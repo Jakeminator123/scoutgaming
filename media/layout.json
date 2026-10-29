@@ -38,7 +38,6 @@
     "web/public/assets": "media/game/runtime/assets",
     "web/public/sfx": "media/game/runtime/audio",
     "web/public/bo/gen": "media/site/runtime/backoffice/gen",
-    "design-kit": "media/site/source/design-kit",
     "content/background.png": "media/game/source/scene/background.png",
     "content/cardback-scout.png": "media/game/source/cards/cardback-scout.png",
     "content/room-wide.png": "media/game/source/scene/room-wide.png",
@@ -114,70 +113,6 @@
       "path": "game/source/scene-footage/README.md",
       "size": 1756,
       "sha256": "33a1aea049d1a84736d7369343419976b6b515947457283ce9467bd1ef8b9518",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/BettingRail.dc.html",
-      "path": "site/source/design-kit/BettingRail.dc.html",
-      "size": 5360,
-      "sha256": "ac8d657de62398899c9a49a73968d37207e6504c014e6ce7eb93f80d2a3182ab",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/canvas.json",
-      "path": "site/source/design-kit/canvas.json",
-      "size": 1098,
-      "sha256": "2fc7595ca97f00cde46ca38d735eed5e8111dd9324c77e027bb18fdd2eb51667",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/Feedback.dc.html",
-      "path": "site/source/design-kit/Feedback.dc.html",
-      "size": 3516,
-      "sha256": "7fb906000ab0f393cc0114d0dedd7c39e519358726d775b39359d7d3a2457b5e",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/HandBar.dc.html",
-      "path": "site/source/design-kit/HandBar.dc.html",
-      "size": 5505,
-      "sha256": "c64d808b89966d97468840a208eadaf61864bb477716962ac72e069eed51bd57",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/Main.dc.html",
-      "path": "site/source/design-kit/Main.dc.html",
-      "size": 6701,
-      "sha256": "8d6a0c67defb061aac700d463080f712dea441e480035b1b5ec3e60e0dc5aa22",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/prive-blackjack-ui-kit.html",
-      "path": "site/source/design-kit/prive-blackjack-ui-kit.html",
-      "size": 2397187,
-      "sha256": "77c93efd64e13a920937d624ae5b454517b8a6994779405f7dc49195e06c058b",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/ScoutBrand.dc.html",
-      "path": "site/source/design-kit/ScoutBrand.dc.html",
-      "size": 4514,
-      "sha256": "4526179e69571a0ba2228487a6083a006a74f18ccd94769c55b34ef31e2ec807",
-      "tracked": true,
-      "access": "source"
-    },
-    {
-      "legacyPath": "design-kit/Seats.dc.html",
-      "path": "site/source/design-kit/Seats.dc.html",
-      "size": 7495,
-      "sha256": "a17c2b8f43e0e39314d3f8266fe90b7ec69413eca9ceaa1567925acad7910246",
       "tracked": true,
       "access": "source"
     }

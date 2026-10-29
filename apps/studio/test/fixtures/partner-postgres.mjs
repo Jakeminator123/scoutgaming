@@ -45,7 +45,7 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
   const accounts = await createPglitePool(); t.after(() => accounts.end());
   const engine = createPostgresStore({ pool: accounts });
   const source = nativeRoomMaterialChoicesFixture();
-  // Scenmallen ger bolaget dealervalet (operatorAdjustable), som Admin gör i Scenmallar.
+  // Miljön ger bolaget dealervalet (operatorAdjustable), som Admin gör i Miljöer.
   const lane = source.project.lanes[0];
   lane.operatorAdjustable = [...new Set([...lane.operatorAdjustable, 'dealer'])];
   lane.dealers = ['dragan', 'paow']; lane.layers.dealer.allowed = [...lane.dealers];

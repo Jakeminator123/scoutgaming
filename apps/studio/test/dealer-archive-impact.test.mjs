@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
+import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact,withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
@@ -23,10 +24,10 @@ const scope={environment:'dealer-archive-impact',workspaceId:'isolated'};
 const lane=(dealerId)=>({...defaultPresentationLane(dealerId),id:dealerId+'-room',label:dealerId+' scene'});
 const adapter=dealer=>({schemaVersion:1,id:'room-lane-'+dealer,label:dealer,renderer:'portrait-video',dealer,mediaCollection:dealer+'-presentation'});
 const room=dealer=>({schemaVersion:2,id:dealer+'-table',name:dealer+' table',operatorId:'north',presentationLaneId:dealer+'-room',gameLaneId:'room-lane-'+dealer,state:'live'});
-async function fixture({labelCollision=false,measuredBank=false}={}){
+async function fixture({labelCollision=false,measuredBank=false,illustration=null}={}){
   const pool=combinedPool(scope,{extendedPresentationReady:measuredBank}),repository=createStudioRepository({pool,scope});
   const keptDealer=measuredBank?'dragan':'linnea';
-  const cloud=cloudPresentationFixture({lanes:[lane('paow'),{...lane(keptDealer),...(labelCollision?{label:'paow'}:{})}]});
+  const cloud=cloudPresentationFixture({lanes:[lane('paow'),{...lane(keptDealer),...(labelCollision?{label:'paow'}:{}),...(illustration?{illustration:illustration.id}:{})}],...(illustration?{assets:[illustration]}:{})});
   if(measuredBank){
     const bank=nativeRoomMaterialFixture({capture:false,allSpeechSlots:true});
     cloud.project.lines=[...cloud.project.lines.filter(row=>row.dealerId!==keptDealer),...bank.project.lines];
@@ -73,6 +74,18 @@ test('archive detaches active rooms and only affected publication, without chang
   assert.equal(readOperatorLifecycle(pack.branding).rooms[0].room.id,'paow-table');
   assert.deepEqual((await f.pack('other')),other);
   assert.deepEqual(f.pool.snapshot().packages.slice(0,2),before.packages);
+});
+
+test('archiving a dealer keeps the surviving environment miljöbild in the published package',async()=>{
+  const illustration={schemaVersion:1,id:'00000000-0000-4000-8000-0000000000b1',role:'illustration',label:'linnea scene · miljöbild v1',sha256:'b'.repeat(64),size:4096,contentType:'image/webp',width:1920,height:1080};
+  illustration.pathname=layerAssetPath(illustration);
+  const f=await fixture({illustration});
+  assert.deepEqual(f.cloud.presentation.assets.map(row=>row.id),[illustration.id],'the frozen package carries the miljöbild');
+  const plan=await f.read();
+  await applyDealerArchiveImpact({...f.input,impactToken:plan.impact.token,actor:'Admin'});
+  const retained=readPackagePresentation(await f.pack('north'));
+  assert.deepEqual(retained.lanes.map(row=>[row.id,row.illustration]),[['linnea-room',illustration.id]]);
+  assert.deepEqual(retained.assets,f.cloud.presentation.assets);
 });
 
 test('ordinary dealer archive and restore preserve another room imported bank without reopening retired rooms',async()=>{

@@ -86,8 +86,8 @@ export function LayerPlaybackEditor({role,policy,assets,allowed,baseSelected,dis
       </fieldset>;
     })}
     <button type="button" className="sg-btn sg-btn-secondary" disabled={disabled||!baseSelected||!videos.length||rules.length>=16} onClick={add}>Lägg till {copy.noun}</button>
-    {rules.length>=16?<p>Högst 16 {copy.noun} kan styras per sammansättning.</p>:null}
-    <p>Prova ändrar bara förhandsvisningen. Spara sammansättningen för att behålla reglerna; publicering görs separat.</p>
+    {rules.length>=16?<p>Högst 16 {copy.noun} kan styras per miljö.</p>:null}
+    <p>Prova ändrar bara förhandsvisningen. Spara miljön för att behålla reglerna; publicering görs separat.</p>
   </section>;
 }
 

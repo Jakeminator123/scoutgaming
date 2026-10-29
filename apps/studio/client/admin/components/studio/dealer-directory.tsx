@@ -132,7 +132,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         <div className="flex items-center gap-3.5">
           <DealerAvatar dealer={dealer} still={dealerStill(workspace!.project,workspace!.inventory,dealer.id)} size={56}/>
           <div className="min-w-0 flex-1"><Link href={dealerHref(dealer.id)} className="block truncate text-base font-semibold text-sg-text no-underline after:absolute after:inset-0 after:rounded-xl hover:underline">{dealer.label}</Link>
-            <div className="text-[12.5px] text-sg-muted">{templates.length?`Tillåten i ${plural(templates.length,'scenmall','scenmallar')}`:'Ingen scenmall ännu'}</div></div>
+            <div className="text-[12.5px] text-sg-muted">{templates.length?`Tillåten i ${plural(templates.length,'miljö','miljöer')}`:'Ingen miljö ännu'}</div></div>
           <span className="relative z-10"><ActionMenu small name={dealer.label} actions={[
             {id:'open',label:'Öppna dealern',onSelect:()=>navigate(dealerHref(dealer.id))},
             {id:'intake',label:'Lägg till klipp',onSelect:()=>navigate(dealerHref(dealer.id,'klipp',{panel:'intake'}))},
@@ -169,11 +169,11 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         {error&&<p role="alert" className="m-0 rounded-lg bg-sg-warn-bg px-3 py-2 text-[13px] text-sg-warn">{error}</p>}
       </form>:<div className="flex items-center gap-4 rounded-xl border border-sg-border bg-sg-surface-2 p-4">
         <DealerAvatar dealer={{id:created.id,label:created.name}} size={56}/>
-        <div className="min-w-0 text-[13.5px] text-sg-muted"><div className="font-semibold text-sg-text">{created.name}</div>Ingen scenmall och inget bolag ännu. Dealern kan tilldelas när klipp och tal räcker för spel.</div>
+        <div className="min-w-0 text-[13.5px] text-sg-muted"><div className="font-semibold text-sg-text">{created.name}</div>Ingen miljö och inget bolag ännu. Dealern kan tilldelas när klipp och tal räcker för spel.</div>
       </div>}
     </Dialog>
     <ConfirmDialog open={review!==null} title={plan?.title??'Granska åtgärden'} description={plan?.summary} consequences={plan?.items??[]}
-      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, spelbord, bolag och scenmallar…'}
+      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, spelbord, bolag och miljöer…'}
       error={reviewError} busy={busy&&review!==null&&!review.checking} busyLabel={plan?.busyLabel}
       confirmLabel={confirmLabel} confirmDisabled={disabled&&!busy||Boolean(deletePlan?.requiresAcknowledgement&&!review?.acknowledged)}
       cancelLabel={stale||review?.error?'Stäng':plan?.cancelLabel} onConfirm={()=>void applyReview()} onCancel={()=>{if(!busy||review?.checking)setReview(null);}}>
