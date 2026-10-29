@@ -25,29 +25,43 @@ function nativeStore({pool,boDb,environmentId,dealerId}) {
 export function createMovingDriftAdminApi({pool,boDb,scope,env={},controllerFactory=createMovingDriftController,
   storeFactory=nativeStore}={}) {
   scope=validateStudioScope(scope);
-  let controller;
+  const controllers=new Map();
   try {
     const configuration=movingDriftConfiguration(env);
     if(!configuration) return Object.freeze({handlers:new Map(),gates:new Map(),configured:false});
-    // Drift state is per dealer, the same row slot and one-profile catalogue as
-    // the game's executor. This API addresses one dealer; with several profiles
-    // it stays closed until Admin chooses the dealer, rather than guessing one.
-    if(configuration.profiles.length!==1) throw Error('dealer_selection_required');
-    const [profile]=configuration.profiles;
-    controller=controllerFactory({
-      store:storeFactory({pool,boDb,environmentId:scope.environment,dealerId:profile.dealerId}),
-      profiles:[profile],capabilities:{connected:true,requireExecutor:true},
-    });
-    if(typeof controller?.status!=='function'||typeof controller?.command!=='function') throw Error('invalid_controller');
+    // Drift state is per dealer: one row slot and one-profile catalogue per dealer,
+    // as in the game's executor. Each request names its dealer; it is never guessed.
+    for(const profile of configuration.profiles) {
+      const controller=controllerFactory({
+        store:storeFactory({pool,boDb,environmentId:scope.environment,dealerId:profile.dealerId}),
+        profiles:[profile],capabilities:{connected:true,requireExecutor:true},
+      });
+      if(typeof controller?.status!=='function'||typeof controller?.command!=='function') throw Error('invalid_controller');
+      controllers.set(profile.dealerId,controller);
+    }
   } catch {
     // Optional configuration/schema must not take unrelated Admin services down.
     // Empty registrations fail closed and are absent from availableActions.
     return Object.freeze({handlers:new Map(),gates:new Map(),configured:false});
   }
   const inScope=context=>context.scope.environment===scope.environment&&context.scope.workspaceId===scope.workspaceId;
+  // GET names the dealer in `?dealerId=`, POST in the body. With one profile the
+  // dealer may be omitted (unchanged behaviour); with several it is required.
+  const target=(context,write)=>{
+    const named=write?context.body?.dealerId:new URL(context.request.url).searchParams.get('dealerId');
+    if(named===undefined||named===null) {
+      if(controllers.size===1) return [...controllers.values()][0];
+      throw driftError('drift_dealer_required',400);
+    }
+    if(typeof named!=='string'||!controllers.has(named)) throw driftError('drift_unknown_dealer',422);
+    return controllers.get(named);
+  };
   const run=async(context,write)=>{
     if(!inScope(context)) throw Object.assign(new Error('Access denied'),{statusCode:403});
-    return publicMovingDriftStatus(write?await controller.command(context.body):await controller.status());
+    const controller=target(context,write);
+    if(!write) return publicMovingDriftStatus(await controller.status());
+    const {dealerId:_dealer,...command}=context.body;
+    return publicMovingDriftStatus(await controller.command(command));
   };
   return Object.freeze({configured:true,
     handlers:new Map([['GET '+path,context=>run(context,false)],['POST '+path,context=>run(context,true)]]),

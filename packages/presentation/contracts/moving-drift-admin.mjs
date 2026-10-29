@@ -23,6 +23,8 @@ const errors=new Map([
   ['drift_warm_unavailable',[409,'Varm drift är inte tillgänglig.']],
   ['drift_warm_budget_unavailable',[409,'Godkänt kostnadsunderlag för varm drift saknas.']],
   ['drift_store_unavailable',[503,'Driftläget kan inte läsas eller sparas just nu.']],
+  ['drift_dealer_required',[400,'Välj vilken dealer taldriften gäller.']],
+  ['drift_unknown_dealer',[422,'Dealern har ingen driftprofil för rörligt tal.']],
   ['drift_api_unavailable',[503,'Driftväljaren är inte tillgänglig.']],
 ]);
 export function publicMovingDriftError(error) {

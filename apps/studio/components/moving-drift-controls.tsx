@@ -7,19 +7,21 @@ import styles from './moving-drift-controls.module.css';
 
 export interface MovingDriftTransport {
   available(method:string,action:string):boolean;
-  request(method:'GET'|'POST',action:string,body?:Record<string,unknown>,signal?:AbortSignal,expectedActor?:StudioAdminActor):Promise<{actor:StudioAdminActor;payload:Record<string,unknown>}>;
+  request(method:'GET'|'POST',action:string,body?:Record<string,unknown>,signal?:AbortSignal,expectedActor?:StudioAdminActor,query?:Record<string,string>):Promise<{actor:StudioAdminActor;payload:Record<string,unknown>}>;
 }
 const modeChoices:[MovingDriftMode,string,string][]=[['off','Av','Inga nya taljobb'],['saving','Sparläge','Förbered vid talbehov'],['warm','Varm','Redo under en vald tid']];
 const time=(value:number)=>new Intl.DateTimeFormat('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(value));
 const failureMessages:Record<number,string>={401:'Sessionen har gått ut. Läs om sidan och logga in igen.',403:'Behörigheten eller sessionen har ändrats. Läs om sidan.',409:'Driftläget har ändrats eller valet är inte tillgängligt. Läs om status.',422:'Valet kunde inte sparas. Kontrollera läge och GPU-profil.'};
+// A dealer without a drift profile is a plain fact, not a failure: say so once and stop asking.
+const NO_PROFILE='drift_unknown_dealer';
 const failureMessage=(error:unknown)=>failureMessages[(error as {status?:number})?.status??0]??'Åtgärden kunde inte bekräftas. Läs om status innan du försöker igen.';
 
 export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTransport;expectedActor:StudioAdminActor}) {
   const [status,setStatus]=useState<MovingDriftAdminStatus|null>(null),[draft,setDraft]=useState<DriftDraft|null>(null);
   const [clock,setClock]=useState(0),[sourceAt,setSourceAt]=useState(0),[reading,setReading]=useState(false),[busy,setBusy]=useState(false);
-  const [error,setError]=useState(''),[notice,setNotice]=useState('');
+  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[noProfile,setNoProfile]=useState(false);
   const alive=useRef(false),sequence=useRef(0),writing=useRef(false),active=useRef<AbortController|null>(null);
-  const current=useRef<MovingDriftAdminStatus|null>(null),local=useRef<DriftDraft|null>(null),actor=useRef<StudioAdminActor|null>(null),readAt=useRef(0),authFailed=useRef(false);
+  const current=useRef<MovingDriftAdminStatus|null>(null),local=useRef<DriftDraft|null>(null),actor=useRef<StudioAdminActor|null>(null),readAt=useRef(0),authFailed=useRef(false),unprofiled=useRef(false);
   const canRead=client.available('GET','moving-drift'),canWrite=client.available('POST','moving-drift');
   function replaceDraft(next:DriftDraft|null) {local.current=next;setDraft(next);}
   function accept(value:unknown,requestedAt:number,reset=false) {
@@ -31,11 +33,12 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
   }
   function clearStatus(cause:unknown) {
     current.current=null;setStatus(null);
+    if((cause as {code?:string})?.code===NO_PROFILE){unprofiled.current=true;replaceDraft(null);setNotice('');setError('');setNoProfile(true);return;}
     if([401,403].includes((cause as {status?:number})?.status??0)){authFailed.current=true;actor.current=null;replaceDraft(null);}
     setNotice('');setError(failureMessage(cause));
   }
   async function refresh() {
-    if(!alive.current||writing.current||!canRead||authFailed.current)return;
+    if(!alive.current||writing.current||!canRead||authFailed.current||unprofiled.current)return;
     const ticket=++sequence.current;active.current?.abort();const controller=new AbortController();active.current=controller;const requestedAt=performance.now();setReading(true);
     try {
       const result=await client.request('GET','moving-drift',undefined,controller.signal,actor.current??undefined);
@@ -45,11 +48,11 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
     finally{if(alive.current&&ticket===sequence.current)setReading(false);}
   }
   useEffect(()=>{
-    alive.current=true;writing.current=false;authFailed.current=false;current.current=null;actor.current=expectedActor;local.current=null;setBusy(false);setReading(false);setStatus(null);setDraft(null);setError('');setNotice('');
+    alive.current=true;writing.current=false;authFailed.current=false;unprofiled.current=false;setNoProfile(false);current.current=null;actor.current=expectedActor;local.current=null;setBusy(false);setReading(false);setStatus(null);setDraft(null);setError('');setNotice('');
     if(!canRead)return()=>{alive.current=false;++sequence.current;active.current?.abort();};
     void refresh();
     const tick=window.setInterval(()=>{if(current.current)setClock(performance.now());},1000);
-    const poll=window.setInterval(()=>{if(document.visibilityState!=='hidden'&&!authFailed.current)void refresh();},10000);
+    const poll=window.setInterval(()=>{if(document.visibilityState!=='hidden'&&!authFailed.current&&!unprofiled.current)void refresh();},10000);
     const visible=()=>{if(document.visibilityState!=='hidden')void refresh();};
     const leave=(event:BeforeUnloadEvent)=>{if(local.current?.dirty||writing.current){event.preventDefault();event.returnValue='';}};
     document.addEventListener('visibilitychange',visible);window.addEventListener('beforeunload',leave);
@@ -86,9 +89,9 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
   const stopVisible=Boolean(status&&status.desired.mode!=='off');
   return <section className={styles.card} aria-labelledby="moving-drift-title">
     <header className={styles.header}><div><p className={styles.eyebrow}>Taldrift</p><h2 id="moving-drift-title">Driftläge</h2></div>
-      {canRead&&<button type="button" className="studio-button" disabled={busy||reading} onClick={()=>authFailed.current?window.location.reload():void refresh()}>{reading?'Läser…':'Uppdatera status'}</button>}
+      {canRead&&!noProfile&&<button type="button" className="studio-button" disabled={busy||reading} onClick={()=>authFailed.current?window.location.reload():void refresh()}>{reading?'Läser…':'Uppdatera status'}</button>}
     </header>
-    {!canRead?<p>Driftstyrningen är inte tillgänglig för den här sessionen.</p>:<>
+    {!canRead?<p>Driftstyrningen är inte tillgänglig för den här sessionen.</p>:noProfile?<p className={styles.helper}>Den här dealern har ingen driftprofil för rörligt tal.</p>:<>
       <div className={styles.status} role="status"><span className={view?.ready?styles.ready:styles.pending} aria-hidden="true"/><strong>Faktisk drift: {view?.label??'Okänd'}</strong>
         {status&&<span>Sparat önskemål: {driftModeLabel(status.desired.mode)}</span>}</div>
       {error&&<p className={styles.error} role="alert">{error}</p>}{notice&&<p className={styles.notice} role="status">{notice}</p>}
