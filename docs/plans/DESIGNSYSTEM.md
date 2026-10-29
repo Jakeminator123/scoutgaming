@@ -31,8 +31,11 @@ Före: blå info-ruta, rödrosa bricka "papperskorg" på varje rad, ensam "Alla 
 
 ## På tur (S under en timme, M en halv dag, L en dag eller mer)
 
-- **Admin, Bolag och spelbord:** Bolag och Alla spelbord S; bolagsnavet: Spelbord, Integration, Journal, Inställningar S, Tilldelning M, Team M (WorkspaceTool med `sg-*`).
-- **Admin, spelbordsnavet:** Dealer och Historik S; Utseende, Spelinställningar och Tillgänglighet L (CSS-moduler i `apps/studio/components`).
-- **Admin, övrigt:** Översikt S, Hjälp S, Dealers M, dealernavet M (klippkartan L), Miljöer och material M (papperskorgen S), System M, Skapa demo M.
-- **Delade komponenter:** `control-resource-lifecycle` S (syns i pilotens Sheet), `presentation-room-create` M, `lane-editor` L.
+Byggda med kitet på `main` `989609e9b`: sidskalen (Översikt, Hjälp, Dealers med dealernavet, Miljöer och material med miljöeditorn och Material, Bolag och spelbord, bolagsnavet, spelbordsnavet, System, Skapa demo), bolagets Spelbord, spelbordets Dealer, Bolagets val och Historik, Spelinställningar och Nytt spelbord (#678). Kvar, efter dagens flikar:
+
+- **Bolag och spelbord, ett bolag:** Tilldelning S (`registered-studio.tsx` med egna Tailwind-klasser), Team M (WorkspaceTool → `admin-publication-page` och `control-operator-directory`, egna CSS-moduler), Inställningar S (livscykeln i `control-resource-lifecycle.module.css`, journalen).
+- **Ett spelbord:** Utseende L (`partner-appearance.module.css`, delas med Partnerportalen), Tillgänglighet S (knapparna är kit, livscykelpanelen har kvar sin CSS-modul).
+- **Dealers, en dealer:** Klippkarta L (`connected-clip-map.tsx`, kortet, intaget och körregeln i `studio.css`), Röst och tal M (`studio-speech-panel`, `taldrift-panel`, `dealer-voice-profile`, svarsbiblioteket och dialogtestet), Används av S (`resource-connections`), Inställningar M (`studio-lifecycle-panel`).
+- **Miljöer och material:** Lager och placering L (`studio-composition-panel`, `lane-editor`, `blackjack-scene-placement-editor`).
+- **System:** Drift M (`studio-administration` med `shared-table-proof`), AI-agenter M (`openclaw-workspace.module.css`), Scoutgamings personal, Spelarkonton och Integration M (`studio-administration.module.css`), Beroenden S (`resource-connections`).
 - **Partnerportalen** (egen `views/ui.tsx` och `partner-portal.css`; flytten följer [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md)): skalet L, Översikt M, Spelbord M, Team M, Integration S, Rapporter S, Spelare S, Hjälp S.
