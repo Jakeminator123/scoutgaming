@@ -38,6 +38,8 @@ Det sparade läget är ett **utkast**; det publicerade är **live**. Spelaren se
 
 **Personal** är Admins konton (`croupier_auth.users`). **Spelare** (`players`) har saldo och historik och tillhör ett bolag. En **API-nyckel** (`api_keys`) låter bolaget starta spelare från sin egen sajt; varje nyckel hör till exakt ett bolag, valt när Admin skapar den, och Partnerportalen visar bolagets egna nycklar maskerade. En **testsession** är en start med demokrediter. **Skapa demo** i Admin sätter ihop bolag, spelbord och dealer för en visning, och demolänken startar spelet med det valda bolagets nyckel. **Journalen** är bolagets händelselogg.
 
+**Partner-API** (`/api/v1/*` i spelmotorn, [partner-api.md](../../../docs/games/partner-api.md)) är kundkontraktet: bolagets egen server anropar det med API-nyckeln och HMAC-signerade anrop. **Portal-API:t** (`/studio/api/partner/*`, `apps/studio/app/api/partner/[...action]`) är Partnerportalens eget API för inloggad bolagspersonal och inget kontrakt mot kunden.
+
 ## Lagring
 
 Neon är produktregistret (bolag, paket, spelbord, klipp, konton) och Blob lagrar mediebytes; Git innehåller kod och text. Paketet är kontraktet mellan Admin och spelet. Detaljerna står i [BLOB-NEON](../../../docs/storage/BLOB-NEON.md) och [ADMIN-KARTA](../../../docs/plans/ADMIN-KARTA.md).

@@ -20,7 +20,7 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore, Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
 | [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) och [environment-variables.json](environment-variables.json) | Alla miljövariabler per tjänst, aldrig värden; JSON:en läses av `tools/check-environment-variables.mjs` | Alla som rör env | I samma PR som variabeln ändras |
 | [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md) | Inventering 29 oktober av alla variabler i drift mot koden: rester, saknade namn, Neon-identiteter och förslag till borttagning (ersatte 28 oktobers) | Den som städar env | Daterad, ändras inte |
-| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering | Den som rör media | När lagringskontraktet ändras |
+| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
 | [ops/cloud/RENDER-V3](../ops/cloud/RENDER-V3.md), [README](../ops/cloud/README.md), [CONTAINER-CONTEXT](../ops/cloud/CONTAINER-CONTEXT.md) | Spelmotorn på Render: tjänst, deploy, återgång, byggkontext | Den som deployar motorn | När tjänsten eller imagen ändras |
 
 ## Produkt och kontrakt
@@ -42,8 +42,22 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: verifierat läge för röst, bank och RunPod, proven 28 oktober, varför inget aktiveras före O03, aktiviteten "dealer-generisk talkedja, Paow först" | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
 | [plans/TALKEDJA](plans/TALKEDJA.md) | Genomförandeplan för den dealer-generiska talkedjan, Paow först: hinder med fil och rad, PR-sekvens T1–T8, Jakobs beslut, vad som raderas | Orkestreraren och den som bygger talkedjan | Per PR i sekvensen, raderas när kedjan är verifierad |
 | [plans/KEVIN-PORT](plans/KEVIN-PORT.md) | Selektiv överföring av Kevins och Emils presentationsförbättringar: läget för P1–P14, kandidater med fil och rad, PR-ordning, vad som inte tas, Jakobs beslut | Orkestreraren och den som bygger varje PR | Per PR i ordningen, raderas när den sista är verifierad |
+| [plans/PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md) | Partnerportalen från kevin-bo till mains mönster: inventering fil för fil, Kevin-beteenden som behålls, målstruktur, PR-sekvens och skydd | Orkestreraren och den som bygger varje PR | Per PR i sekvensen, raderas när den sista är verifierad |
 | [plans/REN-START](plans/REN-START.md) | Ren start: ordning, backup och go-punkter för att radera Astrid, testrum och operatörer | Orkestreraren och Jakob | Tills ren start är utförd |
 | [plans/ADMIN-KARTA](plans/ADMIN-KARTA.md), [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html) | Kablagekarta, målbild och klickbar skiss för Admin | Admin-arkitekten | Av Admin-arkitekten |
+| [plans/VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) | Steg H: Admin-SPA:ns och lobbyns verktygskedja, alternativ A (behåll SPA:n med en Tailwind, en tokenfil och ett mörkt läge) och B (Admin som Next-sidor), rekommendation och PR-sekvens | Den som bygger steg H | Raderas när det valda alternativet är byggt och verifierat i drift |
+
+## Ingångar för agenter och IDE:er
+
+Korta filer som pekar på [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md). Utöver verktygets branchprefix upprepar de bara de viktigaste reglerna; en regeländring görs i AGENTS, inte i ingångsfilerna.
+
+| Fil | Verktyg |
+| --- | --- |
+| [CLAUDE.md](../CLAUDE.md) | Claude Code |
+| [GEMINI.md](../GEMINI.md) | Gemini CLI och Antigravity |
+| [.github/copilot-instructions.md](../.github/copilot-instructions.md) | GitHub Copilot |
+| [.windsurf/rules/scoutgaming.md](../.windsurf/rules/scoutgaming.md) | Windsurf |
+| [.cursor/rules/scoutgaming.mdc](../.cursor/rules/scoutgaming.mdc) | Cursor |
 
 ## Kvitton
 

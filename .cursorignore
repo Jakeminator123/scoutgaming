@@ -10,6 +10,7 @@
 /arkiv/
 /random-stuff-jakob/
 /inbox/local-device.json
+/inbox/local-device.json.*.tmp
 /open-claw/
 /services/openclaw/lab/data/
 /apps/studio/data/
