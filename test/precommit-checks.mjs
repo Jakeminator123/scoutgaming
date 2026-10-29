@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  parseStagedChanges, readStagedChanges, readMergeHead, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests,
+  parseStagedChanges, readStagedChanges, readCommittedChanges, readMergeHead, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests, addsTestFile,
 } from '../tools/precommit-checks.mjs';
 
 const change = (path, status = 'M') => ({ path, status });
@@ -69,8 +69,62 @@ test('CI and explicit --full cannot take the quick path', () => {
   for (const options of [{ env: { CI: 'true' } }, { env: { GITHUB_ACTIONS: 'true' } }, { forceFull: true, env: {} }]) {
     assert.equal(verificationMode(changes, options), 'full');
   }
-  assert.deepEqual(parseArgs(['--full', '--plan']), { forceFull: true, planOnly: true });
+  assert.deepEqual(parseArgs(['--full', '--plan']), { forceFull: true, planOnly: true, prDiff: false });
+  assert.deepEqual(parseArgs(['--pr-diff']), { forceFull: false, planOnly: false, prDiff: true });
   assert.throws(() => parseArgs(['--skip']), /Usage/);
+  assert.throws(() => parseArgs(['--full', '--pr-diff']), /Usage/);
+});
+
+test('--pr-diff plans targeted checks on the committed merge diff, never the full product, even in CI', async () => {
+  await fixture(async root => {
+    const commit = message => git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
+    await mkdir(join(root, 'docs'));
+    await writeFile(join(root, 'docs', 'guide.md'), 'guide\n');
+    git(root, ['add', '-A']); commit('base');
+    await mkdir(join(root, 'apps', 'studio', 'lib'), { recursive: true });
+    await writeFile(join(root, 'apps', 'studio', 'lib', 'room.mjs'), 'export {};\n');
+    git(root, ['add', '-A']); commit('code');
+    assert.deepEqual(readCommittedChanges(root), [change('apps/studio/lib/room.mjs', 'A')]);
+    assert.deepEqual(readStagedChanges(root), [], 'the index is not what --pr-diff reads');
+    const plan = checkPlan('focused', { changes: readCommittedChanges(root), root, committed: true });
+    assert.deepEqual(plan[0], ['git', 'diff', '--check', 'HEAD^1', 'HEAD']);
+    assert.ok(plan.every(args => !args.includes('--cached')), 'no index reads on a committed range');
+    assert.ok(plan.some(args => args.includes('--check') && args.includes('apps/studio/lib/room.mjs')));
+    assert.ok(plan.every(args => !args.includes('.githooks/pre-commit-full')));
+    assert.equal(runChecks(plan, { cwd: root }), 0);
+    const unreadable = await mkdtemp(join(tmpdir(), 'croupier-hook-nocommit-'));
+    try { assert.throws(() => readCommittedChanges(unreadable), /Cannot inspect committed changes/); }
+    finally { await rm(unreadable, { recursive: true, force: true }); }
+    // The real CLI in a CI-like environment: focused, not full.
+    await mkdir(join(root, 'tools'));
+    for (const name of ['precommit-checks.mjs', 'documentation-paths.mjs']) {
+      await writeFile(join(root, 'tools', name), await readFile(new URL('../tools/' + name, import.meta.url)));
+    }
+    const env = { ...isolatedGitEnvironment(), CI: 'true', GITHUB_ACTIONS: 'true' };
+    const result = spawnSync(process.execPath, ['tools/precommit-checks.mjs', '--pr-diff', '--plan'], { cwd: root, env, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.mode, 'focused');
+    assert.deepEqual(parsed.commands[0], ['git', 'diff', '--check', 'HEAD^1', 'HEAD']);
+    assert.ok(parsed.commands.every(args => !args.includes('.githooks/pre-commit-full')));
+  });
+});
+
+test('a commit that adds a test file runs the orphan audit so CI cannot be the first to report it', () => {
+  for (const path of ['test/new-rule.mjs', 'apps/studio/test/new.test.mjs', 'apps/studio/components/panel.test.mjs',
+    'services/openclaw/lab/deploy/new.test.mjs', 'packages/presentation/test/contract.mjs', 'tools/media/test-encode.mjs', 'apps/web/test/landing.mjs']) {
+    assert.equal(addsTestFile([change(path, 'A')]), true, path);
+    assert.equal(addsTestFile([change(path, 'M')]), false, `${path} modified`);
+    assert.equal(addsTestFile([change(path, 'D')]), false, `${path} deleted`);
+  }
+  for (const path of ['test/fixtures/helper.mjs', 'apps/studio/test/fixtures/cloud.mjs', 'docs/test/notes.md', 'services/game/server.mjs',
+    'tools/check-orphan-tests.mjs', 'apps/studio/lib/room.mjs', 'services/astrid-gpu-worker/tests/test_bank.py']) {
+    assert.equal(addsTestFile([change(path, 'A')]), false, path);
+  }
+  const audit = [process.execPath, 'tools/check-orphan-tests.mjs'];
+  assert.ok(checkPlan('focused', { changes: [change('test/new-rule.mjs', 'A')] }).some(args => args.join(' ') === audit.join(' ')));
+  assert.ok(checkPlan('focused', { changes: [change('test/new-rule.mjs', 'M')] }).every(args => args.join(' ') !== audit.join(' ')));
+  assert.ok(checkPlan('documentation', { changes: [change('docs/test/x.md', 'A')] }).every(args => args.join(' ') !== audit.join(' ')));
 });
 
 test('staged parser preserves unusual filenames and rejects malformed output', () => {
