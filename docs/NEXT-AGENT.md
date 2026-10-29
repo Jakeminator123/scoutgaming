@@ -16,6 +16,8 @@ Uppdaterad 28 oktober 2026, eftermiddag, efter O03 (migreringen 100 %). Skriven 
 
 Publicera dragan-tests spelinställning i Admin (eller pausa rummet); frivilligt en egen hand i produktionen på dator och telefon och "godkänt".
 
+Vilosekvens per dealer (när `jakob/claude-idle-rotation` är mergad): för PAOW **Körregel → Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp** (produktionsutkastet har ingen vilosekvens, så **Uppdatera till urvalet** visas inte; Kevins tre bortvalda klipp ingår inte i urvalet). För Dragan laddas de 16 originalen i `apps/studio/lib/idle-rotation-sources/dragan-de31659c.json` (ur Kevins Git, SHA-256 enligt filen) upp till facket **Vila**, `andas` görs till basklipp, sekvensen kopplas och paketet publiceras. Båda kräver Jakobs visuella godkännande.
+
 ## Efter O03
 
 Nästa arbete, i ordning (bakgrund i [MASTERPLAN](../migrering/MASTERPLAN.md#efter-o03); punkterna ger inga procent):
