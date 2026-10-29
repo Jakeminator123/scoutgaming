@@ -11,6 +11,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
+import { OPERATOR_AUDIT_ACTIONS, PARTNER_REQUEST_ACTIONS, PARTNER_REQUEST_STORAGE_VERSION } from './operator-audit-actions.mjs';
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
@@ -25,7 +26,9 @@ const operatorStatuses = new Set(['active', 'suspended']);
 const membershipStatuses = new Set(['active', 'suspended', 'invited']);
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
-const auditActions = new Set(['operator.create', 'role.save', 'membership.create', 'membership.update', 'team.invite', 'team.role', 'team.suspend', 'team.reactivate', 'membership.activate', 'membership.compensate', 'package.publish']);
+// Speglar journalens CHECK (006, utökad av 022 med partnerns begäran).
+const auditActions = new Set(OPERATOR_AUDIT_ACTIONS);
+const requestActions = new Set(PARTNER_REQUEST_ACTIONS);
 // The draft chain's own rows, read into the journal from operator_branding_drafts.
 const draftActions = new Set(['draft.save', 'draft.restore', 'draft.publish']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
@@ -630,6 +633,27 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {})}});
       return replacement?{package:saved,config:structuredClone(roomPublication.configs.find(row=>row.roomId===replacement.roomId).body)}:saved;
   }
+  // Partnerns begäran (material, nyckelrotation) är en journalpost och inget annat:
+  // ingen konfiguration ändras. Före 022 tillåter journalens CHECK inte åtgärden;
+  // då skrivs ingenting och svaret är 503 studio_migration_required.
+  async function recordPartnerRequest(input = {}) {
+    actorOf(input);
+    const operatorId = idText(ownValue(input, 'operatorId'));
+    const action = ownValue(input, 'action');
+    if (!requestActions.has(action)) fail('studio_invalid_data', 422);
+    const message = optionalOwn(input, 'message') ?? null;
+    if (message !== null && (typeof message !== 'string' || message.length < 1 || message.length > 500 || message.trim() !== message
+      || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(message))) fail('studio_invalid_data', 422);
+    return withOperatorLock(async txQuery => {
+      const ledger = await txQuery(`/* operator-store:partner-requests-ready */
+        SELECT count(*)::integer AS ledgered FROM croupier_studio.storage_migrations
+        WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND version=$3`, [PARTNER_REQUEST_STORAGE_VERSION]);
+      if (ledger.length !== 1 || Number(ledger[0].ledgered) !== 1) fail('studio_migration_required', 503);
+      if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      await auditWrite(txQuery, input, { operatorId, action, resourceType: 'operator', resourceId: operatorId, after: { message } });
+      return Object.freeze({ operatorId, action, message });
+    });
+  }
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
   // Only the trusted J08 writer supplies a complete validated replacement. A
   // branding payload cannot turn itself into this method or choose its ID.
@@ -748,5 +772,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, getPublishedRoomLimitPresets, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
+    recordPartnerRequest,
   });
 }
