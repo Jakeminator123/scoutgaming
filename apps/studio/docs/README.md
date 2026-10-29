@@ -111,7 +111,11 @@ visar mönster och exempel. Mönstret är
 - Utdelning: `pos1`–`pos7` är plats 1–7, `posdealer` dealerns öppna kort,
   `hole` dolt kort, `flip` vändning. Suffixet anger var händerna börjar och
   slutar: utan suffix REDO → REDO, `-i` börjar i VILA, `-v` slutar i VILA,
-  `-iv` båda. Exempel: `dragan_pos3-iv.mp4`.
+  `-iv` båda. Dolt kort slutar alltid i VILA och vändningen går VILA → VILA.
+  Exempel: `dragan_pos3-iv.mp4`. Kevins äldre `-u` och `-iu` får samma
+  poskedja som `-v` och `-iv` men är andra filmer, som den filmade utdelningen
+  aldrig använder (för `hole` och `flip` är de kopior av filen utan suffix
+  respektive `-i`). Ladda inte upp dem.
 - Repliker: `<replik>_<språk>_<nr>`, till exempel `dragan_goodluck_sv_1.mp4`.
 - Reaktioner kräver prefix: `dragan_settle_win.mp4`, `dragan_turn.mp4`.
 
@@ -142,12 +146,14 @@ sekvensen kan kopplas.
 2. **Koppla N viloklipp** kopplar urvalet till de redan uppladdade
    originalen. Knappen är spärrad så länge ett valt original saknas; ladda
    upp det i klippkartans intag (facket **Vila**) eller bocka ur det.
-3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp från
-   ett äldre urval kvar (för PAOW de tre Kevin valde bort 27 oktober), tar
-   **Uppdatera till urvalet** bort dem.
-4. Spara utkastet och publicera bolagets paket. För PAOW räcker **Publicera
-   PAOWs viloklipp** i spelbordet. **Återgå till enbart basklippet** tar
-   bort sekvensen; originalen behålls.
+3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
+   utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
+   urvalet** bort dem; knappen visas bara då.
+4. Spara utkastet och publicera bolagets paket. För PAOW är stegen
+   **Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp** i
+   spelbordet (produktionsutkastet har ingen sekvens än, så **Uppdatera
+   till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
+   sekvensen; originalen behålls.
 
 ### Övergångar och delat bord
 
