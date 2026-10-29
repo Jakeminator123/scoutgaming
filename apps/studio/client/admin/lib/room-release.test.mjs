@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as release from './room-release.mjs';
+import * as blockers from './blocker-view.mjs';
 
 const {readRoomRelease,publishRoomRelease,roomReleaseBody,roomReleaseButton,roomReleaseCanPublish,roomReleaseErrorMessage,roomReleaseBlocker,roomReleaseAreas,roomReleaseReceiptText}=release;
 const token='a'.repeat(64);
@@ -52,12 +53,12 @@ test('publish sends the preview token and every expected revision once, and veri
 
 test('the error contract becomes plain Swedish per code, and a failure is never retried automatically',async()=>{
   const cases=[
-    [409,{error:'studio_release_preview_stale',code:'studio_release_preview_stale'},'Något har ändrats sedan förhandsvisningen. Läs in igen.'],
+    [409,{error:'studio_release_preview_stale',code:'studio_release_preview_stale'},'Någon annan sparade just. Läs in igen.'],
     [409,{error:'studio_conflict',code:'studio_conflict',step:'package'},/Bolagets publicering har ändrats.*Inget publicerades.*Läs in igen/],
     [409,{error:'studio_conflict',code:'studio_conflict',step:'room_config_head'},/Spelinställningarna har publicerats från ett annat håll/],
     [409,{error:'studio_room_choices_draft_pending',code:'studio_room_choices_draft_pending'},/opublicerat utseendeutkast/],
-    [422,{error:'studio_room_game_material_unavailable',code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'},/ingen godkänd tagning.*Röst och tal/],
-    [422,{error:'studio_release_invalid',code:'studio_release_invalid',reason:'studio_release_unchanged'},'Inget skiljer sig från live, så inget publicerades.'],
+    [422,{error:'studio_room_game_material_unavailable',code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'},/En replik saknar godkänt tal.*Inget publicerades/],
+    [422,{error:'studio_release_invalid',code:'studio_release_invalid',reason:'studio_release_unchanged'},'Inget skiljer sig från live.'],
     [404,{error:'studio_room_not_found',code:'studio_room_not_found'},/inte öppet hos bolaget/],
     [503,{error:'studio_room_config_storage_missing',code:'studio_room_config_storage_missing'},/saknar lagringen för spelinställningar/],
     [503,{error:'studio_presentation_runtime_update_required',code:'studio_presentation_runtime_update_required'},/Spelmotorn behöver uppdateras/],
@@ -97,13 +98,18 @@ test('nothing to publish disables the button; ready:false keeps Publicera nu ina
 
 test('blockers link to the place where they are fixed, and every area is listed',()=>{
   const context={roomId:'north-a',dealerId:'dragan',rooms:[{id:'north-b',name:'Norr B'}]};
-  assert.deepEqual(roomReleaseBlocker({area:'speech',code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'},context),
-    {text:'Tal och klipp: ingen godkänd tagning.',href:'/admin/dealers/dragan?flik=tal',linkLabel:'Öppna i Röst och tal'});
+  assert.deepEqual(roomReleaseBlocker({area:'speech',code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'},{...context,language:'sv'}),
+    {text:'En replik saknar godkänt tal på svenska.',href:'/admin/dealers/dragan?flik=tal',linkLabel:'Öppna Röst och tal',run:null,detail:'studio_room_game_material_unavailable · native_material_take_unrecognized'});
+  // Mätningen är en knapp som mäter direkt (run), med dealerns klipp som reserv.
   for(const materialReason of ['native_material_measurement_missing','native_material_measurement_mismatch'])
     assert.deepEqual(roomReleaseBlocker({area:'speech',code:'studio_room_game_material_unavailable',materialReason},{...context,dealerName:'Dragan'}),
-      {text:'Tal och klipp: '+(materialReason.endsWith('missing')?'klippen är inte uppmätta':'klippens mätning stämmer inte')+'. Öppna Dealers › Dragan och välj Mät omätta klipp.',href:'/admin/dealers/dragan?flik=klipp',linkLabel:'Öppna dealerns klipp'});
-  assert.match(roomReleaseErrorMessage({code:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'}),/Öppna Dealers › dealern och välj Mät omätta klipp\./);
-  assert.match(roomReleaseErrorMessage({code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'}),/Öppna Röst och tal\./);
+      {text:'Klippen saknar aktuell tidsmätning.',href:'/admin/dealers/dragan?flik=klipp',linkLabel:'Mät omätta klipp',run:'measure',detail:'studio_room_game_material_unavailable · '+materialReason});
+  assert.match(roomReleaseErrorMessage({code:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'}),/^Klippen saknar aktuell tidsmätning\. Inget publicerades\.$/);
+  // Okända koder visas aldrig råa.
+  for(const blocker of [{area:'x',code:'studio_secret_detail'},{area:'speech',code:'studio_room_game_material_unavailable',materialReason:'native_secret_detail'}])
+    assert.doesNotMatch(roomReleaseBlocker(blocker,context).text,/[a-z]+_[a-z_]+/);
+  assert.doesNotMatch(roomReleaseErrorMessage({status:500,code:'studio_secret_detail'})+roomReleaseErrorMessage({status:422,code:'studio_secret_detail'}),/[a-z]+_[a-z_]+/);
+  assert.equal(release.roomReleaseNotice({code:'studio_release_invalid',reason:'studio_release_unchanged'}),true);
   assert.equal(roomReleaseBlocker({area:'settings',code:'studio_room_game_config_missing'},context).href,'/admin/rooms/north-a?flik=spel');
   assert.equal(roomReleaseBlocker({area:'roomChoices',code:'studio_room_choices_draft_pending'},context).href,'/admin/rooms/north-a?flik=utseende');
   const neighbour=roomReleaseBlocker({area:'rooms',code:'studio_room_game_material_unavailable',roomId:'north-b'},context);
@@ -200,7 +206,7 @@ test('the room_choices step and the draft_invalid reason have their own text, li
   assert.equal(roomReleaseErrorMessage({status:422,code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}),
     'Utseendeutkastet passar inte med de sparade miljöerna. Inget publicerades.');
   assert.deepEqual(roomReleaseBlocker({area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'},{roomId:'north-a'}),
-    {text:'Utseendeutkastet passar inte med de sparade miljöerna.',href:'/admin/rooms/north-a?flik=utseende',linkLabel:'Öppna Utseende'});
+    {text:'Utseendeutkastet passar inte med de sparade miljöerna.',href:'/admin/rooms/north-a?flik=utseende',linkLabel:'Öppna Utseende',run:null,detail:'studio_release_invalid · studio_room_choices_draft_invalid'});
 });
 
 test('the Publicera button renders inactive before the comparison is read and for a room that cannot be published',async()=>{
@@ -211,7 +217,7 @@ test('the Publicera button renders inactive before the comparison is read and fo
   const kit=load('../components/ui/kit.tsx');
   const navigation={__esModule:true,default:props=>React.createElement('a',props)};
   const {RoomRelease}=load('../components/studio/room-release.tsx',{'../ui/kit':kit,'../ui/dialog':load('../components/ui/dialog.tsx',{'./kit':kit}),
-    '../../../runtime/navigation':navigation,'../../lib/room-release.mjs':release});
+    '../../../runtime/navigation':navigation,'../../lib/room-release.mjs':release,'../../lib/blocker-view.mjs':blockers});
   const html=props=>renderToStaticMarkup(React.createElement(RoomRelease,{operatorId:'north',roomId:'north-a',roomName:'Norr A',...props}));
   for(const out of [html({eligible:true}),html({eligible:false})]){
     const button=out.match(/<button[^>]*data-action="room-release"[^>]*>([^<]*)</);
@@ -277,6 +283,7 @@ function mountRelease(props,responses){
   const module={exports:{}};
   runInNewContext(transformSync(readFileSync(new URL('../components/studio/room-release.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
     {module,exports:module.exports,AbortController,require:name=>name==='react'?hooks.react:name==='../../lib/room-release.mjs'?lib
+      :name==='../../lib/blocker-view.mjs'?{...blockers,runBlockerAction:(action,options)=>blockers.runBlockerAction(action,{...options,fetchImpl})}
       :name==='../ui/kit'?{Button:stub,cn:(...names)=>names.filter(Boolean).join(' '),TechnicalDetails:stub}:name==='../ui/dialog'?{Dialog:stub}
       :name==='../../../runtime/navigation'?{__esModule:true,default:stub}:require(name)});
   const busy=[],published=[],focused=[];
@@ -324,4 +331,20 @@ test('Publicera nu sends one request for a double click, reports busy, and after
   assert.match(text(h.receipt().props.children),/^Publicerat · version 8/);assert.deepEqual(h.focused,[true],'focus moves to the receipt');
   await h.idle();assert.equal(h.calls.at(-1).method,'GET','the comparison is read again after the receipt');
   assert.equal(h.announced(),'Sparat läge är detsamma som live');
+});
+
+test('the measurement blocker is a button that measures the dealer clips and reads the comparison again',async()=>{
+  const sha='b'.repeat(64),clip={id:'clip-1',revision:'r1',sha256:sha,contentType:'video/mp4',classification:{dealerId:'dragan'}};
+  const blocked=preview({ready:false,blockers:[{area:'speech',code:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'}]});
+  const h=mountRelease({},[{status:200,body:blocked}]);
+  await h.idle();
+  h.responses.push({status:200,body:blocked});h.find('room-release').props.onClick();await h.idle();
+  const button=h.find('blocker-measure');assert.ok(button,'a button, not a link away');
+  assert.equal(text(button.props.children),'Mät omätta klipp');
+  h.responses.push({status:200,body:{videos:[clip,{...clip,id:'other',classification:{dealerId:'paow'}}]}},
+    {status:200,body:{media:{id:'clip-1',revision:'r2',mediaTiming:{frames:10}}}},{status:200,body:preview()});
+  button.props.onClick();await h.idle();await h.idle();
+  const after=h.calls.slice(-3).map(call=>call.method+' '+call.url.replace(/\?.*/,''));
+  assert.equal(after[0],'GET /studio/api/videos');assert.equal(after[1],'POST /studio/api/videos/measure-timing');
+  assert.match(after[2],/^GET .*\/api\/admin\/room-release$/,'the comparison is read again after measuring');
 });

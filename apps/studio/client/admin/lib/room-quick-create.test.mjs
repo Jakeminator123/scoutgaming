@@ -146,7 +146,10 @@ test('kedjan stannar med en mening och rätt knapp; bara ett osäkert svar förs
   const [a, b] = posts(flaky);
   assert.equal(a.idempotencyKey, b.idempotencyKey, 'samma idempotensnyckel'); assert.deepEqual(a.gameConfig, b.gameConfig, 'samma spelinställningar');
   assert.equal(puts(flaky), 1, 'den låsta miljön används igen, inget nytt sparas');
-  assert.deepEqual(stopView('native_material_measurement_missing', {dealerId:'paow'}), {text:'Spelinställningarna kan inte publiceras: klippen är inte uppmätta.', href:'/admin/dealers/paow?flik=klipp', label:'Mät omätta klipp'});
+  assert.deepEqual(stopView('native_material_measurement_missing', {dealerId:'paow'}), {text:'Klippen saknar aktuell tidsmätning.', href:'/admin/dealers/paow?flik=klipp', label:'Mät omätta klipp'});
+  // Spärrarna har sin text i blocker-view.mjs; miljön öppnas under Miljöer.
+  assert.deepEqual(stopView('presentation_lane_incompatible', {laneId:'dragan-delad'}), {text:'Miljön saknar en spelbar dealer eller bakgrund.', href:'/admin/scenes?tab=miljoer&composition=dragan-delad', label:'Öppna miljön'});
+  assert.deepEqual(stopView('conflict'), {text:'Någon annan sparade just. Läs in igen.', action:'reload', label:'Läs in igen'});
 });
 
 test('efter ett stopp (material eller konflikt, även efter Läs in igen) används samma miljö: ingen ny kopia, ny nyckel', async () => {

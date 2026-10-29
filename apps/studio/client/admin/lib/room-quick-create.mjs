@@ -6,7 +6,7 @@ import {defaultPresentationLane} from '../../../../../packages/presentation/cont
 import {createStudioClient} from './connected-studio.mjs';
 import {dealerCoverage} from './dealer-coverage.mjs';
 import {measureClipsInOrder,unmeasuredClips} from './media-timing.mjs';
-import {materialReasonText} from './room-release.mjs';
+import {blockerView,BLOCKER_CODES} from './blocker-view.mjs';
 import {createPresentationRoomClient} from '../../../lib/presentation-room-client.mjs';
 import {createRoomGameConfigClient,ROOM_GAME_DEFAULTS} from '../../../lib/room-game-config-client.mjs';
 import {roomLimitProfiles} from '../../../lib/room-limit-profiles.mjs';
@@ -109,42 +109,29 @@ export function planEnvironment({catalog, project, dealerId, laneId, operatorId 
   return {action:'copy', laneId:locked.id, project:add(locked)};
 }
 
-const companyHref = (operatorId, flik) => `/admin/companies/${encodeURIComponent(operatorId)}?flik=${flik}`;
 const dealerHref = (dealerId, flik) => `/admin/dealers/${encodeURIComponent(dealerId)}?flik=${flik}`;
-const laneHref = laneId => `/admin/scenes?tab=mallar&composition=${encodeURIComponent(laneId)}`;
 const roomHref = (roomId, flik) => `/admin/rooms/${encodeURIComponent(roomId)}?flik=${flik}`;
+// Dialogens stopp som spärrkoder i blocker-view.mjs: förhandsvisningens skäl saknar prefixet studio_.
+const stopBlockers = Object.freeze({appearance_draft:'studio_room_choices_draft_pending', environment_choice:'studio_presentation_room_environment_required',
+  material:'studio_room_game_material_unavailable', conflict:'studio_conflict'});
 /**
- * En mening och en knapp per stopp (#642/#655): `href` öppnar platsen där det rättas, `action` gör om
- * kedjan ('retry', samma spelbord) eller läser in allt igen ('reload').
+ * En mening och en knapp per stopp (#642/#655). Spärrarna har sin text i blocker-view.mjs; `href` öppnar
+ * platsen där det rättas, `action` gör om kedjan ('retry', samma spelbord) eller läser in allt igen ('reload').
  * @returns {{text:string, href?:string, label?:string, action?:'retry'|'reload'}}
  */
 export function stopView(code, {operatorId = '', dealerId = '', laneId = '', detail = ''} = {}) {
-  const lane = {href:laneHref(laneId), label:'Öppna miljön'}, assignment = {href:companyHref(operatorId, 'tilldelning'), label:'Öppna tilldelningen'};
-  const reload = {action:'reload', label:'Läs in igen'}, retry = {action:'retry', label:'Försök igen'};
-  if (/^native_material_/.test(code)) {
-    const text = `Spelinställningarna kan inte publiceras: ${materialReasonText(code)}.`;
-    if (/measurement/.test(code)) return {text, href:dealerHref(dealerId, 'klipp'), label:'Mät omätta klipp'};
-    if (/speech/.test(code)) return {text, href:dealerHref(dealerId, 'tal'), label:'Öppna Röst och tal'};
-    if (code === 'native_material_profile_missing') return {text, href:dealerHref(dealerId, 'landningar'), label:'Öppna Landningar'};
-    return {text, href:dealerHref(dealerId, 'klipp'), label:'Öppna Klippkartan'};
+  const material = /^native_material_/.test(String(code));
+  const blocker = material ? 'studio_room_game_material_unavailable' : stopBlockers[code] ?? (/^presentation_/.test(String(code)) ? 'studio_' + code : code);
+  if (BLOCKER_CODES.includes(blocker)) {
+    const {text, action} = blockerView(blocker, {operatorId, dealerId, compositionId:laneId, ...(material ? {materialReason:code} : {})});
+    if (action?.run === 'reload') return {text, action:'reload', label:action.label};
+    return action?.href ? {text, href:action.href, label:action.label} : {text};
   }
+  const retry = {action:'retry', label:'Försök igen'};
   switch (code) {
-    case 'appearance_draft': return {text:'Bolaget har ett opublicerat utseendeutkast; publicera eller släng det först så att det inte blir inaktuellt.', href:companyHref(operatorId, 'journal'), label:'Öppna bolagets journal'};
-    case 'no_dealer': return {text:'Det finns ingen dealer att skapa spelbordet med.', href:'/admin/dealers', label:'Öppna Dealers'};
-    case 'environment_dealer': return {text:'Miljön har en annan dealer som standard.', ...lane};
-    case 'environment_choice': case 'presentation_room_environment_required': return {text:'Miljön har flera bakgrunder. Välj en som standard.', ...lane};
-    case 'presentation_lane_incompatible': return {text:'Miljön saknar en spelbar dealer eller bakgrund.', ...lane};
-    case 'presentation_room_environment_conflict': return {text:'Miljön används redan av spelbord med en annan bakgrund.', ...lane};
-    case 'presentation_shared_dealer_conflict': case 'presentation_shared_layer_conflict': case 'presentation_legacy_package_conflict': case 'presentation_package_conflict':
-      return {text:'Bolagets tilldelning behöver publiceras igen innan ett nytt spelbord kan läggas till.', ...assignment};
-    case 'presentation_package_too_large': return {text:'Tilldelningen blir för stor med det här spelbordet.', ...assignment};
-    case 'presentation_room_binding_conflict': case 'presentation_game_lane_conflict': return {text:'Spelbordet krockar med ett äldre spelbord. Läs in igen.', ...reload};
-    case 'studio_presentation_runtime_update_required': return {text:'Spelservern behöver uppdateras innan spelbordet kan skapas.'};
     case 'measure_failed': return {text:`${detail} kunde inte mätas.`, href:dealerHref(dealerId, 'klipp'), label:'Öppna Klippkartan'};
-    case 'conflict': return {text:'Någon annan sparade just. Läs in igen.', ...reload};
     case 'uncertain': return {text:'Svaret kom inte fram; försök igen så används samma spelbord.', ...retry};
     case 'aborted': return {text:'Avbrutet. Det som hann bli klart står kvar.', ...retry};
-    case 'material': return {text:'Spelinställningarna kan inte publiceras med dealerns klipp.', href:dealerHref(dealerId, 'klipp'), label:'Öppna Klippkartan'};
     default: return {text:detail || 'Åtgärden kunde inte bekräftas.', ...retry};
   }
 }
