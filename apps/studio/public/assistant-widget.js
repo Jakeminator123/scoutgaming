@@ -25,7 +25,7 @@
   <button class="launch" aria-label="Öppna Adminroboten"><span class="robot" aria-hidden="true">⌘</span><span>Adminroboten</span></button>
   <section class="panel" hidden aria-labelledby="assistant-title"><header><span class="robot" aria-hidden="true">⌘</span><div><h2 id="assistant-title">Adminroboten</h2></div><button class="close" aria-label="Minimera chatten">−</button></header>
     <nav><label>Välj hjälp<select><option value="help">Scoutguiden · hjälp på sajten</option></select></label></nav>
-    <p class="intro"></p><details><summary>Detaljer</summary><p class="model"></p><p class="coverage"></p></details><div class="links" hidden><a href="/admin/clips?tool=import">Ladda upp klipp</a></div>
+    <p class="intro"></p><details><summary>Detaljer</summary><p class="model"></p><p class="coverage"></p></details><div class="links" hidden><a href="/admin/clips?panel=intake">Lägg till klipp</a></div>
     <div class="messages" role="log" aria-live="polite"></div>
     <form><label>Meddelande<textarea maxlength="3000" rows="2" placeholder="Vad vill du ha hjälp med?"></textarea></label><div class="row"><button class="reset" type="button">Nytt samtal</button><button class="send" type="submit">Skicka</button></div></form>
     <div class="status" role="status"></div>
@@ -49,7 +49,7 @@
   function working(value){busy=value;$('.send').disabled=value;$('.reset').disabled=value;select.disabled=value;input.disabled=value;}
   const actionLabels={'dealer.create':'Skapa dealer','dealer.archive':'Arkivera dealer','dealer.restore':'Återställ dealer','dealer.delete':'Radera dealer permanent','material.archive':'Arkivera material','material.restore':'Återställ material','media.rename':'Byt klippets namn','media.archive':'Arkivera klipp','media.restore':'Återställ klipp','media.delete':'Radera klipp permanent','company.archive':'Arkivera bolag','company.restore':'Återställ bolag','room.archive':'Arkivera rum','room.restore':'Återställ rum','room.pause':'Stäng rum','room.open':'Öppna rum','resource.rename':'Byt namn','openclaw.model':'Byt agentmodell'};
   const errors={
-    assistant_invalid_dealer:'Dealer-id är upptaget, ogiltigt eller registret är fullt. Välj ett nytt id eller öppna Studio.',assistant_media_immutable:'Det här klippet hör till en fryst klippfamilj. Namnet kan inte ändras med den här funktionen.',assistant_media_in_use:'Klippet används. Öppna Studio och lossa dess aktiva placeringar innan det arkiveras.',
+    assistant_invalid_dealer:'Dealer-id är upptaget, ogiltigt eller registret är fullt. Välj ett nytt id eller öppna Dealers.',assistant_media_immutable:'Det här klippet hör till en fryst klippfamilj. Namnet kan inte ändras med den här funktionen.',assistant_media_in_use:'Klippet används. Öppna Studio och lossa dess aktiva placeringar innan det arkiveras.',
     assistant_n1_required:'Logga in som nivå 1 för intern åtkomst.',assistant_access_changed:'Din inloggning ändrades. Öppna chatten igen.',
     assistant_model_unavailable:'Den valda modellen svarar inte eller är inte tillgänglig i serverns modellkoppling. Ingen reservmodell används automatiskt.',
     assistant_review_changed:'Underlaget har ändrats. Granska åtgärden på nytt.',assistant_confirmation_expired:'Bekräftelsen har gått ut. Granska på nytt.',
