@@ -121,7 +121,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
             :<><p>Ändringen når spelet efter Spara utkast och en ny publicering av bolagets paket{dealerId==='paow'?', eller Publicera PAOWs viloklipp i spelbordet':''}.</p>
               <div className="studio-policy-actions">
                 {savedRotation.outside>0&&<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Uppdatera till urvalet</button>}
-                <button type="button" className="studio-button" disabled={locked} onClick={()=>{if(!policy)return;const {rotation,...rest}=policy;idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
+                <button type="button" className="studio-button" disabled={locked} onClick={()=>{if(!policy)return;const {rotation,...rest}=policy;setExcluded([]);idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
               </div></>}
         </section>}
         {!policy?.rotation&&<>
