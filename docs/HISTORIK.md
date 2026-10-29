@@ -64,6 +64,17 @@ Alla fanns i `main` på `6942432d` (läs: `git show 6942432d:<sökväg>`). Alla 
 | 2026-10-22 | `migrering/kevin-ks-migrering/K05/K05-matris.tsv` | K05: urvalsmatrisen för PAOW; urvalet bärs av `dealer-import-kevin-source-paow.json`, vars läsare `tools/k05-import-plan.mjs` redan var borttagen | `4fbd5467` |
 | 2026-10-02 | `media/site/source/design-kit/` (8 filer: `prive-blackjack-ui-kit.html`, `BettingRail`, `Feedback`, `HandBar`, `Main`, `ScoutBrand`, `Seats` `.dc.html`, `canvas.json`) | Gammalt designkit utan läsare; raderna i `media/layout.json` (roten `design-kit` och åtta filer), `media/blob-index.json` (`canvas.json`) och `tools/repo-limits-allowlist.json` togs bort samtidigt. Blob-objektet för `canvas.json` ligger kvar i Blob | `d706dea0` |
 
+## Raderade 29 oktober 2026: Admin-kod utan route och Astrid-media
+
+Kod och media utan läsare i Admin eller lobbyn. API-routen `apps/studio/app/api/forge/**` och `lib/dealer-forge-*` står kvar; dealerfabriken bygger på Runway.
+
+| Datum | Fil | Vad det var | Läses med |
+| --- | --- | --- | --- |
+| 2026-10-29 | `apps/studio/components/dealer-forge-page.tsx` (+ `.module.css`, `.test.mjs`) | Forge-UI:t "Skapa material"; ingen route i `client/admin/entry.tsx`, `/admin/dealer-studio` leder till `dealer:klipp` | `git show 3ff8f5daa:apps/studio/components/dealer-forge-page.tsx` |
+| 2026-10-29 | `apps/studio/components/probe-editor.tsx` (+ `.module.css`) | Gammal provredigerare, 0 läsare (#665) | `git show 9f9f20806:apps/studio/components/probe-editor.tsx` |
+| 2026-10-29 | `apps/studio/components/dealer-material-page.tsx` | Omslag kring Forge-UI:t, 0 läsare (#665) | `git show 9f9f20806:apps/studio/components/dealer-material-page.tsx` |
+| 2026-10-29 | `apps/studio/client/lobby/public/images/dealers/astrid.jpg`, `.../videos/dealers/astrid-look.mp4` | Astrids lobbyporträtt och porträttklipp; Astrid är raderad (#665) | `git show 9f9f20806:apps/studio/client/lobby/public/images/dealers/astrid.jpg` |
+
 ## Tidigare raderingar
 
 - `docs/history/` (överlämningar, körlistor och kvitton från före 28 oktober) raderades i `8ad45fbf` och `a90dde8d` (28 oktober 2026). Läs med `git show 29ed6626bf:docs/history/<fil>`; `git log --diff-filter=D -- docs/history` listar filerna.

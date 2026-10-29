@@ -19,7 +19,7 @@ export const IDLE_USES:readonly {id:IdleVariantUse;label:string;hint:string}[]=O
   {id:'manual',label:'Av',hint:'Spelas bara vid manuellt prov. Grundloopen fortsätter.'},
   {id:'automatic',label:'Ibland · intervall',hint:'Startar av sig själv med jämna mellanrum medan dealern väntar, och återgår sedan till grundloopen.'},
   {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när spelbordet kör klippvalsläget Regler.'},
-  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när scenmallens vila står på OpenClaw. Beskriv vad klippet visar.'},
+  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när miljöns vila står på OpenClaw. Beskriv vad klippet visar.'},
 ]);
 const automatic:IdleAutomaticPolicy={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
 const seconds=(ms:number)=>(ms/1000).toLocaleString('sv-SE',{maximumFractionDigits:1});
@@ -102,7 +102,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const caption=slot.eventId==='idle.ready'?'Vila (idle)':slot.title;
 
   return <section aria-label={`Policy för ${slot.title}`} className="studio-policy-panel">
-    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Spelbordet får ändringen först när utkastet sparas och spelbordet publiceras. OpenClaw väljer bara bland klipp markerade OpenClaw, och bara när scenmallens vila står på OpenClaw.</p></header>
+    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Spelbordet får ändringen först när utkastet sparas och spelbordet publiceras. OpenClaw väljer bara bland klipp markerade OpenClaw, och bara när miljöns vila står på OpenClaw.</p></header>
     {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
         {rotationSource&&rotationCandidate&&<section className="studio-policy-section" aria-label="Vilosekvens">
