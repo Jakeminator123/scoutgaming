@@ -349,7 +349,8 @@ publicerade placering som utgångspunkt.
 
 Materialbiblioteket per lager. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Valt förslag visas i scenmallen för dator och mobil;
+välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
+synligt; rumsbilder blir miljöbilder. Valt förslag visas i scenmallen för dator och mobil;
 en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
 svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara scenmallar med samma placering. Uppladdning ändrar inga
