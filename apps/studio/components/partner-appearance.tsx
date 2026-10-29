@@ -237,13 +237,13 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
     settingsLines.push([t('Bordsspråk','Table language'), settings.language === 'sv' ? t('Svenska','Swedish') : settings.language === 'en' ? t('Engelska','English') : settings.language]);
     settingsLines.push([t('Insatsprofil','Limit preset'), (PRESET_NAMES[settings.limitPreset] ?? settings.limitPreset) + (preset ? ` · ${amount(preset.min)}–${amount(preset.max)}` : '')]);
   }
-  const quiet = locked.length || settingsLines.length ? <dl className={styles.quiet} aria-label={t('Bestäms av Scoutgaming','Set by Scoutgaming')}>
+  const quiet = locked.length || settingsLines.length ? <dl className={styles.quiet} data-quiet="" aria-label={t('Bestäms av Scoutgaming','Set by Scoutgaming')}>
     {locked.map(key => { const value = effectiveOf(key); return <div key={key} data-locked={key}><dt>{labels[key]}</dt><dd><span title={value ? labelOf(value) : undefined}>{value ? labelOf(value) : t('inget valt','none selected')}</span><small>{lockedText(key)}</small></dd></div>; })}
     {settingsLines.map(([key, value]) => <div key={key}><dt>{key}</dt><dd><span>{value}</span><small>{t('bestäms av Scoutgaming','set by Scoutgaming')}</small></dd></div>)}
   </dl> : null;
   const resetLink = room && branding.roomOverrides?.[room.id] ? <button type="button" className={styles.linkButton} data-action="reset-room" disabled={!editable || busy} onClick={resetRoom}><RotateCcw size={13} aria-hidden="true"/>{t('Återställ spelbordet till bolagets standard','Reset the table to the company default')}</button> : null;
   const editor = <>
-  {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
+  {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
   <fieldset className={styles.editor} disabled={!editable || busy}>
     <legend className={styles.srOnly}>{t('Spelbordets val','Table choices')}</legend>
     {lane && !lane.composition ? <p className={styles.hint}>{t('Scenen är en enda film; bakgrund och bordsgrafik ingår i den. Be Scoutgaming om separata lager om ni vill kunna byta dem.','The scene is a single video; background and table graphics are part of it. Ask Scoutgaming for separate layers if you want to change them.')}</p> : null}

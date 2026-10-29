@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import Link from '../../../runtime/navigation';
 import {HubPage,Tabs,Card,Chip,Empty,KV} from '../ui/hub';
-import {buttonVariants,cn} from '../ui/kit';
+import {buttonVariants,cn,Footnote} from '../ui/kit';
 import {adminSystemTabs} from '../../lib/admin-navigation';
 import {Administration,AgentModelsPanel,EconomyPanel} from './connected-services';
 import {ResourceConnections} from './resource-connections';
@@ -17,9 +17,9 @@ export function SystemPage({active,tab}:{active:boolean;tab:string}) {
     <Tabs items={adminSystemTabs} active={tab}/>
     {panel('drift',<Administration group="operations"/>)}
     {panel('agenter',<div className="grid gap-4"><OpenAiCard active={active&&tab==='agenter'}/><AgentModelsPanel/></div>)}
-    {panel('personal',<><p className="mb-4 mt-0 text-[12.5px] text-sg-muted">Scoutgamings egna konton: administratörer och personal. Spelarnas konton finns under Spelarkonton.</p><Administration group="accounts" section="users"/></>)}
-    {panel('spelare',<><p className="mb-4 mt-0 text-[12.5px] text-sg-muted">Alla spelare oavsett bolag, för support. Spelare knyts till bolag senare; då flyttar vyn till Bolag › Spelare och ekonomi.</p><Administration group="accounts" section="players"/><EconomyPanel active={active&&tab==='spelare'}/></>)}
-    {panel('integration',<><p className="mb-4 mt-0 text-[12.5px] text-sg-muted">API-nycklar och testsession. Nycklarna är inte knutna till bolag ännu och visas därför här tills vidare.</p><Administration group="partners"/></>)}
+    {panel('personal',<><Footnote className="mb-4 mt-0">Scoutgamings egna konton: administratörer och personal. Spelarnas konton finns under Spelarkonton.</Footnote><Administration group="accounts" section="users"/></>)}
+    {panel('spelare',<><Footnote className="mb-4 mt-0">Alla spelare oavsett bolag, för support. Spelare knyts till bolag senare; då flyttar vyn till bolagets egen sida.</Footnote><Administration group="accounts" section="players"/><EconomyPanel active={active&&tab==='spelare'}/></>)}
+    {panel('integration',<><Footnote className="mb-4 mt-0">API-nycklar och testsession. Varje nyckel hör till ett bolag; du väljer bolaget när du skapar nyckeln.</Footnote><Administration group="partners"/></>)}
     {panel('beroenden',<ResourceConnections embedded/>)}
     {panel('lobby',<Card title="Intern lobby" aside="Bakom inloggning">
       <p className="mb-4 mt-0 max-w-[68ch] text-[13.5px] text-sg-muted">Den interna lobbyn visar alla bolags spelbord, även pausade. Spelet startar mot det som är publicerat. Spelarna ser den publika lobbyn.</p>
