@@ -69,11 +69,11 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_VERCEL_UNIFIED_UI:'0'}));
 });
 
-test('actual unified Studio middleware preserves auth transport and rejects encoded document aliases', async () => {
+test('actual unified Studio proxy preserves auth transport and rejects encoded document aliases', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
-  const middlewareUrl = new URL('../../studio/middleware.ts', import.meta.url);
+  const middlewareUrl = new URL('../../studio/proxy.ts', import.meta.url);
   const requireMiddlewareSource = createRequire(middlewareUrl);
   // The frontend service owns Next; Studio dependencies are installed separately.
   const requireMiddleware = specifier => specifier === 'next/server'
@@ -89,7 +89,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
       'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
     for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin', '/studio/admin/login']) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
       assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
       assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
       assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
@@ -98,7 +98,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login']) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin?room=room-7'),{nextConfig:{basePath:'/studio'}}));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin?room=room-7'),{nextConfig:{basePath:'/studio'}}));
       assert.equal(response.status,307);
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin?room=room-7'));
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
@@ -107,26 +107,26 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     const resetToken='fixture_restore_'.repeat(3);
     for (const prefix of ['', '/studio']) for (const old of ['/set-password','/control/set-password']) {
       for(const query of ['t='+resetToken,'token='+resetToken]) {
-        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query+'&foreign=discard',{nextConfig:{basePath:'/studio'}}));
+        const response=module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?'+query+'&foreign=discard',{nextConfig:{basePath:'/studio'}}));
         assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password?t='+resetToken);
         assert.equal(response.headers.get('referrer-policy'),'no-referrer');
       }
       for(const query of ['t=short','t='+resetToken+'&t='+resetToken,'t='+resetToken+'&token='+resetToken]) {
-        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query,{nextConfig:{basePath:'/studio'}}));
+        const response=module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?'+query,{nextConfig:{basePath:'/studio'}}));
         assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password');
       }
     }
     for (const old of ['/control/login','/studio/login','/control/set-password','/studio/set-password']) {
-      const response=module.exports.middleware(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
+      const response=module.exports.proxy(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
       assert.equal(response.status,400);assert.equal(response.headers.get('location'),null);
     }
     const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
-    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin?dealer=paow', {headers:navigation}));
+    const document = module.exports.proxy(new NextRequest(config.publicOrigin + '/admin?dealer=paow', {headers:navigation}));
     assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin?dealer=paow');
     // Known document metadata is normalized before a fetch hop can replace navigate with cors.
     assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
     assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
-    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin', {headers:{...navigation,origin:'https://foreign.example'}}));
+    const foreign = module.exports.proxy(new NextRequest(config.publicOrigin + '/admin', {headers:{...navigation,origin:'https://foreign.example'}}));
     assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
     for (const [path, init] of [
       ['/studio/api/project', {headers:navigation}],
@@ -137,32 +137,32 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       ['/control/replies', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
     ]) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, init));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin + path, init));
       if (path.startsWith('/control/')) assert.equal(response.status,400,path);
       else assert.equal(response.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site', path);
     }
-    const transport = module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
+    const transport = module.exports.proxy(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
     assert.equal(transport.headers.get('x-middleware-rewrite'), config.backendOrigin + '/studio/api/inputs');
     assert.equal(transport.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
-    const workspace = module.exports.middleware(new NextRequest(config.publicOrigin + '/partner/demo-north/team?_rsc=fixture', {headers}));
+    const workspace = module.exports.proxy(new NextRequest(config.publicOrigin + '/partner/demo-north/team?_rsc=fixture', {headers}));
     assert.equal(workspace.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/partner/demo-north/team?_rsc=fixture');
     for (const path of ['/studio/api/%61dmin/users', '/partner/demo-north/%74eam']) {
-      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 400, path);
+      assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + path)).status, 400, path);
     }
     for (const path of ['/api/internal', '/partner/api/admin']) {
-      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 404, path);
+      assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + path)).status, 404, path);
     }
     delete process.env.CROUPIER_VERCEL_UNIFIED_UI;
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login','/set-password','/control/set-password']) {
       const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
-      const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
+      const response=module.exports.proxy(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
       const mode=old.endsWith('set-password')?'set-password':'login';
       // The legacy returnTo is kept but canonicalised: the retired publication page with one room is that room's nav.
       const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms/room-7');
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+expected);
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
     }
-    assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
+    assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
   } finally {
     for (const [key,value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
   }

@@ -20,7 +20,10 @@
 }
 /* Regler för ättlingar skrivs med :is(.workspace): samma selektor och specificitet som .workspace,
    men esbuilds composes-kontroll (undefined-composes-from) räknar då bara rotklassens egna värden.
-   Klasser som komponerar workspace använder samma form för sina ättlingar. */
+   Klasser som komponerar workspace använder samma form för sina ättlingar och upprepar inte värden
+   som workspace redan sätter. En ättling som ska ändra något ur workspace måste ha högre specificitet
+   än workspace-regeln: Next och Admin-bundeln lägger modulerna i olika ordning, så vid lika
+   specificitet vinner olika regel i de två byggena. */
 .workspace, :is(.workspace) * { box-sizing: border-box; }
 :is(.workspace) :is(button, input, select, textarea) { font: inherit; min-width: 0; max-width: 100%; }
 :is(.workspace) :is(input, select, textarea) { background: var(--bg); color: var(--text); border-color: var(--line); }
