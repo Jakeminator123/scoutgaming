@@ -17,8 +17,8 @@ import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs
 import { partnerNavigation } from '../components/partner/partner-copy.mjs';
 
 // Partnerportalens behörighetsmatris (docs/plans/PARTNERPORTAL-KONVERTERING.md, 4.3 punkt 6).
-// Varje förväntat svar räknas fram ur kartan nedan och rollens behörigheter; inget fall är
-// handskrivet. Rollerna är de tre standardrollerna, en roll med enbart varje behörighet och en
+// Varje förväntat svar räknas fram ur kartan nedan och rollens behörigheter; kartan själv är
+// handskriven efter vyernas behörigheter och vitlistan i lib/partner-session.mjs. Rollerna är de tre standardrollerna, en roll med enbart varje behörighet och en
 // roll med alla utom varje behörighet. Den sista gör att en enda borttagen kontroll i servern
 // syns: rollen som saknar just den behörigheten får då 200 där kartan säger 403.
 
@@ -64,7 +64,8 @@ const now = 1_700_000_000_000;
 const A = { id: 'alfa-bolag', slug: 'alfabolaget', name: 'Alfabolaget' };
 const B = { id: 'beta-bolag', slug: 'betabolaget', name: 'Betabolaget' };
 // Inget svar för bolag A får bära något av bolag B: id, adress, namn, spelbord, paketnamn eller konto.
-const B_MARKERS = /beta/i;
+// Bara B:s konkreta värden, så att vanliga ord som "betala" inte ger falska fel.
+const B_MARKERS = /beta-bolag|betabolaget|beta-bord|Betas|beta-admin|beta@/i;
 const LANE = 'alfa-lane';
 
 const salt = 'cd'.repeat(16), hash = 'ef'.repeat(64);
@@ -125,6 +126,8 @@ async function fixture() {
       { schemaVersion: 2, id: 'alfa-bord', name: 'Alfas blackjack', operatorId: A.id, presentationLaneId: LANE, gameLaneId: 'actual-portrait', state: 'live' },
       { schemaVersion: 2, id: 'beta-bord', name: 'Betas blackjack', operatorId: B.id, presentationLaneId: LANE, gameLaneId: 'actual-portrait', state: 'live' },
     ] });
+  // config.store gör att skrivningarna inte går via transaktionsvägen med FOR UPDATE-låset
+  // (partner-session.mjs); behörighet under lås provas av SQL-proven, inte här.
   const config = { boDb, scope, now: () => now, pool, readAdministration, store,
     gameDb: { prepare: () => ({ all: async () => [], get: async () => undefined }) },
     allowedOrigins: [origin, 'https://studio.example.invalid'], publicHosts: [host, 'studio.example.invalid'], apiBase: '/studio/api/admin', authBase: '/studio/api/auth',
@@ -170,6 +173,11 @@ async function prepare(f, write) {
 
 test('kartan täcker alla tolv behörigheter, alla vyer i menyn och varje vy har en behörighet', () => {
   assert.equal(PARTNER_PERMISSIONS.length, 12);
+  // Låser vyernas behörigheter: en vy som flyttas till fel behörighet i policyn ska fälla provet.
+  assert.deepEqual({ ...PARTNER_VIEW_PERMISSIONS }, {
+    overview: 'overview.read', rooms: 'tables.read', players: 'players.read', reports: 'reports.read',
+    team: 'team.read', integration: 'integrations.read', help: 'overview.read',
+  });
   assert.deepEqual([...partnerNavigationItems.map(item => item.id)].sort(), [...PARTNER_VIEWS].sort());
   for (const view of PARTNER_VIEWS) assert.ok(PARTNER_PERMISSIONS.includes(PARTNER_VIEW_PERMISSIONS[view]), view);
   const used = new Set([...PARTNER_VIEWS.flatMap(viewRequires), ...API_READS.flatMap(item => item.requires), ...API_WRITES.flatMap(item => item.requires)]);
