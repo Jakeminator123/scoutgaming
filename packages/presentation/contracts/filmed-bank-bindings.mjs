@@ -9,6 +9,8 @@ const placement = take => {
   return {eventId:take.target==='flip'?'reveal.dealer':['dealer','hole'].includes(take.target)?'deal.dealer':box<2?'deal.player.left':box<5?'deal.player.centre':'deal.player.right',
     situation:['hole','flip'].includes(take.target)?'dealer-hole':take.target==='dealer'?'dealer-up':'box'+box};
 };
+// The deal slot (eventId/situation) a filmed take is bound to; also used by Landningar's copy.
+export {placement as filmedTakePlacement};
 
 // The legacy full bank is a sequence, not randomly interchangeable clips.
 // Registration alone never activates it: binding remains an explicit draft edit.
