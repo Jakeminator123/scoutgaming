@@ -176,11 +176,13 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     receipts.set(input.commandId, { bytes: JSON.stringify(input), output }); return output;
   } } });
   // Real chat route and NDJSON; only the room service and OpenClaw are fixture ports.
-  const chatFrame = (room, entry) => JSON.stringify({ type: 'shared-room-chat', roomId: room, requestId: entry.requestId,
+  const chatFrame = (room, entry) => JSON.stringify({ type: 'shared-room-chat', roomId: room, lineId: entry.lineId, requestId: entry.requestId,
     who: entry.actorId === null ? 'dealer' : entry.actorId === actorId ? 'you' : 'player', seat: entry.seat, text: entry.text, at: entry.at });
   chat = createSharedRoomChat({ origin, cooldownMs: 0, settingsProvider: () => chatSettings,
     decide: async request => { chatAsked.push(request.message); return { kind: 'generatedText', requestId: request.requestId, exactText: 'Lycka till vid bordet.' }; },
-    service: { async chatContext(request) { assert.equal(request.headers.get('cookie'), cookie);
+    service: { async chatMember(request) { assert.equal(request.headers.get('cookie'), cookie);
+      return { binding: { actorId, sessionId: 'browser-session', roomId }, snapshot: structuredClone(snapshot) }; },
+    async chatContext(request) { assert.equal(request.headers.get('cookie'), cookie);
       return { binding: { actorId, sessionId: 'browser-session', roomId }, dealerId: 'astrid', snapshot: structuredClone(snapshot) }; },
     emitChat: (room, entry) => { for (const socket of sockets) socket.send(chatFrame(room, entry)); } } });
   wss = new WebSocketServer({ noServer: true });
@@ -234,7 +236,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     chatSettings = { speechUrl: 'https://director.invalid', speechToken: 'fixture-token' };
     await chatInput.press('Enter');
     await page.locator('.room-chat-dealer', { hasText: 'Lycka till vid bordet.' }).waitFor();
-    for (const socket of sockets) socket.send(chatFrame(roomId, { requestId: 'chat-other', actorId: 'browser-bob', seat: 3, text: '<img src=x>Hej från trean', at: Date.now() }));
+    for (const socket of sockets) socket.send(chatFrame(roomId, { lineId: 'q-' + 'b'.repeat(24), requestId: 'chat-other', actorId: 'browser-bob', seat: 3, text: '<img src=x>Hej från trean', at: Date.now() }));
     await page.locator('.room-chat-player').waitFor();
     assert.equal(await page.locator('#shared-room-chat img').count(), 0, 'chat text is never parsed as HTML');
     assert.deepEqual(await page.locator('.room-chat-who').allTextContents(), ['du', 'dealern', 'plats 3']);

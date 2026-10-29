@@ -44,9 +44,11 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
   let open = false, unread = 0, pending = null, closed = false;
   function receive(line) {
     if (closed) return;
-    const key = line.requestId + (line.who === 'dealer' ? ':dealer' : ':question');
-    if (seen.has(key)) return;
-    seen.add(key);
+    // Deduplicate on the server's line id (q-/a-<hex>), never on requestId: another member can reuse
+    // anyone's requestId, and that must not hide or replace a line here (review fix).
+    const key = typeof line.lineId === 'string' && /^[qa]-[0-9a-f]{24}$/.test(line.lineId) ? line.lineId : null;
+    if (key && seen.has(key)) return;
+    if (key) seen.add(key);
     const item = make('li', 'room-chat-line room-chat-' + line.who);
     item.append(make('span', 'room-chat-who', label(line)), make('span', 'room-chat-text', line.text));
     log.append(item);
@@ -73,8 +75,8 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
       const decision = await readChatResponse(response);
       if (closed) return;
       input.value = ''; status.textContent = '';
-      receive({ requestId, who: 'you', seat: null, text: message });
-      if (decision?.kind === 'generatedText' && typeof decision.exactText === 'string') receive({ requestId, who: 'dealer', seat: null, text: decision.exactText });
+      receive({ lineId: decision?.questionLineId, requestId, who: 'you', seat: null, text: message });
+      if (decision?.kind === 'generatedText' && typeof decision.exactText === 'string') receive({ lineId: decision.lineId, requestId, who: 'dealer', seat: null, text: decision.exactText });
       else status.textContent = 'Dealern lät frågan vara.';
     } catch (error) {
       if (!closed && !controller.signal.aborted) status.textContent = notices[error?.message] ?? failure;
