@@ -128,6 +128,27 @@ väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
 till vila.
 
+### Sammanhängande vilosekvens
+
+PAOW och Dragan har Kevins urval av viloklipp som en fryst källa. När
+dealern har en basloop visar **Körregel** avsnittet **Sammanhängande
+vilosekvens** med alla klipp i källan. Varje rad visar pose (vila eller
+knäppta händer), fas (insatsfas eller spelarens beslut) och om originalet
+**saknas i biblioteket**. Originalet `andas` måste vara basklipp innan
+sekvensen kan kopplas.
+
+1. Bocka ur klipp som inte ska spelas. Basklippet ingår alltid. Knäppta
+   händer kräver minst ett klipp in i posen och ett tillbaka till vila.
+2. **Koppla N viloklipp** kopplar urvalet till de redan uppladdade
+   originalen. Knappen är spärrad så länge ett valt original saknas; ladda
+   upp det i klippkartans intag (facket **Vila**) eller bocka ur det.
+3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp från
+   ett äldre urval kvar (för PAOW de tre Kevin valde bort 27 oktober), tar
+   **Uppdatera till urvalet** bort dem.
+4. Spara utkastet och publicera bolagets paket. För PAOW räcker **Publicera
+   PAOWs viloklipp** i spelbordet. **Återgå till enbart basklippet** tar
+   bort sekvensen; originalen behålls.
+
 ### Övergångar och delat bord
 
 **Övergångar** har **Till skon** (VILA → REDO, före första givningen) och

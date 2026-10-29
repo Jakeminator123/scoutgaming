@@ -97,7 +97,7 @@ test('Admin binds a subset: the baseline always stays and clasped hands need bot
     assert.equal(result.policy,null);assert.match(result.error,/Knäppta händer kräver minst ett klipp in i posen och ett tillbaka till vila/);
   }
   assert.match(prepareIdleRotation(f.base,f.inventory,{selection:['djupandetag']}).error,/Basklippet andas ingår alltid/);
-  for(const selection of [['andas','andasb'],'andas',[1]])assert.match(prepareIdleRotation(f.base,f.inventory,{selection}).error,/inte finns i dealerns vilokälla/);
+  for(const selection of [['andas','andasb'],'andas',[1],5,{}])assert.match(prepareIdleRotation(f.base,f.inventory,{selection}).error,/inte finns i dealerns vilokälla/);
   // Missing media blocks only while it is selected; deselecting it is an explicit choice.
   const gap=structuredClone(f.inventory);gap.videos=gap.videos.filter(video=>video.sha256!==f.source.clips.find(take=>take.id==='knappaxlar5101').sha256);
   assert.match(prepareIdleRotation(f.base,gap).error,/Originalet knappaxlar5101 saknas/);

@@ -82,7 +82,9 @@ export function prepareIdleRotation(policy, inventory, { selection = null } = {}
   const source = SOURCES.get(dealerId);
   if (!source || policy.familyId !== dealerId + '/idle.ready/ready') return null;
   const videos = Array.isArray(inventory?.videos) ? inventory.videos : [];
-  const known = new Set(source.clips.map(take => take.id)), chosen = new Set(selection ?? known);
+  const known = new Set(source.clips.map(take => take.id));
+  const valid = selection === null || Array.isArray(selection) && selection.every(id => known.has(id));
+  const chosen = new Set(valid && selection ? selection : known);
   const clips = source.clips.map(take => {
     const rows = videos.filter(video => ownOriginal(video, take, dealerId, policy.familyId));
     return { id: take.id, phase: take.phase, from: take.from, to: take.to, head: take.head, calm: take.calm,
@@ -92,8 +94,7 @@ export function prepareIdleRotation(policy, inventory, { selection = null } = {}
   const result = (next, error) => ({ dealerId, ref: source.ref, baseline: source.baseline, total: clips.length,
     matched: clips.filter(row => row.status === 'registered').length, selected: clips.filter(row => row.selected).length,
     clips, policy: next, error });
-  if (selection !== null && (!Array.isArray(selection) || selection.some(id => !known.has(id))))
-    return result(null, 'Urvalet innehåller ett klipp som inte finns i dealerns vilokälla.');
+  if (!valid) return result(null, 'Urvalet innehåller ett klipp som inte finns i dealerns vilokälla.');
   if (!chosen.has(source.baseline)) return result(null, `Basklippet ${source.baseline} ingår alltid i vilosekvensen.`);
   const picked = clips.filter(row => row.selected);
   const ambiguous = picked.filter(row => row.status === 'ambiguous');
