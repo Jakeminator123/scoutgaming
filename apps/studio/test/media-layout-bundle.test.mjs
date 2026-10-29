@@ -2,7 +2,8 @@
 // (outputFileTracingExcludes i apps/studio/next.config.mjs). tools/media-layout.mjs läser
 // layoutfilen bara när readMediaLayout anropas, och Studios nativa medievägar skickar alltid
 // Neons runtimeCatalog. Provet låser båda: importen läser ingen mediefil, och de nativa
-// vägarna fungerar när filerna saknas, utan att ens försöka läsa dem.
+// vägarna (metadata, publik media, klippkontroller och borttagningens indexkontroll) fungerar
+// när filerna saknas, utan att ens försöka läsa dem.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -14,11 +15,13 @@ const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const watched = /(?:^|[\\/])media[\\/](?:layout\.json|blob-index\.json|catalog[\\/])/;
 const touched = [];
 let missing = false; // true: filerna finns inte, som i Vercel-bundeln.
+const restore = [];
 const absent = path => Object.assign(new Error(`ENOENT: no such file or directory, '${path}'`), { code: 'ENOENT', path });
 
 function spy(target, names, asyncCall) {
   for (const name of names) {
     const original = target[name];
+    restore.push(() => { target[name] = original; });
     target[name] = function (path, ...rest) {
       if (watched.test(String(path))) {
         touched.push(`${name} ${String(path).replaceAll('\\', '/').replace(/^.*\/media\//, 'media/')}`);
@@ -31,10 +34,12 @@ function spy(target, names, asyncCall) {
 spy(fs, ['lstatSync', 'statSync', 'readFileSync', 'existsSync', 'openSync', 'realpathSync', 'accessSync'], false);
 spy(fsp, ['readFile', 'lstat', 'stat', 'open', 'realpath', 'access'], true);
 syncBuiltinESMExports(); // Även `import { lstatSync } from 'node:fs'` ser spionerna.
+test.after(() => { for (const undo of restore) undo(); syncBuiltinESMExports(); });
 
 test('importing tools/media-layout.mjs and the Studio modules that use it reads no media file', async () => {
   const layout = await import('../../../tools/media-layout.mjs');
-  for (const module of ['media-blob-index.mjs', 'studio-media-runtime.mjs', 'legacy-clip-inventory.mjs']) await import(`../lib/${module}`);
+  for (const module of ['media-blob-index.mjs', 'studio-media-runtime.mjs', 'legacy-clip-inventory.mjs',
+    'studio-native-runtime.mjs', 'studio-render-persistence.mjs', 'studio-media-deletion.mjs']) await import(`../lib/${module}`);
   assert.deepEqual(touched, []);
   assert.equal(typeof layout.readMediaLayout, 'function', 'the reader exists for local tools and is only called on demand');
 });
@@ -43,6 +48,7 @@ test('native Studio media paths serve from the Neon catalogue when the bundle ha
   const { readRuntimeCatalogFixture } = await import('../../../test/fixtures/runtime-media-catalog.mjs');
   const { createSeedProject, isAssetCompatible } = await import('../../../packages/presentation/contracts/studio-model.mjs');
   const { createStudioMediaRuntime } = await import('../lib/studio-media-runtime.mjs');
+  const { createStudioMediaDeletion } = await import('../lib/studio-media-deletion.mjs');
   const catalog = readRuntimeCatalogFixture(repository); // Testets eget underlag, läst före provet.
   touched.length = 0; missing = true;
   try {
@@ -70,7 +76,10 @@ test('native Studio media paths serve from the Neon catalogue when the bundle ha
     }
     const controls = await media.legacyControls(project);
     assert.ok(controls.runtime, 'legacy clip controls resolve from the catalogue');
-    assert.ok(reads >= 5, 'every operation read the scoped Neon catalogue');
+    // Borttagningen verifierar Blob-indexet ur katalogen innan planen läser projektet (saknas här).
+    const deletion = createStudioMediaDeletion({ repository: { ...neon, transaction: run => run() }, env });
+    await assert.rejects(deletion.checkDealer({ dealerId: 'qa-dealer', expectedRevision: 'a'.repeat(64) }), { code: 'studio_conflict' });
+    assert.ok(reads >= 6, 'every operation read the scoped Neon catalogue');
     assert.deepEqual(touched, [], 'no native path tried to read media/layout.json or media/blob-index.json');
   } finally { missing = false; }
 });
