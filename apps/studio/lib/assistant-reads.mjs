@@ -2,7 +2,7 @@ import {assistantFailure as fail} from './assistant-model.mjs';
 import {assistantServices} from './assistant-context.mjs';
 
 export const ASSISTANT_SOURCES = ['dealers','materials','compositions','media','companies','rooms'];
-export const ASSISTANT_PAGES = {studio:'/admin/clips',import:'/admin/clips?tool=import',materials:'/admin/assets',structure:'/admin/structure',operations:'/admin/drift',models:'/admin/ai/models',companies:'/admin/companies',audit:'/admin/companies'};
+export const ASSISTANT_PAGES = {studio:'/admin/clips',import:'/admin/clips?panel=intake',materials:'/admin/assets',structure:'/admin/structure',operations:'/admin/drift',models:'/admin/ai/models',companies:'/admin/companies',audit:'/admin/companies'};
 const scalar = value => typeof value === 'string' ? value.slice(0,500) : typeof value === 'boolean' || Number.isFinite(value) ? value : null;
 const pick = (row, keys) => Object.fromEntries(keys.filter(key => row?.[key] !== undefined).map(key => [key, scalar(row[key])]));
 export function validateAssistantRead(value) {
@@ -14,7 +14,7 @@ export function assistantNavigation(value) {
   if (value === null || value === undefined) return null;
   if (!value || Object.keys(value).sort().join(',') !== 'page,targetId' || !Object.hasOwn(ASSISTANT_PAGES,value.page)
     || value.targetId !== null && (typeof value.targetId !== 'string' || !/^[-a-zA-Z0-9._:]{1,100}$/.test(value.targetId))) fail('assistant_invalid_navigation');
-  const labels = {studio:'Öppna Studio',import:'Ladda upp klipp',materials:'Öppna bord och bakgrunder',structure:'Öppna strukturen',operations:'Öppna drift',models:'Öppna agentmodeller',companies:'Öppna spelbolag',audit:'Öppna ändringsloggen'};
+  const labels = {studio:'Öppna klippkartan',import:'Lägg till klipp',materials:'Öppna bord och bakgrunder',structure:'Öppna strukturen',operations:'Öppna drift',models:'Öppna agentmodeller',companies:'Öppna bolag',audit:'Öppna ändringsloggen'};
   let href = ASSISTANT_PAGES[value.page];
   if (value.targetId && ['studio','import'].includes(value.page)) href += (href.includes('?')?'&':'?') + 'dealer=' + encodeURIComponent(value.targetId);
   return {href,label:labels[value.page]};
