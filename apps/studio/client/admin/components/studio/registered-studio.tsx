@@ -243,7 +243,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
                   {operatorPackage.message&&<p role="status" className="m-0">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert" className="m-0 text-sg-warn">{operatorPackage.error}</p>}
                 </TechnicalDetails>}
               </>}
-              {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name}
+              {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name} dealers={selectedRoom.dealers}
                 disabled={disabled||lifecycleBusy||roomBusy||roomDirty||createBusy||publishBusy||releaseBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
                 onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);onChanged?.();}}/>
                 :<div className={ui.unpublished} role="status"><h3>Spelinställningar kan sättas när spelbordet är öppet och publicerat</h3><p>Spelinställningar (språk, insatsprofil) gäller öppna, publicerade blackjack-spelbord. Öppna spelbordet under Tillgänglighet och publicera tilldelningen först.</p></div>)}

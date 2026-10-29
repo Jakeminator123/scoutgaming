@@ -43,6 +43,8 @@ const materialReasons = Object.freeze({
   native_material_measurement_mismatch:'klippens mätning stämmer inte',
   native_material_size_mismatch:'klippens storlek stämmer inte',
 });
+// Saknad eller inaktuell tidsmätning åtgärdas med Mät omätta klipp på dealerns flik Klipp.
+const measurementReason = reason => reason === 'native_material_measurement_missing' || reason === 'native_material_measurement_mismatch';
 export function materialReasonText(reason) {
   return materialReasons[reason] ?? (code(reason) ? 'materialet är inte komplett (' + reason + ')' : 'materialet är inte komplett');
 }
@@ -95,7 +97,8 @@ export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reas
     case 'studio_release_preview_stale': return 'Något har ändrats sedan förhandsvisningen.' + RELOAD;
     case 'studio_conflict': return (conflictSteps[step] ?? 'Uppgifterna har ändrats under tiden.') + NOTHING + RELOAD;
     case 'studio_room_choices_draft_pending': return 'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det under Utseende först.' + NOTHING;
-    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '. Öppna Röst och tal.' + NOTHING;
+    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '.'
+      + (measurementReason(materialReason) ? ' Öppna Dealers › dealern och välj Mät omätta klipp.' : ' Öppna Röst och tal.') + NOTHING;
     case 'studio_release_invalid': return (invalidReasons[reason] ?? 'Publiceringen kan inte göras med de sparade valen' + (code(reason) ? ' (' + reason + ')' : '') + '.')
       + (reason === 'studio_release_unchanged' ? '' : NOTHING);
     case 'studio_room_not_found': return 'Spelbordet är inte öppet hos bolaget eller ingår inte i bolagets publicerade tilldelning.' + NOTHING;
@@ -117,7 +120,7 @@ export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reas
 const roomHref = (roomId, flik) => '/admin/rooms/' + encodeURIComponent(roomId) + '?flik=' + flik;
 const dealerHref = (dealerId, flik) => '/admin/dealers/' + encodeURIComponent(dealerId) + '?flik=' + flik;
 /** @returns {{text:string;href:string|null;linkLabel:string|null}} */
-export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms = []} = {}) {
+export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, dealerName = '', rooms = []} = {}) {
   const link = (href, linkLabel) => ({href, linkLabel});
   const none = {href:null, linkLabel:null};
   const dealer = id(dealerId) ? dealerId : null;
@@ -133,6 +136,9 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms
         const name = rooms.find(row => row?.id === blocker.roomId)?.name ?? blocker.roomId;
         return {text:'Spelbordet ' + name + ' kan inte bindas om: ' + materialReasonText(blocker.materialReason) + '.', ...link(roomHref(blocker.roomId, 'spel'), 'Öppna spelbordet')};
       }
+      if (measurementReason(blocker.materialReason)) return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '. Öppna Dealers › '
+        + (dealer ? (typeof dealerName === 'string' && dealerName.trim() ? dealerName.trim() : dealer) : 'dealern') + ' och välj Mät omätta klipp.',
+        ...(dealer ? link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klipp') : none)};
       return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
     }
     case 'ai_table_misfit':

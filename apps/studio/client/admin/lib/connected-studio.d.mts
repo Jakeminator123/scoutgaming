@@ -1,6 +1,8 @@
 import type { StudioProject, StudioEvent } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { VideoMetadata } from '../../../../../packages/presentation/contracts/video-intake.mjs';
-export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;classification?:VideoMetadata;familyId?:string;duration?:number;sha256?:string};
+export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;classification?:VideoMetadata;familyId?:string;duration?:number;sha256?:string;
+  /** Registrets revision och serverns tidsmätning (finns när klippet är uppmätt). */
+  revision?:string;mediaTiming?:unknown;retainedBank?:boolean;deletion?:{state:'deleted'|'pending';requestedAt:string}};
 export type MediaFamily = {id:string;dealerId:string;eventId:string;situation:string;playbackType:string;standardIds:string[];variantIds:string[]};
 export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};
 // The registered catalog (apps/studio/lib/design-preview-catalog.mjs): rooms carry their published state, dealers and play URL.
