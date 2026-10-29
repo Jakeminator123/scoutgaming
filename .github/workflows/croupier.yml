@@ -14,7 +14,9 @@ name: Croupier GitHub checks
 #     openclaw-deploy (services/openclaw/lab/deploy/** only)
 #                                          legs studio-admin-contracts + access-presentation,
 #                                          gateway container
-#     full (everything else)               every leg; Regression (browser) runs but does not
+#     full (everything else)               every leg; Regression (browser) is required when the
+#                                          PR changes services/game/public/** or
+#                                          apps/studio/client/**, otherwise it runs but does not
 #                                          block (advisory); gateway container only when its
 #                                          inputs changed (services/openclaw/lab/deploy/**, lab
 #                                          root, .github/, .githooks/); Moving image on worker changes
@@ -305,8 +307,10 @@ jobs:
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
 
   # Real-browser acceptance (Chrome). The classifier output browser decides whether
-  # the gate requires it: required on nightly, manual and preview runs; advisory on
-  # ready full-scope PRs (it runs and reports, but a red result does not block CI).
+  # the gate requires it: required on nightly, manual and preview runs and on ready
+  # full-scope PRs that change browser client code (services/game/public/**,
+  # apps/studio/client/**); advisory on other ready full-scope PRs (it runs and
+  # reports, but a red result does not block CI).
   browser-regression:
     name: Regression (browser)
     needs: changes
@@ -475,7 +479,7 @@ jobs:
             || required.some(name => jobs[name]?.result !== 'success')) {
             fail('a required check failed, was cancelled, skipped, or was not reported.');
           }
-          // Advisory: a ready PR reports Chrome acceptance without waiting on it; the nightly run on main requires it.
+          // Advisory: a ready PR without browser client changes reports Chrome acceptance without waiting on it; the nightly run on main requires it.
           const chrome = jobs['browser-regression']?.result;
           if (browser === 'advisory' && chrome !== 'success') {
             console.log(`::warning title=Regression (browser)::Chrome acceptance reported ${chrome ?? 'nothing'}. It does not block this PR; the nightly run on main requires it.`);
