@@ -19,7 +19,7 @@ export function SystemPage({active,tab}:{active:boolean;tab:string}) {
     {panel('agenter',<div className="grid gap-4"><OpenAiCard active={active&&tab==='agenter'}/><AgentModelsPanel/></div>)}
     {panel('personal',<><Footnote className="mb-4 mt-0">Scoutgamings egna konton: administratörer och personal. Spelarnas konton finns under Spelarkonton.</Footnote><Administration group="accounts" section="users"/></>)}
     {panel('spelare',<><Footnote className="mb-4 mt-0">Alla spelare oavsett bolag, för support. Spelare knyts till bolag senare; då flyttar vyn till bolagets egen sida.</Footnote><Administration group="accounts" section="players"/><EconomyPanel active={active&&tab==='spelare'}/></>)}
-    {panel('integration',<><Footnote className="mb-4 mt-0">API-nycklar och testsession. Nycklarna är inte knutna till bolag ännu och visas därför här tills vidare.</Footnote><Administration group="partners"/></>)}
+    {panel('integration',<><Footnote className="mb-4 mt-0">API-nycklar och testsession. Varje nyckel hör till ett bolag; du väljer bolaget när du skapar nyckeln.</Footnote><Administration group="partners"/></>)}
     {panel('beroenden',<ResourceConnections embedded/>)}
     {panel('lobby',<Card title="Intern lobby" aside="Bakom inloggning">
       <p className="mb-4 mt-0 max-w-[68ch] text-[13.5px] text-sg-muted">Den interna lobbyn visar alla bolags spelbord, även pausade. Spelet startar mot det som är publicerat. Spelarna ser den publika lobbyn.</p>

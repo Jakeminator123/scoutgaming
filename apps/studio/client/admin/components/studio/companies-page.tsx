@@ -145,7 +145,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         </div>}
         <div hidden={tab!=='team'}>{visited.includes('company:'+id+':team')&&<><Footnote className="mb-3 mt-0">Team, roller och inbjudningar. Administratören utses bara av Admin; den sista administratören kan inte stängas av.</Footnote><WorkspaceTool section="companies" overrides={{operator:operator.id}}/></>}</div>
         {tab==='integration'&&<div className="grid gap-4 md:grid-cols-2">
-          <Card title="API-nycklar"><Empty title="Gemensamma för alla bolag tills vidare" text="Nycklarna är inte knutna till bolag ännu, så de visas och byts under System." action={<Link className={buttonVariants()} href="/admin/system?flik=integration">Integration under System</Link>}/></Card>
+          <Card title="API-nycklar"><p className="m-0 text-[13.5px]">Varje nyckel hör till ett bolag. Nycklarna skapas, byts och återkallas under System, fliken Integration, där du väljer {operator.name} som bolag.</p><p className="mb-0 mt-3"><Link className={buttonVariants()} href="/admin/system?flik=integration">Integration under System</Link></p></Card>
           <Card title="Startadresser" aside="Per spelbord">{own.filter(room=>room.playUrl).length?<KV items={own.filter(room=>room.playUrl).map(room=>[room.name,<code key={room.id} className="break-all rounded bg-sg-surface-2 px-1.5 py-0.5 font-mono text-xs">{room.playUrl}</code>] as [string,ReactNode])}/>:<p className="m-0 text-[12.5px] text-sg-muted">Inget spelbart spelbord ännu.</p>}</Card>
         </div>}
         {tab==='journal'&&<Card title="Journal" aside="Bolagets händelser och utseendeutkast"><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
