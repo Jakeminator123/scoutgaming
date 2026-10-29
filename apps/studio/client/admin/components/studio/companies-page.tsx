@@ -234,7 +234,7 @@ function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,co
     {step===1&&operator&&<div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
       <div className="grid content-start gap-2.5" role="group" aria-label="Miljö">{compositions.map(row=><button key={row.id} type="button" aria-pressed={row.id===composition?.id} className={choice(row.id===composition?.id)} onClick={()=>setCompositionId(row.id)}>
         <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.dealerIds.length?plural(row.dealerIds.length,'dealer','dealers'):'Inga dealers'} · {plural(rooms.filter(room=>room.compositionId===row.id).length,'spelbord','spelbord')} använder miljön</span></button>)}
-        {!compositions.length&&<Empty chip={null} title="Inga miljöer ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Miljöer</Link>}/>}</div>
+        {!compositions.length&&<Empty chip={null} title="Inga miljöer ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}</div>
       {composition&&<div className="grid min-w-0 content-start gap-4">
         <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} revision={revision} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
         <RegisteredStudio mode="create" operatorId={operator.id} compositionId={composition.id} disabled={disabled} onChanged={onChanged}/>

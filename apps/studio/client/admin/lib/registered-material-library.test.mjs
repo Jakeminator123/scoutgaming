@@ -70,7 +70,7 @@ test('real assets page scopes table upload and visible library to explicit game,
     const pill=(tree,label)=>nodes(tree,node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)===label)[0];
     assert.equal(pill(tree,'Roulette').props['aria-pressed'],true);
     pill(tree,'Blackjack').props.onClick();tree=h.render();
-    assert.deepEqual(h.navigated,['/admin/scenes?tab=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
+    assert.deepEqual(h.navigated,['/admin/scenes?tab=material&filter=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.game,'blackjack');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Blackjack board','Legacy board']);
     h.props.role='background';tree=h.render();
@@ -174,7 +174,7 @@ test('mounted material library follows alias context and keeps dealer and room w
     nodes(h.render(),node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)==='Roulette')[0].props.onClick();
     const query=new URLSearchParams(h.query());
     assert.equal(query.get('dealer'),'dragan');assert.equal(query.get('room'),'one');
-    assert.equal(query.get('tab'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
+    assert.equal(query.get('tab'),'material');assert.equal(query.get('filter'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
     assert.match(h.navigated.at(-1),/^\/admin\/scenes\?/);
     assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Roulette board']);
     h.navigate('?tab=bakgrunder&game=roulette&dealer=astrid');h.props.role='background';

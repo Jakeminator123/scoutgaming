@@ -89,7 +89,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card title="Spelbord">{uses.rooms.length?<div className="grid">{uses.rooms.map(room=><Row key={room.id} chip={<Chip tone={room.state==='live'?'ok':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip>} title={room.name} text={`${workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name??'Okänt bolag'} · ${room.published?'publicerat':'inte publicerat'}`} href={`/admin/rooms/${encodeURIComponent(room.id)}`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Inga spelbord använder dealern.</p>}</Card>
         <Card title="Bolag">{uses.operators.length?<div className="grid">{uses.operators.map(operator=><Row key={operator.id} chip={<Chip>{operator.packageRevision===null?'ingen version':`version ${operator.packageRevision}`}</Chip>} title={operator.name} text="via spelbordens miljöer" href={`/admin/companies/${encodeURIComponent(operator.id)}?flik=tilldelning`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Inte tilldelad något bolag.</p>}</Card>
-        <Card title="Miljöer">{templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip tone={lane.isDefault?'accent':''}>{lane.isDefault?'förval':'tillåten'}</Chip>} title={lane.label} text={lane.isDefault?'Dealern är förvald i miljön':'Dealern kan väljas i miljön'} href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealer.id)}`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Ingen miljö tillåter dealern ännu.</p>}</Card>
+        <Card title="Miljöer">{templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip tone={lane.isDefault?'accent':''}>{lane.isDefault?'förval':'tillåten'}</Chip>} title={lane.label} text={lane.isDefault?'Dealern är förvald i miljön':'Dealern kan väljas i miljön'} href={`/admin/scenes?tab=miljoer&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealer.id)}`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Ingen miljö tillåter dealern ännu.</p>}</Card>
       </div>
       <Card title="Alla kopplingar" aside={<AsideLink href={'/admin/system?flik=beroenden&dealer='+encodeURIComponent(dealer.id)}>Beroenden under System</AsideLink>}><ResourceConnections embedded context={'?dealer='+encodeURIComponent(dealer.id)}/></Card>
     </div>}
@@ -116,7 +116,7 @@ function DealerPreview({dealerId,templates,saved,workspace}:{dealerId:string;tem
   const lane=templates.find(row=>row.id===laneId)??templates[0];
   return <PreviewFlyout title="Förhandsvisning · sparad scen" open={open} onOpenChange={setOpen}>
     {templates.length>1&&<label className="mb-3 grid gap-1.5 text-[13px] font-semibold">Miljö<select value={lane?.id??''} onChange={event=>setLaneId(event.target.value)} className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text">{templates.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
-    {!templates.length&&<Empty chip={null} title="Ingen miljö tillåter dealern" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Miljöer</Link>}/>}
+    {!templates.length&&<Empty chip={null} title="Ingen miljö tillåter dealern" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}
     {lane&&<ScenePreview active={open} laneId={lane.id} dealerId={dealerId} game="blackjack" revision={saved?.revision} saved={workspace?{project:saved??workspace.project,inventory:workspace.inventory}:null}/>}
     <Footnote>Visar den sparade miljön med dealerns vila, på dator. Mobilvyn kommer senare.</Footnote>
   </PreviewFlyout>;
@@ -132,12 +132,12 @@ function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId
         <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Kommer senare">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Kommer senare">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">kommer senare</span></div>
       </Card>
       <Card title="Så ser det ut i scenen" aside="Dator">
-        {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Miljöer</Link>}/>}
-        <Footnote>Bordsgrafiken ritas efter dealern, inte tvärtom. Lagrens storlek och läge ändras under <Link href="/admin/scenes?tab=mallar" className={textLinkClass}>Miljöer</Link>.</Footnote>
+        {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}
+        <Footnote>Bordsgrafiken ritas efter dealern, inte tvärtom. Lagrens storlek och läge ändras under <Link href="/admin/scenes?tab=miljoer" className={textLinkClass}>Miljöer</Link>.</Footnote>
       </Card>
     </div>
-    <Card title={`Miljöer som tillåter dealern (${templates.length})`} aside={<AsideLink href="/admin/scenes?tab=mallar">Miljöer</AsideLink>}>
-      {templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip>miljö</Chip>} title={lane.label} text="Dealern kan väljas i miljön" href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealerId)}`}/>)}</div>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu"/>}
+    <Card title={`Miljöer som tillåter dealern (${templates.length})`} aside={<AsideLink href="/admin/scenes?tab=miljoer">Miljöer</AsideLink>}>
+      {templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip>miljö</Chip>} title={lane.label} text="Dealern kan väljas i miljön" href={`/admin/scenes?tab=miljoer&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealerId)}`}/>)}</div>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu"/>}
     </Card>
   </div>;
 }

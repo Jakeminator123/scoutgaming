@@ -24,7 +24,6 @@ function panelHarness(){
   const components=Object.fromEntries(['EnvironmentPicture','ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
   const componentRequire=name=>{
     if(name==='./scene-publication')return {ScenePublication:components.ScenePublication};
-    if(name==='./environment-picture')return {EnvironmentPicture:components.EnvironmentPicture};
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('composition-settings.mjs'))return settings;
@@ -326,15 +325,15 @@ test('copying placement updates only the selected allowed board in both formats'
  assert.deepEqual(next.composition.blackjackTables.find(row=>row.tableId===assets[0].id),source);assert.deepEqual(next.layers,layers);
 });
 
-test('the miljöbild sits in the environment editor, locked until the shared environment is edited, and a picture is registered as an illustration',()=>{
-  const harness=panelHarness(),registered=[];harness.props.onRegistered=(project,id,role)=>registered.push([id,role]);
-  const picture=()=>nodes(harness.render(),node=>node.type===harness.EnvironmentPicture)[0];
-  assert.equal(picture().props.laneId,harness.props.project.lanes[0].id);
-  assert.equal(picture().props.blocked,true,'preview mode cannot choose or export a picture');
-  assert.equal(picture().props.dirty,false);
-  const edit=nodes(harness.render(),node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0];edit.props.onClick();
-  assert.equal(picture().props.blocked,false);
-  picture().props.onExported(harness.props.project,'00000000-0000-4000-8000-0000000000a1');
-  assert.deepEqual(registered,[['00000000-0000-4000-8000-0000000000a1','illustration']]);
-  harness.props.projectDirty=true;assert.equal(picture().props.dirty,true,'an unsaved draft is never exported');
+test('inside the environment editor the panel leaves publication, the room list and the miljöbild to the editor',()=>{
+  const harness=panelHarness();
+  const plain=text(harness.render());
+  assert.equal(nodes(harness.render(),node=>node.type===harness.ScenePublication).length,1);
+  assert.match(plain,/Rum som använder miljön/);
+  harness.props.inEnvironment=true;
+  const tree=harness.render();
+  assert.equal(nodes(tree,node=>node.type===harness.ScenePublication).length,0,'publication happens in the room');
+  assert.doesNotMatch(text(tree),/Rum som använder miljön|Välj material för/);
+  assert.equal(nodes(tree,node=>node.type===harness.EnvironmentPicture).length,0,'the miljöbild is the editor\'s own section');
+  assert.ok(nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö').length,'the shared edit gate stays');
 });

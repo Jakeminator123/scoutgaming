@@ -18,9 +18,15 @@ export const adminDealerTabs = [
   {id:'anvands',label:'Används av'},{id:'installningar',label:'Inställningar'},
 ];
 export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','Mät landningar','Röst och tal','Godkänn','Tilldela'];
-export const adminSceneTabs = [
-  {id:'mallar',label:'Miljöer'},{id:'bakgrunder',label:'Bakgrunder'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'papperskorg',label:'Papperskorg'},
-];
+// Miljöer och material: two tabs. A miljö opens in its own editor (`composition=<id>`); Material filters by kind.
+export const adminSceneTabs = [{id:'miljoer',label:'Miljöer'},{id:'material',label:'Material'}];
+export const adminMaterialFilters = [{id:'bakgrund',label:'Bakgrund'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'arkiverat',label:'Arkiverat'}];
+export const adminMaterialFilterId = value => adminMaterialFilters.some(row=>row.id===value) ? value : adminMaterialFilters[0].id;
+const sceneHref = params => '/admin/scenes?' + new URLSearchParams(Object.entries(params).filter(([,value])=>typeof value==='string'&&value)).toString();
+/** The environment list, or one environment's editor when `id` is given; `extra` keeps a dealer or game choice. */
+export const environmentHref = (id, extra={}) => sceneHref({tab:'miljoer', composition:id, ...extra});
+/** The material tab with one filter (bakgrund, bordsgrafik, arkiverat); `extra` keeps a game choice. */
+export const materialHref = (filter, extra={}) => sceneHref({tab:'material', filter:adminMaterialFilterId(filter), ...extra});
 export const adminCompanyListTabs = [{id:'bolag',label:'Bolag'},{id:'spelbord',label:'Alla spelbord'},{id:'papperskorg',label:'Papperskorg'}];
 export const adminCompanyTabs = [
   {id:'tilldelning',label:'Tilldelning'},{id:'spelbord',label:'Spelbord'},{id:'spelare',label:'Spelare och ekonomi'},
