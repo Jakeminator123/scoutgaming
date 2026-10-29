@@ -16,7 +16,7 @@ eller **sammansättning** (miljö); guiden citerar knapparna som de står.
 | Bolag och spelbord | `/admin/companies?tab=…` | Bolag · Alla spelbord · Papperskorg |
 | ett bolag | `/admin/companies/{bolag}?flik=…` | Spelbord · Tilldelning · Team · Inställningar |
 | ett spelbord | `/admin/rooms/{spelbord}?flik=…` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik |
-| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden · Intern lobby |
+| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden; **Intern lobby** i sidhuvudet |
 | Hjälp | `/admin/guide` | Menyn, vem som får ändra vad, orden och dealerflödet |
 
 Portalraden överst leder till Admin, Partnerportalen och Lobbyn; intern
@@ -70,9 +70,13 @@ Nytt tal används först efter **Publicera** i spelbordet.
 ## Översikt
 
 Listar det som väntar: dealers där klipp saknas, pausade och opublicerade
-spelbord och bolag utan publicerad tilldelning. Genvägar: **Ny dealer**,
-**Nytt bolag**, **Nytt spelbord**, **Lägg till klipp**, **Tilldela innehåll**
-och **Skapa demo** (`/admin/demo`).
+spelbord och bolag utan publicerad tilldelning. Den primära åtgärden är
+**Nytt spelbord**; övriga genvägar: **Lägg till klipp**, **Tilldela innehåll**,
+**Ny dealer** och **Skapa demo** (`/admin/demo`). Menyn visar en räknare vid
+**Dealers** (dealers där klipp saknas) och vid **Bolag och spelbord**
+(spelbord som inte är spelbara). Räknarna bygger på det sidorna redan har
+läst eller sparat (`shareWorkspace` i `client/admin/lib/connected-studio.mjs`);
+menyn läser inget själv.
 
 ## Dealers
 
@@ -553,8 +557,8 @@ till portalen. Ett bolag utan medlemmar får ingen partnerinloggning.
 - **Beroenden**: bolag, dealers, bordsgrafik, bakgrunder och miljöer med
   användning. **Ändra mallens kopplingar** öppnar miljön; **Ändra bara
   rummets val** öppnar ett publicerat spelbords egna val.
-- **Intern lobby**: `/admin/lobby` visar alla bolags spelbord, även pausade;
-  `/lobby` är den publika.
+- **Intern lobby** (länk i sidhuvudet, ingen flik): `/admin/lobby` visar alla
+  bolags spelbord, även pausade; `/lobby` är den publika.
 
 ## Roulette
 
