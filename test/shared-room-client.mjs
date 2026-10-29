@@ -588,3 +588,16 @@ test('a partner refusal close ends the client at once with its code, without ano
   const network = setup(t); network.client.start(); network.sockets[0].ended(1006);
   await until(() => network.sockets.length === 2); assert.deepEqual(network.errors, []);
 });
+
+test('chat frames reach onChat without touching snapshots; a malformed chat frame is an invalid state', async t => {
+  const lines = [];
+  const h = setup(t, { onChat: line => lines.push(line) });
+  h.client.start();
+  h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5 });
+  h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
+  assert.deepEqual(lines, [{ lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5 }]);
+  assert.ok(Object.isFrozen(lines[0])); assert.deepEqual(h.calls, [['snapshot', 1, 100], ['present', 1]]);
+  h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'q-' + '2'.repeat(24), requestId: 'chat-2', who: 'player', seat: 9, text: 'x', at: 6 });
+  await until(() => h.errors.length === 1);
+  assert.deepEqual(h.errors, [{ code: 'shared_room_invalid_state' }]); assert.equal(lines.length, 1);
+});
