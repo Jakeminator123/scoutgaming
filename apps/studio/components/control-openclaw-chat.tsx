@@ -2,7 +2,6 @@
 import { StudioDealerRequired } from './studio-dealer-required';
 
 import { studioScopedHref } from '../lib/studio-navigation.mjs';
-import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import type { StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
@@ -23,9 +22,7 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
   const { status, mode, changeMode, dealerId, dirty } = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
   const query=new URLSearchParams(typeof window==='undefined'?'':window.location?.search);
   // Tvetydiga spelrum går dit den delade dokumentmappningen skickar dem, aldrig till det första värdet.
-  const contextHref=(path:string)=>studioScopedHref(path,query,{dealerId});
-  const modelsHref=contextHref('/admin/ai/models');
-  const rehearsalHref=contextHref('/admin/rooms');
+  const rehearsalHref=studioScopedHref('/admin/rooms',query,{dealerId});
   return <PageTemplate
     eyebrow="Studio"
     title="Dialogtest"
@@ -33,7 +30,7 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
   >
     <div className="sg-page-body">
       <StudioNavigation dealerId={dealerId} dealerLabel={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label} active="speech"/>
-      <GatewayPanel modelsHref={modelsHref} standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
+      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
     </div>
   </PageTemplate>;
 }
