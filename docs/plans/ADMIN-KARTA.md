@@ -1,5 +1,7 @@
 # Kablagekarta: Admin, Partnerportalen och spelaren
 
+> **Läs först.** Kartan är läst på `34fc4cdc02`, före steg E. Sidnivån (adresser som `/admin/rooms`, `/admin/clips`, `/admin/assets` och menynamnen) är inaktuell sedan 28 oktober: Admin har fem menyval, och de gamla adresserna leder vidare enligt `packages/navigation/admin-workspace-routes.mjs`. Dagens meny och flikar står i [användarguiden](../../apps/studio/docs/README.md) och `packages/navigation/admin-navigation.mjs`. Tabellerna över API:er, lagring och publiceringsknappar gäller fortfarande.
+
 > **Inventering, ingen plan.** Läst på `main` 34fc4cdc02 (efter #467, #468, #478 och #479), 28 oktober 2026, av Admin-arkitekten med fem läsagenter och läsfrågor mot Neon. Ingen kod ändrades. Planen för förenklingen är [ADMIN-FORENKLING.md](ADMIN-FORENKLING.md) och skissen [ADMIN-MALBILD-PROTOTYP.html](ADMIN-MALBILD-PROTOTYP.html). Ord enligt [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md). "oklart" betyder att koden inte gav svaret. Radnummer åldras fort; läs om koden innan något byggs.
 >
 > Öppna ändringar som påverkar kartan när de mergas: #477 (`jakob/par-admin-legacy`) tar bort Talgranskning, `voicelines`, `speech-qa`, BO-handoffens routing och dealerlistan i Integrationer; `jakob/claude-stadning-3` river BO-handoffen i spelmotorn. Rader märkta "på väg bort" beskriver det.
