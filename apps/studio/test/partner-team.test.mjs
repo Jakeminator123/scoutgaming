@@ -15,7 +15,7 @@ const tag = (html, id) => html.match(new RegExp(`<[^>]*id="${id}"[^>]*>`))?.[0] 
 
 test('without a verified team adapter the view is read-only, names roles with the portal words and hides other companies', () => {
   const operator = { id: 'op-1', name: 'Nordic Bet', slug: 'nordic-bet' };
-  const snapshot = { schemaVersion: 2, preview: false, mode: 'live', operator, operators: [operator],
+  const snapshot = { schemaVersion: 2, preview: false, operator, operators: [operator],
     roles: [{ id: 'partner-admin', label: 'Partner administrator', permissions: ['team.roles.assign'], delegable: false }, { id: 'partner-viewer', label: 'Partner viewer', permissions: ['team.read'], delegable: true }],
     team: [
       { id: 'user-22', operatorId: 'op-1', name: 'Karin Berg', email: 'karin@op.invalid', roleId: 'partner-admin', role: 'Partner administrator', status: 'active', revision: 4 },
