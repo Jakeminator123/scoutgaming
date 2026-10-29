@@ -22,8 +22,8 @@ och driften i [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md).
 - Partnerinloggningen är `/partner/login` med separat `partner_session`.
 
 `CROUPIER_BACKEND_ORIGIN` slår på de incheckade route- och ingresskontrakten
-(`packages/server-transport/configuration.mjs`), och `CROUPIER_VERCEL_UNIFIED_UI=1`
-ger en publik origin; utan spelmotorns origin finns ingen spelstart.
+(`packages/server-transport/configuration.mjs`), som alltid har en publik origin för
+spel och Admin; utan spelmotorns origin finns ingen spelstart.
 
 ## Delade kontrakt
 

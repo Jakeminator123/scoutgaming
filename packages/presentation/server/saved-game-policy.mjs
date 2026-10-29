@@ -21,10 +21,9 @@ function freeze(value) {
   return value;
 }
 
-// The flag selects one configuration source on both deployments. No connection,
-// schema installation, row initialization or legacy disk read occurs here.
+// Neon is the one configuration source on every deployment (no flag selects it).
+// No connection, schema installation, row initialization or legacy disk read occurs here.
 export function studioGamePolicyConfiguration(env = process.env) {
-  if (env.CROUPIER_STUDIO_NEON_POLICY !== '1') return null;
   try {
     const scope = validateStudioScope({ environment: env.CROUPIER_STUDIO_ENVIRONMENT_ID, workspaceId: env.CROUPIER_STUDIO_WORKSPACE_ID });
     const connectionString = validateGameConnection(env.CROUPIER_GAME_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);

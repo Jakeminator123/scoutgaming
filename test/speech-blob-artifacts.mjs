@@ -9,7 +9,7 @@ import { validatePrivateMedia } from '../apps/studio/lib/cloud-media-store.mjs';
 import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
-const env = { CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' };
+const env = { BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' };
 function input() {
   const artifactId = randomBytes(16).toString('hex'), text = 'Hej, dina kort är ess och nio.';
   const audio = { bytes:Buffer.from('exact-provider-WAV-fixture:'+text), contentType:'audio/wav' };
@@ -169,7 +169,7 @@ test('cross-site media is denied and client ranges or conditionals cannot skip c
 
 test('storage configuration never exposes credentials and cannot fall back to a product directory', async t => {
   const f = await fixture(t), request = input();
-  const adapter = createSpeechBlobArtifacts({env:{CROUPIER_MEDIA_STORAGE:'disk',BLOB_READ_WRITE_TOKEN:'PRIVATE',CROUPIER_GENERATED_SPEECH_DIR:'C:/Users/example/persisted'},blobClient:f.blobClient});
+  const adapter = createSpeechBlobArtifacts({env:{BLOB_READ_WRITE_TOKEN:' ',CROUPIER_GENERATED_SPEECH_DIR:'C:/Users/example/persisted'},blobClient:f.blobClient});
   await assert.rejects(adapter.save(request),error=>error.code==='generated_speech_blob_unavailable'&&!/PRIVATE|persisted/.test(error.message));
   await assert.rejects(adapter.get({...request,kind:'audio',completedPackage:{}}),error=>error.code==='generated_speech_blob_unavailable');
   assert.equal(f.calls.length,0);

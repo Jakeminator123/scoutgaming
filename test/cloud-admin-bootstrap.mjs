@@ -4,7 +4,7 @@ import { randomBytes, scryptSync } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { ENGINE_QA_SKIP, createEngineDatabase, engineBootFailure, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, engineBootFailure, freePort, insertCraigUser, installBaseStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 const game = 'https://game.example.test';
 const bo = 'https://bo.example.test';
@@ -16,13 +16,14 @@ const calibration = fileURLToPath(new URL('../services/game/public/calibration.c
 
 async function fixture(t) {
   const database = await createEngineDatabase(t), port = await freePort();
-  const env = { NODE_ENV: 'production', PUBLIC_URL: game, BO_URL: bo, LAB_PUBLIC_URL: lab, CROUPIER_CLOUD_RUNTIME: '1' };
+  const studio = await installBaseStudioRuntime(t, database);
+  const env = { ...studio.env, NODE_ENV: 'production', PUBLIC_URL: game, BO_URL: bo, LAB_PUBLIC_URL: lab, CROUPIER_CLOUD_RUNTIME: '1' };
   const users = async () => Number((await database.query('SELECT COUNT(*) AS n FROM croupier_auth.users'))[0].n);
-  return { database, port, env, users };
+  return { database, port, env, users, preload: studio.preload };
 }
 
 function rejectedBoot(f, overrides = {}) {
-  const result = engineBootFailure({ database: f.database, port: f.port, env: { ...f.env, ...overrides }, timeoutMs: 20000 });
+  const result = engineBootFailure({ database: f.database, port: f.port, preload: f.preload, env: { ...f.env, ...overrides }, timeoutMs: 20000 });
   assert.equal(result.error, undefined, 'bootstrap must fail before the server listens');
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Cloud operator bootstrap credentials are required/);
@@ -30,7 +31,7 @@ function rejectedBoot(f, overrides = {}) {
   assert.ok(!`${result.stdout}${result.stderr}`.includes(password), 'bootstrap secret reached child output');
 }
 
-const start = (t, f, overrides = {}) => startEngine(t, { database: f.database, port: f.port, env: { ...f.env, ...overrides } });
+const start = (t, f, overrides = {}) => startEngine(t, { database: f.database, port: f.port, preload: f.preload, env: { ...f.env, ...overrides } });
 
 async function request(f, origin, path, body, cookie = '', method = 'POST') {
   const target = new URL(origin);

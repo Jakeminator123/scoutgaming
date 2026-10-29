@@ -5,9 +5,12 @@ const root = dirname(fileURLToPath(import.meta.url));
 // Next traces app entries as /app/<route>; retain the documented route keys too.
 const appTraceRoutes = entries => Object.fromEntries(Object.entries(entries)
   .flatMap(([route, files]) => [[route, files], [`/app${route}`, files]]));
+// Studio is always mounted under /studio on the public origin; no variable selects
+// it (docs/ENVIRONMENT-VARIABLES.md, fixed values). The browser reads the same value.
+const STUDIO_BASE_PATH = '/studio';
 export default {
-  basePath: process.env.CROUPIER_LAB_BASE_PATH || '',
-  env: { NEXT_PUBLIC_LAB_BASE_PATH: process.env.CROUPIER_LAB_BASE_PATH || '' },
+  basePath: STUDIO_BASE_PATH,
+  env: { NEXT_PUBLIC_LAB_BASE_PATH: STUDIO_BASE_PATH },
   distDir: process.env.CROUPIER_LAB_DIST_DIR || '.next',
   typescript: { tsconfigPath: process.env.CROUPIER_LAB_TSCONFIG || 'tsconfig.json' },
   poweredByHeader: false,

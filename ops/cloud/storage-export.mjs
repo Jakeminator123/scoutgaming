@@ -10,10 +10,9 @@ export function readStorageExportConfig(env = process.env) {
     || Buffer.byteLength(env.CROUPIER_STORAGE_EXPORT_SECRET) < 32
     || /[\r\n]/.test(env.CROUPIER_STORAGE_EXPORT_SECRET)) throw Error('Invalid storage maintenance configuration.');
   // Freezes legacy Studio files before their explicit Neon import. An omitted
-  // flag is ambiguous: maintenance must never start the new shared writer or
-  // permit either full-file or streaming provider work.
-  if (env.CROUPIER_STUDIO_NEON_POLICY !== '0'
-    || env.CROUPIER_GENERATED_SPEECH !== '0'
+  // flag is ambiguous: maintenance must never permit either full-file or streaming
+  // provider work. It starts no child, so no Neon writer runs; no Neon flag is read.
+  if (env.CROUPIER_GENERATED_SPEECH !== '0'
     || env.CROUPIER_CLOUD_GENERATED_SPEECH !== '0'
     || env.CROUPIER_GENERATED_SPEECH_STREAMING !== '0') throw Error('Invalid storage maintenance configuration.');
   return Object.freeze({ mode, secret: env.CROUPIER_STORAGE_EXPORT_SECRET });

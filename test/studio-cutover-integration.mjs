@@ -181,7 +181,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       const fixtureGameDatabaseUrl = new URL('postgresql://ep-fixture.neon.tech/croupier_game?sslmode=require');
       fixtureGameDatabaseUrl.username = 'fixture';
       fixtureGameDatabaseUrl.password = 'synthetic';
-      const env = { CROUPIER_STUDIO_NEON_POLICY:'1',         CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl.href,
+      const env = { CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl.href,
         CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment, CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId };
       const before = await runtime.gamePolicy.readSaved();
       const saved = await createRenderStudioPolicy({ storage:runtime.store, env, dealerIdle:idle });
@@ -196,7 +196,6 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         { code:'studio_game_policy_missing' });
       assert.equal(await count(), 0);
       assert.deepEqual(await runtime.gamePolicy.readSaved(), before);
-      assert.equal(await createRenderStudioPolicy({ env:{...env,CROUPIER_STUDIO_NEON_POLICY:'0'} }), null);
     });
     await check('HTTPS real native login admits administrators and rejects game-only credentials and legacy role cookies', async () => {
       for (const [key, user] of [['admin', names[0]], ['revocable', names[2]]]) {
@@ -445,7 +444,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       const artifactValues = new Map(); let blobReads = 0;
       const blobMetadata = (pathname, value) => ({ pathname, url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,
         size:value.bytes.length, contentType:value.contentType });
-      const artifacts = createSpeechBlobArtifacts({ env:{ CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' }, blobClient:{
+      const artifacts = createSpeechBlobArtifacts({ env:{ BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' }, blobClient:{
         put:async (pathname, bytes, options) => {
           assert.equal(options.access, 'private'); assert.equal(options.allowOverwrite, false); assert.equal(options.addRandomSuffix, false);
           assert.equal(artifactValues.has(pathname), false);

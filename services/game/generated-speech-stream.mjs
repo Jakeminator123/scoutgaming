@@ -85,8 +85,8 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
     } catch {}
   }
   const enabled = env.CROUPIER_GENERATED_SPEECH_STREAMING === '1' && env.CROUPIER_GENERATED_SPEECH === '1' && (local || cloud);
-  const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
-  const configuration = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR, origin,
+  // Sessions are always journaled in Neon; the retired private disk directory is never read.
+  const configuration = { origin,
     workerSecret: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, ticketSecret: env.CROUPIER_SPEECH_STREAM_TICKET_SECRET,
     apiKey: env.CARTESIA_API_KEY, voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId };
   if (cloud) {
@@ -104,7 +104,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
     && !/\s/.test(configuration.session.apiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(configuration.session.endpointId ?? '')
     && sessionReserveMicroUsd(configuration.session.reserveUsd) !== null && dailyBudgetMicroUsd(configuration.session.dailyBudgetUsd) !== null
     && sessionReserveMicroUsd(configuration.session.reserveUsd) <= dailyBudgetMicroUsd(configuration.session.dailyBudgetUsd));
-  const configured = enabled && (journaled || privateDirectory(configuration.directory)) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
+  const configured = enabled && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
     && configuration.workerSecret !== configuration.ticketSecret
     && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey) && sessionConfigured;
   return { enabled, configured, configuration };
@@ -121,7 +121,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
 export async function createGeneratedSpeechStreamService(server, configuration, {
   resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000, movingSpeechRoutes = false,
-  journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
+  journal = null, journalRequired = true,
 } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
   if (journal && suppliedSessionManager) fail('generated_speech_journal_unavailable');

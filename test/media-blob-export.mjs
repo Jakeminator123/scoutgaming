@@ -10,7 +10,7 @@ import {getPublicMediaBlobResponse} from '../apps/studio/lib/media-blob-index.mj
 import {createRequire} from 'node:module';
 import {createReadStream,openAsBlob} from 'node:fs';
 const requireLab=createRequire(new URL('../apps/studio/package.json',import.meta.url));
-const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'isolated-fixture'};
+const env={BLOB_READ_WRITE_TOKEN:'isolated-fixture'};
 async function fixture(t){const root=await mkdtemp(join(tmpdir(),'croupier-blob-layout-'));t.after(()=>rm(root,{recursive:true,force:true}));
   await writeMediaLayoutFixture(root,{roots:{'web/public/sfx':'media/game/runtime/audio'},files:Array.from({length:8},(_,i)=>({path:`game/runtime/audio/a${i}.wav`,legacyPath:`web/public/sfx/a${i}.wav`,access:'public',publicUrl:`/sfx/a${i}.wav`,body:`original audio ${i}`}))});return root;}
 function client(){const objects=new Map(),types=new Map(),calls=[],blob=(path)=>({pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType:types.get(path),size:objects.get(path)?.length});return{objects,calls,async get(path){calls.push(['get',path]);return objects.has(path)?{statusCode:200,stream:new Response(objects.get(path)).body,blob:blob(path)}:null;},async put(path,body,options){calls.push(['put',path]);assert.equal(options.access,'private');assert.equal(options.allowOverwrite,false);assert.ok(!objects.has(path));assert.ok(body instanceof Blob);const chunks=[];for await(const part of body.stream())chunks.push(part);objects.set(path,Buffer.concat(chunks));types.set(path,options.contentType);return blob(path);},async del(){throw new Error('Existing media must never be deleted.');}};}

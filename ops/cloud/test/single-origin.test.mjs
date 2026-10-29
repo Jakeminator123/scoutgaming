@@ -9,8 +9,8 @@ const origin = 'https://croupier-fixture.onrender.com';
 const env = {
   NODE_ENV: 'production', PORT: '10000', CROUPIER_CLOUD_LAYOUT: 'single-origin',
   CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
-  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'cloud-fixture',
-  CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
+  CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'cloud-fixture',
+  BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   RENDER_EXTERNAL_URL: origin, CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'cloud-fixture'),
     OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-only',
 };
@@ -50,7 +50,5 @@ test('one-origin game-only mode keeps the Web routes and closes the mounted Lab 
   assert.deepEqual(Object.keys(specs), ['web']);
   assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'single-origin');
   assert.equal(specs.web.env.LAB_PUBLIC_URL, origin);
-  // Retired base-path configuration cannot create a second process.
-  const obsolete = { ...gameOnly, CROUPIER_LAB_BASE_PATH:'/other-studio' };
-  assert.deepEqual(Object.keys(childSpecifications(validateCloudConfig(obsolete), obsolete)), ['web']);
+  assert.deepEqual(Object.keys(childSpecifications(validateCloudConfig(gameOnly), gameOnly)), ['web']);
 });
