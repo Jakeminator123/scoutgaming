@@ -186,8 +186,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
   async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor, query?: Record<string,string>) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
-    if (query !== undefined && (method!=='GET'||action!=='shared-table-proof'||!object(query)||!query.roomId
-      || Object.keys(query).some(key=>!['roomId','shoeId'].includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
+    // Läsfrågor: delad bordskontroll (roomId, shoeId) och taldrift per dealer (dealerId).
+    const queryKeys = action === 'shared-table-proof' ? ['roomId','shoeId'] : action === 'moving-drift' ? ['dealerId'] : [];
+    if (query !== undefined && (method!=='GET'||!object(query)||!query[queryKeys[0]]
+      || Object.keys(query).some(key=>!queryKeys.includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();

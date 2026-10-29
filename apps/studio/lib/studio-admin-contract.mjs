@@ -63,7 +63,7 @@ export function studioAuthEndpoint(method, pathname) {
 // A narrowly read-only preparation query. Other endpoints keep exact paths
 // and no query parameters; this helper grants no role or Origin exception.
 export function isPresentationRoomReadQuery(method, url) {
-  if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url)) return true;
+  if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url) || isMovingDriftReadQuery(method,url)) return true;
   if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;
   const keys = [...url.searchParams.keys()];
   return (keys.length === 2 || keys.length === 3 && keys.includes('game') && ['blackjack','roulette'].includes(url.searchParams.get('game')))
@@ -89,4 +89,10 @@ export function isSharedTableProofReadQuery(method,url) {
   const keys=[...url.searchParams.keys()];
   return method==='GET'&&['/studio/api/admin/shared-table-proof','/api/admin/shared-table-proof'].includes(url.pathname)
     &&keys.length>=1&&keys.length<=2&&new Set(keys).size===keys.length&&keys.includes('roomId')&&keys.every(key=>['roomId','shoeId'].includes(key)&&queryId(url.searchParams.get(key)));
+}
+// Taldrift per dealer: exakt en parameter, dealerId (samma form som driftprofilens dealer-id).
+export function isMovingDriftReadQuery(method,url) {
+  const keys=[...url.searchParams.keys()];
+  return method==='GET'&&['/studio/api/admin/moving-drift','/api/admin/moving-drift'].includes(url.pathname)
+    &&keys.length===1&&keys[0]==='dealerId'&&/^[a-z][a-z0-9-]{0,39}$/.test(url.searchParams.get('dealerId'));
 }

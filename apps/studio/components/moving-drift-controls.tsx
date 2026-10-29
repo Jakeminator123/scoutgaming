@@ -7,7 +7,7 @@ import styles from './moving-drift-controls.module.css';
 
 export interface MovingDriftTransport {
   available(method:string,action:string):boolean;
-  request(method:'GET'|'POST',action:string,body?:Record<string,unknown>,signal?:AbortSignal,expectedActor?:StudioAdminActor):Promise<{actor:StudioAdminActor;payload:Record<string,unknown>}>;
+  request(method:'GET'|'POST',action:string,body?:Record<string,unknown>,signal?:AbortSignal,expectedActor?:StudioAdminActor,query?:Record<string,string>):Promise<{actor:StudioAdminActor;payload:Record<string,unknown>}>;
 }
 const modeChoices:[MovingDriftMode,string,string][]=[['off','Av','Inga nya taljobb'],['saving','Sparläge','Förbered vid talbehov'],['warm','Varm','Redo under en vald tid']];
 const time=(value:number)=>new Intl.DateTimeFormat('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(value));
