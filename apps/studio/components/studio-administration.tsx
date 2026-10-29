@@ -3,7 +3,7 @@ import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { SYSTEM_GROUPS, SYSTEM_SECTIONS } from '../lib/admin-system-sections.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
@@ -49,7 +49,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const SECTION_READS: Record<string, readonly string[]> = {
   ops: ['overview'], shoes: ['shoes'], players: ['players'], users: ['users'],
   apikeys: ['apikeys'], emails: ['emails'], pay: ['transactions'],
@@ -59,13 +59,7 @@ const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
 const OPERATOR_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const EMPTY_ACTIONS: readonly string[] = Object.freeze([]);
-// The retired `tables` group stays in the storage/API contract only; the UI
-// follows the same destinations and names as the shared sidebar.
-const ACTIVE_GROUPS = BACKOFFICE_GROUPS.filter(group => group.id !== 'tables').map(group => ({
-  ...group,
-  label: group.id === 'operations' ? 'Spelstatus & integritet' : group.id === 'accounts' ? 'Konton & åtkomst' : group.label,
-  area: group.area === 'Administration' ? 'System' : group.area,
-}));
+const ACTIVE_GROUPS = SYSTEM_GROUPS;
 function visibleSections(group: string, only?: readonly string[]): readonly string[] {
   return ACTIVE_GROUPS.find(item => item.id === group)?.sections.filter(section => !only || only.includes(section)) ?? [];
 }
@@ -426,7 +420,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   }
   return <div className={styles.sections} onInput={event => { const target = event.target; if (target instanceof HTMLElement) { const form = target.closest('form'); if (form instanceof HTMLFormElement) onDirty?.(form); } }}>
     {sections.map(section => <section key={section} data-admin-section={section} className={styles.section} aria-labelledby={`admin-${section}`}>
-      <h3 id={`admin-${section}`}>{BACKOFFICE_SECTIONS.find(item => item.id === section)?.label}</h3>
+      <h3 id={`admin-${section}`}>{SYSTEM_SECTIONS.find(item => item.id === section)?.label}</h3>
       {section === 'ops' && <>
         {missing(resources.overview, 'overview')}
         {overview && <><dl className={styles.metrics}>

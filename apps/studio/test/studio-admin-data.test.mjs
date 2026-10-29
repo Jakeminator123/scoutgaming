@@ -96,13 +96,10 @@ test('room edit uses server actor and exact CAS; stale, spoofed and invalid edit
   assert.equal(f.state.writes[0].options.actor, 'operator');
   assert.equal(f.state.writes[0].options.value.rooms[0].state, 'live');
 });
-test('pit and tournament do not accept arbitrary config/body fields or synthetic authority', async () => {
+test('the retired pit boss and tournament writes have no handler and nothing is written', async () => {
   const f = fixture();
-  await assert.rejects(f.call('POST','pitboss',{ payout10x: true, streak5: true, randomWalkMin: 0, expectedRevision: 'studio-original' }));
-  await f.call('POST','pitboss',{ payout10x: true, streak5: false, randomWalkMin: 45, expectedRevision: 'studio-original' });
-  await f.call('POST','tournament',{ name: 'Test', format: '20 rounds', buyin: 0, pool: 1000, cap: 10, starts: 'Tonight', expectedRevision: 'studio-new' });
-  assert.equal(f.state.document.value.tournaments[0].state, 'draft');
-  assert.equal(f.state.document.value.tournaments[0].entries, 0);
+  for (const action of ['pitboss', 'tournament']) assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`), false, action);
+  assert.equal(f.state.writes.length, 0);
 });
 test('partner metadata does not select credentials and incomplete runtime actions are absent', async () => {
   // Nyckel→bolag: each key names its company once game migration 012 has added the column, and the

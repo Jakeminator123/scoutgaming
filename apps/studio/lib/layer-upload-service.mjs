@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
 import { inspectLayerMedia } from './layer-media-inspection.mjs';
-import { validateLayerAsset, layerAssetPath, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES } from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import { validateLayerAsset, layerAssetPath, LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES } from '../../../packages/presentation/contracts/presentation-layers.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
 const exact = (value,keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
@@ -44,6 +44,8 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
       || canonicalStudioJson(data.scope) !== canonicalStudioJson(scope) || !Number.isSafeInteger(data.expiresAt)
       || data.expiresAt <= now() || data.expiresAt > now()+TTL) fail('studio_upload_grant_invalid',403);
     const record = validateLayerAsset(data.record);
+    // Only scene layers travel through this upload; a miljöbild is stored by scene export after its v33 check.
+    if (!LAYER_ASSET_ROLES.includes(record.role)) fail('studio_upload_grant_invalid',403);
     return record;
   }
   return Object.freeze({
@@ -52,6 +54,9 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
       if (!exact(body,['operation','sha256','size','contentType','role','label','width','height',...(Object.hasOwn(body??{},'game')?['game']:[])]) || body.operation !== 'prepare') fail('studio_invalid_request',400);
       if (!LAYER_ASSET_TYPES[body.contentType] || !Number.isSafeInteger(body.size)
         || body.size < 16 || body.size > MAX_LAYER_ASSET_BYTES || !/^[a-f0-9]{64}$/.test(body.sha256)) fail('studio_invalid_media',422);
+      // A layer upload is a background or a table. The material role `illustration` (miljöbild) is
+      // created only by scene export, which negotiates capability v33 before any byte is stored.
+      if (!LAYER_ASSET_ROLES.includes(body.role)) fail('studio_invalid_media',422);
       const id = randomUUID();
       const draft = {schemaVersion:1,id,sha256:body.sha256,size:body.size,contentType:body.contentType,
         role:body.role,label:body.label,width:body.width,height:body.height,...(Object.hasOwn(body,'game')?{game:body.game}:{})};

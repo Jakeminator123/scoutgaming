@@ -159,7 +159,9 @@ miljöns **Automatik / OpenClaw** står på **Regler** och utkastet är sparat
 och publicerat. De
 väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
-till vila.
+till vila. Ett klipp på **OpenClaw** får fältet **Vad klippet visar** (högst
+80 tecken); OpenClaw väljer utifrån den texten vid tur eller resultat
+när miljöns vila står på **OpenClaw**.
 
 #### Sammanhängande vilosekvens
 
@@ -178,6 +180,12 @@ sekvensen kan kopplas.
 3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
    utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
    urvalet** bort dem; knappen visas bara då.
+   Ett kopplat klipp som börjar och slutar i vila har brytaren **OpenClaw
+   får föreslå klippet** och då fältet **Vad klippet visar**. Klippet ingår
+   fortfarande i sekvensen; OpenClaw kan dessutom föreslå det vid tur och
+   resultat, och då spelas det en gång innan sekvensen fortsätter. Valen och
+   beskrivningarna behålls när urvalet ändras. Spelmotorn behöver
+   runtimekapabilitet v32 innan en sådan sekvens kan sparas.
 4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
    **Koppla 21 viloklipp** → spara → **Publicera** (eller **Avancerat** ›
    **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
@@ -267,7 +275,7 @@ Spelbord, bolag och miljöer som använder dealern, och **Alla kopplingar**
 - **Godkännande**: checklistan (giv, vila, tal, landningar, minst en
   miljö). Den visar läget; godkännandet sparas inte ännu.
 - Dealerns klipp och arkiv: **Bibliotek** och **Arkiv**, kategorier, **Radera
-  valda**, **Radera alla** och **Ta bort dealern** (se
+  valda** och **Radera alla**. Hela dealern tas bort under Dealers (se
   [Ta bort och återställa](#ta-bort-och-återställa)).
 - **Tekniska detaljer**: dealer-id, lagringsmapp och miljöer.
 
@@ -293,8 +301,9 @@ miljöbilden, annars bakgrunden och bordsgrafiken på sin placering för dator.
   miljöns bilder eller **Ingen miljöbild**. **Exportera miljöbild** ritar den
   sparade scenen för dator (1920 × 1080: bakgrund, bordsgrafik och dealern på
   sin placering) och sparar den som nytt material, "<Miljö> · miljöbild v2".
-  Spara utkastet först. Den nya bilden väljs i utkastet; äldre bilder ligger
-  kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
+  Spara utkastet först. Den nya bilden väljs i utkastet. Miljöns äldre
+  exporterade bilder som ingen miljö visar flyttas till **Arkiverat** och kan
+  återställas där; den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
   designillustration. Insatsprofilen väljer ingen bild.
 - **Lager och placering**: **Spel** (Blackjack eller Roulette) väljer vad
   som förhandsvisas och placeras. **Redigera gemensam miljö** låser upp
@@ -358,8 +367,10 @@ utkastet. Spelborden får ändringen när de publiceras: öppna spelbordet under
 Filtren **Bakgrund**, **Bordsgrafik** och **Arkiverat** visar materialbiblioteket
 per lager respektive det arkiverade materialet. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Bordsgrafik ritas efter en filmad dealers landningar
-och passar bara miljöer med samma placering. Uppladdning ändrar inga
+välj ett och **Använd**. Valt förslag visas i miljön för dator och mobil;
+en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
+svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
+en filmad dealers landningar och passar bara miljöer med samma placering. Uppladdning ändrar inga
 scenval; **Visa var den används** visar vilka miljöer som använder filen.
 
 Arkiverade bakgrunder och bordsgrafik kan återställas; permanent radering är
@@ -495,8 +506,8 @@ ingenting; nekar servern visas orsaken.
   arkivet finns **Återställ** och **Radera permanent**. Permanent radering
   kräver att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter)
   löpt ut och att inget använder det; annars **Behåll i arkivet**.
-- **Dealers**: **Arkivera** i dealerlistan eller **Ta bort dealern** under
-  Inställningar flyttar dealern till **Papperskorg**, stänger av AI-tal och
+- **Dealers**: **Arkivera** i dealerlistan flyttar dealern till
+  **Papperskorg** under Dealers, stänger av AI-tal och
   avpublicerar berörda spelbord; källfiler bevaras. **Återställ** ger dealern
   tillbaka som utkast utan att öppna spelbord. **Radera permanent** kräver
   kryss i **Jag förstår att filerna raderas permanent**. Vid avbrott visas

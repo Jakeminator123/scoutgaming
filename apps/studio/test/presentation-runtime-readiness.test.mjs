@@ -92,21 +92,21 @@ test('a declared VILA/REDO pose chain on a blackjack clip gates media writes on 
   await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.registerMedia({classification:chained}),blocked);},{metadata:plain});
   assert.equal(f.writes.length,0);
 });
-test('a miljöbild (lane field or illustration material) gates project, trash and frozen writes on v32 before SQL',async()=>{
+test('a miljöbild (lane field or illustration material) gates project, trash and frozen writes on v33 before SQL',async()=>{
   const illustration={schemaVersion:1,id:'00000000-0000-4000-8000-0000000000b1',role:'illustration',label:'Miljö · miljöbild v1',sha256:'b'.repeat(64),size:4096,contentType:'image/webp',width:1920,height:1080};
   const values=[['project',{lanes:[{illustration:illustration.id}]}],['project',{layerAssets:[illustration]}],['project',{layerAssetTrash:[{asset:illustration,archivedAt:'2026-10-29T00:00:00.000Z'}]}],
     ['project',{dealerTrash:[{compositions:[{illustration:illustration.id}]}]}]];
-  for(const [kind,value] of values)for(const version of [31,32]){
+  for(const [kind,value] of values)for(const version of [32,33]){
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
     const work=()=>f.wrapped.saveDocument(kind,{value});
-    if(version===31)await assert.rejects(work,blocked);else await work();
-    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'32');assert.equal(f.writes.length,version===32?1:0);
+    if(version===32)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'33');assert.equal(f.writes.length,version===33?1:0);
   }
-  // A frozen package carrying a lane's miljöbild needs v32 too; a context verified without it cannot gain it inside SQL.
+  // A frozen package carrying a lane's miljöbild needs v33 too; a context verified without it cannot gain it inside SQL.
   const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
   await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.saveDocument('project',{value:{lanes:[{illustration:illustration.id}]}}),blocked);},{kind:'project',value:{lanes:[{composition:{}}]}});
   await f.wrapped.withMutationContext(async()=>{await f.wrapped.saveDocument('project',{value:{lanes:[{illustration:illustration.id}]}});},{kind:'project',value:{lanes:[{illustration:illustration.id}]}});
-  assert.equal(f.writes.length,1);assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'32');
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'33');
   const plain=fixture();await plain.wrapped.saveDocument('project',{value:{lanes:[]}});
   assert.equal(plain.fetches.length,0,'a project without a miljöbild keeps its earlier requirement');
 });
@@ -1106,6 +1106,24 @@ test('v28 rejects rotation in active and archived policies before SQL, including
       assert.equal(begun,version===28?1:0);assert.equal(f.writes.length,version===28?1:0);
       assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'28');
     }
+});
+
+test('v32 gates a rotation clip that OpenClaw or a rule may propose; a plain sequence keeps v28',async()=>{
+  const rotation={clips:[]};
+  for(const [variants,required] of [[[{use:'rotation'}],'28'],[[{use:'rotation'},{use:'openclaw'}],'32'],[[{use:'rules'}],'32']])
+    for(const version of [31,32]){
+      const value={dealerIdlePolicies:[{dealerId:'paow',policy:{rotation,variants}}]},descriptor={kind:'project',value};
+      const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Math.min(version,Number(headers['X-Presentation-Capability-Version']))))});
+      f.repository.transaction=async work=>work(f.repository);
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:descriptor});
+      if(required==='32'&&version===31)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],required);
+    }
+  // Without a sequence an OpenClaw behaviour clip needs no new reader.
+  const plain={kind:'project',value:{dealers:[{id:'paow'}],dealerIdlePolicies:[{dealerId:'paow',policy:{variants:[{use:'openclaw'}]}}]}};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await f.wrapped.saveDocument('project',{value:plain.value});
+  assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'3');
 });
 
 test('v28 requires exact rotation support for a valid frozen policy and keeps its accepted bytes',async()=>{

@@ -3,6 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypt
 import { createAccountCredentialResolver } from '../../../packages/studio-access/server/account-credentials.mjs';
 import { readBackofficePlayerSource } from '../bo-player-session.mjs';
 import { claimedOperator, keyOperator, partnerRefusal, PARTNER_OPERATOR_MISMATCH } from '../partner-operator.mjs';
+import { playerOperator } from '../../../packages/storage/server/player-operator.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied
 // one exact origin. Web still expects its own public Host behind the proxy.
@@ -55,7 +56,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
   async function validatedSession(sessionDigest) {
     const session=(await db.prepare('SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>?').get(sessionDigest,Date.now()));
     if(!session)return null;
-    const player = await db.prepare('SELECT status FROM players WHERE id=?').get(session.player_id);
+    const player = await db.prepare("SELECT status,to_jsonb(p)->>'operator_id' AS operator_id FROM players p WHERE id=?").get(session.player_id);
     if (!player || player.status !== 'active') return null;
     // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
     if(String(session.source_stamp??'').startsWith('local:')) {
@@ -81,10 +82,13 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
       // Nyckel→bolag: the company comes from the key row, never from the session (null before 012).
       operatorId=keyOperator(key);
     }
+    // Steg F: the player's own company, null before game-014 and for a player without one. Read
+    // after every other check, so a session that is refused today is still refused the same way.
+    const playerOperatorId = playerOperator(player);
     const publicSession = partnerKeyId
       ? { playerId: session.player_id, partnerKeyId, ...(partnerKeyStamp?{partnerKeyStamp}:{}), displayName: session.display_name || 'spelaren' }
       : { playerId: session.player_id, partnerKeyId: null };
-    return { publicSession, expiresAt: session.expires, operatorId };
+    return { publicSession, expiresAt: session.expires, operatorId, playerOperatorId };
   }
   async function session(req) {
     const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -99,10 +103,12 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     const verified=await validatedSession(sessionDigest);
     if(!verified || !Number.isSafeInteger(verified.expiresAt) || verified.expiresAt<=0)return null;
     // Keep partner provenance explicit; new room access must not reinterpret it as native.
-    // A partner binding also names its key's company (null for a key without one).
+    // A partner binding also names its key's company (null for a key without one). A player with a
+    // company (steg F, after game-014) carries it as playerOperatorId; without one the binding is as before.
     const partnerKeyId=verified.publicSession.partnerKeyId;
     return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt,partnerKeyId,
-      ...(partnerKeyId===null?{}:{operatorId:verified.operatorId})});
+      ...(partnerKeyId===null?{}:{operatorId:verified.operatorId}),
+      ...(verified.playerOperatorId===null?{}:{playerOperatorId:verified.playerOperatorId})});
   }
   async function binding(req) {
     const header=req.headers.cookie;

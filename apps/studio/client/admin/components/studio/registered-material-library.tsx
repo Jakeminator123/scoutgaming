@@ -12,12 +12,14 @@ import {ConfirmDialog,Dialog} from '../ui/dialog';
 import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetFitsGame} from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {createStudioClient} from '../../lib/connected-studio.mjs';
+import {createStudioClient,type VideoInventory} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
 // Mounted per filter under Miljöer och material › Material (Bakgrund, Bordsgrafik); `trashOnly` is the role's part of the Arkiverat filter.
 export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true,trashOnly=false}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean;trashOnly?:boolean}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
+  // The video register only feeds the AI dialog's scene preview (the dealer's idle).
+  const [inventory,setInventory]=useState<VideoInventory|null>(null);
   const query=useSearchParams();
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
   function select(key:'game',value:string){const next=new URLSearchParams({tab:'material',filter:role==='background'?'bakgrund':'bordsgrafik'});for(const [name,item] of query)if(!['tab','filter',key].includes(name))next.append(name,item);next.set(key,value);navigate(base+'?'+next);}
@@ -28,7 +30,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   useEffect(()=>{if(!visible)preview.current?.pause();return()=>preview.current?.pause();},[visible]);
   useEffect(()=>{const hide=()=>{if(document.hidden)preview.current?.pause();};document.addEventListener('visibilitychange',hide);return()=>{document.removeEventListener('visibilitychange',hide);preview.current?.pause();};},[]);
   useEffect(()=>{if(busy)return;const controller=new AbortController();setLoading(true);setError('');void client.load(controller.signal).then(value=>{
-    if(!controller.signal.aborted)setProject(value.project);
+    if(!controller.signal.aborted){setProject(value.project);setInventory(value.inventory??null);}
   }).catch(()=>{if(!controller.signal.aborted)setError('Biblioteket kunde inte läsas. Kontrollera inloggningen och läs om.');})
     .finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[refreshKey,busy,reload]);
   useEffect(()=>{const unload=(event:BeforeUnloadEvent)=>{if(busyRef.current){event.preventDefault();event.returnValue='';}};
@@ -61,7 +63,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
     {project&&<div className="grid gap-5">
       {!trashOnly&&<LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={registered}
         aside={<div className="grid min-w-[200px] place-content-center justify-items-center gap-1.5 rounded-xl border border-sg-border bg-sg-surface-2 px-5 py-4 text-center">
-          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
+          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} project={project} inventory={inventory} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
           <span className="text-xs text-sg-faint">{role==='background'?'Förslag efter din beskrivning':'Ritas efter dealerns landningar'}</span></div>}/>}
       <div className="material-library" id={trashOnly?'material-trash-'+role:undefined}><LayerAssetManager key={role+game+(trashOnly?':trash':'')} project={project} role={role} disabled={blocked} expanded view={trashOnly?'trash':'library'}
         filterAsset={trashOnly?undefined:asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved} renderPlan={planDialog}
