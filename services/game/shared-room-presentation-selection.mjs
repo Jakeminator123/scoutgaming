@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { cloneStudioJson, canonicalStudioJson } from '../../packages/studio-registry/server/storage-contract.mjs';
 import { validateRoomGameMaterial } from '../../packages/presentation/contracts/room-game-config.mjs';
 import { buildRuntimeCatalog } from '../../packages/presentation/contracts/studio-model.mjs';
@@ -8,6 +8,7 @@ import { nativeRoomFilmedPlanning } from '../../packages/presentation/contracts/
 import { transitionClipsForDealer } from '../../packages/presentation/runtime/shoe-transitions.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
 import { selectRegisteredIdleRule } from './presentation-selection.mjs';
+import { idleGameEvent } from '../../packages/presentation/server/idle-advice.mjs';
 const fail=()=>{throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});};
 const same=(a,b)=>canonicalStudioJson(a)===canonicalStudioJson(b);
 const SELECTION_MODES=new Set(['off','rules','random','shadow','active']);
@@ -47,8 +48,39 @@ function narrow(frozen,capture,body){
   for(const line of project.lines)for(const variant of line.variants)if(variant.videoGenerationId&&!allowed.has(variant.videoGenerationId))variant.videoGenerationId=null;
   return {project,inventory:{videos:structuredClone(videos),families:structuredClone(families)},allowed};
 }
+const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// The room's idle mode active/shadow: a committed turn or settlement asks OpenClaw
+// for one idle reaction (no chat needed). Shadow only records the would-be choice.
+// Advice is optional: a refusal, rate limit or provider error answers null.
+// One answer per room and event: the request id, source and cache scope name the
+// room's event, never the player, so every player's request shares one Director
+// call. The source time is the event's publication, so the 30 s limit holds.
+const logAdvice=entry=>console.info(JSON.stringify(entry));
+async function gameEventAdvice({adviseIdle,frozen,project,capture,body,sourceEvent,requestId,mode,directorFetchFactory,request,playerId,signal,log}){
+  const reaction=idleGameEvent(sourceEvent);
+  if(typeof adviseIdle!=='function'||!reaction||!Array.isArray(frozen.idleInventory?.videos))return null;
+  try{
+    const fetchImpl=directorFetchFactory?await directorFetchFactory({req:request,playerId,project,readProject:async()=>project,signal}):null;
+    if(fetchImpl!==null&&typeof fetchImpl!=='function')return null;
+    signal.throwIfAborted();
+    if(!Number.isFinite(capture.publishedAt))return null;
+    const key=[capture.roomId,capture.talkId,capture.version,sourceEvent.type,sourceEvent.box??null,sourceEvent.handIndex??null];
+    const result=await adviseIdle({requestId:'game:'+digest([key,body.dealerId,mode]).slice(0,40),project,dealerId:body.dealerId,mode,
+      sourceRef:{kind:'game-event',channel:'room:'+digest(capture.roomId).slice(0,32),revision:capture.version,
+        messageId:'event:'+digest(key).slice(0,40),at:new Date(capture.publishedAt).toISOString(),event:reaction},gameEvent:sourceEvent},
+      {signal,committedEvent:true,videoRegistry:frozen.idleInventory,cacheScope:digest([body.presentationContext,fetchImpl?.cacheScope??null]),...(fetchImpl?{fetchImpl}:{})});
+    const own=id=>typeof id==='string'&&frozen.idleInventory.videos.some(row=>row.id===id&&row.role==='variant')?id:null;
+    const advice={requestId,mode,event:reaction,videoId:mode==='active'?own(result?.videoId):null,wouldChooseId:own(result?.wouldChooseId),
+      provider:typeof result?.provider==='string'?result.provider:'idle_advice_unavailable_baseline',expiresAt:result?.expiresAt??null,
+      version:body.version,presentationContext:body.presentationContext??null};
+    // The record of a shadow choice: room, dealer, event and clip ids only, never a player.
+    log({event:'idle_game_event_advice',roomId:capture.roomId,dealerId:body.dealerId,mode,reaction,
+      videoId:advice.videoId,wouldChooseId:advice.wouldChooseId,provider:advice.provider});
+    return advice;
+  }catch{signal.throwIfAborted();return null;}
+}
 // Media/Director work happens outside the access port's two SQL captures.
-export async function selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings={},directorFetchFactory,request,playerId,signal}){
+export async function selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings={},directorFetchFactory,request,playerId,signal,adviseIdle=null,log=logAdvice}){
   signal.throwIfAborted();
   const frozen=cloneStudioJson(await frozenDealerContext.resolve(body.presentationContext),{maxBytes:8*1024*1024});signal.throwIfAborted();
   const {project,inventory,allowed}=narrow(frozen,capture,body),sourceEvent=capture.sourceEvent,published=capture.published;
@@ -73,7 +105,11 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
   const requestId=randomUUID();
   const mode=publishedSelectionMode(frozen.lane,sourceEvent,'off'),idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},'off');
   const rule=()=>{const value=idleRuleFor(body,project,inventory,sourceEvent,requestId,idleMode);return value&&allowed.has(value.videoId)?value:null;};
-  if(['turn','settle'].includes(sourceEvent.type))return finish({video:null,standard:null,idleRule:rule(),decision:{requestId,sourceEvent}});
+  if(['turn','settle'].includes(sourceEvent.type)){
+    const idleAdvice=['active','shadow'].includes(idleMode)?await gameEventAdvice({adviseIdle,frozen,project,capture,body,sourceEvent,
+      requestId,mode:idleMode,directorFetchFactory,request,playerId,signal,log}):null;
+    return finish({video:null,standard:null,idleRule:rule(),...(idleAdvice?{idleAdvice}:{}),decision:{requestId,sourceEvent}});
+  }
   let nativePlanning;
   try { nativePlanning=nativeRoomFilmedPlanning(capture.material); } catch { fail(); }
   if(nativePlanning) {
