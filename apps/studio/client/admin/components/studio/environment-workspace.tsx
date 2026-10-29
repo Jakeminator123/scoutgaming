@@ -4,6 +4,7 @@ import {validateProject} from '../../../../../../packages/presentation/contracts
 import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
 import {registerCompositionLayer} from '../../../../lib/studio-composition.mjs';
 import {rebaseProjectDraft} from '../../../../lib/project-rebase.mjs';
+import {holdNavigationDuringUpload} from '../../lib/environment-workspace.mjs';
 
 const client=createStudioClient();
 export type EnvironmentWorkspace=ReturnType<typeof useEnvironmentWorkspace>;
@@ -32,18 +33,26 @@ export function useEnvironmentWorkspace({active,refreshKey,onChanged}:{active:bo
     catch(cause){if(!signal.aborted)setStatus(current=>current==='ready'?current:'error');throw cause;}
   }),[work]);
   // A newer save elsewhere (the clip map, the material library) reloads a clean page; a draft is never replaced.
-  useEffect(()=>{if(active&&!dirtyRef.current)void load();},[active,refreshKey,load]);
+  // This page's own save already holds the new revision, so the refresh it announces (onChanged) is skipped.
+  const own=useRef<string|number|null>(null),loadedKey=useRef<string|number|null>(null);
+  useEffect(()=>{
+    if(!active||dirtyRef.current)return;
+    if(loadedKey.current!==null&&own.current!==null&&refreshKey!==loadedKey.current){loadedKey.current=refreshKey;own.current=null;return;}
+    loadedKey.current=refreshKey;void load();
+  },[active,refreshKey,load]);
   useEffect(()=>()=>running.current?.abort(),[]);
   useEffect(()=>{
     if(!dirty)return;
     const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
     window.addEventListener('beforeunload',unload);return()=>window.removeEventListener('beforeunload',unload);
   },[dirty]);
+  // An upload (material library or table graphics) belongs to the mounted editor: leaving would abort it.
+  useEffect(()=>childBusy?holdNavigationDuringUpload(window,setError):undefined,[childBusy]);
   const edit=useCallback((project:StudioProject)=>{setData(current=>current&&({...current,project}));setNotice('');},[]);
   async function save(){
     if(!data||!dirty||conflicts.length)return;
     await work(async signal=>{const saved=await client.save(data.project,signal);setData(current=>current&&({...current,project:saved}));setBase(structuredClone(saved));setStale(false);
-      setNotice('Utkastet är sparat. Spelborden använder det när de publiceras i spelbordet.');onChanged();});
+      setNotice('Utkastet är sparat. Spelborden använder det när de publiceras i spelbordet.');announce();});
   }
   async function compare(){
     if(!data||!base)return;
@@ -57,10 +66,12 @@ export function useEnvironmentWorkspace({active,refreshKey,onChanged}:{active:bo
       const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId});
       setBase(structuredClone(remote));setData({...data,project:result.project});setConflicts(result.conflicts);
       if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));
-      onChanged();
+      announce();
     }catch(cause){setError((cause as Error).message);}
   }
-  function savedRemote(remote:StudioProject){setBase(structuredClone(remote));setData(current=>current&&({...current,project:remote}));onChanged();}
+  function savedRemote(remote:StudioProject){setBase(structuredClone(remote));setData(current=>current&&({...current,project:remote}));announce();}
+  // Tell the other pages about this page's own change; the refresh that comes back is not reloaded here.
+  function announce(){own.current=refreshKey;onChanged();}
   return {data,base,status,busy:busy||childBusy,dirty,error,notice,conflicts,stale,load,edit,save,compare,registered,savedRemote,setChildBusy,
     keepDraft:()=>setConflicts([]),discard:()=>void load()};
 }

@@ -19,7 +19,8 @@ test('preview documents and assets have exact route boundaries', () => {
 });
 
 test('login returns only to known preview documents; never assets, queries or another origin', () => {
-  for (const path of ['/admin', '/admin/lobby', '/admin/system?flik=personal', '/admin/dealers/vera?flik=tal&verktyg=dialog', '/admin/companies/north', '/admin/rooms/room-1', '/admin/scenes?tab=miljoer']) {
+  for (const path of ['/admin', '/admin/lobby', '/admin/system?flik=personal', '/admin/dealers/vera?flik=tal&verktyg=dialog', '/admin/companies/north', '/admin/rooms/room-1', '/admin/scenes?tab=miljoer',
+    '/admin/scenes?tab=material&filter=bordsgrafik', '/admin/scenes?tab=material&filter=arkiverat&game=roulette', '/admin/scenes?tab=miljoer&composition=studion&operator=north&table=kvall']) {
     assert.equal(studioLoginReturnTo(path), path);
     assert.equal(studioLoginReturnTo('/studio' + path), path);
     assert.equal(studioLoginDestination(path, '/api/auth'), path);
@@ -31,7 +32,7 @@ test('login returns only to known preview documents; never assets, queries or an
     assert.equal(studioLoginDestination(path, '/api/auth'), canonical);
   }
   for (const value of ['/admin/_assets/admin/app.js', '/admin/unknown', '/admin?returnTo=https://elsewhere.test', '//elsewhere.test/admin', '/admin/../api',
-    '/admin/dealers/vera/edit', '/admin/scenes/x', '/admin/rooms/-x', '/admin/system?token=x', '/admin/dealers/vera?flik=tal&flik=klipp', '/admin/companies/north#x'])
+    '/admin/dealers/vera/edit', '/admin/scenes/x', '/admin/rooms/-x', '/admin/system?token=x', '/admin/dealers/vera?flik=tal&flik=klipp', '/admin/scenes?tab=material&filter=a&filter=b', '/admin/scenes?tab=material&filter=<x>', '/admin/companies/north#x'])
     assert.equal(studioLoginReturnTo(value), '/admin', value);
 });
 

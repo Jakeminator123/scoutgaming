@@ -5,7 +5,7 @@ import {Badge,Button,Card,Loading,buttonVariants,plural} from '../ui/kit';
 import {Label,Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '../ui/form';
 import {environmentHref} from '../../lib/admin-navigation';
 import {compositionUses} from '../../lib/connected-studio.mjs';
-import {environmentRooms} from '../../lib/environment-workspace.mjs';
+import {environmentRoomContext,environmentRooms} from '../../lib/environment-workspace.mjs';
 import type {EnvironmentWorkspace} from './environment-workspace';
 import {EnvironmentPicture} from './environment-picture';
 import {StudioCompositionPanel} from './studio-composition-panel';
@@ -14,7 +14,7 @@ import {ScenePreview} from './scene-preview';
 /** One environment in its own view, in three sections: Miljöbild; Lager och placering (the placement editor,
  * layers, allowed dealers and material, and the saved scene's preview); Används av (the tables that use it,
  * each linking to its own editor, where publication happens). Saving is one draft for the whole project. */
-export function EnvironmentEditor({workspace,laneId,game,visible,blocked}:{workspace:EnvironmentWorkspace;laneId:string;game:'blackjack'|'roulette';visible:boolean;blocked:boolean}) {
+export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operator=null,table=null}:{workspace:EnvironmentWorkspace;laneId:string;game:'blackjack'|'roulette';visible:boolean;blocked:boolean;operator?:string|null;table?:string|null}) {
   const {data,base,status,busy,dirty,error,notice,conflicts,stale}=workspace;
   const lane=data?.project.lanes?.find(row=>row.id===laneId),savedLane=base?.lanes?.find(row=>row.id===laneId);
   const locked=blocked||busy||status!=='ready';
@@ -27,7 +27,9 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked}:{works
     <Empty chip={null} title="Miljön finns inte i projektet" text="Den kan ha tagits bort eller bytt adress." action={<Link className={buttonVariants()} href={listHref}>Till alla miljöer</Link>}/>
   </HubPage>;
   const rooms=environmentRooms(data.catalog,lane.id);
-  const setGame=(value:string)=>navigate(environmentHref(lane.id,value==='roulette'?{game:'roulette'}:{}),true);
+  // Opened from a table (operator and table in the address): keep that company's publication and name the table.
+  const context=environmentRoomContext(data.catalog,lane.id,{operator,table}),keep=context?.query??{};
+  const setGame=(value:string)=>navigate(environmentHref(lane.id,{...keep,...(value==='roulette'?{game:'roulette'}:{})}),true);
   const actions=<>{back}
     <Button variant="secondary" disabled={busy||!dirty} onClick={()=>{if(confirm('Kasta dina osparade ändringar och läs in det sparade utkastet?'))workspace.discard();}}>Kasta ändringar</Button>
     <Button variant="primary" disabled={locked||!dirty||conflicts.length>0} onClick={()=>void workspace.save()}>{busy?'Sparar…':'Spara utkast'}</Button></>;
@@ -39,6 +41,9 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked}:{works
       {error&&<p role="alert" className="m-0 text-[13px] text-sg-danger">{error} {stale&&<Button variant="link" onClick={()=>void workspace.compare()}>Jämför senaste revision</Button>}</p>}
       {conflicts.length>0&&<div role="alert" className="grid gap-2 text-[13px] text-sg-danger"><p className="m-0">Samtidiga ändringar: {conflicts.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><Button variant="secondary" className="justify-self-start" onClick={workspace.keepDraft}>Behåll mitt utkast för dessa fält</Button></div>}
       {notice&&<p role="status" className="m-0 text-[13px] text-sg-muted">{notice}</p>}
+      {context&&<Note tone={context.sameEnvironment?'':'warn'}>{context.room?<>Öppnad från spelbordet <strong>{context.room.name}</strong> ({context.operatorName}). </>:<>Öppnad för bolaget <strong>{context.operatorName}</strong>. </>}
+        {context.sameEnvironment?'Publicera den sparade placeringen för bolaget under Lager och placering.':<>Spelbordet använder en annan miljö. <Link href={environmentHref(context.room!.compositionId,{...keep,...(context.room!.game==='roulette'?{game:'roulette'}:{})})} className="font-semibold text-inherit">Visa spelbordets miljö</Link>.</>}
+        {context.choicesHref&&<> <Link href={context.choicesHref} className="font-semibold text-inherit">Välj material för {context.room!.name}</Link>.</>}</Note>}
       <Card title="Miljöbild" id="miljobild">
         <EnvironmentPicture project={data.project} savedProject={base} inventory={data.inventory} laneId={lane.id} blocked={locked} dirty={dirty}
           onEdit={workspace.edit} onExported={(remote,id)=>workspace.registered(remote,id,'illustration',lane.id)}/>
@@ -47,9 +52,9 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked}:{works
         <Select value={game} onValueChange={setGame} disabled={busy}><SelectTrigger id="environment-game" className="h-8 w-36"><SelectValue/></SelectTrigger>
           <SelectContent><SelectItem value="blackjack">Blackjack</SelectItem><SelectItem value="roulette">Roulette</SelectItem></SelectContent></Select></div>}>
         <div className="grid gap-5">
-          <StudioCompositionPanel inEnvironment project={data.project} savedProject={base} inventory={data.inventory} compositionId={lane.id} game={game}
+          <StudioCompositionPanel inEnvironment operatorId={context?.operatorId} operatorSlug={context?.operatorSlug} operatorName={context?.operatorName} project={data.project} savedProject={base} inventory={data.inventory} compositionId={lane.id} game={game}
             dealerId={lane.layers.dealer.default} uses={compositionUses(data.catalog,lane.id)} roomChoicesPath={null} blocked={locked} projectDirty={dirty}
-            onSelect={id=>navigate(environmentHref(id,game==='roulette'?{game}:{}))} onEdit={workspace.edit} onSaved={workspace.savedRemote} onBusyChange={workspace.setChildBusy}
+            onSelect={id=>navigate(environmentHref(id,{...keep,...(game==='roulette'?{game}:{})}))} onEdit={workspace.edit} onSaved={workspace.savedRemote} onBusyChange={workspace.setChildBusy}
             onRegistered={(remote,id,role)=>workspace.registered(remote,id,role,lane.id)}/>
           <section aria-labelledby="environment-preview" className="grid gap-3 border-t border-sg-line-2 pt-4">
             <h3 id="environment-preview" className="m-0 text-[14px] font-semibold">Förhandsvisning av den sparade miljön</h3>

@@ -350,6 +350,41 @@ function geometryGroup(value,group){
     :{points:value.seats.map(seat=>seat.bet),mode:value.betMode,anchor:value.anchors?.bets};
 }
 
+// The room-context receivers moved with the clip map to the dealer nav (Miljöer och material has its own editor,
+// covered in scenes-page.test.mjs); the clip map still edits an explicit template without reassigning the room.
+for(const selected of ['a','b'])test(`the dealer clip map keeps room A while editing explicit template ${selected.toUpperCase()}`,async()=>{
+  const h=harness(`/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&composition=scene-${selected}&game=blackjack`);
+  const pane=await mountClipMap(h,{scene:true}),scene=pane.scene;
+  try{
+    await scene.open();
+    const rooms=pane.registeredRooms(),before=scene.snapshot();
+    assert.equal(pane.composition(),'scene-'+selected);assert.equal(scene.hasPlacement(),true);
+    assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
+    await scene.click('Redigera gemensam miljö');
+    const chosen=before.lanes.find(row=>row.id==='scene-'+selected),profile=movedGeometry(chosen.composition.blackjackTables[0],.15);
+    await scene.edit(profile);
+    const after=scene.snapshot();
+    assert.deepEqual(after.lanes.find(row=>row.id==='scene-'+selected).composition.blackjackTables[0],profile);
+    assert.deepEqual(after.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
+    const sent=await scene.save();assert.equal(sent.revision,before.revision);
+    assert.deepEqual(sent.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
+    assert.deepEqual(pane.registeredRooms(),rooms,'editing and saving a template must not reassign its context room');
+    assert.equal(pane.registeredRooms().find(row=>row.id==='room-a').compositionId,'scene-a');
+    for(const [key,value] of Object.entries({operator:'a',table:'room-a',composition:'scene-'+selected,game:'blackjack'}))assert.equal(new URLSearchParams(h.location.search).get(key),value);
+  }finally{pane.unmount();}
+});
+
+test('an unknown explicit composition on the dealer clip map stays invalid instead of editing the room template',async()=>{
+  const h=harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&composition=missing&game=blackjack');
+  const pane=await mountClipMap(h,{scene:true});
+  try{
+    await pane.scene.open();
+    assert.equal(pane.composition(),'missing');assert.equal(pane.scene.hasPlacement(),false);
+    assert.equal(new URLSearchParams(h.location.search).get('composition'),'missing');
+    assert.equal(pane.selection().room,'room-a');assert.equal(pane.registeredRooms()[0].compositionId,'scene-a');
+  }finally{pane.unmount();}
+});
+
 for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])test(`scene reset uses the saved ${layout} ${group} after unmount, retained drafts and a later save`,async()=>{
   const pane=await mountClipMap(harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{

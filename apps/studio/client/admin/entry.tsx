@@ -86,6 +86,7 @@ function App() {
       </div>
       {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
       {visited.includes('scenes')&&<div hidden={!show('scenes')}><ScenesPage tab={sceneTab} filter={route.page==='scenes'?query.get('filter'):null} compositionId={route.page==='scenes'?query.get('composition')??'':''} game={route.page==='scenes'?query.get('game'):null}
+        operator={route.page==='scenes'?query.get('operator'):null} table={route.page==='scenes'?query.get('table'):null}
         visible={show('scenes')} blocked={studioDirty||importBusy} onChanged={materialChanged} refreshKey={studioRefresh+':'+studioRevision}/></div>}
       {(visited.includes('companies')||visited.includes('company')||visited.includes('room'))&&<div hidden={!(show('companies')||show('company')||show('room'))}><CompaniesPage page={route.page==='company'?'company':route.page==='room'?'room':'companies'} id={route.id} active={show('companies')||show('company')||show('room')} disabled={studioDirty||importBusy} onChanged={materialChanged}/></div>}
       {visited.includes('system')&&<div hidden={!show('system')}><SystemPage active={show('system')} tab={adminTabId('system',query.get('flik'))}/></div>}

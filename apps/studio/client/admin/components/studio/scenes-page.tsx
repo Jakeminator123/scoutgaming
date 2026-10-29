@@ -18,11 +18,12 @@ import {useEnvironmentWorkspace} from './environment-workspace';
 
 // Miljöer och material in two levels: the tabs Miljöer | Material, and one environment's editor (`composition`).
 // Material filters Bakgrund, Bordsgrafik and Arkiverat; the library is the role's own (uploads, AI, trash).
-export function ScenesPage({tab,filter,compositionId,game,visible,blocked,onChanged,refreshKey}:{tab:string;filter:string|null;compositionId:string;game:string|null;visible:boolean;blocked:boolean;onChanged:()=>void;refreshKey:string|number}) {
-  const workspace=useEnvironmentWorkspace({active:visible,refreshKey,onChanged});
+export function ScenesPage({tab,filter,compositionId,game,operator=null,table=null,visible,blocked,onChanged,refreshKey}:{tab:string;filter:string|null;compositionId:string;game:string|null;operator?:string|null;table?:string|null;visible:boolean;blocked:boolean;onChanged:()=>void;refreshKey:string|number}) {
+  // The environments (catalog, project and the whole video inventory) are read on Miljöer only.
+  const workspace=useEnvironmentWorkspace({active:visible&&tab==='miljoer',refreshKey,onChanged});
   const {data,status,dirty,error}=workspace;
   const [creating,setCreating]=useState(false);
-  if(tab==='miljoer'&&compositionId)return <EnvironmentEditor workspace={workspace} laneId={compositionId} game={game==='roulette'?'roulette':'blackjack'} visible={visible} blocked={blocked}/>;
+  if(tab==='miljoer'&&compositionId)return <EnvironmentEditor workspace={workspace} laneId={compositionId} game={game==='roulette'?'roulette':'blackjack'} visible={visible} blocked={blocked} operator={operator} table={table}/>;
   const project=data?.project,counts=environmentCounts(project),lanes=project?.lanes??[],assets=project?.layerAssets??[];
   const materialFilter=adminMaterialFilterId(filter);
   const dealerOf=(id:string)=>({id,label:project?.dealers.find(row=>row.id===id)?.label??'Okänd dealer'});
@@ -32,7 +33,7 @@ export function ScenesPage({tab,filter,compositionId,game,visible,blocked,onChan
     <Button variant={dirty?'secondary':'primary'} disabled={!project||blocked||workspace.busy} onClick={()=>setCreating(true)}><Plus aria-hidden="true"/>Ny miljö</Button></>:undefined;
   return <HubPage title="Miljöer och material" actions={actions}
     intro="En miljö placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
-    tabs={<Tabs items={adminSceneTabs} active={tab} param="tab" drop={['composition']} counts={project?{miljoer:counts.miljoer,material:counts.material}:{}}/>}
+    tabs={<Tabs items={adminSceneTabs} active={tab} param="tab" drop={['composition','operator','table']} counts={project?{miljoer:counts.miljoer,material:counts.material}:{}}/>}
     note={tab==='miljoer'?(dirty?'Osparat utkast. Spara innan du lämnar sidan.':'Välj en miljö för att ändra miljöbild, lager och placering.'):undefined}>
     {status==='error'&&!data&&<Empty chip={null} title="Miljöerna kunde inte läsas" text={error||'Projektet svarade inte.'} action={<Button variant="secondary" onClick={()=>void workspace.load()}>Försök igen</Button>}/>}
     {tab==='miljoer'&&!data&&status!=='error'&&<Loading label="Läser miljöerna…" rows={3}/>}

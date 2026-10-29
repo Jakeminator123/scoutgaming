@@ -123,6 +123,15 @@ test('a selected library composition is editable without inventing a room contex
   assert.equal(h.edits.length,1);assert.equal(h.props.room,undefined);
 });
 
+test('in the environment editor the publication shows only with a company from a room link',()=>{
+  const h=panelHarness();h.props.compositionId=h.props.project.lanes[0].id;h.props.inEnvironment=true;h.props.room=undefined;h.props.roomChoicesPath=null;
+  assert.equal(nodes(h.render(),node=>node.type===h.ScenePublication).length,0,'a plain environment has no company to publish for');
+  Object.assign(h.props,{operatorId:'north',operatorSlug:'north-casino',operatorName:'North'});
+  const publication=nodes(h.render(),node=>node.type===h.ScenePublication);
+  assert.equal(publication.length,1);
+  assert.deepEqual([publication[0].props.operatorId,publication[0].props.operatorSlug,publication[0].props.compositionId],['north','north-casino',h.props.compositionId]);
+});
+
 test('roulette preview never borrows blackjack idle or a blackjack table and keeps video upload game-scoped',()=>{
   const h=panelHarness();h.props.room.game='roulette';
   h.props.project.lines=[{dealerId:'astrid',eventId:'idle.ready',baselineVariantId:'base',variants:[{id:'base',videoGenerationId:'blackjack-idle'}]}];

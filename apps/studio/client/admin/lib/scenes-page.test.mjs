@@ -23,10 +23,10 @@ function page({search='',workspace}){
   const ui={},uiUrl=name=>new URL('../components/ui/'+name+'.tsx',import.meta.url);
   const uiRequire=name=>name.endsWith('runtime/navigation')?navigation:name.endsWith('lib/admin-navigation')?adminNavigation:name.startsWith('./')?(ui[name]??=compile(uiUrl(name.slice(2)),uiRequire)):require(name);
   const stub=tag=>props=>h('section',{[tag]:JSON.stringify(Object.fromEntries(Object.entries(props).filter(([,value])=>typeof value!=='function'&&typeof value!=='object'||Array.isArray(value)&&value.every(item=>typeof item==='string'))))});
-  const panels=[];
+  const panels=[],hookCalls=[];
   const shared=name=>name==='react'||name.startsWith('react/')?require(name):name.endsWith('runtime/navigation')?navigation:name.startsWith('../ui/')?uiRequire('./'+name.slice(6))
     :name==='../../lib/admin-navigation'?adminNavigation:name==='../../lib/environment-workspace.mjs'?environmentWorkspace:name==='../../lib/connected-studio.mjs'?{compositionUses}
-    :name==='./environment-workspace'?{useEnvironmentWorkspace:()=>workspace}:null;
+    :name==='./environment-workspace'?{useEnvironmentWorkspace:args=>{hookCalls.push(args);return workspace;}}:null;
   const editor=compile(new URL('../components/studio/environment-editor.tsx',import.meta.url),name=>shared(name)??(name==='./environment-picture'?{EnvironmentPicture:stub('data-picture')}
     :name==='./studio-composition-panel'?{StudioCompositionPanel:props=>{panels.push(props);return h('section',{'data-layers':props.compositionId,'data-game':props.game,'data-in-environment':String(props.inEnvironment),'data-dealer':props.dealerId});}}
     :name==='./scene-preview'?{ScenePreview:stub('data-preview')}:name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
@@ -36,8 +36,8 @@ function page({search='',workspace}){
     :name==='../../../../components/lane-editor'?{addLane:(project,id,label,dealer)=>({...project,lanes:[...project.lanes,{...defaultPresentationLane(dealer),id,label}]}),newCompositionId:()=>'ny-miljo'}
     :name==='../../../../components/studio-types'?{activeStudioDealers:project=>project.dealers}:name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
   const tab=adminNavigation.adminTabId('scenes',query.get('tab'));
-  const html=renderToStaticMarkup(h(scenes.ScenesPage,{tab,filter:query.get('filter'),compositionId:query.get('composition')??'',game:query.get('game'),visible:true,blocked:false,onChanged(){},refreshKey:'0'}));
-  return {html,panels,navigated};
+  const html=renderToStaticMarkup(h(scenes.ScenesPage,{tab,filter:query.get('filter'),compositionId:query.get('composition')??'',game:query.get('game'),operator:query.get('operator'),table:query.get('table'),visible:true,blocked:false,onChanged(){},refreshKey:'0'}));
+  return {html,panels,navigated,hookCalls};
 }
 function fixture({dirty=false}={}){
   const project=addDealer(createSeedProject(),'nora','Nora');
@@ -46,7 +46,7 @@ function fixture({dirty=false}={}){
   const asset=(id,role)=>({schemaVersion:1,id,role,label:id,sha256:'0'.repeat(64),size:1,contentType:'image/png',pathname:'x',width:1920,height:1080});
   project.layerAssets=[asset('bg-1','background'),asset('bg-2','background'),asset('table-1','table'),asset('pic-1','illustration')];
   project.layerAssetTrash=[{asset:asset('old','table'),archivedAt:'2026-10-28T00:00:00.000Z'}];
-  const catalog={source:'registered',administration:{operators:[{id:'north',name:'North'}],rooms:[
+  const catalog={source:'registered',administration:{operators:[{id:'north',name:'North',slug:'north-casino',archivedAt:null},{id:'south',name:'South',slug:'south',archivedAt:null}],rooms:[
     {id:'kvall',name:'Kvällsbord',operatorId:'north',compositionId:'studion',state:'live',game:'blackjack',published:true},
     {id:'paus',name:'Pausbord',operatorId:'north',compositionId:'studion',state:'paused',game:'roulette'},
     {id:'gammal',name:'Gammalt',operatorId:'north',compositionId:'studion',state:'archived'}]}};
@@ -129,4 +129,88 @@ test('the editor helpers list only active uses and count material by kind',()=>{
   assert.deepEqual(environmentWorkspace.environmentCounts(data.project),{miljoer:2,material:3,bakgrund:2,bordsgrafik:1,arkiverat:1});
   assert.equal(adminNavigation.environmentHref('a b'),'/admin/scenes?tab=miljoer&composition=a+b');
   assert.equal(adminNavigation.materialHref('okänt'),'/admin/scenes?tab=material&filter=bakgrund');
+});
+
+test('a room link (operator and table) keeps the company publication and names the table in the editor',()=>{
+  // The links from the partner portal, Beroenden, the company table list and /admin/clips?panel=layers.
+  const {html,panels}=page({search:'composition=studion&operator=north&table=kvall&game=blackjack',workspace:fixture()});
+  assert.deepEqual([panels[0].inEnvironment,panels[0].operatorId,panels[0].operatorSlug,panels[0].operatorName],[true,'north','north-casino','North']);
+  assert.match(html,/Öppnad från spelbordet <strong>Kvällsbord<\/strong> \(North\)/);assert.match(html,/Publicera den sparade placeringen/);
+  assert.ok(hrefs(html).includes('/admin/rooms?operator=north&table=kvall&composition=studion&game=blackjack'),'the table keeps its own choices');
+  // The table only (Beroenden) finds its company; a company without a table still publishes for it.
+  assert.equal(page({search:'tab=miljoer&composition=studion&table=kvall',workspace:fixture()}).panels[0].operatorId,'north');
+  const company=page({search:'tab=miljoer&composition=studion&operator=north',workspace:fixture()});
+  assert.equal(company.panels[0].operatorId,'north');assert.match(company.html,/Öppnad för bolaget <strong>North<\/strong>/);
+  // A table that uses another environment says so and links there with the same context.
+  const other=page({search:'tab=miljoer&composition=lounge&operator=north&table=paus&game=roulette',workspace:fixture()});
+  assert.match(other.html,/Spelbordet använder en annan miljö/);
+  assert.ok(hrefs(other.html).includes('/admin/scenes?tab=miljoer&composition=studion&operator=north&table=paus&game=roulette'));
+  // A foreign, archived or unknown table never borrows another; without a company there is no publication.
+  for(const search of ['operator=south&table=kvall','table=gammal','table=okand','operator=borta']){
+    const view=page({search:'tab=miljoer&composition=studion&'+search,workspace:fixture()});
+    assert.doesNotMatch(view.html,/Öppnad från spelbordet/,search);
+  }
+  assert.equal(page({search:'tab=miljoer&composition=studion&operator=south&table=kvall',workspace:fixture()}).panels[0].operatorId,'south');
+  for(const search of ['','table=gammal','table=okand','operator=borta'])assert.equal(page({search:'tab=miljoer&composition=studion&'+search,workspace:fixture()}).panels[0].operatorId,undefined,search);
+  // The tab links never carry the room context back to the list.
+  assert.ok(hrefs(html).includes('/admin/scenes?tab=miljoer'));
+  // The room links themselves open this editor with their context.
+  assert.equal(adminDocumentHref('/admin/clips?panel=layers&operator=north&table=kvall&composition=studion'),'/admin/scenes?tab=miljoer&operator=north&table=kvall&composition=studion');
+});
+
+test('an upload in the environment editor holds every navigation that would unmount it until it finishes',()=>{
+  const target=new EventTarget(),blocked=[];
+  const release=environmentWorkspace.holdNavigationDuringUpload(target,message=>blocked.push(message));
+  for(const href of ['/admin/scenes?tab=miljoer','/admin/dealers','/admin/scenes?tab=material&filter=bakgrund']){
+    const event=new CustomEvent('studio:before-navigate',{cancelable:true,detail:{href}});target.dispatchEvent(event);
+    assert.equal(event.defaultPrevented,true,href);
+  }
+  assert.deepEqual(blocked,Array(3).fill(environmentWorkspace.UPLOAD_NAVIGATION_MESSAGE));
+  const unload=new Event('beforeunload',{cancelable:true});target.dispatchEvent(unload);assert.equal(unload.defaultPrevented,true,'a reload asks first');
+  release();
+  const after=new CustomEvent('studio:before-navigate',{cancelable:true,detail:{href:'/admin/dealers'}});target.dispatchEvent(after);
+  assert.equal(after.defaultPrevented,false,'a finished upload leaves navigation free');
+  // The workspace hook holds navigation exactly while a child (upload or publication) is busy.
+  const hook=readFileSync(new URL('../components/studio/environment-workspace.tsx',import.meta.url),'utf8');
+  assert.match(hook,/useEffect\(\(\)=>childBusy\?holdNavigationDuringUpload\(window,setError\):undefined,\[childBusy\]\)/);
+});
+
+// The real workspace hook with minimal hooks: effects run after each render when their dependencies change.
+function workspaceHook(){
+  const slots=[],effects=[],loads=[],saves=[];let cursor=0,effectCursor=0;
+  const hooks={useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},
+    useRef(initial){const i=cursor++;return slots[i]??={current:initial};},
+    useCallback(fn,deps){const i=cursor++,previous=slots[i];if(previous&&deps.every((value,index)=>Object.is(value,previous.deps[index])))return previous.fn;slots[i]={fn,deps};return fn;},
+    useEffect(fn,deps){const i=effectCursor++,previous=effects[i];if(!previous||!deps||deps.some((value,index)=>!Object.is(value,previous.deps[index]))){previous?.cleanup?.();effects[i]={deps,pending:fn};}}};
+  const {project}=fixture().data;
+  const client={async load(){loads.push(1);return {catalog:{administration:{operators:[],rooms:[]}},project:structuredClone(project),inventory:{videos:[]}};},
+    async save(value){saves.push(value);return {...value,revision:'saved-'+saves.length};}};
+  const module={exports:{}},code=transformSync(readFileSync(new URL('../components/studio/environment-workspace.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  runInNewContext(code,{module,exports:module.exports,structuredClone,window:new EventTarget(),AbortController,JSON,require:name=>name==='react'?hooks
+    :name.endsWith('connected-studio.mjs')?{createStudioClient:()=>client}:name.endsWith('environment-workspace.mjs')?environmentWorkspace
+    :name.endsWith('studio-model.mjs')?{validateProject:value=>value}:name.endsWith('studio-composition.mjs')?{registerCompositionLayer:(base,draft,remote)=>({project:remote,conflicts:[]})}
+    :name.endsWith('project-rebase.mjs')?{rebaseProjectDraft:()=>assert.fail('not used')}:assert.fail('Unexpected import '+name)});
+  let result,props;
+  const render=async next=>{props={...props,...next};cursor=0;effectCursor=0;result=module.exports.useEnvironmentWorkspace(props);
+    for(const effect of effects)if(effect?.pending){const fn=effect.pending;effect.pending=null;effect.cleanup=fn();}
+    for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));cursor=0;effectCursor=0;result=module.exports.useEnvironmentWorkspace(props);return result;};
+  return {render,loads,saves,current:()=>result};
+}
+
+test('the environments load only on Miljöer and a page\'s own save does not reload them',async()=>{
+  const hook=workspaceHook(),changed=[];
+  await hook.render({active:false,refreshKey:'0:a',onChanged:()=>changed.push(1)});
+  assert.equal(hook.loads.length,0,'the Material tab never reads the catalog, project or video inventory');
+  await hook.render({active:true});assert.equal(hook.loads.length,1);assert.equal(hook.current().status,'ready');
+  const {project}=hook.current().data;hook.current().edit({...project,lanes:project.lanes.map(lane=>({...lane,label:lane.label+' 2'}))});
+  await hook.render({});assert.equal(hook.current().dirty,true);
+  await hook.current().save();await hook.render({});assert.equal(hook.saves.length,1);assert.equal(changed.length,1);
+  // Admin answers the announced change with a new refresh key: the saved page already holds that revision.
+  await hook.render({refreshKey:'1:a'});assert.equal(hook.loads.length,1,'no reload right after its own save');
+  assert.equal(hook.current().data.project.revision,'saved-1');
+  // A change from another page still reloads a clean page.
+  await hook.render({refreshKey:'2:a'});assert.equal(hook.loads.length,2);
+  // The page activates the reads on Miljöer (list and editor) only.
+  for(const [search,active] of [['tab=material&filter=bakgrund',false],['tab=material&filter=arkiverat',false],['tab=miljoer',true],['tab=miljoer&composition=studion',true]])
+    assert.equal(page({search,workspace:fixture()}).hookCalls[0].active,active,search);
 });

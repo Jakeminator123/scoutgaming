@@ -289,6 +289,11 @@ Sidan har två flikar, **Miljöer** och **Material**. En miljö öppnas i en ege
 vy med tre delar: **Miljöbild**, **Lager och placering** och **Används av**.
 **Alla miljöer** leder tillbaka. Gamla bokmärken (`tab=mallar`,
 `tab=bakgrunder` och så vidare) öppnar rätt flik.
+Öppnas miljön från ett spelbord (portalen, **Beroenden**, bolagets
+spelbordslista) står spelbordet överst, och **Lager och placering** kan
+publicera den sparade placeringen för det bolaget; använder spelbordet en annan
+miljö länkar rutan dit. Medan en fil laddas upp i miljön går det inte att lämna
+sidan. Miljöerna läses bara på fliken **Miljöer**.
 
 ### Miljöer
 
