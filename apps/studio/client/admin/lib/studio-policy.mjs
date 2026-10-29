@@ -1,7 +1,7 @@
 import { validateProject, allowedPathDescriptors, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { validateIdlePolicy } from '../../../../../packages/presentation/runtime/idle-policy.mjs';
 import { createRegisteredIdlePolicy, registeredIdleInventory } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { preparePaowIdleRotation } from '../../../lib/paow-idle-rotation.mjs';
+import { IDLE_ROTATION_DEALERS, prepareIdleRotation, savedIdleRotationSelection } from '../../../lib/idle-rotation-sources.mjs';
 import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { selectionFor } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './connected-studio.mjs';
@@ -83,11 +83,14 @@ export function studioPolicyContext(project, inventory, dealerId, slot) {
   return { kind:family ? 'family' : 'line',family,line,clips,policy:null,global:false,frequency:isAstridDealFamily(family) };
 }
 
-export function prepareStudioPaowIdleRotation(project,inventory,dealerId,slot) {
-  if(dealerId!=='paow'||slot.eventId!=='idle.ready')return null;
+// The dealer's frozen idle source bound to its registered originals. Without a
+// selection the whole source is proposed; a saved sequence keeps its own subset.
+export function prepareStudioIdleRotation(project,inventory,dealerId,slot,selection=null) {
+  if(!IDLE_ROTATION_DEALERS.includes(dealerId)||slot.eventId!=='idle.ready')return null;
   const scope=studioPolicyContext(project,inventory,dealerId,slot);
-  return scope.policy?preparePaowIdleRotation(scope.policy,registeredIdleInventory(inventory,{dealerId,policy:scope.policy})):null;
+  return scope.kind==='idle'&&scope.policy?prepareIdleRotation(scope.policy,registeredIdleInventory(inventory,{dealerId,policy:scope.policy}),{selection}):null;
 }
+export { savedIdleRotationSelection };
 
 export function applyStudioIdlePolicy(project, inventory, dealerId, slot, nextPolicy) {
   const scope = studioPolicyContext(project,inventory,dealerId,slot);
