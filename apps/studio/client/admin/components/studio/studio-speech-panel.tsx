@@ -85,7 +85,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
     return slot.eventId==='speak.other'&&!video?.classification?.recordedSpeech?'Detta talfack kräver ett talkvitto (exakt text och inspelningsidentitet) innan tagningen kan bli standard.':'Filen passar inte detta talfack.'
   }
   function setStandard(row:StudioRecordedSpeech){const slot=slotFor(row.situation);if(!slot||blocked||busy||reviewBusy)return
-    try{onEdit(bindClip(project,inventory,dealerId,slot,row.id));setStandardError('');setStandardNotice('Tagningen är standard i talfacket i utkastet. Spara utkastet och publicera paketet igen för att använda den.')}
+    try{onEdit(bindClip(project,inventory,dealerId,slot,row.id));setStandardError('');setStandardNotice('Tagningen är standard i talfacket i utkastet. Spara utkastet och använd Publicera i spelbordet för att använda den.')}
     catch(cause){setStandardNotice('');setStandardError(cause instanceof Error?cause.message:'Standarden kunde inte sättas.')}}
   const [language,setLanguage]=useState<SpeechLanguage>('sv'),[lineId,setLineId]=useState('goodluck'),[all,setAll]=useState(false)
   const allowedLineIds=studioSpeechLineIds(game),selectedLineId=allowedLineIds.includes(lineId)?lineId:allowedLineIds[0]

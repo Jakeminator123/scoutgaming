@@ -546,7 +546,7 @@ test('the exact receipt accepts server-sorted choices and clears the draft; a ne
   assert.ok(receipt(),'the same revision keeps this receipt');
   p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
   assert.equal(receipt(),false,'a different revision is not this action receipt');
-  assert.match(revisionChip(p.h.render()),/\b6\b/);assert.equal(p.status(),ready);
+  assert.match(revisionChip(p.h.render()),/\b6\b/);assert.equal(p.status(),ready.replace(/\b4\b/,'6'),'back to the idle status, now naming the newer revision');
 });
 
 test('a room creation receipt advances the company package, re-reads the lifecycle and opens the new room nav',async()=>{
@@ -611,23 +611,14 @@ test('a composition removed from Studio stays visible in the package and blocks 
   assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one'],expectedPackageRevision:4});
 });
 
-test('a removed composition never blocks the PAOW idle refresh, which publishes against the frozen package',async()=>{
+test('the room editor publishes through the room release; the PAOW idle refresh and the interim package actions are gone',async()=>{
   const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
-  const isRefresh=node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle';
-  // The interim publication is a disclosure (TechnicalDetails) that holds the refresh button.
-  const later=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
-  const paow=()=>walk(later(),isRefresh)[0];
-  assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
-  assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the room editor carries no package form; the blocked assignment stays on its own tab');
-  assert.ok(later(),'the interim publication lives in its own disclosure');
-  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
-  paow().props.onClick();await p.settle();
-  assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);
-  assert.match(textOf(walk(later(),node=>node.props?.role==='status')),/\b5\b/,'the receipt names the new version');
-  assert.equal(p.lifecycle().props.refreshKey,1,'the receipt re-reads the lifecycle');
-  // The frozen package is the precondition: the next refresh waits for the readback.
-  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
-  paow().props.onClick();await p.settle();
-  assert.deepEqual(p.requests.slice(1).map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:5}]);
+  const tree=p.h.render();
+  assert.equal(walk(tree,node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle').length,0,'idle is captured by the room publication');
+  assert.equal(walk(tree,node=>node.type==='form').length,0,'the room editor carries no package form; the assignment stays on its own tab');
+  const release=walk(tree,node=>node.props?.eligible!==undefined&&node.props?.roomId==='bj');
+  assert.equal(release.length,1,'one room publication, scoped to the open room');
+  assert.equal(release[0].props.operatorId,'a');assert.equal(release[0].props.blockedBy,'');
+  assert.equal(p.requests.length,0);
 });
