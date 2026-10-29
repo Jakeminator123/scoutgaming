@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applyStudioMigrations, loadStudioMigrations, planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import { planGameMigrations } from '../ops/neon-game/migrations.mjs';
 
 const requireLab = createRequire(new URL('../apps/studio/package.json', import.meta.url));
 
@@ -21,6 +22,11 @@ export function migrationDatabaseGuard(connectionString) {
 function safeToken(value) {
   return typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_-]{0,62}$/.test(value) ? value : null;
 }
+
+// Två ledgrar med egna nummer: Studios `croupier_studio.storage_migrations` (001–021) och
+// spelets `croupier_game.storage_migrations` (product-v1, game-0NN-*). Studio 012 och spel 012
+// är olika migreringar, så rapporten namnger dem `studio-NNN` och `game-NNN`.
+const studioLabel = version => `studio-${version}`;
 
 function versionList(rows) {
   if (!Array.isArray(rows)) return null;
@@ -73,16 +79,28 @@ export function selectPendingMigrations({ registry, pending, optionalPending, on
   return { ok: true, selected, deferOptional };
 }
 
+function gameList(labels) {
+  if (!Array.isArray(labels) || labels.some(label => typeof label !== 'string' || !/^game-(?:[0-9]{3}|[a-z][a-z0-9-]{0,62})$/.test(label))) return null;
+  return [...labels];
+}
+
+function presentGame(state) {
+  const applied = gameList(state?.applied), pending = gameList(state?.pending), optionalPending = gameList(state?.optionalPending ?? []);
+  if (!applied || !pending || !optionalPending) return null;
+  return { applied, pending, optionalPending, ready: pending.length === 0 };
+}
+
 function fail(code, versions = []) {
   return { database: null, role: null, applied: [], pending: [], ready: false, exitCode: 2, code, versions, message: null };
 }
 
 function failureCode(error) {
-  const code = error?.name === 'StudioStorageError' ? error.code : undefined;
-  return typeof code === 'string' && /^studio_[a-z0-9_]+$/.test(code) ? code : 'migration_check_unreachable';
+  const code = ['StudioStorageError', 'GameMigrationError'].includes(error?.name) ? error.code : undefined;
+  return typeof code === 'string' && /^(?:studio|game_migration)_[a-z0-9_]+$/.test(code) ? code : 'migration_check_unreachable';
 }
 
-function present(state, appliedNow) {
+/** `game` är spel-ledgerns rapport när den lästs; den blockerar på samma sätt som Studio. */
+function present(state, appliedNow, game) {
   const database = safeToken(state?.target?.database);
   const role = safeToken(state?.target?.role);
   const applied = versionList(state?.applied);
@@ -90,21 +108,25 @@ function present(state, appliedNow) {
   // Deployment-optional versions never block readiness, but the operator must see them to run --apply.
   const optionalPending = versionList(state?.optionalPending ?? []);
   if (!database || !role || !applied || !pending || !optionalPending) return null;
-  const ready = pending.length === 0;
+  const ready = pending.length === 0 && (game === undefined || game.ready);
   const report = { database, role, applied, pending, optionalPending, ready };
+  if (game !== undefined) report.game = game;
   if (appliedNow !== undefined) {
     const now = versionList(appliedNow);
     if (!now) return null;
     report.appliedNow = now;
   }
   if (!ready) {
-    return { ...report, exitCode: 1, code: null, message: `Migration ${pending.join(', ')} saknas i måldatabasen. Kör migrationen innan deploy.` };
+    const missing = [...pending.map(studioLabel), ...(game?.pending ?? [])];
+    return { ...report, exitCode: 1, code: null, message: `Migration ${missing.join(', ')} saknas i måldatabasen. Kör migrationen innan deploy.` };
   }
   return { ...report, exitCode: 0, code: null, message: null };
 }
 
+/** Studio-ledgern läses alltid. Spel-ledgern läses när `planGame` anges (CLI:t anger alltid
+ * planGameMigrations); `--apply`, `--only` och `--skip` gäller bara Studios versioner. */
 export async function checkMigrationReadiness({ pool, directory, connectionString, plan = planStudioMigrations, apply = false, confirm = false,
-  applyMigrations = applyStudioMigrations, only, skip, registry, onPlan } = {}) {
+  applyMigrations = applyStudioMigrations, only, skip, registry, onPlan, planGame } = {}) {
   if (connectionString !== undefined) {
     const guard = migrationDatabaseGuard(connectionString);
     if (!guard.ok) return fail(guard.code);
@@ -113,7 +135,13 @@ export async function checkMigrationReadiness({ pool, directory, connectionStrin
   if (only === undefined && skip !== undefined) return fail('migration_check_selection_invalid');
   let planned;
   try { planned = await plan({ pool, directory }); } catch (error) { return fail(failureCode(error)); }
-  const report = present(planned);
+  let game;
+  if (planGame !== undefined) {
+    if (typeof planGame !== 'function') return fail('migration_check_unreachable');
+    try { game = presentGame(await planGame({ pool })); } catch (error) { return fail(failureCode(error)); }
+    if (!game) return fail('migration_check_unreachable');
+  }
+  const report = present(planned, undefined, game);
   if (!report) return fail('migration_check_unreachable');
   if (apply !== true && only === undefined) return report;
   let sources;
@@ -131,7 +159,7 @@ export async function checkMigrationReadiness({ pool, directory, connectionStrin
   let applied;
   try { applied = await applyMigrations({ pool, expectedTarget: planned?.target, confirm: true, deferOptional, expectedVersions: selected }); }
   catch (error) { return fail(failureCode(error)); }
-  const result = present(applied, applied?.appliedNow ?? []);
+  const result = present(applied, applied?.appliedNow ?? [], game);
   return result ? { ...result, selected } : fail('migration_check_unreachable');
 }
 
@@ -150,6 +178,19 @@ export function parseMigrationArgs(args) {
   }
   if (skip !== undefined && only === undefined) return null;
   return { apply, only, skip };
+}
+
+/** Rapportraden: båda ledgrarna i samma listor, namngivna `studio-NNN` och `game-NNN`. */
+export function readinessOutput(result, { only, apply = false } = {}) {
+  const game = result.game ?? { applied: [], pending: [], optionalPending: [] };
+  const output = { database: result.database, role: result.role,
+    applied: [...result.applied.map(studioLabel), ...game.applied],
+    pending: [...result.pending.map(studioLabel), ...game.pending],
+    optionalPending: [...result.optionalPending.map(studioLabel), ...game.optionalPending],
+    ready: result.ready };
+  if (only !== undefined) output.selected = (result.selected ?? []).map(studioLabel);
+  if (apply) output.appliedNow = (result.appliedNow ?? []).map(studioLabel);
+  return output;
 }
 
 function safeLine(text) {
@@ -179,18 +220,16 @@ async function main() {
   try {
     const { Pool } = requireLab('@neondatabase/serverless');
     pool = new Pool({ connectionString, max: 1, connectionTimeoutMillis: 10000 });
-    const onPlan = versions => console.error(`migration_apply_plan ${versions.length ? versions.join(',') : 'none'}`);
-    const result = await checkMigrationReadiness({ pool, apply, confirm: apply && confirmed, only, skip, onPlan });
+    // stderr namnger Studios versioner som rapportraden (studio-NNN); --only och --skip tar de nakna numren.
+    const onPlan = versions => console.error(`migration_apply_plan ${versions.length ? versions.map(studioLabel).join(',') : 'none'}`);
+    const result = await checkMigrationReadiness({ pool, apply, confirm: apply && confirmed, only, skip, onPlan, planGame: planGameMigrations });
     if (result.exitCode === 2) {
       const named = Array.isArray(result.versions) && result.versions.length && result.versions.every(version => /^[0-9]{3}$/.test(version))
-        ? `${result.code} ${result.versions.join(',')}` : result.code;
+        ? `${result.code} ${result.versions.map(studioLabel).join(',')}` : result.code;
       console.error(safeLine(named) ? named : 'migration_check_unreachable');
       code = 2;
     } else {
-      const output = { database: result.database, role: result.role, applied: result.applied, pending: result.pending, optionalPending: result.optionalPending, ready: result.ready };
-      if (only !== undefined) output.selected = result.selected ?? [];
-      if (apply) output.appliedNow = result.appliedNow ?? [];
-      const line = JSON.stringify(output);
+      const line = JSON.stringify(readinessOutput(result, { only, apply }));
       if (!safeLine(line)) {
         console.error('migration_check_unreachable');
         code = 2;

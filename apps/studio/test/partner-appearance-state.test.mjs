@@ -20,7 +20,8 @@ test('global lane change clears mismatched layer choices but preserves room over
 test('review rejects malformed or mismatched records before publication can be offered',()=>{
   const expected={draftRevision:4,packageRevision:8,branding:{color:'#112233'}},base={...expected,reviewToken:'token',changes:[{roomId:null,key:'color',before:null,after:'#112233'}],affectedRooms:['main']};
   assert.equal(appearanceReview(base,expected),true);
-  for(const changed of [{draftRevision:3},{branding:{color:'#445566'}},{changes:[{roomId:null,key:'unsafe',before:null,after:'x'}]},{affectedRooms:[3]}])assert.equal(appearanceReview({...base,...changed},expected),false);
+  for(const changed of [{draftRevision:3},{branding:{color:'#445566'}},{changes:[{roomId:null,key:'unsafe',before:null,after:'x'}]},{affectedRooms:[3]},{hiddenTableChanges:-1},{hiddenTableChanges:1.5},{hiddenTableChanges:'2'},{tablesHidden:'yes'}])assert.equal(appearanceReview({...base,...changed},expected),false);
+  assert.equal(appearanceReview({...base,changes:[],affectedRooms:[],hiddenTableChanges:2,tablesHidden:true},expected),true);
 });
 
 test('receipts accept explicit supported games and legacy rooms but reject unknown game metadata',()=>{

@@ -35,12 +35,12 @@ Kodåtergång, när en deploy är fel:
 
 ## Neon: backup och restore
 
-**Backupgren före varje schemaändring i produktionen.** En Neon-gren från `main` är en omedelbar, fullständig kopia av alla databaser. Den skapas med Jakobs go före varje DDL, namnges `backup-<syfte>-<datum>` och raderas av Jakob tidigast en vecka efter ändringen. Hittills: `backup-before-008-010-20261027` (`br-round-wind-b120esv6`), `backup-ren-start-20261028` (`br-morning-scene-b1a0ykzk`) och `backup-before-o03-20261028` (`br-winter-sunset-b1dnm0kb`, LSN `0/2F1E6850`, 13:08:33Z). Projektets historik räcker sex timmar bakåt; inom det fönstret kan `main` också återställas till en tidpunkt (PITR). En grenåterställning skriver över allt efter tidpunkten, även plånbokstransaktioner, och används bara om ingen har spelat efter felet. PITR är inte provad.
+**Backupgren före varje schemaändring i produktionen.** En Neon-gren från `main` är en omedelbar, fullständig kopia av alla databaser. Den skapas med Jakobs go före varje DDL, namnges `backup-<syfte>-<datum>` och raderas av Jakob tidigast en vecka efter ändringen. Hittills: `backup-before-008-010-20261027` (`br-round-wind-b120esv6`, 17:41:31Z), `backup-ren-start-20261028` (`br-morning-scene-b1a0ykzk`), `backup-before-o03-20261028` (`br-winter-sunset-b1dnm0kb`, LSN `0/2F1E6850`, 13:08:33Z) och `backup-api-key-operator-20261029` (`br-soft-river-b1h1g7wn`, 01:45:14Z). Projektets historik räcker sex timmar bakåt; inom det fönstret kan `main` också återställas till en tidpunkt (PITR). En grenåterställning skriver över allt efter tidpunkten, även plånbokstransaktioner, och används bara om ingen har spelat efter felet. PITR är inte provad.
 
 **`pg_dump` mot ett tomt mål** är den portabla vägen. Provad mot produktionens migrerade schema 28 oktober 2026: dump av backupgrenen och restore till databasen `croupier_restore_o03` på grenen `o03-restore-proof`, med identisk ögonblicksbild (S0 = S1), samma ledger och readiness och lika ägare och ACL på 94 objekt (O03-kvittot, blocket `backup`; kvittot är raderat och läses ur Git, se [HISTORIK](HISTORIK.md)). Tidigare prov: preview 25 oktober och O02:s restore-replay 28 oktober.
 
 1. **Stoppa skrivare vid en verklig återställning:** spelmotorn, Vercel-API:erna och bakgrundsjobb, med Jakobs beslut och ett avtalat fönster. Ett restoreprov behöver inget stopp: dumpa då från en ny backupgren, som ingen skriver till.
-2. **Frys identiteten:** projekt, gren, endpoint, databas, roll och kodens SHA. `node tools/check-migration-readiness.mjs` (utan `--apply`) visar schemaledgern.
+2. **Frys identiteten:** projekt, gren, endpoint, databas, roll och kodens SHA. `node tools/check-migration-readiness.mjs` (utan `--apply`) visar båda migreringsledgrarna (`studio-NNN` och `game-NNN`, se nedan).
 3. **Dumpa** med PostgreSQL-klient 18 (servern kör 18.6) mot Neons direkta endpoint, värdnamnet utan `-pooler`, som `croupier_game`:
    ```sh
    pg_dump --format=custom --file <privat-katalog>/croupier_game.dump "<direkt anslutning, sslmode=verify-full>"
@@ -66,20 +66,43 @@ Kodåtergång, när en deploy är fel:
 
 Efter en restore eller PITR återöppnas inga rum och inget tal aktiveras automatiskt. Schemaändringar är framåtriktade: det finns ingen DOWN-migrering. Fel före COMMIT rullar tillbaka hela transaktionen; efter COMMIT behålls objekten och återgång sker med kompatibel kod. Ordningen är tolerant kod → godkänd migrering → kravhöjning ([AGENTS.md](../AGENTS.md#verifiering-och-säkerhet)).
 
+### Två migreringsledgrar
+
+Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012 är andra migreringar än Studios 011 och 012, så `node tools/check-migration-readiness.mjs` läser båda och skriver dem i samma rad som `studio-NNN` och `game-NNN` (till exempel `studio-012` och `game-012`). En obligatorisk version som saknas i någon av dem ger exit 1 och blockerar CI; en ändrad checksumma eller en okänd version ger exit 2. `--apply`, `--only` och `--skip` gäller bara Studios versioner och tar Studios nakna nummer (`--only 021`); stderr-raderna (`migration_apply_plan`, vägran) namnger dem `studio-NNN`.
+
+| Ledger | Format | Register och skrivare |
+| --- | --- | --- |
+| Studio `croupier_studio.storage_migrations` | `version` (`001`–`021`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
+| Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` registreras där i samma PR och mergas till `main` innan den körs. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
+
+Spelversionerna 006–013 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.
+
+**Efterhandsrader för 006–010 (`013-ledger-backfill.sql`).** 006 och 007 applicerades för hand innan spelversioner fick ledgerrader, och `tools/prepare-shared-schema.mjs` skriver ingen ledgerrad, så de syntes bara i katalogen. 013 skriver `game-006-player-profile`, `game-007-roulette-tables`, `game-008-shared-wallet`, `game-009-shared-blackjack` och `game-010-presentation-receiver` med filernas checksummor och respektive appliceringsdag, plus sin egen rad `game-013-ledger-backfill`. Den är bara DML i ledgern, kontrollerar först med en egen kontroll per version att 006:s kolumner och kontrollvillkor, 007:s tabell med primärnyckel och spelarreferens och 008–010:s 15 tabeller, index, funktioner, triggrar och kolumner finns (annars avbryts den utan skrivning) och är idempotent: en andra körning ändrar inget, och en befintlig rad med annan checksumma nekar hela transaktionen. Datumet för 008–010 i produktionen är 27 oktober 2026 (`git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`, "Uppdatering 27 oktober 2026", efter backupgrenen `backup-before-008-010-20261027` 17:41:31Z); klockslaget är okänt. För 006 och 007 finns inget antecknat appliceringsdatum; datumen nedan är filernas första commit i Git (006: `d5e3ffd5` 8 oktober 2026, 007: `15aa3192` 27 oktober 2026) och är osäkra. Verktyget ansluter aldrig till databasen; Jakob kör som `croupier_game` mot den direkta endpointen:
+
+```sh
+node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on-006 2026-10-08 --applied-on-007 2026-10-27 --applied-on 2026-10-27 --readiness-sql > <privat-katalog>/013-readiness.sql
+node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on-006 2026-10-08 --applied-on-007 2026-10-27 --applied-on 2026-10-27 --sql > <privat-katalog>/013.sql
+psql "<direkt anslutning som croupier_game, sslmode=verify-full>" -X -v ON_ERROR_STOP=1 -f <privat-katalog>/013-readiness.sql
+psql "<direkt anslutning som croupier_game, sslmode=verify-full>" -X -v ON_ERROR_STOP=1 -f <privat-katalog>/013.sql
+node tools/check-migration-readiness.mjs
+```
+
+Förkontrollen slutar med ROLLBACK. Efter körningen visar readiness `game-006`–`game-010` och `game-013` bland `applied`. Preview fick 006–010 andra datum och körs inte med produktionens.
+
 ### Migrerat schema i produktionen
 
-Läst 28 oktober 2026 före O03 och 14:21Z efter 011; raden för 012 bygger på läsningen 29 oktober. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
+Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 012. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
 
 | Del | Läge | Verktyg |
 | --- | --- | --- |
-| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte). Readiness `ready:true`, inga väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
-| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46Z, efter backupgrenen `backup-api-key-operator-20261029`; `api_keys.operator_id` är `NOT NULL`, [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)) | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`) |
-| Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*` | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
+| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte); 021 är inte körd. Readiness `ready:true`, inga obligatoriska väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
+| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46:30Z, efter backupgrenen `backup-api-key-operator-20261029`): `api_keys.operator_id` är `NOT NULL` med index och oföränderlighetstrigger ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). Samma checksummor som filerna i `ops/neon-game` | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`); readiness läser hela ledgern |
+| Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*`. Efterhandsraderna skrivs med 013 ovan | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
 | Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/o02-snapshot.mjs` |
 | Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Flyttas eller tas bort efter O03 |
 | Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` är kvarlämnade QA-roller som tas bort efter O03 | Inventeras före restore i ett annat projekt |
 
-Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern `product-v1` och `game-012-api-key-operator` men inte 011). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
+Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern bara `product-v1` och `game-012-api-key-operator`; 011 är inte körd där). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)
 
