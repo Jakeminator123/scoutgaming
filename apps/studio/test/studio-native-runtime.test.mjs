@@ -162,14 +162,12 @@ test('native mode is explicit, scoped and never substitutes zone/general databas
   }
 });
 test('explicit unified UI trusts only its public origin without a secondary alias', () => {
-  {
-    const config = nativeStudioAdminConfiguration(env);
-    assert.equal(config.unifiedUi, true);
-    assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
-    assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
-    assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
-    assert.throws(() => assertNativeStudioRequest(new Request('https://studio.example.invalid/studio/api/auth/session'), config), error => error.statusCode === 403);
-  }
+  const config = nativeStudioAdminConfiguration(env);
+  assert.equal(config.unifiedUi, true);
+  assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
+  assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
+  assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
+  assert.throws(() => assertNativeStudioRequest(new Request('https://studio.example.invalid/studio/api/auth/session'), config), error => error.statusCode === 403);
 });
 test('unified UI retains exact HTTPS, scope, Neon and policy requirements', () => {
   for (const change of [

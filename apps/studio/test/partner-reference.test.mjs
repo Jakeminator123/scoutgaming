@@ -65,17 +65,15 @@ test('explicit staged-base launch keeps Partner identity and token but removes i
 test('Partner launch always uses the canonical /game start and preserves the server-owned launch identity', async () => {
   // The canonical entry is fixed; no variable selects another path.
   const gamePath = '/game';
-  {
-    const supplied = `${ORIGIN}${gamePath}?dealer=vera&launch=fixture-token&presentation=original&motion=smooth60#view`;
-    const api = createPartnerReference({env,fetchImpl:async()=>Response.json({url:supplied,expiresIn:60})});
-    const ordinary = await api.endpoint(request('launch'));
-    assert.equal(ordinary.status,200);assert.equal((await ordinary.json()).url,supplied);
-    const staged = await api.endpoint(request('launch-staged-base'));
-    assert.equal(staged.status,200);
-    const url = new URL((await staged.json()).url);
-    assert.equal(url.origin,ORIGIN);assert.equal(url.pathname,gamePath);assert.equal(url.hash,'');
-    assert.deepEqual([...url.searchParams],[['launch','fixture-token'],['dealer','astrid'],['performance','staged']]);
-  }
+  const supplied = `${ORIGIN}${gamePath}?dealer=vera&launch=fixture-token&presentation=original&motion=smooth60#view`;
+  const api = createPartnerReference({env,fetchImpl:async()=>Response.json({url:supplied,expiresIn:60})});
+  const ordinary = await api.endpoint(request('launch'));
+  assert.equal(ordinary.status,200);assert.equal((await ordinary.json()).url,supplied);
+  const staged = await api.endpoint(request('launch-staged-base'));
+  assert.equal(staged.status,200);
+  const url = new URL((await staged.json()).url);
+  assert.equal(url.origin,ORIGIN);assert.equal(url.pathname,gamePath);assert.equal(url.hash,'');
+  assert.deepEqual([...url.searchParams],[['launch','fixture-token'],['dealer','astrid'],['performance','staged']]);
 });
 
 test('canonical Partner launch rejects retired game paths, wrong origins and non-game destinations', async () => {
