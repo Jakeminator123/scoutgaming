@@ -127,7 +127,9 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
-      :name==='./dealer-identity-portrait'?portraitStubs(React):name.startsWith('.')?componentRequire(name):require(name)});
+      :name==='./dealer-identity-portrait'?portraitStubs(React)
+      :name==='./room-release'?{RoomRelease:props=>React.createElement('section',{'data-room-release':props.roomId,'data-eligible':String(Boolean(props.eligible)),'data-blocked-by':props.blockedBy??''})}
+      :name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{hooks.reset();const tree=module.exports.RegisteredStudio(currentProps);hooks.flush();return tree;};
   render();await settle(1);
   return {render,listeners,allowLeave:value=>{allowLeave=value;},setProps(next){currentProps={...currentProps,...next};},
@@ -346,7 +348,7 @@ test('saved room bookmarks land on the room nav with their owner, room and fragm
 test('beforeunload guards drafts and writes in the layer editor and the game settings alike',async()=>{
   for(const section of ['appearance','game']){
     const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section});
-    const editor=()=>walk(h.render(),node=>section==='appearance'?node.props?.apiBase==='/studio/api/partner':node.props?.roomName!==undefined)[0];
+    const editor=()=>walk(h.render(),node=>section==='appearance'?node.props?.apiBase==='/studio/api/partner':node.props?.roomName!==undefined&&typeof node.props.onDirtyChange==='function')[0];
     const unload=()=>{const event={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};h.listeners.get('beforeunload')(event);return event;};
     assert.equal(unload().prevented,false,section);
     editor().props.onDirtyChange(true);h.render();
@@ -356,6 +358,19 @@ test('beforeunload guards drafts and writes in the layer editor and the game set
     editor().props.onBusyChange(false);h.render();assert.equal(unload().prevented,false,section);
     assert.equal(h.confirms,0);assert.equal(editor().props.roomId,'bj');
   }
+});
+
+test('the room publication is keyed by company and room, and holds the room lifecycle while it publishes',async()=>{
+  const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'});
+  const release=()=>walk(h.render(),node=>node.props?.['eligible']!==undefined&&typeof node.props.onPublished==='function')[0];
+  const reader=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
+  // En ny key per bolag och spelbord: kvitto, fel och ruta från ett spelbord följer aldrig med till ett annat.
+  assert.equal(release().key,'release:a:bj');
+  h.setProps({roomId:'roulette'});assert.equal(release().key,'release:a:roulette');
+  h.setProps({operatorId:'b',roomId:'other'});await settle(1);assert.equal(release().key,'release:b:other');
+  assert.equal(reader().props.disabled,false);
+  release().props.onBusyChange(true);assert.equal(reader().props.disabled,true,'the room cannot be opened or paused while it publishes');
+  release().props.onBusyChange(false);assert.equal(reader().props.disabled,false);
 });
 
 test('the assignment publishes the acknowledged company package with the lifecycle revision and re-reads it',async()=>{
