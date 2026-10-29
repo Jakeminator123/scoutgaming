@@ -46,7 +46,7 @@ Ordningen gäller. "DDL" körs av Jakob; "env" dokumenteras i [ENVIRONMENT-VARIA
 
 - **Syfte:** prova talet utan produktionens nycklar och budget (masterplanens punkt 10).
 - **Filer:** `docs/ENVIRONMENT-VARIABLES.md` (preview-raden), ingen kod.
-- **DDL:** nej. **Env:** ja, på preview-Render `croupier-k06-k07-staging`: egna `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` med sina hemligheter, `CROUPIER_DEALER_SPEECH_PROFILES` och `OPENCLAW_PRODUCT_SPEECH_URL`/`_TOKEN`. Produktionens nycklar kopieras aldrig.
+- **DDL:** nej. **Env:** ja, på preview-Render `scoutgaming-preview-engine`: egna `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` med sina hemligheter, `CROUPIER_DEALER_SPEECH_PROFILES` och `OPENCLAW_PRODUCT_SPEECH_URL`/`_TOKEN`. Produktionens nycklar kopieras aldrig.
 - **Prov:** `node ops/cloud/start.mjs --check` på preview, sedan T1:s prov i preview.
 - **Risk:** kostnad. Preview-Blob tar godkänt material (Jakobs beslut 2026-10-28), så riktig Paow-media får ligga där men kostnad för generering och bank i preview kräver fortfarande Jakobs beslut.
 
