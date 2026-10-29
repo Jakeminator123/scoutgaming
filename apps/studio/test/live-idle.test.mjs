@@ -224,3 +224,26 @@ test('snapshots/policies are defensive, clocks and scenes bounded, close is term
   assert.equal(c.offerVariant({ videoId: h.policy.variants[3].videoId, requestId: 'closed', expiresAt: 30000 }), false);
   const other = fixture(); other.at(-1); assert.throws(() => other.controller.started(1), /monotonic/);
 });
+
+// A new dealer needs no special case: its registered idle family names it, and no dealer is a default.
+import { registeredFilmedProfile } from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import { createRegisteredIdlePolicy } from '../../../packages/presentation/runtime/registered-idle-policy.mjs';
+test('a new dealer plays its own idle from its policy; the filmed register names only its own dealers', () => {
+  const id = n => '30000000-0000-4000-8000-' + String(n).padStart(12, '0');
+  const policy = createRegisteredIdlePolicy({ dealerId: 'nova', baselineVideoId: id(1), durationMs: 1000 });
+  policy.variants = [{ videoId: id(2), durationMs: 1000, use: 'automatic', automatic: { averageEveryMs: 5000, jitterMs: 0, cooldownMs: 0, maxPerMinute: 12 } }];
+  const inventory = { families: [{ id: policy.familyId, dealerId: 'nova', playbackType: 'idle-pool', standardIds: [id(1)], variantIds: [id(2)] }],
+    videos: [[id(1), 'standard'], [id(2), 'variant']].map(([videoId, role]) => ({ id: videoId, familyId: policy.familyId, role, available: true })) };
+  let clock = 0;
+  const own = createLiveIdleController({ policy, inventory, now: () => clock, initialScene: { active: true } });
+  const base = own.snapshot().clip; assert.equal(base.videoId, id(1));
+  own.presented(base.playId); assert.equal(own.snapshot().idleReady, true);
+  clock = 5000; assert.equal(own.completed(base.playId).clip.videoId, id(2), 'the new dealer\'s own variant');
+  assert.equal(createLiveIdleController({ policy, inventory, dealerId: 'nova', initialScene: { active: true } }).snapshot().clip.videoId, id(1));
+  assert.equal(createLiveIdleController({ policy, inventory, dealerId: 'paow', initialScene: { active: true } }).snapshot().state, 'unavailable',
+    'another dealer never borrows the family');
+  for (const missing of [null, { ...policy, familyId: undefined }]) assert.throws(() => createLiveIdleController({ policy: missing, inventory }), /Invalid live idle dealer/);
+  assert.equal(registeredFilmedProfile('nova'), null);
+  assert.equal(registeredFilmedProfile('paow').id, 'kevin-paow-c7138759');assert.equal(registeredFilmedProfile('dragan').id, 'kevin-dragan-f15b2af1');
+  for (const value of ['constructor', '__proto__', undefined, 7]) assert.equal(registeredFilmedProfile(value), null);
+});
