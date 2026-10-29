@@ -413,3 +413,63 @@ test('journal validates bounded pagination and tenant scope even when a cursor c
  const rows=await (await handlePartnerAuth(read(cookie,url+'&cursor='+cursor),f.config)).json();
  assert.equal(rows.operatorId,'north');assert.ok(rows.entries.every(row=>row.resourceId!=='other-company'));
 });
+
+// Spelbordets Historik: publiceringshistoriken (kind=publications) läses med
+// reports.read och bär bara package.publish, utan ändringsinnehåll; hela
+// journalen, med teamets händelser, kräver fortfarande team.read och team.roles.assign.
+test('publication history needs reports.read and carries only publications; the full journal keeps its team gate',async()=>{
+ const f=await fixture({memberships:[['42','partner-admin'],['43','partner-viewer'],['44','partner-editor']]});
+ await f.store.upsertRole({actor:'fixture',operatorId:'north',roleId:'reports-only',label:'Reports',permissions:['overview.read','reports.read'],delegable:true});
+ await f.store.upsertRole({actor:'fixture',operatorId:'north',roleId:'team-only',label:'Team',permissions:['overview.read','team.read','team.roles.assign'],delegable:false});
+ await f.store.upsertMembership({actor:'fixture',operatorId:'north',userId:'45',roleId:'reports-only',status:'active'});
+ await f.store.upsertMembership({actor:'fixture',operatorId:'north',userId:'46',roleId:'team-only',status:'active'});
+ for(const tables of [['room-a'],['room-a','room-b']])
+  await f.store.publishPackage({actor:'fixture',operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables,branding:{}});
+ await f.store.createOperator({actor:'fixture',operatorId:'south',slug:'south',name:'South'});
+ await f.store.publishPackage({actor:'fixture',operatorId:'south',lanes:['mobile-phone'],games:['blackjack'],tables:['south-room'],branding:{}});
+ const [admin,viewer,editor,reader,teamAdmin]=await Promise.all(['north-admin','north-viewer','north-editor','outside-partner','north-second-admin'].map(user=>cookieFor(f.config,user)));
+ assert.equal((await handlePartnerAuth(write(admin,{action:'suspend',userId:'44',expectedRevision:1}),f.config)).status,200);
+ const full=origin+'/studio/api/partner/journal?operator=north',publications=full+'&kind=publications';
+ assert.equal((await handlePartnerAuth(read(null,publications),f.config)).status,401);
+ // Läsaren (standardrollen) och en egen roll med bara reports.read får publiceringarna, aldrig hela journalen.
+ for(const [name,cookie] of [['viewer',viewer],['reports-only',reader]]){
+  assert.equal((await handlePartnerAuth(read(cookie,full),f.config)).status,403,name);
+  const response=await handlePartnerAuth(read(cookie,publications),f.config);
+  assert.equal(response.status,200,name);
+  assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie');
+  const body=await response.json();
+  assert.equal(body.operatorId,'north');assert.equal(body.nextCursor,null);
+  // Samma tidsstämpel i fixturen: raderna jämförs i revisionsordning.
+  assert.deepEqual(body.entries.map(row=>[row.beforeRevision,row.afterRevision]).sort((a,b)=>a[1]-b[1]),[[null,1],[1,2]],name);
+  // Bara id, tid och revisioner: inget konto-id, accessClass, requestId, resourceType/Id eller ändringsinnehåll.
+  for(const row of body.entries){
+   assert.deepEqual(Object.keys(row).sort(),['afterRevision','atMs','beforeRevision','id'],name);
+   assert.match(row.id,/^[a-f0-9-]{36}$/,name);assert.ok(Number.isSafeInteger(row.atMs),name);
+  }
+  assert.doesNotMatch(JSON.stringify(body),/fixture|partner|internal-admin|"package"/,name);
+  assert.doesNotMatch(JSON.stringify(body),/room-a|room-b|south|team\.|membership\.|role\.|operator\.create|admin@north/,name);
+  // Sidor och markör räknar bara publiceringar.
+  const first=await (await handlePartnerAuth(read(cookie,publications+'&limit=1'),f.config)).json();
+  assert.equal(first.entries.length,1);assert.ok(first.nextCursor);
+  const second=await (await handlePartnerAuth(read(cookie,publications+'&limit=1&cursor='+first.nextCursor),f.config)).json();
+  assert.equal(second.entries.length,1);assert.equal(second.nextCursor,null);
+  assert.deepEqual([...first.entries,...second.entries].map(row=>row.afterRevision).sort(),[1,2]);
+ }
+ // Utan reports.read: redaktören och en teamadministratör utan rapporter nekas publiceringarna.
+ assert.equal((await handlePartnerAuth(read(editor,publications),f.config)).status,403);
+ assert.equal((await handlePartnerAuth(read(teamAdmin,publications),f.config)).status,403);
+ // Hela journalen är oförändrad för den som har team.read och team.roles.assign.
+ for(const cookie of [admin,teamAdmin]){
+  const body=await (await handlePartnerAuth(read(cookie,full),f.config)).json();
+  assert.ok(body.entries.some(row=>row.action==='team.suspend'));
+  assert.ok(body.entries.some(row=>row.action==='package.publish'&&row.changes?.after?.tables));
+ }
+ assert.equal((await handlePartnerAuth(read(admin,publications),f.config)).status,200);
+ // Bolag B nekas, och en okänd eller dubblerad kind är 400.
+ assert.equal((await handlePartnerAuth(read(reader,origin+'/studio/api/partner/journal?operator=south&kind=publications'),f.config)).status,403);
+ for(const suffix of ['&kind=team','&kind=','&kind=publications&kind=publications','&kind=PUBLICATIONS'])
+  assert.equal((await handlePartnerAuth(read(reader,full+suffix),f.config)).status,400,suffix);
+ // En avstängd läsare nekas på nästa läsning.
+ memberRow(f.pool,'45').status='suspended';
+ assert.equal((await handlePartnerAuth(read(reader,publications),f.config)).status,403);
+});
