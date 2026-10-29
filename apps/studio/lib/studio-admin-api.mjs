@@ -11,7 +11,7 @@ import { logStudioServerFailure } from './studio-error-log.mjs';
 import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 
 const MAX_BODY = 64 * 1024;
-const administrationMutations = new Set(['tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
+const administrationMutations = new Set(['tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
