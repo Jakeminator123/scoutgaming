@@ -261,7 +261,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
       ['Välj Nora', false], ['Välj Oskar', false],
-      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig vid valt spelbord', true]),
     ], 'published dealers first, then disabled teasers');
     // The image request reaches the fixture server after the buttons render; wait for it (up to 5 s).
     const requested = async (path, message) => {
@@ -347,6 +347,9 @@ test('shared room command transport routes only its exact HTTP path through the 
   const path = '/api/shared-room/room-1/command';
   assert.equal(backendPlatformPath(path), true);
   assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + path });
+  const chat = '/api/shared-room/room-1/chat'; // Room chat (PR 1) uses the same exact-path backend route.
+  assert.equal(backendPlatformPath(chat), true);
+  assert.deepEqual(platformRoute(new URL(chat, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + chat });
   const headers = platformBackendHeaders(new Headers({ cookie: 'player_session=browser', origin: config.publicOrigin,
     'x-croupier-vercel-secret': 'forged', 'x-croupier-public-origin': 'forged' }), config);
   assert.equal(headers.get('cookie'), 'player_session=browser'); assert.equal(headers.get('origin'), config.publicOrigin);
