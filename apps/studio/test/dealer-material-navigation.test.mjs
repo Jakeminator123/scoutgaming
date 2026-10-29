@@ -8,7 +8,7 @@ import React from 'react';
 import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { legacyStudioDocumentHref } from '../lib/legacy-studio-document.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
-import { fixture } from './fixtures/dealer-forge-fixture.mjs';
+import { fixture, PNG } from './fixtures/dealer-forge-fixture.mjs';
 
 const require=createRequire(import.meta.url), {transformSync}=require('next/dist/build/swc');
 function load(file,overrides={},globals={}) {
@@ -127,4 +127,45 @@ test('material page does not mount a creator for a missing or archived dealer',(
     const tree=h.render(DealerMaterialPage,{project:createSeedProject(),dealerId,navigationContext:{},disabled:false});
     assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator').length,0);h.effects();h.unmount();
   }
+});
+
+// The composer's idempotency key, by behaviour: an uncertain failure (5xx) keeps the key so a retry returns the
+// journaled job instead of paying again; a definite refusal (4xx) or a changed request gets a new key.
+test('a paid generation keeps one requestId across an uncertain failure and takes a new one after a refusal or a changed request',async()=>{
+  const {service}=fixture();
+  await service.uploadAnchor('paow',{pose:'vila',contentType:'image/png',dataBase64:PNG.toString('base64')},{actor:'tester'});
+  const state=await service.state('paow');
+  const h=hooks(),window=browser('https://qa.invalid/admin/dealers/paow?flik=klipp&panel=generera'),jobs=[],replies=[];
+  const fetch=async(url,init={})=>{
+    if(init.method==='POST'&&url.endsWith('/preview'))return response(await service.preview('paow',JSON.parse(init.body)));
+    if(init.method==='POST'&&url.endsWith('/jobs')){jobs.push(JSON.parse(init.body));const [status,body]=replies.shift();return response(body,status);}
+    assert.notEqual(init.method,'POST','no other write');return response(state);
+  };
+  const {DealerMaterialCreator}=load('../components/dealer-forge-page.tsx',{react:h.react},{window,fetch,crypto:globalThis.crypto});
+  const props={dealerId:'paow',initialState:state};
+  const render=()=>{const tree=h.render(DealerMaterialCreator,props);h.effects();return tree;};
+  // The composer is a function component in the same file; expand it so its submit button is reachable.
+  const expand=node=>Array.isArray(node)?node.map(expand):node&&typeof node==='object'?typeof node.type==='function'&&node.type.name==='Composer'?expand(node.type(node.props)):{...node,props:{...node.props,children:expand(node.props?.children)}}:node;
+  const action=name=>nodes(expand(render()),node=>node.props?.['data-action']===name)[0];
+  const settle=async()=>{for(let i=0;i<3;i++){await tick();render();}};
+  const submit=async([status,body])=>{replies.push([status,body]);assert.equal(action('submit-job').props.disabled,false);action('submit-job').props.onClick();await settle();};
+  action('generate-redo').props.onClick();await settle();
+  await submit([503,{error:'runway_unavailable'}]);
+  action('reconnect').props.onClick();await settle();
+  await submit([503,{error:'runway_unavailable'}]);
+  action('reconnect').props.onClick();await settle();
+  await submit([422,{error:'forge_slot_invalid'}]);
+  await submit([503,{error:'runway_unavailable'}]);
+  action('reconnect').props.onClick();await settle();
+  const prompt=nodes(expand(render()),node=>node.type==='textarea')[0];prompt.props.onChange({target:{value:prompt.props.value+' Changed.'}});await settle();
+  await submit([503,{error:'runway_unavailable'}]);
+  assert.equal(jobs.length,5);const ids=jobs.map(job=>job.requestId);
+  assert.ok(ids.every(id=>/^[0-9a-f-]{36}$/.test(id)));
+  assert.equal(ids[1],ids[0],'a retry after an uncertain 503 reuses the key');
+  assert.equal(ids[2],ids[0],'every retry after an uncertain failure keeps the key, also the one that is then refused');
+  assert.notEqual(ids[3],ids[2],'after a definite 422 refusal the next click is a new request');
+  assert.notEqual(ids[4],ids[3],'a changed request body gets a new key');
+  const withoutKey=({requestId,...body})=>body;
+  assert.deepEqual(withoutKey(jobs[1]),withoutKey(jobs[0]));assert.notEqual(jobs[4].prompt,jobs[3].prompt);
+  h.unmount();
 });

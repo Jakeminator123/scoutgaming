@@ -149,6 +149,17 @@ async function keyRefusal(method: Method, action: string, response: Response): P
   } catch { return undefined; }
 }
 
+// Notices after an acknowledged write, keyed so the page can mark which one it shows (data-notice). The
+// unrefreshed one is the guard against a second write: the server took the first, but the data is not re-read.
+const WRITE_NOTICES = {
+  acknowledged: 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.',
+  'acknowledged-unrefreshed': 'Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.',
+  'email-not-sent': 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.',
+  'invite-sent': 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
+  'resend-sent': 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.',
+} as const;
+const writeNoticeKind = (notice: string) => (Object.keys(WRITE_NOTICES) as (keyof typeof WRITE_NOTICES)[]).find(kind => WRITE_NOTICES[kind] === notice);
+
 function uiError(error: unknown): StudioAdminUiError { return error instanceof StudioAdminUiError ? error : new StudioAdminUiError(503); }
 function aborted(signal?: AbortSignal) { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); }
 
@@ -432,7 +443,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <div><dt>Kortlekar / kort</dt><dd>{label(object(resources.shoes.payload.rules)?.decks)} / {label(object(resources.shoes.payload.rules)?.total)}</dd></div>
         </dl><details className={styles.disclosure}><summary>Spelregler och status</summary><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
           <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
-          <p>Certifieringsunderlag: saknas.</p></details>
+          <p data-certification="missing">Certifieringsunderlag: saknas.</p></details>
         </>}
       </>}
       {section === 'players' && <>
@@ -674,7 +685,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       const reloaded = await load(group, true, result.actor);
       if (!alive.current) return;
       if (!reloaded) {
-        setNotice('Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.');
+        setNotice(WRITE_NOTICES['acknowledged-unrefreshed']);
         return;
       }
       if (form) {
@@ -682,10 +693,9 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
-      setNotice(result.payload.emailSent === false ? 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.'
-        : result.payload.emailSent === true && action === 'users/invite' ? 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.'
-          : result.payload.emailSent === true && action === 'users/resend' ? 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.'
-            : 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.');
+      setNotice(WRITE_NOTICES[result.payload.emailSent === false ? 'email-not-sent'
+        : result.payload.emailSent === true && action === 'users/invite' ? 'invite-sent'
+          : result.payload.emailSent === true && action === 'users/resend' ? 'resend-sent' : 'acknowledged']);
     } catch (error) {
       if (!alive.current) return;
       const failure = uiError(error);
@@ -710,13 +720,13 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow={ownHeading ? (group === 'finance' ? 'EKONOMI' : area.toUpperCase()) : null} title={ownHeading ? pageTitle : null} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
-    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" data-action="reload" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
-    {notice && <p role="status" className={styles.notice}>{notice}</p>}
-    {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
+    {notice && <p role="status" className={styles.notice} data-notice={writeNoticeKind(notice)}>{notice}</p>}
+    {oneTime && actor && <section className={styles.section} data-one-time="" aria-label="Engångsresultat från partneråtgärd">
       {oneTime.kind === 'credentials' && <><h3>Engångsuppgifter</h3><p>Kopiera nu. Uppgifterna försvinner när du döljer dem, laddar om eller lämnar vyn.</p>
         {oneTime.key && <label>API-nyckel<input readOnly value={oneTime.key} autoComplete="off" spellCheck={false} /></label>}
         <label>HMAC-hemlighet<input readOnly value={oneTime.secret} autoComplete="off" spellCheck={false} /></label></>}
@@ -724,8 +734,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       {oneTime.kind === 'credit' && <><h3>Demo-saldo bekräftat</h3><p>{oneTime.playerId}: {oneTime.balance} {oneTime.currency}</p></>}
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
-    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" data-action="discard-drafts" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
+    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} data-group={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
       {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
         key={actor.username+':'+actor.role}
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}

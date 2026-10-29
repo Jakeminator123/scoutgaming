@@ -42,8 +42,8 @@ function Field({id,label,hint,children}:{id:string;label:ReactNode;hint?:ReactNo
 }
 
 function CompanyStep({companies,selected,onSelect}:{companies:DemoCompany[];selected:string|null;onSelect:(id:string)=>void}) {
-  if(!companies.length)return <Empty chip="Inga bolag" title="Det finns inget aktivt bolag att bygga en demo åt" text="Skapa bolaget först under Bolag och spelbord › Nytt bolag, lägg till ett spelbord och publicera paketet."
-    action={<Link className={buttonVariants()} href="/admin/companies?view=create">Bolag och spelbord › Nytt bolag</Link>}/>;
+  if(!companies.length)return <Empty chip="Inga bolag" title="Det finns inget aktivt bolag att bygga en demo åt" text="Skapa bolaget först under Bolag och spelbord, lägg till ett spelbord och publicera paketet."
+    action={<Link className={buttonVariants()} href="/admin/companies?view=create">Nytt bolag</Link>}/>;
   return <div className={choiceGrid} role="group" aria-label="Bolag">{companies.map(company=><button key={company.id} type="button" className={choiceClass(company.id===selected)} aria-pressed={company.id===selected} onClick={()=>onSelect(company.id)}>
     <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"><span className="min-w-0 text-[13.5px] font-semibold [overflow-wrap:break-word]">{company.name}</span>{company.playable?<Chip tone="ok" dot>{company.playable} spelbara</Chip>:<Chip tone="warn">Inga spelbara spelbord</Chip>}</span>
     <span className="text-xs text-sg-muted">{plural(company.rooms,'spelbord','spelbord')} · {company.packageRevision===null?'inget publicerat paket':`publicerad version ${company.packageRevision}`}</span>
@@ -52,7 +52,7 @@ function CompanyStep({companies,selected,onSelect}:{companies:DemoCompany[];sele
 
 function RoomStep({company,rooms,selected,onSelect}:{company:DemoCompany;rooms:DemoRoom[];selected:string|null;onSelect:(room:DemoRoom)=>void}) {
   if(!rooms.length)return <Empty chip="Inga spelbord" title={`${company.name} har inget spelbord`} text="Lägg till ett spelbord hos bolaget under Bolag och spelbord och publicera paketet, så går det att välja här."
-    action={<Link className={buttonVariants()} href={companyHref(company,'spelbord')}>Bolag › {company.name} › Spelbord</Link>}/>;
+    action={<Link className={buttonVariants()} href={companyHref(company,'spelbord')}>Spelbord hos {company.name}</Link>}/>;
   return <div className={choiceGrid} role="group" aria-label="Spelbord">{rooms.map(room=><button key={room.id} type="button" className={choiceClass(room.id===selected)} aria-pressed={room.id===selected} disabled={!room.selectable} onClick={()=>onSelect(room)}>
     <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"><span className="min-w-0 text-[13.5px] font-semibold [overflow-wrap:break-word]">{room.name}</span>{room.selectable?<Chip tone="ok" dot>öppet</Chip>:<Chip tone="warn">{room.state==='live'?'inte spelbart':'pausat'}</Chip>}</span>
     <span className="text-xs text-sg-muted">{GAMES[room.game]??room.game} · {room.dealers.length?`${plural(room.dealers.length,'dealer','dealers')}: ${room.dealers.map(row=>row.name).join(', ')}`:'inga dealers i paketet'}</span>
@@ -61,7 +61,7 @@ function RoomStep({company,rooms,selected,onSelect}:{company:DemoCompany;rooms:D
 }
 
 function DealerStep({company,dealers,selected,onSelect}:{company:DemoCompany;dealers:{selectable:DemoDealer[];others:DemoDealer[]};selected:string|null;onSelect:(id:string)=>void}) {
-  const assign=<Link className={linkClass} href={companyHref(company,'tilldelning')}>Bolag › {company.name} › Tilldelning</Link>;
+  const assign=<Link className={linkClass} href={companyHref(company,'tilldelning')}>Tilldelning för {company.name}</Link>;
   return <div className="grid gap-3">
     {dealers.selectable.length?<div className={choiceGrid} role="group" aria-label="Dealer">{dealers.selectable.map(dealer=><button key={dealer.id} type="button" className={choiceClass(dealer.id===selected)} aria-pressed={dealer.id===selected} onClick={()=>onSelect(dealer.id)}>
       <span className="flex items-center justify-between gap-2"><DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44}/><Chip tone="ok" dot>i paketet</Chip></span>
@@ -72,10 +72,10 @@ function DealerStep({company,dealers,selected,onSelect}:{company:DemoCompany;dea
   </div>;
 }
 
-function CreditsReadout({credits,company,room}:{credits:Load<Credits>;company:DemoCompany;room:DemoRoom}) {
+function CreditsReadout({credits,room}:{credits:Load<Credits>;room:DemoRoom}) {
   if(credits.status==='loading')return <p className={small} role="status">Läser spelbordets spelinställningar…</p>;
   if(credits.status==='error')return <p className={small}>{credits.message}</p>;
-  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under Bolag och spelbord › {company.name}.</p>;
+  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under spelbordets <Link className={linkClass} href={`/admin/rooms/${encodeURIComponent(room.id)}?flik=spel`}>Spelinställningar</Link>.</p>;
   const value=credits.value;
   return <KV items={[
     ['Startsaldo','Bestäms av spelmotorn när testsessionen skapas och visas i kvittot. Det går inte att välja här; efter lanseringen kan du fylla på demosaldot.'],
@@ -95,7 +95,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <Field id="demo-currency" label="Valuta"><select id="demo-currency" className={fieldClass} value={state.form.currency} onChange={event=>onEdit('currency',event.target.value)}>{DEMO_CURRENCIES.map(row=><option key={row}>{row}</option>)}</select></Field>
     </div>
     <section aria-labelledby="demo-credits-title" className="grid gap-2.5"><h3 id="demo-credits-title" className="m-0 text-[13.5px] font-semibold text-sg-text">Saldo och giltighet</h3>
-      <CreditsReadout credits={credits} company={company} room={room}/>
+      <CreditsReadout credits={credits} room={room}/>
       <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; kommer senare). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
     <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> för <b>{company.name}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> med <b>{dealer.name}</b>. Nyckeln gäller bara {company.name}, och nyckel och hemlighet lämnar aldrig servern.</Note>

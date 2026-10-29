@@ -21,7 +21,6 @@ import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../../packages/presentation/server/saved-game-policy.mjs';
 import { createRegisteredDealerIdle } from '../../../packages/presentation/server/registered-dealer-idle.mjs';
-import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 import { createRuntimeMetadataReader } from '../../../tools/runtime-media-catalog.mjs';
 import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
 import { createStudioAdminReadouts } from './studio-admin-readouts.mjs';
