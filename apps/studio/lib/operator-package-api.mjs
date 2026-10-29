@@ -26,12 +26,6 @@ import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mj
 // Bolag › Tilldelat: Admins `assignment` i paketets branding (ADMIN-FORENKLING 5.3).
 export const ASSIGNMENT_ACTION='publish-assignment';
 
-export const SG_TEST_OPERATOR = Object.freeze({
-  id: 'sg-test',
-  slug: 'sg-test',
-  name: 'SG test game provider',
-});
-
 const fail = statusCode => { throw Object.assign(new Error('operator_package_rejected'), { statusCode }); };
 
 export function fixtureLaneOperators() {
@@ -78,10 +72,6 @@ function selectedLanes(value, allowed) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length < 1 || value.length > 32) fail(422);
   if (new Set(value).size !== value.length || value.some(item => typeof item !== 'string' || !allowed.includes(item))) fail(422);
   return value;
-}
-
-function publicOperator(operator) {
-  return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status };
 }
 
 function sceneLayoutIntent(body){
@@ -385,16 +375,6 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       expectedRevision:current?.revision ?? null, lanes, games:current?.games?.length ? [...current.games] : ['blackjack'],
       tables:current ? [...current.tables] : [], branding:withPackagePresentation(current?.branding ?? {}, presentation)});
     return result(published, presentation);
-  });
-  handlers.set('POST /studio/api/admin/operator-create-demo', async context => {
-    exactKeys(context.body, []);
-    const created = await (await store()).createOperator({
-      actor: context.actor.user, audit: operatorAuditContext(context.actor),
-      operatorId: SG_TEST_OPERATOR.id,
-      slug: SG_TEST_OPERATOR.slug,
-      name: SG_TEST_OPERATOR.name,
-    });
-    return { ok: true, operator: publicOperator(created) };
   });
   return Object.freeze({
     handlers, preparations,

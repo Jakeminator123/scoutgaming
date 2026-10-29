@@ -261,7 +261,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
       ['Välj Nora', false], ['Välj Oskar', false],
-      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig vid valt spelbord', true]),
     ], 'published dealers first, then disabled teasers');
     // The image request reaches the fixture server after the buttons render; wait for it (up to 5 s).
     const requested = async (path, message) => {

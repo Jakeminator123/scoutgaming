@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import {DealerVoicePicker} from '../../../../components/dealer-voice-picker'
+import {DealerVoiceProfile} from './dealer-voice-profile'
 import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs'
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs'
 import {bindClip,clipSlots,clipsForSlot,currentClipId,type ClipSlot,type VideoInventory} from '../../lib/connected-studio.mjs'
@@ -18,6 +19,8 @@ export interface StudioSpeechPanelProps {
   blocked?:boolean
   projectDirty?:boolean
   onEdit:(project:StudioProject)=>void
+  /** Present where the caller accepts a server-saved project (Röstprofil). */
+  onProjectSaved?:(project:StudioProject)=>void
   /** Present only where the caller replaces its inventory after a server review write. */
   onInventory?:(inventory:VideoInventory)=>void
   onBusyChange?:(busy:boolean)=>void
@@ -58,7 +61,7 @@ function RecordedSpeechPreview({row,active}:{row:StudioRecordedSpeech;active:boo
 }
 
 export function StudioSpeechPanel(props:StudioSpeechPanelProps){
-  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,onInventory,onBusyChange,onDirtyChange}=props
+  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,onProjectSaved,onInventory,onBusyChange,onDirtyChange}=props
   const dealer=project.dealers.find(row=>row.id===dealerId),saved=dealer?.speechProfile
   const [voiceDraft,setVoiceDraft]=useState(initialDealerVoiceDraft(dealer,saved?.voice))
   const [recordedId,setRecordedId]=useState(''),[lineChoice,setLineChoice]=useState(''),[languageChoice,setLanguageChoice]=useState('')
@@ -174,6 +177,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
         </article>
   return <section className="studio-detail-panel" aria-label={`Röst och talset för ${dealer.label}`}>
     <div><span className="text-xs uppercase tracking-wide text-muted-foreground">Tal · {dealer.label}</span><h2 className="mt-1 text-lg font-semibold">Röst &amp; tal</h2></div>
+    {onProjectSaved&&<DealerVoiceProfile project={project} dealer={dealer} blocked={blocked||busy} projectDirty={projectDirty||formDirty} onSaved={onProjectSaved}/>}
     <section className="mt-4 space-y-3" aria-label="Inspelat tal">
       <h3 className="font-semibold">Inspelat tal</h3>
       {recordings.length?<><p className="text-sm">{recordings.length} filer · {recordings.filter(row=>row.available&&row.review==='approved').length} godkända. Välj replik, språk och tagning. Högsta tagningsnumret står först; förvald är standardtagningen i talfacket, annars den godkända eller granskningsbara tagningen.</p>

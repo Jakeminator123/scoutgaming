@@ -182,7 +182,7 @@ export function createSceneExportApi({authorize,config,repository,mutationTransa
       // Re-authorize right before anything is stored, as the upload does before its commit.
       const stillAuthorized=async()=>{ const current=await staff(request);if (current.user!==principal.user||current.role!==principal.role) throw new StudioStorageError('studio_request_rejected',403);return true; };
       await stillAuthorized();
-      // The game server must read the new material role before any byte is stored (capability v32).
+      // The game server must read the new material role before any byte is stored (capability v33).
       if (typeof repository.withMutationContext==='function') await repository.withMutationContext(()=>{},{kind:'project',value:{layerAssets:[record]}});
       await privateMedia.put(record.pathname,still.bytes,{sha256,size:record.size,contentType:record.contentType,env:mediaOptions.env,cacheDir:mediaOptions.cacheDir});
       // The new material joins the library only; the miljöbild choice stays with the editor's draft.

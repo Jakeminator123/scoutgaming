@@ -33,7 +33,7 @@ async function dealerFrame(){
   return 'data:image/png;base64,'+png.toString('base64');
 }
 
-async function fixture(t,{version=32}={}){
+async function fixture(t,{version=33}={}){
   const pool=await createPglitePool();t.after(()=>pool.end());
   const plan=await planStudioMigrations({pool});await applyStudioMigrations({pool,expectedTarget:plan.target,confirm:true});
   const raw=createStudioRepository({pool,scope}),fetches=[];
@@ -89,7 +89,7 @@ test('export renders the saved scene on a computer screen and saves a new illust
   assert.ok(red[0]>180&&red[1]<80&&red[2]<80,'the keyed green shows the background: '+red);
   assert.ok(blue[2]>180&&blue[0]<80,'the table sits at its saved placement, not on the lower half: '+blue);
   assert.ok(white.every(value=>value>220),'the dealer stays in front: '+white);
-  assert.ok(f.fetches.includes(32),'storing an illustration negotiates the v32 runtime first');
+  assert.ok(f.fetches.includes(33),'storing an illustration negotiates the v33 runtime first');
   // A second export is the next version; the first stays in the library.
   const again=await f.api().handle(f.post({laneId:'studion',expectedRevision:saved.revision}));
   assert.equal(again.status,200);
@@ -137,7 +137,7 @@ test('a miljöbild is chosen on the environment, travels in the package and can 
 });
 
 test('an older game server, a stale editor and foreign or broken input store nothing',async t=>{
-  const old=await fixture(t,{version:31}),saved=await old.raw.readDocument('project');
+  const old=await fixture(t,{version:32}),saved=await old.raw.readDocument('project');
   const refused=await old.api().handle(old.post({laneId:'studion',expectedRevision:saved.revision}));
   assert.equal(refused.status,503);assert.equal((await refused.json()).code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
   assert.deepEqual(old.puts,[],'no byte is stored before the runtime reads the role');

@@ -203,7 +203,7 @@ test('N1 read loop feeds scoped observations to the next model turn and never ex
  let calls=0,h;h=fixture({ask:async args=>{calls++;if(calls===1)return {reply:'Läser',proposal:null,read:{source:'media',query:'astrid',offset:0}};
  assert.equal(args.context.requestedData[0].items[0].label,'Saved clip');return {reply:'Hittade klippet',proposal:null,navigation:{page:'import',targetId:'astrid'}};},
  readData:async()=>({source:'media',total:1,complete:true,items:[{label:'Saved clip'}]})});
- const result=await(await h.post(chat())).json();assert.equal(calls,2);assert.equal(result.navigation.href,'/admin/clips?tool=import&dealer=astrid');assert.equal(h.state.executions,0);
+ const result=await(await h.post(chat())).json();assert.equal(calls,2);assert.equal(result.navigation.href,'/admin/clips?panel=intake&dealer=astrid');assert.equal(h.state.executions,0);
 });
 test('revocation during a scoped read prevents a second model call and private response',async()=>{
  let h,calls=0;h=fixture({ask:async()=>{calls++;return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};},readData:async()=>{h.state.actor=null;return {private:'SECRET'};}});

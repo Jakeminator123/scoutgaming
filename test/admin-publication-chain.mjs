@@ -456,7 +456,7 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       await page.waitForFunction(element => element.getAttribute('aria-pressed') === 'true', element);
     };
     await choose(page.getByRole('list', {name: 'Spelbolag', exact: true}).getByRole('button', {name: /C6 North/}));
-    await choose(page.getByRole('list', {name: 'Spelrum', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
+    await choose(page.getByRole('list', {name: 'Spelbord', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
     await choose(page.getByRole('button', {name: 'Välj Astrid', exact: true}));
     const play = page.getByRole('dialog', {name: 'Astrid', exact: true}).getByRole('link', {name: 'Spela med Astrid', exact: true});
     assert.equal(await play.getAttribute('href'), chain.href);
