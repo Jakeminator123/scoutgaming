@@ -55,6 +55,7 @@ placering för bolaget:
 | --- | --- | --- |
 | **Publicera** → **Publicera nu** | Spelbord (öppet blackjackbord) | Bolagets sparade tal, klipp, vila och placering, fryst som ny version |
 | **Publicera för {bolag}** | Bolag › Tilldelning | Ett ändrat urval av scenmallar |
+| **Publicera tilldelningen** | Bolag › Tilldelning | Vad bolaget får ändra själv, insatsprofiler och språk |
 | **Publicera · N ändringar** → **Publicera nu** | Spelbord › Utseende | Spelbordets bakgrund, dealer och bordsgrafik |
 | **Publicera spelinställningar** | Spelbord › Spelinställningar | Bordsspråk och insatsprofil |
 
@@ -367,8 +368,14 @@ papperskorg; den tas bort när inget spelbord använder den.
 - **Tilldelning**: kryssa i de scenmallar bolaget får använda; dealers,
   bakgrunder och bordsgrafik följer med via scenmallarna. Markeringarna
   ersätter urvalet, så behåll alla scenmallar bolaget fortsatt ska ha.
-  **Publicera för {bolag}** fryser urvalet som en ny version. Upplåsning per
-  val kommer senare.
+  **Publicera för {bolag}** fryser urvalet som en ny version.
+- **Tilldelat bolaget** (överst under Tilldelning): vad bolaget får ändra
+  själv i Partnerportalen. Kryssa i dealer, bordsgrafik och bakgrund (bara där
+  scenmallen tillåter det; annars *Låst i scenmallen*), bordsspråk,
+  insatsprofil och paus, och vilka insatsprofiler och språk bolaget väljer
+  bland. **Publicera tilldelningen** ger paketet en ny version och en rad i
+  bolagets journal; Partnerportalen läser den direkt. Ett upplåst språk eller
+  en upplåst insatsprofil kräver minst ett alternativ.
 - **Spelbord**: bolagets spelbord, **Nytt spelbord** och bolagets papperskorg.
 - **Spelare och ekonomi**: inte anslutet ännu; spelarkonton finns under
   System › Spelarkonton.
