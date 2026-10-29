@@ -153,9 +153,9 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
       <section role="tabpanel" id="structure-panel-materials" aria-labelledby="structure-tab-materials" hidden={tab!=='materials'} className="space-y-4"><h2 className="text-xl font-semibold">Bakgrunder och bordsgrafik</h2>
         <p className="text-sm text-sg-muted">Material är delade filer. Ett lager i en miljö eller ett publicerat val är den enda kopplingen.</p>
         <RegistryRows rows={tree.materials} columns render={row=><li key={row.id} id={resourceAnchor('material',row.id)} className="admin-system-card scroll-mt-6">
-          <h3 className="font-semibold">{row.label}</h3><p className="text-sm">{row.role==='background'?'Bakgrund':'Bord'}{row.game?' · '+gameName(row.game):''}</p><State row={row}/><ResourceIdentity id={row.id}/>
+          <h3 className="font-semibold">{row.label}</h3><p className="text-sm">{row.role==='background'?'Bakgrund':row.role==='illustration'?'Miljöbild':'Bord'}{row.game?' · '+gameName(row.game):''}</p><State row={row}/><ResourceIdentity id={row.id}/>
           <div className="mt-3 text-sm"><Uses rows={row.uses}/></div>
-          {!row.missing&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:row.role==='background'?'bakgrunder':'bordsgrafik',...row.game?{game:row.game}:{}})}>Öppna i Material</a>}
+          {!row.missing&&row.role!=='illustration'&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:row.role==='background'?'bakgrunder':'bordsgrafik',...row.game?{game:row.game}:{}})}>Öppna i Material</a>}
         </li>}/>{!tree.materials.length&&<p>Inga bord eller bakgrunder i de lästa registren.</p>}
       </section>
       <section role="tabpanel" id="structure-panel-compositions" aria-labelledby="structure-tab-compositions" hidden={tab!=='compositions'} className="space-y-4"><h2 className="text-xl font-semibold">Miljöer</h2>

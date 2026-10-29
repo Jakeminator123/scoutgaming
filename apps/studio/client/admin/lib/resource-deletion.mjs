@@ -88,6 +88,8 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
         addRef(target.uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' miljö · '+(layer.enabled?'tillåtet val':'inaktiverat lager')));
       }
     }
+    // The miljöbild is the environment's picture, not a layer; it is still a use of that material.
+    if(typeof row.illustration==='string')addRef(ensureMaterial(row.illustration,'illustration').uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' miljö · miljöbild'));
     compositions.set(row.id,{...node(row.id,row.label,archived),layers,publishedTo:null,historicalPackageReferences:null});
   }
   for(const row of list(project.lanes))addComposition(row,false);

@@ -37,6 +37,14 @@ test('shared room layers are references; published dealer choices do not replace
   assert.equal(tree.rooms.find(row=>row.id==='room-a').choicesPath,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack');
   assert.equal(tree.rooms.find(row=>row.id==='room-a').playable,false);
 });
+test('a miljöbild is a use of its material, never a layer of the environment',()=>{
+  const {workspace,lifecycle}=fixture();
+  workspace.project.layerAssets.push({id:'picture',label:'Gemensam miljö · miljöbild v1',role:'illustration',contentType:'image/webp'});
+  workspace.project.lanes[0].illustration='picture';
+  const tree=buildResourceDeletionTree(workspace,lifecycle),picture=tree.materials.find(row=>row.id==='picture');
+  assert.equal(picture.role,'illustration');assert.deepEqual(picture.uses.map(row=>[row.kind,row.id]),[['composition','shared']]);
+  assert.equal(Object.values(tree.compositions[0].layers).some(layer=>layer.ids.includes('picture')),false);
+});
 test('archived identities, rooms, compositions and media remain visible without inventing a game or owner',()=>{
   const {workspace,lifecycle}=fixture();
   workspace.project.dealerTrash=[{dealer:{id:'old',label:'Arkiverad dealer'},lines:[],compositions:[{id:'old-lane',label:'Arkiverad miljö',layers:{background:{enabled:false,allowed:['old-picture'],default:null},dealer:{enabled:true,allowed:['old'],default:'old'},table:{enabled:false,allowed:[],default:null}}}],activeMediaIds:['archived-clip']}];
