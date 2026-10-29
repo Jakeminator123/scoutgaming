@@ -1,6 +1,7 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { unsafeChatText } from './shared-room-channel.mjs';
 
 // Shared-room text chat (PR 1, no GPU): POST /api/shared-room/<roomId>/chat -> OpenClaw text.
 // Same origin/host/JSON gate as shared-room-command.mjs. The question and the dealer's answer
@@ -51,7 +52,8 @@ function parse(buffer) {
     || typeof value.roundRevision !== 'string' || !value.roundRevision || value.roundRevision.length > 200
     || (value.acceptsSpeechStream !== undefined && typeof value.acceptsSpeechStream !== 'boolean')) fail('shared_room_invalid_request');
   const message = value.message.trim().replace(/\r\n?/g, '\n');
-  if (!message || message.length > 1000 || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(message)) fail('shared_room_invalid_request');
+  // Control, bidi override/isolate and zero-width characters never reach the room (review fix).
+  if (!message || message.length > 1000 || unsafeChatText.test(message)) fail('shared_room_invalid_request');
   return { requestId: value.requestId, message, roundRevision: value.roundRevision };
 }
 
@@ -89,7 +91,7 @@ function rejection(error, aborted) {
 export function createSharedRoomChat({ service, origin, engineOrigin = origin, settingsProvider = null, decide = openClawChat,
   fetchImpl = fetch, now = Date.now, cooldownMs = 10000, maxBodyBytes = 8192, historyChars = 8000 } = {}) {
   const exact = value => { try { return new URL(value).origin === value; } catch { return false; } };
-  if (!exact(origin) || !exact(engineOrigin) || typeof service?.chatContext !== 'function' || typeof service?.emitChat !== 'function'
+  if (!exact(origin) || !exact(engineOrigin) || typeof service?.chatMember !== 'function' || typeof service?.chatContext !== 'function' || typeof service?.emitChat !== 'function'
     || typeof decide !== 'function' || (settingsProvider !== null && typeof settingsProvider !== 'function')) {
     throw new TypeError('Explicit shared room chat service and origins required');
   }
@@ -112,11 +114,12 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
       const input = parse(await readBody(req, res, maxBodyBytes));
       // The access port reads only the session cookie, as for the room socket.
       const request = Object.freeze({ headers: new Headers(typeof h.cookie === 'string' ? { cookie: h.cookie } : {}), signal });
-      const context = await service.chatContext(request, { roomId, signal });
-      const { binding, snapshot } = context, actorId = binding.actorId;
-      if (snapshot.me?.active !== true) fail('shared_room_chat_not_member');
-      if (input.roundRevision !== sharedRoomChatRound(snapshot)) fail('stale_round_revision');
-      if (typeof context.dealerId !== 'string' || !context.dealerId) fail('shared_room_chat_dealer_unavailable');
+      // Review fix: authorization, membership, round, keys and the rate limit come first and take no
+      // SQL lock; only an admitted question reaches the locked read (room, player row, audit lock).
+      const member = await service.chatMember(request, { roomId, signal });
+      const actorId = member.binding.actorId;
+      if (member.snapshot.me?.active !== true) fail('shared_room_chat_not_member');
+      if (input.roundRevision !== sharedRoomChatRound(member.snapshot)) fail('stale_round_revision');
       settings ??= (await import('./director-settings.mjs')).readSettings;
       const missing = openClawChatReadiness(settings());
       if (missing) fail(missing);
@@ -125,8 +128,16 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
       if (prior?.open) fail('shared_room_chat_busy');
       if (prior && at - prior.last < cooldownMs) fail('shared_room_chat_too_soon');
       limit = { open: true, last: at }; remember(limits, actorId, limit);
+      const context = await service.chatContext(request, { roomId, signal });
+      const { snapshot } = context;
+      if (context.binding.actorId !== actorId || snapshot.me?.active !== true) fail('shared_room_chat_not_member');
+      if (input.roundRevision !== sharedRoomChatRound(snapshot)) fail('stale_round_revision');
+      if (typeof context.dealerId !== 'string' || !context.dealerId) fail('shared_room_chat_dealer_unavailable');
+      // Line ids are the server's, never the client's requestId (not unique in a room): q-/a- of one
+      // random thread id. The WS frame and the asker's NDJSON carry the same ids for deduplication.
+      const thread = randomBytes(12).toString('hex'), questionLineId = 'q-' + thread, lineId = 'a-' + thread;
       const seat = Number.isSafeInteger(snapshot.me.seats?.[0]) ? snapshot.me.seats[0] + 1 : null;
-      service.emitChat(roomId, { requestId: input.requestId, actorId, seat, text: input.message, at });
+      service.emitChat(roomId, { lineId: questionLineId, requestId: input.requestId, actorId, seat, text: input.message, at });
       stream.frame({ type: 'progress', stage: 'text', elapsedMs: 0 });
       const key = roomId + '\n' + actorId, history = turns.get(key) ?? [];
       const decision = await decide({ requestId: input.requestId, message: input.message, history: history.map(turn => ({ ...turn })) },
@@ -140,13 +151,13 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
       const text = decision?.kind === 'generatedText' && typeof decision.exactText === 'string' ? decision.exactText : null;
       if (text) {
         stream.frame({ type: 'preview', exactText: text });
-        service.emitChat(roomId, { requestId: input.requestId, actorId: null, seat: null, text, at: now() });
+        service.emitChat(roomId, { lineId, requestId: input.requestId, actorId: null, seat: null, text, at: now() });
         const next = [...history, { role: 'user', text: input.message }, { role: 'assistant', text }];
         while (next.length > 30 || next.reduce((sum, turn) => sum + turn.text.length, 0) > historyChars) next.shift();
         remember(turns, key, next);
       }
       stream.frame({ type: 'result', decision: { kind: text ? 'generatedText' : 'silence', requestId: input.requestId,
-        dealerId: context.dealerId, ...(text ? { exactText: text } : {}) } });
+        dealerId: context.dealerId, questionLineId, ...(text ? { exactText: text, lineId } : {}) } });
       res.end();
     } catch (error) {
       const [status, code] = rejection(error, signal.aborted);
