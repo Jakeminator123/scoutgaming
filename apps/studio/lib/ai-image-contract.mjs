@@ -43,10 +43,13 @@ export const AI_BACKGROUND_CAMERA = Object.freeze({
 });
 // Presets match the generic backgrounds. "Fri" sends only the staff text.
 export const AI_IMAGE_PRESETS = Object.freeze([
+  // Jakob 2026-10-29: bolder styles first; the earlier four stay.
+  Object.freeze({id:'dark-luxury',label:'Mörk lyx'}),
+  Object.freeze({id:'neon',label:'Aggressiv neon'}),
+  Object.freeze({id:'casino',label:'Klassiskt casino'}),
   Object.freeze({id:'dark-studio',label:'Mörk studio'}),
   Object.freeze({id:'warm-lounge',label:'Varm lounge'}),
   Object.freeze({id:'light-studio',label:'Ljus studio'}),
-  Object.freeze({id:'casino',label:'Casino'}),
   Object.freeze({id:'free',label:'Fri'}),
 ]);
 

@@ -10,6 +10,9 @@ import {AI_IMAGE_ERROR_CODES,AI_IMAGE_MAX_PROPOSALS,AI_IMAGE_PROMPT_LENGTH,AI_IM
 // The fit guard lives in the shared contract so publication runs the same check.
 export {AI_TABLE_MISFIT,aiTableFitsTemplate,aiTableMisfits,aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
 import {aiTableMisfits} from '../../../lib/ai-image-contract.mjs';
+import {AI_TABLE_FILL,filmedTableFit} from '../../../lib/filmed-table-template.mjs';
+import {AI_ADOPT_ACTION,adoptLayerAssets} from '../../../lib/ai-material-adoption.mjs';
+import {ROOM_RELEASE_PUBLISH_PATH,roomReleaseFailure} from './room-release.mjs';
 
 export const AI_IMAGE_ENDPOINT='/api/layer-assets/generate';
 export const AI_IMAGE_MESSAGES=Object.freeze({
@@ -134,4 +137,56 @@ export async function aiPackageMisfit({endpoint,lanes,fetchImpl=fetch,signal}) {
     const chosen=new Set(lanes);
     return aiTableMisfits(project.lanes.filter(lane=>chosen.has(lane?.id)),project.layerAssets)[0]??null;
   } catch { return null; }
+}
+
+const percent=value=>Math.round(value*1000)/10;
+/**
+ * Bordsbredd for a table drawn after the dealer's reach (filmed-table-template.mjs):
+ * the scene template's composition (or the defaults) and the suggested one, with
+ * the boxes' share of the table and both layouts' Bordsbredd % for the dialog.
+ * Null without a filmed profile or a valid placement.
+ */
+export function aiTableWidthSuggestion(dealerId,composition) {
+  const fit=filmedTableFit(dealerId,composition??undefined);
+  if (!fit) return null;
+  const widths=value=>({desktop:percent(value.desktop.table.width),mobile:percent(value.mobile.table.width)});
+  return {changed:fit.changed,range:AI_TABLE_FILL,current:{share:fit.current.share,percent:widths(fit.current.composition)},
+    suggested:{share:fit.suggested.share,percent:widths(fit.suggested.composition),composition:fit.suggested.composition,
+      tableWidth:{mobile:fit.suggested.composition.mobile.table.width,desktop:fit.suggested.composition.desktop.table.width}}};
+}
+
+// "Skapa bord + bakgrund + miljöbild från samma tema": a scene export (Miljö-PR 1)
+// and an illustration role do not exist yet, so the environment image is skipped.
+export const AI_THEME_ENVIRONMENT_NOTE='Miljöbild hoppas över: scenexporten och rollen illustration finns inte ännu. Bord och bakgrund skapas med samma tema.';
+
+/**
+ * "Använd i miljön" without a spelbord: the materials are allowed in the scene
+ * template and become its defaults (with the fitted table width) in the saved
+ * project draft. Nothing is published; the template's rooms show it after Publicera.
+ */
+export async function adoptInTemplate({project,compositionId,materials,tableWidth=null},{save,signal}) {
+  return save(adoptLayerAssets(project,{compositionId,materials,tableWidth}),signal);
+}
+
+const receiptOk=(value,input)=>value&&typeof value==='object'&&value.ok===true&&value.operatorId===input.operatorId&&value.roomId===input.roomId
+  &&Number.isSafeInteger(value.packageRevision)&&value.packageRevision===value.previousPackageRevision+1&&typeof value.projectRevision==='string'
+  &&typeof value.configVersion==='string'&&typeof value.publishedAt==='string'&&Number.isFinite(Date.parse(value.publishedAt));
+/**
+ * "Använd i miljön och i spelbordet": POST operator-package {action:'adopt-room-material'}.
+ * The server allows the materials in the room's scene template, makes them its
+ * defaults and publishes the room (steg D) in one transaction; any other saved
+ * but unpublished change stops it. One call per click, never retried.
+ */
+export async function adoptInRoom({operatorId,roomId,compositionId,materials,tableWidth=null,expectedProjectRevision},{fetchImpl=fetch}={}) {
+  const body={action:AI_ADOPT_ACTION,operatorId,roomId,compositionId,materials,tableWidth,expectedProjectRevision};
+  let response;
+  try {
+    response=await fetchImpl(labUrl(ROOM_RELEASE_PUBLISH_PATH),{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',
+      headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(body)});
+  } catch { return {ok:false,status:0,error:'Svaret kom inte fram. Läs in spelbordet igen för att se om publiceringen gick igenom.'}; }
+  if (!response.ok) return roomReleaseFailure(response,'publish');
+  let value=null;
+  try { value=await response.json(); } catch { value=null; }
+  if (!receiptOk(value,{operatorId,roomId})) return {ok:false,status:response.status,error:'Publiceringskvittot kunde inte bekräftas. Läs in spelbordet igen innan du fortsätter.'};
+  return {ok:true,receipt:value};
 }
