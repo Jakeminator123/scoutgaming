@@ -48,7 +48,10 @@ const SOUND_KEY = 'scoutgaming.shared-room.sound';
 function readSound(window) { try { return window?.sessionStorage?.getItem(SOUND_KEY) === 'on'; } catch { return false; } }
 function writeSound(window, on) { try { window?.sessionStorage?.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* The choice holds for this mount. */ } }
 const readyOf = snapshot => snapshot.players?.some(p => p.id === snapshot.me.id && p.ready) === true;
-const SPEECH_KINDS = new Set(['moving-speech-stream', 'generated-speech-stream']);
+// Both kinds are valid answers, but only moving-speech-stream plays here: its path takes assertCurrent, so a mute,
+// a disconnect or a newer answer stops it mid-line. generated-speech-stream plays its own unmuted <video> without that
+// check, so it is shown as text (speech_kind_unsupported) until its stream path takes assertCurrent too.
+const SPEECH_KINDS = new Set(['moving-speech-stream', 'generated-speech-stream']), PLAYABLE_SPEECH_KINDS = new Set(['moving-speech-stream']);
 export const SHARED_ROOM_SOUND_ACTION = 'Slå på ljud';
 // playSpeech: generated-speech-player.mjs playGeneratedSpeech (the descriptor's own validation, ticket and stream).
 // muted(): the tab's sound choice. caption: {show(text)} for the dealer's spoken or text-only line.
@@ -296,6 +299,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       const textOnly=reason=>{caption?.show(text);return{speech:'text-only',reason,...(reason==='muted'?{action:SHARED_ROOM_SOUND_ACTION}:{})};};
       try{
         if(muted())return textOnly('muted');
+        if(!PLAYABLE_SPEECH_KINDS.has(descriptor.kind))return textOnly('speech_kind_unsupported');
         if(!playSpeech)return textOnly('speech_player_unavailable');
         while(playing)await untilIdle(owner.controller.signal);
         current();
@@ -314,8 +318,9 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       }finally{
         signal?.removeEventListener('abort',relay);
         if(speaking===owner)speaking=null;
-        // Only an answer that ended itself (or its caller) gives the dealer back to the idle film.
-        if(owner.live&&!closed&&[null,'caller'].includes(owner.reason))media.state({speech:false,ready:readyOf(state)});
+        // Only an answer that ended itself (or its caller) gives the dealer back to the idle film. A replaced answer
+        // does too when the newer one does not speak (muted, text only, failed): otherwise the idle film stays paused.
+        if(owner.live&&!closed&&([null,'caller'].includes(owner.reason)||(owner.reason==='replaced'&&!speechLive())))media.state({speech:false,ready:readyOf(state)});
       }
     },
     close(){if(closed)return;closed=true;speaking?.stop('closed');previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},

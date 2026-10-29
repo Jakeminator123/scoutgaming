@@ -117,3 +117,54 @@ test('the shared room app exposes speak through the confirmed binding only', asy
   assert.equal(spoken[0][0], result.decision.speechStream);
   app.presentation.enableSound(); assert.equal(sound, 1);
 });
+
+// Review of #645: a newer answer that does not speak may not leave the idle film paused (the table froze).
+test('a speaking answer replaced by a text-only one gives the dealer back to the idle film', async () => {
+  let mute = false;
+  const h = harness({ muted: () => mute, playSpeech: (_descriptor, options) => aborted(options.signal) });
+  const first = h.ports.speak(speechStream()); await turn();
+  assert.deepEqual(h.states.at(-1), { speech: true, ready: false });
+  mute = true;
+  assert.deepEqual(await h.ports.speak(speechStream({ requestId: 'req-2' })), { speech: 'text-only', reason: 'muted', action: 'Slå på ljud' });
+  assert.deepEqual(await first, { speech: 'cancelled', reason: 'replaced' });
+  assert.deepEqual(h.states.at(-1), { speech: false, ready: false }, 'the idle film resumes');
+  h.ports.close();
+});
+
+test('a replaced answer leaves the pause to a newer answer that speaks', async () => {
+  const h = harness({ playSpeech: (_descriptor, options) => aborted(options.signal) });
+  const first = h.ports.speak(speechStream()); await turn();
+  const second = h.ports.speak(speechStream({ requestId: 'req-2' }));
+  assert.deepEqual(await first, { speech: 'cancelled', reason: 'replaced' });
+  assert.deepEqual(h.states.slice(1), [{ speech: true, ready: false }, { speech: true, ready: false }], 'no idle restart under the newer line');
+  h.ports.close(); assert.deepEqual(await second, { speech: 'cancelled', reason: 'closed' });
+});
+
+test('generated-speech-stream is shown as text until its stream path takes assertCurrent', async () => {
+  const h = harness({ playSpeech: async () => {} });
+  assert.deepEqual(await h.ports.speak(speechStream({ kind: 'generated-speech-stream' })), { speech: 'text-only', reason: 'speech_kind_unsupported' });
+  assert.equal(h.played.length, 0); assert.equal(h.states.length, 1, 'the idle film is untouched');
+  assert.deepEqual(h.captions, ['Lycka till vid bordet.']); h.ports.close();
+});
+
+test('a disconnect stops the speech and hands the dealer to the reconnect', async () => {
+  const h = harness({ playSpeech: (_descriptor, options) => aborted(options.signal) });
+  const connection = new AbortController();
+  h.ports.restoreSnapshot(snapshot(1), { signal: connection.signal, receivedAt: 1000 });
+  const speaking = h.ports.speak(speechStream()); await turn();
+  connection.abort();
+  assert.ok(h.played[0].options.signal.aborted, 'the disconnect stops the line');
+  assert.deepEqual(await speaking, { speech: 'cancelled', reason: 'disconnect' });
+  assert.deepEqual(h.states.at(-1), { action: true, speech: false, command: 'shared-disconnect' });
+  h.ports.close();
+});
+
+test('a new table configuration makes the playing answer stale', async () => {
+  let check;
+  const h = harness({ playSpeech: (_descriptor, options) => { check = options.assertCurrent; return aborted(options.signal); } });
+  const speaking = h.ports.speak(speechStream()); await turn();
+  check();
+  h.ports.restoreSnapshot(snapshot(1, { configVersion: 'cfg-2' }), { signal: h.signal, receivedAt: 1000 });
+  assert.throws(check, /shared_room_speech_stale/);
+  h.ports.close(); await speaking;
+});
