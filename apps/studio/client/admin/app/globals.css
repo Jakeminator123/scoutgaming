@@ -1,51 +1,99 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Admin på Tailwind 4 (steg H, A3) med Tailwind 3:s skala och kaskad låsta, så att inga klasser i
+   komponenterna behöver ändras och sidorna ser ut som förut.
+   - Förflygningen och klasserna ligger utan @layer, som i Tailwind 3: studio.css och CSS-modulerna
+     (admin/app.css) konkurrerar med dem genom specificitet och ordning precis som tidigare.
+   - @theme nedan återställer de värden som Tailwind 4 bytt (typsnittslistor, shadow-sm, blur-sm,
+     drop-shadow-sm, ring, rounded-sm/md/lg och de tre standardfärger Admin använder); base.css
+     återställer förflygningens skillnader och space-y/divide längst ned Tailwind 3:s urval.
+   - Färgerna är --sg-* från packages/ui/tokens.css, som studio.css importerar. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css';
+@import './base.css';
+@import 'tailwindcss/utilities.css' source(none);
+@import 'tw-animate-css';
+@import './studio.css';
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+/* Samma källor som Tailwind 3-konfigurationen läste. */
+@source '../**/*.{ts,tsx}';
+@source '../../../components/**/*.{ts,tsx,mjs}';
+
+/* Tailwind 3: mörkt läge är klassen dark; hover gäller även på pekskärmar. */
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant hover (&:hover);
+
+@theme inline {
+  --default-font-family: var(--font-sans), system-ui, sans-serif;
+  --default-mono-font-family: var(--font-mono), ui-monospace, monospace;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+@theme {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --blur-sm: 4px;
+  --drop-shadow-sm: 0 1px 1px rgb(0 0 0 / 0.05);
+  --default-ring-width: 3px;
+  --default-ring-color: rgb(59 130 246 / 0.5);
+  --color-red-400: #f87171;
+  --color-amber-300: #fcd34d;
+  --color-amber-500: #f59e0b;
 }
 
-@layer base {
-  /* shadcn-namnen är alias till --sg-* (packages/ui/tokens.css), så kitet, shadcn-klasserna och de
-     delade komponenterna visar samma färger i Admin och på Next-sidorna, i båda lägena. */
-  :root {
-    --background: var(--sg-bg);
-    --foreground: var(--sg-text);
-    --card: var(--sg-surface);
-    --card-foreground: var(--sg-text);
-    --popover: var(--sg-surface);
-    --popover-foreground: var(--sg-text);
-    --primary: var(--sg-lime);
-    --primary-foreground: var(--sg-on-accent);
-    --secondary: var(--sg-surface-2);
-    --secondary-foreground: var(--sg-text);
-    --muted: var(--sg-surface-2);
-    --muted-foreground: var(--sg-muted);
-    --accent: var(--sg-hover);
-    --accent-foreground: var(--sg-text);
-    --destructive: var(--sg-danger-text);
-    --destructive-foreground: var(--sg-danger-bg);
-    --border: var(--sg-border);
-    --input: var(--sg-field-line);
-    --ring: var(--sg-lime);
-    --radius: 0.5rem;
-  }
-}
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --shadow-sg: var(--sg-shadow);
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  /* Ytor och toner följer --sg-*; lime, teal, amber och röd är fasta. */
+  --color-sg-bg: var(--sg-bg);
+  --color-sg-panel: var(--sg-surface);
+  --color-sg-line: var(--sg-border);
+  --color-sg-text: var(--sg-text);
+  --color-sg-muted: var(--sg-muted);
+  --color-sg-surface: var(--sg-surface);
+  --color-sg-surface-2: var(--sg-surface-2);
+  --color-sg-hover: var(--sg-hover);
+  --color-sg-border: var(--sg-border);
+  --color-sg-line-2: var(--sg-line-2);
+  --color-sg-faint: var(--sg-faint);
+  --color-sg-ink: var(--sg-ink);
+  --color-sg-side-text: var(--sg-side-text);
+  --color-sg-on-accent: var(--sg-on-accent);
+  --color-sg-accent-text: var(--sg-accent-text);
+  --color-sg-accent-bg: var(--sg-accent-bg);
+  --color-sg-ok: var(--sg-ok);
+  --color-sg-ok-bg: var(--sg-ok-bg);
+  --color-sg-info: var(--sg-info);
+  --color-sg-info-bg: var(--sg-info-bg);
+  --color-sg-warn: var(--sg-warn-text);
+  --color-sg-warn-bg: var(--sg-warn-bg);
+  --color-sg-danger: var(--sg-danger-text);
+  --color-sg-danger-bg: var(--sg-danger-bg);
+  --color-sg-danger-line: var(--sg-danger-line);
+  --color-sg-lime: #d6ff3a;
+  --color-sg-teal: #3ad6c4;
+  --color-sg-amber: #ffb547;
+  --color-sg-red: #ff5c6c;
+
+  /* shadcn-namnen (alias nedan) för komponenter som kommer från shadcn. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 /* React Flow node wrapper - remove default white background */
@@ -106,3 +154,27 @@ body {
 .react-flow__attribution {
   display: none !important;
 }
+
+/* Tailwind 3:s space-y och divide: avståndet och linjen ligger ovanför varje synligt barn utom det
+   första (Tailwind 4 lägger dem under varje barn utom det sista). Tailwind 4:s regler har
+   specificitet 0 och nollställs här; Tailwind 3:s regler läggs till. Ett nytt värde i komponenterna
+   behöver en rad här (provet i test/ui-tokens.test.mjs säger till). */
+:where(.space-y-1, .space-y-2, .space-y-3, .space-y-4, .space-y-5, .space-y-6) > :where(:not(:last-child)) {
+  margin-block-end: 0;
+}
+.space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; margin-bottom: 0; }
+.space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; margin-bottom: 0; }
+.space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; margin-bottom: 0; }
+.space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; margin-bottom: 0; }
+.space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; margin-bottom: 0; }
+.space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; margin-bottom: 0; }
+:where(.divide-y) > :where(:not(:last-child)) {
+  border-bottom-width: 0;
+}
+:where(.divide-border, .divide-sg-line, .divide-sg-line-2) > :where(:not(:last-child)) {
+  border-color: var(--border);
+}
+.divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-bottom-width: 0; }
+.divide-border > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
+.divide-sg-line > :not([hidden]) ~ :not([hidden]) { border-color: var(--sg-border); }
+.divide-sg-line-2 > :not([hidden]) ~ :not([hidden]) { border-color: var(--sg-line-2); }
