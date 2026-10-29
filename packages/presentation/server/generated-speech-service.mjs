@@ -42,7 +42,7 @@ export function requireGeneratedSpeechArtifacts(artifacts) {
 // dealer bank or inherit visual acceptance. Request reservations survive failed
 // jobs/restarts: an uncertain paid request is not automatically charged again.
 export function createGeneratedSpeechService(config, { repositoryRoot, provider = null, journal = null, artifacts = null, fetchImpl = fetch,
-  journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' } = {}) {
+  journalRequired = true } = {}) {
   if (typeof repositoryRoot !== 'string' || !isAbsolute(repositoryRoot)) throw new TypeError('Explicit repositoryRoot required');
   if (journalRequired || journal) requireSpeechJournal(journal);
   if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');

@@ -27,7 +27,7 @@ test('ping and launch sign fixed endpoints and launch always uses the observer p
     const path = new URL(url).pathname;
     assert.equal(options.headers['X-Signature'], createHmac('sha256', env.BETTALOTTO_PARTNER_SECRET).update(`123456.POST.${path}.${options.body}`).digest('hex'));
     assert.equal(options.redirect, 'error');
-    return Response.json(path.endsWith('ping') ? { ok: true, key: 'private-name', scopes: ['launch', 'events'] } : { url: `${ORIGIN}/?dealer=astrid&launch=fixture-token`, expiresIn: 21600 });
+    return Response.json(path.endsWith('ping') ? { ok: true, key: 'private-name', scopes: ['launch', 'events'] } : { url: `${ORIGIN}/game?dealer=astrid&launch=fixture-token`, expiresIn: 21600 });
   });
   const ping = await (await api.endpoint(request('verify'))).json();
   assert.deepEqual(ping.scopes, ['launch', 'events']); assert.equal(ping.key, undefined);
@@ -37,7 +37,7 @@ test('ping and launch sign fixed endpoints and launch always uses the observer p
 });
 
 test('unreadable generations configuration does not block Partner access or launch', async () => {
-  const api = createPartnerReference({ env, token: () => { throw new Error('private path'); }, fetchImpl: async url => Response.json(String(url).endsWith('/ping') ? { ok: true, scopes: ['launch', 'events'] } : { url: `${ORIGIN}/?launch=fixture-token` }) });
+  const api = createPartnerReference({ env, token: () => { throw new Error('private path'); }, fetchImpl: async url => Response.json(String(url).endsWith('/ping') ? { ok: true, scopes: ['launch', 'events'] } : { url: `${ORIGIN}/game?launch=fixture-token` }) });
   const status = await (await api.endpoint(request())).json();
   assert.equal(status.configured, true); assert.equal(status.mappingConfigured, false);
   assert.match(status.mappingError, /kunde inte läsas/);
@@ -47,7 +47,7 @@ test('unreadable generations configuration does not block Partner access or laun
 });
 
 test('explicit staged-base launch keeps Partner identity and token but removes incompatible presentation overrides', async () => {
-  const supplied = `${ORIGIN}/?launch=fixture-token&dealer=vera&performance=staged&motion=smooth60&scene=rigged-review&joins=off&continuity=review#old`;
+  const supplied = `${ORIGIN}/game?launch=fixture-token&dealer=vera&performance=staged&motion=smooth60&scene=rigged-review&joins=off&continuity=review#old`;
   const api = service(async (url, options) => {
     assert.equal(url, `${ORIGIN}/api/v1/launch`);
     assert.deepEqual(JSON.parse(options.body), { playerId: env.BETTALOTTO_PARTNER_PLAYER_ID });
@@ -57,14 +57,14 @@ test('explicit staged-base launch keeps Partner identity and token but removes i
   assert.equal(ordinary.url, supplied); assert.equal(ordinary.presentationMode, 'partner-default');
   const staged = await (await api.endpoint(request('launch-staged-base'))).json();
   const url = new URL(staged.url);
-  assert.equal(url.origin, ORIGIN); assert.equal(url.pathname, '/'); assert.equal(url.hash, '');
+  assert.equal(url.origin, ORIGIN); assert.equal(url.pathname, '/game'); assert.equal(url.hash, '');
   assert.deepEqual([...url.searchParams], [['launch', 'fixture-token'], ['dealer', 'astrid'], ['performance', 'staged']]);
   assert.equal(staged.expiresIn, 60); assert.equal(staged.presentationMode, 'astrid-staged-base');
 });
 
-test('Partner launch follows the saved-policy route switch and preserves the server-owned launch identity', async () => {
-  for (const [routing,gamePath] of [[{},'/'],[{CROUPIER_PUBLIC_GAME_PATH:'/game'},'/game'],
-    [{CROUPIER_STUDIO_NEON_POLICY:'1'},'/game'],[{CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_GAME_PATH:'/game'},'/game']]) {
+test('Partner launch always uses the canonical /game start and preserves the server-owned launch identity', async () => {
+  // The canonical entry is fixed; a stale route variable selects nothing.
+  for (const [routing,gamePath] of [[{},'/game'],[{CROUPIER_PUBLIC_GAME_PATH:'/'},'/game']]) {
     const supplied = `${ORIGIN}${gamePath}?dealer=vera&launch=fixture-token&presentation=original&motion=smooth60#view`;
     const api = createPartnerReference({env:{...env,...routing},fetchImpl:async()=>Response.json({url:supplied,expiresIn:60})});
     const ordinary = await api.endpoint(request('launch'));
@@ -80,7 +80,7 @@ test('Partner launch follows the saved-policy route switch and preserves the ser
 test('canonical Partner launch rejects retired game paths, wrong origins and non-game destinations', async () => {
   for (const url of [`${ORIGIN}/?launch=token`,`${ORIGIN}/play/blackjack?launch=token`,`${ORIGIN}/blackjack/?launch=token`,`${ORIGIN}/game/?launch=token`,
     `${ORIGIN}/player-login?launch=token`,`${ORIGIN}/studio?launch=token`,'https://other.test/blackjack?launch=token']) {
-    const api = createPartnerReference({env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1'},fetchImpl:async()=>Response.json({url})});
+    const api = createPartnerReference({env:{...env,},fetchImpl:async()=>Response.json({url})});
     for (const action of ['launch','launch-staged-base']) {
       const response = await api.endpoint(request(action));
       assert.equal(response.status,502);assert.ok(!(await response.text()).includes(url));

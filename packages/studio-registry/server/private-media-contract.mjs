@@ -15,8 +15,9 @@ export function privateContentTypeMatches(actual,expected){
   const [essence,...parameters]=actual.split(';').map(part=>part.trim().toLowerCase());
   return essence===expected.toLowerCase()&&(!parameters.length||(['application/json','model/gltf+json','image/svg+xml'].includes(essence)&&parameters.length===1&&/^charset\s*=\s*(?:utf-8|"utf-8")$/.test(parameters[0])));
 }
+// Private Blob is the only media store; no variable selects it.
 export function isCloudMediaConfigured(env = process.env) {
-  return env.CROUPIER_MEDIA_STORAGE === 'blob' && Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
+  return Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 /** Persist this server-owned reference, never a client-supplied URL or token. */
 export function validatePrivateMedia(record) {

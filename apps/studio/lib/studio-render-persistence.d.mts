@@ -8,7 +8,7 @@ export interface StudioReadPersistence {
   configurationSource: 'neon/croupier_studio';
   scope: Readonly<{environment: string; workspaceId: string}>;
 }
-export function renderStudioPolicyEnabled(env?: Record<string,string | undefined>): boolean;
+export function renderStudioPolicyEnabled(): true;
 export function assertRenderStudioWritable(env?: Record<string,string | undefined>): never;
 export function createStudioRenderPersistence(options?: any): Promise<StudioReadPersistence>;
 export function studioRenderPersistence(): Promise<StudioReadPersistence>;

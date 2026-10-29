@@ -33,9 +33,9 @@ test('preview metadata binds document, snapshot, exact session path and private 
   [{...d,gameOperator:'example'},'/studio-preview/'+id],[{...d,gameLane:'other'},'/studio-preview/'+id],
   [{...d,gameComposition:JSON.stringify({...composition,assets:[{...composition.assets[0],src:composition.assets[0].src.replace(id,other)}]})},'/studio-preview/'+id]]) assert.throws(()=>studioPreviewFromDocument(data,path));
  for(const bad of [{...context,projectRevision:7},{...context,operator:'example'},{...context,sessionId:'../other'}])assert.throws(()=>validateStudioPreview(bad));
- const html=decorateGameEntryHtml('<html lang="sv">',{CROUPIER_STUDIO_NEON_POLICY:'1'},{lane:'evening',dealer:'astrid',presentation:'local',localDealer:'astrid',registeredDealers:registry,choices,composition,studioPreview:context});
+ const html=decorateGameEntryHtml('<html lang="sv">',{lane:'evening',dealer:'astrid',presentation:'local',localDealer:'astrid',registeredDealers:registry,choices,composition,studioPreview:context});
  assert.match(html,/data-studio-preview="/);assert.match(html,/revision:7/);
- assert.throws(()=>decorateGameEntryHtml('<html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},{lane:'evening',dealer:'astrid',presentation:'local',studioPreview:context,operator:'example'}));
+ assert.throws(()=>decorateGameEntryHtml('<html>',{lane:'evening',dealer:'astrid',presentation:'local',studioPreview:context,operator:'example'}));
  assert.deepEqual(validateComposition(composition),composition);
  for(const src of [composition.assets[0].src+'?bypass=1','//other.example/'+asset,'/api/studio-preview/bad/layers/'+asset,composition.assets[0].src.replace(asset,other)])
   assert.throws(()=>validateComposition({...composition,assets:[{...composition.assets[0],src}]}));

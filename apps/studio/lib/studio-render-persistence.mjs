@@ -16,7 +16,8 @@ const createRenderStudioPolicy = createStudioPolicyRuntime({
   },
 });
 
-export const renderStudioPolicyEnabled = (env = process.env) => env.CROUPIER_STUDIO_NEON_POLICY === '1';
+// Neon is the one registry; no variable selects it (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+export const renderStudioPolicyEnabled = () => true;
 export function assertRenderStudioWritable() {
   throw new StudioError('studio_writes_moved_to_native',410);
 }
@@ -30,7 +31,7 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
   mediaFactory = createStudioMediaRuntime,schemaCheck = planStudioMigrations,readText = readFile,
   repositoryRoot = studioRoots().repositoryRoot,
 } = {}) {
-  if (!renderStudioPolicyEnabled(env)) throw new StudioError('studio_read_storage_unavailable',503);
+  if (!renderStudioPolicyEnabled()) throw new StudioError('studio_read_storage_unavailable',503);
   env = Object.freeze({...env});
   let connectionString;
   try {

@@ -9,7 +9,7 @@ import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.
 import {createNeonProjectStore} from '../lib/neon-project-store.mjs';
 
 const scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
-const env = {CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
+const env = {CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
 async function fixture() {
   const pool = createStudioMemoryPool(),repository = createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{value:createSeedProject(),actor:'migration'});

@@ -6,32 +6,39 @@ import assert from 'node:assert/strict';
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
-import { ENGINE_QA_SKIP, backofficeCookie, createEngineDatabase, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
+import { ENGINE_QA_SKIP, backofficeCookie, createEngineDatabase, freePort, insertCraigUser, installBaseStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 const known = '11111111-2222-3333-4444-555555555555';
 const readToken = randomBytes(32).toString('base64url');
 
 test('engine without a published presentation refuses dealer queries, retired local media and BO generation aliases', { skip: ENGINE_QA_SKIP }, async t => {
-  const database = await createEngineDatabase(t);
+  const database = await createEngineDatabase(t), studio = await installBaseStudioRuntime(t, database);
   const admin = await insertCraigUser(database, { username: 'comparison-qa', email: 'comparison@example.invalid', password: randomBytes(24).toString('base64url'), role: 'superadmin' });
   const port = await freePort(), origin = `http://127.0.0.1:${port}`;
-  const engine = await startEngine(t, { database, port, env: { NODE_ENV: 'development', DEMO_GUEST_ACCESS: '1', PUBLIC_URL: origin, BO_URL: origin,
+  const engine = await startEngine(t, { database, port, preload: studio.preload, env: { ...studio.env, NODE_ENV: 'development', DEMO_GUEST_ACCESS: '1', PUBLIC_URL: origin, BO_URL: origin,
     GENERATIONS_READ_TOKENS: createHash('sha256').update(readToken).digest('hex') } });
   const get = (path, { headers = {}, method = 'GET' } = {}) => fetch(engine.origin + path, { method, headers, redirect: 'manual' });
 
   for (const dealer of ['astrid', 'vera', 'amira', 'mei']) for (const path of ['/', '/game']) {
     const response = await get(path + '?dealer=' + dealer + '&rehearsal=1');
-    assert.equal(response.status, 503, `${path} ${dealer}`);
+    // The canonical game entry is fixed (Neon is the registry): the root moves a dealer
+    // query to /game, and the game shell there never honours it without a published table.
+    if (path === '/') { assert.equal(response.status, 307); assert.match(response.headers.get('location'), /^\/game\?(?:dealer=[a-z]+&)?rehearsal=1$/); continue; }
+    assert.equal(response.status, 200, `${path} ${dealer}`);
     const html = await response.text();
-    assert.match(html, /<h1>Ingen presentation vald<\/h1>/);
-    assert.match(html, /Starta ett publicerat bord/);
-    assert.doesNotMatch(html, /data-game-dealer=|<video|<script|data-game-entry|src="app.mjs"/);
+    assert.match(html, /<html data-game-path="\/blackjack"/);
+    assert.doesNotMatch(html, /data-game-dealer=|data-game-presentation=|data-dealer=|data-game-lane=/);
   }
   for (const path of ['/dealer/streams/index.json', '/dealers/astrid/streams/index.json', '/dealers/amira/audio/en/bank.json', '/dealers/mei/poster.jpg',
     '/Dealers/AsTrId/streams/index.json', '/dealers./vera./poster.jpg', '/%64ealers/%61strid/streams/index.json']) {
     const response = await get(path);
-    assert.equal(response.status, 410, path);
-    assert.deepEqual(await response.json(), { error: 'local_dealer_retired' });
+    // Neon and private Blob are fixed: the Studio media runtime owns these paths first
+    // (503 here, without a Blob token); otherwise the retired local route answers 410.
+    // Either way an error object, never a file from the checkout.
+    assert.ok([410, 503].includes(response.status), path);
+    assert.match(response.headers.get('content-type') ?? '', /^application\/json/, path);
+    const body = await response.json();
+    assert.ok(['local_dealer_retired', 'Service temporarily unavailable'].includes(body.error), path);
   }
   assert.equal((await get('/api/auth/session')).status, 200);
 
@@ -62,17 +69,19 @@ test('engine without a published presentation refuses dealer queries, retired lo
   }
   assert.equal((await get(`/api/v1/generations/${known}/video`, { headers: auth, method: 'POST' })).status, 405);
   const mapping = await get('/api/v1/generations/mapping', { headers: auth });
-  assert.equal(mapping.status, 200);
-  assert.equal((await mapping.json()).actualPlayback, false);
+  // The local clip catalog is never served (Neon and Blob are fixed).
+  assert.equal(mapping.status, 404);
+  assert.deepEqual(await mapping.json(), { error: 'no mapping' });
   const rooms = await get('/api/operators/sg-test/rooms');
-  assert.equal(rooms.status, 503); assert.deepEqual(await rooms.json(), { error: 'operator_rooms_unavailable' });
+  // The operator store is Neon's (fixed); a company without a published package is unknown.
+  assert.equal(rooms.status, 404); assert.equal(typeof (await rooms.json()).error, 'string');
   assert.equal(rooms.headers.get('cache-control'), 'no-store'); assert.equal(rooms.headers.has('set-cookie'), false);
 });
 
 test('partner key pings, launches into its own credited wallet and keeps its secret out of the engine', { skip: ENGINE_QA_SKIP }, async t => {
-  const database = await createEngineDatabase(t);
+  const database = await createEngineDatabase(t), studio = await installBaseStudioRuntime(t, database);
   const port = await freePort(), origin = `http://127.0.0.1:${port}`;
-  const engine = await startEngine(t, { database, port, env: { NODE_ENV: 'development', DEMO_GUEST_ACCESS: '1', PUBLIC_URL: origin, BO_URL: origin } });
+  const engine = await startEngine(t, { database, port, preload: studio.preload, env: { ...studio.env, NODE_ENV: 'development', DEMO_GUEST_ACCESS: '1', PUBLIC_URL: origin, BO_URL: origin } });
   const { db, boDb } = database.store;
   // Key issuance only, through the engine's async partner module and its own CRAIG secret.
   const [{ v }] = await database.query("SELECT v FROM croupier_auth.meta WHERE k='jwt_secret'");

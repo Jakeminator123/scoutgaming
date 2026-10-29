@@ -24,7 +24,7 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
 }
 
 export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,authEpoch,
-  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' } = {}) {
+  allowLegacyPartnerSessions = false } = {}) {
 
   const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
   const digest=t=>createHash('sha256').update(t).digest('hex');

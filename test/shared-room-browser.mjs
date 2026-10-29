@@ -105,7 +105,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
   const originalHtml = await readFile(new URL('../services/game/public/index.html', import.meta.url), 'utf8');
   const selection = { lane: 'browser-lane', dealer: 'astrid', localDealer: 'astrid', presentation: 'local', operator: 'fixture',
     packageRevision: 1, branding: {}, roomId, registeredDealers: [{ id: 'astrid', label: 'Isolated Astrid' }] };
-  const html = withSharedRoomEntry(decorateGameEntryHtml(originalHtml, {}, selection, { offline: true }), { enabled: true, selection })
+  const html = withSharedRoomEntry(decorateGameEntryHtml(originalHtml, selection, { offline: true }), { enabled: true, selection })
     .replace(/<link\b[^>]*href="https?:\/\/[^>]*>/g, '')
     .replace('<script src="/studio/assistant-widget.js" defer></script>', '')
     .replace('src="/shared-room-app.mjs"', 'src="/fixture.mjs"');

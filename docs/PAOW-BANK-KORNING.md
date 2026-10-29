@@ -13,7 +13,7 @@ Banken byggs ur **samma miljös** register som den ska köras i. Spelmotorn krä
 
 ## 2. Källor ur registret (CPU, Jakobs dator)
 
-Kräver Node 24, `npm ci` i `services/game` (för `pg`) och previews läsvärden i en ospårad env-fil: `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID=staging_k06_k07`, `CROUPIER_STUDIO_WORKSPACE_ID=croupier`, `CROUPIER_GAME_DATABASE_URL` (previews), `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN` (previews store).
+Kräver Node 24, `npm ci` i `services/game` (för `pg`) och previews läsvärden i en ospårad env-fil: `CROUPIER_STUDIO_ENVIRONMENT_ID=staging_k06_k07`, `CROUPIER_STUDIO_WORKSPACE_ID=croupier`, `CROUPIER_GAME_DATABASE_URL` (previews), `BLOB_READ_WRITE_TOKEN` (previews store). Neon och Blob är fasta i koden.
 
 ```sh
 node --env-file=<ospårad-preview.env> tools/prepare-moving-speech-sources.mjs --dealer paow --output <ny-katalog>/paow-sources
@@ -69,7 +69,7 @@ Serverless endpoint `scoutgaming-moving-paow`: image ur steg 6 med registry-auth
 
 ## 8. Miljö och aktivering
 
-Render `scoutgaming-preview-engine`: `CROUPIER_MOVING_SPEECH_ENABLED=1`, `CROUPIER_MOVING_SPEECH_BANK_RECORDS={"paow":<manifestpost>}`, `CROUPIER_MOVING_SPEECH_IMAGE`, `_RELEASE_SHA256`, `_RUNPOD_API_KEY` (Kevins konto), `_TICKET_SECRET`, `_WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com`, `ELEVENLABS_API_KEY` (Kevins konto), `CROUPIER_DEALER_SPEECH_PROFILES=1` (kräver streaming: `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_STREAMING=1`, och `CROUPIER_STUDIO_NEON_POLICY=1`; annars stoppar `ops/cloud/config.mjs` starten), `CROUPIER_STUDIO_MOVING_DRIFT_API=1` och
+Render `scoutgaming-preview-engine`: `CROUPIER_MOVING_SPEECH_ENABLED=1`, `CROUPIER_MOVING_SPEECH_BANK_RECORDS={"paow":<manifestpost>}`, `CROUPIER_MOVING_SPEECH_IMAGE`, `_RELEASE_SHA256`, `_RUNPOD_API_KEY` (Kevins konto), `_TICKET_SECRET`, `_WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com`, `ELEVENLABS_API_KEY` (Kevins konto), `CROUPIER_DEALER_SPEECH_PROFILES=1` (kräver streaming: `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_STREAMING=1`; annars stoppar `ops/cloud/config.mjs` starten), `CROUPIER_STUDIO_MOVING_DRIFT_API=1` och
 
 ```json
 [{"id":"paow","label":"Paow","dealerId":"paow","endpointId":"<endpoint>","releaseDigest":"<releaseSha256>","bankHash":"<archive.sha256>"}]

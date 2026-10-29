@@ -52,8 +52,8 @@ test('the forwarder is bounded, swallows emitter failures and is attached only b
   // Specifications stay stdio-free until start applies the transform; QA keeps its own transform.
   const env = { NODE_ENV:'production', CROUPIER_CLOUD_LAUNCH:'pilot', CROUPIER_CLOUD_LAYOUT:'single-origin',
     RENDER_EXTERNAL_URL:'https://game.example.test', PORT:'10000',     CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=require',
-    CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-blob',
+    CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+    BLOB_READ_WRITE_TOKEN:'fixture-blob',
     OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-speech' };
   const plain = childSpecifications(validateCloudConfig(env), env);
   assert.deepEqual(Object.keys(plain), ['web']);

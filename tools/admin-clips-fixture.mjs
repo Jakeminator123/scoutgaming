@@ -1,6 +1,6 @@
 // Isolated visual harness for the already-built /admin UI. No Next/game server,
 // provider credentials, remote media or production state. Run from the checkout:
-// Build with CROUPIER_LAB_BASE_PATH=/studio, then run:
+// Build Admin (basePath /studio is fixed), then run:
 // node tools/admin-clips-fixture.mjs --ffmpeg <installed-ffmpeg.exe> [--scene]
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';

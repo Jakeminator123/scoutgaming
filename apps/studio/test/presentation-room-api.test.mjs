@@ -444,8 +444,8 @@ test('unavailable runtime refuses before writer locks; an unrelated catalogue le
 
 test('unified room endpoint publishes while retaining fresh role, Origin and exact query/body/scope boundaries', async () => {
   const f = await fixture(); let role = 'admin';
-  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
-    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_BASE_PATH:'/studio',
+  const config = nativeStudioAdminConfiguration({
+    CROUPIER_PUBLIC_ORIGIN:origin,
     CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
     CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
   const api = createStudioAdminApi({ authorize: async () => ({ ...session, role }), allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts, handlers: f.roomApi.handlers, mutationTransaction: work => work() });

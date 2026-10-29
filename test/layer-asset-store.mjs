@@ -16,7 +16,7 @@ import {createHmac} from 'node:crypto';
 import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 const scope={environment:'test',workspaceId:'layers'},actor='layer-admin';
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example','https://studio.example'],publicHosts:['public.example','studio.example']};
-const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
+const env={BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
 async function fixture() {
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{actor,value:createSeedProject()});

@@ -16,7 +16,7 @@ async function fixture(t, options = {}) {
   const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model', ...(options.overlapAudio ? { overlapAudio: true } : {}) };
   const services = [];
   const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; await options.onWrite?.(b); }, end() {}, abort() { aborted = true; } }) };
-  const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
+  const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10, journalRequired: false,
     resolveOwner: req => req.owner,
     attachRelay: (_, value) => { relayOptions = value; return relay; },
     pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
@@ -89,14 +89,14 @@ test('durable request is exclusive after restart and across fullfile capability'
   const restarted = await f.construct();
   await assert.rejects(restarted.prepare(f.input()), /already_attempted/);
   let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, journalRequired: false, provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
   await assert.rejects(oldService.generate({ ...f.input(), text: 'A test reply.' }), /conflict|attempted/);
   assert.equal(fullfileCalls, 0); assert.equal((await readdir(f.directory)).filter(v => v.endsWith('.request.json')).length, 1);
 });
 
 test('an earlier fullfile paid attempt blocks same request in streaming mode', async t => {
   const f = await fixture(t); let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, journalRequired: false, provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
   await assert.rejects(oldService.generate(f.input()));
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(fullfileCalls, 1); assert.equal(f.sourceCalls, 0);
@@ -144,7 +144,7 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   assert.equal(generatedSpeechStreamConfiguration(env).configuration.overlapAudio, undefined);
   assert.equal(generatedSpeechStreamConfiguration(cloud).configured, true);
   assert.equal(generatedSpeechStreamConfiguration(cloud).configuration.overlapAudio, true);
-  assert.equal(generatedSpeechStreamConfiguration({ ...cloud, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
+  assert.equal(generatedSpeechStreamConfiguration({ ...cloud, CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
     'Neon session/request journals replace the cloud stream directory');
   for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '20.000001' }, { RUNPOD_API_KEY: '' }]) {
     assert.equal(generatedSpeechStreamConfiguration({ ...cloud, ...patch }).configured, false);

@@ -83,8 +83,8 @@ function fixture(overrides = {}) {
 const status = expected => error => error.statusCode === expected;
 
 test('unified login and session retain real credentials, scoped writes and immediate revocation', async () => {
-  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
-    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_BASE_PATH:'/studio',
+  const config = nativeStudioAdminConfiguration({
+    CROUPIER_PUBLIC_ORIGIN:publicOrigin,
     CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
     CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
   const f = fixture({allowedOrigins:config.allowedOrigins});

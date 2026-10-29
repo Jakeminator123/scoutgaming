@@ -98,9 +98,10 @@ test('modern documents still reject malformed legacy sections and mixed legacy r
   assert.deepEqual(saved.value.rooms[0], original.administration.rooms[0]);
 });
 
-test('shared configuration is explicitly enabled, Neon-scoped, inert and never substitutes zones or defaults', () => {
-  assert.equal(studioGamePolicyConfiguration({}), null);
-  const env = { CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
+test('shared configuration is always on, Neon-scoped, inert and never substitutes zones or defaults', () => {
+  // Neon is the fixed registry: an unconfigured environment fails instead of switching it off.
+  assert.throws(() => studioGamePolicyConfiguration({}), error => error.statusCode === 503);
+  const env = { CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
     CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgresql://test.neon.tech/game?sslmode=require', 'user'), CROUPIER_ZONES_DATABASE_URL: fixtureDatabaseUrl('postgresql://test.neon.tech/zones?sslmode=require', 'user') };
   const config = studioGamePolicyConfiguration(env);
   assert.deepEqual(config.scope, scope); assert.ok(Object.isFrozen(config)); assert.ok(Object.isFrozen(config.scope));
@@ -272,7 +273,7 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
  test('Render startup rejects missing required migrations 011, 012, 013, 014 or an unknown version', async () => {
   const {createRenderStudioPolicy}=await import('../services/game/storage/studio-runtime.mjs');
   const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
+  const env={CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const required=(await loadStudioMigrations()).filter(row=>!row.deploymentOptional).map(row=>row.version);
@@ -286,7 +287,7 @@ test('Render startup accepts complete required schema without changing saved pol
   const {createRenderStudioPolicy}=await import('../services/game/storage/studio-runtime.mjs');
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const migrations=await loadStudioMigrations();
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,
+  const env={CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,
   CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require','croupier_game')};
   const {pool,policy,repository}=await fixture(),before=await policy.readSaved();let asserted=0;
   const applied=migrations.map(row=>({version:row.version,checksum:row.checksum,structureChecksum:'a'.repeat(64)}));

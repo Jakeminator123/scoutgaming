@@ -9,7 +9,7 @@ export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '
 // Vercel-bundle saknar filen (outputFileTracingExcludes i apps/studio/next.config.mjs), men dit
 // når inget: Studios nativa medievägar skickar alltid Neons runtimeCatalog
 // (packages/studio-registry/server/media-runtime.mjs, apps/studio/lib/studio-media-deletion.mjs),
-// /api/clip-controls-vägen nås inte på Vercel eftersom CROUPIER_STUDIO_NATIVE_ADMIN=1 krävs,
+// /api/clip-controls-vägen nås inte på Vercel eftersom Admin alltid körs nativt där,
 // och resolveMediaPath tål en saknad fil (ENOENT). Låst av
 // apps/studio/test/media-layout-bundle.test.mjs; lägg ingen läsning på modulnivå och ingen ny
 // Studio-anropare utan runtimeCatalog.
