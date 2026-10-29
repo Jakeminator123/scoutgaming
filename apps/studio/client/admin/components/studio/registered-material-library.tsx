@@ -15,7 +15,7 @@ import {layerAssetFitsGame} from '../../../../../../packages/presentation/contra
 import {createStudioClient} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
-// Mounted per tab under Scenmallar och material (Bakgrunder, Bordsgrafik); `trashOnly` is the role's part of the Papperskorg tab.
+// Mounted per tab under Miljöer och material (Bakgrunder, Bordsgrafik); `trashOnly` is the role's part of the Papperskorg tab.
 export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true,trashOnly=false}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean;trashOnly?:boolean}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   const query=useSearchParams();
@@ -46,13 +46,13 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   }
   const planDialog=(plan:MaterialTrashPlanView)=>{const impact=plan.impact,rooms=impact.rooms.map(room=>`${room.name} · ${impact.operators.find(operator=>operator.id===room.operatorId)?.name??'okänt bolag'}`);
     return <ConfirmDialog open title={impact.archived?`Flytta ${impact.label} till papperskorgen?`:`Återställ ${impact.label}?`} busy={plan.busy} busyLabel="Sparar…"
-      description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Scenmallar och spelbord förblir oförändrade.'}
-      consequences={impact.archived?[`Kopplas loss från ${plural(impact.compositions.length,'scenmall','scenmallar')}${impact.compositions.length?': '+impact.compositions.map(row=>row.label).join(', '):''}`,
+      description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Miljöer och spelbord förblir oförändrade.'}
+      consequences={impact.archived?[`Kopplas loss från ${plural(impact.compositions.length,'miljö','miljöer')}${impact.compositions.length?': '+impact.compositions.map(row=>row.label).join(', '):''}`,
         rooms.length?`${plural(rooms.length,'publicerat spelbord','publicerade spelbord')} avpubliceras och flyttas till papperskorgen: ${rooms.join(', ')}`:'Inga publicerade spelbord påverkas',
         ...(impact.operators.length?[`Publiceringen ändras hos ${impact.operators.map(row=>row.name).join(', ')}`]:[])]:[]}
       confirmLabel={impact.archived?'Flytta till papperskorgen':'Återställ'} danger={impact.archived} onConfirm={plan.onConfirm} onCancel={plan.onCancel}/>;};
   return <section className="grid gap-5" aria-label={trashOnly?'Papperskorg · '+noun:role==='background'?'Bakgrunder':'Bordsgrafik'} onPlayCapture={event=>{const media=event.target as HTMLMediaElement;if(preview.current!==media)preview.current?.pause();preview.current=media;if(!visible||document.hidden)media.pause();}}>
-    {!trashOnly&&<p className="m-0 max-w-[72ch] text-sg-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en scenmall och välj per spelbord.</p>}
+    {!trashOnly&&<p className="m-0 max-w-[72ch] text-sg-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en miljö och välj per spelbord.</p>}
     {disabled&&<p role="status" className="m-0 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">Spara klippkartans utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert" className="m-0 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <Button size="sm" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</Button></p>}
     {loading&&!project&&<div role="status" aria-label="Läser biblioteket…" className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">{[0,1,2,3].map(index=><div key={index} className="aspect-[4/3] animate-pulse rounded-xl border border-sg-border bg-sg-surface-2"/>)}</div>}
@@ -98,7 +98,7 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
     </div>
     <div className="flex items-start gap-2 p-3.5">
       <div className="min-w-0 flex-1"><h2 title={label} className="m-0 truncate text-[14px] font-semibold text-sg-text">{label}</h2>
-        <p className="m-0 text-[12.5px] text-sg-muted">{references.length?`Används i ${plural(references.length,'scenmall','scenmallar')}`:'Inte vald i någon scenmall'}</p>
+        <p className="m-0 text-[12.5px] text-sg-muted">{references.length?`Används i ${plural(references.length,'miljö','miljöer')}`:'Inte vald i någon miljö'}</p>
         {playError&&<p role="alert" className="m-0 mt-1 text-[12.5px] text-sg-danger">{playError}</p>}</div>
       <ActionMenu small name={label} actions={[
         {id:'rename',label:'Byt namn',disabled:'Namnet sätts vid uppladdning; namnbyte sparas inte ännu.',onSelect:()=>{}},
@@ -109,7 +109,7 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
     </div>
     <Dialog open={panel==='uses'} title={'Var '+label+' används'} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>
       {references.length?<ul className="m-0 grid list-none gap-2 p-0">{references.map(name=><li key={name} className="rounded-lg bg-sg-surface-2 px-3 py-2 font-semibold">{name}</li>)}</ul>
-        :<p className="m-0 text-sg-muted">Filen är inte vald i någon scenmall. Publicerade spelbord kontrolleras när du flyttar den till papperskorgen.</p>}
+        :<p className="m-0 text-sg-muted">Filen är inte vald i någon miljö. Publicerade spelbord kontrolleras när du flyttar den till papperskorgen.</p>}
     </Dialog>
     <Dialog open={panel==='details'} title="Tekniska detaljer" description={label} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>
       <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[13px]">

@@ -12,7 +12,7 @@ test('allow narrows the frozen composition and opens settings and pause only whe
   const lane = { composition: null, operatorAdjustable: ['dealer', 'table.color'], layers: { background: { enabled: false }, table: { enabled: false }, dealer: { enabled: true, allowed: ['a'] } } };
   const presentation = { lanes: [lane] };
   assert.deepEqual(partnerAllow({ branding: {} }, presentation), { dealer: true, tableAsset: false, background: false, language: false, limit: false, pause: false });
-  // allow kan inte vidga mallen: bordsgrafik saknas i operatorAdjustable och förblir stängd.
+  // allow kan inte vidga miljön: bordsgrafik saknas i operatorAdjustable och förblir stängd.
   const granted = { branding: { [PARTNER_ASSIGNMENT_KEY]: { allow: { dealer: false, tableAsset: true, language: true, limit: true, pause: 'yes' } } } };
   assert.deepEqual(partnerAllow(granted, presentation), { dealer: false, tableAsset: false, background: false, language: true, limit: true, pause: false });
   const detail = partnerAssignmentDetail({ games: ['blackjack'], branding: { [PARTNER_ASSIGNMENT_KEY]: { limitPresets: ['high', 'unknown', 'casual'], languages: ['sv', 'xx'] } } }, presentation);

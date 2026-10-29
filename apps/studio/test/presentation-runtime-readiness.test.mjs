@@ -92,6 +92,24 @@ test('a declared VILA/REDO pose chain on a blackjack clip gates media writes on 
   await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.registerMedia({classification:chained}),blocked);},{metadata:plain});
   assert.equal(f.writes.length,0);
 });
+test('a miljöbild (lane field or illustration material) gates project, trash and frozen writes on v32 before SQL',async()=>{
+  const illustration={schemaVersion:1,id:'00000000-0000-4000-8000-0000000000b1',role:'illustration',label:'Miljö · miljöbild v1',sha256:'b'.repeat(64),size:4096,contentType:'image/webp',width:1920,height:1080};
+  const values=[['project',{lanes:[{illustration:illustration.id}]}],['project',{layerAssets:[illustration]}],['project',{layerAssetTrash:[{asset:illustration,archivedAt:'2026-10-29T00:00:00.000Z'}]}],
+    ['project',{dealerTrash:[{compositions:[{illustration:illustration.id}]}]}]];
+  for(const [kind,value] of values)for(const version of [31,32]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.saveDocument(kind,{value});
+    if(version===31)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'32');assert.equal(f.writes.length,version===32?1:0);
+  }
+  // A frozen package carrying a lane's miljöbild needs v32 too; a context verified without it cannot gain it inside SQL.
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+  await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.saveDocument('project',{value:{lanes:[{illustration:illustration.id}]}}),blocked);},{kind:'project',value:{lanes:[{composition:{}}]}});
+  await f.wrapped.withMutationContext(async()=>{await f.wrapped.saveDocument('project',{value:{lanes:[{illustration:illustration.id}]}});},{kind:'project',value:{lanes:[{illustration:illustration.id}]}});
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'32');
+  const plain=fixture();await plain.wrapped.saveDocument('project',{value:{lanes:[]}});
+  assert.equal(plain.fetches.length,0,'a project without a miljöbild keeps its earlier requirement');
+});
 test('J08 room drafts in the administration document gate every write on v23, even when empty',async()=>{
   for(const value of [{rooms:[],roomGameConfigs:[]},{rooms:[],roomGameConfigs:[{roomId:'room-1'}]}])for(const version of [22,23]){
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});

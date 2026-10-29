@@ -20,11 +20,10 @@ test('room form presents fixed demo timers, selected saved fields and separate s
  assert.match(html,/Insatstid: 20 sekunder/);assert.match(html,/Beslutstid: 15 sekunder/);assert.doesNotMatch(html,/<input(?![^>]*type="radio")|workerURL/);
  assert.match(html,/>Spara spelinställningar/);assert.match(html,/>Publicera spelinställningar/);assert.match(html,/config-1/);
 });
-test('bet profiles are image cards with the engine numbers, the lobby room pictures and one line on the difference',()=>{
+test('bet profiles are stake cards with the engine numbers and one line on the difference, without place names or pictures',()=>{
  const html=render();
- for(const [label,place,image] of [['Casual','Studion','room-studion.png'],['Privé','Salongen','room-salongen.png'],['High','Loungen','room-loungen.png']]){
-  assert.match(html,new RegExp('>'+label+'</strong><span[^>]*>'+place+'<'));assert.ok(html.includes('/admin/_assets/lobby/images/lobby/'+image));
- }
+ for(const label of ['Casual','Privé','High'])assert.match(html,new RegExp('>'+label+'</strong>'));
+ assert.doesNotMatch(html,/<img|Studion|Salongen|Loungen|room-(studion|salongen|loungen)\.png/,'the room picture is the miljöbild, never the bet profile');
  const n=value=>value.toLocaleString('sv-SE');
  assert.ok(html.includes(n(100)+'–'+n(25000)));assert.ok(html.includes(n(50000)+' spelpengar'));assert.ok(html.includes('>'+n(200)+'<'));
  assert.match(html,/Samma spel och regler\. Skillnaden är insatsnivå, marker och påfyllning/);assert.match(html,/<legend[^>]*>Insatsprofil<\/legend>/);
@@ -58,9 +57,9 @@ test('draft requirement is separate and unknown or mismatched reasons remain neu
   {reason:'unknown_private_detail',materialReason:'native_material_measurement_missing'},
   {materialReason:'native_material_measurement_missing'},
  ]){
-  const html=render({ready:false,...options});assert.match(html,/Kontrollera rummets sammansättning/);
+  const html=render({ready:false,...options});assert.match(html,/Kontrollera rummets miljö/);
   assert.doesNotMatch(html,/unknown_private_detail|__proto__|Mät speltid/);
  }
  const ready=render({reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
- assert.doesNotMatch(ready,/Mät speltid|Kontrollera rummets sammansättning/);
+ assert.doesNotMatch(ready,/Mät speltid|Kontrollera rummets miljö/);
 });

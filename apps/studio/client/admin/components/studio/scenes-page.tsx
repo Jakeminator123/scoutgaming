@@ -11,17 +11,17 @@ import {SceneCover} from './scene-cover';
 type Head={part:'head';tab:string;workspace:Workspace|null};
 type Tail={part:'tail';tab:string;visible:boolean;disabled:boolean;onChanged:()=>void;refreshKey:string};
 
-// Scenmallar och material: the scene editor (one clip-map instance, mounted by entry.tsx under the
+// Miljöer och material: the scene editor (one clip-map instance, mounted by entry.tsx under the
 // head) and the material library per role. Papperskorgen is the library's own trash per role.
 export function ScenesPage(props:Head|Tail) {
   if(props.part==='head'){
     const lanes=props.workspace?.project.lanes??[],assets=props.workspace?.project.layerAssets??[],trash=props.workspace?.project.layerAssetTrash?.length??0;
     const rooms=props.workspace?.catalog.administration.rooms.filter(room=>room.state!=='archived')??[];
     const dealerOf=(id:string)=>({id,label:props.workspace?.project.dealers.find(row=>row.id===id)?.label??'Okänd dealer'});
-    return <HubPage wide continued title="Scenmallar och material" intro="En scenmall placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
-      actions={props.tab==='mallar'?<Link className={buttonVariants()} href="/admin/companies?tab=spelbord">Spelbord som använder mallarna<ArrowRight aria-hidden="true"/></Link>:undefined}>
+    return <HubPage wide continued title="Miljöer och material" intro="En miljö placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
+      actions={props.tab==='mallar'?<Link className={buttonVariants()} href="/admin/companies?tab=spelbord">Spelbord som använder miljöerna<ArrowRight aria-hidden="true"/></Link>:undefined}>
       <Tabs items={adminSceneTabs} active={props.tab} param="tab" counts={props.workspace?{mallar:lanes.length,bakgrunder:assets.filter(asset=>asset.role==='background').length,bordsgrafik:assets.filter(asset=>asset.role==='table').length,papperskorg:trash}:{}}/>
-      {props.tab==='mallar'&&lanes.length>0&&<div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3" role="list" aria-label="Scenmallar">{lanes.map(lane=>{const used=rooms.filter(room=>room.compositionId===lane.id);const dealers=lane.layers.dealer.allowed.map(dealerOf);
+      {props.tab==='mallar'&&lanes.length>0&&<div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3" role="list" aria-label="Miljöer">{lanes.map(lane=>{const used=rooms.filter(room=>room.compositionId===lane.id);const dealers=lane.layers.dealer.allowed.map(dealerOf);
         return <Link key={lane.id} role="listitem" href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}`} className={cn('group grid overflow-hidden rounded-xl border border-sg-border bg-sg-surface text-sg-text no-underline shadow-sg transition-[box-shadow,border-color] duration-200 hover:border-sg-faint hover:shadow-md motion-reduce:transition-none',focusRing)}>
           <SceneCover lane={lane} assets={assets} dealer={dealers.find(row=>row.id===lane.layers.dealer.default)??dealers[0]}/>
           <span className="grid gap-2 p-4">
@@ -39,7 +39,7 @@ export function ScenesPage(props:Head|Tail) {
       <Note>Material i papperskorgen kan återställas; permanent radering är ett eget steg. Arkiverade dealers finns under Dealers.</Note>
       <RegisteredMaterialLibrary role="background" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
       <RegisteredMaterialLibrary role="table" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
-      <Empty chip={null} title="Scenmallar har ingen papperskorg" text="En scenmall tas bort när inget spelbord använder den."/>
+      <Empty chip={null} title="Miljöer har ingen papperskorg" text="En miljö tas bort när inget spelbord använder den."/>
     </div>}
   </div>;
 }

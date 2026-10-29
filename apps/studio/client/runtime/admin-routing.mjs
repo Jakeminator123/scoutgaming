@@ -33,7 +33,7 @@ export function hasAdminContext(search){
   return adminContextKeys.some(key=>query.has(key));
 }
 
-// The one clip-map instance is mounted under the dealer nav and under Scenmallar.
+// The one clip-map instance is mounted under the dealer nav and under Miljöer.
 export function isStudioAdminRoute(path){
   const {page}=parseAdminPath(path);
   return page==='dealer'||page==='scenes';

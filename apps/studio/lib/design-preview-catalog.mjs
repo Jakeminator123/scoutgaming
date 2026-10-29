@@ -8,7 +8,6 @@ import { readPackagePresentation } from '../../../packages/presentation/server/p
 import { readOperatorLifecycle } from '../../../packages/operators/server/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
-import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
 import { adminAssignmentView } from './partner-assignment.mjs';
 
 // Bolag › Tilldelat: Admins tilldelning ur det publicerade paketet (null utan fryst presentation).
@@ -69,13 +68,12 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     ...project.dealers.map(row => ({ id: row.id, name: row.label, archived: false })),
     ...(project.dealerTrash ?? []).map(row => ({ id: row.dealer.id, name: row.dealer.label, archived: true })),
   ];
+  // A lane's saved miljöbild, for Admin's own pictures (scene cards, room pictures) through Admin's layer route.
+  const illustrationOf = lane => typeof lane?.illustration === 'string' && (project.layerAssets ?? []).some(asset => asset.id === lane.illustration && asset.role === 'illustration')
+    ? '/studio/api/layer-assets/' + encodeURIComponent(lane.illustration) : null;
   const compositions = (project.lanes ?? []).map(row => ({ id: row.id, name: row.label,
-    dealerIds: [...row.layers.dealer.allowed], defaultDealerId: row.layers.dealer.default }));
-  // The bet profile in the room's saved game settings (draft), for Admin's room picture only. The published
-  // value is read on the room's Spelinställningar tab; a missing or unknown key is simply left out.
-  const savedProfiles = new Map((Array.isArray(saved.administration.roomGameConfigs) ? saved.administration.roomGameConfigs : [])
-    .filter(row => typeof row?.roomId === 'string' && typeof row.gameConfig?.limitPreset === 'string' && Object.hasOwn(ROOM_LIMIT_PRESETS, row.gameConfig.limitPreset))
-    .map(row => [row.operatorId + '/' + row.roomId, row.gameConfig.limitPreset]));
+    dealerIds: [...row.layers.dealer.allowed], defaultDealerId: row.layers.dealer.default,
+    ...(illustrationOf(row) ? { illustration: illustrationOf(row) } : {}) }));
   const rooms = (saved.administration.rooms ?? []).filter(isPresentationRoom).map(row => {
     const operator = operators.find(item => item.id === row.operatorId);
     const pack = packages.get(row.operatorId);
@@ -92,8 +90,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       compositionId: row.presentationLaneId, laneId: row.gameLaneId, published, playable: Boolean(playable),
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
       environment: playable ? roomEnvironment(playable, operator.slug) : null,
+      ...(composition?.illustration ? { illustration: composition.illustration } : {}),
       playUrl: playable?.playUrl ?? null,
-      ...(savedProfiles.has(row.operatorId + '/' + row.id) ? { savedLimitPreset: savedProfiles.get(row.operatorId + '/' + row.id) } : {}),
       ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),

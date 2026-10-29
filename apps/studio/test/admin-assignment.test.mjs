@@ -2,7 +2,7 @@
 // (PGlite): Admins skrivning av `assignment` i paketets branding genom
 // operator-package (action publish-assignment). Behörighet (bara en
 // N1-administratör med konto, aldrig partnern), validering (allow kan inte
-// vidga scenmallen), CAS, journalpost och att Partnerportalen läser resultatet.
+// vidga miljön), CAS, journalpost och att Partnerportalen läser resultatet.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { partnerPostgresFixture, PARTNER_ORIGIN } from './fixtures/partner-postgres.mjs';

@@ -3,8 +3,8 @@ import { adminDocumentHref } from './admin-workspace-routes.mjs';
 // Public document names. Stored IDs and API contracts keep their compatibility.
 export function compositionLabel(value, language = 'sv') {
   const label = typeof value === 'string' ? value.trim() : '';
-  return label === 'Mobile Phone Lane' ? (language === 'en' ? 'Standard composition' : 'Standardsammansättning')
-    : label === 'Layer Preview Lane' ? (language === 'en' ? 'Layer composition' : 'Lagersammansättning') : label || (language === 'en' ? 'Unnamed composition' : 'Namnlös sammansättning');
+  return label === 'Mobile Phone Lane' ? (language === 'en' ? 'Standard composition' : 'Standardmiljö')
+    : label === 'Layer Preview Lane' ? (language === 'en' ? 'Layer composition' : 'Lagermiljö') : label || (language === 'en' ? 'Unnamed composition' : 'Namnlös miljö');
 }
 
 export function canonicalControlHref(value) {

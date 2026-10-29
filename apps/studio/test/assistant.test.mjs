@@ -125,10 +125,10 @@ test('material action retains dependency token, review consequences and original
 });
 
 test('dealer restore preview lists saved compositions while retaining the original revision-bound command',async()=>{
- const h=actionFixture();h.state.project.dealerTrash=[{dealer:h.state.project.dealers[0],compositions:[{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}]}];h.state.project.dealers=[];
+ const h=actionFixture();h.state.project.dealerTrash=[{dealer:h.state.project.dealers[0],compositions:[{id:'first',label:'Första miljön'},{id:'second',label:'Andra miljön'}]}];h.state.project.dealers=[];
  const p=await prepareAssistantAction(h.native,req(),{action:'dealer.restore',targetId:'astrid',value:null},{services:h.services});
- assert.match(p.review.impact.notice,/sparade sammansättningar återförs som utkast/);
- assert.match(p.review.impact.notice,/Sparade sammansättningar \(2\): Första mallen, Andra mallen/);
+ assert.match(p.review.impact.notice,/sparade miljöer återförs som utkast/);
+ assert.match(p.review.impact.notice,/Sparade miljöer \(2\): Första miljön, Andra miljön/);
  assert.match(p.review.impact.notice,/AI-tal förblir avstängt/);assert.match(p.review.impact.notice,/Rum återställs eller öppnas inte automatiskt/);
  assert.equal(p.plan.path,'/dealers/archive');assert.deepEqual(p.plan.body,{dealerId:'astrid',expectedRevision:'p1',archived:false});assert.equal(h.state.calls.length,0);
 });

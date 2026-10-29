@@ -32,6 +32,6 @@ test('a residual geometry reference is reported and blocks deletion even in arch
 
 test('legacy lane names display as compositions while stored identities and snapshots stay intact',()=>{
   const {project,asset}=fixture();project.lanes[0].label='Mobile Phone Lane';project.lanes[0].layers.background.allowed=[asset.id];
-  assert.deepEqual(layerAssetReferences(project,asset.id),[{id:'mobile-phone',label:'Standardsammansättning'}]);
+  assert.deepEqual(layerAssetReferences(project,asset.id),[{id:'mobile-phone',label:'Standardmiljö'}]);
   assert.equal(project.lanes[0].label,'Mobile Phone Lane');assert.equal(defaultPresentationLane('astrid').label,'Standardsammansättning');
 });

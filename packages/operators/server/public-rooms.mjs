@@ -127,8 +127,10 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
       const limitPreset = limitPresets.get(room.id);
+      // The frozen lane's miljöbild; the package validator has already checked that it is an illustration in this package.
+      const illustration = typeof lane.illustration === 'string' && frozen.assets.some(item => item.id === lane.illustration && item.role === 'illustration') ? lane.illustration : null;
       result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
-        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}),
+        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}), ...(illustration ? { illustration } : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
         playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }

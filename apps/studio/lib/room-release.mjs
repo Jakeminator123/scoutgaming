@@ -72,7 +72,7 @@ function withEditableBranding(branding, editable) {
 }
 // Utseendes granskning avvisar ett utkast som inte passar med 400, 409, 413 eller 422. Granskningen
 // körs mot en fryst kopia (kandidatens presentation, utkastet, administrationen), så 409 betyder här
-// att ett val inte ryms i kandidaten (t.ex. en dealer mallen inte tillåter), inte en samtidig ändring.
+// att ett val inte ryms i kandidaten (t.ex. en dealer miljön inte tillåter), inte en samtidig ändring.
 // Andra statusar (503 och liknande) är tillfälliga och släpps igenom som de är.
 const DRAFT_REJECTIONS = Object.freeze([400, 409, 413, 422]);
 export const isDraftValidationFailure = error => error instanceof StudioStorageError && error.code === 'partner_branding_rejected'
@@ -207,7 +207,7 @@ function releaseChanges(live, next, presentationChanged) {
     const was = live?.roomChoices[role] ?? null, now = next.roomChoices[role];
     if (was !== now) changes.push({area:'roomChoices', key:role, before:was, after:now});
   }
-  // Annat i paketet (andra mallar, andra dealers) som inte syns i områdena ovan.
+  // Annat i paketet (andra miljöer, andra dealers) som inte syns i områdena ovan.
   if (presentationChanged && !changes.some(row => row.area !== 'settings')) changes.push({area:'package'});
   return changes;
 }
@@ -298,7 +298,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     }
   }
   // Samma infångning som "Publicera igen" (operator-package-api.mjs prepare) för paketets
-  // alla mallar, med bolagets eget material. verify=false: ingen provider-I/O.
+  // alla miljöer, med bolagets eget material. verify=false: ingen provider-I/O.
   async function buildCandidate({snapshot, current, administration, operatorId, rows, brandingDraft, includeDraft}) {
     // Med utkastet byggs kandidaten på utkastets val; materialet ryms mot den brandingen.
     const baseBranding = includeDraft ? withEditableBranding(current.branding, brandingDraft.branding) : current.branding;

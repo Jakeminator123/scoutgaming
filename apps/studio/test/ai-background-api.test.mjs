@@ -259,13 +259,13 @@ test('an invalid scene template or composition is refused as ai_image_invalid_re
   const table={role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:1},calls=[],handler=api({calls});
   const wide=facitComposition();wide.desktop.table.width=9;
   const skewed=facitComposition();skewed.mobile.table.x=.2;
-  for (const sceneTemplate of [{id:'Bad Id',composition:facitComposition()},{id:'',composition:facitComposition()},{id:'x'.repeat(64)},{id:'mall',composition:{mobile:{}}},
-    {id:'mall',composition:wide},{id:'mall',composition:{...facitComposition(),extra:true}},{id:'mall',composition:skewed},{id:'mall',composition:facitComposition(),label:'Mall'},'mall',[]]) {
+  for (const sceneTemplate of [{id:'Bad Id',composition:facitComposition()},{id:'',composition:facitComposition()},{id:'x'.repeat(64)},{id:'miljö',composition:{mobile:{}}},
+    {id:'miljö',composition:wide},{id:'miljö',composition:{...facitComposition(),extra:true}},{id:'miljö',composition:skewed},{id:'miljö',composition:facitComposition(),label:'Miljö'},'miljö',[]]) {
     const response=await handler.handle(post({...table,sceneTemplate}));
     assert.equal(response.status,400,JSON.stringify(sceneTemplate).slice(0,80));assert.equal((await response.json()).code,'ai_image_invalid_request');
   }
   const {dealerId:_dealer,...background}=table;
-  assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'mall'}}))).status,400);
+  assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'miljö'}}))).status,400);
   assert.equal(calls.length,0);
 });
 

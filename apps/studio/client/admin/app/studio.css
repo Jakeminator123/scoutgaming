@@ -604,7 +604,7 @@ body.preview-admin{overflow:hidden}
 /* Admin pages are built from the kit (components/ui); only the main surface colour lives here. */
 .preview-admin>main{background:var(--sg-bg);color:var(--sg-text)}
 
-/* The material library (Scenmallar och material): the asset manager's list as a grid of cards, the trash
+/* The material library (Miljöer och material): the asset manager's list as a grid of cards, the trash
    tab as rows. The cards themselves are kit/Tailwind markup in registered-material-library.tsx. */
 .material-library>section>h3{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--sg-muted)}
 .material-library>section>p{margin:0 0 12px;font-size:13px;color:var(--sg-muted)}

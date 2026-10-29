@@ -79,7 +79,7 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
   return {x:origin.x,y:origin.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,fanSpread,
     ...(sourcePlane&&tableId?{sourcePlane,tableId,tableLayout:layout}:{}),
     geometryWarning:fits&&inside(dealer.x,dealer.y,...dealerHand.map(value=>value*scale))?''
-      :`Kort eller insatsplatser ryms inte. Justera ${auto?.landing?'dealerns':'bordets'} placering i Sammansättning.`};
+      :`Kort eller insatsplatser ryms inte. Justera ${auto?.landing?'dealerns':'bordets'} placering i Miljö.`};
 }
 
 // Keep server seat identities and card anchors together, including a resumed

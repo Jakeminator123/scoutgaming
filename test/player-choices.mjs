@@ -218,7 +218,7 @@ test('preview footer returns to its saved composition without an operator link',
  const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
  const window={};window.parent=window;
  const link={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});
- assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Sammansättning');
+ assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Miljö');
  // Real document validation requires a dealer; a partial caller must not serialize undefined.
  const partialLink={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink},URLSearchParams});
  assert.equal(partialLink.href,'/admin/compositions?composition=evening');

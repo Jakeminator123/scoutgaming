@@ -8,6 +8,8 @@ export interface PublicOperatorRoom {
   game?: 'blackjack' | 'roulette';
   /** The published bet profile's key (casual, prive, high); absent when the room has no published game settings. */
   limitPreset?: string;
+  /** The published environment's miljöbild (an illustration material id), for the lobby's picture; absent without one. */
+  illustration?: string;
   id: string; name: string; laneId: string; presentation: { id: string; label: string };
   dealerDefault: string; dealers: PublicRoomDealer[]; playUrl: string;
 }

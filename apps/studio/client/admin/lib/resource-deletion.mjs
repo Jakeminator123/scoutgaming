@@ -85,7 +85,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
       layers[role]={enabled:layer.enabled===true,defaultId:layer.default||null,ids};
       for(const id of ids){
         const target=role==='dealer'?ensureDealer(id):ensureMaterial(id,role);
-        addRef(target.uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' mall · '+(layer.enabled?'tillåtet val':'inaktiverat lager')));
+        addRef(target.uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' miljö · '+(layer.enabled?'tillåtet val':'inaktiverat lager')));
       }
     }
     compositions.set(row.id,{...node(row.id,row.label,archived),layers,publishedTo:null,historicalPackageReferences:null});
@@ -109,7 +109,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     room.choicesPath=room.archived?null:roomChoicesPath(administration.operators.find(current=>current.id===room.operatorId),{id:room.id,operatorId:room.operatorId,state:room.state,compositionId,game:room.game});
     if(compositionId){
       if(!compositions.has(compositionId))compositions.set(compositionId,{...node(compositionId,compositionId,false,true),layers:null,publishedTo:null,historicalPackageReferences:null});
-      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat rum':'Rummets sparade mall'));
+      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat rum':'Rummets sparade miljö'));
     }
     for(const id of room.publishedDealerIds)addRef(ensureDealer(id).uses,ref('room',room.id,room.label,'Publicerat dealerval'));
   }
@@ -156,7 +156,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     const count=presentation.historicalPackageReferences;
     composition.historicalPackageReferences=historyCoverage==='complete'&&Number.isSafeInteger(count)&&count>=0?count:null;
   }
-  if(historyCoverage==='incomplete')warnings.push('Sammansättningarnas historiska paketreferenser kunde inte räknas fullständigt.');
+  if(historyCoverage==='incomplete')warnings.push('Miljöernas historiska paketreferenser kunde inte räknas fullständigt.');
   function useMedia(id,dealerId,relation){
     if(!id)return;
     const value=ensureMedia(id);
@@ -194,8 +194,8 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     dealers:sort([...dealers.values()]),materials:sort([...materials.values()]),media:sort([...media.values()]),
     unownedRoomIds:[...rooms.values()].filter(row=>!operators.has(row.operatorId)).map(row=>row.id),
     coverage:[
-      'Sparad mall och publicerade spelval visas separat. Rummens egna förval ingår i publicerade spelval för spelbara rum. Pausade och arkiverade rums publicerade lagerval ingår inte.',
-      'Sammansättningarnas historiska paketreferenser visas som antal med täckningsstatus. Historiska paketens fullständiga filinnehåll ingår inte.',
+      'Sparad miljö och publicerade spelval visas separat. Rummens egna förval ingår i publicerade spelval för spelbara rum. Pausade och arkiverade rums publicerade lagerval ingår inte.',
+      'Miljöernas historiska paketreferenser visas som antal med täckningsstatus. Historiska paketens fullständiga filinnehåll ingår inte.',
       'Råa filer i Blob och statiska lobbybilder ingår inte i denna läsning. Äldre filbaserade klippbindningar ingår inte heller.',
       'Klippimporten tar för närvarande emot MP4 och WebM. Bord och bakgrundsbilder visas i materialbiblioteket.',
       'Inga synliga kopplingar betyder inte att ett objekt kan raderas permanent.',

@@ -24,7 +24,7 @@ export type AiBackgroundDialogProps = {
 };
 
 type Phase = 'form' | 'generating' | 'results' | 'saving';
-const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en scenmall som publiceras.';
+const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en miljö som publiceras.';
 const UNSUPPORTED = 'Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.';
 const field = 'min-w-0 w-full rounded-lg border border-sg-border bg-sg-surface px-3 py-2 text-[13.5px] text-sg-text';
 const notice = 'm-0 rounded-lg border border-sg-border bg-sg-surface-2 p-3';
@@ -158,12 +158,12 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
             <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
           </label> : null}
           {table && filmed.length ? <label className="grid gap-1">
-            <span className="font-medium">Scenmall</span>
+            <span className="font-medium">Miljö</span>
             <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
               {scenes.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
-              <option value="">Standardplacering (ingen scenmall)</option>
+              <option value="">Standardplacering (ingen miljö)</option>
             </select>
-            <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
+            <span className="text-xs text-sg-muted">Bordsgrafiken passar miljöns placering. Ändras placeringen senare behöver bordet ritas om.</span>
           </label> : null}
           <div className="grid gap-1 rounded-lg border border-dashed border-sg-border p-3" onDragOver={event => { event.preventDefault(); }}
             onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>

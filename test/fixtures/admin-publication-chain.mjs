@@ -107,7 +107,7 @@ export async function createPublicationChain(origin = fixtureOrigin, {roomAppear
   }
   for (const [operatorId, userId] of [[company.id, '42'], [otherCompany.id, '43']])
     await store.upsertMembership({actor: 'fixture-seed', operatorId, userId, roleId: 'partner-admin', status: 'active'});
-  const lane = {...defaultPresentationLane('astrid'), id: compositionId, label: 'C6 sparad sammansättning'};
+  const lane = {...defaultPresentationLane('astrid'), id: compositionId, label: 'C6 sparad miljö'};
   // Keep the existing full-frame fixture, and opt into the real independent
   // layer contract where N2 is allowed to choose a room's table colour.
   if (roomAppearance) {

@@ -48,9 +48,9 @@ test('the field renders every allow choice, the lists and a locked layer', () =>
   // Rutorna läses per namn, oberoende av attributens ordning.
   const box = name => { const tag = html.match(new RegExp(`<input[^>]*name="${name}"[^>]*>`))?.[0]; assert.ok(tag, name); return { checked: tag.includes('checked=""'), disabled: tag.includes('disabled=""') }; };
   for (const key of ['dealer', 'tableAsset', 'background', 'language', 'limit', 'pause']) box('allow-' + key);
-  // Bordsgrafiken är låst i scenmallen: rutan är inaktiv och säger varför.
+  // Bordsgrafiken är låst i miljön: rutan är inaktiv och säger varför.
   assert.deepEqual(box('allow-tableAsset'), { checked: false, disabled: true });
-  assert.match(html, /Låst i scenmallen/);
+  assert.match(html, /Låst i miljön/);
   assert.deepEqual(box('allow-background'), { checked: false, disabled: false });
   assert.deepEqual(box('allow-dealer'), { checked: true, disabled: false });
   assert.equal(box('limitPresets-casual').checked, true);
@@ -59,7 +59,7 @@ test('the field renders every allow choice, the lists and a locked layer', () =>
   // Inget ändrat: publiceringen är inaktiv.
   assert.match(html, /<button[^>]*disabled=""[^>]*>Publicera tilldelningen<\/button>/);
   const none = renderToStaticMarkup(React.createElement(AssignmentField, { operatorId: 'north', revision: null, view: null, disabled: false, onChanged() {} }));
-  assert.match(none, /ingen publicerad scenmall/);
+  assert.match(none, /ingen publicerad miljö/);
 });
 
 test('the draft narrows, stays inside the scene template and keeps a fixed list order', () => {
@@ -74,9 +74,9 @@ test('the draft narrows, stays inside the scene template and keeps a fixed list 
   assert.deepEqual(draft.limitPresets, ['casual', 'prive', 'high']);
   assert.equal(assignmentDirty(view, draft), true);
   assert.equal(assignmentProblem(view, draft), '');
-  assert.match(assignmentProblem(view, toggleAllow(draft, 'tableAsset', true)), /scenmallen/);
+  assert.match(assignmentProblem(view, toggleAllow(draft, 'tableAsset', true)), /miljön/);
   assert.match(assignmentProblem(view, { ...draft, limitPresets: [] }), /insatsprofil/);
-  assert.match(assignmentProblem(null, draft), /ingen publicerad scenmall/);
+  assert.match(assignmentProblem(null, draft), /ingen publicerad miljö/);
 });
 
 test('saving posts the whole assignment to the package path and checks the receipt', async () => {

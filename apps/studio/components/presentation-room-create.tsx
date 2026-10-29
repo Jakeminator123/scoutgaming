@@ -63,8 +63,8 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     void controller.create(key).finally(()=>callbacks.current.onBusyChange?.(controller.getSnapshot().status==='busy'));
   }
   const message = !storeAvailable ? 'Spelrum kräver en ansluten lagring.'
-    : !projectSaved ? 'Spara sammansättningen först.'
-      : !operator || !presentation ? 'Välj bolag och sammansättning.'
+    : !projectSaved ? 'Spara miljön först.'
+      : !operator || !presentation ? 'Välj bolag och miljö.'
         : current ? state.message : null;
   const staleProject = current && !unresolved && Boolean(state.preflight && state.preflight.projectRevision !== projectRevision);
   const packageConflict = current && !unresolved && state.preflight?.reason === 'presentation_package_conflict';
@@ -77,7 +77,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }
     : conflictCode === 'presentation_room_environment_conflict'
-      ? { href: compositionHref, label: 'Skapa en separat sammansättning' }
+      ? { href: compositionHref, label: 'Skapa en separat miljö' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
       ? { href: reloadHref, label: 'Kontrollera spelrummet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
@@ -93,9 +93,9 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     {!visual&&<p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>}
     {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/lobby?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
-      : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här sammansättningen ännu.</p> : null}
+      : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här miljön ännu.</p> : null}
     <details className={styles.create} open={visual || rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
-    <p>Ange ett namn. Sammansättningen publiceras och kopplas till rummet i samma steg.</p>
+    <p>Ange ett namn. Miljön publiceras och kopplas till rummet i samma steg.</p>
     <form className={styles.form} onSubmit={submit}>
       {visual?<div role="group" aria-label="Välj spel" className={styles.gameChoices}>{(['blackjack','roulette'] as const).map(game=><button key={game} className="sg-btn" type="button" aria-pressed={state.game===game} disabled={!enabled||!current||busy||unresolved||state.status==='loading'} onClick={()=>controller.setGame(game)}>{game==='blackjack'?'♠ Blackjack':'◉ Roulette'}</button>)}</div>:<label className={styles.field}>Spel
         <select value={current ? state.game : 'blackjack'} disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event=>controller.setGame(event.target.value)}>
@@ -110,7 +110,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
         {recovery ? null : staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}
           onClick={event => { if (!enabled) event.preventDefault(); }}>Läs in aktuella uppgifter</a>
           : needsComposition ? <a className="sg-btn sg-btn-primary" href={compositionHref} aria-disabled={!enabled}
-            onClick={event => { if (!enabled) event.preventDefault(); }}>{needsEnvironment ? 'Välj och lås miljön i Sammansättningar' : 'Kontrollera sammansättningen'}</a>
+            onClick={event => { if (!enabled) event.preventDefault(); }}>{needsEnvironment ? 'Välj och lås miljön i Miljöer' : 'Kontrollera miljön'}</a>
           : refresh ? <button className="sg-btn sg-btn-primary" type="button" disabled={!enabled}
           onClick={() => { if (enabled) void controller.refresh(); }}>Uppdatera uppgifter</button>
           : receipt ? <a className="sg-btn sg-btn-primary" href={receipt.playUrl}>Öppna spelrummet</a>

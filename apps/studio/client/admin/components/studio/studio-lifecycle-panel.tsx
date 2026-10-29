@@ -169,7 +169,7 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
         setNotice(`${completed.length} klipp ${captured.archived ? 'flyttade till arkivet' : 'återställda'}. Mediafilerna är bevarade.`);
       } else if (captured.kind === 'dealer') {
         await client.dealerLifecycle(project, captured.dealerId, captured.archived, captured.impact, unchanged);
-        setNotice(captured.archived ? 'Dealern, berörda sammansättningar och klipp ligger i papperskorgen. Filerna är bevarade.' : 'Dealern är återställd till utkast med tal avstängt. Rum och bolagspaket återöppnas separat.');
+        setNotice(captured.archived ? 'Dealern, berörda miljöer och klipp ligger i papperskorgen. Filerna är bevarade.' : 'Dealern är återställd till utkast med tal avstängt. Rum och bolagspaket återöppnas separat.');
       } else {
         await client.deleteDealer(project, captured.dealerId, unchanged);
         setNotice('Dealeridentiteten och alla dess egna mediafiler är permanent raderade.');
@@ -202,8 +202,8 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
       </div>
       <nav className="flex gap-2" aria-label="Livscykelresurser"><button type="button" className={button} disabled={busy} aria-pressed={view === 'sets'} onClick={() => setView('sets')}>Set & kategorier</button><button type="button" className={button} disabled={busy} aria-pressed={view === 'clips'} onClick={() => setView('clips')}>Klipp & dealerarkiv</button></nav>
       {view === 'sets' ? <DealerSetManager project={project} inventory={inventory} dealerId={selectedDealer} disabled={editBlocked || busy || invalidated} onEdit={onEdit} /> : <>
-      <details className="rounded border border-sg-line p-3"><summary className="cursor-pointer">Sammansättningar & användning ({bank.compositions.length})</summary>
-        {bank.compositions.length ? <ul className="mt-2 space-y-1">{bank.compositions.map(row => <li key={row.id}>{row.label} <code className="text-sg-muted">{row.id}</code></li>)}</ul> : <p className="mt-2 text-sg-muted">Inga kopplade sammansättningar.</p>}
+      <details className="rounded border border-sg-line p-3"><summary className="cursor-pointer">Miljöer & användning ({bank.compositions.length})</summary>
+        {bank.compositions.length ? <ul className="mt-2 space-y-1">{bank.compositions.map(row => <li key={row.id}>{row.label} <code className="text-sg-muted">{row.id}</code></li>)}</ul> : <p className="mt-2 text-sg-muted">Inga kopplade miljöer.</p>}
         <p className="mt-3 text-sg-muted">Rum som använder dealeridentiteten:</p>
         {bank.rooms.length ? <ul className="mt-1 space-y-1">{bank.rooms.map(row => <li key={row.id}>{row.name} · {catalog.administration.operators.find(operator => operator.id === row.operatorId)?.name ?? row.operatorId} · {row.published ? 'Publicerat paket' : 'Sparat utkast'}</li>)}</ul> : <p className="mt-1 text-sg-muted">Inga sådana rum i detta register.</p>}
         <p className="mt-3 text-sg-muted">Exakt klippanvändning i andra arbetsytor och alla publiceringsversioner kontrolleras av servern vid åtgärden.</p>
@@ -233,7 +233,7 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
       </div>
       <details className="rounded border border-sg-line p-3"><summary className="cursor-pointer">Hela dealeridentiteten</summary>
         {project.dealerSets?.some(row => row.dealerId === selectedDealer) && <p className="mt-2 text-amber-300">Dealern har sparade eller arkiverade kategorier. Ta bort kategorietiketterna och spara först. Kategoriernas klipp bevaras.</p>}
-        <p className="my-3 text-sg-muted">Att ta bort dealern flyttar även dess klipp och berörda sammansättningar till papperskorgen, stänger av tal och ändrar berörda rum och bolagspaket. Filer och historik bevaras.</p>
+        <p className="my-3 text-sg-muted">Att ta bort dealern flyttar även dess klipp och berörda miljöer till papperskorgen, stänger av tal och ändrar berörda rum och bolagspaket. Filer och historik bevaras.</p>
         <div className="flex flex-wrap gap-2">
           {bank.deletionPending ? <p className="text-amber-300">Permanent radering har påbörjats. Återställning är spärrad.</p> : <button type="button" className={button} disabled={disabled} onClick={() => void reviewDealer(!bank.archived)}>{bank.archived ? <RotateCcw size={13} /> : <Trash2 size={13} />}{bank.archived ? 'Återställ dealern' : 'Ta bort dealern'}</button>}
           {bank.archived && <button type="button" className={button} disabled={disabled} onClick={() => void reviewDealerDeletion()}><Trash2 size={13} />{bank.deletionPending ? 'Slutför radering' : 'Radera dealern permanent'}</button>}

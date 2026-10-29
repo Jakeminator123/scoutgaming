@@ -212,7 +212,7 @@ function mountScenePlacement(){
     const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},useRef(initial){return slots[cursor++]??={current:initial};}};
     const module={exports:{}},code=compiledComponent(url);
     runInNewContext(code,{module,exports:module.exports,structuredClone,require:specifier=>specifier==='react'?hooks:specifier.endsWith('.css')?{}
-      :specifier==='./scene-publication'?{ScenePublication:()=>null}:specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
+      :specifier==='./scene-publication'?{ScenePublication:()=>null}:specifier==='./environment-picture'?{EnvironmentPicture:()=>null}:specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
     return props=>{cursor=0;return module.exports[name](props);};
   }
   const panel=mount('../admin/components/studio/studio-composition-panel.tsx','StudioCompositionPanel');
@@ -295,7 +295,7 @@ async function mountClipMap(h,{scene=false}={}){
   const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
   const link=label=>one(nodes(node=>typeof node.props?.href==='string'&&textWithoutControls(node)===label),'link labelled '+label);
   const follow=async label=>{assert.equal(h.api.navigate(link(label).props.href),true,'link '+label+' is accepted');await settle();};
-  // Under Scenmallar the dealer is a selection; under the dealer nav it is the path and the map shows it.
+  // Under Miljöer the dealer is a selection; under the dealer nav it is the path and the map shows it.
   const dealerSelect=()=>nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer');
   const shownDealer=()=>{const selectors=dealerSelect();if(selectors.length)return one(selectors,'dealer selection').props.value;
     const flow=raw(render(),node=>node.type==='Flow');return flow.length?String(flow[0].key).split(':')[0]:'';};
@@ -305,7 +305,7 @@ async function mountClipMap(h,{scene=false}={}){
     composition:()=>nodes(node=>node.type==='StudioCompositionPanel')[0]?.props.compositionId,
     scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
       hasPlacement:()=>scenePanel?.hasPlacement()??false,
-      async open(){await follow('Öppna i Scenmallar');},
+      async open(){await follow('Öppna i Miljöer');},
       async leave(){await follow('Till klippkartan');},
       async click(label){scenePanel.click(label);await settle();},
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
@@ -317,7 +317,7 @@ async function mountClipMap(h,{scene=false}={}){
     async dealer(id){if(dealerSelect().length)select('Dealer').props.onChange({target:{value:id}});else h.api.navigate('/admin/dealers/'+id+'?flik=klipp');await settle();},
     follow,hasDealerSelect:()=>dealerSelect().length>0,
     async editDraft(){
-      await follow('Öppna i Scenmallar');
+      await follow('Öppna i Miljöer');
       const inspector=one(nodes(node=>node.type==='aside'&&node.props['aria-label']==='Klipp och inställningar'),'clip inspector');
       assert.equal(inspector.props.hidden,false,'composition editor must open in the detail panel');
       const panel=one(all(inspector,node=>node.type==='StudioCompositionPanel'),'composition editor'),draft=structuredClone(panel.props.project);
@@ -351,7 +351,7 @@ for(const selected of ['a','b'])test(`the receiving scene editor keeps room A wh
     assert.equal(pane.composition(),'scene-'+selected);assert.equal(scene.hasPlacement(),true);assert.equal(pane.hasDealerSelect(),true);
     assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-'+selected);
-    await scene.click('Redigera gemensam mall');
+    await scene.click('Redigera gemensam miljö');
     const chosen=before.lanes.find(row=>row.id==='scene-'+selected),profile=movedGeometry(chosen.composition.blackjackTables[0],.15);
     await scene.edit(profile);
     const after=scene.snapshot();
@@ -400,7 +400,7 @@ for(const existing of [false,true])test(`explicit scene game survives a differen
     assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'blackjack'});
     assert.equal(pane.composition(),'scene-a');assert.equal(pane.scene.hasPlacement(),true);
     assert.equal(new URLSearchParams(h.location.search).get('game'),'blackjack');
-    const before=pane.scene.snapshot();await pane.scene.click('Redigera gemensam mall');
+    const before=pane.scene.snapshot();await pane.scene.click('Redigera gemensam miljö');
     await pane.scene.edit(movedGeometry(before.lanes[0].composition.blackjackTables[0],.12));
     assert.deepEqual(pane.scene.snapshot().lanes[1],before.lanes[1]);
     assert.deepEqual(pane.registeredRooms(),rooms);assert.equal(rooms.find(row=>row.id==='room-b').game,'roulette');
@@ -414,7 +414,7 @@ test('a receiver can edit an explicit library scene without assigning a company 
     const rooms=pane.registeredRooms(),original=pane.scene.snapshot();
     assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
     assert.deepEqual(pane.selection(),{operator:'',room:'',dealer:'astrid',game:'blackjack'});
-    await pane.scene.click('Redigera gemensam mall');await pane.scene.edit(movedGeometry(original.lanes[1].composition.blackjackTables[0],.1));
+    await pane.scene.click('Redigera gemensam miljö');await pane.scene.edit(movedGeometry(original.lanes[1].composition.blackjackTables[0],.1));
     assert.deepEqual(pane.scene.snapshot().lanes[0],original.lanes[0]);assert.deepEqual(pane.registeredRooms(),rooms);
     assert.equal(new URLSearchParams(h.location.search).has('table'),false);
   }finally{pane.unmount();}
@@ -440,10 +440,10 @@ for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])tes
   const pane=await mountClipMap(harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{
     await scene.open();const saved=sceneGeometry(scene.snapshot());
-    await scene.click('Redigera gemensam mall');const draftB=movedGeometry(saved,.1);await scene.edit(draftB);
+    await scene.click('Redigera gemensam miljö');const draftB=movedGeometry(saved,.1);await scene.edit(draftB);
     await scene.leave();assert.equal(scene.isMounted(),false,'switching away unmounts the real composition panel');
     await scene.open();assert.equal(scene.mounts(),2);assert.deepEqual(sceneGeometry(scene.snapshot()),draftB,'parent retains draft B');
-    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');
+    await scene.click('Redigera gemensam miljö');await scene.click(layout==='mobile'?'Mobil':'Desktop');
     const draftC=movedGeometry(saved,.2);await scene.edit(draftC);
     const reset=group==='cards'?'Återställ sparade kort':'Återställ sparade marker',otherGroup=group==='cards'?'bets':'cards',otherLayout=layout==='mobile'?'desktop':'mobile';
     await scene.click(reset);let actual=sceneGeometry(scene.snapshot());
@@ -452,7 +452,7 @@ for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])tes
     assert.deepEqual(actual[otherLayout],draftC[otherLayout],'other format keeps draft C');
     await scene.edit(movedGeometry(saved,.25));await scene.save();const newlySaved=sceneGeometry(scene.snapshot());assert.equal(scene.snapshot().revision,'fixture.scene.saved');
     const draftD=movedGeometry(saved,.3);await scene.edit(draftD);await scene.leave();await scene.open();assert.equal(scene.mounts(),3);
-    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');await scene.click(reset);
+    await scene.click('Redigera gemensam miljö');await scene.click(layout==='mobile'?'Mobil':'Desktop');await scene.click(reset);
     actual=sceneGeometry(scene.snapshot());
     assert.deepEqual(geometryGroup(actual[layout],group),geometryGroup(newlySaved[layout],group),'successful save advances the reset baseline');
     assert.deepEqual(geometryGroup(actual[layout],otherGroup),geometryGroup(draftD[layout],otherGroup));assert.deepEqual(actual[otherLayout],draftD[otherLayout]);
@@ -463,13 +463,13 @@ test('scene reset uses the compared server baseline while preserving the rebased
   const pane=await mountClipMap(harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{
     await scene.open();const remote=scene.snapshot(),saved=sceneGeometry(remote);
-    await scene.click('Redigera gemensam mall');const draft=movedGeometry(saved,.1);await scene.edit(draft);
+    await scene.click('Redigera gemensam miljö');const draft=movedGeometry(saved,.1);await scene.edit(draft);
     remote.revision='fixture.scene.remote';remote.lanes[0].composition.blackjackTables=[movedGeometry(saved,.2)];scene.remote(remote);
     const sent=await scene.save();assert.notEqual(sent.revision,remote.revision);
     assert.equal(scene.snapshot().revision,sent.revision,'a rejected save must not advance the draft revision');
     assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'a rejected save retains the local geometry');await scene.compare();
     assert.equal(scene.snapshot().revision,remote.revision);assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'conflicting local points remain in the draft');
-    await scene.leave();await scene.open();await scene.click('Redigera gemensam mall');await scene.click('Desktop');await scene.click('Återställ sparade kort');
+    await scene.leave();await scene.open();await scene.click('Redigera gemensam miljö');await scene.click('Desktop');await scene.click('Återställ sparade kort');
     const actual=sceneGeometry(scene.snapshot());
     assert.deepEqual(geometryGroup(actual.desktop,'cards'),geometryGroup(sceneGeometry(remote).desktop,'cards'));
     assert.deepEqual(geometryGroup(actual.desktop,'bets'),geometryGroup(draft.desktop,'bets'));assert.deepEqual(actual.mobile,draft.mobile);
@@ -497,7 +497,7 @@ test('mounted clip pane reactivation writes the retained full context before Bac
 test('mounted clip pane keeps room-owned context through accepted query changes and history',async()=>{
   const h=harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
   try{
-    assert.equal(pane.hasDealerSelect(),false,'the dealer nav shows its dealer; only Scenmallar offers a dealer selection');
+    assert.equal(pane.hasDealerSelect(),false,'the dealer nav shows its dealer; only Miljöer offers a dealer selection');
     h.api.navigate('/admin/dealers/nora?flik=klipp&operator=b&table=room-b&game=roulette&category=bank');await pane.settle();
     assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-b');

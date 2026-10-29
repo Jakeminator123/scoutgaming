@@ -13,6 +13,7 @@ export type Operator = {
   roomIds: string[]; dealerIds: string[];
 };
 export type LobbyCatalog = { operators: Operator[]; rooms: Room[]; dealers: Dealer[] };
+export function roomIllustration(): RoomIllustration;
 export function parseLobbyCatalog(payload: unknown): LobbyCatalog;
 export function loadLobbyCatalog(options?: { fetchImpl?: typeof fetch; signal?: AbortSignal }): Promise<LobbyCatalog>;
 export function lobbySelection(catalog: LobbyCatalog, selected?: { operatorId?: string | null; roomKey?: string | null; dealerId?: string | null }): {

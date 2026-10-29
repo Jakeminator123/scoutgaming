@@ -1,7 +1,7 @@
 // Bolag › Tilldelat: Admins fält för bolagets `assignment` (allow, insatsprofiler
 // och språk). Publiceras som en ny paketrevision genom paketets vanliga väg
 // (POST operator-package, action publish-assignment, CAS på revisionen).
-// Servern avgör allt: fältet erbjuder bara det scenmallen ger bolaget och
+// Servern avgör allt: fältet erbjuder bara det miljön ger bolaget och
 // skickar ändå hela tilldelningen, som servern validerar igen.
 
 export const ASSIGNMENT_ALLOW_KEYS = Object.freeze(['dealer', 'tableAsset', 'background', 'language', 'limit', 'pause']);
@@ -23,7 +23,7 @@ export function assignmentDraft(view) {
   };
 }
 
-// Ett lager som scenmallen inte ger bolaget kan inte låsas upp här (servern nekar också).
+// Ett lager som miljön inte ger bolaget kan inte låsas upp här (servern nekar också).
 export const allowLocked = (view, key) => ASSIGNMENT_LAYER_KEYS.includes(key) && view?.adjustable?.[key] !== true;
 
 export function toggleAllow(draft, key, on) {
@@ -40,8 +40,8 @@ export const assignmentDirty = (view, draft) => canonical(assignmentDraft(view))
 
 // Det som stoppar publiceringen innan något skickas.
 export function assignmentProblem(view, draft) {
-  if (!view) return 'Bolaget har ingen publicerad scenmall ännu. Tilldela en scenmall och publicera först.';
-  if (ASSIGNMENT_LAYER_KEYS.some(key => draft.allow[key] && allowLocked(view, key))) return 'Ett val som scenmallen inte ger bolaget kan inte låsas upp.';
+  if (!view) return 'Bolaget har ingen publicerad miljö ännu. Tilldela en miljö och publicera först.';
+  if (ASSIGNMENT_LAYER_KEYS.some(key => draft.allow[key] && allowLocked(view, key))) return 'Ett val som miljön inte ger bolaget kan inte låsas upp.';
   if (draft.allow.limit && !draft.limitPresets.length) return 'Välj minst en insatsprofil när insatsprofilen är upplåst.';
   if (draft.allow.language && !draft.languages.length) return 'Välj minst ett språk när bordsspråket är upplåst.';
   return '';
@@ -50,7 +50,7 @@ export function assignmentProblem(view, draft) {
 export function assignmentPublishError(status) {
   if (status === 403) return 'Du saknar rätt att ändra bolagets tilldelning. Inget publicerades.';
   if (status === 409) return 'Bolagets paket har ändrats sedan du läste det. Inget publicerades; läs in bolaget igen.';
-  if (status === 422) return 'Tilldelningen godtogs inte: ett val går utöver scenmallen eller saknar alternativ. Inget publicerades.';
+  if (status === 422) return 'Tilldelningen godtogs inte: ett val går utöver miljön eller saknar alternativ. Inget publicerades.';
   if (status === 404) return 'Bolaget eller dess paket finns inte längre. Inget publicerades.';
   return 'Publiceringen gick inte igenom. Inget publicerades.';
 }

@@ -44,10 +44,10 @@ export async function publishSavedScene({project,compositionId,initial,operatorS
   const response=await fetchImpl('/studio/api/admin/operator-package',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json'},
     body:JSON.stringify({action:'publish-scene-layout',operatorId:initial.operatorId,compositionId,expectedPackageRevision:initial.packageRevision,expectedProjectRevision:project.revision})});
   const receipt=await response.json().catch(()=>null);
-  if(response.status===413)throw Error('Publiceringspaketet är för stort. Inget publicerades; den sparade mallen finns kvar.');
+  if(response.status===413)throw Error('Publiceringspaketet är för stort. Inget publicerades; den sparade miljön finns kvar.');
   const refused=aiTableMisfitError(receipt,expected.assets);
   if(refused)throw refused;
-  if(!response.ok)throw Error(response.status===409?'Mallen eller publiceringen har ändrats. Läs in senaste version innan du försöker igen.':'Scenpubliceringen gick inte igenom. Läs in senaste version.');
+  if(!response.ok)throw Error(response.status===409?'Miljön eller publiceringen har ändrats. Läs in senaste version innan du försöker igen.':'Scenpubliceringen gick inte igenom. Läs in senaste version.');
   if(receipt?.ok!==true||receipt.operatorId!==initial.operatorId||receipt.compositionId!==compositionId||receipt.projectRevision!==project.revision
     ||receipt.packageRevision!==initial.packageRevision+1||!sameSceneValue(receipt.presentation,expected))throw Error('Publiceringskvittot kunde inte bekräftas. Läs in senaste version.');
   const readback=await fetchImpl('/studio/api/partner/branding?operator='+encodeURIComponent(operatorSlug),{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}});

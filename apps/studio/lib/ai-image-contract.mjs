@@ -93,10 +93,10 @@ export function aiTableLabelFit(label) {
 // land where that dealer lands, with the same dealer and table placement.
 // Any other material, also a renamed AI graphic, is not affected.
 export const AI_TABLE_MISFIT_CODE='ai_table_misfit';
-const REDRAW='Rita om bordet för den här scenmallen eller välj ett annat bord.';
+const REDRAW='Rita om bordet för den här miljön eller välj ett annat bord.';
 export const AI_TABLE_MISFIT=Object.freeze({
-  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än scenmallens. '+REDRAW,
-  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än scenmallens. '+REDRAW,
+  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än miljöns. '+REDRAW,
+  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än miljöns. '+REDRAW,
 });
 const landings=id=>{const profile=registeredFilmedProfile(id);return profile?JSON.stringify([profile.positions,profile.card]):null;};
 export function aiTableFitsTemplate(asset,lane) {
@@ -125,6 +125,6 @@ export function aiTableMisfits(lanes,assets) {
   return misfits;
 }
 export function aiTableMisfitMessage(misfit) {
-  const reason=AI_TABLE_MISFIT[misfit?.code]??AI_TABLE_MISFIT[misfit?.reason]??'Ett AI-ritat bord passar inte scenmallen. '+REDRAW;
+  const reason=AI_TABLE_MISFIT[misfit?.code]??AI_TABLE_MISFIT[misfit?.reason]??'Ett AI-ritat bord passar inte miljön. '+REDRAW;
   return (typeof misfit?.label==='string'&&misfit.label?misfit.label+': ':'')+reason;
 }

@@ -46,7 +46,7 @@ function App() {
   const [workspace,setWorkspace]=useState<{current:ClipMapWorkspace|null;saved:StudioProject|null}>({current:null,saved:null});
   const workspaceChanged=useCallback((current:ClipMapWorkspace|null,saved:StudioProject|null)=>setWorkspace({current,saved}),[]);
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
-  // The clip map is one instance: under the dealer nav and under Scenmallar › Scenmallar.
+  // The clip map is one instance: under the dealer nav and under Miljöer › Miljöer.
   const dealerTab=route.page==='dealer'?adminTabId('dealer',query.get('flik')):'';
   const sceneTab=route.page==='scenes'?adminTabId('scenes',query.get('tab')):'';
   const mapRoute=route.page==='dealer'?{kind:'dealer' as const,dealerId:route.id,base:'/admin/dealers/'+encodeURIComponent(route.id)}:route.page==='scenes'?{kind:'scenes' as const,base:'/admin/scenes'}:null;
