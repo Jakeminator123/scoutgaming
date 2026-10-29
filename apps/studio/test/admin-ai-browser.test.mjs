@@ -63,7 +63,7 @@ async function openFixture(browser,start=dialog(),ready=f=>dialogReady(f,'elin')
       assert.equal(method,'GET');documents.push(url.pathname+url.search);
       // Öppna spelrum lämnar Dialogtest med ett dokumentbyte; spelrummet (eller spelbordslistan vid
       // tvetydiga bord) ligger utanför provet.
-      if(/^\/admin\/(?:rooms(?:\/|$)|companies$)/.test(url.pathname))return route.fulfill({contentType:'text/html',body:'<h1>Isolerat spelrum</h1>'});
+      if(/^\/admin\/rooms(?:\/|$)/.test(url.pathname)||(url.pathname==='/admin/companies'&&url.searchParams.get('tab')==='spelbord'))return route.fulfill({contentType:'text/html',body:'<h1>Isolerat spelrum</h1>'});
       assert.ok(appDocument(url.pathname),'unexpected document '+url.pathname);
       return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});
     }
