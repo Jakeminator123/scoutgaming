@@ -341,7 +341,8 @@ publicerade placering som utgångspunkt.
 
 Materialbiblioteket per lager. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Bordsgrafik ritas efter en filmad dealers landningar
+välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
+synligt; rumsbilder blir miljöbilder. Bordsgrafik ritas efter en filmad dealers landningar
 och passar bara scenmallar med samma placering. Uppladdning ändrar inga
 scenval; **Visa var den används** visar vilka scenmallar som använder filen.
 
