@@ -347,6 +347,37 @@ svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara scenmallar med samma placering. Uppladdning ändrar inga
 scenval; **Visa var den används** visar vilka scenmallar som använder filen.
 
+#### Bord och bakgrund med AI
+
+**Skapa med AI** i Bordsgrafik ritar bordet åt en vald dealer och scenmall.
+Spelbordets **Utseende** har länken **Skapa bord och bakgrund med AI för
+spelbordet**, som öppnar samma dialog för det spelbordet.
+
+- **Stil**: **Mörk lyx** (svart filt, rosenträ, guldkant) och **Aggressiv
+  neon** (svart filt, magenta och cyan ljuslinje) först, sedan **Klassiskt
+  casino** (grön filt, mahogny, guldrand) och de tre tidigare **Mörk studio**,
+  **Varm lounge** och **Ljus studio**. **Fri** följer bara beskrivningen och
+  inspirationsbilden; bildens dominerande färg blir bordets färg.
+- **Bredd**: bocken **Anpassa bordets bredd efter dealerns räckvidd** (på som
+  standard) ritar bordet så att boxarna fyller 75 % av bordet. Bordsbredd %
+  följer med till scenmallen för både dator och mobil; för PAOW blir det
+  37,7 % på dator (tidigare 31,6 %) och 119 % på mobil (tidigare 100 %).
+  Boxarna ritas exakt ur dealerns filmade profil, så korten landar i dem.
+- **Använd**: välj ett förslag och **Använd**. Med bocken **Använd i miljön
+  *scenmall* och i spelbordet *spelbord*** (när dialogen öppnats från ett
+  spelbord) tillåts materialet i scenmallen, blir standard, får sin
+  bordsbredd och spelbordet publiceras, allt i en transaktion. Finns andra
+  opublicerade ändringar i spelbordet, saknas scenmallen eller materialet,
+  eller passar bordsgrafiken inte scenmallens dealers eller placering, skrivs
+  inget; materialet ligger då kvar i biblioteket. Utan spelbord sparas
+  scenmallen som utkast, och du publicerar själv. Utan bocken hamnar
+  förslaget bara i biblioteket.
+- **Tema**: **Skapa bord + bakgrund + miljöbild från samma tema** skapar bord
+  och bakgrund parallellt med samma beskrivning, stil och inspirationsbild;
+  välj ett av varje och **Använd** lägger in båda. Miljöbilden hoppas över
+  och dialogen säger det: scenexporten och rollen illustration finns inte
+  ännu.
+
 ### Papperskorg
 
 Bakgrunder och bordsgrafik i papperskorgen kan återställas; permanent radering
