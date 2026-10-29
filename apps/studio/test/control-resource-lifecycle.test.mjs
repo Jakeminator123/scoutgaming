@@ -57,8 +57,15 @@ function harness(props={}) {
   // The shared ConfirmDialog is a function component; expand it so its buttons are inspectable.
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:typeof node.type==='function'?all(node.type(node.props),predicate):[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
   const nodes=predicate=>all(render(),predicate);
-  const button=label=>nodes(node=>node.type==='button'&&node.props.children===label)[0];
-  return {input,requests,changed,busy,uncertain,render,nodes,button,html:()=>renderToStaticMarkup(render()),
+  // Controls are found by their action, never by their words.
+  const button=action=>nodes(node=>node.type==='button'&&node.props['data-action']===action)[0];
+  const dialog=()=>nodes(node=>node.type==='dialog'&&Boolean(node.props.children))[0];
+  /** The confirm control: the compact panel's own, or the ConfirmDialog action that is not its cancel button. */
+  const confirm=()=>button('confirm')??(dialog()&&all(dialog(),node=>node.type==='button'&&!('data-dialog-cancel' in node.props))[0]);
+  const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
+  const role=name=>nodes(node=>node.props?.role===name).length;
+  return {input,requests,changed,busy,uncertain,render,nodes,button,dialog,confirm,role,text,html:()=>renderToStaticMarkup(render()),
+    body:index=>JSON.parse(requests[index].options.body),
     async reply(index,value,status=200){requests[index].resolve(Response.json(value,{status}));await new Promise(resolve=>setImmediate(resolve));},
     async ready(value=snapshot()){render();await this.reply(0,value);render();},
     unmount(){for(const effect of effects)effect?.cleanup?.();}};
@@ -82,15 +89,15 @@ test('shared lifecycle navigation defaults remain compatible while Admin can kee
   assert.match(legacy.html(),/href="\/admin\/scenes\?operator=north&amp;composition=standard"/);
   const admin=harness({navigation:{compositionHref:(operator,room)=>'/admin/clips?'+new URLSearchParams({operator:operator.id,table:room.id,composition:room.presentationLaneId}),rehearsalLabel:'Provspela & följ (äldre vy)'}});
   await admin.ready();const links=admin.nodes(node=>node.type==='a');
-  assert.equal(links.find(node=>node.props.children==='Redigera sammansättning').props.href,'/admin/clips?operator=north&table=room-one&composition=standard');
+  assert.ok(links.some(node=>node.props.href==='/admin/clips?operator=north&table=room-one&composition=standard'),'the composition link uses the supplied navigation');
   assert.match(links.find(node=>node.props.children==='Provspela & följ (äldre vy)').props.href,/\/admin\/rooms\?operator=north&table=room-one&composition=standard$/);
   assert.equal(admin.requests.length,1,'navigation does not mutate or reload the shared register');
 });
 
 test('archiving confirms a concrete room and sends exactly its tenant and observed revisions',async()=>{
-  const h=harness();await h.ready();h.button('Flytta till papperskorgen').props.onClick();
-  assert.equal(h.requests.length,1);assert.match(h.html(),/Flytta till papperskorgen: Nordiska rummet/);
-  const confirm=h.button('Bekräfta');confirm.props.onClick();confirm.props.onClick();assert.equal(h.requests.length,2);
+  const h=harness();await h.ready();h.button('room-archive').props.onClick();
+  assert.equal(h.requests.length,1);assert.match(h.text(h.dialog()),/Nordiska rummet/,'the dialog names the concrete room');
+  const confirm=h.confirm();confirm.props.onClick();confirm.props.onClick();assert.equal(h.requests.length,2);
   assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,archived:true});
   assert.equal(h.busy.at(-1),true);
   await h.reply(1,{ok:true,room:room({state:'archived',archivedAt:'2026-10-12T00:00:00Z'}),administrationRevision:'admin-2',packageRevision:5});
@@ -101,36 +108,37 @@ test('archiving confirms a concrete room and sends exactly its tenant and observ
 });
 
 test('a selected confirmation cannot operate on another company after a context switch',async()=>{
-  const h=harness({kind:'operator'});await h.ready();h.button('Flytta bolag till papperskorgen').props.onClick();
-  h.input.operatorId='south';h.render();assert.equal(h.button('Bekräfta'),undefined);assert.equal(h.requests.length,1);
+  const h=harness({kind:'operator'});await h.ready();h.button('operator-lifecycle').props.onClick();assert.ok(h.confirm());
+  h.input.operatorId='south';h.render();assert.equal(h.confirm(),undefined);assert.equal(h.requests.length,1);
 });
 
 test('old suspended companies are distinct from archived companies that can be restored',async()=>{
   const h=harness({kind:'operator'});await h.ready(snapshot({operators:[company('north',{status:'suspended'})]}));
-  assert.match(h.html(),/avstängt sedan tidigare/);assert.equal(h.button('Återställ bolag'),undefined);
+  assert.equal(h.button('operator-lifecycle'),undefined,'an old suspension cannot be restored through the archive');
   h.input.refreshKey=1;h.render();await h.reply(1,snapshot({operators:[company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z'})]}));
-  assert.ok(h.button('Återställ bolag'));h.button('Återställ bolag').props.onClick();assert.match(h.html(),/Spelrummen stannar i papperskorgen/);
+  h.button('operator-lifecycle').props.onClick();h.confirm().props.onClick();
+  assert.deepEqual(h.body(2),{operatorId:'north',archived:false,expectedPackageRevision:4,expectedAdministrationRevision:'admin-1'},'the archived company is restored, never archived again');
 });
 
 test('foreign receipts block retries until a fresh read and never update another tenant',async()=>{
-  const h=harness();await h.ready();h.button('Flytta till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();
+  const h=harness();await h.ready();h.button('room-archive').props.onClick();h.confirm().props.onClick();
   await h.reply(1,{ok:true,room:room({operatorId:'south'}),administrationRevision:'admin-2',packageRevision:5});
   assert.equal(h.requests.length,2);assert.equal(h.changed.length,1);assert.equal(h.uncertain.length,1);
-  assert.equal(h.button('Flytta till papperskorgen').props.disabled,true);assert.equal(h.button('Bekräfta'),undefined);
-  h.button('Uppdatera').props.onClick();h.render();await h.reply(2,snapshot());assert.equal(h.button('Flytta till papperskorgen').props.disabled,false);
+  assert.equal(h.button('room-archive').props.disabled,true);assert.equal(h.confirm(),undefined);
+  h.button('refresh').props.onClick();h.render();await h.reply(2,snapshot());assert.equal(h.button('room-archive').props.disabled,false);
 });
 
 test('failed readback after a saved mutation blocks another write and retains a visible recovery action',async()=>{
-  const h=harness();await h.ready();h.button('Pausa rum').props.onClick();h.button('Bekräfta').props.onClick();
+  const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
   await h.reply(1,{ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:4});
-  await h.reply(2,{},503);assert.equal(h.uncertain.length,1);assert.match(h.html(),/Uppdatera vyn/);
-  assert.equal(h.button('Pausa rum').props.disabled,true);assert.equal(h.button('Uppdatera').props.disabled,false);
+  await h.reply(2,{},503);assert.equal(h.uncertain.length,1);assert.equal(h.role('alert'),1);
+  assert.equal(h.button('room-state').props.disabled,true);assert.equal(h.button('refresh').props.disabled,false);
 });
 
 test('an external write lock and missing package both disable mutations, and unmounted reads are ignored',async()=>{
   const h=harness({disabled:true});await h.ready(snapshot({operators:[company('north',{packageRevision:null,lanes:[]})],rooms:[room({packageRevision:null,published:false,canArchive:false})]}));
-  assert.equal(h.button('Flytta till papperskorgen').props.disabled,true);assert.equal(h.button('Pausa rum').props.disabled,true);
-  h.button('Flytta till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();assert.equal(h.requests.length,1);
+  assert.equal(h.button('room-archive').props.disabled,true);assert.equal(h.button('room-state').props.disabled,true);
+  h.button('room-archive').props.onClick();h.confirm()?.props.onClick();assert.equal(h.requests.length,1);
   const late=harness();late.render();late.unmount();await late.reply(0,snapshot());assert.equal(late.changed.length,0);
 });
 
@@ -150,38 +158,45 @@ test('room-state readback must confirm the administration revision, exact target
     ['different package',value=>({...value,operators:[company('north',{packageRevision:5})]})],
   ];
   for(const [name,change] of changes){
-    const h=harness();await h.ready();h.button('Pausa rum').props.onClick();h.button('Bekräfta').props.onClick();
+    const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
     await h.reply(1,pausedReceipt());assert.equal(h.requests.length,3,name);
     await h.reply(2,change(pausedSnapshot()));
     assert.equal(h.changed.length,1,name+' never applies unconfirmed state');assert.equal(h.uncertain.length,1,name);
-    assert.equal(h.button('Pausa rum').props.disabled,true,name);assert.equal(h.button('Uppdatera').props.disabled,false,name);
-    assert.doesNotMatch(h.html(),/Spelrummet är pausat./,name);assert.match(h.html(),/kunde inte bekräftas/,name);
+    assert.equal(h.button('room-state').props.disabled,true,name);assert.equal(h.button('refresh').props.disabled,false,name);
+    assert.equal(h.role('status'),0,name+' reports no success');assert.equal(h.role('alert'),1,name);
   }
 });
 
 test('room-state receipt itself must contain the requested state and correct revisions before readback',async()=>{
   for(const patch of [{room:room()},{room:room({state:'pending',id:'other'})},{administrationRevision:'admin-1'},{administrationRevision:''},{packageRevision:5},{packageRevision:null},{ok:false}]){
-    const h=harness();await h.ready();h.button('Pausa rum').props.onClick();h.button('Bekräfta').props.onClick();
+    const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
     await h.reply(1,{...pausedReceipt(),...patch});
-    assert.equal(h.requests.length,2);assert.equal(h.changed.length,1);assert.equal(h.uncertain.length,1);assert.equal(h.button('Pausa rum').props.disabled,true);
+    assert.equal(h.requests.length,2);assert.equal(h.changed.length,1);assert.equal(h.uncertain.length,1);assert.equal(h.button('room-state').props.disabled,true);
   }
 });
 
 test('a confirmed room pause updates the visible status and releases writes only after matching readback',async()=>{
-  const h=harness();await h.ready();h.button('Pausa rum').props.onClick();h.button('Bekräfta').props.onClick();
-  await h.reply(1,pausedReceipt());assert.equal(h.button('Pausa rum').props.disabled,true);
+  const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
+  assert.equal(h.body(1).state,'pending');
+  await h.reply(1,pausedReceipt());assert.equal(h.button('room-state').props.disabled,true);
   await h.reply(2,pausedSnapshot());
-  assert.equal(h.changed.length,2);assert.equal(h.uncertain.length,0);assert.match(h.html(),/Spelrummet är pausat/);
-  assert.doesNotMatch(h.html(),/Öppet för spelare/);assert.equal(h.button('Öppna rum').props.disabled,false);
+  assert.equal(h.changed.length,2);assert.equal(h.uncertain.length,0);assert.equal(h.role('status'),1);
+  assert.equal(h.button('room-state').props.disabled,false);
+  h.button('room-state').props.onClick();h.confirm().props.onClick();
+  assert.deepEqual(h.body(3),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-2',expectedPackageRevision:4,state:'live'},'the paused room is now offered for opening');
 });
 
 test('operator archive readback must confirm both suspended status and the recorded archive',async()=>{
   const archived=company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z',packageRevision:5});
   for(const returned of [archived,{...archived,status:'active'},{...archived,archivedAt:null},{...archived,archivedAt:'2026-10-12T01:00:00Z'}]){
-    const h=harness({kind:'operator'});await h.ready();h.button('Flytta bolag till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();
+    const h=harness({kind:'operator'});await h.ready();h.button('operator-lifecycle').props.onClick();h.confirm().props.onClick();
+    assert.equal(h.body(1).archived,true);
     await h.reply(1,{ok:true,operator:archived,packageRevision:5,administrationRevision:'admin-1'});await h.reply(2,snapshot({operators:[returned]}));
-    if(returned===archived){assert.equal(h.uncertain.length,0);assert.equal(h.button('Återställ bolag').props.disabled,false);assert.match(h.html(),/North är arkiverat/);}
-    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('Flytta bolag till papperskorgen').props.disabled,true);assert.doesNotMatch(h.html(),/North är arkiverat/);}
+    if(returned===archived){
+      assert.equal(h.uncertain.length,0);assert.equal(h.role('status'),1);assert.equal(h.button('operator-lifecycle').props.disabled,false);
+      h.button('operator-lifecycle').props.onClick();h.confirm().props.onClick();assert.equal(h.body(3).archived,false,'the archived company is now offered for restore');
+    }
+    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('operator-lifecycle').props.disabled,true);assert.equal(h.role('status'),0);}
   }
 });
 
@@ -191,31 +206,31 @@ test('restoring a room requires readback of the same room as paused and unarchiv
   for(const returnedState of ['pending','live']){
     const h=harness();await h.ready(snapshot({rooms:[archived]}));
     const archive=h.nodes(node=>node.type==='button'&&node.props['aria-pressed']===false)[0];archive.props.onClick();
-    h.button('Återställ rum').props.onClick();h.button('Bekräfta').props.onClick();
+    h.button('room-restore').props.onClick();h.confirm().props.onClick();assert.equal(h.body(1).archived,false);
     await h.reply(1,{ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:5});
     await h.reply(2,snapshot({administrationRevision:'admin-2',operators:[company('north',{packageRevision:5})],rooms:[room({state:returnedState,packageRevision:5})]}));
-    if(returnedState==='pending'){assert.equal(h.uncertain.length,0);assert.match(h.html(),/Rummet är återställt och pausat/);}
-    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('Återställ rum').props.disabled,true);assert.doesNotMatch(h.html(),/Rummet är återställt och pausat/);}
+    if(returnedState==='pending'){assert.equal(h.uncertain.length,0);assert.equal(h.role('status'),1);}
+    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('room-restore').props.disabled,true);assert.equal(h.role('status'),0);}
   }
 });
 
 test('a game card removal confirms the scoped room, keeps CAS and ignores foreign rooms',async()=>{
   const h=harness({compact:true,onRequestHandled:()=>{h.input.request=undefined;}});await h.ready();
   h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
-  assert.ok(h.button('Ta bort spel'));assert.equal(h.requests.length,1);
-  h.button('Avbryt').props.onClick();assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
+  assert.ok(h.confirm());assert.equal(h.requests.length,1);
+  h.button('cancel').props.onClick();assert.equal(h.confirm(),undefined);assert.equal(h.requests.length,1);
   h.input.operatorId='south';h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
-  assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
+  assert.equal(h.confirm(),undefined);assert.equal(h.requests.length,1);
   h.input.operatorId='north';h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
-  h.button('Ta bort spel').props.onClick();
+  h.confirm().props.onClick();
   assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,archived:true});
 });
 
 test('restore view only offers archived rooms and compact opening keeps the scoped state contract',async()=>{
   const h=harness({archiveOnly:true});await h.ready(snapshot({rooms:[room(),room({id:'archived',name:'Borttaget',state:'archived',archivedAt:'2026-10-12',canArchive:false,canRestore:true})]}));
-  assert.equal(h.button('Flytta till papperskorgen'),undefined);assert.ok(h.button('Återställ rum'));
+  assert.equal(h.button('room-archive'),undefined);assert.equal(h.nodes(node=>node.props?.['data-action']==='room-restore').length,1);
   const open=harness({compact:true,request:{kind:'state',roomId:'room-one'},onRequestHandled:()=>{open.input.request=undefined;}});
-  await open.ready(snapshot({rooms:[room({state:'pending'})]}));open.render();open.button('Öppna spel').props.onClick();
+  await open.ready(snapshot({rooms:[room({state:'pending'})]}));open.render();open.confirm().props.onClick();
   assert.deepEqual(JSON.parse(open.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,state:'live'});
 });
 
@@ -223,13 +238,13 @@ test('a pending card action is replaced as one room and action, never mixed with
   const h=harness({compact:true,onRequestHandled:()=>{h.input.request=undefined;}});
   await h.ready(snapshot({rooms:[room(),room({id:'room-two',name:'Andra spelet',state:'pending'})]}));
   h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
-  assert.ok(h.button('Ta bort spel'));assert.equal(h.requests.length,1);
+  const legend=()=>h.text(h.nodes(node=>node.type==='legend')[0]);
+  assert.ok(h.confirm());assert.match(legend(),/Nordiska rummet/);assert.equal(h.requests.length,1);
   h.input.request={kind:'state',roomId:'missing'};h.render();h.render();
-  assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
+  assert.equal(h.confirm(),undefined);assert.equal(h.role('alert'),1);assert.equal(h.requests.length,1);
   h.input.request={kind:'state',roomId:'room-two'};h.render();h.render();
-  assert.equal(h.button('Ta bort spel'),undefined);
-  assert.match(h.html(),/Öppna Andra spelet hos North/);
-  h.button('Öppna spel').props.onClick();
+  assert.match(legend(),/Andra spelet/);assert.match(legend(),/North/);assert.doesNotMatch(legend(),/Nordiska rummet/,'the card action is never mixed with another card');
+  h.confirm().props.onClick();
   assert.equal(h.requests[1].path.endsWith('/room-state'),true);
   assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-two',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,state:'live'});
 });

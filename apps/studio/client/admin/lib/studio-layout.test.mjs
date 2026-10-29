@@ -59,12 +59,12 @@ test('visual groups preserve the exact available server slots without requiring 
   assert.deepEqual(groups.find(row=>row.id==='speech').slots.map(row=>row.id).sort(),slots.filter(row=>row.sourceType==='speak').map(row=>row.id).sort());
   assert.deepEqual(groups.find(row=>row.id==='players').slots.map(row=>row.id).sort(),slots.filter(row=>row.eventId.startsWith('deal.player.')).map(row=>row.id).sort());
   assert.deepEqual(groups.flatMap(row=>row.slots).map(row=>row.id).sort(),slots.map(row=>row.id).sort());
-  for(const slot of groups.find(row=>row.id==='players').slots)assert.equal(slotCaption(slot),`Plats ${Number(slot.situation.slice(3))+1}`);
+  for(const slot of groups.find(row=>row.id==='players').slots)assert.match(slotCaption(slot),new RegExp(`\\b${Number(slot.situation.slice(3))+1}$`),'player places are numbered from one');
+  for(const group of groups)assert.equal(new Set(group.slots.map(slotCaption)).size,group.slots.length,group.id+' captions tell its slots apart');
   const dealer=groups.find(row=>row.id==='dealer');
   assert.ok(dealer.slots.some(row=>row.eventId==='reveal.dealer'));
   assert.ok(dealer.slots.every(row=>!/^box/.test(row.situation)));
-  assert.equal(slotCaption(dealer.slots.find(row=>row.eventId==='reveal.dealer')),'Vänd dolt kort');
-  assert.match(slotExplanation(dealer.slots.find(row=>row.situation==='dealer-up')),/tredje och senare/);
+  assert.equal(new Set(dealer.slots.map(slotExplanation)).size,dealer.slots.length,'each dealer slot has its own explanation');
 });
 
 test('visual groups accept a partial clip bank and new speech slots without padding or dropping them',()=>{
@@ -201,48 +201,48 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   const data={group:groupSlots([slot])[0],slot,clips,selectedId:'selected',boundId:'bound',boundIds:['bound'],variants:[],variantId:'',busy:false,
     onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
   const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipDetails,{data:{...data,...patch}}));
-  const unbound=render({});assert.match(unbound,/Situation/);assert.match(unbound,/Valt klipp/);assert.match(unbound,/Körregel · projektutkast/);
-  assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/Valt för prov · ej kopplat/);assert.match(unbound,/Koppla till utkast/);assert.doesNotMatch(unbound,/Kopplat i sparat utkast/);
-  assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
+  // The card is read through its data hooks: status, actions and the recorded speech, never its words.
+  const status=html=>html.match(/class="studio-card-status[^"]*" data-status="([^"]+)"/)?.[1];
+  const action=(html,name)=>new RegExp(`data-action="${name}"`).test(html);
+  const unbound=render({});assert.equal(status(unbound),'selected');assert.ok(action(unbound,'bind'));
+  assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
   const usage={configured:true,when:'Teknisk källa: event.type=idle',rules:['Automatiskt var 27 s.']};
-  const saved=render({usage});assert.match(saved,/Kopplat i sparat utkast/);assert.match(saved,/Automatiskt var 27 s/);assert.doesNotMatch(saved,/Koppla till utkast/);
-  assert.match(saved,/Teknisk källa: event.type=idle/);assert.doesNotMatch(saved.replace(/<details[\s\S]*?<\/details>/g,''),/event.type/);
-  assert.match(saved,/Dealern väntar mellan spelhändelserna/);
-  assert.match(saved,/Redigera körregel/);assert.doesNotMatch(saved,/Publicerad/);
+  const saved=render({usage});assert.equal(status(saved),'bound');assert.match(saved,/Automatiskt var 27 s/);assert.equal(action(saved,'bind'),false);
+  assert.match(saved,/event.type=idle/);assert.doesNotMatch(saved.replace(/<details[\s\S]*?<\/details>/g,''),/event.type/,'the technical source stays in the details');
+  assert.ok(saved.includes(slotExplanation(slot)),'the situation is explained by the shared slot text');
+  assert.ok(action(saved,'edit-rule'));
   const compact=renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,onOpen(){}}}));
-  assert.match(compact,/Förhandsvisa och redigera/);assert.match(compact,/En annan exakt tagning/);
+  assert.ok(action(compact,'open'));assert.match(compact,/En annan exakt tagning/);
   const variants=[{id:'pose-i',label:'Pose I'},{id:'pose-iv',label:'Pose IV'},{id:'take-2',label:'Tagning 2'}];
   const detail=render({variants,variantId:'pose-iv'});
   for(const variant of variants)assert.ok(detail.includes(variant.id)&&detail.includes(variant.label));
-  assert.match(detail,/Klippförhandsvisning/);assert.match(detail,/inte ett prov i spelmotorn/);assert.match(detail,/value="pose-iv" selected=""/);
+  assert.match(detail,/data-preview-caption/);assert.match(detail,/value="pose-iv" selected=""/);
   const explicitSlot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.id==='deal.player.left/box0');
   const explicit={slot:explicitSlot,group:groupSlots([explicitSlot])[0],variants,variantId:'pose-iv',boundIds:['bound','selected'],usage};
   const otherVariant=render(explicit);
-  assert.match(otherVariant,/Valt för prov · ej kopplat till vald variant/);
-  assert.match(otherVariant,/Koppla till utkast/);assert.doesNotMatch(otherVariant,/Kopplat i sparat utkast/);
+  assert.equal(status(otherVariant),'selected-other-variant');assert.ok(action(otherVariant,'bind'));
   const exactVariant=render({...explicit,selectedId:'bound'});
-  assert.match(exactVariant,/Kopplat i sparat utkast/);assert.doesNotMatch(exactVariant,/Koppla till utkast/);
+  assert.equal(status(exactVariant),'bound');assert.equal(action(exactVariant,'bind'),false);
   for(const direction of ['to-shoe','from-shoe']){
     const shoe=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.id===`transition.shoe/${direction}`);
     const shoeData={slot:shoe,group:groupSlots([shoe])[0]};
-    assert.match(render(shoeData),/Lägg till som variant/);
-    assert.doesNotMatch(render({...shoeData,boundId:''}),/Lägg till som variant/);
-    assert.doesNotMatch(render({...shoeData,boundIds:['bound','selected']}),/Lägg till som variant/);
+    assert.ok(action(render(shoeData),'bind-variant'));
+    assert.equal(action(render({...shoeData,boundId:''}),'bind-variant'),false);
+    assert.equal(action(render({...shoeData,boundIds:['bound','selected']}),'bind-variant'),false);
   }
   const renderCompact=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...explicit,...patch,onOpen(){}}}));
-  assert.match(renderCompact({}),/Valt för prov · ej kopplat till vald variant/);
-  assert.doesNotMatch(renderCompact({}),/Kopplat i sparat utkast/);
-  assert.match(renderCompact({selectedId:'bound'}),/Kopplat i sparat utkast/);
+  assert.equal(status(renderCompact({})),'selected-other-variant');
+  assert.equal(status(renderCompact({selectedId:'bound'})),'bound');
   const dealClip=poses=>({...clips[1],classification:{dealerId:'astrid',eventId:'deal.player.left',situation:'box0',kind:'action',...poses}});
-  assert.match(render({...explicit,clips:[dealClip({startPose:'VILA',endPose:'REDO'})]}),/Poskedja <strong>VILA → REDO<\/strong>/);
-  assert.match(render({...explicit,clips:[dealClip({})]}),/Poskedja ej angiven/);
-  assert.doesNotMatch(unbound,/Poskedja/);
-  const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
+  assert.match(render({...explicit,clips:[dealClip({startPose:'VILA',endPose:'REDO'})]}),/data-pose-chain="VILA → REDO"/);
+  assert.match(render({...explicit,clips:[dealClip({})]}),/data-pose-chain=""/,'a missing pose chain is shown as missing');
+  assert.doesNotMatch(unbound,/data-pose-chain/);
+  const dirty=render({usage,usageChanged:true});assert.equal(status(dirty),'changed');
   const recorded={...clips[1],classification:{recordedSpeech:{exactText:'Tack för spelet.',language:'sv'}}};
   const speech=render({clips:[recorded],library:clipLibraryGroups([recorded],['selected'])});
-  assert.match(speech,/Inspelat tal · originalets ljud/);assert.match(speech,/Tack för spelet\./);assert.match(speech,/Språk: sv/);
-  assert.doesNotMatch(unbound,/Inspelat tal · originalets ljud/);
-  assert.match(speech,/Standardklipp/);assert.match(speech,/aria-pressed="true"/);
+  assert.match(speech,/data-recorded-speech="sv"/);assert.match(speech,/Tack för spelet\./);
+  assert.doesNotMatch(unbound,/data-recorded-speech/);
+  assert.match(speech,/aria-pressed="true"/);
 });
 
 
@@ -261,14 +261,13 @@ test('registered filmed clips offer an explicit native draft action and keep it 
  const nodes=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(nodes):[node,...nodes(node.props?.children)];
  const text=node=>node==null?'':Array.isArray(node)?node.map(text).join(''):typeof node==='object'?text(node.props?.children):String(node);
  const render=patch=>module.exports.ConnectedClipDetails({data:{...data,...patch}});
- const action=tree=>nodes(tree).find(row=>row.type==='button'&&text(row)==='Koppla för delat bord');
+ const action=tree=>nodes(tree).find(row=>row.type==='button'&&row.props['data-action']==='bind-native');
  const tree=render({}),button=action(tree);assert.ok(button);assert.equal(button.props.type,'button');assert.equal(button.props.disabled,false);
- assert.match(text(tree),/valda skoklipp/);assert.match(text(tree),/Spara och publicera separat/);
  button.props.onClick();assert.equal(native,1);assert.equal(legacy,0);
  const locked=action(render({busy:true}));assert.equal(locked.props.disabled,true);locked.props.onClick();assert.equal(native,1);
  assert.equal(action(render({clips:[{...clip,sha256:'a'.repeat(64)}]})),undefined);
  assert.equal(action(render({clips:[{...clip,classification:{dealerId:'astrid'}}]})),undefined);
  assert.equal(action(render({onBindNative:undefined})),undefined);
- const full=nodes(tree).find(row=>row.type==='button'&&text(row).startsWith('Koppla hela givbanken'));
+ const full=nodes(tree).find(row=>row.type==='button'&&row.props['data-action']==='bind');
  full.props.onClick();assert.equal(legacy,1);assert.equal(native,1);
 });

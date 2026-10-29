@@ -670,13 +670,13 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow={ownHeading ? (group === 'finance' ? 'EKONOMI' : area.toUpperCase()) : null} title={ownHeading ? pageTitle : null} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
-    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" data-action="reload" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
-    {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
+    {oneTime && actor && <section className={styles.section} data-one-time="" aria-label="Engångsresultat från partneråtgärd">
       {oneTime.kind === 'credentials' && <><h3>Engångsuppgifter</h3><p>Kopiera nu. Uppgifterna försvinner när du döljer dem, laddar om eller lämnar vyn.</p>
         {oneTime.key && <label>API-nyckel<input readOnly value={oneTime.key} autoComplete="off" spellCheck={false} /></label>}
         <label>HMAC-hemlighet<input readOnly value={oneTime.secret} autoComplete="off" spellCheck={false} /></label></>}
@@ -684,8 +684,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       {oneTime.kind === 'credit' && <><h3>Demo-saldo bekräftat</h3><p>{oneTime.playerId}: {oneTime.balance} {oneTime.currency}</p></>}
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
-    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" data-action="discard-drafts" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
+    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} data-group={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
       {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
         key={actor.username+':'+actor.role}
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}

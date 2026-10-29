@@ -68,7 +68,15 @@ function select(h, id = 'croupier-director') {
   const row = nodes(h.render(), node => node.type === 'article' && node.props['aria-labelledby'] === `agent-${id}`)[0];
   return nodes(row, node => node.type === 'select')[0];
 }
-function button(h, label) { return nodes(h.render(), node => node.type === 'button' && (node.props['aria-label'] === label || [node.props.children].flat().join('') === label))[0]; }
+// Controls are found by their action (and agent row), never by their words.
+function agentRow(tree, id) { return nodes(tree, node => node.type === 'article' && node.props['aria-labelledby'] === `agent-${id}`)[0]; }
+function button(h, action, id) { const scope = id ? agentRow(h.render(), id) : h.render(); return nodes(scope, node => node.type === 'button' && node.props['data-action'] === action)[0]; }
+const save = (h, id = 'croupier-director') => button(h, 'save', id);
+const textOf = node => typeof node === 'string' || typeof node === 'number' ? String(node) : Array.isArray(node) ? node.map(textOf).join('') : node?.props ? textOf(node.props.children) : '';
+const byRole = (h, role) => nodes(h.render(), node => node.props?.role === role).map(textOf);
+/** A confirmed save names the agent and its new model in a status; nothing else does. */
+const confirmed = (h, agent = 'croupier-director', primary = 'lab-provider/new') => byRole(h, 'status').some(text => text.includes(agent) && text.includes(primary));
+const runtimeState = h => nodes(h.render(), node => node.props?.['data-runtime-state'] !== undefined)[0]?.props['data-runtime-state'];
 function change(h, value = 'lab-provider/new', id) { select(h, id).props.onChange({ target: { value } }); view(h); }
 async function started(fetchImpl, globals) { const h = harness(fetchImpl, globals); view(h); await flush(); view(h); return h; }
 
@@ -78,9 +86,11 @@ test('load uses same-origin no-store transport; read-only render never writes an
   assert.equal(calls.length, 1); assert.equal(calls[0].url, labUrls.labUrl('/api/openclaw/admin'));
   assert.equal(calls[0].init.method, 'GET'); assert.equal(calls[0].init.credentials, 'same-origin');
   assert.equal(calls[0].init.redirect, 'error'); assert.equal(calls[0].init.cache, 'no-store');
-  assert.equal(select(h).props.value, 'lab-provider/old'); assert.match(html(h), /nuvarande, saknas i modellistan/);
-  assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-  assert.doesNotMatch(html(h), /bekräftad|Gateway använder/); h.unmount();
+  assert.equal(select(h).props.value, 'lab-provider/old');
+  const current = nodes(select(h), node => node.type === 'option' && node.props.value === 'lab-provider/old');
+  assert.equal(current.length, 1); assert.equal(current[0].props.disabled, true, 'the current model stays visible but cannot be chosen again');
+  assert.equal(save(h).props.disabled, true);
+  assert.equal(confirmed(h, 'croupier-director', 'lab-provider/old'), false); assert.notEqual(runtimeState(h), 'true'); h.unmount();
 });
 
 test('save preserves ordered fallbacks, locks overlapping requests and confirms only after a real GET', async () => {
@@ -92,20 +102,19 @@ test('save preserves ordered fallbacks, locks overlapping requests and confirms 
   });
   change(h); change(h, 'lab-provider/third', 'croupier-chat');
   assert.equal(h.listeners.has('beforeunload'), true);
-  const save = button(h, 'Spara modell för croupier-director'); save.props.onClick(); save.props.onClick();
+  const first = save(h); first.props.onClick(); first.props.onClick();
   assert.equal(calls.length, 2); assert.equal(select(h).props.disabled, true);
-  assert.equal(button(h, 'Ångra alla').props.disabled, true);
+  assert.equal(button(h, 'undo-all').props.disabled, true);
   const body = JSON.parse(calls[1].init.body);
   assert.deepEqual(body, { version: 1, baseHash: 'revision-a', agentId: 'croupier-director', model: { primary: 'lab-provider/new', fallbacks: ['lab-provider/backup', 'other/backup-two'] } });
-  assert.doesNotMatch(html(h), /sparad och bekräftad/);
+  assert.equal(confirmed(h), false);
   finish(); await flush(); view(h);
-  assert.equal(calls[2].init.method, 'GET'); assert.match(html(h), /sparad och bekräftad i OpenClaws inställningar/);
-  assert.match(html(h), /Gateway-omstart är planerad/);
-  assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
+  assert.equal(calls[2].init.method, 'GET'); assert.equal(confirmed(h), true, 'success is shown only after the real GET');
+  assert.equal(save(h).props.disabled, true);
   assert.equal(select(h, 'croupier-chat').props.value, 'lab-provider/third');
-  assert.equal(button(h, 'Spara modell för croupier-chat').props.disabled, false);
+  assert.equal(save(h, 'croupier-chat').props.disabled, false);
   assert.equal(calls.filter(call=>call.init.method==='PATCH').length,1);
-  assert.match(html(h),/Osparade modellval: 1.*Spara varje agent på dess rad/);h.unmount();
+  assert.ok(button(h,'undo-all'),'the other draft is still unsaved');assert.equal(button(h,'reset','croupier-director'),undefined);assert.ok(button(h,'reset','croupier-chat'));h.unmount();
 });
 
 test('multiple drafts offer only per-agent saves and undo all without writing', async () => {
@@ -113,15 +122,14 @@ test('multiple drafts offer only per-agent saves and undo all without writing', 
   const h=await started(async (_url, init)=>{calls.push(init.method);return reply(before());});
   try {
     change(h);change(h,'lab-provider/third','croupier-chat');
-    assert.match(html(h),/Osparade modellval: 2.*Spara varje agent på dess rad/);
-    assert.doesNotMatch(html(h),/Spara alla/);
-    const saves=nodes(h.render(),node=>node.type==='button'&&String(node.props['aria-label']??node.props.children).startsWith('Spara'));
-    assert.deepEqual(saves.map(node=>node.props['aria-label']),['Spara modell för croupier-director','Spara modell för croupier-chat']);
-    button(h,'Ångra alla').props.onClick();view(h);
+    const saves=nodes(h.render(),node=>node.type==='button'&&node.props['data-action']==='save');
+    assert.deepEqual(saves.map(node=>node.props['aria-label']),[save(h).props['aria-label'],save(h,'croupier-chat').props['aria-label']],'one save per agent row and no save-all');
+    assert.equal(nodes(h.render(),node=>node.type==='button'&&node.props['data-action']==='reset').length,2);
+    button(h,'undo-all').props.onClick();view(h);
     assert.equal(select(h).props.value,'lab-provider/old');
     assert.equal(select(h,'croupier-chat').props.value,'lab-provider/old');
     assert.equal(h.listeners.has('beforeunload'),false);
-    assert.equal(button(h,'Ångra alla'),undefined);
+    assert.equal(button(h,'undo-all'),undefined);
     assert.deepEqual(calls,['GET']);
   } finally { h.unmount(); }
 });
@@ -134,12 +142,12 @@ test('revision conflict preserves draft until explicit reload; retry uses fresh 
     if (init.method === 'PATCH') return reply(receipt(JSON.parse(init.body)));
     return reply(calls.length === 1 ? before() : calls.length === 3 ? current : { ...updated(), agents: [{ ...updated().agents[0], model: { primary: 'lab-provider/new', fallbacks: [] } }, before().agents[1]] });
   });
-  change(h); button(h, 'Spara modell för croupier-director').props.onClick(); await flush(); view(h);
-  assert.equal(calls.length, 2); assert.match(html(h), /ändrats av någon annan/);
-  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-  button(h, 'Hämta aktuella val').props.onClick(); await flush(); view(h);
-  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, false);
-  button(h, 'Spara modell för croupier-director').props.onClick(); await flush();
+  change(h); save(h).props.onClick(); await flush(); view(h);
+  assert.equal(calls.length, 2); assert.equal(byRole(h, 'alert').length, 1);
+  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, true);
+  button(h, 'reload').props.onClick(); await flush(); view(h);
+  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, false);
+  save(h).props.onClick(); await flush();
   assert.equal(JSON.parse(calls[3].init.body).baseHash, 'revision-other');
   assert.deepEqual(JSON.parse(calls[3].init.body).model.fallbacks, []); h.unmount();
 });
@@ -151,79 +159,87 @@ test('accepted save with failed readback stays unconfirmed and retains draft unt
     if (calls === 3) return reply({ error: 'openclaw_admin_unavailable', secret: 'DO-NOT-REFLECT' }, 503);
     return reply(calls === 1 ? before() : updated());
   });
-  change(h); button(h, 'Spara modell för croupier-director').props.onClick(); await flush(); view(h);
-  assert.match(html(h), /återläsningen misslyckades/); assert.doesNotMatch(html(h), /sparad och bekräftad|DO-NOT-REFLECT/);
-  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-  button(h, 'Hämta aktuella val').props.onClick(); await flush(); view(h);
-  assert.match(html(h), /sparad och bekräftad/); assert.equal(h.listeners.has('beforeunload'), false); h.unmount();
+  change(h); save(h).props.onClick(); await flush(); view(h);
+  assert.equal(byRole(h, 'alert').length, 1); assert.equal(confirmed(h), false); assert.doesNotMatch(html(h), /DO-NOT-REFLECT/);
+  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, true);
+  button(h, 'reload').props.onClick(); await flush(); view(h);
+  assert.equal(confirmed(h), true); assert.equal(h.listeners.has('beforeunload'), false); h.unmount();
 });
 
 test('readback mismatch never claims success and keeps the draft available for explicit reload', async () => {
   const h = await started(async (_url, init) => init.method === 'PATCH' ? reply(receipt(JSON.parse(init.body))) : reply(before()));
-  change(h); button(h, 'Spara modell för croupier-director').props.onClick(); await flush(); view(h);
-  assert.match(html(h), /kunde inte bekräftas i OpenClaw/); assert.doesNotMatch(html(h), /sparad och bekräftad/);
-  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-  button(h, 'Hämta aktuella val').props.onClick(); await flush(); view(h);
-  assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, false); h.unmount();
+  change(h); save(h).props.onClick(); await flush(); view(h);
+  assert.equal(byRole(h, 'alert').length, 1); assert.equal(confirmed(h), false);
+  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, true);
+  button(h, 'reload').props.onClick(); await flush(); view(h);
+  assert.equal(save(h).props.disabled, false); h.unmount();
 });
 
 test('reserve model cannot be selected as primary while fallback list is preserved; reset causes no write', async () => {
   let calls = 0; const h = await started(async () => { ++calls; return reply(before()); });
   const reserve = nodes(select(h), node => node.type === 'option' && node.props.value === 'lab-provider/backup')[0];
   assert.equal(reserve.props.disabled, true);
-  change(h, 'lab-provider/backup'); button(h, 'Spara modell för croupier-director').props.onClick(); await flush();
-  assert.equal(calls, 1); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-  change(h); button(h, 'Återställ modell för croupier-director').props.onClick(); view(h);
+  change(h, 'lab-provider/backup'); save(h).props.onClick(); await flush();
+  assert.equal(calls, 1); assert.equal(save(h).props.disabled, true);
+  change(h); button(h, 'reset', 'croupier-director').props.onClick(); view(h);
   assert.equal(select(h).props.value, 'lab-provider/old'); assert.equal(h.listeners.has('beforeunload'), false); assert.equal(calls, 1); h.unmount();
 });
 
 test('safe errors distinguish configuration, pairing, session and privilege without reflecting raw provider data', async () => {
-  for (const [status, code, expected] of [
-    [503, 'openclaw_admin_not_configured', /inte konfigurerad/],
-    [503, 'openclaw_admin_device_not_configured', /inte konfigurerad/],
-    [503, 'openclaw_admin_pairing_required', /behöver godkännas/],
-    [503, 'openclaw_admin_scope_required', /saknar behörighet/],
-    [503, 'openclaw_admin_version_mismatch', /versionen stöder inte/],
-    [401, 'studio_login_required', /session har löpt ut/], [403, 'studio_request_rejected', /konto saknar behörighet/],
+  const shown = new Map();
+  for (const [status, code, kind] of [
+    [503, 'openclaw_admin_not_configured', 'configuration'],
+    [503, 'openclaw_admin_device_not_configured', 'configuration'],
+    [503, 'openclaw_admin_pairing_required', 'pairing'],
+    [503, 'openclaw_admin_scope_required', 'scope'],
+    [503, 'openclaw_admin_version_mismatch', 'version'],
+    [401, 'studio_login_required', 'session'], [403, 'studio_request_rejected', 'privilege'],
+    [503, 'unknown_provider_code', 'generic'],
   ]) {
     const h = await started(async () => reply({ error: code, message: 'DO-NOT-REFLECT', token: 'SECRET-NOT-RENDERED' }, status));
-    assert.match(html(h), expected); assert.doesNotMatch(html(h), /DO-NOT-REFLECT|SECRET-NOT-RENDERED|Gateway använder|<select/); h.unmount();
+    const alerts = byRole(h, 'alert'); assert.equal(alerts.length, 1, code);
+    if (shown.has(kind)) assert.equal(alerts[0], shown.get(kind), code); else shown.set(kind, alerts[0]);
+    assert.doesNotMatch(html(h), /DO-NOT-REFLECT|SECRET-NOT-RENDERED|<select/); assert.equal(runtimeState(h), undefined); h.unmount();
   }
+  assert.equal(new Set(shown.values()).size, shown.size, 'each kind of failure has its own explanation');
 });
 
 test('save uncertainty and malformed receipt never display success or discard changes', async () => {
   for (const result of [reply({ error: 'openclaw_admin_save_uncertain', detail: 'DO-NOT-REFLECT' }, 503), reply({ saved: true }), reply({ saved: false })]) {
     const h = await started(async (_url, init) => init.method === 'PATCH' ? result : reply(before()));
-    change(h); button(h, 'Spara modell för croupier-director').props.onClick(); await flush(); view(h);
-    assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
-    assert.match(html(h), /role="alert"/); assert.doesNotMatch(html(h), /sparad och bekräftad|DO-NOT-REFLECT/); h.unmount();
+    change(h); save(h).props.onClick(); await flush(); view(h);
+    assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, true);
+    assert.match(html(h), /role="alert"/); assert.equal(confirmed(h), false); assert.doesNotMatch(html(h), /DO-NOT-REFLECT/); h.unmount();
   }
 });
 
 test('Gateway applied status is fact-bound; false and unknown never claim active runtime configuration', async () => {
-  for (const [applied, expected] of [[true, /Gateway använder/], [false, /ännu inte tagit dem i bruk/], [null, /Det går inte att bekräfta/]]) {
+  const shown = [];
+  for (const applied of [true, false, null]) {
     const initial = before(); initial.gateway.applied = applied;
-    const h = await started(async () => reply(initial)); assert.match(html(h), expected);
-    if (applied !== true) assert.doesNotMatch(html(h), /Gateway använder/); h.unmount();
+    const h = await started(async () => reply(initial)); assert.equal(runtimeState(h), String(applied));
+    shown.push(textOf(nodes(h.render(), node => node.props?.['data-runtime-state'] !== undefined)[0])); h.unmount();
   }
+  assert.equal(new Set(shown).size, 3, 'applied, not applied and unknown read differently');
 });
 
 test('invalid snapshot fails closed and a failed refresh blocks saving stale choices', async () => {
   for (const value of [{ version: 1 }, { ...before(), gateway: { connected: false } }, { ...before(), agents: [before().agents[0], before().agents[0]] }]) {
-    const h = await started(async () => reply(value)); assert.match(html(h), /kunde inte nås/); assert.doesNotMatch(html(h), /<select/); h.unmount();
+    const h = await started(async () => reply(value)); assert.equal(byRole(h, 'alert').length, 1); assert.doesNotMatch(html(h), /<select/); h.unmount();
   }
   let calls = 0; const h = await started(async () => ++calls === 1 ? reply(before()) : reply({ error: 'openclaw_admin_unavailable' }, 503));
-  change(h); button(h, 'Hämta aktuella val').props.onClick(); await flush(); view(h);
-  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true); h.unmount();
+  change(h); button(h, 'reload').props.onClick(); await flush(); view(h);
+  assert.equal(select(h).props.value, 'lab-provider/new'); assert.equal(save(h).props.disabled, true); assert.equal(runtimeState(h), 'stale'); h.unmount();
 });
 
 test('removed agent keeps its orphaned draft visible and navigation warning until explicitly discarded', async () => {
   let calls = 0; const latest = before(); latest.agents = latest.agents.slice(1);
   const h = await started(async () => reply(++calls === 1 ? before() : latest));
-  change(h); button(h, 'Hämta aktuella val').props.onClick(); await flush(); view(h);
-  assert.match(html(h), /croupier-director finns inte längre/); assert.match(html(h), /lab-provider\/new/);
+  change(h); button(h, 'reload').props.onClick(); await flush(); view(h);
+  const orphan = nodes(h.render(), node => node.props?.['data-orphan'] === 'croupier-director')[0];
+  assert.ok(orphan); assert.match(textOf(orphan), /lab-provider\/new/); assert.equal(agentRow(h.render(), 'croupier-director'), undefined);
   assert.equal(h.listeners.has('beforeunload'), true);
-  button(h, 'Ta bort utkast för croupier-director').props.onClick(); view(h);
+  nodes(orphan, node => node.props?.['data-action'] === 'discard')[0].props.onClick(); view(h);
   assert.equal(h.listeners.has('beforeunload'), false); h.unmount();
 });
 
@@ -235,19 +251,16 @@ test('unmount aborts pending reads and prevents a late response from changing st
 
 test('initial render uses existing Studio login, native advanced link and makes no connection claim or request', () => {
   const html = render();
-  assert.match(html, /Öppna OpenClaws egen dashboard/);
-  assert.match(html, /Studio-inloggning/);
-  assert.match(html, /Hämtar inställningar/);
-  assert.doesNotMatch(html, /<iframe|type="password"|type="hidden"|Gateway använder|bekräftad|Render-konsolen/);
+  assert.match(html, /data-action="open-dashboard"/);
+  assert.match(html, /role="status"/, 'the initial read is reported as in progress');
+  assert.doesNotMatch(html, /<iframe|type="password"|type="hidden"|data-runtime-state|<select/);
 });
 
-test('clip policy remains in Studio and advanced dashboard keeps browser-approval guidance', () => {
+test('clip policy remains in Studio and the advanced dashboard offers no Gateway controls', () => {
   const html = render();
-  assert.match(html, /dealerns klipp och regler/);
   assert.ok(html.includes(`href="${labUrls.labUrl('/admin/clips')}"`));
-  assert.match(html, /utan lösenord eller terminalkommando/);
-  assert.match(html, /egen webbläsarsession/);
-  assert.doesNotMatch(html, /Starta om|Stoppa Gateway/);
+  const actions = [...html.matchAll(/<button\b[^>]*>/g)].map(([tag]) => tag.match(/data-action="([^"]+)"/)?.[1]);
+  assert.deepEqual(actions.sort(), ['open-dashboard', 'reload'], 'no restart, stop or other Gateway control');
 });
 
 test('embedded settings share the Admin landmark', () => {
@@ -261,19 +274,18 @@ test('embedded settings share the Admin landmark', () => {
 test('invalid explicit dashboard is not replaced with the default or reflected', () => {
   const html = render({ dashboardUrl: 'https://user:secret@bad.invalid/?token=secret' });
   assert.match(html, /role="alert"/);
-  assert.doesNotMatch(html, /Öppna OpenClaws egen dashboard|bad.invalid|token=secret|user:secret/);
+  assert.doesNotMatch(html, /data-action="open-dashboard"|bad.invalid|token=secret|user:secret/);
 });
 
 test('dashboard button obtains a fresh N1 handoff before navigating and never renders the credential',async()=>{
  const bootstrapToken='a'.repeat(48),browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken,bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});
  let calls=0;const h=await started(async(url,init)=>{calls++;if(init.method==='GET')return reply(before());assert.equal(init.method,'POST');assert.deepEqual(JSON.parse(init.body),{version:1,action:'dashboard.open'});return reply({browserUrl,expiresAtMs:Date.now()+590000,remainingLifetimeMs:590000});});
- const open=nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0];
- open.props.onClick();await flush();view(h);assert.equal(calls,2);assert.deepEqual(h.navigations,[browserUrl]);assert.doesNotMatch(html(h),new RegExp(bootstrapToken));h.unmount();
+ button(h,'open-dashboard').props.onClick();await flush();view(h);assert.equal(calls,2);assert.deepEqual(h.navigations,[browserUrl]);assert.doesNotMatch(html(h),new RegExp(bootstrapToken));h.unmount();
 });
 test('dashboard never follows foreign or expired handoff URL and explains a missing deployed helper',async()=>{
  for(const value of [{browserUrl:'https://evil.invalid/#token=secret',expiresAtMs:Date.now()+50000,remainingLifetimeMs:50000},{browserUrl:dashboard.OPENCLAW_DASHBOARD_URL,expiresAtMs:0,remainingLifetimeMs:0},{error:'openclaw_dashboard_unavailable'}]) {
   const h=await started(async(url,init)=>init.method==='GET'?reply(before()):reply(value,value.error?503:200));
-  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);assert.doesNotMatch(html(h),/evil.invalid|token=secret/);h.unmount();
+  button(h,'open-dashboard').props.onClick();await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);assert.doesNotMatch(html(h),/evil.invalid|token=secret/);h.unmount();
  }
 });
 
@@ -282,7 +294,7 @@ test('dashboard uses server lifetime when the browser clock is ahead or behind G
  const serverNow=Date.now(),expiresAtMs=serverNow+590000;
  for(const skew of [-300000,300000,900000]) {
   const h=await started(async(_url,init)=>reply(init.method==='GET'?before():{browserUrl,expiresAtMs,remainingLifetimeMs:590000}),{Date:class extends Date {static now(){return serverNow+skew;}}});
-  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();
+  button(h,'open-dashboard').props.onClick();
   await flush();view(h);assert.deepEqual(h.navigations,[browserUrl]);h.unmount();
  }
 });
@@ -292,7 +304,7 @@ test('dashboard rejects missing, excessive and elapsed server lifetimes without 
  for(const remainingLifetimeMs of [undefined,0,-1,600001,1.5,'590000',500]) {
   let elapsed=0;
   const h=await started(async(_url,init)=>{if(init.method==='GET')return reply(before());elapsed=1000;return reply({browserUrl,expiresAtMs:Date.now()+590000,remainingLifetimeMs});},{performance:{now:()=>elapsed}});
-  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();
+  button(h,'open-dashboard').props.onClick();
   await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);h.unmount();
  }
 });

@@ -61,63 +61,64 @@ async function panelHarness(respond){
   const render=()=>{cursor=0;return module.exports.StudioSpeechPanel(props)},flush=()=>{const pending=queue;queue=[];for(const item of pending){effects[item.index]?.cleanup?.();effects[item.index]={deps:item.deps,cleanup:item.effect()}}};
   const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
   const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-  const field=(tree,label)=>nodes(nodes(tree,node=>node.type==='label'&&text(node).trimStart().startsWith(label))[0],node=>['input','select'].includes(node.type))[0];
-  const button=(tree,label)=>nodes(tree,node=>node.type==='button'&&text(node).startsWith(label))[0];
+  // Fields and actions are found by their data hooks, never by their words.
+  const field=(tree,key)=>nodes(tree,node=>['input','select'].includes(node.type)&&node.props['data-field']===key)[0];
+  const button=(tree,action)=>nodes(tree,node=>node.type==='button'&&node.props['data-action']===action)[0];
   return {props,render,flush,field,button,nodes,calls};
 }
 test('speech profile stages while shared project is dirty; generation waits for a saved revision',async()=>{
   const h=await panelHarness();h.render();h.flush();let tree=h.render();
-  h.field(tree,'Röstleverantör').props.onChange({target:{value:'cartesia'}});tree=h.render();h.field(tree,'Röstmodell').props.onChange({target:{value:STUDIO_ASTRID_VOICE.modelId}});tree=h.render();h.field(tree,'Voice-ID').props.onChange({target:{value:STUDIO_ASTRID_VOICE.voiceId}});tree=h.render();h.flush();tree=h.render();
-  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);assert.equal(h.nodes(tree,node=>node.type==='fieldset')[0].props.disabled,false);
-  assert.equal(h.button(tree,'Förbered').props.disabled,true);h.button(tree,'Förbered').props.onClick();assert.equal(h.calls.length,0);
-  h.button(tree,'Lägg talprofil').props.onClick();tree=h.render();h.flush();tree=h.render();h.flush();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,STUDIO_ASTRID_VOICE.voiceId);assert.equal(h.props.profileDirty,false);
-  h.props.projectDirty=false;tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'Förbered').props.disabled,true,'staging alone is not a saved server revision');
-  h.props.project={...h.props.project,revision:'r2'};tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'Förbered').props.disabled,false);
+  h.field(tree,'provider').props.onChange({target:{value:'cartesia'}});tree=h.render();h.field(tree,'model').props.onChange({target:{value:STUDIO_ASTRID_VOICE.modelId}});tree=h.render();h.field(tree,'voice-id').props.onChange({target:{value:STUDIO_ASTRID_VOICE.voiceId}});tree=h.render();h.flush();tree=h.render();
+  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'stage-profile').props.disabled,false);assert.equal(h.nodes(tree,node=>node.type==='fieldset')[0].props.disabled,false);
+  assert.equal(h.button(tree,'prepare').props.disabled,true);h.button(tree,'prepare').props.onClick();assert.equal(h.calls.length,0);
+  h.button(tree,'stage-profile').props.onClick();tree=h.render();h.flush();tree=h.render();h.flush();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,STUDIO_ASTRID_VOICE.voiceId);assert.equal(h.props.profileDirty,false);
+  h.props.projectDirty=false;tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'prepare').props.disabled,true,'staging alone is not a saved server revision');
+  h.props.project={...h.props.project,revision:'r2'};tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'prepare').props.disabled,false);
 });
 test('unrelated project revision does not erase unstaged voice fields',async()=>{
-  const h=await panelHarness();h.render();h.flush();let tree=h.render();h.field(tree,'Voice-ID').props.onChange({target:{value:'own-unsaved-voice'}});tree=h.render();h.flush();assert.equal(h.props.profileDirty,true);
-  h.props.project={...h.props.project,revision:'unrelated-r2',clipLabels:{'other-clip':'New label'}};tree=h.render();h.flush();tree=h.render();assert.equal(h.field(tree,'Voice-ID').props.value,'own-unsaved-voice');assert.equal(h.button(tree,'Förbered').props.disabled,true);
+  const h=await panelHarness();h.render();h.flush();let tree=h.render();h.field(tree,'voice-id').props.onChange({target:{value:'own-unsaved-voice'}});tree=h.render();h.flush();assert.equal(h.props.profileDirty,true);
+  h.props.project={...h.props.project,revision:'unrelated-r2',clipLabels:{'other-clip':'New label'}};tree=h.render();h.flush();tree=h.render();assert.equal(h.field(tree,'voice-id').props.value,'own-unsaved-voice');assert.equal(h.button(tree,'prepare').props.disabled,true);
 });
 
 for(const game of ['blackjack','roulette'])test(`${game} body dealer defaults to the confirmed original voice without activation or generation`,async()=>{
   const h=await panelHarness();h.props.game=game;h.props.dealerId='body-7';h.props.project={...h.props.project,dealers:[{id:'body-7',label:'Paow'}]};
   h.render();h.flush();let tree=h.render();h.flush();
-  assert.equal(h.field(tree,'Röst').props.value,'paow','the explicit pairing needs no extra voice menu');
+  assert.equal(h.field(tree,'voice-preset').props.value,'paow','the explicit pairing needs no extra voice menu');
   assert.equal(h.props.profileDirty,false,'an untouched voice proposal must not block navigation');
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false,'the proposal can still be deliberately staged');
-  assert.equal(h.button(tree,'Förbered'),undefined,'without a verified voice profile generation is a note, not a form');
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false,'the proposal can still be deliberately staged');
+  assert.equal(h.button(tree,'prepare'),undefined,'without a verified voice profile generation is a note, not a form');
   assert.equal(h.props.project.dealers[0].speechProfile,undefined,'opening does not mutate the saved project');
-  assert.equal(h.field(tree,'Voice-ID').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_v3');
-  assert.equal(h.field(tree,'Stabilitet').props.value,'0.5');assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
+  assert.equal(h.field(tree,'voice-id').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'model').props.value,'eleven_v3');
+  assert.equal(h.field(tree,'stability').props.value,'0.5');assert.equal(h.field(tree,'enable-speech').props.checked,false);
   assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open===true).length,0,'known voice details stay compact');
-  h.field(tree,'Röstspråk').props.onChange({target:{value:'en'}});tree=h.render();
-  assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_multilingual_v2');assert.equal(h.field(tree,'Stil').props.value,'0.3');
-  h.button(tree,'Lägg talprofil').props.onClick();tree=h.render();h.flush();tree=h.render();
+  h.field(tree,'voice-language').props.onChange({target:{value:'en'}});tree=h.render();
+  assert.equal(h.field(tree,'model').props.value,'eleven_multilingual_v2');assert.equal(h.field(tree,'style').props.value,'0.3');
+  h.button(tree,'stage-profile').props.onClick();tree=h.render();h.flush();tree=h.render();
   const profile=h.props.project.dealers[0].speechProfile;
   assert.equal(profile.state,'preparation');assert.equal(profile.reference,null);assert.equal(profile.voice.language,'en');assert.equal(profile.voice.settings.stability,.38);
   assert.equal(h.calls.length,0,'choosing and saving a preset makes no provider/build request');
-  h.field(tree,'Röst').props.onChange({target:{value:'dragge'}});tree=h.render();
-  assert.equal(h.field(tree,'Voice-ID').props.value,'7f95xPL4S3ySZ4OS1pw8');assert.equal(h.field(tree,'Stil').props.value,'0.15');
-  h.field(tree,'Voice-ID').props.onChange({target:{value:'other-owned-voice'}});tree=h.render();
-  assert.equal(h.field(tree,'Egna röstinställningar').props.checked,false,'another voice never inherits the original clone tuning');
+  h.field(tree,'voice-preset').props.onChange({target:{value:'dragge'}});tree=h.render();
+  assert.equal(h.field(tree,'voice-id').props.value,'7f95xPL4S3ySZ4OS1pw8');assert.equal(h.field(tree,'style').props.value,'0.15');
+  h.field(tree,'voice-id').props.onChange({target:{value:'other-owned-voice'}});tree=h.render();
+  assert.equal(h.field(tree,'custom-settings').props.checked,false,'another voice never inherits the original clone tuning');
 });
 
 test('switching dealers refreshes the default and keeps an existing explicit voice',async()=>{
   const h=await panelHarness();h.props.project.dealers=[{id:'paow',label:'Paow'},{id:'dragge',label:'Dragge'},{id:'custom',label:'Paow',speechProfile:{schemaVersion:2,state:'preparation',voice:{provider:'elevenlabs',voiceId:'custom-id',modelId:'custom-model'},reference:null}}];
   for(const [id,expected] of [['paow','WZVEBKUreb9jAKojf0QF'],['dragge','7f95xPL4S3ySZ4OS1pw8'],['custom','custom-id']]){
     h.props.dealerId=id;h.render();h.flush();const tree=h.render();
-    assert.equal(h.field(tree,'Voice-ID').props.value,expected);
-    assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
+    assert.equal(h.field(tree,'voice-id').props.value,expected);
+    assert.equal(h.field(tree,'enable-speech').props.checked,false);
   }
   assert.equal(h.calls.length,0);
 });
 
-for(const [label,target] of [['Röst',{value:'paow'}],['Röstspråk',{value:'en'}],['Voice-ID',{value:'user-edited-voice'}],['Röstmodell',{value:'user-edited-model'}],['Stabilitet',{value:'0.6'}],['Egna röstinställningar',{checked:false}]])test(`Dragan voice proposal is clean but a real ${label} change remains protected`,async()=>{
+for(const [label,target] of [['voice-preset',{value:'paow'}],['voice-language',{value:'en'}],['voice-id',{value:'user-edited-voice'}],['model',{value:'user-edited-model'}],['stability',{value:'0.6'}],['custom-settings',{checked:false}]])test(`Dragan voice proposal is clean but a real ${label} change remains protected`,async()=>{
   const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};
   const initial=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
-  assert.equal(h.props.profileDirty,false);assert.equal(h.field(tree,'Röst').props.value,'dragge');
+  assert.equal(h.props.profileDirty,false);assert.equal(h.field(tree,'voice-preset').props.value,'dragge');
   h.field(tree,label).props.onChange({target});tree=h.render();h.flush();tree=h.render();
-  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'Förbered'),undefined);
+  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'prepare'),undefined);
   assert.deepEqual(h.props.project,initial);assert.equal(h.calls.length,0,'a form edit cannot start provider work or save a profile');
 });
 
@@ -125,12 +126,12 @@ test('changing only a voice preserves an unchanged own reference; replaced bytes
   const h=await panelHarness(),ref={kind:'video-frame',videoId:'paow-idle',sha256:'a'.repeat(64),offsetMs:200};
   h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow',speechProfile:{schemaVersion:2,state:'preparation',voice:{provider:'elevenlabs',voiceId:'older',modelId:'eleven_v3'},reference:ref}}]};
   h.props.inventory.videos=[{id:ref.videoId,dealer:'paow',available:true,bytes:100,sha256:ref.sha256}];
-  h.render();h.flush();let tree=h.render();h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);h.button(tree,'Lägg talprofil').props.onClick();
+  h.render();h.flush();let tree=h.render();h.field(tree,'voice-preset').props.onChange({target:{value:'paow'}});tree=h.render();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false);h.button(tree,'stage-profile').props.onClick();
   assert.deepEqual(h.props.project.dealers[0].speechProfile.reference,ref);
   tree=h.render();h.flush();tree=h.render();h.props.inventory.videos[0].sha256='b'.repeat(64);tree=h.render();
-  h.field(tree,'Röst').props.onChange({target:{value:'dragge'}});tree=h.render();assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
-  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'WZVEBKUreb9jAKojf0QF');
+  h.field(tree,'voice-preset').props.onChange({target:{value:'dragge'}});tree=h.render();assert.equal(h.button(tree,'stage-profile').props.disabled,true);
+  h.button(tree,'stage-profile').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'WZVEBKUreb9jAKojf0QF');
 });
 
 async function referencePanel(kind,state='preparation') {
@@ -150,22 +151,22 @@ function reviewReference(h) {
 }
 for(const kind of ['motion-video','video-frame'])for(const change of ['offset','source','bytes'])test(`${kind} reference ${change} edit preserves its mode after a fresh preview`,async()=>{
   const h=await referencePanel(kind),before=structuredClone(h.props.project);let tree=h.render();
-  if(change==='offset')h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+  if(change==='offset')h.field(tree,'reference-offset').props.onChange({target:{value:'400'}});
   if(change==='source'){
     h.props.inventory.videos.push({...h.props.inventory.videos[0],id:'dragan-new',sha256:'b'.repeat(64),previewUrl:'/studio/api/videos/dragan-new'});
-    tree=h.render();h.field(tree,'Dealerns egen referensvideo').props.onChange({target:{value:'dragan-new'}});
+    tree=h.render();h.field(tree,'reference-video').props.onChange({target:{value:'dragan-new'}});
   }
   if(change==='bytes'){
     h.props.inventory.videos[0].sha256='b'.repeat(64);
-    h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+    h.field(tree,'reference-offset').props.onChange({target:{value:'400'}});
   }
   tree=h.render();h.flush();tree=h.render();
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true,'changed source/time requires review');
-  h.button(tree,'Lägg talprofil').props.onClick();assert.deepEqual(h.props.project,before);
+  assert.equal(h.button(tree,'stage-profile').props.disabled,true,'changed source/time requires review');
+  h.button(tree,'stage-profile').props.onClick();assert.deepEqual(h.props.project,before);
   tree=reviewReference(h);
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
-  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,kind==='motion-video','editing a motion reference cannot unlock still-frame activation');
-  h.button(tree,'Lägg talprofil').props.onClick();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false);
+  assert.equal(h.field(tree,'enable-speech').props.disabled,kind==='motion-video','editing a motion reference cannot unlock still-frame activation');
+  h.button(tree,'stage-profile').props.onClick();
   const saved=h.props.project.dealers[0].speechProfile;
   assert.deepEqual(saved.reference,{kind,videoId:change==='source'?'dragan-new':'dragan-reference',sha256:(change==='offset'?'a':'b').repeat(64),offsetMs:change==='source'?200:400});
   assert.deepEqual(saved.voice,before.dealers[0].speechProfile.voice);assert.equal(saved.state,'preparation');
@@ -174,19 +175,19 @@ for(const kind of ['motion-video','video-frame'])for(const change of ['offset','
 
 for(const change of ['offset','source','bytes'])test(`enabled motion ${change} edit requires explicit deactivation before staging`,async()=>{
   const h=await referencePanel('motion-video','enabled'),before=structuredClone(h.props.project);let tree=h.render();
-  if(change==='offset')h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+  if(change==='offset')h.field(tree,'reference-offset').props.onChange({target:{value:'400'}});
   if(change==='source'){
     h.props.inventory.videos.push({...h.props.inventory.videos[0],id:'dragan-new',sha256:'b'.repeat(64),previewUrl:'/studio/api/videos/dragan-new'});
-    tree=h.render();h.field(tree,'Dealerns egen referensvideo').props.onChange({target:{value:'dragan-new'}});
+    tree=h.render();h.field(tree,'reference-video').props.onChange({target:{value:'dragan-new'}});
   }
   if(change==='bytes')h.props.inventory.videos[0].sha256='b'.repeat(64);
   tree=h.render();h.flush();tree=reviewReference(h);
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
-  h.button(tree,'Lägg talprofil').props.onClick();assert.deepEqual(h.props.project,before);
-  assert.equal(h.button(tree,'Förbered'),undefined,'only the verified build chain offers generation');
-  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
-  h.button(tree,'Lägg talprofil').props.onClick();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,true);
+  h.button(tree,'stage-profile').props.onClick();assert.deepEqual(h.props.project,before);
+  assert.equal(h.button(tree,'prepare'),undefined,'only the verified build chain offers generation');
+  h.field(tree,'enable-speech').props.onChange({target:{checked:false}});tree=h.render();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false);
+  h.button(tree,'stage-profile').props.onClick();
   const saved=h.props.project.dealers[0].speechProfile;
   assert.equal(saved.state,'preparation');assert.equal(saved.reference.kind,'motion-video');
   assert.equal(saved.reference.videoId,change==='source'?'dragan-new':'dragan-reference');
@@ -196,17 +197,17 @@ for(const change of ['offset','source','bytes'])test(`enabled motion ${change} e
 
 test('voice-only editing preserves enabled motion identity without another preview',async()=>{
   const h=await referencePanel('motion-video','enabled'),reference=structuredClone(h.props.project.dealers[0].speechProfile.reference);let tree=h.render();
-  h.field(tree,'Voice-ID').props.onChange({target:{value:'other-voice'}});tree=h.render();
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);h.button(tree,'Lägg talprofil').props.onClick();
+  h.field(tree,'voice-id').props.onChange({target:{value:'other-voice'}});tree=h.render();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false);h.button(tree,'stage-profile').props.onClick();
   assert.deepEqual(h.props.project.dealers[0].speechProfile.reference,reference);
   assert.equal(h.props.project.dealers[0].speechProfile.state,'enabled');assert.equal(h.calls.length,0);
 });
 
 test('an enabled motion reference can still be turned off without changing its identity',async()=>{
   const h=await referencePanel('motion-video','enabled'),before=structuredClone(h.props.project.dealers[0].speechProfile);let tree=h.render();
-  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,false);
-  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
-  h.button(tree,'Lägg talprofil').props.onClick();
+  assert.equal(h.field(tree,'enable-speech').props.disabled,false);
+  h.field(tree,'enable-speech').props.onChange({target:{checked:false}});tree=h.render();
+  h.button(tree,'stage-profile').props.onClick();
   assert.deepEqual(h.props.project.dealers[0].speechProfile,{...before,state:'preparation'});assert.equal(h.calls.length,0);
 });
 
@@ -215,14 +216,14 @@ for(const failure of ['alpha','decode'])test(`admin blocks ${failure} reference 
   h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow',speechProfile:{schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'older',modelId:'eleven_v3'},reference:ref}}]};
   h.props.inventory.videos=[{id:ref.videoId,dealer:'paow',available:true,bytes:100,sha256:ref.sha256,previewUrl:'/studio/api/videos/paow-idle',...(failure==='alpha'?{compositing:{mode:'alpha'}}:{})}];
   h.render();h.flush();let tree=h.render();
-  h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();
+  h.field(tree,'voice-preset').props.onChange({target:{value:'paow'}});tree=h.render();
   if(failure==='decode'){h.nodes(tree,node=>node.type==='video')[0].props.onError();tree=h.render();}
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
-  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'older');
-  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,false,'turning an incompatible profile off remains possible');
-  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
-  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
-  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.state,'preparation');
+  assert.equal(h.button(tree,'stage-profile').props.disabled,true);
+  h.button(tree,'stage-profile').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'older');
+  assert.equal(h.field(tree,'enable-speech').props.disabled,false,'turning an incompatible profile off remains possible');
+  h.field(tree,'enable-speech').props.onChange({target:{checked:false}});tree=h.render();
+  assert.equal(h.button(tree,'stage-profile').props.disabled,false);
+  h.button(tree,'stage-profile').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.state,'preparation');
   assert.equal(h.calls.length,0);
 });
 test('roulette selects only unchanged game-neutral SV/EN library captions; Blackjack keeps 17',()=>{
@@ -233,10 +234,10 @@ test('roulette selects only unchanged game-neutral SV/EN library captions; Black
   assert.equal(studioSpeechLines('en',['greeting'])[0].exactText,SPEECH_LINES.greeting);assert.equal(studioSpeechLines('sv',['greeting'])[0].exactText,'Välkommen till Privé Blackjack. Slå dig ner, jag är din dealer i kväll.');assert.equal(studioSpeechLines('en',['chatter1'])[0].exactText,SPEECH_LINES.chatter1);
 });
 test('roulette UI resets unsupported selection and all-line preparation sends exactly the neutral subset',async()=>{
-  const h=await panelHarness();h.props.projectDirty=false;h.render();h.flush();let tree=h.render();h.field(tree,'Replikplats').props.onChange({target:{value:'insurance'}});tree=h.render();
-  h.props.game='roulette';tree=h.render();h.flush();tree=h.render();const select=h.field(tree,'Biblioteksreplik');assert.equal(select.props.value,'placebets');assert.deepEqual(h.nodes(select,node=>node.type==='option').map(node=>node.props.value),studioSpeechLineIds('roulette'));
-  const headings=h.nodes(tree,node=>node.type==='h3').map(node=>[node.props.children].flat().join(''));assert.ok(headings.some(text=>text.includes('Ny generering')&&text.includes('4')));
-  const all=h.field(tree,'Förbered alla');all.props.onChange({target:{checked:true}});tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'Förbered 4 talset').props.disabled,false);h.button(tree,'Förbered 4 talset').props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(h.calls.length,1);const request=JSON.parse(h.calls[0].init.body);assert.equal(request.operation,'prepare');assert.deepEqual(request.lineIds,studioSpeechLineIds('roulette'));assert.equal(request.language,'sv');
+  const h=await panelHarness();h.props.projectDirty=false;h.render();h.flush();let tree=h.render();h.field(tree,'line').props.onChange({target:{value:'insurance'}});tree=h.render();
+  h.props.game='roulette';tree=h.render();h.flush();tree=h.render();const select=h.field(tree,'line');assert.equal(select.props.value,'placebets');assert.deepEqual(h.nodes(select,node=>node.type==='option').map(node=>node.props.value),studioSpeechLineIds('roulette'));
+
+  const all=h.field(tree,'all-lines');all.props.onChange({target:{checked:true}});tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'prepare').props.disabled,false);h.button(tree,'prepare').props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(h.calls.length,1);const request=JSON.parse(h.calls[0].init.body);assert.equal(request.operation,'prepare');assert.deepEqual(request.lineIds,studioSpeechLineIds('roulette'));assert.equal(request.language,'sv');
 });
 
 function recordingFixture(id='take-1',dealerId='dragan',status='approved') {
@@ -297,11 +298,14 @@ const nodesOf=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(n
 test('panel separates recorded original text from generation language and opens with no provider call or dirty form',async()=>{
   const h=await panelHarness();h.props.projectDirty=false;h.props.inventory={videos:[recordingFixture('take-1','astrid')]};
   const original=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
-  const summaries=h.nodes(tree,node=>node.type==='summary').map(node=>node.props.children);assert.ok(summaries.includes('Ny generering · textmallar'));assert.ok(summaries.includes('Realtidstal · röst och referens'));assert.ok(!summaries.includes('Talbibliotek · inspelade repliker'));
+  const inDetails=predicate=>h.nodes(tree,node=>node.type==='details').some(details=>h.nodes(details,predicate).length);
+  assert.ok(inDetails(node=>node.props?.['data-action']==='prepare'),'generation sits in its own disclosure');
+  assert.ok(inDetails(node=>node.props?.['data-field']==='voice-id'),'the realtime voice sits in its own disclosure');
+  assert.equal(inDetails(node=>typeof node.props?.row?.id==='string'),false,'the recorded take is not hidden in a disclosure');
   assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open).length,0,'generated speech starts collapsed');
   assert.equal(shownTake(tree),'take-1');
   assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
-  h.field(tree,'Språk').props.onChange({target:{value:'sv'}});tree=h.render();h.flush();
+  h.field(tree,'language').props.onChange({target:{value:'sv'}});tree=h.render();h.flush();
   assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
   assert.equal(h.calls.length,0);assert.deepEqual(h.props.project,original);assert.equal(h.props.profileDirty,false);
 });
@@ -334,14 +338,13 @@ test('recorded take review posts only the exact played identity and shows the tr
   const h=await panelHarness(async()=>({ok:reply.ok,status:reply.status,json:async()=>reply.body})),inventories=[];
   h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[pending]};
   h.render();h.flush();let tree=h.render();
-  assert.equal(h.button(tree,'Godkänn tal'),undefined,'a surface that cannot refresh its inventory offers no review write');
+  assert.equal(h.button(tree,'approve'),undefined,'a surface that cannot refresh its inventory offers no review write');
   h.props.onInventory=inventory=>{inventories.push(inventory);h.props.inventory=inventory;};
   tree=h.render();h.flush();tree=h.render();
   const fieldset=()=>h.nodes(h.render(),node=>node.type==='fieldset'&&node.props['aria-label']==='Bedöm tagningen')[0];
-  assert.equal(fieldset().props.disabled,false);assert.equal(h.button(tree,'Godkänn tal').props.disabled,false);
-  assert.equal(h.button(tree,'Underkänn').props.disabled,false);assert.equal(h.button(tree,'Ta bort bedömning'),undefined);
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&String(node.props.children).includes('Det mäter inte läppsynk')).length,'the UI states that approval is a human attestation');
-  h.button(tree,'Godkänn tal').props.onClick();
+  assert.equal(fieldset().props.disabled,false);assert.equal(h.button(tree,'approve').props.disabled,false);
+  assert.equal(h.button(tree,'reject').props.disabled,false);assert.equal(h.button(tree,'clear-review'),undefined);
+  h.button(tree,'approve').props.onClick();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(h.calls.length,1);assert.equal(h.calls[0].url,'/studio/api/videos/speech-review');assert.equal(h.calls[0].init.method,'POST');
   const speech=pending.classification.recordedSpeech;
@@ -349,18 +352,19 @@ test('recorded take review posts only the exact played identity and shows the tr
     expectedIdentity:recordedSpeechIdentity(speech),verdict:'approved'});
   assert.deepEqual(inventories,[{videos:[approved]}]);
   tree=h.render();
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&String(node.props.children).startsWith('Godkänd av Reviewer · ')).length);
-  assert.equal(h.button(tree,'Godkänn tal').props.disabled,true);assert.ok(h.button(tree,'Ta bort bedömning'));
+  const approvedStatus=studioRecordedSpeechStatus(studioRecordedSpeech({},{videos:[approved]},'dragan')[0]);
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children===approvedStatus).length,'the trusted reviewer from the registry is shown');
+  assert.equal(h.button(tree,'approve').props.disabled,true);assert.ok(h.button(tree,'clear-review'));
   reply={ok:false,status:409,body:{error:'studio_speech_identity_changed',code:'studio_speech_identity_changed'}};
-  h.button(tree,'Ta bort bedömning').props.onClick();
+  h.button(tree,'clear-review').props.onClick();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(JSON.parse(h.calls[1].init.body).verdict,null);assert.equal(inventories.length,1,'a refused write keeps the inventory');
-  assert.ok(h.nodes(h.render(),node=>node.type==='p'&&node.props.role==='alert'&&String(node.props.children).includes('Tagningen har ändrats')).length);
+  assert.equal(h.nodes(h.render(),node=>node.type==='p'&&node.props.role==='alert').length,1,'the refusal is reported');
   h.props.blocked=true;assert.equal(fieldset().props.disabled,true);
   const unverified=embeddedRecordingFixture('embedded-take','pending');unverified.classification.recordedSpeech.source={status:'pending'};delete unverified.mediaTiming;
   h.props.blocked=false;h.props.inventory={videos:[unverified]};tree=h.render();
-  assert.equal(h.button(tree,'Godkänn tal').props.disabled,true,'approval needs the server-verified file check');
-  assert.equal(h.button(tree,'Underkänn').props.disabled,false);
+  assert.equal(h.button(tree,'approve').props.disabled,true,'approval needs the server-verified file check');
+  assert.equal(h.button(tree,'reject').props.disabled,false);
 });
 // Shape of PAOW's imported takes in production: no receipt; language and take
 // only in the import note, the same label once per language.
@@ -399,10 +403,10 @@ test('recorded lines follow the game order, split SV/EN, put the highest take fi
 test('recorded take status names reviewer and time, rejection, pending review or a missing receipt',()=>{
   const plain=importedTake('goodluck',1,'sv');plain.dealer='dragan';plain.classification.dealerId='dragan';
   const time=at=>'T'+at.slice(0,10),rows=Object.fromEntries(studioRecordedSpeech({},{videos:[recordingFixture('approved'),recordingFixture('rejected','dragan','rejected'),recordingFixture('pending','dragan','pending'),plain]},'dragan').map(row=>[row.id,row]));
-  assert.equal(studioRecordedSpeechStatus(rows.approved,time),'Godkänd av Reviewer · T2026-10-15');
-  assert.equal(studioRecordedSpeechStatus(rows.rejected,time),'Underkänd av Reviewer · T2026-10-15');
-  assert.equal(studioRecordedSpeechStatus(rows.pending,time),'Väntar på granskning');
-  assert.equal(studioRecordedSpeechStatus(rows['goodluck-1-sv'],time),'Saknar talkvitto');
+  const status=Object.fromEntries(Object.entries(rows).map(([id,row])=>[id,studioRecordedSpeechStatus(row,time)]));
+  for(const id of ['approved','rejected'])assert.ok(status[id].includes('Reviewer')&&status[id].includes('T2026-10-15'),id+' names reviewer and time');
+  for(const id of ['pending','goodluck-1-sv'])assert.doesNotMatch(status[id],/Reviewer|T2026/,id+' names no attester');
+  assert.equal(new Set(Object.values(status)).size,4,'approval, rejection, pending review and a missing receipt read differently');
 });
 test('recorded dealer without a voice profile sees one line list, distinct takes and collapsed generated speech',async()=>{
   const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'PAOW'}]};h.props.inventory=paowInventory();
@@ -410,29 +414,31 @@ test('recorded dealer without a voice profile sees one line list, distinct takes
   h.render();h.flush();let tree=h.render();h.flush();tree=h.render();
   assert.equal(studioGeneratedSpeechAvailable(h.props.project,'paow'),false);
   const lines=()=>h.nodes(tree,node=>node.type==='button'&&node.props['aria-expanded']!==undefined);
-  assert.deepEqual(lines().map(node=>flat(node.props.children[0])),['Lägg insatser','Lycka till','Blackjack','Dealerns blackjack','Dealern över 21','Dubbling','Försäkring','Förlust','Lika','Vinst','Välkommen','Över 21','Övriga filer · 2']);
+  const rows=studioRecordedSpeech(h.props.project,h.props.inventory,'paow'),groups=studioRecordedSpeechGroups(rows);
+  assert.equal(lines().length,groups.lines.length+1,'every game line plus one row for the other files');
+  assert.deepEqual(lines().slice(0,-1).map(node=>flat(node.props.children[0])),groups.lines.map(line=>line.label),'lines follow the game order');
   assert.deepEqual(lines().map(node=>node.props.disabled===true),[false,false,true,true,true,true,true,true,true,false,false,false,false],'lines without files stay visible but cannot open');
-  assert.equal(lines()[0].props['aria-expanded'],true);assert.equal(flat(lines()[0].props.children[1]),'SV 3 · EN 3');
+  assert.equal(lines()[0].props['aria-expanded'],true);
   const tabs=()=>h.nodes(tree,node=>node.props?.role==='tab');
-  assert.deepEqual(tabs().map(node=>[flat(node),node.props['aria-selected']]),[['Svenska · 3',true],['English · 3',false]]);
+  assert.deepEqual(tabs().map(node=>node.props['aria-selected']),[true,false],'Svenska opens first');
   const takes=()=>h.nodes(h.nodes(tree,node=>node.props?.['aria-label']==='Tagningar')[0],node=>node.type==='button');
-  assert.deepEqual(takes().map(node=>flat(node.props.children[0])),['Tagning 3 placebets_3','Tagning 2 placebets_2','Tagning 1 placebets_1']);
+  const placebets=groups.lines[0].languages[0].takes;
+  assert.deepEqual(placebets.map(row=>row.take),[3,2,1]);
+  takes().forEach((node,index)=>assert.ok(flat(node).includes(placebets[index].label),'highest take first'));
   assert.equal(takes()[0].props['aria-pressed'],true,'highest take is preselected');assert.equal(shownTake(tree),'placebets-3-sv');
-  assert.deepEqual(takes().map(node=>flat(node.props.children[1])),['Saknar talkvitto','Saknar talkvitto','Saknar talkvitto']);
+  takes().forEach((node,index)=>assert.ok(flat(node.props.children[1]).includes(studioRecordedSpeechStatus(placebets[index])),'each take shows its own status'));
   tabs()[1].props.onClick();tree=h.render();
   assert.equal(shownTake(tree),'placebets-3-en');assert.equal(tabs()[1].props['aria-selected'],true);
   takes()[2].props.onClick();tree=h.render();assert.equal(shownTake(tree),'placebets-1-en');
   lines()[1].props.onClick();tree=h.render();
   assert.equal(shownTake(tree),'goodluck-3-en','the chosen language follows to the next line, highest take again');
   lines()[12].props.onClick();tree=h.render();
-  const options=h.nodes(h.field(tree,'Fil'),node=>node.type==='option').map(flat);
+  const options=h.nodes(h.field(tree,'file'),node=>node.type==='option').map(flat);
   assert.equal(options.length,2);assert.equal(new Set(options).size,2);
-  assert.ok(options.some(text=>text.startsWith('push take · Lika · språk okänt')));assert.ok(options.some(text=>text.startsWith('mystery_1 · mystery · SV')));
-  assert.equal(h.button(tree,'Godkänn tal'),undefined,'a take without a receipt offers no approval');
-  const summaries=h.nodes(tree,node=>node.type==='summary').map(node=>node.props.children);
-  assert.ok(!summaries.includes('Ny generering · textmallar'));assert.equal(h.button(tree,'Förbered'),undefined);
-  assert.ok(summaries.includes('Förbered röstprofil för realtidstal'));assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open).length,0);
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&flat(node).startsWith('PAOW har ingen verifierad röstprofil')).length);
+  assert.ok(options.some(text=>text.startsWith('push take')));assert.ok(options.some(text=>text.startsWith('mystery_1')));
+  assert.equal(h.button(tree,'approve'),undefined,'a take without a receipt offers no approval');
+  assert.equal(h.button(tree,'prepare'),undefined,'no generation without a verified voice profile');
+  assert.ok(h.field(tree,'voice-id'),'a profile can still be prepared');assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open).length,0);
   assert.equal(h.calls.length,0);assert.equal(h.props.profileDirty,false);
 });
 // Talfack binding from Inspelat tal reuses bindClip; speak.other still needs a receipt.
@@ -454,21 +460,20 @@ test('Sätt som standard i talfacket stages the selected take through the clip-m
   const flat=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(flat).join(''):node?.props?flat(node.props.children):'';
   const lines=tree=>h.nodes(tree,node=>node.type==='button'&&node.props['aria-expanded']!==undefined);
   const takeButtons=tree=>h.nodes(h.nodes(tree,node=>node.props?.['aria-label']==='Tagningar')[0],node=>node.type==='button');
-  const action=tree=>h.button(tree,'Sätt som standard i talfacket');
+  const action=tree=>h.button(tree,'set-standard');
   h.render();h.flush();let tree=h.render();h.flush();tree=h.render();
-  assert.equal(flat(lines(tree)[0].props.children[1]),'SV 2 · Ingen standard');assert.equal(flat(lines(tree)[1].props.children[1]),'SV 3 · EN 3 · Ingen standard');
+  const summary=(tree,index)=>flat(lines(tree)[index].props.children[1]);
+  assert.ok(!summary(tree,0).includes('placebets_'));assert.ok(!summary(tree,1).includes('goodluck_'),'no standard yet');
   assert.equal(shownTake(tree),takes[1].id,'the highest placebets take is the one with a receipt');
   assert.equal(action(tree).props.disabled,false);
   const before=structuredClone(h.props.project);action(tree).props.onClick();tree=h.render();
   assert.equal(speechSlotStandard(h.props.project,'paow','speak.other','placebets').videoGenerationId,takes[1].id);
   assert.equal(speechSlotStandard(before,'paow','speak.other','placebets'),null,'the previous draft object is not mutated');
   assert.equal(action(tree).props.disabled,true,'the current standard cannot be set again');
-  assert.equal(flat(lines(tree)[0].props.children[1]),'SV 2 · Standard: placebets_2');
-  assert.ok(flat(takeButtons(tree)[0]).endsWith('Väntar på granskning · Standard'));
-  assert.ok(h.nodes(tree,node=>node.props?.role==='status'&&flat(node).startsWith('Tagningen är standard i talfacket i utkastet')).length);
+  assert.ok(summary(tree,0).includes('placebets_2'),'the line names its standard');
+  assert.ok(h.nodes(tree,node=>node.props?.role==='status').length,'the staged standard is reported');
   takeButtons(tree)[1].props.onClick();tree=h.render();
   assert.equal(shownTake(tree),takes[0].id);assert.equal(action(tree).props.disabled,true,'speak.other without a receipt is refused, not loosened');
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&flat(node).includes('kräver ett talkvitto')).length);
   lines(tree)[1].props.onClick();tree=h.render();
   assert.equal(shownTake(tree),takes[4].id,'goodluck opens on SV take 3');
   action(tree).props.onClick();tree=h.render();
@@ -477,7 +482,7 @@ test('Sätt som standard i talfacket stages the selected take through the clip-m
   action(tree).props.onClick();tree=h.render();
   assert.equal(speechSlotStandard(h.props.project,'paow','speak.goodluck','goodluck').videoGenerationId,takes[3].id,'a different take replaces the standard');
   assert.equal(speechSlotStandard(h.props.project,'paow','speak.other','placebets').videoGenerationId,takes[1].id,'other talfack keep their standard');
-  assert.equal(flat(lines(tree)[1].props.children[1]),'SV 3 · EN 3 · Standard: goodluck_2');
+  assert.ok(summary(tree,1).includes('goodluck_2'));assert.ok(!summary(tree,1).includes('goodluck_3'),'the line names the new standard only');
   takeButtons(tree)[0].props.onClick();tree=h.render();h.props.blocked=true;tree=h.render();assert.equal(action(tree).props.disabled,true);
   assert.equal(h.calls.length,0,'staging a standard makes no request; Spara utkast persists it');
 });
@@ -510,10 +515,10 @@ test('a line opens on the take with a receipt and the shown take stays put after
   const settle=()=>{let tree=h.render();h.flush();tree=h.render();h.flush();return h.render();};
   let tree=settle();
   assert.equal(shownTake(tree),takes[1].id,'take 2 is the highest with a receipt, not the receiptless take 3');
-  assert.equal(takeButtons(tree)[0].props.children[0].props.children[0],'Tagning 3','the list order stays highest first');
+  assert.ok(JSON.stringify(takeButtons(tree)[0].props.children[0]).includes(takes[2].label),'the list order stays highest first');
   assert.equal(takeButtons(tree)[1].props['aria-pressed'],true);
   reply={inventory:{families:[],videos:[takes[0],reviewedTake(takes[1],'rejected'),takes[2],...english]}};
-  h.button(tree,'Underkänn').props.onClick();
+  h.button(tree,'reject').props.onClick();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   tree=settle();
   assert.equal(h.props.inventory.videos[1].classification.recordedSpeech.review.status,'rejected');
