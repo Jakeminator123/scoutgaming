@@ -2,20 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {prepareMovingDealPlan,createMovingDealReservations} from '../services/game/moving-speech-deal-plan.mjs';
 import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import {PAOW_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
+import {expandStudioFilmedProfile} from '../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
+import {studioCopyProfile} from './fixtures/native-room-game-material.mjs';
 import {movingDealCard} from '../services/game/public/moving-speech-sequence.mjs';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
-function fixture(){
-  const clips=profile.takes.map((t,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,sha256:t.sha256,
+function fixture({takes=profile.takes,dealerId='dragan',frozen={}}={}){
+  const clips=takes.map((t,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,sha256:t.sha256,
     take:`clip-00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,bytes:100+i,fps:24,frameCount:t.frames,width:1080,height:1920}));
-  const videos=clips.map(c=>({id:c.videoId,sha256:c.sha256,size:c.bytes,available:true,classification:{dealerId:'dragan',kind:'action'}}));
-  const frozenContext={schemaVersion:3,records:videos,inventory:{videos},project:{lines:[{dealerId:'dragan',variants:clips.map(c=>({videoGenerationId:c.videoId}))}]}};
+  const videos=clips.map(c=>({id:c.videoId,sha256:c.sha256,size:c.bytes,available:true,classification:{dealerId,kind:'action'}}));
+  const frozenContext={schemaVersion:3,records:videos,inventory:{videos},project:{lines:[{dealerId,variants:clips.map(c=>({videoGenerationId:c.videoId}))}]},...frozen};
   const receipt={version:7,payload:JSON.stringify([{type:'speak',line:'goodluck'},
     {type:'deal',to:'box',box:3,shoeDraw:1},{type:'deal',to:'dealer',faceDown:false,shoeDraw:2},
     {type:'deal',to:'box',box:3,shoeDraw:3},{type:'deal',to:'dealer',faceDown:true,shoeDraw:4}])};
-  return {receipt,version:7,sourceSet:{dealerId:'dragan',clips},frozenContext,
+  return {receipt,version:7,sourceSet:{dealerId,clips},frozenContext,
     publicVideo:id=>({id,sha256:clips.find(c=>c.videoId===id).sha256,src:'/api/presentation/registered-video/fixture/'+id})};
 }
 test('committed box3 uses complete existing pose chain, exact source frames and authoritative draws',()=>{
@@ -27,6 +30,19 @@ test('committed box3 uses complete existing pose chain, exact source frames and 
   assert.equal(result.frames[182].frame,38);
   assert.equal(result.steps[0].event.box,3);assert.equal(result.steps[3].event.faceDown,true);
   assert.ok(result.steps.every(s=>!Object.hasOwn(s.event,'card')));
+});
+test('Landningar: a new dealer plans its moving deal on the frozen context\'s copied landings, never the code register',()=>{
+  const compact=studioCopyProfile('jakob-2','paow'),own=expandStudioFilmedProfile(compact,{dealerId:'jakob-2'});
+  const input=fixture({takes:own.takes,dealerId:'jakob-2',frozen:{dealer:{id:'jakob-2',label:'Jakob 2'},filmedProfile:own}});
+  const result=prepareMovingDealPlan(input);
+  assert.ok(result.steps.length>=4);
+  for(const step of result.steps){
+    assert.equal(step.video.filmedTake.profileId,compact.id);
+    assert.equal(step.video.sha256,compact.takes[step.video.filmedTake.takeKey].sha256,'its own clip for PAOW\'s take');
+    assert.equal(step.end-step.first,PAOW_KEVIN_PROFILE.takes.find(take=>take.key===step.video.filmedTake.takeKey).frames,'PAOW\'s timing');
+  }
+  // Another dealer's frozen context never lends its landings.
+  assert.throws(()=>prepareMovingDealPlan({...input,frozenContext:{...input.frozenContext,dealer:{id:'paow',label:'PAOW'}}}));
 });
 test('sparse absolute box3 maps to live hand zero and never borrows another hand card',()=>{
   const first={shoeDraw:1,rank:'A'},second={shoeDraw:3,rank:'K'};

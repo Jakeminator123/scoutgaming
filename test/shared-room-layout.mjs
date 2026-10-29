@@ -12,6 +12,8 @@ import { projectTableGamePlane } from '../packages/presentation/runtime/game-ove
 import { defaultBlackjackAutoScale, defaultBlackjackTableGeometry, defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
 import { cardViewDepth } from '../packages/presentation/contracts/card-view.mjs';
 import { mountSharedRoomPresentation } from '../services/game/public/shared-room-presentation.mjs';
+import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
 import { createSharedRoomView } from '../services/game/public/shared-room-view.mjs';
 import { createSharedRoomController } from '../services/game/public/shared-room-controller.mjs';
 
@@ -85,16 +87,17 @@ function presentationDocument({ width = 1440, height = 900 } = {}) {
   const window = new EventTarget(); window.matchMedia = () => ({ matches: width <= 860 });
   return { document, window, nodes };
 }
-async function mountLayout(dealer, composition = null, size) {
+async function mountLayout(dealer, composition = null, size, media = {}) {
   const { document, window } = presentationDocument(size);
-  let projection;
+  let projection, overlay;
   const cards = { restore() {}, sync() {}, clear() {}, show() {}, reveal() {}, close() {}, setProjection: value => { projection = value; } };
   const selection = { presentation: 'local', dealer, localDealer: dealer, operator: 'north', roomId, packageRevision: 1, registeredDealers: [{ id: dealer, label: dealer }] };
   const port = await mountSharedRoomPresentation({ document, window, selection, onReady() {}, onError() {}, createComposition: () => composition,
-    loadAdapters: async () => [{ PerformancePlayer: class { dispose() {} } }, { createLocalPresentation: async () => ({ state() {}, start() {}, close() {} }) }, { createLocalCardOverlay: () => cards }] });
+    loadAdapters: async () => [{ PerformancePlayer: class { dispose() {} } }, { createLocalPresentation: async () => ({ state() {}, start() {}, close() {}, ...media }) },
+      { createLocalCardOverlay: (_host, options) => { overlay = options; return cards; } }] });
   const seats = Array.from({ length: 7 }, () => new Element());
   port.layout({ snapshot: seatedAt([3]), focusSeat: null, seats });
-  return { port, seats, projection: () => projection };
+  return { port, seats, projection: () => projection, overlay: () => overlay };
 }
 const tableGeometry = auto => ({ tableId: 'table-a', mobile: { cardWidth: .045, dealer: { x: .5, y: .2 }, seats: Array.from({ length: 3 }, (_, i) => ({ card: { x: .3 + .2 * i, y: .3 }, bet: { x: .3 + .2 * i, y: .45 } })), ...auto },
   desktop: { cardWidth: .045, dealer: { x: .5, y: .2 }, seats: Array.from({ length: 7 }, (_, i) => ({ card: { x: .22 + .093 * i, y: .3 }, bet: { x: .22 + .093 * i, y: .45 } })), ...auto } });
@@ -119,6 +122,30 @@ test('desktop seats stand on the filmed landings of an automatic table, on Admin
   const phone = await mountLayout('paow', null, { width: 390, height: 844 });
   assert.deepEqual(phone.seats.map(node => node.hidden), [true, true, false, false, false, true, true], 'a phone shows three boxes');
   phone.port.close();
+});
+
+// Landningar 2/4: a new dealer (jakob-2) whose Admin copied PAOW's landings gets them through the room's locked
+// configuration (its frozen material, or the package row's profile), so cards and the phone's three boxes stand on
+// PAOW's landings instead of the calibrated reserve row. PAOW itself still reads the code profile.
+test('Landningar: a dealer with copied PAOW landings lays out on PAOW\'s landings on desktop and phone, from its frozen configuration', async () => {
+  const f = nativeRoomMaterialFixture({ dealerId: 'jakob-2', copyOf: 'paow' }), row = f.presentation.registeredDealers[0];
+  const material = resolveNativeRoomGameMaterial(f.input, { version: 2 });
+  for (const size of [undefined, { width: 390, height: 844 }]) {
+    const reference = await mountLayout('paow', null, size);
+    assert.equal(reference.overlay().filmedProfile, paow, 'PAOW keeps the code profile');
+    for (const media of [{ filmedMaterial: material }, { filmedProfile: row.filmedProfile }]) {
+      const own = await mountLayout('jakob-2', null, size, media);
+      assert.equal(own.projection().source, 'filmed-profile', 'not the reserve row');
+      assert.deepEqual(own.projection(), reference.projection(), 'the same cards and seats as PAOW');
+      assert.deepEqual(own.seats.map(node => [node.hidden, node.style.left, node.style.top]), reference.seats.map(node => [node.hidden, node.style.left, node.style.top]));
+      assert.equal(own.overlay().filmedProfile.id, row.filmedProfile.id, 'the cards fly on its own frozen profile');
+      own.port.close();
+    }
+    reference.port.close();
+    const none = await mountLayout('jakob-2', null, size);
+    assert.equal(none.projection().source, 'calibration', 'without frozen landings: the reserve row, as before');
+    none.port.close();
+  }
 });
 
 // Platsbrickorna (2026-10-29): the seat circle, hand total and bets stand on the same box as the cards, from the

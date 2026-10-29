@@ -4,6 +4,7 @@ import { sharedRoomPresentationRead } from './shared-room-presentation-http.mjs'
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
+import { filmedProfileFor } from '../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from '../../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { selectRegisteredIdleRule, selectPresentation, createIdleAdviceServer } from './presentation-selection.mjs';
@@ -182,6 +183,8 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: ownPolicy, inventory,
           ...(ownPolicy ? {idleInventory:registeredIdleInventory(inventory,{dealerId:requestedDealer,policy:ownPolicy})} : {}),
           dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>dealer.id===requestedDealer).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
+          // Admin's preview lays out the saved own landings of a new dealer (the code profile otherwise).
+          ...(project.dealers.find(dealer=>dealer.id===requestedDealer)?.filmedProfile ? {filmedProfile:structuredClone(project.dealers.find(dealer=>dealer.id===requestedDealer).filmedProfile)} : {}),
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
@@ -248,7 +251,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
             projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
         }
         if (frozen.project) {
-          const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
+          const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,profile:frozen.filmedProfile,
             published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
           if(filmed){
             await frozenDealerContext.resolve(body.presentationContext);
@@ -309,7 +312,8 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
           idleRule:idleRuleFor(body,project,inventory,sourceEvent,requestId),projectRevision:project.revision,configurationSource});return true;
       }
-      const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
+      // Admin's preview (and the local lab) read the saved project: the dealer's own landings, else the code profile.
+      const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,profile:filmedProfileFor(body.dealerId,{project}),
         published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
       if(filmed){
         const video=filmed.video?{...publicVideo(filmed.video),filmedTake:filmed.filmedTake}:null;

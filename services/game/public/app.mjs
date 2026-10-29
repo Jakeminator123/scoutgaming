@@ -19,7 +19,7 @@ import { createTableAudio } from './table-audio.mjs';
 import {gameLaneFromDocument} from '../../../packages/presentation/contracts/game-selection.mjs';
 import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from '../../../packages/presentation/runtime/player-choices.mjs';
 import { createPresentationStartup } from './presentation-startup.mjs';
-import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
+import { registeredFilmedProfile, frozenFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
 import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
 import { totalLabel } from './card-presentation/renderer-support.js';
@@ -90,6 +90,8 @@ const localPresentationEnabled = true;
 if (entrySelection.lane === 'mobile-phone') document.title = 'Standardsammansättning · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;
+// The dealer's landings from its locked configuration (frozenFilmedProfile); the code register until it has loaded.
+let dealerFilmedProfile = null;
 if (localPresentationEnabled) {
   document.documentElement.dataset.presentation = 'local';
   $('#supervisor')?.removeAttribute('src');
@@ -204,7 +206,8 @@ if (localPresentationEnabled) {
       onGestureWait: waiting => presentationStartup.waitForGesture(DEALER.key, waiting),
       onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
     });
-    localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
+    dealerFilmedProfile = frozenFilmedProfile(DEALER.key,{filmedMaterial:localPresentation.filmedMaterial,filmedProfile:localPresentation.filmedProfile});
+    localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:dealerFilmedProfile});
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
   } catch (error) {
@@ -659,7 +662,7 @@ function layoutSeats() {
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
-      const hud=$('#hud-bottom').getBoundingClientRect(),filmedProfile=registeredFilmedProfile(DEALER.key);
+      const hud=$('#hud-bottom').getBoundingClientRect(),filmedProfile=dealerFilmedProfile??registeredFilmedProfile(DEALER.key);
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
         bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,filmedProfile});
       $('#scene').dataset.betPlacement=layout.followCards?'under-cards':'manual';
