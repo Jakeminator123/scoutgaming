@@ -51,7 +51,7 @@ Inventering från oktober 2026, utanför masterplanen. Kontrollera mot koden inn
 
 | Område | Öppet |
 | --- | --- |
-| Admin-förenkling | `/admin` ska bli enkel (en publiceringsknapp per rum). Underlag i [NEXT-AGENT](NEXT-AGENT.md#separata-spår-efter-migreringen) |
+| Admin-förenkling | `/admin` ska bli enkel (en publiceringsknapp per rum). Underlag i [NEXT-AGENT](NEXT-AGENT.md#separata-spår) |
 | Bolagsdata | Spelare, transaktioner och rapporter ur motorns ledger, bolagsbunden identitet, valuta och exportisolering. Ingen andra plånbok i Admin |
 | Konto och integration | Lösenordsåterställning för bolag, riktig 2FA, API-nycklar med rotation, wallet- och webhookprov |
 | Inbjudan och återställning | Resend mot sandbox är verifierad; en riktig mottagares hela kedja saknar kvitto |
