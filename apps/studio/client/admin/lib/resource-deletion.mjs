@@ -18,7 +18,7 @@ export function createResourceDeletionClient({workspaceClient=createStudioClient
   return {async load(signal){
     const lifecycle=fetchImpl('/studio/api/admin/resource-lifecycle',{method:'GET',credentials:'same-origin',cache:'no-store',redirect:'error',
       headers:{accept:'application/json'},signal}).then(async response=>{
-      if(!response.ok)throw Error('Bolagens och rummens arkiv kunde inte läsas.');
+      if(!response.ok)throw Error('Bolagens och spelbordens arkiv kunde inte läsas.');
       const value=await response.json();
       if(!validLifecycle(value))throw Error('Arkivregistret gav ett ogiltigt svar.');
       return value;
@@ -38,7 +38,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
   const administration=catalog.administration;
   if(lifecycle){
     if(!validLifecycle(lifecycle)||lifecycle.administrationRevision!==administration.revisions.administration)
-      throw Error('Rumsregistret ändrades under läsningen. Uppdatera för att läsa samma revision.');
+      throw Error('Spelbordsregistret ändrades under läsningen. Uppdatera för att läsa samma revision.');
     const published=new Map(administration.operators.map(row=>[row.id,row]));
     if(published.size!==lifecycle.operators.length||lifecycle.operators.some(row=>{
       const current=published.get(row.id);
@@ -99,7 +99,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
   for(const row of sourceRooms){
     const stored=lifecycleRooms.get(row.id),compositionId=row.compositionId??row.presentationLaneId??null;
     if(stored&&(stored.operatorId!==row.operatorId||stored.presentationLaneId!==compositionId))
-      throw Error('Ett rum ändrades under läsningen. Uppdatera för att läsa samma revision.');
+      throw Error('Ett spelbord ändrades under läsningen. Uppdatera för att läsa samma revision.');
     const room={...node(row.id,row.name,Boolean(stored?.archivedAt||row.archivedAt||row.state==='archived')),
       // presentation-room-contract.mjs defines schema-v2 rooms without game as Blackjack.
       operatorId:row.operatorId,game:row.game??(row.schemaVersion===2||stored?.schemaVersion===2?'blackjack':null),compositionId,published:row.published===true,playable:row.playable===true,state:row.state||stored?.state||'',publication:null,
@@ -111,7 +111,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     room.choicesPath=room.archived?null:roomChoicesPath(administration.operators.find(current=>current.id===room.operatorId),{id:room.id,operatorId:room.operatorId,state:room.state,compositionId,game:room.game});
     if(compositionId){
       if(!compositions.has(compositionId))compositions.set(compositionId,{...node(compositionId,compositionId,false,true),layers:null,publishedTo:null,historicalPackageReferences:null});
-      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat rum':'Rummets sparade miljö'));
+      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat spelbord':'Spelbordets sparade miljö'));
     }
     for(const id of room.publishedDealerIds)addRef(ensureDealer(id).uses,ref('room',room.id,room.label,'Publicerat dealerval'));
   }
@@ -125,7 +125,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
       const room=rooms.get(source.id);
       if(!room||room.operatorId!==operator.id||room.compositionId!==source.presentation?.id
         ||room.game!==(source.game??'blackjack')||room.archived||!room.published)
-        throw Error('Rummets publicerade val stämmer inte med rumsregistret. Uppdatera trädet.');
+        throw Error('Spelbordets publicerade val stämmer inte med spelbordsregistret. Uppdatera trädet.');
       const choices=[];
       for(const sourceDealer of list(source.dealers)){
         const dealer=ensureDealer(sourceDealer.id);
@@ -196,7 +196,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     dealers:sort([...dealers.values()]),materials:sort([...materials.values()]),media:sort([...media.values()]),
     unownedRoomIds:[...rooms.values()].filter(row=>!operators.has(row.operatorId)).map(row=>row.id),
     coverage:[
-      'Sparad miljö och publicerade spelval visas separat. Rummens egna förval ingår i publicerade spelval för spelbara rum. Pausade och arkiverade rums publicerade lagerval ingår inte.',
+      'Sparad miljö och publicerade spelval visas separat. Spelbordens egna förval ingår i publicerade spelval för spelbara spelbord. Pausade och arkiverade spelbords publicerade lagerval ingår inte.',
       'Miljöernas historiska paketreferenser visas som antal med täckningsstatus. Historiska paketens fullständiga filinnehåll ingår inte.',
       'Råa filer i Blob och statiska lobbybilder ingår inte i denna läsning. Äldre filbaserade klippbindningar ingår inte heller.',
       'Klippimporten tar för närvarande emot MP4 och WebM. Bord och bakgrundsbilder visas i materialbiblioteket.',
