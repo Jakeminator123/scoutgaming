@@ -431,7 +431,7 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
   const body=await response.json();
-  // Den frysta presentationen och tilldelningen bär scenmallen; projektionen partnerPackageProfiles provas i partner-package-view.test.mjs.
+  // Den frysta presentationen och tilldelningen bär scenmallen.
   assert.equal(body.presentation.lanes[0].label,'Publicerad North');
   assert.deepEqual(body.assignment.lanes,[{id:body.presentation.lanes[0].id,label:'Publicerad North'}]);
   assert.deepEqual(body.assignment.dealers.map(dealer=>dealer.id),['astrid']);

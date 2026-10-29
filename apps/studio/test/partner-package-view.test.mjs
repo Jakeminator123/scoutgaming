@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {adminLayerAdjustments,effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles,partnerLayerChoices} from '../lib/partner-package-view.mjs';
+import {adminLayerAdjustments,effectivePartnerAdjustments,partnerLaneState,partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -21,9 +21,8 @@ function makePresentation(layered=true,schemaVersion=2) {
 
 test('assigned layers keep their exact image/video formats and published defaults',()=>{
   const presentation=makePresentation();
-  const [profile]=partnerPackageProfiles(presentation,{dealer:'elin'},'op-1');
-  assert.equal(profile.operatorId,'op-1');
-  assert.equal(profile.dealer,'elin');
+  const profile=partnerLaneState(presentation.lanes[0],{lane:presentation.lanes[0].id,dealer:'elin'},presentation.assets,presentation.registeredDealers);
+  assert.equal(profile.layers.dealer.selected,'elin');
   assert.equal(profile.layers.table.contentType,'image/png');
   assert.equal(profile.layers.background.contentType,'video/webm');
   assert.equal(profile.layers.table.selected,tableId);
@@ -42,8 +41,8 @@ test('registered dealer label comes from the frozen package while selection keep
   const lane=structuredClone(makePresentation().lanes[0]);
   lane.dealers=['linnea'];lane.layers.dealer={enabled:true,default:'linnea',allowed:['linnea']};
   const presentation={schemaVersion:2,lanes:[lane],assets:[],registeredDealers:[{id:'linnea',label:'Linnea Studio',idle:null}]};
-  const state=partnerPackageProfiles(presentation,{},'north-id')[0];
-  assert.equal(state.dealer,'linnea');assert.equal(state.layers.dealer.label,'Linnea Studio');
+  const state=partnerLaneState(lane,{lane:lane.id},presentation.assets,presentation.registeredDealers);
+  assert.equal(state.layers.dealer.selected,'linnea');assert.equal(state.layers.dealer.label,'Linnea Studio');
 });
 
 test('the published layers of one room follow its exact overrides (Spelbord list cards)',()=>{
