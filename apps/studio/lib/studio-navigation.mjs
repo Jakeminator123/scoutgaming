@@ -49,7 +49,8 @@ export function studioNavigationHref(path, context = {}) {
 // dokumentmappningen med alla sina värden, så att single() i
 // packages/navigation/admin-workspace-routes.mjs avgör målet: ett spelrum öppnar sin nav,
 // flera hamnar på bolagets flik Spelbord. Navigeringen väljer aldrig det första värdet.
-// Valen följer sedan med oförändrade så att målsidan själv kan pröva dem.
+// Valen följer sedan med oförändrade så att målsidan själv kan pröva dem. Ett tableId i
+// context ersätter aldrig tvetydiga table-värden i adressen; det tas då bort.
 export function studioScopedHref(path, query, context = {}) {
   const source = new URL(path, 'https://studio.invalid');
   const scope = typeof query?.getAll === 'function'
