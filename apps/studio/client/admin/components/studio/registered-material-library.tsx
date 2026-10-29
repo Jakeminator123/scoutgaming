@@ -6,7 +6,7 @@ import {LayerLibrary} from '../../../../components/layer-library';
 import {LayerAssetManager,type MaterialTrashPlanView} from '../../../../components/layer-asset-manager';
 import {Play} from 'lucide-react';
 import {ActionMenu} from '../ui/hub';
-import {Button,buttonVariants,cn,plural} from '../ui/kit';
+import {Button,buttonVariants,cn,focusRing,plural} from '../ui/kit';
 import {AiBackgroundDialog} from './ai-background-dialog';
 import {ConfirmDialog,Dialog} from '../ui/dialog';
 import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
@@ -94,7 +94,7 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
       {state==='loading'&&<span className="absolute inset-0 grid place-items-center text-xs font-semibold text-sg-muted" role="status"><span className="absolute inset-0 animate-pulse bg-sg-surface-2"/><span className="relative">Läser förhandsvisning…</span></span>}
       {state==='error'&&<div className="absolute inset-0 grid place-content-center justify-items-center gap-2 bg-sg-surface-2 p-3 text-center"><p role="alert" className="m-0 text-[12.5px] text-sg-muted">Förhandsvisningen kunde inte läsas.</p>
         <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>{setState('loading');setPlaying(false);setAttempt(value=>value+1);}}>Försök igen</button></div>}
-      {isVideo&&state==='ready'&&!playing&&<button type="button" aria-label={'Spela '+label+' med ljud'} onClick={()=>void play()} className="absolute bottom-2.5 left-2.5 inline-flex h-8 items-center gap-1.5 rounded-full border-0 bg-[rgba(15,16,18,.72)] px-3 text-xs font-semibold text-white backdrop-blur hover:bg-[rgba(15,16,18,.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime"><Play className="size-3.5" aria-hidden="true"/>Spela med ljud</button>}
+      {isVideo&&state==='ready'&&!playing&&<button type="button" aria-label={'Spela '+label+' med ljud'} onClick={()=>void play()} className={cn('absolute bottom-2.5 left-2.5 inline-flex h-8 items-center gap-1.5 rounded-full border-0 bg-[rgba(15,16,18,.72)] px-3 text-xs font-semibold text-white backdrop-blur hover:bg-[rgba(15,16,18,.85)]',focusRing)}><Play className="size-3.5" aria-hidden="true"/>Spela med ljud</button>}
     </div>
     <div className="flex items-start gap-2 p-3.5">
       <div className="min-w-0 flex-1"><h2 title={label} className="m-0 truncate text-[14px] font-semibold text-sg-text">{label}</h2>

@@ -2,7 +2,7 @@ import {useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode} fr
 import {ArrowLeft, ArrowRight, Ban, Check, Copy, RotateCcw} from 'lucide-react';
 import Link from '../../../runtime/navigation';
 import {HubPage, Crumbs, Card, Chip, Empty, KV, Note} from '../ui/hub';
-import {Button, buttonVariants, cn, plural, TechnicalDetails} from '../ui/kit';
+import {Button, buttonVariants, cn, focusRing, plural, TechnicalDetails} from '../ui/kit';
 import {ConfirmDialog, DialogSteps} from '../ui/dialog';
 import {toast} from '../ui/toast';
 import {DealerAvatar} from './dealer-identity-portrait';
@@ -28,10 +28,10 @@ const GAMES:Record<string,string>={blackjack:'Blackjack',roulette:'Roulette'};
 const failure=(error:unknown)=>{const status=error instanceof DemoError?error.status:0;return {status:'error' as const,message:error instanceof Error?error.message:'Okänt fel.',authentication:[401,403].includes(status)};};
 const companyHref=(company:DemoCompany,flik:string)=>`/admin/companies/${encodeURIComponent(company.id)}?flik=${flik}`;
 // The choice cards and fields of the guided dialogs (Nytt spelbord, Ny dealer), on the same tokens.
-const choiceClass=(on:boolean)=>cn('grid w-full min-w-0 content-start gap-1.5 rounded-xl border p-3.5 text-left text-[13px] text-sg-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime disabled:cursor-not-allowed disabled:opacity-60',
+const choiceClass=(on:boolean)=>cn('grid w-full min-w-0 content-start gap-1.5 rounded-xl border p-3.5 text-left text-[13px] text-sg-text transition-colors disabled:cursor-not-allowed disabled:opacity-60',focusRing,
   on?'border-sg-text bg-sg-surface shadow-[0_0_0_2px_var(--sg-lime)]':'cursor-pointer border-sg-border bg-sg-surface enabled:hover:bg-sg-surface-2');
 const choiceGrid='grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5';
-const fieldClass='h-10 w-full min-w-0 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime disabled:opacity-60';
+const fieldClass='h-10 w-full min-w-0 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint disabled:opacity-60 '+focusRing;
 const linkClass='font-semibold text-sg-accent-text no-underline hover:underline';
 const alertClass='m-0 rounded-lg bg-sg-danger-bg px-3.5 py-2.5 text-[13px] text-sg-danger';
 const small='m-0 text-[12.5px] text-sg-muted';
@@ -164,7 +164,7 @@ function TopUp({value,permissions,revoked}:{value:DemoLaunch;permissions:DemoPer
       <p className={cn(small,'mt-0.5')}>Saldo nu: {formatMoney(known.balance,currency)}. Påfyllningen går till demospelaren i kvittot.</p></div>
     <form className="grid items-end gap-2 sm:grid-cols-[minmax(0,220px)_auto] sm:justify-start" onSubmit={submit}>
       <Field id="demo-topup" label={`Belopp${currency?` (${currency})`:''}`}>
-        <input id="demo-topup" className={fieldClass} inputMode="decimal" autoComplete="off" value={amount} disabled={Boolean(blocked)||busy} onChange={event=>setAmount(event.target.value)}/></Field>
+        <input id="demo-topup" className={cn(fieldClass,'focus-visible:ring-offset-sg-surface-2')} inputMode="decimal" autoComplete="off" value={amount} disabled={Boolean(blocked)||busy} onChange={event=>setAmount(event.target.value)}/></Field>
       <Button type="submit" size="lg" disabled={Boolean(blocked)||busy||checked.amount===null}>{busy?'Fyller på…':'Fyll på'}</Button>
     </form>
     {blocked?<p className={missingClass}>{blocked}</p>:amount.trim()&&checked.missing&&<p className={missingClass}>{checked.missing}</p>}
