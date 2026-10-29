@@ -1,6 +1,6 @@
 # Scoutgaming: ordlista
 
-Vad orden betyder i produkten. Ett ord per begrepp i all text som vänder sig till användare; kodens namn står inom parentes en gång och byter inte namn för att ett ord byts i menyn. Ordlistan låser inga flöden: hur Admin ska se ut står i [målbilden](../../../docs/plans/ADMIN-FORENKLING.md), hur koden hänger ihop i [kablagekartan](../../../docs/plans/ADMIN-KARTA.md), arbetsstegen i [användarguiden](README.md) och de tekniska medieformaten i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md). Uppdaterad 28 oktober 2026.
+Vad orden betyder i produkten. Ett ord per begrepp i all text som vänder sig till användare; kodens namn står inom parentes en gång och byter inte namn för att ett ord byts i menyn. Ordlistan låser inga flöden: hur Admin ska se ut står i [målbilden](../../../docs/plans/ADMIN-FORENKLING.md), hur koden hänger ihop i [kablagekartan](../../../docs/plans/ADMIN-KARTA.md), arbetsstegen i [användarguiden](README.md) och de tekniska medieformaten i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md). Uppdaterad 29 oktober 2026.
 
 ## Tre nivåer
 
@@ -79,7 +79,7 @@ Ska Johns Bet få ett fjärde spelbord som ser ut som Loungen, skapar Admin ett 
 - **Spelbordets utseende** (`branding`, `roomOverrides`): vald bakgrund, dealer och bordsgrafik per spelbord inom tilldelningen. Ändras som utkast, granskas och publiceras. Utkastet är i dag ett per bolag, inte per spelbord.
 - **Utkast** och **live**: det sparade läget mot det publicerade. Spelaren ser bara live. Pågående rundor spelas klart på den gamla versionen; nästa runda får den nya.
 - **Publicering**: tal godkänns, paketet publiceras och sist spelbordets spelinställningar. Målbilden samlar det till en knapp per spelbord med granskning och kvitto.
-- **Demo** (**Skapa demo**): Admins guide som sätter ihop bolag, spelbord och dealer för en visning. Demolänken är avstängd tills API-nycklar knyts till bolag.
+- **Demo** (**Skapa demo**): Admins guide som sätter ihop bolag, spelbord och dealer för en visning. Demolänken startar spelet med en API-nyckel för det valda bolaget.
 - **Bolagets eget material** (planerat): bakgrunder och bordsgrafik som bolaget skapar själv, genom uppladdning eller AI. Scoutgaming godkänner varje material med ett klick, och materialet syns bara på bolagets egna spelbord. Bordsgrafik ritas alltid efter dealerns landningsmall. Det kräver en ny tabell i databasen (migrering 021) innan det byggs.
 - **Papperskorgen**: arkivering som går att ångra. Historik och källmedia raderas aldrig som bieffekt; permanent radering är ett eget steg.
 
@@ -128,7 +128,7 @@ Admin bestämmer per bolag vilka dealers, mallar, material och insatsprofiler bo
 - **Bolagets team** (`operator_memberships`): bolagets personer med en roll. Standardrollerna är **administratör** (`partner-admin`, alla behörigheter, utses bara av Admin), **redaktör** (`partner-editor`, ser och ändrar spelbord) och **läsare** (`partner-viewer`, ser allt i bolaget). Den sista administratören kan inte stängas av.
 - **Behörighet**: kodens tolv namn (`overview.read`, `tables.read`, `tables.configure`, `presentations.read`, `presentations.configure`, `players.read`, `reports.read`, `integrations.read`, `team.read`, `team.invite`, `team.roles.assign`, `team.suspend`). En dold meny är ingen behörighet; servern avgör.
 - **Spelare** (`players`): ett spelarkonto med saldo och historik. Efter O03 tillhör varje spelare exakt ett bolag.
-- **API-nyckel** (`api_keys`): bolagets nyckel för att starta spelare från sin egen sajt; **testsession** är en start med demokrediter.
+- **API-nyckel** (`api_keys`): bolagets nyckel för att starta spelare från sin egen sajt. Varje nyckel hör till exakt ett bolag, som väljs när Admin skapar den och aldrig byts; spelare som startas med den hamnar hos bolaget. Partnerportalen visar bolagets egna nycklar maskerade. **Testsession** är en start med demokrediter.
 - **Journal** (`operator_audit_events`): bolagets händelser, synlig för Admin och för bolagets administratör.
 
 ## Lagring

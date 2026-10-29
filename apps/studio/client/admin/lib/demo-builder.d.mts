@@ -9,8 +9,6 @@ export const DEMO_KEY_SCOPES:readonly ('launch'|'play')[];
 export const DEMO_KEY_PREFIX:'demo-';
 export const DEMO_NAME_MAX:number;
 export const DEMO_CREDIT_MAX:number;
-export const DEMO_LAUNCH_ENABLED:boolean;
-export const DEMO_LAUNCH_OFF_TEXT:string;
 
 export type DemoOperatorRow={id:string;slug:string;name:string;status:string;packageRevision:number|null;archivedAt?:string|null};
 export type DemoRoomRow={id:string;name:string;operatorId:string;game?:string;state:string;published:boolean;playable:boolean;
@@ -73,6 +71,6 @@ export function readDemoSession(fetchImpl?:typeof fetch,signal?:AbortSignal):Pro
 export function readDemoCatalogFrom(fetchImpl?:typeof fetch,signal?:AbortSignal):Promise<DemoAdministration>;
 export function readRoomGameConfig(fetchImpl:typeof fetch|undefined,context:{operatorId:string;roomId:string},signal?:AbortSignal):Promise<RoomGameConfigReceipt>;
 export function postAdminAction(fetchImpl:typeof fetch|undefined,action:string,body:Record<string,unknown>,signal?:AbortSignal):Promise<Record<string,unknown>>;
-export function launchDemo(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;form:DemoForm;permissions:DemoPermissions;operatorSlug:string;roomId:string;dealerId:string|null;onPhase?:(phase:'create'|'launch')=>void}):Promise<DemoLaunch>;
+export function launchDemo(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;form:DemoForm;permissions:DemoPermissions;operatorId:string;operatorSlug:string;roomId:string;dealerId:string|null;onPhase?:(phase:'create'|'launch')=>void}):Promise<DemoLaunch>;
 export function creditDemo(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;keyId:string;playerId:string;amount:number}):Promise<DemoCreditReceipt>;
 export function revokeDemoKey(input:{fetchImpl?:typeof fetch;signal?:AbortSignal;keyId:string}):Promise<Record<string,unknown>>;

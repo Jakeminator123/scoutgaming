@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import * as demoLib from '../client/admin/lib/demo-builder.mjs';
-import {DEMO_KEY_SCOPES,DEMO_LAUNCH_ENABLED,DEMO_LAUNCH_OFF_TEXT,DEMO_STEPS,DemoError,chooseCompany,chooseDealer,chooseRoom,creditDemo,demoCompanies,demoCreditReceipt,demoCredits,demoDealers,demoDisplayName,demoErrorMessage,demoFormRequirement,demoKeyName,demoLaunchLink,demoPermissions,demoReceipt,demoRooms,
+import {DEMO_KEY_SCOPES,DEMO_STEPS,DemoError,chooseCompany,chooseDealer,chooseRoom,creditDemo,demoCompanies,demoCreditReceipt,demoCredits,demoDealers,demoDisplayName,demoErrorMessage,demoFormRequirement,demoKeyName,demoLaunchLink,demoPermissions,demoReceipt,demoRooms,
   editDemo,expiryText,goToStep,initialDemoState,launchDemo,nextLabel,nextStep,previousStep,reachableStep,readCreditAmount,readDemoCatalog,revokeDemoKey,stepRequirement} from '../client/admin/lib/demo-builder.mjs';
 import {approvedPartnerLaunchUrl} from '../lib/partner-launch-url.mjs';
 import {designPreviewPages,designPreviewReturnTo} from '../lib/design-preview-paths.mjs';
@@ -60,7 +60,7 @@ test('steps: each step demands its choice, names the next step and never skips a
   assert.equal(nextLabel(4),'Skapa demolänk');
   state=editDemo(state,'name','Demo Johns Bet');
   assert.equal(demoFormRequirement(state).ready,true);
-  assert.deepEqual(stepRequirement(state),DEMO_LAUNCH_ENABLED?{ready:true,missing:''}:{ready:false,missing:DEMO_LAUNCH_OFF_TEXT},'steg 4:s krav följer DEMO_LAUNCH_ENABLED');
+  assert.deepEqual(stepRequirement(state),{ready:true,missing:''},'steg 4 kräver bara formuläret: demolänken är påslagen');
   assert.equal(demoFormRequirement(editDemo(state,'displayName','x'.repeat(41))).ready,false,'visningsnamn över 40 tecken stoppar');
   assert.equal(demoFormRequirement(editDemo(state,'displayName','Bad\u0007name')).missing,'Visningsnamnet får vara högst 40 tecken utan styrtecken.');
   assert.equal(editDemo(state,'currency','GBP').form.currency,'EUR','okänd valuta ignoreras');
@@ -92,6 +92,9 @@ test('link: the engine address must be the approved game start; company, room an
   assert.equal(demoLaunchLink(launchPayload(),context),`${ORIGIN}/game?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow&dealer=paow`);
   assert.equal(demoLaunchLink(launchPayload(),{...context,dealerId:null}),`${ORIGIN}/game?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow`);
   assert.equal(demoLaunchLink(launchPayload({url:`${ORIGIN}/blackjack?dealer=astrid&launch=aaa.bbb.ccc`}),context),`${ORIGIN}/blackjack?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow&dealer=paow`,'en äldre dealer=astrid-adress ersätts med vald dealer');
+  // Nyckel→bolag: motorn sätter nyckelns bolag i adressen; samma bolag ger länken, ett annat ingen.
+  assert.equal(demoLaunchLink(launchPayload({url:`${ORIGIN}/game?operator=johns-bet&launch=aaa.bbb.ccc`}),context),`${ORIGIN}/game?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow&dealer=paow`);
+  assert.throws(()=>demoLaunchLink(launchPayload({url:`${ORIGIN}/game?operator=acme-play&launch=aaa.bbb.ccc`}),context),/annat bolag än demons/);
   for (const url of ['https://evil.invalid/game?launch=aaa.bbb.ccc',`http://${ORIGIN.slice(8)}/game?launch=aaa.bbb.ccc`,`${ORIGIN}/lobby?launch=aaa.bbb.ccc`,`${ORIGIN}/game?launch=aaa.bbb.ccc&returnTo=x`,`${ORIGIN}/game?launch=not-a-token`,`${ORIGIN}/game`,`${ORIGIN}/game?launch=aaa.bbb.ccc#x`]) {
     assert.throws(()=>demoLaunchLink(launchPayload({url}),context),/godkända speladressen/,url);
   }
@@ -121,6 +124,10 @@ test('permissions: the wrong role is refused by the server policy and the page s
   assert.match(demoErrorMessage('create',409,null),/^Nyckeln kunde inte skapas: .*Läs in sidan/);
   assert.equal(demoErrorMessage('launch',503,{code:'studio_presentation_runtime_update_required'}),'Testsessionen kunde inte startas: spelmotorn eller nyckeltjänsten är tillfälligt otillgänglig. Inget skapades lokalt. (studio_presentation_runtime_update_required)');
   assert.equal(demoErrorMessage('revoke',503,{code:'<script>'}).includes('<'),false,'okända koder visas inte');
+  // Nyckel→bolag: apikeys/create nekar med en fast kod, som sidan säger i klartext.
+  assert.equal(demoErrorMessage('create',503,{code:'partner_key_operator_schema_pending'}),'Nyckeln kunde inte skapas: databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012), så ingen nyckel skapades. Demolänkar kan skapas när Scoutgaming har lagt in den. (partner_key_operator_schema_pending)');
+  assert.match(demoErrorMessage('create',422,{code:'partner_key_operator_invalid'}),/^Nyckeln kunde inte skapas: bolaget finns inte längre eller är avstängt/);
+  assert.doesNotMatch(demoErrorMessage('launch',503,{code:'partner_key_operator_schema_pending'}),/spelmigrering/,'koden förklaras bara för nyckeln');
 });
 
 test('credits: the refill is read from the published limit preset, never invented',()=>{
@@ -159,17 +166,17 @@ test('launch: creates a demo key that the server answers without key or secret, 
     throw new Error('unexpected '+url);
   };
   const phases=[];
-  const result=await launchDemo({fetchImpl,form:{name:' Johns Bet ',displayName:'',language:'sv',currency:'SEK'},permissions:demoPermissions(adminSession()),operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow',onPhase:phase=>phases.push(phase)});
+  const result=await launchDemo({fetchImpl,form:{name:' Johns Bet ',displayName:'',language:'sv',currency:'SEK'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow',onPhase:phase=>phases.push(phase)});
   assert.deepEqual(phases,['create','launch']);
   assert.deepEqual(calls.map(call=>[call.url,call.method,call.body]),[
-    ['/studio/api/admin/apikeys/create','POST',{name:'demo-Johns Bet',scopes:['launch','play'],purpose:'demo'}],
+    ['/studio/api/admin/apikeys/create','POST',{operatorId:'op-johns',name:'demo-Johns Bet',scopes:['launch','play'],purpose:'demo'}],
     ['/studio/api/admin/apikeys/launch','POST',{id:'key-1',displayName:'Johns Bet',currency:'SEK',language:'sv'}],
   ]);
   assert.ok(calls.every(call=>call.origin==='same-origin'));
   assert.deepEqual(result.key,{id:'key-1',name:'demo-Johns Bet'});
   // Även en server som felaktigt skickar med nyckel och hemlighet får dem aldrig vidare.
   const leaky=async url=>url.endsWith('/apikeys/create')?new Response(JSON.stringify({ok:true,key:{id:'key-9',name:'demo-Johns Bet',key:'ck_live_'+'k'.repeat(24),secret:'cs_'+'x'.repeat(43)}}),{status:200}):new Response(JSON.stringify(launchPayload()),{status:200});
-  const kept=await launchDemo({fetchImpl:leaky,form:{name:'Johns Bet',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'});
+  const kept=await launchDemo({fetchImpl:leaky,form:{name:'Johns Bet',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'});
   assert.deepEqual(kept.key,{id:'key-9',name:'demo-Johns Bet'});
   for (const value of [result,kept]) {assert.equal(JSON.stringify(value).includes('cs_'),false);assert.equal(JSON.stringify(value).includes('ck_live'),false);}
   assert.equal(result.link,`${ORIGIN}/game?launch=aaa.bbb.ccc&operator=johns-bet&table=room-paow&dealer=paow`);
@@ -177,14 +184,22 @@ test('launch: creates a demo key that the server answers without key or secret, 
 });
 
 test('launch: server errors are readable and a key created before a failed launch travels with the error',async()=>{
+  // Nyckel→bolag: utan bolag skapas ingen nyckel och inget anrop görs.
+  let reached=0;
+  for (const operatorId of [undefined,null,'','op johns'])
+    await assert.rejects(launchDemo({fetchImpl:async()=>{reached++;},form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId,operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),/registrerat bolag/);
+  assert.equal(reached,0);
+  const pending=async()=>new Response(JSON.stringify({error:'Action unavailable',code:'partner_key_operator_schema_pending'}),{status:503});
+  await assert.rejects(launchDemo({fetchImpl:pending,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),
+    error=>error.status===503&&/spelmigrering 012/.test(error.message)&&error.key===undefined);
   const forbidden=async()=>new Response(JSON.stringify({error:'Access denied'}),{status:403});
-  await assert.rejects(launchDemo({fetchImpl:forbidden,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),
+  await assert.rejects(launchDemo({fetchImpl:forbidden,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),
     error=>error instanceof DemoError&&error.status===403&&/Nyckeln kunde inte skapas: .*rollen admin/.test(error.message)&&error.key===undefined);
   const engineDown=async url=>url.endsWith('/apikeys/create')?new Response(JSON.stringify({ok:true,key:{id:'key-2',name:'Demo'}}),{status:200}):new Response(JSON.stringify({error:'Action unavailable'}),{status:503});
-  await assert.rejects(launchDemo({fetchImpl:engineDown,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),
+  await assert.rejects(launchDemo({fetchImpl:engineDown,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),
     error=>error.status===503&&/Testsessionen kunde inte startas: spelmotorn/.test(error.message)&&error.key.id==='key-2');
   const foreign=async url=>url.endsWith('/apikeys/create')?new Response(JSON.stringify({ok:true,key:{id:'key-3',name:'Demo'}}),{status:200}):new Response(JSON.stringify(launchPayload({url:'https://evil.invalid/game?launch=aaa.bbb.ccc'})),{status:200});
-  await assert.rejects(launchDemo({fetchImpl:foreign,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),/godkända speladressen/);
+  await assert.rejects(launchDemo({fetchImpl:foreign,form:{name:'Demo',displayName:'',language:'en',currency:'EUR'},permissions:demoPermissions(adminSession()),operatorId:'op-johns',operatorSlug:'johns-bet',roomId:'room-paow',dealerId:'paow'}),/godkända speladressen/);
   const revoked=[];
   await revokeDemoKey({fetchImpl:async(url,init)=>{revoked.push([url,JSON.parse(init.body)]);return new Response(JSON.stringify({ok:true,authority:'render'}),{status:200});},keyId:'key-2'});
   assert.deepEqual(revoked,[['/studio/api/admin/apikeys/revoke',{id:'key-2'}]]);
@@ -194,7 +209,10 @@ test('launch: server errors are readable and a key created before a failed launc
 // Samma matris som Integrationers projektion: demon godtar exakt de adresser som
 // lib/partner-launch-url.mjs godtar och bygger då länken på den adressen.
 const LAUNCH_URLS=[`${ORIGIN}/game?launch=a.b.c`,`${ORIGIN}/blackjack?launch=a.b.c`,`${ORIGIN}/game?dealer=astrid&launch=a.b.c`,`${ORIGIN}/game?launch=a.b.c&dealer=dragan`,
-  `${ORIGIN}/game?dealer=Wrong&launch=a.b.c`,`${ORIGIN}/game?dealer=&launch=a.b.c`,`${ORIGIN}/game?operator=north&launch=a.b.c`,`${ORIGIN}/game?launch=a.b.c&launch=a.b.c`,
+  `${ORIGIN}/game?operator=johns-bet&launch=a.b.c`,`${ORIGIN}/game?launch=a.b.c&operator=johns-bet&dealer=paow`,
+  `${ORIGIN}/game?operator=Johns&launch=a.b.c`,`${ORIGIN}/game?operator=api&launch=a.b.c`,`${ORIGIN}/game?operator=&launch=a.b.c`,`${ORIGIN}/game?operator=johns-bet&operator=johns-bet&launch=a.b.c`,
+  `${ORIGIN}/game?launch=a.b.c&table=room-paow`,
+  `${ORIGIN}/game?dealer=Wrong&launch=a.b.c`,`${ORIGIN}/game?dealer=&launch=a.b.c`,`${ORIGIN}/game?launch=a.b.c&launch=a.b.c`,
   `${ORIGIN}/game?dealer=astrid&dealer=astrid&launch=a.b.c`,`${ORIGIN}/game?launch=bad`,`${ORIGIN}/game?launch=a.b.c#x`,`${ORIGIN}/game`,`${ORIGIN}/lobby?launch=a.b.c`,
   'http://game.fixture.invalid/game?launch=a.b.c','https://user:pw@game.fixture.invalid/game?launch=a.b.c','https://evil.invalid/game?launch=a.b.c',
   'https://game.fixture.invalid:8443/game?launch=a.b.c',`${ORIGIN}/game?launch=${'a'.repeat(16400)}.b.c`,'not a url'];
@@ -206,7 +224,10 @@ test('link: the demo applies Integrationer\'s launch-address rule from lib/partn
     if(approved){accepted++;assert.equal(demoLaunchLink(launchPayload({url}),context),`${approved.origin}${approved.pathname}?launch=a.b.c&operator=johns-bet&table=room-paow&dealer=paow`,url);}
     else assert.throws(()=>demoLaunchLink(launchPayload({url}),context),/godkända speladressen/,url);
   }
-  assert.equal(accepted,4);
+  assert.equal(accepted,6);
+  // Motorns bolag i adressen är bara godkänt när det är demons bolag.
+  assert.ok(approvedPartnerLaunchUrl(`${ORIGIN}/game?operator=north&launch=a.b.c`,ORIGIN));
+  assert.throws(()=>demoLaunchLink(launchPayload({url:`${ORIGIN}/game?operator=north&launch=a.b.c`}),context),/annat bolag än demons/);
   for (const origin of [`${ORIGIN}/`,'http://game.fixture.invalid',undefined,null,'']) assert.equal(approvedPartnerLaunchUrl(`${ORIGIN}/game?launch=a.b.c`,origin),null,String(origin));
   assert.equal(approvedPartnerLaunchUrl(['https://game.fixture.invalid/game?launch=a.b.c'],ORIGIN),null,'bara en sträng är en adress');
 });
@@ -284,16 +305,16 @@ const renderDemoStep4=()=>renderDemo([{status:'ready',value:administration()},{s
 const visible=html=>html.slice(0,html.indexOf('<details'));
 const technical=html=>html.slice(html.indexOf('<details'));
 
-test('Skapa demolänk is off with the reason while DEMO_LAUNCH_ENABLED is false; steps 1–3 and Din demo still show the choices',{skip:DEMO_LAUNCH_ENABLED&&'demolänken är påslagen'},()=>{
-  assert.equal(DEMO_LAUNCH_ENABLED,false);
+test('Skapa demolänk is active at step 4 once the form is ready; nothing says the link comes later',()=>{
   const html=renderDemoStep4();
   assert.match(html,/<h2[^>]*>4\. Lansera<\/h2>/);
   const button=html.match(/<button[^>]*>Skapa demolänk<\/button>/)?.[0];
-  assert.ok(button,'knappen finns');assert.match(button,/disabled=""/,'knappen är inaktiv');
-  assert.ok(html.includes(DEMO_LAUNCH_OFF_TEXT),'texten står vid knappen');
-  assert.equal(DEMO_LAUNCH_OFF_TEXT,'Demolänken öppnar spelet med en partnernyckel. Delat bord för sådana sessioner kommer när nyckeln knyts till bolaget; tills dess går demon inte att spela vid ett publicerat delat bord. Skapa demolänk slås på då.');
+  assert.ok(button,'knappen finns');assert.doesNotMatch(button,/disabled/,'knappen är aktiv');
+  assert.doesNotMatch(html,/Demolänk kommer senare|slås på då|knyts till bolaget/,'ingen avstängningstext');
+  assert.match(html,/få en länk att skicka/);
+  assert.match(visible(html),/Nyckeln gäller bara Johns Bet/,'sidan säger att nyckeln hör till bolaget');
   for (const choice of ['Johns Bet','PAOW Blackjack','PAOW','Johns demo','demo-Johns demo'])assert.ok(html.includes(choice),'Din demo visar '+choice);
-  assert.doesNotMatch(html,/landar direkt|vid spelbordet/,'inga löften om att demon sätter sig vid bordet');
+  assert.equal('DEMO_LAUNCH_ENABLED' in demoLib,false);assert.equal('DEMO_LAUNCH_OFF_TEXT' in demoLib,false);
 });
 
 test('identities stay in Tekniska detaljer: company, table, dealer and the server actions are not in the visible page',()=>{

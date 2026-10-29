@@ -105,9 +105,32 @@ test('pit and tournament do not accept arbitrary config/body fields or synthetic
   assert.equal(f.state.document.value.tournaments[0].entries, 0);
 });
 test('partner metadata does not select credentials and incomplete runtime actions are absent', async () => {
-  const f = fixture(); f.state.rows = [{ id: 'x', scopes: '["launch"]', name: 'Partner' }];
-  assert.deepEqual((await f.call('GET','apikeys')).keys[0].scopes, ['launch']);
-  assert.ok(!/\b(?:key|secret)\b/.test(f.state.reads.at(-1)));
+  // Nyckel→bolag: each key names its company once game migration 012 has added the column, and the
+  // companies offered for a new key are this scope's only. Before 012 the column is never named.
+  for (const present of [false, true]) {
+    const reads = [];
+    const boDb = { prepare(sql) { reads.push(sql); return {
+      get: async () => sql.includes(' FROM pg_attribute ') ? { present } : assert.fail(sql),
+      all: async (...args) => {
+        if (sql.includes(' FROM croupier_studio.operators ')) {
+          assert.deepEqual(args, [scope.environment, scope.workspaceId]);
+          return [{ operator_id: 'north', name: 'North', status: 'active' }, { operator_id: 'gone', name: 'Gone', status: 'suspended' }];
+        }
+        if (sql.includes(' FROM api_keys ')) return [{ id: 'x', scopes: '["launch"]', name: 'Partner', ...(present ? { operator_id: 'north' } : {}) },
+          ...(present ? [{ id: 'y', scopes: 'not json', name: 'Other', operator_id: 'unknown-company' }] : [])];
+        return assert.fail(sql);
+      } }; } };
+    const listed = await fixture({ boDb }).call('GET', 'apikeys');
+    assert.equal(listed.operatorBinding, present ? 'ready' : 'pending');
+    assert.deepEqual(listed.operators, [{ id: 'north', name: 'North', status: 'active' }, { id: 'gone', name: 'Gone', status: 'suspended' }]);
+    assert.deepEqual(listed.keys[0].scopes, ['launch']);
+    assert.deepEqual(listed.keys.map(key => [key.id, key.operatorId, key.operatorName]), present ? [['x', 'north', 'North'], ['y', 'unknown-company', null]] : [['x', null, null]]);
+    assert.equal(Object.hasOwn(listed.keys[0], 'operator_id'), false);
+    const keyRead = reads.find(sql => sql.includes(' FROM api_keys '));
+    assert.ok(!/\b(?:key|secret)\b/.test(keyRead), keyRead);
+    assert.equal(keyRead.includes('operator_id'), present, 'the column is named only once it exists');
+  }
+  const f = fixture();
   for (const action of ['players/password','players/status','apikeys/revoke','apikeys/credit','speech-qa','voiceline-review','tier']) {
     assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`), false);
   }
