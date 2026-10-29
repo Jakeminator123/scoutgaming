@@ -14,11 +14,54 @@ const canonical = value => JSON.stringify(value, (_key, item) => record(item)
 const hash = value => createHash('sha256').update(canonical(value)).digest('hex');
 const fail = (code, status = 400) => { throw new StudioError(code, status); };
 
+// A committed public turn or settlement, named for the idle reaction it invites.
+// Stakes and returns only size the win here; they never reach the Director.
+export const IDLE_GAME_EVENTS = Object.freeze(['turn', 'blackjack', 'dealer-bust', 'win-big', 'win-small', 'push', 'lose']);
+export function idleGameEvent(event) {
+  if (event?.type === 'turn') return 'turn';
+  if (event?.type !== 'settle' || !Array.isArray(event.hands) || !event.hands.length) return null;
+  const outcomes = event.hands.map(hand => hand?.outcome);
+  if (outcomes.includes('blackjack')) return 'blackjack';
+  if (Number.isInteger(event.dealerTotal) && event.dealerTotal > 21 && outcomes.includes('win')) return 'dealer-bust';
+  const money = event.hands.every(hand => Number.isFinite(hand?.stake) && Number.isFinite(hand?.returned));
+  const staked = money ? event.hands.reduce((sum, hand) => sum + hand.stake, 0) : 0;
+  const net = money ? event.hands.reduce((sum, hand) => sum + hand.returned - hand.stake, 0) : 0;
+  // Big: the round at least doubled the whole stake; anything less is small.
+  if (outcomes.includes('win')) return money && staked > 0 && net >= staked ? 'win-big' : 'win-small';
+  return outcomes.every(outcome => outcome === 'push') ? 'push' : 'lose';
+}
+
 // Apps bind their own settings and registry; each request may override its snapshot.
 export function createIdleAdviceService({ director, projectModel, settings, settingsProvider, videoRegistry, registryLoader, fetchImpl = fetch, now = Date.now }) {
   const { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES, askDirector, remoteRequest } = director;
   const { buildRuntimeCatalog, validateProject, registeredIdlePolicy, isDealerId } = projectModel;
-  function validateBody(body, now) {
+  // A game event is the trigger instead of chat: the committed public instruction
+  // goes to the Director as the event; there is no observed chat to bind.
+  function validateGameEvent(body, now) {
+    if (!exact(body, ['requestId', 'project', 'dealerId', 'mode', 'sourceRef', 'gameEvent'])
+      || !id(body.requestId) || !isDealerId(body.dealerId)
+      || !['active', 'shadow'].includes(body.mode)) fail('idle_advice_invalid_request');
+    const source = body.sourceRef;
+    if (!exact(source, ['kind', 'channel', 'revision', 'messageId', 'at', 'event'])
+      || !id(source.channel, 200) || !id(source.messageId, 200) || !IDLE_GAME_EVENTS.includes(source.event)
+      || !Number.isSafeInteger(source.revision) || source.revision < 0 || !timestamp(source.at)) fail('idle_advice_invalid_source');
+    const at = Date.parse(source.at);
+    if (at > now || at + IDLE_ADVICE_LIMITS.ttlMs <= now) fail('idle_advice_expired_source', 409);
+    let project, input;
+    try { input = normalizeInput({ requestId: body.requestId, event: body.gameEvent, mode: body.mode }); }
+    catch { fail('idle_advice_invalid_event'); }
+    if (!['turn', 'settle'].includes(input.event.type) || idleGameEvent(body.gameEvent) !== source.event) fail('idle_advice_invalid_event');
+    try { project = validateProject(body.project); } catch { fail('idle_advice_invalid_project'); }
+    if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('idle_advice_invalid_request');
+    return { body: structuredClone({ ...body, project }), input, expiresAt: at + IDLE_ADVICE_LIMITS.ttlMs, reaction: source.event };
+  }
+  // Only the engine's own receipt-backed caller may name a game event; an HTTP
+  // body can never claim one (committedEvent is not part of any request).
+  function validateBody(body, now, committedEvent) {
+    if (committedEvent === true) {
+      if (!record(body?.sourceRef) || body.sourceRef.kind !== 'game-event') fail('idle_advice_invalid_source');
+      return validateGameEvent(body, now);
+    }
     if (!exact(body, ['requestId', 'project', 'dealerId', 'mode', 'sourceRef', 'observedChat'])
       || !id(body.requestId) || !isDealerId(body.dealerId)
       || !['active', 'shadow'].includes(body.mode)) fail('idle_advice_invalid_request');
@@ -49,10 +92,12 @@ export function createIdleAdviceService({ director, projectModel, settings, sett
     if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('idle_advice_invalid_request');
     try { input = normalizeInput({ requestId: body.requestId, event: { type: 'idle' }, mode: body.mode, context: { observedChat: chat } }); }
     catch { fail('idle_advice_invalid_observation'); }
-    return { body: structuredClone({ ...body, project }), input, expiresAt: at + IDLE_ADVICE_LIMITS.ttlMs };
+    return { body: structuredClone({ ...body, project }), input, expiresAt: at + IDLE_ADVICE_LIMITS.ttlMs, reaction: null };
   }
 
-  function idleCatalog(project, dealerId, registry) {
+  // reaction: a game event's name; its candidates sit on that event's own source
+  // type, so the Director sees the committed public instruction, not 'idle'.
+  function idleCatalog(project, dealerId, registry, reaction = null, sourceType = 'idle') {
     const policy = registeredIdlePolicy(project, dealerId);
     const family = registry?.families?.find(item => item.id === policy?.familyId && item.dealerId === dealerId
       && item.eventId === 'idle.ready' && item.situation === 'ready' && item.playbackType === 'idle-pool');
@@ -87,20 +132,27 @@ export function createIdleAdviceService({ director, projectModel, settings, sett
     const template = buildRuntimeCatalog(project, dealerId).events.find(node => node.id === 'idle.ready');
     const assetId = 'renderer-idle.noop';
     const baselineId = `${dealerId}.idle.ready.standard`;
+    const reacting = reaction !== null;
     const variants = [{ id: baselineId, label: primary.fileName, priority: 0, when: { all: [] }, assetId },
       // The existing Director prefers an applicable contextual candidate with
       // higher priority. This is advice, not a rule match: baseline/abstention
       // remain valid and finalizeDecision never forces an alternative.
       ...videos.map(video => ({ id: `${dealerId}.idle.ready.file-${video.id}`, label: video.adviceLabel,
         priority: 10, when: { all: [] }, assetId }))];
-    const idle = { id: `renderer-idle.${dealerId}`, label: 'Local renderer idle',
-      description: 'Local renderer-idle opportunity, not a published native game instruction. Baseline means no action.',
-      sourceType: 'idle', sourceRef: 'local-renderer-idle-not-native-game-event', sourceStatus: 'proposed',
-      match: template.match, exampleEvent: { type: 'idle' }, baselineVariantId: baselineId, variants };
+    const idle = reacting
+      ? { id: `idle-reaction.${reaction}.${dealerId}`, label: 'Idle reaction to a game event',
+        description: `One optional silent idle reaction after a committed public ${sourceType} (${reaction}). Baseline means no action.`,
+        sourceType, sourceRef: 'committed-public-game-event', sourceStatus: 'proposed',
+        match: { type: sourceType }, baselineVariantId: baselineId, variants }
+      : { id: `renderer-idle.${dealerId}`, label: 'Local renderer idle',
+        description: 'Local renderer-idle opportunity, not a published native game instruction. Baseline means no action.',
+        sourceType: 'idle', sourceRef: 'local-renderer-idle-not-native-game-event', sourceStatus: 'proposed',
+        match: template.match, exampleEvent: { type: 'idle' }, baselineVariantId: baselineId, variants };
     const catalog = { schemaVersion: 1, revision: 'renderer-idle.pending',
-      sourceNote: 'Renderer-idle only. Not a native game event, playback receipt, player memory or permission to speak.',
+      sourceNote: reacting ? 'Idle reaction only. Not a card, payout, playback receipt, player memory or permission to speak.'
+        : 'Renderer-idle only. Not a native game event, playback receipt, player memory or permission to speak.',
       triggerSources: [],
-      events: [...SOURCE_TYPES.filter(type => type !== 'idle').map(type => {
+      events: [...SOURCE_TYPES.filter(type => type !== sourceType).map(type => {
         const variantId = `renderer-idle-compat.${type}.standard`;
         return { id: `renderer-idle-compat.${type}`, label: 'Unused schema placeholder',
           description: 'No media candidates; this source type is not selectable by this endpoint.',
@@ -123,9 +175,9 @@ export function createIdleAdviceService({ director, projectModel, settings, sett
   // distributed exactly-once guarantee; the client also consumes each native ID.
   const jobs = new Map();
   let active = 0;
-  return async function advise(body, { signal, fetchImpl: requestFetch = fetchImpl, cacheScope, videoRegistry: requestRegistry } = {}) {
+  return async function advise(body, { signal, fetchImpl: requestFetch = fetchImpl, cacheScope, videoRegistry: requestRegistry, committedEvent = false } = {}) {
     if (cacheScope !== undefined && (typeof cacheScope !== 'string' || !/^[a-f0-9]{64}$/.test(cacheScope))) fail('idle_advice_invalid_owner_scope');
-    const checked = validateBody(body, now());
+    const checked = validateBody(body, now(), committedEvent);
     const { body: inputBody, input, expiresAt } = checked;
     const scoped = value => cacheScope === undefined ? value : canonical([cacheScope, value]);
     const jobKey = scoped(inputBody.requestId),channel = scoped(inputBody.sourceRef.channel);
@@ -149,7 +201,8 @@ export function createIdleAdviceService({ director, projectModel, settings, sett
     job.promise = Promise.resolve().then(async () => {
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       let selection;
-      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, requestRegistry ?? videoRegistry ?? await registryLoader()); }
+      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, requestRegistry ?? videoRegistry ?? await registryLoader(),
+        checked.reaction, input.event.type); }
       catch { return result('idle_catalog_unavailable_baseline'); }
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       if (selection.reason) return result(selection.reason);
@@ -182,7 +235,7 @@ export function createIdleAdviceService({ director, projectModel, settings, sett
       if (now() >= expiresAt) return result('idle_advice_expired_baseline');
       const status = publicProvider(reply?.provider?.status);
       if (status !== 'responded') return result(status);
-      const count = prepared.context.observedChat.messages.length;
+      const count = prepared.context.observedChat?.messages.length ?? 0;
       if (reply.provider.contextContractVersion !== 2 || reply.provider.observedChatMessages !== count) {
         return result(configured.remoteUrl ? 'remote_context_not_supported_baseline' : 'context_not_supported_baseline');
       }

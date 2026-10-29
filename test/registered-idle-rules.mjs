@@ -162,3 +162,117 @@ test('Astrid legacy idle policy resolves through the same accessor without leaki
   f.project.dealerIdlePolicies.push({dealerId:'astrid',policy:own});
   assert.equal(registeredIdlePolicy(f.project,'astrid'),own,'explicit dealer policy has precedence');
 });
+
+// Game events trigger OpenClaw for an idle reaction without chat (the shared table has none).
+// The Director is a local stub here: no Gateway, no network.
+import { createIdleAdviceService, idleGameEvent } from '../packages/presentation/server/idle-advice.mjs';
+import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from '../packages/director/engine.mjs';
+import { buildRuntimeCatalog } from '../packages/presentation/contracts/studio-model.mjs';
+import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
+import { selectSharedRoomPresentation } from '../services/game/shared-room-presentation-selection.mjs';
+
+const settle = (hands, dealerTotal = 19) => ({ type: 'settle', dealerTotal, dealerBlackjack: false, hands });
+const hand = (outcome, stake = 10, returned = { win: 20, blackjack: 25, push: 10, lose: 0 }[outcome]) => ({ box: 3, stake, returned, outcome });
+function adviceFixture({ answer = prepared => prepared.eligible.find(row => row.priority === 10)?.id ?? null } = {}) {
+  const f = fixture();
+  f.policy.variants[0].use = 'openclaw'; f.policy.variants[0].description = 'jublar kort med händerna';
+  validateProject(f.project);
+  for (const video of f.inventory.videos) video.fileName = video.id + '.mp4';
+  const idleInventory = registeredIdleInventory(f.inventory, { dealerId: 'linnea', policy: f.policy });
+  const asked = [];
+  const director = { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES, remoteRequest: () => assert.fail('no remote Director'),
+    askDirector: async prepared => { asked.push(prepared);
+      return { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: answer(prepared) },
+        provider: { status: 'responded', contextContractVersion: 2, observedChatMessages: prepared.context.observedChat?.messages.length ?? 0 } }; } };
+  const service = createIdleAdviceService({ director, projectModel: { buildRuntimeCatalog, validateProject, registeredIdlePolicy, isDealerId },
+    settings: {}, videoRegistry: idleInventory });
+  // As the shared-table selection calls it; an HTTP body never carries committedEvent.
+  const advise = (body, options = {}) => service(body, { committedEvent: true, ...options });
+  return { ...f, idleInventory, asked, service, advise };
+}
+const gameBody = (f, event, patch = {}) => ({ requestId: 'game-1', project: structuredClone(f.project), dealerId: 'linnea', mode: 'active',
+  sourceRef: { kind: 'game-event', channel: 'room:a', revision: 4, messageId: 'event:1', at: new Date().toISOString(), event: idleGameEvent(event) },
+  gameEvent: event, ...patch });
+
+test('a committed turn or settlement is named for its idle reaction; stakes size the win only', () => {
+  assert.equal(idleGameEvent({ type: 'turn', box: 3, handIndex: 0, legalActions: ['stand'] }), 'turn');
+  assert.equal(idleGameEvent(settle([hand('blackjack'), hand('lose')])), 'blackjack');
+  assert.equal(idleGameEvent(settle([hand('win')], 24)), 'dealer-bust');
+  assert.equal(idleGameEvent(settle([hand('win'), hand('win', 20, 40)])), 'win-big');
+  assert.equal(idleGameEvent(settle([hand('win'), hand('lose')])), 'win-small');
+  assert.equal(idleGameEvent(settle([hand('push'), hand('push')])), 'push');
+  assert.equal(idleGameEvent(settle([hand('lose'), hand('push')])), 'lose');
+  for (const event of [{ type: 'deal' }, { type: 'idle' }, settle([]), null]) assert.equal(idleGameEvent(event), null);
+});
+
+test('OpenClaw answers a game event without chat: active returns the clip, shadow only the would-be choice', async () => {
+  const event = settle([hand('win'), hand('win', 20, 40)]);
+  for (const mode of ['active', 'shadow']) {
+    const f = adviceFixture(), result = await f.advise(gameBody(f, event, { mode }));
+    assert.equal(result.provider, 'responded');
+    assert.deepEqual([result.videoId, result.wouldChooseId], [mode === 'active' ? uuid(2) : null, uuid(2)]);
+    assert.deepEqual(result.contextReceipt, { contractVersion: 2, observedChatMessages: 0 });
+    const sent = f.asked[0];
+    assert.equal(sent.node.id, 'idle-reaction.win-big.linnea');
+    assert.deepEqual(sent.event, { type: 'settle', dealerTotal: 19, dealerBlackjack: false, hands: [{ box: 3, outcome: 'win' }, { box: 3, outcome: 'win' }] },
+      'the Director sees the public result, never stakes or returns');
+    assert.equal(sent.context.observedChat, undefined);
+    assert.match(sent.eligible.find(row => row.priority === 10).label, /jublar kort med händerna/);
+  }
+  const abstains = adviceFixture({ answer: () => null });
+  assert.equal((await abstains.advise(gameBody(abstains, event))).videoId, null);
+});
+
+test('a game event must be a committed turn or settlement whose name matches; nothing reaches the Director otherwise', async () => {
+  const f = adviceFixture(), event = settle([hand('win')]);
+  const refused = [
+    gameBody(f, event, { gameEvent: settle([hand('lose')]) }),
+    gameBody(f, { type: 'deal', to: 'dealer', box: null, faceDown: true, clip: { action: 'deal-dealer' }, card: null }),
+    { ...gameBody(f, event), sourceRef: { ...gameBody(f, event).sourceRef, event: 'player-joined' } },
+    (({ gameEvent, ...rest }) => rest)(gameBody(f, event)),
+    gameBody(f, event, { observedChat: { source: 'native-observation', before: new Date().toISOString(), messages: [] } }),
+    gameBody(f, event, { mode: 'rules' }),
+  ];
+  for (const body of refused) await assert.rejects(f.advise(body), /idle_advice_invalid/);
+  // The idle-advice HTTP routes pass client bodies without committedEvent: a claimed game event is refused.
+  await assert.rejects(f.service(gameBody(f, event)), /idle_advice_invalid_request/);
+  await assert.rejects(f.advise({ ...gameBody(f, event), sourceRef: { ...gameBody(f, event).sourceRef, kind: 'renderer-idle' } }), /idle_advice_invalid_source/);
+  assert.equal(f.asked.length, 0);
+});
+
+function sharedRoomFixture(idleMode, adviseIdle) {
+  const f = adviceFixture(), context = { operatorSlug: 'north', roomId: 'room-a', packageRevision: 7, dealerId: 'linnea' };
+  const frozen = { context, dealer: { id: 'linnea' }, project: f.project, inventory: { videos: structuredClone(f.inventory.videos), families: [] },
+    idleInventory: f.idleInventory, projectRevision: 'frozen-7', configurationSource: 'operator-package-v3', lane: { openclaw: { idle: idleMode } } };
+  const material = { revision: 'casual-' + 'a'.repeat(16), dealerId: 'linnea', language: 'sv', leadMs: 1000, cardMs: 1000,
+    media: f.records.map(row => ({ id: row.id, sha256: row.sha256 })) };
+  const logged = [];
+  const run = async sourceEvent => selectSharedRoomPresentation({
+    capture: { sourceEvent, published: [sourceEvent], material, version: 4, roomId: 'room-a', talkId: 'talk-4', language: 'sv', presentationContext: context, packageRevision: 7 },
+    body: { dealerId: 'linnea', mode: idleMode, version: 4, event: sourceEvent, presentationContext: context, sharedRoom: { roomId: 'room-a', ver: 4, talkId: 'talk-4' } },
+    frozenDealerContext: { resolve: async () => frozen, publicVideo: () => null }, select: async () => assert.fail('no media for a game event'),
+    request: null, playerId: 'alice', signal: new AbortController().signal, adviseIdle: adviseIdle ?? f.service, log: entry => logged.push(entry) });
+  return { f, run, logged };
+}
+
+test('the shared table asks OpenClaw at turn and settlement when idle is active or shadow, and never otherwise', async () => {
+  const turn = { type: 'turn', box: 3, handIndex: 0, legalActions: ['hit', 'stand'] }, won = settle([hand('blackjack')]);
+  for (const mode of ['active', 'shadow']) for (const event of [turn, won]) {
+    const s = sharedRoomFixture(mode), answer = await s.run(event);
+    assert.equal(answer.video, null);
+    assert.deepEqual({ ...answer.idleAdvice, expiresAt: typeof answer.idleAdvice.expiresAt },
+      { requestId: answer.decision.requestId, mode, event: idleGameEvent(event), videoId: mode === 'active' ? uuid(2) : null, wouldChooseId: uuid(2),
+        provider: 'responded', expiresAt: 'string', version: 4, presentationContext: { operatorSlug: 'north', roomId: 'room-a', packageRevision: 7, dealerId: 'linnea' } });
+    assert.equal(s.f.asked[0].node.id, `idle-reaction.${idleGameEvent(event)}.linnea`);
+    assert.deepEqual(s.logged.map(row => [row.event, row.mode, row.reaction, row.videoId, row.wouldChooseId]),
+      [['idle_game_event_advice', mode, idleGameEvent(event), mode === 'active' ? uuid(2) : null, uuid(2)]]);
+    assert.equal(JSON.stringify(s.logged).includes('alice'), false, 'the log names no player');
+  }
+  for (const mode of ['off', 'rules', 'random']) {
+    const s = sharedRoomFixture(mode, () => assert.fail('no OpenClaw call in mode ' + mode)), answer = await s.run(won);
+    assert.equal(Object.hasOwn(answer, 'idleAdvice'), false);assert.equal(s.logged.length, 0);
+  }
+  // Optional advice: a provider failure leaves the committed event's answer intact.
+  const failing = sharedRoomFixture('active', async () => { throw new Error('gateway down'); }), answer = await failing.run(won);
+  assert.equal(Object.hasOwn(answer, 'idleAdvice'), false);assert.deepEqual(answer.decision.sourceEvent, won);
+});
