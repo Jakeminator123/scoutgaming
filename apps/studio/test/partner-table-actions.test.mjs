@@ -13,7 +13,9 @@ import { NATIVE_FILMED_PLANNING_MUTATION } from '../lib/presentation-runtime-rea
 import { listPackageRooms } from '../../../packages/presentation/server/package-rooms.mjs';
 
 test('partner table actions on PostgreSQL', async t => {
-  const f = await partnerPostgresFixture(t);
+  // L3: pausa/öppna skriver bara dokumentet tills PR 3; med Studio 023 vinner paketets frysta läge.
+  // Därför körs 023 först när PR 3 är ute, och här utan 023 tills PR 3 tar bort undantaget.
+  const f = await partnerPostgresFixture(t, { deferOptional: ['023'] });
   const pack = () => f.direct.getCurrentPackage('north');
   // Admins tilldelning: en ny paketrevision med `assignment` i brandingen.
   const grant = async assignment => {

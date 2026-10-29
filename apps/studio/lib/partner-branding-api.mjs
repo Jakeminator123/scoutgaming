@@ -124,6 +124,9 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
       && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
+  // One room's view of the package: `tables` and the package's own `rooms` (Studio 023) together,
+  // or the package rooms would no longer match `tables` and read as a corrupt package (503).
+  const roomPackage=(pack,room)=>({...pack,tables:[room.id],rooms:pack.rooms?.filter(row=>row.id===room.id)??null});
   const cleanDraft=(draft,pack,source=store)=>cleanBrandingDraft(draft,pack,source);
   async function state(operatorId,source=store,document=null) {
     requireDraftStore(source);
@@ -132,7 +135,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const history=await source.listPackages(operatorId,{limit:20});
     return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:await cleanDraft(draft,pack,source),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
-      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
+      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices(roomPackage(pack,room),readPackagePresentation(pack),document)[room.presentationLaneId]])),
       rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
   }
   function assertEditable(branding) {
@@ -201,7 +204,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         &&!roomRights.has(key==='color'?'table.color':key))fail(422);
       const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);
       const baseline=resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},room.id,room.presentationLaneId);
-      const roomDealers=choices({...pack,tables:[room.id]},presentation,document)[selectedLane.id];
+      const roomDealers=choices(roomPackage(pack,room),presentation,document)[selectedLane.id];
       checkedValues(value,baseline,selectedLane,roomDealers);
     }
     // Keep all N1-owned metadata exactly, replacing only the public editable surface.

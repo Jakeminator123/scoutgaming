@@ -60,6 +60,18 @@ test('active lane requires admin and a current revision; it preserves the other 
   assert.equal(f.state.document.value.gameLane,'mobile-phone');
 });
 
+// change() (bodyKeys, CAS, server actor), proven on game-lane now that A:room is gone (plan L3).
+test('change() saves with the server actor and exact CAS; a spoofed actor, an extra key or a stale revision saves nothing', async () => {
+  const f = fixture(), body = { lane: 'mobile-phone', expectedRevision: 'studio-original' };
+  for (const bad of [{ ...body, actor: 'attacker' }, { ...body, rooms: [] }, { ...body, expectedRevision: 'stale' }, { lane: 'mobile-phone' }]) {
+    await assert.rejects(f.call('POST', 'game-lane', bad));
+  }
+  assert.equal(f.state.writes.length, 0);
+  assert.deepEqual(await f.call('POST', 'game-lane', body), { ok: true, revision: 'studio-new' });
+  assert.equal(f.state.writes.length, 1);
+  assert.equal(f.state.writes[0].options.actor, 'operator'); assert.equal(f.state.writes[0].options.expectedRevision, 'studio-original');
+});
+
 test('lane creation and removal enforce role, CAS, replacement and preserve shared state', async () => {
   const f = fixture(), definition = { ...SAVED_GAME_LANES[0], id: 'mobile-two', label: 'Second mobile' };
   const body = { definition, expectedRevision: 'studio-original' };

@@ -74,7 +74,7 @@ Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012
 
 | Ledger | Format | Register och skrivare |
 | --- | --- | --- |
-| Studio `croupier_studio.storage_migrations` | `version` (`001`–`022`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
+| Studio `croupier_studio.storage_migrations` | `version` (`001`–`023`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
 | Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` registreras där i samma PR och mergas till `main` innan den körs. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
 
 Spelversionerna 006–014 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), 014 med kravsteget i [STEG-F](plans/STEG-F.md), där också Jakobs kommando för 014 står). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.
@@ -97,7 +97,7 @@ Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 
 
 | Del | Läge | Verktyg |
 | --- | --- | --- |
-| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte); 021 är inte körd. Readiness `ready:true`, inga obligatoriska väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
+| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte); 021 är inte körd. 023 (spelborden i paketet, valfri) kör Jakob med `node tools/check-migration-readiness.mjs --apply --only 023 --skip 021,022` (skippa de valfria som fortfarande väntar), först i preview och sedan här, när L3 PR 3 är ute. Readiness `ready:true`, inga obligatoriska väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
 | Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46:30Z, efter backupgrenen `backup-api-key-operator-20261029`): `api_keys.operator_id` är `NOT NULL` med index och oföränderlighetstrigger ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). Samma checksummor som filerna i `ops/neon-game` | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`); readiness läser hela ledgern |
 | Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*`. Efterhandsraderna skrivs med 013 ovan | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
 | Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/db-snapshot.mjs` |
