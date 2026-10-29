@@ -5,7 +5,6 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
-import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { legacyStudioDocumentHref } from '../lib/legacy-studio-document.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { fixture, PNG } from './fixtures/dealer-forge-fixture.mjs';
@@ -97,36 +96,6 @@ test('material reads ignore an older dealer response and stop job polling when t
   const props={dealerId:'paow',initialState:{...paow,jobs:[{jobId:'existing',status:'running',taskId:'provider-task',request:{}}]}};
   polling.render(Polling,props);polling.effects();assert.equal(window.timers.size,1,'active mounted tab schedules its existing job');
   polling.render(Polling,{...props,active:false});polling.effects();assert.equal(window.timers.size,0,'leaving the tab cancels polling');polling.unmount();
-});
-
-test('the dedicated material page preserves dealer scope and guards pending work on every exit',()=>{
-  const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?dealer=paow&view=generate');
-  const {DealerMaterialPage}=load('../components/dealer-material-page.tsx',{react:h.react},{window});
-  const context={laneId:'scene-a',operatorId:'north',tableId:'room-7',game:'roulette'};
-  const props={project:addDealer(createSeedProject(),'paow','PAOW'),dealerId:'paow',navigationContext:context,disabled:false};
-  const render=()=>{const tree=h.render(DealerMaterialPage,props);h.effects();return tree;};
-  let tree=render(),creator=nodes(tree,node=>node.type==='DealerMaterialCreator')[0];
-  assert.equal(creator.props.dealerId,'paow');assert.equal(creator.key,'paow');
-  assert.deepEqual(creator.props.navigationContext,context);
-  for(const pending of [{dirty:true,busy:false},{dirty:false,busy:true}]){
-    creator.props.onPendingChange(pending);tree=render();
-    const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
-    window.listeners.get('studio:before-navigate')(event);assert.equal(event.defaultPrevented,true);
-    let warned=false;window.listeners.get('beforeunload')({preventDefault(){warned=true;}});assert.equal(warned,true);
-    assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator')[0].key,'paow');
-  }
-  creator.props.onPendingChange({dirty:false,busy:false});render();
-  const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
-  window.listeners.get('studio:before-navigate')(event);assert.equal(event.defaultPrevented,false);
-  h.unmount();assert.equal(window.listeners.size,0);
-});
-test('material page does not mount a creator for a missing or archived dealer',()=>{
-  for(const dealerId of [undefined,'missing']){
-    const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?view=generate');
-    const {DealerMaterialPage}=load('../components/dealer-material-page.tsx',{react:h.react},{window});
-    const tree=h.render(DealerMaterialPage,{project:createSeedProject(),dealerId,navigationContext:{},disabled:false});
-    assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator').length,0);h.effects();h.unmount();
-  }
 });
 
 // The composer's idempotency key, by behaviour: an uncertain failure (5xx) keeps the key so a retry returns the

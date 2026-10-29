@@ -235,7 +235,7 @@ test('partner and template links are scoped to the selected owner and never carr
   const other=await registeredStudioHtml({operatorId:'b',mode:'package'},{compositions});
   assert.ok(hrefs(other).includes('/partner/b/rooms'));assert.equal(hrefs(other).some(href=>href.includes('/partner/a')||href.includes('operator=a')),false);
   const empty=await registeredStudioHtml({operatorId:'b',mode:'package'},{compositions:[]});
-  assert.ok(hrefs(empty).includes('/admin/scenes?tab=mallar'),'without templates the assignment points to Miljöer');
+  assert.ok(hrefs(empty).includes('/admin/scenes?tab=miljoer'),'without templates the assignment points to Miljöer');
   for(const section of ['appearance','state']){
     const foreign=await registeredStudioHtml({operatorId:'a',roomId:'other',mode:'room',section},{compositions});
     assert.equal(hrefs(foreign).some(href=>/rooms\?room=|\/partner\//.test(href)),false,'a cross-owner room never becomes this company\'s partner context');
@@ -246,7 +246,7 @@ test('the rooms lifecycle gets scene template links without the game or owner of
   const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'state'},{compositions});
   const navigation=walk(h.render(),node=>node.props?.kind==='rooms')[0].props.navigation;
   assert.equal(typeof navigation.rehearsalLabel,'string');assert.ok(navigation.rehearsalLabel);
-  assert.equal(navigation.compositionHref({id:'a'},{id:'bj',presentationLaneId:'one'}),'/admin/scenes?tab=mallar&composition=one&table=bj');
+  assert.equal(navigation.compositionHref({id:'a'},{id:'bj',presentationLaneId:'one'}),'/admin/scenes?tab=miljoer&composition=one&table=bj');
   for(const [owner,room] of [[{id:'a'},{id:'other',presentationLaneId:'three'}],[{id:'b'},{id:'bj',presentationLaneId:'one'}],[{id:'a'},{id:'bj',presentationLaneId:'two'}]]){
     assert.doesNotMatch(navigation.compositionHref(owner,room),/game=|operator=/,'another room, company or composition never lends its game or owner');
   }
