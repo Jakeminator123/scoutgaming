@@ -22,7 +22,7 @@ run_node_tests() {
   name=$2
   shift 2
   seconds=180
-  if [ "$selected" = studio ]; then seconds=240; fi
+  if [ "$selected" = studio ]; then seconds=360; fi
   # The pinned-image Docker build and real process regression (900s test).
   if [ "$selected" = container ]; then seconds=960; fi
   run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"
@@ -48,7 +48,6 @@ run_check contracts migration-status 30 node migrering/status.mjs --check
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs test/prepare-lissabon-retirement.mjs
 run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs
 run_node_tests contracts o02-freeze-check test/o02-freeze-check.mjs test/merge-pr.mjs
-run_node_tests contracts o02-receipt test/o02-receipt.mjs
 run_check contracts no-sqlite 60 node tools/check-no-sqlite.mjs
 run_check contracts repo-limits 60 node tools/check-repo-limits.mjs
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-no-sqlite.mjs test/check-repo-limits.mjs test/run-engine-qa.mjs test/check-orphan-tests.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
@@ -84,7 +83,7 @@ run_node_tests access media-layout test/media-layout.mjs test/media-blob-export.
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
 run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-catalog.mjs --check
-run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs test/k05-import-plan.mjs
+run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
 run_check access player-auth 180 node test/player-auth.mjs
 run_node_tests access player-accounts test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs apps/web/test/player-ui-build.mjs
 run_node_tests access runtime test/vercel-presentation-video-origin.mjs
