@@ -1,15 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { basename, dirname, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDocumentationPath } from './documentation-paths.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const indexingFiles = new Set(['.ignore', '.cursorignore']);
-// The orphan audit knows which tests a runner registers. CI's sparse classifier
-// checkout and copied fixtures carry only this file; then no consumers are added.
-const orphanAudit = existsSync(fileURLToPath(new URL('./check-orphan-tests.mjs', import.meta.url)))
-  ? await import('./check-orphan-tests.mjs') : null;
 
 // Git exports repository-local variables to hooks. Child commands must discover
 // the repository from their explicit cwd, including temporary Git fixtures.
@@ -198,13 +195,37 @@ function fixtureConsumerTests(changes, root) {
 
 // Text sources a test can load by path; documentation keeps its quick path.
 const consumerSource = /\.(?:[cm]?[jt]sx?|css|html|json)$/;
+// Manifests and lockfiles are read by setup and install tests, not loaded as code.
+const manifestOrLock = /(?:^|\/)(?:package[^/]*\.json|npm-shrinkwrap\.json|[^/]*-lock\.(?:json|ya?ml)|[^/]*\.lockb?)$/;
 // A source named by more tests than this is a shared contract (studio-model.mjs is
 // named by over a hundred). The full regression runs all of them; a subset chosen
 // here would only look complete, so such a source adds no consumers.
 export const SOURCE_CONSUMER_LIMIT = 8;
+// More changed sources without own tests than this is a sweep (a move, a rename,
+// a dependency bump); the search would cost more than it adds, and the full
+// regression in CI runs every test anyway.
+export const SOURCE_CONSUMER_SEARCH_LIMIT = 50;
+
+// The orphan audit knows which tests a runner registers. It is loaded only when a
+// search runs. CI's sparse classifier checkout and copied fixtures carry only this
+// file; then no consumers are added. A broken audit or runner file (a package.json
+// that does not parse) costs the search, never the hook.
+function registeredTests(root) {
+  const audit = fileURLToPath(new URL('./check-orphan-tests.mjs', import.meta.url));
+  if (!existsSync(audit)) return [];
+  try {
+    return createRequire(import.meta.url)(audit).auditOrphanTests({ root }).covered.map(entry => entry.file);
+  } catch (error) {
+    console.warn(`Source consumer search skipped: ${String(error?.message ?? error).split('\n')[0]}`);
+    return [];
+  }
+}
 
 // String literals outside comments. A template literal counts only without
-// placeholders: a computed path is unknown.
+// placeholders: a computed path is unknown. Regex literals are not recognized: a
+// quote or '//' inside one can hide the strings after it on that line or until the
+// next matching quote. That only loses consumers (a false negative, left to CI);
+// it never selects a test that does not load the path.
 function* stringLiterals(source) {
   for (const { 0: token, index } of source.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|`(?:\\.|[^`\\])*`/g)) {
     if (token[0] !== '/' && !(token[0] === '`' && token.includes('${'))) yield { value: token.slice(1, -1), index };
@@ -236,20 +257,24 @@ const loadsPath = name => (name.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+/g) ?? []).so
 // the repository root passed to a loader (import, require, resolve, join, readFile,
 // compile, URL, ...; checked by calleeOf/loadsPath), with or without extension.
 // Only without an exact name, and only passed to a loader: a trailing part of at
-// least two segments ('components/x.tsx', 'ui/kit'), the file name with extension,
-// or a hyphenated name without extension (tsx('dealer-directory')). Path lists in
-// classification tests and single words such as 'dialog' or 'error' are data.
+// least two segments ('components/x.tsx', 'ui/kit'), or a hyphenated file name
+// with or without extension (tsx('dealer-directory'),
+// 'dealer-directory.tsx'). Path lists in classification tests and single words
+// such as 'dialog', 'page.tsx' or 'room.mjs' are data or name another file.
+// Manifests and lockfiles never search.
 function sourceConsumerTests(paths, root) {
-  if (!paths.length || !orphanAudit) return [];
+  paths = paths.filter(path => !manifestOrLock.test(path));
+  if (!paths.length || paths.length > SOURCE_CONSUMER_SEARCH_LIMIT) return [];
   const targets = paths.map(path => {
     const stemPath = path.replace(/\.[^./]+$/, ''), stem = basename(stemPath);
     const trailing = [path, stemPath].flatMap(key => key.split('/').map((_, i, parts) => parts.slice(i).join('/')).slice(1, -1));
-    if (/^[\w.]+(?:[-_][\w.]+)+$/.test(stem)) trailing.push(stem);
-    return { path, exact: new Set([path, stemPath]), loose: new Set([...trailing, basename(path)]), stem,
+    if (/^[\w.]+(?:[-_][\w.]+)+$/.test(stem)) trailing.push(stem, basename(path));
+    return { path, exact: new Set([path, stemPath]), loose: new Set(trailing), stem,
       exactTests: new Set(), looseTests: new Set() };
   });
-  for (const { file } of orphanAudit.auditOrphanTests({ root }).covered) {
-    const source = readFileSync(resolve(root, file), 'utf8');
+  for (const file of registeredTests(root)) {
+    let source;
+    try { source = readFileSync(resolve(root, file), 'utf8'); } catch { continue; }
     // Every rule ends in the file name, so only tests containing it are parsed.
     const relevant = targets.filter(target => target.path !== file && source.includes(target.stem));
     if (!relevant.length) continue;
