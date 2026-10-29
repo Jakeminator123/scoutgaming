@@ -28,12 +28,22 @@ function presentationTimeout(presentation, stallMs) {
   return Math.ceil(Math.max(planned, mediaBudget) + stallMs);
 }
 
-function readState(data, roomId, maxMessageBytes) {
+function readFrame(data, maxMessageBytes) {
   // Browser WebSocket delivers the server's JSON text. Binary frames are never
   // decoded or expanded, and both UTF-16 length and wire bytes are bounded.
   if (typeof data !== 'string' || data.length > maxMessageBytes
     || new TextEncoder().encode(data).byteLength > maxMessageBytes) invalid();
-  const frame = JSON.parse(data), s = frame?.snapshot, p = frame?.presentation;
+  return JSON.parse(data);
+}
+// Chat (PR 1): one line in the room's chat log; never game state.
+function readChat(frame, roomId) {
+  if (Object.keys(frame).length !== 7 || frame.roomId !== roomId || !id(frame.requestId) || !['you', 'player', 'dealer'].includes(frame.who)
+    || !(frame.seat === null || (Number.isSafeInteger(frame.seat) && frame.seat >= 1 && frame.seat <= 7))
+    || typeof frame.text !== 'string' || !frame.text.trim() || frame.text.length > 1000 || !integer(frame.at)) invalid();
+  return Object.freeze({ requestId: frame.requestId, who: frame.who, seat: frame.seat, text: frame.text, at: frame.at });
+}
+function readState(frame, roomId) {
+  const s = frame?.snapshot, p = frame?.presentation;
   if (!object(frame) || frame.type !== 'shared-room-state' || frame.roomId !== roomId
     || !object(s) || s.contract !== 'blackjack-table/1' || s.roomId !== roomId
     || !integer(s.version) || !integer(s.presentationVer) || !id(s.configVersion) || !id(s.windowId)
@@ -101,7 +111,7 @@ const eventTarget = value => value && typeof value.addEventListener === 'functio
  */
 export function createSharedRoomClient({
   roomId, browserOrigin, WebSocket = globalThis.WebSocket,
-  restoreSnapshot, present, onError = () => {}, now = Date.now,
+  restoreSnapshot, present, onChat = () => {}, onError = () => {}, now = Date.now,
   maxMessageBytes = 256 * 1024, maxPendingStates = 4,
   maxReconnectAttempts = 20, reconnectDelayMs = 250, maxReconnectDelayMs = 5000, reconnectBudgetMs = 60000,
   connectTimeoutMs = 5000, callbackTimeoutMs = 10000,
@@ -112,7 +122,7 @@ export function createSharedRoomClient({
   try { origin = new URL(browserOrigin); } catch { throw new TypeError('shared_room_invalid_origin'); }
   if (!id(roomId) || origin.origin !== browserOrigin || !['http:', 'https:'].includes(origin.protocol)
     || (globalThis.location && globalThis.location.origin !== browserOrigin)
-    || ![WebSocket, restoreSnapshot, present, onError, now].every(port => typeof port === 'function')
+    || ![WebSocket, restoreSnapshot, present, onChat, onError, now].every(port => typeof port === 'function')
     || !Number.isSafeInteger(maxMessageBytes) || maxMessageBytes < 256 || maxMessageBytes > 1024 * 1024
     || !Number.isSafeInteger(maxPendingStates) || maxPendingStates < 1 || maxPendingStates > 32
     || !Number.isSafeInteger(maxReconnectAttempts) || maxReconnectAttempts < 0 || maxReconnectAttempts > 60
@@ -254,7 +264,13 @@ export function createSharedRoomClient({
     const receivedAt = now();
     let frame;
     try {
-      frame = readState(event.data, roomId, maxMessageBytes);
+      frame = readFrame(event.data, maxMessageBytes);
+      if (object(frame) && frame.type === 'shared-room-chat') {
+        const line = readChat(frame, roomId);
+        try { onChat(line); } catch {}
+        return;
+      }
+      frame = readState(frame, roomId);
       if (actorId !== undefined && frame.snapshot.me.id !== actorId) invalid();
     } catch { finish('shared_room_invalid_state'); return; }
     actorId ??= frame.snapshot.me.id;

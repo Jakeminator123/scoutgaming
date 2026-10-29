@@ -189,6 +189,26 @@ export function createSharedRoomService({
     },
     close: () => channel.close(),
   } });
+  // Chat (PR 1): the socket's authorization and client snapshot plus the room's published dealer,
+  // read under the room lock like withActiveRoomPresentation. No command, wallet or outbox write.
+  async function chatContext(request, { roomId, signal } = {}) {
+    if (typeof repository?.sharedTransaction !== 'function' || typeof runtime.withLockedRead !== 'function'
+      || typeof access.readPresentationContextLocked !== 'function') throw unavailable();
+    const combined = request?.signal && signal ? AbortSignal.any([request.signal, signal]) : request?.signal ?? signal;
+    return read(async active => {
+      assertSharedPostgresOwner();
+      const binding = await access.authorize(request, { roomId, signal: active });
+      active.throwIfAborted(); requireRoomReady(roomId);
+      const context = await repository.sharedTransaction(() => runtime.withLockedRead({ rooms: [roomId], players: [binding.actorId] }, async reader => {
+        const room = await reader.room(roomId); active.throwIfAborted();
+        return access.readPresentationContextLocked(binding, { configVersion: room?.configVersion ?? null, signal: active });
+      }), { serialize: true });
+      active.throwIfAborted();
+      const snapshot = projectSharedRoomSnapshot(await runtime.coordinator.snapshot(roomId, binding.actorId, { client: true }), binding);
+      return Object.freeze({ binding, dealerId: context?.context?.dealerId, snapshot });
+    }, combined);
+  }
+  function emitChat(roomId, entry) { requireReady(); channel.emitChat(roomId, entry); }
   function release() {
     if (cleanup) return cleanup;
     lifetime.abort(stopped());
@@ -239,7 +259,7 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health, command, withSharedCommittedReceipt, withActiveRoomPresentation,
+  return Object.freeze({ start, close, stop: close, health, command, chatContext, emitChat, withSharedCommittedReceipt, withActiveRoomPresentation,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }
 

@@ -331,3 +331,25 @@ test('F11: room observations reread only sockets that are behind, never during a
   h.channel.close();assert.deepEqual(a.closed,[{code:1012,reason:'shared_room_restart'}]);
   h.channel.observeRoom('room-a',{version:9,presentationVer:9});await turn();assert.equal(a.frames.length,4);
 });
+
+test('chat lines fan out per socket as you/player/dealer, replay the last chatLimit on attach and inbound stays closed',async t=>{
+  const h=setup(t,{chatLimit:2,authorize:async(req,{roomId})=>({...binding(roomId),actorId:req.headers.get('x-fixture-actor')??'player-a'}),revalidate:async b=>b,
+    readSnapshot:async(room,actor)=>{const s=snapshot(room);s.me={...s.me,id:actor};return s;}});
+  const a=await h.attach(),b=new Socket();
+  (await h.channel.prepare(new Request(`${origin}/shared-room/room-a`,{headers:{origin,'x-fixture-actor':'player-b'}}))).attach(b);
+  const elsewhere=await h.attach('room-b');
+  await until(()=>a.frames.length===1&&b.frames.length===1&&elsewhere.frames.length===1);
+  h.channel.emitChat('room-a',{requestId:'chat-1',actorId:'player-a',seat:1,text:'Hej',at:5});
+  h.channel.emitChat('room-a',{requestId:'chat-1',actorId:null,seat:null,text:'Hej själv',at:6});
+  const chat=socket=>socket.frames.filter(f=>f.type==='shared-room-chat');
+  assert.deepEqual(chat(a),[{type:'shared-room-chat',roomId:'room-a',requestId:'chat-1',who:'you',seat:1,text:'Hej',at:5},
+    {type:'shared-room-chat',roomId:'room-a',requestId:'chat-1',who:'dealer',seat:null,text:'Hej själv',at:6}]);
+  assert.deepEqual(chat(b).map(f=>f.who),['player','dealer']);assert.equal(chat(elsewhere).length,0);
+  assert.ok(!JSON.stringify(chat(b)).includes('player-'),'no actor id in a chat frame');
+  h.channel.emitChat('room-a',{requestId:'chat-2',actorId:'player-b',seat:3,text:'Tredje',at:7});
+  const late=await h.attach();
+  assert.deepEqual(chat(late).map(f=>[f.who,f.text]),[['dealer','Hej själv'],['player','Tredje']]);
+  for(const bad of [{requestId:'chat-3',actorId:'player-a',seat:8,text:'x',at:1},{requestId:'chat-3',actorId:null,seat:null,text:' ',at:1},
+    {requestId:'chat-3',actorId:null,seat:null,text:'x'.repeat(1001),at:1}])assert.throws(()=>h.channel.emitChat('room-a',bad),/shared_room_request_rejected/);
+  a.emit('message','{"type":"shared-room-chat"}');assert.deepEqual(a.closed,[{code:1008,reason:'shared_room_read_only'}]);clean(a);
+});
