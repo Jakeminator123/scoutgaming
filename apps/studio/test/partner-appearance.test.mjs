@@ -336,7 +336,7 @@ test('legacy published composition labels are translated in review, and the port
     const lane=initial.presentation.lanes[0];
     lane.label='Mobile Phone Lane';
     initial.presentation.lanes.push({...structuredClone(lane),id:'layer-preview',label:'Layer Preview Lane'},
-      {...structuredClone(lane),id:'company-custom',label:'Bolagets egen sammansättning'});
+      {...structuredClone(lane),id:'company-custom',label:'Bolagets egen miljö'});
     initial.lanes=initial.presentation.lanes.map(row=>row.id);
     const before=JSON.stringify(initial);
     const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);assert.equal(body.action,'review');return response(reviewed(initial,{changes:[{roomId:null,key:'lane',before:'mobile-phone',after:'layer-preview'}]}));},{language});

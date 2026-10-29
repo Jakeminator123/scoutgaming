@@ -111,7 +111,8 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
         if(record&&(record.sha256!==video.sha256||record.size!==video.bytes||!same(record.classification,video.classification)))fail('studio_preview_media_mismatch',409);
         if(['upload'].includes(video.source)&&!record)fail('studio_preview_media_unavailable',503);
       }
-      const assets=freeze((project.layerAssets??[]).map(validateLayerAsset));
+      // A miljöbild (illustration) is never a layer, so the preview's library leaves it out.
+      const assets=freeze((project.layerAssets??[]).map(validateLayerAsset).filter(row=>row.role!=='illustration'));
       if(['table','background'].some(role=>assets.filter(row=>row.role===role).length>32))fail('studio_preview_layer_limit',422);
       const dealerAvailability=project.dealers.filter(row=>isActiveDealerId(row.id)).map(({id,label})=>({id,label,playable:Boolean(ownDealerIdle(project,inventory,id)),
         reason:ownDealerIdle(project,inventory,id)?null:'studio_preview_idle_required'}));

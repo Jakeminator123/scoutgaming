@@ -1,8 +1,8 @@
 // Shared menu, tab lists and dealer steps for the Admin shell and Hjälp. Words follow apps/studio/docs/TERMINOLOGI.md.
 export const adminNavigationGroups = [
-  {id:'content',label:'Innehåll',description:'Dealers, klipp, tal, scenmallar och material.',links:[
+  {id:'content',label:'Innehåll',description:'Dealers, klipp, tal, miljöer och material.',links:[
     {label:'Dealers',href:'/admin/dealers',description:'Ett nav per dealer: klippkarta, röst och tal, landningar, används av och inställningar.'},
-    {label:'Scenmallar och material',href:'/admin/scenes',description:'Placering av bakgrund, dealer och bordsgrafik, samt bakgrunder och bordsgrafik på ett ställe.'},
+    {label:'Miljöer och material',href:'/admin/scenes',description:'Placering av bakgrund, dealer och bordsgrafik, samt bakgrunder och bordsgrafik på ett ställe.'},
   ]},
   {id:'companies',label:'Bolag',description:'Bolagen och deras spelbord.',links:[
     {label:'Bolag och spelbord',href:'/admin/companies',description:'Ett nav per bolag: tilldelning, spelbord, spelare och ekonomi, team, integration, journal och inställningar.'},
@@ -19,7 +19,7 @@ export const adminDealerTabs = [
 ];
 export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','Mät landningar','Röst och tal','Godkänn','Tilldela'];
 export const adminSceneTabs = [
-  {id:'mallar',label:'Scenmallar'},{id:'bakgrunder',label:'Bakgrunder'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'papperskorg',label:'Papperskorg'},
+  {id:'mallar',label:'Miljöer'},{id:'bakgrunder',label:'Bakgrunder'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'papperskorg',label:'Papperskorg'},
 ];
 export const adminCompanyListTabs = [{id:'bolag',label:'Bolag'},{id:'spelbord',label:'Alla spelbord'},{id:'papperskorg',label:'Papperskorg'}];
 export const adminCompanyTabs = [

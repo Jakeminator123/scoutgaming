@@ -33,6 +33,6 @@ Före: blå info-ruta, rödrosa bricka "papperskorg" på varje rad, ensam "Alla 
 
 - **Admin, Bolag och spelbord:** Bolag och Alla spelbord S; bolagsnavet: Spelbord, Integration, Journal, Inställningar S, Tilldelning M, Team M (WorkspaceTool med `sg-*`).
 - **Admin, spelbordsnavet:** Dealer och Historik S; Utseende, Spelinställningar och Tillgänglighet L (CSS-moduler i `apps/studio/components`).
-- **Admin, övrigt:** Översikt S, Hjälp S, Dealers M, dealernavet M (klippkartan L), Scenmallar och material M (papperskorgen S), System M, Skapa demo M.
+- **Admin, övrigt:** Översikt S, Hjälp S, Dealers M, dealernavet M (klippkartan L), Miljöer och material M (papperskorgen S), System M, Skapa demo M.
 - **Delade komponenter:** `control-resource-lifecycle` S (syns i pilotens Sheet), `presentation-room-create` M, `lane-editor` L.
 - **Partnerportalen** (egen `views/ui.tsx` och `partner-portal.css`; flytten följer [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md)): skalet L, Översikt M, Spelbord M, Team M, Integration S, Rapporter S, Spelare S, Hjälp S.

@@ -49,7 +49,7 @@ test('a simultaneous remote lane edit remains an explicit conflict and retains t
 test('a missing or wrong-role upload receipt cannot change the draft',()=>{
   const {base,draft,remote,selection}=fixture(),before=structuredClone(draft);
   assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,role:'table'}),/registrering kunde inte verifieras/);
-  assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,laneId:'deleted-lane'}),/valda sammansättningen finns inte längre/);
+  assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,laneId:'deleted-lane'}),/valda miljön finns inte längre/);
   assert.deepEqual(draft,before);
 });
 

@@ -15,9 +15,9 @@ const conflictMessages = Object.freeze({
   presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
   presentation_shared_layer_conflict: 'Ett bord eller en bakgrund skiljer sig från paketets frysta definition. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
   presentation_legacy_package_conflict: 'Paketets äldre format kan inte uppdateras en presentation i taget. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
-  presentation_room_binding_conflict: 'Ett befintligt spelrum är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera sammansättningens startdealer mot rummets inställningar i Administration. Rummets koppling ändras inte av publicering.',
+  presentation_room_binding_conflict: 'Ett befintligt spelrum är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera miljöns startdealer mot rummets inställningar i Administration. Rummets koppling ändras inte av publicering.',
   presentation_game_lane_conflict: 'Den tekniska spelkonfigurationen krockar med en befintlig definition. Kontrollera Bord & spelrum i Administration. Skapa inte ett extra rum för att kringgå konflikten.',
-  presentation_room_environment_conflict: 'Sammansättningen används redan av publicerade rum med en annan miljö. Skapa en separat sammansättning för det nya rummets fasta bakgrund. Befintliga rum och deras publicerade miljöer ändras inte här.',
+  presentation_room_environment_conflict: 'Miljön används redan av publicerade rum med en annan miljö. Skapa en separat miljö för det nya rummets fasta bakgrund. Befintliga rum och deras publicerade miljöer ändras inte här.',
 });
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
@@ -120,9 +120,9 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
 }
 function readinessMessage(prepared, context) {
   if (prepared.projectRevision !== context.projectRevision) return 'Presentationen har ändrats. Ladda om sidan.';
-  if (prepared.reason === 'presentation_room_environment_required') return 'Ett nytt spelrum behöver en fast miljö. Välj en enda tillåten bakgrund som standard i Sammansättningar och spara. Använd en separat sammansättning om den nuvarande redan delas av publicerade rum. Inbakade miljöer för flera dealers kan inte räknas som samma rum.';
+  if (prepared.reason === 'presentation_room_environment_required') return 'Ett nytt spelrum behöver en fast miljö. Välj en enda tillåten bakgrund som standard i Miljöer och spara. Använd en separat miljö om den nuvarande redan delas av publicerade rum. Inbakade miljöer för flera dealers kan inte räknas som samma rum.';
   if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan rummet kan skapas.';
-  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar sammansättning. Kontrollera vald grundloop, dealer och lager i Sammansättning och spara.';
+  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar miljö. Kontrollera vald grundloop, dealer och lager i Miljö och spara.';
   if (prepared.reason === 'presentation_package_conflict' && prepared.conflictCode) return conflictMessages[prepared.conflictCode];
   if (prepared.reason === 'presentation_package_conflict') return 'Paketet kan inte uppdateras eftersom uppgifter har ändrats eller ett befintligt spelrum påverkas. Läs in bolagets aktuella paket och kontrollera presentationerna.';
   if (prepared.reason === 'presentation_package_too_large') return 'Paketet är för stort. Minska presentationens innehåll eller paketets urval och försök igen.';

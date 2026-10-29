@@ -44,6 +44,7 @@ run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test
 run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/studio-resource-lifecycle.test.mjs apps/studio/client/admin/lib/service-navigation.test.mjs
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs apps/studio/client/admin/lib/lifecycle-actions.test.mjs apps/studio/client/admin/lib/confirm-dialog.test.mjs
 run_node_tests admin room-release apps/studio/client/admin/lib/room-release.test.mjs apps/studio/client/admin/lib/room-settings-warning.test.mjs apps/studio/client/admin/lib/media-timing.test.mjs
+run_node_tests admin environment apps/studio/client/admin/lib/scene-cover.test.mjs apps/studio/client/admin/lib/scene-export.test.mjs
 run_check contracts migration-status 30 node migrering/status.mjs --check
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs test/prepare-lissabon-retirement.mjs
 run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs

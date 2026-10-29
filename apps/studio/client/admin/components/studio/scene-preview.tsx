@@ -47,16 +47,16 @@ export function ScenePreview({active,laneId,dealerId,game='blackjack',revision,s
   return <div className="grid gap-4">
     {(studio.status==='idle'||studio.status==='loading')&&<Loading label="Läser den sparade scenen…" rows={4}/>}
     {studio.status==='error'&&<Empty chip={null} title="Den sparade scenen kunde inte läsas" text="Projektet eller klippregistret svarade inte. Stäng förhandsvisningen och öppna den igen."/>}
-    {value&&!lane&&<Empty chip={null} title="Scenmallen finns inte i det sparade projektet"/>}
+    {value&&!lane&&<Empty chip={null} title="Miljön finns inte i det sparade projektet"/>}
     {value&&lane&&<>
       {shown?<CompositionPreview key={laneId+':'+scene.dealerId} minimal autoplay loopDealer dealer={scene.dealer} background={scene.background} table={scene.table}
         settings={scene.settings} layout="desktop" show={{dealer:true,background:true,table:true}} compositing={scene.compositing} framing={scene.framing}
         backgroundPlayback={scene.backgroundId!==lane.layers.background.default?undefined:lane.backgroundPlayback} backgroundAssets={clipAssets('background')}
         tablePlayback={game==='blackjack'&&scene.tableAsset?.id!==lane.layers.table.default?undefined:lane.tablePlayback} tableAssets={clipAssets('table')}/>
-        :<Empty chip={null} title="Scenen har inget att visa" text="Dealern saknar viloklipp och mallen saknar både bakgrund och bordsgrafik."/>}
-      {dealerId&&scene.dealerId!==dealerId&&<Note tone="warn">Den sparade scenmallen tillåter inte den här dealern. Förhandsvisningen visar mallens förvalda dealer.</Note>}
+        :<Empty chip={null} title="Scenen har inget att visa" text="Dealern saknar viloklipp och miljön saknar både bakgrund och bordsgrafik."/>}
+      {dealerId&&scene.dealerId!==dealerId&&<Note tone="warn">Den sparade miljön tillåter inte den här dealern. Förhandsvisningen visar miljöns förvalda dealer.</Note>}
       {!scene.dealer&&<Note tone="warn">Dealern saknar viloklipp. Koppla vilan i <Link href={dealerHref} className="font-semibold text-inherit">dealerns klippkarta</Link>, så syns dealern här.</Note>}
-      {!scene.background&&<Note tone="warn">Mallen saknar bakgrund. Välj en i <Link href={templateHref} className="font-semibold text-inherit">scenmallen</Link>.</Note>}
+      {!scene.background&&<Note tone="warn">Miljön saknar bakgrund. Välj en i <Link href={templateHref} className="font-semibold text-inherit">miljön</Link>.</Note>}
     </>}
     <div className="border-t border-sg-line-2 pt-4">
       <h3 className="m-0 mb-1 text-[13.5px] font-semibold">Provspela med spelmotorn</h3>
