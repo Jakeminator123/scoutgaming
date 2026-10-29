@@ -624,14 +624,63 @@ test('a composition removed from Studio stays visible in the package and blocks 
   assert.deepEqual(p.requests[0].body,{operatorId:'a',lanes:['one'],expectedPackageRevision:4});
 });
 
-test('the room editor publishes through the room release; the PAOW idle refresh and the interim package actions are gone',async()=>{
+test('an unchanged assignment is re-frozen only under Avancerat and a changed one only through the form button',async()=>{
+  const p=await publicationHarness();
+  const republish=()=>walk(p.h.render(),node=>node.type==='button'&&node.props?.['data-action']==='republish-package')[0];
+  const submitForm=async()=>{walk(p.h.render(),node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});await p.settle();};
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(p.submit().props.disabled,true,'an unchanged selection has nothing to publish in the form');
+  assert.equal(republish().props.disabled,false,'Avancerat re-freezes the unchanged selection');
+  await submitForm();assert.equal(p.requests.length,0,'the form never re-freezes an unchanged selection');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one']}));
+  republish().props.onClick();await p.settle();
+  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:4}],'the republish carries the CAS revision');
+  assert.match(p.status(),/\b5\b/);
+  assert.equal(textOf(p.submit()).trim(),'Publicera för a','the form button keeps its name after a receipt');assert.equal(textOf(republish()).trim(),'Publicera igen');
+  p.checkbox('two').props.onChange({target:{checked:true}});
+  assert.equal(p.submit().props.disabled,false,'a changed selection is published by the form');assert.equal(republish().props.disabled,true,'Avancerat waits');
+  republish().props.onClick();await p.settle();assert.equal(p.requests.length,1,'Avancerat never publishes a changed selection');
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','two']}));
+  await submitForm();
+  assert.deepEqual(p.requests[1].body,{operatorId:'a',lanes:['one','two'],expectedPackageRevision:5});
+  // A readback without a package revision is never a republish: the first publication is the form's and sends null.
+  const first=await publicationHarness();
+  const firstRepublish=()=>walk(first.h.render(),node=>node.type==='button'&&node.props?.['data-action']==='republish-package')[0];
+  first.lifecycle().props.onChanged(packageOperators({packageRevision:null,lanes:['one']}));
+  assert.equal(first.submit().props.disabled,false);assert.equal(firstRepublish().props.disabled,true);
+  first.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:1,lanes:['one']}));
+  await first.publish();
+  assert.deepEqual(first.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:null}]);
+});
+
+test('the room editor publishes through the room release and keeps the PAOW idle refresh under Avancerat',async()=>{
   const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
   const tree=p.h.render();
-  assert.equal(walk(tree,node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle').length,0,'idle is captured by the room publication');
   assert.equal(walk(tree,node=>node.type==='form').length,0,'the room editor carries no package form; the assignment stays on its own tab');
-  const release=walk(tree,node=>node.props?.eligible!==undefined&&node.props?.roomId==='bj');
-  assert.equal(release.length,1,'one room publication, scoped to the open room');
-  assert.equal(release[0].props.operatorId,'a');assert.equal(release[0].props.blockedBy,'');
-  assert.equal(p.requests.length,0);
+  const release=()=>walk(p.h.render(),node=>node.props?.eligible!==undefined&&node.props?.roomId==='bj');
+  assert.equal(release().length,1,'one room publication, scoped to the open room');
+  assert.equal(release()[0].props.operatorId,'a');assert.equal(release()[0].props.blockedBy,'');
+  const isRefresh=node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle';
+  const advanced=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
+  const paow=()=>walk(advanced(),isRefresh)[0];
+  assert.equal(advanced().props.title,'Avancerat','the idle refresh is advanced, beside the one Publicera');
+  // A scene template removed from Studio stops Publicera (studio_presentation_required) but never the idle refresh:
+  // it publishes against the frozen package, never Studio lanes.
+  assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package');
+  release()[0].props.onBusyChange(true);assert.equal(paow().props.disabled,true,'the room publication in flight locks the idle refresh');
+  release()[0].props.onBusyChange(false);assert.equal(paow().props.disabled,false);
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
+  paow().props.onClick();await p.settle();
+  assert.deepEqual(p.requests.map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:4}]);
+  assert.match(textOf(walk(advanced(),node=>node.props?.role==='status')),/\b5\b/,'the receipt names the new version');
+  assert.equal(p.lifecycle().props.refreshKey,1,'the receipt re-reads the lifecycle');
+  // The frozen package is the precondition: the next refresh sends the new revision.
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:6,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'bj'}}));
+  paow().props.onClick();await p.settle();
+  assert.deepEqual(p.requests.slice(1).map(row=>row.body),[{action:'refresh-dealer-idle',operatorId:'a',roomId:'bj',dealerId:'paow',expectedPackageRevision:5}]);
+  // A foreign receipt is never confirmed; the next write waits for the readback.
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:7,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'other'}}));
+  paow().props.onClick();await p.settle();
+  assert.equal(paow().props.disabled,true,'an unconfirmed receipt blocks the next refresh until readback');
 });

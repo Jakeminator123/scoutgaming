@@ -118,7 +118,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
           {savedRotation&&savedRotation.outside>0&&<p className="studio-policy-warning">{savedRotation.outside} kopplade klipp finns inte i dealerns vilokälla och tas bort när du ändrar urvalet.</p>}
           {rotationCandidate.error&&<p role="alert" className="studio-policy-error">{rotationCandidate.error}</p>}
           {!savedRotation?<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Koppla {rotationCandidate.selected} viloklipp</button>
-            :<><p>Ändringen når spelet efter Spara utkast och Publicera i spelbordet.</p>
+            :<><p>Ändringen når spelet efter Spara utkast och Publicera i spelbordet. Ett spelbord utan Publicera (roulette eller ej öppet) får den via Avancerat › Publicera igen under bolagets tilldelning.</p>
               <div className="studio-policy-actions">
                 {savedRotation.outside>0&&<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Uppdatera till urvalet</button>}
                 <button type="button" className="studio-button" disabled={locked} onClick={()=>{if(!policy)return;const {rotation,...rest}=policy;setExcluded([]);idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
