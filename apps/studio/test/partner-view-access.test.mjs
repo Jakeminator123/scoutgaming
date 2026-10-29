@@ -13,6 +13,7 @@ import { defaultCompositionSettings } from '../../../packages/presentation/contr
 import { withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { cloudPresentationFixture } from './fixtures/cloud-presentation.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
+import { validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
 
 // Partnerportalen per role: the server decides every view, not the menu.
 // partner-editor: overview, tables, presentations (configure). partner-viewer: every *.read.
@@ -27,7 +28,7 @@ const request = (cookie, path, { body, headers = {} } = {}) => new Request(`${or
   host, cookie, ...(body ? { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } : {}), ...headers,
 }, ...(body ? { body: JSON.stringify(body) } : {}) });
 
-async function fixture() {
+async function fixture(poolOptions) {
   const users = [
     { id: '42', username: 'john-admin', role: 'partner', email: 'admin@partner.invalid' },
     { id: '43', username: 'john-editor', role: 'partner', email: 'editor@partner.invalid' },
@@ -52,7 +53,7 @@ async function fixture() {
     sessions.push({ token_digest: partnerSessionDigest(token), craig_user_id: user.id, role: 'partner', source_stamp: stamp(user), auth_epoch: 0, expires: now + 3600_000 });
     return `partner_session=${token}`;
   };
-  const pool = operatorMemoryPool();
+  const pool = operatorMemoryPool(poolOptions);
   const store = await createOperatorStore({ sql: pool, scope, now: () => now });
   await store.createOperator({ actor: 'fixture', operatorId: john.id, slug: john.slug, name: john.name });
   for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId: john.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
@@ -228,4 +229,83 @@ test('the snapshot carries only the sections the role may read, so a denied or n
     assert.equal(loaded.denied?.view, view);
     assert.doesNotMatch(JSON.stringify(loaded.snapshot), /john-room|astrid|john-admin/);
   }
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Integration shows the company's own keys, masked.
+// The memory pool hands back whole rows (key, secret, wallet, IP list, creator) on purpose: only
+// the projection in lib/partner-api-keys.mjs may reach the snapshot. The SQL runs on PGlite in
+// test/partner-key-operator.mjs.
+const apiKey = (id, operatorId, extra = {}) => ({ id, name: `Nyckel ${id}`, key: `ck_live_LEAKKEY${id}`, secret: `cs_LEAKSECRET${id}`, scopes: '["launch","play","admin"]',
+  wallet_url: 'https://wallet.partner.invalid/LEAKWALLET', ip_allow: '203.0.113.7', created_by: 'staff@scoutgaming.invalid',
+  created_at: '2026-10-29T08:00:00.000Z', last_used: null, revoked_at: null, operator_id: operatorId, ...extra });
+const integration = (f, cookie, company = john) => partnerWorkspaceInitialData(request(cookie, workspaceSurfacePath('partner', 'integration', company.slug)),
+  { config: f.config, store: f.store, operatorSlug: company.slug, view: 'integration' });
+
+test('Integration lists only the company\'s own keys, masked, and only to a role with integrations.read', async () => {
+  const f = await fixture();
+  f.pool.tables.api_keys.push(apiKey('john-live', john.id, { last_used: '2026-10-29T10:00:00.000Z' }),
+    apiKey('john-old', john.id, { revoked_at: '2026-10-29T09:00:00.000Z' }), apiKey('south-live', south.id));
+  for (const cookie of [f.admin, f.viewer]) {
+    const { snapshot } = await integration(f, cookie);
+    assert.equal(snapshot.apiKeys.status, 'connected');
+    assert.deepEqual(snapshot.apiKeys.keys.map(key => [key.id, key.operatorId, key.status, key.scopes, key.walletConfigured, key.lastUsed, key.revokedAt]), [
+      ['john-live', john.id, 'active', ['launch', 'play'], true, '2026-10-29T10:00:00.000Z', null],
+      ['john-old', john.id, 'revoked', ['launch', 'play'], true, null, '2026-10-29T09:00:00.000Z'],
+    ]);
+    assert.deepEqual(Object.keys(snapshot.apiKeys.keys[0]).sort(), ['createdAt', 'id', 'lastUsed', 'name', 'operatorId', 'revokedAt', 'scopes', 'status', 'walletConfigured']);
+    assert.doesNotMatch(JSON.stringify(snapshot), /LEAK|south-live|203\.0\.113\.7|staff@scoutgaming|ip_allow|created_by|wallet_url/);
+    assert.equal(validatePartnerSnapshot(snapshot), snapshot);
+    // Client-side navigation keeps the snapshot, so the keys are there on every view the role opens.
+    assert.deepEqual((await page(f, cookie, 'overview')).snapshot.apiKeys.keys.map(key => key.id), ['john-live', 'john-old']);
+  }
+  // The redaktör lacks integrations.read: no keys on Integration (the 403 card) or on any other view.
+  for (const view of PARTNER_VIEWS) {
+    const loaded = await page(f, f.editor, view);
+    assert.equal(loaded.snapshot.apiKeys, undefined, view);
+    assert.doesNotMatch(JSON.stringify(loaded.snapshot), /john-live|john-old|LEAK/, view);
+  }
+  // The other company's administrator sees their own key only, and John's never.
+  const theirs = (await integration(f, f.southAdmin, south)).snapshot;
+  assert.deepEqual(theirs.apiKeys.keys.map(key => [key.id, key.operatorId]), [['south-live', south.id]]);
+  assert.doesNotMatch(JSON.stringify(theirs), /john-live|john-old|LEAK/);
+  // John's members cannot read South's keys through the page or the snapshot API.
+  for (const cookie of [f.admin, f.viewer]) {
+    await assert.rejects(integration(f, cookie, south), error => error.statusCode === 403);
+    const response = await handlePartnerAuth(request(cookie, `/studio/api/partner/snapshot?operator=${south.slug}`), f.config);
+    assert.equal(response.status, 403); assert.doesNotMatch(await response.text(), /south-live/);
+  }
+  // A snapshot that would carry another company's key is refused before it renders.
+  const { snapshot } = await integration(f, f.admin);
+  const forged = { ...snapshot, apiKeys: { ...snapshot.apiKeys, keys: [...snapshot.apiKeys.keys, { ...snapshot.apiKeys.keys[0], id: 'south-live', operatorId: south.id }] } };
+  assert.throws(() => validatePartnerSnapshot(forged), /fel bolagskontext/);
+  assert.throws(() => validatePartnerSnapshot({ ...snapshot, apiKeys: { status: 'connected' } }), /fel bolagskontext/);
+});
+
+test('Partnerportalen cannot create, rotate or revoke a key; only Admin can, so a body naming a company changes nothing', async () => {
+  const f = await fixture();
+  f.pool.tables.api_keys.push(apiKey('john-live', john.id));
+  const before = structuredClone(f.pool.tables.api_keys);
+  for (const cookie of [f.admin, f.viewer, f.southAdmin]) {
+    for (const action of ['apikeys', 'apikeys/create', 'apikeys/rotate', 'keys']) {
+      for (const body of [{ operatorId: john.id, name: 'Egen' }, { operatorId: south.id, name: 'Annans' }, { id: 'john-live' }]) {
+        const response = await handlePartnerAuth(request(cookie, `/studio/api/partner/${action}?operator=${john.slug}`, { body }), f.config);
+        assert.ok(response.status >= 400 && response.status < 500, `${action} ${response.status}`);
+        assert.doesNotMatch(await response.text(), /ck_live|cs_|LEAK/);
+      }
+    }
+  }
+  assert.deepEqual(f.pool.tables.api_keys, before);
+});
+
+test('before game migration 012 Integration says the keys are pending; a failed read is honest and keeps the page', async () => {
+  const pending = await fixture({ apiKeyColumn: false });
+  pending.pool.tables.api_keys.push(apiKey('john-live', john.id));
+  const early = (await integration(pending, pending.admin)).snapshot;
+  assert.deepEqual(early.apiKeys, { status: 'pending', keys: [] });
+  assert.doesNotMatch(JSON.stringify(early), /john-live|LEAK/);
+  const broken = await fixture();
+  broken.pool.tables.api_keys = null; // the read throws inside the pool
+  const loaded = await integration(broken, broken.admin);
+  assert.equal(loaded.denied, undefined);
+  assert.deepEqual(loaded.snapshot.apiKeys, { status: 'not-connected', reason: 'read-failed', keys: [] });
 });

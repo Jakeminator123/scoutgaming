@@ -16,7 +16,7 @@ Referenser: Admins **Hjälp** (`/admin/guide`, kortet "Orden") är den korta, ak
 
 ## Det Admin skapar
 
-- **Dealer**: en person med eget klippbibliotek, egen röst och egna repliker. Dealerns **klipp** ordnas i en **klippkarta** per situation: **vila** (grundloopen mellan händelserna), spelhandlingar som utdelning och kortvändning, övergångar till och från skon, och **repliker** med språk och exakt text. En **tagning** är en inspelning av en replik; bara godkända, servermätta tagningar spelas. En dealer är **godkänd** när klipp och tal räcker för spel.
+- **Dealer**: en person med eget klippbibliotek, egen röst och egna repliker. Dealerns **klipp** ordnas i en **klippkarta** per situation: **vila** (grundloopen mellan händelserna; PAOW och Dragan kan därtill ha en **sammanhängande vilosekvens**, Kevins urval av viloklipp som kopplas under Körregel), spelhandlingar som utdelning och kortvändning, övergångar till och från skon, och **repliker** med språk och exakt text. En **tagning** är en inspelning av en replik; bara godkända, servermätta tagningar spelas. En dealer är **godkänd** när klipp och tal räcker för spel.
 - **Material**: **bakgrunder** och **bordsgrafik** (`layerAssets`), uppladdade på ett ställe. Bordsgrafik är bilden av bordet med boxarna där korten landar, aldrig ett spelbord. Den ritas efter dealerns **landningar**, mätningen i dealerns **filmade profil** av var handen lägger korten.
 - **Scenmall** (`lane`; i koden också `composition`): hur bakgrund, dealer och bordsgrafik placeras i scenen, och vilka dealers och vilket material mallen tillåter. Flera spelbord kan dela samma scenmall. **Placering** är mallens skala och läge för de tre lagren, separat för dator och mobil; normalt fylls den i från dealerns filmade profil.
 - **Röst och tal**: dealerns inspelade tal och, när talkedjan är igång, genererat tal med läppsynk. **Dialogtest** är chatten mot dealern; **AI-agenter** är systeminställningarna för det.
@@ -36,7 +36,9 @@ Det sparade läget är ett **utkast**; det publicerade är **live**. Spelaren se
 
 ## Konton
 
-**Personal** är Admins konton (`croupier_auth.users`). **Spelare** (`players`) har saldo och historik och tillhör ett bolag. En **API-nyckel** (`api_keys`) låter bolaget starta spelare från sin egen sajt; en **testsession** är en start med demokrediter. **Journalen** är bolagets händelselogg.
+**Personal** är Admins konton (`croupier_auth.users`). **Spelare** (`players`) har saldo och historik och tillhör ett bolag. En **API-nyckel** (`api_keys`) låter bolaget starta spelare från sin egen sajt; varje nyckel hör till exakt ett bolag, valt när Admin skapar den, och Partnerportalen visar bolagets egna nycklar maskerade. En **testsession** är en start med demokrediter. **Skapa demo** i Admin sätter ihop bolag, spelbord och dealer för en visning, och demolänken startar spelet med det valda bolagets nyckel. **Journalen** är bolagets händelselogg.
+
+**Partner-API** (`/api/v1/*` i spelmotorn, [partner-api.md](../../../docs/games/partner-api.md)) är kundkontraktet: bolagets egen server anropar det med API-nyckeln och HMAC-signerade anrop. **Portal-API:t** (`/studio/api/partner/*`, `apps/studio/app/api/partner/[...action]`) är Partnerportalens eget API för inloggad bolagspersonal och inget kontrakt mot kunden.
 
 ## Lagring
 

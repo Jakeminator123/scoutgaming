@@ -6,7 +6,8 @@ import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse, IdleAutomaticPolicy
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import { selectionFor } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
-import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, prepareStudioPaowIdleRotation, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, prepareStudioIdleRotation, savedIdleRotationSelection, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import type { PreparedIdleRotationClip } from '../../../../lib/idle-rotation-sources.mjs';
 
 export type StudioPolicyPanelProps = {
   project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
@@ -27,14 +28,20 @@ export function scheduleSummary(a:IdleAutomaticPolicy) {
   const pause=a.cooldownMs>0?`Minst ${seconds(a.cooldownMs)} s paus och högst`:'Högst';
   return `Spelas i snitt ${every}${jitter}. ${pause} ${a.maxPerMinute} ${a.maxPerMinute===1?'gång':'gånger'} per minut. Spelhändelser kan skjuta upp starten.`;
 }
+// Pose, phase and kind of one clip in the dealer's frozen idle source.
+export function rotationClipText(row:PreparedIdleRotationClip) {
+  const pose=row.from===row.to?(row.from==='clasped'?'knäppta händer':'vila'):row.to==='clasped'?'vila → knäppta händer':'knäppta händer → vila';
+  const phase=row.phase==='bets'?' · insatsfas':row.phase==='decide'?' · spelarens beslut':'';
+  return pose+phase+(row.baseline?' · basklipp':row.head?' · huvudrörelse':row.calm?' · lugn':'');
+}
 
 export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const {project,inventory,dealerId,slot,selectedVideoId,selectedVariantId,blocked,onEdit,onBusyChange}=props;
-  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[addId,setAddId]=useState(''),[selected,setSelected]=useState('');
+  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[addId,setAddId]=useState(''),[selected,setSelected]=useState(''),[excluded,setExcluded]=useState<string[]>([]);
   const operation=useRef<AbortController|null>(null), latest=useRef(props), busyCallback=useRef(onBusyChange);
   latest.current=props;busyCallback.current=onBusyChange;
   useEffect(()=>{
-    setError('');setBusy(false);setAddId('');setSelected('');
+    setError('');setBusy(false);setAddId('');setSelected('');setExcluded([]);
     return ()=>{operation.current?.abort();operation.current=null;busyCallback.current?.(false);};
   },[dealerId,slot.id,selectedVideoId,selectedVariantId]);
   useEffect(()=>()=>{operation.current?.abort();busyCallback.current?.(false);},[]);
@@ -61,7 +68,17 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
     finally{if(operation.current===controller){operation.current=null;setBusy(false);busyCallback.current?.(false);}}
   }
   const policy=scope?.policy;
-  const rotationCandidate=scope?prepareStudioPaowIdleRotation(project,inventory,dealerId,slot):null;
+  // The whole source with each clip's status; a saved sequence keeps its own subset.
+  const rotationSource=scope?prepareStudioIdleRotation(project,inventory,dealerId,slot):null;
+  const savedRotation=rotationSource&&policy?.rotation?savedIdleRotationSelection(rotationSource,policy):null;
+  const rotationSelection=savedRotation?savedRotation.ids:rotationSource?rotationSource.clips.filter(row=>!excluded.includes(row.id)).map(row=>row.id):[];
+  const rotationCandidate=rotationSource?prepareStudioIdleRotation(project,inventory,dealerId,slot,rotationSelection):null;
+  function toggleRotationClip(id:string,checked:boolean){
+    if(locked||!rotationSource)return;
+    if(!savedRotation){setExcluded(current=>[...current.filter(row=>row!==id),...checked?[]:[id]]);return;}
+    const prepared=prepareStudioIdleRotation(project,inventory,dealerId,slot,checked?[...rotationSelection,id]:rotationSelection.filter(row=>row!==id));
+    if(prepared?.policy)idle(prepared.policy);else setError(prepared?.error??'Urvalet kunde inte kopplas.');
+  }
   const choices=scope?.family?scope.clips.filter(video=>scope!.family!.variantIds.includes(video.id)).map(video=>({id:video.id,label:label(video.id)}))
     :scope?.line.variants.filter(row=>row.id!==scope!.line.baselineVariantId&&scope!.clips.some(video=>video.id===row.videoGenerationId)).map(row=>({id:row.id,label:row.label}))??[];
   const preferredId=scope?.family?selectedVideoId:scope?.line.variants.find(row=>row.id===selectedVariantId&&row.videoGenerationId===selectedVideoId)?.id
@@ -90,14 +107,22 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
     <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
     {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
-        {rotationCandidate&&<section className="studio-policy-section" aria-label="PAOWs vilosekvenser">
-          <h3>Sammanhängande vilosekvenser</h3>
-          <p>{policy?.rotation?`${policy.rotation.clips.length} klipp är kopplade i utkastet.`:'Koppla Kevins 24 valda viloklipp. Befintliga original återanvänds.'}</p>
-          <p>Knäppta händer följer insatsfasen. Händerna mot bordet följer spelarens beslut. Övergångsklipp spelas färdigt före nästa pose.</p>
-          {rotationCandidate.error&&<p role="alert">{rotationCandidate.error}</p>}
-          {!policy?.rotation?<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Koppla 24 viloklipp</button>
-            :<><p>Ändringen når spelet efter Spara utkast och Publicera PAOWs viloklipp i rummet.</p>
-              <button type="button" className="studio-button" disabled={locked} onClick={()=>{const {rotation,...rest}=policy;idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button></>}
+        {rotationSource&&rotationCandidate&&<section className="studio-policy-section" aria-label="Vilosekvens">
+          <h3>Sammanhängande vilosekvens</h3>
+          <p>{savedRotation&&policy?.rotation?`${policy.rotation.clips.length} klipp är kopplade i utkastet.`:`Koppla Kevins urval för dealern. Befintliga original återanvänds.`} {rotationSource.matched} av {rotationSource.total} original finns i biblioteket (källa {rotationSource.ref.slice(0,8)}).</p>
+          <p>Knäppta händer följer insatsfasen. Händerna mot bordet följer spelarens beslut. Övergångsklipp spelas färdigt före nästa pose. Bocka ur ett klipp för att lämna det utanför sekvensen.</p>
+          <div className="studio-policy-triggers" role="group" aria-label="Klipp i vilosekvensen">{rotationSource.clips.map(row=><label key={row.id} className="studio-policy-trigger">
+            <input type="checkbox" checked={rotationSelection.includes(row.id)} disabled={locked||row.baseline} onChange={event=>toggleRotationClip(row.id,event.target.checked)}/>
+            <span><strong>{row.id}</strong> · {rotationClipText(row)}{row.status!=='registered'&&<> · <em>{row.status==='missing'?'saknas i biblioteket':'flera original matchar'}</em></>}</span>
+          </label>)}</div>
+          {savedRotation&&savedRotation.outside>0&&<p className="studio-policy-warning">{savedRotation.outside} kopplade klipp finns inte i dealerns vilokälla och tas bort när du ändrar urvalet.</p>}
+          {rotationCandidate.error&&<p role="alert" className="studio-policy-error">{rotationCandidate.error}</p>}
+          {!savedRotation?<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Koppla {rotationCandidate.selected} viloklipp</button>
+            :<><p>Ändringen når spelet efter Spara utkast och en ny publicering av bolagets paket{dealerId==='paow'?', eller Publicera PAOWs viloklipp i spelbordet':''}.</p>
+              <div className="studio-policy-actions">
+                {savedRotation.outside>0&&<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Uppdatera till urvalet</button>}
+                <button type="button" className="studio-button" disabled={locked} onClick={()=>{if(!policy)return;const {rotation,...rest}=policy;setExcluded([]);idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
+              </div></>}
         </section>}
         {!policy?.rotation&&<>
         <section className="studio-policy-section" aria-label="Basloop"><h3>Basloop</h3>

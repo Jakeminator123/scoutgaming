@@ -1,54 +1,73 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 28 oktober 2026, eftermiddag, efter O03 (migreringen 100 %). Skriven för en agent som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) (produktväg, identiteter, leverans) och [AGENTS.md](../AGENTS.md). Jakobs aktuella instruktioner går före allt här. Alla dokument står i [docs/README](README.md); raderade dokument läses ur Git.
+Uppdaterad 29 oktober 2026, natt, mot `main` `6f2d8236` (efter #556). Skriven för en agent som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) (produktväg, identiteter, leverans) och [AGENTS.md](../AGENTS.md). Jakobs aktuella instruktioner går före allt här. Alla dokument står i [docs/README](README.md); raderade dokument läses ur Git ([HISTORIK](HISTORIK.md)).
 
 ## Läget
 
-- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). **Migreringen är klar: 100 % (20/20).** O03 VERIFIED via #527 efter oberoende granskning (GODKÄND MED ANMÄRKNING; granskningen och kvittona är raderade och står i [HISTORIK](HISTORIK.md)).
-- **O03 släppt 28 oktober:** main-head `5f5bc88d` (runtime lika med O02-kandidaten `f3780593`). Vercel `dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV` READY 13:39Z (senare auto-deployer av main, bara docs, runtimediff 0); Render `croupier-v3` `dep-dbgvog0ae00c73dgivq0` 13:44Z och, när flaggan sattes 13:52Z, `dep-dbgvsc5g1s2s73cdoqkg` live 13:53Z. 011 (`game-011-retire-lissabon`) applicerad 14:21:48Z; 74 tabeller. Backup och restoreprov S0 = S1 på grenen `backup-before-o03-20261028`. Spelad hand på delat bord med syntetiskt konto, 0 fel och 0 5xx i loggarna. Kvittot `docs/2026-10-28-O03-RELEASE-ACCEPTANCE.json` är raderat och läses ur Git ([HISTORIK](HISTORIK.md)).
-- **Produktion:** Vercel `scoutgaming` deployar `main` automatiskt. Kontrollera Render med `curl https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`; `/__cloud/shared-room-health` är inte publikt nåbar. `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen: deploya `croupier-v3` bara när bordet är tomt (F11, [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)) tills #529 är mergad och provad i preview.
-- **Johns Bet (PAOW):** paket 13 och spelinställningen `room-config-36bf0df8…` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, nu på det delade bordet. En strandad nativerunda (beslutsfas, 20 demo-USD dragna) ligger kvar; de tre avräknade är inkasserade.
-- **dragan-test:** paket 16 sparat av Jakob 13:53Z; spelinställningen är inte publicerad (pending Jakob, eller pausa rummet).
-- **Preview** (tidigare staging) behålls; se [START-HERE](../START-HERE.md#preview).
-- **Merge:** den obligatoriska kontrollen `CI` gäller på PR:ens head; branchen behöver inte vara à jour med `main`. Orkestratorn mergar grönt Jakob-ägt arbete och deployar `croupier-v3` efter grön main-CI som rör motorn, med F11-villkoret ovan.
+- **Status:** bara i [migrering/STATUS.md](../migrering/STATUS.md), genererad från [status.json](../migrering/status.json). Migreringen är klar: alla 20 aktiviteter VERIFIED, O03 via #527. Arbetet nedan ger inga poäng och ändrar inte status.
+- **Mergat natten 28–29 oktober:** #552 (tal på delat bord), #553 (ignore-filerna), #554 (assistenten utan `CROUPIER_LAB_UI_ORIGIN`), #555 (`merge-pr.mjs` kräver färsk CI-bas och raden `Buggranskning:`), #556 (bordet: H/S/D/P med fokus i beslutspanelen), #557 (klipplogik), #558 (miljöinventeringen [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md)), #559 (kvitton raderade, [HISTORIK](HISTORIK.md)), #560 (vilosekvens per dealer som data), #561 (nyckel → bolag B), #562 (branchen `preview` är previews källa), #563 (CI: utkast kör lätt, klar PR kör fullt), #564 (döda verktyg, prov och typfiler raderade). Kvällen före: #544 (Admin nivå 1 och 2, demo-byggaren, AI-bakgrunder, bordets F12–F16), #538 (nyckel → bolag A), #549 (TALKEDJA T3).
+- **Mergat natten 29 oktober (efter oberoende granskning):** #566 (ingångsfiler för alla verktyg: CLAUDE.md, GEMINI.md, `.github/copilot-instructions.md`, `.windsurf/rules/scoutgaming.md`, `.cursor/rules/scoutgaming.mdc`), #569 ([användarguiden](../apps/studio/docs/README.md) följer Admin-menyn; [ADMIN-KARTA](plans/ADMIN-KARTA.md) märkt som läst före steg E), #571 (planen [PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md)).
+- **Öppna PR:er** (underagenter mergar aldrig; orkestratorn mergar efter oberoende granskning och grön `CI`):
+  - #567: Admins små pil- och fotnotstexter blir ikoner, länkar och vanliga ord. Kräver Jakobs visuella ok.
+  - #568: Admin-klienten får samma React, esbuild och TypeScript som Studio, och planen för steg H (`docs/plans/VERKTYGSKEDJA.md`, kommer med #568).
+  - #570: testlås: etikettregex byts mot roll-, aria-, prop- och anropskontroller.
+  - #572: dealerns förhandsvisning utan spelmotor, och "Provspela sparad scen" fungerar på spelbordet.
+  - #573 (den här) och #574 (mergas efter #573): sakdokumenten och `migrering/` efter avslutet.
+  - #575: pre-commit väljer också prov som laddar den ändrade komponenten. #578: spärr mot underagenter med gammal kontext.
+  - #550 och #551 (Kevins kortkommandon och resultat; gemensamma blackjackregler) är fortfarande öppna. #556 byggde på #550 utan resultatspärren.
+- **Produktion:** Vercel `scoutgaming` deployar `main` automatiskt. Kontrollera Render med `curl https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`; `/__cloud/shared-room-health` är inte publikt nåbar. `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen. F11 (#529) är mergad 28 oktober, men inget kvitto på prov i preview finns i dokumenten: deploya `croupier-v3` bara när bordet är tomt ([ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)) tills F11 är kvitterad.
+- **Databasen:** Neon-projektet `croupier-production`, databasen `croupier_game`, fyra scheman och 74 tabeller; schemakartan och de två migreringsledgrarna står i [BLOB-NEON](storage/BLOB-NEON.md#scheman-och-skrivare). `game-012-api-key-operator` är körd i produktionen 2026-10-29 01:46Z (och i preview); Studio 021 (bolagets material) är valfri och inte körd.
+- **Var `/admin` läser:** bara Neon `croupier_studio`, utan reserver ([CLOUD-MIGRATION](CLOUD-MIGRATION.md#ytor-och-datalagring)). Gammalt innehåll som syns i Admin är rader i Neon. `/admin` är en esbuild-SPA, byggd till `apps/studio/design-preview-build/`, inte Next-sidor.
+- **Miljövariabler:** alla namn som koden läser står i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md). Vercel-posterna under [Att ta bort](ENVIRONMENT-VARIABLES.md#att-ta-bort-ur-vercel-production) väntar på att Jakob tar bort dem i panelen.
+- **Johns Bet (PAOW):** paket 13 och spelinställningen `room-config-36bf0df8…` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, på det delade bordet. En strandad nativerunda (beslutsfas, 20 demo-USD dragna) ligger kvar.
+- **Preview:** branchen `preview` deployas till preview.scoutgaming.tech ([START-HERE](../START-HERE.md#preview)).
+- **Merge:** `CI` gäller PR:ens head; branchen behöver inte vara à jour med `main`, men `merge-pr.mjs` nekar om `main` sedan CI-körningen ändrat samma filer eller paketrot.
 
 ## Pending Jakob (blockerar inget)
 
-Publicera dragan-tests spelinställning i Admin (eller pausa rummet); frivilligt en egen hand i produktionen på dator och telefon och "godkänt".
+- dragan-test: paket 16 är sparat; spelinställningen är inte publicerad (publicera i Admin eller pausa rummet).
+- Vilosekvens per dealer (#560 mergad): för PAOW **Körregel → Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp**. För Dragan laddas de 16 originalen i `apps/studio/lib/idle-rotation-sources/dragan-de31659c.json` upp till facket **Vila**, `andas` blir basklipp, sekvensen kopplas och paketet publiceras. Båda kräver Jakobs visuella godkännande.
+- Vercel-posterna ovan, och om `croupier-lab-ui.vercel.app` ska bli en redirect till www.
+- Innehållet i `croupier_studio.documents` kunde inte läsas av agenter i natt. Förslag: `select kind, revision, length(value::text), updated_at from croupier_studio.documents`, och en titt på `dealerTrash`, `legacyClipReview` och bolaget `sg-test`.
+- Visuellt ok för #567 och för bordet efter #536 och #556 på dator och telefon.
 
 ## Efter O03
 
-Nästa arbete, i ordning (bakgrund i [MASTERPLAN](../migrering/MASTERPLAN.md#efter-o03); punkterna ger inga procent):
+Nästa arbete, i ordning (Jakobs beslut 28 oktober, kompletterat 29 oktober). Varje punkt är en vanlig PR med grön CI, provas i preview när orkestratorn bedömer att det behövs och kvitteras med verifierad Vercel- och Render-SHA.
 
-1. **#529 F11:** merge → prov i preview → prod-deploy av `croupier-v3` vid tomt bord. Till dess deploy bara vid tomt bord.
-2. **Gränssnitts-PR:en F12–F16** (draft på väg, `jakob/claude-table-layout`).
-3. **#530** preview-namn i docs.
-4. **Admin:** N2 → N1 → demo → AI-grenen efter designrunda (#518, #519, #512; [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md)).
-5. **Städning:** syntetiskt prodkonto `o03v-3436cfb2` (saldo 995), staging-QA-rester, Vercel-previews, D6 (QA-roller, `pg_stat_statements`, `CROUPIER_ASTRID_CAMERA`, O03:s Neon-grenar och restoremål).
-6. **Dealer-generisk talkedja med Paow** ([PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md)): RunPod-callbacken (`MOVING_CALLBACK_ORIGIN`, pekar på raderade `croupier-v2`) rättas före rörligt tal. ElevenLabs-kontot (Kevins) är till 80 % förbrukat.
-7. **Bindning nyckel → bolag** (partnernyckel mot delat bord ger 403 i dag).
-8. **L3** (rumsnamn och state ur paketet), sedan O1, O4, L1-503.
-9. **Ren start steg 2.**
-10. **Kevins portplan** P4–P14 (skalningstest 10×7, preview med egen taluppsättning och pensionering av nativebordet följer i MASTERPLAN).
+1. **F11:** #529 (anslutningarna stängs med 1012 vid SIGTERM, ögonblicksbilder oavsett instans) provas i preview; därefter deployas `croupier-v3` även när bordet inte är tomt.
+2. **Admin-förenkling** ([ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md)): steg E (meny och nav) är byggt i #544. Nu: #567, #569 och #570; förhandsvisningen (propen `revision` saknas i `companies-page.tsx` på bolags- och spelbordssidan, och `CompositionPreview` i dealer- och spelbordspanelen); **steg D**, en Publicera i stället för fem knappar (§7); steg F (spelare → bolag), G (städning) och H ([VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md), #568). Nivå 2 följer [PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md) (#571).
+3. **Dealer-generisk talkedja, Paow först** ([TALKEDJA](plans/TALKEDJA.md), bakgrund i [PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md)): T3 är mergad (#549). Före rörligt tal: RunPod-mallens `MOVING_CALLBACK_ORIGIN` pekar på raderade `croupier-v2`, och `croupier-v3` har de gamla `CROUPIER_MOVING_SPEECH_BANK_RECORD`/`_ENDPOINT_ID` men saknar `CROUPIER_MOVING_SPEECH_BANK_RECORDS`. ElevenLabs-kontot (Kevins) är till största delen förbrukat. Bara Jakob godkänner ljud och läppsynk.
+4. **Nyckel → bolag** ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)): A (#538), 012 och B (#561) är klara. Nästa är C: kravhöjning, legacygrenen bort, nativa bord och rumsoraklet.
+5. **L3:** rummens namn och läge läses ur det publicerade paketet i stället för administrationsdokumentet (den farligaste dubbellagringen; rummet finns i dag på fyra ställen).
+6. **Ren start steg 2** enligt [REN-START](plans/REN-START.md).
+7. **Kevins portplan P4–P14** ([KEVIN-PORT](plans/KEVIN-PORT.md)); P7 (gäståtkomst) och P13 (desktop) kräver Jakobs beslut. Därefter pensioneras nativebordet (`blackjack_tables`, `native_presentations`).
+8. **Skalningstest:** tio bord med sju spelare (10×7) som grind, med motorns kända serialiseringspunkter mätta (globalt lås även vid läsning, auditlåset, den sekventiella schemaläggaren).
+9. **Preview får egen taluppsättning** när den generiska talkedjan byggs, med egna nycklar och egen budget; produktionens nycklar kopieras aldrig dit.
+10. **Databasen** (kräver Jakobs ja för varje DML eller DDL): efterhandsrader `game-008`–`010` och readiness som också läser spel-ledgern; BO-resterna (`bo_lab_handoffs`, `bo_game_handoffs`) bort, först konsumenterna och sedan en spelmigrering i 011:s form (D2); en gallringsregel för `document_history` (en fjärdedel av databasen med tre dokument); preview i takt (011 och Studio 016, 018, 019); index för bolagsrapporter tillsammans med steg F.
+11. **Städning (D6):** QA-rollerna `croupier_game_qa` och `croupier_studio_qa_abc92154cb15`, `pg_stat_statements` ur schemat `croupier_game`, `CROUPIER_ASTRID_CAMERA=1` på `croupier-v3` (kamera och röst behålls; flaggan är Astrid-märkt), O03:s Neon-grenar, restoremålen och backupgrenarna, det syntetiska prodkontot `o03v-3436cfb2`, staging-QA-rester och gamla Vercel-previews.
 
 D3c (talströmning med delat bord) är inte provad i preview; återgången D7 (flaggan av och låst deploy av `3415c310`) är förgodkänd och behövdes inte.
 
 ## Behörigheter
 
-Agenter får läsa Neon, Render-loggar och Vercel, prova i preview med syntetiska konton och öppna PR:er. Underagenter mergar aldrig. Jakob krävs för publicering i produktionens Admin, produktions-DDL, radering av molnresurser, produktionsflaggor, betald drift och allt visuellt eller AV; hash och testpass räknas inte som visuellt godkännande. Aldrig hemligheter i Git eller chatt, prov mot riktiga användare eller Johns Bet, eller ändringar i Kevins brancher.
+Agenter får läsa Neon, Render-loggar och Vercel, prova i preview med syntetiska konton och öppna PR:er. Underagenter mergar aldrig. Jakob krävs för publicering i produktionens Admin, produktions-DDL och DML, radering av molnresurser, produktionsflaggor, betald drift och allt visuellt eller AV; hash och testpass räknas inte som visuellt godkännande. Aldrig hemligheter i Git eller chatt, prov mot riktiga användare eller Johns Bet, eller ändringar i Kevins brancher.
 
 ## Kända fällor
 
-- **Deploy med delat bord på:** kontrollera `shared_table_members WHERE active` och `shared_wallet_reservations` (båda 0) före varje `croupier-v3`-deploy tills F11 är rättad.
+- **Deploy med delat bord på:** kontrollera `shared_table_members WHERE active` och `shared_wallet_reservations` (båda 0) före varje `croupier-v3`-deploy tills F11 är kvitterad.
 - **Prov i preview:** delat bord innebär att Jakobs hand stör mätningarna. Låt honom inte spela medan en harness kör.
-- **Pre-push-hooken** (`tools/check-push-target.mjs`) tillåter sedan #485 bara radering av `jakob/*`-brancher som redan är mergade i `main`; GitHub raderar mergade headbrancher automatiskt.
-- **Render MCP:** `update_environment_variables` slår ihop nycklar och startar en deploy av branchens senaste commit direkt (så sattes flaggan i O03). Den läser inga värden; använd REST med `RENDER_API_KEY`.
+- **Två ledgrar med krockande nummer:** `ops/neon-game/012` är inte `ops/neon-studio/012`. Skriv alltid `game-012` eller Studio 012 ([BLOB-NEON](storage/BLOB-NEON.md#scheman-och-skrivare)).
+- **Ordändringar i Admin:** pre-commit väljer prov på filnamnsstam, så en ändrad etikett kan passera lokalt och falla i CI. Se urvalet med `node tools/precommit-checks.mjs --plan`; #570 tar bort de flesta etikettlåsen.
+- **Pre-push-hooken** (`tools/check-push-target.mjs`) tillåter bara radering av `jakob/*`-brancher som redan är mergade i `main`; GitHub raderar mergade headbrancher automatiskt.
+- **Render MCP:** `update_environment_variables` slår ihop nycklar och startar en deploy av branchens senaste commit direkt. Den läser inga värden; använd REST med `RENDER_API_KEY`.
 - **Windows:** `core.longpaths` är på i repot. Kvarblivna mappar tas bort med `Remove-Item -LiteralPath ('\\?\' + $p) -Recurse -Force`. Filbevakningsprov kan fallera lokalt; CI avgör.
 - **Hemlighetsskanning:** bokstavliga Postgres-URI:er i tester underkänns. Använd `fixtureDatabaseUrl()` i `test/fixtures/database-url.mjs`.
-- **Namn:** `recordedSpeech` v2 är MP4-talformatet, inte Render-motorn v2.
+- **Namn:** `recordedSpeech` v2 är MP4-talformatet, inte Render-motorn v2. Partner-API (kundkontraktet, `/api/v1/*`) är inte portal-API:t (`/studio/api/partner/*`), se [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
 
-## Separata spår efter migreringen
+## Separata spår
 
-- **Ren start:** [plans/REN-START.md](plans/REN-START.md). Astrid tas bort som dealer, inklusive legacyreferensen (Jakob: "radera allt sånt"). I repot är K1 (#480) och repo-PR 2 (#488) mergade och driftsatta; Neon- och Blob-stegen väntar på Jakobs go, och bankformatet tas bort i K1b efter katalogbytet (steg 6). Dragans dealer, talbank och talkedja behålls som referens när AI-tal med läppsynk görs dealergeneriskt.
-- **Admin-förenkling (UX):** `/admin`, `/partner` och spelarens väg ska vara enkla och begripliga. Kablagekartan över alla tre nivåerna är [ADMIN-KARTA](plans/ADMIN-KARTA.md); den enda målbilden med leveransordning är [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) med den klickbara skissen [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html). Byggs efter O03 i ordningen ovan. Det finns inte i masterplanen; Jakob avgör UX.
+- **Ren start:** [plans/REN-START.md](plans/REN-START.md). Astrid tas bort som dealer, inklusive legacyreferensen (Jakob: "radera allt sånt"). I repot är K1 (#480, #546), K3 (#545) och repo-PR 2 (#488) mergade; Neon- och Blob-stegen väntar på Jakobs go, och bankformatet tas bort i K1b efter katalogbytet (steg 6). Dragans dealer, talbank och talkedja behålls som referens när AI-tal med läppsynk görs dealergeneriskt.
+- **Admin-förenkling (UX):** `/admin`, `/partner` och spelarens väg ska vara enkla och begripliga. Målbilden med leveransordning är [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) med den klickbara skissen [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html); kablagekartan är [ADMIN-KARTA](plans/ADMIN-KARTA.md). Jakob avgör UX.
 - **Motorn efter O03:** `croupier-v3` blir ren kort-, sko- och matematiktjänst, och tal och presentation får en egen tjänst.
+- **Repostruktur:** rotens `test/` per ägare, `tools/` i `ci/`, `dev/` och `ops/`, media i Git till Blob och en verktygskedja för `apps/web` och Admin-klienten är föreslagna men inte beslutade; de tre `tools/`-modulerna som produktionsimagen kopierar (`ops/cloud/Dockerfile.game`) flyttas i så fall till ett paket.

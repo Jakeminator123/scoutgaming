@@ -57,6 +57,7 @@ const SECTION_READS: Record<string, readonly string[]> = {
 const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
+const OPERATOR_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const EMPTY_ACTIONS: readonly string[] = Object.freeze([]);
 // The retired `tables` group stays in the storage/API contract only; the UI
 // follows the same destinations and names as the shared sidebar.
@@ -112,9 +113,16 @@ export function studioAdminActor(value: unknown): StudioAdminActor | null {
   return { username: actor.username, role: normalizeStudioRole(actor.role) as StudioRole };
 }
 
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the fixed codes apikeys/create answers with, in words.
+// Only these codes are read from a refusal body; any other server text is never shown.
+const KEY_REFUSALS: Record<string, string> = {
+  partner_key_operator_schema_pending: 'Nyckeln skapades inte: databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012). Nycklar kan skapas när Scoutgaming har lagt in den.',
+  partner_key_operator_invalid: 'Nyckeln skapades inte: bolaget finns inte eller är avstängt. Välj ett aktivt bolag och försök igen.',
+};
 export class StudioAdminUiError extends Error {
   readonly status: number;
-  constructor(status: number) {
+  readonly code?: string;
+  constructor(status: number, code?: string) {
     const messages: Record<number, string> = {
       400: 'Servern avvisade uppgifterna. Kontrollera fälten och försök igen.',
       401: 'Sessionen är avslutad. Logga in igen och ladda om.',
@@ -125,11 +133,32 @@ export class StudioAdminUiError extends Error {
       501: 'Funktionen är ännu inte ansluten till den här administrationsytan.',
       503: 'Tjänsten är tillfälligt otillgänglig. Inga lokala ersättningsdata används.',
     };
-    super(messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
+    const known = typeof code === 'string' && Object.hasOwn(KEY_REFUSALS, code) ? code : undefined;
+    super(known ? KEY_REFUSALS[known] : messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
     this.name = 'StudioAdminUiError';
     this.status = status;
+    if (known) this.code = known;
   }
 }
+/** The fixed refusal code of a failed apikeys/create, when it is one Admin explains; never other text. */
+async function keyRefusal(method: Method, action: string, response: Response): Promise<string | undefined> {
+  if (method !== 'POST' || action !== 'apikeys/create' || ![422, 503].includes(response.status)) return undefined;
+  try {
+    const body = object(await response.json());
+    return typeof body?.code === 'string' && Object.hasOwn(KEY_REFUSALS, body.code) ? body.code : undefined;
+  } catch { return undefined; }
+}
+
+// Notices after an acknowledged write, keyed so the page can mark which one it shows (data-notice). The
+// unrefreshed one is the guard against a second write: the server took the first, but the data is not re-read.
+const WRITE_NOTICES = {
+  acknowledged: 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.',
+  'acknowledged-unrefreshed': 'Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.',
+  'email-not-sent': 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.',
+  'invite-sent': 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
+  'resend-sent': 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.',
+} as const;
+const writeNoticeKind = (notice: string) => (Object.keys(WRITE_NOTICES) as (keyof typeof WRITE_NOTICES)[]).find(kind => WRITE_NOTICES[kind] === notice);
 
 function uiError(error: unknown): StudioAdminUiError { return error instanceof StudioAdminUiError ? error : new StudioAdminUiError(503); }
 function aborted(signal?: AbortSignal) { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); }
@@ -180,7 +209,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
     }
     const response = await send(method, action, body, signal, query);
-    if (!response.ok) throw new StudioAdminUiError(response.status);
+    if (!response.ok) throw new StudioAdminUiError(response.status, await keyRefusal(method, action, response));
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
       || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
@@ -217,7 +246,8 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     }
     if (action === 'apikeys') {
       if (!Array.isArray(payload.keys)) throw new StudioAdminUiError(503);
-      payload = { keys: partnerMetadata(payload.keys) };
+      payload = { keys: partnerMetadata(payload.keys), operators: keyOperators(payload.operators),
+        operatorBinding: payload.operatorBinding === 'ready' || payload.operatorBinding === 'pending' ? payload.operatorBinding : 'unknown' };
     }
     const listField = { players: 'players', users: 'users', transactions: 'tx' }[action as 'players' | 'users' | 'transactions'];
     if (listField && !Array.isArray(payload[listField])) throw new StudioAdminUiError(503);
@@ -320,7 +350,15 @@ export function partnerMetadata(value: unknown): JsonObject[] {
     scopes: Array.isArray(row.scopes) ? row.scopes.filter(scope => typeof scope === 'string' && PARTNER_SCOPES.includes(scope)) : [],
     walletConfigured: typeof row.wallet_configured === 'boolean' ? row.wallet_configured : typeof row.wallet_url === 'string' && row.wallet_url.length > 0,
     created_at: label(row.created_at), last_used: label(row.last_used), revoked_at: row.revoked_at ? label(row.revoked_at) : null,
+    // Nyckel→bolag: the key's company, or null for a key from before game migration 012.
+    operatorId: typeof row.operatorId === 'string' && OPERATOR_ID.test(row.operatorId) ? row.operatorId : null,
+    operatorName: typeof row.operatorName === 'string' && row.operatorName.trim() ? label(row.operatorName) : null,
   }));
+}
+/** The companies a new key can belong to, as the server listed them for this scope. */
+export function keyOperators(value: unknown): JsonObject[] {
+  return rows(value).filter(row => typeof row.id === 'string' && OPERATOR_ID.test(row.id))
+    .map(row => ({ id: row.id as string, name: label(row.name, row.id as string), active: row.status === 'active' }));
 }
 
 type AdministrationViewProps = {
@@ -376,6 +414,11 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
     return descriptor && studioRoleMeetsMinimum(actor.role, descriptor.minimumRole) && !available('POST', action) ? <p className={styles.notice}>Ändringen {action} är ännu inte ansluten. Ingen åtgärd skickas.</p> : null;
   }
   const overview = resources.overview?.payload;
+  // Nyckel→bolag: a new key needs an active company, and the database column from game migration 012.
+  const keyPayload = resources.apikeys?.payload, keyCompanies = rows(keyPayload?.operators).filter(company => company.active === true);
+  const keyCreation = { companies: keyCompanies,
+    blocker: keyPayload?.operatorBinding === 'pending' ? 'Nya nycklar kan skapas när databasen har fått kopplingen mellan nyckel och bolag (spelmigrering 012). Till dess visas befintliga nycklar utan bolag.'
+      : !keyCompanies.length ? 'Det finns inget aktivt bolag att knyta en nyckel till. Skapa eller aktivera bolaget under Bolag och spelbord först.' : '' };
   const sections = visibleSections(group, only).filter(section => meetsStudioAdminSectionRole(actor.role, section));
   function missing(resource: Resource | undefined, kind: string) {
     const reloadLabel = kind === 'players' ? 'Hämta spelarkonton' : kind === 'users' ? 'Hämta konton' : 'Hämta serverdata';
@@ -400,7 +443,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <div><dt>Kortlekar / kort</dt><dd>{label(object(resources.shoes.payload.rules)?.decks)} / {label(object(resources.shoes.payload.rules)?.total)}</dd></div>
         </dl><details className={styles.disclosure}><summary>Spelregler och status</summary><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
           <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
-          <p>Certifieringsunderlag: saknas.</p></details>
+          <p data-certification="missing">Certifieringsunderlag: saknas.</p></details>
         </>}
       </>}
       {section === 'players' && <>
@@ -464,6 +507,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {['apikeys/create','apikeys/rotate','apikeys/revoke','apikeys/launch','apikeys/credit'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.apikeys?.payload && <><EmptyRows count={rows(resources.apikeys.payload.keys).length} />{rows(resources.apikeys.payload.keys).map((key, index) => <div className={styles.row} key={label(key.id, String(index))}>
           <div className={styles.integrationIdentity}><strong>{label(key.name)}</strong><dl className={styles.integrationFacts}>
+            <div><dt>Bolag</dt><dd>{typeof key.operatorId === 'string' ? label(key.operatorName, key.operatorId) : 'Inget bolag'}</dd></div>
             <div><dt>Status</dt><dd><span className={styles.status}>{key.revoked_at ? 'Återkallad' : 'Aktiv'}</span>{Boolean(key.revoked_at) && <small><AdminTime value={key.revoked_at}/></small>}</dd></div>
             <div><dt>Senast använd</dt><dd><AdminTime value={key.last_used} empty="Inte registrerat"/></dd></div>
             <div><dt>Wallet</dt><dd>{key.walletConfigured === true ? 'Ansluten' : 'Ej ansluten'}</dd></div>
@@ -481,12 +525,19 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Belopp<input name="amount" type="number" min="0.01" max="100000" step="0.01" required disabled={busy} /></label><button disabled={busy}>Kreditera demo-saldo</button>
           </form>}
         </div>)}</>}
-        {mayWrite('apikeys/create') && <details className={styles.disclosure}><summary>Ny partnernyckel</summary><form method="post" className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
+        {mayWrite('apikeys/create') && resources.apikeys?.payload && <details className={styles.disclosure}><summary>Ny partnernyckel</summary>
+          {keyCreation.blocker && <p className={styles.notice} role="status">{keyCreation.blocker}</p>}
+          <form method="post" className={styles.form} onSubmit={submit('apikeys/create', form => ({ operatorId:value(form,'operatorId'), name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
+          <label>Bolag<select name="operatorId" required defaultValue="" disabled={busy || !keyCreation.companies.length}>
+            <option value="" disabled>Välj bolaget som nyckeln gäller</option>
+            {keyCreation.companies.map(company => <option key={String(company.id)} value={String(company.id)}>{label(company.name)}</option>)}
+          </select></label>
+          <p className={styles.notice}>Nyckeln gäller bara det valda bolaget och kan inte flyttas till ett annat. Spelare som startas med den hamnar hos bolaget.</p>
           <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
           <label>Wallet-URL (valfritt, HTTPS)<input name="walletUrl" type="url" maxLength={2048} disabled={busy} /></label>
           <label>IP-adresser (valfritt, kommaseparerat)<input name="ipAllow" maxLength={2048} disabled={busy} /></label>
           <fieldset><legend>Rättigheter</legend>{PARTNER_SCOPES.map(scope => <label className={styles.checkbox} key={scope}><input type="checkbox" name={`scope-${scope}`} defaultChecked disabled={busy} />{scope}</label>)}</fieldset>
-          <button disabled={busy}>Skapa partnernyckel</button>
+          <button disabled={busy || Boolean(keyCreation.blocker)}>Skapa partnernyckel</button>
         </form></details>}
         <p className={styles.notice}>Nyckel och HMAC-hemlighet visas endast direkt efter skapande eller rotation. Kopiera dem till partnerns säkra förvaring innan du lämnar vyn. Spelmotorn bekräftar launch, återkallelse och demo-saldo.</p>
       </>}
@@ -634,7 +685,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       const reloaded = await load(group, true, result.actor);
       if (!alive.current) return;
       if (!reloaded) {
-        setNotice('Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.');
+        setNotice(WRITE_NOTICES['acknowledged-unrefreshed']);
         return;
       }
       if (form) {
@@ -642,10 +693,9 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
-      setNotice(result.payload.emailSent === false ? 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.'
-        : result.payload.emailSent === true && action === 'users/invite' ? 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.'
-          : result.payload.emailSent === true && action === 'users/resend' ? 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.'
-            : 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.');
+      setNotice(WRITE_NOTICES[result.payload.emailSent === false ? 'email-not-sent'
+        : result.payload.emailSent === true && action === 'users/invite' ? 'invite-sent'
+          : result.payload.emailSent === true && action === 'users/resend' ? 'resend-sent' : 'acknowledged']);
     } catch (error) {
       if (!alive.current) return;
       const failure = uiError(error);
@@ -670,13 +720,13 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow={ownHeading ? (group === 'finance' ? 'EKONOMI' : area.toUpperCase()) : null} title={ownHeading ? pageTitle : null} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
-    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" data-action="reload" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button></div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
-    {notice && <p role="status" className={styles.notice}>{notice}</p>}
-    {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
+    {notice && <p role="status" className={styles.notice} data-notice={writeNoticeKind(notice)}>{notice}</p>}
+    {oneTime && actor && <section className={styles.section} data-one-time="" aria-label="Engångsresultat från partneråtgärd">
       {oneTime.kind === 'credentials' && <><h3>Engångsuppgifter</h3><p>Kopiera nu. Uppgifterna försvinner när du döljer dem, laddar om eller lämnar vyn.</p>
         {oneTime.key && <label>API-nyckel<input readOnly value={oneTime.key} autoComplete="off" spellCheck={false} /></label>}
         <label>HMAC-hemlighet<input readOnly value={oneTime.secret} autoComplete="off" spellCheck={false} /></label></>}
@@ -684,8 +734,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       {oneTime.kind === 'credit' && <><h3>Demo-saldo bekräftat</h3><p>{oneTime.playerId}: {oneTime.balance} {oneTime.currency}</p></>}
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
-    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+    {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten tills du sparar eller kastar dem.</p><button type="button" data-action="discard-drafts" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
+    {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Administration"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} data-group={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
       {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
         key={actor.username+':'+actor.role}
         roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}

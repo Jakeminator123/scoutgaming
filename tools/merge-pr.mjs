@@ -1,20 +1,26 @@
 #!/usr/bin/env node
 // Merge guard for the orchestrating session: the AGENTS.md "Leverans och merge" rules as code.
 //
-//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]
+//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]
 //
 // It fetches origin/main, reads the owner from inbox/people.json and the branch policy from
 // tools/repository-policy.json there (trusted main, never the working copy), reads the pull request
 // and its complete file list fresh from GitHub, prints one line per check and merges only when
 // every check passes:
 //   gh pr merge <nr> --merge --match-head-commit <sha>      (never --admin, never --auto)
+// --base <branch> (default main) names the PR's base: main, or an environment branch from the
+// policy (preview). The same checks apply; only the freshness diff runs against origin/<base>, and a
+// PR into an environment branch may also have main as its head (syncing preview with production).
+// An environment branch is never accepted as a PR head, and a PR against main is refused when its
+// head carries the environment branch's history (isolation: origin/preview merged into the branch,
+// or a branch cut from preview), so preview-only commits never reach production through a PR.
 // --freeze <SHA> (O02) requires the SHA on origin/main and refuses any file, old or new path,
 // under the runtime prefixes of tools/o02-freeze-check.mjs. A PR that changes .github/workflows/
 // or .github/actions/ also changes the CI that judges it, so it needs --allow-workflow-change.
 // fresh: the ruleset does not require an up-to-date branch, so green CI may have tested the merge
-// into an older main. The tested base is the first parent of the merge commit the CI run checked
+// into an older base. The tested base is the first parent of the merge commit the CI run checked
 // out (named in the log of the run's changes job, parents from the commits API). It passes when that
-// base is origin/main, or when main's changes since then share no file and no package root
+// base is origin/<base>, or when the base's changes since then share no file and no package root
 // (PACKAGE_ROOTS) with the PR; otherwise, or when the base cannot be determined, it refuses.
 // review: the PR body needs the author's "Buggranskning: <verktyg/modell>, <nivå>, <fynd>" line.
 // --dry-run prints the decisions and merges nothing.
@@ -23,9 +29,10 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CI_WORKFLOW, REPO, touchesRuntime } from './o02-freeze-check.mjs';
-import { featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
+import { environmentBranches, featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const MAIN_BRANCH = 'main';
 export const REQUIRED_CHECK = 'CI';
 export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles,body';
 // Other people's branches stay theirs even when the PR was opened from Jakob's account. The policy
@@ -40,17 +47,21 @@ export const PACKAGE_ROOTS = Object.freeze(['services/game/', 'packages/<name>/'
 const fullSha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 export function parseArgs(args) {
-  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]';
-  const options = { number: null, head: null, freeze: null, allowWorkflowChange: false, dryRun: false };
+  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]';
+  const options = { number: null, head: null, base: MAIN_BRANCH, freeze: null, allowWorkflowChange: false, dryRun: false };
+  let baseGiven = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dry-run' && !options.dryRun) options.dryRun = true;
     else if (arg === '--allow-workflow-change' && !options.allowWorkflowChange) options.allowWorkflowChange = true;
     else if ((arg === '--head' || arg === '--freeze') && options[arg.slice(2)] === null && fullSha(args[i + 1])) options[arg.slice(2)] = args[++i];
+    else if (arg === '--base' && !baseGiven && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(args[i + 1] ?? '')) { options.base = args[++i]; baseGiven = true; }
     else if (/^[1-9][0-9]{0,6}$/.test(arg) && options.number === null) options.number = Number(arg);
     else throw Error(usage);
   }
   if (options.number === null || options.head === null) throw Error(usage);
+  // The O02 freeze is a main-only rule; it has no meaning for an environment branch.
+  if (options.freeze && options.base !== MAIN_BRANCH) throw Error(usage);
   return options;
 }
 
@@ -109,20 +120,21 @@ export function packageRoot(path) {
 }
 
 // freshness: { base, main, behind, files } from readFreshness, or { reason } when it could not be read.
-export function freshnessVerdict(freshness, paths, complete) {
-  const advice = 'merga origin/main in i branchen och låt CI köra om';
+// `main` is the current tip of the PR's base branch (origin/<name>), named by `name`.
+export function freshnessVerdict(freshness, paths, complete, name = MAIN_BRANCH) {
+  const advice = `merga origin/${name} in i branchen och låt CI köra om`;
   if (!fullSha(freshness?.base) || !fullSha(freshness?.main)) return { ok: false, reason: `CI-basen kunde inte avgöras: ${freshness?.reason ?? 'okänd orsak'}` };
-  if (freshness.base === freshness.main) return { ok: true, reason: `CI mot aktuell main ${freshness.main.slice(0, 12)}` };
+  if (freshness.base === freshness.main) return { ok: true, reason: `CI mot aktuell ${name} ${freshness.main.slice(0, 12)}` };
   if (!complete) return { ok: false, reason: 'kan inte prövas utan fullständig fillista' };
-  if (!Array.isArray(freshness.files) || !Number.isSafeInteger(freshness.behind)) return { ok: false, reason: `ändringarna på main sedan ${freshness.base.slice(0, 12)} kunde inte läsas` };
-  const behind = `CI mot main ${freshness.base.slice(0, 12)}, ${freshness.behind} commits bakåt`;
+  if (!Array.isArray(freshness.files) || !Number.isSafeInteger(freshness.behind)) return { ok: false, reason: `ändringarna på ${name} sedan ${freshness.base.slice(0, 12)} kunde inte läsas` };
+  const behind = `CI mot ${name} ${freshness.base.slice(0, 12)}, ${freshness.behind} commits bakåt`;
   const mainFiles = new Set(freshness.files);
   const overlap = [...new Set(paths)].filter(path => mainFiles.has(path));
-  if (overlap.length) return { ok: false, reason: `${behind}; main har sedan dess ändrat ${overlap.length} av PR:ens filer, t.ex. ${overlap[0]}; ${advice}` };
+  if (overlap.length) return { ok: false, reason: `${behind}; ${name} har sedan dess ändrat ${overlap.length} av PR:ens filer, t.ex. ${overlap[0]}; ${advice}` };
   const mainRoots = new Set(freshness.files.map(packageRoot).filter(Boolean));
   const shared = [...new Set(paths.map(packageRoot))].filter(root => root && mainRoots.has(root));
-  if (shared.length) return { ok: false, reason: `${behind}; main och PR:en ändrar båda i ${shared.join(', ')}; ${advice}` };
-  return { ok: true, reason: `${behind}, ingen överlappning (${freshness.files.length} filer ändrade på main sedan dess)` };
+  if (shared.length) return { ok: false, reason: `${behind}; ${name} och PR:en ändrar båda i ${shared.join(', ')}; ${advice}` };
+  return { ok: true, reason: `${behind}, ingen överlappning (${freshness.files.length} filer ändrade på ${name} sedan dess)` };
 }
 
 // The PR author's own bug review (AGENTS.md "Leverans och merge"): one line in the PR body that
@@ -158,23 +170,29 @@ export function securityVerdict(result) {
   return errors.length ? { ok: false, reason: `${errors.join(', ')} (${summary})` } : { ok: true, reason: summary };
 }
 
-export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = false, allowWorkflowChange = false,
-  jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false, freshness = null }) {
+export function evaluateMerge({ pr, files, head, base = MAIN_BRANCH, environments = [], freeze = null, freezeOnMain = false, allowWorkflowChange = false,
+  jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false, freshness = null, isolation = null }) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), reason });
   check('pr', pr?.number !== undefined, pr ? `#${pr.number}` : 'PR kunde inte läsas');
   check('state', pr?.state === 'OPEN', `state ${pr?.state ?? 'okänd'}`);
   check('draft', pr?.isDraft === false, pr?.isDraft === false ? 'inte utkast' : 'utkast eller okänt');
-  check('base', pr?.baseRefName === 'main', `bas ${pr?.baseRefName ?? 'okänd'}`);
+  // The base is main, or an environment branch the policy on origin/main names (preview).
+  const knownBase = base === MAIN_BRANCH || (environments ?? []).includes(base);
+  check('base', knownBase && pr?.baseRefName === base, !knownBase ? `${base} är varken ${MAIN_BRANCH} eller en miljöbranch (${(environments ?? []).join(', ') || 'inga'})`
+    : pr?.baseRefName === base ? `bas ${base}` : `bas ${pr?.baseRefName ?? 'okänd'} är inte ${base}`);
   check('source', pr?.isCrossRepository === false, pr?.isCrossRepository === false ? 'samma repo' : 'annat källrepo eller okänt');
   check('head', fullSha(head) && pr?.headRefOid === head,
     pr?.headRefOid === head ? `head ${head}` : `head ${pr?.headRefOid ?? 'okänd'} är inte ${head}`);
   const branch = String(pr?.headRefName ?? '');
   // Jakob's delivery branches only (policy featureBranches), and never someone else's on top.
+  // Into an environment branch, main itself is also a valid head; an environment branch never is.
   const foreign = foreignPatterns.find(pattern => matchesGlob(branch, pattern));
   const feature = (featureBranches ?? []).some(pattern => matchesBranchPattern(branch, pattern));
-  check('branch', branch && feature && !foreign, foreign ? `${branch} matchar ${foreign} (någon annans branch)`
-    : feature ? `branch ${branch}` : `${branch || 'okänd branch'} matchar inte ${(featureBranches ?? []).join(', ') || 'featureBranches'}`);
+  const mainIntoEnvironment = knownBase && base !== MAIN_BRANCH && branch === MAIN_BRANCH;
+  check('branch', branch && (feature || mainIntoEnvironment) && !foreign, foreign ? `${branch} matchar ${foreign} (någon annans branch)`
+    : feature ? `branch ${branch}` : mainIntoEnvironment ? `branch ${branch} in i miljöbranchen ${base}`
+    : `${branch || 'okänd branch'} matchar inte ${(featureBranches ?? []).join(', ') || 'featureBranches'}`);
   const login = pr?.author?.login;
   check('author', typeof jakobLogin === 'string' && jakobLogin !== '' && login === jakobLogin,
     `författare ${login ?? 'okänd'}${login === jakobLogin ? '' : `, inte ${jakobLogin ?? 'okänd ägare'}`}`);
@@ -188,8 +206,10 @@ export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = f
   check('workflow', complete && (!workflow.length || allowWorkflowChange), !complete ? 'kan inte prövas utan fullständig fillista'
     : !workflow.length ? 'ingen CI-ändring'
     : allowWorkflowChange ? `${workflow.length} CI-filer, tillåtet med --allow-workflow-change` : `${workflow.length} CI-filer, t.ex. ${workflow[0]}; kräver --allow-workflow-change`);
-  const fresh = freshnessVerdict(freshness, paths ?? [], complete);
+  const fresh = freshnessVerdict(freshness, paths ?? [], complete, knownBase ? base : MAIN_BRANCH);
   check('fresh', fresh.ok, fresh.reason);
+  // Into main, the head must not carry the environment branches' own history (readIsolation).
+  if (base === MAIN_BRANCH) check('isolation', isolation?.ok === true, isolation?.reason ?? 'miljöbranchernas historik kunde inte prövas');
   const review = reviewVerdict(pr?.body);
   check('review', review.ok, review.reason);
   if (freeze) {
@@ -227,53 +247,105 @@ export function readPrFiles(gh, number) {
   try { return result.stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)); } catch { return null; }
 }
 
-// The main SHA that the green CI run tested against: the CI check names its run, the log of the run's
+// The base SHA that the green CI run tested against: each CI check names its run, the log of the run's
 // changes job names the merge commit it fetched (+<sha>:refs/remotes/pull/<nr>/merge), and that
-// commit's parents are [tested main, head]. The run's pull_requests[].base.sha is not used: it is the
+// commit's parents are [tested base, head]. The run's pull_requests[].base.sha is not used: it is the
 // PR's live base, not the one the run tested, and a re-run tests the original merge commit again.
-export function readCiBase(gh, { number, head, rollup }) {
-  const runIds = new Set((Array.isArray(rollup) ? rollup : [])
+// One head can carry several CI runs (a PR against main and one against preview, or a push run on
+// main or preview with no PR merge at all), so every run is tried and the one whose log names this
+// PR's merge ref wins; without one, CI is missing for this PR's base.
+export function readCiBase(gh, { number, head, rollup, base = MAIN_BRANCH }) {
+  const runIds = [...new Set((Array.isArray(rollup) ? rollup : [])
     .filter(entry => entry?.name === REQUIRED_CHECK && entry.__typename === 'CheckRun' && entry.workflowName === CI_WORKFLOW)
-    .map(entry => /\/actions\/runs\/(\d+)\/job\//.exec(String(entry.detailsUrl ?? ''))?.[1] ?? 'okänd'));
-  if (runIds.size !== 1 || runIds.has('okänd')) return { reason: `CI-körningen kunde inte identifieras (${runIds.size} körningar)` };
-  const [runId] = runIds;
-  const jobs = gh(['api', `repos/${REPO}/actions/runs/${runId}/jobs?per_page=100`, '--paginate', '--jq', '.jobs[] | {id, name, head_sha, workflow_name}']);
-  if (jobs.error || jobs.status !== 0) return { reason: `jobben i körning ${runId} kunde inte läsas` };
-  let named;
-  try { named = jobs.stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(job => job?.name === CI_BASE_JOB); }
-  catch { return { reason: `jobben i körning ${runId} gav oläsbart svar` }; }
-  if (named.length !== 1 || named[0].head_sha !== head || named[0].workflow_name !== CI_WORKFLOW) {
-    return { reason: `jobben ${CI_BASE_JOB} på head ${String(head).slice(0, 12)} finns inte entydigt i körning ${runId}` };
+    .map(entry => /\/actions\/runs\/(\d+)\/job\//.exec(String(entry.detailsUrl ?? ''))?.[1] ?? 'okänd'))];
+  if (!runIds.length || runIds.includes('okänd')) return { reason: `CI-körningen kunde inte identifieras (${runIds.length} körningar)` };
+  const skipped = [];
+  for (const runId of runIds) {
+    const candidate = readCiRunMerge(gh, { number, head, runId });
+    if (candidate.merge) {
+      const commit = gh(['api', `repos/${REPO}/commits/${candidate.merge}`, '--jq', '[.parents[].sha]']);
+      let parents = null;
+      if (!commit.error && commit.status === 0) { try { parents = JSON.parse(commit.stdout); } catch { parents = null; } }
+      if (!Array.isArray(parents) || parents.length !== 2 || !fullSha(parents[0]) || parents[1] !== head) {
+        return { reason: `merge-commiten ${candidate.merge.slice(0, 12)} har inte föräldrarna [${base}, ${String(head).slice(0, 12)}]` };
+      }
+      return { base: parents[0], merge: candidate.merge, runId };
+    }
+    skipped.push(`körning ${runId}: ${candidate.reason}`);
   }
-  const log = gh(['api', '--allow-escape-sequences', `repos/${REPO}/actions/jobs/${named[0].id}/logs`]);
-  if (log.error || log.status !== 0) return { reason: `loggen för ${CI_BASE_JOB} i körning ${runId} kunde inte läsas` };
-  const merges = new Set([...String(log.stdout).matchAll(/\+([0-9a-f]{40}):refs\/remotes\/pull\/(\d+)\/merge\b/g)]
-    .map(match => Number(match[2]) === number ? match[1] : 'annan PR'));
-  if (merges.size !== 1 || merges.has('annan PR')) return { reason: `merge-commiten för PR #${number} finns inte entydigt i loggen för körning ${runId}` };
-  const [merge] = merges;
-  const commit = gh(['api', `repos/${REPO}/commits/${merge}`, '--jq', '[.parents[].sha]']);
-  let parents = null;
-  if (!commit.error && commit.status === 0) { try { parents = JSON.parse(commit.stdout); } catch { parents = null; } }
-  if (!Array.isArray(parents) || parents.length !== 2 || !fullSha(parents[0]) || parents[1] !== head) {
-    return { reason: `merge-commiten ${merge.slice(0, 12)} har inte föräldrarna [main, ${String(head).slice(0, 12)}]` };
-  }
-  return { base: parents[0], merge, runId };
+  return { reason: `CI saknas för bas ${base}: ingen av ${runIds.length} CI-körningar på head ${String(head).slice(0, 12)} testade PR #${number} (${skipped.join('; ')})` };
 }
 
-// What main changed since the tested base, from freshly fetched origin/main.
-export function readFreshness(gh, git, { number, head, rollup }) {
-  const ci = readCiBase(gh, { number, head, rollup });
+// The merge commit a CI run tested for this PR, from the log of its changes job on this head.
+function readCiRunMerge(gh, { number, head, runId }) {
+  const jobs = gh(['api', `repos/${REPO}/actions/runs/${runId}/jobs?per_page=100`, '--paginate', '--jq', '.jobs[] | {id, name, head_sha, workflow_name}']);
+  if (jobs.error || jobs.status !== 0) return { reason: 'jobben kunde inte läsas' };
+  let named;
+  try { named = jobs.stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(job => job?.name === CI_BASE_JOB); }
+  catch { return { reason: 'jobben gav oläsbart svar' }; }
+  if (named.length !== 1 || named[0].head_sha !== head || named[0].workflow_name !== CI_WORKFLOW) {
+    return { reason: `jobben ${CI_BASE_JOB} på head ${String(head).slice(0, 12)} finns inte entydigt` };
+  }
+  const log = gh(['api', '--allow-escape-sequences', `repos/${REPO}/actions/jobs/${named[0].id}/logs`]);
+  if (log.error || log.status !== 0) return { reason: `loggen för ${CI_BASE_JOB} kunde inte läsas` };
+  const merges = new Set([...String(log.stdout).matchAll(/\+([0-9a-f]{40}):refs\/remotes\/pull\/(\d+)\/merge\b/g)]
+    .filter(match => Number(match[2]) === number).map(match => match[1]));
+  if (merges.size !== 1) return { reason: merges.size ? `loggen nämner ${merges.size} merge-commits för PR #${number}` : `loggen nämner ingen merge-commit för PR #${number}` };
+  const [merge] = merges;
+  return { merge };
+}
+
+// What the base branch changed since the tested base, from freshly fetched origin/<base> (main by default).
+export function readFreshness(gh, git, { number, head, rollup, base: name = MAIN_BRANCH }) {
+  const ci = readCiBase(gh, { number, head, rollup, base: name });
   if (!ci.base) return ci;
-  const rev = git(['rev-parse', 'origin/main']);
+  const ref = `origin/${name}`;
+  const rev = git(['rev-parse', ref]);
   const main = !rev.error && rev.status === 0 ? String(rev.stdout).trim() : null;
-  if (!fullSha(main)) return { reason: 'origin/main kunde inte läsas' };
+  if (!fullSha(main)) return { reason: `${ref} kunde inte läsas` };
   if (ci.base === main) return { base: ci.base, main, behind: 0, files: [] };
-  if (git(['merge-base', '--is-ancestor', ci.base, 'origin/main']).status !== 0) return { reason: `CI-basen ${ci.base.slice(0, 12)} ingår inte i origin/main` };
+  if (git(['merge-base', '--is-ancestor', ci.base, ref]).status !== 0) return { reason: `CI-basen ${ci.base.slice(0, 12)} ingår inte i ${ref}` };
   // -z: raw path bytes, never core.quotepath's quoted "caf\303\251" form that matches no PR path.
-  const diff = git(['diff', '--name-only', '--no-renames', '-z', ci.base, 'origin/main']);
-  const count = git(['rev-list', '--count', `${ci.base}..origin/main`]);
+  const diff = git(['diff', '--name-only', '--no-renames', '-z', ci.base, ref]);
+  const count = git(['rev-list', '--count', `${ci.base}..${ref}`]);
   if (diff.error || diff.status !== 0 || count.error || count.status !== 0) return { reason: `git diff mot CI-basen ${ci.base.slice(0, 12)} misslyckades` };
   return { base: ci.base, main, behind: Number(String(count.stdout).trim()), files: String(diff.stdout).split('\0').filter(Boolean) };
+}
+
+// Isolation of main from the environment branches: an environment branch is never merged into main,
+// also not indirectly. A PR head against main is refused when it contains a commit that exists on
+// origin/<environment> but not on origin/main and that lies off the head's own first-parent line:
+// that is what `git merge origin/preview` in the branch, or a branch cut from a preview that holds
+// merged PRs, looks like. A branch fast-forwarded to preview and continued passes, since the shared
+// commits are its own first-parent line, and a merge of origin/main into it is excluded by ^origin/main.
+// The environment branches are fetched with explicit refspecs, and the head when it is not local.
+export function readIsolation(git, { head, environments, base = MAIN_BRANCH }) {
+  const names = Array.isArray(environments) ? environments : [];
+  if (!names.length) return { ok: true, reason: 'inga miljöbrancher i policyn' };
+  if (!fullSha(head)) return { ok: false, reason: 'head är ingen full SHA' };
+  const fetched = git(['fetch', '-q', 'origin', ...names.map(name => `+refs/heads/${name}:refs/remotes/origin/${name}`)]);
+  if (fetched.error || fetched.status !== 0) return { ok: false, reason: `origin/${names.join(', origin/')} kunde inte hämtas` };
+  if (git(['cat-file', '-e', `${head}^{commit}`]).status !== 0) {
+    const pulled = git(['fetch', '-q', 'origin', head]);
+    if (pulled.error || pulled.status !== 0 || git(['cat-file', '-e', `${head}^{commit}`]).status !== 0) return { ok: false, reason: `head ${head.slice(0, 12)} finns inte lokalt och kunde inte hämtas` };
+  }
+  const list = args => {
+    const result = git(['rev-list', ...args]);
+    return result.error || result.status !== 0 ? null : String(result.stdout).split(/\s+/).filter(Boolean);
+  };
+  const own = list([head, `^origin/${base}`]);
+  const line = list(['--first-parent', head, `^origin/${base}`]);
+  if (!own || !line) return { ok: false, reason: `historiken för head ${head.slice(0, 12)} mot origin/${base} kunde inte läsas` };
+  const inHead = new Set(own), onLine = new Set(line);
+  for (const name of names) {
+    const ref = `origin/${name}`;
+    const only = list([ref, `^origin/${base}`]);
+    if (!only) return { ok: false, reason: `${ref} kunde inte jämföras med origin/${base}` };
+    const shared = only.filter(sha => inHead.has(sha));
+    const foreign = shared.find(sha => !onLine.has(sha));
+    if (foreign) return { ok: false, reason: `head innehåller ${shared.length} commits från ${ref} som inte ligger på branchens egen linje, t.ex. ${foreign.slice(0, 12)}; origin/${name} mergas aldrig in i en branch mot ${base}, öppna i stället en PR mot ${name}` };
+  }
+  return { ok: true, reason: `head delar ingen historik med origin/${names.join(', origin/')} utöver sin egen` };
 }
 
 function readTrustedJson(git, path) {
@@ -287,21 +359,27 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   log = console.log } = {}) {
   let options;
   try { options = parseArgs(args); } catch (error) { log(error.message); return 2; }
-  const fetched = git(['fetch', '-q', 'origin', 'main']);
-  if (fetched.error || fetched.status !== 0) throw Error('git fetch origin main misslyckades; ingen merge utan färsk main');
+  // Owner and policy always come from main; another base branch is fetched too, with an explicit
+  // refspec so origin/<base> is updated even in a clone whose fetch mapping covers only main.
+  const refs = options.base === MAIN_BRANCH ? [MAIN_BRANCH] : [MAIN_BRANCH, `+refs/heads/${options.base}:refs/remotes/origin/${options.base}`];
+  const names = options.base === MAIN_BRANCH ? [MAIN_BRANCH] : [MAIN_BRANCH, options.base];
+  const fetched = git(['fetch', '-q', 'origin', ...refs]);
+  if (fetched.error || fetched.status !== 0) throw Error(`git fetch origin ${names.join(' ')} misslyckades; ingen merge utan färsk ${names.join(' och ')}`);
   const people = readTrustedJson(git, 'inbox/people.json');
   const policy = readTrustedJson(git, 'tools/repository-policy.json');
+  const environments = environmentBranches(policy);
   const jakobLogin = people?.jakob?.github;
   const freezeOnMain = options.freeze ? git(['merge-base', '--is-ancestor', options.freeze, 'origin/main']).status === 0 : false;
   const view = gh(['pr', 'view', String(options.number), '-R', REPO, '--json', PR_FIELDS]);
   let pr = null;
   if (!view.error && view.status === 0) { try { pr = JSON.parse(view.stdout); } catch { pr = null; } }
   const files = pr ? readPrFiles(gh, options.number) : null;
-  const freshness = pr ? readFreshness(gh, git, { number: options.number, head: options.head, rollup: pr.statusCheckRollup }) : null;
+  const freshness = pr ? readFreshness(gh, git, { number: options.number, head: options.head, rollup: pr.statusCheckRollup, base: options.base }) : null;
+  const isolation = pr && options.base === MAIN_BRANCH ? readIsolation(git, { head: options.head, environments }) : null;
   const sec = pr ? readSecurity(security, { sleep, log }) : { result: null, retried: false };
-  const verdict = evaluateMerge({ pr, files, head: options.head, freeze: options.freeze, freezeOnMain,
-    allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
-    foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried, freshness });
+  const verdict = evaluateMerge({ pr, files, head: options.head, base: options.base, environments,
+    freeze: options.freeze, freezeOnMain, allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
+    foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried, freshness, isolation });
   for (const entry of verdict.checks) log(`${entry.ok ? 'ok ' : 'nej'} ${entry.name}: ${entry.reason}`);
   if (!verdict.ok) { log(`nekad: PR #${options.number} mergas inte`); return 1; }
   if (options.dryRun) { log(`dry-run: PR #${options.number} skulle mergas på ${options.head}`); return 0; }

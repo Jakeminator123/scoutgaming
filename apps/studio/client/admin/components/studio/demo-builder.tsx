@@ -6,7 +6,7 @@ import {Button, buttonVariants, cn, plural, TechnicalDetails} from '../ui/kit';
 import {ConfirmDialog, DialogSteps} from '../ui/dialog';
 import {toast} from '../ui/toast';
 import {DealerAvatar} from './dealer-identity-portrait';
-import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DEMO_LAUNCH_ENABLED, DEMO_LAUNCH_OFF_TEXT, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
+import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
   demoKeyName, demoNameBase, demoPermissions, demoRooms, editDemo, expiryText, formatMoney, goToStep, initialDemoState, launchDemo, nextLabel, nextStep, previousStep, reachableStep,
   readCreditAmount, readDemoCatalogFrom, readDemoSession, readRoomGameConfig, revokeDemoKey, stepRequirement,
   type DemoAdministration, type DemoCompany, type DemoCredits as Credits, type DemoDealer, type DemoKey, type DemoLaunch, type DemoPermissions, type DemoRoom, type DemoState} from '../../lib/demo-builder.mjs';
@@ -42,8 +42,8 @@ function Field({id,label,hint,children}:{id:string;label:ReactNode;hint?:ReactNo
 }
 
 function CompanyStep({companies,selected,onSelect}:{companies:DemoCompany[];selected:string|null;onSelect:(id:string)=>void}) {
-  if(!companies.length)return <Empty chip="Inga bolag" title="Det finns inget aktivt bolag att bygga en demo åt" text="Skapa bolaget först under Bolag och spelbord › Nytt bolag, lägg till ett spelbord och publicera paketet."
-    action={<Link className={buttonVariants()} href="/admin/companies?view=create">Bolag och spelbord › Nytt bolag</Link>}/>;
+  if(!companies.length)return <Empty chip="Inga bolag" title="Det finns inget aktivt bolag att bygga en demo åt" text="Skapa bolaget först under Bolag och spelbord, lägg till ett spelbord och publicera paketet."
+    action={<Link className={buttonVariants()} href="/admin/companies?view=create">Nytt bolag</Link>}/>;
   return <div className={choiceGrid} role="group" aria-label="Bolag">{companies.map(company=><button key={company.id} type="button" className={choiceClass(company.id===selected)} aria-pressed={company.id===selected} onClick={()=>onSelect(company.id)}>
     <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"><span className="min-w-0 text-[13.5px] font-semibold [overflow-wrap:break-word]">{company.name}</span>{company.playable?<Chip tone="ok" dot>{company.playable} spelbara</Chip>:<Chip tone="warn">Inga spelbara spelbord</Chip>}</span>
     <span className="text-xs text-sg-muted">{plural(company.rooms,'spelbord','spelbord')} · {company.packageRevision===null?'inget publicerat paket':`publicerad version ${company.packageRevision}`}</span>
@@ -52,7 +52,7 @@ function CompanyStep({companies,selected,onSelect}:{companies:DemoCompany[];sele
 
 function RoomStep({company,rooms,selected,onSelect}:{company:DemoCompany;rooms:DemoRoom[];selected:string|null;onSelect:(room:DemoRoom)=>void}) {
   if(!rooms.length)return <Empty chip="Inga spelbord" title={`${company.name} har inget spelbord`} text="Lägg till ett spelbord hos bolaget under Bolag och spelbord och publicera paketet, så går det att välja här."
-    action={<Link className={buttonVariants()} href={companyHref(company,'spelbord')}>Bolag › {company.name} › Spelbord</Link>}/>;
+    action={<Link className={buttonVariants()} href={companyHref(company,'spelbord')}>Spelbord hos {company.name}</Link>}/>;
   return <div className={choiceGrid} role="group" aria-label="Spelbord">{rooms.map(room=><button key={room.id} type="button" className={choiceClass(room.id===selected)} aria-pressed={room.id===selected} disabled={!room.selectable} onClick={()=>onSelect(room)}>
     <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"><span className="min-w-0 text-[13.5px] font-semibold [overflow-wrap:break-word]">{room.name}</span>{room.selectable?<Chip tone="ok" dot>öppet</Chip>:<Chip tone="warn">{room.state==='live'?'inte spelbart':'pausat'}</Chip>}</span>
     <span className="text-xs text-sg-muted">{GAMES[room.game]??room.game} · {room.dealers.length?`${plural(room.dealers.length,'dealer','dealers')}: ${room.dealers.map(row=>row.name).join(', ')}`:'inga dealers i paketet'}</span>
@@ -61,7 +61,7 @@ function RoomStep({company,rooms,selected,onSelect}:{company:DemoCompany;rooms:D
 }
 
 function DealerStep({company,dealers,selected,onSelect}:{company:DemoCompany;dealers:{selectable:DemoDealer[];others:DemoDealer[]};selected:string|null;onSelect:(id:string)=>void}) {
-  const assign=<Link className={linkClass} href={companyHref(company,'tilldelning')}>Bolag › {company.name} › Tilldelning</Link>;
+  const assign=<Link className={linkClass} href={companyHref(company,'tilldelning')}>Tilldelning för {company.name}</Link>;
   return <div className="grid gap-3">
     {dealers.selectable.length?<div className={choiceGrid} role="group" aria-label="Dealer">{dealers.selectable.map(dealer=><button key={dealer.id} type="button" className={choiceClass(dealer.id===selected)} aria-pressed={dealer.id===selected} onClick={()=>onSelect(dealer.id)}>
       <span className="flex items-center justify-between gap-2"><DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44}/><Chip tone="ok" dot>i paketet</Chip></span>
@@ -72,10 +72,10 @@ function DealerStep({company,dealers,selected,onSelect}:{company:DemoCompany;dea
   </div>;
 }
 
-function CreditsReadout({credits,company,room}:{credits:Load<Credits>;company:DemoCompany;room:DemoRoom}) {
+function CreditsReadout({credits,room}:{credits:Load<Credits>;room:DemoRoom}) {
   if(credits.status==='loading')return <p className={small} role="status">Läser spelbordets spelinställningar…</p>;
   if(credits.status==='error')return <p className={small}>{credits.message}</p>;
-  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under Bolag och spelbord › {company.name}.</p>;
+  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under spelbordets <Link className={linkClass} href={`/admin/rooms/${encodeURIComponent(room.id)}?flik=spel`}>Spelinställningar</Link>.</p>;
   const value=credits.value;
   return <KV items={[
     ['Startsaldo','Bestäms av spelmotorn när testsessionen skapas och visas i kvittot. Det går inte att välja här; efter lanseringen kan du fylla på demosaldot.'],
@@ -95,10 +95,10 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <Field id="demo-currency" label="Valuta"><select id="demo-currency" className={fieldClass} value={state.form.currency} onChange={event=>onEdit('currency',event.target.value)}>{DEMO_CURRENCIES.map(row=><option key={row}>{row}</option>)}</select></Field>
     </div>
     <section aria-labelledby="demo-credits-title" className="grid gap-2.5"><h3 id="demo-credits-title" className="m-0 text-[13.5px] font-semibold text-sg-text">Saldo och giltighet</h3>
-      <CreditsReadout credits={credits} company={company} room={room}/>
+      <CreditsReadout credits={credits} room={room}/>
       <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; kommer senare). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
-    <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> hos <b>{company.name}</b> med <b>{dealer.name}</b>. Nyckel och hemlighet lämnar aldrig servern.</Note>
+    <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> för <b>{company.name}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> med <b>{dealer.name}</b>. Nyckeln gäller bara {company.name}, och nyckel och hemlighet lämnar aldrig servern.</Note>
     {permissions.blocker&&<div role="note"><Note tone="warn">{permissions.blocker}</Note></div>}
   </div>;
 }
@@ -232,7 +232,7 @@ export function DemoBuilder() {
     if(!company||!room||!dealer||!permissions?.canLaunch||!requirement.ready||busy)return;
     setLaunch({phase:'create'});setRevoke({phase:'idle'});
     try{
-      const value=await launchDemo({fetchImpl:fetch,form:state.form,permissions,operatorSlug:company.slug,roomId:room.id,dealerId:dealer.id,onPhase:phase=>setLaunch({phase})});
+      const value=await launchDemo({fetchImpl:fetch,form:state.form,permissions,operatorId:company.id,operatorSlug:company.slug,roomId:room.id,dealerId:dealer.id,onPhase:phase=>setLaunch({phase})});
       setLaunch({phase:'done',value});
     }catch(error){setLaunch({phase:'error',message:error instanceof Error?error.message:'Okänt fel.',key:(error as {key?:DemoKey}).key??null});}
   };
@@ -255,7 +255,7 @@ export function DemoBuilder() {
   else if(effective.step===3&&company)body=<DealerStep company={company} dealers={dealers} selected={dealer?.id??null} onSelect={id=>setState(current=>chooseDealer(current,id))}/>;
   else if(company&&room&&dealer)body=<LaunchStep state={state} company={company} room={room} dealer={dealer} permissions={permissions??demoPermissions(null)} credits={session.status==='ready'?credits:session.status==='loading'?{status:'loading'}:session} onEdit={(field,value)=>setState(current=>editDemo(current,field,value))}/>;
   const launchReady=effective.step===4?requirement.ready&&Boolean(permissions?.canLaunch)&&!busy:requirement.ready;
-  const launchMissing=effective.step===4&&!DEMO_LAUNCH_ENABLED?DEMO_LAUNCH_OFF_TEXT:effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
+  const launchMissing=effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
   const key=launch.phase==='done'?launch.value.key:launch.phase==='error'?launch.key:null;
   const receipt=launch.phase==='done'?launch.value.receipt:null;
   const technical:[string,ReactNode][]=[
@@ -266,11 +266,10 @@ export function DemoBuilder() {
     ...(key?[['Nyckel-id',key.id]] as [string,ReactNode][]:[]),
     ...(receipt?.playerId?[['Demospelare',receipt.playerId]] as [string,ReactNode][]:[]),
     ...(receipt?.playerRef?[['Spelarreferens',receipt.playerRef]] as [string,ReactNode][]:[]),
-    ['Skrivningar','apikeys/create och apikeys/launch; Fyll på: apikeys/credit; Återkalla: apikeys/revoke'],
+    ['Skrivningar','apikeys/create (med bolags-id) och apikeys/launch; Fyll på: apikeys/credit; Återkalla: apikeys/revoke'],
   ];
   return <HubPage eyebrow={<Crumbs items={[{label:'Översikt',href:'/admin'},{label:'Skapa demo'}]}/>} title="Skapa demo"
-    chip={DEMO_LAUNCH_ENABLED?undefined:<Chip tone="warn" title={DEMO_LAUNCH_OFF_TEXT}>Demolänk kommer senare</Chip>}
-    intro={`Bygg en demo åt ett bolag i fyra steg${DEMO_LAUNCH_ENABLED?' och få en länk att skicka':''}. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.`}>
+    intro="Bygg en demo åt ett bolag i fyra steg och få en länk att skicka. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.">
     <DialogSteps steps={DEMO_STEPS.map(step=>step.label)} current={done?DEMO_STEPS.length:effective.step-1} reachable={reachableStep(effective)-1} onSelect={done||busy?undefined:index=>go(index+1)} className="mb-5"/>
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">
       <div className="min-w-0" aria-live="polite"><Card title={done?stepTitle:`${effective.step}. ${stepTitle}`} aside={!done&&catalog.status==='ready'?(effective.step===1?`${companies.length} aktiva bolag`:effective.step===2?`${rooms.filter(row=>row.selectable).length} av ${rooms.length} spelbara`:effective.step===3?`${dealers.selectable.length} i paketet`:undefined):undefined}>

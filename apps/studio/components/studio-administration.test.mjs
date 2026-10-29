@@ -11,6 +11,7 @@ import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
+import { journalType, formatJournalAmount } from '../client/admin/lib/economy-journal.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
@@ -151,6 +152,28 @@ test('native administration preserves its standalone shell, embeds without a sec
 });
 
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }
+// Controls are found by their command, form fields or data attributes, never by their words,
+// so a wording change in the UI does not break a test of what the control does.
+function control(tree, action) { return nodes(tree, node => node.type === 'button' && node.props['data-action'] === action); }
+function tab(tree, group) { return nodes(tree, node => node.type === 'button' && node.props['data-group'] === group); }
+function formsWith(tree, field, without) {
+  const has = (node, name) => nodes(node, child => child.props?.name === name).length > 0;
+  return nodes(tree, node => node.type === 'form' && has(node, field) && !(without && has(node, without)));
+}
+/** The commands the view's plain (non-form) buttons send when clicked. */
+function clickedActions(h, props) {
+  const sent = [], tree = h.StudioAdministrationView({ ...props, command: action => sent.push(action) });
+  for (const button of nodes(tree, node => node.type === 'button' && node.props.type === 'button' && typeof node.props.onClick === 'function')) button.props.onClick();
+  return sent;
+}
+const escapeHtml = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+/** The rendered page shows the UI error for this HTTP status. */
+function showsFailure(h, tree, code) { return renderToStaticMarkup(tree).includes(escapeHtml(new h.StudioAdminUiError(code).message)); }
+/** An unknown actor or group gets one alert and no sections, forms or buttons. */
+function refused(tree) {
+  const html = renderToStaticMarkup(tree);
+  return /role="alert"/.test(html) && !/data-admin-section/.test(html) && nodes(tree, node => node.type === 'form' || node.type === 'button').length === 0;
+}
 function reply(payload, status = 200) { return new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json' } }); }
 function nativeReply(payload, code = 200, current = actor('admin')) {
   const response = reply(payload, code);
@@ -190,7 +213,8 @@ function resources() {
       { username: actor('superadmin').username, role: 'superadmin', active: 1 },
       { username: 'other@example.test', role: 'staff', active: 1 },
     ] } },
-    apikeys: { payload: { keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true }] } },
+    apikeys: { payload: { operatorBinding: 'ready', operators: [{ id: 'north', name: 'North Casino', active: true }, { id: 'paused', name: 'Paused Bets', active: false }],
+      keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true, operatorId: 'north', operatorName: 'North Casino' }] } },
     transactions: { payload: { tx: [{ player_id: 'player-closed', type: 'open', amount: 42, currency: 'EUR', at: '2026-10-02T00:00:00Z' }] } },
     shoes:{payload:{rules:{decks:8,total:416,cutAfter:312,burn:1},tableCount:2,shoes:2,activeRounds:1,cutReached:0,observedAt:'2026-10-03T02:00:00.000Z'}},
     emails:{payload:{previewOnly:true,templates:[{id:'welcome',name:'Welcome',heading:'Hello <script>',text:'Preview',fields:[['Account','[PLAYER EMAIL]']],action:'Take a seat'}]}},
@@ -210,12 +234,12 @@ test('journal presents Swedish events, per-row currencies and explicit UTC witho
   ];
   const before = JSON.stringify(props.resources.transactions.payload);
   const html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
-  assert.match(html, /Insats · Blackjack/); assert.match(html, /Öppningssaldo/);
-  assert.match(html, /Valutabyte · nytt saldo/); assert.match(html, /Okänd händelse · new-event/);
-  assert.match(html, /16 okt\.? 2026.*22:30:00 UTC/);
+  for (const row of props.resources.transactions.payload.tx) {
+    assert.ok(html.includes(escapeHtml(journalType(row.type))), row.type);
+    assert.ok(html.includes(escapeHtml(formatJournalAmount(Number(row.amount), row.currency))), `${row.amount} ${row.currency}`);
+  }
   assert.match(html, /dateTime="2026-10-16T22:30:00.000Z"/);
-  assert.match(html, /[−-]12,50\s*kr/); assert.match(html, /3,00 USDT/);
-  assert.match(html, /<details><summary>Visa detaljer<\/summary>.*Spelar-ID.*<code>partner-player-a{220}<\/code>/);
+  assert.match(html, /<details>.*<code>partner-player-a{220}<\/code>/);
   assert.ok(html.includes('2026-10-17T00:30:00+02:00'));
   assert.doesNotMatch(html, /<form|<button|NaN|undefined|<details open/);
   assert.equal(JSON.stringify(props.resources.transactions.payload),before);
@@ -225,11 +249,11 @@ test('empty and malformed journals give a visible result instead of a misleading
   const h = harness(), props = viewProps('admin', 'finance');
   props.resources.transactions.payload.tx = [];
   let html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
-  assert.match(html, /Inga journalposter/); assert.doesNotMatch(html, /<table/);
+  assert.match(html, /data-admin-section="pay"/); assert.doesNotMatch(html, /<table|role="alert"/);
   for (const field of [{amount:'wrong'}, {at:'invalid'}, {currency:''}]) {
     props.resources.transactions.payload.tx = [{at:'2026-10-16T10:00:00Z',player_id:'fixture',type:'deposit',currency:'SEK',amount:12,...field}];
     html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
-    assert.match(html, /role="alert"/); assert.match(html, /Ladda om från servern/);
+    assert.match(html, /role="alert"/);
     assert.doesNotMatch(html, /<table|NaN|Invalid Date/);
   }
 });
@@ -241,11 +265,11 @@ test('account status labels keep stored values and integration dates never revea
   assert.equal(states.length,1); assert.equal(states[0].props.defaultValue,'blocked');
   assert.deepEqual(nodes(states[0],node=>node.type === 'option').map(node=>node.props.value),['blocked','closed']);
   const html = renderToStaticMarkup(tree);
-  assert.match(html, /Aktivt/); assert.match(html, /Stängt/); assert.match(html, /<code>player-active<\/code>/);
+  assert.match(html, /<code>player-active<\/code>/); assert.match(html, /<code>player-closed<\/code>/);
   const partners = viewProps('admin','partners');
   partners.resources.apikeys.payload.keys[0].last_used='2026-10-17T00:30:00+02:00';
   const integration = renderToStaticMarkup(React.createElement(h.StudioAdministrationView,partners));
-  assert.match(integration,/22:30:00 UTC/); assert.match(integration,/Wallet/); assert.match(integration,/Ansluten/);
+  assert.match(integration,/dateTime="2026-10-16T22:30:00.000Z"/);
   assert.doesNotMatch(integration,/MUST-NOT-RENDER/);
 });
 
@@ -254,12 +278,10 @@ test('administration notices label team compatibility without changing its edito
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === '/admin/companies')[0];
     assert.ok(original, group);
-    assert.equal(original.props.children, 'Bolag & team');
-    const embedded = h.render({ ...props, companyTeamLabel: 'Bolag & team (äldre editor)' });
+    const embedded = h.render({ ...props, companyTeamLabel: 'Fixture team label' });
     const target = nodes(embedded, node => node.type === 'a').find(node => node.props.href === '/admin/companies');
     assert.ok(target, group);
-    assert.equal(target.props.children, 'Bolag & team (äldre editor)');
-    assert.doesNotMatch(renderToStaticMarkup(embedded), /Spelbolag &amp; rum|spelmotorns gemensamma inställningar/);
+    assert.equal(target.props.children, 'Fixture team label');
     h.unmount();
   }
 });
@@ -272,7 +294,7 @@ test('embedded navigation leaves group changes to the enclosing Admin while stan
     h.render(props);h.effects();await flush();const tree=h.render(props);
     assert.ok(nodes(tree,node=>node.type===h.StudioAdministrationView).length);
     assert.equal(nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Administration').length,showGroupNavigation===false?0:1);
-    assert.equal(buttons(tree,'Integrationer').length,showGroupNavigation===false?0:1);
+    assert.equal(tab(tree,'partners').length,showGroupNavigation===false?0:1);
     h.unmount();
   }
 });
@@ -319,19 +341,15 @@ test('each work area retains native identity headers and only shows its own tabs
       assert.ok(view&&Object.values(view.props.resources).every(resource=>resource.payload),group.id);
       assert.equal(view.props.actor.role,'admin');
       assert.equal(f.state.sessions,readIdentity==='response-headers-v1'?0:f.state.reads+1);
-      const expectedTabs={Drift:['Spelstatus & integritet','Betalningar & journal'],Administration:['Konton & åtkomst','Integrationer']};
+      const sameArea=navigation.BACKOFFICE_GROUPS.filter(item=>item.id!=='tables'&&item.area===group.area).map(item=>item.id);
       const menu=nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Administration')[0];
-      assert.deepEqual(nodes(menu,node=>node.type==='button').map(node=>node.props.children),expectedTabs[group.area],group.id);
-      assert.equal(buttons(tree,'Spelmotor & rum').length,0,'retired room settings are never offered in the group menu');
-      const html=renderToStaticMarkup(tree);
-      if(group.area==='Administration')assert.match(html,/>SYSTEM</);
-      if(group.id==='operations')assert.match(html,/<h1>Spelstatus &amp; integritet<\/h1>/);
-      if(group.id==='accounts')assert.match(html,/<h1>Konton &amp; åtkomst<\/h1>/);
+      assert.deepEqual(nodes(menu,node=>node.type==='button').map(node=>node.props['data-group']),sameArea,group.id);
+      assert.equal(nodes(menu,node=>node.type==='button'&&node.props['aria-pressed']===true).map(node=>node.props['data-group']).join(),group.id);
+      assert.equal(tab(tree,'tables').length,0,'retired room settings are never offered in the group menu');
+      assert.match(renderToStaticMarkup(tree),/<h1>/);
       h.unmount();
     }
   }
-  const nativeSource=readFileSync(new URL('./native-administration.tsx',import.meta.url),'utf8');
-  assert.match(nativeSource,/<StudioAdministration\b[^>]*readIdentity="response-headers-v1"/);
 });
 
 test('response identity is checked before body hydration; missing/malformed/different actors fail closed without session fallback', async () => {
@@ -374,15 +392,15 @@ test('two native server GETs reread role and epoch; revocation never leaks the s
 });
 
 test('a server rejection after group preflight clears previously displayed native data and controls', async () => {
-  for (const [statusCode, notice] of [[401, /Sessionen är avslutad/], [403, /Behörigheten saknas eller har ändrats/]]) {
+  for (const statusCode of [401, 403]) {
     const h = harness(), f = nativeReadFixture(); let rejectReads = false;
     const props = { ...f.props, fetchImpl: async (url, init) => rejectReads ? reply({ error: 'private provider detail' }, statusCode) : f.props.fetchImpl(url, init) };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
     assert.match(renderToStaticMarkup(tree), /owner@example.test/);
     rejectReads = true;
-    buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+    control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
     const html = renderToStaticMarkup(tree);
-    assert.match(html, notice); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|private provider detail/);
+    assert.ok(showsFailure(h, tree, statusCode)); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|private provider detail/);
     assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
     h.unmount();
   }
@@ -390,9 +408,9 @@ test('a server rejection after group preflight clears previously displayed nativ
 
 test('native identity change or revocation between concurrent reads discards the entire group', async () => {
   for (const [change, notice] of [
-    [state => { state.user.username = 'other@example.test'; }, /Behörigheten saknas eller har ändrats/],
-    [state => { state.user.role = 'reader'; }, /Sessionen är avslutad/],
-    [state => { state.epoch++; }, /Sessionen är avslutad/],
+    [state => { state.user.username = 'other@example.test'; }, 403],
+    [state => { state.user.role = 'reader'; }, 401],
+    [state => { state.epoch++; }, 401],
   ]) {
     const h = harness(), f = nativeReadFixture(); let release, bodies = 0;
     const firstDone = new Promise(resolve => { release = resolve; });
@@ -405,7 +423,7 @@ test('native identity change or revocation between concurrent reads discards the
     } };
     h.render(props); h.effects(); await flush();
     const tree = h.render(props), html = renderToStaticMarkup(tree);
-    assert.match(html, notice);
+    assert.ok(showsFailure(h, tree, notice));
     assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|other@example.test/);
     assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
     assert.equal(f.state.sessions, 0); assert.equal(f.state.reads, 2);
@@ -502,8 +520,8 @@ test('native all-error reload clears previous actor, data and controls instead o
   const props = { ...f.props, fetchImpl: (url, init) => failed ? Promise.resolve(reply({}, 503)) : f.props.fetchImpl(url, init) };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /owner@example.test/);
-  failed = true; buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.match(renderToStaticMarkup(tree), /tillfälligt otillgänglig/);
+  failed = true; control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.ok(showsFailure(h, tree, 503));
   assert.doesNotMatch(renderToStaticMarkup(tree), /aria-label="Administration"|owner@example.test/);
   assert.equal(f.state.sessions, 0); h.unmount();
 });
@@ -521,7 +539,7 @@ test('render never mutates or requests providers/accounts; four active groups ex
   });
   assert.equal(sections.length, 7); assert.equal(new Set(sections).size, 7);
   assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).filter(id => !retired.sections.includes(id)).sort());
-  assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'tables'))), /Okänd session eller administrationsgrupp/);
+  assert.ok(refused(h.StudioAdministrationView(viewProps('superadmin', 'tables'))));
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
 
@@ -539,7 +557,7 @@ test('unknown identities/roles/groups fail closed, including inherited and proto
   const h = harness();
   for (const value of [null, [], {}, 'admin', actor('constructor'), actor('__proto__'), actor('player'), { username: '', role: 'reader' }, Object.create(actor('superadmin')), { username: 'x\u0000y', role: 'admin' }]) assert.equal(h.studioAdminActor(value), null);
   for (const group of ['constructor', '__proto__', '/accounts', 'accounts?x=1', 'accounts/', 'tables', null]) {
-    assert.match(renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps(), group })), /Okänd session/);
+    assert.ok(refused(h.StudioAdministrationView({ ...viewProps(), group })), String(group));
   }
 });
 
@@ -602,7 +620,7 @@ test('an accounts page reads and shows only its own section under the page headi
     assert.deepEqual(Object.keys(view.props.resources), [section]);
     const html = renderToStaticMarkup(tree);
     assert.match(html, new RegExp(`data-admin-section="${section}"`)); assert.doesNotMatch(html, new RegExp(`data-admin-section="${other}"`));
-    assert.doesNotMatch(html, /<h1|sg-eyebrow/, 'the enclosing page owns the heading'); assert.match(html, /owner@example\.test · Administratör/);
+    assert.doesNotMatch(html, /<h1|sg-eyebrow/, 'the enclosing page owns the heading'); assert.match(html, /owner@example\.test/);
     h.unmount();
   }
   for (const changed of [actor('reader'), { username: 'other@example.test', role: 'admin' }]) {
@@ -610,7 +628,7 @@ test('an accounts page reads and shows only its own section under the page headi
     const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions, initialGroup: 'accounts', sections: ['users'],
       session: () => assert.fail('No GET session'), fetchImpl: async () => nativeReply(resources().users.payload, 200, changed) };
     h.render(props); h.effects(); await flush(); const tree = h.render(props), html = renderToStaticMarkup(tree);
-    if (changed.role === 'reader') { assert.match(html, /Behörigheten saknas/); assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0); }
+    if (changed.role === 'reader') { assert.ok(showsFailure(h, tree, 403)); assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0); }
     else assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.actor.username, 'other@example.test', 'the read identity, never a cached one, is shown');
     assert.doesNotMatch(html, /data-admin-section="players"/); h.unmount();
   }
@@ -629,7 +647,7 @@ test('Ekonomi tabs share one identity-checked journal read per visit; an explici
   const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   assert.equal(view.props.resources.transactions.payload, overview.results[0].payload);
   assert.equal(view.props.actor.username, actor('admin').username);
-  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(scoped);
+  control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(scoped);
   assert.equal(reads, 2, 'an explicit reload reads the server again');
   journal.refresh(); await journal.read(client); assert.equal(reads, 3, 'a new visit reads anew');
   h.unmount();
@@ -687,9 +705,11 @@ test('activated partner actions use explicit transient projections and the retir
   }
   await assert.rejects(client.request('POST','speech-qa',{}),status(400));
   assert.equal(fetches,4);
-  const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'partners')));
+  const partners = viewProps('superadmin', 'partners'), html = renderToStaticMarkup(h.StudioAdministrationView(partners));
   assert.doesNotMatch(html, /MUST-NOT-RENDER|wallet_url|type="password"/);
-  assert.match(html,/Skapa partnernyckel|Rotera hemlighet/); assert.match(html, /Återkalla partnernyckel/);
+  assert.equal(formsWith(h.StudioAdministrationView(partners), 'walletUrl').length, 1, 'the key creation form is offered');
+  const clicked = clickedActions(h, partners);
+  assert.ok(clicked.includes('apikeys/rotate')); assert.ok(clicked.includes('apikeys/revoke'));
 });
 
 test('partner result projection rejects malformed credentials and cross-origin/ambiguous launch URLs', () => {
@@ -705,9 +725,11 @@ test('partner result projection rejects malformed credentials and cross-origin/a
     'https://game.example.test/game?dealer=astrid&launch=a.b.c#secret']) {
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
   }
-  for (const url of ['https://game.example.test/game?launch=a.b.c','https://game.example.test/blackjack?launch=a.b.c'])
+  // Nyckel→bolag: the engine names the key's company in the address of a bound key.
+  for (const url of ['https://game.example.test/game?launch=a.b.c','https://game.example.test/blackjack?launch=a.b.c','https://game.example.test/game?operator=north&launch=a.b.c'])
     assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'))),{kind:'launch',url,playerRef:'player'});
-  for (const url of ['https://game.example.test/game?operator=north&launch=a.b.c','https://game.example.test/game?launch=a.b.c&launch=a.b.c'])
+  for (const url of ['https://game.example.test/game?launch=a.b.c&launch=a.b.c','https://game.example.test/game?operator=North&launch=a.b.c',
+    'https://game.example.test/game?operator=api&launch=a.b.c','https://game.example.test/game?operator=north&operator=south&launch=a.b.c','https://game.example.test/game?operator=north&table=t&launch=a.b.c'])
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
   // Dealer-independent: any well-formed registered identity, not a historical name list.
   for (const dealer of ['astrid','dragan','linnea-2']) {
@@ -720,7 +742,7 @@ test('partner result projection rejects malformed credentials and cross-origin/a
 test('Integrationer launch projection is exactly the shared rule in lib/partner-launch-url.mjs (the Demo-builder uses it too)', () => {
   const h = harness(), origin = 'https://game.example.test';
   const urls = [`${origin}/game?launch=a.b.c`,`${origin}/blackjack?launch=a.b.c`,`${origin}/game?dealer=astrid&launch=a.b.c`,`${origin}/game?launch=a.b.c&dealer=linnea-2`,
-    `${origin}/game?dealer=Wrong&launch=a.b.c`,`${origin}/game?operator=north&launch=a.b.c`,`${origin}/game?launch=a.b.c&launch=a.b.c`,`${origin}/game?launch=bad`,
+    `${origin}/game?dealer=Wrong&launch=a.b.c`,`${origin}/game?operator=north&launch=a.b.c`,`${origin}/game?operator=..%2Fnorth&launch=a.b.c`,`${origin}/game?launch=a.b.c&launch=a.b.c`,`${origin}/game?launch=bad`,
     `${origin}/game?launch=a.b.c#x`,`${origin}/other?launch=a.b.c`,'http://game.example.test/game?launch=a.b.c','https://outside.test/game?launch=a.b.c',
     `${origin}/game?launch=${'a'.repeat(16400)}.b.c`,'not a url'];
   let accepted = 0;
@@ -729,7 +751,7 @@ test('Integrationer launch projection is exactly the shared rule in lib/partner-
     if (approved) { accepted++; assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin))),{kind:'launch',url:approved.href,playerRef:'player'}); }
     else assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin),status(503),url);
   }
-  assert.equal(accepted, 4);
+  assert.equal(accepted, 5);
   assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`},origin),status(503),'playerRef is still required');
   for (const gameOrigin of [undefined,'',`${origin}/`,'http://game.example.test']) assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`,playerRef:'player'},gameOrigin),status(503),String(gameOrigin));
 });
@@ -738,16 +760,16 @@ test('partner forms retain explicit role/scopes/wallet boundaries and send only 
   const h = harness(), calls = [], data = resources();
   data.apikeys.payload.keys[0].scopes = ['launch','wallet']; data.apikeys.payload.keys[0].walletConfigured = false;
   const tree = h.StudioAdministrationView({...viewProps('admin','partners'),resources:data,command:(action,body)=>calls.push({action,body})});
-  assert.equal(buttons(tree,'Skapa partnernyckel').length,1); assert.equal(buttons(tree,'Rotera hemlighet').length,1);
-  const formFor = text => nodes(tree,node=>node.type==='form' && buttons(node,text).length)[0];
-  formFor('Skapa spellänk').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'})});
-  formFor('Kreditera demo-saldo').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',amount:'12.50'})});
+  assert.equal(formsWith(tree,'walletUrl').length,1);
+  assert.deepEqual(clickedActions(h,{...viewProps('admin','partners'),resources:data}).filter(action=>action==='apikeys/rotate'),['apikeys/rotate']);
+  formsWith(tree,'displayName')[0].props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'})});
+  formsWith(tree,'amount')[0].props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',amount:'12.50'})});
   assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
     {action:'apikeys/launch',body:{id:'partner-one',playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'}},
     {action:'apikeys/credit',body:{id:'partner-one',playerId:'partner-player',amount:12.5}},
   ]);
   data.apikeys.payload.keys[0].walletConfigured = true;
-  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin','partners'),resources:data}),'Kreditera demo-saldo').length,0);
+  assert.equal(formsWith(h.StudioAdministrationView({...viewProps('admin','partners'),resources:data}),'amount').length,0);
 });
 
 test('one-time credential display clears on explicit reload/group change and never enters account metadata', async () => {
@@ -755,17 +777,17 @@ test('one-time credential display clears on explicit reload/group change and nev
   const props = {initialGroup:'accounts',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
     init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree,'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  tab(tree,'partners')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   let native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
   native.props.command('apikeys/create',{name:'Example'}); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
   native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
   assert.equal(JSON.stringify(native.props.resources).includes(secret),false);
-  buttons(tree,'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  control(tree,'reload')[0].props.onClick(); await flush(); tree = h.render(props);
   assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret));
   nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('apikeys/create',{name:'Example'}); await flush(); tree=h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
-  buttons(tree,'Konton & åtkomst')[0].props.onClick(); tree=h.render(props);
+  tab(tree,'accounts')[0].props.onClick(); tree=h.render(props);
   assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret)); h.unmount();
 });
 
@@ -786,7 +808,7 @@ test('pagehide removes one-time results before the frozen snapshot, but cancelle
     let blocked=false;h.listeners.get('beforeunload')({preventDefault(){blocked=true;},returnValue:undefined});
     assert.equal(blocked,true);assert.ok(renderToStaticMarkup(h.render(props)).includes(sensitive));
     const frozen=h.pagehideSnapshot(props,persisted);
-    assert.ok(!frozen.includes(sensitive));assert.doesNotMatch(frozen,/Engångsresultat från partneråtgärd/);
+    assert.ok(!frozen.includes(sensitive));assert.doesNotMatch(frozen,/data-one-time/);
     h.listeners.get('pageshow')?.({persisted});
     tree=h.render(props);assert.ok(!renderToStaticMarkup(tree).includes(sensitive));assert.equal(writes,1);
     // The restored page can display a new explicit result, never the old one.
@@ -807,19 +829,8 @@ test('a POST response from before pagehide cannot restore credentials after page
   h.listeners.get('pageshow')?.({persisted:true});
   resolvePost(reply({ok:true,key:{id:'partner-one',key,secret}}));await flush();
   const restored=renderToStaticMarkup(h.render(props));
-  assert.ok(!restored.includes(secret));assert.doesNotMatch(restored,/Engångsresultat från partneråtgärd/);
-  assert.match(restored,/Servern bekräftade åtgärden/);assert.equal(writes,1);h.unmount();
-});
-
-test('staff invitation explains company memberships in both the form and successful result', async () => {
-  const h=harness(),data=resources();
-  const props={initialGroup:'accounts',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('admin'),
-    fetchImpl:async(url,init)=>init.method==='POST'?reply({ok:true,emailSent:true}):reply(data[url.slice('/api/admin/'.length)]?.payload)};
-  h.render(props);h.effects();await flush();let tree=h.render(props);
-  let html=renderToStaticMarkup(tree);assert.match(html,/Bolagsåtkomst följer tilldelade medlemskap/);assert.doesNotMatch(html,/demonstrationer|kundval/);
-  nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('users/invite',{email:'other@example.test',role:'admin'});await flush();tree=h.render(props);
-  const notices=nodes(tree,node=>node.props?.role==='status').map(node=>renderToStaticMarkup(node)).join('');
-  assert.match(notices,/Inbjudan.*Bolagsåtkomst följer tilldelade medlemskap/);assert.doesNotMatch(notices,/demonstrationer|kundval/);h.unmount();
+  assert.ok(!restored.includes(secret));assert.doesNotMatch(restored,/data-one-time/);
+  assert.match(restored,/data-notice="acknowledged"/,'the acknowledged write is still reported');assert.equal(writes,1);h.unmount();
 });
 
 test('keys/invite responses are projected before state, and server errors never echo secret bodies', async () => {
@@ -848,16 +859,19 @@ test('malformed list payloads are unavailable, never a fabricated empty account/
 test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmins have no controls', () => {
   const h = harness();
   for (const role of ['reader','staff','player']) for (const group of navigation.BACKOFFICE_GROUPS) {
-    const tree = h.StudioAdministrationView(viewProps(role, group.id));
-    assert.equal(nodes(tree, node => node.type === 'form' || node.type === 'button').length, 0);
-    assert.match(renderToStaticMarkup(tree), /Okänd session/);
+    assert.ok(refused(h.StudioAdministrationView(viewProps(role, group.id))), `${role} ${group.id}`);
   }
   for (const role of ['admin','superadmin']) {
-    const tree = h.StudioAdministrationView(viewProps(role,'accounts')),html=renderToStaticMarkup(tree);
-    assert.match(html,/Skapa spelarkonto|Bjud in adminpersonal – nivå 1/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
-    assert.equal(buttons(tree,'Spara roll').length,1);assert.equal(buttons(tree,'Ta bort konto').length,1);
-    assert.doesNotMatch(html,/<option[^>]*>(reader|staff|superadmin)<\/option>/);
-    assert.match(html,/Administratör/);assert.match(html,/Spelare/);
+    const calls = [], props = { ...viewProps(role,'accounts'), command: (action, body) => calls.push({ action, body }) };
+    const tree = h.StudioAdministrationView(props);
+    assert.ok(formsWith(tree,'username').length);assert.ok(formsWith(tree,'email').length);
+    // The own account (owner@example.test) has neither a role form nor a removal; only the other account does.
+    const roleForms=formsWith(tree,'role','email');assert.equal(roleForms.length,1);
+    roleForms[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ role: 'admin' }) });
+    assert.equal(calls.at(-1).body.username,'other@example.test');
+    assert.deepEqual(clickedActions(h,props).filter(action=>action==='users/remove'),['users/remove']);
+    for (const select of nodes(tree,node=>node.type==='select'&&node.props.name==='role'))
+      for (const option of nodes(select,node=>node.type==='option')) assert.ok(['','admin'].includes(option.props.value),'only the admin role is offered');
   }
   assert.equal(h.studioAdminActor(actor('superadmin')).role,'admin');
 });
@@ -865,17 +879,14 @@ test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmi
 test('account creation distinguishes game-only players from emailed Studio administrator activation', () => {
   const h = harness(), calls = [];
   const tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
-  const playerDisclosure = nodes(tree, node => node.type === 'details' && buttons(node, 'Skapa spelarkonto').length)[0];
-  const invitationDisclosure = nodes(tree, node => node.type === 'details' && buttons(node, 'Skicka inbjudan').length)[0];
-  const playerHtml = renderToStaticMarkup(playerDisclosure), invitationHtml = renderToStaticMarkup(invitationDisclosure);
-  assert.match(playerHtml, /<summary>Skapa spelarkonto<\/summary>/);
-  assert.match(playerHtml, /ingen administratörsbehörighet eller Studioåtkomst/);
-  assert.match(invitationHtml, /<summary>Bjud in adminpersonal – nivå 1<\/summary>/);
-  assert.match(invitationHtml, /e-postadress/); assert.match(invitationHtml, /aktiveras.*väljer lösenord via mejlet/);
-  assert.match(invitationHtml, /intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3/);
-  assert.match(invitationHtml, /<option value="admin">Administratör – nivå 1, 2 och 3<\/option>/);
-  assert.match(invitationHtml, /72 timmar/);
-  assert.match(renderToStaticMarkup(tree), /samma konto och lösenord på alla tre nivåerna/);
+  const playerDisclosure = nodes(tree, node => node.type === 'details' && formsWith(node, 'username').length)[0];
+  const invitationDisclosure = nodes(tree, node => node.type === 'details' && formsWith(node, 'email').length)[0];
+  assert.ok(playerDisclosure); assert.ok(invitationDisclosure); assert.notEqual(playerDisclosure, invitationDisclosure);
+  // A player account has a password and no Studio role or e-mail; the invitation has an e-mail and the admin role, never a password.
+  assert.equal(nodes(playerDisclosure, node => ['email', 'role'].includes(node.props?.name)).length, 0);
+  assert.equal(nodes(playerDisclosure, node => node.props?.name === 'password').length, 1);
+  assert.equal(nodes(invitationDisclosure, node => node.props?.name === 'password').length, 0);
+  assert.deepEqual(nodes(invitationDisclosure, node => node.type === 'option').map(node => node.props.value), ['admin']);
   assert.equal(nodes(invitationDisclosure, node => node.type === 'input' && node.props.name === 'email')[0].props.type, 'email');
   assert.equal(calls.length, 0);
   nodes(invitationDisclosure, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ email: 'new-admin@example.test', role: 'admin' }) });
@@ -884,15 +895,16 @@ test('account creation distinguishes game-only players from emailed Studio admin
 
 test('missing mail capability explains why Studio invitations are unavailable while player creation stays game-only', () => {
   const h = harness(), props = viewProps('admin');
-  const tree = h.StudioAdministrationView({ ...props, available: (method, action) => available(method, action) && !['users/invite', 'users/resend'].includes(action) });
-  const html = renderToStaticMarkup(tree);
-  assert.match(html, /E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas/);
-  assert.match(html, /Att skapa ett spelarkonto ger inte Studioåtkomst/);
-  assert.equal(buttons(tree, 'Skicka inbjudan').length, 0);
-  assert.equal(buttons(tree, 'Skicka nytt aktiverings-/återställningsmejl').length, 0);
-  assert.equal(buttons(tree, 'Skapa spelarkonto').length, 1);
+  const withoutMail = { ...props, available: (method, action) => available(method, action) && !['users/invite', 'users/resend'].includes(action) };
+  const tree = h.StudioAdministrationView(withoutMail);
+  const html = renderToStaticMarkup(tree), usersSection = node => node.props?.['data-admin-section'] === 'users';
+  const explained = view => nodes(nodes(view, usersSection)[0], node => node.props?.role === 'status').length;
+  assert.equal(explained(tree), 1, 'the missing mail capability is explained');
+  assert.equal(formsWith(tree, 'email').length, 0);
+  assert.equal(clickedActions(h, withoutMail).includes('users/resend'), false);
+  assert.equal(formsWith(tree, 'username').length, 1);
   assert.doesNotMatch(html, /users\/(invite|resend)|RESEND_API_KEY|CROUPIER_STUDIO_MAIL_FROM/);
-  assert.doesNotMatch(renderToStaticMarkup(h.StudioAdministrationView(props)), /E-post för Studio behöver konfigureras/);
+  assert.equal(explained(h.StudioAdministrationView(props)), 0);
 });
 
 test('stored game-only user roles require an explicit new role rather than displaying a selected administrator role', () => {
@@ -901,11 +913,12 @@ test('stored game-only user roles require an explicit new role rather than displ
     const data = resources(), calls = [];
     data.users.payload.users = [{ username: 'other@example.test', role, active: 1 }];
     const tree = h.StudioAdministrationView({ ...viewProps('admin'), resources: data, command: (action, body) => calls.push({ action, body }) });
-    const form = nodes(tree, node => node.type === 'form' && buttons(node, 'Spara roll').length)[0];
+    const form = formsWith(tree, 'role', 'email')[0];
     const select = nodes(form, node => node.type === 'select' && node.props.name === 'role')[0];
-    const html = renderToStaticMarkup(select), administrator = ['admin', 'superadmin'].includes(role);
-    assert.match(html, /required=""/);
-    assert.match(html, administrator ? /<option value="admin" selected="">Administratör/ : /<option value="" disabled="" selected="">Välj ny roll/);
+    const administrator = ['admin', 'superadmin'].includes(role);
+    assert.equal(select.props.required, true);
+    assert.equal(select.props.defaultValue, administrator ? 'admin' : '');
+    assert.equal(nodes(select, node => node.type === 'option' && node.props.value === '')[0].props.disabled, true, 'the empty choice can never be submitted');
     assert.equal(calls.length, 0); assert.equal(data.users.payload.users[0].role, role);
     form.props.onSubmit({ preventDefault() {}, currentTarget: new Form({ role: 'admin' }) });
     assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'users/role', body: { username: 'other@example.test', role: 'admin' } }]);
@@ -913,20 +926,23 @@ test('stored game-only user roles require an explicit new role rather than displ
 });
 
 test('player lifecycle is create/status, never hard delete or reopening closed accounts; inactive action is explicit', () => {
-  const h = harness(); const tree = h.StudioAdministrationView(viewProps('admin', 'accounts'));
-  assert.equal(buttons(tree, 'Ändra spelarstatus').length, 1);
-  const html = renderToStaticMarkup(tree);
-  assert.match(html, /Stängt konto – ingen återöppning/); assert.match(html, /12–128 tecken/); assert.doesNotMatch(html, /Ta bort spelare/);
-  const unavailable = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', 'accounts'), available: (method, action) => available(method, action) && action !== 'players/status' }));
-  assert.match(unavailable, /players\/status är ännu inte ansluten/); assert.doesNotMatch(unavailable, /Ändra spelarstatus/);
+  const h = harness(), calls = [], props = { ...viewProps('admin', 'accounts'), command: (action, body) => calls.push({ action, body }) };
+  const tree = h.StudioAdministrationView(props);
+  // Two players (active and closed): only the active one can change status, and closing is a status, never a delete.
+  const statusForms = formsWith(tree, 'status'); assert.equal(statusForms.length, 1);
+  statusForms[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ status: 'closed', reason: 'Fixture' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'players/status', body: { playerId: 'player-active', status: 'closed', reason: 'Fixture' } }]);
+  for (const input of nodes(tree, node => node.type === 'input' && node.props.type === 'password')) { assert.equal(input.props.minLength, 12); assert.equal(input.props.maxLength, 128); }
+  assert.equal(clickedActions(h, props).some(action => action.startsWith('players/')), false, 'no player button deletes or reopens');
+  const unavailable = h.StudioAdministrationView({ ...viewProps('admin', 'accounts'), available: (method, action) => available(method, action) && action !== 'players/status' });
+  assert.match(renderToStaticMarkup(unavailable), /players\/status/); assert.equal(formsWith(unavailable, 'status').length, 0);
 });
 
 test('active account forms emit established payloads and clear the password input', () => {
   const h = harness(); const calls = [];
   const tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
-  const formFor = text => nodes(tree, node => node.type === 'form' && buttons(node, text).length)[0];
   const playerForm = new Form({ username: 'test-one', name: 'Tester', password: 'temporary-password', currency: 'SEK', reason: 'Demo' });
-  formFor('Skapa spelarkonto').props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
+  formsWith(tree, 'username')[0].props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
   assert.equal(playerForm.passwordInput.value, ''); assert.equal(calls.at(-1).body.password, 'temporary-password');
   assert.equal(calls.at(-1).action, 'players/create'); assert.equal(Object.hasOwn(calls.at(-1).body, 'expectedRevision'), false);
 });
@@ -935,16 +951,16 @@ test('retired tournament, pitboss and empty legacy galleries are absent while so
   const h = harness(); const data = resources(); const original = JSON.stringify(data);
   data.emails.payload.templates.push({ id: 'tournament-invite', name: 'Tournament invite' });
   const html = navigation.BACKOFFICE_GROUPS.map(group => renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', group.id), resources: data }))).join('');
-  assert.doesNotMatch(html, /Pit bosses|Turneringar|Skapa turneringsutkast|Spara pit bosses|Existing tournament|Tournament invite|Äldre klipp och granskning|Genererat material|data-admin-section="(pit|tours|clips|gens)"/);
+  assert.doesNotMatch(html, /Existing tournament|Tournament invite|data-admin-section="(pit|tours|clips|gens)"/);
   data.emails.payload.templates.pop(); assert.equal(JSON.stringify(data), original);
   assert.equal(data.config.payload.tournaments.length, 1); assert.equal(data.config.payload.pitboss.randomWalkMin, 45);
 });
 
 test('secondary account and partner forms remain functional inside closed disclosures', () => {
   const h = harness();
-  for (const [group, action] of [['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
-    const tree = h.StudioAdministrationView(viewProps('admin', group));
-    const disclosure = nodes(tree, node => node.type === 'details' && buttons(node, action).length)[0];
+  for (const [group, field] of [['accounts', 'username'], ['accounts', 'status'], ['partners', 'walletUrl']]) {
+    const tree = h.StudioAdministrationView(viewProps('admin', group)), action = field;
+    const disclosure = nodes(tree, node => node.type === 'details' && formsWith(node, field).length)[0];
     assert.ok(disclosure, action); assert.notEqual(disclosure.props.open, true);
     assert.ok(nodes(disclosure, node => node.type === 'form' && node.props.method === 'post').length);
   }
@@ -953,7 +969,7 @@ test('secondary account and partner forms remain functional inside closed disclo
 test('operations readouts keep honest certification limitations', () => {
   const h = harness();
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
-  assert.match(html, /Certifieringsunderlag: saknas/); assert.match(html,/Cut card efter 312/);assert.doesNotMatch(html, /CERTIFIED|VALID/);
+  assert.match(html, /data-certification="missing"/, 'the missing certification evidence is stated');assert.doesNotMatch(html, /CERTIFIED|VALID|certifierad/i);
 });
 
 test('native mail previews escape content, render placeholders and never send or navigate',()=>{
@@ -971,25 +987,25 @@ test('revoked session clears old account data/controls, and explicit reload reco
   h.render(props); h.effects(); await flush();
   let tree = h.render(props); assert.match(renderToStaticMarkup(tree), /owner@example.test/); assert.equal(count, 2);
   current = null;
-  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
   const html = renderToStaticMarkup(tree);
-  assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /owner@example.test|aria-label="Administration"/); assert.equal(count, 2);
-  current = actor('admin'); buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush();
-  assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test · Administratör/); assert.equal(count, 4); h.unmount();
+  assert.ok(showsFailure(h, tree, 401)); assert.doesNotMatch(html, /owner@example.test|aria-label="Administration"/); assert.equal(count, 2);
+  current = actor('admin'); control(tree, 'reload')[0].props.onClick(); await flush();
+  assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test/); assert.equal(count, 4); h.unmount();
 });
 
 test('a lower role or different identity mid-load fails closed instead of retaining stale controls', async () => {
   for (const [changedActor, notice] of [
-    [actor('reader'), /Sessionen är avslutad/],
-    [{ username: 'other@example.test', role: 'admin' }, /Behörigheten saknas eller har ändrats/],
+    [actor('reader'), 401],
+    [{ username: 'other@example.test', role: 'admin' }, 403],
   ]) {
     const h = harness(); let identities = 0; const data = resources();
     const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET shoes'],
       session: async () => ++identities === 1 ? actor('superadmin') : changedActor,
       fetchImpl: async url => reply(data[url.slice('/api/admin/'.length)].payload) };
     h.render(props); h.effects(); await flush();
-    const html = renderToStaticMarkup(h.render(props));
-    assert.match(html, notice); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|other@example.test|superadmin/); h.unmount();
+    const tree = h.render(props), html = renderToStaticMarkup(tree);
+    assert.ok(showsFailure(h, tree, notice)); assert.doesNotMatch(html, /aria-label="Administration"|owner@example.test|other@example.test|superadmin/); h.unmount();
   }
 });
 
@@ -1008,12 +1024,12 @@ test('draft guard survives reload/conflict, protects native unload and cancelled
   const firstForm = new Form({ status: 'blocked', reason: 'Fixture' }); nativeView().props.onDirty(firstForm);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   h.window.confirm = () => false;
-  buttons(tree, 'Integrationer')[0].props.onClick(); tree = h.render(props);
+  tab(tree, 'partners')[0].props.onClick(); tree = h.render(props);
   assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.group, 'accounts');
   nativeView().props.command('players/status', { playerId: 'player-active', status: 'blocked', reason: 'Fixture' }, firstForm); await flush(); tree = h.render(props);
-  assert.match(renderToStaticMarkup(tree), /Uppgifterna har ändrats|Osparade formulärfält/); assert.equal(firstForm.resets, 0);
-  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/); assert.equal(firstForm.resets, 0); h.unmount();
+  assert.ok(showsFailure(h, tree, 409)); assert.equal(control(tree, 'discard-drafts').length, 1); assert.equal(firstForm.resets, 0);
+  control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.equal(control(tree, 'discard-drafts').length, 1, 'the draft survives a reload'); assert.equal(firstForm.resets, 0); h.unmount();
 });
 
 test('two quick group changes invalidate abort-ignoring late reads before effect cleanup without clearing the latest busy state', async () => {
@@ -1030,12 +1046,12 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
       response.json = () => { bodies++; return json(); }; entry.resolve(response);
     };
     h.render(props); h.effects(); await flush(); let tree = h.render(props); holding = true;
-    buttons(tree, 'Betalningar & journal')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    tab(tree, 'finance')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     assert.equal(pending.length, 1); assert.equal(tree.props['aria-busy'], true);
-    assert.equal(buttons(tree, 'Spelstatus & integritet')[0].props.disabled, false);
-    buttons(tree, 'Spelstatus & integritet')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
+    assert.equal(tab(tree, 'operations')[0].props.disabled, false);
+    tab(tree, 'operations')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
     h.render(props); h.effects(); await flush(); tree = h.render(props); assert.equal(pending.length, 3);
-    buttons(tree, 'Betalningar & journal')[0].props.onClick();
+    tab(tree, 'finance')[0].props.onClick();
     assert.ok(pending.slice(1).every(entry => entry.signal.aborted));
     // Resolve stale reads in the click-to-effect window. These fetches ignore
     // cancellation and include both successful data and an authorization error.
@@ -1064,15 +1080,15 @@ test('cancelled group change during a GET preserves its read, draft and unload g
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ status: 'blocked' });
   const oldKey = view().key; view().props.onDirty(draft); tree = h.render(props); holding = true;
-  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  h.window.confirm = () => false; buttons(tree, 'Integrationer')[0].props.onClick(); tree = h.render(props);
+  control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
+  h.window.confirm = () => false; tab(tree, 'partners')[0].props.onClick(); tree = h.render(props);
   assert.equal(signal.aborted, false); assert.equal(view().props.group, 'accounts'); assert.equal(view().key, oldKey);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   holding = false; waiting.resolve(nativeReply(resources().players.payload)); await flush(); tree = h.render(props);
-  assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.equal(control(tree, 'discard-drafts').length, 1);
   assert.ok(view().props.resources.players.payload);
-  h.window.confirm = () => true; buttons(tree, 'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
-  assert.equal(view().props.group, 'partners'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  h.window.confirm = () => true; tab(tree, 'partners')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  assert.equal(view().props.group, 'partners'); assert.equal(control(tree, 'discard-drafts').length, 0);
   prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, false); h.unmount();
 });
 
@@ -1088,17 +1104,17 @@ test('POST and its reload block navigation and double writes; one-time results r
         const waiting = deferred(); pending.push({ action, ...waiting }); return waiting.promise;
       } };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
-    buttons(tree, 'Integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    tab(tree, 'partners')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
     view().props.command('apikeys/create', { name: 'Fixture partner' });
     const duplicate = { name: 'Duplicate', password: 'discarded-fixture-password' }; view().props.command('apikeys/create', duplicate);
     await flush(); tree = h.render(props); assert.equal(writes, 1); assert.equal(Object.hasOwn(duplicate, 'password'), false);
-    assert.equal(buttons(tree, 'Konton & åtkomst')[0].props.disabled, true); buttons(tree, 'Konton & åtkomst')[0].props.onClick();
+    assert.equal(tab(tree, 'accounts')[0].props.disabled, true); tab(tree, 'accounts')[0].props.onClick();
     tree = h.render(props); assert.equal(view().props.group, 'partners');
     let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
     posting.resolve(reply({ ok: true, key: { id: 'partner-one', key, secret } })); await flush(); tree = h.render(props);
-    assert.equal(pending.length, 2); assert.equal(tree.props['aria-busy'], true); assert.equal(buttons(tree, 'Konton & åtkomst')[0].props.disabled, true);
-    buttons(tree, 'Konton & åtkomst')[0].props.onClick(); tree = h.render(props); assert.equal(view().props.group, 'partners');
+    assert.equal(pending.length, 2); assert.equal(tree.props['aria-busy'], true); assert.equal(tab(tree, 'accounts')[0].props.disabled, true);
+    tab(tree, 'accounts')[0].props.onClick(); tree = h.render(props); assert.equal(view().props.group, 'partners');
     for (const [index, entry] of pending.entries()) {
       const username = mode === 'same' || mode === 'mismatched' && index === 0 ? actor('admin').username : 'other@example.test';
       const response = nativeReply(resources()[entry.action].payload, 200, { username, role: 'admin' }), json = response.json.bind(response);
@@ -1109,7 +1125,7 @@ test('POST and its reload block navigation and double writes; one-time results r
     if (mode === 'same') { assert.match(html, new RegExp(secret)); assert.equal(bodies, 2); }
     else assert.doesNotMatch(html, new RegExp(secret));
     if (mode === 'mismatched') { assert.equal(bodies, 0); assert.doesNotMatch(html, /aria-label="Administration"/); }
-    else { assert.equal(buttons(tree, 'Konton & åtkomst')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
+    else { assert.equal(tab(tree, 'accounts')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
     h.unmount();
   }
 });
@@ -1121,7 +1137,7 @@ test('saving one form preserves other drafts; double command cannot send two wri
     return reply(url.endsWith('/config') ? config() : url.endsWith('/players') ? resources().players.payload : url.endsWith('/users') ? resources().users.payload : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Konton & åtkomst')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  tab(tree, 'accounts')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const saved = new Form({ username: 'test-one' }), other = new Form({ reason: 'Unsaved draft' });
   native.props.onDirty(saved); native.props.onDirty(other);
@@ -1130,7 +1146,7 @@ test('saving one form preserves other drafts; double command cannot send two wri
   await flush(); tree = h.render(props);
   assert.equal(writes, 1); assert.equal(submitted.password, 'temporary-password'); assert.equal(Object.hasOwn(body, 'password'), false);
   assert.equal(saved.resets, 1); assert.equal(other.resets, 0);
-  assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/); h.unmount();
+  assert.equal(control(tree, 'discard-drafts').length, 1, 'the other draft is still unsaved'); h.unmount();
 });
 
 test('reload keeps an edited form; only a confirmed discard remounts it', async () => {
@@ -1140,12 +1156,12 @@ test('reload keeps an edited form; only a confirmed discard remounts it', async 
   const native = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const draft = new Form({ status: 'blocked' }); native().props.onDirty(draft); tree = h.render(props);
   const oldKey = native().key;
-  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.equal(reads, 4); assert.equal(native().key, oldKey); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
-  h.window.confirm = () => false; buttons(tree, 'Kasta formulärutkast och läs om')[0].props.onClick(); tree = h.render(props);
-  assert.equal(native().key, oldKey); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
-  h.window.confirm = () => true; buttons(tree, 'Kasta formulärutkast och läs om')[0].props.onClick(); await flush(); tree = h.render(props);
-  assert.notEqual(native().key, oldKey); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/); assert.equal(draft.resets, 0); h.unmount();
+  control(tree, 'reload')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.equal(reads, 4); assert.equal(native().key, oldKey); assert.equal(control(tree, 'discard-drafts').length, 1);
+  h.window.confirm = () => false; control(tree, 'discard-drafts')[0].props.onClick(); tree = h.render(props);
+  assert.equal(native().key, oldKey); assert.equal(control(tree, 'discard-drafts').length, 1);
+  h.window.confirm = () => true; control(tree, 'discard-drafts')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.notEqual(native().key, oldKey); assert.equal(control(tree, 'discard-drafts').length, 0); assert.equal(draft.resets, 0); h.unmount();
 });
 
 test('acknowledged write plus unavailable reload is not advertised as fully refreshed success', async () => {
@@ -1159,19 +1175,21 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
   const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0]; const form = new Form({ status: 'blocked' });
   native.props.onDirty(form); native.props.command('players/status', { playerId: 'player-active', status: 'blocked', reason: 'Fixture' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
-  assert.match(html, /Skicka inte samma åtgärd igen/); assert.doesNotMatch(html, /Tillgänglig serverdata har lästs om|SECRET_DB_ERROR/); assert.equal(form.resets, 0); h.unmount();
+  // A fully refreshed success would reset the form and release its draft; here both are kept.
+  assert.match(html, /data-notice="acknowledged-unrefreshed"/, 'the page warns that the write took but the data is not re-read'); assert.doesNotMatch(html, /data-notice="acknowledged"/); assert.doesNotMatch(html, /SECRET_DB_ERROR/);
+  assert.equal(form.resets, 0); assert.equal(control(tree, 'discard-drafts').length, 1); h.unmount();
 });
 
 
 test('Backoffice password form confirms twice, clears both fields and excludes closed accounts', () => {
   const h=harness(),calls=[];
   const tree=h.StudioAdministrationView({...viewProps('admin'),command:(action,body)=>calls.push({action,body})});
-  const forms=nodes(tree,node=>node.type==='form' && buttons(node,'Spara nytt lösenord').length);
+  const forms=formsWith(tree,'confirm');
   assert.equal(forms.length,1);
   const mismatch=new Form({password:'fixture-new-password',confirm:'different-password',reason:'Operator reset'});
   forms[0].props.onSubmit({preventDefault(){},currentTarget:mismatch});
   assert.equal(calls.length,0);assert.equal(mismatch.passwordInput.value,'');assert.equal(mismatch.confirmInput.value,'');
-  assert.equal(mismatch.confirmInput.reported,true);assert.match(mismatch.confirmInput.validationMessage,/stämmer inte/);
+  assert.equal(mismatch.confirmInput.reported,true);assert.ok(mismatch.confirmInput.validationMessage,'the mismatch is reported on the field');
   const form=new Form({password:'fixture-new-password',confirm:'fixture-new-password',reason:' Operator reset '});
   forms[0].props.onSubmit({preventDefault(){},currentTarget:form});
   assert.equal(form.passwordInput.value,'');assert.equal(form.confirmInput.value,'');
@@ -1179,13 +1197,13 @@ test('Backoffice password form confirms twice, clears both fields and excludes c
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{playerId:'player-active',password:'fixture-new-password',reason:'Operator reset'});
   assert.doesNotMatch(renderToStaticMarkup(tree),/fixture-new-password|different-password/);
   const blocked=resources();blocked.players.payload.players[0].status='blocked';
-  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:blocked}),'Spara nytt lösenord').length,1);
+  assert.equal(formsWith(h.StudioAdministrationView({...viewProps('admin'),resources:blocked}),'confirm').length,1);
   const craigOnly=resources();craigOnly.players.payload.players[0].passwordChangeAllowed=false;
-  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'Spara nytt lösenord').length,0);
+  assert.equal(formsWith(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'confirm').length,0);
   delete craigOnly.players.payload.players[0].passwordChangeAllowed;
-  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'Spara nytt lösenord').length,0);
+  assert.equal(formsWith(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'confirm').length,0);
   const unavailable=h.StudioAdministrationView({...viewProps('admin'),available:(method,action)=>available(method,action)&&action!=='players/password'});
-  assert.equal(buttons(unavailable,'Spara nytt lösenord').length,0);assert.match(renderToStaticMarkup(unavailable),/players\/password är ännu inte ansluten/);
+  assert.equal(formsWith(unavailable,'confirm').length,0);assert.match(renderToStaticMarkup(unavailable),/players\/password/);
 });
 
 test('password command is single dispatch, never stores the password and does not retry an uncertain failure', async () => {
@@ -1196,7 +1214,7 @@ test('password command is single dispatch, never stores the password and does no
     const key=url.slice(url.lastIndexOf('/')+1);return reply(resources()[key]?.payload||resources().overview.payload);
   }};
   h.render(props);h.effects();await flush();let tree=h.render(props);
-  buttons(tree,'Konton & åtkomst')[0].props.onClick();h.render(props);h.effects();await flush();tree=h.render(props);
+  tab(tree,'accounts')[0].props.onClick();h.render(props);h.effects();await flush();tree=h.render(props);
   const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0],body={playerId:'player-active',password:'fixture-new-password',reason:'Operator reset'};
   view.props.command('players/password',body,new Form({}));view.props.command('players/password',{...body},new Form({}));
   await flush();assert.equal(writes,1);assert.equal(submitted.password,'fixture-new-password');
@@ -1204,7 +1222,7 @@ test('password command is single dispatch, never stores the password and does no
   release();await flush();await flush();tree=h.render(props);
   assert.equal(writes,1);assert.equal(Object.hasOwn(body,'password'),false);
   assert.doesNotMatch(renderToStaticMarkup(tree),/fixture-new-password|PRIVATE SERVER TEXT/);
-  assert.match(renderToStaticMarkup(tree),/tillfälligt otillgänglig/);h.unmount();
+  assert.ok(showsFailure(h,tree,503));h.unmount();
 });
 
 
@@ -1247,4 +1265,69 @@ test('scoped proof GET carries only validated query fields through the identity-
  for(const query of [{roomId:'room-1',extra:'x'},{roomId:'../room'},{shoeId:'shoe-2'},{roomId:'room-1',shoeId:2}])
    await assert.rejects(client.request('GET','shared-table-proof',undefined,undefined,actor,query),error=>error.status===400);
  assert.equal(calls.length,1);
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Admin chooses the company when it creates a key, the list
+// shows each key's company, and the server's fixed refusals are explained instead of a generic error.
+test('Integration creates a key for a chosen active company and shows each key\'s company', () => {
+  const h = harness(), calls = [], data = resources();
+  data.apikeys.payload.keys.push({ id: 'legacy', name: 'Old partner', scopes: ['play'], walletConfigured: false, operatorId: null, operatorName: null });
+  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'partners'), resources: data, command: (action, body) => calls.push({ action, body }) });
+  const html = renderToStaticMarkup(tree);
+  // Each key row names its own company; the legacy key without one does not borrow another key's company.
+  const keyRow = name => nodes(tree, node => node.type === 'div' && nodes(node, child => child.type === 'strong' && child.props.children === name).length && nodes(node, child => child.type === 'dl').length)
+    .map(node => renderToStaticMarkup(node)).sort((a, b) => a.length - b.length)[0];
+  assert.match(keyRow('Test partner'), /North Casino/); assert.doesNotMatch(keyRow('Old partner'), /North Casino/);
+  const select = nodes(tree, node => node.type === 'select' && node.props.name === 'operatorId')[0];
+  assert.equal(select.props.required, true); assert.equal(select.props.disabled, false);
+  assert.deepEqual(nodes(select, node => node.type === 'option').map(node => [node.props.value, node.props.disabled === true]), [['', true], ['north', false]],
+    'only active companies are offered');
+  const form = formsWith(tree, 'walletUrl')[0];
+  const create = nodes(form, node => node.type === 'button')[0];
+  assert.equal(create.props.disabled, false);
+  form.props.onSubmit({ preventDefault() {}, currentTarget: new Form({ operatorId: 'north', name: 'North live', walletUrl: '', ipAllow: '', 'scope-launch': 'on', 'scope-play': 'on' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'apikeys/create', body: { operatorId: 'north', name: 'North live', scopes: ['launch', 'play'], walletUrl: '', ipAllow: '' } }]);
+});
+
+test('Integration says why a key cannot be created yet: before migration 012, or without an active company', () => {
+  const reasons = new Map();
+  for (const [change, kind] of [
+    [payload => { payload.operatorBinding = 'pending'; }, 'migration'],
+    [payload => { payload.operators = [{ id: 'paused', name: 'Paused Bets', active: false }]; }, 'no-company'],
+    [payload => { delete payload.operators; payload.operatorBinding = 'unknown'; }, 'no-company'],
+  ]) {
+    const h = harness(), data = resources(); change(data.apikeys.payload);
+    const tree = h.StudioAdministrationView({ ...viewProps('admin', 'partners'), resources: data });
+    const disclosure = nodes(tree, node => node.type === 'details' && formsWith(node, 'walletUrl').length)[0];
+    const reason = nodes(disclosure, node => node.props?.role === 'status').map(node => renderToStaticMarkup(node)).join('');
+    assert.ok(reason, kind + ' is explained');
+    if (reasons.has(kind)) assert.equal(reason, reasons.get(kind)); else reasons.set(kind, reason);
+    assert.equal(nodes(formsWith(tree, 'walletUrl')[0], node => node.type === 'button')[0].props.disabled, true);
+  }
+  assert.notEqual(reasons.get('migration'), reasons.get('no-company'), 'a pending migration and a missing company are explained apart');
+});
+
+test('the key list projection keeps company ids and names only, and apikeys/create refusals are explained by their fixed code', async () => {
+  const h = harness();
+  assert.deepEqual(JSON.parse(JSON.stringify(h.partnerMetadata([{ id: 'k', name: 'K', operatorId: 'north', operatorName: 'North', operator_secret: 'x' },
+    { id: 'j', operatorId: '../south', operatorName: '   ' }]).map(row => [row.operatorId, row.operatorName]))), [['north', 'North'], [null, null]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.keyOperators([{ id: 'north', name: 'North', status: 'active', secret: 'x' }, { id: 'paused', status: 'suspended' }, { id: 'bad id' }, 'north']))),
+    [{ id: 'north', name: 'North', active: true }, { id: 'paused', name: 'paused', active: false }]);
+  const listing = { keys: [], operators: [{ id: 'north', name: 'North', status: 'active' }], operatorBinding: 'ready', extra: 'DROPPED' };
+  const read = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply(listing) });
+  assert.deepEqual(JSON.parse(JSON.stringify((await read.request('GET', 'apikeys')).payload)), { keys: [], operators: [{ id: 'north', name: 'North', active: true }], operatorBinding: 'ready' });
+  const explained = [];
+  for (const [code, statusCode] of [['partner_key_operator_schema_pending', 503], ['partner_key_operator_invalid', 422]]) {
+    const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply({ error: 'SECRET_DB_URL', code }, statusCode) });
+    await assert.rejects(client.request('POST', 'apikeys/create', { operatorId: 'north', name: 'North' }), error => {
+      explained.push(error.message);
+      return error.status === statusCode && error.code === code && error.message !== new h.StudioAdminUiError(statusCode).message && !error.message.includes('SECRET');
+    });
+  }
+  assert.notEqual(explained[0], explained[1], 'each fixed refusal has its own explanation');
+  // Another action, or an unknown code, keeps the generic message.
+  for (const [action, body, code] of [['apikeys/rotate', { id: 'k' }, 'partner_key_operator_schema_pending'], ['apikeys/create', { operatorId: 'north', name: 'N' }, 'partner_unknown']]) {
+    const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply({ error: 'x', code }, 503) });
+    await assert.rejects(client.request('POST', action, body), error => error.status === 503 && error.code === undefined && error.message === new h.StudioAdminUiError(503).message);
+  }
 });

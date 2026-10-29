@@ -14,6 +14,10 @@ import { keyOperator, claimedOperator, partnerLaunchOperator, partnerRoomRefusal
   PARTNER_ROOM_REFUSALS } from '../services/game/partner-operator.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { createStudioAdminAccounts } from '../apps/studio/lib/studio-admin-accounts.mjs';
+import { createStudioAdminData } from '../apps/studio/lib/studio-admin-data.mjs';
+import { readPartnerApiKeys } from '../apps/studio/lib/partner-api-keys.mjs';
+import { approvedPartnerLaunchUrl } from '../apps/studio/lib/partner-launch-url.mjs';
+import { demoLaunchLink } from '../apps/studio/client/admin/lib/demo-builder.mjs';
 
 const scope = Object.freeze({ environment: 'partner-key-test', workspaceId: 'isolated' });
 const origin = 'https://game.example.invalid';
@@ -185,4 +189,80 @@ test('the shared-table command binding reads the key company with real SQL, with
     assert.equal(await h.store.db.transaction(() => commandAuth.bindingById(binding.sessionId, { actorId: binding.actorId })), null);
     assert.equal(await h.auth.bindingById(binding.sessionId), null);
   }
+});
+
+// PR B (Admin och demo): what Admin's Integration and Partnerportalen read, with the real SQL.
+const admin = { user: 'operator', role: 'admin' };
+const adminData = h => createStudioAdminData({ db: h.store.db, boDb: h.store.boDb, scope,
+  repository: { readDocument: async () => null, saveDocument: async () => assert.fail('no document write') } });
+const listKeys = h => adminData(h).handlers.get('GET /studio/api/admin/apikeys')({ scope, actor: admin, endpoint: { action: 'apikeys' } });
+const createKey = (h, body) => createStudioAdminAccounts({ boDb: h.store.boDb, gameDb: h.store.db, scope }).handlers
+  .get('POST /studio/api/admin/apikeys/create')({ body, scope, actor: admin, endpoint: { action: 'apikeys/create' } });
+const partnerKeys = (h, operatorId) => readPartnerApiKeys({ query: (text, values) => h.store.pool.query(text, values), operatorId });
+const secretsOf = async h => (await h.store.pool.query('SELECT key, secret FROM croupier_auth.api_keys')).rows.flatMap(row => [row.key, row.secret]);
+
+test('Admin lists every key with its company and offers this scope\'s companies; before 012 no key has one', async t => {
+  for (const bound of [false, true]) {
+    const h = await setup(t, { bound });
+    // A company in another scope is never offered and never names a key.
+    await h.store.pool.query('INSERT INTO croupier_studio.operators VALUES ($1,$2,$3,$4,$5,$6,$7)', ['other-scope', scope.workspaceId, 'elsewhere', 'elsewhere-bet', 'Elsewhere', 'active', 1]);
+    if (bound) { await createKey(h, { name: 'North live', scopes: ['launch', 'play'], operatorId: 'north' }); await h.key('key-south', 'south'); }
+    else await h.key('key-legacy');
+    const listed = await listKeys(h);
+    assert.equal(listed.operatorBinding, bound ? 'ready' : 'pending');
+    assert.deepEqual(listed.operators, [{ id: 'north', name: 'north', status: 'active' }, { id: 'paused', name: 'paused', status: 'suspended' }, { id: 'south', name: 'south', status: 'active' }]);
+    assert.deepEqual(listed.keys.map(key => [key.name, key.operatorId, key.operatorName]).sort(),
+      bound ? [['Key key-south', 'south', 'south'], ['North live', 'north', 'north']] : [['Key key-legacy', null, null]]);
+    const text = JSON.stringify(listed);
+    for (const secret of await secretsOf(h)) assert.equal(text.includes(secret), false, 'no key or secret in the listing');
+    assert.doesNotMatch(text, /elsewhere/i);
+  }
+});
+
+test('Partnerportalen reads only its own company\'s keys with real SQL, masked; before 012 it reads none', async t => {
+  const early = await setup(t, { bound: false });
+  await early.key('key-legacy');
+  assert.deepEqual(await partnerKeys(early, 'north'), { status: 'pending', keys: [] });
+  const h = await setup(t, { bound: true });
+  const north = (await createKey(h, { name: 'North live', scopes: ['launch', 'play'], operatorId: 'north' })).key;
+  await h.key('key-south', 'south'); await h.key('key-north-old', 'north');
+  await h.store.pool.query("UPDATE croupier_auth.api_keys SET revoked_at='2026-10-29T09:00:00.000Z', wallet_url='https://wallet.partner.invalid/x' WHERE id='key-north-old'");
+  const own = await partnerKeys(h, 'north');
+  assert.equal(own.status, 'connected');
+  assert.deepEqual(own.keys.map(key => [key.id, key.operatorId, key.status, key.walletConfigured]), [[north.id, 'north', 'active', false], ['key-north-old', 'north', 'revoked', true]]);
+  assert.deepEqual(own.keys[0].scopes, ['launch', 'play']); assert.equal(own.keys[1].revokedAt, '2026-10-29T09:00:00.000Z');
+  assert.deepEqual((await partnerKeys(h, 'south')).keys.map(key => key.id), ['key-south']);
+  assert.deepEqual(await partnerKeys(h, 'paused'), { status: 'connected', keys: [] });
+  const text = JSON.stringify([own, await partnerKeys(h, 'south')]);
+  for (const secret of await secretsOf(h)) assert.equal(text.includes(secret), false, 'no key or secret reaches the portal');
+  assert.doesNotMatch(text, /wallet\.partner/);
+  assert.deepEqual(Object.keys(own.keys[0]).sort(), ['createdAt', 'id', 'lastUsed', 'name', 'operatorId', 'revokedAt', 'scopes', 'status', 'walletConfigured']);
+  // The company comes from the session; anything that is not a company id reads nothing.
+  for (const operatorId of ["north' OR 'a'='a", '', null, undefined, ['north'], 'a'.repeat(101)]) {
+    assert.deepEqual(await partnerKeys(h, operatorId), { status: 'not-connected', reason: 'no-operator', keys: [] }, String(operatorId));
+  }
+  assert.deepEqual(await readPartnerApiKeys({ operatorId: 'north' }), { status: 'not-connected', reason: 'no-pool', keys: [] });
+  assert.deepEqual(await readPartnerApiKeys({ query: async () => { throw Error('private database details'); }, operatorId: 'north' }),
+    { status: 'not-connected', reason: 'read-failed', keys: [] });
+  // A row for another company is never shown, even from a wrong query.
+  assert.deepEqual(await readPartnerApiKeys({ query: async text => ({ rows: text.includes(':column') ? [{ present: true }] : [{ id: 'x', operator_id: 'south' }] }), operatorId: 'north' }),
+    { status: 'not-connected', reason: 'read-failed', keys: [] });
+});
+
+test('the demo key is bound to the chosen company: Admin\'s launch rule takes the engine address and the link lands there', async t => {
+  const h = await setup(t, { bound: true });
+  const created = await createKey(h, { name: 'demo-North', scopes: ['launch', 'play'], purpose: 'demo', operatorId: 'north' });
+  assert.deepEqual(Object.keys(created.key).sort(), ['id', 'name'], 'a demo key never returns key or secret');
+  const minted = await h.partner.keys.mintLaunch(created.key.id, { displayName: 'North demo' });
+  assert.equal(approvedPartnerLaunchUrl(minted.url, origin)?.searchParams.get('operator'), 'north');
+  const link = demoLaunchLink({ ok: true, url: minted.url }, { gameOrigin: origin, operatorSlug: 'north', roomId: 'room-1', dealerId: null });
+  assert.deepEqual([...new URL(link).searchParams.keys()], ['launch', 'operator', 'table']);
+  const landed = await h.land(link);
+  assert.equal(landed.destination, '/game?game=blackjack&table=room-1&operator=north');
+  assert.equal(landed.binding.operatorId, 'north');
+  // A demo built for another company gets no link from this key: the engine would refuse it.
+  assert.throws(() => demoLaunchLink({ ok: true, url: minted.url }, { gameOrigin: origin, operatorSlug: 'south-bet', roomId: 'room-1', dealerId: null }), /annat bolag/);
+  const sessions = await h.count('player_sessions');
+  await assert.rejects(h.land(link.replace('operator=north', 'operator=south-bet')), mismatch);
+  assert.equal(await h.count('player_sessions'), sessions);
 });

@@ -18,6 +18,26 @@ Bolagets eget material hamnar bara i bolagets eget frysta paket, aldrig i någon
 
 Repo-JSON (`media/layout.json`, `media/blob-index.json`, importfiler) och äldre Blob-JSON är authoring- och importunderlag, aldrig runtime-reserv. Saknad eller felaktig katalog ger 503, inte en lokal fallback.
 
+## Scheman och skrivare
+
+Neon-projektet heter `croupier-production` (`wandering-hill-60561912`) och databasen i det `croupier_game`; någon databas `croupier_production` finns inte. All produktdata ligger i den databasen, uppdelad i scheman. Läst 2026-10-29, 74 tabeller:
+
+| Schema | Tabeller | Innehåll | Skrivs av |
+| --- | --- | --- | --- |
+| `public` | 0 | tomt | – |
+| `croupier_auth` | 7 | personal (`users`), tokens, `meta`, auth-epoker, sessioner (`lab_sessions`), partnernycklar (`api_keys`, med `operator_id NOT NULL` sedan `game-012`), BO-resten `bo_lab_handoffs` | Studio och motorn (`users`, `meta`); Studio skapar nycklarna och motorn autentiserar dem |
+| `croupier_game` | 39 och 2 vyer från `pg_stat_statements` | spelare, saldo och transaktioner, spelarinloggning, delat bord (008–010), roulette, Partner-API:ts spelare och rundor, chattminne och probe | motorn, utom rummets spelinställningar (`shared_table_configs`, `shared_table_config_heads`; `packages/presentation/server/room-game-publication.mjs`) och spelaradministrationen (`packages/storage/server/player-administration.mjs`), som Studio skriver |
+| `croupier_studio` | 28 (31 med den valfria 021) | dokumentregistret (`documents`, `document_history`, `audit_events`, `media_records`), bolag och paket (`operator_*`), runtimekatalog och talrepliker, Forge | Studio, utom tal- och GPU-tabellerna (`speech_*`, `gpu_*`, `fullfile_*`, `operator_qa_*`, `moving_*`), som motorn skriver |
+
+Schemat följer alltså inte skrivaren. Båda tjänsterna ansluter med rollen `croupier_game`, som äger allt utom `moving_drift_control`.
+
+Det finns två migreringsledgrar med krockande nummer: `ops/neon-game/011` och `012` är inte samma sak som `ops/neon-studio/011` och `012`. Ange alltid ledgern (`game-012`, Studio 012).
+
+- **Studio**, `croupier_studio.storage_migrations`: registret är listan i `ops/neon-studio/migrations.mjs`, och `tools/check-migration-readiness.mjs` (som CI kör) läser den. Produktionen har 001–008 och 011–020; 021 är valfri och inte körd.
+- **Spel**, `croupier_game.storage_migrations`: motorn och Studio kontrollerar bara `product-v1`:s checksumma mot `ops/neon-game/product-schema.sql` vid start (`packages/storage/server/postgres-store.mjs:159`). Senare spelversioner är granskade engångstransaktioner som `tools/prepare-*.mjs` renderar och som själva skriver sin ledgerrad. Produktionen har `product-v1`, `sqlite-import-v1`, `game-011-retire-lissabon` (2026-10-28) och `game-012-api-key-operator` (2026-10-29 01:46Z). 008–010 (delat bord) applicerades utan ledgerrad, och readiness läser inte den här ledgern.
+
+Preview avviker: Studio saknar 016, 018 och 019, och spel-ledgern har `product-v1` och `game-012` men inte 011 ([ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen)).
+
 ## Sökvägar i Blob
 
 ```text

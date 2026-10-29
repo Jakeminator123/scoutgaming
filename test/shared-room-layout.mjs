@@ -17,7 +17,7 @@ class Element extends EventTarget {
     const styles = new Map(); this.style = { setProperty: (key, value) => styles.set(key, String(value)), getPropertyValue: key => styles.get(key) ?? '', removeProperty: key => styles.delete(key) };
     this.classes = new Set(); this.classList = { add: name => this.classes.add(name), toggle: (name, on) => on ? this.classes.add(name) : this.classes.delete(name) }; }
   set textContent(value) { this._text = String(value); this.children = []; } get textContent() { return this._text + this.children.map(child => child.textContent).join(''); }
-  setAttribute(name, value) { this.attributes[name] = String(value); } getAttribute(name) { return this.attributes[name]; }
+  setAttribute(name, value) { this.attributes[name] = String(value); } getAttribute(name) { return this.attributes[name] ?? null; } removeAttribute(name) { delete this.attributes[name]; }
   append(...children) { for (const child of children) { child.parentNode?.children && (child.parentNode.children = child.parentNode.children.filter(node => node !== child)); child.parentNode = this; } this.children.push(...children); }
   prepend(...children) { for (const child of children) child.parentNode = this; this.children.unshift(...children); }
   replaceChildren(...children) { this._text = ''; this.children = children; } remove() { this.removed = true; }

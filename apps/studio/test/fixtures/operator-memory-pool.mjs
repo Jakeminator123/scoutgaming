@@ -54,8 +54,8 @@ export function usersDb(users) {
 // In-memory croupier_studio operator tables behind tagged queries, shaped like
 // the Neon pool: query() for reads and connect() for the store's locked writes.
 // BEGIN/ROLLBACK restore a snapshot so a refused guard leaves no partial row.
-export function operatorMemoryPool() {
-  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [], operator_branding_drafts: [] };
+export function operatorMemoryPool({ apiKeyColumn = true } = {}) {
+  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [], operator_branding_drafts: [], api_keys: [] };
   const trace = [];
   const hooks = new Map();
   let lockTail = Promise.resolve();
@@ -71,6 +71,12 @@ export function operatorMemoryPool() {
   async function dispatch(text, values, client) {
     // This schema has no migration 021: company material is not installed.
     if (text.includes('/* operator-materials:materials-ready */')) return [{ ledgered: 0, present: false }];
+    // croupier_auth.api_keys as Partnerportalen reads it (lib/partner-api-keys.mjs). With game
+    // migration 012 (apiKeyColumn) every row names its company; the real SQL runs in test/partner-key-operator.mjs.
+    if (text.includes('/* partner-api-keys:column */')) return [{ present: apiKeyColumn }];
+    if (text.includes('/* partner-api-keys:list */')) {
+      return tables.api_keys.filter(row => row.operator_id === values[0]).map(row => ({ ...copy(row), wallet_configured: Boolean(row.wallet_url) }));
+    }
     const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
     if (!tag) throw new Error(`untagged query: ${text}`);
     trace.push({ client: client?.id ?? 0, step: tag });
@@ -109,7 +115,8 @@ export function operatorMemoryPool() {
       const row={environment_id:environment,workspace_id:workspace,operator_id:values[2],event_id:values[3],actor_id:values[4],access_class:values[5],action:values[6],resource_type:values[7],resource_id:values[8],before_revision:values[9],after_revision:values[10],occurred_at_ms:values[11],request_id:values[12],changes:values[13]};
       tables.operator_audit_events.push(row); return [copy(row)];
     }
-    if (tag === 'list-audit') return [...scoped('operator_audit_events'),...scoped('operator_branding_drafts').map(row=>({...row,resource_type:'draft',resource_id:row.operator_id,before_revision:row.draft_revision>1?row.draft_revision-1:null,after_revision:row.draft_revision}))].filter(row=>row.operator_id===values[2] && (values[3]===null || row.occurred_at_ms<values[3] || row.occurred_at_ms===values[3] && row.event_id<values[4]))
+    if (tag === 'list-audit') return [...scoped('operator_audit_events'),...scoped('operator_branding_drafts').map(row=>({...row,resource_type:'draft',resource_id:row.operator_id,before_revision:row.draft_revision>1?row.draft_revision-1:null,after_revision:row.draft_revision}))].filter(row=>row.operator_id===values[2] && (values[3]===null || row.occurred_at_ms<values[3] || row.occurred_at_ms===values[3] && row.event_id<values[4])
+      && (values[6]==null || values[6].includes(row.action)))
       .sort((a,b)=>b.occurred_at_ms-a.occurred_at_ms || b.event_id.localeCompare(a.event_id)).slice(0,values[5]).map(copy);
     if (tag === 'create-operator') {
       if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
