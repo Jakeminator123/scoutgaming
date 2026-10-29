@@ -17,11 +17,11 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [CLOUD-MIGRATION](CLOUD-MIGRATION.md) | Ytor, datalagring, väg från merge till produktion, deploykontroll | Den som levererar | När driftvägen ändras |
-| [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore, Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
+| [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore (`tools/db-snapshot.mjs` jämför källa och mål), Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
 | [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) och [environment-variables.json](environment-variables.json) | Alla miljövariabler per tjänst, aldrig värden; JSON:en läses av `tools/check-environment-variables.mjs` | Alla som rör env | I samma PR som variabeln ändras |
 | [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md) | Inventering 29 oktober av alla variabler i drift mot koden: rester, saknade namn, Neon-identiteter och förslag till borttagning (ersatte 28 oktobers) | Den som städar env | Daterad, ändras inte |
 | [PAOW-BANK-KORNING](PAOW-BANK-KORNING.md) och [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) | Steg för steg för Paows rörliga bank: källor, pool, GPU-förberedelse, Blob, image, RunPod-endpoint och aktivering i preview (T4–T5) | Jakob eller agent med nycklar | När bankverktyget eller endpointens mall ändras; mallen fylls och döps om vid körningen |
-| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
+| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering, manuell export till `media/blob-index.json`; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
 | [ops/cloud/RENDER-V3](../ops/cloud/RENDER-V3.md), [README](../ops/cloud/README.md), [CONTAINER-CONTEXT](../ops/cloud/CONTAINER-CONTEXT.md) | Spelmotorn på Render: tjänst, deploy, återgång, byggkontext | Den som deployar motorn | När tjänsten eller imagen ändras |
 
 ## Produkt och kontrakt
@@ -38,7 +38,6 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
-| [plans/O02-PLAN](plans/O02-PLAN.md) och [O02-RESTORE-REPLAY](plans/O02-RESTORE-REPLAY.md) | Frysning, restore och replay inför O02 (klar); kvar bara för att `tools/o02-*.mjs` och `test/o02-*.mjs` pekar på dem | Ingen aktiv läsare | Raderas tillsammans med `tools/o02-*.mjs` i en kod-PR |
 | [plans/NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md) | Nyckel → bolag: `api_keys.operator_id`, migrering 012, motorns kontroll, prov och PR-sekvens | Orkestreraren och den som bygger bindningen | Tills bindningen är verifierad i drift, sedan raderas det |
 | [plans/STEG-F](plans/STEG-F.md) | Steg F, spelare knyts till bolag: inventering, `players.operator_id`, migrering game-014 med backfill, PR-ordning, risker och Jakobs tre beslut | Orkestreraren och den som bygger steg F | Tills steget är verifierat i drift, sedan raderas det |
 | [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: verifierat läge för röst, bank och RunPod, proven 28 oktober, varför inget aktiveras före O03, aktiviteten "dealer-generisk talkedja, Paow först" | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
@@ -66,6 +65,6 @@ Korta filer som pekar på [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.
 
 ## Kvitton
 
-Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Kvar i `docs/` är bara de som `tools/o02-receipt.mjs` läste (verktyget är borttaget efter migreringen och kan läsas ur Git): J08, isolerat prov, K04 staging, K04 omprov 6, K06 omprov 1–2 och K07 omprov 1–2. Ingen levande kod läser dem längre.
+Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Migreringens kvitton är raderade (alla 20 aktiviteter VERIFIED); `migrering/status.json` pekar på Git-versionerna, se [HISTORIK](HISTORIK.md). Kvar är bara [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) för Paows bank och [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md).
 
 Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git ([HISTORIK](HISTORIK.md)).

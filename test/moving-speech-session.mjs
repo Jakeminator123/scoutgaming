@@ -175,6 +175,7 @@ test('restart recovery leaves sessions of another configured dealer to that deal
 test('296 second cold start retains admitted ownership and keeps worker execution at 180 seconds',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
   const f=fixture(),attempt=await f.admit();await attempt.submit();
+  assert.equal(attempt.warm,false,'no capacity proof of a running worker: not warm');
   t.mock.timers.tick(296000);
   assert.equal(f.callbacks.options.signal.aborted,false);
   assert.equal(f.callbacks.options.startupMs,450000);assert.equal(f.callbacks.options.lifetimeMs,480000);
@@ -231,6 +232,7 @@ test('journal lease precedes capacity reads and a completed job permits the next
   },workerState:async()=>summarizeMovingWorkerHealth(movingCapacityFixture().health)}});
   for(const requestId of ['warm-one','warm-two']){
     const attempt=await f.admit({requestId});
+    assert.equal(attempt.warm,true,'one running owned worker: a warm admission');
     assert.equal(f.state.input.movingCapacity.release.capacity.activePods[0].id,'owned-pod');
     // The real worker count remains one. It is never relabelled as drained.
     assert.equal(f.state.input.workerState.workers,1);

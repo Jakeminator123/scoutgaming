@@ -414,6 +414,20 @@ test('archive plan API is read-only and confirmation requires the same current t
  const changed=f.pool.snapshot();assert.equal((await api.handle(req('/api/dealers/archive',f.archiveBody))).status,409);assert.deepEqual(f.pool.snapshot(),changed);
 });
 
+test('dealer restore brings back an archived environment with its miljöbild only while the picture is still in the library',()=>{
+ let project=addDealer(createSeedProject(),'linnea','Linnea');
+ const illustration={schemaVersion:1,id:'00000000-0000-4000-8000-0000000000b1',role:'illustration',label:'Miljö · miljöbild v1',sha256:'b'.repeat(64),size:4096,contentType:'image/webp',width:1920,height:1080};
+ illustration.pathname=layerAssetPath(illustration);
+ const lane={...defaultPresentationLane('linnea'),illustration:illustration.id};project.lanes=[lane];project.layerAssets=[illustration];
+ project=lifecycleProject(project,{dealerId:'linnea',archived:true,records:[]});
+ assert.deepEqual(project.dealerTrash.find(row=>row.dealer.id==='linnea').compositions.map(row=>row.illustration),[illustration.id]);
+ // The saved snapshot itself guarantees the picture: a trashed environment whose miljöbild left the library
+ // (or changed role) is an invalid project, so restore never starts.
+ for(const layerAssets of [[],[{...illustration,role:'background'}]])
+   assert.throws(()=>lifecycleProject({...structuredClone(project),layerAssets},{dealerId:'linnea',archived:false,records:[]}),/dealerTrash\[0\]/);
+ assert.deepEqual(lifecycleProject(project,{dealerId:'linnea',archived:false,records:[]}).lanes,[lane]);
+});
+
 test('shared archived compositions validate against history but restore waits for active dealer dependencies',()=>{
  let project=addDealer(addDealer(createSeedProject(),'linnea','Linnea'),'elin','Elin');
  const lane=defaultPresentationLane('linnea');lane.dealers.push('elin');lane.layers.dealer.allowed.push('elin');project.lanes=[lane];

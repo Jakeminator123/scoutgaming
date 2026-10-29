@@ -315,7 +315,7 @@ test('standalone form has one name field and create action, with no extra accept
   const h = fixture(), ui = componentHarness(h.controller);
   const tree = ui.render({ ...context, projectSaved: false });
   const html = renderToStaticMarkup(tree);
-  assert.match(html, /Skapa spelrum/); assert.match(html, /Rumsnamn/); assert.match(html, /Spara sammansättningen först/);
+  assert.match(html, /Skapa spelbord/); assert.match(html, /Spelbordets namn/); assert.match(html, /Spara miljön först/);
   assert.equal((html.match(/<input/g) ?? []).length, 1); assert.equal(html.includes('checkbox'), false);
   assert.equal(find(tree, 'button').props.disabled, true); assert.equal(h.requests.length, 0); ui.unmount();
 });
@@ -404,11 +404,11 @@ test('room list opens the existing room before creating and hides stale links on
   const room={id,name:'Johannas blackjack',playUrl:'/play/blackjack?operator=sg-test&table='+id};
   h.reply(0,prepared(context,{rooms:[room],packageRevision:1}));await tick();
   let tree=ui.render(context),html=renderToStaticMarkup(tree);
-  assert.match(html,/<ul aria-label="Befintliga spelrum">/);
+  assert.match(html,/<ul aria-label="Befintliga spelbord">/);
   assert.equal(find(tree,'a').props.href,'/lobby?operator=sg-test');
   assert.ok(html.includes(room.playUrl.replaceAll('&','&amp;')));
   assert.match(html,/Öppna bolagets spellobby/);
-  assert.match(html,/<details[^>]*><summary>Skapa nytt spelrum<\/summary>/);
+  assert.match(html,/<details[^>]*><summary>Skapa nytt spelbord<\/summary>/);
   assert.equal(h.requests.length,1,'viewing existing rooms performs no create request');
   const other={...context,operator:{id:'other',slug:'other',name:'Annat bolag'}};
   tree=ui.render(other);assert.equal(find(tree,'a'),null);
@@ -426,10 +426,10 @@ test('preflight causes provide distinct recovery without silently creating or re
   for (const [extra, label, href] of [
     [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/admin/rooms?operator=sg-test'],
     [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/admin/rooms?operator=sg-test'],
-    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/admin/scenes?composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/admin/scenes?composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera miljön', '/admin/scenes?composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera miljön', '/admin/scenes?composition=portrait-live'],
     [{ ready: false, reason: 'presentation_room_environment_required', environment: { kind: 'variable', fixed: false, label: 'Välj en fast bakgrund för rummet' } },
-      'Välj och lås miljön i Sammansättningar', '/admin/scenes?composition=portrait-live'],
+      'Välj och lås miljön i Miljöer', '/admin/scenes?composition=portrait-live'],
   ]) {
     const h = fixture(), ui = componentHarness(h.controller);
     ui.render(context); h.reply(0, prepared(context, extra)); await tick();
@@ -445,12 +445,12 @@ test('preflight causes provide distinct recovery without silently creating or re
 test('form displays the saved fixed or baked environment without extra writes or a false room preview', async () => {
   for (const environment of [
     { kind: 'image', fixed: true, label: 'Casino' },
-    { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' },
+    { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' },
   ]) {
     const h = fixture(), ui = componentHarness(h.controller);
     ui.render(context); h.reply(0, prepared(context, { environment })); await tick();
     const html = renderToStaticMarkup(ui.render(context));
-    assert.match(html, /Rummets miljö/); assert.ok(html.includes(environment.label));
+    assert.match(html, /Spelbordets miljö/); assert.ok(html.includes(environment.label));
     assert.match(html, environment.kind === 'baked' ? /inbakad miljö/ : /fast bakgrund/);
     assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
   }
@@ -507,7 +507,7 @@ test('a shared published environment conflict directs to a separate composition 
   ui.render(context);
   h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: 'presentation_room_environment_conflict' }));
   await tick(); const tree = ui.render(context), html = renderToStaticMarkup(tree);
-  assert.match(html, /Skapa en separat sammansättning/); assert.match(html, /redan av publicerade rum/);
+  assert.match(html, /Skapa en separat miljö/); assert.match(html, /redan av publicerade rum/);
   assert.equal(find(tree, 'a').props.href, labBasePath() + '/admin/scenes?composition=portrait-live');
   find(tree, 'form').props.onSubmit({ preventDefault() {} });
   assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
@@ -519,7 +519,7 @@ test('a valid existing room stays visible when changed draft content blocks anot
   ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', packageRevision: 1, rooms: [room] })); await tick();
   const html = renderToStaticMarkup(ui.render(context));
   assert.match(html, /Öppna Befintligt rum/); assert.match(html, /Öppna bolagets spellobby/);
-  assert.doesNotMatch(html, /Inget publicerat spelrum/); assert.equal(h.requests.length, 1);
+  assert.doesNotMatch(html, /Inget publicerat spelbord/); assert.equal(h.requests.length, 1);
   ui.unmount();
 });
 
@@ -531,7 +531,7 @@ test('typed conflicts offer visible explicit recovery while keeping creation blo
     const tree = ui.render(context), html = renderToStaticMarkup(tree), together = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(code);
     assert.equal(h.controller.getSnapshot().status, 'unavailable');
     assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/admin/rooms?operator=sg-test');
-    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera spelrummet/);
+    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera spelbordet/);
     if (together) assert.match(html, /publicera alla dessa presentationer tillsammans först.*Behåll befintliga rum och dealers/);
     else assert.doesNotMatch(html, /publicera alla dessa presentationer/);
     const message = h.controller.getSnapshot().message; h.controller.setName('Nytt rum');

@@ -21,8 +21,9 @@ och driften i [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md).
   `/demo` och `/casino.html` är borta.
 - Partnerinloggningen är `/partner/login` med separat `partner_session`.
 
-`CROUPIER_VERCEL_UI=1` och `CROUPIER_VERCEL_UNIFIED_UI=1` styr de incheckade
-route- och ingresskontrakten; utan dem finns ingen spelstart.
+`CROUPIER_BACKEND_ORIGIN` slår på de incheckade route- och ingresskontrakten
+(`packages/server-transport/configuration.mjs`), och `CROUPIER_VERCEL_UNIFIED_UI=1`
+ger en publik origin; utan spelmotorns origin finns ingen spelstart.
 
 ## Delade kontrakt
 

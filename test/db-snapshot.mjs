@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createPglitePool } from './fixtures/pglite-pool.mjs';
-import { SCHEMAS, SEQUENCES_SQL, TABLES_SQL, canonical, compare, sha256, snapshot, tableHashSql } from '../tools/o02-snapshot.mjs';
+import { SCHEMAS, SEQUENCES_SQL, TABLES_SQL, canonical, compare, sha256, snapshot, tableHashSql } from '../tools/db-snapshot.mjs';
 
-// tools/o02-snapshot.mjs is the S0/S1 parity instrument of O02-PLAN.md §3.3 (R2, R6, R9).
+// tools/db-snapshot.mjs is the S0/S1 parity instrument of the restore runbook (docs/ENVIRONMENT-RESTORATION.md, step 8).
 // These tests pin its canonicalisation and comparison on a real PostgreSQL parser (PGlite);
 // the SQL itself was also run statement by statement, read-only, against staging.
 

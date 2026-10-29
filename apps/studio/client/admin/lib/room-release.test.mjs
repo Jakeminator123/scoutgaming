@@ -198,9 +198,9 @@ test('the room_choices step and the draft_invalid reason have their own text, li
   assert.equal(roomReleaseErrorMessage({status:409,code:'studio_conflict',step:'room_choices'}),
     'Utseendeutkastet har ändrats sedan förhandsvisningen. Inget publicerades. Läs in igen.');
   assert.equal(roomReleaseErrorMessage({status:422,code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}),
-    'Utseendeutkastet passar inte med de sparade scenmallarna. Inget publicerades.');
+    'Utseendeutkastet passar inte med de sparade miljöerna. Inget publicerades.');
   assert.deepEqual(roomReleaseBlocker({area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'},{roomId:'north-a'}),
-    {text:'Utseendeutkastet passar inte med de sparade scenmallarna.',href:'/admin/rooms/north-a?flik=utseende',linkLabel:'Öppna Utseende'});
+    {text:'Utseendeutkastet passar inte med de sparade miljöerna.',href:'/admin/rooms/north-a?flik=utseende',linkLabel:'Öppna Utseende'});
 });
 
 test('the Publicera button renders inactive before the comparison is read and for a room that cannot be published',async()=>{

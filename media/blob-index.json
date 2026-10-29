@@ -6731,21 +6731,6 @@
         "size": 957,
         "contentType": "application/json"
       }
-    },
-    {
-      "logicalPath": "site/source/design-kit/canvas.json",
-      "id": "2fc7595c-a97f-00cd-e46c-a38d735eed5e",
-      "sha256": "2fc7595ca97f00cde46ca38d735eed5e8111dd9324c77e027bb18fdd2eb51667",
-      "size": 1098,
-      "access": "source",
-      "legacyUrls": [],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/site/source/design-kit/2fc7595c-a97f-00cd-e46c-a38d735eed5e/2fc7595ca97f00cde46ca38d735eed5e8111dd9324c77e027bb18fdd2eb51667.json",
-        "sha256": "2fc7595ca97f00cde46ca38d735eed5e8111dd9324c77e027bb18fdd2eb51667",
-        "size": 1098,
-        "contentType": "application/json"
-      }
     }
   ],
   "verification": "readback-sha256"

@@ -207,7 +207,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if(!operator||operator.status!=='active'||!current||current.operatorId!==body.operatorId)fail(404);
     if(current.revision!==body.expectedPackageRevision)fail(409);
     const presentation=readPackagePresentation(current);
-    if(!presentation)fail(409); // Tilldelningen bygger på paketets frysta scenmallar.
+    if(!presentation)fail(409); // Tilldelningen bygger på paketets frysta miljöer.
     return {presentation,assignment:validateAdminAssignment(body.assignment,presentation)};
   }
   async function prepareAssignment(context) {

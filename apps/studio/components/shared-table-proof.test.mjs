@@ -53,12 +53,12 @@ test('epoch zero is a closed shoe and retains its exact proof download',async()=
 test('invalid closure timestamps are rejected in both summary and selected shoe',async()=>{
  for(const closedAt of ['2026-10-22T01:00:00Z',-1,1.5,NaN,Infinity,8640000000000001]) {
   const h=harness(),value=data(true);value.shoes[0].closedAt=closedAt;h.change('room-1');h.submit();await h.answer(0,value);
-  assert.match(h.html(),/stämmer inte med det valda rummet/);assert.doesNotMatch(h.html(),/data:application/);
+  assert.match(h.html(),/stämmer inte med det valda spelbordet/);assert.doesNotMatch(h.html(),/data:application/);
  }
  const h=harness();h.change('room-1');h.submit();await h.answer(0,data(true));
  h.nodes(n=>n.type==='button'&&String(n.props.children).startsWith('Visa'))[0].props.onClick();
  await h.answer(1,data(true,{shoeId:'shoe-1',commitment:'commit',closedAt:'1792630800000',rawProof:'PRIVATE'}));
- assert.match(h.html(),/stämmer inte med det valda rummet/);assert.doesNotMatch(h.html(),/PRIVATE|data:application/);
+ assert.match(h.html(),/stämmer inte med det valda spelbordet/);assert.doesNotMatch(h.html(),/PRIVATE|data:application/);
 });
 
 const references=[{roomId:'room-1',shoeId:'shoe-1',roundId:'round-frozen',configVersion:'config-frozen'}];
@@ -95,10 +95,10 @@ test('foreign, ambiguous and unverified reference receipts are rejected before d
   {verification:{status:'failed'}},
  ]) {
   const h=await selectedProof(change),html=h.html();
-  assert.match(html,/stämmer inte med det valda rummet/);assert.doesNotMatch(html,/round-frozen|config-frozen|data:application/);
+  assert.match(html,/stämmer inte med det valda spelbordet/);assert.doesNotMatch(html,/round-frozen|config-frozen|data:application/);
  }
  const incomplete=await selectedProof({},false);
- assert.match(incomplete.html(),/stämmer inte med det valda rummet/);assert.doesNotMatch(incomplete.html(),/round-frozen|config-frozen/);
+ assert.match(incomplete.html(),/stämmer inte med det valda spelbordet/);assert.doesNotMatch(incomplete.html(),/round-frozen|config-frozen/);
 });
 test('open shoe never displays round or configuration references supplied by a malformed response',async()=>{
  const h=harness();h.change('room-1');h.submit();await h.answer(0,data());

@@ -22,6 +22,8 @@ function detach(lane,id){
   if(playback)playback.rules=layer.enabled&&layer.default?playback.rules.filter(rule=>rule.assetId!==id):[];
  }
  retainBlackjackTableGeometry(lane.composition,lane.layers.table.allowed);
+ // A lane's miljöbild is cosmetic: archiving it clears the saved choice, never a room or a published package.
+ if(lane.illustration===id)delete lane.illustration;
 }
 export function changeMaterialTrash(project,{id,archived,now=Date.now}){
  const next=structuredClone(project),trash=next.layerAssetTrash??[];
@@ -49,7 +51,7 @@ export async function materialTrashPlan({repository,operators,id,archived,expect
  if(!asset)fail();
  const next=changeMaterialTrash(project.value,{id,archived,now});
  const compositions=[...(project.value.lanes??[]),...(project.value.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];
- const affected=archived?compositions.filter(lane=>materialUsedBy(lane,id)):[];
+ const affected=archived?compositions.filter(lane=>materialUsedBy(lane,id)||lane.illustration===id):[];
  const entries=[];
  for(const operator of [...await operators.listOperators()].sort((a,b)=>a.id.localeCompare(b.id))){
   const pack=await operators.getCurrentPackage(operator.id),presentation=readPackagePresentation(pack);

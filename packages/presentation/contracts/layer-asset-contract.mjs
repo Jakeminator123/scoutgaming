@@ -2,6 +2,10 @@
 import {MATERIALS} from './material-catalog.mjs';
 const knownSources = new Map(MATERIALS.flatMap(material=>material.sources.map(source=>[source.sha256,{material,source}])));
 export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
+// Material roles: the two scene layers plus the environment picture (miljöbild), an image shown in the
+// lobby and Admin only. An illustration is never a layer: a lane cannot allow or select it, and the game never draws it.
+export const MATERIAL_ROLES = Object.freeze([...LAYER_ASSET_ROLES, 'illustration']);
+const ROLE_FOLDERS = Object.freeze({ background: 'backgrounds', table: 'tables', illustration: 'illustrations' });
 export const LAYER_ASSET_TYPES = Object.freeze({
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
   'video/mp4': 'mp4', 'video/webm': 'webm',
@@ -27,8 +31,9 @@ function text(value, max = 80) {
 const assetId = value => typeof value === 'string' && uuid.test(value);
 export function layerAssetPath(asset) {
   const extension = Object.hasOwn(LAYER_ASSET_TYPES,asset.contentType)?LAYER_ASSET_TYPES[asset.contentType]:null;
-  if (!LAYER_ASSET_ROLES.includes(asset.role) || !assetId(asset.id) || !hash.test(asset.sha256) || !extension) reject();
-  return `croupier/media/${asset.role === 'background' ? 'backgrounds' : 'tables'}/${asset.id}/${asset.sha256}.${extension}`;
+  if (!MATERIAL_ROLES.includes(asset.role) || !assetId(asset.id) || !hash.test(asset.sha256) || !extension
+    || asset.role === 'illustration' && !asset.contentType.startsWith('image/')) reject();
+  return `croupier/media/${ROLE_FOLDERS[asset.role]}/${asset.id}/${asset.sha256}.${extension}`;
 }
 export function validateLayerAsset(value) {
   exact(value, ['schemaVersion', 'id', 'role', 'label', 'sha256', 'size', 'contentType', 'pathname', 'width', 'height'], ['game']);
@@ -46,7 +51,7 @@ export function validateLayerAsset(value) {
 
 // Legacy tables remain blackjack-only. Labels never establish game identity.
 export function layerAssetFitsGame(asset, game='blackjack') {
-  if (!asset || !['blackjack','roulette'].includes(game)) return false;
+  if (!asset || !['blackjack','roulette'].includes(game) || !LAYER_ASSET_ROLES.includes(asset.role)) return false;
   const known=knownSources.get(asset.sha256);
   if (known && (known.material.role!==asset.role
     || ['size','contentType','width','height'].some(key=>asset[key]!==known.source[key])

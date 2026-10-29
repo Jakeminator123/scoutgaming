@@ -33,13 +33,14 @@ export function hasAdminContext(search){
   return adminContextKeys.some(key=>query.has(key));
 }
 
-// The one clip-map instance is mounted under the dealer nav and under Scenmallar.
+// The one clip-map instance is mounted under the dealer nav. Miljöer och material has its own editor,
+// which opens one environment by its explicit `composition` and never inherits the clip map's context.
 export function isStudioAdminRoute(path){
   const {page}=parseAdminPath(path);
-  return page==='dealer'||page==='scenes';
+  return page==='dealer';
 }
 
-// Only the clip map carries room/template context between its two mounts; the
+// Only the clip map carries room/template context between dealers; the
 // dealer sits in the path, so it is never inherited from a query.
 export function withAdminContext(href,currentSearch){
   if(!href.startsWith('/admin'))return href;

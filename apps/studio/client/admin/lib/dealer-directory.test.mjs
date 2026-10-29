@@ -187,7 +187,7 @@ test('a pending Studio draft blocks dealer mutations even when a stale button ha
 });
 
 test('restore confirmation names the saved compositions before any restore is submitted',async()=>{
-  const compositions=[{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}];
+  const compositions=[{id:'first',label:'Första miljön'},{id:'second',label:'Andra miljön'}];
   const h=harness(compositions);await h.settle();
   h.button('archive').props.onClick();await h.settle();h.confirm().props.onClick();await h.settle();
   h.button('restore').props.onClick();await h.settle();

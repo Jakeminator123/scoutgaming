@@ -126,7 +126,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
         </Card>
         <Card title="Så hänger det ihop">
           <KV items={[['Admin','skapar och tilldelar'],['Bolaget','väljer inom tilldelningen'],['Spelaren','ser bara det publicerade']]}/>
-          <Footnote>Varje <Link href="/admin/companies" className={textLinkClass}>bolag</Link> får en tilldelning. Bolagets spelbord har scenmall, dealer, språk och insatsprofil, och det är spelbordet spelaren möter i spelet.</Footnote>
+          <Footnote>Varje <Link href="/admin/companies" className={textLinkClass}>bolag</Link> får en tilldelning. Bolagets spelbord har miljö, dealer, språk och insatsprofil, och det är spelbordet spelaren möter i spelet.</Footnote>
         </Card>
       </div>
     </div>

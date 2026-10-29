@@ -21,7 +21,7 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['EnvironmentPicture','ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
   const componentRequire=name=>{
     if(name==='./scene-publication')return {ScenePublication:components.ScenePublication};
     if(name==='react')return hooks;
@@ -84,7 +84,7 @@ test('shared template preview lists uses and requires its explicit edit action b
   assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
   const next=structuredClone(h.props.project.lanes[0]);next.openclaw.idle='rules';
   nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(next);assert.equal(h.edits.length,0);
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
   nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(next);
   assert.equal(h.edits.length,1);assert.equal(h.edits[0].lanes[0].openclaw.idle,'rules');
   h.props.blocked=true;tree=h.render();nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(next);assert.equal(h.edits.length,1);
@@ -94,7 +94,7 @@ test('changing composition returns the next shared template to preview mode whil
   const other={...structuredClone(h.props.project.lanes[0]),id:'other-composition'};
   h.props.project.lanes.push(other);h.props.room={...h.props.room,compositionId:other.id};tree=h.render();
   assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
-  assert.ok(text(tree).includes('Redigera gemensam mall'));assert.equal(h.props.project.lanes.length,2);
+  assert.ok(text(tree).includes('Redigera gemensam miljö'));assert.equal(h.props.project.lanes.length,2);
 });
 
 test('explicit shared template edits never follow or reassign a different room template',()=>{
@@ -103,13 +103,13 @@ test('explicit shared template edits never follow or reassign a different room t
   h.props.project.lanes.push(other);h.props.compositionId=other.id;h.props.game='blackjack';
   let tree=h.render();assert.equal(nodes(tree,node=>node.type==='h2')[0].props.children,other.label);
   assert.equal(nodes(tree,node=>node.type==='a')[0].props.href,h.props.roomChoicesPath);
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();
   tree=h.render();const updated={...structuredClone(other),openclaw:{...other.openclaw,idle:'rules'}};
   nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(updated);
   assert.deepEqual(h.props.project.lanes[0],original);assert.equal(h.props.project.lanes[1].openclaw.idle,'rules');
   assert.deepEqual(h.props.room,originalRoom);
   h.props.compositionId='missing';tree=h.render();
-  assert.ok(text(tree).includes('Den valda sammansättningen finns inte.'));
+  assert.ok(text(tree).includes('Den valda miljön finns inte.'));
   assert.equal(nodes(tree,node=>node.type===h.LayerAssetSelect).length,0);
 });
 
@@ -117,10 +117,19 @@ test('a selected library composition is editable without inventing a room contex
   const h=panelHarness();h.props.compositionId=h.props.project.lanes[0].id;h.props.game='blackjack';
   h.props.room=undefined;h.props.roomChoicesPath=null;
   let tree=h.render();assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();
   tree=h.render();const lane=structuredClone(h.props.project.lanes[0]);lane.openclaw.idle='rules';
   nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(lane);
   assert.equal(h.edits.length,1);assert.equal(h.props.room,undefined);
+});
+
+test('in the environment editor the publication shows only with a company from a room link',()=>{
+  const h=panelHarness();h.props.compositionId=h.props.project.lanes[0].id;h.props.inEnvironment=true;h.props.room=undefined;h.props.roomChoicesPath=null;
+  assert.equal(nodes(h.render(),node=>node.type===h.ScenePublication).length,0,'a plain environment has no company to publish for');
+  Object.assign(h.props,{operatorId:'north',operatorSlug:'north-casino',operatorName:'North'});
+  const publication=nodes(h.render(),node=>node.type===h.ScenePublication);
+  assert.equal(publication.length,1);
+  assert.deepEqual([publication[0].props.operatorId,publication[0].props.operatorSlug,publication[0].props.compositionId],['north','north-casino',h.props.compositionId]);
 });
 
 test('roulette preview never borrows blackjack idle or a blackjack table and keeps video upload game-scoped',()=>{
@@ -132,7 +141,7 @@ test('roulette preview never borrows blackjack idle or a blackjack table and kee
   let tree=h.render(),preview=nodes(tree,node=>node.type===h.CompositionPreview)[0];
   assert.equal(preview.props.dealer,null);assert.equal(preview.props.table,null);
   assert.ok(nodes(tree,node=>node.type===h.LayerAssetSelect).every(node=>node.props.game==='roulette'));
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
   const uploader=nodes(tree,node=>node.type===h.LayerLibrary&&node.props.role==='table')[0];
   assert.equal(uploader.props.disabled,false);assert.equal(uploader.props.game,'roulette');
   h.props.project.layerAssets[0].game='roulette';
@@ -166,7 +175,7 @@ test('Admin table profile edits only the selected table and format behind templa
   assert.equal(editor.props.disabled,true);assert.equal(editor.props.tableId,table.id);
   const profile=settings.defaultBlackjackTableGeometry(table.id);profile.mobile.betMode='under-cards';
   editor.props.onChange(profile);assert.equal(h.edits.length,0);
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
   editor=nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0];assert.equal(editor.props.disabled,false);
   editor.props.onChange(profile);assert.equal(h.edits.length,1,text(h.render()));
   assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].mobile.betMode,'under-cards');
@@ -186,7 +195,7 @@ test('roulette uses the player desktop format and zoom requires explicit shared-
   assert.equal(zoom.props.disabled,true);
   assert.equal(nodes(tree,node=>node.type===h.CompositionPreview)[0].props.layout,'desktop');
   assert.equal(nodes(tree,node=>node.props?.role==='tab'&&text(node)==='Mobil').length,0);
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();
   tree=h.render();zoom=nodes(tree,node=>node.type===h.CompositionZoomControls)[0];assert.equal(zoom.props.disabled,false);
   const next=settings.defaultCompositionSettings();next.desktop.dealer.scale=1.1;
   zoom.props.onChange(next);
@@ -205,7 +214,7 @@ test('table clips edit lanes[0].tablePlayback behind template edit ownership and
   assert.equal(editor.props.disabled,true);assert.equal(editor.props.baseSelected,true);assert.deepEqual(editor.props.allowed,[still.id,clip.id]);
   const policy={schemaVersion:1,rules:[defaultLayerRule(clip.id,'table-1',{role:'table'})]};
   editor.props.onChange(policy);assert.equal(h.edits.length,0,'preview mode never writes');
-  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
   editor=nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0];assert.equal(editor.props.disabled,false);
   editor.props.onChange(policy);assert.equal(h.edits.length,1);
   assert.deepEqual(h.edits[0].lanes[0].tablePlayback,policy);assert.equal(h.edits[0].lanes[0].backgroundPlayback,undefined);
@@ -240,7 +249,7 @@ test('every allowed board can be edited without changing defaults or room bindin
  let tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Bord att placera kort på')[0].props.onChange({target:{value:assets[1].id}});
  tree=h.render();const editor=nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.equal(editor.props.tableId,assets[1].id);
  assert.equal(editor.props.renderPreview().props.table.url,'/studio/api/layer-assets/'+assets[1].id);assert.deepEqual(h.props.project,original);assert.deepEqual(h.props.room,room);
- nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+ nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
  nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0].props.onChange(settings.defaultBlackjackTableGeometry(assets[1].id));
  assert.equal(h.props.project.lanes[0].composition.blackjackTables[0].tableId,assets[1].id);assert.deepEqual(h.props.project.lanes[0].layers,defaults);
  tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Chatt width')[0].props.onChange({target:{valueAsNumber:70}});
@@ -298,7 +307,7 @@ test('manual background and table clip previews restore their own base and polic
 
 test('scene publication and uploads share one operation lock until every operation finishes',()=>{
  const h=panelHarness(),states=[];h.props.onBusyChange=value=>states.push(value);
- nodes(h.render(),n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();
+ nodes(h.render(),n=>n.type==='button'&&text(n)==='Redigera gemensam miljö')[0].props.onClick();
  let tree=h.render(),publication=nodes(tree,n=>n.type===h.ScenePublication)[0],upload=nodes(tree,n=>n.type===h.LayerLibrary)[0];
  publication.props.onBusyChange(true);tree=h.render();
  assert.ok(nodes(tree,n=>n.type===h.LayerLibrary).every(n=>n.props.disabled));
@@ -319,8 +328,21 @@ test('copying placement updates only the selected allowed board in both formats'
  const source=structuredClone(lane.composition.blackjackTables[0]),layers=structuredClone(lane.layers);
  nodes(h.render(),n=>n.props?.['aria-label']==='Bord att placera kort på')[0].props.onChange({target:{value:assets[1].id}});
  let tree=h.render();const copy=()=>nodes(h.render(),n=>n.type==='button'&&text(n)==='Kopiera båda formaten till valt bord')[0];assert.equal(copy().props.disabled,true);
- nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();copy().props.onClick();
+ nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam miljö')[0].props.onClick();copy().props.onClick();
  assert.deepEqual(nodes(h.render(),n=>n.props?.role==='alert').map(text),[]);assert.equal(h.edits.length,1,'copy commits one valid project edit');
  const next=h.props.project.lanes[0];assert.deepEqual(next.composition.blackjackTables.find(row=>row.tableId===assets[1].id),{...source,tableId:assets[1].id});
  assert.deepEqual(next.composition.blackjackTables.find(row=>row.tableId===assets[0].id),source);assert.deepEqual(next.layers,layers);
+});
+
+test('inside the environment editor the panel leaves publication, the room list and the miljöbild to the editor',()=>{
+  const harness=panelHarness();
+  const plain=text(harness.render());
+  assert.equal(nodes(harness.render(),node=>node.type===harness.ScenePublication).length,1);
+  assert.match(plain,/Spelbord som använder miljön/);
+  harness.props.inEnvironment=true;
+  const tree=harness.render();
+  assert.equal(nodes(tree,node=>node.type===harness.ScenePublication).length,0,'publication happens in the room');
+  assert.doesNotMatch(text(tree),/Spelbord som använder miljön|Välj material för/);
+  assert.equal(nodes(tree,node=>node.type===harness.EnvironmentPicture).length,0,'the miljöbild is the editor\'s own section');
+  assert.ok(nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö').length,'the shared edit gate stays');
 });

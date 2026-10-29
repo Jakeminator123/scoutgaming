@@ -3,7 +3,6 @@
 const base = '/admin/_assets/lobby';
 const pair = (names, image, video) => Object.freeze({ names: Object.freeze(names), image: `${base}/images/dealers/${image}`, video: `${base}/videos/dealers/${video}` });
 const pairs = Object.freeze({
-  astrid: pair(['Astrid'], 'astrid.jpg', 'astrid-look.mp4'),
   marten: pair(['Mårten', 'Marten'], 'marten.jpg', 'marten-look.mp4'),
   // Dragge is registered as `dragan` (named Dragan) since the Kevin import (apps/studio/lib/dealer-import-kevin-source.json).
   dragge: pair(['Dragge', 'Dragan'], 'dragge.jpg', 'dragge-shirt.mp4'),
@@ -13,7 +12,7 @@ const pairs = Object.freeze({
 // Match identities explicitly: the registered id must be listed here AND the display name must be one of
 // the pair's names (case-insensitive, so "PAOW" and "Paow" match). A matching label alone is insufficient.
 // Same aliases as the lobby (client/lobby/lib/dealer-portraits.mjs): PAOW was published as `paow-v2`.
-const identities = Object.freeze({ astrid: 'astrid', marten: 'marten', dragge: 'dragge', dragan: 'dragge', anna: 'anna', paow: 'paow', 'paow-v2': 'paow' });
+const identities = Object.freeze({ marten: 'marten', dragge: 'dragge', dragan: 'dragge', anna: 'anna', paow: 'paow', 'paow-v2': 'paow' });
 const normalizeName = value => typeof value === 'string' ? value.trim().normalize('NFC').toLocaleLowerCase('sv') : '';
 
 export function suppliedDealerArtwork(dealer) {

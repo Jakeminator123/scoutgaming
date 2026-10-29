@@ -38,7 +38,7 @@ async function fixture({nativeVersion,frozenAnchors=false,measuredBank=false}={}
  const pool=combinedPool(scope,{extendedPresentationReady:measuredBank}),repository=createStudioRepository({pool,scope}),target=asset(1),kept=asset(2);
  const dealerId=measuredBank?'dragan':'astrid';
  const lane=defaultPresentationLane(dealerId);lane.layers.background={enabled:true,mode:'image',default:target.id,allowed:[target.id]};
- const retained={...structuredClone(lane),id:'other-composition',label:'Behållen sammansättning'};
+ const retained={...structuredClone(lane),id:'other-composition',label:'Behållen miljö'};
  retained.layers.background={enabled:true,mode:'image',default:kept.id,allowed:[kept.id]};
  const cloud=cloudPresentationFixture({lanes:[lane,retained],assets:[target,kept]});
  if(measuredBank){

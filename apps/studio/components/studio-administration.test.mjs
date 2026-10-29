@@ -436,12 +436,12 @@ test('native read capability keeps write preflight, self-protection and revision
   const h = harness(); let current = actor('admin'), sessions = 0, writes = 0;
   const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
     session: async () => { sessions++; return current; }, fetchImpl: async () => { writes++; return reply({ ok: true }); } });
-  await client.request('POST', 'room', { expectedRevision: 'studio-v1' });
-  await assert.rejects(client.request('POST', 'room', {}), status(409));
+  await client.request('POST', 'tier', { expectedRevision: 'studio-v1' });
+  await assert.rejects(client.request('POST', 'tier', {}), status(409));
   await assert.rejects(client.request('POST', 'users/remove', { username: current.username }), status(403));
   await assert.rejects(client.request('POST', 'users/role', { username: current.username, role: 'admin' }), status(403));
   current = null;
-  await assert.rejects(client.request('POST', 'room', { expectedRevision: 'studio-v1' }), status(401));
+  await assert.rejects(client.request('POST', 'tier', { expectedRevision: 'studio-v1' }), status(401));
   assert.equal(sessions, 5); assert.equal(writes, 1);
 });
 
@@ -678,7 +678,7 @@ test('each request checks live identity, role floors and self-role/self-removal 
 test('all config mutations carry exact string revision; no numeric/missing/prototype CAS fallback', async () => {
   const h = harness(); let requests = [];
   const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', session: async () => actor('superadmin'), availableActions: allActions, fetchImpl: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return reply({ ok: true }); } });
-  const configActions = ['room', 'tier', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
+  const configActions = ['tier', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
   for (const action of configActions) {
     for (const expectedRevision of [undefined, null, 0, 1, [], {}, 'bad revision', '/external', 'x'.repeat(101)]) await assert.rejects(client.request('POST', action, { expectedRevision }), status(409));
     await client.request('POST', action, { expectedRevision: 'studio-91ba0c61-3f45-4e9e-9efe-b40a3b201234' });

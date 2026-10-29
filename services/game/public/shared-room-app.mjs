@@ -197,7 +197,8 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
     seats=createSharedRoomWaiting({roomId,createCommands,state:()=>controller.state});
     const restoreSnapshot=async(raw,options)=>{await controller.restoreSnapshot(raw,options);seats.update();};
     // Chat (PR 1b): text with the dealer; a missing or failing chat never changes the table.
-    try{chat=createChat({document,roomId,fetchImpl,state:()=>controller.state});}catch{chat=null;}
+    // PR 4: every member plays the dealer's answer through the confirmed binding's presentation.speak.
+    try{chat=createChat({document,roomId,fetchImpl,state:()=>controller.state,speak:value=>presentation.speak(value),enableSound:()=>presentation.enableSound()});}catch{chat=null;}
     // A spent reconnect budget leaves the socket offline: the table keeps its last state and offers Återanslut.
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot,
       present:controller.present,onChat:line=>chat?.receive(line),onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
