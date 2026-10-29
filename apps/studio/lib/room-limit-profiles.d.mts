@@ -1,6 +1,4 @@
-export type RoomLimitProfile = { id: string; label: string; place: string; image: string; alt: string; min: number; max: number; sideMax: number; chips: number[]; refill: number; stakes: string };
+export type RoomLimitProfile = { id: string; label: string; min: number; max: number; sideMax: number; chips: number[]; refill: number; stakes: string };
 export const roomLimitProfileNote: string;
 export function formatAmount(value: number): string;
 export function roomLimitProfiles(): RoomLimitProfile[];
-export function roomLimitProfileArtwork(id: unknown): { file: string; alt: string } | undefined;
-export function roomLimitProfileImage(id: unknown): string | undefined;

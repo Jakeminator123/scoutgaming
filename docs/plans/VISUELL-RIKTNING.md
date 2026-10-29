@@ -1,6 +1,6 @@
 # Visuell riktning för Admin och Partnerportalen
 
-> Jakobs beslut 2026-10-29: Johns färgtema och visuella riktning blir produktens. Källa: Johns skiss `random/n2-skiss-john/index.html` (gren `john`, 47af5385f) och issue #9 (kommentar 2026-10-10). Skissen är inspiration och dess namn är legacy; koden och [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md) vinner. Ord här: bolag, spelbord, scenmall, tilldelning.
+> Jakobs beslut 2026-10-29: Johns färgtema och visuella riktning blir produktens. Källa: Johns skiss `random/n2-skiss-john/index.html` (gren `john`, 47af5385f) och issue #9 (kommentar 2026-10-10). Skissen är inspiration och dess namn är legacy; koden och [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md) vinner. Ord här: bolag, spelbord, miljö, tilldelning.
 
 ## Skal och sidmall
 
@@ -9,7 +9,7 @@
 - **En plats per uppgift.** Detaljer öppnas i sidopanel 460px; modal bara för bekräftelse.
 - **Väntande** syns som räknare i menyn och som lista på Översikt.
 - **Låsta val** (utanför bolagets tilldelning) visas avstängda med "Låst av Scoutgaming".
-- **Förhandsvisning per enhet** (dator, platta, mobil) där spelbord och scenmall visas.
+- **Förhandsvisning per enhet** (dator, platta, mobil) där spelbord och miljö visas.
 - **Mobil**: menyn blir en låda, 16px gutter.
 
 ## Typsnitt

@@ -12,7 +12,7 @@ test('all dealers must share a sole published background before it becomes the r
   assert.deepEqual(value, { kind: 'image', fixed: true, label: 'Salongen',
     image: '/api/presentation/layers/nordic-bet/' + a.id });
   for (const dealers of [[dealer([a, b])], [dealer(), dealer([b])], [dealer(), dealer([a], 'video')]]) {
-    assert.deepEqual(roomEnvironment({ dealers }, 'north'), { kind: 'variable', fixed: false, label: 'Flera miljöer' });
+    assert.deepEqual(roomEnvironment({ dealers }, 'north'), { kind: 'variable', fixed: false, label: 'Flera bakgrunder' });
   }
 });
 
@@ -20,8 +20,8 @@ test('video and baked environments never masquerade as background photographs', 
   const video = roomEnvironment({ dealers: [dealer([a], 'video')] }, 'north');
   assert.deepEqual(video, { kind: 'video', fixed: true, label: 'Salongen' });
   const baked = { independentLayers: false, background: { enabled: false, default: null, allowed: [], mode: 'baked' } };
-  assert.deepEqual(roomEnvironment({ dealers: [baked] }, 'north'), { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
-  assert.deepEqual(roomEnvironment({ dealers: [baked, baked] }, 'north'), { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
+  assert.deepEqual(roomEnvironment({ dealers: [baked] }, 'north'), { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' });
+  assert.deepEqual(roomEnvironment({ dealers: [baked, baked] }, 'north'), { kind: 'baked', fixed: false, label: 'Bakgrunden följer vald dealer' });
   assert.equal(roomEnvironment({ dealers: [baked, dealer()] }, 'north').fixed, false);
 });
 
@@ -39,7 +39,7 @@ test("several choices show the room default dealer's published default backgroun
   const room = (dealers, dealerDefault = 'nora') => ({ dealerDefault, dealers });
   const named = (id, source) => ({ id, ...source });
   const choices = named('nora', dealer([a, b])); choices.background.default = b.id;
-  assert.deepEqual(roomEnvironment(room([choices]), 'nordic bet'), { kind: 'variable', fixed: false, label: 'Flera miljöer',
+  assert.deepEqual(roomEnvironment(room([choices]), 'nordic bet'), { kind: 'variable', fixed: false, label: 'Flera bakgrunder',
     image: '/api/presentation/layers/nordic%20bet/' + b.id });
   // Different sole backgrounds per dealer: the room default dealer decides.
   assert.equal(roomEnvironment(room([named('nora', dealer([a])), named('elin', dealer([b]))], 'elin'), 'north').image,
@@ -50,6 +50,6 @@ test("several choices show the room default dealer's published default backgroun
   const foreign = named('nora', dealer([a, b])); foreign.background.default = '33333333-3333-3333-3333-333333333333';
   for (const value of [room([named('nora', dealer([a, b], 'video'))]), room([baked, named('nora', dealer([a]))], 'elin'),
     room([noDefault]), room([foreign]), room([named('nora', dealer([a, b]))], 'missing'), { dealers: [dealer([a, b])] }]) {
-    assert.deepEqual(roomEnvironment(value, 'north'), { kind: 'variable', fixed: false, label: 'Flera miljöer' });
+    assert.deepEqual(roomEnvironment(value, 'north'), { kind: 'variable', fixed: false, label: 'Flera bakgrunder' });
   }
 });

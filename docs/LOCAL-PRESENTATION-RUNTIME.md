@@ -57,7 +57,7 @@ Kvittot bevisar containertider och bindning till exakt de bytes som mättes, int
 
 Vercel (Admin) och Render (spelmotorn) uppdateras vid olika tidpunkter, och spelmotorns läsare är strikta: ett okänt fält i ett dokument eller paket gör att hela dokumentet nekas. Därför annonserar spelmotorn vilka format den läser (`packages/presentation/capability-contract.mjs`), och Admin skriver ett nytt fält först när kapabiliteten finns.
 
-- Förhandling sker med headern `X-Presentation-Capability-Version` (v1–v32). Utan header svarar endpointen med v2. En felaktig eller okänd version väljer aldrig tyst en annan.
+- Förhandling sker med headern `X-Presentation-Capability-Version` (v1–v33). Utan header svarar endpointen med v2. En felaktig eller okänd version väljer aldrig tyst en annan.
 - Admins readiness (`apps/studio/lib/presentation-runtime-readiness.mjs`) kontrollerar kravet före SQL och igen under transaktionen; den gör inga provideranrop under SQL-lås och höjer inte generella startkrav.
 - Deploya kompatibla läsare före nya skrivningar. En äldre release som inte läser ett lagrat format är ingen giltig rollback när sådana poster eller paket finns; då måste fältet först tas bort ur lagringen.
 
@@ -83,6 +83,7 @@ Vercel (Admin) och Render (spelmotorn) uppdateras vid olika tidpunkter, och spel
 | 30 | `recordedEmbeddedAv: 'embedded-mp4-av-v2'` |
 | 31 | `nativeFilmedPlanning: 'frozen-topology-v2'` |
 | 32 | `idleRotationOffers: 'rest-proposals-v1'` (ett viloklipp i vilosekvensen får `use` `openclaw`/`rules`) |
+| 33 | `laneIllustration: 'environment-image-v1'` (miljöbild `lane.illustration` och materialrollen `illustration`) |
 
 ## Fryst paket och presentationskuvert
 

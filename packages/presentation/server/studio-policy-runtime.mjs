@@ -12,7 +12,7 @@ export function createStudioPolicyRuntime({ schemaCheck: defaultSchemaCheck, isS
   return async function createRenderStudioPolicy({ storage, env = process.env, dealerIdle, schemaCheck = defaultSchemaCheck } = {}) {
     const config = studioGamePolicyConfiguration(env);
     if (!config) return null;
-    if (env.CROUPIER_DATABASE !== 'postgres' || !storage?.pool || !storage?.db?.assertInstalled) {
+    if (!storage?.pool || !storage?.db?.assertInstalled) {
       throw Object.assign(new Error('studio_game_storage_unavailable'), { statusCode: 503 });
     }
     await storage.db.assertInstalled();

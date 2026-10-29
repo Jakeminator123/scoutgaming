@@ -12,7 +12,7 @@ test('the six menu pages and the three navs parse from the path; anything else i
   for(const path of ['/admin/rooms','/admin/clips','/admin/dealers/a/b','/admin/system/x','/admin/demo/x','/control/clips','/partner'])assert.equal(parseAdminPath(path).page,'unknown',path);
 });
 
-test('the clip map is a Studio route only under the dealer nav and under Scenmallar',()=>{
+test('the clip map is a Studio route only under the dealer nav; Miljöer has its own editor',()=>{
   for(const search of ['','?view=registered','?dealer=anna','?operator=north&table=north-roulette','?composition=scene','?lane=legacy']){
     assert.equal(isStudioAdminRoute('/admin',search),false);
     assert.equal(isStudioAdminRoute('/admin/dealers',search),false,'the dealer list never mounts the map');
@@ -21,7 +21,7 @@ test('the clip map is a Studio route only under the dealer nav and under Scenmal
   for(const search of ['?dealer=anna','?operator=north&table=north-roulette'])assert.equal(hasAdminContext(search),true);
   assert.equal(isStudioAdminRoute('/admin/dealers/dragan','?flik=klipp'),true);
   assert.equal(isStudioAdminRoute('/admin/dealers/dragan','?flik=tal'),true);
-  assert.equal(isStudioAdminRoute('/admin/scenes','?tab=mallar'),true);
+  assert.equal(isStudioAdminRoute('/admin/scenes','?tab=miljoer'),false,'Miljöer och material never mounts the clip map');
   assert.equal(isStudioAdminRoute('/admin/rooms/room-1',''),false,'the room editor is not the clip map');
   assert.equal(isStudioAdminRoute('/admin/clips',''),false,'the retired address redirects instead');
 });
@@ -34,7 +34,7 @@ test('only the clip map inherits room and template context; the dealer sits in t
   assert.equal(withAdminContext('/admin/rooms/room-one?flik=spel',context),'/admin/rooms/room-one?flik=spel');
   assert.equal(withAdminContext('/admin/system?flik=drift',context),'/admin/system?flik=drift');
   assert.equal(withAdminContext('/admin/dealers/bea?flik=klipp#cards',context),'/admin/dealers/bea?flik=klipp&operator=north&table=room-one&game=blackjack#cards');
-  assert.equal(withAdminContext('/admin/scenes?tab=mallar',context),'/admin/scenes?tab=mallar&operator=north&table=room-one&game=blackjack');
+  assert.equal(withAdminContext('/admin/scenes?tab=miljoer',context),'/admin/scenes?tab=miljoer','the environment list never inherits a room or template');
   assert.equal(new URLSearchParams(withAdminContext('/admin/dealers/bea?flik=klipp',context).split('?')[1]).has('dealer'),false,'a query dealer is never inherited');
   assert.equal(withAdminContext('https://outside.invalid/admin/dealers/bea',context),'https://outside.invalid/admin/dealers/bea');
 });
@@ -50,11 +50,9 @@ test('explicit scene links win while a new room does not inherit the old templat
     assert.equal(inherited.has('game'),false,'an omitted game belongs to the new room');
     assert.equal(inherited.has('composition'),false);
   }
-  for(const field of ['composition','lane']){
-    const explicit=target('/admin/scenes?tab=mallar&'+field+'=scene-b');
-    assert.equal(explicit.get(field),'scene-b');assert.equal(explicit.has(field==='lane'?'composition':'lane'),false);
-    assert.equal(explicit.get('table'),'room-a');assert.equal(explicit.get('operator'),'a');
-  }
+  // An environment link names its environment and nothing else from the clip map's context.
+  const explicit=target('/admin/scenes?tab=miljoer&composition=scene-b');
+  assert.equal(explicit.get('composition'),'scene-b');assert.equal(explicit.has('table'),false);assert.equal(explicit.has('operator'),false);
   assert.equal(target('/admin/dealers/nora?flik=klipp').get('composition'),'scene-a');
   assert.equal(target('/admin/dealers/nora?flik=klipp').get('game'),'blackjack');
 });

@@ -27,7 +27,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
   try{candidate=bindRouletteStart(project,inventory,dealerId,tableLaneId,form);}catch(cause){error=(cause as Error).message;}
   const change=(key:keyof RouletteStartForm,value:string)=>setForm(current=>({...current,[key]:value}));
   return <section className="space-y-3 text-xs" aria-label="Kalibrera roulettens startfilm">
-    <p>Välj granskad startfilm och dess exakta markörer. Ändringen gäller dealerns rouletteklipp i alla sammansättningar. Spara utkastet och publicera berörda rum separat.</p>
+    <p>Välj granskad startfilm och dess exakta markörer. Ändringen gäller dealerns rouletteklipp i alla miljöer. Spara utkastet och publicera berörda spelbord separat.</p>
     <fieldset disabled={blocked} className="space-y-3">
       <label className="studio-field">Startfilm<select value={form.videoId} onChange={event=>{if((dirty||reviewDirty)&&!confirm('Kasta osparade formulärändringar och välj en annan film?'))return;setForm(rouletteStartForm(project,dealerId,event.target.value));}}>
         <option value="">Välj registrerad startfilm…</option>
@@ -35,17 +35,17 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
         {videos.map(video=><option key={video.id} value={video.id}>{video.label} · {video.id}</option>)}
       </select></label>
       {selected&&<p>Registrerad pose: {metadata?.startPose??'saknas'} → {metadata?.endPose??'saknas'}. Inramning: {metadata?.framing?`skala ${metadata.framing.scale}, x ${metadata.framing.x}, y ${metadata.framing.y}`:'saknas'}. Granska och spara filmuppgifterna nedan innan koppling.</p>}
-      <label className="studio-field">Sammansättning för bordkontroll<select value={tableLaneId} onChange={event=>{setTableLaneId(event.target.value);change('tableDesignId','');}}>
-        <option value="">Välj en mall med denna dealer och roulettebord…</option>
+      <label className="studio-field">Miljö för bordkontroll<select value={tableLaneId} onChange={event=>{setTableLaneId(event.target.value);change('tableDesignId','');}}>
+        <option value="">Välj en miljö med denna dealer och roulettebord…</option>
         {compositions.map(lane=><option key={lane.id} value={lane.id}>{lane.label} · {lane.id}</option>)}
       </select></label>
-      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte rum eller mall. <a className="underline" href="/admin/scenes" target="_blank" rel="noopener">Hantera sammansättningar</a></p>
+      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte spelbord eller miljö. <a className="underline" href="/admin/scenes" target="_blank" rel="noopener">Hantera miljöer</a></p>
       <label className="studio-field">Tillåten borddesign<select value={form.tableDesignId} onChange={event=>change('tableDesignId',event.target.value)}>
         <option value="">Välj registrerat roulettebord…</option>
         {form.tableDesignId&&!designs.includes(form.tableDesignId)&&<option value={form.tableDesignId}>Inte tillåten här: {form.tableDesignId}</option>}
         {designs.map(id=><option key={id} value={id}>{tables.find(row=>row.designId===id)?.label} · {id}</option>)}
       </select></label>
-      {form.tableDesignId&&<p>Matchande lager: {tables.filter(row=>row.designId===form.tableDesignId).map(row=>row.assetId).join(', ')||'saknas i sammansättningen'}</p>}
+      {form.tableDesignId&&<p>Matchande lager: {tables.filter(row=>row.designId===form.tableDesignId).map(row=>row.assetId).join(', ')||'saknas i miljön'}</p>}
       {([['durationMs','Verifierad filmlängd (ms)'],['wheelImpulseMs','Hjulimpuls (ms)'],['ballReleaseMs','Kulsläpp (ms)']] as const).map(([key,label])=><label key={key} className="studio-field">{label}<input type="number" step="1" min={key==='durationMs'?1000:0} max={60000} value={form[key]} onChange={event=>change(key,event.target.value)}/></label>)}
       <details><summary>Handregion för just denna film</summary><label className="studio-field">Polygoner (JSON, valfritt)<textarea rows={3} value={form.foregroundPolygons} onChange={event=>change('foregroundPolygons',event.target.value)} /></label><p>Punkter 0–1 i filmens bildyta. Lämna tomt om ingen handregion är granskad.</p></details>
       {error&&<p role="alert" className="text-sg-red">{error}</p>}

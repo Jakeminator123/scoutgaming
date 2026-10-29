@@ -64,7 +64,7 @@ export function AiProposalPreview({role, proposal, companion = null, project = n
   try {
     layouts = AI_PREVIEW_LAYOUTS.map(layout => aiPreviewLayout({layout, settings, background, table, dealer, dealerId: scene.dealerId || dealerId, warned, proposalRole: role}));
   } catch { layouts = []; }
-  if (!layouts.length) return <p role="status" className="m-0 text-xs text-sg-muted">Förhandsvisningen kunde inte ritas för den här scenmallen.</p>;
+  if (!layouts.length) return <p role="status" className="m-0 text-xs text-sg-muted">Förhandsvisningen kunde inte ritas för den här miljön.</p>;
   const missing = [
     !dealer ? (scene.dealer ? 'dealern (grön skärm visas bara i scenen)' : 'dealern (inget viloklipp)') : '',
     role === 'table' && !background ? 'bakgrund' : '',

@@ -70,7 +70,7 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
       const next=structuredClone(p);
       [...(next.dealers??[]),...(next.layerAssets??[]),...(next.lanes??[])].find(row=>row.id===targetId).label=value.trim();
       kind='document';path='/project';method='PUT';body={project:next,expectedRevision:saved.revision};
-      impact={before:label,after:value.trim(),notice:'Ändrar endast namnet på den valda dealern, det valda materialet eller sammansättningen. Sparas som en ny granskad projektversion.'};
+      impact={before:label,after:value.trim(),notice:'Ändrar endast namnet på den valda dealern, det valda materialet eller miljön. Sparas som en ny granskad projektversion.'};
     }else if(action.startsWith('dealer.')){
       const restore=action==='dealer.restore';permanent=action==='dealer.delete';
       const row=required(restore||permanent?p.dealerTrash?.find(row=>row.dealer.id===targetId)?.dealer:p.dealers?.find(row=>row.id===targetId));
@@ -87,7 +87,7 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
         body={...body,archived:!restore,...(!restore?{impactToken:check.impact.token}:{})};
         path='/dealers/archive';
         const compositions=restore?p.dealerTrash?.find(entry=>entry.dealer.id===targetId)?.compositions??[]:[];
-        impact=restore?{notice:`Dealern, materialet och sparade sammansättningar återförs som utkast. Sparade sammansättningar (${compositions.length}): ${compositions.map(name).join(', ')||'inga'}. AI-tal förblir avstängt. Rum återställs eller öppnas inte automatiskt.`}:{...check.impact,notice:'Dealern och berörda kopplingar flyttas till papperskorgen. Se alla berörda rum och bolag nedan. Historik och källfiler bevaras.'};
+        impact=restore?{notice:`Dealern, materialet och sparade miljöer återförs som utkast. Sparade miljöer (${compositions.length}): ${compositions.map(name).join(', ')||'inga'}. AI-tal förblir avstängt. Rum återställs eller öppnas inte automatiskt.`}:{...check.impact,notice:'Dealern och berörda kopplingar flyttas till papperskorgen. Se alla berörda rum och bolag nedan. Historik och källfiler bevaras.'};
       }
     }else{
       const archived=action==='material.archive';
@@ -95,7 +95,7 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
       label=name(row);body={id:targetId,archived,expectedRevision:saved.revision};
       const check=await services.admin(request,'material-trash-check','POST',body);
       path='/admin/material-trash';body={...body,impactToken:check.impact.token};
-      impact={...check.impact,notice:archived?'Flyttas till papperskorgen och lossas från aktiva rum/sammansättningar. Källfil och publicerad historik bevaras.':'Återställs som ett fristående materialval. Tidigare kopplingar återställs inte automatiskt.'};
+      impact={...check.impact,notice:archived?'Flyttas till papperskorgen och lossas från aktiva rum/miljöer. Källfil och publicerad historik bevaras.':'Återställs som ett fristående materialval. Tidigare kopplingar återställs inte automatiskt.'};
     }
   }else{
     const saved=await services.admin(request,'resource-lifecycle');

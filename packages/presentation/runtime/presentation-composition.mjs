@@ -110,7 +110,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     }
     const missing=Boolean(current?.settings?.blackjackTables?.length);
     return {...projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},referenceFraming??undefined),
-      ...(missing?{geometryWarning:'Bordet saknar egna kort- och insatsplatser. Justera det i Sammansättning.'}:{}),
+      ...(missing?{geometryWarning:'Bordet saknar egna kort- och insatsplatser. Justera det i Miljö.'}:{}),
       sourceAligned:!missing&&['scale','x','y'].every(name=>(referenceFraming?.[name]??(name==='scale'?1:0))===(framing?.[name]??(name==='scale'?1:0)))};
   }
   const actorFrame=document.createElement('canvas');

@@ -83,7 +83,7 @@ test('start editor exposes saved values, missing-data errors and separate metada
   const f=fixture();f.project=editor.bindRouletteStart(f.project,f.inventory,dealerId,f.laneId,f.form);
   const render=project=>renderToStaticMarkup(React.createElement(module.exports.RouletteStartEditor,{...f,project,dealerId,videoId:startId,blocked:false,onEdit(){},onDirtyChange(){},onInventory(){},onBusyChange(){}}));
   const html=render(f.project);assert.match(html,/value="10042"/);assert.match(html,/value="1700"/);assert.match(html,/value="4600"/);assert.match(html,/VILA → VILA/);assert.match(html,/skala 1, x 0.2, y 0/);assert.match(html,/Ta bort sparad startkoppling/);
-  assert.match(html,/Sammansättning för bordkontroll/);assert.match(html,/href="\/admin\/scenes"/);
+  assert.match(html,/Miljö för bordkontroll/);assert.match(html,/href="\/admin\/scenes"/);
   const other={...structuredClone(f.project.lanes[0]),id:'unassigned-anna',label:'Anna without room'};f.project.lanes.push(other);
   assert.match(render(f.project),/Anna without room/,'unassigned compatible templates remain explicitly selectable');
   other.layers.dealer.allowed=['vera'];assert.doesNotMatch(render(f.project),/Anna without room/);

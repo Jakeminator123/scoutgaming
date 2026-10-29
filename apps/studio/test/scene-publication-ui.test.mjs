@@ -62,7 +62,7 @@ function harness(f,queue){
     lateWrites:()=>lateWrites};
 }
 
-const publishLabel='Publicera sparad placering',importLabel='Läs in placering i mallen',reloadLabel='Läs in publicerad version';
+const publishLabel='Publicera sparad placering',importLabel='Läs in placering i miljön',reloadLabel='Läs in publicerad version';
 const posts=h=>h.requests.filter(row=>row.options.method==='POST');
 
 test('double click publishes once, stays busy through readback, and confirms only the verified saved result',async()=>{
