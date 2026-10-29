@@ -11,30 +11,39 @@ import { isDocumentationPath } from './documentation-paths.mjs';
 // matrix from the classifier output, so the leg table lives here, next to the
 // scope table that selects legs; test/ci-changes.mjs proves the legs partition
 // the suites of .githooks/pre-commit-full (engine and container run separately).
+// Four legs, each installing the toolchain once: the shared setup (ffmpeg, npm,
+// pnpm) costs about as much as a small suite, so short suites share a leg.
 export const REGRESSION_LEGS = Object.freeze([
-  { leg: 'studio', suites: 'studio' },
-  { leg: 'admin-contracts', suites: 'admin contracts', policy: true },
+  { leg: 'studio-admin-contracts', suites: 'studio admin contracts', policy: true },
   { leg: 'database-engine', suites: 'database', postgres: true },
-  { leg: 'presentation', suites: 'presentation' },
-  { leg: 'access', suites: 'access', build: true },
+  { leg: 'access-presentation', suites: 'access presentation', build: true },
   { leg: 'speech-gameplay', suites: 'speech gameplay', speech_node: true, lipsync: true },
-  { leg: 'browser', suites: '', browser: true },
 ].map(Object.freeze));
 export const LIPSYNC_LEG = 'speech-gameplay';
 
-// Scope matrix (which regression legs a classified PR diff runs). Unknown or
+// Real-browser acceptance (Chrome) is its own job, "Regression (browser)", outside
+// the leg matrix. The selection says whether the final gate requires it:
+//   required  complete runs (nightly schedule, manual, push preview)
+//   advisory  ready full-scope PRs: it runs and reports, but CI does not wait on its result
+//   none      drafts, documentation, openclaw-deploy and push main: it does not run
+export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
+
+// Scope matrix (which regression legs a classified diff runs). Unknown or
 // shared paths (packages/*, test/fixtures/*, .githooks, tools, ops) are 'full'.
 //   documentation    reviewed prose only                      no legs; documentation job
-//   openclaw-deploy  only services/openclaw/lab/deploy/**     admin-contracts, access (+ gateway container)
-//   full             everything else                          every leg
+//   openclaw-deploy  only services/openclaw/lab/deploy/**     studio-admin-contracts, access-presentation (+ gateway container)
+//   full             everything else                          every leg (+ browser)
+//   integration      push to main (after a PR's own full CI)  no legs; documentation job, readiness,
+//                                                             gateway container when its inputs changed
 // openclaw-deploy is safe because the Gateway image copies only deploy/ files,
 // and deploy/ is imported solely by the access suite (deploy/*.test.mjs,
 // test/backup-render-state.mjs, the lab check) and scanned by the contracts
 // suite (no-sqlite, orphan tests). lab/src/ is copied into Postgres fixtures,
-// so it stays 'full'.
+// so it stays 'full'. The complete regression on main runs nightly (schedule).
 export const SCOPE_LEGS = Object.freeze({
   documentation: Object.freeze([]),
-  'openclaw-deploy': Object.freeze(['admin-contracts', 'access']),
+  integration: Object.freeze([]),
+  'openclaw-deploy': Object.freeze(['studio-admin-contracts', 'access-presentation']),
   full: Object.freeze(REGRESSION_LEGS.map(({ leg }) => leg)),
 });
 
@@ -124,6 +133,9 @@ export function gatewayContainerRequired(changes) {
 }
 
 const LONG_LIVED_REFS = ['refs/heads/main', 'refs/heads/preview'];
+const MAIN_REF = 'refs/heads/main';
+// The complete product: nightly schedule, manual runs, push preview and every uncertain input.
+const COMPLETE = Object.freeze({scope: 'full', migration: true, moving: true, gateway: true, draft: false, browser: 'required'});
 
 function readEvent(env) {
   try { return JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')); } catch { return null; }
@@ -137,26 +149,39 @@ export function draftPullRequest({ env = process.env } = {}) {
   return readEvent(env)?.pull_request?.draft === true;
 }
 
-export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
-  // Long-lived branches (main, preview) and manual runs always verify the complete product after integration.
-  const complete = {scope: 'full', migration: true, moving: true, gateway: true, draft: false};
-  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, stdio: ['ignore','pipe','pipe'] });
-  // Rebuilding an unchanged isolated worker image adds no new acceptance.
-  // Only a complete, verified push range may skip that image build on main/preview.
-  if (env.GITHUB_EVENT_NAME === 'push' && LONG_LIVED_REFS.includes(env.GITHUB_REF)
-    && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '') && env.GITHUB_EVENT_PATH) {
-    try {
-      const event = JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
-      if (!/^[a-f0-9]{40}$/.test(event?.before || '') || event.before === env.GITHUB_SHA
-        || event.after !== env.GITHUB_SHA || git(['rev-parse','HEAD']).trim() !== env.GITHUB_SHA) return complete;
-      git(['merge-base','--is-ancestor',event.before,'HEAD']);
-      const changes = parseDiff(git(['diff','--raw','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv','-z',event.before,'HEAD','--']));
-      return {...complete, moving: movingWorkerRequired(changes)};
-    } catch {
-      // Missing history, malformed events and uncertain diffs keep the build.
-      return complete;
-    }
+// The complete, verified push range of a main/preview push, or null when it cannot be proven.
+function pushRange(env, git) {
+  if (!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '') || !env.GITHUB_EVENT_PATH) return null;
+  try {
+    const event = JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
+    if (!/^[a-f0-9]{40}$/.test(event?.before || '') || event.before === env.GITHUB_SHA
+      || event.after !== env.GITHUB_SHA || git(['rev-parse','HEAD']).trim() !== env.GITHUB_SHA) return null;
+    git(['merge-base','--is-ancestor',event.before,'HEAD']);
+    return parseDiff(git(['diff','--raw','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv','-z',event.before,'HEAD','--']));
+  } catch {
+    // Missing history, malformed events and uncertain diffs prove nothing.
+    return null;
   }
+}
+
+export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
+  const complete = {...COMPLETE};
+  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, stdio: ['ignore','pipe','pipe'] });
+  if (env.GITHUB_EVENT_NAME === 'push' && LONG_LIVED_REFS.includes(env.GITHUB_REF)) {
+    const changes = pushRange(env, git);
+    // Push main: every change arrived through a PR whose own ready CI ran the regression
+    // on its merge commit, so main runs integration checks only (documentation contracts,
+    // live migration readiness, and the Gateway image when its inputs changed or the range
+    // is uncertain). The complete regression on main runs nightly (schedule) and on manual runs.
+    if (env.GITHUB_REF === MAIN_REF) {
+      return {scope: 'integration', migration: true, moving: false, gateway: changes ? gatewayContainerRequired(changes) : true,
+        draft: false, browser: 'none'};
+    }
+    // Preview: the complete product. Rebuilding an unchanged isolated worker image adds
+    // no new acceptance, so only a complete, verified push range may skip that build.
+    return changes ? {...complete, moving: movingWorkerRequired(changes)} : complete;
+  }
+  // Schedule (nightly on main), manual runs and unknown events verify the complete product.
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return complete;
   if (!/^refs\/pull\/\d+\/merge$/.test(env.GITHUB_REF || '') || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) return complete;
   const parents = git(['rev-list', '--parents', '-n', '1', 'HEAD']).trim().split(' ');
@@ -164,21 +189,22 @@ export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Checkout's PR merge commit includes current main. Comparing its first
   // parent avoids misclassifying an old branch or looking only at its last push.
   const changes = parseDiff(git(['diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', '-z', 'HEAD^1', 'HEAD', '--']));
-  return {scope: scopeOf(changes), migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes),
-    gateway: gatewayContainerRequired(changes), draft: draftPullRequest({ env })};
+  const scope = scopeOf(changes), draft = draftPullRequest({ env });
+  return {scope, migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes),
+    gateway: gatewayContainerRequired(changes), draft, browser: !draft && scope === 'full' ? 'advisory' : 'none'};
 }
 
 export function ciScope(options) {
   return ciSelection(options).scope;
 }
 
-// GITHUB_OUTPUT lines for the workflow: scope, booleans, the leg list and the
-// dealer-regression matrix (fromJSON in the workflow).
+// GITHUB_OUTPUT lines for the workflow: scope, booleans, the browser mode, the leg
+// list and the dealer-regression matrix (fromJSON in the workflow).
 export function ciOutputs(selection) {
   const legs = regressionLegs(selection.scope);
   return {
     scope: selection.scope, migration: String(selection.migration), moving: String(selection.moving),
-    gateway: String(selection.gateway), draft: String(selection.draft),
+    gateway: String(selection.gateway), draft: String(selection.draft), browser: String(selection.browser),
     legs: JSON.stringify(legs.map(({ leg }) => leg)), matrix: JSON.stringify({ include: legs }),
   };
 }
@@ -186,13 +212,15 @@ export function ciOutputs(selection) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const selection = ciSelection();
   const outputs = ciOutputs(selection);
-  const {scope, migration, moving, gateway, draft} = outputs;
-  console.log(`CI scope: ${scope}; draft: ${draft}; regression legs: ${outputs.legs}; production migration readiness: ${migration}; Moving image check: ${moving}; Gateway container: ${gateway}`);
+  const {scope, migration, moving, gateway, draft, browser} = outputs;
+  console.log(`CI scope: ${scope}; draft: ${draft}; regression legs: ${outputs.legs}; browser: ${browser}; production migration readiness: ${migration}; Moving image check: ${moving}; Gateway container: ${gateway}`);
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(outputs).map(([key, value]) => `${key}=${value}\n`).join(''));
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `### Verification scope: ${scope}${draft === 'true' ? ' (draft: targeted checks only, no CI check until ready for review)' : ''}\n\n${scope === 'documentation'
       ? 'Prose-only PR: environment registry, delivery policy and documentation checks. No runtime acceptance is claimed.'
+      : scope === 'integration'
+        ? `Push to main: documentation contracts, live migration readiness and the Gateway container (${gateway}). The PR's own CI ran the regression on its merge commit; the complete regression on main runs nightly and on manual runs.`
       : draft === 'true'
         ? 'Draft PR: precommit-checks on the merge diff only. The full regression runs when the PR is marked ready for review.'
-        : `Regression legs: ${JSON.parse(outputs.legs).join(', ')}${scope === 'full' ? ' (full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks)' : ''}. Gateway container: ${gateway}. Live migration readiness: ${migration === 'true' ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
+        : `Regression legs: ${JSON.parse(outputs.legs).join(', ')}${scope === 'full' ? ' (full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks)' : ''}. Browser (Chrome): ${browser}. Gateway container: ${gateway}. Live migration readiness: ${migration === 'true' ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
 }

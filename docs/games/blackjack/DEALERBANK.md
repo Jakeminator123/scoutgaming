@@ -43,7 +43,7 @@ Vändning använder `reveal.dealer`/`dealer-hole`. Box 1 är spelarens vänstra 
 
 | Profil | Formel vid 1920×1080 | Innebörd |
 | --- | --- | --- |
-| Forge | x′=x+420, y′=y−108, skala 1 | `stageTransform` i dealer-forge-catalog. Porträttfilen beskärs på höjden. |
+| Forge | x′=x+420, y′=y−108, skala 1 | Porträttfilen beskärs på höjden (den oanvända funktionen `stageTransform` är raderad). |
 | Höjdanpassad (Light) | x′=656,25+0,5625x, y′=0,5625y | Hela porträtthöjden ryms. |
 
 [dealerFrameRect](../../../packages/presentation/contracts/dealer-framing.mjs) använder visningshöjd × sparad `scale` samt x/y-offset; standard `scale=1` ger höjdanpassning, och `scale=16/9, x=0, y=13/45` ger Forge-beskärningen. Båda kan alltså uttryckas, men ett rum läses alltid från sin publicerade profil. Ingen automatisk crop, förflyttning eller förstoring får lösa konflikten i tysthet.

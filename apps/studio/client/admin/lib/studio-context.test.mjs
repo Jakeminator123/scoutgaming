@@ -159,6 +159,7 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
   const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
     :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
+    :name==='./assignment-field'?{AssignmentField:stub('data-assignment-field',props=>[props.operatorId,props.revision??'none'].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
@@ -326,7 +327,10 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   assert.equal(hrefs(html).some(href=>/other|archived|operator=|\/control/.test(href)),false,'another company\'s room, the archive and query-selected owners stay out');
   assert.ok(hrefs(html).includes('/admin/companies/a?flik=spelbord&view=create'));assert.doesNotMatch(html,/data-registered-studio=/,'room creation opens only on request');
   assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions}),/data-registered-studio="create:a::"/);
-  assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions}),/data-registered-studio="package:a::"/);
+  const assigned=await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions});
+  assert.match(assigned,/data-registered-studio="package:a::"/);
+  // Bolag › Tilldelat: tilldelningens fält för samma bolag och dess publicerade revision.
+  assert.match(assigned,/data-assignment-field="a:/);
   const other=await companiesPageHtml({page:'company',id:'b',search:'?flik=spelbord',compositions});
   assert.deepEqual([...new Set(hrefs(other).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/other?flik=utseende']);
   const missing=await companiesPageHtml({page:'company',id:'missing',search:'?flik=spelbord',compositions});

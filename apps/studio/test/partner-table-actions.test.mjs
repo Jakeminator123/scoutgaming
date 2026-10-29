@@ -162,6 +162,15 @@ test('partner table actions on PostgreSQL', async t => {
     assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
     const opened = (await states()).map(row => JSON.parse(row.changes)).find(changes => changes.after.state === 'live');
     assert.deepEqual(opened, { before: { state: 'pending' }, after: { state: 'live', administrationRevision: (await f.raw.readDocument('administration')).revision } });
+    // Partnerns journal visar händelserna men aldrig Scoutgamings administrationsrevision.
+    const read = await status(f.call('journal'), 200, 'the partner journal');
+    const shown = read.entries.filter(entry => entry.action === 'room.state');
+    // Samma klocka i fixturen: ordningen mellan raderna avgörs av event_id, så jämför utan ordning.
+    assert.deepEqual(shown.map(({ changes }) => `${JSON.stringify(changes.before)}>${JSON.stringify(changes.after)}`).sort(),
+      ['{"state":"live"}>{"state":"pending"}', '{"state":"pending"}>{"state":"live"}']);
+    assert.ok(shown.every(({ changes }) => Object.keys(changes).sort().join() === 'after,before'));
+    assert.ok(read.entries.some(entry => entry.action === 'room.settings'), 'the settings draft is listed too');
+    assert.doesNotMatch(JSON.stringify(read), /administrationRevision/, 'the administration revision never reaches the partner');
     const other = { roomId: room('north-b'), state: 'pending', expectedState: 'live', expectedPackageRevision: revision };
     await status(f.call('room-state', { body: other }), 200, 'pause a table without published settings');
     await refused(() => f.call('room-state', { body: { ...other, state: 'live', expectedState: 'pending' } }), 409, 'never released by Admin');
@@ -183,6 +192,14 @@ test('partner table actions on PostgreSQL', async t => {
     await adminState(room('north-a'), 'live');
     await adminState(room('north-a'), 'pending');
     assert.equal((await refused(() => f.call('room-state', { body: open }), 409, 'Admin re-paused after the partner pause')).reason, 'admin-pause');
+    // Admin (N1) pausar genom portalens väg: journalraden är internal-admin, inte
+    // partner, så bolaget kan inte häva den (listPartnerRoomPauses, access_class='partner').
+    await adminState(room('north-a'), 'live');
+    const n1 = await status(f.call('room-state', { user: 'n1-admin', body: pause }), 200, 'N1 pause through the portal route');
+    assert.deepEqual(n1.room, { id: room('north-a'), state: 'pending' });
+    const internal = (await journal()).filter(row => row.action === 'room.state' && row.access_class !== 'partner');
+    assert.deepEqual(internal.map(row => [row.access_class, row.actor_id, JSON.parse(row.changes).after.state]), [['internal-admin', '7', 'pending']]);
+    assert.equal((await refused(() => f.call('room-state', { body: open }), 409, 'an N1 pause set through the portal route')).reason, 'admin-pause');
     // Partnerns egen paus består genom Admins andra sparningar och öppnas av partnern.
     await adminState(room('north-a'), 'live');
     await status(f.call('room-state', { body: pause }), 200, 'partner pause');
@@ -226,6 +243,37 @@ test('partner table actions on PostgreSQL', async t => {
   await t.test('state: allow.pause=false closes the action', async () => {
     const granted = await grant({ allow: { limit: true } });
     await refused(() => f.call('room-state', { body: { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: granted.revision } }), 403, 'allow.pause');
+  });
+
+  await t.test('appearance: a paused table keeps its published override; only a new or changed one is refused', async () => {
+    // Admin publicerar en dealer-override för north-b (i paketets branding).
+    const current = await pack();
+    await f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+      lanes: current.lanes, games: current.games, tables: current.tables,
+      branding: { ...current.branding, roomOverrides: { ...(current.branding.roomOverrides ?? {}), [room('north-b')]: { dealer: 'paow' } } } }),
+    [NATIVE_FILMED_PLANNING_MUTATION]);
+    // Ett utkast som bara ändrar north-a och bär north-b:s publicerade override vidare.
+    const draftFor = async (overrides = {}) => {
+      const view = await (await f.call('branding')).json();
+      return { action: 'save-draft', expectedDraftRevision: view.draftRevision, expectedPackageRevision: view.packageRevision,
+        branding: { ...view.branding, roomOverrides: { ...view.branding.roomOverrides, [room('north-a')]: { dealer: 'paow' }, ...overrides } } };
+    };
+    const dealerFor = async (id, dealer = 'paow') => {
+      const read = await assignment();
+      return { roomId: id, dealer, expectedDraftRevision: read.revisions.brandingDraft, expectedPackageRevision: read.revisions.package };
+    };
+    assert.equal((await draftFor()).branding.roomOverrides[room('north-b')].dealer, 'paow');
+    await status(f.call('branding', { body: await draftFor() }), 200, 'north-b live: the same draft');
+    await status(f.call('dealer', { body: await dealerFor(room('north-a')) }), 200, 'north-b live: dealer for north-a');
+    // north-b pausas (läge pending): samma utkast och dealerbytet för north-a går fortfarande igenom.
+    await adminState(room('north-b'), 'pending');
+    await status(f.call('branding', { body: await draftFor() }), 200, `north-b paused by Admin: the same draft`);
+    await status(f.call('dealer', { body: await dealerFor(room('north-a'), 'dragan') }), 200, `north-b paused by Admin: dealer for north-a`);
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('north-b')]: { dealer: 'dragan' } }) }), 422, 'a changed override for the paused table');
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('north-b')]: { dealer: 'paow', background: 'ghost' } }) }), 422, 'a widened override for the paused table');
+    await refused(async () => f.call('dealer', { body: await dealerFor(room('north-b'), 'dragan') }), 422, 'POST dealer for the paused table');
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('south')]: { dealer: 'paow' } }) }), 422, 'another company\'s table');
+    await adminState(room('north-b'), 'live');
   });
 });
 

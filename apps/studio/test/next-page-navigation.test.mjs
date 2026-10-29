@@ -79,7 +79,6 @@ test('actual Studio SSR guard reaches mounted login after 401 and preserves othe
       'next/navigation': navigation,
       './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
       './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
-      './remote-ui.mjs': { remoteUiConfiguration: () => null },
       './studio-native-runtime.mjs': nativeOverrides(status),
       './studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
       './next-page-navigation.mjs': { nextStudioLoginRedirect },
@@ -102,7 +101,6 @@ test('actual native page guard returns every current view after public, standalo
       'next/navigation': navigation,
       './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
       './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
-      './remote-ui.mjs': { remoteUiConfiguration: () => null },
       './studio-native-runtime.mjs': { nativeStudioAdminEnabled: () => true, nativeStudioAdminConfiguration: () => config,
         assertNativeStudioRequest: () => {}, studioNativeRuntime: async () => ({ authorize: async request => {
           authorized.push(request.url); throw Object.assign(new Error('fixture authorization'), {statusCode: 401});
@@ -319,7 +317,6 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       'next/navigation': navigation,
       './http-guard.mjs': {assertLocalPageRequest:()=>assert.fail('no local fallback')},
       './studio-server.mjs': {studioInitialData:()=>assert.fail('no legacy fallback')},
-      './remote-ui.mjs': {remoteUiConfiguration:()=>null},
       './studio-native-runtime.mjs': {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>({authorize:async()=>{throw Object.assign(new Error('fixture authorization'),{statusCode:401});}})},
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},

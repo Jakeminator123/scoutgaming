@@ -19,6 +19,12 @@ import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
 import {createRoomRelease,ROOM_RELEASE_ACTION} from './room-release.mjs';
+import {adminAssignmentView,validateAdminAssignment,PARTNER_ASSIGNMENT_KEY} from './partner-assignment.mjs';
+import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
+
+// Bolag › Tilldelat: Admins `assignment` i paketets branding (ADMIN-FORENKLING 5.3).
+export const ASSIGNMENT_ACTION='publish-assignment';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -192,7 +198,38 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       administrationRevision:administration.revision,...candidate,...merged});
     preparedValues.add(value);return value;
   }
+  // Bara en N1-administratör med konto skriver tilldelningen, med samma policy som
+  // Utseende och rummets publicering (presentations.configure som internal-admin).
+  // Partnersessioner når aldrig Admins endpoint, och partnerns utseendeutkast kan
+  // inte skriva `assignment` (partner-branding-api.mjs tar bara bolagets fält).
+  function assignmentIntent(context) {
+    const body=context.body;
+    exactKeys(body,['action','operatorId','expectedPackageRevision','assignment']);
+    if(!isRoomOperatorId(body.operatorId)||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1)fail(400);
+    const actor=context.actor;
+    const internal=internalPartnerContext({accountId:actor?.accountId,role:actor?.role,scope},{id:body.operatorId,status:'active',scope});
+    if(!allowsWorkspaceResource(internal,'presentations.configure',{scope,operatorId:body.operatorId}))fail(403);
+    if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+    return body;
+  }
+  function assignmentCandidate(operator,current,body) {
+    if(!operator||operator.status!=='active'||!current||current.operatorId!==body.operatorId)fail(404);
+    if(current.revision!==body.expectedPackageRevision)fail(409);
+    const presentation=readPackagePresentation(current);
+    if(!presentation)fail(409); // Tilldelningen bygger på paketets frysta scenmallar.
+    return {presentation,assignment:validateAdminAssignment(body.assignment,presentation)};
+  }
+  async function prepareAssignment(context) {
+    const body=assignmentIntent(context);
+    if(!repository?.transaction||!repository.withTransactionClient)fail(503);
+    const operators=await store(),operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId);
+    const candidate=assignmentCandidate(operator,current,body);
+    const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,expectedPackageRevision:body.expectedPackageRevision,
+      ...candidate,mutations:[...nativeFilmedPlanningMutations(current),{kind:'presentation-package',value:candidate.presentation}]});
+    preparedValues.add(value);return value;
+  }
   async function prepare(context) {
+    if(context.body?.action===ASSIGNMENT_ACTION)return prepareAssignment(context);
     if(context.body?.action===ROOM_RELEASE_ACTION)return release.prepare(context);
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
     if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
@@ -246,6 +283,23 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     return {allowExtended};
   }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
+    if(context.body?.action===ASSIGNMENT_ACTION){
+      const body=assignmentIntent(context),prepared=context.prepared===undefined?await prepare(context):context.prepared;
+      if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
+      return repository.transaction(()=>repository.withTransactionClient(async client=>{
+        const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
+        const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId);
+        // Läses om under bolagets lås: samma revision och samma frysta presentation som förberedelsen.
+        const candidate=assignmentCandidate(operator,current,body);
+        if(canonicalStudioJson(candidate.presentation)!==canonicalStudioJson(prepared.presentation))fail(409);
+        // Bara tilldelningen byts; allt annat i paketet (presentation, val, spelbord) står kvar.
+        // Journalen: package.publish med tilldelningen före och efter (operator-store.mjs).
+        const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
+          expectedRevision:current.revision,lanes:current.lanes,games:current.games,tables:current.tables,
+          branding:{...current.branding,[PARTNER_ASSIGNMENT_KEY]:candidate.assignment}});
+        return {ok:true,operatorId:published.operatorId,packageRevision:published.revision,assignment:adminAssignmentView(published,candidate.presentation)};
+      }),{presentationMutation:prepared.mutations});
+    }
     if(context.body?.action===ROOM_RELEASE_ACTION)return release.publish(context);
     if(context.body?.action==='refresh-dealer-idle'){
       const body=idleRefreshIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
