@@ -28,7 +28,7 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [apps/studio/docs/README](../apps/studio/docs/README.md) | Användarguide för Admin (länkas från Admins hjälp) | Admin-användare | När ett arbetssteg i Admin ändras |
-| [apps/studio/docs/TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) | Ord och begrepp (länkas från Admins hjälp) | Alla | När ett begrepp ändras |
+| [apps/studio/docs/TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) | Bred beskrivning av vad orden betyder; referens, inte tvingande ordlista (länkas från Admins hjälp) | Den som är ny i produkten | När ett ord byter betydelse i produkten |
 | [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md) | Tekniskt kontrakt för lagring, frysning och uppspelning av dealermedia | Den som rör presentation | När kontraktet i koden ändras |
 | [games/](games/README.md) | Blackjack, roulette, klipp och format, Partner-API v1 | Den som rör spel eller integration | När regler, format eller API ändras |
 | [AI/](AI/README.md) och [AI/openclaw/](AI/openclaw/README.md) | Vem anropar vilken modell, OpenClaw-källor, produkttal, Director- och Gateway-drift, dashboard, Astrids labbchatt (avvecklas) | Den som rör tal eller OpenClaw | När Director, Gateway eller modellflöden ändras |
