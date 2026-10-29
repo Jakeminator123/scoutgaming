@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 // Merge guard for the orchestrating session: the AGENTS.md "Leverans och merge" rules as code.
 //
-//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]
+//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]
 //
 // It fetches origin/main, reads the owner from inbox/people.json and the branch policy from
 // tools/repository-policy.json there (trusted main, never the working copy), reads the pull request
 // and its complete file list fresh from GitHub, prints one line per check and merges only when
 // every check passes:
 //   gh pr merge <nr> --merge --match-head-commit <sha>      (never --admin, never --auto)
+// --base <branch> (default main) names the PR's base: main, or an environment branch from the
+// policy (preview). The same checks apply; only the freshness diff runs against origin/<base>, and a
+// PR into an environment branch may also have main as its head (syncing preview with production).
+// An environment branch is never accepted as a PR head.
 // --freeze <SHA> (O02) requires the SHA on origin/main and refuses any file, old or new path,
 // under the runtime prefixes of tools/o02-freeze-check.mjs. A PR that changes .github/workflows/
 // or .github/actions/ also changes the CI that judges it, so it needs --allow-workflow-change.
 // fresh: the ruleset does not require an up-to-date branch, so green CI may have tested the merge
-// into an older main. The tested base is the first parent of the merge commit the CI run checked
+// into an older base. The tested base is the first parent of the merge commit the CI run checked
 // out (named in the log of the run's changes job, parents from the commits API). It passes when that
-// base is origin/main, or when main's changes since then share no file and no package root
+// base is origin/<base>, or when the base's changes since then share no file and no package root
 // (PACKAGE_ROOTS) with the PR; otherwise, or when the base cannot be determined, it refuses.
 // review: the PR body needs the author's "Buggranskning: <verktyg/modell>, <nivå>, <fynd>" line.
 // --dry-run prints the decisions and merges nothing.
@@ -23,9 +27,10 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CI_WORKFLOW, REPO, touchesRuntime } from './o02-freeze-check.mjs';
-import { featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
+import { environmentBranches, featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const MAIN_BRANCH = 'main';
 export const REQUIRED_CHECK = 'CI';
 export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles,body';
 // Other people's branches stay theirs even when the PR was opened from Jakob's account. The policy
@@ -40,17 +45,21 @@ export const PACKAGE_ROOTS = Object.freeze(['services/game/', 'packages/<name>/'
 const fullSha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 export function parseArgs(args) {
-  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]';
-  const options = { number: null, head: null, freeze: null, allowWorkflowChange: false, dryRun: false };
+  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]';
+  const options = { number: null, head: null, base: MAIN_BRANCH, freeze: null, allowWorkflowChange: false, dryRun: false };
+  let baseGiven = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dry-run' && !options.dryRun) options.dryRun = true;
     else if (arg === '--allow-workflow-change' && !options.allowWorkflowChange) options.allowWorkflowChange = true;
     else if ((arg === '--head' || arg === '--freeze') && options[arg.slice(2)] === null && fullSha(args[i + 1])) options[arg.slice(2)] = args[++i];
+    else if (arg === '--base' && !baseGiven && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(args[i + 1] ?? '')) { options.base = args[++i]; baseGiven = true; }
     else if (/^[1-9][0-9]{0,6}$/.test(arg) && options.number === null) options.number = Number(arg);
     else throw Error(usage);
   }
   if (options.number === null || options.head === null) throw Error(usage);
+  // The O02 freeze is a main-only rule; it has no meaning for an environment branch.
+  if (options.freeze && options.base !== MAIN_BRANCH) throw Error(usage);
   return options;
 }
 
@@ -109,20 +118,21 @@ export function packageRoot(path) {
 }
 
 // freshness: { base, main, behind, files } from readFreshness, or { reason } when it could not be read.
-export function freshnessVerdict(freshness, paths, complete) {
-  const advice = 'merga origin/main in i branchen och låt CI köra om';
+// `main` is the current tip of the PR's base branch (origin/<name>), named by `name`.
+export function freshnessVerdict(freshness, paths, complete, name = MAIN_BRANCH) {
+  const advice = `merga origin/${name} in i branchen och låt CI köra om`;
   if (!fullSha(freshness?.base) || !fullSha(freshness?.main)) return { ok: false, reason: `CI-basen kunde inte avgöras: ${freshness?.reason ?? 'okänd orsak'}` };
-  if (freshness.base === freshness.main) return { ok: true, reason: `CI mot aktuell main ${freshness.main.slice(0, 12)}` };
+  if (freshness.base === freshness.main) return { ok: true, reason: `CI mot aktuell ${name} ${freshness.main.slice(0, 12)}` };
   if (!complete) return { ok: false, reason: 'kan inte prövas utan fullständig fillista' };
-  if (!Array.isArray(freshness.files) || !Number.isSafeInteger(freshness.behind)) return { ok: false, reason: `ändringarna på main sedan ${freshness.base.slice(0, 12)} kunde inte läsas` };
-  const behind = `CI mot main ${freshness.base.slice(0, 12)}, ${freshness.behind} commits bakåt`;
+  if (!Array.isArray(freshness.files) || !Number.isSafeInteger(freshness.behind)) return { ok: false, reason: `ändringarna på ${name} sedan ${freshness.base.slice(0, 12)} kunde inte läsas` };
+  const behind = `CI mot ${name} ${freshness.base.slice(0, 12)}, ${freshness.behind} commits bakåt`;
   const mainFiles = new Set(freshness.files);
   const overlap = [...new Set(paths)].filter(path => mainFiles.has(path));
-  if (overlap.length) return { ok: false, reason: `${behind}; main har sedan dess ändrat ${overlap.length} av PR:ens filer, t.ex. ${overlap[0]}; ${advice}` };
+  if (overlap.length) return { ok: false, reason: `${behind}; ${name} har sedan dess ändrat ${overlap.length} av PR:ens filer, t.ex. ${overlap[0]}; ${advice}` };
   const mainRoots = new Set(freshness.files.map(packageRoot).filter(Boolean));
   const shared = [...new Set(paths.map(packageRoot))].filter(root => root && mainRoots.has(root));
-  if (shared.length) return { ok: false, reason: `${behind}; main och PR:en ändrar båda i ${shared.join(', ')}; ${advice}` };
-  return { ok: true, reason: `${behind}, ingen överlappning (${freshness.files.length} filer ändrade på main sedan dess)` };
+  if (shared.length) return { ok: false, reason: `${behind}; ${name} och PR:en ändrar båda i ${shared.join(', ')}; ${advice}` };
+  return { ok: true, reason: `${behind}, ingen överlappning (${freshness.files.length} filer ändrade på ${name} sedan dess)` };
 }
 
 // The PR author's own bug review (AGENTS.md "Leverans och merge"): one line in the PR body that
@@ -158,23 +168,29 @@ export function securityVerdict(result) {
   return errors.length ? { ok: false, reason: `${errors.join(', ')} (${summary})` } : { ok: true, reason: summary };
 }
 
-export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = false, allowWorkflowChange = false,
+export function evaluateMerge({ pr, files, head, base = MAIN_BRANCH, environments = [], freeze = null, freezeOnMain = false, allowWorkflowChange = false,
   jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false, freshness = null }) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), reason });
   check('pr', pr?.number !== undefined, pr ? `#${pr.number}` : 'PR kunde inte läsas');
   check('state', pr?.state === 'OPEN', `state ${pr?.state ?? 'okänd'}`);
   check('draft', pr?.isDraft === false, pr?.isDraft === false ? 'inte utkast' : 'utkast eller okänt');
-  check('base', pr?.baseRefName === 'main', `bas ${pr?.baseRefName ?? 'okänd'}`);
+  // The base is main, or an environment branch the policy on origin/main names (preview).
+  const knownBase = base === MAIN_BRANCH || (environments ?? []).includes(base);
+  check('base', knownBase && pr?.baseRefName === base, !knownBase ? `${base} är varken ${MAIN_BRANCH} eller en miljöbranch (${(environments ?? []).join(', ') || 'inga'})`
+    : pr?.baseRefName === base ? `bas ${base}` : `bas ${pr?.baseRefName ?? 'okänd'} är inte ${base}`);
   check('source', pr?.isCrossRepository === false, pr?.isCrossRepository === false ? 'samma repo' : 'annat källrepo eller okänt');
   check('head', fullSha(head) && pr?.headRefOid === head,
     pr?.headRefOid === head ? `head ${head}` : `head ${pr?.headRefOid ?? 'okänd'} är inte ${head}`);
   const branch = String(pr?.headRefName ?? '');
   // Jakob's delivery branches only (policy featureBranches), and never someone else's on top.
+  // Into an environment branch, main itself is also a valid head; an environment branch never is.
   const foreign = foreignPatterns.find(pattern => matchesGlob(branch, pattern));
   const feature = (featureBranches ?? []).some(pattern => matchesBranchPattern(branch, pattern));
-  check('branch', branch && feature && !foreign, foreign ? `${branch} matchar ${foreign} (någon annans branch)`
-    : feature ? `branch ${branch}` : `${branch || 'okänd branch'} matchar inte ${(featureBranches ?? []).join(', ') || 'featureBranches'}`);
+  const mainIntoEnvironment = knownBase && base !== MAIN_BRANCH && branch === MAIN_BRANCH;
+  check('branch', branch && (feature || mainIntoEnvironment) && !foreign, foreign ? `${branch} matchar ${foreign} (någon annans branch)`
+    : feature ? `branch ${branch}` : mainIntoEnvironment ? `branch ${branch} in i miljöbranchen ${base}`
+    : `${branch || 'okänd branch'} matchar inte ${(featureBranches ?? []).join(', ') || 'featureBranches'}`);
   const login = pr?.author?.login;
   check('author', typeof jakobLogin === 'string' && jakobLogin !== '' && login === jakobLogin,
     `författare ${login ?? 'okänd'}${login === jakobLogin ? '' : `, inte ${jakobLogin ?? 'okänd ägare'}`}`);
@@ -188,7 +204,7 @@ export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = f
   check('workflow', complete && (!workflow.length || allowWorkflowChange), !complete ? 'kan inte prövas utan fullständig fillista'
     : !workflow.length ? 'ingen CI-ändring'
     : allowWorkflowChange ? `${workflow.length} CI-filer, tillåtet med --allow-workflow-change` : `${workflow.length} CI-filer, t.ex. ${workflow[0]}; kräver --allow-workflow-change`);
-  const fresh = freshnessVerdict(freshness, paths ?? [], complete);
+  const fresh = freshnessVerdict(freshness, paths ?? [], complete, knownBase ? base : MAIN_BRANCH);
   check('fresh', fresh.ok, fresh.reason);
   const review = reviewVerdict(pr?.body);
   check('review', review.ok, review.reason);
@@ -260,18 +276,19 @@ export function readCiBase(gh, { number, head, rollup }) {
   return { base: parents[0], merge, runId };
 }
 
-// What main changed since the tested base, from freshly fetched origin/main.
-export function readFreshness(gh, git, { number, head, rollup }) {
+// What the base branch changed since the tested base, from freshly fetched origin/<base> (main by default).
+export function readFreshness(gh, git, { number, head, rollup, base: name = MAIN_BRANCH }) {
   const ci = readCiBase(gh, { number, head, rollup });
   if (!ci.base) return ci;
-  const rev = git(['rev-parse', 'origin/main']);
+  const ref = `origin/${name}`;
+  const rev = git(['rev-parse', ref]);
   const main = !rev.error && rev.status === 0 ? String(rev.stdout).trim() : null;
-  if (!fullSha(main)) return { reason: 'origin/main kunde inte läsas' };
+  if (!fullSha(main)) return { reason: `${ref} kunde inte läsas` };
   if (ci.base === main) return { base: ci.base, main, behind: 0, files: [] };
-  if (git(['merge-base', '--is-ancestor', ci.base, 'origin/main']).status !== 0) return { reason: `CI-basen ${ci.base.slice(0, 12)} ingår inte i origin/main` };
+  if (git(['merge-base', '--is-ancestor', ci.base, ref]).status !== 0) return { reason: `CI-basen ${ci.base.slice(0, 12)} ingår inte i ${ref}` };
   // -z: raw path bytes, never core.quotepath's quoted "caf\303\251" form that matches no PR path.
-  const diff = git(['diff', '--name-only', '--no-renames', '-z', ci.base, 'origin/main']);
-  const count = git(['rev-list', '--count', `${ci.base}..origin/main`]);
+  const diff = git(['diff', '--name-only', '--no-renames', '-z', ci.base, ref]);
+  const count = git(['rev-list', '--count', `${ci.base}..${ref}`]);
   if (diff.error || diff.status !== 0 || count.error || count.status !== 0) return { reason: `git diff mot CI-basen ${ci.base.slice(0, 12)} misslyckades` };
   return { base: ci.base, main, behind: Number(String(count.stdout).trim()), files: String(diff.stdout).split('\0').filter(Boolean) };
 }
@@ -287,8 +304,12 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   log = console.log } = {}) {
   let options;
   try { options = parseArgs(args); } catch (error) { log(error.message); return 2; }
-  const fetched = git(['fetch', '-q', 'origin', 'main']);
-  if (fetched.error || fetched.status !== 0) throw Error('git fetch origin main misslyckades; ingen merge utan färsk main');
+  // Owner and policy always come from main; another base branch is fetched too, with an explicit
+  // refspec so origin/<base> is updated even in a clone whose fetch mapping covers only main.
+  const refs = options.base === MAIN_BRANCH ? [MAIN_BRANCH] : [MAIN_BRANCH, `+refs/heads/${options.base}:refs/remotes/origin/${options.base}`];
+  const names = options.base === MAIN_BRANCH ? [MAIN_BRANCH] : [MAIN_BRANCH, options.base];
+  const fetched = git(['fetch', '-q', 'origin', ...refs]);
+  if (fetched.error || fetched.status !== 0) throw Error(`git fetch origin ${names.join(' ')} misslyckades; ingen merge utan färsk ${names.join(' och ')}`);
   const people = readTrustedJson(git, 'inbox/people.json');
   const policy = readTrustedJson(git, 'tools/repository-policy.json');
   const jakobLogin = people?.jakob?.github;
@@ -297,10 +318,10 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   let pr = null;
   if (!view.error && view.status === 0) { try { pr = JSON.parse(view.stdout); } catch { pr = null; } }
   const files = pr ? readPrFiles(gh, options.number) : null;
-  const freshness = pr ? readFreshness(gh, git, { number: options.number, head: options.head, rollup: pr.statusCheckRollup }) : null;
+  const freshness = pr ? readFreshness(gh, git, { number: options.number, head: options.head, rollup: pr.statusCheckRollup, base: options.base }) : null;
   const sec = pr ? readSecurity(security, { sleep, log }) : { result: null, retried: false };
-  const verdict = evaluateMerge({ pr, files, head: options.head, freeze: options.freeze, freezeOnMain,
-    allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
+  const verdict = evaluateMerge({ pr, files, head: options.head, base: options.base, environments: environmentBranches(policy),
+    freeze: options.freeze, freezeOnMain, allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
     foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried, freshness });
   for (const entry of verdict.checks) log(`${entry.ok ? 'ok ' : 'nej'} ${entry.name}: ${entry.reason}`);
   if (!verdict.ok) { log(`nekad: PR #${options.number} mergas inte`); return 1; }

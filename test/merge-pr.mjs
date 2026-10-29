@@ -5,7 +5,7 @@ import {
   BASELINE_FOREIGN_BRANCHES, PR_FIELDS, REVIEW_MISSING, changedPaths, evaluateMerge, foreignBranchPatterns, freshnessVerdict, main,
   matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
-import { featurePatterns } from '../tools/check-push-target.mjs';
+import { environmentBranches, featurePatterns } from '../tools/check-push-target.mjs';
 
 // tools/merge-pr.mjs is the orchestrator's only merge path. Every refusal rule has a case
 // here, and gh/git/security-status are injected so the test never touches the network.
@@ -34,8 +34,8 @@ const goodPr = (overrides = {}) => ({
   ...overrides,
 });
 const decide = (pr, extra = {}) => evaluateMerge({ pr, files: goodFiles, head: HEAD, jakobLogin: 'Jakeminator123',
-  featureBranches: featurePatterns(policy), foreignPatterns: foreignBranchPatterns({ policy, people }), security: cleanSecurity,
-  freshness: currentMain, ...extra });
+  featureBranches: featurePatterns(policy), environments: environmentBranches(policy), foreignPatterns: foreignBranchPatterns({ policy, people }),
+  security: cleanSecurity, freshness: currentMain, ...extra });
 const failed = verdict => verdict.checks.filter(entry => !entry.ok).map(entry => entry.name);
 const withFiles = (files, extra = {}) => decide(goodPr({ changedFiles: files.length }), { files, ...extra });
 
@@ -102,6 +102,35 @@ test('only Jakob\'s delivery branches pass, and other people\'s branches never d
   assert.equal(matchesGlob('kevin.x', 'kevin*'), true);
   assert.equal(matchesGlob('xkevin', 'kevin*'), false);
   assert.equal(matchesGlob('codex/kevinx', 'codex/kevin-*'), false);
+});
+
+test('--base preview merges into the environment branch with the same gate, and preview is never a head', () => {
+  assert.deepEqual(environmentBranches(policy), ['preview']);
+  const intoPreview = (overrides = {}) => goodPr({ baseRefName: 'preview', ...overrides });
+  // The base must be named explicitly: a PR into preview is refused by the default main gate and vice versa.
+  assert.deepEqual(failed(decide(intoPreview())), ['base']);
+  assert.match(decide(intoPreview()).checks.find(entry => entry.name === 'base').reason, /^bas preview är inte main$/);
+  assert.deepEqual(failed(decide(goodPr(), { base: 'preview' })), ['base']);
+  const verdict = decide(intoPreview(), { base: 'preview' });
+  assert.equal(verdict.ok, true, JSON.stringify(verdict.checks));
+  assert.ok(verdict.checks.some(entry => entry.name === 'base' && entry.reason === 'bas preview'));
+  assert.ok(verdict.checks.some(entry => entry.name === 'fresh' && entry.reason === `CI mot aktuell preview ${MAIN.slice(0, 12)}`));
+  // Only policy environment branches are bases; unknown names fail closed even when the PR agrees.
+  assert.deepEqual(failed(decide(goodPr({ baseRefName: 'kevin' }), { base: 'kevin' })), ['base']);
+  assert.match(decide(goodPr({ baseRefName: 'kevin' }), { base: 'kevin' }).checks.find(entry => entry.name === 'base').reason, /varken main eller en miljöbranch \(preview\)/);
+  assert.deepEqual(failed(decide(intoPreview(), { base: 'preview', environments: [] })), ['base']);
+  // main may be merged into preview (sync), never into main; preview is never a head anywhere.
+  assert.equal(decide(intoPreview({ headRefName: 'main' }), { base: 'preview' }).ok, true);
+  assert.deepEqual(failed(decide(goodPr({ headRefName: 'main' }))), ['branch']);
+  assert.deepEqual(failed(decide(intoPreview({ headRefName: 'preview' }), { base: 'preview' })), ['branch']);
+  assert.deepEqual(failed(decide(goodPr({ headRefName: 'preview' }))), ['branch']);
+  for (const branch of ['kevin', 'kevin/port', 'codex/kevin-fix', 'john', 'roulette-on-kevin-staging']) {
+    assert.deepEqual(failed(decide(intoPreview({ headRefName: branch }), { base: 'preview' })), ['branch'], branch);
+  }
+  // The freshness diff names the base branch.
+  const stale = freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: 2, files: ['docs/x.md'] }, ['docs/x.md'], true, 'preview');
+  assert.equal(stale.ok, false);
+  assert.match(stale.reason, /^CI mot preview ffffffffffff, 2 commits bakåt; preview har sedan dess ändrat 1 av PR:ens filer, t\.ex\. docs\/x\.md; merga origin\/preview in i branchen/);
 });
 
 test('a PR that changes the CI that judges it needs --allow-workflow-change', () => {
@@ -222,6 +251,17 @@ test('readFreshness diffs origin/main against the CI base', () => {
   assert.match(readFreshness(ciGh().gh, git({ ancestor: false }), args).reason, /ingår inte i origin\/main/);
   assert.match(readFreshness(ciGh({ fail: 'log' }).gh, git(), args).reason, /loggen/);
   assert.match(readFreshness(ciGh().gh, git({ diffStatus: 128 }), args).reason, /git diff mot CI-basen/);
+  // With --base preview every ref is origin/preview; main is not consulted for the diff.
+  const previewGit = argv => {
+    assert.ok(!argv.includes('origin/main') && !argv.some(arg => String(arg).endsWith('..origin/main')), argv.join(' '));
+    if (argv[0] === 'rev-parse') { assert.deepEqual(argv, ['rev-parse', 'origin/preview']); return { status: 0, stdout: `${MAIN}\n` }; }
+    if (argv[0] === 'merge-base') { assert.deepEqual(argv, ['merge-base', '--is-ancestor', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: '' }; }
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: 'docs/a.md\0' }; }
+    if (argv[0] === 'rev-list') { assert.deepEqual(argv, ['rev-list', '--count', `${OLD_MAIN}..origin/preview`]); return { status: 0, stdout: '1\n' }; }
+    return { status: 1, stdout: '' };
+  };
+  assert.deepEqual(readFreshness(ciGh().gh, previewGit, { ...args, base: 'preview' }), { base: OLD_MAIN, main: MAIN, behind: 1, files: ['docs/a.md'] });
+  assert.match(readFreshness(ciGh().gh, () => ({ status: 128, stdout: '' }), { ...args, base: 'preview' }).reason, /origin\/preview kunde inte läsas/);
 });
 
 test('review requires a non-empty Buggranskning line in the PR body', () => {
@@ -253,11 +293,16 @@ test('security-status refuses failures and reports only safe counts', () => {
 });
 
 test('arguments require a PR number and a full head SHA', () => {
-  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, freeze: null, allowWorkflowChange: false, dryRun: false });
+  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, base: 'main', freeze: null, allowWorkflowChange: false, dryRun: false });
   assert.deepEqual(parseArgs(['--dry-run', '--freeze', FREEZE, '--head', HEAD, '7', '--allow-workflow-change']),
-    { number: 7, head: HEAD, freeze: FREEZE, allowWorkflowChange: true, dryRun: true });
+    { number: 7, head: HEAD, base: 'main', freeze: FREEZE, allowWorkflowChange: true, dryRun: true });
+  assert.deepEqual(parseArgs(['42', '--base', 'preview', '--head', HEAD]), { number: 42, head: HEAD, base: 'preview', freeze: null, allowWorkflowChange: false, dryRun: false });
+  assert.equal(parseArgs(['42', '--base', 'main', '--head', HEAD]).base, 'main');
   for (const args of [[], ['42'], ['42', '--head', HEAD.slice(0, 12)], ['42', '--head', HEAD.toUpperCase()], ['--head', HEAD],
-    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze'], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD]]) {
+    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze'], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD],
+    // --base needs a plain branch name, once, and the O02 freeze is main-only.
+    ['42', '--head', HEAD, '--base'], ['42', '--head', HEAD, '--base', '--dry-run'], ['42', '--head', HEAD, '--base', 'a', '--base', 'b'],
+    ['42', '--head', HEAD, '--base', '../x'], ['42', '--head', HEAD, '--base', 'preview', '--freeze', FREEZE]]) {
     assert.throws(() => parseArgs(args), /Usage/, args.join(' '));
   }
 });
@@ -332,6 +377,42 @@ test('main fetches main, then merges with gh, the exact head and no admin or aut
   const unreviewed = harness({ pr: goodPr({ body: 'Inget här' }) });
   assert.equal(unreviewed.run(['42', '--head', HEAD]), 1);
   assert.ok(unreviewed.lines.includes(`nej review: ${REVIEW_MISSING}`));
+});
+
+test('main with --base preview fetches preview too, diffs against origin/preview and merges the same way', () => {
+  const merges = h => h.calls.gh.filter(argv => argv[1] === 'merge').length;
+  const h = harness({ pr: goodPr({ baseRefName: 'preview' }) });
+  assert.equal(h.run(['42', '--head', HEAD, '--base', 'preview']), 0);
+  assert.deepEqual(h.calls.git, [['fetch', '-q', 'origin', 'main', '+refs/heads/preview:refs/remotes/origin/preview'], ['show', 'origin/main:inbox/people.json'],
+    ['show', 'origin/main:tools/repository-policy.json'], ['rev-parse', 'origin/preview']],
+    'owner and policy still come from main; origin/preview is updated explicitly, even with a main-only fetch mapping');
+  assert.ok(h.lines.includes('ok  base: bas preview'), h.lines.join('\n'));
+  assert.ok(h.lines.includes(`ok  fresh: CI mot aktuell preview ${OLD_MAIN.slice(0, 12)}`), h.lines.join('\n'));
+  assert.deepEqual(h.calls.gh.at(-1), ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  // The policy on origin/main decides which environment branches exist: without the field, preview is refused.
+  const unknown = harness({ pr: goodPr({ baseRefName: 'preview' }), trusted: { 'inbox/people.json': people, 'tools/repository-policy.json': { ...policy, environmentBranches: undefined } } });
+  assert.equal(unknown.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(unknown.lines.some(line => /^nej base: preview är varken main eller en miljöbranch \(inga\)/.test(line)), unknown.lines.join('\n'));
+  assert.equal(merges(unknown), 0);
+  // A PR into preview is not merged by the default main gate, and a main PR not by --base preview.
+  const wrongGate = harness({ pr: goodPr({ baseRefName: 'preview' }) });
+  assert.equal(wrongGate.run(['42', '--head', HEAD]), 1);
+  assert.ok(wrongGate.lines.includes('nej base: bas preview är inte main'));
+  assert.equal(merges(wrongGate), 0);
+  const mainPr = harness();
+  assert.equal(mainPr.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(mainPr.lines.includes('nej base: bas main är inte preview'));
+  assert.equal(merges(mainPr), 0);
+  // Syncing main into preview is allowed; a stale preview (changed one of the PR's files) is refused like main.
+  const sync = harness({ pr: goodPr({ baseRefName: 'preview', headRefName: 'main' }) });
+  assert.equal(sync.run(['42', '--head', HEAD, '--base', 'preview', '--dry-run']), 0);
+  assert.ok(sync.lines.includes('ok  branch: branch main in i miljöbranchen preview'));
+  assert.equal(merges(sync), 0);
+  const stale = harness({ pr: goodPr({ baseRefName: 'preview' }), testedMain: MAIN });
+  assert.equal(stale.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(stale.lines.some(line => /^nej fresh: CI mot preview ffffffffffff, 2 commits bakåt; preview har sedan dess ändrat 1 av PR:ens filer/.test(line)), stale.lines.join('\n'));
+  assert.equal(merges(stale), 0);
+  assert.throws(() => harness({ fetch: { status: 128, stdout: '' } }).run(['42', '--head', HEAD, '--base', 'preview']), /fetch origin main preview/);
 });
 
 test('main refuses without merging, and dry-run never merges', () => {

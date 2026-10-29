@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { redactSecrets, validatePush } from '../tools/check-push-target.mjs';
+import { environmentBranches, isEnvironmentBranch, redactSecrets, validatePush } from '../tools/check-push-target.mjs';
 import { deliver, parseDeliveryArgs, planGithubDelivery } from '../tools/push-github-work.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
@@ -31,6 +31,28 @@ test('feature branches can be created and fast-forwarded', () => {
   const https = `https://github.com/${policy.repository}`;
   assert.doesNotThrow(() => validatePush(https, feature('jakob/example', sha('c'), sha('0')), policy, () => true));
   assert.doesNotThrow(() => validatePush(`https://github.com/${policy.repository}.git`, `${update}\n${feature('jakob/claude-example')}`, policy, () => true));
+});
+test('the preview environment branch can be fast-forwarded from the policy but never deleted or rewritten', () => {
+  assert.deepEqual(policy.environmentBranches, ['preview']);
+  assert.deepEqual(environmentBranches(policy), ['preview']);
+  assert.equal(isEnvironmentBranch('preview', policy), true);
+  assert.equal(isEnvironmentBranch('main', policy), false);
+  assert.equal(isEnvironmentBranch('jakob/preview', policy), false);
+  const preview = (local = sha('c'), remote = sha('d')) => `refs/heads/jakob/x ${local} refs/heads/preview ${remote}`;
+  assert.doesNotThrow(() => validatePush(url, preview(sha('c'), sha('0')), policy, () => { throw new Error('new branch'); }), 'created from a feature branch');
+  assert.doesNotThrow(() => validatePush(url, `HEAD ${sha('a')} refs/heads/preview ${sha('b')}`, policy, () => true), 'fast-forward from main');
+  assert.doesNotThrow(() => validatePush(url, preview(), policy, () => true));
+  assert.throws(() => validatePush(url, preview(), policy, () => false), /force push/);
+  assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/heads/preview ${sha('d')}`, policy, () => true, () => sha('e')), /deletion is not allowed for environment branch preview/);
+  assert.throws(() => validatePush(url, feature('previews', sha('c'), sha('0')), policy), /feature branches/);
+  assert.throws(() => validatePush(url, feature('preview/x', sha('c'), sha('0')), policy), /feature branches/);
+  // The refusal names the environment branches without widening feature-branch matching.
+  assert.throws(() => validatePush(url, feature('kevin', sha('c'), sha('0')), policy), /environment branches \(preview\)/);
+  // A policy without the field is still valid; a malformed one is refused before any ref is judged.
+  assert.doesNotThrow(() => validatePush(url, update, { ...policy, environmentBranches: undefined }, () => true));
+  for (const bad of [['main'], ['jakob/preview'], ['kevin'], ['kevin-staging'], ['jakob-gren'], ['pre*'], [''], ['preview', 42], 'preview']) {
+    assert.throws(() => validatePush(url, update, { ...policy, environmentBranches: bad }, () => true), /environmentBranches/, JSON.stringify(bad));
+  }
 });
 test('merged feature branches can be deleted; main, protected and unmerged branches cannot', () => {
   const main = () => sha('e');
@@ -84,11 +106,15 @@ test('push rejects tags, other branches and other repositories', () => {
   ]) assert.equal(redactSecrets(text).includes('example-token') || redactSecrets(text).includes('user@'), false, text);
 });
 test('delivery plans a feature branch and an explicit main emergency path', () => {
-  assert.deepEqual(parseDeliveryArgs(['--check']), { check: true, adminMain: false });
-  assert.throws(() => parseDeliveryArgs(['--force']), /Usage/);
+  assert.deepEqual(parseDeliveryArgs(['--check']), { check: true, adminMain: false, environment: null });
+  assert.deepEqual(parseDeliveryArgs(['--environment', 'preview', '--check']), { check: true, adminMain: false, environment: 'preview' });
+  for (const args of [['--force'], ['--environment'], ['--environment', '--check'], ['--environment', 'a', '--environment', 'b'], ['--admin-main', '--environment', 'preview']]) {
+    assert.throws(() => parseDeliveryArgs(args), /Usage/, args.join(' '));
+  }
   const plan = planGithubDelivery({ branch: 'jakob/claude-a03-example', policy });
   assert.equal(plan.ref, 'refs/heads/jakob/claude-a03-example');
   assert.equal(plan.emergency, false);
+  assert.equal(plan.environment, false);
   assert.equal(plan.pullRequest, 'gh pr create --repo Jakeminator123/scoutgaming --base main --head jakob/claude-a03-example');
   assert.equal(planGithubDelivery({ branch: 'main', adminMain: true, policy }).emergency, true);
   assert.equal(planGithubDelivery({ branch: 'main', adminMain: true, policy }).pullRequest, null);
@@ -96,6 +122,55 @@ test('delivery plans a feature branch and an explicit main emergency path', () =
   assert.throws(() => planGithubDelivery({ branch: 'kevin', policy }), /not a delivery branch/);
   assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-a03-example', adminMain: true, policy }), /only pushes main/);
   assert.throws(() => planGithubDelivery({ branch: 'jakob/example', policy: { ...policy, featureBranches: [] } }), /featureBranches/);
+});
+test('delivery to the preview environment branch is a fast-forward from main, a feature branch or preview itself, never a PR', () => {
+  const expected = source => ({ branch: 'preview', source, ref: 'refs/heads/preview', emergency: false, environment: true, pullRequest: null });
+  assert.deepEqual(planGithubDelivery({ branch: 'preview', policy }), expected('preview'));
+  assert.deepEqual(planGithubDelivery({ branch: 'preview', environment: 'preview', policy }), expected('preview'));
+  assert.deepEqual(planGithubDelivery({ branch: 'main', environment: 'preview', policy }), expected('main'));
+  assert.deepEqual(planGithubDelivery({ branch: 'jakob/claude-x', environment: 'preview', policy }), expected('jakob/claude-x'));
+  for (const branch of ['kevin', 'kevin/port', 'codex/kevin-x', 'john', 'jakob-export', '']) {
+    assert.throws(() => planGithubDelivery({ branch, environment: 'preview', policy }), /may be pushed to preview/, branch || '(detached)');
+  }
+  assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-x', environment: 'kevin', policy }), /not an environment branch/);
+  assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-x', environment: 'main', policy }), /not an environment branch/);
+  assert.throws(() => planGithubDelivery({ branch: 'preview', policy: { ...policy, environmentBranches: [] } }), /not a delivery branch/);
+  assert.throws(() => planGithubDelivery({ branch: 'preview', adminMain: true, policy }), /only pushes main/);
+  const local = sha('c');
+  const { calls, git } = fakeGit({
+    'branch --show-current': 'jakob/claude-x',
+    'remote get-url --push --all origin': 'https://github.com/Jakeminator123/scoutgaming',
+    'rev-parse HEAD': local,
+    [`merge-base --is-ancestor ${sha('d')} ${local}`]: '',
+    [`push origin ${local}:refs/heads/preview`]: '',
+    'fetch --no-tags https://github.com/Jakeminator123/scoutgaming refs/heads/preview:refs/remotes/origin/preview': '',
+    'rev-parse refs/remotes/origin/preview': local,
+    'config --get-all remote.origin.fetch': '+refs/heads/main:refs/remotes/origin/main',
+    'remote set-branches --add origin preview': '',
+  });
+  let reads = 0;
+  const wrapped = (...args) => {
+    if (args[0] === 'ls-remote') return ++reads === 1 ? `${sha('d')}\trefs/heads/preview` : local;
+    return git(...args);
+  };
+  const logs = [];
+  const plan = deliver({ args: ['--environment', 'preview'], policy, git: wrapped, log: line => logs.push(line) });
+  assert.equal(plan.environment, true);
+  assert.deepEqual(JSON.parse(logs[0]), { branch: 'preview', source: 'jakob/claude-x', local, remote: sha('d'), gitlab: 'paused', emergency: false, environment: true, pullRequest: null });
+  assert.ok(calls.includes(`push origin ${local}:refs/heads/preview`));
+  assert.ok(calls.includes('remote set-branches --add origin preview'), 'preview becomes fetchable');
+  assert.equal(calls.some(call => call.startsWith('branch --set-upstream-to')), false, 'the feature branch keeps its own upstream');
+  assert.equal(logs.some(line => line.includes('gh pr create')), false);
+  assert.ok(logs.includes(`GitHub verified: ${local}`));
+  const diverged = fakeGit({
+    'branch --show-current': 'main',
+    'remote get-url --push --all origin': 'https://github.com/Jakeminator123/scoutgaming',
+    'rev-parse HEAD': local,
+    'ls-remote --heads https://github.com/Jakeminator123/scoutgaming refs/heads/preview': sha('b'),
+    [`merge-base --is-ancestor ${sha('b')} ${local}`]: new Error('not ancestor'),
+  });
+  assert.throws(() => deliver({ args: ['--environment', 'preview'], policy, git: diverged.git, log() {} }), /merge origin\/preview into main first, or open a pull request against preview.*No force push/);
+  assert.equal(diverged.calls.some(call => call.startsWith('push ')), false);
 });
 
 function fakeGit(responses) {

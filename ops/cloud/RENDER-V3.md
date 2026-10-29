@@ -16,7 +16,7 @@ Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i worksp
 
 Imagen installerar bara `services/game` och `services/astrid-gpu-worker/gateway` och kopierar en uttrycklig fillista, se [CONTAINER-CONTEXT](CONTAINER-CONTEXT.md). Build-filter om Render bara ska bygga vid relevanta ändringar: `ops/cloud/**`, `ops/neon-game/**`, `ops/neon-studio/**`, `packages/**`, `services/game/**`, `services/astrid-gpu-worker/gateway/**`, `tools/media-layout.mjs`, `tools/runtime-media-catalog.mjs`, `tools/media-blob-index-reader.mjs`, `.dockerignore`. `ops/cloud/test/game-image.test.mjs` håller listan i takt med spelserverns importer.
 
-Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Den behålls efter O03 och orkestratorn deployar dit pinnat, bara SHA:er från `main` eller `jakob/*`, aldrig `kevin*`. Preview är inget obligatoriskt steg före produktion. Jakob startar och stoppar den.
+Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Den behålls efter O03. Sedan 2026-10-29 är dess branch `preview` (bytt i Render-panelen, MCP kan inte ändra branch): det som pushas till `preview` (bara från `main` eller `jakob/*`, aldrig `kevin*`, se [START-HERE](../../START-HERE.md#preview)) är det som deployas, med `trigger_deploy` eller panelen om auto-deploy är av. Preview är inget obligatoriskt steg före produktion. Jakob startar och stoppar den.
 
 ## Miljövariabler
 

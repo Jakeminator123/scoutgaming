@@ -3,38 +3,59 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { featurePatterns, matchesBranchPattern, redactSecrets, repositoryFromRemote } from './check-push-target.mjs';
+import { environmentBranches, featurePatterns, matchesBranchPattern, redactSecrets, repositoryFromRemote } from './check-push-target.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const USAGE = 'Usage: node tools/push-github-work.mjs [--check] [--admin-main] [--environment <branch>]';
 
 export function loadPolicy(read = readFileSync) {
   return JSON.parse(read(new URL('./repository-policy.json', import.meta.url), 'utf8'));
 }
 
 export function parseDeliveryArgs(args) {
-  if (args.some(arg => arg !== '--check' && arg !== '--admin-main')) {
-    throw new Error('Usage: node tools/push-github-work.mjs [--check] [--admin-main]');
+  const options = { check: false, adminMain: false, environment: null };
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--check') options.check = true;
+    else if (args[i] === '--admin-main') options.adminMain = true;
+    else if (args[i] === '--environment' && options.environment === null && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(args[i + 1] ?? '')) options.environment = args[++i];
+    else throw new Error(USAGE);
   }
-  return { check: args.includes('--check'), adminMain: args.includes('--admin-main') };
+  if (options.adminMain && options.environment) throw new Error(USAGE);
+  return options;
 }
 
-export function planGithubDelivery({ branch, adminMain = false, policy }) {
+// Three plans: a feature branch to its own ref plus the PR command; main only as the admin emergency;
+// an environment branch (preview) fast-forwarded from itself, or from main or a feature branch with
+// --environment. Environment pushes open no PR: the branch is the environment, not a delivery.
+export function planGithubDelivery({ branch, adminMain = false, environment = null, policy }) {
   if (policy.mode !== 'github-only') throw new Error('Expected GitHub-only repository policy.');
   const patterns = featurePatterns(policy);
+  const environments = environmentBranches(policy);
+  const isFeature = name => patterns.some(pattern => matchesBranchPattern(name, pattern));
   if (adminMain) {
     if (branch !== policy.branch) throw new Error(`--admin-main only pushes ${policy.branch}.`);
-    return { branch, ref: `refs/heads/${policy.branch}`, emergency: true, pullRequest: null };
+    return { branch, source: branch, ref: `refs/heads/${policy.branch}`, emergency: true, environment: false, pullRequest: null };
+  }
+  if (environment !== null || environments.includes(branch)) {
+    const target = environment ?? branch;
+    if (!environments.includes(target)) throw new Error(`${target} is not an environment branch. Use ${environments.join(', ') || '(none in policy)'}.`);
+    if (branch !== target && branch !== policy.branch && !isFeature(branch)) {
+      throw new Error(`Only ${policy.branch}, ${patterns.join(', ')} or ${target} itself may be pushed to ${target}; not ${branch || '(detached)'}.`);
+    }
+    return { branch: target, source: branch, ref: `refs/heads/${target}`, emergency: false, environment: true, pullRequest: null };
   }
   if (branch === policy.branch) {
     throw new Error(`Direct push to ${policy.branch} is an admin emergency path. Pass --admin-main, or deliver from a feature branch (${patterns.join(', ')}) and open a pull request.`);
   }
-  if (!patterns.some(pattern => matchesBranchPattern(branch, pattern))) {
+  if (!isFeature(branch)) {
     throw new Error(`Branch ${branch || '(detached)'} is not a delivery branch. Use ${patterns.join(', ')}.`);
   }
   return {
     branch,
+    source: branch,
     ref: `refs/heads/${branch}`,
     emergency: false,
+    environment: false,
     pullRequest: `gh pr create --repo ${policy.repository} --base ${policy.branch} --head ${branch}`,
   };
 }
@@ -52,7 +73,7 @@ function gitRunner(cwd) {
 export function deliver({ args = [], policy, git, log = console.log }) {
   const options = parseDeliveryArgs(args);
   const branch = git('branch', '--show-current');
-  const plan = planGithubDelivery({ branch, adminMain: options.adminMain, policy });
+  const plan = planGithubDelivery({ branch, adminMain: options.adminMain, environment: options.environment, policy });
   const urls = git('remote', 'get-url', '--push', '--all', 'origin').split(/\r?\n/).filter(Boolean);
   const repo = urls.length === 1 ? repositoryFromRemote(urls[0]) : null;
   if (!repo || repo.toLowerCase() !== String(policy.repository).toLowerCase()) {
@@ -62,14 +83,16 @@ export function deliver({ args = [], policy, git, log = console.log }) {
   const remote = git('ls-remote', '--heads', urls[0], plan.ref).split(/\s+/)[0] || '';
   if (remote) {
     try { git('merge-base', '--is-ancestor', remote, local); }
-    catch { throw new Error(`GitHub is not a known ancestor. Run git fetch origin ${branch}, then inspect divergence. No force push.`); }
+    catch { throw new Error(`GitHub is not a known ancestor. Run git fetch origin ${plan.branch}, then inspect divergence${plan.environment ? ` (merge origin/${plan.branch} into ${branch} first, or open a pull request against ${plan.branch})` : ''}. No force push.`); }
   }
   log(JSON.stringify({
     branch: plan.branch,
+    source: plan.source,
     local,
     remote: remote || null,
     gitlab: 'paused',
     emergency: plan.emergency,
+    environment: plan.environment,
     pullRequest: plan.pullRequest,
   }));
   if (!options.check) {
@@ -94,7 +117,8 @@ export function deliver({ args = [], policy, git, log = console.log }) {
       return to.replace('*', match) === tracking;
     });
     if (!mapped) git('remote', 'set-branches', '--add', 'origin', plan.branch);
-    git('branch', `--set-upstream-to=origin/${plan.branch}`, plan.branch);
+    // An environment push from main or a feature branch leaves that branch's upstream alone.
+    if (plan.source === plan.branch) git('branch', `--set-upstream-to=origin/${plan.branch}`, plan.branch);
     log(`GitHub verified: ${after}`);
   }
   if (plan.pullRequest) log(`Pull request command (not created by this tool): ${plan.pullRequest}`);

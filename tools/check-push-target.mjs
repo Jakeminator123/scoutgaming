@@ -71,6 +71,21 @@ export function isAllowedHead(name, policy) {
   return name === policy.branch || featurePatterns(policy).some(pattern => matchesBranchPattern(name, pattern));
 }
 
+// Long-lived environment branches (preview): plain names that may be fast-forwarded like main but
+// never deleted, and that are not delivery branches, so merge-pr.mjs never takes them as a PR head.
+// A name that is main, matches a feature pattern or a protected (someone else's) branch is refused.
+export function environmentBranches(policy) {
+  const names = policy?.environmentBranches ?? [];
+  const invalid = !Array.isArray(names) || names.some(name => typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)
+    || isProtectedBranch(name, policy) || featurePatterns(policy).some(pattern => matchesBranchPattern(name, pattern)));
+  if (invalid) throw new Error('repository policy environmentBranches must list plain branch names such as preview, distinct from main, the feature patterns and protectedBranches.');
+  return names;
+}
+
+export function isEnvironmentBranch(name, policy) {
+  return environmentBranches(policy).includes(name);
+}
+
 // Long-lived and other owners' branches; `*` matches any characters, so `kevin*` covers kevin, kevin-x and kevin/x.
 export function isProtectedBranch(name, policy) {
   const patterns = policy?.protectedBranches;
@@ -85,13 +100,16 @@ export function isProtectedBranch(name, policy) {
 
 function refusal(policy) {
   const patterns = featurePatterns(policy).join(', ');
-  return `Only updates to ${policy.branch} or feature branches (${patterns}) are allowed; deletion only of merged feature branches; no tags or other refs.`;
+  const environments = environmentBranches(policy);
+  const targets = environments.length ? `${policy.branch}, environment branches (${environments.join(', ')})` : policy.branch;
+  return `Only updates to ${targets} or feature branches (${patterns}) are allowed; deletion only of merged feature branches; no tags or other refs.`;
 }
 
 const zero = sha => /^0+$/.test(sha);
 
 function validateDeletion(name, remoteSha, policy, isAncestor, mainSha) {
   if (name === policy.branch) throw new Error(`Branch deletion is not allowed for ${policy.branch}.`);
+  if (isEnvironmentBranch(name, policy)) throw new Error(`Branch deletion is not allowed for environment branch ${name}.`);
   if (isProtectedBranch(name, policy)) throw new Error(`Branch deletion is not allowed for protected branch ${name}.`);
   if (!isAllowedHead(name, policy)) throw new Error(refusal(policy));
   if (zero(remoteSha)) throw new Error(`Branch deletion refused: ${name} does not exist on the remote.`);
@@ -108,6 +126,7 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor, m
     throw new Error('GitLab is paused. Push only to the approved GitHub repository.');
   }
   featurePatterns(policy);
+  environmentBranches(policy);
   isProtectedBranch('', policy);
   for (const line of String(updates || '').trim().split(/\r?\n/).filter(Boolean)) {
     const parts = line.trim().split(/\s+/);
@@ -121,7 +140,7 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor, m
       validateDeletion(name, remoteSha, policy, isAncestor, mainSha);
       continue;
     }
-    if (!name || !isAllowedHead(name, policy)) throw new Error(refusal(policy));
+    if (!name || !(isAllowedHead(name, policy) || isEnvironmentBranch(name, policy))) throw new Error(refusal(policy));
     if (!zero(remoteSha) && !isAncestor(remoteSha, sha)) {
       throw new Error('Push would rewrite history, or the remote commit is not known locally. Fetch and inspect divergence; no force push.');
     }
