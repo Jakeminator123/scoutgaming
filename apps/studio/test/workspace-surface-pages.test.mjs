@@ -32,7 +32,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
   const shared = load('../components/workspace-surface-page.tsx', {
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
-    '@/components/kevin-bo/partner-operator-workspace': { PartnerOperatorWorkspace },
+    '@/components/partner/partner-operator-workspace': { PartnerOperatorWorkspace },
     '@/components/partner-workspace': { PartnerWorkspace },
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },

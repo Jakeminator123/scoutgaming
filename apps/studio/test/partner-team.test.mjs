@@ -4,7 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { jsxRequire } from './fixtures/jsx-require.mjs';
 
-const { TeamView } = jsxRequire(import.meta.url)('../components/kevin-bo/views/team.jsx');
+const { TeamView } = jsxRequire(import.meta.url)('../components/partner/views/team.jsx');
 
 function render(snapshot, runtime = {}) {
   const calls = [];

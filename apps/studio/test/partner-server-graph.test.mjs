@@ -62,8 +62,8 @@ test('the server reading of Partnerportalen never pulls React hooks or Next clie
   for (const expected of ['lib/partner-data.mjs', 'lib/partner-session.mjs', 'lib/partner-words.mjs', 'lib/partner-game-readout.mjs', 'lib/partner-workspace-access.mjs']) assert.ok(seen.includes(expected), expected);
   assert.ok(seen.length > 20, `the walk covers the server modules (${seen.length})`);
   // The client components the page hands the snapshot to are boundaries, not server modules.
-  for (const expected of ['components/kevin-bo/partner-operator-workspace.jsx', 'components/partner-workspace.tsx']) assert.ok(boundaries.includes(expected), expected);
-  assert.ok(!seen.includes('components/kevin-bo/partner-copy.mjs'), 'the hook module stays behind the client boundary');
+  for (const expected of ['components/partner/partner-operator-workspace.jsx', 'components/partner-workspace.tsx']) assert.ok(boundaries.includes(expected), expected);
+  assert.ok(!seen.includes('components/partner/partner-copy.mjs'), 'the hook module stays behind the client boundary');
 });
 
 test('the graph walk itself catches a hook import, a react import in a .mjs module and a dynamic import', () => {
@@ -92,7 +92,7 @@ test('the graph walk itself catches a hook import, a react import in a .mjs modu
 
 test('the role words the server renders are the words the shell shows', async () => {
   const { partnerRoleWord } = await import('../lib/partner-words.mjs');
-  const copy = await import('../components/kevin-bo/partner-copy.mjs');
+  const copy = await import('../components/partner/partner-copy.mjs');
   assert.equal(copy.partnerRoleWord, partnerRoleWord);
   assert.equal(partnerRoleWord('partner-editor'), 'redaktör');
   assert.equal(partnerRoleWord('custom-role', 'Nattskift'), 'Nattskift');

@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { partnerCopy, partnerNavigation } from '../components/kevin-bo/partner-copy.mjs';
-import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
+import { partnerCopy, partnerNavigation } from '../components/partner/partner-copy.mjs';
+import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
 import { PARTNER_PERMISSIONS } from '../../../packages/studio-access/server/partner-access-policy.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -13,7 +13,7 @@ import { jsxRequire } from './fixtures/jsx-require.mjs';
 
 const require = createRequire(import.meta.url);
 const postcss = require('postcss');
-const sourceUrl = new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url);
+const sourceUrl = new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url);
 const actions = jsxRequire(sourceUrl)('../partner-session-actions.tsx');
 const DAY = 24 * 60 * 60 * 1000, today = Date.UTC(2026, 9, 28, 12);
 const roleOf = id => STANDARD_OPERATOR_ROLES.find(role => role.id === id);
@@ -210,7 +210,7 @@ test('shell strings exist in both languages and the snapshot validator rejects f
 });
 
 test('portal CSS is fenced under .partner-portal, loads nothing external, and the directory CSS defines every class it uses', () => {
-  const portalCss = readFileSync(new URL('../components/kevin-bo/partner-portal.css', import.meta.url), 'utf8');
+  const portalCss = readFileSync(new URL('../components/partner/partner-portal.css', import.meta.url), 'utf8');
   postcss.parse(portalCss).walkRules(rule => {
     if (rule.parent.type === 'atrule' && /keyframes$/.test(rule.parent.name)) return;
     for (const selector of postcss.list.comma(rule.selector)) assert.ok(selector.startsWith('.partner-portal'), selector);
