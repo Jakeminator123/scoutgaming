@@ -66,7 +66,7 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
   finally{lock.current=false;if(ticket===epoch.current)setBusy(false);callbacks.current.onBusyChange?.(false);}
  }
  return <Container>{expanded?<h3>{heading}</h3>:<summary>{heading}</summary>}
-  {!renderAsset&&<p>Flytta en fil till papperskorgen. Kontrollera först vilka sammansättningar och publicerade spelrum som påverkas. Ändringen sparas direkt.</p>}
+  {!renderAsset&&<p>Flytta en fil till papperskorgen. Kontrollera först vilka miljöer och publicerade spelbord som påverkas. Ändringen sparas direkt.</p>}
   {error?<p role="alert">{error} <button type="button" data-action="refresh" disabled={disabled||busy} onClick={()=>void refresh()}>Läs in aktuella uppgifter</button></p>:null}
   {notice?<p role="status">{notice}</p>:null}
   {view!=='trash'&&(assets.length?<ul className={renderAsset?'material-card-list':undefined}>{assets.map(asset=><li key={asset.id}>{renderAsset?renderAsset(asset,{disabled:blocked,onTrash:()=>void run(asset.id,true)}):<><strong>{asset.label}</strong> · {layerAssetReferences(project,asset.id).map(row=>row.label).join(', ')||'Oanvänd i utkast'} <button type="button" data-action="trash" disabled={blocked} onClick={()=>void run(asset.id,true)}>Flytta till papperskorgen</button></>}</li>)}</ul>:<p>Inga filer i det här urvalet.</p>)}
@@ -78,11 +78,11 @@ export function LayerAssetManager({project,role,disabled,onSaved,onBusyChange,ex
   </>:null}
   {plan&&plan.revision===project.revision&&renderPlan?renderPlan({impact:plan.impact,busy,onConfirm:()=>void run(plan.impact.id,plan.impact.archived,true),onCancel:()=>setPlan(null)}):null}
   {plan&&plan.revision===project.revision&&!renderPlan?<fieldset ref={confirmation} tabIndex={-1} disabled={blocked} data-plan={plan.impact.archived?'trash':'restore'}><legend>{plan.impact.archived?'Flytta till papperskorgen':'Återställ'}: {plan.impact.label}</legend>
-   {plan.impact.archived?<><p>Filen kopplas loss från {plan.impact.compositions.length} sammansättningar, även arkiverade dealerutkast. Berörda spelrum avpubliceras och flyttas till papperskorgen.</p>
+   {plan.impact.archived?<><p>Filen kopplas loss från {plan.impact.compositions.length} miljöer, även arkiverade dealerutkast. Berörda spelbord avpubliceras och flyttas till papperskorgen.</p>
     {plan.impact.compositions.length?<ul>{plan.impact.compositions.map((item,index)=><li key={item.id+':'+index}>{item.label}</li>)}</ul>:null}
-    {plan.impact.rooms.length?<ul>{plan.impact.rooms.map(room=><li key={room.id}>{room.name} · {plan.impact.operators.find(operator=>operator.id===room.operatorId)?.name}</li>)}</ul>:<p>Inga publicerade spelrum påverkas.</p>}
+    {plan.impact.rooms.length?<ul>{plan.impact.rooms.map(room=><li key={room.id}>{room.name} · {plan.impact.operators.find(operator=>operator.id===room.operatorId)?.name}</li>)}</ul>:<p>Inga publicerade spelbord påverkas.</p>}
     {plan.impact.operators.length?<p>Publiceringen ändras hos: {plan.impact.operators.map(item=>item.name).join(', ')}.</p>:null}
-    <p>Originalfilen och publicerad historik behålls.</p></>:<p>Filen blir valbar igen. Sammansättningar och spelrum förblir oförändrade.</p>}
+    <p>Originalfilen och publicerad historik behålls.</p></>:<p>Filen blir valbar igen. Miljöer och spelbord förblir oförändrade.</p>}
    <button type="button" data-action="confirm" onClick={()=>void run(plan.impact.id,plan.impact.archived,true)}>Bekräfta</button> <button type="button" data-action="cancel" onClick={()=>setPlan(null)}>Avbryt</button>
   </fieldset>:null}
  </Container>;

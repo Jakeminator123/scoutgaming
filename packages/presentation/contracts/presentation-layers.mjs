@@ -52,9 +52,14 @@ function layer(value, role, authorisedDealers = dealers) {
   if (value.colors !== undefined) list(value.colors, color => typeof color === 'string' && /^#[a-f0-9]{6}$/.test(color));
   return structuredClone(value);
 }
+/** Every material a frozen lane references: its background and table choices and its miljöbild. */
+export function laneMaterialIds(lane) {
+  return [...LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed), ...(typeof lane.illustration === 'string' ? [lane.illustration] : [])];
+}
 export function validatePresentationLane(value, {dealerIds = [...dealers]} = {}) {
   const authorisedDealers = new Set(list(dealerIds, isDealerId, MAX_DEALERS));
-  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback']);
+  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback', 'illustration']);
+  if (value.illustration !== undefined && !assetId(value.illustration)) reject();
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
@@ -151,6 +156,11 @@ export function validatePresentationPackage(value) {
       used.add(id);
     }
   }
+  // The miljöbild travels with its lane for the lobby; it is never one of the lane's layers.
+  for (const lane of lanes) if (lane.illustration !== undefined) {
+    if (byId.get(lane.illustration)?.role !== 'illustration') reject();
+    used.add(lane.illustration);
+  }
   if (assets.some(asset => !used.has(asset.id))) reject();
   for (const lane of lanes) if (Object.hasOwn(lane, 'backgroundPlayback')) {
     validateBackgroundPlayback(lane.backgroundPlayback, { assets,
@@ -169,7 +179,7 @@ export function buildPresentationPackage(project, selectedLaneIds, library, opti
   const selected = list(selectedLaneIds, id => typeof id === 'string' && token.test(id));
   const lanes = selected.map(id => project.lanes?.find(lane => lane.id === id));
   if (lanes.some(lane => !lane || lane.dealers.some(id=>!project.dealers?.some(dealer=>dealer.id===id)))) reject();
-  const used = new Set(lanes.flatMap(lane => LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed)));
+  const used = new Set(lanes.flatMap(laneMaterialIds));
   const v2 = Object.hasOwn(options, 'registeredDealers');
   return validatePresentationPackage({ schemaVersion:Object.hasOwn(options, 'playback') ? 3 : v2 ? 2 : 1, projectRevision:project.revision, lanes,
     assets:library.filter(asset => used.has(asset.id)), ...(v2 ? {registeredDealers:options.registeredDealers} : {}), ...(Object.hasOwn(options, 'playback') ? {playback:options.playback} : {}) });

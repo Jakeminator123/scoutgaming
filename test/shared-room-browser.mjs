@@ -15,6 +15,7 @@ import { decorateGameEntryHtml } from '../services/game/public/game-entry-contra
 import { withSharedRoomEntry } from '../services/game/shared-room-entry.mjs';
 import { createSharedRoomCommand } from '../services/game/shared-room-command.mjs';
 import { handleSharedRoomHttp } from '../services/game/shared-room-http.mjs';
+import { createSharedRoomChat } from '../services/game/shared-room-chat.mjs';
 
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const roomId = 'browser-room', actorId = 'browser-alice', cookie = 'fixture_session=isolated-browser';
@@ -111,7 +112,8 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
   const stateFrame = () => JSON.stringify({ type: 'shared-room-state', roomId, snapshot, presentation });
   const broadcast = () => { snapshot.serverNow = Date.now(); for (const socket of sockets) socket.send(stateFrame()); };
   const nextRequest = () => { const wait = deferred(); requests.push(wait); return bounded(wait.promise); };
-  let command;
+  let command, chat, chatSettings = {};
+  const chatAsked = [];
   server = createServer(async (req, res) => {
     try {
       if (req.url === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html); return; }
@@ -135,7 +137,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
         res.writeHead(200,headers);res.end(JSON.stringify(binding));return;
       }
       if (req.url.startsWith('/api/shared-room/')) {
-        await handleSharedRoomHttp(req, res, { engineOrigin: origin, command: async request => {
+        await handleSharedRoomHttp(req, res, { engineOrigin: origin, chat, command: async request => {
           const bytes = await request.clone().text();
           httpBodies.push({ bytes, cookie: request.headers.get('cookie'), origin: request.headers.get('origin'), url: request.url });
           requests.shift()?.resolve();
@@ -173,6 +175,16 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     const output = { result, replay: false, snapshot: structuredClone(snapshot) };
     receipts.set(input.commandId, { bytes: JSON.stringify(input), output }); return output;
   } } });
+  // Real chat route and NDJSON; only the room service and OpenClaw are fixture ports.
+  const chatFrame = (room, entry) => JSON.stringify({ type: 'shared-room-chat', roomId: room, lineId: entry.lineId, requestId: entry.requestId,
+    who: entry.actorId === null ? 'dealer' : entry.actorId === actorId ? 'you' : 'player', seat: entry.seat, text: entry.text, at: entry.at });
+  chat = createSharedRoomChat({ origin, cooldownMs: 0, settingsProvider: () => chatSettings,
+    decide: async request => { chatAsked.push(request.message); return { kind: 'generatedText', requestId: request.requestId, exactText: 'Lycka till vid bordet.' }; },
+    service: { async chatMember(request) { assert.equal(request.headers.get('cookie'), cookie);
+      return { binding: { actorId, sessionId: 'browser-session', roomId }, snapshot: structuredClone(snapshot) }; },
+    async chatContext(request) { assert.equal(request.headers.get('cookie'), cookie);
+      return { binding: { actorId, sessionId: 'browser-session', roomId }, dealerId: 'astrid', snapshot: structuredClone(snapshot) }; },
+    emitChat: (room, entry) => { for (const socket of sockets) socket.send(chatFrame(room, entry)); } } });
   wss = new WebSocketServer({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
     assert.equal(req.url, `/shared-room/${roomId}`); assert.equal(req.headers.origin, origin); assert.equal(req.headers.cookie, cookie);
@@ -212,6 +224,26 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
         && window.fixture.app.controller.state.waiting === null, snapshot.version);
     }
     assert.deepEqual(await page.evaluate(() => window.fixture.app.controller.state.snapshot.me.seats), [0, 6]);
+    // Chat panel: folded by default, a missing OpenClaw key is a notice only, the answer reaches the log.
+    chatSettings = {}; chatAsked.length = 0;
+    const chatToggle = page.locator('.room-chat-toggle'), chatBody = page.locator('#shared-room-chat-body');
+    assert.equal(await chatBody.isVisible(), false);
+    await chatToggle.click(); await chatBody.waitFor({ state: 'visible' });
+    const chatInput = page.getByLabel('Meddelande till dealern', { exact: true });
+    await chatInput.fill('Hej dealern'); await chatInput.press('Enter');
+    await page.locator('.room-chat-status', { hasText: 'Dealerns chatt är inte inkopplad i den här miljön' }).waitFor();
+    assert.equal(await chatInput.inputValue(), 'Hej dealern'); assert.deepEqual(chatAsked, []);
+    chatSettings = { speechUrl: 'https://director.invalid', speechToken: 'fixture-token' };
+    await chatInput.press('Enter');
+    await page.locator('.room-chat-dealer', { hasText: 'Lycka till vid bordet.' }).waitFor();
+    for (const socket of sockets) socket.send(chatFrame(roomId, { lineId: 'q-' + 'b'.repeat(24), requestId: 'chat-other', actorId: 'browser-bob', seat: 3, text: '<img src=x>Hej från trean', at: Date.now() }));
+    await page.locator('.room-chat-player').waitFor();
+    assert.equal(await page.locator('#shared-room-chat img').count(), 0, 'chat text is never parsed as HTML');
+    assert.deepEqual(await page.locator('.room-chat-who').allTextContents(), ['du', 'dealern', 'plats 3']);
+    assert.equal(await chatInput.inputValue(), ''); assert.equal(chatAsked.at(-1), 'Hej dealern');
+    const chatBox = await page.locator('#shared-room-chat').boundingBox();
+    assert.ok(chatBox.x >= 0 && chatBox.x + chatBox.width <= viewport.width, 'chat panel stays inside the viewport');
+    await chatToggle.click(); await chatBody.waitFor({ state: 'hidden' });
     // A phone chooses which three boxes it shows; a wide screen shows all seven and has no chooser.
     const windows = page.getByLabel('Visa platser på bordet', { exact: true });
     if (viewport.width < 860) {

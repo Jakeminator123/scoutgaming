@@ -359,7 +359,7 @@ test('J08 public material error is restricted to its action, status and fixed co
     ['room-game-config',422,materialCode,{error:materialCode,code:materialCode}],
     ['room-game-config',422,'private_internal_code',{error:'Invalid data'}],
     ['room-game-config',503,materialCode,{error:'Action unavailable'}],
-    ['room',422,materialCode,{error:'Invalid data'}],
+    ['tier',422,materialCode,{error:'Invalid data'}],
   ]) {
     const path='/studio/api/admin/'+action;
     const api=createStudioAdminApi({authorize:async()=>({...actor,scope}),allowedOrigins:[origin],publicHosts:['studio.invalid'],

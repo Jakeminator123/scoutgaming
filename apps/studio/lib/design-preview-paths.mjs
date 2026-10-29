@@ -11,7 +11,7 @@ export function designPreviewReturnTo(value) {
   const target=value.startsWith('/studio/')?value.slice(7):value;
   const [path,search]=target.split('?');
   if(target.split('?').length>2||!(path==='/admin'||path==='/admin/lobby'||path==='/admin/material-library'||path.startsWith('/admin/')&&isDesignPreviewPage(path.slice(7))))return null;
-  const allowed=new Set(['operator','room','table','composition','lane','dealer','game','event','variant','situation','view','tab','tool','role','category','panel','family','flik','verktyg']);
+  const allowed=new Set(['operator','room','table','composition','lane','dealer','game','event','variant','situation','view','tab','tool','role','category','panel','family','flik','verktyg','filter']);
   const query=new URLSearchParams(search),seen=new Set();
   for(const [key,item] of query){if(!allowed.has(key)||seen.has(key)||!(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/).test(item))return null;seen.add(key);}
   return adminDocumentHref(path+(query.size?'?'+query:''));

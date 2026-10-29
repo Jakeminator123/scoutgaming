@@ -8,7 +8,7 @@ import {AiTableMisfitError,aiTableMisfitBody,assertAiTableChoiceFits,assertAiTab
 import {publishSavedScene,scenePublicationPreview} from '../lib/scene-publication.mjs';
 import {packagePublishError} from '../lib/operator-package-client.mjs';
 
-const REDRAW=/Rita om bordet för den här scenmallen eller välj ett annat bord\./;
+const REDRAW=/Rita om bordet för den här miljön eller välj ett annat bord\./;
 const ids={ai:'00000000-0000-4000-8000-0000000000a1',manual:'00000000-0000-4000-8000-0000000000a2'};
 function table(id,label) {
   const asset={schemaVersion:1,id,role:'table',game:'blackjack',label,sha256:'a'.repeat(64),size:1024,contentType:'image/webp',width:1215,height:2074};
@@ -83,6 +83,6 @@ test('a fitting AI table is published, and a server refusal shows the same reaso
 
 test('the package publication in the client shows the server refusal as a reason, not a raw code',()=>{
   const message=packagePublishError(422,{error:'ai_table_misfit',code:'ai_table_misfit',compositionId:'paow-bord',assetId:ids.ai,reason:'ai_table_other_dealer'});
-  assert.match(message,/^Scenmallen paow-bord: Bordsgrafiken är ritad för en annan dealer/);assert.match(message,REDRAW);assert.match(message,/Inget publicerades\.$/);
+  assert.match(message,/^Miljön paow-bord: Bordsgrafiken är ritad för en annan dealer/);assert.match(message,REDRAW);assert.match(message,/Inget publicerades\.$/);
   assert.doesNotMatch(packagePublishError(422,{code:'ai_table_misfit',compositionId:'<script>',reason:'x'}),/script/);
 });

@@ -179,7 +179,7 @@ export function ConfirmDialog({ open, title, description, consequences = [], chi
   </Dialog.Root>;
 }
 
-// Böjning: "1 dealer", "2 dealers"; "1 scenmall", "2 scenmallar".
+// Böjning: "1 dealer", "2 dealers"; "1 miljö", "2 miljöer".
 export function count(value: number, one: string, many: string) { return `${value} ${value === 1 ? one : many}`; }
 
 export const locale = (language?: Language) => language === 'en' ? 'en-GB' : 'sv-SE';

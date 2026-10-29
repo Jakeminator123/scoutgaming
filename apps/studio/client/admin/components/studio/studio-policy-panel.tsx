@@ -18,8 +18,8 @@ export type StudioPolicyPanelProps = {
 export const IDLE_USES:readonly {id:IdleVariantUse;label:string;hint:string}[]=Object.freeze([
   {id:'manual',label:'Av',hint:'Spelas bara vid manuellt prov. Grundloopen fortsätter.'},
   {id:'automatic',label:'Ibland · intervall',hint:'Startar av sig själv med jämna mellanrum medan dealern väntar, och återgår sedan till grundloopen.'},
-  {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när rummet kör klippvalsläget Regler.'},
-  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när scenmallens vila står på OpenClaw. Beskriv vad klippet visar.'},
+  {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när spelbordet kör klippvalsläget Regler.'},
+  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när miljöns vila står på OpenClaw. Beskriv vad klippet visar.'},
 ]);
 const automatic:IdleAutomaticPolicy={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
 const seconds=(ms:number)=>(ms/1000).toLocaleString('sv-SE',{maximumFractionDigits:1});
@@ -95,21 +95,14 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const variant=media??lineVariant;
   const selection=media?.selection??(lineVariant?selectionFor(lineVariant):{rules:false,model:false,random:false});
   function variantEdit(patch:Partial<Omit<MediaVariantPolicy,'videoId'>>){edit(()=>applyStudioVariantPolicy(project,inventory,dealerId,slot,selectedId,patch));}
-  const saved=scope?.family?project.mediaPolicy?.find(row=>row.familyId===scope!.family!.id)?.variants??[]:[];
-  const percent=media?.frequencyPercent??0,total=saved.reduce((sum,row)=>sum+(row.frequencyPercent??0),0);
-  const unavailableShare=saved.filter(row=>!scope?.clips.some(video=>video.id===row.videoId)).reduce((sum,row)=>sum+(row.frequencyPercent??0),0);
-  const activeFrequency=saved.filter(row=>(row.frequencyPercent??0)>0).length;
-  const legacyFrequency=Boolean(scope?.frequency&&!saved.some(row=>row.frequencyPercent!==undefined)&&saved.some(row=>Object.values(row.selection).some(Boolean)));
   const addChoices=scope?.clips.filter(video=>!policy||![...policy.base,...policy.variants].some(row=>row.videoId===video.id))??[];
-  const baseAllowed=(id:string)=>!scope?.global||Boolean(scope.family?.standardIds.includes(id));
-  const variationAllowed=(id:string)=>!scope?.global||Boolean(scope.family?.variantIds.includes(id));
   // Plain-language reading of the saved rule for the chosen variant. Read-only.
   const variantVideoId=scope?.family?selectedId:lineVariant?.videoGenerationId??'';
   const usage=scope&&scope.kind!=='idle'&&variant&&variantVideoId?studioClipUsage(project,inventory,dealerId,slot,variantVideoId,scope.family?undefined:selectedId):null;
   const caption=slot.eventId==='idle.ready'?'Vila (idle)':slot.title;
 
   return <section aria-label={`Policy för ${slot.title}`} className="studio-policy-panel">
-    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw väljer bara bland klipp markerade OpenClaw, och bara när scenmallens vila står på OpenClaw.</p></header>
+    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Spelbordet får ändringen först när utkastet sparas och spelbordet publiceras. OpenClaw väljer bara bland klipp markerade OpenClaw, och bara när miljöns vila står på OpenClaw.</p></header>
     {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
         {rotationSource&&rotationCandidate&&<section className="studio-policy-section" aria-label="Vilosekvens">
@@ -161,23 +154,18 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
           <label className="studio-field"><span>Registrerat klipp</span><select value={addId} onChange={event=>setAddId(event.target.value)}>
             <option value="">Välj registrerat klipp…</option>{addChoices.map(video=><option key={video.id} value={video.id}>{label(video.id)}</option>)}
           </select></label>
-          <div className="studio-policy-actions"><button type="button" className="studio-button" disabled={!addId||!baseAllowed(addId)||(policy?.base.length??0)>=4} onClick={()=>void add(true)}>{busy?'Läser längd…':'Lägg till i basloopen'}</button>
-            {policy&&<button type="button" className="studio-button" disabled={!addId||!variationAllowed(addId)} onClick={()=>void add(false)}>Lägg till som beteendeklipp</button>}
+          <div className="studio-policy-actions"><button type="button" className="studio-button" disabled={!addId||(policy?.base.length??0)>=4} onClick={()=>void add(true)}>{busy?'Läser längd…':'Lägg till i basloopen'}</button>
+            {policy&&<button type="button" className="studio-button" disabled={!addId} onClick={()=>void add(false)}>Lägg till som beteendeklipp</button>}
           </div><p className="studio-policy-hint">Klippets längd läses från videons metadata. Högst fyra basklipp.</p>
         </section>
         </>}
       </>:<>
         {choices.length?<>
           <label className="studio-field"><span>Variant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{!selectedId&&<option value="">Välj en alternativ tagning…</option>}{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
-          {!selectedId?<p className="studio-policy-hint">Den valda tagningen saknar en redigerbar alternativregel. Standardklippets urval är fast; ett okopplat klipp måste kopplas först.</p>:scope.frequency?<section className="studio-policy-section" aria-label="Frekvens">
-            <h3>Hur ofta väljs varianten?</h3>
-            {legacyFrequency&&<p className="studio-policy-warning">Första frekvensändringen ersätter det äldre urvalet för just denna plats.</p>}
-            <Numeric label="Frekvens (%)" value={percent} min={0} max={percent===0&&activeFrequency>=4?0:100-total+percent} onChange={frequencyPercent=>variantEdit({frequencyPercent})}/>
-            <p className="studio-policy-hint">0 % = endast manuellt prov. Högst fyra aktiva varianter.{!legacyFrequency&&` Standardens andel: ${100-total+unavailableShare} %.`}</p>
-          </section>:variant?<>
+          {!selectedId?<p className="studio-policy-hint">Den valda tagningen saknar en redigerbar alternativregel. Standardklippets urval är fast; ett okopplat klipp måste kopplas först.</p>:variant?<>
             <section className="studio-policy-section" aria-label="Urval"><h3>Hur väljs varianten?</h3>
               <div className="studio-chip-row">{([['rules','Regler','Väljs när villkoren nedan stämmer.'],['random','Slump','Kan väljas slumpmässigt i stället för standardklippet.'],['model','OpenClaw','OpenClaw får välja varianten utifrån chatt och persona.']] as const).map(([key,title,hint])=><label key={key} className="studio-chip" title={hint}><input type="checkbox" checked={selection[key]} onChange={event=>variantEdit({selection:{...selection,[key]:event.target.checked}})}/>{title}</label>)}</div>
-              <p className="studio-policy-hint">Alla av = endast manuellt prov. Standardklippet finns alltid som reserv. Rummets publicerade automatikläge avgör vilket urval som används.</p>
+              <p className="studio-policy-hint">Alla av = endast manuellt prov. Standardklippet finns alltid som reserv. Spelbordets publicerade automatikläge avgör vilket urval som används.</p>
               <button type="button" className="studio-policy-link" onClick={()=>variantEdit({selection:{rules:false,model:false,random:false}})}>Endast manuell</button>
             </section>
             {usage&&<div className="studio-policy-summary" role="status" aria-label="Så används varianten">{usage.rules.map(rule=><p key={rule}>{rule}</p>)}</div>}

@@ -6,12 +6,21 @@ import styles from './admin-publication-page.module.css';
 
 const profiles=roomLimitProfiles();
 
-function publicationHelp(publication:RoomGameReceipt['publication']) {
+type RoomDealer={id:string;name:string};
+const dealerClips=(dealer:RoomDealer)=>'/admin/dealers/'+encodeURIComponent(dealer.id)+'?flik=klipp';
+// Mätningen görs på dealernavet; texten pekar dit med en länk per dealer i spelbordet.
+function measurementHelp(dealers:RoomDealer[]) {
+  const rest=' Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+  if(!dealers.length)return 'Klippen saknar aktuella tidsmätningar. Öppna Dealers › dealern i spelbordet och välj Mät omätta klipp.'+rest;
+  return <>Klippen saknar aktuella tidsmätningar. Öppna {dealers.map((dealer,index)=><span key={dealer.id}>{index?' eller ':''}<a className="font-semibold underline" href={dealerClips(dealer)}>Dealers › {dealer.name}</a></span>)} och välj Mät omätta klipp.{rest}</>;
+}
+
+function publicationHelp(publication:RoomGameReceipt['publication'],dealers:RoomDealer[]=[]) {
   if(publication.reason==='studio_room_game_draft_required')return 'Spara spelinställningarna som utkast för att kontrollera materialet för valt språk.';
   if(publication.reason==='studio_room_game_material_unavailable')switch(publication.materialReason){
     case 'native_material_measurement_missing':
     case 'native_material_measurement_mismatch':
-      return 'Klippen saknar aktuella tidsmätningar. Öppna dealerns klipp och välj Mät speltid. Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+      return measurementHelp(dealers);
     case 'native_material_speech_slot_missing':
     case 'native_material_speech_unbound':
       return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera i spelbordet efter rättning.';
@@ -29,10 +38,10 @@ function publicationHelp(publication:RoomGameReceipt['publication']) {
     case 'native_material_timing_limit':
       return 'Klippen ger för långa uppspelningssekvenser för dessa spelinställningar. Klippens längd och övergångar behöver granskas innan du kan publicera.';
   }
-  return 'Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets sammansättning.';
+  return 'Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets miljö.';
 }
 
-export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
+export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
   if(!ref.current)ref.current=createRoomGameConfigController();
   const controller=ref.current,state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
@@ -59,12 +68,12 @@ export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusy
       <p className="m-0 text-[12.5px] text-sg-muted">{roomLimitProfileNote}</p>
       {/* Native radios share one name, so arrow keys move between the cards and Tab enters the group once. */}
       <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">{profiles.map(profile=>{const on=state.fields.limitPreset===profile.id;
-        return <label key={profile.id} className={'group/profile relative grid cursor-pointer overflow-hidden max-md:grid-cols-[112px_minmax(0,1fr)] rounded-xl border bg-sg-surface text-[13px] shadow-sg transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sg-mark has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-sg-surface '+(on?'border-sg-text shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border hover:border-sg-faint hover:shadow-md')}>
+        return <label key={profile.id} className={'group/profile relative grid cursor-pointer overflow-hidden rounded-xl border bg-sg-surface text-[13px] shadow-sg transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sg-mark has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-sg-surface '+(on?'border-sg-text shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border hover:border-sg-faint hover:shadow-md')}>
           <input type="radio" name={'limit-preset-'+roomId} value={profile.id} checked={on} onChange={()=>edit('limitPreset',profile.id)} className="sr-only"/>
-          <span className="relative block aspect-[16/9] overflow-hidden bg-sg-ink max-md:aspect-auto max-md:min-h-[136px]">
-            <img src={profile.image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-200 group-hover/profile:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/profile:scale-100"/>
-            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6 text-white"><strong className="block text-[15px] leading-tight">{profile.label}</strong><span className="text-xs opacity-85">{profile.place}</span></span>
-            {on&&<span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-sg-lime text-[13px] font-bold text-sg-on-accent" aria-hidden="true">✓</span>}
+          {/* A profile is stakes only; the room's picture comes from its environment (miljöbild). */}
+          <span className="flex items-center justify-between gap-2 border-b border-sg-border px-3 py-2.5">
+            <strong className="text-[15px] leading-tight text-sg-text">{profile.label}</strong>
+            {on&&<span className="grid size-6 place-items-center rounded-full bg-sg-lime text-[13px] font-bold text-sg-on-accent" aria-hidden="true">✓</span>}
           </span>
           <span className="grid gap-1 p-3 tabular-nums">
             <span className="flex justify-between gap-2"><span className="text-sg-muted">Insats</span><strong className="text-sg-text">{profile.stakes}</strong></span>
@@ -77,7 +86,7 @@ export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusy
     <p>Insatstid: 20 sekunder. Beslutstid: 15 sekunder. Beloppen är demoenheter.</p>
     {current&&state.error?<p role="alert">{state.error}</p>:null}
     {current&&state.message?<p role="status">{state.message}</p>:null}
-    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication)}</p>:null}
+    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication,dealers)}</p>:null}
     <div className={styles.actions}>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</button>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</button>

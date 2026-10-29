@@ -10,6 +10,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
+import { PACKAGE_ROOMS_MAX_TEXT, validatePackageRooms } from '../../presentation/contracts/package-rooms.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
 // Samma nyckel som PARTNER_ASSIGNMENT_KEY (packages/presentation/server/presentation-package.mjs).
 const ASSIGNMENT_KEY = 'assignment';
@@ -28,6 +29,9 @@ const operatorStatuses = new Set(['active', 'suspended']);
 const membershipStatuses = new Set(['active', 'suspended', 'invited']);
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
+// `rooms` (Studio 023) through the row's JSON: NULL both before the column exists and when unset,
+// so one SELECT serves every deployment during the migration. Callers alias the table as p.
+const packageColumns = "environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms,to_jsonb(p)->>'rooms' AS rooms";
 // Speglar journalens CHECK (006, utökad av 022 med partnerns egna åtgärder och begäran).
 const auditActions = new Set(OPERATOR_AUDIT_ACTIONS);
 const tableActions = new Set(PARTNER_TABLE_ACTIONS);
@@ -116,6 +120,14 @@ function canonicalIdList(value) {
   return text;
 }
 
+function canonicalPackageRooms(value, operatorId, tables) {
+  const rooms = validatePackageRooms(value, { operatorId, tables });
+  if (!rooms) fail('studio_invalid_data', 422);
+  const text = canonicalStudioJson(rooms);
+  if (text.length > PACKAGE_ROOMS_MAX_TEXT) fail('studio_invalid_data', 422);
+  return text;
+}
+
 function canonicalBranding(value) {
   return canonicalStudioJson(validatePresentationBranding(value));
 }
@@ -193,12 +205,16 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   }
   function packageRow(row) {
     if (!row || row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId) fail('studio_corrupt_operator');
+    const operatorId = idText(row.operator_id, 'studio_corrupt_operator', 503), tables = storedJson(row.tables, canonicalIdList);
     return Object.freeze({
-      operatorId: idText(row.operator_id, 'studio_corrupt_operator', 503),
+      operatorId,
       revision: integer(row.package_revision, 1, 'studio_corrupt_operator', 503),
       lanes: Object.freeze(storedJson(row.lanes, canonicalIdList)),
       games: Object.freeze(storedJson(row.games, canonicalIdList)),
-      tables: Object.freeze(storedJson(row.tables, canonicalIdList)),
+      tables: Object.freeze(tables),
+      // Studio 023 (plan L3): null without the column or before a package is written with rooms.
+      rooms: row.rooms === null || row.rooms === undefined ? null
+        : Object.freeze(storedJson(row.rooms, value => canonicalPackageRooms(value, operatorId, tables)).map(Object.freeze)),
       branding: Object.freeze(storedJson(row.branding, canonicalBranding)),
       publishedAtMs: integer(row.published_at_ms, 0, 'studio_corrupt_operator', 503),
       scope,
@@ -278,8 +294,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   }
   async function getCurrentPackage(operatorId) {
     const rows = await query(`/* operator-store:current-package */
-      SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms
-      FROM croupier_studio.operator_packages
+      SELECT ${packageColumns} FROM croupier_studio.operator_packages p
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
       ORDER BY package_revision DESC LIMIT 1`, [idText(operatorId)]);
     if (rows.length > 1) fail('studio_corrupt_operator');
@@ -772,10 +787,9 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     });
   }
 
-  const packageColumns='environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms';
   const draftColumns='environment_id,workspace_id,operator_id,draft_revision,base_package_revision,branding,source_package_revision,published_package_revision,action,occurred_at_ms';
   async function getPackage(operatorId, revision) {
-    const rows=await query(`/* operator-store:package-by-revision */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+    const rows=await query(`/* operator-store:package-by-revision */ SELECT ${packageColumns} FROM croupier_studio.operator_packages p
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND package_revision=$4`,
       [idText(operatorId),integer(revision,1,'studio_invalid_data',400)]);
     if(rows.length>1)fail('studio_corrupt_operator');
@@ -784,7 +798,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   async function listPackages(operatorId,{limit=20,beforeRevision=null}={}) {
     if(!Number.isSafeInteger(limit)||limit<1||limit>50)fail('studio_invalid_data',400);
     if(beforeRevision!==null)integer(beforeRevision,1,'studio_invalid_data',400);
-    return (await query(`/* operator-store:list-packages */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+    return (await query(`/* operator-store:list-packages */ SELECT ${packageColumns} FROM croupier_studio.operator_packages p
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND ($4::bigint IS NULL OR package_revision<$4)
       ORDER BY package_revision DESC LIMIT $5`,[idText(operatorId),beforeRevision,limit])).map(packageRow);
   }
@@ -850,7 +864,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const expected=integer(ownValue(input,'expectedDraftRevision'),0,'studio_invalid_data',422);
       const expectedPackage=integer(ownValue(input,'expectedPackageRevision'),1,'studio_invalid_data',422);
       if(!await lockOperator(txQuery,operatorId))fail('studio_operator_not_found',404);
-      const rows=await txQuery(`/* operator-store:current-package */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+      const rows=await txQuery(`/* operator-store:current-package */ SELECT ${packageColumns} FROM croupier_studio.operator_packages p
         WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 ORDER BY package_revision DESC LIMIT 1`,[operatorId]);
       const pack=rows[0]?packageRow(rows[0]):null;
       const before=await latestDraft(txQuery,operatorId);

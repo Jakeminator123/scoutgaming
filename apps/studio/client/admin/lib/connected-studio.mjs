@@ -334,7 +334,7 @@ export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativ
     async upload(file, metadata, signal) {
       if(metadata.mediaType==='image')throw Error('PNG kan provas lokalt men kan ännu inte sparas under Dealers.');
       const mode = await json('/studio/api/videos', { signal });
-      if (mode.uploadMode !== 'private-client-blob') throw Error('Den skyddade uppladdningen är otillgänglig i denna miljö.');
+      if (mode.uploadMode !== 'private-client-blob') throw Error('Den skyddade uppladdningen är otillgänglig här.');
       const contentType = /\.png$/i.test(file.name) ? 'image/png' : /\.mp4$/i.test(file.name) ? 'video/mp4' : 'video/webm';
       const result = await uploadImpl(file, metadata, contentType, { signal, fetchImpl });
       const inventory = await json('/studio/api/videos', { signal });

@@ -19,7 +19,8 @@ test('preview documents and assets have exact route boundaries', () => {
 });
 
 test('login returns only to known preview documents; never assets, queries or another origin', () => {
-  for (const path of ['/admin', '/admin/lobby', '/admin/system?flik=personal', '/admin/dealers/vera?flik=tal&verktyg=dialog', '/admin/companies/north', '/admin/rooms/room-1', '/admin/scenes?tab=mallar']) {
+  for (const path of ['/admin', '/admin/lobby', '/admin/system?flik=personal', '/admin/dealers/vera?flik=tal&verktyg=dialog', '/admin/companies/north', '/admin/rooms/room-1', '/admin/scenes?tab=miljoer',
+    '/admin/scenes?tab=material&filter=bordsgrafik', '/admin/scenes?tab=material&filter=arkiverat&game=roulette', '/admin/scenes?tab=miljoer&composition=studion&operator=north&table=kvall']) {
     assert.equal(studioLoginReturnTo(path), path);
     assert.equal(studioLoginReturnTo('/studio' + path), path);
     assert.equal(studioLoginDestination(path, '/api/auth'), path);
@@ -31,7 +32,7 @@ test('login returns only to known preview documents; never assets, queries or an
     assert.equal(studioLoginDestination(path, '/api/auth'), canonical);
   }
   for (const value of ['/admin/_assets/admin/app.js', '/admin/unknown', '/admin?returnTo=https://elsewhere.test', '//elsewhere.test/admin', '/admin/../api',
-    '/admin/dealers/vera/edit', '/admin/scenes/x', '/admin/rooms/-x', '/admin/system?token=x', '/admin/dealers/vera?flik=tal&flik=klipp', '/admin/companies/north#x'])
+    '/admin/dealers/vera/edit', '/admin/scenes/x', '/admin/rooms/-x', '/admin/system?token=x', '/admin/dealers/vera?flik=tal&flik=klipp', '/admin/scenes?tab=material&filter=a&filter=b', '/admin/scenes?tab=material&filter=<x>', '/admin/companies/north#x'])
     assert.equal(studioLoginReturnTo(value), '/admin', value);
 });
 
@@ -254,7 +255,7 @@ test('retired Admin library authorizes before redirecting to the registered mate
     const response=await serveDesignPreview(new Request(url,{method}),['material-library'],{authorize});
     assert.equal(authorized,1);assert.equal(response.status,307);assert.equal(await response.text(),'');
     const target=new URL(response.headers.get('location'),'https://studio.test');
-    assert.equal(target.pathname,'/admin/scenes');assert.equal(target.searchParams.get('tab'),'bakgrunder');assert.equal(target.searchParams.has('role'),false);
+    assert.equal(target.pathname,'/admin/scenes');assert.equal(target.searchParams.get('tab'),'material');assert.equal(target.searchParams.get('filter'),'bakgrund');assert.equal(target.searchParams.has('role'),false);
     for(const [key,value] of [['game','roulette'],['operator','north'],['room','vip']])assert.equal(target.searchParams.get(key),value);
     assert.equal(response.headers.get('cache-control'),'private, no-store');
     assert.equal((await serveDesignPreview(new Request(url,{method:'POST'}),['material-library'],{authorize})).status,405);
@@ -265,7 +266,7 @@ test('retired Admin library authorizes before redirecting to the registered mate
 test('retired library login returns to the canonical material tab without accepting invalid context',()=>{
   for(const prefix of ['/admin','/studio/admin']){
     const target=studioLoginReturnTo(prefix+'/material-library?role=background&game=roulette&room=vip');
-    assert.equal(target,'/admin/scenes?tab=bakgrunder&game=roulette&room=vip');
+    assert.equal(target,'/admin/scenes?tab=material&filter=bakgrund&game=roulette&room=vip');
     assert.equal(studioLoginReturnTo(prefix+'/material-library?role=table&role=background'),'/admin');
     assert.equal(studioLoginReturnTo(prefix+'/material-library?returnTo=https://outside.invalid'),'/admin');
   }

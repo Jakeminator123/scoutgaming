@@ -21,7 +21,7 @@ export function TaldriftPanel() {
     return()=>controller.abort();
   },[refresh]);
   return <section className="admin-speech-panel" aria-label="Taldrift">
-    <p className="admin-speech-lead">GPU-läget för dealerns tal i den här miljön. Av och Sparläge är anslutna; ett sparat önskemål är ingen driftbekräftelse.</p>
+    <p className="admin-speech-lead">GPU-läget för dealerns tal. Av och Sparläge är anslutna; ett sparat önskemål är ingen driftbekräftelse.</p>
     {state.status==='loading'&&<p role="status">Läser session och driftbehörighet…</p>}
     {state.status==='error'&&<div className="admin-system-card" role="alert"><p>{state.message}</p><button className="studio-button" type="button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>}
     {state.status==='ready'&&<MovingDriftControls client={state.client} expectedActor={state.actor}/>}

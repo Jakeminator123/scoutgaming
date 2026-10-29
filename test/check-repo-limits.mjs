@@ -47,12 +47,12 @@ test('media binaries: no additions, no growth, moves and shrinking allowed', () 
   assert.equal(errorsFor([{ path: 'apps/web/public/new.png', bytes: 100, added: true, binary: true }]), '', 'the media rule is limited to media/');
 });
 
-test('living documents have a line and size limit outside docs/history', () => {
+test('living documents have a line and size limit, with no history folder exempt', () => {
   assert.equal(lineCount(''), 0); assert.equal(lineCount('a\nb\n'), 2); assert.equal(lineCount('a\nb'), 2);
   assert.equal(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 10, lines: 150 }]), '');
-  assert.match(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 10, lines: 151 }]), /151 rader, över taket 150\. Flytta äldre avsnitt till docs\/history\//);
-  assert.match(errorsFor([{ path: 'docs/plans/BIG.md', bytes: MAX_DOC_BYTES + 1 }]), /över taket 100 kB för levande dokument\. Flytta äldre avsnitt till docs\/history\//);
-  assert.equal(errorsFor([{ path: 'docs/history/OLD.md', bytes: MAX_DOC_BYTES * 3 }]), '');
+  assert.match(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 10, lines: 151 }]), /151 rader, över taket 150\. Radera avklarat; Git har det/);
+  assert.match(errorsFor([{ path: 'docs/plans/BIG.md', bytes: MAX_DOC_BYTES + 1 }]), /över taket 100 kB för levande dokument\. Radera äldre avsnitt; Git har dem/);
+  assert.match(errorsFor([{ path: 'docs/history/OLD.md', bytes: MAX_DOC_BYTES * 3 }]), /över taket 100 kB/);
 });
 
 test('arguments accept only the documented modes', () => {

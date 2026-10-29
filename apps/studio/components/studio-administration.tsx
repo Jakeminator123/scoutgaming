@@ -49,7 +49,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const SECTION_READS: Record<string, readonly string[]> = {
   ops: ['overview'], shoes: ['shoes'], players: ['players'], users: ['users'],
   apikeys: ['apikeys'], emails: ['emails'], pay: ['transactions'],
@@ -464,7 +464,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             </details></td>
           </tr>)}</tbody>
         </table></div></>}
-        {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration i den här miljön.</p>}
+        {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration här.</p>}
         {mayWrite('players/create') && resources.players?.payload?.administration === true && <details className={styles.disclosure}><summary>Skapa spelarkonto</summary><p>Det här kontot kan logga in i Blackjack. Det ger ingen administratörsbehörighet eller Studioåtkomst.</p><form method="post" className={styles.form} onSubmit={submit('players/create', form => {
           const password = String(new FormData(form).get('password') ?? '');
           const input = form.elements.namedItem('password');
