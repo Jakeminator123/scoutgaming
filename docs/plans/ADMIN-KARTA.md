@@ -228,7 +228,7 @@ Där spelaren kan se opublicerat eller ett annat bolags material (rapporterat ti
 
 - `/game?dealer=X` utan `operator`: `selectGameEntry` tar grenen `slug===undefined` och läser sparat doc.project och doc.administration utan bolag eller paket (`game-entry-selector.mjs:54-63`); routingen släpper igenom eftersom `dealer` är en kontextnyckel (`platform-routing.mjs:96-97`, `game-entry.mjs:12`). Faller bort med nativebordet.
 - `GET /api/presentation/config?dealerId=X` lämnar ut det sparade projektets dealer-idle och hela videoregistret till varje autentiserad spelare eller gäst (`presentation-api.mjs:174-181`).
-- Rummens namn och state är inte versionerade (punkt 4). `A:room` sätter state utan aktiveringskontroll (`studio-admin-data.mjs:137-141`).
+- Rummens namn och state är inte versionerade (punkt 4). Den döda `A:room` (state utan aktiveringskontroll) är borttagen i L3 PR 1; `A:room-state` är enda vägen.
 - Lobbyns `?operator=`/`?room=`/`?dealer=` prövas mot den publika katalogen (`lobby-provider.tsx:74-85`, `catalog.mjs:57-91`); ingen väg till utkast hittad. `/game?operator=A&table=<B:s rum>` stoppas av `package-rooms.mjs:24`.
 - Ingen spelare är bunden till något bolag (nedan). Vilken spelare som helst kan spela i vilket bolags rum som helst, även på delade bordet (inga bolagskontroller i `shared-command-auth.mjs`, `shared-room-command.mjs`, `shared-room-service.mjs`).
 

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { allowsPartnerResource } from '../packages/studio-access/server/partner-access-policy.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { withOperatorLifecycle } from '../packages/operators/server/operator-lifecycle.mjs';
@@ -949,4 +950,38 @@ test('published bet profiles are read for the versions the package binds, on the
     ['room-a', version(2), 'room-b', version(3), 'room-x', version(9)]);
   assert.deepEqual([...await store.getPublishedRoomConfigHeads(pack)].sort(), ['room-a', 'room-b']);
   assert.equal((await store.getPublishedRoomConfigHeads({ operatorId: 'north', revision: 1, branding: {} })).size, 0);
+});
+
+// L3 PR 1: package reads name `rooms` through to_jsonb(p), so the same SELECTs run before and after
+// Studio 023 adds the column. Real PostgreSQL (PGlite) with the studio tables exactly as 001/005 create them.
+test('package reads tolerate operator_packages with and without the rooms column, on PostgreSQL', async t => {
+  const { createPglitePool } = await import('./fixtures/pglite-pool.mjs');
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  const ddl = async file => (await readFile(new URL(`../ops/neon-studio/${file}`, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const table = (sql, name) => new RegExp(`CREATE TABLE croupier_studio\\.${name} \\([\\s\\S]*?\\n\\);`).exec(sql)[0];
+  const [metadata, operators] = await Promise.all([ddl('001-studio-metadata.sql'), ddl('005-operators.sql')]);
+  await pool.query(['CREATE SCHEMA croupier_studio;', table(metadata, 'documents'), table(operators, 'operators'), table(operators, 'operator_packages')].join('\n'));
+  await pool.query('INSERT INTO croupier_studio.operators VALUES ($1,$2,$3,$4,$5,$6,$7)', [north.environment, north.workspaceId, 'north', 'north', 'North', 'active', 1]);
+  const room = { schemaVersion: 2, id: 'room-one', name: 'North table', operatorId: 'north', presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'live' };
+  const insert = (revision, extra = {}) => pool.query(`INSERT INTO croupier_studio.operator_packages (environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms${Object.keys(extra).map(key => ',' + key).join('')})
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9${Object.keys(extra).map((_, index) => `,$${10 + index}`).join('')})`,
+  [north.environment, north.workspaceId, 'north', revision, '["mobile-phone"]', '["blackjack"]', '["room-one"]', '{}', revision, ...Object.values(extra)]);
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock });
+  const reads = async revision => [await store.getCurrentPackage('north'), await store.getPackage('north', revision),
+    (await store.listPackages('north'))[0], (await store.getCurrentPresentationContext('north')).package];
+  await insert(1);
+  for (const pack of await reads(1)) { assert.equal(pack.revision, 1); assert.equal(pack.rooms, null, 'no column: rooms is null'); }
+  await pool.query('ALTER TABLE croupier_studio.operator_packages ADD COLUMN rooms text');
+  await insert(2);
+  for (const pack of await reads(2)) { assert.equal(pack.revision, 2); assert.equal(pack.rooms, null, 'column without a value: null'); }
+  await insert(3, { rooms: canonicalStudioJson([room]) });
+  for (const pack of await reads(3)) {
+    assert.deepEqual(pack.rooms, [room]); assert.ok(Object.isFrozen(pack.rooms) && Object.isFrozen(pack.rooms[0]));
+  }
+  assert.equal((await store.getPackage('north', 1)).rooms, null, 'older packages keep reading without rooms');
+  for (const [revision, rooms] of [[4, JSON.stringify([{ ...room, state: 'live', schemaVersion: 2 }])], [5, canonicalStudioJson([{ ...room, id: 'room-two' }])],
+    [6, canonicalStudioJson([{ ...room, operatorId: 'south' }])], [7, canonicalStudioJson([room, room])], [8, '[]']]) {
+    await insert(revision, { rooms });
+    await assert.rejects(store.getCurrentPackage('north'), refusal('studio_corrupt_operator'), `revision ${revision}`);
+  }
 });
