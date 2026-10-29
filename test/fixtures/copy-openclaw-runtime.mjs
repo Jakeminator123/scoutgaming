@@ -67,7 +67,7 @@ export async function copyOpenClawRuntime(root) {
     'packages/presentation/contracts/policies/studio-contract.json',
     'packages/presentation/contracts/presentation-layers.mjs',
     'packages/presentation/contracts/presentation-material-game.mjs',
-    'packages/presentation/contracts/presentation-room.mjs',
+    'packages/presentation/contracts/presentation-room.mjs', 'packages/presentation/contracts/package-rooms.mjs',
     'packages/presentation/contracts/probe-policy.mjs',
     'packages/presentation/contracts/roulette-media.mjs',
     'packages/presentation/contracts/schemas/video.schema.json',

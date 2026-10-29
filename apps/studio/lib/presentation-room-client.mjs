@@ -22,10 +22,15 @@ const conflictMessages = Object.freeze({
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
 export class PresentationRoomError extends Error {
-  constructor(message, { status = 0, uncertain = false } = {}) {
+  constructor(message, { status = 0, uncertain = false, code = null, materialReason = null } = {}) {
     super(message); this.name = 'PresentationRoomError'; this.status = status; this.uncertain = uncertain;
+    // Serverns fasta kod (t.ex. studio_room_choices_draft_pending) och materialets skäl (native_material_*), annars null.
+    this.code = code; this.materialReason = materialReason;
   }
 }
+// Spelinställningarna i samma POST (presentation-room-api.mjs gameConfig): språk och insatsprofil.
+const gameConfigShape = value => sameKeys(value, ['language', 'limitPreset']) && typeof value.language === 'string' && /^[a-z]{2}$/.test(value.language)
+  && typeof value.limitPreset === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(value.limitPreset);
 const invalid = () => { throw new PresentationRoomError('Svaret kunde inte verifieras.'); };
 function capability(value) {
   if (value === null) return null;
@@ -85,8 +90,13 @@ function receipt(value, context, payload) {
     || !revision(value.administrationRevision) || !packageRevision(value.packageRevision)) invalid();
   const playUrl = presentationRoomPlayUrl(value.playUrl, { operatorSlug: context.operator.slug, roomId: room.id });
   if (!playUrl.startsWith(`/play/${payload.game ?? 'blackjack'}?`)) invalid();
+  // Med spelinställningar: kvittot bär exakt de publicerade inställningarna.
+  const published = payload.gameConfig ? value.published : undefined;
+  if (payload.gameConfig && (!object(published) || !gameConfigShape(published.gameConfig) || published.gameConfig.language !== payload.gameConfig.language
+    || published.gameConfig.limitPreset !== payload.gameConfig.limitPreset || !packageRevision(published.packageRevision))) invalid();
   return Object.freeze({ ok: true, duplicate: value.duplicate, room: Object.freeze({ ...room }),
-    administrationRevision: value.administrationRevision, packageRevision: value.packageRevision, playUrl });
+    administrationRevision: value.administrationRevision, packageRevision: value.packageRevision, playUrl,
+    ...(published ? { published: Object.freeze({ packageRevision: published.packageRevision, gameConfig: Object.freeze({ ...published.gameConfig }) }) } : {}) });
 }
 function statusMessage(status) {
   return ({ 401: 'Logga in igen för att skapa spelrummet.', 403: 'Åtkomst nekad.', 409: 'Uppgifterna har ändrats. Uppdatera innan du skapar rummet.',
@@ -99,7 +109,12 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
       response = await fetchImpl(path, { credentials: 'same-origin', cache: 'no-store', redirect: 'error', ...options,
         headers: { Accept: 'application/json', ...(writing ? { 'Content-Type': 'application/json' } : {}) } });
     } catch { throw new PresentationRoomError(writing ? 'Svaret är osäkert. Försök igen med samma uppgifter.' : 'Uppgifterna kunde inte hämtas.', { uncertain: writing }); }
-    if (!response.ok) throw new PresentationRoomError(statusMessage(response.status), { status: response.status, uncertain: writing && response.status >= 500 });
+    if (!response.ok) {
+      let body = null; try { body = await response.json(); } catch {}
+      const code = typeof body?.code === 'string' && /^[a-z0-9_]{1,80}$/.test(body.code) ? body.code : null;
+      const materialReason = typeof body?.materialReason === 'string' && /^native_material_[a-z0-9_]{1,80}$/.test(body.materialReason) ? body.materialReason : null;
+      throw new PresentationRoomError(statusMessage(response.status), { status: response.status, uncertain: writing && response.status >= 500, code, materialReason });
+    }
     try { return await response.json(); } catch { throw new PresentationRoomError('Svaret kunde inte verifieras.', { uncertain: writing }); }
   }
   return Object.freeze({
@@ -112,7 +127,8 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
     async create(context, payload, { signal } = {}) {
       if (!validContext(context) || payload?.operatorId !== context.operator.id || payload?.presentationLaneId !== context.presentation.id
         || !roomName(payload.name) || !uuid(payload.idempotencyKey) || !revision(payload.expectedProjectRevision)
-        || !revision(payload.expectedAdministrationRevision) || !(payload.expectedPackageRevision === null || packageRevision(payload.expectedPackageRevision))) invalid();
+        || !revision(payload.expectedAdministrationRevision) || !(payload.expectedPackageRevision === null || packageRevision(payload.expectedPackageRevision))
+        || Object.hasOwn(payload, 'gameConfig') && ((payload.game ?? 'blackjack') !== 'blackjack' || !gameConfigShape(payload.gameConfig))) invalid();
       const value = await request(labUrl(ENDPOINT), { method: 'POST', body: JSON.stringify(payload), signal }, true);
       try { return receipt(value, context, payload); } catch { throw new PresentationRoomError('Spelrummet kan ha skapats, men svaret kunde inte verifieras. Försök igen med samma uppgifter.', { uncertain: true }); }
     },

@@ -4,6 +4,7 @@ import { readPackagePresentation, resolvePackageRoomDealer } from './presentatio
 import { isPresentationRoom, roomGame } from '../contracts/presentation-room.mjs';
 import { frozenPlaybackProject } from '../contracts/frozen-dealer-playback.mjs';
 import { filmedProfileFor } from '../contracts/filmed-profiles/studio-profile.mjs';
+import { filmedProfileOrPaow } from '../contracts/filmed-profiles/registry.mjs';
 import { validateFilmedDealProfile } from '../contracts/filmed-profile.mjs';
 import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../contracts/media-timing.mjs';
 import { recordedSpeechForVideo } from '../contracts/recorded-speech.mjs';
@@ -50,9 +51,10 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const dealerId = resolvePackageRoomDealer(pack, room, presentation);
     if (!dealerId
       || !presentation.registeredDealers.some(row => row.id === dealerId && row.idle)) fail('native_material_dealer_missing');
-    // The frozen package row's own landings first, the code profile as seed and fallback.
+    // The frozen package row's own landings first, then the code profile; without
+    // either the dealer inherits PAOW's (never blocked).
     const studio = presentation.registeredDealers.find(row => row.id === dealerId).filmedProfile;
-    const profile = filmedProfileFor(dealerId, {registeredDealers:presentation.registeredDealers});
+    const profile = filmedProfileFor(dealerId, {registeredDealers:presentation.registeredDealers}) ?? filmedProfileOrPaow(dealerId);
     if (!profile) fail('native_material_profile_missing');
     if (studio && version !== 2) fail('native_material_contract_unsupported');
     validateFilmedDealProfile(profile); compatible(profile);

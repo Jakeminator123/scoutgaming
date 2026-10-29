@@ -6,7 +6,7 @@ import {buttonVariants,cn,Footnote,plural,TechnicalDetails,textLinkClass} from '
 import {adminDealerTabs,adminDealerSteps} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import {dealerCoverage,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealer-coverage.mjs';
+import {dealerCoverage,dealerLandingsNote,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealer-coverage.mjs';
 import {DealerAvatar} from './dealer-identity-portrait';
 import {WorkspaceTool} from './workspace-tools';
 import {TaldriftPanel} from './taldrift-panel';
@@ -132,7 +132,7 @@ function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId
       <Card title="Var dealerns hand landar" aside={<Chip tone="warn">kommer senare</Chip>}>
         <Footnote className="mb-3 mt-0">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Att mäta och spara landningarna i Admin kommer senare. I dag finns de bara för två filmade dealers.</Footnote>
         <KV items={[['Givklipp',`${dealBound}/${plural(dealTotal,'fack','fack')} kopplade`],['Mobil','3 av 7 platser i ett glidande fönster, ingen zoom'],['Mäts ur','givklippen: när kortet nuddar, landar och lämnar handen']]}/>
-        <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Kommer senare">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Kommer senare">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">kommer senare</span></div>
+        <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Kommer senare">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Kommer senare">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">{dealerLandingsNote(dealerId)??'kommer senare'}</span></div>
       </Card>
       <Card title="Så ser det ut i scenen" aside="Dator">
         {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}

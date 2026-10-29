@@ -30,7 +30,7 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['clips', 'admin'], ['generations', 'admin'], ['gen-verdicts', 'admin'],
   ['apikeys', 'admin'], ['users', 'admin'], ['players', 'admin'],
   ['transactions', 'admin'], ['emails', 'admin'], ['shoes', 'admin'],
-  ['tier', 'admin'], ['room', 'admin'], ['game-lane', 'admin'],
+  ['tier', 'admin'], ['game-lane', 'admin'],
   ['game-lanes/create', 'admin'], ['game-lanes/remove', 'admin'],
   ['clip-landing', 'admin'], ['clip-never', 'admin'],
   ['gen-landing', 'admin'], ['gen-verdict', 'admin'],

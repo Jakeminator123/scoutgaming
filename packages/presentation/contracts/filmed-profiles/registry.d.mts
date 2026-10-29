@@ -7,3 +7,4 @@ export type RegisteredFilmedProfile = {
 };
 export function registeredFilmedProfile(dealerId:string): RegisteredFilmedProfile|null;
 export function registeredFilmedProfileById(profileId:string): RegisteredFilmedProfile|null;
+export function filmedProfileOrPaow(dealerId:string): (RegisteredFilmedProfile & {inherited?:'paow'})|null;
