@@ -2,7 +2,7 @@ import { createLayerComposition } from '../../../packages/presentation/runtime/p
 import { combineAbortSignals } from './abort-signals.mjs';
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { SEAT_HALF_PX, fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
-import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
+import { frozenFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import { nativeRoomFilmedPlanning } from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import { resolvePlayerSelection, applyTableColor } from '../../../packages/presentation/runtime/player-choices.mjs';
@@ -334,7 +334,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const host=document.getElementById('scene');
   const dealer=selection.registeredDealers?.find(row=>row.id===selection.dealer);
   if(!host||!dealer||selection.localDealer!==dealer.id||!/^[a-z0-9_-]{1,128}$/.test(selection.roomId??''))throw new Error('shared_room_presentation_binding_missing');
-  const filmedProfile=registeredFilmedProfile(dealer.id);
+  let filmedProfile=null;
   signal?.throwIfAborted();
   const [{PerformancePlayer},{createLocalPresentation},{createLocalCardOverlay}]=await loadAdapters();
   signal?.throwIfAborted();
@@ -376,6 +376,9 @@ export async function mountSharedRoomPresentation({ document, window, selection,
       // A dealer that cannot be shown releases a background film deferred for its first frame.
       onError:()=>{if(!dealerShown){placeholder.textContent=DEALER_UNAVAILABLE;composition?.dealerUnavailable?.();}onError('shared_room_media_unavailable');}});
     signal?.throwIfAborted();
+    // The dealer's landings come with the room's locked configuration (its frozen material or package row), so a
+    // new dealer with its own (copied) landings lays out cards and the phone's three boxes like PAOW, not the row.
+    filmedProfile=frozenFilmedProfile(dealer.id,{filmedMaterial:media.filmedMaterial,filmedProfile:media.filmedProfile});
     cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile});
     // Apply only this server binding's N2 values. Shared tables never read a
     // personal dealer/colour override or query-string choice here.

@@ -5,8 +5,9 @@ import { transitionClipsForDealer } from '../../packages/presentation/runtime/sh
 
 // Only explicit, saved media bindings can opt into a source-film sequence. The
 // caller supplies committed server events and its already authorized inventory.
-export function filmedDealSelection({project,inventory,dealerId,sourceEvent,published,shoeTransitions=false}) {
-  const profile=registeredFilmedProfile(dealerId);
+// profile: the dealer's landings from the caller's frozen context (or Admin's saved project); the code
+// register is only the default for a caller that has none (dragan, paow keep their profile).
+export function filmedDealSelection({project,inventory,dealerId,sourceEvent,published,shoeTransitions=false,profile=registeredFilmedProfile(dealerId)}) {
   if(!profile||!['deal','reveal'].includes(sourceEvent?.type))return null;
   const refs=new Set(project.lines.filter(line=>line.dealerId===dealerId).flatMap(line=>line.variants.map(row=>row.videoGenerationId)).filter(Boolean));
   const ownInventory={...inventory,videos:inventory.videos.filter(row=>refs.has(row.id))};
