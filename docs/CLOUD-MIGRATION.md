@@ -13,7 +13,7 @@ Var produkten kör, hur en ändring når produktionen och hur man kontrollerar d
 | Talkedjan (Director och Gateway) | `packages/director`, `services/openclaw/lab` | Render `croupier-lab-director` och `croupier-lab-openclaw`, med diskar `/data/catalog` och `/data/openclaw` |
 | Produktregister: konton, spel, dealers, bolag, rum, mallar, paket, spelinställningar, mediekatalog, talrepliker | SQL i `ops/neon-game` och `ops/neon-studio` | Neon `croupier-production`, databas `croupier_game` |
 | Mediebytes | Sökvägar och regler i [BLOB-NEON](storage/BLOB-NEON.md) | Privat Vercel Blob `croupier-media-private` |
-| Preview (tidigare staging) | Samma kod som produktionen mellan prov, låst SHA från `main` eller `jakob/*` | Egna resurser i Vercel, Render, Neon och Blob, se [START-HERE](../START-HERE.md#preview) |
+| Preview (tidigare staging) | Branchen `preview`, som alltid innehåller `main` och tar emot push från `main` och `jakob/*` | Vercel `scoutgaming-preview` (preview.scoutgaming.tech), Render `scoutgaming-preview-engine`, Neon `croupier-k06-k07-staging` och eget Blob-lager, se [START-HERE](../START-HERE.md#preview) |
 
 Det finns en väg: inga lokala produktregister, ingen SQLite, inga parallella QA-ytor. `node apps/studio/start.mjs --no-open` skriver bara den publicerade lobbyns adress. `/control` och `/lab` svarar med redirect till `/admin`. Variablerna per tjänst står i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 

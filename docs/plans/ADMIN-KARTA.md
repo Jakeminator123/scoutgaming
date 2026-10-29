@@ -22,7 +22,7 @@ Kontraktet mellan nivåerna är **paketet** (`operator_packages`, senaste revisi
 
 ### Hur `/admin` hänger ihop
 
-- `/admin` är en egen React-app i `apps/studio/client/admin`, byggd till `apps/studio/design-preview-build/` och serverad av `apps/studio/app/admin/[[...path]]/route.ts` (kräver personalbehörighet). Tillåtna sidor: `apps/studio/lib/design-preview-paths.mjs`. Router: `client/admin/entry.tsx`. Meny: `packages/navigation/admin-navigation.mjs` (grupperna Studio och Administration, plus System). Pensionerade adresser: `packages/navigation/admin-workspace-routes.mjs` (`ADMIN_RETIRED_DOCUMENTS`, `destinations`); omdirigering sker med 307 på servern och `navigate` i klienten. `/control/*` omdirigeras av `apps/studio/middleware.ts` via `lib/legacy-studio-document.mjs` och `packages/navigation/control-flow.mjs`.
+- `/admin` är en egen React-app i `apps/studio/client/admin`, byggd till `apps/studio/design-preview-build/` och serverad av `apps/studio/app/admin/[[...path]]/route.ts` (kräver personalbehörighet). Tillåtna sidor: `apps/studio/lib/design-preview-paths.mjs`. Router: `client/admin/entry.tsx`. Meny: `packages/navigation/admin-navigation.mjs` (grupperna Studio och Administration, plus System). Pensionerade adresser: `packages/navigation/admin-workspace-routes.mjs` (`ADMIN_RETIRED_DOCUMENTS`, `destinations`); omdirigering sker med 307 på servern och `navigate` i klienten. `/control/*` omdirigeras av `apps/studio/proxy.ts` via `lib/legacy-studio-document.mjs` och `packages/navigation/control-flow.mjs`.
 - `/admin/clips` och `/admin/scenes` är samma monterade komponent (`ConnectedClipMap`, `entry.tsx:73`); `scenes` är klippkartan med panelen `layers`. Studio-verktygen Skapa material, Svarsbibliotek, Dialogtest och Talgranskning går genom `WorkspaceTool` (`workspace-tools.tsx`), som först hämtar `GET /api/admin/workspace/<section>` (hela projektet och alla videos, `lib/admin-workspace-data.mjs:8-23`). Okända `/admin/*`-sökvägar hamnar i `RegisteredStudio` (`entry.tsx:82`).
 - Klientens gemensamma kedjor, refererade i tabellerna:
   - **K-doc** = `GET/PUT /studio/api/project` → `app/api/project/route.ts` → `lib/studio-document-api.mjs:64-80` → `neon-project-store.mjs:32` → `repository.mjs:216 saveDocument` → doc.project + `document_history` + `audit_events`. Klienten skickar **hela** projektet med CAS på revision (`client/admin/lib/connected-studio.mjs:337-351`).
@@ -89,6 +89,7 @@ En action utan handler svarar 503 (`studio-admin-api.mjs:74-76,108`). "UI" är p
 | GET/POST/DELETE speech-qa | **ingen handler** | – | ingen; klienten kastar 501 (`studio-administration.tsx:181`); #477 tar bort |
 | GET users, players, transactions, apikeys, emails | `studio-admin-data.mjs:127-134`; `studio-admin-readouts.mjs:19` | `croupier_auth.users`, `croupier_game.players/player_accounts/transactions`, `croupier_auth.api_keys`, kod | kontosidorna, Ekonomi, Integrationer |
 | GET room-game-config, presentation-room, resource-lifecycle | `room-game-config-api.mjs:105`; `presentation-room-api.mjs:252`; `resource-lifecycle-api.mjs:64` | documents, `operator_packages`, `shared_table_configs` | Rum, Bolag & team, Kopplingar |
+| GET room-release (`?operatorId&roomId`, mergad i #583) | `room-release.mjs:287` (registrerad i `operator-package-api.mjs:158`) | läser documents, `operator_packages`, `shared_table_configs`; ingen provider-I/O | **ingen ännu** (Publicera i spelbordet byggs nu); förhandsvisning: live och kandidat per område, `ready` med hinder, revisioner och `previewToken` |
 | GET/POST moving-drift | `moving-drift-admin.mjs:44` | `moving_drift_control` | Taldrift |
 | POST tournament, pitboss | `studio-admin-data.mjs:147,142` | doc.administration `tournaments/pitboss` | **ingen** (bara i `CONFIG_COMMANDS`, `studio-administration.tsx:55`) |
 | POST tier, room, game-lane, game-lanes/create, game-lanes/remove | `studio-admin-data.mjs:154,137,67,73,82` | doc.administration `tiers/rooms[].state/gameLane(s)` | bara döda `tables` (`:471-502`); `room` hoppar över aktiveringskontrollen som `room-state` har (`resource-lifecycle-api.mjs:184-187`) |
@@ -97,6 +98,7 @@ En action utan handler svarar 503 (`studio-admin-api.mjs:74-76,108`). "UI" är p
 | POST users/invite, resend, role, remove | `studio-admin-accounts.mjs:60,77`; `studio-admin-data.mjs:191-192` | `croupier_auth.users`, `tokens`, `lab_sessions`, `bo_lab_handoffs` | Konton & åtkomst |
 | POST apikeys/create | `studio-admin-accounts.mjs:88` | `croupier_auth.api_keys` | Integrationer |
 | POST operator-package | `operator-package-api.mjs:209` (+prepare `:161`) | pkg+1 | Rum (`registered-studio.tsx:187,199`), Sceneditor (`lib/scene-publication.mjs:34`) |
+| POST operator-package `{action:'publish-room'}` (mergad i #583) | `room-release.mjs:390` (+prepare `:356`; grenar i `operator-package-api.mjs:196,249`) | pkg+1 + `shared_table_configs`/`_heads` och rummets `roomGameConfigs`-utkast bort, i en transaktion | **ingen ännu** (UI-knappen byggs nu); kräver `previewToken` från GET room-release |
 | POST room-game-config | `room-game-config-api.mjs:110` | `roomGameConfigs`; publish = pkg+1 | Rum |
 | POST presentation-room | `presentation-room-api.mjs:297` | doc.administration `rooms` + pkg+1 | Rum |
 | POST operator-create-demo | `operator-package-api.mjs:288` | skapar bolaget **`sg-test`** (`:19-23`) | **ingen** |
@@ -106,7 +108,7 @@ En action utan handler svarar 503 (`studio-admin-api.mjs:74-76,108`). "UI" är p
 
 ### Knappar som höjer paketrevisionen
 
-ADMIN-FORENKLING från 27 oktober räknade fem. Det finns åtta:
+ADMIN-FORENKLING från 27 oktober räknade fem. Det finns åtta knappar, och sedan #583 en nionde serverväg utan knapp:
 
 | # | Knapp (fil:rad) | Action | Fryser |
 |---|---|---|---|
@@ -118,6 +120,7 @@ ADMIN-FORENKLING från 27 oktober räknade fem. Det finns åtta:
 | 6 | "Lägg till spel": `presentation-room-create.tsx:117-118` | A:presentation-room | nytt rum i doc.administration + paketets `tables` (`presentation-room-api.mjs:328-330`) |
 | 7 | "Flytta till papperskorgen" / "Återställ rum": `control-resource-lifecycle.tsx:137-138` | A:room-lifecycle | arkivpost i paketets `branding`; rummet ut ur eller in i `tables` (`resource-lifecycle-api.mjs:175-176`) |
 | 8 | stäng av / återställ bolag (Bolag & team): `control-resource-lifecycle.tsx:144` | A:operator-lifecycle | `operators.status` + pkg+1 (OS:617-621) |
+| 9 | ingen knapp än: serverväg för steg D, "Publicera" i spelbordet ([ADMIN-FORENKLING](ADMIN-FORENKLING.md) §7), byggs nu | A:operator-package `publish-room` efter GET room-release | hela spelbordet i en publicering: fryst presentation, viloklipp, placering och spelinställningar → `shared_table_configs` (`room-release.mjs:390-463`); när knappen finns flyttas 1, 3 och 5 till Avancerat eller bort och 2 blir fält (#583) |
 
 "Pausa/Öppna spel" (`registered-studio.tsx:249`, A:room-state) höjer inte paketet men höjer administrationsrevisionen, så ett öppet spelinställningsutkast får 409 (`room-game-config-api.mjs:116`). Varje pkg+1 gör ett öppet partnerutkast inaktuellt (OS:701-702): publicering kräver att utkastets bas är senaste revisionen.
 
@@ -290,7 +293,7 @@ Förkortningar: **REPO** = `packages/studio-registry/server/repository.mjs`, **L
 
 | Skrivmål | Ytor | Samma kontrakt? | Risk |
 |---|---|---|---|
-| **`operator_packages`** (pkg+1) | åtta knappar i Admin (tabellen ovan) plus portalens Spelrum, materialpapperskorgen (`resource-lifecycle-api.mjs:139`), dealerarkivering (`dealer-archive-impact.mjs:141`) och AI-assistenten (`lib/assistant-actions.mjs:88-119`) | samma `publishWithin`, men CAS skiljer: de flesta skickar expectedRevision; `operator-package-api.mjs:283` tar `current?.revision` vid läsningen | revisionen höjs från ungefär tio vägar; varje höjning gör partnerns öppna utkast inaktuellt (OS:701-702) och ett öppet spelinställningsutkast ogiltigt (409) |
+| **`operator_packages`** (pkg+1) | åtta knappar i Admin och serverns `publish-room` (tabellen ovan) plus portalens Spelrum, materialpapperskorgen (`resource-lifecycle-api.mjs:139`), dealerarkivering (`dealer-archive-impact.mjs:141`) och AI-assistenten (`lib/assistant-actions.mjs:88-119`) | samma `publishWithin`, men CAS skiljer: de flesta skickar expectedRevision; `operator-package-api.mjs:283` tar `current?.revision` vid läsningen | revisionen höjs från ungefär tio vägar; varje höjning gör partnerns öppna utkast inaktuellt (OS:701-702) och ett öppet spelinställningsutkast ogiltigt (409) |
 | **`operator_branding_drafts`** (rummets utseende) | `/partner/<bolag>/rooms` (`rooms.jsx:28`) och `/admin/rooms` (`registered-studio.tsx:261`), samma loader och endpoint | samma rad | **ett utkast per bolag**, inte per rum: Admin, bolaget och alla rum (`roomOverrides`) redigerar samma kedja; skyddet är bara 409 på `expectedDraftRevision` (OS:700). Vilka val som tillåts avgörs av sessionen (PBA:269), inte av propen `adminChoices` |
 | **`operator_memberships`** (team) | `/admin/companies` (`operator-admin-api.mjs:181/216`) och `/partner/<bolag>/team` (PTA:94), aktivering i `partner-session.mjs:579` | samma `upsertMembership` (OS:493), två regelverk | inbjudningslogiken finns två gånger (`operator-admin-api.mjs:152-191`, PTA:130-169); journalens action skiljer (`team.invite` mot `membership.create`) |
 | **`croupier_auth.users`** (inbjudan) | Konton & åtkomst users/invite (`studio-admin-accounts.mjs:70`, roll admin); Bolag & team och portalen → `operator-accounts.mjs:139` (roll partner) | två INSERT-vägar | users/invite kontrollerar krock mot `player_accounts` (`:67-68`); partnervägen gör det inte |

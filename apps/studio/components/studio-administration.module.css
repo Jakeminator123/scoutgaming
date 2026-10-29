@@ -35,7 +35,7 @@
 .disclosure[open] > summary { margin-bottom: 8px; }
 .disclosure form { margin-top: 10px; }
 :is(.administration) label { display: grid; gap: 7px; font-size: 14px; }
-:is(.administration) input, :is(.administration) select { color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; min-width: 0; max-width: 100%; }
+:is(.administration) input, :is(.administration) select { border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; }
 :is(.administration) input:not([type="checkbox"]), :is(.administration) select { min-height: 42px; }
 :is(.administration) fieldset { border: 1px solid var(--line); border-radius: 7px; padding: 12px; min-width: 0; }
 :is(.administration) legend { padding: 0 6px; }

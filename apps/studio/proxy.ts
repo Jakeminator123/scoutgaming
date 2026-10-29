@@ -20,7 +20,9 @@ function legacyDocumentRedirect(request: NextRequest, publicOrigin?: string) {
 
 // Services route Studio documents directly to this app. Retain the same exact
 // transport boundary that the separate frontend previously enforced.
-export function middleware(request: NextRequest) {
+// Next 16 kallar konventionen proxy (tidigare middleware); den kör alltid i
+// Node.js och tillåter inte config.runtime.
+export function proxy(request: NextRequest) {
   const metadata = studioDocumentNavigationMetadata(request);
   if (metadata.controlDocument && metadata.crossSite) console.info('studio_document_transport', {
     stage: 'middleware', ...metadata,
@@ -56,4 +58,4 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-export const config = { runtime: 'nodejs', matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };
