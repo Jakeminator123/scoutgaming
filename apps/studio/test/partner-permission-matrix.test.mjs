@@ -38,6 +38,7 @@ const BRANDING_ACTIONS = ['save-draft', 'discard-draft', 'review', 'publish', 'r
 const API_READS = [
   { id: 'snapshot', path: 'snapshot', requires: [FLOOR] },
   { id: 'branding GET', path: 'branding', requires: ['presentations.read'] },
+  { id: 'assignment', path: 'assignment', requires: ['presentations.read'] },
   { id: 'team GET', path: 'team', requires: ['team.read'] },
   { id: 'journal', path: 'journal', requires: TEAM_WRITE },
   { id: 'journal kind=publications', path: 'journal', query: '&kind=publications', requires: ['reports.read'] },
