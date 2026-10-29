@@ -5,9 +5,14 @@ export const themeModeStorageKey = 'sg-theme';
 export const themeModes = Object.freeze(['dark', 'light']);
 export const defaultThemeMode = 'dark';
 
-// Körs före första målningen: inline i Next-layouten och som /admin/_assets/admin/theme-mode.js
-// i Admin, vars CSP inte tillåter inline-skript. Ett otillgängligt localStorage ger standardläget.
-export const themeModeBootstrap = `(function(){var m='dark';try{if(localStorage.getItem('sg-theme')==='light')m='light';}catch(e){}var c=document.documentElement.classList;c.remove('dark','light');c.add(m);})();`;
+// Körs före första målningen: som vanligt <script> i <head> i Next-layouten (app/layout.tsx;
+// inte next/script, vars inline-innehåll körs först när Next startar) och som
+// /admin/_assets/admin/theme-mode.js i Admin, vars CSP inte tillåter inline-skript.
+// Engångsflytt av Partnerportalens tidigare val (localStorage 'sg-partner-theme'): saknas
+// sg-theme och var det gamla valet light, sparas light under sg-theme; den gamla nyckeln tas bort.
+// Läget bestäms före skrivningarna, så en nekad skrivning ändrar det inte. Ett otillgängligt
+// localStorage ger standardläget.
+export const themeModeBootstrap = `(function(){var m='dark';try{var s=localStorage,v=s.getItem('sg-theme'),o=s.getItem('sg-partner-theme');if(v===null&&o==='light')v='light';if(v==='light')m='light';if(o!==null){if(m==='light')s.setItem('sg-theme',m);s.removeItem('sg-partner-theme');}}catch(e){}var c=document.documentElement.classList;c.remove('dark','light');c.add(m);})();`;
 
 export function normalizeThemeMode(value) {
   return value === 'light' ? 'light' : defaultThemeMode;

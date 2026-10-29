@@ -1,8 +1,8 @@
 import {useEffect,useState} from 'react';
 import {Upload} from 'lucide-react';
 import Link, {navigate,useSearchParams} from '../../../runtime/navigation';
-import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,Steps,ActionMenu,PreviewFlyout,pageClass} from '../ui/hub';
-import {buttonVariants,cn,plural,TechnicalDetails} from '../ui/kit';
+import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,Steps,ActionMenu,PreviewFlyout,pageClass,AsideLink} from '../ui/hub';
+import {buttonVariants,cn,Footnote,plural,TechnicalDetails,textLinkClass} from '../ui/kit';
 import {adminDealerTabs,adminDealerSteps} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
@@ -90,7 +90,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
         <Card title="Bolag">{uses.operators.length?<div className="grid">{uses.operators.map(operator=><Row key={operator.id} chip={<Chip>{operator.packageRevision===null?'ingen version':`version ${operator.packageRevision}`}</Chip>} title={operator.name} text="via spelbordens scenmallar" href={`/admin/companies/${encodeURIComponent(operator.id)}?flik=tilldelning`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Inte tilldelad något bolag.</p>}</Card>
         <Card title="Scenmallar">{templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip tone={lane.isDefault?'accent':''}>{lane.isDefault?'förval':'tillåten'}</Chip>} title={lane.label} text={lane.isDefault?'Dealern är förvald i mallen':'Dealern kan väljas i mallen'} href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealer.id)}`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Ingen scenmall tillåter dealern ännu.</p>}</Card>
       </div>
-      <Card title="Alla kopplingar" aside="Samma läsning som System › Beroenden"><ResourceConnections embedded context={'?dealer='+encodeURIComponent(dealer.id)}/></Card>
+      <Card title="Alla kopplingar" aside={<AsideLink href={'/admin/system?flik=beroenden&dealer='+encodeURIComponent(dealer.id)}>Beroenden under System</AsideLink>}><ResourceConnections embedded context={'?dealer='+encodeURIComponent(dealer.id)}/></Card>
     </div>}
     {(tab==='landningar'||tab==='anvands')&&<TechnicalDetails items={technical}/>}
   </div>;
@@ -106,7 +106,7 @@ function ApprovalCard({coverage,templates}:{coverage:Coverage;templates:{id:stri
   ];
   return <Card title="Godkännande" aside="Krävs för att dealern ska kunna tilldelas" className="mt-3">
     <div className="grid">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">kommer senare</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
-    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Checklistan visar läget; godkännandet sparas inte ännu. Tilldelning görs under Bolag › Tilldelning. Mätningen av landningar i Admin kommer senare; i dag finns de bara för två filmade dealers.</p>
+    <Footnote>Checklistan visar läget; godkännandet sparas inte ännu. Dealern tilldelas under bolagets flik Tilldelning i <Link href="/admin/companies" className={textLinkClass}>Bolag och spelbord</Link>. Mätningen av landningar i Admin kommer senare; i dag finns de bara för två filmade dealers.</Footnote>
   </Card>;
 }
 
@@ -117,7 +117,7 @@ function DealerPreview({dealerId,templates,saved}:{dealerId:string;templates:{id
     {templates.length>1&&<label className="mb-3 grid gap-1.5 text-[13px] font-semibold">Scenmall<select value={lane?.id??''} onChange={event=>setLaneId(event.target.value)} className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text">{templates.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
     {!templates.length&&<Empty chip={null} title="Ingen scenmall tillåter dealern" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}
     {lane&&<SavedScenePreview active={open} presentationLaneId={lane.id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/>}
-    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Visar scenmallens sparade förval som spelaren ser dem vid det delade bordet, på dator. Mobilvyn kommer senare.</p>
+    <Footnote>Visar scenmallens sparade förval som spelaren ser dem vid det delade bordet, på dator. Mobilvyn kommer senare.</Footnote>
   </PreviewFlyout>;
 }
 
@@ -126,16 +126,16 @@ function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId
   return <div className="mt-5 grid gap-4">
     <div className="grid gap-4 md:grid-cols-2">
       <Card title="Var dealerns hand landar" aside={<Chip tone="warn">kommer senare</Chip>}>
-        <p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Att mäta och spara landningarna i Admin kommer senare. I dag finns de bara för två filmade dealers.</p>
+        <Footnote className="mb-3 mt-0">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Att mäta och spara landningarna i Admin kommer senare. I dag finns de bara för två filmade dealers.</Footnote>
         <KV items={[['Givklipp',`${dealBound}/${plural(dealTotal,'fack','fack')} kopplade`],['Mobil','3 av 7 platser i ett glidande fönster, ingen zoom'],['Mäts ur','givklippen: när kortet nuddar, landar och lämnar handen']]}/>
         <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" className={buttonVariants()} disabled title="Kommer senare">Mät landningar</button><button type="button" className={buttonVariants({variant:'ink'})} disabled title="Kommer senare">Exportera landningsmall</button><span className="text-[12.5px] text-sg-muted">kommer senare</span></div>
       </Card>
       <Card title="Så ser det ut i scenen" aside="Dator">
         {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen scenmall tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}
-        <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Bordsgrafiken ritas efter dealern, inte tvärtom. Lagrens storlek och läge ändras under <Link href="/admin/scenes?tab=mallar" className="font-semibold text-sg-accent-text">Scenmallar</Link>.</p>
+        <Footnote>Bordsgrafiken ritas efter dealern, inte tvärtom. Lagrens storlek och läge ändras under <Link href="/admin/scenes?tab=mallar" className={textLinkClass}>Scenmallar</Link>.</Footnote>
       </Card>
     </div>
-    <Card title={`Scenmallar som tillåter dealern (${templates.length})`} aside={<Link href="/admin/scenes?tab=mallar" className="font-semibold text-sg-accent-text no-underline hover:underline">Scenmallar →</Link>}>
+    <Card title={`Scenmallar som tillåter dealern (${templates.length})`} aside={<AsideLink href="/admin/scenes?tab=mallar">Scenmallar</AsideLink>}>
       {templates.length?<div className="grid">{templates.map(lane=><Row key={lane.id} chip={<Chip>scenmall</Chip>} title={lane.label} text="Dealern kan väljas i mallen" href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}&dealer=${encodeURIComponent(dealerId)}`}/>)}</div>:<Empty chip={null} title="Ingen scenmall tillåter dealern ännu"/>}
     </Card>
   </div>;

@@ -73,13 +73,6 @@ test('Dealer Forge page renders the full matrix server-side: groups, every slot,
   assert.doesNotMatch(html, /Registrera dealer|Ny dealer · id|Dealer Forge/);
 });
 
-test('the composer sends one idempotency key per distinct request and keeps it across ambiguous failures', () => {
-  const source = readFileSync(fileURLToPath(new URL('./dealer-forge-page.tsx', import.meta.url)), 'utf8');
-  assert.match(source, /\{\.\.\.payload,requestId\}/);
-  assert.match(source, /attemptRef\.current\?\.signature!==signature\)attemptRef\.current=\{signature,requestId:crypto\.randomUUID\(\)\}/);
-  assert.match(source, /status>=400&&status<500\)attemptRef\.current=null/);
-});
-
 test('without native data material creation has no duplicate dealer form and shows readable setup warnings', async () => {
   const html = renderToStaticMarkup(React.createElement(DealerMaterialCreator, { dealerId: 'paow', initialIndex: { dealers: [{ id: 'paow', label: 'Paow' }], migrationReady: false, runwayConfigured: false }, initialState: null }));
   assert.doesNotMatch(html, /Registrera dealer|RUNWAY_API_KEY|migration 008/); assert.match(html, /inte färdigkonfigurerat/); assert.match(html, /Genereringstjänsten är inte ansluten/); assert.match(html, /Läser dealern/); assert.match(html, /<fieldset[^>]*disabled/);

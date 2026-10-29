@@ -5,8 +5,12 @@ const migrationReports = new Set([
   "migrering/status.json",
 ]);
 const guides = new Set([
+  ".cursor/rules/scoutgaming.mdc",
+  ".github/copilot-instructions.md",
+  ".windsurf/rules/scoutgaming.md",
   "AGENTS.md",
   "CLAUDE.md",
+  "GEMINI.md",
   "README.md",
   "START-HERE.md",
   "apps/studio/AGENTS.md",

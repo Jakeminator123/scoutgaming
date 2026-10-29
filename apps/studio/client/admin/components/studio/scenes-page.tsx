@@ -1,3 +1,4 @@
+import {ArrowRight} from 'lucide-react';
 import Link from '../../../runtime/navigation';
 import {HubPage,Tabs,Card,Chip,Row,Empty,Note,pageClass} from '../ui/hub';
 import {buttonVariants,cn,focusRing,plural} from '../ui/kit';
@@ -18,7 +19,7 @@ export function ScenesPage(props:Head|Tail) {
     const rooms=props.workspace?.catalog.administration.rooms.filter(room=>room.state!=='archived')??[];
     const dealerOf=(id:string)=>({id,label:props.workspace?.project.dealers.find(row=>row.id===id)?.label??'Okänd dealer'});
     return <HubPage wide continued title="Scenmallar och material" intro="En scenmall placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Materialet laddas upp här, på ett ställe."
-      actions={props.tab==='mallar'?<Link className={buttonVariants()} href="/admin/companies?tab=spelbord">Spelbord som använder mallarna →</Link>:undefined}>
+      actions={props.tab==='mallar'?<Link className={buttonVariants()} href="/admin/companies?tab=spelbord">Spelbord som använder mallarna<ArrowRight aria-hidden="true"/></Link>:undefined}>
       <Tabs items={adminSceneTabs} active={props.tab} param="tab" counts={props.workspace?{mallar:lanes.length,bakgrunder:assets.filter(asset=>asset.role==='background').length,bordsgrafik:assets.filter(asset=>asset.role==='table').length,papperskorg:trash}:{}}/>
       {props.tab==='mallar'&&lanes.length>0&&<div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3" role="list" aria-label="Scenmallar">{lanes.map(lane=>{const used=rooms.filter(room=>room.compositionId===lane.id);const dealers=lane.layers.dealer.allowed.map(dealerOf);
         return <Link key={lane.id} role="listitem" href={`/admin/scenes?tab=mallar&composition=${encodeURIComponent(lane.id)}`} className={cn('group grid overflow-hidden rounded-xl border border-sg-border bg-sg-surface text-sg-text no-underline shadow-sg transition-[box-shadow,border-color] duration-200 hover:border-sg-faint hover:shadow-md motion-reduce:transition-none',focusRing)}>

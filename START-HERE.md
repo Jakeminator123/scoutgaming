@@ -80,7 +80,7 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 | Fråga | Dokument |
 | --- | --- |
 | Läge, återstående arbete, kända fällor | [NEXT-AGENT](docs/NEXT-AGENT.md) |
-| Aktivitetsstatus och plan | [STATUS](migrering/STATUS.md), [MASTERPLAN](migrering/MASTERPLAN.md) |
+| Aktivitetsstatus (migreringen är avslutad) | [STATUS](migrering/STATUS.md) |
 | Regler för agenter | [AGENTS](AGENTS.md) |
 | Vad orden betyder (bred referens) | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
 | Arbetssteg i Admin | [användarguiden](apps/studio/docs/README.md) |
