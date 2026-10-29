@@ -2,6 +2,7 @@ import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioS
 import { createNeonProjectStore, createNeonSocialStore } from './neon-project-store.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
+import { movingSpeechBanksAllowed } from '../../../packages/presentation/contracts/dealer-speech-profile.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {
@@ -40,7 +41,8 @@ function documentSession(session, scope) {
 
 // These are Studio policy endpoints, not BO reader/staff administration access.
 // Exact saved documents only; request drafts never become game policy implicitly.
-export function createStudioDocumentApi({ repository, authorize, config, validateProjectBindings, gamePolicy, mutationTransaction } = {}) {
+// movingSpeechDealers: the dealers with a moving bank in this environment (movingDriftDealerIds); none when absent.
+export function createStudioDocumentApi({ repository, authorize, config, validateProjectBindings, gamePolicy, mutationTransaction, movingSpeechDealers = () => [] } = {}) {
   if (typeof authorize !== 'function' || !config) fail('studio_invalid_configuration');
   const scope = validateStudioScope(config.scope);
   if (!['/api/admin', '/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
@@ -71,6 +73,11 @@ export function createStudioDocumentApi({ repository, authorize, config, validat
       if (field === 'project') {
         if (typeof validateProjectBindings !== 'function') fail('studio_media_verifier_required');
         await validateProjectBindings(body.project);
+        // The bank check is the server's, not only Admin's: the saved project is read only when a motion reference
+        // would be refused without it, so an unchanged active profile (Dragan) stays saveable.
+        const banks = movingSpeechDealers();
+        if (!movingSpeechBanksAllowed(body.project, null, banks) && !movingSpeechBanksAllowed(body.project, await store.load(), banks))
+          fail('studio_speech_bank_missing', 422);
       }
       const saved = await mutationTransaction(async () => {
         const current = await authorize(request);

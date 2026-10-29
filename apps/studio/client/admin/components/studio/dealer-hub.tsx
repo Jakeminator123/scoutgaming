@@ -13,8 +13,9 @@ import {TaldriftPanel} from './taldrift-panel';
 import {ResourceConnections} from './resource-connections';
 import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
+import {DealerTimingAction} from './clip-timing';
 
-type Props={part:'head'|'tail';dealerId:string;tab:string;workspace:Workspace|null;saved:StudioProject|null};
+type Props={part:'head'|'tail';dealerId:string;tab:string;workspace:Workspace|null;saved:StudioProject|null;onMaterialChanged?:()=>void};
 const base=(dealerId:string)=>'/admin/dealers/'+encodeURIComponent(dealerId);
 type Coverage=ReturnType<typeof dealerCoverage>;
 function Meter({label,part}:{label:string;part:{bound:number;total:number}}) {
@@ -25,7 +26,7 @@ function Meter({label,part}:{label:string;part:{bound:number;total:number}}) {
 
 // The dealer nav: header with portrait, status and actions, the seven steps, tabs. The clip map (Klippkarta,
 // Röst och tal, Inställningar) is mounted by entry.tsx between head and tail so one instance serves all three tabs.
-export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
+export function DealerHub({part,dealerId,tab,workspace,saved,onMaterialChanged}:Props) {
   const query=useSearchParams();
   // Svarsbiblioteket and Dialogtest keep their drafts across tab changes on this dealer.
   const [talVisited,setTalVisited]=useState(tab==='tal');
@@ -67,6 +68,8 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
       <span className="text-[12.5px] font-semibold text-sg-text">Krävs för spel</span>
       <Meter label="Giv" part={coverage.deal}/><Meter label="Tal" part={coverage.speech}/><Meter label="Vila" part={coverage.idle}/>
       <span className="text-xs text-sg-faint">Skoövergångar och {plural(coverage.optional.total,'replik','repliker')} är frivilliga.</span>
+      {/* Spelbordet publiceras bara med uppmätta klipp; mätningen ger inget nytt bild- eller talgodkännande. */}
+      <div className="ml-auto"><DealerTimingAction inventory={workspace?.inventory} dealerId={dealerId} onDone={onMaterialChanged}/></div>
     </div>}
     {tab==='installningar'&&coverage&&<ApprovalCard coverage={coverage} templates={templates}/>}
     {tab==='installningar'&&dealer&&<TechnicalDetails items={technical}/>}

@@ -6,7 +6,11 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
-import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,AI_THEME_ENVIRONMENT_NOTE,adoptInRoom,adoptInTemplate,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,aiTableWidthSuggestion,
+  dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_PRESETS} from '../lib/ai-image-contract.mjs';
+import {AI_TABLE_STYLES,aiTableLookFromColour} from '../lib/ai-table-style.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {aiImageLabel,aiPlacementHash,aiTableLabelFit,sha256Hex} from '../lib/ai-image-contract.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
@@ -183,4 +187,50 @@ test('choosing a table in a scene template blocks a misfit AI graphic and explai
   assert.doesNotMatch(other,/value="00000000-0000-4000-8000-0000000000a2" disabled=""/,'manual material is never blocked');
   const chosen={...lane(['astrid']),layers:{...lane(['astrid']).layers,table:{enabled:true,default:ai.id,allowed:[ai.id]}}};
   assert.match(html({lane:chosen}),new RegExp('role="alert">'+ai.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+': Bordsgrafiken är ritad för en annan dealer'));
+});
+
+test('styles: the bolder presets come first, every preset has a table style, and "Fri" takes the inspiration\'s colour',()=>{
+  assert.deepEqual(AI_IMAGE_PRESETS.map(row=>row.label),['Mörk lyx','Aggressiv neon','Klassiskt casino','Mörk studio','Varm lounge','Ljus studio','Fri']);
+  assert.deepEqual(Object.keys(AI_TABLE_STYLES).sort(),AI_IMAGE_PRESETS.map(row=>row.id).sort());
+  for (const [id,style] of Object.entries(AI_TABLE_STYLES)) assert.match(style.stroke,/^rgba\(/,id);
+  assert.deepEqual(aiTableLookFromColour({r:20,g:120,b:60}),{felt:'#0d4f28',light:'#218b4b'},'kept dark enough for the white box stroke');
+  assert.equal(aiTableLookFromColour({r:300,g:0,b:0}),null);
+});
+
+test('the dialog suggests Bordsbredd % from the dealer\'s reach and names the skipped environment image',()=>{
+  const suggestion=aiTableWidthSuggestion('paow',defaultCompositionSettings());
+  assert.equal(suggestion.changed,true);assert.deepEqual(suggestion.current.percent,{desktop:31.6,mobile:100});
+  assert.deepEqual(suggestion.suggested.percent,{desktop:37.7,mobile:119});
+  assert.ok(suggestion.suggested.share>=suggestion.range.min&&suggestion.suggested.share<=suggestion.range.max);
+  assert.deepEqual(suggestion.suggested.tableWidth,{mobile:suggestion.suggested.composition.mobile.table.width,desktop:suggestion.suggested.composition.desktop.table.width});
+  assert.equal(aiTableWidthSuggestion('astrid',defaultCompositionSettings()),null);
+  assert.match(AI_THEME_ENVIRONMENT_NOTE,/^Miljöbild hoppas över/);
+});
+
+const TABLE='00000000-0000-4000-8000-0000000000a1';
+test('"Använd i miljön och i spelbordet" posts one adopt request and reads only a matching receipt',async()=>{
+  const sent=[],receipt={ok:true,operatorId:'north',roomId:'north-a',previousPackageRevision:7,packageRevision:8,projectRevision:'project-9',configVersion:'cfg-2',publishedAt:'2026-10-29T20:00:00.000Z',actor:'jakob',changes:[]};
+  const input={operatorId:'north',roomId:'north-a',compositionId:'paow-bord',materials:[{role:'table',assetId:TABLE}],tableWidth:{mobile:1.19,desktop:.377},expectedProjectRevision:'project-8'};
+  const ok=await adoptInRoom(input,{fetchImpl:async(url,init)=>{sent.push({url,init});return Response.json(receipt);}});
+  assert.deepEqual(ok,{ok:true,receipt});
+  assert.equal(sent.length,1);assert.equal(sent[0].url,'/api/admin/operator-package');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
+  assert.deepEqual(JSON.parse(sent[0].init.body),{action:'adopt-room-material',...input});
+  const wrong=await adoptInRoom(input,{fetchImpl:async()=>Response.json({...receipt,roomId:'north-b'})});
+  assert.equal(wrong.ok,false);assert.match(wrong.error,/kvittot/);
+  const refused=await adoptInRoom(input,{fetchImpl:async()=>Response.json({error:'studio_release_invalid',code:'studio_release_invalid',reason:'studio_release_other_changes'},{status:422})});
+  assert.equal(refused.ok,false);assert.equal(refused.reason,'studio_release_other_changes');assert.match(refused.error,/andra sparade ändringar.*Inget publicerades/);
+  const lost=await adoptInRoom(input,{fetchImpl:async()=>{throw Error('offline');}});
+  assert.equal(lost.ok,false);assert.match(lost.error,/Svaret kom inte fram/);
+});
+
+test('"Använd i miljön" without a spelbord saves the adopted scene template as the project draft',async()=>{
+  const project=structuredClone(nativeRoomMaterialFixture({capture:false}).project),lane=project.lanes[0].id;
+  const asset={schemaVersion:1,id:TABLE,role:'table',game:'blackjack',label:aiImageLabel('Mörk lyx',{dealerId:'dragan',placement:aiPlacementHash(defaultCompositionSettings())}),
+    sha256:'b'.repeat(64),size:100,contentType:'image/webp',width:1215,height:2074};
+  project.layerAssets=[...(project.layerAssets??[]),{...asset,pathname:layerAssetPath(asset)}];
+  const saves=[];
+  const result=await adoptInTemplate({project,compositionId:lane,materials:[{role:'table',assetId:TABLE}]},{save:async next=>{saves.push(next);return next;}});
+  assert.equal(saves.length,1);assert.equal(result.lanes[0].layers.table.default,TABLE);assert.deepEqual(result.lanes[0].layers.table.allowed,[TABLE]);
+  assert.equal(project.lanes[0].layers.table.default,null,'the loaded project is not changed in place');
+  await assert.rejects(adoptInTemplate({project,compositionId:'saknas',materials:[{role:'table',assetId:TABLE}]},{save:async()=>assert.fail('nothing is saved')}),/Miljön finns inte/);
 });

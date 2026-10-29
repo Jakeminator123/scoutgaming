@@ -237,6 +237,18 @@ röstprofil; dealers utan en sådan har **Förbered röstprofil för
 realtidstal**. Att spara en röstprofil gör inget betalt prov och godkänner
 ingen läppsynk.
 
+**Referenstyp** under realtidstal: **Stillbild** (en ruta ur dealerns egen
+video, stillbildsvägen) eller **Rörlig** (dealerns bank, `motion-video`).
+En rörlig referens kan alltid sparas som förberedelse; bankbygget tar den
+valda positionen som vilaruta och kräver steg om 125 ms (hel ruta i 24 fps).
+**Begär AI-tal** går att slå på för en rörlig referens bara när miljöns
+driftprofil för dealern har en bankhash (`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`
+på Vercel); servern vägrar annars sparningen (`studio_speech_bank_missing`),
+utom för en redan begärd profil med samma referens (rösten får bytas).
+Referensen ska vara ett av bankens klipp. Referenstypen kan inte
+bytas medan AI-tal är begärt. Paows körning:
+[PAOW-BANK-KORNING](../../../docs/PAOW-BANK-KORNING.md).
+
 Under talpanelen finns:
 
 - **Tal vid inaktivitet**: inte anslutet per dealer ännu.
@@ -388,6 +400,55 @@ scenval; **Visa var den används** visar vilka miljöer som använder filen.
 
 Arkiverade bakgrunder och bordsgrafik kan återställas; permanent radering är
 ett eget steg. Publicerade spelbord påverkas inte.
+
+#### Bord och bakgrund med AI
+
+**Skapa med AI** i Bordsgrafik ritar bordet åt en vald dealer och scenmall.
+Spelbordets **Utseende** har länken **Skapa bord och bakgrund med AI för
+spelbordet**, som öppnar samma dialog för det spelbordet.
+
+- **Stil**: **Mörk lyx** (svart filt, rosenträ, guldkant) och **Aggressiv
+  neon** (svart filt, magenta och cyan ljuslinje) först, sedan **Klassiskt
+  casino** (grön filt, mahogny, guldrand) och de tre tidigare **Mörk studio**,
+  **Varm lounge** och **Ljus studio**. **Fri** följer bara beskrivningen och
+  inspirationsbilden; bildens dominerande färg blir bordets färg, mörkad
+  tills boxarnas vita streck har kontrasten 3:1 mot filten.
+- **Bredd**: bocken **Anpassa bordets bredd efter dealerns räckvidd** (på som
+  standard) ritar bordet så att boxarna fyller 75 % av bordet. Bordsbredd %
+  följer med till scenmallen för både dator och mobil; för PAOW blir det
+  37,7 % på dator (tidigare 31,6 %) och 119 % på mobil (tidigare 100 %).
+  Boxarna ritas exakt ur dealerns filmade profil, så korten landar i dem.
+- **Använd**: välj ett förslag och **Använd**. Med bocken **Använd i miljön
+  *scenmall* och i spelbordet *spelbord*** (när dialogen öppnats från ett
+  spelbord) tillåts materialet i scenmallen, blir standard, får sin
+  bordsbredd och spelbordet publiceras, allt i en transaktion. Utan spelbord
+  sparas scenmallen som utkast, och du publicerar själv. Utan bocken hamnar
+  förslaget bara i biblioteket. Detta stoppar **Använd** (felet
+  `studio_release_invalid` med skälet inom parentes); inget skrivs och
+  materialet ligger kvar i biblioteket:
+  - spelbordet har andra sparade men opublicerade ändringar, även ett
+    utkast till spelinställningarna (`studio_release_other_changes`; utkastet
+    står kvar), eller saknar publicerade spelinställningar
+    (`studio_room_game_config_missing`);
+  - spelbordet använder en annan scenmall (`ai_adopt_other_template`), eller
+    scenmallen eller materialet finns inte (`ai_adopt_template_missing`,
+    `ai_adopt_material_missing`);
+  - bolaget eller spelbordet har ett eget val som döljer mallens standard
+    (`ai_adopt_room_choice`); välj då materialet under Utseende;
+  - en ny bredd skulle nå ett annat öppet spelbord hos bolaget på samma
+    scenmall som visar ett annat bord, t.ex. Privé
+    (`ai_adopt_other_room_table`): bredden gäller hela mallen;
+  - bordsgrafiken passar inte scenmallens dealers eller placering
+    (`ai_adopt_table_misfit`), eller ett äldre AI-bord i mallen skulle bli
+    felpassat av den nya bredden (`ai_adopt_template_table_misfit`): ta bort
+    det ur mallen eller rita om det;
+  - samma material är redan live, så inget skiljer sig
+    (`studio_release_unchanged`).
+- **Tema**: **Skapa bord + bakgrund + miljöbild från samma tema** skapar bord
+  och bakgrund parallellt med samma beskrivning, stil och inspirationsbild;
+  välj ett av varje och **Använd** lägger in båda. Miljöbilden hoppas över
+  och dialogen säger det: scenexporten och rollen illustration finns inte
+  ännu.
 
 ## Bolag och spelbord
 
