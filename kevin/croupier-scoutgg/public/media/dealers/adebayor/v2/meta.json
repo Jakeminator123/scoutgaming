@@ -158,8 +158,11 @@
   "huvud": "huvud/s7202.mp4",
   "lugnandetag": "lugnandetag/s7211.mp4",
   "nerupp": "nerupp/s7212.mp4",
-  "nick": "nick/s7212.mp4"
+  "nick": "nick/s7212.mp4",
+  "handtrumma": "handtrumma/s7222.mp4",
+  "handflytt": "handflytt/s7222.mp4",
+  "handgnid": "handgnid/s7222.mp4"
  },
  "kept": [],
- "built": "2026-10-29T03:59:11.834Z"
+ "built": "2026-10-29T10:02:53.171Z"
 }

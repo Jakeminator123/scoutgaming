@@ -124,10 +124,10 @@ export const DEALERS = {
 // Kevin 29 Oct: not many head movements at rest, more hands: the hand and breathing takes carry the weight, the head takes
 // (huvud, the glances, nick, nerupp) are rare and never calm
 const ADEBAYOR_WEIGHTS = { fingrar: 12, andas: 10, lugnandetag: 8, djupandetag: 6, blickvanster: 1, blickhoger: 1, huvud: 1, nerupp: 1, nick: 1,
-  handtrumma: 10, handflytt: 8, handknapp: 8, handgnid: 8, handstryk: 8, handlyft: 6 };   // the hand takes (pass 11), once built
+  handtrumma: 10, handflytt: 8, handgnid: 8 };   // the hand takes Spel-QA approved (pass 11)
 const adebayorWeights = idles => idles.map(i => ({ ...i, vikt: ADEBAYOR_WEIGHTS[i.id] ?? i.vikt }));
 const ADEBAYOR_NEW_IDLES = [['lugnandetag', 'andas lugnt'], ['nerupp', 'ser ner och upp igen'], ['nick', 'nickar lätt'],
-  ['handtrumma', 'fingrarna trummar lätt'], ['handflytt', 'händerna flyttas lite'], ['handknapp', 'knäpper händerna och släpper'], ['handgnid', 'tummen gnider pekfingret'], ['handstryk', 'en hand stryker över filten'], ['handlyft', 'lyfter en hand lätt']];
+  ['handtrumma', 'fingrarna trummar lätt'], ['handflytt', 'händerna flyttas lite'], ['handgnid', 'tummen gnider pekfingret']];   // handknapp, handlyft, handstryk out (Spel-QA 29 Oct)
 // only the takes the live build has made (/local-dealers.js from v2/meta.json); a listed clip that does not exist would stall the preload
 const adebayorBuilt = idles => (globalThis.LOCAL_DEALERS_IDLES ? idles.filter(i => globalThis.LOCAL_DEALERS_IDLES.includes(i.id)) : idles);   // axlar, blinkhuvud, blickskon out (Spel-QA 29 Oct: the smile grows to a grin, teeth show, a big turn down)
 if (globalThis.LOCAL_DEALERS?.includes('adebayor')) DEALERS.adebayor = { id: 'adebayor', name: 'Adebayor', label: 'Adebayor (lokal)', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/adebayor.jpg' + V,
