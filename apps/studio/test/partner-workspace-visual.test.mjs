@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { partnerCopy, partnerNavigation } from '../components/kevin-bo/partner-copy.mjs';
-import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
+import { partnerCopy, partnerNavigation } from '../components/partner/partner-copy.mjs';
+import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
 import { PARTNER_PERMISSIONS } from '../../../packages/studio-access/server/partner-access-policy.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -13,7 +13,7 @@ import { jsxRequire } from './fixtures/jsx-require.mjs';
 
 const require = createRequire(import.meta.url);
 const postcss = require('postcss');
-const sourceUrl = new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url);
+const sourceUrl = new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url);
 const actions = jsxRequire(sourceUrl)('../partner-session-actions.tsx');
 const DAY = 24 * 60 * 60 * 1000, today = Date.UTC(2026, 9, 28, 12);
 const roleOf = id => STANDARD_OPERATOR_ROLES.find(role => role.id === id);
@@ -36,10 +36,9 @@ function days(values) {
 }
 function realSnapshot(overrides = {}) {
   const operator = { id: 'john', slug: 'johnsspelbolag', name: 'Johns Bet', packageRevision: '7' };
-  return { schemaVersion: 2, preview: false, mode: 'live', accessClass: 'partner', viewer: { user: 'john-admin', accessClass: 'partner' },
+  return { schemaVersion: 2, preview: false, accessClass: 'partner', viewer: { user: 'john-admin', accessClass: 'partner' },
     operator, operators: [operator], role: { id: 'partner-admin', label: 'administratör' }, permissions: [...PARTNER_PERMISSIONS], view: 'overview',
     packageRevision: '7', publishedAt: Date.UTC(2026, 9, 20, 9), generatedAt: '2026-10-28T12:00:00Z',
-    presentations: [{ id: 'lane-john', operatorId: 'john', name: 'Johns lane', dealer: 'paow' }],
     tables: [
       { id: 'room-john', operatorId: 'john', name: 'Johns bord', game: 'blackjack', state: 'live', status: 'active', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: 'config-3', settings: { language: 'en', limitPreset: 'casual' }, playUrl: '/game?game=blackjack&operator=johnsspelbolag&table=room-john' },
       { id: 'room-vip', operatorId: 'john', name: 'VIP-bordet', game: 'blackjack', state: 'pending', status: 'pending', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: null, playUrl: null },
@@ -48,7 +47,7 @@ function realSnapshot(overrides = {}) {
     assignment: { games: ['blackjack'], dealers: [{ id: 'paow', label: 'PAOW' }], lanes: [{ id: 'lane-john', label: 'Johns lane' }], backgrounds: [{ id: 'bg-lounge', label: 'Lounge' }], tables: [{ id: 'oak', label: 'Oak' }, { id: 'felt', label: 'Green felt' }] },
     reports: { status: 'ready', from: today - 30 * DAY, to: today, windowDays: 30, currency: 'USD', truncated: false,
       rooms: [{ roomId: 'room-john', rounds: 12, staked: 600, returned: 540, net: 60, days: days([0, 3, 2, 1, 2, 3, 1]) }, { roomId: 'room-vip', rounds: 0, staked: 0, returned: 0, net: 0, days: days([]) }] },
-    summary: { activeTables: 1 }, ...overrides };
+    ...overrides };
 }
 const render = (props, options) => renderToStaticMarkup(React.createElement(components(options).PartnerOperatorWorkspace, { surface: 'partner', user: 'john-admin', apiBase: '/studio/api/partner/snapshot', initialSnapshot: realSnapshot(), ...props }));
 const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/<span class="label">([^<]+)</g)].map(match => match[1]);
@@ -93,7 +92,7 @@ test('a denied view renders the 403 card with role and permission inside the she
 
 test('a role without a section sees no such section, never invented rooms or assignment', () => {
   // A role that lacks tables.read or presentations.read gets a snapshot without those sections.
-  const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], presentations: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined, summary: {} }) });
+  const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined }) });
   assert.doesNotMatch(narrow, />Var ni är publicerade<\/h2>|>Er tilldelning<\/h2>|spelbord öppna i lobbyn/);
   assert.doesNotMatch(narrow, /0 av 0/); assert.doesNotMatch(narrow, /Oak|Lounge|Johns bord/);
   assert.deepEqual(menuOf(narrow), ['Översikt', 'Hjälp och kontakt']);
@@ -197,9 +196,9 @@ test('shell strings exist in both languages and the snapshot validator rejects f
   assert.deepEqual(Object.keys(sv), Object.keys(en));
   for (const copy of [sv, en]) for (const [key, value] of Object.entries(copy)) assert.ok(typeof value === 'string' && value, key);
   assert.equal(partnerCopy('unsupported'), sv);
-  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), preview: true, mode: 'fixture' }));
+  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), preview: true }));
   assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), operators: [] }));
-  for (const key of ['tables', 'team', 'presentations']) {
+  for (const key of ['tables', 'team']) {
     assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: [{ id: 'foreign', operatorId: 'other' }] }), key);
     assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: null }), key);
   }
@@ -210,7 +209,7 @@ test('shell strings exist in both languages and the snapshot validator rejects f
 });
 
 test('portal CSS is fenced under .partner-portal, loads nothing external, and the directory CSS defines every class it uses', () => {
-  const portalCss = readFileSync(new URL('../components/kevin-bo/partner-portal.css', import.meta.url), 'utf8');
+  const portalCss = readFileSync(new URL('../components/partner/partner-portal.css', import.meta.url), 'utf8');
   postcss.parse(portalCss).walkRules(rule => {
     if (rule.parent.type === 'atrule' && /keyframes$/.test(rule.parent.name)) return;
     for (const selector of postcss.list.comma(rule.selector)) assert.ok(selector.startsWith('.partner-portal'), selector);
@@ -244,7 +243,7 @@ test('a verified own-company saved receipt updates the package view and clears t
   const receipt = { operatorId: 'john', packageRevision: 8, branding: { lane: lane.id, dealer: 'vera' }, presentation: { schemaVersion: 1, projectRevision: 'frozen-r1', lanes: [lane], assets: [] } };
   view().props.onAppearanceSaved({ ...receipt, operatorId: 'other' }); assert.deepEqual(view().props.runtime.snapshot, before);
   view().props.onAppearanceSaved(receipt); const after = view().props.runtime.snapshot;
-  assert.equal(after.packageRevision, '8'); assert.equal(after.operator.packageRevision, '8'); assert.equal(after.presentations[0].dealer, 'vera'); assert.equal(after.draft, null);
+  assert.equal(after.packageRevision, '8'); assert.equal(after.operator.packageRevision, '8'); assert.equal(after.branding.dealer, 'vera'); assert.equal(after.presentation, receipt.presentation); assert.equal(after.presentations, undefined); assert.equal(after.draft, null);
   assert.deepEqual(after.team, before.team); assert.deepEqual(after.tables, before.tables); assert.deepEqual(after.operators, before.operators);
   view().props.onAppearanceSaved({ ...receipt, packageRevision: 7, branding: { dealer: 'astrid' } }); assert.deepEqual(view().props.runtime.snapshot, after);
 });

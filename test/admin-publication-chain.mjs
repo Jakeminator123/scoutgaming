@@ -32,7 +32,7 @@ function browserBundle() {
     import React from 'react';
     import {createRoot} from 'react-dom/client';
     import {PresentationRoomCreate} from './apps/studio/components/presentation-room-create.tsx';
-    import {PartnerOperatorWorkspace} from './apps/studio/components/kevin-bo/partner-operator-workspace.jsx';
+    import {PartnerOperatorWorkspace} from './apps/studio/components/partner/partner-operator-workspace.jsx';
     import {LobbyProvider} from './apps/studio/client/lobby/components/lobby-provider.tsx';
     import {OperatorsSection} from './apps/studio/client/lobby/components/sections/operators-section.tsx';
     import {RoomsSection} from './apps/studio/client/lobby/components/sections/rooms-section.tsx';

@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { endPartnerSession, partnerSessionDestination } from '../lib/partner-session-actions.mjs';
-import { partnerCopy } from '../components/kevin-bo/partner-copy.mjs';
+import { partnerCopy } from '../components/partner/partner-copy.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -107,7 +107,7 @@ test('both live directory identities expose explicit localized auth buttons', ()
   for (const language of ['sv', 'en']) {
     const preferences = { usePartnerPreferences: () => ({ language, theme: 'dark', copy: partnerCopy(language), setLanguage() {}, setTheme() {} }) };
     const { PartnerWorkspace } = loadComponent('../components/partner-workspace.tsx', { dependencies: {
-      './partner-session-actions': actions, './kevin-bo/partner-copy.mjs': preferences,
+      './partner-session-actions': actions, './partner/partner-copy.mjs': preferences,
     } });
     for (const accessClass of ['internal-admin', 'partner']) {
       const html = renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'john', operators: [], accessClass, apiBase: defaults.apiBase }));
