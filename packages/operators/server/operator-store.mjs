@@ -409,18 +409,15 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       try { client?.release?.(); } catch { /* Caller owns pool health. */ }
     }
   }
-  // publishWithin also reads, in the same statement, whether Studio 023's column exists, the
-  // administration document's rooms (packageRoomsWithin) and whether the company has a draft
-  // (rebaseOpenDraft, which reads the draft itself after the lock).
+  // publishWithin also reads, in the same statement, whether Studio 023's column exists and the
+  // administration document's rooms (packageRoomsWithin).
   async function lockOperator(txQuery, operatorId, { packageRooms = false } = {}) {
     const rows = await txQuery(`/* operator-store:lock-operator */
       SELECT environment_id, workspace_id, operator_id${packageRooms ? `,
         EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='croupier_studio'
           AND table_name='operator_packages' AND column_name='rooms') AS package_rooms_column,
         (SELECT d.value->'rooms' FROM croupier_studio.documents d
-          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='administration') AS administration_rooms,
-        EXISTS(SELECT 1 FROM croupier_studio.operator_branding_drafts b
-          WHERE b.environment_id=$1 AND b.workspace_id=$2 AND b.operator_id=$3) AS branding_draft` : ''}
+          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='administration') AS administration_rooms` : ''}
       FROM croupier_studio.operators
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
       FOR UPDATE`, [operatorId]);
@@ -658,10 +655,14 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   // (assertPublishableDraft requires base = latest). The rule: a draft is never thrown away. The
   // same choices become a new draft revision on the new base. A published or discarded draft, or
   // one that was already based on an older package, is left as it is. Callers that publish the
-  // draft themselves pass rebaseDraft=false.
-  async function rebaseOpenDraft(txQuery,input,locked,current,saved) {
-    if(locked.branding_draft!==true||!current)return;
-    const before=await latestDraft(txQuery,saved.operatorId);
+  // draft themselves pass rebaseDraft=false. A latest draft row that is not canonical is not this
+  // publication's to refuse: it is left as it is, with a warning, and the package is published.
+  async function rebaseOpenDraft(txQuery,input,brandingDraft,current,saved) {
+    if(!brandingDraft||!current)return;
+    let before;
+    // Only the row's decoding fails with this code; a failed statement keeps its own code and is rethrown.
+    try{before=await latestDraft(txQuery,saved.operatorId);}
+    catch(error){if(error?.code!=='studio_corrupt_operator')throw error;console.warn('operator_branding_draft_unreadable',{operatorId:saved.operatorId});return;}
     if(!before||before.action==='draft.publish'||before.basePackageRevision!==current.revision)return;
     const editable=value=>canonicalStudioJson(publicEditableBranding(value));
     // The same test as cleanBrandingDraft (apps/studio/lib/partner-branding-api.mjs): a discard restores the base.
@@ -682,16 +683,28 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       let branding = canonicalBranding(ownValue(input, 'branding'));
       const expectedRevision = optionalOwn(input, 'expectedRevision');
       if (expectedRevision !== undefined && expectedRevision !== null) integer(expectedRevision, 1, 'studio_invalid_data', 422);
+      // `roomState` marks a pause or an opening (setRoomState, resource-lifecycle-api.mjs): the journal's
+      // package.publish entry then records which of the package's tables changed and to which state.
+      const roomState = optionalOwn(input, 'roomState');
+      if (roomState !== undefined && (!plain(roomState) || Object.keys(roomState).sort().join(',') !== 'roomId,state'
+        || !['live', 'pending'].includes(roomState.state) || !JSON.parse(tables).includes(roomState.roomId)
+        || optionalOwn(input, 'lifecycle') !== undefined)) fail('studio_invalid_data', 422);
       const locked = await lockOperator(txQuery, operatorId, { packageRooms: true });
       if (!locked) fail('studio_operator_not_found', 404);
-      let current=null;
+      let current=null,brandingDraft=false;
       {
+        // Whether the company has a draft (rebaseOpenDraft) is read here, in the first statement after
+        // the lock: a statement's subqueries share its snapshot, and the lock statement's is older than
+        // a first draft committed while it waited for the lock.
         const rows = await txQuery(`/* operator-store:current-package */
-          SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms
+          SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms,
+            EXISTS(SELECT 1 FROM croupier_studio.operator_branding_drafts b
+              WHERE b.environment_id=$1 AND b.workspace_id=$2 AND b.operator_id=$3) AS branding_draft
           FROM croupier_studio.operator_packages
           WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
           ORDER BY package_revision DESC LIMIT 1`, [operatorId]);
         current = rows[0] ? packageRow(rows[0]) : null;
+        brandingDraft = rows[0]?.branding_draft === true;
         if (expectedRevision !== undefined && (current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
         const lifecycle = optionalOwn(input, 'lifecycle');
         // `deleted: true` marks a permanent room deletion from the trash (permanent-deletion-api.mjs):
@@ -736,8 +749,9 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,
         ...(assignmentChanged ? {before:{assignment:structuredClone(assignmentBefore)}} : {}),
         after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {}),
+          ...(roomState ? {roomId:roomState.roomId,state:roomState.state} : {}),
           ...(assignmentChanged ? {assignment:structuredClone(assignmentAfter)} : {})}});
-      if(rebaseDraft)await rebaseOpenDraft(txQuery,input,locked,current,saved);
+      if(rebaseDraft)await rebaseOpenDraft(txQuery,input,brandingDraft,current,saved);
       return replacement?{package:saved,config:structuredClone(roomPublication.configs.find(row=>row.roomId===replacement.roomId).body)}:saved;
   }
   // Partnerns begäran (material, nyckelrotation) är en journalpost och inget annat:

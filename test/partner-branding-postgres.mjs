@@ -406,6 +406,33 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
       assert.deepEqual(await f.snapshot(), legacy);
     }
   });
+  // Plan L3 PR 3: whether the company has a draft is read after the operator lock, in its own statement. A
+  // company's first draft, committed while a package publication waits for that lock, is carried over too.
+  await check('a first draft committed while a publication waits for the operator lock is carried over', async () => {
+    const operatorId = 'draft-east', input = { actor: 'fixture', operatorId, lanes: [], games: ['blackjack'], tables: [], branding: { name: operatorId } };
+    await store.createOperator({ actor: 'fixture', operatorId, slug: operatorId, name: operatorId });
+    const first = await store.publishPackage(input), holder = await operatorPool.connect();
+    let pending, saved;
+    try {
+      await holder.query('BEGIN');
+      const held = await createOperatorStore({ sql: holder, scope, transaction: work => work(holder) });
+      saved = await held.saveBrandingDraft({ actor: 'fixture', operatorId, expectedDraftRevision: 0, expectedPackageRevision: first.revision, branding: { color: '#112233' } });
+      pending = store.publishPackage({ ...input, expectedRevision: first.revision });
+      for (let tries = 0; ; tries++) {
+        const { count } = (await operatorPool.query(`SELECT count(*)::int AS count FROM pg_stat_activity WHERE pid<>pg_backend_pid()
+          AND wait_event_type='Lock' AND query LIKE '%operator-store:lock-operator%'`)).rows[0];
+        if (count === 1) break;
+        assert.ok(tries < 300, 'the publication waits for the operator lock');
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      await holder.query('COMMIT');
+    } catch (error) {
+      await holder.query('ROLLBACK').catch(() => {}); await pending?.catch(() => {}); throw error;
+    } finally { holder.release(); }
+    const published = await pending, carried = await store.getBrandingDraft(operatorId);
+    assert.equal(published.revision, first.revision + 1);
+    assert.deepEqual([carried.revision, carried.action, carried.basePackageRevision, carried.branding], [saved.revision + 1, 'draft.save', published.revision, saved.branding]);
+  });
   return { checks, operatorPool, authPool };
 }
 

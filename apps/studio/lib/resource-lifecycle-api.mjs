@@ -204,7 +204,8 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   let pack=saved.pack;
   if(published){
    const input=packageInput(actor,body.operatorId,saved.pack,saved.pack.branding);
-   pack=await operators.publishPackage({...input,rooms:packageRoomsFor(saved.administration,input)});
+   // The journal's package.publish entry names the table and its new state (no DDL).
+   pack=await operators.publishPackage({...input,rooms:packageRoomsFor(saved.administration,input),roomState:{roomId:room.id,state:body.state}});
   }
   return {ok:true,room:{...room,archivedAt:null},administrationRevision:changed.revision,packageRevision:pack?.revision??null};
  }

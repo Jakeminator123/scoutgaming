@@ -866,6 +866,42 @@ test('an imported material receipt survives N2 rotation only while its exact pre
   }
 });
 
+// L3 PR 3: a pause is a package revision. A paused room keeps its published settings only while its presentation,
+// dealer and appearance stay as they were checked. A change to them is refused (409) while it is paused, as before
+// PR 3, so that opening it never meets settings it cannot use (422). The pause itself and another table's change
+// pass, its own settings are not published while it is paused, and it opens again on the same settings.
+test('a paused room keeps its settings only while they still hold, and opens again on them', async () => {
+  const h = await roomPublicationFixture({ twoRooms: true }), original = structuredClone(h.config());
+  const state = value => { h.sql.tables.documents[0].value.rooms.find(row => row.id === h.room.id).state = value; };
+  state('pending');
+  const paused = await h.store.publishPackage(h.request());
+  assert.equal(paused.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'the pause keeps the settings');
+  const neighbour = await h.store.publishPackage(h.request({ expectedRevision: 2, branding: { ...paused.branding,
+    roomOverrides: { ...paused.branding.roomOverrides, 'room-other': { color: '#778899' } } } }));
+  assert.equal(neighbour.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'another table\'s change keeps them');
+  assert.notEqual(neighbour.branding.roomGameConfigVersions['room-other'], h.pack.branding.roomGameConfigVersions['room-other']);
+  const reframed = mutate => {
+    const changed = structuredClone(h.presentation); mutate(changed);
+    return withPackagePresentation(neighbour.branding, changed, { allowExtended: true });
+  };
+  for (const [change, branding] of [
+    ['dealer', { ...neighbour.branding, roomOverrides: { ...neighbour.branding.roomOverrides, [h.room.id]: { color: '#112233', dealer: 'paow' } } }],
+    ['presentation', reframed(presentation => { presentation.lanes[0].openclaw.speak = 'rules'; })],
+  ]) {
+    const before = structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishPackage(h.request({ expectedRevision: 3, branding })), refusal('studio_conflict'), change);
+    assert.deepEqual(h.sql.tables, before, `${change}: nothing is written`);
+  }
+  const before = structuredClone(h.sql.tables);
+  await assert.rejects(h.store.publishRoomGameConfig(h.request({ expectedRevision: 3, branding: neighbour.branding }),
+    { roomId: h.room.id, gameConfig: { language: 'sv', limitPreset: 'casual' }, material: structuredClone(original.material) }), refusal('studio_conflict'));
+  assert.deepEqual(h.sql.tables, before, 'its own settings wait until it is open');
+  state('live');
+  const opened = await h.store.publishPackage(h.request({ expectedRevision: 3, branding: neighbour.branding }));
+  assert.equal(opened.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'opened on the same settings');
+  assert.deepEqual(h.config(), original);
+});
+
 test('the explicit J08 writer authors its own config version without changing an unrelated retained room', async () => {
   const h = await roomPublicationFixture({ twoRooms: true }), old = structuredClone(h.sql.tables.shared_table_configs);
   const gameConfig = { language: 'sv', limitPreset: 'casual' }, material = structuredClone(h.config().material);
@@ -1104,4 +1140,27 @@ test('a package revision carries the open appearance draft over; published, disc
   const older = await draft();
   await publish();
   assert.deepEqual(await draft(), older);
+});
+
+// L3 PR 3: a latest draft row that is not canonical never stops a publication (a pause, a new table, an
+// archive): the package is published, the row is left as it is, and a warning names the company.
+test('a non-canonical latest draft row is left as it is, with a warning, and the package is still published', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock }), operatorId = 'north';
+  await store.createOperator({ operatorId, slug: 'north', name: 'North', status: 'active', actor });
+  const publish = async () => store.publishPackage({ actor, operatorId, expectedRevision: (await store.getCurrentPackage(operatorId))?.revision ?? null,
+    lanes: [], games: ['blackjack'], tables: [], branding: { name: 'North' } });
+  await publish();
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: 0, expectedPackageRevision: 1, branding: { color: '#112233' } });
+  const stored = '{ "color": "#112233" }';
+  await pool.query('UPDATE croupier_studio.operator_branding_drafts SET branding=$2 WHERE operator_id=$1', [operatorId, stored]);
+  await assert.rejects(store.getBrandingDraft(operatorId), refusal('studio_corrupt_operator'));
+  const warn = t.mock.method(console, 'warn', () => {});
+  assert.equal((await publish()).revision, 2);
+  assert.deepEqual(warn.mock.calls.filter(call => call.arguments[0] === 'operator_branding_draft_unreadable').map(call => call.arguments[1]), [{ operatorId }]);
+  const rows = (await pool.query('SELECT draft_revision,base_package_revision,branding FROM croupier_studio.operator_branding_drafts WHERE operator_id=$1', [operatorId])).rows;
+  assert.deepEqual(rows.map(row => [Number(row.draft_revision), Number(row.base_package_revision), row.branding]), [[1, 1, stored]]);
 });

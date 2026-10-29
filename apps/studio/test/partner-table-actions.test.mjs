@@ -176,6 +176,11 @@ test('partner table actions on PostgreSQL', async t => {
     const [entry] = await states();
     assert.deepEqual([entry.access_class, entry.actor_id, entry.resource_type, entry.resource_id], ['partner', '42', 'package', room('north-a')]);
     assert.deepEqual(JSON.parse(entry.changes), { before: { state: 'live' }, after: { state: 'pending', administrationRevision: (await f.raw.readDocument('administration')).revision } });
+    // The pause's package version is journaled with the partner's own account too (never a pseudonym), naming the table.
+    const [published] = await f.rows(`SELECT access_class, actor_id, changes FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id='north' AND action='package.publish' AND after_revision=$3`, [f.scope.environment, f.scope.workspaceId, revision + 1]);
+    const { after: publishedAfter } = JSON.parse(published.changes);
+    assert.deepEqual([published.access_class, published.actor_id, publishedAfter.roomId, publishedAfter.state], ['partner', '42', room('north-a'), 'pending']);
     await refused(async () => f.call('room-state', { body: await fresh(pause) }), 409, 'the table is no longer live (CAS)');
     await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'live' } }), 400, 'no change');
     await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending' } }), 409, 'reopen with a stale package revision (CAS)');
@@ -362,6 +367,14 @@ test('without Studio 023 the partner pause still raises the package and keeps bo
   const bound = (await pack()).branding.roomGameConfigVersions;
   assert.equal(bound[room('north-a')], before.branding.roomGameConfigVersions[room('north-a')], 'the paused table keeps its published settings');
   assert.equal(typeof bound[room('north-b')], 'string');
+  // A change to what the paused table's settings were checked against (here its dealer) is refused while it is
+  // paused (409, nothing written), as before PR 3: otherwise the publication would pass and the opening fail (422).
+  const held = await pack(), overrides = held.branding.roomOverrides ?? {};
+  await assert.rejects(f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: held.revision,
+    lanes: held.lanes, games: held.games, tables: held.tables,
+    branding: { ...held.branding, roomOverrides: { ...overrides, [room('north-a')]: { ...overrides[room('north-a')], dealer: 'paow' } } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]), error => error?.statusCode === 409 && error.code === 'studio_conflict');
+  assert.equal((await pack()).revision, held.revision);
   await call('room-state', { roomId: room('north-a'), state: 'live', expectedState: 'pending', expectedPackageRevision: (await pack()).revision }, 'reopen');
   assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
 });

@@ -8,7 +8,7 @@ import { createSavedGamePolicy } from '../packages/presentation/server/saved-gam
 import {isPresentationRoom, isRoomOperatorId, PRESENTATION_ROOM_SCHEMA_VERSION} from '../packages/presentation/contracts/presentation-room.mjs';
 import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
 import { StudioStorageError } from '../packages/studio-registry/server/document-contract.mjs';
-import {listPackageRooms, resolvePackageRoom, inspectPackageRooms} from '../packages/presentation/server/package-rooms.mjs';
+import {listPackageRooms, resolvePackageRoom, inspectPackageRooms, packageRoomsFor} from '../packages/presentation/server/package-rooms.mjs';
 import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
@@ -193,6 +193,17 @@ test('a package with rooms is the list: the document neither adds, removes nor r
   assert.equal((await select('?operator=north&table=room-one')).status, 200);
   f.pack.rooms = [{ ...room, state: 'pending' }]; f.administration.rooms = [structuredClone(room)];
   assert.equal((await select('?operator=north&table=room-one')).status, 404, 'paused in the package wins over live in the document');
+});
+// Plan L3 PR 3: the rooms every writer sends with its publication (packageRoomsFor). Null, never a throw, when
+// the list cannot be checked: publishWithin then keeps PR 2's path and the write is not refused for it.
+test('packageRoomsFor gives the document rooms of the package tables, or null when they cannot be checked', () => {
+  const f = fixture();
+  assert.deepEqual(packageRoomsFor(f.administration, f.pack), [room]);
+  assert.equal(packageRoomsFor(f.administration, { ...f.pack, tables: [room.id, 'room-two'] }), null, 'a table without its room');
+  // A frozen presentation the readers cannot read (its environments differ from the package's lanes).
+  const unreadable = { ...f.pack, lanes: ['mobile-phone', 'other'] };
+  assert.throws(() => readPackagePresentation(unreadable), error => error.statusCode === 503);
+  assert.equal(packageRoomsFor(f.administration, unreadable), null);
 });
 test('package rooms that disagree with the package itself are a corrupt package, never a silently missing table', () => {
   const f = fixture(), input = { administration: f.administration, package: { ...f.pack, rooms: [structuredClone(room)] }, operatorId: 'north' };

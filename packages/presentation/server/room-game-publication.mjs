@@ -111,8 +111,10 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
   const presentation=readPackagePresentation(next),configs=[],media=new Map(),packages=new Map(current?[[current.revision,current]]:[]);
   for(const id of ids) {
     const matches=roomRows.filter(room=>room?.id===id),room=matches.length===1?matches[0]:null;
-    // A paused room (plan L3 PR 3: a pause is a package revision) keeps its published settings as
-    // they are; nobody plays it, and reopening it publishes again and checks them then.
+    // A paused room (plan L3 PR 3: a pause is a package revision) keeps its published settings only
+    // while what they were checked against is unchanged (effect: presentation, dealer, appearance).
+    // Any other change while it is paused is a conflict (409, as before PR 3), so that opening it
+    // never meets settings it cannot use (422). Its own settings are not published while paused.
     const paused=room?.state==='pending'&&replacement?.roomId!==id;
     if(!isPresentationRoom(room)||roomGame(room)!=='blackjack'||room.state!=='live'&&!paused||room.operatorId!==next.operatorId
       ||!retained.has(id)||!next.games.includes('blackjack')||!next.lanes.includes(room.presentationLaneId))conflict();
@@ -122,7 +124,6 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
       WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id=$3`,[id]);
     if(heads.length>1||previous[id]&&(heads.length!==1||heads[0].version!==previous[id]))conflict();
     const expectedVersion=heads[0]?.version??null;
-    if(paused){map[id]=expectedVersion;continue;}
     let body;
     if(replacement?.roomId===id) {
       if(expectedVersion!==null) {
@@ -143,6 +144,11 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
       }
       if(source.operatorId!==next.operatorId||source.revision!==existing.packageRevision||!source.tables.includes(id))conflict();
       const oldPresentation=readPackagePresentation(source),dealerId=resolvePackageRoomDealer(source,room,oldPresentation);
+      // Before assertPublishedRoomGameConfig: native material resolves only for a live room.
+      if(paused) {
+        if(!same(effect(source,room,oldPresentation),effect(next,room,presentation)))conflict();
+        map[id]=expectedVersion;continue;
+      }
       assertPublishedRoomGameConfig(existing,{version:expectedVersion,pack:source,room,presentation:oldPresentation,dealerId});
       if(same(effect(source,room,oldPresentation),effect(next,room,presentation))) {map[id]=expectedVersion;continue;}
       let material=existing.material;

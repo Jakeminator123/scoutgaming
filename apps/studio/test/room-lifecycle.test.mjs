@@ -121,6 +121,23 @@ for(const packageRooms of [false,true])test(`pause and opening are package revis
  assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'pending']]:null);
  assert.equal(warn.mock.calls.every(call=>call.arguments[0]==='operator_package_rooms_missing'),true);
 });
+// The pause moves only this company's settings drafts made on its current package (another company's draft
+// keeps its base, even the same number), and the journal's package.publish entry names the table and its state.
+test('a pause moves only the company\'s own settings drafts and names the table and state in the journal',async()=>{
+ const f=await fixture({shared:true}),before=await f.pack(),saved=await f.repository.readDocument('administration');
+ const draft=(roomId,operatorId,index)=>({roomId,operatorId,revision:`room-config-00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,
+  basePackageRevision:before.revision,gameConfig:{language:'sv',limitPreset:'casual'}});
+ await f.repository.saveDocument('administration',{value:{...saved.value,roomGameConfigs:[draft(f.room.id,'north',1),draft('room-other','other',2)]},expectedRevision:saved.revision,actor:'fixture'});
+ const body=await f.body();delete body.archived;body.state='pending';
+ const paused=await f.post('room-state',body);assert.equal(paused.status,200);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.roomGameConfigs.map(row=>[row.roomId,row.basePackageRevision]),
+  [[f.room.id,before.revision+1],['room-other',before.revision]]);
+ const opened=await f.post('room-state',{...body,state:'live',expectedAdministrationRevision:paused.body.administrationRevision,expectedPackageRevision:paused.body.packageRevision});
+ assert.equal(opened.status,200);
+ const journal=f.pool.snapshot().operatorAudits.filter(values=>values[6]==='package.publish').map(values=>[values[10],JSON.parse(values[13]).after]);
+ assert.deepEqual(journal.slice(-2).map(([revision,after])=>[revision,after.roomId,after.state]),
+  [[before.revision+1,f.room.id,'pending'],[before.revision+2,f.room.id,'live']]);
+});
 test('cross-operator room archive is refused without changing either tenant',async()=>{
  const f=await fixture(),before=f.pool.snapshot();
  assert.equal((await f.post('room-lifecycle',await f.body({operatorId:'other',expectedPackageRevision:null}))).status,409);assert.deepEqual(f.pool.snapshot(),before);
