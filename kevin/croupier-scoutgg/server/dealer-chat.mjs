@@ -9,6 +9,7 @@ const PERSONAS = {
   astrid: 'You are Astrid, an elegant, warm and quick-witted blackjack dealer at a live table.',
   dragge: 'You are Dragan, a grey-haired, charming blackjack dealer with dry Swedish humour and a lot of swagger. This is a lively lobby: people joke, tease and say random things, and you play along. Be genuinely funny: quick comebacks, playful self-irony about your age and hair, kind roasts, running jokes. Never stiff, never a customer-service voice.',
   paow: 'You are Paow, a blonde blackjack dealer with a sharp Stockholm wit, neck tattoos and total calm. This is a lively lobby: people joke, tease and say random things, and you play along. Be genuinely funny: deadpan one-liners, playful confidence, kind roasts, running jokes. Never stiff, never a customer-service voice.',
+  adebayor: 'You are Emmanuel Adebayor, the former Arsenal and Togo striker, now a blackjack dealer and QTech\'s ambassador for Africa at a live table. Warm, confident, playful about football when asked, never about betting advice. Keep it short.',
   astrid2: 'You are Astrid, an elegant, warm and quick-witted blackjack dealer with a calm British poise and a dry sense of humour. This is a lively lobby: people joke, tease and say random things, and you play along. Be genuinely funny and warm, never cold.',
 };
 
@@ -67,7 +68,7 @@ export async function dealerTalk(o) {
 }
 
 async function talkOnce({ text, dealer = 'astrid', language = 'en', facts = '', history = [], memory = '', playerName = '', fetchImpl = fetch, timeoutMs = 12000, retry = false }) {
-  const name = { dragge: 'Dragan', paow: 'Paow', astrid2: 'Astrid' }[dealer] ?? 'Astrid';
+  const name = { dragge: 'Dragan', paow: 'Paow', astrid2: 'Astrid', adebayor: 'Adebayor' }[dealer] ?? 'Astrid';
   const lang = { sv: 'Swedish', en: 'English', es: 'Spanish', fr: 'French', zh: 'Chinese', pt: 'Brazilian Portuguese', ko: 'Korean' }[language] ?? 'English';
   const convo = history.slice(-6).map(h => `${h.who === 'dealer' ? name : 'Player'}: ${h.text}`).join('\n');
   const prompt = `${PERSONAS[dealer] ?? PERSONAS.astrid}\n${RULES}\nLanguage: ${lang}.\nThe player is called "${playerName || 'unknown'}" at this table. ${memory}\nUse what you remember naturally (their name, running jokes), without listing it.\nTable facts (the player's own view): ${facts || 'no round in play'}\n\n${convo ? convo + '\n' : ''}Player: ${String(text).slice(0, 280)}\n${retry ? 'Say it differently this time: no betting or playing talk at all, just a joke.\n' : ''}${name}:\n\nAfter your reply, on a NEW line, write "MEMORY: " followed by one short thing worth remembering about this player for next time (a nickname, a joke, what they like), or "MEMORY: none". Never personal data.`;

@@ -76,6 +76,9 @@ const chatLimit=createRateLimit();
 const apiLimit=createRateLimit({limit:20});
 const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Play demo password: see demo-gate.mjs
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
+// Kevin 28 Oct: dealers that exist only on this machine (LOCAL_DEALERS=adebayor in the local .env, never prod or staging):
+// the page learns them from /local-dealers.js and dealers.js adds them; their takes are built by verktyg/adebayor-live.mjs
+const LOCAL_DEALERS=(process.env.LOCAL_DEALERS??'').split(',').map(s=>s.trim()).filter(Boolean);
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
 // His moving idles (Kevin 20 Oct): the dealer's H3 idles in dealers.js (takes from VILA to VILA, like the deals: Dragan's
 // in his take folder v2/, Astrid 2.0's in idle-v2/) are takes the lip-sync worker can map, so a line or answer said at
@@ -85,7 +88,7 @@ const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1,calm:Boolean(i.calm),head:Boolean(i.head),once:Boolean(i.once),...(i.fas?{fas:i.fas}:{}),...(i.from&&i.from!=='vila'?{from:i.from}:{}),...(i.to&&i.to!=='vila'?{to:i.to}:{})}]:[];}catch{return [];}});
 // Emil 28 Oct: the dealers whose deal takes may run at a studio table's tempo (studio-tables.mjs TEMPOS); Astrid 2.0 first.
 const TEMPO_DEALERS=['astrid2'];
-const READY_TAKES=Object.fromEntries(['dragge','paow','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id)}];}catch{return [id,null];}}));
+const READY_TAKES=Object.fromEntries(['dragge','paow','astrid2',...LOCAL_DEALERS].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
@@ -718,6 +721,8 @@ async function handleHttp(req, res) {
     res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${desk};`); return; }
   // Kevin 24 Oct: "Runpod is down can you add we currently doing maintance work notification in prod": a banner on the
   // table and the lobby while MAINTENANCE_NOTICE=1 in the env, text from MAINTENANCE_TEXT (maintenance-notice.js)
+  if (p === "/local-dealers.js") { let v = 0, land = null; try { const f = path.join(PUBLIC, "media", "dealers", "adebayor", "v2", "meta.json"); v = Math.round(statSync(f).mtimeMs); land = JSON.parse(readFileSync(f, "utf8")).land ?? null; } catch {}
+    res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.LOCAL_DEALERS=${JSON.stringify(LOCAL_DEALERS)};globalThis.LOCAL_DEALERS_V=${v};globalThis.LOCAL_DEALERS_LAND=${JSON.stringify(land)};`); return; }
   if (p === "/notice.js") { const text = process.env.MAINTENANCE_NOTICE === "1" ? (process.env.MAINTENANCE_TEXT?.trim() || MAINTENANCE_DEFAULT).slice(0, 300) : ""; res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.

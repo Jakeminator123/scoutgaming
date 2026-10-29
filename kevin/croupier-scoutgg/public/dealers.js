@@ -28,6 +28,10 @@ const idlesFor = id => [['breath', 40, 'andas lugnt, blinkar'], ['glance', 12, '
 const PAOW_READY = { in: 21, land: { 1: 28, 2: 33, 3: 27, 4: 27, 5: 26, 6: 27, 7: 28, dealer: 37, hole: 29, flip: 31, '1v': 34, '2v': 33, '3v': 31, '4v': 37, '5v': 31, '6v': 31, '7v': 34, dealerv: 23 }, card: [78, 106] };
 // Astrid 2.0 (Emil 13 Oct): Astrid on Paow's green plate, H3 takes with the one-hand technique for 5-7 and the dealer
 // (KLARA_ASTRID, metodik/videoklipp/skript/greenscreen/bygg-spelklipp.py). land = build-tracks.py's printout.
+// Kevin 28 Oct: Adebayor (QTech's ambassador), built live from Klippstudion on this machine (verktyg/adebayor-live.mjs) and
+// listed only where the server names him in LOCAL_DEALERS (/local-dealers.js), never prod or staging. His takes go from
+// rest to rest with the card left on the box; the landing frames are Dragan's (same plate) until Spel-QA measures his.
+const ADEBAYOR_READY = { in: 0, land: { 1: 29, 2: 27, 3: 27, 4: 24, 5: 26, 6: 27, 7: 33, dealer: 35, hole: 27, flip: 23, ...(globalThis.LOCAL_DEALERS_LAND ?? {}) }, card: [78, 106] };   // the live build's landing frames (/local-dealers.js) win
 const ASTRID2_READY = { in: 24, land: { 1: 27, 2: 31, 3: 28, 4: 27, 5: 26, 6: 26, 7: 23, dealer: 24, hole: 37, flip: 25, '1v': 26, '2v': 26, '3v': 23, '4v': 24, '5v': 25, '6v': 23, '7v': 22, dealerv: 37 }, card: [79, 106] };
 // Her idles are H3 takes from rest to rest (3 s, kor-idle.sh): breathing plus at most one small thing each.
 // Dragan gets the same nine (Kevin 20 Oct, e2e's H3 takes), in his take folder v2/: there they are takes the lip-sync
@@ -112,6 +116,10 @@ export const DEALERS = {
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
     clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true, preloadHits: true, lipPlaces: '/media/dealers/astrid2/lapprutor.json' + V },
 };
+
+if (globalThis.LOCAL_DEALERS?.includes('adebayor')) DEALERS.adebayor = { id: 'adebayor', name: 'Adebayor', label: 'Adebayor (lokal)', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/adebayor.jpg' + V,
+  keyed: { still: '/media/dealers/adebayor/v2/vila.png?v=' + (globalThis.LOCAL_DEALERS_V ?? 0) }, layerScale: 1, ready: ADEBAYOR_READY,
+  clips: '/media/dealers/adebayor/v2/', land: ADEBAYOR_READY.land, /* no lines: Astrid's recorded lines are skipped (unusedLine), he deals silently until he has a voice */ idles: h3IdlesFor('adebayor', 'v2', 1.625, ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud']), handMatte: false, serverGreets: false };
 
 function pick() {
   try {
