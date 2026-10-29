@@ -72,6 +72,8 @@
   --sg-muted: #666c75;
   --sg-faint: #8d939b;
   --sg-ink: #1b1c1e;
+  /* Lime når inte 3:1 mot ljusa ytor; markeringen (vald flik, fokusring) blir mörk oliv. */
+  --sg-mark: #4d6b00;
   --sg-on-accent: #1b1c1e;
   --sg-accent-text: #4d6b00;
   --sg-accent-bg: #f4ffcf;

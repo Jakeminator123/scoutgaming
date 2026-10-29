@@ -73,8 +73,10 @@ test('actual root layout installs the inert history proxy before Next hydration'
   assert.ok(tree.includes(child),'the root layout keeps the active page directly');
   const script=tree.find(node=>node.props?.id==='sg-history');
   assert.equal(script?.props.strategy,'beforeInteractive');assert.equal(script?.props.dangerouslySetInnerHTML.__html,studioHistoryBootstrap);
-  const mode=tree.find(node=>node.props?.id==='sg-theme');
-  assert.equal(mode?.props.strategy,'beforeInteractive');assert.equal(mode?.props.dangerouslySetInnerHTML.__html,themeModeBootstrap,'the shared mode is set before the first paint');
+  // A plain <script> in <head> runs while the HTML is parsed; next/script queues inline content until Next boots.
+  const head=tree.find(node=>node.type==='head'),mode=all(head?.props.children).find(node=>node.props?.id==='sg-theme');
+  assert.equal(mode?.type,'script','the mode script is a plain script element in <head>');assert.equal(mode.props.strategy,undefined);
+  assert.equal(mode.props.dangerouslySetInnerHTML.__html,themeModeBootstrap,'the shared mode is set before the first paint');
   const window=new EventTarget();let observed=0;
   runInNewContext(studioHistoryBootstrap,{window,Symbol});runInNewContext(studioHistoryBootstrap,{window,Symbol});
   assert.equal(window[Symbol.for('scout.studio-history')].handler,null);

@@ -19,10 +19,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="sv" data-scroll-behavior="smooth" className={`${display.variable} ${body.variable} ${mono.variable} dark`} suppressHydrationWarning>
+    <head>
+      {/* Mörkt är standard; startskriptet byter till light om det valet är sparat (lib/theme-mode.mjs).
+          Ett vanligt skript i <head> körs under HTML-tolkningen, före första målningen; next/script
+          beforeInteractive med inline-innehåll köas och körs först när Next startar. */}
+      <script id="sg-theme" dangerouslySetInnerHTML={{ __html: themeModeBootstrap }} />
+    </head>
     <body>
       <Script id="sg-history" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: studioHistoryBootstrap }} />
-      {/* Mörkt är standard; startskriptet byter till light om det valet är sparat (lib/theme-mode.mjs). */}
-      <Script id="sg-theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeModeBootstrap }} />
       {children}
       <Script src={(process.env.CROUPIER_LAB_BASE_PATH || '') + '/assistant-widget.js'} strategy="afterInteractive" />
     </body>
