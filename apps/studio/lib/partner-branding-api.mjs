@@ -76,6 +76,20 @@ function view(pack, adjustable) {
   };
 }
 
+// The company's open (unpublished, not discarded) appearance draft, or null.
+// Shared with the room publication (room-release.mjs), which stops on an open draft.
+export async function cleanBrandingDraft(draft,pack,source) {
+  // Discard restores the current published choices in the existing immutable
+  // draft journal. Compare against that original package so a later publication
+  // cannot resurrect the discarded draft. Keep its revision for the next CAS.
+  const restoredCurrent=draft?.action==='draft.restore'&&draft.sourcePackageRevision===draft.basePackageRevision;
+  const restored=restoredCurrent?(draft.sourcePackageRevision===pack.revision?pack:await source.getPackage(pack.operatorId,draft.sourcePackageRevision)):null;
+  const discarded=restored?.operatorId===pack.operatorId&&restored.revision===draft.sourcePackageRevision
+    &&canonicalStudioJson(publicEditableBranding(draft.branding))===canonicalStudioJson(publicEditableBranding(restored.branding));
+  return !draft||draft.action==='draft.publish'||discarded?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
+    branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
+}
+
 // materials: optional store of the company's own material (Bolagets eget
 // material), read before SQL; the write context supplies the same store on its
 // locked client. Without it every branding publication keeps the frozen package.
@@ -158,17 +172,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
       && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
-  async function cleanDraft(draft,pack,source=store) {
-    // Discard restores the current published choices in the existing immutable
-    // draft journal. Compare against that original package so a later publication
-    // cannot resurrect the discarded draft. Keep its revision for the next CAS.
-    const restoredCurrent=draft?.action==='draft.restore'&&draft.sourcePackageRevision===draft.basePackageRevision;
-    const restored=restoredCurrent?(draft.sourcePackageRevision===pack.revision?pack:await source.getPackage(pack.operatorId,draft.sourcePackageRevision)):null;
-    const discarded=restored?.operatorId===pack.operatorId&&restored.revision===draft.sourcePackageRevision
-      &&canonicalStudioJson(publicEditableBranding(draft.branding))===canonicalStudioJson(publicEditableBranding(restored.branding));
-    return !draft||draft.action==='draft.publish'||discarded?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
-      branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
-  }
+  const cleanDraft=(draft,pack,source=store)=>cleanBrandingDraft(draft,pack,source);
   async function state(operatorId,source=store,document=null) {
     requireDraftStore(source);
     const pack=await load(operatorId,source),draft=await source.getBrandingDraft(operatorId);
