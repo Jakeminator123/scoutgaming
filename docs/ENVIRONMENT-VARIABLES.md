@@ -30,7 +30,7 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CROUPIER_VERCEL_UNIFIED_UI` | krävs, `1` | web, studio | En publik origin för spel och Admin; kräver `CROUPIER_STUDIO_NATIVE_ADMIN=1` |
 | `CROUPIER_STUDIO_NATIVE_ADMIN` | krävs, `1`; läses även vid bygget | web, studio | Admin körs på Vercel; spelmotorn behåller spelauktoriteten |
 | `CROUPIER_PUBLIC_ORIGIN` | krävs | web, studio, speech | `https://www.scoutgaming.tech`; även länkar i mejl |
-| `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com`. Satt slår den på transporten till spelmotorn (`packages/server-transport/configuration.mjs`); den tidigare brytaren `CROUPIER_VERCEL_UI=1` läses inte längre |
+| `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com`. Satt slår den på transporten till spelmotorn (`packages/server-transport/configuration.mjs`); den tidigare brytaren `CROUPIER_VERCEL_UI=1` läses inte längre. Saknas den med `VERCEL_ENV=production` kastar `platformConfiguration` ett fel, så `apps/web`-bygget (`tools/prepare-platform-ui.mjs`) fälls och den förra deployen står kvar; lokalt, i Vercel Preview och i CI ger saknad origin bara landningssidan |
 | `CROUPIER_VERCEL_INGRESS_SECRET` | krävs, Sensitive | web, studio, speech | Signerar anrop till spelmotorn; samma värde som på Render |
 | `CROUPIER_LAB_UI_ORIGIN` | sätts inte | web, studio | Läses bara när `CROUPIER_VERCEL_UNIFIED_UI` inte är `1`: då är den Studiozonens egen origin, och `packages/server-transport/configuration.mjs` och `studio-native-runtime.mjs` kräver att den skiljer sig från den publika originen och spelmotorns. I unified-läget ignoreras den överallt, också av assistenten (`/studio/api/assistant` och `/studio/api/public-assistant` via `assistantRequestConfiguration` i `studio-native-request.mjs`), som då bara kräver `CROUPIER_PUBLIC_ORIGIN`; den koden (`3e866f74`) är i produktion sedan deployen av `a05917c3` (`dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3`, 2026-10-29). Borttagen ur panelen (läst 2026-10-29 16:10); domänen `croupier-lab-ui.vercel.app` finns kvar i projektet |
 | `CROUPIER_LAB_BASE_PATH` | krävs, `/studio`; byggtid | studio | basePath; `NEXT_PUBLIC_LAB_BASE_PATH` härleds vid bygget |
@@ -81,19 +81,21 @@ Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har
 
 <a id="att-ta-bort-i-panelen"></a><a id="att-ta-bort-ur-vercel-production"></a>
 
-Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsningen 2026-10-28, eftersom Render MCP inte visar namn). Ordningen är fast: koden slutar läsa namnet, PR:en mergas, deployen går ut (Vercel `main` respektive `croupier-v3` och `scoutgaming-preview-engine`), och först därefter tar Jakob bort posten i panelen. En borttagning i panelen gäller från nästa deploy; Render startar en deploy direkt.
+Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsningen 2026-10-28, eftersom Render MCP inte visar namn). Ordningen är fast: koden slutar läsa namnet, PR:en mergas, deployen går ut (Vercel `scoutgaming` och Render `croupier-v3` från `main`; Vercel `scoutgaming-preview` och Render `scoutgaming-preview-engine` från branchen `preview`), och först därefter tar Jakob bort posten i panelen. En borttagning i panelen gäller från nästa deploy; Render startar en deploy direkt.
 
 Den förra listan (talflaggorna, `DEMO_GUEST_ACCESS`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` och `CROUPIER_LAB_UI_ORIGIN` i `scoutgaming`) är utförd: ingen av dem finns i panelen 16:10. Kvar från den är Preview- och Development-scopet för `CROUPIER_DEALER_IMPORT_AI`.
 
 ### Efter deploy av #664 (Miljövariabler 1)
 
+Produktionsraderna gäller när #664 är deployad från `main`. Preview-raderna (Vercel `scoutgaming-preview`, Render `scoutgaming-preview-engine`) gäller först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad. Tas posterna bort där innan dess stoppar `scoutgaming-preview-engine` vid start (koden på `preview` kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`) och `scoutgaming-preview` bygger utan transport (`/game` → 404).
+
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
 | Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UI` | Konstant `1`; transporten slås nu på av `CROUPIER_BACKEND_ORIGIN` (`packages/server-transport/configuration.mjs:14`) |
-| Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | Samma |
+| Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | Samma; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
 | Render `croupier-v3` | `CROUPIER_DATABASE` | Konstant `postgres`, enda värdet som startade; PostgreSQL är fast i `ops/cloud/config.mjs` och ingen källfil läser namnet |
 | Render `croupier-v3` | `CROUPIER_STREAM_LANE` | Konstant `lissabon-stream-lane`; starten sätter anslutnings-ID:t för spelprocessen själv (`ops/cloud/config.mjs`, `childSpecifications`) |
-| Render `scoutgaming-preview-engine` | `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` | Samma som `croupier-v3` |
+| Render `scoutgaming-preview-engine` | `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` | Samma som `croupier-v3`; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
 
 ### Redan nu (läses inte av någon deployad kod)
 

@@ -78,3 +78,12 @@ test('the engine origin alone turns the platform transport on; the retired switc
   assert.deepEqual(platformConfiguration({...env,CROUPIER_VERCEL_UI:'0'}),platformConfiguration(env));
   assert.throws(()=>platformConfiguration({...env,CROUPIER_PUBLIC_ORIGIN:undefined}),/CROUPIER_PUBLIC_ORIGIN/);
 });
+
+test('a Vercel production deployment without the engine origin fails instead of shipping /game as 404',()=>{
+  const env={CROUPIER_PUBLIC_ORIGIN:'https://www.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)};
+  assert.throws(()=>platformConfiguration({...env,VERCEL_ENV:'production'}),/CROUPIER_BACKEND_ORIGIN is required/);
+  assert.throws(()=>platformConfiguration({...env,VERCEL_ENV:'production',CROUPIER_BACKEND_ORIGIN:''}),/CROUPIER_BACKEND_ORIGIN is required/);
+  for (const VERCEL_ENV of [undefined,'preview','development']) assert.equal(platformConfiguration({...env,VERCEL_ENV}),null);
+  assert.equal(platformConfiguration({...env,VERCEL_ENV:'production',CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
+    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1'}).backendOrigin,'https://engine.example.invalid');
+});

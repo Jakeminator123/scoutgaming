@@ -104,8 +104,7 @@
         "RENDER_EXTERNAL_URL",
         "RENDER_SERVICE_ID",
         "RENDER_GIT_COMMIT",
-        "RENDER_INSTANCE_ID",
-        "CROUPIER_STREAM_LANE"
+        "RENDER_INSTANCE_ID"
       ],
       "blocked": [
         "DEMO_GUEST_ACCESS",
@@ -123,7 +122,7 @@
         "CROUPIER_GENERATED_SPEECH_DIR",
         "CROUPIER_DATA_DIR"
       ],
-      "constantsInCode_2026_10_29": "CROUPIER_DATABASE (always postgres) and CROUPIER_STREAM_LANE (always lissabon-stream-lane, set by ops/cloud/config.mjs childSpecifications for the game child) are no longer read from the Render panel; remove both from croupier-v3 and scoutgaming-preview-engine after the deploy (ENVIRONMENT-VARIABLES.md#att-ta-bort-i-panelen)."
+      "constantsInCode_2026_10_29": "CROUPIER_DATABASE (always postgres) and CROUPIER_STREAM_LANE (always lissabon-stream-lane, set by ops/cloud/config.mjs childSpecifications for the game child) are no longer read from the Render panel; remove both from croupier-v3 after the main deploy, and from scoutgaming-preview-engine only once branch preview has #664 and is deployed (ENVIRONMENT-VARIABLES.md#att-ta-bort-i-panelen). Neither is listed here, so --compare render-game shows both as unlisted until they are removed."
     },
     "vercel-entry": {
       "sources": [
@@ -177,7 +176,7 @@
           "CROUPIER_AI_IMAGE_ENABLED",
           "CROUPIER_AI_IMAGE_DAILY_LIMIT"
         ],
-        "previewProject": "scoutgaming-preview: 16 names, all Production scope"
+        "previewProject": "scoutgaming-preview: 16 names, Production scope; BLOB_READ_WRITE_TOKEN also covers Preview and Development"
       },
       "required": [],
       "firstBoot": [],
@@ -210,7 +209,8 @@
         "CROUPIER_NEON_POSTGRES_URL_NO_SSL",
         "CROUPIER_NEON_POSTGRES_URL_NON_POOLING",
         "CROUPIER_NEON_POSTGRES_USER",
-        "CROUPIER_MEDIA_STORE_ID"
+        "CROUPIER_MEDIA_STORE_ID",
+        "VERCEL_ENV"
       ],
       "blocked": [
         "RUNPOD_API_KEY",
@@ -526,19 +526,34 @@
         "audit": "2026-10-29: Vercel names read 16:10; Render names from the 2026-10-28 REST read. Order: code stops reading, merge, deploy, then Jakob removes the panel entry. The previous Vercel list (speech flags, DEMO_GUEST_ACCESS, CROUPIER_LAB_REMOTE_UI, CROUPIER_MEDIA_BLOB_INDEX, CROUPIER_DATABASE, CROUPIER_STREAM_LANE, CROUPIER_LAB_UI_ORIGIN) is done: none is in the panel.",
         "afterDeployOfThisChange": [
           {
-            "where": "vercel scoutgaming (production), vercel scoutgaming-preview",
+            "where": "vercel scoutgaming (production)",
             "names": [
               "CROUPIER_VERCEL_UI"
             ],
             "reason": "Always 1; CROUPIER_BACKEND_ORIGIN now switches the transport on."
           },
           {
-            "where": "render croupier-v3, render scoutgaming-preview-engine",
+            "where": "render croupier-v3",
             "names": [
               "CROUPIER_DATABASE",
               "CROUPIER_STREAM_LANE"
             ],
             "reason": "Single legal value hard-coded in ops/cloud/config.mjs; no source reads the panel entry."
+          },
+          {
+            "where": "vercel scoutgaming-preview (production scope)",
+            "names": [
+              "CROUPIER_VERCEL_UI"
+            ],
+            "reason": "Same as scoutgaming; only once branch preview has #664 (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, the preview build silently loses the transport."
+          },
+          {
+            "where": "render scoutgaming-preview-engine",
+            "names": [
+              "CROUPIER_DATABASE",
+              "CROUPIER_STREAM_LANE"
+            ],
+            "reason": "Same as croupier-v3; only once branch preview has #664 (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, the preview engine stops at start."
           }
         ],
         "now": [
