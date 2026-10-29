@@ -99,6 +99,11 @@ test('blockers link to the place where they are fixed, and every area is listed'
   const context={roomId:'north-a',dealerId:'dragan',rooms:[{id:'north-b',name:'Norr B'}]};
   assert.deepEqual(roomReleaseBlocker({area:'speech',code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'},context),
     {text:'Tal och klipp: ingen godkänd tagning.',href:'/admin/dealers/dragan?flik=tal',linkLabel:'Öppna i Röst och tal'});
+  for(const materialReason of ['native_material_measurement_missing','native_material_measurement_mismatch'])
+    assert.deepEqual(roomReleaseBlocker({area:'speech',code:'studio_room_game_material_unavailable',materialReason},{...context,dealerName:'Dragan'}),
+      {text:'Tal och klipp: '+(materialReason.endsWith('missing')?'klippen är inte uppmätta':'klippens mätning stämmer inte')+'. Öppna Dealers › Dragan och välj Mät omätta klipp.',href:'/admin/dealers/dragan?flik=klipp',linkLabel:'Öppna dealerns klipp'});
+  assert.match(roomReleaseErrorMessage({code:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'}),/Öppna Dealers › dealern och välj Mät omätta klipp\./);
+  assert.match(roomReleaseErrorMessage({code:'studio_room_game_material_unavailable',materialReason:'native_material_take_unrecognized'}),/Öppna Röst och tal\./);
   assert.equal(roomReleaseBlocker({area:'settings',code:'studio_room_game_config_missing'},context).href,'/admin/rooms/north-a?flik=spel');
   assert.equal(roomReleaseBlocker({area:'roomChoices',code:'studio_room_choices_draft_pending'},context).href,'/admin/rooms/north-a?flik=utseende');
   const neighbour=roomReleaseBlocker({area:'rooms',code:'studio_room_game_material_unavailable',roomId:'north-b'},context);
