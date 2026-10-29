@@ -128,7 +128,7 @@ function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;r
 
 // Bolag och spelbord (companies-page.tsx) resolves the company and the room's registered owner from the path and
 // mounts RegisteredStudio per tab. Its children with their own reads are stubbed with their props.
-async function companiesPageHtml({page,id,search='',...overrides}){
+async function companiesPageHtml({page,id,search='',previews=false,...overrides}){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const componentRequire=createRequire(new URL('../components/studio/companies-page.tsx',import.meta.url));
@@ -139,11 +139,13 @@ async function companiesPageHtml({page,id,search='',...overrides}){
   const compile=(file,resolve)=>{const module={exports:{}};runInNewContext(transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
     {module,exports:module.exports,URLSearchParams,URL,AbortController,fetch:async()=>Response.json(value),document:{addEventListener:()=>{},removeEventListener:()=>{}},require:resolve});return module.exports;};
   const ui={},uiRequire=name=>name.endsWith('runtime/navigation')?navigation:name.startsWith('./')?(ui[name]??=compile('../components/ui/'+name.slice(2)+'.tsx',uiRequire)):require(name);
-  const hub=compile('../components/ui/hub.tsx',uiRequire);
+  // `previews` opens the preview panel and shows which revision each preview receives.
+  const hub={...compile('../components/ui/hub.tsx',uiRequire),...(previews?{PreviewFlyout:props=>React.createElement('aside',{'data-flyout':props.title},props.children)}:{})};
   const stub=(tag,pick)=>props=>React.createElement('section',{[tag]:pick(props)});
+  const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
     :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
-    :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:()=>null}
+    :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
@@ -289,6 +291,15 @@ test('library context accepts only the explicitly selected room and its register
     assert.equal(context.room,undefined);assert.equal(context.lane,undefined);
     assert.equal(context.dealer.id,'paow-v2');
   }
+});
+
+// "Provspela sparad scen" needs the saved project revision; without it the button is always disabled.
+test('the room preview and Nytt spelbord hand the saved project revision to the saved-scene preview',async()=>{
+  const room=await companiesPageHtml({page:'room',id:'bj',search:'?flik=utseende',compositions,previews:true});
+  assert.match(room,/data-(?:scene-preview|saved-scene)="[^"]+" data-revision="p1"/,'the room preview receives the catalog project revision');
+  const create=await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions,previews:true});
+  assert.match(create,/data-saved-scene="one" data-revision="p1"/,'Nytt spelbord receives it as well');
+  assert.doesNotMatch(room+create,/data-revision="none"/);
 });
 
 test('the company nav lists only the owner\'s rooms and links each to its own room nav',async()=>{

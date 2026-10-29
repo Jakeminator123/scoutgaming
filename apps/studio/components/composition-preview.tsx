@@ -88,7 +88,7 @@ function useLayerClips(role:LayerPlaybackRole,{policy,assets,enabled,sourceKey,l
 
 // Optional silent layer videos share playback controls. Only the dealer owns
 // the finite play count, preserving the exact clip chosen by Studio.
-export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay,minimal=false}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode;minimal?:boolean}) {
+export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay,minimal=false,autoplay=false,loopDealer=false}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode;minimal?:boolean;autoplay?:boolean;loopDealer?:boolean}) {
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0);
@@ -122,7 +122,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     async function load(role:Role,media:CompositionMedia|null) {
       if(!media)return;
       const video=media.contentType.startsWith('video/'),element=video?document.createElement('video'):new Image();elements.push(element);
-      if(element instanceof HTMLVideoElement){element.playsInline=true;element.preload='auto';element.muted=role!=='dealer';element.loop=role!=='dealer';videos.current[role]=element;}
+      if(element instanceof HTMLVideoElement){element.playsInline=true;element.preload='auto';element.muted=role!=='dealer'||autoplay;element.loop=role!=='dealer'||loopDealer;videos.current[role]=element;}
       const promise=decode(element,video?'loadeddata':'load');element.src=media.url;if(element instanceof HTMLVideoElement)element.load();await promise;
       if(!active)return;
       const width=element instanceof HTMLVideoElement?element.videoWidth:element.naturalWidth,height=element instanceof HTMLVideoElement?element.videoHeight:element.naturalHeight;
@@ -170,6 +170,15 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
 
   const backgroundStatus=useLayerClips('background',{policy:backgroundPlayback,assets:backgroundAssets,enabled:visible.background,sourceKey,loaded,language,previewRuleId:previewBackgroundRuleId,previewRequest:previewBackgroundRequest,refs:{player:backgroundPlayer,base:baseAssets,sceneAssets,renderer,playbackActive}});
   const tableStatus=useLayerClips('table',{policy:tablePlayback,assets:tableAssets,enabled:visible.table,sourceKey,loaded,language,previewRuleId:previewTableRuleId,previewRequest:previewTableRequest,refs:{player:tablePlayer,base:baseAssets,sceneAssets,renderer,playbackActive}});
+
+  // `autoplay` starts the channels once they are ready (muted, so the browser allows it) unless the viewer
+  // prefers reduced motion; `loopDealer` loops the dealer clip instead of stopping after its plays. Without
+  // the two props the preview waits for Spela and plays the dealer clip a counted number of times.
+  useEffect(()=>{
+    const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(autoplay&&loaded&&!reduced&&!document.hidden&&Object.values(videos.current).length)void play();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[autoplay,loaded]);
 
   async function play(count?:number){
     if(!ready.current)return;

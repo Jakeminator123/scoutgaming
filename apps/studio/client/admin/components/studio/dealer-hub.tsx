@@ -12,6 +12,7 @@ import {WorkspaceTool} from './workspace-tools';
 import {TaldriftPanel} from './taldrift-panel';
 import {ResourceConnections} from './resource-connections';
 import {SavedScenePreview} from './saved-scene-preview';
+import {ScenePreview} from './scene-preview';
 
 type Props={part:'head'|'tail';dealerId:string;tab:string;workspace:Workspace|null;saved:StudioProject|null};
 const base=(dealerId:string)=>'/admin/dealers/'+encodeURIComponent(dealerId);
@@ -73,7 +74,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved}:Props) {
   // Tail: what each tab shows below (or instead of) the clip map.
   if(!dealer)return null;
   return <div className={cn(pageClass,'max-w-none pt-0')}>
-    {tab==='klipp'&&<DealerPreview dealerId={dealer.id} templates={templates} saved={saved}/>}
+    {tab==='klipp'&&<DealerPreview dealerId={dealer.id} templates={templates} saved={saved} workspace={workspace}/>}
     {talVisited&&<div className="mt-5 grid gap-4" hidden={tab!=='tal'}>
       <Note tone="warn">Talkedjan byggs om, likadant för alla dealers: text, röst och läppsynk. Verktygen nedan fungerar som i dag.</Note>
       <div className="grid gap-4 md:grid-cols-2">
@@ -110,14 +111,14 @@ function ApprovalCard({coverage,templates}:{coverage:Coverage;templates:{id:stri
   </Card>;
 }
 
-function DealerPreview({dealerId,templates,saved}:{dealerId:string;templates:{id:string;label:string}[];saved:StudioProject|null}) {
+function DealerPreview({dealerId,templates,saved,workspace}:{dealerId:string;templates:{id:string;label:string}[];saved:StudioProject|null;workspace:Workspace|null}) {
   const [open,setOpen]=useState(false),[laneId,setLaneId]=useState('');
   const lane=templates.find(row=>row.id===laneId)??templates[0];
   return <PreviewFlyout title="Förhandsvisning · sparad scen" open={open} onOpenChange={setOpen}>
     {templates.length>1&&<label className="mb-3 grid gap-1.5 text-[13px] font-semibold">Scenmall<select value={lane?.id??''} onChange={event=>setLaneId(event.target.value)} className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text">{templates.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
     {!templates.length&&<Empty chip={null} title="Ingen scenmall tillåter dealern" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}
-    {lane&&<SavedScenePreview active={open} presentationLaneId={lane.id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/>}
-    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Visar scenmallens sparade förval som spelaren ser dem vid det delade bordet, på dator. Mobilvyn kommer senare.</p>
+    {lane&&<ScenePreview active={open} laneId={lane.id} dealerId={dealerId} game="blackjack" revision={saved?.revision} saved={workspace?{project:saved??workspace.project,inventory:workspace.inventory}:null}/>}
+    <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Visar den sparade scenmallen med dealerns vila, på dator. Mobilvyn kommer senare.</p>
   </PreviewFlyout>;
 }
 

@@ -20,7 +20,7 @@ const id='00000000-0000-4000-8000-000000000002',tableId='00000000-0000-4000-8000
 // Render the actual transpiled component, including dependency-sensitive effect
 // cleanup. The browser boundary supplies controllable media promises and time;
 // the real background scheduler retains its rolling budget and cancellation.
-function fixture(t,{table=false}={}){
+function fixture(t,{table=false,extra={}}={}){
   let time=0,serial=0,cursor=0,dirty=true,mounted=true,tree,props,renderedBackground=null,renderedTable=null;
   const slots=[],pending=new Map(),timers=new Map(),frames=new Map(),videos=[],renderers=[],players=[],draws=[];
   const schedule=(fn,ms)=>{const token=++serial;timers.set(token,{fn,at:time+ms});return token;};
@@ -78,7 +78,7 @@ function fixture(t,{table=false}={}){
     backgroundAssets:[{id,url:'/event.mp4',label:'Celebration',contentType:'video/mp4'}],
     ...(table?{table:{url:'/table.png',label:'Table',contentType:'image/png'},show:{dealer:true,background:true,table:true},
       tablePlayback:{schemaVersion:1,rules:[defaultLayerRule(tableId,'flower',{role:'table'})]},
-      tableAssets:[{id:tableId,url:'/flower.mp4',label:'Flower',contentType:'video/mp4'}]}:{})};
+      tableAssets:[{id:tableId,url:'/flower.mp4',label:'Flower',contentType:'video/mp4'}]}:{}),...extra};
   let canvasKey,stage;
   function render(){
     if(!mounted)return;cursor=0;dirty=false;tree=CompositionPreview(props);
@@ -202,4 +202,25 @@ test('a table clip swaps only the table layer and returns to the base table whil
   assert.equal(h.table.src,'/flower.mp4','the table clip started by its timer');
   const elapsed=h.now-started;assert.ok(elapsed>=195000-74000&&elapsed<=195000+74000+5000,`started after ${elapsed} ms, inside 195 s ± 74 s`);
   assert.equal(dealer.playCalls,1);assert.equal(h.players.length,2);
+});
+
+test('without autoplay the dealer waits for Spela and stops after its plays; layers loop silently',async t=>{
+  const h=fixture(t);await h.ready();
+  const dealer=h.dealer;assert.equal(dealer.playCalls,0,'nothing starts by itself');
+  assert.equal(dealer.loop,false);assert.equal(dealer.muted,false);
+  h.click('Spela');await h.flush();assert.equal(dealer.playCalls,1);
+  dealer.dispatchEvent(new Event('ended'));await h.flush();
+  assert.equal(dealer.paused,true,'the dealer clip stops after one play');assert.ok(h.button('Spela'));
+});
+
+test('autoplay with loopDealer starts the muted dealer and background on load and keeps the dealer looping',async t=>{
+  const h=fixture(t,{extra:{autoplay:true,loopDealer:true,minimal:true}});await h.flush();
+  const dealer=h.dealer;
+  assert.equal(dealer.loop,true,'the dealer idle loops');assert.equal(dealer.muted,true,'autoplay is muted so the browser allows it');
+  assert.equal(dealer.playCalls,1,'started once when ready, without a click');assert.equal(dealer.paused,false);
+  assert.equal(h.players[0].starts,1,'background automation starts with the channels');
+  assert.ok(h.button('Pausa'),'the viewer can still pause');
+  h.click('Pausa');await h.flush();assert.equal(dealer.paused,true);
+  await h.update({settings:{...defaultCompositionSettings(),tableFront:true}});
+  assert.equal(dealer.playCalls,1,'a placement change does not restart a paused preview');
 });
