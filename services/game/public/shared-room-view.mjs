@@ -1,6 +1,7 @@
 // Existing table DOM; all visible money, seats and controls come from a server snapshot.
 import { BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { SEAT_COUNT, WINDOW_SIZE, crowding, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
+import { installDecisionShortcuts } from './shared-room-shortcuts.mjs';
 const money = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
 const $ = (document,id) => document.getElementById(id);
 function button(document,text,action) {
@@ -85,6 +86,8 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   }
   const decisions=[...document.querySelectorAll('[data-act]')].filter(node=>!node.closest?.('#actions'));
   for(const node of decisions)listen(node,()=>actions?.dispatch('act',{action:node.dataset.act}));
+  // H/S/D/P while a decision button has focus (shared-room-shortcuts.mjs); a key clicks the same button.
+  cleanups.push(installDecisionShortcuts($(document,'actions-top'),decisions));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
   $(document,'ins-yes').textContent='Ja';$(document,'ins-no').textContent='Nej';
   const owns=index=>Boolean(model?.snapshot&&model.snapshot.owners[index]===model.snapshot.me.id);
@@ -132,13 +135,19 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
     return [current&&field?current.fields[field]:null,current&&slot?.leaveSeat===node?current.leaveSeat:null,slot?.join,
       ...(zone.querySelectorAll?.('button')??[])].find(usable)??null;
   }
+  // A decision button closed by the new turn (Double after a hit) hands focus to the panel's first open button, so
+  // H/S/D/P keep working (shared-room-shortcuts.mjs). The panel closed as a whole (a pending command) opens again
+  // with the same button, which then keeps its claim.
+  const panel=$(document,'actions-top');
+  const sibling=node=>node&&panel?.contains?.(node)&&!usable(node)?[...panel.querySelectorAll?.('button')??[]].find(usable)??null:null;
   function keepFocus(){
     if(closed||!lastFocus||moved)return;
     const active=document.activeElement,shown=lastFocus.isConnected!==false&&(lastFocus.checkVisibility?.()??true);
+    const next=shown?sibling(lastFocus):null;
     // Focus elsewhere is the player's; the control that still holds it on screen needs nothing.
-    if(active&&active!==document.body&&(active!==lastFocus||shown))return;
+    if(active&&active!==document.body&&(active!==lastFocus||(shown&&!next)))return;
     // A control that is only closed for a moment keeps its claim; one that left the screen hands it on.
-    const target=shown?lastFocus:substitute(lastFocus);
+    const target=next??(shown?lastFocus:substitute(lastFocus));
     if(usable(target)&&target!==active)target.focus?.({preventScroll:true});
   }
   // Chrome moves focus off a closed control at its next frame, so the check runs again then.

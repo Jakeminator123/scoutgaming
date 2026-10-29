@@ -1,10 +1,29 @@
 name: Croupier GitHub checks
 
+# What runs when (the scope matrix lives in tools/ci-changes.mjs, SCOPE_LEGS):
+#
+#   push main/preview, workflow_dispatch   full: every regression leg, gateway container,
+#                                          migration readiness, Moving image on worker changes
+#   PR ready for review (opened/synchronize/reopened/ready_for_review, not draft)
+#     documentation (reviewed prose only)  documentation job
+#     openclaw-deploy (services/openclaw/lab/deploy/** only)
+#                                          legs admin-contracts + access, gateway container
+#     full (everything else)               every leg; gateway container only when its inputs
+#                                          changed (services/openclaw/lab/deploy/**, lab root,
+#                                          .github/, .githooks/); Moving image on worker changes
+#   PR draft                               changes + targeted (tools/precommit-checks.mjs --pr-diff);
+#                                          the gate is named "CI (utkast)", so the required check CI
+#                                          is missing and tools/merge-pr.mjs cannot merge the head
+#
+# The final gate job is the required check CI. It passes only when every job the
+# classified scope requires reported success on this exact head.
+
 on:
   push:
-    branches: [main]
+    branches: [main, preview]
   pull_request:
-    branches: [main]
+    branches: [main, preview]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +31,9 @@ permissions:
 
 concurrency:
   group: croupier-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push to the same PR replaces the running check; main and preview
+  # runs are integration receipts and always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
@@ -22,6 +43,10 @@ jobs:
       scope: ${{ steps.scope.outputs.scope }}
       migration: ${{ steps.scope.outputs.migration }}
       moving: ${{ steps.scope.outputs.moving }}
+      gateway: ${{ steps.scope.outputs.gateway }}
+      draft: ${{ steps.scope.outputs.draft }}
+      legs: ${{ steps.scope.outputs.legs }}
+      matrix: ${{ steps.scope.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -74,40 +99,62 @@ jobs:
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
 
+  # Draft PRs: the same targeted checks as the local pre-commit hook, on the PR
+  # merge diff (syntax, registries, related tests, apps/web types, orphan tests
+  # for new test files). No regression leg runs until the PR is ready for review.
+  targeted:
+    name: Targeted checks (draft)
+    needs: changes
+    if: needs.changes.outputs.draft == 'true' && needs.changes.outputs.scope != 'documentation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            apps/studio/package-lock.json
+            apps/studio/client/package-lock.json
+            apps/speech/package-lock.json
+            services/game/package-lock.json
+            services/astrid-gpu-worker/gateway/package-lock.json
+      - name: Install verified ffmpeg packages
+        timeout-minutes: 8
+        uses: ./.github/actions/setup-ffmpeg
+      - run: npm --prefix apps/studio ci
+      - run: npm --prefix apps/studio/client ci --include=dev --ignore-scripts --no-audit --no-fund
+      - run: npm --prefix services/game ci --ignore-scripts
+      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
+      - run: npm --prefix apps/speech ci --ignore-scripts
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+          run_install: false
+      - run: pnpm --dir apps/web install --frozen-lockfile
+      - name: Targeted checks on the PR merge diff
+        timeout-minutes: 15
+        run: |
+          node tools/precommit-checks.mjs --pr-diff --plan
+          node tools/precommit-checks.mjs --pr-diff
+
   # Same registry as local --full (.githooks/pre-commit-full), split into parallel legs.
-  # Every leg gets the same verified toolchain; a leg runs its suites to the end and
-  # fails if any suite fails. Engine runs only through its PostgreSQL harness, and the
-  # container suite has its own job.
+  # The matrix comes from the classifier (REGRESSION_LEGS filtered by scope). Every leg
+  # gets the same verified toolchain; a leg runs its suites to the end and fails if any
+  # suite fails. Engine runs only through its PostgreSQL harness, and the container
+  # suite has its own job.
   dealer-regression:
     name: Regression (${{ matrix.leg }})
     needs: changes
-    if: needs.changes.outputs.scope == 'full'
+    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.legs != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - leg: studio
-            suites: studio
-          - leg: admin-contracts
-            suites: admin contracts
-            policy: true
-          - leg: database-engine
-            suites: database
-            postgres: true
-          - leg: presentation
-            suites: presentation
-          - leg: access
-            suites: access
-            build: true
-          - leg: speech-gameplay
-            suites: speech gameplay
-            speech_node: true
-            lipsync: true
-          - leg: browser
-            suites: ''
-            browser: true
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
     outputs:
       # Only the lipsync leg runs this step; legs that skip it record no value.
       lipsync_verified: ${{ steps.lipsync_contracts.outputs.verified }}
@@ -159,7 +206,11 @@ jobs:
         run: npm --prefix services/openclaw/lab run check
       - name: Orphan tests
         if: ${{ matrix.policy }}
-        run: node tools/check-orphan-tests.mjs
+        run: |
+          node tools/check-orphan-tests.mjs || {
+            echo "::error title=Orphan tests::Every test file must be registered. Add each listed file to a run_node_tests line of .githooks/pre-commit-full (the suite that owns its area: studio, admin, contracts, database, presentation, access, speech, gameplay, engine or container), or classify a helper/opt-in module in tools/orphan-tests-exceptions.json. Locally: node tools/check-orphan-tests.mjs (the pre-commit hook runs it when a test file is added)."
+            exit 1
+          }
       - name: Regression suites
         if: ${{ matrix.suites != '' }}
         timeout-minutes: 20
@@ -175,7 +226,7 @@ jobs:
           exit "$failed"
       - name: Existing isolated Studio SQL, restart and HTTPS acceptance
         if: ${{ !cancelled() && matrix.postgres }}
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: |
           # The runner image ships PostgreSQL 16 binaries; the download stays as fallback.
           if [ -x /usr/lib/postgresql/16/bin/initdb ] && [ -x /usr/lib/postgresql/16/bin/pg_ctl ]; then
@@ -184,11 +235,21 @@ jobs:
             postgres_source=(--download-postgres)
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
-          node tools/regression-group.mjs database/isolated-sql-restart-https 360 node tools/studio-isolated-qa.mjs "${postgres_source[@]}"
-          node tools/regression-group.mjs database/shared-blackjack 360 node tools/run-shared-table-qa.mjs "${postgres_source[@]}"
-          node tools/regression-group.mjs database/shared-schema-upgrade 180 node tools/run-shared-table-qa.mjs --schema-upgrade "${postgres_source[@]}"
-          node tools/regression-group.mjs database/lissabon-retirement 180 node tools/run-shared-table-qa.mjs --lissabon-retirement "${postgres_source[@]}"
-          node tools/regression-group.mjs database/room-game-config 360 node tools/run-room-game-config-qa.mjs "${postgres_source[@]}"
+          # Each group starts its own fresh loopback cluster. These groups have failed
+          # on runner timing and passed unchanged on rerun, so a failed group runs one
+          # more time, visibly (RETRY line and a warning annotation); a second failure
+          # fails the step. No test is skipped or weakened.
+          retry_once() {
+            node tools/regression-group.mjs "$@" && return 0
+            echo "[regression] RETRY $1 (attempt 2/2 on a fresh cluster)"
+            echo "::warning title=Regression retry::$1 failed once in this run and was retried; see the first attempt above if it fails again."
+            node tools/regression-group.mjs "$@"
+          }
+          retry_once database/isolated-sql-restart-https 360 node tools/studio-isolated-qa.mjs "${postgres_source[@]}"
+          retry_once database/shared-blackjack 360 node tools/run-shared-table-qa.mjs "${postgres_source[@]}"
+          retry_once database/shared-schema-upgrade 180 node tools/run-shared-table-qa.mjs --schema-upgrade "${postgres_source[@]}"
+          retry_once database/lissabon-retirement 180 node tools/run-shared-table-qa.mjs --lissabon-retirement "${postgres_source[@]}"
+          retry_once database/room-game-config 360 node tools/run-room-game-config-qa.mjs "${postgres_source[@]}"
       - name: Real engine over HTTP on isolated PostgreSQL with TLS
         if: ${{ !cancelled() && matrix.postgres }}
         timeout-minutes: 12
@@ -284,11 +345,12 @@ jobs:
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
 
   # The pinned OpenClaw Gateway image build (about 90 s, mostly the base pull) runs
-  # beside the regression legs instead of inside the access suite.
+  # beside the regression legs instead of inside the access suite, and only when
+  # its inputs changed (classifier output gateway) or on main/preview/manual runs.
   gateway-container:
     name: Gateway container
     needs: changes
-    if: needs.changes.outputs.scope == 'full'
+    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.gateway == 'true' && needs.changes.outputs.scope != 'documentation'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -302,11 +364,11 @@ jobs:
   migration-readiness:
     name: Studio migration readiness
     needs: changes
-    # Main/manual runs always check the ledger. Client/test-only PR edits
-    # need no production access; server/schema/dependency changes still do.
-    # Forks receive no production credentials; the final gate rejects
-    # skipped readiness whenever the classified change requires it.
-    if: ${{ needs.changes.outputs.migration == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    # Main/preview/manual runs always check the ledger. Client/test-only PR edits
+    # need no production access; server/schema/dependency changes still do, once
+    # the PR is ready for review. Forks receive no production credentials; the
+    # final gate rejects skipped readiness whenever the classified change requires it.
+    if: ${{ needs.changes.outputs.migration == 'true' && needs.changes.outputs.draft != 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preview')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -324,12 +386,15 @@ jobs:
 
   moving-worker:
     needs: changes
-    if: needs.changes.outputs.moving == 'true'
+    if: needs.changes.outputs.moving == 'true' && needs.changes.outputs.draft != 'true'
     uses: ./.github/workflows/moving-gpu-build.yml
 
+  # The required check is named CI only for runs that can merge (push, manual,
+  # PR ready for review). A draft run reports "CI (utkast)" instead, so the
+  # ruleset and tools/merge-pr.mjs keep waiting for the real CI on that head.
   ci:
-    name: CI
-    needs: [changes, documentation, dealer-regression, gateway-container, migration-readiness, moving-worker]
+    name: ${{ needs.changes.outputs.draft == 'true' && 'CI (utkast)' || 'CI' }}
+    needs: [changes, documentation, targeted, dealer-regression, gateway-container, migration-readiness, moving-worker]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
@@ -342,23 +407,41 @@ jobs:
           // Final gate script
           const jobs = JSON.parse(process.env.CI_NEEDS);
           const scope = jobs.changes?.outputs?.scope;
-          const required = scope === 'documentation' ? ['documentation']
-            : scope === 'full' ? ['dealer-regression', 'gateway-container'] : [];
+          const draft = jobs.changes?.outputs?.draft;
           const moving = jobs.changes?.outputs?.moving;
           const migration = jobs.changes?.outputs?.migration;
+          const gateway = jobs.changes?.outputs?.gateway;
+          let legs;
+          try { legs = JSON.parse(jobs.changes?.outputs?.legs ?? ''); } catch { legs = null; }
+          const fail = message => { console.error(`CI failed: ${message}`); process.exit(1); };
+          if (jobs.changes?.result !== 'success' || !['true', 'false'].includes(draft) || !Array.isArray(legs)
+            || !legs.every(leg => typeof leg === 'string' && leg)) fail('the change classification is missing or malformed.');
+          if (draft === 'true') {
+            // Targeted run only: nothing heavy may have run, and the targeted job must pass.
+            const required = scope === 'documentation' ? ['documentation'] : ['targeted'];
+            const idle = ['dealer-regression', 'gateway-container', 'migration-readiness', 'moving-worker', scope === 'documentation' ? 'targeted' : 'documentation'];
+            if (required.some(name => jobs[name]?.result !== 'success') || idle.some(name => jobs[name]?.result !== 'skipped')) {
+              fail('a draft run requires the targeted (or documentation) job to pass and nothing else to run.');
+            }
+            console.log(`CI (utkast) passed: ${scope}; the required check CI runs when the PR is marked ready for review.`);
+            process.exit(0);
+          }
+          const required = scope === 'documentation' ? ['documentation'] : legs.length ? ['dealer-regression'] : [];
           if (!['true', 'false'].includes(migration)
-            || (migration === 'true' && (scope !== 'full'
+            || (migration === 'true' && (scope === 'documentation'
               || jobs['migration-readiness']?.result !== 'success'))) {
-            console.error('CI failed: required production migration readiness is missing or unsuccessful. Fork code must not receive production credentials; review and rerun from an authorized repository branch.');
-            process.exit(1);
+            fail('required production migration readiness is missing or unsuccessful. Fork code must not receive production credentials; review and rerun from an authorized repository branch.');
+          }
+          if (!['true', 'false'].includes(gateway) || (scope === 'documentation') !== (legs.length === 0)
+            || jobs['gateway-container']?.result !== (gateway === 'true' && scope !== 'documentation' ? 'success' : 'skipped')) {
+            fail('the Gateway container check is missing, failed, or ran against the classification.');
           }
           if (!['true', 'false'].includes(moving)
             || jobs['moving-worker']?.result !== (moving === 'true' ? 'success' : 'skipped')
-            || jobs.changes?.result !== 'success' || required.length === 0
-            || (scope === 'full' && jobs['dealer-regression']?.outputs?.lipsync_verified !== 'true')
+            || jobs.targeted?.result !== 'skipped' || required.length === 0
+            || (legs.includes('speech-gameplay') && jobs['dealer-regression']?.outputs?.lipsync_verified !== 'true')
             || required.some(name => jobs[name]?.result !== 'success')) {
-            console.error('CI failed: a required check failed, was cancelled, skipped, or was not reported.');
-            process.exit(1);
+            fail('a required check failed, was cancelled, skipped, or was not reported.');
           }
-          console.log(`CI passed: ${scope}`);
+          console.log(`CI passed: ${scope} (${legs.join(', ') || 'no regression legs'})`);
           NODE

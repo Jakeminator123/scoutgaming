@@ -83,12 +83,45 @@ export function verificationMode(changes, { forceFull = false, env = process.env
   ) ? 'documentation' : 'focused';
 }
 
+// --pr-diff: the committed diff HEAD^1..HEAD instead of the index. In CI that is
+// the PR merge commit against main (draft PRs run only these targeted checks);
+// locally it is the last commit. CI environment flags do not force --full there.
 export function parseArgs(args) {
-  if (args.some(arg => !['--full', '--plan'].includes(arg))) {
-    throw Error('Usage: node tools/precommit-checks.mjs [--full] [--plan]');
+  if (args.some(arg => !['--full', '--plan', '--pr-diff'].includes(arg)) || (args.includes('--full') && args.includes('--pr-diff'))) {
+    throw Error('Usage: node tools/precommit-checks.mjs [--full | --pr-diff] [--plan]');
   }
-  return { forceFull: args.includes('--full'), planOnly: args.includes('--plan') };
+  return { forceFull: args.includes('--full'), planOnly: args.includes('--plan'), prDiff: args.includes('--pr-diff') };
 }
+
+export const PR_DIFF = Object.freeze(['HEAD^1', 'HEAD']);
+
+export function readCommittedChanges(root, { env = isolatedGitEnvironment(), range = PR_DIFF } = {}) {
+  const result = spawnSync('git', ['-c', 'diff.relative=false', 'diff', '--name-status', '-z',
+    '--no-renames', '--no-ext-diff', '--no-textconv', ...range, '--'], { cwd: root, encoding: 'utf8', env });
+  if (result.error || result.status !== 0) {
+    throw Error('Cannot inspect committed changes: ' + (result.error?.message || result.stderr || result.signal || result.status));
+  }
+  return parseStagedChanges(result.stdout);
+}
+
+// A new test file that no runner lists fails CI's orphan audit (admin-contracts leg);
+// the same audit runs here as soon as a commit adds one. Mirrors isTestFile in
+// tools/check-orphan-tests.mjs for the discovery roots it walks.
+export function addsTestFile(changes) {
+  return changes.some(({ status, path }) => status === 'A'
+    && /^(?:test|apps|services|packages|ops|tools\/media)\//.test(path)
+    && !path.split('/').some(part => ['fixtures', '__fixtures__', 'node_modules'].includes(part))
+    && /\.(?:mjs|js|cjs|ts|mts|cts)$/.test(path)
+    && (/\.(?:test|spec)\.[^.]+$/.test(path) || path.split('/').slice(0, -1).some(part => part === 'test' || part === 'tests')
+      || (path.startsWith('tools/media/') && basename(path).startsWith('test-'))));
+}
+
+// Printed after a failed check whose plain output does not say what to do.
+const CHECK_HINTS = Object.freeze({
+  'tools/check-orphan-tests.mjs': 'Orphan tests: add each listed file to a run_node_tests line in .githooks/pre-commit-full '
+    + '(the suite that owns its area: studio, admin, contracts, database, presentation, access, speech, gameplay, engine or container), '
+    + 'or classify a helper/opt-in module in tools/orphan-tests-exceptions.json. CI fails the admin-contracts leg otherwise.',
+});
 
 // Static ESM only: do not evaluate helpers, dynamic imports or require calls.
 // Keep quoted strings as tokens so comments and example code cannot add edges.
@@ -201,14 +234,20 @@ export function focusedTests(changes, root = repositoryRoot) {
   return [...selected].sort();
 }
 
-export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorkers = 4 } = {}) {
+// committed: plan for the committed range PR_DIFF (--pr-diff) instead of the index.
+export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorkers = 4, committed = false } = {}) {
   if (mode === 'full') return [['sh', '.githooks/pre-commit-full']];
   if (!['documentation', 'focused'].includes(mode)) throw Error('Unknown verification mode');
   if (!Number.isInteger(testWorkers) || testWorkers < 1 || testWorkers > 4) throw Error('Focused test workers must be an integer from 1 to 4');
   const tests = focusedTests(changes, root);
-  const commands = [['git', 'diff', '--cached', '--check']];
+  const commands = [committed ? ['git', 'diff', '--check', ...PR_DIFF] : ['git', 'diff', '--cached', '--check']];
   // Repo growth (files over 1 MB, new media binaries, living-document limits) on the staged diff only.
-  if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) commands.push([process.execPath, 'tools/check-repo-limits.mjs', '--cached']);
+  if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) {
+    commands.push([process.execPath, 'tools/check-repo-limits.mjs', ...(committed ? ['--tree', 'HEAD', '--changed-since', 'HEAD^1'] : ['--cached'])]);
+  }
+  if (mode === 'focused' && addsTestFile(changes) && existsSync(resolve(root, 'tools/check-orphan-tests.mjs'))) {
+    commands.push([process.execPath, 'tools/check-orphan-tests.mjs']);
+  }
   for (const { status, path } of changes) {
     if (status === 'D' || !existsSync(resolve(root, path))) continue;
     if (/\.[cm]?js$/.test(path)) commands.push([process.execPath, '--check', path]);
@@ -242,6 +281,7 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
     }
     if (result.status !== 0) {
       if (result.signal) console.error('Verification interrupted by ' + result.signal);
+      if (CHECK_HINTS[args[0]]) console.error(CHECK_HINTS[args[0]]);
       return Number.isInteger(result.status) && result.status > 0 ? result.status : 1;
     }
   }
@@ -249,24 +289,26 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
 }
 
 export function main(args = process.argv.slice(2)) {
-  const { forceFull, planOnly } = parseArgs(args);
+  const { forceFull, planOnly, prDiff } = parseArgs(args);
   const indexEnv = isolatedGitEnvironment();
   // The invoking Git commit can own a temporary index (for example --only).
   // Keep that exact index only for this hook's own inspection, never its checks.
   if (process.env.GIT_INDEX_FILE) indexEnv.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
-  const changes = readStagedChanges(repositoryRoot, { env: indexEnv });
-  const mode = verificationMode(changes, { forceFull });
+  const changes = prDiff ? readCommittedChanges(repositoryRoot) : readStagedChanges(repositoryRoot, { env: indexEnv });
+  // --pr-diff is the targeted CI path for draft PRs: never the full product there.
+  const mode = prDiff ? verificationMode(changes, { env: {} }) : verificationMode(changes, { forceFull });
   // Limit simultaneous disposable servers on constrained local machines.
   // This changes scheduling only: CI/full checks and every test stay intact.
   const workerSetting = mode === 'focused' ? process.env.CROUPIER_PRECOMMIT_TEST_WORKERS : undefined;
   if (workerSetting !== undefined && !['1','2','3','4'].includes(workerSetting)) throw Error('CROUPIER_PRECOMMIT_TEST_WORKERS must be 1, 2, 3 or 4');
-  const commands = checkPlan(mode, { changes, testWorkers: workerSetting === undefined ? 4 : Number(workerSetting) });
+  const commands = checkPlan(mode, { changes, committed: prDiff, testWorkers: workerSetting === undefined ? 4 : Number(workerSetting) });
   if (planOnly) {
     console.log(JSON.stringify({ mode, commands }));
     return 0;
   }
   console.log(mode === 'full'
     ? 'Full regression: CI or explicit --full.'
+    : prDiff ? `Targeted ${mode} checks on ${PR_DIFF.join('..')}: changed files and available related tests. The full regression runs when the PR is ready for review.`
     : `Local ${mode} checks: changed files and available related tests. Full regression runs in CI; use --full locally when needed.`);
   return runChecks(commands);
 }

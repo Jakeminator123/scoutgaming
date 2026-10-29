@@ -13,6 +13,7 @@ import { isPresentationRoomLaneCompatible } from '../../../packages/presentation
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { readPartnerReports, readPublishedRoomSettings } from './partner-game-readout.mjs';
+import { readPartnerApiKeys } from './partner-api-keys.mjs';
 import { partnerRoleWord } from './partner-words.mjs';
 
 export const INTERNAL_ROLE = Object.freeze({ id: 'internal-admin', label: 'Scoutgamings personal' });
@@ -221,7 +222,8 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   // bär bara de avsnitt rollen får läsa:
   // tables.read → spelbord och deras inställningar, presentations.read →
   // scenmall/utseende/tilldelning/utkast, reports.read → ekonomi och
-  // publiceringar, team.read → team och inbjudningar.
+  // publiceringar, team.read → team och inbjudningar, integrations.read →
+  // bolagets egna API-nycklar, maskerade (partner-api-keys.mjs).
   const required = PARTNER_VIEW_PERMISSIONS[view];
   const denied = may(required) ? null : { view, permission: required, role };
   const canTables = may('tables.read'), canPresentations = may('presentations.read'), canReports = may('reports.read');
@@ -263,6 +265,9 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   const choices = visible.some(item => item.id === operator.id) ? visible : [current, ...visible];
   const reports = canReports && ['overview', 'reports', 'rooms'].includes(view)
     ? await readPartnerReports({ query, operatorId: operator.id, roomIds: tables.map(table => table.id), now }) : null;
+  // integrations.read → the company's own keys, masked. The company is the one this session was
+  // just authorized for (operator.id above), never a value from the address or a body.
+  const apiKeys = may('integrations.read') ? await readPartnerApiKeys({ query, operatorId: operator.id }) : null;
   return {
     ...snapshotBase(session, now),
     ...(revision ? { packageRevision: revision } : {}),
@@ -282,6 +287,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     draft: canPresentations ? await draftOf(operators, operator.id) : null,
     publications: canReports ? await publicationsOf(operators, operator.id) : [],
     ...(reports ? { reports } : {}),
+    ...(apiKeys ? { apiKeys } : {}),
     summary: canTables ? { activeTables: presentation ? tables.filter(table => table.status === 'active').length : tables.length } : {},
   };
 }
