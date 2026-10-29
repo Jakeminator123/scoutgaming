@@ -14,6 +14,7 @@ import { withPackagePresentation } from '../../../packages/presentation/server/p
 import { cloudPresentationFixture } from './fixtures/cloud-presentation.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 import { validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
+import { partnerNavigation } from '../components/partner/partner-copy.mjs';
 
 // Partnerportalen per role: the server decides every view, not the menu.
 // partner-editor: overview, tables, presentations (configure). partner-viewer: every *.read.
@@ -110,6 +111,20 @@ test('a redaktör is denied Team, Spelare, Ekonomi and Integration by direct add
   }
   assert.equal((await api(f, f.editor, 'team')).status, 403);
   assert.equal((await api(f, f.editor, 'journal')).status, 403);
+});
+
+test('for every standard role the menu offers exactly the views the server opens, and every other view is denied by address', async () => {
+  const f = await fixture();
+  for (const [cookie, roleId] of [[f.admin, 'partner-admin'], [f.editor, 'partner-editor'], [f.viewer, 'partner-viewer']]) {
+    const loaded = await page(f, cookie, 'overview');
+    const menu = partnerNavigation('sv', loaded.snapshot.permissions).map(item => item.id);
+    assert.ok(menu.includes('overview') && menu.includes('help'), roleId);
+    for (const view of PARTNER_VIEWS) {
+      const opened = await page(f, cookie, view);
+      assert.equal(opened.denied === undefined, menu.includes(view), `${roleId} ${view}`);
+      if (opened.denied) assert.deepEqual(opened.denied.permission, PARTNER_VIEW_PERMISSIONS[view], `${roleId} ${view}`);
+    }
+  }
 });
 
 test('a läsare opens all seven views but every write is refused on the server', async () => {

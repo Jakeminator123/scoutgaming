@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { PARTNER_VIEWS } from '../../../../packages/navigation/workspace-surfaces.mjs';
+import { partnerNavigationItems } from '../../../../packages/navigation/partner-navigation.mjs';
 import { PARTNER_VIEW_PERMISSIONS } from '../../../../packages/studio-access/server/partner-access-policy.mjs';
 // Rollens ord bor i en ren modul (ingen React) så att servern kan läsa dem.
 export { PARTNER_ROLE_WORDS, partnerRoleWord } from '../../lib/partner-words.mjs';
 
 // Orden följer apps/studio/docs/TERMINOLOGI.md: Partnerportalen, bolag, spelbord,
 // bordsgrafik, scenmall, tilldelning, version, utkast/publicerad,
-// administratör/redaktör/läsare.
+// administratör/redaktör/läsare. Menyvalens namn kommer ur packages/navigation/partner-navigation.mjs.
+const viewLabels = language => Object.fromEntries(partnerNavigationItems.map(item => [item.id, item.label[language]]));
 const COPY = Object.freeze({
   sv: {
     portal: 'Partnerportalen', level: 'Partnerportalen', partners: 'Bolag', company: 'Bolag',
@@ -21,7 +22,7 @@ const COPY = Object.freeze({
     sameLogin: 'Samma konto', control: 'Admin', player: 'Spelarlobby',
     directoryNote: 'Listan hämtas från registrerade bolag. Inga exempeldata visas här.',
     theme: 'Tema', light: 'Ljust', dark: 'Mörkt', language: 'Språk', menu: 'Meny',
-    overview: 'Översikt', rooms: 'Spelbord', players: 'Spelare', reports: 'Ekonomi', team: 'Team', integration: 'Integration', help: 'Hjälp och kontakt',
+    ...viewLabels('sv'),
     assignmentFrom: 'Tilldelning från Scoutgaming', revision: 'Version', packageMissing: 'Ingen publicerad tilldelning',
     dealer: 'dealer', dealers: 'dealers', lane: 'scenmall', lanes: 'scenmallar', table: 'bordsgrafik', tables: 'bordsgrafik', background: 'bakgrund', backgrounds: 'bakgrunder', switchCompany: 'Byt bolag',
     find: 'Sök', findHint: 'Sök sidor och spelbord', findEmpty: 'Inget matchar.', pages: 'Sidor', settings: 'Inställningar', companyDefault: 'Bolagets standard', close: 'Stäng',
@@ -45,7 +46,7 @@ const COPY = Object.freeze({
     sameLogin: 'Same account', control: 'Admin', player: 'Player lobby',
     directoryNote: 'This list comes from registered companies. No sample data is shown here.',
     theme: 'Theme', light: 'Light', dark: 'Dark', language: 'Language', menu: 'Menu',
-    overview: 'Overview', rooms: 'Tables', players: 'Players', reports: 'Finance', team: 'Team', integration: 'Integration', help: 'Help and contact',
+    ...viewLabels('en'),
     assignmentFrom: 'Assignment from Scoutgaming', revision: 'Version', packageMissing: 'No published assignment',
     dealer: 'dealer', dealers: 'dealers', lane: 'scene template', lanes: 'scene templates', table: 'table graphic', tables: 'table graphics', background: 'background', backgrounds: 'backgrounds', switchCompany: 'Switch company',
     find: 'Search', findHint: 'Search pages and tables', findEmpty: 'Nothing matches.', pages: 'Pages', settings: 'Settings', companyDefault: 'Company default', close: 'Close',
@@ -60,13 +61,13 @@ const COPY = Object.freeze({
 
 export function partnerCopy(language = 'sv') { return COPY[language === 'en' ? 'en' : 'sv']; }
 
-// Menyn är presentation: samma karta som servern använder för att neka en vy.
-// Spelare visas inte i menyn förrän spelare kopplats till bolag; adressen nekas eller
-// visas fortfarande av servern efter behörigheten players.read.
-const HIDDEN_VIEWS = new Set(['players']);
+// Menyn är presentation: menyvalen ur packages/navigation/partner-navigation.mjs, filtrerade på
+// samma karta som servern använder för att neka en vy (PARTNER_VIEW_PERMISSIONS). Skalet och
+// Hjälp läser båda härifrån.
 export function partnerNavigation(language, permissions = []) {
-  const copy = partnerCopy(language), allowed = new Set(permissions);
-  return PARTNER_VIEWS.filter(view => !HIDDEN_VIEWS.has(view) && allowed.has(PARTNER_VIEW_PERMISSIONS[view])).map(id => ({ id, label: copy[id] }));
+  const lang = language === 'en' ? 'en' : 'sv', allowed = new Set(permissions);
+  return partnerNavigationItems.filter(item => allowed.has(PARTNER_VIEW_PERMISSIONS[item.id]))
+    .map(item => ({ id: item.id, label: item.label[lang], description: item.description[lang], icon: item.icon }));
 }
 
 // Presentation preferences only; business data and drafts remain server-owned.

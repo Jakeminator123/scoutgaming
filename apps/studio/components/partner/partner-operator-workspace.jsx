@@ -26,7 +26,8 @@ import { PartnerSessionActions } from '../partner-session-actions';
 import { createPartnerLeaveGuard } from './partner-navigation-guard.mjs';
 import './partner-portal.css';
 
-const ICONS = { overview: LayoutDashboard, rooms: Spade, players: Users, reports: ChartColumn, team: UsersRound, integration: Plug, help: LifeBuoy };
+// Ikonnamnen står i packages/navigation/partner-navigation.mjs.
+const ICONS = { 'layout-dashboard': LayoutDashboard, spade: Spade, users: Users, 'chart-column': ChartColumn, 'users-round': UsersRound, plug: Plug, 'life-buoy': LifeBuoy };
 
 class ViewBoundary extends React.Component {
   state = { failed:false };
@@ -147,7 +148,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
           {snapshot.operators.length>1?<select id="partner-operator" aria-label={copy.switchCompany} value={snapshot.operator.id} onChange={event=>switchOperator(event.target.value)}>{snapshot.operators.map(operator=><option key={operator.id} value={operator.id}>{operator.name}</option>)}</select>:null}
         </div>
         <button type="button" className="find" onClick={()=>setFinding(true)} aria-keyshortcuts="Control+K Meta+K"><Search size={15} aria-hidden="true"/><span>{copy.find}</span><kbd>⌘K</kbd></button>
-        <nav aria-label={copy.menu}>{navigation.map(item=>{const Icon=ICONS[item.id];return <a href={viewPath(item.id)} key={item.id} className="nav" aria-current={view===item.id?'page':undefined} onClick={event=>{if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();go(item.id);}}>
+        <nav aria-label={copy.menu}>{navigation.map(item=>{const Icon=ICONS[item.icon];return <a href={viewPath(item.id)} key={item.id} className="nav" aria-current={view===item.id?'page':undefined} onClick={event=>{if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();go(item.id);}}>
           {Icon?<Icon size={16} aria-hidden="true" className="nav-icon"/>:null}<span className="label">{item.label}</span>{counts[item.id]?<span className="count">{counts[item.id]}</span>:null}</a>;})}</nav>
         <div className="foot">
           <div className="who"><span className="avatar" aria-hidden="true">{user.slice(0,2).toUpperCase()}</span><div><div><b>{user}</b></div><div className="small">{role}</div></div>
@@ -183,7 +184,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
       <Command.Input placeholder={copy.findHint} aria-label={copy.findHint}/>
       <Command.List>
         <Command.Empty>{copy.findEmpty}</Command.Empty>
-        <Command.Group heading={copy.pages}>{navigation.map(item=>{const Icon=ICONS[item.id];return <Command.Item key={item.id} value={item.label} onSelect={()=>pick(item.id,item.id==='rooms'?{}:roomRequest)}>{Icon?<Icon size={15} aria-hidden="true"/>:null}{item.label}</Command.Item>;})}</Command.Group>
+        <Command.Group heading={copy.pages}>{navigation.map(item=>{const Icon=ICONS[item.icon];return <Command.Item key={item.id} value={item.label} onSelect={()=>pick(item.id,item.id==='rooms'?{}:roomRequest)}>{Icon?<Icon size={15} aria-hidden="true"/>:null}{item.label}</Command.Item>;})}</Command.Group>
         {allowed('rooms')&&rooms.length?<Command.Group heading={copy.rooms}>{rooms.map(room=><Command.Item key={room.id} value={`${room.name} ${room.id}`} onSelect={()=>pick('rooms',{roomId:room.id})}><Spade size={15} aria-hidden="true"/>{room.name}</Command.Item>)}
           <Command.Item value={copy.companyDefault} onSelect={()=>pick('rooms',{scope:'company'})}><Spade size={15} aria-hidden="true"/>{copy.companyDefault}</Command.Item></Command.Group>:null}
       </Command.List>
