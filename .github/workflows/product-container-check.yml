@@ -1,8 +1,12 @@
 name: Render v3 container check
 
+# The Render croupier-v3 (game) image, not the OpenClaw Gateway image that
+# croupier.yml's gateway-container job builds. Advisory (not part of the CI
+# gate); it runs only when the image's own inputs change: its Dockerfile, the
+# root .dockerignore and the two locked package manifests it installs.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, preview]
     paths:
       - .github/workflows/product-container-check.yml
       - .dockerignore
