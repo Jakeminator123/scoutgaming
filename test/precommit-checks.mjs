@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
   parseStagedChanges, readStagedChanges, readCommittedChanges, readMergeHead, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests, addsTestFile,
+  SOURCE_CONSUMER_LIMIT,
 } from '../tools/precommit-checks.mjs';
 
 const change = (path, status = 'M') => ({ path, status });
@@ -359,6 +360,127 @@ test('focused selection includes the microphone consumer for fixture and camera 
   for (const path of ['test/fixtures/microphone-control.mjs', 'services/game/public/astrid-camera-control.mjs']) {
     assert.ok(focusedTests([change(path)]).includes('test/microphone-openclaw-integration.mjs'), path);
   }
+});
+
+// Components whose tests live in client/admin/lib or apps/studio/test: no file stem
+// leads there, so a wording change used to pass locally and fail first in CI.
+test('focused selection finds registered tests that load a changed component from another folder', () => {
+  const consumers = {
+    'apps/studio/client/admin/components/studio/dealer-directory.tsx': ['apps/studio/client/admin/lib/dealer-directory.test.mjs'],
+    'apps/studio/client/admin/components/studio/studio-speech-panel.tsx': ['apps/studio/client/admin/lib/studio-speech.test.mjs'],
+    'apps/studio/client/admin/components/studio/connected-clip-card.tsx': ['apps/studio/client/admin/lib/studio-layout.test.mjs',
+      'apps/studio/client/admin/lib/roulette-clip-map.test.mjs'],
+    'apps/studio/components/layer-asset-manager.tsx': ['apps/studio/test/material-trash-ui.test.mjs'],
+    'apps/studio/client/admin/components/studio/registered-studio.tsx': ['apps/studio/client/admin/lib/studio-context.test.mjs'],
+  };
+  for (const [path, tests] of Object.entries(consumers)) {
+    const selected = focusedTests([change(path)]);
+    for (const file of tests) assert.ok(selected.includes(file), `${path} -> ${file}`);
+    assert.ok(selected.length <= SOURCE_CONSUMER_LIMIT, path);
+    // Path lists in classification tests are data, not a load of the component.
+    assert.ok(!selected.includes('test/ci-changes.mjs') && !selected.includes('test/precommit-checks.mjs'), path);
+  }
+  const plan = checkPlan('focused', { changes: Object.keys(consumers).map(path => change(path)) });
+  const run = plan.find(args => args.includes('--test'));
+  for (const file of Object.values(consumers).flat()) assert.ok(run.includes(file), file);
+});
+
+async function writeTree(root, files) {
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(join(root, path, '..'), { recursive: true });
+    await writeFile(join(root, path), content);
+  }
+}
+
+const consumerRegistry = 'run_node_tests admin consumers apps/studio/client/admin/lib/*.test.mjs apps/studio/test/*.test.mjs test/*.mjs\n';
+
+test('source consumers are registered tests that load the path; data, comments and unregistered tests do not count', async () => {
+  await fixture(async root => {
+    await writeTree(root, {
+      '.githooks/pre-commit-full': consumerRegistry,
+      'apps/studio/client/admin/components/studio/panel.tsx': 'export {};\n',
+      'apps/studio/client/admin/components/studio/hub-panel.tsx': 'export {};\n',
+      'apps/studio/client/admin/components/ui/dialog.tsx': 'export {};\n',
+      'apps/studio/components/editor.tsx': 'export {};\n',
+      'apps/studio/lib/room.mjs': 'export {};\n',
+      // Exact: a relative string resolved from the test's folder, and a root path given to a loader.
+      'apps/studio/client/admin/lib/panel-view.test.mjs':
+        "const source = readFileSync(new URL('../components/studio/panel.tsx', import.meta.url), 'utf8');\n",
+      'test/editor-source.mjs': "const source = readFileSync(resolve(root, 'apps/studio/components/editor.tsx'), 'utf8');\n",
+      // Loose: a hyphenated name and a trailing part given to a compile helper. The stub
+      // comparison is no load and adds nothing to the exact name above.
+      'apps/studio/client/admin/lib/hub.test.mjs':
+        "const tsx = name => compile('../components/studio/' + name + '.tsx');\nrun(tsx('hub-panel'));\nrun(tsx('ui/dialog'));\n"
+        + "const stub = name => name.endsWith('studio/panel') ? {} : null;\n",
+      // Data, comments and plain words: none of these may select a test.
+      'test/classification.mjs': "for (const path of ['apps/studio/client/admin/components/studio/hub-panel.tsx']) check(path);\n"
+        + "assert.equal(mode([change('apps/studio/components/editor.tsx')]), 'focused');\nconst panel = 'hub-panel';\n"
+        + "// readFileSync(new URL('../apps/studio/client/admin/components/ui/dialog.tsx', import.meta.url));\n"
+        + "/* import '../apps/studio/client/admin/components/studio/hub-panel.tsx'; */\n",
+      'apps/studio/test/roles.test.mjs': "screen.getByRole('dialog'); open('dialog');\nconst example = `../components/studio/${'panel'}.tsx`;\n",
+      // A component's own test wins; other tests that load it are left to CI.
+      'apps/studio/test/room.test.mjs': 'export {};\n',
+      'apps/studio/test/room-user.test.mjs': "import '../lib/room.mjs';\n",
+      // Not registered by any runner, so CI would not run it either.
+      'apps/studio/client/admin/opt-in/panel.test.mjs': "import '../components/studio/panel.tsx';\n",
+    });
+    const tests = path => focusedTests([change(path)], root);
+    assert.deepEqual(tests('apps/studio/client/admin/components/studio/panel.tsx'), ['apps/studio/client/admin/lib/panel-view.test.mjs']);
+    assert.deepEqual(tests('apps/studio/components/editor.tsx'), ['test/editor-source.mjs']);
+    assert.deepEqual(tests('apps/studio/client/admin/components/studio/hub-panel.tsx'), ['apps/studio/client/admin/lib/hub.test.mjs']);
+    assert.deepEqual(tests('apps/studio/client/admin/components/ui/dialog.tsx'), ['apps/studio/client/admin/lib/hub.test.mjs']);
+    assert.deepEqual(tests('apps/studio/lib/room.mjs'), ['apps/studio/test/room.test.mjs']);
+    // A deleted component still runs the tests that would now fail.
+    await rm(join(root, 'apps/studio/client/admin/components/studio/panel.tsx'));
+    assert.deepEqual(focusedTests([change('apps/studio/client/admin/components/studio/panel.tsx', 'D')], root),
+      ['apps/studio/client/admin/lib/panel-view.test.mjs']);
+    // Documentation never searches for consumers.
+    await writeTree(root, { 'docs/history/receipt.json': '{}\n', 'test/receipt-reader.mjs': "readFileSync(resolve(root, 'docs/history/receipt.json'));\n" });
+    assert.deepEqual(tests('docs/history/receipt.json'), []);
+    // Negative: nothing loads this component.
+    await writeTree(root, { 'apps/studio/client/admin/components/studio/unused-card.tsx': 'export {};\n' });
+    assert.deepEqual(tests('apps/studio/client/admin/components/studio/unused-card.tsx'), []);
+  });
+});
+
+test('a source loaded by more tests than the limit is a shared contract left to the full regression', async () => {
+  await fixture(async root => {
+    const loader = name => [`apps/studio/test/${name}.test.mjs`, "import '../lib/shared-contract.mjs';\n"];
+    await writeTree(root, {
+      '.githooks/pre-commit-full': consumerRegistry,
+      'apps/studio/lib/shared-contract.mjs': 'export {};\n',
+      ...Object.fromEntries(Array.from({ length: SOURCE_CONSUMER_LIMIT }, (_, i) => loader(`user-${i}`))),
+    });
+    const changes = [change('apps/studio/lib/shared-contract.mjs')];
+    assert.equal(focusedTests(changes, root).length, SOURCE_CONSUMER_LIMIT);
+    await writeTree(root, Object.fromEntries([loader('one-more')]));
+    assert.deepEqual(focusedTests(changes, root), []);
+  });
+});
+
+test('--plan lists source consumers, and a checkout without the orphan audit still plans', async () => {
+  await fixture(async root => {
+    await writeTree(root, {
+      '.githooks/pre-commit-full': consumerRegistry,
+      'apps/studio/client/admin/components/studio/panel.tsx': 'export {};\n',
+      'apps/studio/client/admin/lib/panel-view.test.mjs': "import '../components/studio/panel.tsx';\n",
+    });
+    for (const name of ['precommit-checks.mjs', 'documentation-paths.mjs']) {
+      await writeTree(root, { [`tools/${name}`]: await readFile(new URL('../tools/' + name, import.meta.url)) });
+    }
+    git(root, ['add', '--', 'apps/studio/client/admin/components/studio/panel.tsx']);
+    const env = isolatedGitEnvironment();
+    for (const name of ['CI', 'GITHUB_ACTIONS', 'CROUPIER_PRECOMMIT_TEST_WORKERS']) delete env[name];
+    const plan = () => {
+      const result = spawnSync(process.execPath, ['tools/precommit-checks.mjs', '--plan'], { cwd: root, env, encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      return JSON.parse(result.stdout).commands.find(args => args.includes('--test')) ?? [];
+    };
+    // Like CI's sparse classifier checkout: no audit, no consumers, no failure.
+    assert.ok(!plan().includes('apps/studio/client/admin/lib/panel-view.test.mjs'));
+    await writeTree(root, { 'tools/check-orphan-tests.mjs': await readFile(new URL('../tools/check-orphan-tests.mjs', import.meta.url)) });
+    assert.ok(plan().includes('apps/studio/client/admin/lib/panel-view.test.mjs'));
+  });
 });
 
 test('documentation and focused commits both run the repo-limit guard on the staged diff', () => {
