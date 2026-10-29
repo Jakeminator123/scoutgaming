@@ -10,6 +10,9 @@ import { resolveRoomBranding } from '../../operators/contracts/branding.mjs';
 // Legacy encodings retain their exact bounds. The explicit extended envelope
 // requires optional storage version 020 and runtime capability 29 before writing.
 export const PRESENTATION_PACKAGE_KEY = '_scoutPresentation';
+// Admins tilldelning till bolaget (apps/studio/lib/partner-assignment.mjs):
+// följer med paketet men aldrig i den publika brandingen.
+export const PARTNER_ASSIGNMENT_KEY = 'assignment';
 const GZIP_LIMIT = 6500, BROTLI_LIMIT = 7400, OUTPUT_LIMIT = 256 * 1024;
 const fail = (status = 422) => { throw new StudioStorageError('studio_invalid_presentation', status); };
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -75,7 +78,8 @@ export function resolvePackageRoomDealer(pack, room, presentation = readPackageP
   return typeof dealerId === 'string' && lane.layers.dealer.allowed.includes(dealerId) ? dealerId : null;
 }
 export function withPackagePresentation(branding, presentation, options) {
-  const next = { ...normalizePresentationBranding(branding,presentation), ...(Object.hasOwn(branding ?? {}, OPERATOR_LIFECYCLE_KEY) ? { [OPERATOR_LIFECYCLE_KEY]: structuredClone(branding[OPERATOR_LIFECYCLE_KEY]) } : {}), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation,options) };
+  const kept = Object.fromEntries([OPERATOR_LIFECYCLE_KEY, PARTNER_ASSIGNMENT_KEY].filter(key => Object.hasOwn(branding ?? {}, key)).map(key => [key, structuredClone(branding[key])]));
+  const next = { ...normalizePresentationBranding(branding,presentation), ...kept, [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation,options) };
   try { validatePresentationBranding(next); } catch { fail(413); }
   return next;
 }
@@ -94,5 +98,6 @@ export function publicPackageBranding(branding) {
   const copy = structuredClone(branding ?? {});
   delete copy[PRESENTATION_PACKAGE_KEY];
   delete copy[OPERATOR_LIFECYCLE_KEY];
+  delete copy[PARTNER_ASSIGNMENT_KEY];
   return copy;
 }

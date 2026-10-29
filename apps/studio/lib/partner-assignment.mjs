@@ -11,9 +11,10 @@
 // inte i mallen och är stängda tills Admin uttryckligen ger dem.
 import { materialLabel } from '../../../packages/presentation/contracts/material-catalog.mjs';
 import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
+import { PARTNER_ASSIGNMENT_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
 import { effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 
-export const PARTNER_ASSIGNMENT_KEY = 'assignment';
+export { PARTNER_ASSIGNMENT_KEY };
 export const PARTNER_ALLOW_KEYS = Object.freeze(['dealer', 'tableAsset', 'background', 'language', 'limit', 'pause']);
 // Samma språk som validateRoomGameConfig godtar.
 export const PARTNER_LANGUAGES = Object.freeze(['en', 'sv']);

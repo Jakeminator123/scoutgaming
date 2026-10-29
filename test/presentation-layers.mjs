@@ -10,7 +10,7 @@ import {platformBackendHeaders} from '../packages/navigation/server/platform-rou
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
+import {withPackagePresentation,readPackagePresentation,publicPackageBranding,PARTNER_ASSIGNMENT_KEY} from '../packages/presentation/server/presentation-package.mjs';
 import {createPartnerBrandingApi as createApi} from '../apps/studio/lib/partner-branding-api.mjs';
 import {publishThroughDraft,withBrandingDrafts} from '../apps/studio/test/fixtures/branding-draft-store.mjs';
 import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
@@ -34,6 +34,12 @@ test('publication freezes lane data and only referenced assets; subsequent Studi
   project.lanes[0].layers.background.allowed=[];project.layerAssets[0].label='changed';
   assert.deepEqual(readPackagePresentation(pack),presentation);assert.equal(presentation.assets.length,2);
   assert.deepEqual(publicPackageBranding(pack.branding),{name:'North'});
+});
+test('Admins tilldelning följer med paketet men aldrig i den publika brandingen',()=>{
+  const {presentation}=fixture(),assignment={allow:{dealer:false,pause:true},limitPresets:['high'],languages:['sv']};
+  const branding=withPackagePresentation({name:'North',[PARTNER_ASSIGNMENT_KEY]:assignment},presentation);
+  assert.deepEqual(branding[PARTNER_ASSIGNMENT_KEY],assignment);
+  assert.deepEqual(publicPackageBranding(branding),{name:'North'});
 });
 test('an incomplete three-layer Nora can be published and entered through her own compatible lane', async () => {
   const project = addDealer(fixture().project, 'nora', 'Nora'), lane = project.lanes[0];

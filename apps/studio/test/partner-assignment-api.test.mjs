@@ -3,6 +3,7 @@
 // presentations.read nekas, ett annat bolag nekas utan läckage.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { partnerPostgresFixture } from './fixtures/partner-postgres.mjs';
 import { partnerAllow, partnerAssignmentDetail, PARTNER_ASSIGNMENT_KEY } from '../lib/partner-assignment.mjs';
 import { readPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
@@ -48,6 +49,58 @@ test('the assignment read on PostgreSQL follows role and company', async t => {
     assert.ok(Array.isArray(editor.rooms));
     const viewer = await (await f.call('assignment', { user: 'north-viewer' })).json();
     assert.deepEqual(viewer.canConfigure, { presentations: false, tables: false });
+  });
+
+  await t.test('published settings need tables.read; Admin\'s unpublished drafts need tables.configure and stay within the company', async () => {
+    // Publicerade inställningar: paketets bindning och raden i shared_table_configs (samma form som J08 skriver).
+    const version = 'fixture-config-v1';
+    await f.pool.query('INSERT INTO croupier_game.shared_table_configs(room_id,version,body) VALUES($1,$2,$3)',
+      [f.id('north-a'), version, JSON.stringify({ operatorId: 'north', roomId: f.id('north-a'), language: 'sv', limitPreset: 'high', packageRevision: pack.revision })]);
+    const [row] = await f.rows('SELECT branding FROM croupier_studio.operator_packages WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND package_revision=$4',
+      [f.scope.environment, f.scope.workspaceId, 'north', pack.revision]);
+    await f.pool.query('UPDATE croupier_studio.operator_packages SET branding=$1 WHERE environment_id=$2 AND workspace_id=$3 AND operator_id=$4 AND package_revision=$5',
+      [JSON.stringify({ ...JSON.parse(row.branding), roomGameConfigVersions: { [f.id('north-a')]: version } }), f.scope.environment, f.scope.workspaceId, 'north', pack.revision]);
+    // Admins sparade utkast för bolag A (north-b) och bolag B (south).
+    const draft = (room, operatorId, limitPreset) => ({ roomId: f.id(room), operatorId, revision: `room-config-${randomUUID()}`,
+      basePackageRevision: pack.revision, gameConfig: { language: 'en', limitPreset } });
+    const saved = await f.raw.readDocument('administration');
+    await f.raw.saveDocument('administration', { value: { ...saved.value, roomGameConfigs: [draft('north-b', 'north', 'prive'), draft('south', 'south', 'casual')] },
+      expectedRevision: saved.revision, actor: 'fixture' });
+    const read = async (user, operator = 'north') => (await f.call('assignment', { user, operator })).json();
+    const admin = await read('north-admin');
+    const roomA = admin.rooms.find(room => room.id === f.id('north-a')), roomB = admin.rooms.find(room => room.id === f.id('north-b'));
+    assert.deepEqual(roomA.settings, { published: { language: 'sv', limitPreset: 'high' }, draft: null });
+    assert.deepEqual(roomB.settings.draft?.gameConfig, { language: 'en', limitPreset: 'prive' });
+    assert.equal(JSON.stringify(admin).includes(f.id('south')), false, 'company B\'s draft never appears');
+    for (const user of ['north-editor', 'north-viewer']) {
+      const body = await read(user);
+      assert.deepEqual(body.rooms.find(room => room.id === f.id('north-a')).settings.published, { language: 'sv', limitPreset: 'high' }, user);
+      assert.ok(body.rooms.every(room => room.settings.draft === null), `${user} sees no unpublished draft without tables.configure`);
+      assert.equal(JSON.stringify(body).includes('prive'), false, user);
+    }
+    const south = await read('south-admin', 'south');
+    assert.deepEqual(south.rooms.map(room => room.settings.draft?.gameConfig.limitPreset), ['casual']);
+    assert.equal(JSON.stringify(south).includes(f.id('north-b')), false);
+  });
+
+  await t.test('a broken or stale draft of another company never fails this company\'s read', async () => {
+    const saved = await f.raw.readDocument('administration');
+    const rows = [
+      // Bolag B:s rad är ogiltig, och en äldre rad bär fortfarande B som ägare av A:s spelbord.
+      { roomId: f.id('south'), operatorId: 'south', revision: 'not-a-revision', basePackageRevision: 0, gameConfig: {} },
+      { roomId: f.id('north-a'), operatorId: 'south', revision: `room-config-${randomUUID()}`, basePackageRevision: pack.revision, gameConfig: { language: 'en', limitPreset: 'casual' } },
+      ...saved.value.roomGameConfigs.filter(row => row.operatorId === 'north'),
+    ];
+    f.config.readAdministration = async () => ({ ...saved.value, roomGameConfigs: rows });
+    try {
+      const response = await f.call('assignment');
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      assert.deepEqual(body.rooms.map(room => [room.id, room.settings.draft?.gameConfig.limitPreset ?? null]).sort(),
+        [[f.id('north-a'), null], [f.id('north-b'), 'prive']]);
+      // Det egna bolagets trasiga rad fäller däremot den egna läsningen.
+      assert.equal((await f.call('assignment', { user: 'south-admin', operator: 'south' })).status, 503);
+    } finally { delete f.config.readAdministration; }
   });
 
   await t.test('a role without presentations.read is refused with 403', async () => {
