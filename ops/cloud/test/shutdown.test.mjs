@@ -45,7 +45,8 @@ for (const mode of ['natural', 'cancel', 'timeout']) test(`Linux SIGTERM chain w
     });
     const webReady = await web.until('web:listening');
     const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
-      labOrigin: 'https://lab.example.test', streaming: true };
+      labOrigin: 'https://lab.example.test', streaming: true,
+      speechProvider: { cartesiaKey: 'fixture-key', runpodKey: 'fixture-key', runpodEndpointId: 'fixture-endpoint' } };
     gateway = createCloudGateway(config, { webPort: webReady.port });
     trackServerConnections(gateway);
     gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
