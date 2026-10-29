@@ -4,7 +4,9 @@
 // 009-tabeller. Bolagen north och south har var sitt publicerat paket med en
 // fryst presentation (två dealers, dragan och paow) och egna spelbord. Konton:
 // north-admin (partner-admin), north-editor (partner-editor), north-viewer
-// (partner-viewer) i north, och south-admin (partner-admin) i south.
+// (partner-viewer) i north, och south-admin (partner-admin) i south. n1-admin är
+// Scoutgamings personal (Admin, N1) med en lab_session, som når portalens väg
+// som internal-admin.
 // Syntetiska data; ingen produktionsdatabas.
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { createPglitePool } from '../../../../test/fixtures/pglite-pool.mjs';
@@ -92,6 +94,15 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
       .run(partnerSessionDigest(token), String(account.id), 'partner', createHash('sha256').update(`${salt}:${hash}`).digest('hex'), 0, now() + 3_600_000);
     tokens[account.username] = token;
   }
+  {
+    const salt = randomBytes(16).toString('hex'), hash = scryptSync('fixture-password', salt, 64).toString('hex');
+    await engine.boDb.prepare('INSERT INTO users (id,username,email,role,salt,hash,created_at) VALUES (?,?,?,?,?,?,?)')
+      .run(7, 'n1-admin', 'n1-admin@fixture.invalid', 'admin', salt, hash, 'fixture');
+    const token = randomBytes(32).toString('hex');
+    await engine.boDb.prepare('INSERT INTO lab_sessions (token_digest,craig_user_id,role,source_stamp,auth_epoch,expires) VALUES (?,?,?,?,?,?)')
+      .run(createHash('sha256').update(token).digest('hex'), '7', 'admin', createHash('sha256').update(`${salt}:${hash}`).digest('hex'), 0, now() + 3_600_000);
+    tokens['n1-admin'] = token;
+  }
   // Den nativa grinden som Admins skrivningar går genom. PGlite har en enda
   // session, så produktlåset (boDb.transaction) är här en genomströmning, som i room-release.test.mjs.
   const presentationTransaction = createNativePresentationMutationTransaction({ repository, boDb: { transaction: work => work() }, pool, scope });
@@ -100,7 +111,7 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
     rateLimit: async () => true, clientAddress: async () => 'fixture-partner' };
   const call = (action, { user = 'north-admin', operator = 'north', body, method = body === undefined ? 'GET' : 'POST', headers = {} } = {}) =>
     handlePartnerAuth(new Request(`${PARTNER_ORIGIN}/studio/api/partner/${action}?operator=${operator}`, {
-      method, headers: { host, cookie: `partner_session=${tokens[user]}`,
+      method, headers: { host, cookie: `${user === 'n1-admin' ? 'lab_session' : 'partner_session'}=${tokens[user]}`,
         ...(method === 'POST' ? { origin: PARTNER_ORIGIN, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } : {}), ...headers },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }), config);
