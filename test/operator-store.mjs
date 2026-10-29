@@ -943,4 +943,10 @@ test('published bet profiles are read for the versions the package binds, on the
   pack.branding.roomGameConfigVersions['room-a'] = version(1);
   assert.equal((await store.getPublishedRoomLimitPresets(pack)).get('room-a'), 'casual', 'the bound version, not the newest row');
   assert.equal((await store.getPublishedRoomLimitPresets({ operatorId: 'north', revision: 1, branding: {} })).size, 0);
+  // The settings heads the shared table reads at entry (room_config_missing without one), for the bound rooms only.
+  await config('room-x', 9, { limitPreset: 'casual' });
+  await pool.query('INSERT INTO croupier_game.shared_table_config_heads(room_id,version) VALUES($1,$2),($3,$4),($5,$6)',
+    ['room-a', version(2), 'room-b', version(3), 'room-x', version(9)]);
+  assert.deepEqual([...await store.getPublishedRoomConfigHeads(pack)].sort(), ['room-a', 'room-b']);
+  assert.equal((await store.getPublishedRoomConfigHeads({ operatorId: 'north', revision: 1, branding: {} })).size, 0);
 });
