@@ -27,7 +27,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
   try{candidate=bindRouletteStart(project,inventory,dealerId,tableLaneId,form);}catch(cause){error=(cause as Error).message;}
   const change=(key:keyof RouletteStartForm,value:string)=>setForm(current=>({...current,[key]:value}));
   return <section className="space-y-3 text-xs" aria-label="Kalibrera roulettens startfilm">
-    <p>Välj granskad startfilm och dess exakta markörer. Ändringen gäller dealerns rouletteklipp i alla miljöer. Spara utkastet och publicera berörda rum separat.</p>
+    <p>Välj granskad startfilm och dess exakta markörer. Ändringen gäller dealerns rouletteklipp i alla miljöer. Spara utkastet och publicera berörda spelbord separat.</p>
     <fieldset disabled={blocked} className="space-y-3">
       <label className="studio-field">Startfilm<select value={form.videoId} onChange={event=>{if((dirty||reviewDirty)&&!confirm('Kasta osparade formulärändringar och välj en annan film?'))return;setForm(rouletteStartForm(project,dealerId,event.target.value));}}>
         <option value="">Välj registrerad startfilm…</option>
@@ -39,7 +39,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
         <option value="">Välj en miljö med denna dealer och roulettebord…</option>
         {compositions.map(lane=><option key={lane.id} value={lane.id}>{lane.label} · {lane.id}</option>)}
       </select></label>
-      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte rum eller miljö. <a className="underline" href="/admin/scenes" target="_blank" rel="noopener">Hantera miljöer</a></p>
+      <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte spelbord eller miljö. <a className="underline" href="/admin/scenes" target="_blank" rel="noopener">Hantera miljöer</a></p>
       <label className="studio-field">Tillåten borddesign<select value={form.tableDesignId} onChange={event=>change('tableDesignId',event.target.value)}>
         <option value="">Välj registrerat roulettebord…</option>
         {form.tableDesignId&&!designs.includes(form.tableDesignId)&&<option value={form.tableDesignId}>Inte tillåten här: {form.tableDesignId}</option>}
