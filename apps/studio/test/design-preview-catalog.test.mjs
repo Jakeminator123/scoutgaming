@@ -193,3 +193,11 @@ test('catalog request reauthorizes before reads, accepts GET/HEAD only and never
   const query = await serveDesignCatalog(new Request(request.url + '?operator=other'), options);
   assert.equal(query.status, 400); assert.equal(reads, 2);
 });
+test('Admin sees an open appearance draft per company; a published or missing draft reads as none', async () => {
+  const f = fixture();
+  const draft = { operatorId: f.room.operatorId, revision: 2, basePackageRevision: 7, action: 'draft.save', branding: {}, sourcePackageRevision: null };
+  const read = async getBrandingDraft => (await registeredDesignCatalog({ ...f, store: { ...f.store, getBrandingDraft } })).administration.operators.map(row => row.appearanceDraft);
+  assert.deepEqual(await read(async id => id === f.room.operatorId ? draft : null), [true, false]);
+  assert.deepEqual(await read(async () => ({ ...draft, action: 'draft.publish' })), [false, false]);
+  assert.deepEqual(await read(async () => null), [false, false]);
+});

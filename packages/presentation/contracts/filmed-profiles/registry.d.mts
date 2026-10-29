@@ -5,3 +5,4 @@ export function registeredFilmedProfile(dealerId:string): {
   takes:{key:string;sha256:string;target:string;variant:string;startPose:'VILA'|'REDO';endPose:'VILA'|'REDO'}[];
   [key:string]:unknown;
 }|null;
+export function filmedProfileOrPaow(dealerId:string): (NonNullable<ReturnType<typeof registeredFilmedProfile>> & {inherited?:'paow'})|null;
