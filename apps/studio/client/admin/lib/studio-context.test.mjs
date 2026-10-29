@@ -601,8 +601,10 @@ test('a composition removed from Studio stays visible in the package and blocks 
 test('a removed composition never blocks the PAOW idle refresh, which publishes against the frozen package',async()=>{
   const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
-  const later=()=>walk(p.h.render(),node=>node.type==='details')[0];
-  const paow=()=>walk(later(),node=>node.type==='button')[0];
+  const isRefresh=node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle';
+  // The interim publication is a disclosure (TechnicalDetails) that holds the refresh button.
+  const later=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
+  const paow=()=>walk(later(),isRefresh)[0];
   assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package, never Studio lanes');
   assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the room editor carries no package form; the blocked assignment stays on its own tab');
   assert.ok(later(),'the interim publication lives in its own disclosure');
