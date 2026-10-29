@@ -1192,7 +1192,9 @@ if (sharedRoomsEnabled) {
   });
   sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:roomOrigins.origin,
     engineOrigin:roomOrigins.engineOrigin});
-  sharedRoomChat = createSharedRoomChat({service:sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin});
+  // Speech services are created below; the chat reads them per request (PR 2: ticket to the asker).
+  sharedRoomChat = createSharedRoomChat({service:sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin,
+    speech:()=>({movingSpeech:movingSpeechService,speechStream:speechStreamService,dealerSpeech:dealerSpeechRuntime})});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
@@ -1294,6 +1296,7 @@ const gameShutdown = installGracefulShutdown({ server, closeRuntime: async ({ si
       if (dealerId === 'astrid') probeCancellations.push(probeRuntime.cancel({ playerId, dealerId }, 'server_shutdown'));
     } catch { /* An invalid internal key cannot delay the remaining cancellations. */ }
   }
+  sharedRoomChat?.close?.();
   const outcomes = await Promise.allSettled([sharedRoomService?.close(), speechStreamService?.close({ signal }), ...probeCancellations]);
   if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
 }, closeStorage: async () => {

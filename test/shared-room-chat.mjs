@@ -15,14 +15,15 @@ const snapshot = (over = {}) => ({ contract: 'blackjack-table/1', roomId: 'room-
   me: { id: 'player-a', seats: [0], active: true, available: 100 }, ...over });
 const binding = { actorId: 'player-a', sessionId: 'player-' + 'f'.repeat(64), operatorId: 'operator-a', roomId: 'room-a', packageRevision: 2, expiresAt: Date.now() + 60000 };
 
-async function fixture(t, { settings = { speechUrl: 'https://director.invalid', speechToken: 'token' }, read = () => snapshot(), decide, now } = {}) {
+const roomContext = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'paow' });
+async function fixture(t, { settings = { speechUrl: 'https://director.invalid', speechToken: 'token' }, read = () => snapshot(), decide, now, speech = null } = {}) {
   const emitted = [], decided = [], contexts = [];
   let engineOrigin, clock = 1000;
   const service = {
     async chatContext(request, { roomId }) {
       contexts.push(roomId);
       if (request.headers.get('cookie') !== cookie) throw Object.assign(Error('private'), { statusCode: 401 });
-      return { binding, dealerId: 'paow', snapshot: read(contexts.length) };
+      return { binding, dealerId: 'paow', presentationContext: roomContext, snapshot: read(contexts.length) };
     },
     emitChat: (roomId, entry) => emitted.push({ roomId, ...entry }),
   };
@@ -32,7 +33,7 @@ async function fixture(t, { settings = { speechUrl: 'https://director.invalid', 
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   engineOrigin = `http://127.0.0.1:${server.address().port}`;
-  chat = createSharedRoomChat({ service, origin, engineOrigin, settingsProvider: () => settings, now: now ?? (() => clock),
+  chat = createSharedRoomChat({ service, origin, engineOrigin, settingsProvider: () => settings, now: now ?? (() => clock), speech,
     decide: decide ?? (async (request, status) => { decided.push({ request, status });
       return { kind: 'generatedText', requestId: request.requestId, exactText: 'Du har sexton, jag skulle stanna.' }; }) });
   t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
@@ -54,7 +55,7 @@ test('a member question streams NDJSON and reaches the room as question and deal
   assert.deepEqual(h.emitted.map(({ roomId, requestId, actorId, seat, text }) => ({ roomId, requestId, actorId, seat, text })), [
     { roomId: 'room-a', requestId: 'chat-1', actorId: 'player-a', seat: 1, text: 'Vad har jag?' },
     { roomId: 'room-a', requestId: 'chat-1', actorId: null, seat: null, text: 'Du har sexton, jag skulle stanna.' }]);
-  assert.equal(h.contexts.length, 2, 'authorization and round are read again before the answer is published');
+  assert.equal(h.contexts.length, 3, 'authorization and round are read again before the answer is published');
   assert.equal(sharedRoomChatRound({ roundId: null, windowId: 'w' }), 'window:w');
 });
 
@@ -121,4 +122,58 @@ test('one open question per actor and ten seconds between questions', async t =>
   assert.equal(soon.status, 429); assert.deepEqual(await soon.json(), { error: 'shared_room_chat_too_soon' });
   h.tick(1);
   assert.equal((await h.post(ask({ requestId: 'chat-4' }))).status, 200);
+});
+
+// PR 2: speech for the asker. A stubbed moving runtime records what the room hands it.
+function speechPorts({ supports = true, requested = true, prepare, still = null } = {}) {
+  const calls = { forContext: [], prepare: [], cancelled: [] };
+  const descriptor = Object.freeze({ schemaVersion: 1, kind: 'moving-speech-stream', id: 'a'.repeat(32), url: '/moving-speech-stream', ticket: 'body.sig' });
+  const movingSpeech = { supports: dealerId => supports && dealerId === 'paow', cancelOwner: owner => calls.cancelled.push(owner),
+    forContext: (context, presentationVersion, sessionRevision) => {
+      calls.forContext.push({ context, presentationVersion, sessionRevision });
+      return { prepare: async input => { calls.prepare.push(input); await input.beforeCostly(); return prepare ? prepare(input) : descriptor; } };
+    } };
+  return { calls, descriptor, speech: () => ({ movingSpeech, speechStream: still, dealerSpeech: { requested: async dealerId => requested && dealerId === 'paow' } }) };
+}
+
+test('acceptsSpeechStream: the moving runtime gets the room context and binding owner; the ticket goes to the asker', async t => {
+  const ports = speechPorts(), h = await fixture(t, { speech: ports.speech });
+  const body = await frames(await h.post(ask({ acceptsSpeechStream: true })));
+  assert.deepEqual(body.map(frame => frame.type), ['progress', 'preview', 'progress', 'result']);
+  const { decision } = body.at(-1);
+  assert.deepEqual(decision.speechStream, ports.descriptor); assert.equal(decision.visualMode, 'generated-lipsync-stream-preview');
+  assert.equal(body.at(-1).speech, undefined);
+  assert.equal(ports.calls.forContext.length, 1);
+  const [{ context, presentationVersion, sessionRevision }] = ports.calls.forContext, [input] = ports.calls.prepare;
+  assert.equal(context, roomContext); assert.equal(presentationVersion, undefined); assert.match(sessionRevision, /^s[a-f0-9]{24}$/);
+  assert.equal(input.owner, binding.sessionId); assert.equal(input.playerId, 'player-a'); assert.equal(input.dealerId, 'paow');
+  assert.equal(input.text, 'Du har sexton, jag skulle stanna.'); assert.equal(input.requestId, 'chat-1'); assert.equal(Object.hasOwn(input, 'presentationVersion'), false);
+  assert.deepEqual(ports.calls.cancelled, [binding.sessionId], 'a new question cancels the earlier answer of this owner');
+  assert.equal(h.emitted.at(-1).text, 'Du har sexton, jag skulle stanna.');
+});
+
+test('speech never fails the text: busy, no profile and no lane answer text-only with a reason', async t => {
+  const busy = speechPorts({ prepare: () => { throw Object.assign(Error('generated_speech_session_busy'), { code: 'generated_speech_session_busy', statusCode: 429 }); } });
+  const cases = [[busy, 'generated_speech_session_busy'], [speechPorts({ requested: false }), 'generated_speech_profile_not_enabled'],
+    [speechPorts({ supports: false }), 'moving_speech_dealer_unavailable'],
+    [speechPorts({ prepare: () => { throw Object.assign(Error('https://private.example/?key=secret'), { code: 'provider_private' }); } }), 'moving_speech_unavailable']];
+  for (const [ports, reason] of cases) {
+    const h = await fixture(t, { speech: ports.speech }), response = await h.post(ask({ acceptsSpeechStream: true }));
+    assert.equal(response.status, 200, reason);
+    const result = (await frames(response)).at(-1);
+    assert.deepEqual(result, { type: 'result', speech: 'text-only', reason,
+      decision: { kind: 'generatedText', requestId: 'chat-1', dealerId: 'paow', exactText: 'Du har sexton, jag skulle stanna.' } });
+    assert.equal(h.emitted.length, 2, 'question and answer still reach the room');
+  }
+  assert.equal(busy.calls.prepare.length, 1);
+});
+
+test('without a moving lane the still-image stream is used; without acceptsSpeechStream nothing is prepared', async t => {
+  const still = { prepared: [], prepare: async input => { still.prepared.push(input); return { kind: 'generated-speech-stream' }; } };
+  const ports = speechPorts({ supports: false, still }), h = await fixture(t, { speech: ports.speech });
+  assert.deepEqual((await frames(await h.post(ask({ acceptsSpeechStream: true })))).at(-1).decision.speechStream, { kind: 'generated-speech-stream' });
+  assert.equal(still.prepared[0].owner, binding.sessionId); assert.equal(ports.calls.forContext.length, 0);
+  h.tick(10000);
+  const plain = (await frames(await h.post(ask({ requestId: 'chat-2' })))).at(-1);
+  assert.equal(plain.decision.speechStream, undefined); assert.equal(plain.speech, undefined); assert.equal(still.prepared.length, 1);
 });

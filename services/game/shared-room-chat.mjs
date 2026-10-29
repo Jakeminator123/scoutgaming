@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { chatFailureCode } from '../../packages/presentation/contracts/chat-response.mjs';
 
-// Shared-room text chat (PR 1, no GPU): POST /api/shared-room/<roomId>/chat -> OpenClaw text.
+// Shared-room chat: POST /api/shared-room/<roomId>/chat -> OpenClaw text (PR 1) and, for the asker
+// only, a speech ticket in result.decision.speechStream (PR 2); speech failure keeps the text.
 // Same origin/host/JSON gate as shared-room-command.mjs. The question and the dealer's answer
 // go to every socket in the room (shared-room-channel.mjs emitChat); the asker also gets NDJSON.
 const requestIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
@@ -52,7 +55,29 @@ function parse(buffer) {
     || (value.acceptsSpeechStream !== undefined && typeof value.acceptsSpeechStream !== 'boolean')) fail('shared_room_invalid_request');
   const message = value.message.trim().replace(/\r\n?/g, '\n');
   if (!message || message.length > 1000 || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(message)) fail('shared_room_invalid_request');
-  return { requestId: value.requestId, message, roundRevision: value.roundRevision };
+  return { requestId: value.requestId, message, roundRevision: value.roundRevision, acceptsSpeechStream: value.acceptsSpeechStream === true };
+}
+
+// Public reason for a text-only answer: only application-owned codes, never provider detail.
+function speechReason(error) {
+  const code = typeof error?.code === 'string' ? error.code : error?.message;
+  if (code === 'moving_speech_dealer_unavailable') return code;
+  return chatFailureCode(code) === 'chat_failed' ? 'moving_speech_unavailable' : code;
+}
+
+/** PR 2: the speech path for this room's dealer, mirroring the solo /chat choice. Moving lipsync
+ * on the bank's rest frame when the dealer has a lane (room context, never a deal presentationVersion),
+ * else the still-image stream. Null service plus a reason means the answer stays text-only. */
+async function selectSpeech(ports, context, sessionRevision) {
+  const { movingSpeech, speechStream, dealerSpeech } = ports ?? {};
+  try {
+    if (await dealerSpeech?.requested?.(context.dealerId) !== true) return { reason: 'generated_speech_profile_not_enabled' };
+    if (movingSpeech?.supports?.(context.dealerId) && context.presentationContext?.dealerId === context.dealerId) {
+      return { service: movingSpeech.forContext(context.presentationContext, undefined, sessionRevision) };
+    }
+    if (typeof speechStream?.prepare === 'function') return { service: speechStream };
+    return { reason: 'moving_speech_dealer_unavailable' };
+  } catch (error) { return { reason: speechReason(error) }; }
 }
 
 function readBody(req, res, maxBytes) {
@@ -87,21 +112,28 @@ function rejection(error, aborted) {
 }
 
 export function createSharedRoomChat({ service, origin, engineOrigin = origin, settingsProvider = null, decide = openClawChat,
-  fetchImpl = fetch, now = Date.now, cooldownMs = 10000, maxBodyBytes = 8192, historyChars = 8000 } = {}) {
+  fetchImpl = fetch, now = Date.now, cooldownMs = 10000, maxBodyBytes = 8192, historyChars = 8000, speech = null } = {}) {
   const exact = value => { try { return new URL(value).origin === value; } catch { return false; } };
   if (!exact(origin) || !exact(engineOrigin) || typeof service?.chatContext !== 'function' || typeof service?.emitChat !== 'function'
-    || typeof decide !== 'function' || (settingsProvider !== null && typeof settingsProvider !== 'function')) {
+    || typeof decide !== 'function' || (settingsProvider !== null && typeof settingsProvider !== 'function')
+    || (speech !== null && typeof speech !== 'function')) {
     throw new TypeError('Explicit shared room chat service and origins required');
   }
-  const origins = new Set([origin, engineOrigin]), limits = new Map(), turns = new Map();
+  const origins = new Set([origin, engineOrigin]), limits = new Map(), turns = new Map(), open = new Set();
   let settings = settingsProvider;
   const remember = (map, key, value) => { map.delete(key); map.set(key, value); if (map.size > 4096) map.delete(map.keys().next().value); };
-  return async function handle(req, res, { roomId, url } = {}) {
+  // speech() is read per request: server.mjs creates the speech services after the room service.
+  const cancelSpeech = (ports, owner) => {
+    for (const port of [ports?.speechStream, ports?.movingSpeech]) {
+      try { void Promise.resolve(port?.cancelOwner?.(owner)).catch(() => {}); } catch {}
+    }
+  };
+  async function handle(req, res, { roomId, url } = {}) {
     const controller = new AbortController(), signal = controller.signal;
     const disconnected = () => { if (!res.writableEnded) controller.abort(); };
-    res.once('close', disconnected);
+    res.once('close', disconnected); open.add(controller);
     const stream = createChatResponseStream(res, { signal });
-    let limit;
+    let limit, owner, ports, delivered = false;
     try {
       if (req.method !== 'POST') fail('shared_room_method_not_allowed');
       const h = req.headers;
@@ -125,37 +157,69 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
       if (prior?.open) fail('shared_room_chat_busy');
       if (prior && at - prior.last < cooldownMs) fail('shared_room_chat_too_soon');
       limit = { open: true, last: at }; remember(limits, actorId, limit);
+      // A new question supersedes this member's earlier, possibly still playing, answer.
+      owner = binding.sessionId; ports = speech?.() ?? null; cancelSpeech(ports, owner);
+      const status = sharedRoomChatStatus(context);
+      const selected = input.acceptsSpeechStream ? await selectSpeech(ports, context, status.sessionRevision) : {};
       const seat = Number.isSafeInteger(snapshot.me.seats?.[0]) ? snapshot.me.seats[0] + 1 : null;
       service.emitChat(roomId, { requestId: input.requestId, actorId, seat, text: input.message, at });
       stream.frame({ type: 'progress', stage: 'text', elapsedMs: 0 });
       const key = roomId + '\n' + actorId, history = turns.get(key) ?? [];
-      const decision = await decide({ requestId: input.requestId, message: input.message, history: history.map(turn => ({ ...turn })) },
-        sharedRoomChatStatus(context), { settingsProvider: settings,
-          fetchImpl: (target, options = {}) => fetchImpl(target, { ...options, signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal }) });
-      // The answer is for this round and this member only: reread before anyone sees it.
-      const after = await service.chatContext(request, { roomId, signal });
-      if (after.binding.actorId !== actorId || after.snapshot.me?.active !== true || after.dealerId !== context.dealerId
-        || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
+      // The answer and its speech are for this round and this member only. One locked read per
+      // freshness check; readOwner reports the binding of the latest read (same player-<sha256>).
+      let latest = context;
+      const readStatus = async () => {
+        const after = await service.chatContext(request, { roomId, signal });
+        latest = after;
+        if (after.binding.actorId !== actorId || after.binding.sessionId !== owner || after.snapshot.me?.active !== true
+          || after.dealerId !== context.dealerId || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
+        return after;
+      };
+      let published = null;
+      let decision;
+      try {
+        decision = await completeChatWithSpeech({ request: { requestId: input.requestId, message: input.message, history: history.map(turn => ({ ...turn })) },
+          status, owner, playerId: actorId, signal, readOwner: async () => latest.binding.sessionId, readStatus, streamService: selected.service ?? null,
+          onProgress: stage => { if (stage === 'video-queue') stream.frame({ type: 'progress', stage, elapsedMs: Math.max(0, now() - at) }); },
+          decide: (value, state) => decide(value, state, { settingsProvider: settings,
+            fetchImpl: (target, options = {}) => fetchImpl(target, { ...options, signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal }) }),
+          onDecision: text => {
+            published = text;
+            stream.frame({ type: 'preview', exactText: text });
+            service.emitChat(roomId, { requestId: input.requestId, actorId: null, seat: null, text, at: now() });
+            const next = [...history, { role: 'user', text: input.message }, { role: 'assistant', text }];
+            while (next.length > 30 || next.reduce((sum, turn) => sum + turn.text.length, 0) > historyChars) next.shift();
+            remember(turns, key, next);
+          } });
+      } catch (error) {
+        // Text already reached the room: speech failure (busy, no bank, endpoint) never fails the answer.
+        if (published === null || signal.aborted) throw error;
+        cancelSpeech(ports, owner);
+        selected.reason = speechReason(error);
+        decision = { kind: 'generatedText', exactText: published };
+      }
       if (signal.aborted) fail('shared_room_chat_cancelled');
       const text = decision?.kind === 'generatedText' && typeof decision.exactText === 'string' ? decision.exactText : null;
-      if (text) {
-        stream.frame({ type: 'preview', exactText: text });
-        service.emitChat(roomId, { requestId: input.requestId, actorId: null, seat: null, text, at: now() });
-        const next = [...history, { role: 'user', text: input.message }, { role: 'assistant', text }];
-        while (next.length > 30 || next.reduce((sum, turn) => sum + turn.text.length, 0) > historyChars) next.shift();
-        remember(turns, key, next);
-      }
+      const speechStream = text && decision.speechStream ? decision.speechStream : null;
       stream.frame({ type: 'result', decision: { kind: text ? 'generatedText' : 'silence', requestId: input.requestId,
-        dealerId: context.dealerId, ...(text ? { exactText: text } : {}) } });
+        dealerId: context.dealerId, ...(text ? { exactText: text } : {}),
+        ...(speechStream ? { visualMode: decision.visualMode, speechStream } : {}) },
+        ...(text && input.acceptsSpeechStream && !speechStream ? { speech: 'text-only', reason: selected.reason ?? 'moving_speech_unavailable' } : {}) });
+      delivered = true;
       res.end();
     } catch (error) {
+      if (owner && !delivered) cancelSpeech(ports, owner);
       const [status, code] = rejection(error, signal.aborted);
       if (res.destroyed) return;
       if (res.headersSent) { stream.frame({ type: 'error', error: code }); res.end(); return; }
       res.writeHead(status, headers); res.end(JSON.stringify({ error: code }));
     } finally {
       if (limit) limit.open = false;
+      open.delete(controller);
       stream.close(); res.removeListener('close', disconnected);
     }
-  };
+  }
+  // Shutdown: abort open questions; their speech preparation follows the request signal.
+  handle.close = () => { for (const controller of open) controller.abort(); };
+  return handle;
 }

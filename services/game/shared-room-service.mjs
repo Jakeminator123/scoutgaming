@@ -205,7 +205,10 @@ export function createSharedRoomService({
       }), { serialize: true });
       active.throwIfAborted();
       const snapshot = projectSharedRoomSnapshot(await runtime.coordinator.snapshot(roomId, binding.actorId, { client: true }), binding);
-      return Object.freeze({ binding, dealerId: context?.context?.dealerId, snapshot });
+      // presentationContext {operatorSlug,roomId,packageRevision,dealerId} is the published room
+      // context (PR 2: speech reads evidence with it); the binding itself carries none.
+      const presentationContext = context?.context ? Object.freeze({ ...context.context }) : null;
+      return Object.freeze({ binding, dealerId: presentationContext?.dealerId, presentationContext, snapshot });
     }, combined);
   }
   function emitChat(roomId, entry) { requireReady(); channel.emitChat(roomId, entry); }
