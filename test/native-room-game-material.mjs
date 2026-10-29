@@ -10,6 +10,8 @@ import { canonicalStudioJson, validateStudioMedia } from '../packages/studio-reg
 import { addDealer, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
+import { nativeRoomFilmedPlanning } from '../packages/presentation/contracts/native-room-filmed-planning.mjs';
+import { validateRoomGameMaterial } from '../packages/presentation/contracts/room-game-config.mjs';
 
 const resolve = f => resolveNativeRoomGameMaterial(f.input,{version:2});
 const denied = reason => error => error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && (!reason || error.reason === reason);
@@ -313,5 +315,36 @@ test('Admin speech review of the ten bound PAOW takes satisfies the native speec
     const {revision,updatedAt,...stored}=record,frozen=f.records.find(row=>row.id===record.id);
     // room-game-config publication additionally requires the registered row to equal the frozen copy.
     assert.equal(canonicalStudioJson(validateStudioMedia(stored)),canonicalStudioJson(validateStudioMedia(frozen)));
+  }
+});
+
+test('a new dealer with a frozen copy of PAOW landings publishes film v2; without it the profile is missing as before',()=>{
+  const f=nativeRoomMaterialFixture({dealerId:'jakob-2',copyOf:'paow'}),row=f.presentation.registeredDealers[0];
+  const material=resolve(f);
+  assert.equal(material.dealerId,'jakob-2');assert.match(material.revision,/^native-film-v2-[a-f0-9]{64}$/);
+  assert.deepEqual(material.film.profile,row.filmedProfile);assert.equal(material.film.schemaVersion,2);assert.equal(material.film.profileId,row.filmedProfile.id);
+  assert.equal(material.cardMs,2580);assert.equal(material.leadMs,9914,'the copy keeps PAOW timing');
+  const planning=nativeRoomFilmedPlanning(material);
+  assert.equal(planning.profile.id,row.filmedProfile.id);assert.deepEqual(planning.profile.positions,f.profile.positions);
+  assert.ok(planning.profile.takes.every(take=>take.sha256===row.filmedProfile.takes[take.key].sha256),'planning reads the frozen own clips');
+  const steps=[{type:'deal',to:'box',box:6,faceDown:false,shoeDraw:91}];
+  assert.equal(guard(material,steps,1),true,'the commit guard plans the dealer\'s own frozen clips');
+  const own=new Set(Object.entries(row.filmedProfile.takes).filter(([key])=>key.startsWith('7:')).map(([,take])=>take.sha256));
+  assert.throws(()=>guard({...material,media:material.media.filter(item=>!own.has(item.sha256))},steps,1),{code:'native_room_sequence_unsupported'});
+  assert.throws(()=>resolveNativeRoomGameMaterial(f.input,{version:1}),denied('native_material_contract_unsupported'),'v1 cannot carry the profile');
+  for(const patch of [{profile:{...material.film.profile,id:'studio-jakob-2-00000000'}},{schemaVersion:1}])
+    assert.throws(()=>nativeRoomFilmedPlanning({...material,film:{...material.film,...patch}}));
+  assert.throws(()=>validateRoomGameMaterial({...material,film:{...material.film,profile:null}},{dealerId:'jakob-2',language:'sv'}));
+  delete row.filmedProfile;f.recapture();
+  assert.throws(()=>resolve(f),denied('native_material_profile_missing'));
+});
+
+test('Dragan and PAOW keep their exact material revisions; the code register stays their profile',()=>{
+  const locked={dragan:['native-film-v1-ad3890a829d216c487a416e2fe6ac8c5f4ee9a9eb0e6bd22007dad4fa9321828','native-film-v2-755570a377cfd6d26d6536da6f930d12afa63a2d39608b4679dac74c5cb692d6'],
+    paow:['native-film-v1-3bd6953c14b729de53262a82353e23e712efbfce85eee98af4b72d100187f584','native-film-v2-207bf64323c89f6682b8e5729f5380e3cfc4685f504535a833b113a4e8f9e7c4']};
+  for(const [dealerId,[v1,v2]] of Object.entries(locked)){
+    const f=nativeRoomMaterialFixture({dealerId}),material=resolve(f);
+    assert.equal(resolveNativeRoomGameMaterial(f.input,{version:1}).revision,v1);assert.equal(material.revision,v2);
+    assert.deepEqual(Object.keys(material.film).sort(),['profileId','schemaVersion','transitions']);assert.equal(material.film.schemaVersion,1);
   }
 });

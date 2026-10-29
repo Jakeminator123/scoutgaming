@@ -1,5 +1,6 @@
 import { validateRoomGameMaterial } from './room-game-config.mjs';
 import { registeredFilmedProfile } from './filmed-profiles/registry.mjs';
+import { expandStudioFilmedProfile } from './filmed-profiles/studio-profile.mjs';
 
 export const NATIVE_ROOM_MATERIAL_V2_PREFIX = 'native-film-v2-';
 export const isNativeRoomMaterial = material => typeof material?.revision === 'string' && material.revision.startsWith('native-film-');
@@ -7,11 +8,13 @@ export const nativeRoomMaterialVersion = material => material?.revision?.startsW
 
 // The immutable config carries exact media and the selected shoe topology.
 // This projection is shared by the pre-commit guard and browser timeline.
-// It never reads a registry, guesses a filename, or creates a media approval.
+// It reads only the material's own frozen profile (film v2) or the code
+// registry (v1), never guesses a filename or creates a media approval.
 export function nativeRoomFilmedPlanning(material) {
   if (nativeRoomMaterialVersion(material)!==2) return null;
   validateRoomGameMaterial(material,{dealerId:material.dealerId,language:material.language});
-  const profile=registeredFilmedProfile(material.dealerId);
+  const profile=material.film.schemaVersion===2?expandStudioFilmedProfile(material.film.profile,{dealerId:material.dealerId})
+    :registeredFilmedProfile(material.dealerId);
   if(!profile||profile.id!==material.film.profileId)throw Error('native_room_film_profile_mismatch');
   const dealerId=material.dealerId;
   const inventory={videos:material.media.map(row=>({...row,available:true,classification:{dealerId}}))};

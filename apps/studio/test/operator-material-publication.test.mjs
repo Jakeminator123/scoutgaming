@@ -6,6 +6,8 @@ import { canonicalStudioJson } from '../../../packages/studio-registry/server/do
 import { mergeOperatorMaterials, withoutOperatorMaterials, MAX_LANE_LAYER_CHOICES } from '../../../packages/presentation/server/operator-material-merge.mjs';
 import { operatorTableBinding, operatorTableFits, mergeOperatorMaterialsForPublication, presentationFits,
   operatorMaterialFingerprint } from '../lib/operator-material-publication.mjs';
+import { filmedProfileFor } from '../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
+import { studioCopyProfile } from '../../../test/fixtures/native-room-game-material.mjs';
 
 // Bolagets eget material at publication, as pure data: which lanes receive a
 // company's approved backgrounds and table graphics, and what is refused.
@@ -121,6 +123,20 @@ test('the server binds a table graphic to the filmed landing template of its lan
   assert.deepEqual(operatorTableFits(row, { ...paow, dealers: ['paow', 'dragan'] }), { ok: true });
   assert.deepEqual(operatorTableFits(row, { ...paow, dealers: ['paow', 'astrid'] }), { ok: false, reason: 'dealer' }, 'every dealer must land on the same boxes');
   assert.deepEqual(operatorTableFits({ tableBinding: { ...binding, profileId: 'kevin-paow-older' } }, paow), { ok: false, reason: 'dealer' });
+});
+
+test('a new dealer\'s table graphic is checked against the frozen studio landings, not the code register', () => {
+  const filmedProfile = studioCopyProfile('jakob-2', 'paow'), base = presentation(), open = base.lanes[0];
+  open.dealers = ['jakob-2']; open.layers.dealer = { enabled: true, default: 'jakob-2', allowed: ['jakob-2'] };
+  const frozen = { ...base, schemaVersion: 2, registeredDealers: [{ id: 'jakob-2', label: 'Jakob 2', idle: null, filmedProfile }] };
+  const binding = operatorTableBinding('jakob-2', open, { profileFor: id => filmedProfileFor(id, { registeredDealers: frozen.registeredDealers }) });
+  assert.equal(binding.profileId, filmedProfile.id);
+  assert.equal(operatorTableBinding('jakob-2', open), null, 'the code register alone has no landings for a new dealer');
+  const row = { ...material(7, { role: 'table' }), tableBinding: binding };
+  const merged = mergeOperatorMaterialsForPublication({ presentation: frozen, rows: [row], rooms, fits: () => true });
+  assert.deepEqual(merged.warnings, []); assert.deepEqual(allowed(merged.presentation, 'open', 'table'), [uuid(7)]);
+  const unfrozen = mergeOperatorMaterialsForPublication({ presentation: { ...frozen, registeredDealers: [{ id: 'jakob-2', label: 'Jakob 2', idle: null }] }, rows: [row], rooms, fits: () => true });
+  assert.deepEqual(unfrozen.warnings.map(row => [row.code, row.reason]), [['operator_material_table_mismatch', 'dealer']]);
 });
 
 test('without rows the publisher keeps its own presentation object; the fingerprint names every decision', () => {

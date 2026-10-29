@@ -1467,3 +1467,15 @@ test('native package preflight discovers shared bindings before SQL while unboun
     assert.deepEqual(nativeFilmedPlanningMutations({branding}),bound?[NATIVE_FILMED_PLANNING_MUTATION]:[]);
   }
 });
+
+test('v33 gates a dealer\'s own filmed profile in the project and the dealer archive',async()=>{
+  const filmedProfile={schemaVersion:1,id:'studio-jakob-2-00000000',kind:'copy',base:'kevin-paow-c7138759',takes:{}};
+  for(const [kind,value] of [['project',{dealers:[{id:'jakob-2',filmedProfile}]}],['dealer-archive',{dealerTrash:[{dealer:{id:'jakob-2',filmedProfile}}]}]])for(const version of [32,33]){
+    const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Math.min(version,Number(headers['X-Presentation-Capability-Version']))))});
+    f.repository.transaction=async work=>work(f.repository);
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:{kind,value}});
+    if(version===32)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'33');
+  }
+  assert.ok(JSON.stringify(presentationCapabilitiesForVersion(33)).length<2048,'the v33 representation fits the bounded capability read');
+});

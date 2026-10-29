@@ -60,7 +60,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '33', '032', '32, 32', '031', '31, 31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '34', '032', '32, 32', '031', '31, 31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }

@@ -212,7 +212,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope, materials,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
-      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
+      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation?.registeredDealers?.some(row=>row.filmedProfile)?33:presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
         [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
     });
     for (const service of [lanePackages, rooms]) {

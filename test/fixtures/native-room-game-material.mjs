@@ -4,6 +4,7 @@ import { cloudPresentationFixture } from '../../apps/studio/test/fixtures/cloud-
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { bindFilmedBank } from '../../packages/presentation/contracts/filmed-bank-bindings.mjs';
 import { registeredFilmedProfile } from '../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import { expandStudioFilmedProfile } from '../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import { bindSpeechSlotStandard, speechSlotEventId, SPEECH_SLOT_IDS } from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../packages/presentation/contracts/recorded-speech.mjs';
 import { mediaTimingSpeechIdentity } from '../../packages/presentation/contracts/media-timing.mjs';
@@ -40,10 +41,19 @@ export function measuredFixtureRecord(row,{frames=48,fps=24,audioEndUs=null} = {
 
 /** Synthetic declared unit-test records only: no files, databases or approvals
  * of real material. Profile hashes describe the checked-in source contract. */
-export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',capture=true,allSpeechSlots=false,idOffset=0,speechSchemaVersion=1} = {}) {
+/** copyOf: a new dealer whose frozen studio profile copies that code profile's
+ * landings onto its own synthetic clips (same poses and frame counts). */
+export function studioCopyProfile(dealerId,copyOf) {
+  const base=registeredFilmedProfile(copyOf);
+  return {schemaVersion:1,id:`studio-${dealerId}-${hash('copy:'+dealerId).slice(0,8)}`,kind:'copy',base:base.id,
+    takes:Object.fromEntries(base.takes.map(take=>[take.key,{sha256:hash(`synthetic ${dealerId} ${take.key}`)}]))};
+}
+export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,language='sv',capture=true,allSpeechSlots=false,idOffset=0,speechSchemaVersion=1} = {}) {
   if (![1,2].includes(speechSchemaVersion)) throw new TypeError('Unsupported synthetic speech schema');
   const fixture = cloudPresentationFixture({lanes:[defaultPresentationLane(dealerId)]});
-  const profile = registeredFilmedProfile(dealerId), presentation = fixture.presentation;
+  const filmedProfile = copyOf ? studioCopyProfile(dealerId,copyOf) : null;
+  const profile = filmedProfile ? expandStudioFilmedProfile(filmedProfile,{dealerId}) : registeredFilmedProfile(dealerId), presentation = fixture.presentation;
+  if (filmedProfile) presentation.registeredDealers[0].filmedProfile = filmedProfile;
   let project = fixture.project, n = 1 + idOffset;
   const idle = presentation.playback.media[0]; measuredFixtureRecord(idle);
   presentation.registeredDealers[0].idle = structuredClone(idle);
@@ -59,7 +69,13 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
     rows.push(measuredFixtureRecord(record({sha256:take.sha256,classification:{eventId,situation,kind:'action',startPose:take.startPose,endPose:take.endPose}}),{frames:take.frames,fps:profile.plane.fps}));
   }
   const inventory = () => ({videos:rows.map(row => ({...row,dealer:dealerId,available:true,integrity:'verified',bytes:row.size})),families:[]});
-  project = bindFilmedBank(project,inventory(),dealerId);
+  if (!filmedProfile) project = bindFilmedBank(project,inventory(),dealerId);
+  // The same variants bindFilmedBank writes, from the dealer's own studio profile.
+  else for (const take of profile.takes) {
+    const row = rows.find(item => item.sha256 === take.sha256), line = project.lines.find(item => item.dealerId === dealerId && item.eventId === row.classification.eventId);
+    line.variants.push({id:`${dealerId}.${line.eventId}.filmed.${take.target}.${take.variant||'base'}`,label:take.key,priority:0,triggerIds:[],
+      assetId:line.variants.find(item => item.id === line.baselineVariantId).assetId,videoGenerationId:row.id,selection:{rules:false,model:false,random:false}});
+  }
   for (const lineId of allSpeechSlots ? SPEECH_SLOT_IDS : NATIVE_ROOM_SPEECH_SLOTS) {
     const sha256 = hash(`synthetic:${dealerId}:${language}:${lineId}`), eventId = speechSlotEventId(lineId);
     const speech = {schemaVersion:speechSchemaVersion,dealerId,lineId,takeId:lineId+'_1',language,exactText:'Synthetic unit test line.',

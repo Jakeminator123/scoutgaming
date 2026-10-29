@@ -3,7 +3,7 @@ import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/s
 import { readPackagePresentation, resolvePackageRoomDealer } from './presentation-package.mjs';
 import { isPresentationRoom, roomGame } from '../contracts/presentation-room.mjs';
 import { frozenPlaybackProject } from '../contracts/frozen-dealer-playback.mjs';
-import { registeredFilmedProfile } from '../contracts/filmed-profiles/registry.mjs';
+import { filmedProfileFor } from '../contracts/filmed-profiles/studio-profile.mjs';
 import { validateFilmedDealProfile } from '../contracts/filmed-profile.mjs';
 import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../contracts/media-timing.mjs';
 import { recordedSpeechForVideo } from '../contracts/recorded-speech.mjs';
@@ -50,8 +50,11 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const dealerId = resolvePackageRoomDealer(pack, room, presentation);
     if (!dealerId
       || !presentation.registeredDealers.some(row => row.id === dealerId && row.idle)) fail('native_material_dealer_missing');
-    const profile = registeredFilmedProfile(dealerId);
+    // The frozen package row's own landings first, the code profile as seed and fallback.
+    const studio = presentation.registeredDealers.find(row => row.id === dealerId).filmedProfile;
+    const profile = filmedProfileFor(dealerId, {registeredDealers:presentation.registeredDealers});
     if (!profile) fail('native_material_profile_missing');
+    if (studio && version !== 2) fail('native_material_contract_unsupported');
     validateFilmedDealProfile(profile); compatible(profile);
     const project = frozenPlaybackProject(presentation.playback, {registeredDealers:presentation.registeredDealers, projectRevision:presentation.projectRevision});
     const records = presentation.playback.media.filter(row => row.classification.dealerId === dealerId);
@@ -134,7 +137,7 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const cardMs = Math.ceil((dealUs + transitionUs + FILMED_TAKE_GAP_MS*1000)/1000);
     if (leadMs > 60000 || cardMs > 60000) fail('native_material_timing_limit');
     const media = records.map(({id,sha256}) => ({id,sha256})).sort((a,b) => a.id.localeCompare(b.id));
-    const film=version===2?{schemaVersion:1,profileId:profile.id,transitions:Object.fromEntries(Object.entries(transitions)
+    const film=version===2?{schemaVersion:studio?2:1,profileId:profile.id,...(studio?{profile:structuredClone(studio)}:{}),transitions:Object.fromEntries(Object.entries(transitions)
       .map(([direction,row])=>[direction,row?{id:row.id,sha256:row.sha256,durationMs:durations.get(row.id)/1000}:null]))}:null;
     const revision = (version===2?NATIVE_ROOM_MATERIAL_V2_PREFIX:NATIVE_ROOM_MATERIAL_PREFIX) + digest({contract:NATIVE_ROOM_PRESENTATION_CONTRACT,
       room:{id:room.id,operatorId:room.operatorId,presentationLaneId:room.presentationLaneId,gameLaneId:room.gameLaneId},

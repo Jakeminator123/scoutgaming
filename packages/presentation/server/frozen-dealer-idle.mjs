@@ -114,7 +114,9 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
       const {videoId,...profile}=validateRouletteStartBinding(dealer.rouletteStart);
       rouletteStart=validateFrozenRouletteStart({clip:capture(videos.find(row=>row.id===videoId)),...profile},id,validateStudioMedia);
     }
-    return { id, label: dealer.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{}) };
+    // The saved landings are frozen with the row; validateFrozenRegisteredDealers checks them.
+    return { id, label: dealer.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{}),
+      ...(Object.hasOwn(dealer,'filmedProfile')?{filmedProfile:cloneStudioJson(dealer.filmedProfile)}:{}) };
   });
   return freeze({ registeredDealers: validateFrozenRegisteredDealers(registeredDealers, { dealerIds: selectedDealers }), mediaPreconditions });
 }
