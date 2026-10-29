@@ -63,7 +63,7 @@ export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,copyFra
   const record = ({sha256,id=uuid(n++),classification}) => ({id,sha256,size:4096,contentType:'video/mp4',
     pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
     classification:{dealerId,role:'alternative',label:'Synthetic contract fixture',notes:'Unit test only',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0},...classification}});
-  for (const take of profile.takes) {
+  for (const take of profile?.takes ?? []) {
     const box = Number(take.target)-1;
     const eventId = take.target === 'flip' ? 'reveal.dealer' : ['dealer','hole'].includes(take.target) ? 'deal.dealer'
       : `deal.player.${box<2?'left':box<5?'centre':'right'}`;
@@ -71,9 +71,10 @@ export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,copyFra
     rows.push(measuredFixtureRecord(record({sha256:take.sha256,classification:{eventId,situation,kind:'action',startPose:take.startPose,endPose:take.endPose}}),{frames:take.frames,fps:profile.plane.fps}));
   }
   const inventory = () => ({videos:rows.map(row => ({...row,dealer:dealerId,available:true,integrity:'verified',bytes:row.size})),families:[]});
-  if (!filmedProfile) project = bindFilmedBank(project,inventory(),dealerId);
+  // A dealer without any filmed profile has no filmed bank to bind.
+  if (!filmedProfile && profile) project = bindFilmedBank(project,inventory(),dealerId);
   // The same variants bindFilmedBank writes, from the dealer's own studio profile.
-  else for (const take of profile.takes) {
+  else if (filmedProfile) for (const take of profile.takes) {
     const row = rows.find(item => item.sha256 === take.sha256), line = project.lines.find(item => item.dealerId === dealerId && item.eventId === row.classification.eventId);
     line.variants.push({id:`${dealerId}.${line.eventId}.filmed.${take.target}.${take.variant||'base'}`,label:take.key,priority:0,triggerIds:[],
       assetId:line.variants.find(item => item.id === line.baselineVariantId).assetId,videoGenerationId:row.id,selection:{rules:false,model:false,random:false}});

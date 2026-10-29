@@ -16,3 +16,13 @@ export function registeredFilmedProfile(dealerId){
 export function registeredFilmedProfileById(profileId){
   return typeof profileId === 'string' ? BY_ID.get(profileId) ?? null : null;
 }
+// Jakob 2026-10-29: a dealer without its own filmed profile uses PAOW's as the
+// standard instead of being blocked. The copy keeps PAOW's id and is marked
+// inherited, so nothing can pass it off as the dealer's own calibration. Its
+// takes stay PAOW's exact sha256 files: they give landings and geometry, and a
+// dealer's own action clips still have to match them to count as takes.
+const INHERITED_PAOW = Object.freeze({...PAOW_KEVIN_PROFILE, inherited: 'paow'});
+export function filmedProfileOrPaow(dealerId){
+  if (typeof dealerId !== 'string' || !/^[a-z0-9_-]{1,128}$/.test(dealerId)) return null;
+  return registeredFilmedProfile(dealerId) ?? INHERITED_PAOW;
+}

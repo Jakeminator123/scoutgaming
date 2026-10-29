@@ -31,7 +31,6 @@ function browserBundle() {
   return bundlePromise ??= build({stdin: {contents: `
     import React from 'react';
     import {createRoot} from 'react-dom/client';
-    import {PresentationRoomCreate} from './apps/studio/components/presentation-room-create.tsx';
     import {PartnerOperatorWorkspace} from './apps/studio/components/partner/partner-operator-workspace.jsx';
     import {LobbyProvider} from './apps/studio/client/lobby/components/lobby-provider.tsx';
     import {OperatorsSection} from './apps/studio/client/lobby/components/sections/operators-section.tsx';
@@ -40,9 +39,8 @@ function browserBundle() {
     import {SelectionTicket} from './apps/studio/client/lobby/components/selection-ticket.tsx';
     const props = JSON.parse(document.getElementById('fixture-data').textContent);
     createRoot(document.getElementById('root')).render(props.surface === 'partner'
-      ? <PartnerOperatorWorkspace {...props}/> : location.pathname === '/lobby'
-      ? <LobbyProvider><OperatorsSection/><RoomsSection/><DealersSection/><SelectionTicket/></LobbyProvider>
-      : <PresentationRoomCreate {...props}/>);
+      ? <PartnerOperatorWorkspace {...props}/>
+      : <LobbyProvider><OperatorsSection/><RoomsSection/><DealersSection/><SelectionTicket/></LobbyProvider>);
   `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
   outfile: resolve(root, 'fixture.js'), external: ['/composition-runtime/compositor.js'],
   // Match Next's static-image import shape without reading or serving media.
@@ -194,7 +192,9 @@ test('C6 existing publication controller and APIs carry one new frozen revision 
   await assertPublishedChain(f, receipt);
 });
 
-test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the public lobby and game entry',
+// Admin skapar spelbordet med Nytt spelbord (room-quick-create.mjs); här samma POST genom den befintliga
+// kontrollern, och därefter N2 i webbläsaren.
+test('C5/C6 N1 room creation, N2 room draft and reviewed publication reach the public lobby and game entry',
   {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE to run the isolated C6 browser chain', timeout: 60_000}, async t => {
     const {chromium} = await import(pathToFileURL(browserModule).href);
     const channel = process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL;
@@ -212,7 +212,7 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
           {method: incoming.method, headers: incoming.headers, ...(body.length ? {body} : {})});
         const path = new URL(request.url).pathname;
         let response;
-        if (['/admin/publication', '/lobby'].includes(path) || /^\/(?:studio\/)?partner\//.test(path)) {
+        if (path === '/lobby' || /^\/(?:studio\/)?partner\//.test(path)) {
           const props = path.includes('/partner/') ? await f.partnerPageProps(request) : f.props;
           response = new Response(
           '<!doctype html><html lang="sv"><meta charset="utf-8"><link rel="stylesheet" href="/fixture.css"><div id="root"></div>'
@@ -248,14 +248,11 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       const path = new URL(response.url()).pathname;
       if (path.startsWith('/studio/api/') && response.status() >= 400) errors.push('Unexpected API response ' + response.status() + ' ' + path);
     });
-    await page.goto(origin + '/admin/publication');
-    await page.getByLabel('Rumsnamn', {exact: true}).fill('C6 publicerat rum');
-    const created = page.waitForResponse(response => response.url() === origin + roomEndpoint && response.request().method() === 'POST');
-    await page.getByRole('button', {name: 'Skapa spelrum', exact: true}).click();
-    const published = await created; assert.equal(published.status(), 200);
-    const receipt = await published.json(), chain = await assertPublishedChain(f, receipt);
+    const receipt = await publishWithExistingController(f), chain = await assertPublishedChain(f, receipt);
     await useCookie(f.auth.north);
-    const partner = await page.evaluate(async path => {const response = await fetch(path); return {status: response.status, body: await response.json()};}, partnerPath(company.slug));
+    // The page has not opened anything yet; read the partner snapshot through the same handler the server forwards to.
+    const partnerResponse = await f.handle(new Request(origin + partnerPath(company.slug), {headers: {cookie: f.auth.north}}));
+    const partner = {status: partnerResponse.status, body: await partnerResponse.json()};
     assert.equal(partner.status, 200); assert.deepEqual(partner.body.presentation, chain.partner.presentation);
     assert.equal(partner.body.packageRevision, String(receipt.packageRevision));
     // Unlike an API-only receipt, this mounts the complete N2 workspace from
