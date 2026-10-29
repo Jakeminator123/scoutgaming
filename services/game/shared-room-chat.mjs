@@ -230,7 +230,7 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
         const fresh = recipient => async req => {
           const cookie = req?.headers?.cookie;
           const after = await service.chatMember(Object.freeze({ headers: new Headers(typeof cookie === 'string' ? { cookie } : {}), signal: AbortSignal.timeout(5000) }), { roomId });
-          if (after.binding.actorId !== recipient.playerId || after.binding.sessionId !== recipient.owner
+          if (after.binding.actorId !== recipient.playerId || after.binding.sessionId !== recipient.owner || after.snapshot.me?.active !== true
             || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
         };
         try {

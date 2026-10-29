@@ -392,3 +392,18 @@ test('PR 4 panel: every member plays the dealer answer once per line; a muted me
   assert.deepEqual(played, ['mine', 'asker']);
   panel.close();
 });
+
+// Rättelser efter oberoende granskning (PR 4b): a listener's ticket needs a seat at the table now and this round.
+test('a listener who left the table or is in a new round cannot redeem the spoken answer', async t => {
+  const other = { ...binding, actorId: 'player-b', sessionId: 'player-' + 'b'.repeat(64) };
+  let state = 'seated';
+  const read = () => state === 'left' ? snapshot({ me: { id: 'player-b', seats: [], active: false } })
+    : state === 'next' ? snapshot({ roundId: 'shared-room-a-round-5' }) : snapshot();
+  const ports = speechPorts(), h = await fixture(t, { speech: ports.speech, read, others: { 'croupier_session=bob': other } });
+  await frames(await h.post(ask({ acceptsSpeechStream: true })));
+  const bob = ports.calls.issued.find(recipient => recipient.owner === other.sessionId), req = { headers: { cookie: 'croupier_session=bob' } };
+  await bob.check(req);
+  state = 'left'; await assert.rejects(bob.check(req), /stale_round_revision/, 'left the table with the socket still open');
+  state = 'next'; await assert.rejects(bob.check(req), /stale_round_revision/, 'a new round');
+  state = 'seated'; await bob.check(req);
+});
