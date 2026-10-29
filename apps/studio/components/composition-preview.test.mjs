@@ -20,7 +20,9 @@ const id='00000000-0000-4000-8000-000000000002',tableId='00000000-0000-4000-8000
 // Render the actual transpiled component, including dependency-sensitive effect
 // cleanup. The browser boundary supplies controllable media promises and time;
 // the real background scheduler retains its rolling budget and cancellation.
-function fixture(t,{table=false}={}){
+// `reducedMotion` stubs matchMedia, `hidden` starts with a hidden tab and `refuse` makes the browser refuse play().
+function fixture(t,{table=false,extra={},reducedMotion,hidden=false,refuse=false}={}){
+  const browser={refuse};
   let time=0,serial=0,cursor=0,dirty=true,mounted=true,tree,props,renderedBackground=null,renderedTable=null;
   const slots=[],pending=new Map(),timers=new Map(),frames=new Map(),videos=[],renderers=[],players=[],draws=[];
   const schedule=(fn,ms)=>{const token=++serial;timers.set(token,{fn,at:time+ms});return token;};
@@ -29,7 +31,7 @@ function fixture(t,{table=false}={}){
     tagName='VIDEO';src='';videoWidth=1920;videoHeight=1080;readyState=2;currentTime=0;duration=2;paused=true;deferred=null;playCalls=0;
     get currentSrc(){return this.src;}
     load(){if(this.src)queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
-    play(){this.playCalls++;this.paused=false;if(this.deferred){const value=this.deferred;this.deferred=null;return value.promise;}return Promise.resolve();}
+    play(){this.playCalls++;if(browser.refuse)return Promise.reject(Object.assign(Error('play() refused'),{name:'NotAllowedError'}));this.paused=false;if(this.deferred){const value=this.deferred;this.deferred=null;return value.promise;}return Promise.resolve();}
     pause(){this.paused=true;}
     removeAttribute(name){if(name==='src')this.src='';}
     holdNextPlay(){let resolve;const promise=new Promise(done=>{resolve=done;});this.deferred={promise};return resolve;}
@@ -41,7 +43,7 @@ function fixture(t,{table=false}={}){
     removeAttribute(name){if(name==='src')this.value='';}
   }
   class Canvas {width=0;height=0;getContext(){return {};}}
-  const document=new EventTarget();document.hidden=false;
+  const document=new EventTarget();document.hidden=hidden;
   document.createElement=tag=>{if(tag==='video'){const video=new Video();videos.push(video);return video;}if(tag==='canvas')return new Canvas();throw Error('Unexpected DOM '+tag);};
   class Compositor {
     released=[];disposed=false;
@@ -68,6 +70,7 @@ function fixture(t,{table=false}={}){
   const module={exports:{}};
   vm.runInNewContext(code,{module,exports:module.exports,console,structuredClone,URL,AbortController,
     document,Image:ImageElement,HTMLVideoElement:Video,queueMicrotask,
+    ...(reducedMotion===undefined?{}:{matchMedia:query=>({media:query,matches:reducedMotion&&query==='(prefers-reduced-motion: reduce)'})}),
     setTimeout:schedule,clearTimeout:cancel,requestAnimationFrame:fn=>{const token=++serial;frames.set(token,fn);return token;},cancelAnimationFrame:token=>frames.delete(token),
     require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)});
   const {CompositionPreview}=module.exports;
@@ -78,7 +81,7 @@ function fixture(t,{table=false}={}){
     backgroundAssets:[{id,url:'/event.mp4',label:'Celebration',contentType:'video/mp4'}],
     ...(table?{table:{url:'/table.png',label:'Table',contentType:'image/png'},show:{dealer:true,background:true,table:true},
       tablePlayback:{schemaVersion:1,rules:[defaultLayerRule(tableId,'flower',{role:'table'})]},
-      tableAssets:[{id:tableId,url:'/flower.mp4',label:'Flower',contentType:'video/mp4'}]}:{})};
+      tableAssets:[{id:tableId,url:'/flower.mp4',label:'Flower',contentType:'video/mp4'}]}:{}),...extra};
   let canvasKey,stage;
   function render(){
     if(!mounted)return;cursor=0;dirty=false;tree=CompositionPreview(props);
@@ -100,6 +103,7 @@ function fixture(t,{table=false}={}){
   return {async ready(){await flush();assert.equal(button('Spela').props.disabled,false);assert.equal(players.length,table?2:1);},
     click(label){const value=button(label);assert.equal(Boolean(value.props.disabled),false);value.props.onClick();},
     async update(patch){props={...props,...patch};dirty=true;await flush();},flush,frame,advance,unmount,
+    allowPlay(){browser.refuse=false;},alerts(){return nodes(tree,node=>node.props?.role==='alert').map(text);},
     hide(){document.hidden=true;document.dispatchEvent(new Event('visibilitychange'));},
     show(){document.hidden=false;document.dispatchEvent(new Event('visibilitychange'));},
     get dealer(){return videos.find(video=>video.src==='/dealer.mp4');},get eventVideos(){return videos.filter(video=>video.playCalls&&video!==this.dealer);},
@@ -202,4 +206,53 @@ test('a table clip swaps only the table layer and returns to the base table whil
   assert.equal(h.table.src,'/flower.mp4','the table clip started by its timer');
   const elapsed=h.now-started;assert.ok(elapsed>=195000-74000&&elapsed<=195000+74000+5000,`started after ${elapsed} ms, inside 195 s ± 74 s`);
   assert.equal(dealer.playCalls,1);assert.equal(h.players.length,2);
+});
+
+test('without autoplay the dealer waits for Spela, plays with sound and stops after its plays',async t=>{
+  const h=fixture(t);await h.ready();
+  const dealer=h.dealer;assert.equal(dealer.playCalls,0,'nothing starts by itself');
+  assert.equal(dealer.loop,false);assert.equal(dealer.muted,false);
+  h.click('Spela');await h.flush();assert.equal(dealer.playCalls,1);
+  dealer.dispatchEvent(new Event('ended'));await h.flush();
+  assert.equal(dealer.paused,true,'the dealer clip stops after one play');assert.ok(h.button('Spela'));
+});
+
+test('autoplay with loopDealer starts the muted dealer and background on load and keeps the dealer looping',async t=>{
+  const h=fixture(t,{extra:{autoplay:true,loopDealer:true,minimal:true}});await h.flush();
+  const dealer=h.dealer;
+  assert.equal(dealer.loop,true,'the dealer idle loops');assert.equal(dealer.muted,true,'autoplay is muted so the browser allows it');
+  assert.equal(dealer.playCalls,1,'started once when ready, without a click');assert.equal(dealer.paused,false);
+  assert.equal(h.players[0].starts,1,'background automation starts with the channels');
+  assert.ok(h.button('Pausa'),'the viewer can still pause');
+  h.click('Pausa');await h.flush();assert.equal(dealer.paused,true);
+  await h.update({settings:{...defaultCompositionSettings(),tableFront:true}});
+  assert.equal(dealer.playCalls,1,'a placement change does not restart a paused preview');
+});
+
+const autoplay={autoplay:true,loopDealer:true,minimal:true};
+test('autoplay waits while the viewer prefers reduced motion; Spela still starts the preview',async t=>{
+  const h=fixture(t,{extra:autoplay,reducedMotion:true});await h.flush();
+  const dealer=h.dealer;assert.equal(dealer.playCalls,0,'nothing moves by itself');assert.equal(h.players[0].starts,0);
+  h.hide();h.show();await h.flush();assert.equal(dealer.playCalls,0,'showing the tab does not start it either');
+  h.click('Spela');await h.flush();assert.equal(dealer.playCalls,1);assert.equal(dealer.paused,false);assert.ok(h.button('Pausa'));
+});
+
+test('autoplay waits for a hidden tab, resumes when shown and stays paused after the viewer paused',async t=>{
+  const h=fixture(t,{extra:autoplay,reducedMotion:false,hidden:true});await h.flush();
+  const dealer=h.dealer;assert.equal(dealer.playCalls,0,'a hidden tab does not start playback');
+  h.show();await h.flush();assert.equal(dealer.playCalls,1,'starts when the tab is shown');assert.equal(dealer.paused,false);
+  h.hide();await h.flush();assert.equal(dealer.paused,true,'hiding pauses');
+  h.show();await h.flush();assert.equal(dealer.playCalls,2,'and showing resumes');assert.equal(dealer.paused,false);assert.ok(h.button('Pausa'));
+  h.click('Pausa');await h.flush();h.hide();h.show();await h.flush();
+  assert.equal(dealer.playCalls,2,'a viewer pause is kept');assert.equal(dealer.paused,true);assert.ok(h.button('Spela'));
+  h.click('Spela');await h.flush();h.hide();h.show();await h.flush();assert.equal(dealer.playCalls,4,'after Spela it resumes again');
+});
+
+test('a refused autoplay returns quietly to Spela without an alert',async t=>{
+  const h=fixture(t,{extra:autoplay,refuse:true});await h.flush();
+  const dealer=h.dealer;assert.equal(dealer.playCalls,1,'autoplay was tried once');assert.equal(dealer.paused,true);
+  assert.deepEqual(h.alerts(),[],'no alert for a refused autoplay');assert.ok(h.button('Spela'));
+  h.hide();h.show();await h.flush();assert.equal(dealer.playCalls,1,'not retried on its own');
+  h.click('Spela');await h.flush();assert.deepEqual(h.alerts(),['Videorna kunde inte starta. Försök igen.'],'a refused click is still said');
+  h.allowPlay();h.click('Spela');await h.flush();assert.equal(dealer.paused,false);assert.deepEqual(h.alerts(),[]);
 });
