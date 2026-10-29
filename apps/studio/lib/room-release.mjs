@@ -24,7 +24,7 @@ import {isPresentationRoom,isRoomOperatorId,roomGame} from '../../../packages/pr
 import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
 import {captureFrozenPresentation,selectedRegisteredIdleDefaults,assertCapturedPresentationMedia,assertPublishedRoomBindings} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import {readPackagePresentation,resolvePackageRoomDealer,withPackagePresentation,publicPackageBranding} from '../../../packages/presentation/server/presentation-package.mjs';
-import {listPackageRooms,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
+import {listPackageRooms,packageRoomsFor,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
 import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
 import {isNativeRoomMaterial,nativeRoomMaterialVersion} from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial} from '../../../packages/presentation/contracts/room-game-config.mjs';
@@ -350,6 +350,8 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     if (!canExtend() && presentationPackageRequiresV29(presentation)) refuse(PRESENTATION_RUNTIME_UPDATE_REQUIRED, 503);
     const candidate = {operatorId, revision:current.revision + 1, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables],
       branding:withPackagePresentation(baseBranding, presentation, {allowExtended:canExtend()})};
+    // The package's own rooms (Studio 023, plan L3 PR 3) go with the candidate, as publish writes them.
+    candidate.rooms = packageRoomsFor(administration, candidate);
     // Presentationen tar tyst bort val den inte bär; ett utkastval får inte försvinna så.
     if (includeDraft && lostDraftChoices({live:current.branding, draft:brandingDraft.branding, candidate:candidate.branding}).length) invalid(DRAFT_INVALID);
     return {presentation, candidate, mediaPreconditions:captured.mediaPreconditions, materialWarnings, materialFingerprint};
@@ -633,13 +635,14 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       if (sha256(current.branding) !== prepared.currentBrandingSha256) conflict('package');
       const branding = structuredClone(candidateBranding), gameConfig = prepared.gameConfig;
       const candidate = {operatorId, revision:current.revision + 1, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables], branding};
+      candidate.rooms = packageRoomsFor(administration, candidate);
       const {material, preconditions} = await roomMaterial({snapshot, candidate, presentation, room, gameConfig});
       await recheck(preconditions);
       // J08-skrivaren: rumslås i ordning, CAS på varje huvud, andra rums bindningar oförändrade.
       try {
         // Med utkastet: samma transaktion markerar det publicerat (operator-store.mjs, CAS på revisionen).
         await operators.publishRoomGameConfig({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId,
-          expectedRevision:current.revision, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables], branding},
+          expectedRevision:current.revision, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables], rooms:candidate.rooms, branding},
         {roomId, gameConfig:validateRoomGameConfig(gameConfig), material},
         prepared.appearanceDraftRevision === null ? null : {expectedDraftRevision:prepared.appearanceDraftRevision});
       } catch (error) {

@@ -11,12 +11,26 @@ import { partnerPostgresFixture } from './fixtures/partner-postgres.mjs';
 import { PARTNER_ASSIGNMENT_KEY } from '../lib/partner-assignment.mjs';
 import { NATIVE_FILMED_PLANNING_MUTATION } from '../lib/presentation-runtime-readiness.mjs';
 import { listPackageRooms } from '../../../packages/presentation/server/package-rooms.mjs';
+import { createResourceLifecycleApi } from '../lib/resource-lifecycle-api.mjs';
+
+// Admins egen väg för spelbordens läge (room-state, resource-lifecycle-api.mjs) genom samma nativa grind:
+// sedan L3 PR 3 en paketversion, som partnerns.
+function adminRoomState(f) {
+  const lifecycle = createResourceLifecycleApi({ repository: f.repository, scope: f.scope, now: f.config.now });
+  return async (roomId, state) => {
+    const body = { operatorId: 'north', roomId, state, expectedAdministrationRevision: (await f.raw.readDocument('administration')).revision,
+      expectedPackageRevision: (await f.direct.getCurrentPackage('north')).revision };
+    return f.config.presentationTransaction(() => lifecycle.handlers.get('POST /studio/api/admin/room-state')({ actor: f.admin, scope: f.scope, body }),
+      { presentationDocuments: ['project', 'administration'], presentationOperatorIds: ['north'], presentationMutation: { kind: 'resource-lifecycle', value: {} } });
+  };
+}
 
 test('partner table actions on PostgreSQL', async t => {
-  // L3: pausa/öppna skriver bara dokumentet tills PR 3; med Studio 023 vinner paketets frysta läge.
-  // Därför körs 023 först när PR 3 är ute, och här utan 023 tills PR 3 tar bort undantaget.
-  const f = await partnerPostgresFixture(t, { deferOptional: ['023'] });
+  // Med Studio 023: paketet bär spelbordens läge (plan L3 PR 3), och pausa/öppna ger en ny paketversion.
+  const f = await partnerPostgresFixture(t);
   const pack = () => f.direct.getCurrentPackage('north');
+  // Samma begäran mot den nuvarande paketversionen (varje paus och öppning höjer den).
+  const fresh = async body => ({ ...body, expectedPackageRevision: (await pack()).revision });
   // Admins tilldelning: en ny paketrevision med `assignment` i brandingen.
   const grant = async assignment => {
     const current = await pack();
@@ -44,12 +58,7 @@ test('partner table actions on PostgreSQL', async t => {
     assert.deepEqual(await revisions(), before, `${message}: inget ändrat`);
     return body;
   };
-  // Admins egen skrivning av administrationsdokumentet (spelbordens läge), som Admins room-state.
-  const adminState = async (id, state) => {
-    const saved = await f.raw.readDocument('administration');
-    await f.raw.saveDocument('administration', { value: { ...saved.value, rooms: saved.value.rooms.map(row => row.id === id ? { ...row, state } : row) },
-      expectedRevision: saved.revision, actor: 'fixture-admin' });
-  };
+  const adminState = adminRoomState(f);
 
   await t.test('dealer: a choice inside the assignment is saved in the appearance draft', async () => {
     const before = await assignment();
@@ -149,18 +158,34 @@ test('partner table actions on PostgreSQL', async t => {
     await refused(() => f.call('room-state', { user: 'south-admin', body: pause }), 403, 'another company');
     await refused(() => f.call('room-state', { body: { ...pause, roomId: room('south') } }), 404, 'another company\'s table');
     await refused(() => f.call('room-state', { body: { ...pause, expectedPackageRevision: revision - 1 } }), 409, 'a stale package revision (CAS)');
+    // Bolagets öppna utseendeutkast bygger på nuvarande paket; pausen tar det med sig (aldrig kastat).
+    const before = await pack(), draft = await f.direct.getBrandingDraft('north');
+    assert.deepEqual([draft.action, draft.basePackageRevision], ['draft.save', revision]);
     const paused = await status(f.call('room-state', { body: pause }), 200, 'administrator');
     assert.deepEqual(paused.room, { id: room('north-a'), state: 'pending' });
+    assert.equal(paused.packageRevision, revision + 1, 'the pause is a package revision');
+    const after = await pack();
+    assert.equal(after.revision, revision + 1);
+    assert.deepEqual(after.rooms.map(row => [row.id, row.state]), [[room('north-a'), 'pending'], [room('north-b'), 'live']], 'the package carries the state');
+    assert.deepEqual(after.branding, before.branding, 'only the rooms differ; the paused table keeps its published settings');
+    const kept = await f.direct.getBrandingDraft('north');
+    assert.deepEqual([kept.revision, kept.action, kept.basePackageRevision, kept.branding], [draft.revision + 1, 'draft.save', revision + 1, draft.branding]);
     assert.deepEqual(await lobby(), [room('north-b')], 'the paused table leaves the lobby catalogue');
     // Pausen står i bolagets journal med partnerns konto och accessClass.
     const states = async () => (await journal()).filter(row => row.action === 'room.state');
     const [entry] = await states();
     assert.deepEqual([entry.access_class, entry.actor_id, entry.resource_type, entry.resource_id], ['partner', '42', 'package', room('north-a')]);
     assert.deepEqual(JSON.parse(entry.changes), { before: { state: 'live' }, after: { state: 'pending', administrationRevision: (await f.raw.readDocument('administration')).revision } });
-    await refused(() => f.call('room-state', { body: pause }), 409, 'the table is no longer live (CAS)');
+    // The pause's package version is journaled with the partner's own account too (never a pseudonym), naming the table.
+    const [published] = await f.rows(`SELECT access_class, actor_id, changes FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id='north' AND action='package.publish' AND after_revision=$3`, [f.scope.environment, f.scope.workspaceId, revision + 1]);
+    const { after: publishedAfter } = JSON.parse(published.changes);
+    assert.deepEqual([published.access_class, published.actor_id, publishedAfter.roomId, publishedAfter.state], ['partner', '42', room('north-a'), 'pending']);
+    await refused(async () => f.call('room-state', { body: await fresh(pause) }), 409, 'the table is no longer live (CAS)');
     await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'live' } }), 400, 'no change');
-    await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending', expectedPackageRevision: revision - 1 } }), 409, 'reopen with a stale package revision (CAS)');
-    await status(f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending' } }), 200, 'reopen');
+    await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending' } }), 409, 'reopen with a stale package revision (CAS)');
+    await status(f.call('room-state', { body: await fresh({ ...pause, state: 'live', expectedState: 'pending' }) }), 200, 'reopen');
+    assert.equal((await pack()).revision, revision + 2);
     assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
     const opened = (await states()).map(row => JSON.parse(row.changes)).find(changes => changes.after.state === 'live');
     assert.deepEqual(opened, { before: { state: 'pending' }, after: { state: 'live', administrationRevision: (await f.raw.readDocument('administration')).revision } });
@@ -173,40 +198,41 @@ test('partner table actions on PostgreSQL', async t => {
     assert.ok(shown.every(({ changes }) => Object.keys(changes).sort().join() === 'after,before'));
     assert.ok(read.entries.some(entry => entry.action === 'room.settings'), 'the settings draft is listed too');
     assert.doesNotMatch(JSON.stringify(read), /administrationRevision/, 'the administration revision never reaches the partner');
-    const other = { roomId: room('north-b'), state: 'pending', expectedState: 'live', expectedPackageRevision: revision };
-    await status(f.call('room-state', { body: other }), 200, 'pause a table without published settings');
-    await refused(() => f.call('room-state', { body: { ...other, state: 'live', expectedState: 'pending' } }), 409, 'never released by Admin');
+    const other = { roomId: room('north-b'), state: 'pending', expectedState: 'live' };
+    await status(f.call('room-state', { body: await fresh(other) }), 200, 'pause a table without published settings');
+    await refused(async () => f.call('room-state', { body: await fresh({ ...other, state: 'live', expectedState: 'pending' }) }), 409, 'never released by Admin');
     const south = (await f.raw.readDocument('administration')).value.rooms.find(row => row.id === room('south'));
     assert.equal(south.state, 'live', 'the other company\'s table is untouched');
   });
 
   await t.test('state: the partner never lifts a pause Admin set, only its own', async () => {
-    const revision = (await pack()).revision;
-    const open = { roomId: room('north-a'), state: 'live', expectedState: 'pending', expectedPackageRevision: revision };
+    const open = { roomId: room('north-a'), state: 'live', expectedState: 'pending' };
     const pause = { ...open, state: 'pending', expectedState: 'live' };
-    // Admin pausar: partnern får 409 admin-pause och ingenting ändras.
-    await adminState(room('north-a'), 'pending');
-    const refusedBody = await refused(() => f.call('room-state', { body: open }), 409, 'an Admin pause');
+    // Admin pausar: partnern får 409 admin-pause och ingenting ändras. Admins paus är också en paketversion.
+    const revision = (await pack()).revision;
+    assert.equal((await adminState(room('north-a'), 'pending')).packageRevision, revision + 1);
+    assert.equal((await pack()).rooms.find(row => row.id === room('north-a')).state, 'pending');
+    const refusedBody = await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'an Admin pause');
     assert.equal(refusedBody.reason, 'admin-pause');
     // Partnern pausar, Admin öppnar och pausar igen: pausen är nu Admins.
     await adminState(room('north-a'), 'live');
-    await status(f.call('room-state', { body: pause }), 200, 'partner pause');
+    await status(f.call('room-state', { body: await fresh(pause) }), 200, 'partner pause');
     await adminState(room('north-a'), 'live');
     await adminState(room('north-a'), 'pending');
-    assert.equal((await refused(() => f.call('room-state', { body: open }), 409, 'Admin re-paused after the partner pause')).reason, 'admin-pause');
+    assert.equal((await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'Admin re-paused after the partner pause')).reason, 'admin-pause');
     // Admin (N1) pausar genom portalens väg: journalraden är internal-admin, inte
     // partner, så bolaget kan inte häva den (listPartnerRoomPauses, access_class='partner').
     await adminState(room('north-a'), 'live');
-    const n1 = await status(f.call('room-state', { user: 'n1-admin', body: pause }), 200, 'N1 pause through the portal route');
+    const n1 = await status(f.call('room-state', { user: 'n1-admin', body: await fresh(pause) }), 200, 'N1 pause through the portal route');
     assert.deepEqual(n1.room, { id: room('north-a'), state: 'pending' });
     const internal = (await journal()).filter(row => row.action === 'room.state' && row.access_class !== 'partner');
     assert.deepEqual(internal.map(row => [row.access_class, row.actor_id, JSON.parse(row.changes).after.state]), [['internal-admin', '7', 'pending']]);
-    assert.equal((await refused(() => f.call('room-state', { body: open }), 409, 'an N1 pause set through the portal route')).reason, 'admin-pause');
+    assert.equal((await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'an N1 pause set through the portal route')).reason, 'admin-pause');
     // Partnerns egen paus består genom Admins andra sparningar och öppnas av partnern.
     await adminState(room('north-a'), 'live');
-    await status(f.call('room-state', { body: pause }), 200, 'partner pause');
+    await status(f.call('room-state', { body: await fresh(pause) }), 200, 'partner pause');
     await adminState(room('north-b'), 'live');
-    await status(f.call('room-state', { body: open }), 200, 'the partner opens its own pause');
+    await status(f.call('room-state', { body: await fresh(open) }), 200, 'the partner opens its own pause');
     assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
   });
 
@@ -239,7 +265,7 @@ test('partner table actions on PostgreSQL', async t => {
     await member('43', { roleId: 'partner-editor' });
     // Utan ändring däremellan går samma paus igenom.
     await status(f.call('room-state', { body: pause }), 200, 'nothing changed in between');
-    await status(f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending' } }), 200, 'reopen');
+    await status(f.call('room-state', { body: await fresh({ ...pause, state: 'live', expectedState: 'pending' }) }), 200, 'reopen');
   });
 
   await t.test('state: allow.pause=false closes the action', async () => {
@@ -299,4 +325,56 @@ test('before Studio migration 022 the journaled table actions answer 503 and wri
     assert.deepEqual(await revisions(), before, `${path}: inget skrivet`);
   }
   assert.equal((await f.raw.readDocument('administration')).value.rooms.find(row => row.id === f.id('north-a')).state, 'live');
+});
+
+// Utan Studio 023 (före Jakobs körning i preview och produktion) är pausen ändå en paketversion: paketet
+// bär inga `rooms` och läsarna läser dokumentet. Bolagets öppna utseendeutkast och ett annat spelbords
+// spelinställningsutkast följer med till den nya versionen, och det pausade spelbordet behåller sina
+// publicerade spelinställningar genom en annan publicering.
+test('without Studio 023 the partner pause still raises the package and keeps both drafts', async t => {
+  const f = await partnerPostgresFixture(t, { deferOptional: ['023'] });
+  const pack = () => f.direct.getCurrentPackage('north'), room = name => f.id(name);
+  const call = async (path, body, message) => {
+    const response = await f.call(path, { body }), value = await response.json();
+    assert.equal(response.status, 200, `${message}: ${JSON.stringify(value)}`);
+    return value;
+  };
+  const lobby = async () => listPackageRooms({ administration: (await f.raw.readDocument('administration')).value, package: await pack(), operatorId: 'north' })
+    .filter(row => row.state === 'live').map(row => row.id).sort();
+  const read = await (await f.call('assignment')).json();
+  await call('dealer', { roomId: room('north-a'), dealer: 'paow', expectedDraftRevision: read.revisions.brandingDraft, expectedPackageRevision: read.revisions.package }, 'appearance draft');
+  const current = await pack();
+  await f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+    lanes: current.lanes, games: current.games, tables: current.tables,
+    branding: { ...current.branding, [PARTNER_ASSIGNMENT_KEY]: { allow: { language: true, limit: true, pause: true }, limitPresets: ['casual', 'prive'] } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]);
+  const settings = async roomId => (await call('room-settings', { action: 'save-draft', roomId, expectedPackageRevision: (await pack()).revision, expectedDraftRevision: null,
+    gameConfig: { language: 'sv', limitPreset: 'prive' } }, `settings draft ${roomId}`)).draft.revision;
+  const publish = async (roomId, draftRevision) => call('room-settings', { action: 'publish', roomId, expectedPackageRevision: (await pack()).revision, expectedDraftRevision: draftRevision }, `publish ${roomId}`);
+  await publish(room('north-a'), await settings(room('north-a')));
+  const waiting = await settings(room('north-b'));
+  const before = await pack(), draft = await f.direct.getBrandingDraft('north');
+  assert.equal(draft.basePackageRevision, before.revision, 'the appearance draft followed the two publications');
+  const paused = await call('room-state', { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: before.revision }, 'pause');
+  const after = await pack();
+  assert.deepEqual([paused.packageRevision, after.revision, after.rooms], [before.revision + 1, before.revision + 1, null]);
+  assert.equal((await f.raw.readDocument('administration')).value.rooms.find(row => row.id === room('north-a')).state, 'pending');
+  assert.deepEqual(await lobby(), [room('north-b')]);
+  const kept = await f.direct.getBrandingDraft('north');
+  assert.deepEqual([kept.revision, kept.basePackageRevision, kept.branding], [draft.revision + 1, after.revision, draft.branding]);
+  // The other table's settings draft was made on the previous package and is still publishable.
+  await publish(room('north-b'), waiting);
+  const bound = (await pack()).branding.roomGameConfigVersions;
+  assert.equal(bound[room('north-a')], before.branding.roomGameConfigVersions[room('north-a')], 'the paused table keeps its published settings');
+  assert.equal(typeof bound[room('north-b')], 'string');
+  // A change to what the paused table's settings were checked against (here its dealer) is refused while it is
+  // paused (409, nothing written), as before PR 3: otherwise the publication would pass and the opening fail (422).
+  const held = await pack(), overrides = held.branding.roomOverrides ?? {};
+  await assert.rejects(f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: held.revision,
+    lanes: held.lanes, games: held.games, tables: held.tables,
+    branding: { ...held.branding, roomOverrides: { ...overrides, [room('north-a')]: { ...overrides[room('north-a')], dealer: 'paow' } } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]), error => error?.statusCode === 409 && error.code === 'studio_conflict');
+  assert.equal((await pack()).revision, held.revision);
+  await call('room-state', { roomId: room('north-a'), state: 'live', expectedState: 'pending', expectedPackageRevision: (await pack()).revision }, 'reopen');
+  assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
 });

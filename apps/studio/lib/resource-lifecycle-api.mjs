@@ -4,6 +4,7 @@ import * as savedGameDocumentContract from '../../../packages/studio-registry/se
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {packageRoomsFor} from '../../../packages/presentation/server/package-rooms.mjs';
 import {canonicalStudioJson,StudioStorageError,validateStudioScope,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
@@ -38,7 +39,7 @@ function restoreBlockers({operator,pack,administration,project},entry){
  if(administration.rooms.length>=1000)blockers.push('room_limit');
  return blockers;
 }
-function packageInput(context,operatorId,pack,branding,lifecycle){return {actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId,
+function packageInput(actor,operatorId,pack,branding,lifecycle){return {actor:actor.user,audit:actor.audit??operatorAuditContext(actor),operatorId,
  expectedRevision:pack?.revision??null,lanes:[...(pack?.lanes??[])],games:[...(pack?.games??[])],tables:[...(pack?.tables??[])],branding,...(lifecycle?{lifecycle}:{})};}
 export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
  scope=validateStudioScope(scope);
@@ -95,7 +96,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   if(body.archived?operator.status!=='active'||lifecycle.operator!==null:operator.status!=='suspended'||lifecycle.operator===null)fail('studio_conflict');
   const archivedAt=body.archived?new Date(now()).toISOString():lifecycle.operator.archivedAt;
   lifecycle.operator=body.archived?{archivedAt}:null;
-  const input=packageInput(context,operator.id,pack,structuredClone(pack?.branding??{}),{resourceType:'operator',resourceId:operator.id,archived:body.archived});
+  const input=packageInput(context.actor,operator.id,pack,structuredClone(pack?.branding??{}),{resourceType:'operator',resourceId:operator.id,archived:body.archived});
   let administrationRevision=saved.administrationRevision;
   if(body.archived||saved.administration.rooms.some(room=>room.operatorId===operator.id)){
    const administration=structuredClone(saved.administration),config=gameLaneConfiguration(administration);
@@ -118,6 +119,8 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   // Restoring a company never republishes its rooms. Each room is restored
   // explicitly as pending through the existing room lifecycle contract.
   input.branding=withOperatorLifecycle(input.branding,lifecycle);
+  // The rooms taken out above are no longer in input.tables, so the saved document gives the same list.
+  input.rooms=packageRoomsFor(saved.administration,input);
   const changed=await operators.changeOperatorStatus({...input,
    status:body.archived?'suspended':'active',expectedStatus:operator.status});
   return {ok:true,operator:{id:operator.id,slug:operator.slug,name:operator.name,status:changed.operator.status,archivedAt:lifecycle.operator?.archivedAt??null},administrationRevision,packageRevision:changed.package.revision};
@@ -146,7 +149,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   const saved={...await documents(),...await selected(operators,body.operatorId)};
   if(saved.administrationRevision!==body.expectedAdministrationRevision||(saved.pack?.revision??null)!==body.expectedPackageRevision)fail('studio_conflict');
   if(!saved.pack)fail('studio_operator_package_missing');
-  const administration=structuredClone(saved.administration),lifecycle=structuredClone(saved.lifecycle),input=packageInput(context,body.operatorId,saved.pack,saved.pack.branding,{resourceType:'room',resourceId:body.roomId,archived:body.archived});
+  const administration=structuredClone(saved.administration),lifecycle=structuredClone(saved.lifecycle),input=packageInput(context.actor,body.operatorId,saved.pack,saved.pack.branding,{resourceType:'room',resourceId:body.roomId,archived:body.archived});
   let room;
   if(body.archived){
    room=administration.rooms.find(row=>row.id===body.roomId);
@@ -171,7 +174,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
    if(!config.gameLanes.some(row=>row.id===entry.gameLane.id)){administration.gameLanes=[...config.gameLanes,entry.gameLane];administration.gameLane=config.gameLane??entry.gameLane.id;}
    administration.rooms.push(room);lifecycle.rooms=lifecycle.rooms.filter(row=>row.room.id!==room.id);input.tables=[...new Set([...input.tables,room.id])];
   }
-  input.branding=withOperatorLifecycle(input.branding,lifecycle);
+  input.branding=withOperatorLifecycle(input.branding,lifecycle);input.rooms=packageRoomsFor(administration,input);
   const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(administration),expectedRevision:saved.administrationRevision,actor:context.actor.user});
   const pack=await operators.publishPackage(input);
   return {ok:true,room:{...room,...(body.archived?{state:'archived',archivedAt:lifecycle.rooms.find(entry=>entry.room.id===room.id).archivedAt}:{archivedAt:null})},administrationRevision:changed.revision,packageRevision:pack.revision};
@@ -190,8 +193,21 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
    if(saved.operator.status!=='active'||!saved.pack?.tables.includes(room.id)||!presentation||!isPresentationRoomLaneCompatible(gameLane,presentation.lanes.find(row=>row.id===room.presentationLaneId),presentation,room.game??'blackjack'))fail('studio_room_activation_blocked');
   }
   room.state=body.state;
+  // Plan L3 PR 3: the package carries the table's state, so a pause or an opening is a package
+  // revision (pkg+1) where only `rooms` differs. The document keeps the same state until the
+  // readers leave it. A room the package does not hold changes only in the document, as before.
+  const published=Boolean(saved.pack?.tables.includes(room.id));
+  // The settings drafts made on this package stay publishable on the next one.
+  if(published&&Array.isArray(saved.administration.roomGameConfigs))saved.administration.roomGameConfigs=saved.administration.roomGameConfigs.map(row=>
+   row.operatorId===body.operatorId&&row.basePackageRevision===saved.pack.revision?{...row,basePackageRevision:saved.pack.revision+1}:row);
   const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(saved.administration),expectedRevision:saved.administrationRevision,actor:actor.user});
-  return {ok:true,room:{...room,archivedAt:null},administrationRevision:changed.revision,packageRevision:saved.pack?.revision??null};
+  let pack=saved.pack;
+  if(published){
+   const input=packageInput(actor,body.operatorId,saved.pack,saved.pack.branding);
+   // The journal's package.publish entry names the table and its new state (no DDL).
+   pack=await operators.publishPackage({...input,rooms:packageRoomsFor(saved.administration,input),roomState:{roomId:room.id,state:body.state}});
+  }
+  return {ok:true,room:{...room,archivedAt:null},administrationRevision:changed.revision,packageRevision:pack?.revision??null};
  }
  endpoint('POST','room-state',async(context,operators)=>{
   const body=context.body;exact(body,['operatorId','roomId','state','expectedAdministrationRevision','expectedPackageRevision']);

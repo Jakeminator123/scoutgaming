@@ -13,7 +13,7 @@ import { createOperatorStore } from '../../../packages/operators/server/operator
 import { readPackagePresentation, withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom, roomGame, roomPlayPath} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
+import {packageRoomsFor,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
 import { resolveFrozenDealerIdle } from '../../../packages/presentation/server/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
@@ -24,7 +24,6 @@ import {assertPresentationRoomMaterials} from '../../../packages/presentation/co
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
 import {validateRoomGameConfig} from '../../../packages/presentation/contracts/room-game-config.mjs';
-import {cleanBrandingDraft} from './partner-branding-api.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
@@ -361,11 +360,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
-      // Två publiceringar i följd gör ett öppet utseendeutkast inaktuellt: då skrivs inget.
-      if (body.gameConfig) {
-        if (typeof roomGameConfig?.publishNewRoom !== 'function') fail(503, 'studio_room_game_config_unavailable');
-        if (saved.pack && await cleanBrandingDraft(await saved.operators.getBrandingDraft(body.operatorId), saved.pack, saved.operators)) fail(409, 'studio_room_choices_draft_pending');
-      }
+      // Bolagets öppna utseendeutkast följer med till den nya paketversionen (operator-store.mjs, plan L3 PR 3).
+      if (body.gameConfig && typeof roomGameConfig?.publishNewRoom !== 'function') fail(503, 'studio_room_game_config_unavailable');
       // The same company material as negotiated; a decision in between is a conflict.
       if (materials && operatorMaterialFingerprint(saved.materialRows) !== prepared.materialFingerprint) fail(409);
       const frozen = adminFrozen(saved);
@@ -382,9 +378,10 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       const candidate = { operatorId: body.operatorId, revision: (saved.pack?.revision ?? 0) + 1, lanes: presentation.lanes.map(lane => lane.id),
         games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])], tables: [...(saved.pack?.tables ?? []), room.id],
         branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) };
+      candidate.rooms = packageRoomsFor(administration, candidate);
       if (!body.gameConfig) {
         const pack = await saved.operators.publishPackage({ actor: actor.user, audit: actor.audit, operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
-          lanes: candidate.lanes, games: candidate.games, tables: candidate.tables, branding: candidate.branding });
+          lanes: candidate.lanes, games: candidate.games, tables: candidate.tables, rooms: candidate.rooms, branding: candidate.branding });
         return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
       }
       // Tilldelningen och spelinställningarna i samma paketversion (som room-release.mjs), på samma klient:
