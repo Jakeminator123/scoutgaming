@@ -125,7 +125,7 @@ const adebayorWeights = idles => idles.map(i => ({ ...i, vikt: ADEBAYOR_WEIGHTS[
 const ADEBAYOR_NEW_IDLES = [['lugnandetag', 'andas lugnt'], ['nerupp', 'ser ner och upp igen'], ['nick', 'nickar lätt']];   // axlar, blinkhuvud, blickskon out (Spel-QA 29 Oct: the smile grows to a grin, teeth show, a big turn down)
 if (globalThis.LOCAL_DEALERS?.includes('adebayor')) DEALERS.adebayor = { id: 'adebayor', name: 'Adebayor', label: 'Adebayor (lokal)', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/adebayor.jpg' + V,
   keyed: { still: '/media/dealers/adebayor/v2/vila.png?v=' + (globalThis.LOCAL_DEALERS_V ?? 0) }, layerScale: 1, ready: ADEBAYOR_READY,
-  clips: '/media/dealers/adebayor/v2/', land: ADEBAYOR_READY.land, /* no lines: Astrid's recorded lines are skipped (unusedLine), he deals silently until he has a voice */ idles: adebayorWeights([...h3IdlesFor('adebayor', 'v2', 1.625, ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud']), ...extraIdles('adebayor', ADEBAYOR_NEW_IDLES)]), handMatte: false, serverGreets: false };
+  clips: '/media/dealers/adebayor/v2/', land: ADEBAYOR_READY.land, /* no recorded lines: Astrid's are skipped (unusedLine); his voice is TTS over the moving lip sync */ idles: adebayorWeights([...h3IdlesFor('adebayor', 'v2', 1.625, ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud']), ...extraIdles('adebayor', ADEBAYOR_NEW_IDLES)]), handMatte: false, serverGreets: true };   // the server greets his players by name over his idle chain, like Paow and Dragan
 
 function pick() {
   try {
