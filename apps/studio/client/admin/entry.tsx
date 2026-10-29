@@ -79,7 +79,9 @@ function App() {
       {show('home')&&<AdminHome workspace={workspace.current}/>}
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
-      <div className="flex min-h-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
+      {/* <main> is a viewport-high flex column: the map keeps its full height (shrink-0) so the tab's own
+          content below starts after it instead of being painted under it. */}
+      <div className="flex shrink-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
         {mapVisited&&lastMapRoute&&<Clips active={mapShown} dealerId={lastMapRoute.kind==='dealer'?lastMapRoute.dealerId:''} base={lastMapRoute.base} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>
           <ConnectedClipMap route={lastMapRoute} active={mapActive} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} onWorkspaceChange={workspaceChanged} refreshKey={studioRefresh}/>
         </Clips>}
