@@ -14,11 +14,13 @@ rollen saknar enligt `PARTNER_VIEW_PERMISSIONS`) → `partner-operator-workspace
   vyväxlingen; navigering, rumsval och utkastvakt (`partner-navigation-guard.mjs`).
 - `partner-copy.mjs`: orden (TERMINOLOGI), menyn per behörighet, rollorden, preferenser.
 - `partner-workspace-context.mjs`: validerar snapshoten mot fel bolag och fixturer.
-- `partner-portal.css`: alla stilar, fästa under `.partner-portal`.
+- `partner-portal.css`: alla stilar, fästa under `.partner-portal`; färgerna är `--sg-*` ur
+  `packages/ui/tokens.css`, och de få egna namnen (diagram, mjuk lime, skugga) heter också `--sg-*`.
 - `views/`: `overview.jsx`, `rooms.jsx` (kort + `components/partner-appearance.tsx` i flikar),
   `players.jsx` (tomläge till steg F), `reports.jsx` (aggregat ur `lib/partner-game-readout.mjs`),
-  `team.jsx`, `integration.jsx`, `help.jsx`, primitiverna i `ui.jsx`, sifferhjälpare i
-  `report-figures.mjs`.
+  `team.jsx`, `integration.jsx`, `help.jsx`, sifferhjälpare i `report-figures.mjs` och
+  primitiverna i `ui.tsx` med samma namn och props som Admins kit (`Card`, `Badge`, `Row`, `Rows`,
+  `Empty`, `KV`, `Note`, `Stat`, `ActionMenu`, `ConfirmDialog`, `TechnicalDetails`).
 
 Den gemensamma redigeraren (`components/partner-appearance*`) och journalen
 (`components/partner-journal-loader.mjs`) ligger utanför mappen eftersom Admin också använder dem.
