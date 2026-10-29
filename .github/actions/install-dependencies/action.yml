@@ -1,0 +1,65 @@
+name: Locked package trees
+description: Restore every package tree the regression uses from one cache keyed on the lockfiles, manifests and Node ABI; install them (npm ci, pnpm --frozen-lockfile) only on an exact miss.
+inputs:
+  warm:
+    description: "'true' only checks that the cache entry exists (no download) and installs and saves it when missing; used on main so pull requests restore a current entry."
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    # The key covers each lockfile and its package.json, so a manifest that drifts
+    # from its lockfile always misses and npm ci / pnpm --frozen-lockfile reject it.
+    - name: Identify the Node ABI
+      id: node
+      shell: bash
+      run: echo "abi=$(node -p process.versions.modules)" >> "$GITHUB_OUTPUT"
+    - name: Restore installed package trees
+      id: cache
+      continue-on-error: true
+      uses: actions/cache/restore@v6
+      with:
+        lookup-only: ${{ inputs.warm == 'true' }}
+        path: |
+          apps/studio/node_modules
+          apps/studio/client/node_modules
+          services/game/node_modules
+          services/astrid-gpu-worker/gateway/node_modules
+          apps/speech/node_modules
+          apps/web/node_modules
+        key: ${{ runner.os }}-${{ runner.arch }}-locked-trees-v1-abi${{ steps.node.outputs.abi }}-${{ hashFiles('apps/studio/package-lock.json', 'apps/studio/package.json', 'apps/studio/client/package-lock.json', 'apps/studio/client/package.json', 'services/game/package-lock.json', 'services/game/package.json', 'services/astrid-gpu-worker/gateway/package-lock.json', 'services/astrid-gpu-worker/gateway/package.json', 'apps/speech/package-lock.json', 'apps/speech/package.json', 'apps/web/pnpm-lock.yaml', 'apps/web/package.json') }}
+    - name: Install every locked package tree
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        npm --prefix apps/studio ci
+        # Bundled Admin and lobby component tests resolve the client's own packages.
+        npm --prefix apps/studio/client ci --include=dev --ignore-scripts --no-audit --no-fund
+        npm --prefix services/game ci --ignore-scripts
+        npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
+        # The speech service's own locked transport.
+        npm --prefix apps/speech ci --ignore-scripts
+    - name: Install pnpm for the real Next middleware used by frontend regression tests
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: pnpm/action-setup@v6
+      with:
+        version: 10.33.2
+        run_install: false
+    - name: Install the frontend package tree
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm --dir apps/web install --frozen-lockfile
+    # Saved right after a clean install, before any test or build can write into the trees.
+    - name: Save installed package trees
+      if: steps.cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v6
+      with:
+        path: |
+          apps/studio/node_modules
+          apps/studio/client/node_modules
+          services/game/node_modules
+          services/astrid-gpu-worker/gateway/node_modules
+          apps/speech/node_modules
+          apps/web/node_modules
+        key: ${{ steps.cache.outputs.cache-primary-key }}
