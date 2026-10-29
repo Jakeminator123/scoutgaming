@@ -41,6 +41,7 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
   for(const value of ['https://provider.invalid/file','//outside.invalid','/api/voice/private','/studio/api/videos/id?token=secret','javascript:alert(1)','/studio/api/speech-build?media='+'a'.repeat(32)+'&kind=video&token=secret'])assert.equal(studioSpeechMediaUrl(value),null);
 });
 
+const VoiceProfileStub=()=>null;
 // Compile each panel source once; every harness still evaluates it in a fresh context.
 let compiledPanels;
 function panelSources(transformSync,readFileSync){
@@ -56,7 +57,7 @@ async function panelHarness(respond){
   const output={code:compiled.panel},slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};
-  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:name.includes('connected-studio.mjs')?connected:name.includes('speech-slot-bindings.mjs')?slotBindings:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
+  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-profile')?{DealerVoiceProfile:VoiceProfileStub}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:name.includes('connected-studio.mjs')?connected:name.includes('speech-slot-bindings.mjs')?slotBindings:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
   const props={project:{schemaVersion:1,revision:'r1',dealers:[{id:'astrid',label:'Astrid'}]},inventory:{videos:[]},dealerId:'astrid',blocked:false,projectDirty:true,onEdit:next=>{props.project=next},onDirtyChange:dirty=>{props.profileDirty=dirty}};
   const render=()=>{cursor=0;return module.exports.StudioSpeechPanel(props)},flush=()=>{const pending=queue;queue=[];for(const item of pending){effects[item.index]?.cleanup?.();effects[item.index]={deps:item.deps,cleanup:item.effect()}}};
   const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
@@ -539,4 +540,13 @@ test('a line opens on the take with a receipt and the shown take stays put after
   takeButtons(tree)[0].props.onClick();tree=settle();assert.equal(shownTake(tree),takes[2].id);
   h.props.inventory={families:[],videos:h.props.inventory.videos.filter(row=>row.id!==takes[2].id)};tree=settle();
   assert.equal(shownTake(tree),takes[0].id,'only a vanished take falls back to preselection');
+});
+
+test('Röst och tal shows the Röstprofil card only where the caller accepts a server-saved project',async()=>{
+  const h=await panelHarness();h.props.dealerId='paow';h.props.projectDirty=false;h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow'}]};
+  assert.equal(h.nodes(h.render(),node=>node.type===VoiceProfileStub).length,0);
+  const saved=[];h.props.onProjectSaved=project=>saved.push(project);
+  const card=h.nodes(h.render(),node=>node.type===VoiceProfileStub)[0];
+  assert.equal(card.props.dealer.id,'paow');assert.equal(card.props.projectDirty,false);
+  card.props.onSaved({revision:'r9'});assert.deepEqual(saved,[{revision:'r9'}]);
 });
