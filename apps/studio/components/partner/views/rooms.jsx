@@ -58,7 +58,8 @@ export function PartnerRoomWorkspace({ snapshot, copy, language = 'sv', apiBase,
   const all = (snapshot.tables ?? []).filter(room => room.operatorId === snapshot.operator?.id && (room.status === 'active' || ['pending', 'paused', 'preview'].includes(room.state ?? room.status)));
   const unavailable = selection.unavailable || roomId !== '' && !rooms.some(room => room.id === roomId);
   const setRoomId = id => (onSelectionChange ?? setLocalSelection)({ roomId: id, unavailable: false });
-  const canJournal = (snapshot.permissions ?? []).includes('team.roles.assign');
+  // Historiken läser bolagets publiceringar (GET /journal?kind=publications) med reports.read.
+  const canJournal = (snapshot.permissions ?? []).includes('reports.read');
   const selectedRoom = rooms.find(room => room.id === roomId) ?? null;
   const listHref = workspaceSurfacePath('partner', 'rooms', snapshot.operator?.slug);
   const helpHref = workspaceSurfacePath('partner', 'help', snapshot.operator?.slug);
@@ -77,7 +78,7 @@ export function PartnerRoomWorkspace({ snapshot, copy, language = 'sv', apiBase,
       : <div key={room.id} className="room-card paused" title={t('Pausade spelbord öppnas av Scoutgaming. Begär under Hjälp och kontakt.', 'Paused tables are opened by Scoutgaming. Request it under Help and contact.')}>{body}</div>;
   };
   const journal = canJournal && /^(?:\/studio)?\/api\/partner$/.test(brandingApiBase(apiBase))
-    ? <PartnerJournal base={brandingApiBase(apiBase)} operatorSlug={snapshot.operator.slug} operatorId={snapshot.operator.id} language={language} actions={['package.publish', 'draft.publish']} /> : null;
+    ? <PartnerJournal base={brandingApiBase(apiBase)} operatorSlug={snapshot.operator.slug} operatorId={snapshot.operator.id} language={language} kind="publications" /> : null;
   const title = selectedRoom ? selectedRoom.name : t('Bolagets standard', 'Company default');
   const header = { title, crumbs: <Crumbs items={[{ label: copy.rooms, href: listHref }, { label: title }]} />,
     playHref: selectedRoom?.state === 'live' ? selectedRoom.playUrl ?? null : null };
