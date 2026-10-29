@@ -213,7 +213,12 @@ test('chat context: socket authorization, the room dealer under the room lock an
   assert.equal(context.dealerId, 'paow'); assert.equal(context.binding, h.binding);
   assert.deepEqual(locks, [{ rooms: ['room-a'], players: ['actor-a'] }]); assert.deepEqual(configs, [['actor-a', 'room-config-a']]);
   assert.equal(context.snapshot.shoeOrder, undefined); assert.equal(context.snapshot.roundId, 'round-a');
+  // Review fix: chat admission reads authorization and the client snapshot without any lock.
+  const member = await h.service.chatMember(request(), { roomId: 'room-a' });
+  assert.equal(member.binding, h.binding); assert.equal(member.snapshot.roundId, 'round-a'); assert.equal(member.snapshot.shoeOrder, undefined);
+  assert.equal(locks.length, 1, 'chatMember takes no locked read'); assert.equal(configs.length, 1);
   hole = true;
+  await assert.rejects(h.service.chatMember(request(), { roomId: 'room-a' }), { statusCode: 503 });
   await assert.rejects(h.service.chatContext(request(), { roomId: 'room-a' }), { statusCode: 503 });
   h.service.emitChat('room-a', { requestId: 'chat-1' });
   assert.deepEqual(h.calls.filter(call => call[0] === 'chat'), [['chat', 'room-a', { requestId: 'chat-1' }]]);

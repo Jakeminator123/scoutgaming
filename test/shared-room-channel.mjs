@@ -339,17 +339,33 @@ test('chat lines fan out per socket as you/player/dealer, replay the last chatLi
   (await h.channel.prepare(new Request(`${origin}/shared-room/room-a`,{headers:{origin,'x-fixture-actor':'player-b'}}))).attach(b);
   const elsewhere=await h.attach('room-b');
   await until(()=>a.frames.length===1&&b.frames.length===1&&elsewhere.frames.length===1);
-  h.channel.emitChat('room-a',{requestId:'chat-1',actorId:'player-a',seat:1,text:'Hej',at:5});
-  h.channel.emitChat('room-a',{requestId:'chat-1',actorId:null,seat:null,text:'Hej själv',at:6});
+  h.channel.emitChat('room-a',{lineId:'q-'+'1'.repeat(24),requestId:'chat-1',actorId:'player-a',seat:1,text:'Hej',at:5});
+  h.channel.emitChat('room-a',{lineId:'a-'+'1'.repeat(24),requestId:'chat-1',actorId:null,seat:null,text:'Hej själv',at:6});
   const chat=socket=>socket.frames.filter(f=>f.type==='shared-room-chat');
-  assert.deepEqual(chat(a),[{type:'shared-room-chat',roomId:'room-a',requestId:'chat-1',who:'you',seat:1,text:'Hej',at:5},
-    {type:'shared-room-chat',roomId:'room-a',requestId:'chat-1',who:'dealer',seat:null,text:'Hej själv',at:6}]);
+  assert.deepEqual(chat(a),[{type:'shared-room-chat',roomId:'room-a',lineId:'q-'+'1'.repeat(24),requestId:'chat-1',who:'you',seat:1,text:'Hej',at:5},
+    {type:'shared-room-chat',roomId:'room-a',lineId:'a-'+'1'.repeat(24),requestId:'chat-1',who:'dealer',seat:null,text:'Hej själv',at:6}]);
   assert.deepEqual(chat(b).map(f=>f.who),['player','dealer']);assert.equal(chat(elsewhere).length,0);
   assert.ok(!JSON.stringify(chat(b)).includes('player-'),'no actor id in a chat frame');
-  h.channel.emitChat('room-a',{requestId:'chat-2',actorId:'player-b',seat:3,text:'Tredje',at:7});
+  h.channel.emitChat('room-a',{lineId:'q-'+'2'.repeat(24),requestId:'chat-2',actorId:'player-b',seat:3,text:'Tredje',at:7});
   const late=await h.attach();
   assert.deepEqual(chat(late).map(f=>[f.who,f.text]),[['dealer','Hej själv'],['player','Tredje']]);
-  for(const bad of [{requestId:'chat-3',actorId:'player-a',seat:8,text:'x',at:1},{requestId:'chat-3',actorId:null,seat:null,text:' ',at:1},
-    {requestId:'chat-3',actorId:null,seat:null,text:'x'.repeat(1001),at:1}])assert.throws(()=>h.channel.emitChat('room-a',bad),/shared_room_request_rejected/);
+  const line={lineId:'q-'+'3'.repeat(24),requestId:'chat-3',actorId:null,seat:null,text:'x',at:1};
+  for(const bad of [{...line,actorId:'player-a',seat:8},{...line,text:' '},{...line,text:'x'.repeat(1001)},{...line,lineId:undefined},{...line,lineId:'chat-3'},
+    {...line,text:'a\u202eb'},{...line,text:'a\u200bb'},{...line,text:'a\u0007b'}])assert.throws(()=>h.channel.emitChat('room-a',bad),/shared_room_request_rejected/);
   a.emit('message','{"type":"shared-room-chat"}');assert.deepEqual(a.closed,[{code:1008,reason:'shared_room_read_only'}]);clean(a);
+});
+
+test('chat review fixes: the last socket out clears the room log, a room without sockets keeps none',async t=>{
+  const h=setup(t,{revalidate:async b=>b});
+  const line=n=>({lineId:'q-'+String(n).repeat(24),requestId:'chat-'+n,actorId:'player-a',seat:1,text:'Rad '+n,at:n});
+  h.channel.emitChat('room-a',line(1));
+  const a=await h.attach();await until(()=>a.frames.length===1);
+  assert.equal(a.frames.filter(f=>f.type==='shared-room-chat').length,0,'a line sent to an empty room is never stored');
+  h.channel.emitChat('room-a',line(2));
+  a.emit('close');
+  const next=await h.attach();await until(()=>next.frames.length===1);
+  assert.deepEqual(next.frames.filter(f=>f.type==='shared-room-chat'),[],'the next company never sees the previous lines');
+  h.channel.emitChat('room-a',line(3));
+  const joined=await h.attach();await until(()=>joined.frames.length>=2);
+  assert.deepEqual(joined.frames.filter(f=>f.type==='shared-room-chat').map(f=>f.text),['Rad 3']);
 });
