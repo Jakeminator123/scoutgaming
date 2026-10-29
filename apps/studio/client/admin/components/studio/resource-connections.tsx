@@ -155,7 +155,7 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
         <RegistryRows rows={tree.materials} columns render={row=><li key={row.id} id={resourceAnchor('material',row.id)} className="admin-system-card scroll-mt-6">
           <h3 className="font-semibold">{row.label}</h3><p className="text-sm">{row.role==='background'?'Bakgrund':row.role==='illustration'?'Miljöbild':'Bord'}{row.game?' · '+gameName(row.game):''}</p><State row={row}/><ResourceIdentity id={row.id}/>
           <div className="mt-3 text-sm"><Uses rows={row.uses}/></div>
-          {!row.missing&&row.role!=='illustration'&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:row.role==='background'?'bakgrunder':'bordsgrafik',...row.game?{game:row.game}:{}})}>Öppna i Material</a>}
+          {!row.missing&&row.role!=='illustration'&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:'material',filter:row.role==='background'?'bakgrund':'bordsgrafik',...row.game?{game:row.game}:{}})}>Öppna i Material</a>}
         </li>}/>{!tree.materials.length&&<p>Inga bord eller bakgrunder i de lästa registren.</p>}
       </section>
       <section role="tabpanel" id="structure-panel-compositions" aria-labelledby="structure-tab-compositions" hidden={tab!=='compositions'} className="space-y-4"><h2 className="text-xl font-semibold">Miljöer</h2>
@@ -168,7 +168,7 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
           </div>
           {row.layers&&<dl className="space-y-2 text-sm">{(['background','dealer','table'] as const).map(role=><div key={role}><dt className="font-medium">{role==='background'?'Bakgrund':role==='dealer'?'Dealer':'Bord'}{row.layers![role].enabled?'':' · avstängt'}</dt>
             <dd>{row.layers![role].ids.length?row.layers![role].ids.map((id,index)=><span key={id}>{index>0?', ':''}<a className="underline" href={resourceHref(role==='dealer'?'dealer':'material',id)}>{(role==='dealer'?tree.dealers:tree.materials).find(item=>item.id===id)?.label??id}</a>{row.layers![role].defaultId===id?' (förval)':''}</span>):'Inga sparade val'}</dd></div>)}</dl>}
-          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:'mallar',composition:row.id})}>Ändra miljön</a>}
+          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({tab:'miljoer',composition:row.id})}>Ändra miljön</a>}
         </li>}/>{!tree.compositions.length&&<p>Inga miljöer i det lästa registret.</p>}
       </section>
       <details className="admin-system-card text-sm text-sg-muted"><summary>Vad läsningen omfattar</summary><p className="mt-2">Historikräkning: {tree.historyCoverage==='complete'?'komplett registerläsning':tree.historyCoverage==='incomplete'?'ofullständig':'inte tillgänglig'}.</p><ul className="mt-2 list-disc space-y-2 pl-5">{tree.coverage.map(item=><li key={item}>{item}</li>)}</ul>

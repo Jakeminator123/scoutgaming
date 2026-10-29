@@ -142,13 +142,13 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, deale
       return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
     }
     case 'ai_table_misfit':
-      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna miljön')};
+      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'miljoer', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna miljön')};
     case 'studio_release_invalid': {
       const text = invalidReasons[blocker.reason] ?? 'Miljöerna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
       if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return {text, ...link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klippkarta')};
       // Utkastet åtgärdas under Utseende, inte i miljöerna.
       if (blocker.reason === 'studio_room_choices_draft_invalid') return {text, ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
-      return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Miljöer')};
+      return {text, ...link('/admin/scenes?tab=miljoer', 'Öppna Miljöer')};
     }
     case 'studio_media_registry_unavailable': return {text:'Medieregistret svarar inte just nu. Läs in igen om en stund.', ...none};
     case 'studio_presentation_runtime_update_required': return {text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', ...none};

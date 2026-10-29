@@ -40,7 +40,7 @@ test('public root redirect admits exact Admin without accepting external or auth
     // /admin/dealers/<id> and /admin/rooms/<id> are the navs; any other extra segment is not a page.
     for(const suffix of ['/extra','-extra','/../login'])if(!(suffix==='/extra'&&['/admin/dealers','/admin/rooms'].includes(path)))assert.throws(()=>publicAbsoluteUrl(headers,path+suffix),/control_redirect_rejected/);
   }
-  for(const path of ['/admin/dealers/vera?flik=klipp#clips','/admin/companies/north?flik=team','/admin/rooms/room-1?flik=utseende','/admin/scenes?tab=mallar','/admin/system?flik=integration'])
+  for(const path of ['/admin/dealers/vera?flik=klipp#clips','/admin/companies/north?flik=team','/admin/rooms/room-1?flik=utseende','/admin/scenes?tab=miljoer','/admin/system?flik=integration'])
     assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
   for(const path of ['/admin/dealers/vera/edit','/admin/dealers/-vera','/admin/companies/north/team','/admin/rooms/../login','/admin/scenes/miljöer','/admin/system/drift','/admin/dealers/'+'a'.repeat(101)])
     assert.throws(()=>publicAbsoluteUrl(headers,path),/control_redirect_rejected/,path);

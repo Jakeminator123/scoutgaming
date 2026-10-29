@@ -41,7 +41,7 @@ export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoic
         || !Number.isSafeInteger(value.chain.count)||!Number.isSafeInteger(value.chain.total)
         || value.shoes.some(row=>!row||typeof row.shoeId!=='string'||typeof row.commitment!=='string'||!validClosedAt(row.closedAt))
         || value.selected && (value.selected.shoeId!==shoeId||typeof value.selected.commitment!=='string'||!validClosedAt(value.selected.closedAt)||!value.shoes.some(row=>row.shoeId===shoeId&&row.commitment===value.selected?.commitment&&row.closedAt===value.selected?.closedAt)
-          ||value.selected.closedAt!=null&&!validTraceability(value.selected,roomId,value.chain)))throw Error('Skobevisets svar stämmer inte med det valda rummet.');
+          ||value.selected.closedAt!=null&&!validTraceability(value.selected,roomId,value.chain)))throw Error('Skobevisets svar stämmer inte med det valda spelbordet.');
       setPayload(value);
     }catch(problem){if(alive.current&&seq===epoch.current)setError(problem instanceof Error?problem.message:'Skobeviset kunde inte hämtas.');}
     finally{if(alive.current&&seq===epoch.current)setBusy(false);}
@@ -51,13 +51,13 @@ export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoic
     <h3>Skobevis och auditkedja</h3>
     <p>Öppna skor visar endast sitt åtagande. Fullständigt skobevis kan hämtas efter stängning.</p>
     <form className={styles.form} onSubmit={submit}>
-      {roomChoices.length?<label>Spelrum<select value={roomId} onChange={event=>changeRoom(event.target.value)}><option value="">Välj spelrum</option>{roomChoices.map(room=><option value={room.id} key={room.id}>{room.name}</option>)}</select></label>
-        :<label>Spelrummets ID<input value={roomId} maxLength={128} required pattern="[A-Za-z0-9][A-Za-z0-9._:-]{0,127}" onChange={event=>changeRoom(event.target.value)}/></label>}
+      {roomChoices.length?<label>Spelbord<select value={roomId} onChange={event=>changeRoom(event.target.value)}><option value="">Välj spelbord</option>{roomChoices.map(room=><option value={room.id} key={room.id}>{room.name}</option>)}</select></label>
+        :<label>Spelbordets ID<input value={roomId} maxLength={128} required pattern="[A-Za-z0-9][A-Za-z0-9._:-]{0,127}" onChange={event=>changeRoom(event.target.value)}/></label>}
       <button disabled={busy||!roomId}>Hämta skobevis</button>
     </form>
     {busy?<p role="status">Hämtar skobevis…</p>:null}{error?<p role="alert">{error}</p>:null}
     {payload?<><p role="status">{payload.chain.ok&&payload.chain.complete?'Auditkedjan är verifierad.':!payload.chain.complete?'Auditkedjan är ofullständig och kan inte markeras verifierad.':'Auditkedjan kunde inte verifieras.'} Kontrollerade poster: {payload.chain.count} av {payload.chain.total}.</p>
-      {!payload.shoes.length?<p>Inga skor har registrerats för rummet.</p>:<ul>{payload.shoes.map(shoe=><li key={shoe.shoeId}>
+      {!payload.shoes.length?<p>Inga skor har registrerats för spelbordet.</p>:<ul>{payload.shoes.map(shoe=><li key={shoe.shoeId}>
         <span>{shoe.shoeId} · {shoe.closedAt!=null?'Stängd':'Öppen'}</span>{' '}
         <button type="button" disabled={busy} onClick={()=>void load(shoe.shoeId)}>Visa åtagande{shoe.closedAt!=null?' och bevis':''}</button>
       </li>)}</ul>}

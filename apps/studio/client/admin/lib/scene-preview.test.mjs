@@ -60,7 +60,7 @@ test('missing media is said, and Provspela still receives the saved revision',()
 
   const noBackground=saved();noBackground.lane.layers.background={...noBackground.lane.layers.background,default:null};
   const backgroundHtml=render(noBackground);
-  assert.match(backgroundHtml,/Miljön saknar bakgrund/);assert.match(backgroundHtml,/href="\/admin\/scenes\?tab=mallar&amp;composition=/);
+  assert.match(backgroundHtml,/Miljön saknar bakgrund/);assert.match(backgroundHtml,/href="\/admin\/scenes\?tab=miljoer&amp;composition=/);
   handsRevision(backgroundHtml,noBackground.lane.id,'no background');
 
   const nothing=saved();nothing.inventory.videos=[];nothing.project.layerAssets=[];
