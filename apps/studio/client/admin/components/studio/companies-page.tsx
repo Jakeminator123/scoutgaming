@@ -11,6 +11,7 @@ import type {Catalog} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {RegisteredStudio} from './registered-studio';
+import {AssignmentField} from './assignment-field';
 import {WorkspaceTool} from './workspace-tools';
 import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
@@ -136,7 +137,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
       {operator&&<>
-        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Upplåsning per val (dealer, bordsgrafik, bakgrund, språk, insatsprofil) kommer senare.</Note><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
+        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><div className="mb-4"><AssignmentField operatorId={operator.id} revision={operator.packageRevision} view={operator.assignment} disabled={disabled} onChanged={changed}/></div><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
           <CreateRoomDialog revision={revision} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
@@ -257,8 +258,8 @@ function OperatorAdjustable({laneId,operator,active}:{laneId:string;operator:Ope
   return <Card title="Vad bolaget får ändra på det här spelbordet" aside={<AsideLink href={companyHref(operator,'tilldelning')}>Ändra i bolagets tilldelning</AsideLink>}>
     {state.status==='loading'&&<Loading label="Läser scenmallen…" rows={4}/>}
     {state.status==='error'&&<Empty title="Oklart" text="Projektet kunde inte läsas, så bolagets val visas inte."/>}
-    {state.status==='ready'&&(state.lane?<div className="grid">{(['dealer','table','background','branding'] as const).map(key=>{const unlocked=state.lane!.operatorAdjustable?.includes(key)??false;return <Row key={key} chip={unlocked?<Chip tone="ok">upplåst</Chip>:<Chip tone="ink">låst</Chip>} title={labels[key]??key} text={unlocked?'Bolaget väljer inom tilldelningen i Partnerportalen':'Låst av Scoutgaming'}/>;})}<Row chip={<Chip tone="ink">låst</Chip>} title="Bordsspråk och insatsprofil" text="Sätts av Admin under Spelinställningar; upplåsning per bolag kommer senare"/></div>:<Empty title="Oklart" text="Scenmallen finns inte i det sparade projektet."/>)}
-    <Footnote>Valen gäller per scenmall i dag, inte per bolag; det ändras senare.</Footnote>
+    {state.status==='ready'&&(state.lane?<div className="grid">{(['dealer','table','background','branding'] as const).map(key=>{const unlocked=state.lane!.operatorAdjustable?.includes(key)??false;return <Row key={key} chip={unlocked?<Chip tone="ok">upplåst</Chip>:<Chip tone="ink">låst</Chip>} title={labels[key]??key} text={unlocked?'Bolaget väljer inom tilldelningen i Partnerportalen':'Låst av Scoutgaming'}/>;})}<Row chip={<Chip tone="ink">per bolag</Chip>} title="Bordsspråk, insatsprofil och paus" text="Låses upp per bolag under Bolag › Tilldelat"/></div>:<Empty title="Oklart" text="Scenmallen finns inte i det sparade projektet."/>)}
+    <Footnote>Scenmallen avgör vad som kan låsas upp. Under Bolag › Tilldelat kan du stänga ett val för just det här bolaget.</Footnote>
   </Card>;
 }
 
