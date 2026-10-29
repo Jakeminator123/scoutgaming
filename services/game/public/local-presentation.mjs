@@ -701,6 +701,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, observeEvents, start: resumeIdle,
     get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
+    // The package row's frozen landings (frozen-dealer-presentation.mjs configuration), when the dealer has its own.
+    get filmedProfile() { return config.filmedProfile?structuredClone(config.filmedProfile):null; },
     // language: the plan's language (the room's), so a spoken line without the plan's speechTake finds its take.
     prepareSequence(events, { selectAhead: early = false, language } = {}) {
       if (['en', 'sv'].includes(language)) speechLanguage = language;

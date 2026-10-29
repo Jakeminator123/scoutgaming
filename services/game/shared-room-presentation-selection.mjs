@@ -119,7 +119,8 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
       if(Boolean(expected)!==Boolean(actual)||expected&&(expected.id!==actual.id||expected.sha256!==actual.sha256))fail();
     }
   }
-  const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,
+  // The room material's frozen landings, else the package row's (frozen.filmedProfile), else the code profile.
+  const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,profile:nativePlanning?.dealerId===body.dealerId?nativePlanning.profile:frozen.filmedProfile,
     shoeTransitions:nativePlanning?true:body.shoeTransitions===true});
   if(nativePlanning&&['deal','reveal'].includes(sourceEvent.type)&&!filmed?.video)fail();
   if(filmed){

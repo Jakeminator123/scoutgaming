@@ -41,7 +41,7 @@ function material(reason, ctx) {
   if (SPEECH.includes(reason)) return {title:'Röst och tal', text:'En replik saknar godkänt tal på ' + language(ctx.language) + '.', action:{label:'Öppna Röst och tal', href:dealerHref(ctx.dealerId, 'tal')}};
   if (BANK.includes(reason)) return {title:'Klipp', text:dealer + ' saknar klipp för ett fack.', action:clipMap(ctx)};
   // En dealer utan egen filmad profil ärver PAOW:s (#657).
-  if (reason === 'native_material_profile_missing') return {title:'Landningar', text:'Dealern använder PAOW:s landningar (ingen egen filmad profil).', action:{label:'Öppna Landningar', href:dealerHref(ctx.dealerId, 'landningar')}};
+  if (reason === 'native_material_profile_missing') return {title:'Landningar', text:'Dealern saknar filmad profil (landningar). Välj Använd PAOW:s landningar för dealers från dealer-fabriken, eller mät.', action:{label:'Öppna Landningar', href:dealerHref(ctx.dealerId, 'landningar')}};
   if (reason === 'native_material_dealer_missing') return {title:'Miljö', text:'Dealern finns inte i miljön.', action:{label:'Öppna miljön', href:sceneHref(ctx.compositionId)}};
   return {title:'Klipp', text:'Ett klipp är tekniskt fel' + (technical[reason] ? ': ' + technical[reason] : '') + '.', action:clipMap(ctx)};
 }

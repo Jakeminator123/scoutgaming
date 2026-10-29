@@ -38,7 +38,7 @@ test('every material reason is one Swedish sentence with a button, never a raw c
   ['native_material_measurement_missing',/Klippen saknar aktuell tidsmätning\./,/data-action="blocker-measure"[^>]*>Mät omätta klipp</],
   ['native_material_speech_slot_missing',/En replik saknar godkänt tal på svenska\./,/href="\/admin\/dealers\/paow\?flik=tal"[^>]*>Öppna Röst och tal</],
   ['native_material_bank_incomplete',/PAOW saknar klipp för ett fack\./,/href="\/admin\/dealers\/paow\?flik=klipp"[^>]*>Öppna Klippkartan</],
-  ['native_material_profile_missing',/Dealern använder PAOW:s landningar \(ingen egen filmad profil\)\./,/href="\/admin\/dealers\/paow\?flik=landningar"[^>]*>Öppna Landningar</],
+  ['native_material_profile_missing',/Dealern saknar filmad profil \(landningar\)\. Välj Använd PAOW:s landningar för dealers från dealer-fabriken, eller mät\./,/href="\/admin\/dealers\/paow\?flik=landningar"[^>]*>Öppna Landningar</],
   ['native_material_take_audio_truncated',/Ett klipp är tekniskt fel: ljudet fortsätter efter klippbytet\./,/>Öppna Klippkartan</],
  ];
  for(const [materialReason,text,action] of expected){

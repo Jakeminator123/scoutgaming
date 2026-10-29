@@ -39,7 +39,10 @@ export function validateRoomGameMaterial(value, {language,dealerId}={}) {
     && !/^native-film-v[12]-[a-f0-9]{64}$/.test(value.revision)) fail();
   if (filmed) {
     const film=value.film;
-    if(!exact(film,['schemaVersion','profileId','transitions'])||film.schemaVersion!==1||!id(film.profileId)
+    // v2 carries the dealer's frozen studio profile (compact); planning expands and validates it.
+    const studio=film?.schemaVersion===2;
+    if(!exact(film,['schemaVersion','profileId','transitions',...(studio?['profile']:[])])||![1,2].includes(film.schemaVersion)||!id(film.profileId)
+      ||studio&&(!object(film.profile)||film.profile.id!==film.profileId||!film.profileId.startsWith('studio-'))
       ||!exact(film.transitions,['toShoe','fromShoe']))fail();
     const transitionIds=new Set();
     for(const clip of Object.values(film.transitions)) {

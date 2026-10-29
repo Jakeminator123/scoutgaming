@@ -9,6 +9,7 @@
 import {createHash} from 'node:crypto';
 import {filmedTableTemplate} from './filmed-table-template.mjs';
 import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import {filmedProfileFor} from '../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {canonicalStudioJson} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {mergeOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
@@ -16,34 +17,35 @@ import {encodePresentationPackage, withPackagePresentation} from '../../../packa
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 
 const sha256 = text => createHash('sha256').update(text).digest('hex');
-function template(dealerId, lane) {
-  return filmedTableTemplate(dealerId, {composition: lane?.composition ?? defaultCompositionSettings()});
+function template(dealerId, lane, profileFor = registeredFilmedProfile) {
+  return filmedTableTemplate(dealerId, {profileFor, composition: lane?.composition ?? defaultCompositionSettings()});
 }
 // Where the boxes are, independent of which dealer's name is on the template.
-function landing(dealerId, lane) {
-  const found = template(dealerId, lane);
+function landing(dealerId, lane, profileFor) {
+  const found = template(dealerId, lane, profileFor);
   if (!found) return null;
   const {dealerId: _dealer, profileId: _profile, ...geometry} = found;
   return canonicalStudioJson(geometry);
 }
 
 /** The server's binding for a table graphic drawn for one dealer in one lane, or null. */
-export function operatorTableBinding(dealerId, lane) {
-  const found = template(dealerId, lane);
+export function operatorTableBinding(dealerId, lane, {profileFor} = {}) {
+  const found = template(dealerId, lane, profileFor);
   return found ? {dealerId, profileId: found.profileId, laneId: lane.id, templateSha256: sha256(canonicalStudioJson(found))} : null;
 }
 
-/** A table graphic fits only its own lane, dealer and current placement. */
-export function operatorTableFits(material, lane) {
+/** A table graphic fits only its own lane, dealer and current placement.
+ * profileFor reads the publication's frozen dealer rows (their own landings first). */
+export function operatorTableFits(material, lane, {profileFor = registeredFilmedProfile} = {}) {
   const binding = material?.tableBinding;
   if (!binding || binding.laneId !== lane?.id) return {ok: false, reason: 'lane'};
-  if (!lane.dealers?.includes(binding.dealerId) || registeredFilmedProfile(binding.dealerId)?.id !== binding.profileId) return {ok: false, reason: 'dealer'};
+  if (!lane.dealers?.includes(binding.dealerId) || profileFor(binding.dealerId)?.id !== binding.profileId) return {ok: false, reason: 'dealer'};
   // No template (phone and desktop disagree) or another template: the placement moved.
-  const current = operatorTableBinding(binding.dealerId, lane);
+  const current = operatorTableBinding(binding.dealerId, lane, {profileFor});
   if (current?.templateSha256 !== binding.templateSha256) return {ok: false, reason: 'placement'};
   // Every dealer this lane can show must land on the same boxes.
-  const drawn = landing(binding.dealerId, lane);
-  if (lane.dealers.some(id => landing(id, lane) !== drawn)) return {ok: false, reason: 'dealer'};
+  const drawn = landing(binding.dealerId, lane, profileFor);
+  if (lane.dealers.some(id => landing(id, lane, profileFor) !== drawn)) return {ok: false, reason: 'dealer'};
   return {ok: true};
 }
 
@@ -73,7 +75,8 @@ export function presentationFits({branding = {}, base, allowExtended = false}) {
 /** Merge for one publication. Unchanged results return the caller's own presentation. */
 export function mergeOperatorMaterialsForPublication({presentation, rows = [], rooms = [], fits}) {
   if (!rows.length) return {presentation, warnings: [], changed: false};
-  const result = mergeOperatorMaterials({presentation, materials: rows, rooms, tableFits: operatorTableFits, fits});
+  const profileFor = dealerId => filmedProfileFor(dealerId, {registeredDealers: presentation?.registeredDealers ?? []});
+  const result = mergeOperatorMaterials({presentation, materials: rows, rooms, tableFits: (row, lane) => operatorTableFits(row, lane, {profileFor}), fits});
   return result.changed ? result : {presentation, warnings: result.warnings, changed: false};
 }
 

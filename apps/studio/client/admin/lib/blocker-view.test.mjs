@@ -26,7 +26,7 @@ test('every blocker code is one Swedish line with a button to the right place an
   // Nytt spelbord: utan spelbord öppnas bolagets journal för utkastet; tilldelningens stopp öppnar tilldelningen.
   assert.deepEqual(blockerView('studio_room_choices_draft_pending', {operatorId:'north'}).action, {label:'Öppna bolagets journal', href:'/admin/companies/north?flik=journal'});
   assert.equal(blockerView('studio_presentation_package_too_large', ctx).action.href, '/admin/companies/north?flik=tilldelning');
-  assert.equal(blockerView('native_material_profile_missing', ctx).text, 'Dealern använder PAOW:s landningar (ingen egen filmad profil).');
+  assert.equal(blockerView('native_material_profile_missing', ctx).text, 'Dealern saknar filmad profil (landningar). Välj Använd PAOW:s landningar för dealers från dealer-fabriken, eller mät.');
   for (const unknown of ['studio_secret_detail', '__proto__', undefined]) {
     const view = blockerView(unknown, ctx);
     assert.equal(view.text, 'Något hindrar publiceringen.');assert.equal(view.action, null);

@@ -13,6 +13,7 @@ import { validateLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
 import { validateRouletteIdleBinding } from './roulette-idle-contract.mjs';
 import { validateRouletteStartBinding } from './roulette-start-contract.mjs';
+import { validateStudioFilmedProfile } from './filmed-profiles/studio-profile.mjs';
 import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from './speech-slot-bindings.mjs';
 
 
@@ -415,7 +416,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart'])) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart','filmedProfile'])) return;
+    if (Object.hasOwn(dealer,'filmedProfile')) {
+      try { validateStudioFilmedProfile(dealer.filmedProfile,{dealerId:dealer.id}); }
+      catch { error(at + '.filmedProfile', 'ogiltig filmad profil (landningar)'); }
+    }
     if (Object.hasOwn(dealer,'rouletteStart')) {
       try { validateRouletteStartBinding(dealer.rouletteStart); if(!dealer.rouletteIdle)throw Error('kräver roulette-idle för återgång'); }
       catch (cause) { error(at + '.rouletteStart', cause.message); }

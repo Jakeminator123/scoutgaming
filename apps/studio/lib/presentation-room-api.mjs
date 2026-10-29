@@ -185,7 +185,8 @@ function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
   // check. Later contracts retain room support without matching an old list.
   if (capabilities?.rooms !== 'operator-owned-v2' || game === 'roulette' && capabilities.rouletteRooms !== 'european-single-zero-v1'
     ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
-    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
+    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1'
+    ||presentation?.registeredDealers?.some(row=>row.filmedProfile)&&capabilities.filmedProfiles!=='frozen-studio-profile-v1') return false;
   if (presentation?.schemaVersion >= 2 && (capabilities.registeredDealerMode !== 'saved-registry-idle-v1'
     || capabilities.frozenDealerIdle !== 'operator-package-v2')) return false;
   if (presentation?.schemaVersion === 3 && capabilities.frozenDealerEvents !== 'operator-package-v3') return false;

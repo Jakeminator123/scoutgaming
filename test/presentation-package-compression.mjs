@@ -93,3 +93,19 @@ test('extended v2 is explicit, lossless and bounded; legacy limits never grow',(
   assert.throws(()=>validatePresentationBranding({...branding,_scoutPresentation:{...envelope,data:'A'.repeat(EXTENDED_PRESENTATION_DATA_LIMIT)},name:'x'.repeat(2500)}));
   assert.throws(()=>validatePresentationBranding({name:'x'.repeat(8000)}));
 });
+
+test('frozen studio landings cost little and a package with three new dealers still fits the extended envelope',()=>{
+  const dealers=['jakob-2','jakob-3','jakob-4'].map((dealerId,index)=>nativeRoomMaterialFixture({dealerId,copyOf:'paow',capture:false,idOffset:1000*(index+1)}));
+  const [primary]=dealers,lane=primary.presentation.lanes[0];
+  lane.dealers=dealers.map(f=>f.presentation.registeredDealers[0].id);lane.layers.dealer.allowed=[...lane.dealers];
+  for(const f of dealers.slice(1)){
+    primary.presentation.registeredDealers.push(...f.presentation.registeredDealers);
+    primary.presentation.playback.lines.push(...f.presentation.playback.lines);primary.records.push(...f.records);
+  }
+  const value=primary.presentation,envelope=encodePresentationPackage(value,{allowExtended:true});
+  assert.equal(envelope.format,EXTENDED_PRESENTATION_FORMAT);assert.ok(envelope.data.length<=EXTENDED_PRESENTATION_DATA_LIMIT);
+  assert.deepEqual(decodePresentationPackage(envelope).registeredDealers.map(row=>row.filmedProfile.id),value.registeredDealers.map(row=>row.filmedProfile.id));
+  const without=structuredClone(value);for(const row of without.registeredDealers)delete row.filmedProfile;
+  // The profile repeats its clips' hashes, which the package already carries.
+  assert.ok(envelope.data.length-encodePresentationPackage(without,{allowExtended:true}).data.length<1500);
+});
