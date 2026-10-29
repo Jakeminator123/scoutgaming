@@ -1,5 +1,8 @@
 import type { Config } from 'tailwindcss'
 
+// shadcn-namnen i app/globals.css är alias till --sg-* (hex), inte HSL-tripplar.
+const mix = (name: string) => `color-mix(in srgb, var(${name}) calc(<alpha-value> * 100%), transparent)`
+
 const config: Config = {
   darkMode: ['class'],
   content: [
@@ -15,8 +18,8 @@ const config: Config = {
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // Surfaces follow the --sg-* tokens in app/studio.css (light by default, dark under
-        // prefers-color-scheme). Lime, teal, amber and red keep hex so /opacity variants work.
+        // Surfaces follow the --sg-* tokens in packages/ui/tokens.css (dark by default, light with
+        // the class light on <html>). Lime, teal, amber and red keep hex so /opacity variants work.
         sg: {
           bg: 'var(--sg-bg)',
           panel: 'var(--sg-surface)',
@@ -49,72 +52,39 @@ const config: Config = {
           amber: '#ffb547',
           red: '#ff5c6c',
         },
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: mix('--background'),
+        foreground: mix('--foreground'),
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: mix('--card'),
+          foreground: mix('--card-foreground'),
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: mix('--popover'),
+          foreground: mix('--popover-foreground'),
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: mix('--primary'),
+          foreground: mix('--primary-foreground'),
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: mix('--secondary'),
+          foreground: mix('--secondary-foreground'),
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: mix('--muted'),
+          foreground: mix('--muted-foreground'),
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: mix('--accent'),
+          foreground: mix('--accent-foreground'),
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: mix('--destructive'),
+          foreground: mix('--destructive-foreground'),
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
-        },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
-        workflow: {
-          bg: 'hsl(var(--workflow-bg))',
-          surface: 'hsl(var(--workflow-surface))',
-          'surface-hover': 'hsl(var(--workflow-surface-hover))',
-          border: 'hsl(var(--workflow-border))',
-          'border-subtle': 'hsl(var(--workflow-border-subtle))',
-          text: 'hsl(var(--workflow-text))',
-          'text-muted': 'hsl(var(--workflow-text-muted))',
-          'text-subtle': 'hsl(var(--workflow-text-subtle))',
-          'node-bg': 'hsl(var(--workflow-node-bg))',
-          'node-input': 'hsl(var(--workflow-node-input))',
-          'canvas-dot': 'hsl(var(--workflow-canvas-dot))',
-          edge: 'hsl(var(--workflow-edge))',
-          handle: 'hsl(var(--workflow-handle))',
-          'handle-border': 'hsl(var(--workflow-handle-border))',
-        },
+        border: mix('--border'),
+        input: mix('--input'),
+        ring: mix('--ring'),
       },
       boxShadow: {
         sg: 'var(--sg-shadow)',
