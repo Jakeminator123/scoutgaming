@@ -6,7 +6,6 @@ import {PartnerAppearanceLoader} from '../../../../components/partner-appearance
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {ControlResourceLifecycle, type LifecycleSnapshot, type RoomLifecycleRequest} from '../../../../components/control-resource-lifecycle';
 import {RoomGameConfig} from '../../../../components/room-game-config';
-import {PresentationRoomCreate} from '../../../../components/presentation-room-create';
 import {markPackagesStale, packageEditor, packageSelectionDirty, publishOperatorPackage, publishedPackageMessage, rebasePackageEditors, togglePackageLane, verifiedPackageRevision, packagePublishError} from '../../../../lib/operator-package-client.mjs';
 import type {PackageEditor} from '../../../../lib/operator-package-client.mjs';
 import {labBasePath} from '../../../../lib/lab-url.mjs';
@@ -46,21 +45,18 @@ const labels: Record<string, string> = { active: 'Aktivt', suspended: 'Avstängt
 const gameSettingsRoom = (room: Room) => room.published && room.state === 'live' && room.game === 'blackjack';
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-/** The company's package (mode package), a new room (mode create) and the room editor (mode room, one
+/** The company's package (mode package) and the room editor (mode room, one
  *  section per tab). The company and room come from the nav's path, never from a dealer-library query. */
-export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'create'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void;
-  /** Create mode: a scene template already chosen in the guided dialog; the editor's own picker is then hidden. */
-  compositionId?: string };
-export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus, compositionId: chosenComposition }: RegisteredStudioProps) {
+export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void };
+export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus }: RegisteredStudioProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
   const search = useSearchParams().toString();
-  // One room draft at a time: a dirty or writing room editor locks its sibling, room creation,
+  // One room draft at a time: a dirty or writing room editor locks its sibling,
   // the rooms lifecycle and the package publication, so nothing remounts over unsaved edits.
   const [roomDirty,setRoomDirty] = useState(false), [roomBusy,setRoomBusy] = useState(false);
   const [gameDirty,setGameDirty] = useState(false), [gameBusy,setGameBusy] = useState(false);
-  const [createDraft,setCreateDraft] = useState(false), [createBusy,setCreateBusy] = useState(false);
   const [publishBusy,setPublishBusy] = useState(false), [releaseBusy,setReleaseBusy] = useState(false);
   const publishLock = useRef(false);
   const [lifecycleRefresh,setLifecycleRefresh] = useState(0);
@@ -68,13 +64,12 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const lifecycleKey = useRef(''), lifecycleOps = useRef(new Set<string>());
   const [packages,setPackages] = useState<Record<string,PackageEditor>>({});
   const [roomStatus,setRoomStatus] = useState<AppearanceRoomStatus|null>(null);
-  const [newRoomComposition,setNewRoomComposition] = useState('');
   const [roomRequest,setRoomRequest] = useState<RoomLifecycleRequest>();
-  const anyBusy = roomBusy || gameBusy || createBusy || lifecycleBusy || publishBusy || releaseBusy;
+  const anyBusy = roomBusy || gameBusy || lifecycleBusy || publishBusy || releaseBusy;
   // Package selections are retained per company; only mounted editors need a leave guard.
-  const anyDraft = roomDirty || gameDirty || createDraft;
+  const anyDraft = roomDirty || gameDirty;
   // The room's publication compares saved state with live: it re-reads whenever the editors have finished a write.
-  const editorsIdle = !roomBusy && !gameBusy && !createBusy && !lifecycleBusy && !publishBusy;
+  const editorsIdle = !roomBusy && !gameBusy && !lifecycleBusy && !publishBusy;
   const [releaseTick,setReleaseTick] = useState(0), editorsWereIdle = useRef(true);
   useEffect(() => { if (editorsIdle && !editorsWereIdle.current) setReleaseTick(value => value + 1); editorsWereIdle.current = editorsIdle; }, [editorsIdle]);
   function mayLeave() { return !anyBusy && (!anyDraft || confirm('Lämna spelbordets osparade val? Sparade utkast och publicerad version behålls.')); }
@@ -121,7 +116,6 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const selectedRoom = roomId ? operatorRooms.find(row => row.id === roomId) : undefined;
   const dealerName = (id: string) => data?.dealers.find(row => row.id === id)?.name ?? id;
   const compositions = complete?.compositions ?? [];
-  const createComposition = compositions.find(row => row.id === (chosenComposition || newRoomComposition)) ?? compositions.find(row => row.id === operatorRooms[0]?.compositionId) ?? compositions[0];
   // Both room editors reload together on a register re-read; sibling keys stay distinct.
   const editorKey = operator && selectedRoom ? operator.id + ':' + selectedRoom.id + ':' + refresh : '';
   // Lifecycle snapshots carry the published package per company; a changed key re-reads the register.
@@ -153,7 +147,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const operatorPackage = operator ? packages[operator.id] ?? packageEditor() : packageEditor();
   const selectionDirty = packageSelectionDirty(operatorPackage);
   const roomDraftBlocks = roomDirty || gameDirty;
-  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || createDraft || operatorPackage.needsRefresh || !operatorPackage.chosen.length;
+  const publishBlocked = !operator || disabled || anyBusy || roomDraftBlocks || operatorPackage.needsRefresh || !operatorPackage.chosen.length;
   // A published composition that Studio no longer has stays visible until it is unchecked; the package is never
   // republished over it. The PAOW idle refresh under Spelbord › Avancerat works on the frozen package and is not affected.
   const retiredChosen = operatorPackage.chosen.some(id => !compositions.some(row => row.id === id));
@@ -212,7 +206,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   // a notice or a pending request. Tillgänglighet shows it in its own slot; every other mode mounts it last.
   const lifecycleReader = operator && (mode !== 'room' || selectedRoom) ? <div id="room-lifecycle" className={ui.slot}>
     <ControlResourceLifecycle operatorId={operator.id} kind="rooms" available refreshKey={lifecycleRefresh} compact request={roomRequest} onRequestHandled={()=>setRoomRequest(undefined)}
-      disabled={disabled||roomBusy||gameBusy||createBusy||publishBusy||releaseBusy||anyDraft} onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/>
+      disabled={disabled||roomBusy||gameBusy||publishBusy||releaseBusy||anyDraft} onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/>
   </div> : null;
   const stateSection = mode === 'room' && section === 'state';
   return <>
@@ -235,7 +229,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
               {section==='appearance'&&<>
                 {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className="m-0 flex flex-wrap items-center gap-2 text-[12.5px] text-sg-muted" aria-label="Publicerat nu"><div className="flex items-center gap-2"><dt className="inline-flex items-center gap-1.5 font-semibold text-sg-text"><span className="size-1.5 rounded-full bg-sg-ok" aria-hidden="true"/>Publicerat nu</dt><dd className="m-0">{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}
                 {gameSettingsRoom(selectedRoom)&&<p className="m-0"><a className={linkClass} href={'/admin/scenes?'+new URLSearchParams({tab:'bordsgrafik',operator:operator.id,room:selectedRoom.id})}>Skapa bord och bakgrund med AI för spelbordet</a></p>}
-                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||createBusy||publishBusy||releaseBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>{setRoomStatus(status);onRoomStatus?.(status);}} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
+                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||publishBusy||releaseBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>{setRoomStatus(status);onRoomStatus?.(status);}} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
                   : <div className={ui.unpublished} role="status"><h3>Spelbordet saknar ett publicerat paket</h3><p>Utseendet kan väljas när bolagets scenmallar är publicerade under Bolag › Tilldelning.</p></div>}
                 {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<TechnicalDetails title="Avancerat" className="mt-0">
                   <p className="m-0">Publicera bara PAOWs sparade vilosekvens i bolagets publicerade spelbord. Övriga publicerade val och placeringar behålls. Vanligen räcker Publicera, som tar med vilan.</p>
@@ -244,7 +238,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
                 </TechnicalDetails>}
               </>}
               {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name} dealers={selectedRoom.dealers}
-                disabled={disabled||lifecycleBusy||roomBusy||roomDirty||createBusy||publishBusy||releaseBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
+                disabled={disabled||lifecycleBusy||roomBusy||roomDirty||publishBusy||releaseBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
                 onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);onChanged?.();}}/>
                 :<div className={ui.unpublished} role="status"><h3>Spelinställningar kan sättas när spelbordet är öppet och publicerat</h3><p>Spelinställningar (språk, insatsprofil) gäller öppna, publicerade blackjack-spelbord. Öppna spelbordet under Tillgänglighet och publicera tilldelningen först.</p></div>)}
               {section==='state'&&<div className={ui.slot}>
@@ -278,17 +272,6 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
             {operatorPackage.message&&<p role="status" className={ui.receipt}><strong className="font-semibold">Publiceringen är bekräftad.</strong> {operatorPackage.message}</p>}
             <p className="m-0 flex flex-wrap items-center gap-3"><a href={'/partner/'+encodeURIComponent(operator.slug)+'/rooms'} className={linkClass}>Öppna Partnerportalen ↗</a> {reloadButton}</p>
           </section>}
-          {mode==='create' && complete && <div id="room-create" className={ui.card}>{!chosenComposition&&<div><h2 className="m-0 text-[15px] font-semibold">Nytt spelbord hos {operator.name}</h2></div>}
-            {compositions.length>0&&!chosenComposition&&<label className="grid max-w-sm gap-1.5 text-[13px] font-semibold">Scenmall<select className="h-9 rounded-lg border border-sg-border bg-sg-surface px-2.5 font-normal text-sg-text" aria-label="Scenmall" value={createComposition?.id??''} disabled={anyBusy||createDraft} onChange={event=>setNewRoomComposition(event.target.value)}>
-              {compositions.map(row=><option key={row.id} value={row.id}>{compositionLabel(row.name)}{operatorPackage.baseline.includes(row.id)?'':' · inte publicerad'}</option>)}
-            </select></label>}
-            <PresentationRoomCreate operator={{id:operator.id,slug:operator.slug,name:operator.name}} presentation={createComposition?{id:createComposition.id,label:compositionLabel(createComposition.name)}:null}
-              projectRevision={complete.revisions.project} projectSaved={!disabled} storeAvailable hideExisting visual
-              interactionDisabled={lifecycleBusy||roomBusy||gameBusy||publishBusy||roomDraftBlocks}
-              onDraftChange={setCreateDraft} onBusyChange={setCreateBusy}
-              onCreated={receipt=>{packageAdvanced(receipt.room.operatorId,receipt.packageRevision);reload();onChanged?.();const href='/admin/rooms/'+encodeURIComponent(receipt.room.id);const history=studioHistory(window);if(history.canNavigate(href))history.push(href,true);}}/>
-            <p className="text-xs text-sg-muted">Spelbordet är pausat tills du publicerar tilldelningen och öppnar det under Tillgänglighet.</p>
-          </div>}
           {!stateSection&&lifecycleReader}
         </>}
       <footer className="mt-auto border-t border-sg-line-2 pt-3 text-xs text-sg-faint">{state.status === 'ready' ? `Uppgifterna lästa ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'}{lifecycleSnapshot?' · Paket och livscykel lästa':''}</footer>

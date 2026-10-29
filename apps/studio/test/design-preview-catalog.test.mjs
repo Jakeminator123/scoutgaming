@@ -192,3 +192,12 @@ test('admin rooms carry only a known bet profile from their own saved game setti
   assert.equal(Object.hasOwn(rooms.find(row=>row.id===other.id),'savedLimitPreset'),false);
   assert.ok(rooms.every(row=>row.savedLimitPreset===undefined||['casual','prive','high'].includes(row.savedLimitPreset)));
 });
+
+test('Admin sees an open appearance draft per company; a published or missing draft reads as none', async () => {
+  const f = fixture();
+  const draft = { operatorId: f.room.operatorId, revision: 2, basePackageRevision: 7, action: 'draft.save', branding: {}, sourcePackageRevision: null };
+  const read = async getBrandingDraft => (await registeredDesignCatalog({ ...f, store: { ...f.store, getBrandingDraft } })).administration.operators.map(row => row.appearanceDraft);
+  assert.deepEqual(await read(async id => id === f.room.operatorId ? draft : null), [true, false]);
+  assert.deepEqual(await read(async () => ({ ...draft, action: 'draft.publish' })), [false, false]);
+  assert.deepEqual(await read(async () => null), [false, false]);
+});

@@ -10,6 +10,7 @@ import { createOperatorStore } from '../../../packages/operators/server/operator
 import { designPreviewHeaders } from './design-preview.mjs';
 import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
 import { adminAssignmentView } from './partner-assignment.mjs';
+import { cleanBrandingDraft } from './partner-branding-api.mjs';
 
 // Bolag › Tilldelat: Admins tilldelning ur det publicerade paketet (null utan fryst presentation).
 // Ett paket vars presentation inte går att läsa visar ingen tilldelning i stället för att fälla katalogen.
@@ -31,8 +32,10 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     const pack = await store.getCurrentPackage(row.id);
     if (pack && pack.operatorId !== row.id) unavailable();
     packages.set(row.id, pack);
+    // Bolagets öppna utseendeutkast (samma bedömning som publiceringen): Nytt spelbord startar inte då.
+    const appearanceDraft = Boolean(pack && typeof store.getBrandingDraft === 'function' && await cleanBrandingDraft(await store.getBrandingDraft(row.id), pack, store));
     operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
-      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack) });
+      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack), appearanceDraft });
   }
   // The published settings heads per company, read once and shared by Admin's warning and the lobby below,
   // so both say what the shared table says (room_config_missing).

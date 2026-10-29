@@ -4,17 +4,19 @@ import Link, {navigate,useSearchParams} from '../../../runtime/navigation';
 import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout,ActionMenu,AsideLink} from '../ui/hub';
 import {Button,buttonVariants,chipVariants,cn,EmptyState,Footnote,formatDate,formatNumber,Loading,plural,TechnicalDetails} from '../ui/kit';
 import {Dialog,DialogSteps,Sheet} from '../ui/dialog';
+import {fieldClass} from '../ui/form';
 import {DataTable,type Column} from '../ui/data-table';
 import {insetTableClass} from '../ui/table';
 import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
-import type {Catalog} from '../../lib/connected-studio.mjs';
+import {createStudioClient,type Catalog,type Workspace} from '../../lib/connected-studio.mjs';
+import {dealerChoices,defaultLanguage,laneChoices,QUICK_CREATE_STEPS,quickCreateDefaults,roomName,runQuickCreate,type QuickChoice,type QuickMemo,type QuickStepId,type QuickStepStatus} from '../../lib/room-quick-create.mjs';
+import {roomLimitProfiles} from '../../../../lib/room-limit-profiles.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {RegisteredStudio} from './registered-studio';
 import {AssignmentField} from './assignment-field';
 import {WorkspaceTool} from './workspace-tools';
-import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
 import {RoomPicture} from './room-picture';
 import {RoomSettingsWarning,RoomStateChip} from './room-settings-warning';
@@ -118,7 +120,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='spelbord'&&<>
         {filters('/admin/companies?tab=spelbord',operators.filter(row=>!row.archivedAt))}
         {create&&!createOperator&&<Empty chip={null} title="Inget aktivt bolag" text="Skapa ett bolag först."/>}
-        <CreateRoomDialog revision={revision} open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
+        <CreateRoomDialog open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} disabled={disabled} onChanged={changed}
           onClose={()=>navigate('/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):''))}/>
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
@@ -155,8 +157,8 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {operator&&<>
         {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><div className="mb-4"><AssignmentField operatorId={operator.id} revision={operator.packageRevision} view={operator.assignment} disabled={disabled} onChanged={changed}/></div><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
-          <CreateRoomDialog revision={revision} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
-          {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
+          <CreateRoomDialog open={create} operators={[operator]} initialOperator={operator.id} fixedOperator disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
+          {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Nytt spelbord väljer dealer, miljö och språk åt dig och publicerar allt i ett steg."/>}
         </Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
         {tab==='spelare'&&<div className="grid gap-4 md:grid-cols-2">
@@ -217,33 +219,87 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   </HubPage>;
 }
 
-type Composition=Catalog['administration']['compositions'][number];
-// Nytt spelbord as a guided overlay: company → scene template with the saved scene beside the choice, and
-// game and name on the same step. The last step is the same room creation as before (RegisteredStudio create mode,
-// the presentation-room call); background and table graphics are chosen afterwards under Utseende,
-// because the creation call does not take them.
-function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,compositions,rooms,revision,disabled,onChanged,onClose}:{revision?:string;open:boolean;operators:Operator[];initialOperator:string;fixedOperator?:boolean;compositions:Composition[];rooms:Room[];disabled:boolean;onChanged:()=>void;onClose:()=>void}) {
-  const [step,setStep]=useState(fixedOperator?1:0),[operatorId,setOperatorId]=useState(initialOperator),[compositionId,setCompositionId]=useState('');
-  useEffect(()=>{if(open){setStep(fixedOperator?1:0);setOperatorId(initialOperator);setCompositionId('');}},[open,initialOperator,fixedOperator]);
-  const operator=operators.find(row=>row.id===operatorId)??operators[0];
-  const composition=compositions.find(row=>row.id===compositionId)??compositions.find(row=>rooms.some(room=>room.operatorId===operator?.id&&room.compositionId===row.id))??compositions[0];
-  const steps=['Bolag','Scenmall, spel och namn'];
-  const choice=(on:boolean)=>cn('grid gap-1 rounded-xl border p-3.5 text-left text-[13px] transition-colors',on?'border-sg-text bg-sg-surface shadow-[0_0_0_2px_var(--sg-lime)]':'border-sg-border bg-sg-surface hover:bg-sg-surface-2');
-  return <Dialog open={open} size="xl" title={operator?`Nytt spelbord hos ${operator.name}`:'Nytt spelbord'} description="Spelbordet skapas pausat. Det öppnas för spelare när tilldelningen är publicerad och du öppnar det under Tillgänglighet." onClose={onClose}
-    footer={<>{step>(fixedOperator?1:0)&&<Button onClick={()=>setStep(step-1)}>Tillbaka</Button>}<Button onClick={onClose}>Avbryt</Button>
-      {step===0&&<Button variant="primary" disabled={!operator} onClick={()=>setStep(1)}>Nästa: välj scenmall<ArrowRight aria-hidden="true"/></Button>}
-</>}>
-    <DialogSteps steps={steps} current={step} onSelect={index=>{if(index>=(fixedOperator?1:0))setStep(index);}}/>
-    {step===0&&<div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5" role="group" aria-label="Bolag">{operators.map(row=><button key={row.id} type="button" aria-pressed={row.id===operator?.id} className={choice(row.id===operator?.id)} onClick={()=>setOperatorId(row.id)}>
-      <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${row.packageRevision}`} · {plural(rooms.filter(room=>room.operatorId===row.id).length,'spelbord','spelbord')}</span></button>)}</div>}
-    {step===1&&operator&&<div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-      <div className="grid content-start gap-2.5" role="group" aria-label="Scenmall">{compositions.map(row=><button key={row.id} type="button" aria-pressed={row.id===composition?.id} className={choice(row.id===composition?.id)} onClick={()=>setCompositionId(row.id)}>
-        <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.dealerIds.length?plural(row.dealerIds.length,'dealer','dealers'):'Inga dealers'} · {plural(rooms.filter(room=>room.compositionId===row.id).length,'spelbord','spelbord')} använder mallen</span></button>)}
-        {!compositions.length&&<Empty chip={null} title="Inga scenmallar ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}</div>
-      {composition&&<div className="grid min-w-0 content-start gap-4">
-        <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} revision={revision} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
-        <RegisteredStudio mode="create" operatorId={operator.id} compositionId={composition.id} disabled={disabled} onChanged={onChanged}/>
-      </div>}
+// Nytt spelbord på ett steg (lib/room-quick-create.mjs): allt är förvalt och går att ändra under Avancerat;
+// Skapa och publicera kör kedjan (miljö → mät klipp → spelbord och tilldelning → spelinställningar) och
+// stannar med en mening och en knapp. Spelbordet skapas öppet och spelbart när kedjan går igenom.
+const limitLabels=Object.fromEntries(roomLimitProfiles().map(row=>[row.id,row.label]));
+const stepChip:Record<QuickStepStatus,ReactNode>={running:<Chip tone="info">pågår</Chip>,done:<Chip tone="live">klart</Chip>,skipped:<Chip tone="draft">behövs inte</Chip>,stopped:<Chip tone="warn">hinder</Chip>};
+type QuickResult=Awaited<ReturnType<typeof runQuickCreate>>;
+// The page's own fetch, read at call time (tests run the page with a stubbed one).
+const request:typeof fetch=(input,init)=>fetch(input,init);
+export function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,disabled,onChanged,onClose}:{open:boolean;operators:Operator[];initialOperator:string;fixedOperator?:boolean;disabled:boolean;onChanged:()=>void;onClose:()=>void}) {
+  const [operatorId,setOperatorId]=useState(initialOperator),[workspace,setWorkspace]=useState<Workspace|null>(null),[loadError,setLoadError]=useState(''),[reload,setReload]=useState(0);
+  const [choice,setChoice]=useState<QuickChoice|null>(null),[steps,setSteps]=useState<Partial<Record<QuickStepId,{status:QuickStepStatus;text:string}>>>({});
+  const [result,setResult]=useState<QuickResult|null>(null),[busy,setBusy]=useState(false);
+  const memo=useRef<QuickMemo>({}),abort=useRef<AbortController|null>(null);
+  useEffect(()=>{if(open)setOperatorId(initialOperator);},[open,initialOperator]);
+  useEffect(()=>{
+    if(!open)return;
+    const controller=new AbortController();setWorkspace(null);setLoadError('');setSteps({});setResult(null);memo.current={};
+    createStudioClient({fetchImpl:request}).load(controller.signal).then(value=>{if(!controller.signal.aborted)setWorkspace(value);},cause=>{if(!controller.signal.aborted)setLoadError(cause instanceof Error?cause.message:'Uppgifterna kunde inte läsas.');});
+    return()=>controller.abort();
+  },[open,reload]);
+  useEffect(()=>{
+    if(!workspace||!operatorId)return;
+    const picked=quickCreateDefaults({catalog:workspace.catalog,project:workspace.project,inventory:workspace.inventory,operatorId});
+    setChoice(picked);memo.current={};
+    const controller=new AbortController();
+    void defaultLanguage({catalog:workspace.catalog,operatorId},{fetchImpl:request,signal:controller.signal}).then(language=>{if(!controller.signal.aborted)setChoice(current=>current&&current.language===picked.language?{...current,language}:current);});
+    return()=>controller.abort();
+  },[workspace,operatorId]);
+  const operator=workspace?.catalog.administration.operators.find(row=>row.id===operatorId)??operators.find(row=>row.id===operatorId);
+  const dealers=workspace?dealerChoices(workspace.project,workspace.inventory):[];
+  const dealerLabel=(id:string)=>dealers.find(row=>row.id===id)?.label??id;
+  const lanes=workspace&&choice?laneChoices({catalog:workspace.catalog,project:workspace.project,operatorId,dealerId:choice.dealerId}):[];
+  const finished=Boolean(result?.ok),locked=busy||finished;
+  function change(patch:Partial<QuickChoice>){
+    if(!workspace||!choice||locked)return;
+    const next={...choice,...patch};
+    if(patch.dealerId!==undefined)next.laneId=laneChoices({catalog:workspace.catalog,project:workspace.project,operatorId,dealerId:next.dealerId})[0]?.id??'';
+    if(patch.dealerId!==undefined||patch.game!==undefined)next.name=roomName({catalog:workspace.catalog,operatorId,dealerId:next.dealerId,dealerLabel:dealerLabel(next.dealerId),game:next.game});
+    memo.current={};setSteps({});setResult(null);setChoice(next);
+  }
+  async function start(){
+    if(!choice||!operator||disabled||busy)return;
+    const controller=new AbortController();abort.current=controller;setBusy(true);setResult(null);setSteps({});
+    try{
+      const value=await runQuickCreate({...choice,name:choice.name.trim()},{operator,memo:memo.current,signal:controller.signal,fetchImpl:request,onStep:(id,status,text)=>setSteps(current=>({...current,[id]:{status,text}}))});
+      setResult(value);if(value.ok||memo.current.room)onChanged();
+    }finally{setBusy(false);abort.current=null;}
+  }
+  const stop=result&&!result.ok?result:null;
+  const select=(label:string,value:string,onChange:(value:string)=>void,options:[string,string][])=><label className="grid gap-1.5 text-[13px] font-semibold">{label}
+    <select className={fieldClass} value={value} disabled={locked} onChange={event=>onChange(event.target.value)}>{options.map(([id,text])=><option key={id} value={id}>{text}</option>)}</select></label>;
+  return <Dialog open={open} size="lg" busy={busy} title={operator?`Nytt spelbord hos ${operator.name}`:'Nytt spelbord'} onClose={()=>{abort.current?.abort();onClose();}}
+    description="Allt är förvalt. Skapa och publicera gör resten: spelbordet blir öppet och spelbart, och visas som förbereds bara om ett steg stannar."
+    footer={<>{busy?<Button onClick={()=>abort.current?.abort()}>Avbryt</Button>:<Button onClick={onClose}>{finished?'Stäng':'Avbryt'}</Button>}
+      {result?.ok?<><Link className={buttonVariants()} href={result.roomHref}>Öppna spelbordet</Link><a className={buttonVariants({variant:'primary'})} href={result.playUrl} target="_blank" rel="noopener">Öppna i spelet<ExternalLink aria-hidden="true"/></a></>
+        :stop?.href?<Link className={buttonVariants({variant:'primary'})} href={stop.href}>{stop.label}<ArrowRight aria-hidden="true"/></Link>
+        :stop?.action?<Button variant="primary" disabled={disabled} onClick={()=>{if(stop.action==='reload')setReload(value=>value+1);else void start();}}>{stop.label}</Button>
+        :<Button variant="primary" disabled={disabled||busy||!choice?.dealerId||!choice.name.trim()} onClick={()=>void start()}>{busy?'Skapar…':'Skapa och publicera'}</Button>}</>}>
+    {loadError&&<p role="alert" className="m-0 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{loadError} <Button size="sm" onClick={()=>setReload(value=>value+1)}>Läs in igen</Button></p>}
+    {disabled&&<Note className="mb-3">Klippkartan har osparade ändringar eller en import pågår. Spara eller vänta först.</Note>}
+    {!workspace&&!loadError&&<Loading label="Väljer dealer, miljö och språk…" rows={3}/>}
+    {workspace&&choice&&<div className="grid gap-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <label className="grid gap-1.5 text-[13px] font-semibold">Namn<input className={fieldClass} value={choice.name} maxLength={100} disabled={locked} onChange={event=>change({name:event.target.value})}/></label>
+        <p className="m-0 self-end text-[13px] text-sg-muted">{[gameLabel(choice.game),dealerLabel(choice.dealerId)||'ingen dealer',lanes.find(row=>row.id===choice.laneId)?.label??'ny miljö',choice.language==='sv'?'svenska':'engelska',limitLabels[choice.limitPreset]??choice.limitPreset].join(' · ')}</p>
+      </div>
+      <details className="rounded-xl border border-sg-border bg-sg-surface-2 px-3.5 py-2.5"><summary className="cursor-pointer text-[13px] font-semibold">Avancerat</summary>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {!fixedOperator&&operators.length>1&&select('Bolag',operatorId,value=>{if(!locked)setOperatorId(value);},operators.map(row=>[row.id,row.name]))}
+          {select('Spel',choice.game,value=>change({game:value as QuickChoice['game']}),[['blackjack','Blackjack'],['roulette','Roulette · enkel nolla']])}
+          {select('Dealer',choice.dealerId,value=>change({dealerId:value}),dealers.map(row=>[row.id,row.label+(row.complete?'':' · klippen räcker inte än')]))}
+          {select('Miljö',choice.laneId,value=>change({laneId:value}),[...lanes.map(row=>[row.id,row.label] as [string,string]),['','Ny miljö för '+dealerLabel(choice.dealerId)]])}
+          {choice.game==='blackjack'&&select('Bordsspråk',choice.language,value=>change({language:value as QuickChoice['language']}),[['en','Engelska'],['sv','Svenska']])}
+          {choice.game==='blackjack'&&select('Insatsprofil',choice.limitPreset,value=>change({limitPreset:value as QuickChoice['limitPreset']}),Object.entries(limitLabels))}
+        </div>
+        <Footnote>En miljö som andra spelbord använder kopieras i stället för att ändras. Bakgrund och bordsgrafik följer miljöns standard.</Footnote>
+      </details>
+      {(busy||result)&&<ol className="m-0 grid list-none gap-1.5 p-0" aria-label="Kedjan">{QUICK_CREATE_STEPS.map(([id,label])=>{const row=steps[id];
+        return <li key={id} data-step={id} className="flex flex-wrap items-center gap-2 text-[13px]">{row?stepChip[row.status]:<Chip tone="draft">väntar</Chip>}<span className="font-semibold">{label}</span>{row?.text&&<span className={row.status==='stopped'?'text-sg-warn':'text-sg-muted'}>{row.text}</span>}</li>;})}</ol>}
+      {stop&&<p role="alert" className="m-0 text-[13px] text-sg-warn">{stop.text}</p>}
+      {result?.ok&&<p role="status" className="m-0 text-[13px]"><strong className="font-semibold">{result.room.name} är öppet och publicerat.</strong> Spelare kan sätta sig nu.</p>}
     </div>}
   </Dialog>;
 }
