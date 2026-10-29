@@ -218,7 +218,7 @@ test('"Använd i miljön och i spelbordet" posts one adopt request and reads onl
   const wrong=await adoptInRoom(input,{fetchImpl:async()=>Response.json({...receipt,roomId:'north-b'})});
   assert.equal(wrong.ok,false);assert.match(wrong.error,/kvittot/);
   const refused=await adoptInRoom(input,{fetchImpl:async()=>Response.json({error:'studio_release_invalid',code:'studio_release_invalid',reason:'studio_release_other_changes'},{status:422})});
-  assert.equal(refused.ok,false);assert.equal(refused.reason,'studio_release_other_changes');assert.match(refused.error,/andra sparade ändringar.*Inget publicerades/);
+  assert.equal(refused.ok,false);assert.equal(refused.reason,'studio_release_other_changes');assert.match(refused.error,/andra opublicerade ändringar.*Inget publicerades/);
   const lost=await adoptInRoom(input,{fetchImpl:async()=>{throw Error('offline');}});
   assert.equal(lost.ok,false);assert.match(lost.error,/Svaret kom inte fram/);
 });
