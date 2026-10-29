@@ -131,6 +131,18 @@ test('two dealers each get a verified bank and drift profile; Dragan alone is un
   assert.deepEqual(rest,single);
 });
 
+// docs/PAOW-BANK-KORNING.md step 7: preview carries Paow alone; its profile's bankHash is the archive hash and its
+// releaseDigest is the image's release, so Dragan's production values are never copied to preview.
+test('preview with Paow alone: own bank and endpoint pass; a foreign release or Dragan bank is refused',()=>{
+  const paowOnly={...base(),...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:paowManifest}),
+    CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([paowProfile])};
+  const web=children(paowOnly).web.env;
+  assert.deepEqual(JSON.parse(web.CROUPIER_MOVING_SPEECH_BANK_RECORDS),{paow:paowManifest});
+  assert.deepEqual(movingDriftConfiguration(web).profiles,[paowProfile]);
+  assert.throws(()=>validateCloudConfig({...paowOnly,CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('other release')}),/DRIFT_API\/PROFILES/);
+  assert.throws(()=>validateCloudConfig({...paowOnly,CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:privateManifest})}),/bank of another dealer for paow/);
+});
+
 test('bank and profile refusals name the dealer: wrong dealer, profile without a bank, bank without a profile',()=>{
   const env={...base(),...twoDealers()},banks='CROUPIER_MOVING_SPEECH_BANK_RECORDS',profiles='CROUPIER_STUDIO_MOVING_DRIFT_PROFILES';
   const refuse=(change,pattern)=>assert.throws(()=>validateCloudConfig({...env,...change}),

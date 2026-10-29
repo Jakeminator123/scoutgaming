@@ -4,3 +4,4 @@ export function dealerSpeechPreparation(value:DealerSpeechProfile|undefined):{ac
 export function isSpeechReferenceVideo(video:any,dealerId:string):boolean;
 export function dealerSpeechReferenceCheck(video:any,dealerId:string):{canEnable:boolean;message:string};
 export function validateDealerSpeechReference(profile:unknown,video:any,dealerId:string):void;
+export function movingSpeechBanksAllowed(project:unknown,previous:unknown,bankDealerIds:readonly string[]|null|undefined):boolean;
