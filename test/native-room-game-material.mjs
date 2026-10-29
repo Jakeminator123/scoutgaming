@@ -12,6 +12,7 @@ import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 import { nativeRoomFilmedPlanning } from '../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import { validateRoomGameMaterial } from '../packages/presentation/contracts/room-game-config.mjs';
+import { registeredFilmedProfile } from '../packages/presentation/contracts/filmed-profiles/registry.mjs';
 
 const resolve = f => resolveNativeRoomGameMaterial(f.input,{version:2});
 const denied = reason => error => error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && (!reason || error.reason === reason);
@@ -347,4 +348,18 @@ test('Dragan and PAOW keep their exact material revisions; the code register sta
     assert.equal(resolveNativeRoomGameMaterial(f.input,{version:1}).revision,v1);assert.equal(material.revision,v2);
     assert.deepEqual(Object.keys(material.film).sort(),['profileId','schemaVersion','transitions']);assert.equal(material.film.schemaVersion,1);
   }
+});
+
+test('a factory dealer\'s longer -iu clips (68-81 frames) publish at their own frame count with PAOW\'s landings',()=>{
+  const copyFrames={'1:i':68,'4:i':74,'dealer:i':81},paow=registeredFilmedProfile('paow');
+  const f=nativeRoomMaterialFixture({dealerId:'jakob-2',copyOf:'paow',copyFrames}),material=resolve(f);
+  const expanded=nativeRoomFilmedPlanning(material).profile;
+  for(const [key,frames] of Object.entries(copyFrames)){
+    const take=expanded.takes.find(row=>row.key===key),code=paow.takes.find(row=>row.key===key);
+    assert.equal(take.frames,frames);assert.deepEqual({...take,frames:code.frames,sha256:code.sha256,repositoryPath:code.repositoryPath},code);
+  }
+  // Kevin's 60-frame clip does not match a take frozen at 74 frames.
+  const row=f.records.find(item=>item.sha256===f.presentation.registeredDealers[0].filmedProfile.takes['4:i'].sha256);
+  measuredFixtureRecord(row,{frames:60,fps:24});f.recapture();
+  assert.throws(()=>resolve(f),denied('native_material_take_mismatch'));
 });

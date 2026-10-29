@@ -48,10 +48,12 @@ export function studioCopyProfile(dealerId,copyOf) {
   return {schemaVersion:1,id:`studio-${dealerId}-${hash('copy:'+dealerId).slice(0,8)}`,kind:'copy',base:base.id,
     takes:Object.fromEntries(base.takes.map(take=>[take.key,{sha256:hash(`synthetic ${dealerId} ${take.key}`)}]))};
 }
-export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,language='sv',capture=true,allSpeechSlots=false,idOffset=0,speechSchemaVersion=1} = {}) {
+/** copyFrames: per take key, a longer own clip's frame count kept in the copy (dealer-fabriken's -iu takes). */
+export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,copyFrames={},language='sv',capture=true,allSpeechSlots=false,idOffset=0,speechSchemaVersion=1} = {}) {
   if (![1,2].includes(speechSchemaVersion)) throw new TypeError('Unsupported synthetic speech schema');
   const fixture = cloudPresentationFixture({lanes:[defaultPresentationLane(dealerId)]});
   const filmedProfile = copyOf ? studioCopyProfile(dealerId,copyOf) : null;
+  for (const [key,frames] of Object.entries(copyFrames)) filmedProfile.takes[key].frames = frames;
   const profile = filmedProfile ? expandStudioFilmedProfile(filmedProfile,{dealerId}) : registeredFilmedProfile(dealerId), presentation = fixture.presentation;
   if (filmedProfile) presentation.registeredDealers[0].filmedProfile = filmedProfile;
   let project = fixture.project, n = 1 + idOffset;
