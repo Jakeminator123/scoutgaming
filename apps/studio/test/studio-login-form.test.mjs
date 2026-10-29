@@ -224,7 +224,7 @@ test('actual browser expired Admin login restores the real room view through his
     await studio.getByRole('link',{name:'Öppna i Miljöer',exact:true}).click();
     await page.waitForURL(url=>url.pathname==='/admin/scenes');
     assert.equal(new URL(page.url()).pathname,'/admin/scenes');
-    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'mallar',...expectedContext},'Miljöer keeps the dealer and the room context');
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'miljoer',...expectedContext},'Miljöer keeps the dealer and the room context');
     const scene = page.getByRole('region',{name:'Sceneditor',exact:true});
     const composition = page.getByRole('region',{name:'Gemensam miljö',exact:true});
     await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();

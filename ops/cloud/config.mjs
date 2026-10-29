@@ -131,9 +131,8 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
       || !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode'))
       || zonesDatabaseUrl.length > 8192 || /[\r\n\t]/.test(zonesDatabaseUrl)) fail('CROUPIER_ZONES_DATABASE_URL');
   }
-  // One product path in every mode, maintenance included: PostgreSQL, named explicitly.
-  const database = env.CROUPIER_DATABASE;
-  if (database !== 'postgres') fail('CROUPIER_DATABASE');
+  // One product path in every mode, maintenance included: PostgreSQL. No variable selects it.
+  const database = 'postgres';
   const gameDatabaseUrl = env.CROUPIER_GAME_DATABASE_URL || '';
   validateGameConnection(gameDatabaseUrl, zonesDatabaseUrl);
   const layout = env.CROUPIER_CLOUD_LAYOUT || 'separate-hosts';
@@ -158,7 +157,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   // process uses the one scoped Neon catalog and private Blob, even with a mount.
   let studioPolicy = null;
   if (!storageExport) {
-    if (env.CROUPIER_STUDIO_NEON_POLICY !== '1') fail('CROUPIER_DATABASE/CROUPIER_STUDIO_NEON_POLICY');
+    if (env.CROUPIER_STUDIO_NEON_POLICY !== '1') fail('CROUPIER_STUDIO_NEON_POLICY');
     try { studioPolicy = studioGamePolicyConfiguration(env); } catch { fail('CROUPIER_STUDIO_NEON_POLICY/scope'); }
     if (!studioPolicy || mediaStorage !== 'blob' || !blobToken) fail('CROUPIER_MEDIA_STORAGE/BLOB_READ_WRITE_TOKEN');
   }
@@ -217,7 +216,6 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
   if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
   if (httpsOrigin(env.CROUPIER_GAME_ORIGIN || (singleOrigin ? gameOrigin : ''), 'CROUPIER_GAME_ORIGIN') !== gameOrigin) fail('CROUPIER_GAME_ORIGIN');
-  if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
   const publicPort = port(env.PORT);
   const disk = env.CROUPIER_CLOUD_DATA_ROOT;
   const diskRequired = Boolean(storageExport);
@@ -307,7 +305,6 @@ export function childSpecifications(config, env = process.env) {
   return {
     web: { command: process.execPath, args: [join(REPOSITORY, 'services/game/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
-        CROUPIER_DATABASE: config.database,
         ...(config.gameDatabaseUrl ? { CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
         CROUPIER_PUBLIC_GAME_PATH: config.publicGamePath,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,

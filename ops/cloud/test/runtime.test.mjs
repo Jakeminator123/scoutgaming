@@ -15,7 +15,7 @@ import { assertCloudAccessReady, main, openCheckedGateway } from '../start.mjs';
 
 const fixture = () => ({
   NODE_ENV: 'production', PORT: '10000',
-  CROUPIER_DATABASE:'postgres', CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
   CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-cloud-test-volume'),
@@ -23,8 +23,7 @@ const fixture = () => ({
   LAB_PUBLIC_URL: 'https://lab.example.test',
   CROUPIER_GAME_ORIGIN: 'https://game.example.test',
   BETTALOTTO_PARTNER_BASE_URL: 'https://game.example.test',
-  CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
-  OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
   OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-product-speech-token',
 });
 
@@ -107,7 +106,7 @@ test('shared tables reach the game process only through the validated cloud flag
   for (const value of ['', 'true', 'false', '01', '1 ', '2', true]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), [name]: value }), /CROUPIER_SHARED_TABLE_ENABLED/);
   }
-  for (const change of [{ CROUPIER_DATABASE: 'sqlite', CROUPIER_GAME_DATABASE_URL: undefined },
+  for (const change of [{ CROUPIER_GAME_DATABASE_URL: undefined },
     { CROUPIER_STUDIO_NEON_POLICY: '0' }, { CROUPIER_STUDIO_ENVIRONMENT_ID: '' }]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change, [name]: '1' }));
   }
@@ -181,15 +180,13 @@ test('configuration rejects local or ambiguous exposure and conflicting storage'
     { CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'speech') },
     { CROUPIER_CLOUD_DATA_ROOT: '.' },
     { CROUPIER_DATA_DIR: join(tmpdir(), 'players') },
-    { CROUPIER_DATABASE: undefined },
   ]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change }));
   }
 });
 
 test('Postgres, Neon and private Blob can start without a persistent product mount', async () => {
-  const env = { ...fixture(), CROUPIER_DATABASE:'postgres',
-    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  const env = { ...fixture(),     CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
     CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
     CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token' };
   delete env.CROUPIER_CLOUD_DATA_ROOT;
@@ -205,7 +202,7 @@ test('Postgres, Neon and private Blob can start without a persistent product mou
   const obsolete={...env,CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'ignored-retired-index.json')};
   assert.equal(childSpecifications(validateCloudConfig(obsolete),obsolete).web.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
   for (const patch of [{CROUPIER_MEDIA_STORAGE:'disk'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},{CROUPIER_DATABASE:'sqlite'},
+    {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},
     {BLOB_READ_WRITE_TOKEN:''},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
     assert.throws(() => validateCloudConfig({...env,...patch}));
     assert.throws(() => validateCloudConfig({...fixture(),...patch}),'a volume cannot enable the retired cloud fallback');

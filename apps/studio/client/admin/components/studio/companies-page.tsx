@@ -12,7 +12,6 @@ import type {Catalog} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {RegisteredStudio} from './registered-studio';
-import {AssignmentField} from './assignment-field';
 import {WorkspaceTool} from './workspace-tools';
 import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
@@ -31,7 +30,7 @@ type Operator=Catalog['administration']['operators'][number];type Room=Catalog['
 const stateChip=(room:Room)=><RoomStateChip room={room}/>;
 const publishedChip=(room:Room)=>room.published?<Chip tone="live">publicerat</Chip>:<Chip tone="draft">inte publicerat</Chip>;
 const operatorChip=(operator:Operator)=><Chip tone={operator.archivedAt?'off':operator.status==='active'?'live':'warn'} dot>{operator.archivedAt?'i papperskorgen':operator.status==='active'?'aktivt':'avstängt'}</Chip>;
-const companyHref=(operator:Pick<Operator,'id'>,flik='tilldelning')=>`/admin/companies/${encodeURIComponent(operator.id)}?flik=${flik}`;
+const companyHref=(operator:Pick<Operator,'id'>,flik='spelbord')=>`/admin/companies/${encodeURIComponent(operator.id)}?flik=${flik}`;
 const roomHref=(room:Room,flik='utseende')=>`/admin/rooms/${encodeURIComponent(room.id)}?flik=${flik}`;
 const games:Record<string,string>={blackjack:'Blackjack',roulette:'Roulette'};
 const gameLabel=(game:string|undefined)=>games[game??'']??'Spel';
@@ -97,14 +96,14 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const trashHref=(extra='')=>trashBase+(filter?'&operator='+encodeURIComponent(filter):'')+extra;
     const restoring=tab==='papperskorg'?operators.find(row=>row.id===query.get('restore')):undefined;
     const ghost=buttonVariants({variant:'ghost',size:'sm'});
-    return <HubPage eyebrow="Bolag" title="Bolag och spelbord" intro="Varje bolag har ett eget nav: tilldelning, spelbord, spelare, team, integration och journal. Alla bolags spelbord finns på en flik."
+    return <HubPage eyebrow="Bolag" title="Bolag och spelbord" intro="Varje bolag har ett eget nav: spelbord, tilldelning, team och inställningar. Alla bolags spelbord finns på en flik."
       actions={tab==='bolag'?<Link className={buttonVariants({variant:'primary'})} href="/admin/companies?tab=bolag&view=create"><Plus aria-hidden="true"/>Nytt bolag</Link>:tab==='spelbord'?<Link className={buttonVariants({variant:'primary'})} href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}><Plus aria-hidden="true"/>Nytt spelbord</Link>:undefined}
       tabs={<Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?groups.counts:{}}/>}
       note={tab==='papperskorg'?'Arkiverat ligger kvar tills det återställs. Ett bolag återställs under bolagets Inställningar; ett spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.':undefined}>
       {status}
       {tab==='bolag'&&<>
         <Dialog open={create} size="lg" title="Nytt bolag" description="Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under Tilldelning." onClose={()=>navigate('/admin/companies?tab=bolag')}
-          footer={<><Button onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>{operators[0]&&<Link className={buttonVariants({variant:'primary'})} href={companyHref(operators[operators.length-1])}>Till bolagets tilldelning<ArrowRight aria-hidden="true"/></Link>}</>}>
+          footer={<><Button onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>{operators[0]&&<Link className={buttonVariants({variant:'primary'})} href={companyHref(operators[operators.length-1],'tilldelning')}>Till bolagets tilldelning<ArrowRight aria-hidden="true"/></Link>}</>}>
           <DialogSteps steps={['Namn och administratör','Tilldelning']} current={0}/>{create&&<WorkspaceTool section="companies"/>}
         </Dialog>
         {catalog&&<Card><DataTable label="Bolag" rows={liveOperators} rowKey={row=>row.id} filter={{placeholder:'Sök bolag',text:row=>row.name}} initialSort={{id:'name',dir:'asc'}} empty={archivedOperators.length?'Inga aktiva bolag. Arkiverade bolag finns under Papperskorg.':'Inga bolag i registret.'} columns={[
@@ -153,25 +152,18 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
       {operator&&<>
-        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><div className="mb-4"><AssignmentField operatorId={operator.id} revision={operator.packageRevision} view={operator.assignment} disabled={disabled} onChanged={changed}/></div><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
+        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><RegisteredStudio mode="package" operatorId={operator.id} assignment={operator.assignment} assignmentRevision={operator.packageRevision} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
           <CreateRoomDialog revision={revision} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
         </Card>}
+        {tab==='spelbord'&&<Card title="Startadresser" aside="Per spelbord" className="mt-4">{own.filter(room=>room.playUrl).length?<KV items={own.filter(room=>room.playUrl).map(room=>[room.name,<code key={room.id} className="break-all rounded bg-sg-surface-2 px-1.5 py-0.5 font-mono text-xs">{room.playUrl}</code>] as [string,ReactNode])}/>:<p className="m-0 text-[12.5px] text-sg-muted">Inget spelbart spelbord ännu.</p>}</Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
-        {tab==='spelare'&&<div className="grid gap-4 md:grid-cols-2">
-          <Card title="Spelare"><Empty title="Inte anslutet ännu" text="Spelare är inte knutna till bolag ännu; det kommer senare. Tills dess finns alla spelarkonton under System." action={<Link className={buttonVariants()} href="/admin/system?flik=spelare">Spelarkonton under System</Link>}/></Card>
-          <Card title="Rundor och omsättning per spelbord"><Empty title="Inte anslutet ännu" text="Rundor och insatser per spelbord visas inte i Admin ännu. Ekonomin för alla bolag finns under System, fliken Spelarkonton."/></Card>
-        </div>}
         <div hidden={tab!=='team'}>{visited.includes('company:'+id+':team')&&<><Footnote className="mb-3 mt-0">Team, roller och inbjudningar. Administratören utses bara av Admin; den sista administratören kan inte stängas av.</Footnote><WorkspaceTool section="companies" overrides={{operator:operator.id}}/></>}</div>
-        {tab==='integration'&&<div className="grid gap-4 md:grid-cols-2">
-          <Card title="API-nycklar"><p className="m-0 text-[13.5px]">Varje nyckel hör till ett bolag. Bolaget väljer du när du skapar nyckeln under System, fliken Integration; listan visar bolaget per nyckel.</p><p className="mb-0 mt-3"><Link className={buttonVariants()} href="/admin/system?flik=integration">Integration under System</Link></p></Card>
-          <Card title="Startadresser" aside="Per spelbord">{own.filter(room=>room.playUrl).length?<KV items={own.filter(room=>room.playUrl).map(room=>[room.name,<code key={room.id} className="break-all rounded bg-sg-surface-2 px-1.5 py-0.5 font-mono text-xs">{room.playUrl}</code>] as [string,ReactNode])}/>:<p className="m-0 text-[12.5px] text-sg-muted">Inget spelbart spelbord ännu.</p>}</Card>
-        </div>}
-        {tab==='journal'&&<Card title="Journal" aside="Bolagets händelser och utseendeutkast"><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
         {tab==='installningar'&&<div className="grid gap-4 md:grid-cols-2">
           <Card title="Bolag"><KV items={[['Namn',operator.name],['Status',operatorChip(operator)],['Tilldelning',version(operator)]]}/><Footnote>Namnet ändras inte från Admin i dag.</Footnote></Card>
           <Card title="Livscykel" aside="Stäng av, papperskorg, återställ"><ControlResourceLifecycle operatorId={operator.id} kind="operator" available disabled={disabled} onChanged={changed}/></Card>
+          <Card title="Journal" aside="Bolagets händelser och utseendeutkast" className="md:col-span-2"><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>
         </div>}
         <TechnicalDetails items={[['Bolags-id',operator.id],['Adress i Partnerportalen','/partner/'+operator.slug]]}/>
       </>}
@@ -239,7 +231,7 @@ function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,co
     {step===1&&operator&&<div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
       <div className="grid content-start gap-2.5" role="group" aria-label="Miljö">{compositions.map(row=><button key={row.id} type="button" aria-pressed={row.id===composition?.id} className={choice(row.id===composition?.id)} onClick={()=>setCompositionId(row.id)}>
         <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.dealerIds.length?plural(row.dealerIds.length,'dealer','dealers'):'Inga dealers'} · {plural(rooms.filter(room=>room.compositionId===row.id).length,'spelbord','spelbord')} använder miljön</span></button>)}
-        {!compositions.length&&<Empty chip={null} title="Inga miljöer ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Miljöer</Link>}/>}</div>
+        {!compositions.length&&<Empty chip={null} title="Inga miljöer ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}</div>
       {composition&&<div className="grid min-w-0 content-start gap-4">
         <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} revision={revision} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
         <RegisteredStudio mode="create" operatorId={operator.id} compositionId={composition.id} disabled={disabled} onChanged={onChanged}/>
