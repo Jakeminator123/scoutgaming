@@ -50,12 +50,12 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onS
   const current = state.identity === identity ? state : { status: 'loading' };
   // The sibling editor (children) stays available while the layer panel is loading or unavailable.
   const state_ = (role, text) => {
-    const line = React.createElement('p', { role, className: 'kevin-appearance-state' }, text);
+    const line = React.createElement('p', { role, className: 'partner-appearance-panel-state' }, text);
     // Partnerportalen: the page heading stays while the editor loads or explains why it is missing.
     if (header) return React.createElement('div', { className: 'appearance-state' + (current.status === 'loading' ? ' loading' : '') },
       React.createElement('div', { className: 'page-head' }, React.createElement('div', { className: 'page-title' }, header.crumbs ? React.createElement('div', { className: 'eyebrow' }, header.crumbs) : null, React.createElement('h1', null, header.title))),
       current.status === 'loading' ? React.createElement('div', { className: 'skeleton-editor', 'aria-hidden': 'true' }, React.createElement('div', { className: 'skeleton block' }), React.createElement('div', { className: 'skeleton block tall' })) : null,
-      React.createElement('p', { role, className: current.status === 'loading' ? 'kevin-appearance-state' : 'note warn' }, text));
+      React.createElement('p', { role, className: current.status === 'loading' ? 'partner-appearance-panel-state' : 'note warn' }, text));
     return children ? React.createElement(React.Fragment, null, line, children) : line;
   };
   if (current.status === 'hidden') return state_('alert', en ? 'The appearance could not be loaded. Reload or check your access.' : 'Spelbordets utseende kunde inte hämtas. Ladda om eller kontrollera din åtkomst.');
@@ -64,7 +64,7 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onS
   if (current.status === 'loading') return state_('status', en ? 'Loading appearance…' : 'Hämtar utseende…');
   if (current.status === 'none') return state_('status', en ? 'Nothing is published yet. Scoutgaming publishes your tables first.' : 'Inget är publicerat än. Scoutgaming publicerar era spelbord först.');
   if (roomId && !current.initial.rooms?.some(room => room.id === roomId)) return state_('alert', en ? 'This table is not available in the published version. Reload the page.' : 'Spelbordet är inte tillgängligt i den publicerade versionen. Ladda om sidan.');
-  return React.createElement('section', { className: 'kevin-appearance', 'aria-label': en ? 'Appearance and publishing' : 'Utseende och publicering' },
+  return React.createElement('section', { className: 'partner-appearance-panel', 'aria-label': en ? 'Appearance and publishing' : 'Utseende och publicering' },
     React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, language, active, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, disabled, roomLayout, adminChoices, roomState, settings, history, header, onNotice, onSaved: saved => {
       if (activeIdentity.current !== identity || saved.operatorId !== current.initial.operatorId) return;
       setState(previous => previous.status === 'ready' && previous.identity === identity && previous.initial.operatorId === saved.operatorId ? { ...previous, initial: saved } : previous);

@@ -1,4 +1,7 @@
-// T2 policy groundwork; deliberately not connected to login or HTTP handlers.
+// Partnerportalens behörighetsgolv, kopplade till inloggning och HTTP: vyer och snapshot
+// (apps/studio/lib/partner-data.mjs), API-åtgärderna via partner-workspace-access.mjs och
+// partner-team-api.mjs, rollerna i operator-admin-api.mjs och lagret (operator-store.mjs).
+// Menyn (components/partner/partner-copy.mjs) läser samma vykarta.
 // These are permission floors, not authentication. Inputs must be fresh,
 // server-owned projections read in the same transaction as a protected write.
 // The caller must also verify session identity/stamp/epoch, membership revision,
