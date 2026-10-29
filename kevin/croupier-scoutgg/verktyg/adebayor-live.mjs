@@ -19,7 +19,7 @@ const V2 = path.join(ROOT, 'public/media/dealers/adebayor/v2');
 const PICKS = path.join(os.homedir(), '.claude-notch/clip-picks.json');
 const START = [path.join(KAND, 'start/v3-sko.png'), path.join(os.homedir(), 'Desktop/adebayor-h3/referens/VILA-sko.png')].find(existsSync);
 const DEALS = { box1: 'pos1', box2: 'pos2', box3: 'pos3', box4: 'pos4', box5: 'pos5', box6: 'pos6', box7: 'pos7', boxdealer: 'posdealer', dealer: 'posdealer', hole: 'hole', flip: 'flip' };
-const IDLES = ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud'];
+const IDLES = ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud', 'lugnandetag', 'nerupp', 'nick'];   // + pass 8 (s721x); axlar, blinkhuvud, blickskon out (Spel-QA 29 Oct: grin, teeth, big head turn)
 const TRACK = { pos1: '1', pos2: '2', pos3: '3', pos4: '4', pos5: '5', pos6: '6', pos7: '7', posdealer: 'dealer', hole: 'hole', flip: 'flip' };
 // Dragan's plate (public/media/dealers/dragge/v2/meta.json), the same scaled plate Adebayor's start image was built on
 const DRAGGE = JSON.parse(readFileSync(path.join(ROOT, 'public/media/dealers/dragge/v2/meta.json'), 'utf8'));
@@ -61,7 +61,7 @@ const same = (a, b) => existsSync(b) && statSync(a).size === statSync(b).size &&
 
 export function build({ log = console.log } = {}) {
   let picks = {}; try { picks = JSON.parse(readFileSync(PICKS, 'utf8')); } catch {}
-  const kept = keptPerTake(picks), approved = Object.fromEntries(Object.entries(val()).map(([t, f]) => [t, path.join(KAND, f)]));
+  const kept = keptPerTake(picks), approved = Object.fromEntries(Object.entries(val()).filter(([t, f]) => typeof f === 'string' && !t.startsWith('_')).map(([t, f]) => [t, path.join(KAND, f)]));
   mkdirSync(V2, { recursive: true });
   const used = {}, changed = [];
   const put = (take, src) => {

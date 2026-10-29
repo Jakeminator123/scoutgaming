@@ -155,8 +155,11 @@
   "blickvanster": "blickvanster/s7202.mp4",
   "djupandetag": "djupandetag/s7202.mp4",
   "fingrar": "fingrar/s7202.mp4",
-  "huvud": "huvud/s7202.mp4"
+  "huvud": "huvud/s7202.mp4",
+  "lugnandetag": "lugnandetag/s7211.mp4",
+  "nerupp": "nerupp/s7212.mp4",
+  "nick": "nick/s7212.mp4"
  },
  "kept": [],
- "built": "2026-10-29T03:24:30.498Z"
+ "built": "2026-10-29T03:59:11.834Z"
 }
