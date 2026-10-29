@@ -158,7 +158,9 @@ scenmallens **Automatik / OpenClaw** står på **Regler** och utkastet är spara
 och publicerat. De
 väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
-till vila.
+till vila. Ett klipp på **OpenClaw** får fältet **Vad klippet visar** (högst
+80 tecken); OpenClaw väljer utifrån den texten vid tur, resultat eller chatt
+när scenmallens vila står på **OpenClaw**.
 
 #### Sammanhängande vilosekvens
 
@@ -177,6 +179,12 @@ sekvensen kan kopplas.
 3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
    utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
    urvalet** bort dem; knappen visas bara då.
+   Ett kopplat klipp som börjar och slutar i vila har brytaren **OpenClaw
+   får föreslå klippet** och då fältet **Vad klippet visar**. Klippet ingår
+   fortfarande i sekvensen; OpenClaw kan dessutom föreslå det vid tur och
+   resultat, och då spelas det en gång innan sekvensen fortsätter. Valen och
+   beskrivningarna behålls när urvalet ändras. Spelmotorn behöver
+   runtimekapabilitet v32 innan en sådan sekvens kan sparas.
 4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
    **Koppla 21 viloklipp** → spara → **Publicera** (eller **Avancerat** ›
    **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
