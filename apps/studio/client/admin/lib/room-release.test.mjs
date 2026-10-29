@@ -114,6 +114,90 @@ test('blockers link to the place where they are fixed, and every area is listed'
   assert.deepEqual(areas[5].rows,['Bordsgrafik: green → blue']);assert.deepEqual(areas[6].rows,['Norr B binds om och behåller sina spelinställningar']);
 });
 
+// Steg D v2: bolagets utseendeutkast följer med publiceringen och ska synas i rutan.
+const appearance=(patch={})=>({area:'appearance',draftRevision:4,changes:[
+  {roomId:null,key:'dealer',before:'dragan',after:'paow'},
+  {roomId:'north-a',key:'dealer',before:'dragan',after:'paow'},
+  {roomId:'north-b',key:'dealer',before:'dragan',after:'paow'},
+  {roomId:'north-c',key:'roomOverrides.table',before:null,after:'blue'}],affectedRooms:['north-a','north-b','north-c'],...patch});
+
+test('an included appearance draft is its own area with company and room rows, and other affected rooms are named',()=>{
+  const view=preview({changes:[{area:'settings',before:null,after:{language:'sv',limitPreset:'prive'}},appearance()],
+    appearanceDraft:{revision:4,included:true}});
+  const names={dragan:'Dragan',paow:'PAOW'};
+  const areas=roomReleaseAreas(view,{dealerName:id=>names[id],rooms:[{id:'north-a',name:'Norr A'},{id:'north-c',name:'Norr C'}]});
+  const area=areas.find(row=>row.area==='appearance');
+  assert.ok(area,'the appearance area is shown');
+  assert.equal(area.label,'Utseende (utkast 4)');assert.equal(area.changed,true);
+  // Spelbordens ärvda dealerrader är bolagets val en gång; Norr B nämns under "Gäller även".
+  assert.deepEqual(area.rows,['Bolaget · Dealer: Dragan → PAOW','Spelbordet Norr C · Bordsgrafik (eget val): – → blue','Gäller även: Norr B, Norr C']);
+  assert.deepEqual(areas.map(row=>row.area),['speech','clips','idle','placement','settings','roomChoices','appearance','rooms']);
+  // Två val i utkastet och en inställning; "Gäller även" är ingen ändring.
+  assert.equal(release.roomReleaseChangeCount(view),3);
+  assert.equal(roomReleaseButton({status:'ready',preview:view}).hint,'3 ändringar ej publicerade');
+  // Bara det valda spelbordet påverkas: ingen rad "Gäller även".
+  const own=roomReleaseAreas(preview({changes:[appearance({changes:[{roomId:'north-a',key:'color',before:'#111',after:'#222'}],affectedRooms:['north-a']})]}))
+    .find(row=>row.area==='appearance');
+  assert.deepEqual(own.rows,['Spelbordet north-a · Färg: #111 → #222']);
+  assert.equal(release.roomReleaseChangeCount(preview({changes:[appearance({changes:[],affectedRooms:[]})]})),1,'an empty draft still counts once');
+});
+
+test('a draft choice that is also a roomChoices row is shown and counted once',()=>{
+  const names={dragan:'Dragan',paow:'PAOW'};
+  const dealer={area:'roomChoices',key:'dealer',before:'dragan',after:'paow'};
+  // Ett bolag med ett spelbord: bolagets dealerval ger raden under roomChoices och två utseenderader.
+  const single=preview({changes:[dealer,appearance({changes:[{roomId:null,key:'dealer',before:'dragan',after:'paow'},
+    {roomId:'north-a',key:'dealer',before:'dragan',after:'paow'}],affectedRooms:['north-a']})],appearanceDraft:{revision:4,included:true}});
+  const areas=roomReleaseAreas(single,{dealerName:id=>names[id]});
+  assert.deepEqual(areas.find(row=>row.area==='roomChoices').rows,['Dealer: Dragan → PAOW (bolagets val i utkastet)']);
+  assert.deepEqual(areas.find(row=>row.area==='appearance').rows,['Utkastet 4 publiceras samtidigt (valen står under Spelbordets val)']);
+  assert.equal(release.roomReleaseChangeCount(single),1);
+  assert.equal(roomReleaseButton({status:'ready',preview:single}).hint,'1 ändring ej publicerad');
+  // Flera spelbord: samma val en gång, de andra spelborden under "Gäller även", eget val på ett annat bord räknas för sig.
+  const many=preview({changes:[dealer,appearance()],appearanceDraft:{revision:4,included:true}});
+  const manyAreas=roomReleaseAreas(many,{dealerName:id=>names[id],rooms:[{id:'north-c',name:'Norr C'}]});
+  assert.deepEqual(manyAreas.find(row=>row.area==='roomChoices').rows,['Dealer: Dragan → PAOW (bolagets val i utkastet)']);
+  assert.deepEqual(manyAreas.find(row=>row.area==='appearance').rows,['Spelbordet Norr C · Bordsgrafik (eget val): – → blue','Gäller även: Norr B, Norr C']);
+  assert.equal(release.roomReleaseChangeCount(many),2);
+  // Spelbordets eget val i utkastet: raden står under roomChoices med sitt ursprung.
+  const own=preview({changes:[{area:'roomChoices',key:'table',before:'green',after:'blue'},appearance({changes:[{roomId:'north-a',key:'table',before:'green',after:'blue'}],affectedRooms:['north-a']})]});
+  assert.deepEqual(roomReleaseAreas(own).find(row=>row.area==='roomChoices').rows,['Bordsgrafik: green → blue (eget val i utkastet)']);
+  assert.equal(release.roomReleaseChangeCount(own),1);
+  // Bolagets val når inte det valda spelbordet när det har ett eget val: båda räknas.
+  const kept=preview({changes:[{area:'roomChoices',key:'dealer',before:'dragan',after:'mira'},appearance({changes:[{roomId:null,key:'dealer',before:'dragan',after:'paow'},
+    {roomId:'north-a',key:'dealer',before:'dragan',after:'mira'},{roomId:'north-b',key:'dealer',before:'dragan',after:'paow'}],affectedRooms:['north-a','north-b']})]});
+  assert.deepEqual(roomReleaseAreas(kept,{dealerName:id=>names[id]}).find(row=>row.area==='appearance').rows,['Bolaget · Dealer: Dragan → PAOW','Gäller även: Norr B']);
+  assert.equal(release.roomReleaseChangeCount(kept),2);
+});
+
+test('an included draft without change rows still shows the area, and a draft that is not included shows none',()=>{
+  const included=roomReleaseAreas(preview({changes:[],appearanceDraft:{revision:6,included:true}})).find(row=>row.area==='appearance');
+  assert.deepEqual([included.label,included.changed,included.rows],['Utseende (utkast 6)',true,['Utkastet 6 publiceras samtidigt']]);
+  assert.equal(roomReleaseAreas(preview({appearanceDraft:{revision:6,included:false}})).some(row=>row.area==='appearance'),false);
+});
+
+test('a server without step D v2 (no appearance area, no appearanceDraft) reads and renders as before',async()=>{
+  const old=preview();
+  assert.equal('appearanceDraft' in old,false);
+  const read=await readRoomRelease({operatorId:'north',roomId:'north-a',fetchImpl:recorder([{status:200,body:old}]).fetchImpl});
+  assert.equal(read.ok,true);
+  assert.equal(roomReleaseAreas(read.preview).some(row=>row.area==='appearance'),false);
+  assert.equal(release.roomReleaseChangeCount(read.preview),1);
+  // Trasiga eller saknade fält i området fäller inte rutan.
+  const broken=roomReleaseAreas(preview({changes:[{area:'appearance'},{area:'appearance',changes:[null,{key:7}],affectedRooms:'north-b'}],appearanceDraft:'x'}))
+    .find(row=>row.area==='appearance');
+  assert.deepEqual([broken.label,broken.rows],['Utseende (utkast)',['Utkastet publiceras samtidigt']]);
+});
+
+test('the room_choices step and the draft_invalid reason have their own text, linking to Utseende',()=>{
+  assert.equal(roomReleaseErrorMessage({status:409,code:'studio_conflict',step:'room_choices'}),
+    'Utseendeutkastet har ändrats sedan förhandsvisningen. Inget publicerades. Läs in igen.');
+  assert.equal(roomReleaseErrorMessage({status:422,code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}),
+    'Utseendeutkastet passar inte med de sparade scenmallarna. Inget publicerades.');
+  assert.deepEqual(roomReleaseBlocker({area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'},{roomId:'north-a'}),
+    {text:'Utseendeutkastet passar inte med de sparade scenmallarna.',href:'/admin/rooms/north-a?flik=utseende',linkLabel:'Öppna Utseende'});
+});
+
 test('the Publicera button renders inactive before the comparison is read and for a room that cannot be published',async()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const tsx=path=>transformSync(readFileSync(new URL(path,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;

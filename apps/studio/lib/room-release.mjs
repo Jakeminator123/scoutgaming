@@ -8,8 +8,12 @@
 //      Förberedelse utanför låset (infångning, mediekontroll mot Blob), därefter
 //      bolagslås, N→N+1, CAS på alla revisioner och J08-skrivaren för spelbordet.
 //
-// Första versionen: ett opublicerat utseendeutkast för bolaget stoppar med 409
-// studio_room_choices_draft_pending. Utkastet tas inte med i samma transaktion.
+// Andra versionen: bolagets öppna utseendeutkast tas med i samma transaktion när rollen
+// får publicera utseende (presentations.read och presentations.configure, som i Utseende).
+// Utkastet prövas med Utseendes egen granskning mot kandidatens presentation, ingår i
+// previewToken med sin revision och markeras publicerat av operatörsbutiken med samma
+// journalrad som "Publicera granskat utkast". Utan rätten, eller när utkastet bygger på
+// ett äldre paket, stoppar det som förut med 409 studio_room_choices_draft_pending.
 import {createHash} from 'node:crypto';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {isAdministratorRole} from '../../../packages/studio-access/account-role.mjs';
@@ -29,7 +33,9 @@ import {resolveRoomBranding} from '../../../packages/operators/contracts/brandin
 import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {presentationPackageRequiresV29,PRESENTATION_RUNTIME_UPDATE_REQUIRED,NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
-import {cleanBrandingDraft} from './partner-branding-api.mjs';
+import {cleanBrandingDraft,createPartnerBrandingApi} from './partner-branding-api.mjs';
+import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
+import {PARTNER_BRANDING_FIELDS,PARTNER_ROOM_BRANDING_FIELDS,publicEditableBranding} from '../../../packages/operators/contracts/branding.mjs';
 import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
 import {isRoomReleaseReadQuery} from './studio-admin-contract.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
@@ -39,7 +45,7 @@ export const ROOM_RELEASE_ACTION = 'publish-room';
 export const ROOM_RELEASE_CODES = Object.freeze(['studio_conflict','studio_release_preview_stale','studio_room_choices_draft_pending',
   'studio_room_game_material_unavailable','studio_release_invalid','studio_room_not_found','studio_presentation_runtime_update_required',
   'studio_room_config_storage_missing','studio_media_registry_unavailable']);
-export const ROOM_RELEASE_STEPS = Object.freeze(['package','project','administration','room_config_head','media','materials']);
+export const ROOM_RELEASE_STEPS = Object.freeze(['package','project','administration','room_config_head','media','materials','room_choices']);
 const BODY_KEYS = ['action','operatorId','roomId','gameConfig','expectedPackageRevision','expectedProjectRevision','expectedAdministrationRevision','previewToken'];
 
 const refuse = (code, status, extra = {}) => { throw Object.assign(new StudioStorageError(code, status), extra); };
@@ -56,6 +62,68 @@ function freeze(value) {
   return value;
 }
 const safeCode = value => typeof value === 'string' && /^[a-z][a-z0-9_]{0,100}$/.test(value);
+const DRAFT_INVALID = 'studio_room_choices_draft_invalid';
+// Utkastets valbara yta ersätter brandingens, allt annat (presentation, bindningar,
+// livscykel) står kvar: samma sammanfogning som Utseendes publicering.
+function withEditableBranding(branding, editable) {
+  const next = structuredClone(branding ?? {});
+  for (const key of [...PARTNER_BRANDING_FIELDS, 'roomOverrides']) delete next[key];
+  return {...next, ...publicEditableBranding(editable)};
+}
+// Utseendes granskning avvisar ett utkast som inte passar med 400, 409, 413 eller 422. Granskningen
+// körs mot en fryst kopia (kandidatens presentation, utkastet, administrationen), så 409 betyder här
+// att ett val inte ryms i kandidaten (t.ex. en dealer mallen inte tillåter), inte en samtidig ändring.
+// Andra statusar (503 och liknande) är tillfälliga och släpps igenom som de är.
+const DRAFT_REJECTIONS = Object.freeze([400, 409, 413, 422]);
+export const isDraftValidationFailure = error => error instanceof StudioStorageError && error.code === 'partner_branding_rejected'
+  && DRAFT_REJECTIONS.includes(error.statusCode);
+/**
+ * De val utkastet ändrar mot live (bolagets fält och spelbordens egna val) som kandidatens
+ * presentation tappar. Bara utkastets nycklar jämförs: ett live-val som presentationen tar bort
+ * utan att utkastet rör det hindrar inte, precis som samma publicering utan utkast.
+ * @returns {string[]} sökvägar som 'dealer' eller 'roomOverrides.<spelbord>.table'
+ */
+export function lostDraftChoices({live, draft, candidate}) {
+  const before = publicEditableBranding(live), after = publicEditableBranding(withEditableBranding(live, draft)), next = publicEditableBranding(candidate);
+  const same = (a, b) => canonicalStudioJson(a ?? null) === canonicalStudioJson(b ?? null);
+  const lost = [];
+  for (const key of PARTNER_BRANDING_FIELDS) if (!same(before[key], after[key]) && !same(after[key], next[key])) lost.push(key);
+  const rooms = new Set([...Object.keys(before.roomOverrides ?? {}), ...Object.keys(after.roomOverrides ?? {})]);
+  for (const roomId of [...rooms].sort()) for (const key of PARTNER_ROOM_BRANDING_FIELDS) {
+    const wanted = after.roomOverrides?.[roomId]?.[key];
+    if (!same(before.roomOverrides?.[roomId]?.[key], wanted) && !same(wanted, next.roomOverrides?.[roomId]?.[key])) lost.push('roomOverrides.' + roomId + '.' + key);
+  }
+  return lost;
+}
+
+/**
+ * Live och utkastet så som Utseendes granskning ska se dem mot kandidaten. Utkastet är hela ytan
+ * och bär därför live-val det inte ändrar; ett sådant val som kandidatens presentation tar bort
+ * (samma fall som lostDraftChoices släpper igenom) får kandidatens värde i både live och utkastet.
+ * Granskningen prövar då bara det utkastet ändrar, och ett ändrat val som inte ryms stoppas som förut.
+ * @returns {{live:object, draft:object}} publika valbara ytor
+ */
+export function draftReviewSurfaces({live, draft, candidate}) {
+  const base = structuredClone(publicEditableBranding(live)), wanted = structuredClone(publicEditableBranding(withEditableBranding(live, draft)));
+  const next = publicEditableBranding(candidate);
+  const same = (a, b) => canonicalStudioJson(a ?? null) === canonicalStudioJson(b ?? null);
+  const settle = (from, to, value) => {
+    if (value === undefined) { delete from.object[from.key]; delete to.object[to.key]; }
+    else { from.object[from.key] = structuredClone(value); to.object[to.key] = structuredClone(value); }
+  };
+  for (const key of PARTNER_BRANDING_FIELDS) if (same(base[key], wanted[key]) && !same(wanted[key], next[key]))
+    settle({object:base, key}, {object:wanted, key}, next[key]);
+  for (const roomId of Object.keys(wanted.roomOverrides ?? {})) for (const key of PARTNER_ROOM_BRANDING_FIELDS) {
+    const was = base.roomOverrides?.[roomId], now = wanted.roomOverrides[roomId];
+    if (!was || !same(was[key], now[key]) || same(now[key], next.roomOverrides?.[roomId]?.[key])) continue;
+    settle({object:was, key}, {object:now, key}, next.roomOverrides?.[roomId]?.[key]);
+  }
+  for (const surface of [base, wanted]) {
+    for (const [roomId, value] of Object.entries(surface.roomOverrides ?? {})) if (!Object.keys(value).length) delete surface.roomOverrides[roomId];
+    if (surface.roomOverrides && !Object.keys(surface.roomOverrides).length) delete surface.roomOverrides;
+  }
+  return {live:base, draft:wanted};
+}
 
 /** Den publika felkroppen för rummets publicering, eller null för andra fel. */
 export function roomReleaseErrorBody(error, status) {
@@ -162,6 +230,13 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     if (!isAdministratorRole(context.actor?.role) || typeof context.actor?.user !== 'string' || !context.actor.user
       || canonicalStudioJson(validateStudioScope(context.scope)) !== scopeKey) refuse('studio_forbidden', 403);
   }
+  // Rätten att publicera utseende, med Utseendes policy: en N1-administratör med konto får
+  // presentations.read och presentations.configure för bolaget som internal-admin
+  // (partner-workspace-access.mjs, partner-session.mjs). Ett konto utan id får det inte.
+  function mayPublishAppearance(actor, operatorId) {
+    const context = internalPartnerContext({accountId:actor?.accountId, role:actor?.role, scope}, {id:operatorId, status:'active', scope});
+    return ['presentations.read','presentations.configure'].every(permission => allowsWorkspaceResource(context, permission, {scope, operatorId}));
+  }
   const materialRows = async (sql, operatorId) => materials ? readOperatorMaterialRows(materials(sql), operatorId) : [];
   // 009-lagringen (spelinställningar) kontrolleras innan något skrivs.
   async function storageReady(sql) {
@@ -187,18 +262,46 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     return {configVersion:version, packageRevision:value.packageRevision, gameConfig, material:value.material ?? null};
   }
   // Bolaget, spelbordet och dess utkast, lästa utanför låset.
-  async function readState(operatorId, roomId) {
+  // includeDraft: utkastet tas med (rätten finns och det bygger på nuvarande paket).
+  async function readState(operatorId, roomId, actor) {
     const operators = await store(), operator = await operators.getOperatorById(operatorId);
     if (!operator || operator.status !== 'active') notFound();
     const snapshot = await repository.readPresentationSnapshot(), current = await operators.getCurrentPackage(operatorId);
     if (canonicalStudioJson(validateStudioScope(snapshot?.scope)) !== scopeKey) refuse('studio_scope_mismatch', 409);
     const administration = snapshot.administrationDocument.value, room = liveRoom(administration, current, operatorId, roomId);
-    const brandingDraft = await cleanBrandingDraft(await operators.getBrandingDraft(operatorId), current, operators);
-    return {operators, snapshot, administration, current, room, brandingDraft};
+    const rawBrandingDraft = await operators.getBrandingDraft(operatorId);
+    const brandingDraft = await cleanBrandingDraft(rawBrandingDraft, current, operators);
+    const includeDraft = Boolean(brandingDraft) && brandingDraft.basePackageRevision === current.revision && mayPublishAppearance(actor, operatorId);
+    return {operators, snapshot, administration, current, room, brandingDraft, rawBrandingDraft, includeDraft};
+  }
+  // Utseendes egen granskning (partner-branding-api.mjs, action 'review') av utkastet mot
+  // kandidatens presentation: samma val, rättigheter, dealerval och bordskontroller som
+  // "Granska publicering", utan skrivning. Ett utkast som inte passar är 422 med fast skäl.
+  async function reviewDraft({state, built, actor}) {
+    const {operators, current} = state;
+    // Bara det utkastet ändrar granskas: live-val som kandidaten tappar och utkastet inte rör
+    // rensas ur både live och utkastet (draftReviewSurfaces), precis som publiceringen utan utkast.
+    const surfaces = draftReviewSurfaces({live:current.branding, draft:state.brandingDraft.branding, candidate:built.candidate.branding});
+    const rawBrandingDraft = {...state.rawBrandingDraft, branding:surfaces.draft};
+    const view = {...current, branding:withEditableBranding(built.candidate.branding, surfaces.live)};
+    const document = structuredClone(state.snapshot.administrationDocument);
+    const readAdministration = async () => document;
+    const source = {...operators, getCurrentPackage:async id => id === current.operatorId ? view : null, getBrandingDraft:async () => rawBrandingDraft};
+    const api = createPartnerBrandingApi({store:source, readAdministration, readProject:async () => refuse('studio_storage_unavailable', 503),
+      withWriteContext:work => work({store:source, readAdministration, reauthorize:async () => true})});
+    try {
+      return await api.command({action:'review', operatorId:current.operatorId, expectedDraftRevision:rawBrandingDraft.revision,
+        expectedPackageRevision:current.revision, actor:actor.user, audit:operatorAuditContext(actor)});
+    } catch (error) {
+      if (isDraftValidationFailure(error)) invalid(DRAFT_INVALID);
+      throw error;
+    }
   }
   // Samma infångning som "Publicera igen" (operator-package-api.mjs prepare) för paketets
   // alla mallar, med bolagets eget material. verify=false: ingen provider-I/O.
-  async function buildCandidate({snapshot, current, administration, operatorId, rows}) {
+  async function buildCandidate({snapshot, current, administration, operatorId, rows, brandingDraft, includeDraft}) {
+    // Med utkastet byggs kandidaten på utkastets val; materialet ryms mot den brandingen.
+    const baseBranding = includeDraft ? withEditableBranding(current.branding, brandingDraft.branding) : current.branding;
     let saved;
     try { saved = normalizeProject(snapshot.projectDocument.value); } catch { invalid('studio_presentation_required'); }
     const allowed = new Set((saved.lanes ?? []).map(lane => lane.id)), lanes = [...current.lanes];
@@ -218,7 +321,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     let presentation = captured.presentation, materialWarnings = [], materialFingerprint = null;
     if (materials) {
       const merged = mergeOperatorMaterialsForPublication({presentation, rows, rooms:publicationRooms(administration, operatorId, current),
-        fits:presentationFits({branding:current.branding, base:presentation, allowExtended:canExtend()})});
+        fits:presentationFits({branding:baseBranding, base:presentation, allowExtended:canExtend()})});
       presentation = merged.presentation; materialWarnings = merged.warnings ?? []; materialFingerprint = operatorMaterialFingerprint(rows);
     }
     try { assertPublishedRoomBindings({administration, operatorId, currentPackage:current, presentation}); }
@@ -229,7 +332,9 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     }
     if (!canExtend() && presentationPackageRequiresV29(presentation)) refuse(PRESENTATION_RUNTIME_UPDATE_REQUIRED, 503);
     const candidate = {operatorId, revision:current.revision + 1, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables],
-      branding:withPackagePresentation(current.branding, presentation, {allowExtended:canExtend()})};
+      branding:withPackagePresentation(baseBranding, presentation, {allowExtended:canExtend()})};
+    // Presentationen tar tyst bort val den inte bär; ett utkastval får inte försvinna så.
+    if (includeDraft && lostDraftChoices({live:current.branding, draft:brandingDraft.branding, candidate:candidate.branding}).length) invalid(DRAFT_INVALID);
     return {presentation, candidate, mediaPreconditions:captured.mediaPreconditions, materialWarnings, materialFingerprint};
   }
   // Samma materialkontroll som room-game-config-api.mjs material(): rummets material
@@ -262,16 +367,20 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     }
   }
   // Skillnaden mot live och dess hash. Samma funktion för förhandsvisning och publicering.
-  function compare({state, live, gameConfig, built}) {
+  function compare({state, live, gameConfig, built, review = null}) {
     const livePresentation = readPackagePresentation(state.current);
     const liveAreas = releaseAreas(state.current, livePresentation, state.room, live?.gameConfig ?? null);
     const nextAreas = built && gameConfig ? releaseAreas(built.candidate, built.presentation, state.room, gameConfig) : null;
     const presentationSha256 = {live:livePresentation ? sha256(livePresentation) : null, candidate:built ? sha256(built.presentation) : null};
     const changes = releaseChanges(liveAreas, nextAreas, presentationSha256.live !== presentationSha256.candidate);
+    // Utkastet är ett eget ändrat område: Utseendes granskningsrader (bolaget och varje spelbord).
+    const appearance = state.includeDraft ? {revision:state.brandingDraft.revision, branding:state.brandingDraft.branding} : null;
+    if (nextAreas && appearance && review) changes.push({area:'appearance', draftRevision:appearance.revision,
+      changes:structuredClone(review.changes), affectedRooms:[...review.affectedRooms]});
     const revisions = {package:state.current.revision, project:state.snapshot.projectDocument.revision, administration:state.snapshot.administrationDocument.revision};
     const previewToken = sha256({contract:'room-release/1', scope, operatorId:state.room.operatorId, roomId:state.room.id, revisions,
       configVersion:live?.configVersion ?? null, presentationSha256, gameConfig:gameConfig ?? null, live:liveAreas, candidate:nextAreas,
-      materialFingerprint:built?.materialFingerprint ?? null});
+      materialFingerprint:built?.materialFingerprint ?? null, appearance, brandingDraft:state.brandingDraft?.revision ?? null});
     return {liveAreas, nextAreas, changes, changed:Boolean(nextAreas) && (changes.length > 0 || !live), revisions, presentationSha256, previewToken};
   }
   function blockerOf(error, area) {
@@ -291,18 +400,24 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     requireRuntime();
     const operatorId = url.searchParams.get('operatorId'), roomId = url.searchParams.get('roomId');
     if (!isRoomOperatorId(operatorId) || !isGameLaneId(roomId)) notFound();
-    const state = await readState(operatorId, roomId), blockers = [];
+    const state = await readState(operatorId, roomId, context.actor), blockers = [];
     const storage = await storageReady(pool);
     if (!storage) blockers.push({area:'settings', code:'studio_room_config_storage_missing'});
-    if (state.brandingDraft) blockers.push({area:'roomChoices', code:'studio_room_choices_draft_pending', draftRevision:state.brandingDraft.revision});
+    if (state.brandingDraft && !state.includeDraft)
+      blockers.push({area:'roomChoices', code:'studio_room_choices_draft_pending', draftRevision:state.brandingDraft.revision});
     const live = storage ? await publishedConfig(pool, state.current, state.room) : null;
     const draft = validateRoomGameDrafts(state.administration.roomGameConfigs ?? [], state.administration.rooms).find(row => row.roomId === roomId) ?? null;
     const gameConfig = draft?.gameConfig ?? live?.gameConfig ?? null;
     if (!gameConfig) blockers.push({area:'settings', code:'studio_room_game_config_missing'});
-    let built = null;
+    let built = null, review = null;
+    const draftBlocker = error => { const row = blockerOf(error, 'package'); return row.reason === DRAFT_INVALID ? {...row, area:'roomChoices'} : row; };
     try { built = await buildCandidate({...state, operatorId, rows:await materialRows(pool, operatorId)}); }
-    catch (error) { blockers.push(blockerOf(error, 'package')); }
-    const view = compare({state, live, gameConfig, built});
+    catch (error) { blockers.push(draftBlocker(error)); }
+    if (built && state.includeDraft) {
+      try { review = await reviewDraft({state, built, actor:context.actor}); }
+      catch (error) { blockers.push(draftBlocker(error)); }
+    }
+    const view = compare({state, live, gameConfig, built, review});
     if (built && gameConfig) {
       try { await roomMaterial({snapshot:state.snapshot, candidate:built.candidate, presentation:built.presentation, room:state.room, gameConfig}); }
       catch (error) { blockers.push(blockerOf(error, 'speech')); }
@@ -335,6 +450,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       roomGameConfigDraft:draft?.revision ?? null, brandingDraft:state.brandingDraft?.revision ?? null},
     gameConfig, live:publicAreas(view.liveAreas), candidate:publicAreas(view.nextAreas), changes:view.changes, changed:view.changed,
     affectedRooms, ready:view.changed && blockers.length === 0, blockers, previewToken:view.previewToken,
+    appearanceDraft:state.brandingDraft ? {revision:state.brandingDraft.revision, included:state.includeDraft} : null,
     ...(built?.materialWarnings?.length ? {materialWarnings:structuredClone(built.materialWarnings)} : {})};
   }
 
@@ -357,15 +473,16 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     trusted(context);
     const body = roomReleaseIntent(context.body);
     requireRuntime();
-    const state = await readState(body.operatorId, body.roomId);
+    const state = await readState(body.operatorId, body.roomId, context.actor);
     if (state.current.revision !== body.expectedPackageRevision) conflict('package');
     if (state.snapshot.projectDocument.revision !== body.expectedProjectRevision) conflict('project');
     if (state.snapshot.administrationDocument.revision !== body.expectedAdministrationRevision) conflict('administration');
     if (!await storageReady(pool)) refuse('studio_room_config_storage_missing', 503);
-    if (state.brandingDraft) refuse('studio_room_choices_draft_pending', 409);
+    if (state.brandingDraft && !state.includeDraft) refuse('studio_room_choices_draft_pending', 409);
     const live = await publishedConfig(pool, state.current, state.room);
     const built = await buildCandidate({...state, operatorId:body.operatorId, rows:await materialRows(pool, body.operatorId)});
-    const view = compare({state, live, gameConfig:body.gameConfig, built});
+    const review = state.includeDraft ? await reviewDraft({state, built, actor:context.actor}) : null;
+    const view = compare({state, live, gameConfig:body.gameConfig, built, review});
     if (view.previewToken !== body.previewToken) refuse('studio_release_preview_stale', 409);
     if (!view.changed) {
       await dropNoopDraft({state, roomId:body.roomId, live, gameConfig:body.gameConfig, actor:context.actor.user});
@@ -380,6 +497,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       administrationRevision:state.snapshot.administrationDocument.revision, presentation:built.presentation,
       currentBrandingSha256:sha256(state.current.branding), candidateBranding:structuredClone(built.candidate.branding), mediaPreconditions:built.mediaPreconditions, materialFingerprint:built.materialFingerprint,
       materialWarnings:structuredClone(built.materialWarnings), changes:structuredClone(view.changes),
+      appearanceDraftRevision:state.includeDraft ? state.brandingDraft.revision : null,
       // Lagringsbeskrivningen för det administrationsdokument som skrivs utan rummets utkast.
       administrationDescriptor:{...administration, roomGameConfigs:administration.roomGameConfigs ?? []}});
     preparedValues.add(value);
@@ -409,7 +527,13 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       if (snapshot.projectDocument.revision !== prepared.projectRevision) conflict('project');
       if (snapshot.administrationDocument.revision !== prepared.administrationRevision) conflict('administration');
       const administration = structuredClone(snapshot.administrationDocument.value), room = liveRoom(administration, current, operatorId, roomId);
-      if (await cleanBrandingDraft(await operators.getBrandingDraft(operatorId), current, operators)) refuse('studio_room_choices_draft_pending', 409);
+      // Utkastet under låset ska vara exakt det förberedda (eller inget). Ett nytt eller ändrat
+      // utkast är en konflikt; utan rätt att publicera utseende stoppar det som förut.
+      const lockedDraft = await cleanBrandingDraft(await operators.getBrandingDraft(operatorId), current, operators);
+      if ((lockedDraft?.revision ?? null) !== prepared.appearanceDraftRevision) {
+        if (lockedDraft && !mayPublishAppearance(context.actor, operatorId)) refuse('studio_room_choices_draft_pending', 409);
+        conflict('room_choices');
+      }
       if (materials && operatorMaterialFingerprint(await materialRows(client, operatorId)) !== prepared.materialFingerprint) conflict('materials');
       const recheck = async preconditions => {
         try { await assertCapturedPresentationMedia(repository, preconditions); }
@@ -426,11 +550,15 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       await recheck(preconditions);
       // J08-skrivaren: rumslås i ordning, CAS på varje huvud, andra rums bindningar oförändrade.
       try {
+        // Med utkastet: samma transaktion markerar det publicerat (operator-store.mjs, CAS på revisionen).
         await operators.publishRoomGameConfig({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId,
           expectedRevision:current.revision, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables], branding},
-        {roomId, gameConfig:validateRoomGameConfig(body.gameConfig), material});
+        {roomId, gameConfig:validateRoomGameConfig(body.gameConfig), material},
+        prepared.appearanceDraftRevision === null ? null : {expectedDraftRevision:prepared.appearanceDraftRevision});
       } catch (error) {
         // Paketets revision är redan låst och kontrollerad: en konflikt här gäller spelbordens huvuden.
+        // Butikens CAS på utkastet (operator-store.mjs) bär steget room_choices.
+        if (error?.code === 'studio_conflict' && error.step === 'room_choices') conflict('room_choices');
         if (error?.code === 'studio_conflict' && !error.step) conflict('room_config_head');
         // J08 löser om grannrummens nativa material: skälet ur den fasta listan blir materialReason.
         if (error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && error.materialReason === undefined)
@@ -453,7 +581,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       if (!config || config.packageRevision !== stored.revision || canonicalStudioJson(config.gameConfig) !== canonicalStudioJson(body.gameConfig))
         refuse('studio_corrupt_room_game_config', 503);
       return {ok:true, operatorId, roomId, previousPackageRevision:current.revision, packageRevision:stored.revision, package_revision:stored.revision,
-        configVersion:config.configVersion, gameConfig:config.gameConfig, administrationRevision,
+        configVersion:config.configVersion, gameConfig:config.gameConfig, administrationRevision, appearanceDraftRevision:prepared.appearanceDraftRevision,
         publishedAt:new Date(stored.publishedAtMs).toISOString(), actor:context.actor.user, changes:structuredClone(prepared.changes),
         ...(prepared.materialWarnings?.length ? {materialWarnings:structuredClone(prepared.materialWarnings)} : {})};
     }), {presentationMutation:[{kind:'presentation-package', value:prepared.presentation},

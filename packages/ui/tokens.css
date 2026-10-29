@@ -3,8 +3,10 @@
    Mörkt läge är standard (steg H, beslut 2026-10-29). Ljust läge gäller när <html> har
    klassen light; startskriptet i lib/theme-mode.mjs sätter dark eller light efter det
    sparade valet (localStorage 'sg-theme'), aldrig efter operativsystemets läge.
-   Sidomenyn (--sg-side*) är mörk i båda lägena. Lime är knappfyllning och fokusring;
-   text i accentfärg använder --sg-accent-text. Typsnitten läser --sg-next-*, som Next
+   Sidomenyn (--sg-side*) är mörk i båda lägena. Lime är knappfyllning; text i accentfärg
+   använder --sg-accent-text (minst 4,5:1). Markeringar och fokusringar ska använda
+   --sg-mark, som har minst 3:1 mot alla ytor i båda lägena; Admins Tailwind-klasser gör det
+   (focusRing i kit.tsx, ring-sg-mark) och ett källprov vaktar dem. Typsnitten läser --sg-next-*, som Next
    sätter med next/font och Admin med sina egna typsnittsfiler. */
 :root {
   color-scheme: dark;

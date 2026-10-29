@@ -8,7 +8,7 @@
   min-height: 100vh;
 }
 .sg-shell :focus-visible {
-  outline: 2px solid var(--sg-lime);
+  outline: 2px solid var(--sg-mark);
   outline-offset: 2px;
 }
 .sg-theme {
@@ -62,7 +62,7 @@
   border-color: transparent;
   cursor: not-allowed;
 }
-.sg-btn:focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 2px; }
+.sg-btn:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 2px; }
 
 /* Visible text belongs in the element: Ansluten, Ej sparad, OpenClaw, Sparad. */
 .sg-pill {

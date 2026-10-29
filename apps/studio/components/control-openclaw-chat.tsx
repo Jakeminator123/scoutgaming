@@ -1,8 +1,7 @@
 'use client';
 import { StudioDealerRequired } from './studio-dealer-required';
 
-import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
-import { labUrl } from '../lib/lab-url.mjs';
+import { studioScopedHref } from '../lib/studio-navigation.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import type { StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
@@ -22,16 +21,8 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
 }) {
   const { status, mode, changeMode, dealerId, dirty } = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
   const query=new URLSearchParams(typeof window==='undefined'?'':window.location?.search);
-  function contextHref(path:string) {
-    const url=new URL(studioNavigationHref(path,{...studioNavigationContextFromQuery(query),dealerId}),'https://studio.invalid');
-    // Keep explicit ambiguous room/operator selectors for the destination to validate.
-    for(const key of ['operator','table','room'])if(query.has(key)){
-      url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
-    }
-    return url.pathname+url.search;
-  }
-  const modelsHref=contextHref('/admin/ai/models');
-  const rehearsalHref=contextHref('/admin/rooms');
+  // Tvetydiga spelrum går dit den delade dokumentmappningen skickar dem, aldrig till det första värdet.
+  const rehearsalHref=studioScopedHref('/admin/rooms',query,{dealerId});
   return <PageTemplate
     eyebrow="Studio"
     title="Dialogtest"
@@ -39,7 +30,7 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
   >
     <div className="sg-page-body">
       <StudioNavigation dealerId={dealerId} dealerLabel={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label} active="speech"/>
-      <GatewayPanel modelsHref={modelsHref} standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
+      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
     </div>
   </PageTemplate>;
 }
