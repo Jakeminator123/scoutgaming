@@ -57,6 +57,8 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   useEffect(()=>{setRoomStatus(null);},[page,id]);
   const changed=()=>{setRefresh(value=>value+1);onChanged();};
   const operators=catalog?.administration.operators??[],compositions=catalog?.administration.compositions??[];
+  // The saved project revision that "Provspela sparad scen" starts against (room preview and Nytt spelbord).
+  const revision=catalog?.administration.revisions?.project;
   // Archived rooms stay with their company until restored through the rooms lifecycle; companies in the
   // trash (archivedAt) are listed only under Papperskorg, beside the archived rooms.
   const groups=companyListGroups(operators,catalog?.administration.rooms??[]);
@@ -99,7 +101,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='spelbord'&&<>
         {filters('/admin/companies?tab=spelbord',operators.filter(row=>!row.archivedAt))}
         {create&&!createOperator&&<Empty chip={null} title="Inget aktivt bolag" text="Skapa ett bolag först."/>}
-        <CreateRoomDialog revision={catalog?.administration.revisions.project} open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
+        <CreateRoomDialog revision={revision} open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
           onClose={()=>navigate('/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):''))}/>
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
@@ -136,7 +138,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {operator&&<>
         {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Upplåsning per val (dealer, bordsgrafik, bakgrund, språk, insatsprofil) kommer senare.</Note><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
-          <CreateRoomDialog revision={catalog?.administration.revisions.project} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
+          <CreateRoomDialog revision={revision} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
         </Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
@@ -192,7 +194,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='bolagets-val'&&<OperatorAdjustable laneId={room.compositionId} operator={operator} active={active&&tab==='bolagets-val'}/>}
       {tab==='historik'&&<Card title="Historik" aside="Bolagets publiceringar och utkast"><p className="mb-3 mt-0 text-[12.5px] text-sg-muted">Journalen gäller hela bolaget; raderna för det här spelbordet nämner dess namn.</p><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
       <TechnicalDetails items={[['Spelbords-id',room.id],['Scenmall-id',room.compositionId],['Spellane-id',room.laneId],['Bolags-id',room.operatorId]]}/>
-      <RoomPreview room={room} revision={catalog?.administration.revisions.project}/>
+      <RoomPreview room={room} revision={revision}/>
     </>}
   </HubPage>;
 }
