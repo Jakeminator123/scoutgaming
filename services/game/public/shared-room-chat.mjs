@@ -18,9 +18,12 @@ const maxLines = 30;
 const label = line => line.who === 'dealer' ? 'dealern' : line.who === 'you' ? 'du' : line.seat ? `plats ${line.seat}` : 'spelare';
 const round = snapshot => snapshot.roundId ?? 'window:' + snapshot.windowId;
 
-export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, randomId = () => globalThis.crypto.randomUUID() } = {}) {
+// speak(descriptor): presentation.speak of the room (PR 3); everyone plays the dealer's answer through it (PR 4).
+// A muted player gets the text and a "Slå på ljud" button (enableSound).
+export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, randomId = () => globalThis.crypto.randomUUID(), speak = null, enableSound = null } = {}) {
   if (typeof document?.createElement !== 'function' || !/^[a-z0-9_-]{1,128}$/.test(roomId ?? '')
-    || typeof state !== 'function' || typeof fetchImpl !== 'function' || typeof randomId !== 'function') throw new TypeError('shared_room_chat_invalid_options');
+    || typeof state !== 'function' || typeof fetchImpl !== 'function' || typeof randomId !== 'function'
+    || (speak !== null && typeof speak !== 'function') || (enableSound !== null && typeof enableSound !== 'function')) throw new TypeError('shared_room_chat_invalid_options');
   const make = (tag, className, text) => { const node = document.createElement(tag); node.className = className; if (text !== undefined) node.textContent = text; return node; };
   const panel = make('section', 'room-chat'), toggle = make('button', 'room-chat-toggle', 'Chatt'), unreadBadge = make('span', 'room-chat-unread');
   const body = make('div', 'room-chat-body'), log = make('ol', 'room-chat-log'), status = make('p', 'room-chat-status');
@@ -32,7 +35,8 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
   log.setAttribute('aria-live', 'polite'); status.setAttribute('role', 'status');
   input.type = 'text'; input.maxLength = 1000; input.autocomplete = 'off'; input.placeholder = 'Fråga dealern…';
   input.setAttribute('aria-label', 'Meddelande till dealern'); send.type = 'submit';
-  toggle.append(unreadBadge); form.append(input, send); body.append(log, status, form); panel.append(toggle, body);
+  const sound = make('button', 'room-chat-sound'); sound.type = 'button'; sound.hidden = true;
+  toggle.append(unreadBadge); form.append(input, send); body.append(log, status, form, sound); panel.append(toggle, body);
   document.body.append(panel);
   // Sit just below the header, whose height wraps with its buttons (phones get two rows).
   const header = document.getElementById?.('hud-top');
@@ -40,13 +44,24 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
     if (Number.isFinite(bottom)) panel.style.setProperty('--room-chat-top', Math.round(bottom + 6) + 'px'); };
   const observer = header && typeof globalThis.ResizeObserver === 'function' ? new globalThis.ResizeObserver(place) : null;
   observer?.observe(header); place();
-  const seen = new Set();
+  const seen = new Set(), spoken = new Set();
   let open = false, unread = 0, pending = null, closed = false;
+  // One playback per answer line: the asker's NDJSON result and this socket's frame carry the same lineId.
+  function play(key, descriptor) {
+    if (!speak || !key || !descriptor || spoken.has(key)) return;
+    spoken.add(key);
+    Promise.resolve().then(() => speak(descriptor)).then(result => {
+      if (closed || result?.speech !== 'text-only' || !result.action || !enableSound) return;
+      sound.textContent = result.action; sound.hidden = false;
+    }).catch(() => {});
+  }
+  function onSound() { sound.hidden = true; enableSound?.(); }
   function receive(line) {
     if (closed) return;
     // Deduplicate on the server's line id (q-/a-<hex>), never on requestId: another member can reuse
     // anyone's requestId, and that must not hide or replace a line here (review fix).
     const key = typeof line.lineId === 'string' && /^[qa]-[0-9a-f]{24}$/.test(line.lineId) ? line.lineId : null;
+    if (line.who === 'dealer' && line.speech) play(key, line.speech);
     if (key && seen.has(key)) return;
     if (key) seen.add(key);
     const item = make('li', 'room-chat-line room-chat-' + line.who);
@@ -71,12 +86,13 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
       const response = await fetchImpl(`/api/shared-room/${roomId}/chat`, { method: 'POST', credentials: 'same-origin', mode: 'same-origin',
         redirect: 'error', cache: 'no-store', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
-        body: JSON.stringify({ requestId, message, roundRevision: round(snapshot), acceptsSpeechStream: false }) });
+        body: JSON.stringify({ requestId, message, roundRevision: round(snapshot), acceptsSpeechStream: Boolean(speak) }) });
       const decision = await readChatResponse(response);
       if (closed) return;
       input.value = ''; status.textContent = '';
       receive({ lineId: decision?.questionLineId, requestId, who: 'you', seat: null, text: message });
-      if (decision?.kind === 'generatedText' && typeof decision.exactText === 'string') receive({ lineId: decision.lineId, requestId, who: 'dealer', seat: null, text: decision.exactText });
+      if (decision?.kind === 'generatedText' && typeof decision.exactText === 'string') receive({ lineId: decision.lineId, requestId, who: 'dealer', seat: null, text: decision.exactText,
+        ...(decision.speechStream ? { speech: decision.speechStream } : {}) });
       else status.textContent = 'Dealern lät frågan vara.';
     } catch (error) {
       if (!closed && !controller.signal.aborted) status.textContent = notices[error?.message] ?? failure;
@@ -84,13 +100,13 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
       if (pending === controller) { pending = null; if (!closed) send.disabled = false; }
     }
   }
-  toggle.addEventListener('click', onToggle); form.addEventListener('submit', onSubmit);
+  toggle.addEventListener('click', onToggle); form.addEventListener('submit', onSubmit); sound.addEventListener('click', onSound);
   return Object.freeze({
     receive,
     close() {
       if (closed) return;
       closed = true; pending?.abort(); pending = null; observer?.disconnect();
-      toggle.removeEventListener('click', onToggle); form.removeEventListener('submit', onSubmit); panel.remove();
+      toggle.removeEventListener('click', onToggle); form.removeEventListener('submit', onSubmit); sound.removeEventListener('click', onSound); panel.remove();
     },
   });
 }

@@ -36,12 +36,14 @@ function readFrame(data, maxMessageBytes) {
   return JSON.parse(data);
 }
 // Chat (PR 1): one line in the room's chat log; never game state.
+// PR 4: a dealer line may carry this socket's own speech descriptor; the speech player validates it before use.
 function readChat(frame, roomId) {
-  if (Object.keys(frame).length !== 8 || frame.roomId !== roomId || typeof frame.lineId !== 'string' || !/^[qa]-[0-9a-f]{24}$/.test(frame.lineId)
+  const speech = frame.speech;
+  if (Object.keys(frame).length !== (speech === undefined ? 8 : 9) || (speech !== undefined && (!object(speech) || frame.who !== 'dealer')) || frame.roomId !== roomId || typeof frame.lineId !== 'string' || !/^[qa]-[0-9a-f]{24}$/.test(frame.lineId)
     || !id(frame.requestId) || !['you', 'player', 'dealer'].includes(frame.who)
     || !(frame.seat === null || (Number.isSafeInteger(frame.seat) && frame.seat >= 1 && frame.seat <= 7))
     || typeof frame.text !== 'string' || !frame.text.trim() || frame.text.length > 1000 || !integer(frame.at)) invalid();
-  return Object.freeze({ lineId: frame.lineId, requestId: frame.requestId, who: frame.who, seat: frame.seat, text: frame.text, at: frame.at });
+  return Object.freeze({ lineId: frame.lineId, requestId: frame.requestId, who: frame.who, seat: frame.seat, text: frame.text, at: frame.at, ...(speech ? { speech } : {}) });
 }
 function readState(frame, roomId) {
   const s = frame?.snapshot, p = frame?.presentation;

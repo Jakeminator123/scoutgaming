@@ -160,10 +160,12 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(binding.expiresAt<=now()){socket.close(1008,'shared_room_unauthorized');fail('shared_room_unauthorized',403);}
       if(connections.size>=maxConnections){socket.close(1013,'shared_room_capacity');fail();}
       let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer,presenceTimer,presence;
+      // Aborts with this socket: a speech ticket issued to it can no longer be redeemed or keep streaming (PR 4).
+      const lifetime=new AbortController();
       let sentVersion=-1,sentPresentation=-1,observed=null;
       const cleanup=()=>{
         if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);clearTimeout(presenceTimer);
-        operation?.abort();presence?.abort();
+        operation?.abort();presence?.abort();lifetime.abort();
         socket.off('message',inbound);socket.off('close',cleanup);socket.off('error',broken);
         connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);
         // The last socket out takes the room's chat with it: the next company starts empty.
@@ -245,15 +247,23 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         if(!closed){presenceTimer=setTimeout(beat,presenceIntervalMs);presenceTimer.unref?.();}
       }
       // Chat (PR 1): server -> client only. who is per socket; the actor id never leaves the server.
-      const chat=entry=>{
+      const chat=(entry,speech)=>{
         if(closed)return;
         const data=JSON.stringify({type:'shared-room-chat',roomId,lineId:entry.lineId,requestId:entry.requestId,
-          who:entry.actorId===null?'dealer':entry.actorId===binding.actorId?'you':'player',seat:entry.seat,text:entry.text,at:entry.at});
+          who:entry.actorId===null?'dealer':entry.actorId===binding.actorId?'you':'player',seat:entry.seat,text:entry.text,at:entry.at,...(speech?{speech}:{})});
         if(socket.readyState!==1||!Number.isFinite(socket.bufferedAmount)||socket.bufferedAmount<0
           ||socket.bufferedAmount+Buffer.byteLength(data)>maxBufferedBytes){close(1013,'shared_room_backpressure');return;}
         socket.send(data,error=>{if(error)broken();});
       };
-      const connection={close,requestRefresh,observe,roomId,chat};
+      // PR 4: the dealer's spoken answer for this socket only. issue gets this socket's session and lifetime and
+      // returns a descriptor with a ticket of its own, or null (this socket keeps the text it already has).
+      const speak=(entry,issue)=>{
+        if(closed)return;
+        let speech=null;
+        try{speech=issue(Object.freeze({owner:binding.sessionId,playerId:binding.actorId,signal:lifetime.signal}));}catch{}
+        if(speech)chat(entry,speech);
+      };
+      const connection={close,requestRefresh,observe,roomId,chat,speak};
       connections.add(connection);if(!rooms.has(roomId))rooms.set(roomId,new Set());rooms.get(roomId).add(connection);
       if(!actors.has(binding.actorId))actors.set(binding.actorId,new Set());actors.get(binding.actorId).add(connection);
       socket.on('message',inbound);socket.on('close',cleanup);socket.on('error',broken);
@@ -289,6 +299,15 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       const entry=Object.freeze({lineId,requestId,actorId,seat,text,at}),log=chats.get(roomId)??[];
       log.push(entry);if(log.length>chatLimit)log.splice(0,log.length-chatLimit);chats.set(roomId,log);
       for(const connection of group)connection.chat(entry);
+    },
+    // PR 4: a spoken dealer line, sent per socket with that socket's own ticket and never kept in the log: a
+    // socket that attaches later gets the text only. The text line itself went out earlier through emitChat.
+    emitSpeech(roomId,{lineId,requestId,text,at}={},issue){
+      if(stopped)return;
+      if(!id(roomId)||typeof lineId!=='string'||!/^a-[0-9a-f]{24}$/.test(lineId)||!id(requestId)||typeof text!=='string'||!text.trim()
+        ||text.length>1000||unsafeChatText.test(text)||!integer(at)||typeof issue!=='function')fail('shared_room_request_rejected',400);
+      const entry=Object.freeze({lineId,requestId,actorId:null,seat:null,text,at});
+      for(const connection of rooms.get(roomId)??[])connection.speak(entry,issue);
     },
     // B2: the service closes only on shutdown/restart (SIGTERM). 1012 tells the client to
     // reconnect with a fresh authenticated snapshot; 1000 would stop it for good.

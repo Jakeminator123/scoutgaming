@@ -75,7 +75,7 @@ async function selectSpeech(ports, context, sessionRevision) {
   try {
     if (await dealerSpeech?.requested?.(context.dealerId) !== true) return { reason: 'generated_speech_profile_not_enabled' };
     if (movingSpeech?.supports?.(context.dealerId) && context.presentationContext?.dealerId === context.dealerId) {
-      return { service: movingSpeech.forContext(context.presentationContext, undefined, sessionRevision) };
+      return { service: movingSpeech.forContext(context.presentationContext, undefined, sessionRevision, { room: true }) };
     }
     if (typeof speechStream?.prepare === 'function') return { service: speechStream };
     return { reason: 'moving_speech_dealer_unavailable' };
@@ -223,6 +223,21 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
         ...(text && input.acceptsSpeechStream && !speechStream ? { speech: 'text-only', reason: selected.reason ?? 'moving_speech_unavailable' } : {}) });
       delivered = true;
       res.end();
+      // PR 4: everyone at the table hears and sees the answer. Each room socket gets its own ticket for the one
+      // GPU session (moving-speech-room-relay.mjs). A listener's freshness is its own unlocked chatMember read at
+      // redemption: no locked read per listener or chunk, so a spoken answer keeps its two locked reads.
+      if (speechStream?.kind === 'moving-speech-stream' && typeof selected.service?.issue === 'function' && typeof service.emitSpeech === 'function') {
+        const fresh = recipient => async req => {
+          const cookie = req?.headers?.cookie;
+          const after = await service.chatMember(Object.freeze({ headers: new Headers(typeof cookie === 'string' ? { cookie } : {}), signal: AbortSignal.timeout(5000) }), { roomId });
+          if (after.binding.actorId !== recipient.playerId || after.binding.sessionId !== recipient.owner
+            || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
+        };
+        try {
+          service.emitSpeech(roomId, { lineId, requestId: input.requestId, text, at: now() },
+            recipient => selected.service.issue(speechStream, { ...recipient, check: fresh(recipient) }));
+        } catch {}
+      }
     } catch (error) {
       if (owner && !delivered) cancelSpeech(ports, owner);
       const [status, code] = rejection(error, signal.aborted);
