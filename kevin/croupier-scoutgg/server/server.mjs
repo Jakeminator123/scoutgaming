@@ -41,6 +41,7 @@ import { createAlerts } from './alerts.mjs';
 import { createRunpodNotice } from './runpod-notice.mjs';
 // Kevin 23 Oct: lip-sync and callback failures to the webhook in ALERT_WEBHOOK_URL (server/alerts.mjs), else to the log
 const alerts = createAlerts();
+import './local-dealers.mjs';   // sets globalThis.LOCAL_DEALERS before dealers.js adds the local-only dealers
 import { DEALERS } from '../public/dealers.js';   // the dealers' idle lists (which takes a chain at rest is laid from)
 
 loadEnv();
