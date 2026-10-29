@@ -1,9 +1,9 @@
 import { gameLaneFromDocument } from '../../../packages/presentation/contracts/game-selection.mjs';
 import { createPresentationStartup } from './presentation-startup.mjs';
 import { combineAbortSignals } from './abort-signals.mjs';
-import { createSharedRoomClient } from './shared-room-client.mjs';
+import { createSharedRoomClient, ROOM_CONFIG_MISSING } from './shared-room-client.mjs';
 import { createSharedRoomCommandClient } from './shared-room-command-client.mjs';
-import { createSharedRoomController } from './shared-room-controller.mjs';
+import { createSharedRoomController, ROOM_NOT_READY } from './shared-room-controller.mjs';
 import { createSharedRoomView } from './shared-room-view.mjs';
 import { mountSharedRoomPresentation } from './shared-room-presentation.mjs';
 import { createSharedRoomWaiting } from './shared-room-waiting.mjs';
@@ -178,7 +178,8 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
   let presentation,view,controller,socket,commands,seats,closed=false;
-  const fail=code=>{startup.fail();controller?.fail(code);};
+  // A room without published game settings says so on the loading screen too, not the generic reload text.
+  const fail=code=>{startup.fail(code===ROOM_CONFIG_MISSING?ROOM_NOT_READY:undefined);controller?.fail(code);};
   const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();seats?.stop();controller?.stop();
     if(!controller){commands?.stop();view?.close();presentation?.close();}startup.close();};
   window.addEventListener('pagehide',close,{once:true});

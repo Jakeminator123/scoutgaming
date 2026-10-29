@@ -15,12 +15,13 @@ export function createPresentationStartup({ document, dealerId, timeoutMs = 3000
     timer = setTimer(() => { if (generation === timerGeneration) fail(); }, timeoutMs);
   };
   armTimer();
-  function fail() {
+  // message: a known reason in place of the generic text (for example a room without game settings).
+  function fail(message) {
     if (state === 'ready' || state === 'navigating' || state === 'closed') return;
     stopTimer(); gestureWaiting = false;
     state = 'failed'; root.dataset.presentationStartup = state;
     if (status) {
-      status.textContent = 'Spelbordet kunde inte visas. Ladda om sidan för att försöka igen.';
+      status.textContent = typeof message === 'string' && message ? message : 'Spelbordet kunde inte visas. Ladda om sidan för att försöka igen.';
       status.setAttribute('role', 'alert');
       const button = document.createElement('button');
       button.type = 'button'; button.textContent = 'Ladda om';

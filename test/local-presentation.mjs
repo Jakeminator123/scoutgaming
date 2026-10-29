@@ -1844,6 +1844,39 @@ test('new unreviewed speech metadata never reaches the live media player', async
 });
 
 
+// Game events trigger OpenClaw without chat: active plays its idle reaction once, shadow only records it, off asks nothing.
+for(const [mode,shared] of [['active',true],['shadow',true],['off',true],['active',false],['shadow',false]])test(`a settled round on ${shared?'a shared':'a single-player'} table asks OpenClaw for an idle reaction in mode ${mode}`,async t=>{
+  const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
+  const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null,description:'jublar kort'}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
+  const inventory={videos,families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  // A shared table (idleConfigRead=false) gets OpenClaw's answer; a single-player table sends nothing.
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true,...(shared?{idleConfigRead:false}:{})});
+  const original=globalThis.fetch,asked=[],asks=shared&&mode!=='off';
+  globalThis.fetch=async(url,options)=>{
+    const response=await original(url,options);if(url!=='/api/presentation/select')return response;
+    const result=await response.json(),body=JSON.parse(options.body);asked.push(body);
+    return Response.json({...result,idleAdvice:{requestId:result.decision.requestId,mode:body.mode,event:'win-big',videoId:body.mode==='active'?alt:null,wouldChooseId:alt,
+      provider:'responded',expiresAt:new Date(Date.now()+30000).toISOString(),version:body.version,presentationContext:null}});
+  };
+  const control=f.elements.find(row=>row.className==='local-presentation-mode');control.value=mode;control.onchange();
+  f.controller.state({action:true});
+  await f.controller.observeEvents([{type:'settle',dealerTotal:22,dealerBlackjack:false,hands:[{box:3,stake:10,returned:20,outcome:'win'}]}]);
+  f.controller.state({action:true,command:'collect'});f.setVersion(3);
+  await f.controller.observeEvents([{type:'speak',line:'placebets'},{type:'idle'}],{command:'collect',previousVersion:2});
+  f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  const current=f.jobs.at(-1);assert.equal(current.take.media.src,videos[0].src);
+  current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(asked.length,asks?1:0,'off and a single-player table make no request');
+  if(asks)assert.equal(asked[0].mode,mode);
+  assert.equal(f.jobs.at(-1).take.media.src,videos[asks&&mode==='active'?1:0].src,mode==='active'&&asks?'the reaction plays':'otherwise the base stays');
+  const recorded=f.receipts.filter(row=>row.event==='idle-advice'&&row.source==='game-event');
+  assert.equal(recorded.length,asks?1:0);
+  if(asks&&mode==='shadow')assert.deepEqual([recorded[0].result.videoId,recorded[0].result.wouldChooseId],[null,alt]);
+  f.controller.close();globalThis.fetch=original;
+});
+
 for(const late of ['response','json'])test('aborted rule observation cannot offer stale idle after '+late,async t=>{
   const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
   const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
