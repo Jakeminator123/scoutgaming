@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPartnerLeaveGuard} from '../components/kevin-bo/partner-navigation-guard.mjs';
+import {createPartnerLeaveGuard} from '../components/partner/partner-navigation-guard.mjs';
 
 test('leave guard asks once while dirty, approves beforeunload after consent and resets', () => {
   let dirty = true, answers = [false, true];

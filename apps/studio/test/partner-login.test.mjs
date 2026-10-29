@@ -198,7 +198,7 @@ test('actual browser partner login returns to the authorized operator and room w
           const module={exports:{}}, unused=()=>assert.fail('unexpected fixture preview or control');
           const overrides={
             'next/headers':{headers:async()=>request.headers},'next/navigation':navigation,
-            '@/components/kevin-bo/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
+            '@/components/partner/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
             '@/components/partner-workspace':{PartnerWorkspace:()=>null},
             '@/lib/partner-data.mjs':{partnerWorkspaceInitialData:(req,options)=>partnerWorkspaceInitialData(req,{...options,config,store})},
 

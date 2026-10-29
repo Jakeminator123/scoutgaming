@@ -15,7 +15,7 @@ const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const origin='https://partner-workspace.fixture.invalid',studio=dirname(dirname(fileURLToPath(import.meta.url)));
 let source;
 async function fixtureSource(){return source??=build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
-import {PartnerOperatorWorkspace} from './components/kevin-bo/partner-operator-workspace.jsx';
+import {PartnerOperatorWorkspace} from './components/partner/partner-operator-workspace.jsx';
 const props=window.__PROPS__;createRoot(document.getElementById('root')).render(React.createElement(PartnerOperatorWorkspace,props));`,resolveDir:studio,loader:'jsx'},
   bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent',
   define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"0"'},

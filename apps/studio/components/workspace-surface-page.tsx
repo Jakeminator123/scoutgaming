@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { PartnerOperatorWorkspace } from '@/components/kevin-bo/partner-operator-workspace';
+import { PartnerOperatorWorkspace } from '@/components/partner/partner-operator-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
 
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';

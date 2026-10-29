@@ -1,7 +1,7 @@
 // Partnerportalens ord som servern också behöver (apps/studio/docs/TERMINOLOGI.md).
 // Ren modul utan React: partner-data.mjs läses i serverkomponenter och i
 // app/api/partner-rutten, där en modul med useEffect/useState inte får ingå.
-// Klientens texter (menyn, skalet) ligger i components/kevin-bo/partner-copy.mjs.
+// Klientens texter (menyn, skalet) ligger i components/partner/partner-copy.mjs.
 // Rollens ord: standardrollerna i apps/studio/lib/operator-admin-api.mjs.
 export const PARTNER_ROLE_WORDS = Object.freeze({
   sv: Object.freeze({ 'partner-admin': 'administratör', 'partner-editor': 'redaktör', 'partner-viewer': 'läsare' }),
