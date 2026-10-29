@@ -6,12 +6,21 @@ import styles from './admin-publication-page.module.css';
 
 const profiles=roomLimitProfiles();
 
-function publicationHelp(publication:RoomGameReceipt['publication']) {
+type RoomDealer={id:string;name:string};
+const dealerClips=(dealer:RoomDealer)=>'/admin/dealers/'+encodeURIComponent(dealer.id)+'?flik=klipp';
+// Mätningen görs på dealernavet; texten pekar dit med en länk per dealer i spelbordet.
+function measurementHelp(dealers:RoomDealer[]) {
+  const rest=' Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+  if(!dealers.length)return 'Klippen saknar aktuella tidsmätningar. Öppna Dealers › dealern i spelbordet och välj Mät omätta klipp.'+rest;
+  return <>Klippen saknar aktuella tidsmätningar. Öppna {dealers.map((dealer,index)=><span key={dealer.id}>{index?' eller ':''}<a className="font-semibold underline" href={dealerClips(dealer)}>Dealers › {dealer.name}</a></span>)} och välj Mät omätta klipp.{rest}</>;
+}
+
+function publicationHelp(publication:RoomGameReceipt['publication'],dealers:RoomDealer[]=[]) {
   if(publication.reason==='studio_room_game_draft_required')return 'Spara spelinställningarna som utkast för att kontrollera materialet för valt språk.';
   if(publication.reason==='studio_room_game_material_unavailable')switch(publication.materialReason){
     case 'native_material_measurement_missing':
     case 'native_material_measurement_mismatch':
-      return 'Klippen saknar aktuella tidsmätningar. Öppna dealerns klipp och välj Mät speltid. Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+      return measurementHelp(dealers);
     case 'native_material_speech_slot_missing':
     case 'native_material_speech_unbound':
       return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera i spelbordet efter rättning.';
@@ -31,7 +40,7 @@ function publicationHelp(publication:RoomGameReceipt['publication']) {
   return 'Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets sammansättning.';
 }
 
-export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
+export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
   if(!ref.current)ref.current=createRoomGameConfigController();
   const controller=ref.current,state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
@@ -76,7 +85,7 @@ export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusy
     <p>Insatstid: 20 sekunder. Beslutstid: 15 sekunder. Beloppen är demoenheter.</p>
     {current&&state.error?<p role="alert">{state.error}</p>:null}
     {current&&state.message?<p role="status">{state.message}</p>:null}
-    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication)}</p>:null}
+    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication,dealers)}</p>:null}
     <div className={styles.actions}>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</button>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</button>

@@ -1204,8 +1204,22 @@ html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex
 .room-chat-send { padding: 0 14px; min-height: 36px; border-radius: 999px; cursor: pointer; border: none;
   background: #D6FF3A; color: #0A0B0D; font: 600 12px 'Space Grotesk', sans-serif; }
 .room-chat-send:disabled { opacity: .45; cursor: default; }
+.room-chat-body { position: relative; }
+.room-chat-close { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 999px; cursor: pointer; padding: 0;
+  background: transparent; border: 1px solid rgba(242,241,237,.14); color: #c9cbd2; font: 600 16px/1 'Inter', sans-serif; }
+.room-chat-close:hover { border-color: rgba(214,255,58,.55); color: #F2F1ED; }
+.room-chat-close:focus-visible { outline: 2px solid #D6FF3A; outline-offset: 2px; }
+.room-chat-log { padding-right: 34px; }
+/* Docked (the shared table): the folded pill is a seat control in the header row and wraps with them, so it covers
+   no seat, bet or decision at any width. Opened, the log is an overlay just below the header with its own close. */
+.room-chat.room-chat-docked { position: static; width: auto; display: inline-flex; order: 3; }
+.room-chat-docked .room-chat-toggle { min-height: 44px; }
+.room-chat-docked .room-chat-body { position: fixed; top: var(--room-chat-top, calc(env(safe-area-inset-top, 0px) + 64px)); right: 12px; z-index: 46;
+  width: min(320px, calc(100vw - 24px)); box-sizing: border-box; pointer-events: auto; }
+@media (max-width: 860px) { .room-chat.room-chat-docked { order: 1; } }
 @media (max-width: 480px) {
   .room-chat { right: 8px; width: calc(100vw - 16px); }
+  .room-chat-docked .room-chat-body { right: 8px; width: calc(100vw - 16px); }
   .room-chat-log { max-height: 26vh; }
   .room-chat-input { font-size: 16px; } /* no iOS zoom on focus */
 }
