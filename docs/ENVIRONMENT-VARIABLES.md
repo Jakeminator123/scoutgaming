@@ -23,20 +23,17 @@ Inga miljögrupper eller secret files används. Render-konfiguration kopieras al
 
 ## Vercel `scoutgaming`: web, studio och speech
 
-Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `vercel-frontend-production` (web och speech via `packages/server-transport/configuration.mjs` och `packages/navigation/server/platform-routing.mjs`), `vercel-lab-ui` (studio, med Next-proxyn `apps/studio/proxy.ts`) och `vercel-entry` (spelarbygget). Allt sätts i Production. Läst 2026-10-29 (namn, scope och typ, inga värden; [inventeringen](2026-10-29-ENV-INVENTORY.md)): 51 poster i Production (35 egna och 16 `CROUPIER_NEON_*`), 10 i Preview och 3 i Development. Undantag: `CROUPIER_AI_IMAGE_ENABLED` och `CROUPIER_AI_IMAGE_DAILY_LIMIT` ligger med avsikt i alla tre scopen (Jakobs beslut 2026-10-29), `CROUPIER_DEALER_IMPORT_AI` ligger också i Development och Preview, där den inte gör något, och Preview-scopet har sju handsatta poster till (se [Att ta bort ur Vercel](#att-ta-bort-ur-vercel-production)). Preview-scopet pekar på produktionens adresser men saknar ingresshemligheten och databasadressen och är ingen skrivbar testmiljö; den riktiga previewn är projektet `scoutgaming-preview`.
+Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `vercel-frontend-production` (web och speech via `packages/server-transport/configuration.mjs` och `packages/navigation/server/platform-routing.mjs`), `vercel-lab-ui` (studio, med Next-proxyn `apps/studio/proxy.ts`) och `vercel-entry` (spelarbygget). Allt sätts i Production. Läst 2026-10-29 16:10 (namn, scope och typ, inga värden): 41 namn i Production (24 handsatta, 16 `CROUPIER_NEON_*` och `CROUPIER_MEDIA_STORE_ID` från kopplingarna), 5 i Preview (`CROUPIER_AI_IMAGE_ENABLED`, `CROUPIER_AI_IMAGE_DAILY_LIMIT`, `OPENAI_API_KEY`, `CROUPIER_DEALER_IMPORT_AI`, `CROUPIER_MEDIA_STORE_ID`) och 4 i Development (samma utom `CROUPIER_MEDIA_STORE_ID`). AI-bildnamnen ligger med avsikt i alla tre scopen (Jakobs beslut 2026-10-29); `CROUPIER_DEALER_IMPORT_AI` gör inget i Preview och Development. Preview-scopet saknar ingresshemligheten och databasadressen och är ingen skrivbar testmiljö; den riktiga previewn är projektet `scoutgaming-preview`. Vad som ska bort står i [Att ta bort i panelen](#att-ta-bort-i-panelen).
 
 | Namn | Krav | Tjänst | Syfte |
 | --- | --- | --- | --- |
-| `CROUPIER_VERCEL_UI` | krävs, `1` | web, studio, speech | Slår på transporten till spelmotorn |
 | `CROUPIER_VERCEL_UNIFIED_UI` | krävs, `1` | web, studio | En publik origin för spel och Admin; kräver `CROUPIER_STUDIO_NATIVE_ADMIN=1` |
 | `CROUPIER_STUDIO_NATIVE_ADMIN` | krävs, `1`; läses även vid bygget | web, studio | Admin körs på Vercel; spelmotorn behåller spelauktoriteten |
 | `CROUPIER_PUBLIC_ORIGIN` | krävs | web, studio, speech | `https://www.scoutgaming.tech`; även länkar i mejl |
-| `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com` |
+| `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com`. Satt slår den på transporten till spelmotorn (`packages/server-transport/configuration.mjs`); den tidigare brytaren `CROUPIER_VERCEL_UI=1` läses inte längre. Saknas den med `VERCEL_ENV=production` kastar `platformConfiguration` ett fel, så `apps/web`-bygget (`tools/prepare-platform-ui.mjs`) fälls och den förra deployen står kvar; lokalt, i Vercel Preview och i CI ger saknad origin bara landningssidan |
 | `CROUPIER_VERCEL_INGRESS_SECRET` | krävs, Sensitive | web, studio, speech | Signerar anrop till spelmotorn; samma värde som på Render |
-| `CROUPIER_LAB_UI_ORIGIN` | sätts inte; ska bort | web, studio | Läses bara när `CROUPIER_VERCEL_UNIFIED_UI` inte är `1`: då är den Studiozonens egen origin, och `packages/server-transport/configuration.mjs` och `studio-native-runtime.mjs` kräver att den skiljer sig från den publika originen och spelmotorns. I unified-läget ignoreras den överallt, också av assistenten (`/studio/api/assistant` och `/studio/api/public-assistant` via `assistantRequestConfiguration` i `studio-native-request.mjs`), som då bara kräver `CROUPIER_PUBLIC_ORIGIN`; den koden (`3e866f74`) är i produktion sedan deployen av `a05917c3` (`dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3`, 2026-10-29). Värdet i Production är den gamla aliasvärden `croupier-lab-ui.vercel.app`, som fortfarande är en domän i projektet |
-| `CROUPIER_LAB_REMOTE_UI` | läses inte; ska bort ur panelen | studio | Den gamla Lab-fjärrvägen. `remote-ui.mjs` är raderad (steg G i admin-förenklingen); ingen källfil läser namnet |
+| `CROUPIER_LAB_UI_ORIGIN` | sätts inte | web, studio | Läses bara när `CROUPIER_VERCEL_UNIFIED_UI` inte är `1`: då är den Studiozonens egen origin, och `packages/server-transport/configuration.mjs` och `studio-native-runtime.mjs` kräver att den skiljer sig från den publika originen och spelmotorns. I unified-läget ignoreras den överallt, också av assistenten (`/studio/api/assistant` och `/studio/api/public-assistant` via `assistantRequestConfiguration` i `studio-native-request.mjs`), som då bara kräver `CROUPIER_PUBLIC_ORIGIN`; den koden (`3e866f74`) är i produktion sedan deployen av `a05917c3` (`dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3`, 2026-10-29). Borttagen ur panelen (läst 2026-10-29 16:10); domänen `croupier-lab-ui.vercel.app` finns kvar i projektet |
 | `CROUPIER_LAB_BASE_PATH` | krävs, `/studio`; byggtid | studio | basePath; `NEXT_PUBLIC_LAB_BASE_PATH` härleds vid bygget |
-| `CROUPIER_STREAM_LANE` | sätts inte på Vercel; ska bort | studio | Blir bara `connectedLane` i Admins arbetsyta, som ingen komponent läser, och `app/api/health` körs bara lokalt. Anslutnings-ID:t behövs bara på spelmotorn (Render) |
 | `LAB_PUBLIC_URL` | villkorlig | studio | Betrodd proxy-origin för sessionskontrollen; ingen lokal Studio-process |
 | `CROUPIER_STUDIO_NEON_POLICY` | krävs, `1` | web, studio | Neon är registret; ingen disk- eller seedreserv |
 | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` | krävs | studio | Serverägt scope (`production`/`croupier`); samma som på spelmotorn |
@@ -56,15 +53,14 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CROUPIER_STUDIO_MOVING_DRIFT_API`, `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` | villkorlig | web, studio | Driftväljaren för rörligt tal, se nedan |
 | `CROUPIER_VERCEL_FRONTEND_ORIGIN` | valfri | studio | Betrott proxyursprung för en separat förhandsfrontend; tom i produktionen |
 | `CROUPIER_GAME_ORIGIN` | sätts inte på Vercel | web (`vercel-entry`), studio | Behövs bara när `apps/web/tools/player-ui-build.mjs` körs fristående. Vercel-bygget (`prepare-platform-ui.mjs`) tar originen från `CROUPIER_BACKEND_ORIGIN`. Studio läser den bara i den lokala partnerreferensen (`partner-observer.mjs:41`, se nedan) |
-| `CROUPIER_DATABASE` | sätts inte på Vercel; ska bort | studio | Läses av `studio-render-persistence.mjs` och `studio-policy-runtime.mjs` på den lokala Render-läsvägen, som inte nås med native Admin. Krävs bara på spelmotorn |
-| `CROUPIER_MEDIA_BLOB_INDEX` | sätts inte på Vercel; ska bort | studio | Ignoreras: runtime-vägarna skickar alltid med `runtimeCatalog` från Neon (`registry-reader.mjs`, `media-runtime.mjs`), och `media/blob-index.json` utesluts från bundeln i `apps/studio/next.config.mjs` |
-| `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` | sätts inte på Vercel; ska bort | studio | Läses av den delade `generated-speech-runtime.mjs`, men kan aldrig slå på något på Vercel: talet kräver `HOST` `0.0.0.0` (eller `localhost` lokalt) och för molnet en `PUBLIC_URL`, och ingen av dem finns där. Talet körs på Render |
+| `CROUPIER_MEDIA_BLOB_INDEX` | sätts inte | studio | Ignoreras: runtime-vägarna skickar alltid med `runtimeCatalog` från Neon (`registry-reader.mjs`, `media-runtime.mjs`), och `media/blob-index.json` utesluts från bundeln i `apps/studio/next.config.mjs` |
+| `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING` | sätts inte på Vercel | studio | Läses av den delade `generated-speech-runtime.mjs`, men kan aldrig slå på något på Vercel: talet kräver `HOST` `0.0.0.0` (eller `localhost` lokalt) och för molnet en `PUBLIC_URL`, och ingen av dem finns där. Talet körs på Render |
 | `BO_URL` | sätts inte | – | Läses inte på Vercel; bara spelmotorn härleder den |
 | `CROUPIER_ASTRID_CAMERA`, `CROUPIER_PLAYER_ACCOUNTS` | sätts inte | – | Läses bara av spelmotorn |
 | `CROUPIER_NEON_*` (16 namn), `CROUPIER_MEDIA_STORE_ID` | värdhanterad | projektet | Injiceras av Vercels Neon- och Blob-kopplingar; koden läser dem inte (ingen källfil läser heller `DATABASE_URL`, `POSTGRES_URL` eller `PG*`). Alla 16 Neon-poster hör till resursen `store_f0uLTbYiQKqQjLCY`, som är Neon-projektet `croupier-production` `wandering-hill-60561912`, alltså samma databas som `CROUPIER_GAME_DATABASE_URL`; sedan 2026-10-28 bara i Production (Preview avmarkerad i kopplingen). `CROUPIER_MEDIA_STORE_ID` hör till `store_AqwvebTbBHarOjvG` (Production och Preview) |
 | `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` | nekas | web, studio | Talleverantörerna bor på Render; Vercel ska inte ha kopior |
 | `CROUPIER_ZONES_DATABASE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | nekas | studio | Hör till spelmotorn respektive Director |
-| `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW` | nekas; ska bort | studio | `1` stänger av molntalet respektive slår på den lokala förhandsvisningen (bara med `HOST=localhost`). Avvikelse 2026-10-29: båda är satta till `0` i Production, där de inte gör något |
+| `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW` | nekas | studio | `1` stänger av molntalet respektive slår på den lokala förhandsvisningen (bara med `HOST=localhost`). Borttagna ur panelen (läst 2026-10-29 16:10) |
 | `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_GENERATED_SPEECH_DIR`, `LAB_STUDIO_DATA_DIR` | nekas | studio | Talbudget och endpoint hör till Render; diskvägarna är pensionerade |
 | `NODE_ENV`; `HOST`, `CROUPIER_CLOUD_RUNTIME`, `PUBLIC_URL` | värdhanterad; sätts inte | studio | Läses av den delade talmodulen för att känna igen molnet; Vercel sätter `NODE_ENV` |
 | `VERCEL` | värdhanterad | studio | Vercel sätter den. `apps/studio/lib/public-assistant.mjs:55` tar då Scoutguidens hastighetsgräns per `x-vercel-forwarded-for`, annars en gemensam hink |
@@ -72,27 +68,59 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CROUPIER_LAB_INTERNAL_SECRET` | sätts inte | studio | Det gamla molnlabbets gräns i `apps/studio/lib/http-guard.mjs:19,30`: tillsammans med `LAB_PUBLIC_URL` (https-origin) och minst 32 byte släpper den in anrop med rubriken `x-croupier-lab-authorized` till de lokalvaktade vägarna. Båda är osatta på Vercel, så de vägarna svarar 403 där |
 | `BETTALOTTO_API`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_SECRET`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_BASE_URL` | sätts inte; bara lokalt | studio | Partnerreferensen `/api/inputs/reference` (`apps/studio/lib/partner-reference.mjs:13-19`, `partner-observer.mjs:3-15,41`; äldre alias `LAB_PARTNER_*`). Vägen är lokalvaktad (`partner-reference.mjs:67`); `BETTALOTTO_API` läses också ur rotens `.env` och `apps/studio/.env.local` |
 
-**Var Studio och `/admin` läser data.** Datakällan väljs bara av `CROUPIER_GAME_DATABASE_URL` (värden måste sluta på `.neon.tech`, annars 503) och scopet `CROUPIER_STUDIO_ENVIRONMENT_ID`/`CROUPIER_STUDIO_WORKSPACE_ID` (`apps/studio/lib/studio-native-runtime.mjs:63-85`); dokumenten och runtimekatalogen läses per scope (`packages/studio-registry/server/repository.mjs:113-121`). Det finns ingen reserv till fil, JSON, SQLite, PGlite eller seed. `CROUPIER_NEON_*` (16 namn) och `CROUPIER_MEDIA_STORE_ID` är integrationsposter som ingen källfil läser. Fyra namn läses i koden men gör ingenting i Vercel-driften (`CROUPIER_STUDIO_NATIVE_ADMIN=1`, `CROUPIER_VERCEL_UNIFIED_UI=1`) och står i [Att ta bort](#att-ta-bort-ur-vercel-production):
+**Var Studio och `/admin` läser data.** Datakällan väljs bara av `CROUPIER_GAME_DATABASE_URL` (värden måste sluta på `.neon.tech`, annars 503) och scopet `CROUPIER_STUDIO_ENVIRONMENT_ID`/`CROUPIER_STUDIO_WORKSPACE_ID` (`apps/studio/lib/studio-native-runtime.mjs:63-85`); dokumenten och runtimekatalogen läses per scope (`packages/studio-registry/server/repository.mjs:113-121`). Det finns ingen reserv till fil, JSON, SQLite, PGlite eller seed. `CROUPIER_NEON_*` (16 namn) och `CROUPIER_MEDIA_STORE_ID` är integrationsposter som ingen källfil läser. Två namn läses i koden men gör ingenting i Vercel-driften (`CROUPIER_STUDIO_NATIVE_ADMIN=1`, `CROUPIER_VERCEL_UNIFIED_UI=1`) och är inte satta där:
 
-- `CROUPIER_STREAM_LANE`: `apps/studio/app/api/admin/workspace/[section]/route.ts:19` (blir bara `connectedLane`) och `app/api/health/route.ts:3` (lokalvaktad).
-- `CROUPIER_LAB_UI_ORIGIN`: `apps/studio/lib/studio-native-runtime.mjs:67`, `lib/studio-native-request.mjs:51` och `packages/server-transport/configuration.mjs:17` läser den bara utan unified-läget.
+- `CROUPIER_LAB_UI_ORIGIN`: `apps/studio/lib/studio-native-runtime.mjs:67`, `lib/studio-native-request.mjs:51` och `packages/server-transport/configuration.mjs:19` läser den bara utan unified-läget.
 - `CROUPIER_MEDIA_BLOB_INDEX`: `packages/studio-registry/server/media-blob-index.mjs:25`; katalogen från Neon (`runtimeCatalog`, `:17` och `media-runtime.mjs:57`) går alltid före.
-- `CROUPIER_DATABASE`: `apps/studio/lib/studio-render-persistence.mjs:39` och `packages/presentation/server/studio-policy-runtime.mjs:15`, den gamla Render-läsvägen.
+
+Studio läser inte längre `CROUPIER_STREAM_LANE` (Admins `connectedLane` är alltid `false`, ingen komponent läste den) eller `CROUPIER_DATABASE` (PostgreSQL är enda vägen).
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
-### Att ta bort ur Vercel Production
+## Att ta bort i panelen (efter deploy av #664)
 
-Målbild efter läs-only-granskningen 2026-10-29 (main `84a5db4e`), kontrollerad igen mot panelen senare samma dag (main `a05917c3`): alla tolv poster ligger kvar. Ingen av variablerna läses vid bygget, och alla saknas redan i `scoutgaming-preview`, som fungerar. Jakob tar bort dem i panelen eller med `vercel env rm` efter mergen, i denna ordning, och ändringen gäller från nästa deploy:
+<a id="att-ta-bort-i-panelen"></a><a id="att-ta-bort-ur-vercel-production"></a>
 
-1. Talflaggorna och gästflaggan, alla `0`: `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING`, `CROUPIER_GENERATED_SPEECH_PREVIEW` och `DEMO_GUEST_ACCESS`.
-2. De gamla Lab- och Render-vägarna: `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE` (Production och Preview).
-3. `CROUPIER_LAB_UI_ORIGIN` (Production och Preview). Villkoret är uppfyllt: koden där assistenten bara kräver `CROUPIER_PUBLIC_ORIGIN` (`3e866f74`) ingår i produktionsdeployen `dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3` (`a05917c3`, READY 2026-10-29 01:14Z). Gör gärna domänen `croupier-lab-ui.vercel.app` till en redirect till www och behåll den, så att ingen annan kan ta namnet.
-4. Development- och Preview-scopet för `CROUPIER_DEALER_IMPORT_AI`; Production behålls.
+Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsningen 2026-10-28, eftersom Render MCP inte visar namn). Ordningen är fast: koden slutar läsa namnet, PR:en mergas, deployen går ut (Vercel `scoutgaming` och Render `croupier-v3` från `main`; Vercel `scoutgaming-preview` och Render `scoutgaming-preview-engine` från branchen `preview`), och först därefter tar Jakob bort posten i panelen. En borttagning i panelen gäller från nästa deploy; Render startar en deploy direkt.
 
-Redan gjort av Jakob (bekräftat i panelen 2026-10-29): `BO_URL`, `CROUPIER_ASTRID_CAMERA` och `CROUPIER_PLAYER_ACCOUNTS` är borta ur projektet, och Neon-kopplingens Preview-scope är avmarkerat, så `CROUPIER_NEON_*` finns bara i Production.
+Den förra listan (talflaggorna, `DEMO_GUEST_ACCESS`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` och `CROUPIER_LAB_UI_ORIGIN` i `scoutgaming`) är utförd: ingen av dem finns i panelen 16:10. Kvar från den är Preview- och Development-scopet för `CROUPIER_DEALER_IMPORT_AI`.
 
-Kontrollera efteråt `/admin`-inloggningen, `/lobby`, `/game` med en spelad hand, att `/studio/api/assistant` svarar 200 och att Admin › System visar AI-agenterna. Granskningens övriga förslag, att koppla bort Neon-integrationen helt (de 16 `CROUPIER_NEON_*`, som koden inte läser) och att ta bort de övriga handsatta Preview-posterna (`CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_MEDIA_STORE_ID`), är separata beslut och ingår inte här.
+### Efter deploy av #664 (Miljövariabler 1)
+
+Produktionsraderna gäller när #664 är deployad från `main`. Preview-raderna (Vercel `scoutgaming-preview`, Render `scoutgaming-preview-engine`) gäller först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad. Tas posterna bort där innan dess stoppar `scoutgaming-preview-engine` vid start (koden på `preview` kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`) och `scoutgaming-preview` bygger utan transport (`/game` → 404).
+
+| Tjänst / projekt | Variabel | Varför |
+| --- | --- | --- |
+| Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UI` | Konstant `1`; transporten slås nu på av `CROUPIER_BACKEND_ORIGIN` (`packages/server-transport/configuration.mjs:14`) |
+| Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | Samma; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
+| Render `croupier-v3` | `CROUPIER_DATABASE` | Konstant `postgres`, enda värdet som startade; PostgreSQL är fast i `ops/cloud/config.mjs` och ingen källfil läser namnet |
+| Render `croupier-v3` | `CROUPIER_STREAM_LANE` | Konstant `lissabon-stream-lane`; starten sätter anslutnings-ID:t för spelprocessen själv (`ops/cloud/config.mjs`, `childSpecifications`) |
+| Render `scoutgaming-preview-engine` | `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` | Samma som `croupier-v3`; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
+
+### Redan nu (läses inte av någon deployad kod)
+
+| Tjänst / projekt | Variabel | Varför |
+| --- | --- | --- |
+| Render `croupier-v3` | `CROUPIER_MOVING_SPEECH_BANK_RECORD`, `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` | Läses inte sedan T3 (28 oktober); ersatta av `CROUPIER_MOVING_SPEECH_BANK_RECORDS` och driftprofilens endpoint |
+| Vercel `scoutgaming`, Preview och Development | `CROUPIER_DEALER_IMPORT_AI` | Gör inget där; Production behålls |
+
+### Separata beslut: integrationsposter
+
+| Tjänst / projekt | Variabel | Varför |
+| --- | --- | --- |
+| Vercel `scoutgaming`, Production | 16 `CROUPIER_NEON_*` | Neon-kopplingen (`store_f0uLTbYiQKqQjLCY`) injicerar dem; ingen källfil läser dem. Koppla bort projektkopplingen (radera inte resursen `croupier-production`); `CROUPIER_GAME_DATABASE_URL` är handsatt och påverkas inte |
+| Vercel `scoutgaming`, Production och Preview | `CROUPIER_MEDIA_STORE_ID` | Blob-kopplingen (`store_AqwvebTbBHarOjvG`) injicerar den; ingen källfil läser den. Kontrollera först att den handsatta `BLOB_READ_WRITE_TOKEN` fungerar utan projektkopplingen |
+
+### Hygien (inga borttagningar)
+
+- Vercel `scoutgaming-preview`: `BLOB_READ_WRITE_TOKEN` är lagrad som Encrypted, och Vercel flaggar den som läsbar hemlighet. Lägg in samma värde igen som Sensitive.
+- Vercel `scoutgaming`: `CROUPIER_BACKEND_ORIGIN` är lagrad som Sensitive fast den är en publik URL (i `scoutgaming-preview` är den Plain). Ofarligt men inkonsekvent; kan läggas om som Plain.
+
+### Nästa PR (inte rörda här)
+
+Konstanter som också ska hårdkodas: `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN` och `CROUPIER_LAB_BASE_PATH` läses av `apps/studio/lib/studio-native-runtime.mjs`, som ändras i öppna PR:er (#656, #658). `CROUPIER_STUDIO_NEON_POLICY` och `CROUPIER_MEDIA_STORAGE` läses av spelmotorn och Studio och sätts i flera dussin prov; de tas i en egen PR. Med dem och integrationsposterna blir `scoutgaming` Production 18 poster, `scoutgaming-preview` 10 och spelmotorerna två färre var.
+
+Kontrollera efter varje panelsteg `/admin`-inloggningen, `/lobby`, `/game` med en spelad hand, att `/studio/api/assistant` svarar 200 och Render `/__cloud/health`.
 
 ## Render `croupier-v3`: spelmotorn
 
@@ -103,8 +131,8 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 | `NODE_ENV` | krävs, `production` (imagen sätter) | Produktionsläge |
 | `CROUPIER_CLOUD_LAUNCH` | krävs, `pilot` | Tillåter `start.mjs --start` |
 | `CROUPIER_CLOUD_LAYOUT` | krävs, `single-origin` | En publik origin. Kodens standard `separate-hosts` används inte |
-| `CROUPIER_STREAM_LANE` | krävs, `lissabon-stream-lane` | Anslutnings-ID |
-| `CROUPIER_DATABASE` | krävs, `postgres` | Enda databasvägen; annat värde stoppar starten |
+| `CROUPIER_STREAM_LANE` | sätts inte; fast i starten | Anslutnings-ID `lissabon-stream-lane`, som `ops/cloud/config.mjs` sätter för spelprocessen. Panelposten läses inte längre och tas bort ([listan](#att-ta-bort-i-panelen)) |
+| `CROUPIER_DATABASE` | läses inte | PostgreSQL är enda databasvägen och fast i koden. Panelposten tas bort ([listan](#att-ta-bort-i-panelen)) |
 | `CROUPIER_GAME_DATABASE_URL` | krävs | Neon `croupier_game`; TLS `require`, `verify-ca` eller `verify-full` (produktionen `verify-full`) |
 | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` | krävs | Samma register och scope som Vercel |
 | `CROUPIER_MEDIA_STORAGE`, `BLOB_READ_WRITE_TOKEN` | krävs (`blob`) | Privat Blob; ingen diskreserv |

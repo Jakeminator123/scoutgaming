@@ -31,6 +31,8 @@ Kodåtergång, när en deploy är fel:
 
 **Delat bord av.** `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`, live 13:53:25Z; bordet var tomt före). Återgång till nativebordet: kontrollera att bordet är tomt enligt ovan, sätt flaggan till `0` med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>` startar ingen deploy) och deploya samma SHA låst. Reservationer som ändå står kvar ligger kvar i Neon tills flaggan slås på igen; de raderas aldrig för hand. Jakob har förgodkänt återgången flagga av och låst deploy av `3415c310` (D7, 2026-10-28).
 
+**Återgång förbi #664 (Miljövariabler 1).** Kod före #664 (till exempel live `6f2d8236`) läser fortfarande tre poster som #664 gjorde till konstanter. Innan en sådan SHA deployas eller en revert av #664 mergas läggs de tillbaka i panelen: `CROUPIER_DATABASE=postgres` och `CROUPIER_STREAM_LANE=lissabon-stream-lane` på Render `croupier-v3` (och `scoutgaming-preview-engine` om den också går tillbaka), `CROUPIER_VERCEL_UI=1` på Vercel `scoutgaming` (och `scoutgaming-preview`). Utan dem stoppar motorn vid start och Vercel-bygget tappar transporten tyst. Lägg in Render-posterna med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>`, ingen deploy) före den låsta deployen.
+
 Återställ inte gamla env-filer, gamla tjänster eller domänkopplingar som del av en kodåtergång. `croupier-v2` och `croupier-vercel-preview-qa` är raderade; det finns ingen äldre motor att gå tillbaka till. En ändrad miljövariabel, databasbehörighet eller talflagga har sin egen återgång och följer inte med koden. Render MCP:s env-skrivning sammanfogar nycklar och startar en deploy direkt.
 
 ## Neon: backup och restore
