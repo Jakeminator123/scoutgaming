@@ -1,7 +1,7 @@
 'use client';
 import { StudioDealerRequired } from './studio-dealer-required';
 
-import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
+import { studioScopedHref } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import type { StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -22,14 +22,8 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
 }) {
   const { status, mode, changeMode, dealerId, dirty } = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
   const query=new URLSearchParams(typeof window==='undefined'?'':window.location?.search);
-  function contextHref(path:string) {
-    const url=new URL(studioNavigationHref(path,{...studioNavigationContextFromQuery(query),dealerId}),'https://studio.invalid');
-    // Keep explicit ambiguous room/operator selectors for the destination to validate.
-    for(const key of ['operator','table','room'])if(query.has(key)){
-      url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
-    }
-    return url.pathname+url.search;
-  }
+  // Tvetydiga spelrum går dit den delade dokumentmappningen skickar dem, aldrig till det första värdet.
+  const contextHref=(path:string)=>studioScopedHref(path,query,{dealerId});
   const modelsHref=contextHref('/admin/ai/models');
   const rehearsalHref=contextHref('/admin/rooms');
   return <PageTemplate

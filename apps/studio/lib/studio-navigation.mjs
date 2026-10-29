@@ -45,6 +45,31 @@ export function studioNavigationHref(path, context = {}) {
   return labUrl(`${pathname}${canonical.search}${canonical.hash}`);
 }
 
+// Sidans uttryckliga val av bolag och spelrum (operator, table, room) går in i
+// dokumentmappningen med alla sina värden, så att single() i
+// packages/navigation/admin-workspace-routes.mjs avgör målet: ett spelrum öppnar sin nav,
+// flera hamnar på bolagets flik Spelbord. Navigeringen väljer aldrig det första värdet.
+// Valen följer sedan med oförändrade så att målsidan själv kan pröva dem.
+export function studioScopedHref(path, query, context = {}) {
+  const source = new URL(path, 'https://studio.invalid');
+  const scope = typeof query?.getAll === 'function'
+    ? [['operator', 'operatorId'], ['table', 'tableId'], ['room', null]].map(([parameter, key]) => [parameter, key, query.getAll(parameter)]).filter(([, , values]) => values.length)
+    : [];
+  context = {...studioNavigationContextFromQuery(query), ...context};
+  for (const [parameter, key, values] of scope) {
+    if (key && new Set(values).size === 1) continue;
+    if (key) { delete context[key]; if (key === 'operatorId') delete context.operatorSlug; }
+    source.searchParams.delete(parameter);
+    for (const value of values) source.searchParams.append(parameter, value);
+  }
+  const url = new URL(studioNavigationHref(source.pathname + source.search + source.hash, context), 'https://studio.invalid');
+  for (const [parameter, , values] of scope) {
+    url.searchParams.delete(parameter);
+    for (const value of values) url.searchParams.append(parameter, value);
+  }
+  return url.pathname + url.search + url.hash;
+}
+
 export function studioNavigationTabs(context = {}, hrefs = {}) {
   return STUDIO_DEALER_TABS.map(tab => ({ ...tab, href: studioNavigationHref(hrefs[tab.id] ?? tab.href, context) }));
 }
