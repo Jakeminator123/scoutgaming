@@ -6,6 +6,8 @@ import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMA
 import {aiImageErrorMessage, aiSceneTemplates, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
 import type {AiTableFit} from '../../../../lib/ai-image-contract.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
+import type {VideoInventory} from '../../lib/connected-studio.mjs';
+import {AiLandingBadge, AiProposalPreview} from './ai-proposal-preview';
 import {Dialog} from '../ui/dialog';
 import {Button, buttonVariants, cn} from '../ui/kit';
 
@@ -18,6 +20,9 @@ export type AiBackgroundDialogProps = {
   dealers?: readonly {id: string; label: string}[];
   /** Scene templates (project.lanes); a table is drawn for one template's composition. */
   templates?: readonly AiSceneTemplate[];
+  /** The saved project and video register for the preview on a scene template (background, dealer, table). */
+  project?: StudioProject | null;
+  inventory?: VideoInventory | null;
   disabled?: boolean;
   onRegistered: (project: StudioProject, id: string) => void;
   onBusyChange?: (busy: boolean) => void;
@@ -32,7 +37,7 @@ const notice = 'm-0 rounded-lg border border-sg-border bg-sg-surface-2 p-3';
 // Proposals are drafts in this dialog only. "Använd" registers one through the
 // existing layer-asset upload; it reaches no operator until a scene template
 // lists it and is published.
-export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], templates = [], disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
+export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], templates = [], project = null, inventory = null, disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
   const table = role === 'table', filmed = aiTableDealers(dealers), unsupported = table && (game !== 'blackjack' || filmed.length === 0);
   const [open, setOpen] = useState(false), [phase, setPhase] = useState<Phase>('form');
   const [status, setStatus] = useState<AiImageStatus | null>(null), [statusError, setStatusError] = useState('');
@@ -51,6 +56,10 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   const scenes = aiSceneTemplates(templates, dealerId), sceneIds = scenes.map(row => row.id).join(',');
   useEffect(() => { const ids = sceneIds ? sceneIds.split(',') : []; setTemplateId(current => ids.includes(current) ? current : ids[0] ?? ''); }, [sceneIds]);
   const scene = scenes.find(row => row.id === templateId) ?? null;
+  // A background is previewed on any scene template; a table on the one it is drawn for.
+  const [previewId, setPreviewId] = useState(''), templateIds = templates.map(row => row.id).join(',');
+  useEffect(() => { const ids = templateIds ? templateIds.split(',') : []; setPreviewId(current => ids.includes(current) ? current : ids[0] ?? ''); }, [templateIds]);
+  const previewLane = table ? templateId : previewId;
   useEffect(() => {
     if (!open) return undefined;
     const controller = new AbortController();
@@ -200,8 +209,21 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               className={cn('relative overflow-hidden rounded-lg border-2 bg-sg-surface-2', selected === row.id ? 'border-sg-lime' : 'border-sg-border')} onClick={() => setSelected(row.id)}>
               <img src={row.dataUrl} alt={`Förslag ${index + 1}`} className="block h-auto w-full" />
               {selected === row.id ? <span className="absolute right-2 top-2 rounded-full bg-sg-lime p-1 text-sg-on-accent"><Check className="size-3.5" aria-hidden="true" /></span> : null}
+              <AiLandingBadge role={role} proposal={row} className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate" />
             </button>)}
           </div>
+          {proposals.some(row => row.id === selected) ? <div className="grid gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="m-0 font-medium">Förhandsvisning i scenen</p>
+              {!table && templates.length ? <label className="flex items-center gap-2 text-xs text-sg-muted">Scenmall
+                <select className={cn(field, 'w-auto py-1 text-xs')} value={previewId} disabled={phase === 'saving'} onChange={event => setPreviewId(event.target.value)}>
+                  {templates.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+                </select>
+              </label> : null}
+            </div>
+            <AiProposalPreview role={role} proposal={proposals.find(row => row.id === selected)!} project={project} inventory={inventory} laneId={previewLane} dealerId={table ? dealerId : undefined}
+              composition={table ? scene?.composition : undefined} />
+          </div> : null}
           {phase === 'saving' ? <p role="status" className="m-0">{progress === null ? `Sparar i ${place}…` : `Laddar upp · ${progress} %`}</p> : null}
         </div> : null}
 

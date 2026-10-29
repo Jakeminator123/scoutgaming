@@ -41,7 +41,7 @@ test('the game registry names every numbered game file and pins the checksums th
   // Produktionens ledgerrader (läst 2026-10-29) har exakt dessa checksummor.
   assert.equal(loaded.find(row => row.version === 'game-011-retire-lissabon').checksum, 'd128b7ae3a7060320887274bb5b217ccb72af9da334fa9183d7773d5406aa939');
   assert.equal(loaded.find(row => row.version === 'game-012-api-key-operator').checksum, '782b087d907f0953304d265e0dc3e3eb8c478d9b2b972c5b88fa2a92a82116be');
-  assert.deepEqual(loaded.map(row => row.label), ['game-product-v1', 'game-sqlite-import-v1', 'game-006', 'game-007', 'game-008', 'game-009', 'game-010', 'game-011', 'game-012', 'game-013']);
+  assert.deepEqual(loaded.map(row => row.label), ['game-product-v1', 'game-sqlite-import-v1', 'game-006', 'game-007', 'game-008', 'game-009', 'game-010', 'game-011', 'game-012', 'game-013', 'game-014']);
   assert.equal(gameMigrationLabel('game-012-api-key-operator'), 'game-012');
 });
 
@@ -54,7 +54,7 @@ test('readiness reads both ledgers on PGlite, keeps studio-012 and game-012 apar
   assert.equal(result.exitCode, 0, result.code ?? result.message); assert.equal(result.ready, true);
   assert.ok(result.applied.includes('012'), 'Studio 012 (runtime media catalogue)');
   assert.deepEqual(result.game, { applied: ['game-product-v1', 'game-012'], pending: [],
-    optionalPending: ['game-006', 'game-007', 'game-008', 'game-009', 'game-010', 'game-011', 'game-013'], ready: true }, 'ready without the backfill');
+    optionalPending: ['game-006', 'game-007', 'game-008', 'game-009', 'game-010', 'game-011', 'game-013', 'game-014'], ready: true }, 'ready without the backfill');
   const line = readinessOutput(result);
   assert.ok(line.applied.includes('studio-012') && line.applied.includes('game-012'));
   assert.equal(line.applied.some(label => /^[0-9]{3}$/.test(label)), false, 'no bare number in the report');
@@ -86,7 +86,7 @@ test('readiness reads both ledgers on PGlite, keeps studio-012 and game-012 apar
   result = await readiness(pool);
   assert.equal(result.exitCode, 0);
   assert.deepEqual(result.game.applied, ['game-product-v1', 'game-006', 'game-007', 'game-008', 'game-009', 'game-010', 'game-012', 'game-013']);
-  assert.deepEqual(result.game.optionalPending, ['game-011']);
+  assert.deepEqual(result.game.optionalPending, ['game-011', 'game-014']);
   assert.ok(['game-006', 'game-007', 'game-010'].every(label => readinessOutput(result).applied.includes(label)));
 
   // Fail closed: en ändrad checksumma och en okänd version ger exit 2, saknad product-v1 blockerar.
@@ -94,10 +94,10 @@ test('readiness reads both ledgers on PGlite, keeps studio-012 and game-012 apar
   result = await readiness(pool);
   assert.equal(result.exitCode, 2); assert.equal(result.code, 'game_migration_checksum_mismatch');
   await pool.query("UPDATE croupier_game.storage_migrations SET checksum='" + (await sha('012-api-key-operator.sql')) + "' WHERE version='game-012-api-key-operator'");
-  await pool.query("INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ('game-014-unreviewed','" + 'a'.repeat(64) + "','{}','now')");
+  await pool.query("INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ('game-099-unreviewed','" + 'a'.repeat(64) + "','{}','now')");
   result = await readiness(pool);
   assert.equal(result.exitCode, 2); assert.equal(result.code, 'game_migration_unknown_version');
-  await pool.query("DELETE FROM croupier_game.storage_migrations WHERE version IN ('game-014-unreviewed','product-v1')");
+  await pool.query("DELETE FROM croupier_game.storage_migrations WHERE version IN ('game-099-unreviewed','product-v1')");
   result = await readiness(pool);
   assert.equal(result.exitCode, 1); assert.equal(result.ready, false);
   assert.deepEqual(result.game.pending, ['game-product-v1']); assert.deepEqual(result.pending, []);

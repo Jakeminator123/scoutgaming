@@ -21,7 +21,7 @@ Det ett bolag kan ändra är en delmängd av det Admin kan ändra; spelaren ser 
 - **Klippkarta** (`slots`): dealerns klipp ordnade per situation.
 - **Vila** (`idle`): dealerns grundloop mellan händelserna; **vilosekvens** (`rotation`) är flera viloklipp i följd.
 - **Replik** och **tagning** (`take`): en mening med exakt text, och en godkänd inspelning av den.
-- **Röst och tal** (`speech`): dealerns inspelade och genererade tal.
+- **Röst och tal** (`speech`): dealerns inspelade och genererade tal. **Röstprofil** (`speechProfile.voice`): dealerns sparade röst (ElevenLabs röst-ID och modell) i projektet i Neon; talet läser den, röstkatalogen föreslår bara.
 - **Landningar** (`landing`): var dealerns hand lägger korten i bild.
 - **Scenmall** (`lane`, `composition`): hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter.
 - **Placering** (`placement`): scenmallens skala och läge per lager, för dator och mobil.
@@ -49,7 +49,7 @@ Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på de
 | Studio | `apps/studio`, basePath `/studio` | Admin (ingen egen produkt) |
 | Control, Kontrollpanelen | redirect `/control`; i UI inloggningstexten (`partner-login.tsx`) | Admin |
 | Lab, labb | redirect `/lab`, `croupier-lab-*` på Render, `services/openclaw/lab`, `lab_sessions`, `lab-url.mjs` | Admin; talkedjans tjänst heter Director |
-| BO, Backoffice | tabeller `bo_*`, `backoffice-navigation.mjs` | Admin |
+| BO, Backoffice | tabeller `bo_*`, cookien `bo_jwt` | Admin |
 | Lissabon | tabeller `lissabon_*`, `lissabon-stream-lane`, redirect `/labb-lissabon` | inget produktord |
 | Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-login.tsx` och `partner-team-loader.mjs` | bolag, bolagets team |
 | Rum, spelrum | kodnamnet `room`; i UI lobbyn (`client/lobby`) | spelbord |

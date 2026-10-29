@@ -8,7 +8,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
-import * as navigation from '../lib/backoffice-navigation.mjs';
+import * as navigation from '../lib/admin-system-sections.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
 import { journalType, formatJournalAmount } from '../client/admin/lib/economy-journal.mjs';
@@ -89,7 +89,7 @@ function harness() {
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
-            : name === '../lib/backoffice-navigation.mjs' ? navigation : require(name),
+            : name === '../lib/admin-system-sections.mjs' ? navigation : require(name),
   });
   return {
     ...module.exports, listeners, window,
@@ -334,14 +334,14 @@ function nativeReadFixture() {
 
 test('each work area retains native identity headers and only shows its own tabs', async () => {
   for (const readIdentity of ['session-preflight','response-headers-v1']) {
-    for (const group of navigation.BACKOFFICE_GROUPS.filter(group => group.id !== 'tables')) {
+    for (const group of navigation.SYSTEM_GROUPS) {
       const h=harness(), f=nativeReadFixture(), props={...f.props,readIdentity,initialGroup:group.id};
       h.render(props);h.effects();await flush();const tree=h.render(props);
       const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
       assert.ok(view&&Object.values(view.props.resources).every(resource=>resource.payload),group.id);
       assert.equal(view.props.actor.role,'admin');
       assert.equal(f.state.sessions,readIdentity==='response-headers-v1'?0:f.state.reads+1);
-      const sameArea=navigation.BACKOFFICE_GROUPS.filter(item=>item.id!=='tables'&&item.area===group.area).map(item=>item.id);
+      const sameArea=navigation.SYSTEM_GROUPS.filter(item=>item.area===group.area).map(item=>item.id);
       const menu=nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Administration')[0];
       assert.deepEqual(nodes(menu,node=>node.type==='button').map(node=>node.props['data-group']),sameArea,group.id);
       assert.equal(nodes(menu,node=>node.type==='button'&&node.props['aria-pressed']===true).map(node=>node.props['data-group']).join(),group.id);
@@ -532,20 +532,19 @@ test('render never mutates or requests providers/accounts; four active groups ex
   const html = renderToStaticMarkup(h.render(props));
   assert.equal(calls, 0);
   assert.doesNotMatch(html, /iframe|localStorage|MUST-NOT-RENDER/);
-  const retired = navigation.BACKOFFICE_GROUPS.find(group => group.id === 'tables');
-  const sections = navigation.BACKOFFICE_GROUPS.flatMap(group => {
+  const sections = navigation.SYSTEM_GROUPS.flatMap(group => {
     const tree = h.StudioAdministrationView(viewProps('superadmin', group.id));
     return nodes(tree, node => node.props?.['data-admin-section']).map(node => node.props['data-admin-section']);
   });
   assert.equal(sections.length, 7); assert.equal(new Set(sections).size, 7);
-  assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).filter(id => !retired.sections.includes(id)).sort());
+  assert.deepEqual([...sections].sort(), navigation.SYSTEM_SECTIONS.map(section => section.id).sort());
   assert.ok(refused(h.StudioAdministrationView(viewProps('superadmin', 'tables'))));
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
 
 test('actual rendered native administration forms explicitly use POST, including account passwords', () => {
   const h = harness(); let forms = 0;
-  for (const group of navigation.BACKOFFICE_GROUPS) {
+  for (const group of navigation.SYSTEM_GROUPS) {
     const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', group.id)));
     for (const form of html.matchAll(/<form\b[^>]*>/g)) { assert.match(form[0], /method="post"/); ++forms; }
   }
@@ -679,7 +678,7 @@ test('each request checks live identity, role floors and self-role/self-removal 
 test('all config mutations carry exact string revision; no numeric/missing/prototype CAS fallback', async () => {
   const h = harness(); let requests = [];
   const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', session: async () => actor('superadmin'), availableActions: allActions, fetchImpl: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return reply({ ok: true }); } });
-  const configActions = ['room', 'tier', 'pitboss', 'tournament', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
+  const configActions = ['room', 'tier', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
   for (const action of configActions) {
     for (const expectedRevision of [undefined, null, 0, 1, [], {}, 'bad revision', '/external', 'x'.repeat(101)]) await assert.rejects(client.request('POST', action, { expectedRevision }), status(409));
     await client.request('POST', action, { expectedRevision: 'studio-91ba0c61-3f45-4e9e-9efe-b40a3b201234' });
@@ -858,7 +857,7 @@ test('malformed list payloads are unavailable, never a fabricated empty account/
 
 test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmins have no controls', () => {
   const h = harness();
-  for (const role of ['reader','staff','player']) for (const group of navigation.BACKOFFICE_GROUPS) {
+  for (const role of ['reader','staff','player']) for (const group of navigation.SYSTEM_GROUPS) {
     assert.ok(refused(h.StudioAdministrationView(viewProps(role, group.id))), `${role} ${group.id}`);
   }
   for (const role of ['admin','superadmin']) {
@@ -950,7 +949,7 @@ test('active account forms emit established payloads and clear the password inpu
 test('retired tournament, pitboss and empty legacy galleries are absent while source data remains intact', () => {
   const h = harness(); const data = resources(); const original = JSON.stringify(data);
   data.emails.payload.templates.push({ id: 'tournament-invite', name: 'Tournament invite' });
-  const html = navigation.BACKOFFICE_GROUPS.map(group => renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', group.id), resources: data }))).join('');
+  const html = navigation.SYSTEM_GROUPS.map(group => renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', group.id), resources: data }))).join('');
   assert.doesNotMatch(html, /Existing tournament|Tournament invite|data-admin-section="(pit|tours|clips|gens)"/);
   data.emails.payload.templates.pop(); assert.equal(JSON.stringify(data), original);
   assert.equal(data.config.payload.tournaments.length, 1); assert.equal(data.config.payload.pitboss.randomWalkMin, 45);
@@ -1181,7 +1180,7 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
 });
 
 
-test('Backoffice password form confirms twice, clears both fields and excludes closed accounts', () => {
+test('Admin password form confirms twice, clears both fields and excludes closed accounts', () => {
   const h=harness(),calls=[];
   const tree=h.StudioAdministrationView({...viewProps('admin'),command:(action,body)=>calls.push({action,body})});
   const forms=formsWith(tree,'confirm');
