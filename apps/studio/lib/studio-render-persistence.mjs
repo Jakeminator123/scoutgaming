@@ -35,7 +35,7 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
   let connectionString;
   try {
     connectionString = validateGameConnection(env.CROUPIER_GAME_DATABASE_URL,env.CROUPIER_ZONES_DATABASE_URL);
-    if (env.CROUPIER_DATABASE !== 'postgres' || !new URL(connectionString).hostname.endsWith('.neon.tech')) throw new Error('invalid');
+    if (!new URL(connectionString).hostname.endsWith('.neon.tech')) throw new Error('invalid');
   } catch {throw new StudioError('studio_read_storage_unavailable',503);}
   poolFactory ??= async connection => {
     const {Pool} = await import('@neondatabase/serverless');
