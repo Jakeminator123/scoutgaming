@@ -6,11 +6,14 @@ import {FILMED_CATCH_UP_S, FILMED_SEEK_END_MARGIN_S} from '../../../packages/pre
 // phase before its first frame (:234); handoverAt hands over on the last frames instead of 'ended' (:192);
 // playbackRate is the chain's fitted rate (:223-227); clockTime() is the table clock in take seconds, to catch
 // up after buffering and to end a step whose time is over (:180-185). Card motion still follows mediaTime.
+// onVideo(video): the owner's handle on the element while it plays, so a sound toggle changes video.muted without
+// stopping or restarting the line. The element is the film's own; the owner never replaces its source or playback.
 export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onGestureWait = () => {}, onSoundBlocked = null, onFrame, renderFrame, hold = () => {},
-  startOffset = 0, handoverAt = null, playbackRate = null, clockTime = null }) {
+  startOffset = 0, handoverAt = null, playbackRate = null, clockTime = null, onVideo = null }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
+    try { onVideo?.(video); } catch { /* A handle observer never stops the film. */ }
     let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, late = false, recovery, gestureWaiting = false, soundWaiting = false, soundWindow;
     const gestureWait = waiting => { if (gestureWaiting !== waiting) { gestureWaiting = waiting; onGestureWait(waiting); } };
     const clearRecovery = () => { recovery?.remove(); recovery = null; gestureWait(false); };

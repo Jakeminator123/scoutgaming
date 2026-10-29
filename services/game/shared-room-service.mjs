@@ -152,8 +152,10 @@ export function createSharedRoomService({
       } finally { admissions.delete(token); }
     }, combined);
   }
+  // Speech lag (28 Oct 2026): a spoken line also carries its room's standard clip, from the package its config is bound to.
   const filmedSteps = typeof runtime.store?.read?.config === 'function'
-    ? createFilmedStepReader({ readConfig: (roomId, version) => runtime.store.read.config(roomId, version) })
+    ? createFilmedStepReader({ readConfig: (roomId, version) => runtime.store.read.config(roomId, version),
+      ...(typeof access.readPackage === 'function' ? { readPackage: (operatorId, revision) => access.readPackage(operatorId, revision) } : {}) })
     : async (_roomId, presentation) => presentation;
   let presentationAccess;
   function presentationRead(method,args,selectFrozen) {
