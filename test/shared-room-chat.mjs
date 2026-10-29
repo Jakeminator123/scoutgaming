@@ -44,13 +44,14 @@ async function fixture(t, { settings = { speechUrl: 'https://director.invalid', 
     decide: decide ?? (async (request, status) => { decided.push({ request, status });
       return { kind: 'generatedText', requestId: request.requestId, exactText: 'Du har sexton, jag skulle stanna.' }; }) });
   t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
-  const post = (body, { headers = {}, method = 'POST', room = 'room-a' } = {}) => fetch(`${engineOrigin}/api/shared-room/${room}/chat`, {
-    method, headers: { origin, cookie, 'content-type': 'application/json', ...headers },
+  const post = (body, { headers = {}, method = 'POST', room = 'room-a', signal } = {}) => fetch(`${engineOrigin}/api/shared-room/${room}/chat`, {
+    method, headers: { origin, cookie, 'content-type': 'application/json', ...headers }, signal,
     ...(method === 'POST' ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}) });
-  return { post, emitted, decided, contexts, members, tick: ms => { clock += ms; } };
+  return { post, emitted, decided, contexts, members, close: () => chat.close(), tick: ms => { clock += ms; } };
 }
 const ask = (over = {}) => ({ requestId: 'chat-1', message: '  Vad har jag?  ', roundRevision: 'shared-room-a-round-4', acceptsSpeechStream: false, ...over });
 const frames = async response => (await response.text()).trim().split('\n').map(line => JSON.parse(line));
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 test('a member question streams NDJSON and reaches the room as question and dealer answer', async t => {
   const h = await fixture(t);
@@ -64,7 +65,7 @@ test('a member question streams NDJSON and reaches the room as question and deal
   assert.deepEqual(h.emitted.map(({ roomId, requestId, actorId, seat, text }) => ({ roomId, requestId, actorId, seat, text })), [
     { roomId: 'room-a', requestId: 'chat-1', actorId: 'player-a', seat: 1, text: 'Vad har jag?' },
     { roomId: 'room-a', requestId: 'chat-1', actorId: null, seat: null, text: 'Du har sexton, jag skulle stanna.' }]);
-  assert.equal(h.contexts.length, 3, 'authorization and round are read again before the answer is published');
+  assert.equal(h.contexts.length, 2, 'one locked read at admission and one before the answer is published');
   assert.equal(sharedRoomChatRound({ roundId: null, windowId: 'w' }), 'window:w');
 });
 
@@ -199,9 +200,9 @@ test('review fix: 20 parallel questions from one member take at most one locked 
   const refused = settled.filter(response => response?.status === 429);
   assert.equal(refused.length, 19);
   for (const response of refused) assert.deepEqual(await response.json(), { error: 'shared_room_chat_busy' });
-  // PR 2: completeChatWithSpeech rereads once before OpenClaw, so the admitted question itself takes
-  // two locked reads up front; the 19 refused questions take none.
-  assert.ok(h.contexts.length <= 2, `locked reads before the answer: ${h.contexts.length}`);
+  // The admitted question takes one locked read before the answer (completeChatWithSpeech's first
+  // check reuses it); the 19 refused questions take none.
+  assert.ok(h.contexts.length <= 1, `locked reads before the answer: ${h.contexts.length}`);
   release(); await Promise.all(pending);
   const solo = await fixture(t);
   assert.equal((await solo.post(ask())).status, 200);
@@ -230,4 +231,61 @@ test('review fix: control, bidi and zero-width characters are refused before the
   }
   assert.equal(h.emitted.length, 0); assert.equal(h.decided.length, 0); assert.equal(h.members.length, 0);
   assert.equal((await h.post(ask({ message: 'Rad ett\nrad två å ä ö 👍' }))).status, 200);
+});
+
+// Review fix (PR 2): the room lock is global (pg_advisory_xact_lock), so speech never holds it per chunk.
+test('review fix: a spoken answer takes two locked reads, however many chunks it prepares and streams', async t => {
+  let stream;
+  const ports = speechPorts({ prepare: async input => { for (let chunk = 0; chunk < 3; chunk++) await input.beforeCostly(); stream = input; return ports.descriptor; } });
+  const h = await fixture(t, { speech: ports.speech });
+  assert.deepEqual((await frames(await h.post(ask({ acceptsSpeechStream: true })))).at(-1).decision.speechStream, ports.descriptor);
+  for (let chunk = 0; chunk < 10; chunk++) await stream.beforeCostly();
+  assert.equal(h.contexts.length, 2, `locked reads for a whole spoken answer: ${h.contexts.length}`);
+  assert.ok(h.members.length >= 15, 'every speech check still rereads membership and round, without a lock');
+});
+
+test('review fix: a round that moves on the read after prepare cancels the prepared speech once and keeps the text', async t => {
+  let prepared = false, before;
+  const ports = speechPorts({ prepare: () => { prepared = true; before = ports.calls.cancelled.length; return ports.descriptor; } });
+  const h = await fixture(t, { speech: ports.speech, read: () => snapshot(prepared ? { roundId: 'shared-room-a-round-5' } : {}) });
+  const result = (await frames(await h.post(ask({ acceptsSpeechStream: true })))).at(-1);
+  assert.equal(result.speech, 'text-only'); assert.equal(result.decision.speechStream, undefined);
+  assert.equal(result.decision.exactText, 'Du har sexton, jag skulle stanna.');
+  assert.equal(ports.calls.cancelled.length - before, 1, 'the prepared speech is cancelled at once');
+});
+
+test('review fix: a member who leaves the table mid-stream fails the next speech check', async t => {
+  let stream, left = false;
+  const ports = speechPorts({ prepare: input => { stream = input; return ports.descriptor; } });
+  const h = await fixture(t, { speech: ports.speech, read: () => snapshot(left ? { me: { id: 'player-a', seats: [], active: false } } : {}) });
+  assert.ok((await frames(await h.post(ask({ acceptsSpeechStream: true })))).at(-1).decision.speechStream);
+  await stream.beforeCostly();
+  left = true;
+  await assert.rejects(stream.beforeCostly(), /stale_round_revision/);
+});
+
+test('review fix: a client that disconnects during prepare cancels the speech it started', async t => {
+  let reached, release, before;
+  const hit = new Promise(resolve => { reached = resolve; }), gate = new Promise(resolve => { release = resolve; });
+  const ports = speechPorts({ prepare: async () => { before = ports.calls.cancelled.length; reached(); await gate; return ports.descriptor; } });
+  const h = await fixture(t, { speech: ports.speech });
+  const controller = new AbortController();
+  const response = await h.post(ask({ acceptsSpeechStream: true }), { signal: controller.signal });
+  assert.equal(response.status, 200);
+  await hit; controller.abort(); await pause(50); release();
+  for (let wait = 0; wait < 50 && ports.calls.cancelled.length === before; wait++) await pause(10);
+  assert.equal(ports.calls.cancelled.length - before, 1, 'no speech is left running for a disconnected asker');
+});
+
+test('review fix: closing the chat route aborts open questions', async t => {
+  let reached;
+  const hit = new Promise(resolve => { reached = resolve; });
+  const ports = speechPorts({ prepare: input => new Promise((_, reject) => {
+    reached(); input.signal.addEventListener('abort', () => reject(input.signal.reason), { once: true });
+  }) });
+  const h = await fixture(t, { speech: ports.speech });
+  const pending = h.post(ask({ acceptsSpeechStream: true })).then(frames);
+  await hit; h.close();
+  const body = await Promise.race([pending, pause(1000).then(() => null)]);
+  assert.deepEqual(body?.at(-1), { type: 'error', error: 'shared_room_chat_cancelled' });
 });

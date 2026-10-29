@@ -176,14 +176,19 @@ export function createSharedRoomChat({ service, origin, engineOrigin = origin, s
       service.emitChat(roomId, { lineId: questionLineId, requestId: input.requestId, actorId, seat, text: input.message, at });
       stream.frame({ type: 'progress', stage: 'text', elapsedMs: 0 });
       const key = roomId + '\n' + actorId, history = turns.get(key) ?? [];
-      // The answer and its speech are for this round and this member only. One locked read per
-      // freshness check; readOwner reports the binding of the latest read (same player-<sha256>).
+      // The answer and its speech are for this round and this member only (review fix: the room lock
+      // is global, pg_advisory_xact_lock in studio-registry). 'start' reuses the locked read above;
+      // only the publication check after the answer locks again. Speech preparation and every
+      // streamed chunk read chatMember without SQL locks (binding, session, active, round); a dealer
+      // change is caught by the speech runtime's evidence and assertFresh. readOwner reports the
+      // binding of the latest read (same player-<sha256>).
       let latest = context;
-      const readStatus = async () => {
-        const after = await service.chatContext(request, { roomId, signal });
+      const readStatus = async stage => {
+        if (stage === 'start') return latest;
+        const after = stage === 'answer' ? await service.chatContext(request, { roomId, signal }) : await service.chatMember(request, { roomId, signal });
         latest = after;
         if (after.binding.actorId !== actorId || after.binding.sessionId !== owner || after.snapshot.me?.active !== true
-          || after.dealerId !== context.dealerId || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
+          || (stage === 'answer' && after.dealerId !== context.dealerId) || sharedRoomChatRound(after.snapshot) !== input.roundRevision) fail('stale_round_revision');
         return after;
       };
       let published = null;
