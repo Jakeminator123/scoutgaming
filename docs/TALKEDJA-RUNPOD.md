@@ -14,10 +14,10 @@ Prod `croupier.scoutgg.dev` kör release `gh-de31659c13ab` från grenen `kevin` 
 
 | Resurs | Vad | Läge |
 | --- | --- | --- |
-| Pod `v01sxp6a4wmjq6` | Emils rörliga läppsynk, image `croupier-lipsync-worker:fe1b55e` + `/data/avatars`; RTX 4090, 61 GB RAM, 0,89 $/h. Ringer själv upp prod över websocket som banan `e2e-prod` och annonserar tagningar: paow 90, dragan 85, astrid 65. Första munbit efter 0,25–0,5 s | aktiv, behålls |
-| Endpoints `7tcfouz8jib4wb` (Paow), `fxwf3rgwme748i` (Dragan) | Röst och chattsvar, min 1/max 1, ca 1,1 $/h ihop. Image astrid-gpu-worker `71f47174`/`6e8fff01` (enligt 22/10), `AVATAR_ID` per endpoint, `{op:"lipsync", wav_b64}` → `mp4_b64` | aktiva, alltid på |
-| Endpoint `mq7eiwanda72fg` | Reserv när podden faller (0/3), sämre läppsynk, image `6c80fe5`. `POST /v2/mq7eiwanda72fg/run {input:{op:"session", ws_url, ttl:3300, avatar}}` med `ws_url = wss://<origin>/lipsync-rorlig?token=<process-token>&avatar=<dealer>`; workern ringer upp, svarar `pong` med tagningar, får `start`/`end` och svarar `lapp` (H.264 256×512) och `done`; ljudet 0,22 s efter kartans första ruta | reserv, kostar vid bruk |
-| Pod `h6jevb1ylc7wi0` | H100, 3,99 $/h, renderar Adebayors klipp, stoppas automatiskt | tillfällig |
+| Pod Kevins prod-pod | Emils rörliga läppsynk, image `croupier-lipsync-worker:fe1b55e` + `/data/avatars`; RTX 4090, 61 GB RAM, 0,89 $/h. Ringer själv upp prod över websocket som banan `e2e-prod` och annonserar tagningar: paow 90, dragan 85, astrid 65. Första munbit efter 0,25–0,5 s | aktiv, behålls |
+| Endpoints Kevins Paow- och Dragan-endpoints | Röst och chattsvar, min 1/max 1, ca 1,1 $/h ihop. Image astrid-gpu-worker `71f47174`/`6e8fff01` (enligt 22/10), `AVATAR_ID` per endpoint, `{op:"lipsync", wav_b64}` → `mp4_b64` | aktiva, alltid på |
+| Endpoint Kevins reservendpoint | Reserv när podden faller (0/3), sämre läppsynk, image `6c80fe5`. `POST /v2/<reserv-id>/run {input:{op:"session", ws_url, ttl:3300, avatar}}` med `ws_url = wss://<origin>/lipsync-rorlig?token=<process-token>&avatar=<dealer>`; workern ringer upp, svarar `pong` med tagningar, får `start`/`end` och svarar `lapp` (H.264 256×512) och `done`; ljudet 0,22 s efter kartans första ruta | reserv, kostar vid bruk |
+| Pod Kevins tillfälliga H100-pod | H100, 3,99 $/h, renderar Adebayors klipp, stoppas automatiskt | tillfällig |
 | Endpoints med max 0 | `tdkbn6qxcyh4so` (klassiska Astrid, `registry.gitlab.com/emacodehero/astrid-gpu-worker:d3a2d0a6`), `9hyt6a6e17223s` (gammal Dragge), `m92ozpmo4dblod` (lokal test) | inaktiva |
 | Stoppade poddar, volym | `ocusfoehs1str3` (Emils original, maskinen saknar ledig GPU), `56ztvy7chwmxrh`, `c8ecfltxn0ux91` (migreringar), `xvcvt1wllt5eoa`, `e2l9tjkcewzeeh` (reservförsök), `qrh2uetfnc9l6v` (Adebayor), `wyzggorfuse5cf` (bygg-avatarer); volym `oem9ixhj1q` (30 GB, tom) | kostar lagring |
 
@@ -25,7 +25,7 @@ Emils image är privat på GHCR: varje ny pod eller endpoint behöver registry-a
 
 Fällor (Kevins numrering): 1 två poddar på samma bana tar anslutningen från varandra var 10:e s, bara en pod per bana; 2 poddens data ligger på maskinens disk och "migrate" skapar kopior (backup `/root/emil-pod-backup/data-20261027.tgz` på scout-hel1); 3 utan registry-auth `IMAGE_AUTH_ERROR`; 4 chattsvar kräver min 1, annars över 12 s kallstart och bara text; 5 podden behöver RAM, 35 GB gav OOM; 6 en bana delas av alla dealers, två samtidiga köar (Dragan 7–9 s); 7 `mq7` heter "staging" men är prods reserv, max 0 ger `ENDPOINT_PAUSED`; 8 en worker som annonserar 0 tagningar ger flimrande mun; 9 lokalt ska `RORLIG_ENDPOINT_ID` vara av (`local-none`) och lokala `.env`-värden får aldrig till prod; 10 RunPod-konsolen visar gammalt läge tills sidan laddas om.
 
-Cleanup (Kevins förslag, inget raderas utan hans ja): behåll `v01sxp6a4wmjq6`, `7tcf`/`fxwf`, `mq7` (eller max 0 när podden visat sig stabil), `h6jevb1ylc7wi0` tills Adebayor är klar, backupen på scout-hel1. Radera `xvcvt1wllt5eoa`, `e2l9tjkcewzeeh`, `c8ecfltxn0ux91`, `56ztvy7chwmxrh`, `qrh2uetfnc9l6v`, `wyzggorfuse5cf`, endpoints `9hyt6a6e17223s` och `m92ozpmo4dblod`, volymen `oem9ixhj1q` och åtta gamla mallar; `ocusfoehs1str3` först när Emil sagt ok; `tdkbn6qxcyh4so` bara om ingen använder klassiska läget. Kevins nästa steg: Emils `/data` på en nätverksvolym och en andra prod-bana på `v01`.
+Cleanup (Kevins förslag, inget raderas utan hans ja): behåll Kevins prod-pod, Paow-/Dragan-endpoints, reserven (eller max 0 när podden visat sig stabil), Kevins tillfälliga H100-pod tills Adebayor är klar, backupen på scout-hel1. Radera `xvcvt1wllt5eoa`, `e2l9tjkcewzeeh`, `c8ecfltxn0ux91`, `56ztvy7chwmxrh`, `qrh2uetfnc9l6v`, `wyzggorfuse5cf`, endpoints `9hyt6a6e17223s` och `m92ozpmo4dblod`, volymen `oem9ixhj1q` och åtta gamla mallar; `ocusfoehs1str3` först när Emil sagt ok; `tdkbn6qxcyh4so` bara om ingen använder klassiska läget. Kevins nästa steg: Emils `/data` på en nätverksvolym och en andra prod-bana på `v01`.
 
 ## Röst: ElevenLabs och Cartesia
 
@@ -50,8 +50,8 @@ Per-dealer-kartan finns redan för rörligt tal: `CROUPIER_MOVING_SPEECH_BANK_RE
 | --- | --- | --- | --- |
 | Kod | gren `kevin`, `gh-de31659c13ab` | `main` | `preview` |
 | RunPod-konto | Kevins | `RUNPOD_API_KEY`: Kevins (*rapporterat*); rörlig nyckel ej läst | ingen nyckel |
-| Stillbild, chattsvar | `7tcf` (Paow), `fxwf` (Dragan), min 1, helklipp | endpoint `kiud9j0a7fp5gn` (*rapporterat*) = Kevins pod, 404 | av |
-| Rörligt | pod `v01`, bana `e2e-prod`; reserv `mq7` | av (`=0`); `zjsdlni6cn8dvo` i vårt konto, mallens callback → `croupier-v2`; `_BANK_RECORDS` saknas, gamla `_BANK_RECORD`/`_ENDPOINT_ID` kvar | av |
+| Stillbild, chattsvar | Kevins Paow-/Dragan-endpoints, min 1, helklipp | endpoint `kiud9j0a7fp5gn` (*rapporterat*) = Kevins pod, 404 | av |
+| Rörligt | Kevins prod-pod, bana `e2e-prod`; Kevins reserv | av (`=0`); `zjsdlni6cn8dvo` i vårt konto, mallens callback → `croupier-v2`; `_BANK_RECORDS` saknas, gamla `_BANK_RECORD`/`_ENDPOINT_ID` kvar | av |
 | Banker | Emils paket: paow, dragan, astrid | Dragan i privat Blob; Paow saknas | inga |
 | Röst | ElevenLabs Pro (Kevin) | samma konto, `CROUPIER_DEALER_SPEECH_PROFILES=1` | ingen nyckel |
 | Cartesia | bara Astrid | krävs av starten, bara Astrids röst | ingen |
@@ -61,7 +61,7 @@ Per-dealer-kartan finns redan för rörligt tal: `CROUPIER_MOVING_SPEECH_BANK_RE
 
 ## Kan vår kod tala med Kevins endpoints som de är?
 
-Nej, inte utan kod. `7tcf`/`fxwf` tar helfilsjobb `op:"lipsync"` med fast `AVATAR_ID`; vår stillbildsväg skickar `op:"session"` med avatar och kräver bindningen i protokoll 3, som Emils image `71f47174`/`6e8fff01` inte har visat (källan är Emils privata repo; vår import är `d3a2d0a6` plus egen strömning, `services/astrid-gpu-worker/SOURCE.md`). `mq7` och `v01` talar Emils `/lipsync-rorlig`-protokoll med tagningsnamn ur Kevins filer och avatarer i imagen; vår rörliga väg kräver kvittobunden bank och vår image. Att ansluta dem är mer än 300 rader och flyttar en medveten säkerhetsgräns, så det görs inte här. Nästa PR, om Jakob väljer det:
+Nej, inte utan kod. Kevins endpoints tar helfilsjobb `op:"lipsync"` med fast `AVATAR_ID`; vår stillbildsväg skickar `op:"session"` med avatar och kräver bindningen i protokoll 3, som Emils image `71f47174`/`6e8fff01` inte har visat (källan är Emils privata repo; vår import är `d3a2d0a6` plus egen strömning, `services/astrid-gpu-worker/SOURCE.md`). `mq7` och `v01` talar Emils `/lipsync-rorlig`-protokoll med tagningsnamn ur Kevins filer och avatarer i imagen; vår rörliga väg kräver kvittobunden bank och vår image. Att ansluta dem är mer än 300 rader och flyttar en medveten säkerhetsgräns, så det görs inte här. Nästa PR, om Jakob väljer det:
 
 - Helfil per dealer mot Kevins chattsvarsendpoints: profilens ElevenLabs-källa i stället för Cartesia (`generated-speech-provider.mjs:152`), endpoint per dealer (ny `CROUPIER_SPEECH_RUNPOD_ENDPOINTS`, JSON per dealerId), journal och budget för helfil per dealer (`packages/presentation/server/generated-speech-runtime.mjs:43-61`), uppspelning av helklipp i spelbordets chatt (`services/game/server.mjs:939`). Våra jobb skulle köa bakom Kevins prod (max 1).
 - Emils rörliga protokoll: vägen `/lipsync-rorlig` (pong, tagningar, `start`/`lapp`/`done`), karta från registerklipp till Kevins tagningsnamn (`services/game/games/blackjack/presentation/k04-media.tsv`) och undantag i `config.mjs:197` och `moving-speech-transport.mjs:79`. `v01` ringer bara Kevins prod; en bana till oss kräver en egen pod (fälla 1 och 6).
