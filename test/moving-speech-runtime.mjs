@@ -199,6 +199,33 @@ test('a shared-room context is accepted without presentationVersion: rest-frame 
   assert.deepEqual(other.trace, []); assert.equal(other.state.reads, 0);
 });
 
+test('room answer (PR 4): TTS starts before worker ready; one dispatch feeds the asker and another listener alike', async t => {
+  const f = await setup(t), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+  const service = f.runtime.forContext(room, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined });
+  assert.ok(f.trace.indexOf('admit') < f.trace.indexOf('tts') && f.trace.indexOf('tts') < f.trace.indexOf('ready'), f.trace.join(','));
+  await until(() => f.state.chunks === 3);
+  assert.equal(f.state.dispatched, 1, 'the worker streams into the relay without waiting for a listener');
+  const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  assert.notEqual(other.ticket, d.ticket);
+  for (const descriptor of [d, other]) assert.equal((await validateMovingSpeechStream(descriptor, { dealerId: 'dragan', requestId: f.input.requestId, exactText: f.input.text, now: f.state.now })).id, d.id);
+  assert.equal((await f.connect(other).opened).status, 403, 'the asker\'s session cannot redeem another listener\'s ticket');
+  const second = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  const asker = f.connect(d), listener = f.connect(second, { headers: { cookie: 'owner=two' } });
+  assert.equal((await asker.opened).status, 101); assert.equal((await listener.opened).status, 101);
+  const rest = await fetch(f.base + `/api/moving-speech/${d.id}/rest`, { headers: { cookie: 'owner=two' } });
+  assert.equal(rest.status, 200); assert.deepEqual(Buffer.from(await rest.arrayBuffer()), f.original);
+  await until(() => asker.messages.length === 3 && listener.messages.length === 3);
+  for (const client of [asker, listener]) client.send({ t: 'credit', id: client.messages[0].plan.start.id, frames: 36 });
+  assert.equal((await asker.close).code, 1000); assert.equal((await listener.close).code, 1000);
+  assert.deepEqual(listener.messages, asker.messages); assert.deepEqual(asker.messages.at(-1), { t: 'done', id: asker.messages[0].plan.start.id, frames: 36 });
+  assert.equal(f.state.dispatched, 1); assert.equal(f.state.cancelled, 1, 'the GPU session is released once its output is buffered');
+  // A refused admission still never starts TTS in a room.
+  const refused = await setup(t, { onAdmit: () => { throw Error('generated_speech_total_budget_exhausted'); } });
+  await assert.rejects(refused.runtime.forContext(room, undefined, 's-room', { room: true }).prepare({ ...refused.input, context: undefined }));
+  assert.equal(refused.trace.includes('tts'), false);
+});
+
 test('maximum PCM prepares 600 frames; the next sample stops TTS consumption before render dispatch', async t => {
   const f = await setup(t, { pcm: Buffer.alloc(MOVING_SPEECH_MAX_PCM_BYTES, 1) });
   const descriptor = await f.prepare(), client = f.connect(descriptor);
