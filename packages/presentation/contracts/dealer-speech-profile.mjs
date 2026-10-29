@@ -86,3 +86,15 @@ export function validateDealerSpeechReference(profile,video,dealerId) {
     || (Number.isFinite(video.duration) && ref.offsetMs >= video.duration * 1000)) throw Error('studio_speech_reference_invalid');
   if(normalized.state==='enabled'&&!dealerSpeechReferenceCheck(video,dealerId).canEnable)throw Error('studio_speech_reference_incompatible');
 }
+// A motion reference speaks only through the dealer's moving bank. A save may newly request AI speech with a
+// motion-video reference only for a dealer whose drift profile names a bank here (movingDriftDealerIds). A profile
+// that was already requested with the same reference stays as it is (Dragan in production); its voice may change.
+export function movingSpeechBanksAllowed(project,previous,bankDealerIds) {
+  const banks=new Set(bankDealerIds??[]);
+  return (project?.dealers??[]).every(dealer=>{
+    const profile=dealer.speechProfile;
+    if(profile?.state!=='enabled'||profile.reference?.kind!=='motion-video'||banks.has(dealer.id))return true;
+    const before=previous?.dealers?.find(row=>row.id===dealer.id)?.speechProfile;
+    return before?.state==='enabled'&&Boolean(before.reference)&&['kind','videoId','sha256','offsetMs'].every(key=>before.reference[key]===profile.reference[key]);
+  });
+}
