@@ -36,8 +36,9 @@ Dealerns sida visar de fem första stegen överst och markerar de som är klara.
 5. **Tilldela**: kryssa i dealern i en miljö
    ([Miljöer](#miljöer-och-material)) och ge bolaget miljön under
    **Bolag › Tilldelning**.
-6. **Spelbord**: **Nytt spelbord** hos bolaget. Det skapas pausat.
-7. **Publicera** och öppna spelbordet under **Tillgänglighet**.
+6. **Spelbord**: **Nytt spelbord** hos bolaget. **Skapa och publicera** skapar
+   spelbordet öppet, med tilldelning och spelinställningar publicerade.
+7. **Publicera** senare ändringar; **Tillgänglighet** pausar och öppnar spelbordet.
 
 ### Publicera i dag: en huvudknapp per spelbord
 
@@ -449,10 +450,12 @@ spelbordet**, som öppnar samma dialog för det spelbordet.
   spelbord. **Nytt bolag** skapar bolaget och bjuder in dess första
   administratör; nästa steg är **Till bolagets tilldelning**.
 - **Alla spelbord**: alla bolags spelbord, filtrerbara per bolag. **Nytt
-  spelbord** frågar efter bolag, miljö, spel (Blackjack eller Roulette) och
-  namn och visar den sparade scenen bredvid; avsluta med **Lägg till spel**.
-  Spelbordet skapas pausat. Bakgrund och bordsgrafik väljer du efteråt under
-  Utseende.
+  spelbord** förväljer dealer (bara en med hela klippbanken), miljö, namn,
+  språk och insatsprofil; allt går att ändra under Avancerat. **Skapa och
+  publicera** låser eller kopierar miljön, mäter omätta klipp och skapar
+  spelbordet öppet med tilldelning och spelinställningar i en publicering.
+  Stannar kedjan visas en mening och en knapp; ett nytt försök använder samma
+  miljö. Bakgrund och bordsgrafik väljer du efteråt under Utseende.
 - **Papperskorg**: arkiverade bolag och spelbord.
 
 ### Ett bolag
