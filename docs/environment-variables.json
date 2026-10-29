@@ -413,7 +413,7 @@
     },
     "vercel-lab-ui": {
       "sources": [
-        "apps/studio/middleware.ts",
+        "apps/studio/proxy.ts",
         "apps/studio/lib/remote-ui.mjs",
         "apps/studio/lib/studio-native-runtime.mjs",
         "apps/studio/lib/studio-native-mail.mjs",
