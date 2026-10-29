@@ -58,7 +58,7 @@ Registrera `dep-…`, `dpl_…` och SHA i `frozen-candidate.json` (`manual.F6`).
 | R7 | Byt env till målet, starta skrivarna, deploya `$SHA` (D1–D3) | `/__cloud/version` = `$SHA`; Render-loggen visar målets databas; health 200 |
 | R8a–e | Autentiserad replay (se nedan) | Se tabellen under R8 |
 | R9 | S0′ på källan medan appen pekar på målet; byt tillbaka env; deploya `$SHA`; grind | `--compare s0.json s0prime.json` exit 0 |
-| R10 | Skriv kvittot `$O2/o02/restore-replay/receipt.json` | Fälten som `tools/o02-receipt.mjs` läser |
+| R10 | Skriv kvittot `$O2/o02/restore-replay/receipt.json` | Fälten som `tools/o02-receipt.mjs` läste (verktyget är borttaget efter migreringen och kan läsas ur Git) |
 
 ### R1 Stoppa skrivare
 
