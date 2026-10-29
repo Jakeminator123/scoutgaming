@@ -26,7 +26,8 @@ const DEALER_VOICES = {
   // rest-image endpoint exists for her, so without that worker her answer is text.
   // Adebayor (Kevin 29 Oct: voice PiGyGh3I6t288DXzqeDV): ElevenLabs, lip-synced by the moving lip sync only (his pod lane);
   // no rest-image endpoint, so without that worker his answer is text. He exists only where LOCAL_DEALERS lists him.
-  adebayor: { voice: 'PiGyGh3I6t288DXzqeDV', endpoint: process.env.ADEBAYOR_LIPSYNC_ENDPOINT ?? null,
+  // His voice lives in Impactwin's ElevenLabs account (Kevin 29 Oct), not the game's: keyEnv names the env variable with that key
+  adebayor: { voice: 'PiGyGh3I6t288DXzqeDV', keyEnv: 'ELEVENLABS_IMPACTWIN_KEY', endpoint: process.env.ADEBAYOR_LIPSYNC_ENDPOINT ?? null,
     reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } } } },
   astrid2: { tts: 'cartesia', voice: null, endpoint: process.env.ASTRID2_LIPSYNC_ENDPOINT ?? null,
     reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } } } },
@@ -48,7 +49,8 @@ function secret(name, files, { env = true } = {}) {
   return '';
 }
 const home = process.env.HOME ?? '';
-const XI = () => secret('ELEVENLABS_VIDEO_KEY', [path.join(home, '.config/croupier/agent.env'), '/etc/croupier/agent.env']);
+// the game's ElevenLabs key, or a dealer's own account (DEALER_VOICES[dealer].keyEnv, e.g. Adebayor in Impactwin's account)
+const XI = (dealer = null) => (dealer && DEALER_VOICES[dealer]?.keyEnv && process.env[DEALER_VOICES[dealer].keyEnv]) || secret('ELEVENLABS_VIDEO_KEY', [path.join(home, '.config/croupier/agent.env'), '/etc/croupier/agent.env']);
 // Local QA sets RUNPOD_API_KEY=local-qa-disabled for Astrid's pipeline; Dragge's voice reads the real key file then.
 const RP = () => secret('DRAGGE_RUNPOD_API_KEY', []) || secret('RUNPOD_API_KEY', [path.join(home, '.config/croupier/runpod.env')]);
 
@@ -65,7 +67,7 @@ function podLipsync(dealer, pcm) {
   return run;
 }
 
-export const draggeVoiceReady = (dealer) => Boolean((onCartesia(dealer) ? cartesia : XI()) && (onPod(dealer) || RP()));
+export const draggeVoiceReady = (dealer) => Boolean((onCartesia(dealer) ? cartesia : XI(dealer)) && (onPod(dealer) || RP()));
 // The RunPod key his voice uses (the real one even where local QA disables Astrid's): the lip sync on the moving clips
 // orders its worker with it too (rorlig-lipsync.mjs).
 export const runpodKey = () => RP();
@@ -111,7 +113,7 @@ export async function draggeVoice(text, language, { fetchImpl = fetch, dealer = 
   }
   const VOICE = DEALER_VOICES[dealer].voice, read = voiceRead(dealer, language);
   const tts = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_${RATE}`, {
-    method: 'POST', headers: { 'xi-api-key': XI(), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
+    method: 'POST', headers: { 'xi-api-key': XI(dealer), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
     body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en', 'es', 'fr', 'zh', 'pt', 'ko'].includes(language) ? language : 'en' }),
       voice_settings: read.settings }),
   });
