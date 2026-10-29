@@ -16,7 +16,7 @@ import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 // Spelbordets publicering och "Använd i miljön och i spelbordet" delar kontrakt och transaktion.
 const ROOM_RELEASE_ACTIONS = [ROOM_RELEASE_ACTION, AI_ADOPT_ACTION];
 const MAX_BODY = 64 * 1024;
-const administrationMutations = new Set(['tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
+const administrationMutations = new Set(['tier','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
 const RESOURCE_DELETE_CODES = new Set(['studio_resource_delete_blocked','studio_delete_name_mismatch','studio_conflict','studio_room_not_found','studio_composition_not_found','studio_operator_not_found']);

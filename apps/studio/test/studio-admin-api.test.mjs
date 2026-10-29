@@ -6,12 +6,12 @@ import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED,
 const origin = 'https://studio.example';
 const path = action => `/studio/api/admin/${action}`;
 const session = { user: 'Jakob', role: 'superadmin', scope: { environment: 'isolated-fixture', workspaceId: 'qa' } };
-function api(options = {}) { return createStudioAdminApi({ authorize: async () => session, mutationTransaction: work => work(), allowedOrigins: [origin], publicHosts: ['studio.example'], handlers: new Map([['GET ' + path('players'), () => ({ players: [] })], ['POST ' + path('room'), context => ({ actor: context.actor, scope: context.scope })]]), ...options }); }
-function request(action = 'room', options = {}) { return new Request(origin + path(action), { method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: '{}', ...options }); }
+function api(options = {}) { return createStudioAdminApi({ authorize: async () => session, mutationTransaction: work => work(), allowedOrigins: [origin], publicHosts: ['studio.example'], handlers: new Map([['GET ' + path('players'), () => ({ players: [] })], ['POST ' + path('tier'), context => ({ actor: context.actor, scope: context.scope })]]), ...options }); }
+function request(action = 'tier', options = {}) { return new Request(origin + path(action), { method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: '{}', ...options }); }
 
 test('exact contract routing, unavailable handler and private safe errors', async () => {
   const handler = api();
-  for (const [url, method, status] of [[path('unknown'), 'GET', 404], [path('room') + '/', 'GET', 404], [path('room'), 'PUT', 405], [path('config'), 'GET', 503]]) {
+  for (const [url, method, status] of [[path('unknown'), 'GET', 404], [path('tier') + '/', 'GET', 404], [path('tier'), 'PUT', 405], [path('config'), 'GET', 503]]) {
     const response = await handler.handle(new Request(origin + url, { method }));
     assert.equal(response.status, status); assert.equal(response.headers.get('cache-control'), 'private, no-store');
   }
@@ -74,16 +74,16 @@ test('live authorization and explicit role floor deny players and reader writes'
 
 test('host and browser-origin spoofing cannot invoke a write', async () => {
   for (const headers of [{ origin: 'https://evil.example' }, { origin, 'sec-fetch-site': 'cross-site' }, { origin, 'sec-fetch-site': 'same-site' }, { origin, 'sec-fetch-site': 'same-origin', host: 'evil.example' }, { origin, 'sec-fetch-site': 'same-origin', 'x-forwarded-host': 'evil.example' }, { origin }, {}]) {
-    assert.equal((await api().handle(request('room', { headers: { 'content-type': 'application/json', ...headers } }))).status, 403);
+    assert.equal((await api().handle(request('tier', { headers: { 'content-type': 'application/json', ...headers } }))).status, 403);
   }
   assert.equal((await api().handle(new Request('https://evil.example' + path('players')))).status, 403);
 });
 
 test('bounded strict UTF8 object JSON and server-owned actor/scope', async () => {
-  for (const body of ['null', '[]', 'true', '{bad}', '{"actor":"spoof"}', '{"scope":"spoof"}']) assert.equal((await api().handle(request('room', { body }))).status, 400);
-  assert.equal((await api().handle(request('room', { body: new Uint8Array([0xc3, 0x28]) }))).status, 400);
-  assert.equal((await api().handle(request('room', { body: JSON.stringify({ text: 'x'.repeat(65536) }) }))).status, 413);
-  assert.equal((await api().handle(request('room', { headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'text/plain' } }))).status, 415);
+  for (const body of ['null', '[]', 'true', '{bad}', '{"actor":"spoof"}', '{"scope":"spoof"}']) assert.equal((await api().handle(request('tier', { body }))).status, 400);
+  assert.equal((await api().handle(request('tier', { body: new Uint8Array([0xc3, 0x28]) }))).status, 400);
+  assert.equal((await api().handle(request('tier', { body: JSON.stringify({ text: 'x'.repeat(65536) }) }))).status, 413);
+  assert.equal((await api().handle(request('tier', { headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'text/plain' } }))).status, 415);
   const result = await (await api().handle(request())).json();
   assert.deepEqual(result, { actor: { user: 'Jakob', role: 'admin' }, scope: session.scope });
 });
@@ -156,19 +156,19 @@ test('opaque 503/500 handler failures log one redacted line and expose only a fi
   ];
   for (const [handler, status, body, name] of cases) {
     const { result, lines } = await capturedErrors(async () => {
-      const response = await api({ handlers: new Map([['POST ' + path('room'), handler]]) }).handle(request('room', { body: '{"secret":"fixture-body"}', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', cookie: 'session=fixture-cookie' } }));
+      const response = await api({ handlers: new Map([['POST ' + path('tier'), handler]]) }).handle(request('tier', { body: '{"secret":"fixture-body"}', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', cookie: 'session=fixture-cookie' } }));
       return [response.status, await response.json()];
     });
     assert.deepEqual(result, [status, body]); assert.equal(lines.length, 1); assert.equal(lines[0].length, 1);
     const raw = lines[0][0], line = JSON.parse(raw);
     assert.deepEqual(Object.keys(line), ['studioNativeError', 'code', 'name', 'message', 'route', 'method', 'stack', 'cause']);
-    assert.equal(line.studioNativeError, true); assert.equal(line.name, name); assert.equal(line.route, 'room'); assert.equal(line.method, 'POST');
+    assert.equal(line.studioNativeError, true); assert.equal(line.name, name); assert.equal(line.route, 'tier'); assert.equal(line.method, 'POST');
     assert.ok(line.stack.length > 0 && line.stack.length <= 8 && line.stack.every(frame => frame.startsWith('at ')));
     for (const secret of ['fixture-pass', 'fixture-user', 'neon.tech', 'owner@example', 'fixture-token', 'fixture-body', 'fixture-cookie', 'private provider detail', 'Jakob']) assert.equal(raw.includes(secret), false, secret);
     if (name === 'Error') assert.match(line.message, /^connect failed \[url\] for \[email\] token=\[redacted\]$/);
   }
   const { lines } = await capturedErrors(async () => {
-    for (const statusCode of [409, 422]) await api({ handlers: new Map([['POST ' + path('room'), () => { throw new StudioStorageError('studio_storage_unavailable', statusCode); }]]) }).handle(request());
+    for (const statusCode of [409, 422]) await api({ handlers: new Map([['POST ' + path('tier'), () => { throw new StudioStorageError('studio_storage_unavailable', statusCode); }]]) }).handle(request());
   });
   assert.deepEqual(lines, []);
 });
@@ -183,9 +183,9 @@ test('revocation while the request body is pending cannot execute a local mutati
   let principal = session, writer, authorizations = 0, invoked = 0, bodyPending;
   const waiting = new Promise(resolve => { bodyPending = resolve; });
   const configured = api({ authorize: () => { authorizations++; bodyPending(); return principal; },
-    handlers: new Map([['POST ' + path('room'), () => { invoked++; return { ok: true }; }]]) });
+    handlers: new Map([['POST ' + path('tier'), () => { invoked++; return { ok: true }; }]]) });
   const body = new ReadableStream({ start(controller) { writer = controller; } });
-  const pending = configured.handle(request('room', { body, duplex: 'half' }));
+  const pending = configured.handle(request('tier', { body, duplex: 'half' }));
   await waiting;
   principal = { ...session, role: 'reader' };
   writer.enqueue(new TextEncoder().encode('{}')); writer.close();
@@ -207,7 +207,7 @@ test('identity and scope are checked again after gates while holding the product
   let checks = 0, locked = false;
   const configured = api({ authorize: () => { checks++; if (checks === 3) assert.equal(locked, true); return session; },
     mutationTransaction: async work => { locked = true; try { return await work(); } finally { locked = false; } },
-    handlers: new Map([['POST ' + path('room'), () => { assert.equal(locked, true); return { ok: true }; }]]) });
+    handlers: new Map([['POST ' + path('tier'), () => { assert.equal(locked, true); return { ok: true }; }]]) });
   assert.equal((await configured.handle(request())).status, 200); assert.equal(checks, 3);
 });
 
@@ -302,13 +302,13 @@ test('authorization revocation after provider preparation is rechecked under the
 });
 
 test('preparation registration cannot widen the route contract and request denial precedes provider work', async () => {
-  const key = 'POST ' + path('room'); let preparations = 0;
+  const key = 'POST ' + path('tier'); let preparations = 0;
   for (const invalid of [new Map([['GET ' + path('players'), () => ({})]]), new Map([['POST ' + path('unknown'), () => ({})]]),
     new Map([['POST ' + path('apikeys/credit'), () => ({})]]), new Map([[key, null]])]) {
     assert.throws(() => api({ preparations: invalid }), /Unknown admin preparation/);
   }
   const entries = new Map([[key, () => { preparations++; return { server: true }; }]]), configured = api({ preparations: entries });
   entries.set(key, () => { throw Error('Caller cannot replace snapshotted preparation'); });
-  assert.equal((await configured.handle(request('room', { headers: { origin: 'https://evil.example', 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } }))).status, 403);
+  assert.equal((await configured.handle(request('tier', { headers: { origin: 'https://evil.example', 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } }))).status, 403);
   assert.equal(preparations, 0); assert.equal((await configured.handle(request())).status, 200); assert.equal(preparations, 1);
 });

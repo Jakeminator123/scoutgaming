@@ -49,7 +49,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const SECTION_READS: Record<string, readonly string[]> = {
   ops: ['overview'], shoes: ['shoes'], players: ['players'], users: ['users'],
   apikeys: ['apikeys'], emails: ['emails'], pay: ['transactions'],
