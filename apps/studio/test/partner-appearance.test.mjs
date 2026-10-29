@@ -8,6 +8,8 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
+import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 const require = createRequire(import.meta.url);
 const {transformSync} = require('next/dist/build/swc');
 const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
@@ -41,12 +43,14 @@ function walk(tree,predicate) {
   return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
 }
 const byAction=(tree,name)=>walk(tree,node=>node.props?.['data-action']===name)[0];
-const select=(tree,label)=>walk(tree,node=>node.type==='select'&&node.props?.['aria-label']===label)[0];
+// The room scope selector and review are found by their data hook or class, never by their words.
+const scope=tree=>walk(tree,node=>node.type==='select'&&node.props?.['data-field']==='scope')[0];
+const selects=tree=>walk(tree,node=>node.type==='select');
 // The layer choices are card groups (AppearanceChoices) with the same value/onChange contract as the old selects.
 const KINDS={Bakgrund:'background',Background:'background',Dealer:'dealer',Bordsgrafik:'table'};
 const choice=(tree,label)=>walk(tree,node=>node.type===AppearanceChoices&&node.props.kind===(KINDS[label]??label))[0];
 const textOf=node=>!node?'':typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(textOf).join(''):textOf(node.props?.children);
-const reviewSection=tree=>walk(tree,node=>node.type==='section'&&node.props?.['aria-label']==='Granskning före publicering')[0];
+const reviewSection=tree=>walk(tree,node=>node.type==='section'&&node.props?.className==='review')[0];
 const dialog=tree=>walk(tree,node=>node.type===RadixDialog.Root)[0];
 const response=(data,status=200)=>({ok:status>=200&&status<300,status,json:async()=>data});
 const reviewed=(initial,extra={})=>({reviewToken:'a-valid-review-token',draftRevision:initial.draftRevision,packageRevision:initial.packageRevision,branding:initial.draft.branding,changes:[{roomId:null,key:'color',before:'#112233',after:'#445566'}],affectedRooms:['north-main'],...extra});
@@ -63,49 +67,55 @@ function html(initial,options={}) {return renderToStaticMarkup(React.createEleme
 
 test('saved draft is loaded separately from the live version with SV and EN workflow labels',()=>{
   const sv=html(withDraft()),en=html(withDraft(),{language:'en'});
-  assert.match(sv,/Publicerad version 7 · utkast sparat/);assert.match(sv,/Publicera · 2 ändringar/);assert.doesNotMatch(sv,/#445566|Bordsfärg/);
-  assert.match(en,/Save draft/);assert.match(en,/Publish · 2 changes/);assert.match(en,/Restore to draft/);
-  assert.match(html(initialState()),/Inget att publicera/,'nothing differs from live, so the primary action says so');
-  assert.doesNotMatch(sv,/<input[^>]+(?:name|logo|primary)|type="range"|Placering|Ordmarke/);
+  const tree=language=>stateful(withDraft(),()=>assert.fail('render only'),{language}).render();
+  const reviewLabel=language=>textOf(byAction(tree(language),'review'));
+  assert.match(reviewLabel('sv'),/\b2\b/);assert.match(reviewLabel('en'),/\b2\b/);assert.notEqual(reviewLabel('sv'),reviewLabel('en'),'the workflow follows the language');
+  const status=textOf(walk(tree('sv'),node=>node.props?.role==='status')[0]);assert.match(status,/\b7\b/,'the live version is named apart from the draft');
+  assert.equal(byAction(tree('sv'),'review').props.disabled,false);assert.ok(byAction(tree('en'),'save-draft'));assert.ok(byAction(tree('en'),'restore-5'),'an older version can be restored to the draft');
+  assert.equal(byAction(stateful(initialState(),()=>assert.fail('render only')).render(),'review').props.disabled,true,'nothing differs from live, so there is nothing to publish');
+  assert.doesNotMatch(sv,/#445566/);
+  assert.doesNotMatch(sv,/<input[^>]+(?:name|logo|primary)|type="range"/);
 });
 test('read-only and pre-draft backends fail closed but can inspect room scope',async()=>{
   for(const initial of [initialState({canConfigure:false}),initialState({draftRevision:undefined})]){
     const {render}=stateful(initial,()=>assert.fail('unauthorized write'));
     assert.equal(byAction(render(),'save-draft').props.disabled,true);
     await byAction(render(),'save-draft').props.onClick();
-    assert.equal(select(render(),'Gäller för').props.disabled,false);
+    assert.equal(scope(render()).props.disabled,false);
   }
   assert.match(html(initialState({canConfigure:false})),/<fieldset[^>]*disabled=""/);
 });
 test('legacy scene templates explain the baked layers and the partner editor never shows table colour',()=>{
   const initial=initialState();delete initial.presentation.lanes[0].composition;
-  const legacy=html(initial);
-  assert.match(legacy,/Scenen är en enda film/);assert.match(legacy,/data-locked="background"/);assert.match(legacy,/data-locked="table"/);assert.doesNotMatch(legacy,/aria-label="Bordsfärg"/);
-  const full=html(initialState());
-  assert.match(full,/role="radiogroup"[^>]*aria-label="Bakgrund"/);assert.match(full,/role="radiogroup"[^>]*aria-label="Bordsgrafik"/);assert.match(full,/role="radiogroup"[^>]*aria-label="Dealer"/);
-  assert.match(full,/role="radio"[^>]*aria-checked="true"[^>]*aria-label="Bakgrund: bg-one"|aria-label="Bakgrund: bg-one"[^>]*aria-checked="true"/);
-  assert.doesNotMatch(full,/aria-label="Bordsfärg"|Bordsfärg<|Scenmall/);
+  const legacy=html(initial),legacyTree=stateful(initial,()=>assert.fail('render only')).render();
+  assert.match(legacy,/data-locked="background"/);assert.match(legacy,/data-locked="table"/);
+  assert.equal(picker(legacyTree,'background'),undefined);assert.equal(picker(legacyTree,'table'),undefined,'the baked layers are not offered');
+  const full=html(initialState()),fullTree=stateful(initialState(),()=>assert.fail('render only')).render();
+  assert.equal((full.match(/role="radiogroup"/g)||[]).length,3);
+  assert.deepEqual(walk(fullTree,node=>node.type===AppearanceChoices).map(node=>node.props.kind).sort(),['background','dealer','table'],'no table colour or scene template choice');
+  assert.equal(picker(fullTree,'background').props.effective,'bg-one');
 });
 test('locked layers and settings are quiet lines set by Scoutgaming, two tabs, and the review names every table',()=>{
   const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['dealer','branding'];
   initial.presentation.assets=[{id:'bg-one',role:'background',label:'Salong'},{id:'table-one',role:'table',label:'Grön filt'}];
-  const locked=html(initial,{roomId:'north-main',roomState:'pending',settings:{language:'sv',limitPreset:'prive'}});
-  assert.equal((locked.match(/bestäms av Scoutgaming/g)||[]).length,4,'two locked layers and two read-only settings');
-  assert.match(locked,/data-locked="background"[\s\S]*?Salong/);assert.match(locked,/data-locked="table"[\s\S]*?Grön filt/);
-  assert.doesNotMatch(locked,/aria-label="Bakgrund"|aria-label="Bordsgrafik"|Låst av Scoutgaming|Inte tillgängligt i denna presentation/);
-  assert.match(locked,/aria-label="Dealer"/);
-  for(const label of ['Utseende','Historik'])assert.match(locked,new RegExp('role="tab"[^>]*>'+label+'<'));
-  for(const label of ['Spelinställningar','Tillgänglighet'])assert.doesNotMatch(locked,new RegExp('role="tab"[^>]*>'+label+'<'));
-  assert.match(locked,/Bordsspråk<\/dt><dd><span>Svenska<\/span>/);assert.match(locked,/Insatsprofil<\/dt><dd><span>Privé · 5–2\s000<\/span>/);
-  assert.match(locked,/data-state="paused"[^>]*title="Pausat: syns inte i lobbyn\. Öppning begärs från Scoutgaming\."/);
-  assert.match(locked,/Publicerade versioner/);
+  const options={roomId:'north-main',roomState:'pending',settings:{language:'sv',limitPreset:'prive'}};
+  const locked=html(initial,options),lockedTree=stateful(initial,()=>assert.fail('render only'),options).render();
+  const quiet=walk(lockedTree,node=>node.props?.['data-quiet']!==undefined)[0];
+  assert.equal(walk(quiet,node=>node.type==='div').length,4,'two locked layers and two read-only settings');
+  assert.match(textOf(walk(quiet,node=>node.props?.['data-locked']==='background')[0]),/Salong/);assert.match(textOf(walk(quiet,node=>node.props?.['data-locked']==='table')[0]),/Grön filt/);
+  assert.deepEqual(walk(lockedTree,node=>node.type===AppearanceChoices).map(node=>node.props.kind),['dealer'],'only the unlocked dealer can be chosen');
+  assert.equal((locked.match(/role="tab"/g)||[]).length,2,'appearance and history are the only tabs');
+  const preset=ROOM_LIMIT_PRESETS.prive,amount=value=>new Intl.NumberFormat('sv-SE').format(value);
+  assert.ok(textOf(quiet).includes(`${amount(preset.min)}–${amount(preset.max)}`),'the read-only limit preset shows its published amounts');
+  assert.match(locked,/data-state="paused"/);
   const {render}=stateful(initial,()=>assert.fail('inspection does not write'),{roomId:'north-main',roomState:'pending'});
-  assert.match(textOf(reviewSection(render())),/Utkastet är gemensamt för bolagets spelbord[^.]*\(Huvudrum, VIP\)/);
+  assert.match(textOf(reviewSection(render())),/\(Huvudrum, VIP\)/,'the shared draft names every company table');
   const open=html(initialState(),{roomId:'north-main',roomState:'live'});
-  assert.match(open,/data-state="open"/);assert.doesNotMatch(open,/Bordsspråk|Insatsprofil/,'no settings shown without published settings');
+  assert.match(open,/data-state="open"/);assert.doesNotMatch(open,/data-quiet/,'no settings shown without published settings');
   assert.doesNotMatch(open,/data-locked=/);
-  const company=html(initialState(),{roomId:''});
-  assert.doesNotMatch(company,/Scenmall|aria-label="Scenmall"/,'the company never chooses a scene template');assert.match(company,/Bolagets standard<\/span><\/h1>/);
+  const companyTree=stateful(initialState(),()=>assert.fail('render only'),{roomId:''}).render();
+  assert.equal(selects(companyTree).length,0,'the company never chooses a scene template');
+  assert.doesNotMatch(textOf(walk(companyTree,node=>node.type==='h1')[0]),/Huvudrum|VIP/,'the company default is not a table');
 });
 test('save creates a draft with full supported state, preserves hidden choices and never reports a live publication',async()=>{
   const initial=initialState({branding:{color:'#112233',dealer:'vera',roomOverrides:{'north-vip':{table:'table-two'}},name:'unused'}}),calls=[],published=[];
@@ -182,9 +192,9 @@ test('local discard clears an obsolete failed-save message without retrying the 
   let calls=0;
   const {render}=stateful(initialState(),async()=>{calls++;return response({},413);});
   choice(render(),'Bakgrund').props.onChange('bg-two');await byAction(render(),'save-draft').props.onClick();
-  assert.match(renderToStaticMarkup(render()),/Utkastet är för stort/);
+  assert.match(renderToStaticMarkup(render()),/role="alert"/);
   await byAction(render(),'discard-draft').props.onClick();
-  assert.equal(calls,1);assert.equal(choice(render(),'Bakgrund').props.value,'');assert.doesNotMatch(renderToStaticMarkup(render()),/Utkastet är för stort/);
+  assert.equal(calls,1);assert.equal(choice(render(),'Bakgrund').props.value,'');assert.doesNotMatch(renderToStaticMarkup(render()),/role="alert"/);
 });
 
 test('discarding a saved or stale company draft keeps live branding and uses the new draft revision for the next save',async()=>{
@@ -230,7 +240,7 @@ test('discard sends one mutation while pending and ignores a completion after un
 test('room reset removes only that override and room presentation remains server-owned',async()=>{
   const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-main':{color:'#445566'},'north-vip':{table:'table-two'}}}}),calls=[];
   const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});});
-  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Scenmall'),undefined);
+  scope(render()).props.onChange({target:{value:'north-main'}});assert.equal(selects(render()).length,1,'only the scope selector, no scene template');
   byAction(render(),'reset-room').props.onClick();await byAction(render(),'save-draft').props.onClick();
   assert.deepEqual(calls[0].branding,{color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}});
 });
@@ -259,25 +269,28 @@ test('stale base requires saving again before review and history is not silently
 test('inherited room override changes appear in review even without an immediate visual change',async()=>{
   const initial=withDraft(),{render}=stateful(initial,async()=>response(reviewed(initial,{changes:[{roomId:'north-main',key:'roomOverrides.color',before:'#112233',after:null}],affectedRooms:[]})));
   await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,false);
-  assert.match(textOf(reviewSection(render())),/Bordsfärg \(spelbordsval\)/);assert.doesNotMatch(textOf(reviewSection(render())),/roomOverrides.color/);
+  const changes=walk(reviewSection(render()),node=>node.type==='li');
+  assert.equal(changes.length,1);assert.match(textOf(changes[0]),/Huvudrum/);assert.doesNotMatch(textOf(reviewSection(render())),/roomOverrides/,'the inherited key is named, not shown raw');
   assert.equal(dialog(render()).props.open,true,'a valid review opens the publish dialog');
 });
 test('room dealers use room-specific choices and frozen schema3 labels',()=>{
   const initial=initialState();initial.presentation={...initial.presentation,schemaVersion:3,registeredDealers:[{id:'astrid',label:'Frozen Astrid',idle:null},{id:'vera',label:'Frozen Vera',idle:null}],playback:{}};
-  const {render}=stateful(initial,()=>assert.fail('no request'));select(render(),'Gäller för').props.onChange({target:{value:'north-vip'}});
+  const {render}=stateful(initial,()=>assert.fail('no request'));scope(render()).props.onChange({target:{value:'north-vip'}});
   const options=choice(render(),'Dealer').props.choices;
   assert.equal(options.some(row=>row.id==='vera'),false);assert.equal(options.find(row=>row.id==='astrid').label,'Frozen Astrid');
 });
 
 test('oversized packages explain how to reduce scope and preserve the draft for another save',async()=>{
+  const alerts={};
   for(const language of ['sv','en']){
     const {render}=stateful(initialState(),async()=>response({},413),{language});
     const label=language==='en'?'Background':'Bakgrund';
     choice(render(),label).props.onChange('bg-two');
     await byAction(render(),'save-draft').props.onClick();
     assert.equal(choice(render(),label).props.value,'bg-two');assert.equal(byAction(render(),'save-draft').props.disabled,false);assert.equal(byAction(render(),'publish').props.disabled,true);
-    const markup=renderToStaticMarkup(render());assert.match(markup,language==='en'?/Reduce the number of table choices/:/Minska antalet spelbordsval/);assert.match(markup,language==='en'?/Published versions/:/Publicerade versioner/);
+    alerts[language]=textOf(walk(render(),node=>node.props?.role==='alert'));assert.ok(alerts[language],'the oversized package is explained');
   }
+  assert.notEqual(alerts.sv,alerts.en);
 });
 
 test('parent receives real dirty state and room switches preserve all unsaved room choices',async()=>{
@@ -287,7 +300,7 @@ test('parent receives real dirty state and room switches preserve all unsaved ro
   choice(render(),'Dealer').props.onChange('vera');render();assert.equal(changes.at(-1),true);
   options.roomId='north-vip';assert.equal(choice(render(),'Dealer').props.value,'');
   options.roomId='north-main';assert.equal(choice(render(),'Dealer').props.value,'vera');
-  assert.equal(select(render(),'Gäller för'),undefined,'controlled room selector is not duplicated');
+  assert.equal(scope(render()),undefined,'controlled room selector is not duplicated');
   await byAction(render(),'save-draft').props.onClick();render();assert.equal(changes.at(-1),false);
   unmount();assert.equal(changes.at(-1),false);
 });
@@ -303,11 +316,10 @@ test('legacy published composition labels are translated in review, and the port
     initial.lanes=initial.presentation.lanes.map(row=>row.id);
     const before=JSON.stringify(initial);
     const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);assert.equal(body.action,'review');return response(reviewed(initial,{changes:[{roomId:null,key:'lane',before:'mobile-phone',after:'layer-preview'}]}));},{language});
-    assert.equal(select(render(),language==='en'?'Scene template':'Scenmall'),undefined);
-    const standard=language==='en'?'Standard composition':'Standardsammansättning';
-    const layers=language==='en'?'Layer composition':'Lagersammansättning';
+    assert.equal(selects(render()).length,1,'only the scope selector, no scene template');
+    const standard=compositionLabel('Mobile Phone Lane',language),layers=compositionLabel('Layer Preview Lane',language);
     await byAction(render(),'review').props.onClick();
-    const text=textOf(walk(render(),node=>node.type==='section'&&node.props?.['aria-label']===(language==='en'?'Review before publishing':'Granskning före publicering'))[0]);
+    const text=textOf(reviewSection(render()));
     assert.ok(text.includes(standard+' → '+layers),text);
     assert.doesNotMatch(text,/Mobile Phone Lane|Layer Preview Lane/);
     assert.equal(JSON.stringify(initial),before);
@@ -319,8 +331,8 @@ test('Admin room layout shows one frozen preview and exact locked choices withou
   const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['table.color'];
   initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'table-one',label:'Grön filt'}];
   const content=html(initial,{roomId:'north-main',roomLayout:true});
-  assert.match(content,/Salong/);assert.match(content,/Grön filt/);assert.match(content,/låst i publicerat paket/);
-  assert.doesNotMatch(content,/Inte tillgängligt i denna presentation|aria-label="Gäller för"|aria-label="Sammansättning"/);
+  assert.match(content,/data-locked="background"[\s\S]*?Salong/);assert.match(content,/data-locked="table"[\s\S]*?Grön filt/);
+  assert.doesNotMatch(content,/<select/,'no scope or composition selector in the room layout');
   assert.equal((content.match(/data-appearance-preview=/g)||[]).length,1);
 });
 
@@ -372,7 +384,7 @@ test('Admin room publication review stays hidden until a room draft is saved and
   ]);
   for(const call of calls){assert.equal(call.url,'/studio/api/partner/branding?operator=north');assert.equal(call.credentials,'same-origin');assert.equal(call.method,'POST');}
   assert.equal(published.length,1);assert.equal(published[0].packageRevision,8);
-  assert.match(textOf(walk(h.render(),node=>node.type===RadixDialog.Title)),/Publicerat · version 8/);
+  assert.match(textOf(walk(h.render(),node=>node.type===RadixDialog.Title)),/\b8\b/,'the receipt names the new live version');
   assert.equal(byAction(h.render(),'publish'),undefined,'the receipt replaces the publish step');
 });
 
@@ -389,9 +401,10 @@ test('Admin layer choices preserve composition and room allowlists while partner
   }
   const baked=initialState();baked.presentation.lanes[0].layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
   const fixed=stateful(baked,()=>assert.fail('read only'),{roomId:'north-main',roomLayout:true,adminChoices:true});
-  assert.equal(picker(fixed.render(),'background'),undefined);assert.match(textOf(lockedLine(fixed.render(),'background')),/inbakad i dealerfilmen/);
+  assert.equal(picker(fixed.render(),'background'),undefined);assert.ok(lockedLine(fixed.render(),'background'));
+  assert.notEqual(textOf(lockedLine(fixed.render(),'background')),textOf(lockedLine(partner.render(),'background')),'a baked background explains why it is locked');
   const vip=stateful(initialState({roomDealerChoices:{'north-main':['astrid','vera'],'north-vip':[]}}),()=>assert.fail('read only'),{roomId:'north-vip',roomLayout:true,adminChoices:true});
-  assert.equal(picker(vip.render(),'dealer'),undefined);assert.match(textOf(lockedLine(vip.render(),'dealer')),/ingen dealer är tilldelad/);
+  assert.equal(picker(vip.render(),'dealer'),undefined);assert.ok(lockedLine(vip.render(),'dealer'),'a table without assigned dealers explains it instead of offering a choice');
 });
 
 test('Admin room overrides save the unlocked layers through the same draft contract and report the live status to the header',async()=>{

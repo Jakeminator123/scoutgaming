@@ -64,7 +64,7 @@ export function render(data) {
   rows.push('', '## Uppdatering', '', 'Orkestratorn uppdaterar status.json efter granskad leverans och kör node migrering/status.mjs --write.',
     'VERIFIED kräver full kod-SHA, branch, PR, oberoende granskare och konkreta test-/runtimebevis. Skriptet validerar uppgifterna strukturellt; granskaren bedömer bevisen.',
     'En ändring som ogiltigförklarar ett bevis återöppnar aktiviteten och berörda beroenden; procenten får sjunka.',
-    '', '[Masterplan](MASTERPLAN.md) · [Jakobs aktiviteter](jakob-main-migrering/AKTIVITETER.md) · [Kevins aktiviteter](kevin-ks-migrering/AKTIVITETER.md)', '');
+    '', '[Masterplan (avslutad)](MASTERPLAN.md) · [Nästa arbete](../docs/NEXT-AGENT.md#efter-o03) · [Raderade aktivitetsfiler](../docs/HISTORIK.md)', '');
   return rows.join('\n');
 }
 

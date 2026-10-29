@@ -17,6 +17,8 @@ Var produkten kör, hur en ändring når produktionen och hur man kontrollerar d
 
 Det finns en väg: inga lokala produktregister, ingen SQLite, inga parallella QA-ytor. `node apps/studio/start.mjs --no-open` skriver bara den publicerade lobbyns adress. `/control` och `/lab` svarar med redirect till `/admin`. Variablerna per tjänst står i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 
+> **Var `/admin` läser.** Bara Neon, schemat `croupier_studio` (dokumenten `project` och `administration`, bolagen, paketen och `media_records`), valt av `CROUPIER_GAME_DATABASE_URL` och scopet `CROUPIER_STUDIO_ENVIRONMENT_ID`/`CROUPIER_STUDIO_WORKSPACE_ID`. Det finns ingen reserv till fil, JSON, SQLite, PGlite eller seed: fel eller saknad databas ger 503 ([ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#vercel-scoutgaming-web-studio-och-speech)). Gammalt innehåll som syns i Admin är rader i Neon, inte kod. Själva sidan är en esbuild-SPA, inte Next-sidor: `apps/studio/client/build.mjs` bygger `apps/studio/design-preview-build/` med hela Admin-SPA:n, den interna lobbyn och den publika lobbyn, som `app/admin/[[...path]]` och `app/lobby/[[...path]]` serverar. `apps/studio/preview-build/` innehåller bara kompositorn (`compositor.js` och `geometry.js`, kopierade av `apps/studio/tools/prepare-preview.mjs`) under `/preview`. Schemana, tabellerna och vem som skriver vad står i [BLOB-NEON](storage/BLOB-NEON.md#scheman-och-skrivare).
+
 ## Från merge till produktion
 
 1. **Schema först.** Kod som kräver ny SQL mergas inte förrän Jakob har applicerat migreringen (`node tools/check-migration-readiness.mjs --apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending`). CI läser produktionens migreringsledger. En `deploymentOptional`-version kräver tolerant kod först, sedan godkänd migrering och sist en PR som gör versionen obligatorisk. Ändra aldrig ett redan applicerat schemas checksumma för att få grön CI.
@@ -50,7 +52,7 @@ Inventering från oktober 2026, utanför masterplanen. Kontrollera mot koden inn
 
 | Område | Öppet |
 | --- | --- |
-| Admin-förenkling | `/admin` ska bli enkel (en publiceringsknapp per rum). Underlag i [NEXT-AGENT](NEXT-AGENT.md#separata-spår-efter-migreringen) |
+| Admin-förenkling | `/admin` ska bli enkel (en publiceringsknapp per rum). Underlag i [NEXT-AGENT](NEXT-AGENT.md#separata-spår) |
 | Bolagsdata | Spelare, transaktioner och rapporter ur motorns ledger, bolagsbunden identitet, valuta och exportisolering. Ingen andra plånbok i Admin |
 | Konto och integration | Lösenordsåterställning för bolag, riktig 2FA, API-nycklar med rotation, wallet- och webhookprov |
 | Inbjudan och återställning | Resend mot sandbox är verifierad; en riktig mottagares hela kedja saknar kvitto |
