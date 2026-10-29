@@ -35,7 +35,7 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked}:{works
   return <HubPage eyebrow="Miljöer och material" title={lane.label} chip={state} actions={actions}
     intro="Miljön placerar bakgrund, dealer och bordsgrafik för dator och mobil och säger vilka dealers och vilket material den tillåter. Spelborden som använder den får ändringen när de publiceras.">
     <div className="grid gap-4" aria-busy={busy||undefined}>
-      {blocked&&<Note tone="warn">Klippkartan har ett osparat utkast. Spara eller kasta det där innan du ändrar miljön.</Note>}
+      {blocked&&<Note tone="warn">Klippkartan har ett osparat utkast eller en pågående import. Spara eller avsluta där innan du ändrar miljön.</Note>}
       {error&&<p role="alert" className="m-0 text-[13px] text-sg-danger">{error} {stale&&<Button variant="link" onClick={()=>void workspace.compare()}>Jämför senaste revision</Button>}</p>}
       {conflicts.length>0&&<div role="alert" className="grid gap-2 text-[13px] text-sg-danger"><p className="m-0">Samtidiga ändringar: {conflicts.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><Button variant="secondary" className="justify-self-start" onClick={workspace.keepDraft}>Behåll mitt utkast för dessa fält</Button></div>}
       {notice&&<p role="status" className="m-0 text-[13px] text-sg-muted">{notice}</p>}
