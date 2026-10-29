@@ -31,7 +31,7 @@ test('async storage contract partner launch returns canonical game address with 
   assert.equal(db.tables.players[0].balance,127.5);assert.deepEqual(journal,[]);
 });
 
-// L1 (O02): a partner launch names no company. Follow the whole landing: launch URL →
+// L1 (O02): a key without company (every key before 012, NYCKEL-BOLAG) names none. Follow the whole landing: launch URL →
 // engine landing (launchGameStart, as in server.mjs) → public routing → lobby. Neither
 // a new nor an already issued dealer=astrid URL may reach /blackjack without a company.
 test('partner launch lands in the lobby without a company and keeps an explicit company room',async () => {

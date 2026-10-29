@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  BASELINE_FOREIGN_BRANCHES, PR_FIELDS, changedPaths, evaluateMerge, foreignBranchPatterns, main, matchesGlob, parseArgs,
-  readPrFiles, securityVerdict, SECURITY_RETRY_MS,
+  BASELINE_FOREIGN_BRANCHES, PR_FIELDS, REVIEW_MISSING, changedPaths, evaluateMerge, foreignBranchPatterns, freshnessVerdict, main,
+  matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
 import { featurePatterns } from '../tools/check-push-target.mjs';
 
@@ -12,23 +12,30 @@ import { featurePatterns } from '../tools/check-push-target.mjs';
 const HEAD = 'a'.repeat(40);
 const OTHER = 'b'.repeat(40);
 const FREEZE = 'c'.repeat(40);
+const MAIN = 'd'.repeat(40);
+const MERGE = 'e'.repeat(40);
+const OLD_MAIN = 'f'.repeat(40);
+const CI_URL = 'https://github.com/Jakeminator123/scoutgaming/actions/runs/7/job/9';
+const BODY = 'Sammanfattning\n\nBuggranskning: Claude Code /code-review medium, 2 fynd: 1 åtgärdat, 1 avvisat';
 const WORKFLOW = 'Croupier GitHub checks';
 const people = { jakob: { github: 'Jakeminator123', branch: 'main' }, kevin: { github: 'invoicesolv', branch: 'kevin' },
   john: { github: 'Johncleochile', branch: 'john' }, emil: { github: 'EmaCodeHero', branch: 'emil' } };
 const policy = JSON.parse(readFileSync(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
 const cleanSecurity = { status: 0, stdout: JSON.stringify({ purpose: 'gitguardian-combined-security-status-v1',
   attention: ['gitguardian_open_incidents'], incidentCounts: { open: 2 } }) };
-const ciRun = (overrides = {}) => ({ __typename: 'CheckRun', name: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW, ...overrides });
+const ciRun = (overrides = {}) => ({ __typename: 'CheckRun', name: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW, detailsUrl: CI_URL, ...overrides });
+const currentMain = { base: MAIN, main: MAIN, behind: 0, files: [] };
 const goodFiles = [{ filename: 'tools/merge-pr.mjs', status: 'added', previous_filename: null },
   { filename: 'docs/README.md', status: 'modified', previous_filename: null }];
 const goodPr = (overrides = {}) => ({
   number: 42, author: { login: 'Jakeminator123' }, isCrossRepository: false, headRefName: 'jakob/claude-merge-guard',
-  headRefOid: HEAD, isDraft: false, baseRefName: 'main', state: 'OPEN', mergeable: 'MERGEABLE', changedFiles: 2,
+  headRefOid: HEAD, isDraft: false, baseRefName: 'main', state: 'OPEN', mergeable: 'MERGEABLE', changedFiles: 2, body: BODY,
   statusCheckRollup: [{ __typename: 'CheckRun', name: 'changes', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW }, ciRun()],
   ...overrides,
 });
 const decide = (pr, extra = {}) => evaluateMerge({ pr, files: goodFiles, head: HEAD, jakobLogin: 'Jakeminator123',
-  featureBranches: featurePatterns(policy), foreignPatterns: foreignBranchPatterns({ policy, people }), security: cleanSecurity, ...extra });
+  featureBranches: featurePatterns(policy), foreignPatterns: foreignBranchPatterns({ policy, people }), security: cleanSecurity,
+  freshness: currentMain, ...extra });
 const failed = verdict => verdict.checks.filter(entry => !entry.ok).map(entry => entry.name);
 const withFiles = (files, extra = {}) => decide(goodPr({ changedFiles: files.length }), { files, ...extra });
 
@@ -36,7 +43,7 @@ test('a verified Jakob PR with green CI on the exact head passes every check', (
   const verdict = decide(goodPr());
   assert.equal(verdict.ok, true, JSON.stringify(verdict.checks));
   assert.deepEqual(verdict.checks.map(entry => entry.name),
-    ['pr', 'state', 'draft', 'base', 'source', 'head', 'branch', 'author', 'ci', 'mergeable', 'files', 'workflow', 'security']);
+    ['pr', 'state', 'draft', 'base', 'source', 'head', 'branch', 'author', 'ci', 'mergeable', 'files', 'workflow', 'fresh', 'review', 'security']);
   assert.equal(decide(goodPr(), { freeze: FREEZE, freezeOnMain: true }).ok, true, 'non-runtime files pass the freeze');
   assert.equal(decide(goodPr({ mergeable: 'UNKNOWN' })).ok, true, 'GitHub decides UNKNOWN at merge time');
 });
@@ -59,6 +66,7 @@ test('each refusal rule refuses on its own', () => {
       goodPr({ statusCheckRollup: [ciRun(), ciRun({ workflowName: 'Shadow CI' })] }),
       goodPr({ statusCheckRollup: [ciRun(), { __typename: 'StatusContext', context: 'CI', state: 'SUCCESS' }] })],
     mergeable: [goodPr({ mergeable: 'CONFLICTING' })],
+    review: [goodPr({ body: '' }), goodPr({ body: undefined }), goodPr({ body: 'Buggranskning:' })],
   };
   // An incomplete file list also leaves the CI-file rule unproven.
   for (const pr of [goodPr({ changedFiles: 3 }), goodPr({ changedFiles: undefined })]) assert.deepEqual(failed(decide(pr)), ['files', 'workflow']);
@@ -72,6 +80,7 @@ test('each refusal rule refuses on its own', () => {
   assert.deepEqual(failed(decide(goodPr(), { head: 'not-a-sha' })), ['head']);
   assert.deepEqual(failed(decide(goodPr(), { jakobLogin: undefined })), ['author'], 'no trusted owner, no merge');
   assert.deepEqual(failed(decide(goodPr(), { files: null })), ['files', 'workflow'], 'an unreadable file list proves nothing');
+  assert.deepEqual(failed(decide(goodPr(), { freshness: null })), ['fresh'], 'an unknown CI base refuses');
   assert.ok(failed(decide(null)).length >= 11, 'an unreadable PR refuses everything');
 });
 
@@ -127,6 +136,108 @@ test('--freeze refuses runtime paths, moves out of runtime and a candidate off m
   assert.deepEqual(changedPaths([{ filename: 'b', status: 'renamed', previous_filename: 'a' }]), ['b', 'a']);
 });
 
+test('fresh passes CI against current main, or an older main without shared files or package roots', () => {
+  const behind = files => ({ base: OLD_MAIN, main: MAIN, behind: 3, files });
+  const pr = ['apps/studio/app/admin/page.tsx', 'services/game/rules.mjs', 'docs/x.md'];
+  assert.deepEqual(freshnessVerdict(currentMain, pr, true), { ok: true, reason: `CI mot aktuell main ${MAIN.slice(0, 12)}` });
+  const quiet = freshnessVerdict(behind(['apps/studio/app/lobby/page.tsx', 'packages/director/a.mjs', 'tools/x.mjs']), pr, true);
+  assert.equal(quiet.ok, true);
+  assert.match(quiet.reason, /^CI mot main ffffffffffff, 3 commits bakåt, ingen överlappning/);
+  const same = freshnessVerdict(behind(['docs/x.md']), pr, true);
+  assert.equal(same.ok, false);
+  assert.match(same.reason, /ändrat 1 av PR:ens filer, t\.ex\. docs\/x\.md; merga origin\/main in i branchen och låt CI köra om/);
+  for (const [mainFile, root] of [['services/game/table.mjs', 'services/game/'], ['apps/web/app/page.tsx', 'apps/web/'],
+    ['apps/studio/lib/a.mjs', 'apps/studio/lib/'], ['packages/director/b.mjs', 'packages/director/']]) {
+    const prFile = root === 'services/game/' ? 'services/game/rules.mjs' : `${root}other.mjs`;
+    const verdict = freshnessVerdict(behind([mainFile]), [prFile], true);
+    assert.equal(verdict.ok, false, root);
+    assert.match(verdict.reason, new RegExp(`båda i ${root.replace(/\//g, '\\/')}`), root);
+  }
+  assert.equal(freshnessVerdict(behind(['packages/director/b.mjs']), ['packages/presentation/c.mjs'], true).ok, true, 'different packages');
+  assert.equal(freshnessVerdict(behind(['apps/studio/lib/a.mjs']), ['apps/studio/app/b.tsx'], true).ok, true, 'studio outside lib');
+  // Fail closed: unknown base, incomplete PR list, unreadable main diff.
+  assert.match(freshnessVerdict({ reason: 'x' }, pr, true).reason, /^CI-basen kunde inte avgöras: x/);
+  assert.equal(freshnessVerdict(null, pr, true).ok, false);
+  assert.equal(freshnessVerdict(behind([]), pr, false).ok, false);
+  assert.equal(freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: null, files: [] }, pr, true).ok, false);
+  assert.equal(packageRoot('packages/director'), null);
+  assert.equal(packageRoot('apps/studio/package.json'), null);
+});
+
+function ciGh({ jobs = [{ id: 9, name: 'changes', head_sha: HEAD, workflow_name: WORKFLOW }, { id: 10, name: 'CI', head_sha: HEAD, workflow_name: WORKFLOW }],
+  log = `2026 [command]/usr/bin/git fetch --depth=2 origin +${MERGE}:refs/remotes/pull/42/merge\n2026 HEAD is now at eeeeeee Merge ${HEAD} into ${OLD_MAIN}\n`,
+  parents = [OLD_MAIN, HEAD], fail = '' } = {}) {
+  const calls = [];
+  return { calls, gh: argv => {
+    calls.push(argv);
+    const url = argv.find(arg => arg.startsWith('repos/')) ?? '';
+    const kind = url.includes('/pulls/') ? 'files' : url.includes('/actions/runs/') ? 'jobs' : url.includes('/actions/jobs/') ? 'log' : url.includes('/commits/') ? 'commit' : 'other';
+    if (kind === fail) return { status: 1, stdout: '' };
+    if (kind === 'files') return { status: 0, stdout: goodFiles.map(file => JSON.stringify(file)).join('\n') };
+    if (kind === 'jobs') return { status: 0, stdout: jobs.map(job => JSON.stringify(job)).join('\n') };
+    if (kind === 'log') return { status: 0, stdout: log };
+    if (kind === 'commit') return { status: 0, stdout: JSON.stringify(parents) };
+    return { status: 1, stdout: '' };
+  } };
+}
+const rollup = [ciRun()];
+
+test('the CI base is the first parent of the merge commit named in the changes job log, and fails closed', () => {
+  const ok = ciGh();
+  assert.deepEqual(readCiBase(ok.gh, { number: 42, head: HEAD, rollup }), { base: OLD_MAIN, merge: MERGE, runId: '7' });
+  assert.deepEqual(ok.calls.map(argv => argv.find(arg => arg.startsWith('repos/'))), ['repos/Jakeminator123/scoutgaming/actions/runs/7/jobs?per_page=100',
+    'repos/Jakeminator123/scoutgaming/actions/jobs/9/logs', `repos/Jakeminator123/scoutgaming/commits/${MERGE}`]);
+  const refuses = (gh, extra = {}) => readCiBase(gh, { number: 42, head: HEAD, rollup, ...extra });
+  for (const [why, result] of [
+    ['no CI run url', refuses(ciGh().gh, { rollup: [ciRun({ detailsUrl: undefined })] })],
+    ['two CI runs', refuses(ciGh().gh, { rollup: [ciRun(), ciRun({ detailsUrl: CI_URL.replace('/7/', '/8/') })] })],
+    ['no CI check', refuses(ciGh().gh, { rollup: [] })],
+    ['jobs unreadable', refuses(ciGh({ fail: 'jobs' }).gh)],
+    ['no changes job', refuses(ciGh({ jobs: [{ id: 10, name: 'CI', head_sha: HEAD, workflow_name: WORKFLOW }] }).gh)],
+    ['changes job on another head', refuses(ciGh({ jobs: [{ id: 9, name: 'changes', head_sha: OTHER, workflow_name: WORKFLOW }] }).gh)],
+    ['log unreadable', refuses(ciGh({ fail: 'log' }).gh)],
+    ['log without merge ref', refuses(ciGh({ log: 'HEAD is now at 1234567 something' }).gh)],
+    ['merge ref of another PR', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/43/merge` }).gh)],
+    ['two merge refs', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/42/merge\n+${FREEZE}:refs/remotes/pull/42/merge` }).gh)],
+    ['commit unreadable', refuses(ciGh({ fail: 'commit' }).gh)],
+    ['second parent is not the head', refuses(ciGh({ parents: [OLD_MAIN, OTHER] }).gh)],
+    ['not a merge commit', refuses(ciGh({ parents: [OLD_MAIN] }).gh)]]) {
+    assert.equal(result.base, undefined, why);
+    assert.equal(typeof result.reason, 'string', why);
+  }
+});
+
+test('readFreshness diffs origin/main against the CI base', () => {
+  // -z output: NUL-separated raw paths, so a path with å/ä/ö is never quoted.
+  const git = ({ main = MAIN, ancestor = true, diff = 'docs/a.md\0packages/director/läs mig.mjs\0', count = '4\n', diffStatus = 0 } = {}) => argv => {
+    if (argv[0] === 'rev-parse') return { status: 0, stdout: `${main}\n` };
+    if (argv[0] === 'merge-base') return { status: ancestor ? 0 : 1, stdout: '' };
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/main']); return { status: diffStatus, stdout: diff }; }
+    if (argv[0] === 'rev-list') return { status: 0, stdout: count };
+    return { status: 1, stdout: '' };
+  };
+  const args = { number: 42, head: HEAD, rollup };
+  assert.deepEqual(readFreshness(ciGh().gh, git(), args), { base: OLD_MAIN, main: MAIN, behind: 4, files: ['docs/a.md', 'packages/director/läs mig.mjs'] });
+  assert.deepEqual(readFreshness(ciGh().gh, git({ main: OLD_MAIN }), args), { base: OLD_MAIN, main: OLD_MAIN, behind: 0, files: [] });
+  assert.match(readFreshness(ciGh().gh, git({ ancestor: false }), args).reason, /ingår inte i origin\/main/);
+  assert.match(readFreshness(ciGh({ fail: 'log' }).gh, git(), args).reason, /loggen/);
+  assert.match(readFreshness(ciGh().gh, git({ diffStatus: 128 }), args).reason, /git diff mot CI-basen/);
+});
+
+test('review requires a non-empty Buggranskning line in the PR body', () => {
+  for (const body of [BODY, '- Buggranskning: Codex /review, medium, 0 fynd', '**Buggranskning:** Cursor Bugbot, 1 fynd: 1 åtgärdat',
+    '**Buggranskning**: Sonnet, låg, 0 fynd', 'Intro\r\n* buggranskning: x\r\n', '> BUGGRANSKNING: Claude Code /code-review medium']) {
+    assert.equal(reviewVerdict(body).ok, true, body);
+  }
+  assert.match(reviewVerdict('- Buggranskning: Codex /review').reason, /^Buggranskning: Codex \/review$/);
+  for (const body of [undefined, null, '', 'Ingen granskning', 'Buggranskning:', 'Buggranskning:   ', '**Buggranskning:**', '- Buggranskning: **',
+    'Ingen buggranskning: gjordes', 'Buggranskning saknas', 'Buggranskning: -', 'Buggranskning: ​',
+    // The unedited template, an HTML comment and fenced code are not a review.
+    'Buggranskning: <verktyg/modell>, <nivå>, <fynd>', '<!--\nBuggranskning: x\n-->', 'Text\n```\nBuggranskning: x\n```']) {
+    assert.deepEqual(reviewVerdict(body), { ok: false, reason: REVIEW_MISSING }, String(body));
+  }
+});
+
 test('security-status refuses failures and reports only safe counts', () => {
   assert.equal(securityVerdict(cleanSecurity).ok, true);
   assert.match(securityVerdict(cleanSecurity).reason, /öppna incidenter 2/);
@@ -162,8 +273,9 @@ test('the REST file list is read as JSON lines and fails closed', () => {
 
 function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { status: 0, stdout: '' }, fetch = { status: 0, stdout: '' },
   onMain = true, trusted = { 'inbox/people.json': people, 'tools/repository-policy.json': policy },
-  securityResults = [cleanSecurity] } = {}) {
+  securityResults = [cleanSecurity], testedMain = OLD_MAIN, mainChanged = ['tools/merge-pr.mjs'] } = {}) {
   const calls = { gh: [], git: [], security: 0, sleeps: [] }, lines = [];
+  const ci = ciGh().gh;
   return {
     calls, lines,
     run: args => main({
@@ -171,13 +283,17 @@ function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { stat
       gh: argv => {
         calls.gh.push(argv);
         if (argv[1] === 'view') return view ?? { status: 0, stdout: JSON.stringify(pr) };
-        if (argv[0] === 'api') return { status: 0, stdout: files.map(file => JSON.stringify(file)).join('\n') };
+        if (argv[0] === 'api' && argv[1].includes('/pulls/')) return { status: 0, stdout: files.map(file => JSON.stringify(file)).join('\n') };
+        if (argv[0] === 'api') return ci(argv);
         return merge;
       },
       git: argv => {
         calls.git.push(argv);
         if (argv[0] === 'fetch') return fetch;
         if (argv[0] === 'merge-base') return { status: onMain ? 0 : 1, stdout: '' };
+        if (argv[0] === 'rev-parse') return { status: 0, stdout: `${testedMain}\n` };
+        if (argv[0] === 'diff') return { status: 0, stdout: mainChanged.map(path => `${path}\0`).join('') };
+        if (argv[0] === 'rev-list') return { status: 0, stdout: '2\n' };
         const path = argv[1].replace(/^origin\/main:/, '');
         return trusted[path] ? { status: 0, stdout: JSON.stringify(trusted[path]) } : { status: 128, stdout: '' };
       },
@@ -191,17 +307,31 @@ test('main fetches main, then merges with gh, the exact head and no admin or aut
   const h = harness();
   assert.equal(h.run(['42', '--head', HEAD]), 0);
   assert.deepEqual(h.calls.git, [['fetch', '-q', 'origin', 'main'], ['show', 'origin/main:inbox/people.json'],
-    ['show', 'origin/main:tools/repository-policy.json']], 'owner and policy come from freshly fetched main, not the working copy');
+    ['show', 'origin/main:tools/repository-policy.json'], ['rev-parse', 'origin/main']], 'owner, policy and main come from freshly fetched main');
   assert.deepEqual(h.calls.gh[0].slice(-2), ['--json', PR_FIELDS]);
   assert.equal(h.calls.gh[1][0], 'api');
-  assert.deepEqual(h.calls.gh[2], ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  assert.equal(h.calls.gh.length, 6, 'view, files, CI jobs, CI log, merge commit, merge');
+  assert.deepEqual(h.calls.gh.at(-1), ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  assert.ok(h.lines.includes(`ok  fresh: CI mot aktuell main ${OLD_MAIN.slice(0, 12)}`));
+  assert.ok(h.lines.some(line => /^ok  review: Buggranskning: /.test(line)));
   assert.ok(h.calls.gh.flat().every(arg => !['--admin', '--auto'].includes(arg)));
   assert.equal(h.calls.security, 1);
   assert.ok(h.lines.some(line => /^ok  ci: CI SUCCESS/.test(line)));
   assert.match(h.lines.at(-1), /^mergad: PR #42/);
   const frozen = harness();
   assert.equal(frozen.run(['42', '--head', HEAD, '--freeze', FREEZE, '--dry-run']), 0);
-  assert.deepEqual(frozen.calls.git.at(-1), ['merge-base', '--is-ancestor', FREEZE, 'origin/main']);
+  assert.deepEqual(frozen.calls.git.at(-2), ['merge-base', '--is-ancestor', FREEZE, 'origin/main']);
+  // CI tested an older main that changed one of the PR's files: refused, nothing merged.
+  const stale = harness({ testedMain: MAIN });
+  assert.equal(stale.run(['42', '--head', HEAD]), 1);
+  assert.ok(stale.lines.some(line => /^nej fresh: CI mot main ffffffffffff, 2 commits bakåt; main har sedan dess ändrat 1 av PR:ens filer/.test(line)), stale.lines.join('\n'));
+  assert.equal(stale.calls.gh.filter(argv => argv[1] === 'merge').length, 0);
+  const behind = harness({ testedMain: MAIN, mainChanged: ['apps/web/app/page.tsx'] });
+  assert.equal(behind.run(['42', '--head', HEAD, '--dry-run']), 0);
+  assert.ok(behind.lines.includes('ok  fresh: CI mot main ffffffffffff, 2 commits bakåt, ingen överlappning (1 filer ändrade på main sedan dess)'), behind.lines.join('\n'));
+  const unreviewed = harness({ pr: goodPr({ body: 'Inget här' }) });
+  assert.equal(unreviewed.run(['42', '--head', HEAD]), 1);
+  assert.ok(unreviewed.lines.includes(`nej review: ${REVIEW_MISSING}`));
 });
 
 test('main refuses without merging, and dry-run never merges', () => {
