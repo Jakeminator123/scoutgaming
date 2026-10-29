@@ -164,7 +164,7 @@ async function installed() {
 test('Studio migration sources are fixed, ordered, bounded and independent of runtime environment', async () => {
   const migrations = await loadStudioMigrations();
   assert.deepEqual(migrations.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011', '012', '013', '014','015','016','017','018','019','020','021','022']);
-  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql', '004-fullfile-reservations.sql', '005-operators.sql', '006-operator-audit.sql', '007-partner-branding-drafts.sql', '008-dealer-forge.sql', '011-gpu-daily-budget.sql', '012-runtime-media-catalog.sql', '013-moving-speech-admission.sql','014-moving-speech-budget-amendments.sql','015-moving-budget-capacity.sql','016-moving-drift-control.sql','017-moving-budget-capacity.sql','018-gpu-daily-budget-40.sql','019-trial-budget-ceilings.sql','020-extended-presentation.sql','021-operator-materials.sql','022-partner-requests.sql']);
+  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql', '004-fullfile-reservations.sql', '005-operators.sql', '006-operator-audit.sql', '007-partner-branding-drafts.sql', '008-dealer-forge.sql', '011-gpu-daily-budget.sql', '012-runtime-media-catalog.sql', '013-moving-speech-admission.sql','014-moving-speech-budget-amendments.sql','015-moving-budget-capacity.sql','016-moving-drift-control.sql','017-moving-budget-capacity.sql','018-gpu-daily-budget-40.sql','019-trial-budget-ceilings.sql','020-extended-presentation.sql','021-operator-materials.sql','022-partner-journal.sql']);
   assert.ok(migrations.every(row => /^[a-f0-9]{64}$/.test(row.checksum) && Object.isFrozen(row)));
   assert.equal(migrations[0].tables.includes('storage_migrations'), true);
   assert.equal(migrations[1].tables.includes('storage_migrations'), false);
@@ -710,18 +710,20 @@ test('022 is optional, widens only the journal action CHECK and preserves 006\'s
   assert.deepEqual(applied.appliedNow,['022']);assert.deepEqual(pool.snapshot().ledger.slice(0,-1),old);
   assert.deepEqual(pool.snapshot(),complete);
   // Ett vidgat CHECK utan ledgerrad, eller en annan lista med raden, bryter strukturbeviset.
-  for(const edit of [state=>{state.ledger=state.ledger.filter(row=>row.version!=='022');},state=>{setAudit(state,[...OPERATOR_AUDIT_ACTIONS,'request.other']);}]) {
+  for(const edit of [state=>{state.ledger=state.ledger.filter(row=>row.version!=='022');},state=>{setAudit(state,[...OPERATOR_AUDIT_ACTIONS,'room.other']);}]) {
     const broken=await installed();broken.change(edit);
     await assert.rejects(planStudioMigrations({pool:broken}),refusal('studio_migration_structure_mismatch'));
   }
-  const migrations=await loadStudioMigrations(),requests=migrations.find(row=>row.version==='022');
-  assert.equal(requests.deploymentOptional,true);assert.deepEqual([requests.tables,requests.indexes,requests.fingerprintTables],[[],[],['operator_audit_events']]);
-  const directory=await mkdtemp(join(tmpdir(),'croupier-request-source-'));
+  const migrations=await loadStudioMigrations(),journal=migrations.find(row=>row.version==='022');
+  assert.equal(journal.deploymentOptional,true);assert.deepEqual([journal.tables,journal.indexes,journal.fingerprintTables],[[],[],['operator_audit_events']]);
+  const directory=await mkdtemp(join(tmpdir(),'croupier-journal-source-'));
   t.after(()=>rm(directory,{recursive:true,force:true}));
   for(const migration of migrations)await copyFile(new URL('../ops/neon-studio/'+migration.file,import.meta.url),join(directory,migration.file));
-  for(const sql of [requests.sql+'DELETE FROM croupier_studio.operator_audit_events;',requests.sql.replace("'request.key-rotation'))","'request.key-rotation','team.delete'))"),
-    requests.sql.replace('operator_audit_events DROP','operator_packages DROP')]) {
-    await writeFile(join(directory,requests.file),sql);
+  // Den sista åtgärden i listan följs av '));: en extra åtgärd läggs till där.
+  for(const sql of [journal.sql+'DELETE FROM croupier_studio.operator_audit_events;',journal.sql.replace("'))","','team.delete'))"),
+    journal.sql.replace('operator_audit_events DROP','operator_packages DROP')]) {
+    assert.notEqual(sql,journal.sql);
+    await writeFile(join(directory,journal.file),sql);
     await assert.rejects(loadStudioMigrations({directory}),refusal('studio_migration_invalid_source'));
   }
 });
@@ -821,12 +823,23 @@ test('019 without 018 directly against the runner fails its structure proof and 
 
 test('--apply --only 021 installs exactly 021 when nothing earlier is pending, and refuses an unnamed earlier gap',async()=>{
   const pool=await installed();pool.change(remove021);pool.calls.length=0;
-  const printed=[],result=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['021','022'],onPlan:list=>printed.push(list)});
-  assert.equal(result.exitCode,0);assert.deepEqual(printed,[['021','022']]);assert.deepEqual(result.appliedNow,['021','022']);assert.deepEqual(result.optionalPending,[]);
+  // 022 kommer efter 021 och väntar kvar som valfri; den installeras aldrig utan att namnges.
+  const printed=[],result=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['021'],onPlan:list=>printed.push(list)});
+  assert.equal(result.exitCode,0);assert.deepEqual(printed,[['021']]);assert.deepEqual(result.appliedNow,['021']);assert.deepEqual(result.optionalPending,['022']);
+  assert.equal(pool.calls.some(row=>row.marker==='ddl-022'),false);
   // An earlier pending version must be named with --only or skipped with --skip.
   const gap=await installed();gap.change(remove016);gap.change(remove021);gap.calls.length=0;const before=gap.snapshot();
   const refused=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021','022']});
   assert.equal(refused.exitCode,2);assert.equal(refused.code,'migration_check_selection_order');assert.deepEqual(gap.snapshot(),before);
-  const skipped=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021','022'],skip:['016']});
-  assert.equal(skipped.exitCode,0);assert.deepEqual(skipped.appliedNow,['021','022']);assert.deepEqual(skipped.optionalPending,['016']);
+  const skipped=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021'],skip:['016']});
+  assert.equal(skipped.exitCode,0);assert.deepEqual(skipped.appliedNow,['021']);assert.deepEqual(skipped.optionalPending,['016','022']);
+});
+
+test('--apply --only 022 --skip 021 installs exactly 022 and leaves 021 pending',async()=>{
+  const pool=await installed();pool.change(remove021);pool.calls.length=0;
+  const unnamed=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['022']});
+  assert.equal(unnamed.exitCode,2);assert.equal(unnamed.code,'migration_check_selection_order');
+  const printed=[],result=await checkMigrationReadiness({pool,apply:true,confirm:true,only:['022'],skip:['021'],onPlan:list=>printed.push(list)});
+  assert.equal(result.exitCode,0);assert.deepEqual(printed,[['022']]);assert.deepEqual(result.appliedNow,['022']);assert.deepEqual(result.optionalPending,['021']);
+  assert.equal(pool.calls.some(row=>row.marker==='ddl-021'),false);
 });

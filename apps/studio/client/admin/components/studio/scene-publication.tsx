@@ -38,12 +38,14 @@ export function ScenePublication({project,savedProject,compositionId,operatorId,
   return <section className="studio-scene-publication" aria-label="Publicera scenens placering">
     <h3>Publicera placeringen</h3>
     <p>{operatorId?`${operatorName??operatorId} · ${rooms.map(room=>room.label).join(', ')||'ingen publicerad koppling till mallen'}`:'Välj spelbolag under Rum och publicering för att uppdatera dess rum.'}</p>
-    <p>Spara mallen först. Publiceringen uppdaterar placeringen i alla bolagets rum som använder mallen. Materialval, klipp och sparade materialutkast behålls.</p>
+    <p>Spara mallen och publicera i spelbordet: placeringen följer med där, tillsammans med tal, klipp och vila.</p>
     {dirty&&<p role="status">Spara projektutkastet före publicering.</p>}
     <div className="flex flex-wrap gap-2">
-      <button className="studio-button" disabled={disabled||!changed||!rooms.length} onClick={()=>void publish()}>Publicera sparad placering</button>
       <button className="studio-button" disabled={blocked||busy||loading||!operatorId} onClick={()=>setAttempt(value=>value+1)}>Läs in publicerad version</button>
     </div>
+    <details><summary>Avancerat</summary><p>Publicera bara placeringen i alla bolagets spelbord som använder mallen. Materialval, klipp och sparade materialutkast behålls.</p>
+      <button className="studio-button" disabled={disabled||!changed||!rooms.length} onClick={()=>void publish()}>Publicera sparad placering</button>
+    </details>
     {snapshot?.presentation?.lanes.some(lane=>lane.id===compositionId)&&<details><summary>Återanvänd publicerad placering</summary><p>Läs in bolagets publicerade placering som utgångspunkt i den gemensamma mallen. Materialval och andra sammansättningar ändras inte.</p>
       <button className="studio-button" disabled={disabled} onClick={()=>{if(disabled||!snapshot?.presentation)return;try{onEdit(importPublishedSceneLayout(project,compositionId,snapshot.presentation));setNotice('Placeringen är inläst i projektutkastet. Spara mallen för att behålla den.');}catch(cause){setError((cause as Error).message);}}}>Läs in placering i mallen</button>
     </details>}

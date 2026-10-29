@@ -10,7 +10,7 @@ import {platformBackendHeaders} from '../packages/navigation/server/platform-rou
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
+import {withPackagePresentation,readPackagePresentation,publicPackageBranding,PARTNER_ASSIGNMENT_KEY} from '../packages/presentation/server/presentation-package.mjs';
 import {createPartnerBrandingApi as createApi} from '../apps/studio/lib/partner-branding-api.mjs';
 import {publishThroughDraft,withBrandingDrafts} from '../apps/studio/test/fixtures/branding-draft-store.mjs';
 import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
@@ -34,6 +34,34 @@ test('publication freezes lane data and only referenced assets; subsequent Studi
   project.lanes[0].layers.background.allowed=[];project.layerAssets[0].label='changed';
   assert.deepEqual(readPackagePresentation(pack),presentation);assert.equal(presentation.assets.length,2);
   assert.deepEqual(publicPackageBranding(pack.branding),{name:'North'});
+});
+test('Admins tilldelning följer med paketet men aldrig i den publika brandingen',()=>{
+  const {presentation}=fixture(),assignment={allow:{dealer:false,pause:true},limitPresets:['high'],languages:['sv']};
+  const branding=withPackagePresentation({name:'North',[PARTNER_ASSIGNMENT_KEY]:assignment},presentation);
+  assert.deepEqual(branding[PARTNER_ASSIGNMENT_KEY],assignment);
+  assert.deepEqual(publicPackageBranding(branding),{name:'North'});
+});
+// Dealern (roomOverrides) provas på PostgreSQL i apps/studio/test/partner-table-actions.test.mjs.
+test('Admins allow stänger bordsgrafik och bakgrund även i utseendets utkast för partnern, inte för Admin',async()=>{
+  const {pack,presentation}=fixture();presentation.lanes[0].composition=defaultCompositionSettings();
+  const choices={tableAsset:{table:presentation.assets[1].id,color:'#123456'},background:{background:presentation.assets[0].id}};
+  for(const [key,branding] of Object.entries(choices)){
+    const api=allow=>{
+      const current={...pack,branding:withPackagePresentation({...publicPackageBranding(pack.branding),[PARTNER_ASSIGNMENT_KEY]:{allow}},presentation)};
+      const store=withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async()=>{throw Error('no publication here');}});
+      return {store,api:createPartnerBrandingApi({store,readProject:async()=>{throw Error('not the mutable project');}})};
+    };
+    const command=(target,extra={})=>target.api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding,...extra});
+    // Utan Admins allow-flagga följer valet scenmallen och sparas.
+    const open=api({});await command(open);assert.equal((await open.store.getBrandingDraft('north')).revision,1,key);
+    // Med flaggan false nekas samma val, och inget utkast sparas.
+    const closed=api({[key]:false});
+    await assert.rejects(command(closed),error=>error.statusCode===422,key);
+    assert.equal(await closed.store.getBrandingDraft('north'),null,`${key}: inget sparat`);
+    // Admin (N1) påverkas inte av bolagets allow.
+    await command(closed,{audit:{actorId:'n1-admin',accessClass:'internal-admin',requestId:'00000000-0000-4000-8000-000000000001'}});
+    assert.equal((await closed.store.getBrandingDraft('north')).revision,1,`${key}: Admin`);
+  }
 });
 test('an incomplete three-layer Nora can be published and entered through her own compatible lane', async () => {
   const project = addDealer(fixture().project, 'nora', 'Nora'), lane = project.lanes[0];

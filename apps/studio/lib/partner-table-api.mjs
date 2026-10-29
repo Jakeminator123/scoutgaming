@@ -16,15 +16,15 @@ import { createOperatorStore } from '../../../packages/operators/server/operator
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { resolveNativeRoomGameMaterial } from '../../../packages/presentation/server/native-room-game-material.mjs';
 import { partnerAllow } from './partner-assignment.mjs';
-import { partnerOperatorContext, decidedPartnerContext } from './partner-session.mjs';
+import { partnerOperatorContext, decidedPartnerContext, PARTNER_TABLE_CONFLICTS } from './partner-session.mjs';
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { NATIVE_FILMED_PLANNING_MUTATION, wrapNativePresentationRepository } from './presentation-runtime-readiness.mjs';
 import { createNativePresentationMutationTransaction } from './studio-native-runtime.mjs';
 import { createRoomGameConfigApi } from './room-game-config-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 
-function fail(statusCode) {
-  throw Object.assign(new Error('partner_table_rejected'), { statusCode });
+function fail(statusCode, reason) {
+  throw Object.assign(new Error('partner_table_rejected'), { statusCode, ...(reason ? { reason } : {}) });
 }
 
 async function readAdministrationValue(config) {
@@ -54,7 +54,9 @@ export function publishedRoomSettings({ query, operatorId, rooms, pack }) {
 }
 
 // Läsa tilldelningen: kräver presentations.read. Spelborden (namn, läge,
-// dealer, spelinställningar och deras utkast) kräver dessutom tables.read.
+// dealer och publicerade spelinställningar) kräver dessutom tables.read.
+// Admins opublicerade spelinställningsutkast är ett arbetsläge, inte något
+// spelarna ser: de visas bara med tables.configure (minsta behörighet).
 // Revisionerna är de som skrivvägarna kontrollerar (CAS).
 export async function readPartnerAssignment({ found, decided, config }) {
   const { store, operator, session } = found;
@@ -72,8 +74,12 @@ export async function readPartnerAssignment({ found, decided, config }) {
   const brandingDraft = typeof store.getBrandingDraft === 'function' ? await store.getBrandingDraft(operator.id) : null;
   if (brandingDraft && brandingDraft.operatorId !== operator.id) fail(403);
   let drafts = [];
-  if (administration && may('tables.read')) {
-    try { drafts = validateRoomGameDrafts(administration.roomGameConfigs ?? [], administration.rooms); } catch { fail(503); }
+  if (administration && may('tables.read') && may('tables.configure')) {
+    // Bara bolagets egna utkast på bolagets egna spelbord valideras: en trasig
+    // eller inaktuell rad hos ett annat bolag får aldrig fälla den här läsningen.
+    const own = (Array.isArray(administration.roomGameConfigs) ? administration.roomGameConfigs : [])
+      .filter(row => row?.operatorId === operator.id && rooms.some(room => room.id === row.roomId));
+    try { drafts = validateRoomGameDrafts(own, administration.rooms); } catch { fail(503); }
   }
   const dealerLabel = id => presentation?.registeredDealers?.find(dealer => dealer.id === id)?.label ?? id;
   return {
@@ -112,13 +118,43 @@ function intentOf(action, body) {
     if (!['save-draft', 'publish'].includes(body.action) || !ROOM_ID.test(body.roomId) || !packageRevision(body.expectedPackageRevision)
       || !(body.expectedDraftRevision === null && save || typeof body.expectedDraftRevision === 'string' && /^room-config-[a-f0-9-]{36}$/.test(body.expectedDraftRevision))) fail(400);
     if (save) validateRoomGameConfig(body.gameConfig);
+    // Publiceringen journalförs redan som package.publish (operator-store.mjs).
     return { requires: allow => allow.language || allow.limit, presentation: [{ kind: 'administration', value: { roomGameConfigs: [] } },
-      ...(save ? [] : [NATIVE_FILMED_PLANNING_MUTATION])], operatorPackage: !save };
+      ...(save ? [] : [NATIVE_FILMED_PLANNING_MUTATION])], operatorPackage: !save, journaled: save };
   }
   exactKeys(body, ['roomId', 'state', 'expectedState', 'expectedPackageRevision']);
   if (!ROOM_ID.test(body.roomId) || !['live', 'pending'].includes(body.state) || !['live', 'pending'].includes(body.expectedState)
     || body.state === body.expectedState || !packageRevision(body.expectedPackageRevision)) fail(400);
-  return { requires: allow => allow.pause, presentation: { kind: 'resource-lifecycle', value: {} }, operatorPackage: true };
+  return { requires: allow => allow.pause, presentation: { kind: 'resource-lifecycle', value: {} }, operatorPackage: true, journaled: true };
+}
+
+// Har bolaget självt pausat spelbordet, och har det varit pausat sedan dess?
+// Partnerns paus står i bolagets journal (room.state, accessClass partner) med
+// administrationsrevisionen den skapade. Från den revisionen följs
+// administrationsdokumentets historik (document_history, varje sparning ger en
+// rad med revisionen som ersatte den) framåt till den nuvarande revisionen;
+// spelbordet ska vara pausat i varje led. Har Admin öppnat och pausat igen, eller
+// pausat ett spelbord som aldrig pausats av bolaget, finns ingen sådan kedja.
+// Historiken läses i samma transaktion, under Studio-scopets och bolagets lås.
+const PAUSE_CHAIN_LIMIT = 500;
+const PAUSE_CHAIN_SQL = `/* partner-table:pause-chain */ WITH RECURSIVE chain(revision, replaced_by, state, depth) AS (
+    SELECT h.revision, h.replaced_by, (SELECT r->>'state' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(h.value->'rooms') = 'array' THEN h.value->'rooms' ELSE '[]'::jsonb END) r WHERE r->>'id' = $4 LIMIT 1), 1
+      FROM croupier_studio.document_history h
+      WHERE h.environment_id = $1 AND h.workspace_id = $2 AND h.kind = 'administration' AND h.revision = $3
+    UNION ALL
+    SELECT h.revision, h.replaced_by, (SELECT r->>'state' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(h.value->'rooms') = 'array' THEN h.value->'rooms' ELSE '[]'::jsonb END) r WHERE r->>'id' = $4 LIMIT 1), c.depth + 1
+      FROM chain c JOIN croupier_studio.document_history h
+        ON h.environment_id = $1 AND h.workspace_id = $2 AND h.kind = 'administration' AND h.revision = c.replaced_by
+      WHERE c.state = 'pending' AND c.replaced_by <> $5 AND c.depth < ${PAUSE_CHAIN_LIMIT})
+  SELECT revision, replaced_by, state FROM chain ORDER BY depth`;
+async function pausedByPartner({ client, store, config, operatorId, roomId, current }) {
+  if (typeof store.listPartnerRoomPauses !== 'function' || typeof current !== 'string') return false;
+  for (const paused of await store.listPartnerRoomPauses(operatorId, roomId)) {
+    if (paused === current) return true;
+    const { rows } = await client.query(PAUSE_CHAIN_SQL, [config.scope.environment, config.scope.workspaceId, paused, roomId, current]);
+    if (rows.length && rows.every(row => row.state === 'pending') && rows.at(-1).replaced_by === current) return true;
+  }
+  return false;
 }
 
 export async function partnerTableAction(prepared, config, readBody) {
@@ -159,18 +195,38 @@ export async function partnerTableAction(prepared, config, readBody) {
       if (!pack || pack.operatorId !== operator.id) fail(404);
       const allow = partnerAllow(pack, readPackagePresentation(pack));
       if (!intent.requires(allow)) fail(403);
-      if (prepared.action === 'room-settings') return await roomSettings({ client, repository, config, operator, body, actor, allow, settings });
+      // Paus, öppning och spelinställningsutkast skrivs i bolagets journal i samma
+      // transaktion (Studio-migrering 022). Utan 022 skrivs ingenting: 503
+      // studio_migration_required, prövat före varje annan skrivning.
+      const journal = { operatorId: operator.id, roomId: body.roomId, actor: session.user, audit: actor.audit };
+      if (intent.journaled) await store.assertPartnerJournalReady();
+      if (prepared.action === 'room-settings') {
+        const receipt = await roomSettings({ client, repository, config, operator, body, actor, allow, settings });
+        if (intent.journaled) await store.recordPartnerTableEvent({ ...journal, action: 'room.settings',
+          before: { draftRevision: body.expectedDraftRevision }, after: { draftRevision: receipt.draft.revision, gameConfig: receipt.draft.gameConfig,
+            administrationRevision: receipt.administrationRevision } });
+        const { administrationRevision: _hidden, ...visible } = receipt;
+        return visible;
+      }
       const lifecycle = createResourceLifecycleApi({ repository, scope: config.scope, now: config.now });
       const changed = await lifecycle.setRoomState(store, { operatorId: operator.id, roomId: body.roomId, state: body.state,
-        expectedPackageRevision: body.expectedPackageRevision }, actor, async ({ room, pack: locked }) => {
+        expectedPackageRevision: body.expectedPackageRevision }, actor, async ({ room, pack: locked, administrationRevision }) => {
         if (room.state !== body.expectedState) fail(409);
+        if (body.state !== 'live') return;
         // Bara ett spelbord som redan har publicerade spelinställningar kan öppnas av bolaget;
         // ett spelbord som aldrig släppts öppnas av Admin.
-        if (body.state === 'live' && typeof locked?.branding?.roomGameConfigVersions?.[room.id] !== 'string') fail(409);
+        if (typeof locked?.branding?.roomGameConfigVersions?.[room.id] !== 'string') fail(409);
+        // Och bara en paus som bolaget självt satt: Admins paus hävs aldrig här.
+        if (!await pausedByPartner({ client, store, config, operatorId: operator.id, roomId: room.id, current: administrationRevision })) fail(409, 'admin-pause');
       });
+      await store.recordPartnerTableEvent({ ...journal, action: 'room.state', before: { state: body.expectedState },
+        after: { state: changed.room.state, administrationRevision: changed.administrationRevision } });
       return { ok: true, room: { id: changed.room.id, state: changed.room.state }, packageRevision: changed.packageRevision };
     } catch (error) {
-      if (Number.isInteger(error?.statusCode) && !(error instanceof StudioStorageError)) throw new StudioStorageError('partner_request_rejected', error.statusCode);
+      if (Number.isInteger(error?.statusCode) && !(error instanceof StudioStorageError)) {
+        throw Object.assign(new StudioStorageError('partner_request_rejected', error.statusCode),
+          PARTNER_TABLE_CONFLICTS.includes(error.reason) ? { reason: error.reason } : {});
+      }
       throw error;
     }
   })), options);
@@ -201,6 +257,5 @@ async function roomSettings({ client, repository, config, operator, body, actor,
     if (candidate.language !== baseline?.language && (!allow.language || !assignment.languages.includes(candidate.language))) fail(422);
     if (candidate.limitPreset !== baseline?.limitPreset && (!allow.limit || !assignment.limitPresets.includes(candidate.limitPreset))) fail(422);
   });
-  const { administrationRevision: _hidden, ...visible } = receipt;
-  return visible;
+  return receipt;
 }

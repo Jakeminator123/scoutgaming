@@ -53,9 +53,12 @@ const API_WRITES = [
   { id: 'dealer POST', path: 'dealer', action: 'dealer', requires: BRANDING_WRITE },
 ];
 // Spelbordens skrivvägar (partner-table-api.mjs) går genom Studio-transaktionen och den nativa
-// grinden, och begäran kräver migrering 022; minnesfixturen saknar båda. Här provas nekandet: utan behörigheten 403 och inget ändrat,
-// med den aldrig 403. Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat
-// bolags spelbord (404) och CAS (409) provas på PGlite i partner-table-actions.test.mjs.
+// grinden, och journalposterna (även begäran) kräver migrering 022; minnesfixturen saknar båda.
+// Här provas nekandet: utan behörigheten 403 och inget ändrat,
+// med den aldrig 403 (tillåtna anrop stannar här på 503 före lagret, så "inget ändrat" säger lite).
+// Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat bolags spelbord (404)
+// och CAS (409) provas på PGlite i partner-table-actions.test.mjs, där varje nekat anrop jämför
+// administrations-, paket- och utkastrevisionen och spelbordsjournalen före och efter.
 const TABLE_WRITE = ['tables.read', 'tables.configure'];
 const API_TABLE_WRITES = [
   { id: 'room-settings POST save-draft', path: 'room-settings', action: 'save-draft', requires: TABLE_WRITE,
@@ -235,6 +238,12 @@ test('varje roll får exakt de läsningar kartan ger, och läsningen bär bara v
         // tables.read styr spelbordslistan i utseendet (4.3 punkt 1).
         assert.equal(body.rooms.length > 0, role.permissions.includes('tables.read'), `${role.id} spelbord i utseendet`);
         assert.equal(body.canConfigure, allows(role, BRANDING_WRITE), `${role.id} canConfigure`);
+      }
+      if (read.id === 'assignment') {
+        // Spelborden kräver tables.read; knapparna följer var sin configure-rättighet.
+        assert.equal('rooms' in body, role.permissions.includes('tables.read'), `${role.id} spelbord i tilldelningen`);
+        assert.deepEqual(body.canConfigure, { presentations: role.permissions.includes('presentations.configure'),
+          tables: role.permissions.includes('tables.configure') }, `${role.id} canConfigure i tilldelningen`);
       }
       if (read.id === 'team GET') {
         // Teamvyns knappar följer samma karta som servern använder för skrivningarna.

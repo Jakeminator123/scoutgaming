@@ -12,6 +12,7 @@ import { partnerPresentationDealerChoices } from './partner-presentation-choices
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
+import { partnerAllow } from './partner-assignment.mjs';
 import { mergeOperatorMaterialsForPublication, operatorMaterialFingerprint, presentationFits, publicationRooms } from './operator-material-publication.mjs';
 import { encodePresentationPackage } from '../../../packages/presentation/server/presentation-package.mjs';
 import { isExtendedPresentationEnvelope } from '../../../packages/presentation/server/presentation-storage.mjs';
@@ -147,9 +148,14 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   // The Admin route carries the server-derived access class in the audit
   // context. An N1 administrator may choose any layer the frozen composition
-  // allows; partner sessions keep the company's operatorAdjustable gate.
-  function laneRights(lane,adminChoices) {
-    return new Set(adminChoices?adminLayerAdjustments(lane):effectivePartnerAdjustments(lane));
+  // allows; partner sessions keep the company's operatorAdjustable gate,
+  // narrowed by Admins `allow` i tilldelningen (partner-assignment.mjs): utan
+  // allow.dealer, allow.tableAsset eller allow.background ändrar bolaget inte
+  // det lagret, oavsett väg (dealer, branding save-draft, restore, publish).
+  const ALLOW_LAYERS=Object.freeze({dealer:'dealer',table:'tableAsset',background:'background'});
+  function laneRights(lane,adminChoices,allow) {
+    if(adminChoices)return new Set(adminLayerAdjustments(lane));
+    return new Set(effectivePartnerAdjustments(lane).filter(token=>!Object.hasOwn(ALLOW_LAYERS,token)||allow?.[ALLOW_LAYERS[token]]===true));
   }
   async function validateDraft(pack,branding,document,adminChoices=false) {
     assertEditable(branding);
@@ -160,8 +166,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const lane=presentation.lanes.find(row=>row.id===laneId);
     if(!lane)fail(422);
     const defaults={...branding};delete defaults.roomOverrides;
+    // Läses ur samma paket som valideringen, under bolagets lås i skrivvägen.
+    const allow=partnerAllow(pack,presentation);
     function checkedValues(value,baseline,selectedLane,allowedDealers) {
-      const rights=laneRights(selectedLane,adminChoices);
+      const rights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS){
         const changed=canonicalStudioJson(value[key]??null)!==canonicalStudioJson(baseline[key]??null);
         const token=key==='color'?'table.color':key;
@@ -180,7 +188,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
       // Explicit overrides change future inheritance even when today's rendered value is equal.
       const explicitBefore=base.roomOverrides?.[room.id]??{},explicitAfter=branding.roomOverrides?.[room.id]??{};
-      const roomRights=laneRights(selectedLane,adminChoices);
+      const roomRights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(explicitBefore[key]??null)!==canonicalStudioJson(explicitAfter[key]??null)
         &&!roomRights.has(key==='color'?'table.color':key))fail(422);
       const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);

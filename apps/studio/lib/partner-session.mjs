@@ -90,11 +90,14 @@ export function rejectPartnerMethod() {
     headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
   });
 }
+// 409 med kod från spelbordens skrivvägar (partner-table-api.mjs): spelbordet är
+// pausat av Admin (eller aldrig pausat av bolaget självt), och bara Admin öppnar det.
+export const PARTNER_TABLE_CONFLICTS = Object.freeze(['admin-pause']);
 function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
   // 503 studio_migration_required: koden väntar på en Studio-migrering (t.ex. 022).
-  const reason = status === 409 && PARTNER_TEAM_CONFLICTS.includes(error?.reason) ? error.reason
+  const reason = status === 409 && [...PARTNER_TEAM_CONFLICTS, ...PARTNER_TABLE_CONFLICTS].includes(error?.reason) ? error.reason
     : status === 503 && error?.code === 'studio_migration_required' ? error.code : null;
   return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }

@@ -85,7 +85,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
     return slot.eventId==='speak.other'&&!video?.classification?.recordedSpeech?'Detta talfack kräver ett talkvitto (exakt text och inspelningsidentitet) innan tagningen kan bli standard.':'Filen passar inte detta talfack.'
   }
   function setStandard(row:StudioRecordedSpeech){const slot=slotFor(row.situation);if(!slot||blocked||busy||reviewBusy)return
-    try{onEdit(bindClip(project,inventory,dealerId,slot,row.id));setStandardError('');setStandardNotice('Tagningen är standard i talfacket i utkastet. Spara utkastet och publicera paketet igen för att använda den.')}
+    try{onEdit(bindClip(project,inventory,dealerId,slot,row.id));setStandardError('');setStandardNotice('Tagningen är standard i talfacket i utkastet. Spara utkastet och använd Publicera i spelbordet för att använda den.')}
     catch(cause){setStandardNotice('');setStandardError(cause instanceof Error?cause.message:'Standarden kunde inte sättas.')}}
   const [language,setLanguage]=useState<SpeechLanguage>('sv'),[lineId,setLineId]=useState('goodluck'),[all,setAll]=useState(false)
   const allowedLineIds=studioSpeechLineIds(game),selectedLineId=allowedLineIds.includes(lineId)?lineId:allowedLineIds[0]
@@ -124,7 +124,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   useEffect(()=>{setPlan(null);setResults([])},[game])
   useEffect(()=>{setPlan(null)},[project.revision,dealerId,savedKey,language,lineId,all,profileDirty,projectDirty,game])
   async function review(verdict:StudioRecordedSpeechVerdict){if(!recorded?.speech||!onInventory||blocked||busy||reviewBusy)return;setReviewBusy(true);onBusyChange?.(true);setReviewError('');setReviewNotice('')
-    try{const result=await reviewTake(studioRecordedSpeechReviewRequest(recorded,dealerId,verdict));onInventory(result.inventory);if(latest.current.dealerId===dealerId)setReviewNotice(verdict==='approved'?'Talet är godkänt. Publicera paketet igen och därefter spelinställningarna för att använda tagningen.':verdict==='rejected'?'Tagningen är underkänd och spelas inte.':'Bedömningen är borttagen. Tagningen väntar på granskning.')}
+    try{const result=await reviewTake(studioRecordedSpeechReviewRequest(recorded,dealerId,verdict));onInventory(result.inventory);if(latest.current.dealerId===dealerId)setReviewNotice(verdict==='approved'?'Talet är godkänt. Använd Publicera i spelbordet för att använda tagningen.':verdict==='rejected'?'Tagningen är underkänd och spelas inte.':'Bedömningen är borttagen. Tagningen väntar på granskning.')}
     catch(cause){if(latest.current.dealerId===dealerId)setReviewError((cause instanceof Error?cause.message:'Bedömningen kunde inte sparas.'))}finally{setReviewBusy(false);onBusyChange?.(false)}}
   function readyFrame(){const video=preview.current;if(video&&video.readyState>=2&&!video.seeking&&Math.abs(video.currentTime*1000-offsetMs)<60){setFrameReviewed(true);setReferenceError('')}}
   function saveProfile(){try{if(blocked||busy||!dealer)return;if(changedEnabledMotion)throw Error('Stäng av Begär AI-tal innan du sparar en ändrad rörelsereferens.');if(enabled&&(!referenceCheck.canEnable||referenceError))throw Error(referenceError||referenceCheck.message);if(videoId&&!referenceUnchanged&&(!selected||!frameReviewed||durationMs<1||offsetMs>=durationMs))throw Error('Granska vald position i dealerns egen referensvideo innan du lägger profilen i utkastet.');

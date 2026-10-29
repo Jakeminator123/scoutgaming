@@ -11,7 +11,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
-import { OPERATOR_AUDIT_ACTIONS, PARTNER_REQUEST_ACTIONS, PARTNER_REQUEST_STORAGE_VERSION } from './operator-audit-actions.mjs';
+import { OPERATOR_AUDIT_ACTIONS, PARTNER_REQUEST_ACTIONS, PARTNER_TABLE_ACTIONS, PARTNER_JOURNAL_STORAGE_VERSION } from './operator-audit-actions.mjs';
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
@@ -26,8 +26,9 @@ const operatorStatuses = new Set(['active', 'suspended']);
 const membershipStatuses = new Set(['active', 'suspended', 'invited']);
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
-// Speglar journalens CHECK (006, utökad av 022 med partnerns begäran).
+// Speglar journalens CHECK (006, utökad av 022 med partnerns egna åtgärder och begäran).
 const auditActions = new Set(OPERATOR_AUDIT_ACTIONS);
+const tableActions = new Set(PARTNER_TABLE_ACTIONS);
 const requestActions = new Set(PARTNER_REQUEST_ACTIONS);
 // The draft chain's own rows, read into the journal from operator_branding_drafts.
 const draftActions = new Set(['draft.save', 'draft.restore', 'draft.publish']);
@@ -645,14 +646,53 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (message !== null && (typeof message !== 'string' || message.length < 1 || message.length > 500 || message.trim() !== message
       || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(message))) fail('studio_invalid_data', 422);
     return withOperatorLock(async txQuery => {
-      const ledger = await txQuery(`/* operator-store:partner-requests-ready */
-        SELECT count(*)::integer AS ledgered FROM croupier_studio.storage_migrations
-        WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND version=$3`, [PARTNER_REQUEST_STORAGE_VERSION]);
-      if (ledger.length !== 1 || Number(ledger[0].ledgered) !== 1) fail('studio_migration_required', 503);
+      await partnerJournalReady(txQuery);
       if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
       await auditWrite(txQuery, input, { operatorId, action, resourceType: 'operator', resourceId: operatorId, after: { message } });
       return Object.freeze({ operatorId, action, message });
     });
+  }
+  // Partnerns egna åtgärder (022) får bara skrivas när 022 står i ledgern; före
+  // det tillåter journalens CHECK dem inte. Anroparen prövar detta i sin
+  // transaktion före sina egna skrivningar, så att ingenting ändras utan journalpost:
+  // annars 503 studio_migration_required och inget skrivet.
+  async function partnerJournalReady(txQuery) {
+    const ledger = await txQuery(`/* operator-store:partner-journal-ready */
+      SELECT count(*)::integer AS ledgered FROM croupier_studio.storage_migrations
+      WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND version=$3`, [PARTNER_JOURNAL_STORAGE_VERSION]);
+    if (ledger.length !== 1 || Number(ledger[0].ledgered) !== 1) fail('studio_migration_required', 503);
+  }
+  async function assertPartnerJournalReady() { return withOperatorLock(partnerJournalReady); }
+  // Partnerns paus/öppning (room.state) och spelinställningsutkast (room.settings)
+  // för ett eget spelbord. Resursen är paketets spelbord: resource_type package,
+  // resource_id spelbordets id. Skrivs i anroparens transaktion efter ändringen,
+  // med anroparens audit-kontext (konto och accessClass).
+  async function recordPartnerTableEvent(input = {}) {
+    actorOf(input);
+    const operatorId = idText(ownValue(input, 'operatorId')), roomId = idText(ownValue(input, 'roomId'));
+    const action = ownValue(input, 'action');
+    if (!tableActions.has(action) || optionalOwn(input, 'audit') === undefined) fail('studio_invalid_data', 422);
+    const before = optionalOwn(input, 'before') ?? null, after = ownValue(input, 'after');
+    if (!plain(after) || before !== null && !plain(before)) fail('studio_invalid_data', 422);
+    return withOperatorLock(async txQuery => {
+      await partnerJournalReady(txQuery);
+      if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      await auditWrite(txQuery, input, { operatorId, action, resourceType: 'package', resourceId: roomId, before, after });
+      return Object.freeze({ operatorId, roomId, action });
+    });
+  }
+  // Administrationsrevisionerna där partnern (accessClass partner) pausade ett
+  // spelbord genom partner-API:t, nyaste först. Admins pauser skrivs aldrig hit.
+  async function listPartnerRoomPauses(operatorId, roomId, { limit = 20 } = {}) {
+    operatorId = idText(operatorId); roomId = idText(roomId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('studio_invalid_data', 400);
+    const rows = await query(`/* operator-store:partner-room-pauses */
+      SELECT changes FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND action='room.state' AND access_class='partner'
+        AND resource_type='package' AND resource_id=$4
+      ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $5`, [operatorId, roomId, limit]);
+    return rows.map(row => storedJson(row.changes, canonicalStudioJson)?.after)
+      .filter(after => after?.state === 'pending' && typeof after.administrationRevision === 'string').map(after => after.administrationRevision);
   }
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
   // Only the trusted J08 writer supplies a complete validated replacement. A
@@ -772,6 +812,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, getPublishedRoomLimitPresets, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
-    recordPartnerRequest,
+    assertPartnerJournalReady, recordPartnerTableEvent, listPartnerRoomPauses, recordPartnerRequest,
   });
 }

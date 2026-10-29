@@ -72,7 +72,7 @@ Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012
 
 | Ledger | Format | Register och skrivare |
 | --- | --- | --- |
-| Studio `croupier_studio.storage_migrations` | `version` (`001`–`021`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
+| Studio `croupier_studio.storage_migrations` | `version` (`001`–`022`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
 | Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` registreras där i samma PR och mergas till `main` innan den körs. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
 
 Spelversionerna 006–013 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.

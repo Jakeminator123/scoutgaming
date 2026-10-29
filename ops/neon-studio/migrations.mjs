@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { join, isAbsolute } from 'node:path';
 import { StudioStorageError, canonicalStudioJson, studioStorageFailure } from '../../packages/studio-registry/server/document-contract.mjs';
 
-import { OPERATOR_AUDIT_ACTIONS, OPERATOR_AUDIT_ACTIONS_006, OPERATOR_AUDIT_ACTION_CONSTRAINT, PARTNER_REQUEST_ALTER, operatorAuditActionCheck } from '../../packages/operators/server/operator-audit-actions.mjs';
+import { OPERATOR_AUDIT_ACTIONS, OPERATOR_AUDIT_ACTIONS_006, OPERATOR_AUDIT_ACTION_CONSTRAINT, PARTNER_JOURNAL_ALTER, operatorAuditActionCheck } from '../../packages/operators/server/operator-audit-actions.mjs';
 import { EXTENDED_PRESENTATION_ALTERS, EXTENDED_PRESENTATION_CHECKS, EXTENDED_BRANDING_LIMIT, presentationBrandingCheck } from '../../packages/presentation/server/presentation-storage.mjs';
 
 const schema = 'croupier_studio';
@@ -70,10 +70,11 @@ const sources = Object.freeze([
   { version:'021', file:'021-operator-materials.sql', deploymentOptional:true,
     tables:['operator_materials','operator_material_policies','operator_ai_attempts'],
     indexes:['operator_materials_time_idx','operator_ai_attempts_day_idx'] },
-  // Partnerns begäran (material, nyckelrotation) som journalposter: bara 006:s
-  // CHECK-lista för action vidgas. Tolerant kod först: utan 022 svarar
-  // partner-API:t 503 studio_migration_required. Appliceras efter Jakobs ja.
-  { version:'022', file:'022-partner-requests.sql', deploymentOptional:true, tables:[], indexes:[],
+  // Partnerns egna åtgärder (spelbordens läge, spelinställningsutkast och begäran
+  // om material eller nyckelrotation) som journalposter: bara 006:s CHECK-lista för
+  // action vidgas. Tolerant kod först: utan 022 svarar de vägarna 503
+  // studio_migration_required. Appliceras efter Jakobs ja.
+  { version:'022', file:'022-partner-journal.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_audit_events'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
@@ -124,7 +125,7 @@ function statements(sql) {
 function validateSql(source, sql) {
   if (source.version === '022') {
     const parts = statements(sql);
-    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== PARTNER_REQUEST_ALTER) refuse('studio_migration_invalid_source', 422);
+    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== PARTNER_JOURNAL_ALTER) refuse('studio_migration_invalid_source', 422);
     return;
   }
   if (source.version === '020') {
