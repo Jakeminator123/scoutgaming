@@ -4,20 +4,19 @@ import { Archive, RotateCcw, Trash2 } from 'lucide-react';
 import type { StudioProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import { validateProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import { createDealerSet, dealerSetsForClip, editDealerSet, removeDealerSet, validateDealerSetBindings } from '../../../../../../packages/presentation/contracts/dealer-sets.mjs';
-import type { DealerArchiveImpact } from '../../../../lib/dealer-archive-impact.mjs';
 import type { Catalog, VideoInventory } from '../../lib/connected-studio.mjs';
-import { clipLifecycleBlocker, createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
-import { clipArchivePlan, dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';
-import { ConfirmAcknowledgement, ConfirmDialog } from '../ui/dialog';
+import { clipLifecycleBlocker, createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, lifecycleMessage } from '../../lib/studio-lifecycle.mjs';
+import { clipArchivePlan } from '../../lib/lifecycle-actions.mjs';
+import { ConfirmDialog } from '../ui/dialog';
+import Link from '../../../runtime/navigation';
 import { ClipDeleteAction, type ClipDeleteResult } from './clip-delete-action';
 
 const client = createLifecycleClient();
 const button = 'inline-flex items-center justify-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-40';
 const input = 'min-w-0 rounded border border-sg-line bg-sg-bg p-2 text-xs';
-type Plan = { dealerId: string; fingerprint: string; ids: string[]; error?: string } & (
-  { kind: 'clips'; archived: boolean; all: boolean } | { kind: 'dealer'; archived: boolean; impact?: DealerArchiveImpact; checking: boolean }
-  | { kind: 'delete-dealer'; eligibility?: DeletionPlan; checking: boolean; acknowledged: boolean }
-);
+// Clip archive only. The whole dealer is archived, restored and deleted in one
+// place: the Dealers list with its Papperskorg (dealer-directory.tsx).
+type Plan = { dealerId: string; fingerprint: string; ids: string[]; error?: string; kind: 'clips'; archived: boolean; all: boolean };
 export type StudioLifecyclePanelProps = {
   project: StudioProject; inventory: VideoInventory; catalog: Catalog; dealerId: string; blocked?: boolean;
   onReload: () => void|Promise<void>; onBusyChange?: (busy: boolean) => void;
@@ -103,9 +102,6 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
     const state = current.current;
     return state.selectedDealer === value.dealerId && value.fingerprint === lifecycleFingerprint(state.project, state.inventory, value.dealerId, value.ids);
   }
-  function patchPlan(captured: Pick<Plan, 'fingerprint'>, patch: Partial<Plan>) {
-    setPlan(value => value && value.fingerprint === captured.fingerprint ? { ...value, ...patch } as Plan : value);
-  }
   async function reload() {
     setInvalidated(true);
     try { await current.current.onReload(); } catch { setError(value => value + ' Registret kunde inte läsas om.'); }
@@ -129,25 +125,6 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
     if (disabled || !bank || !ids.length) return;
     setError(''); setPlan({ ...snapshot(ids), kind: 'clips', archived, all });
   }
-  async function reviewDealer(archived: boolean) {
-    if (!bank || disabled) return;
-    const captured = snapshot(bank.videos.map(row => row.id));
-    if (!archived) { setPlan({ ...captured, kind: 'dealer', archived: false, checking: false }); return; }
-    setPlan({ ...captured, kind: 'dealer', archived: true, checking: true });
-    await run(async () => {
-      try { const impact = await client.checkDealerArchive(project, selectedDealer); patchPlan(captured, { checking: false, impact }); }
-      catch (cause) { patchPlan(captured, { checking: false, error: lifecycleMessage(cause) }); }
-    });
-  }
-  async function reviewDealerDeletion() {
-    if (!bank || disabled) return;
-    const captured = snapshot(bank.videos.map(row => row.id));
-    setPlan({ ...captured, kind: 'delete-dealer', checking: true, acknowledged: false });
-    await run(async () => {
-      try { const eligibility = await client.checkDealerDeletion(project, selectedDealer); patchPlan(captured, { checking: false, eligibility }); }
-      catch (cause) { patchPlan(captured, { checking: false, error: lifecycleMessage(cause) }); }
-    });
-  }
   function clipDone(result: ClipDeleteResult) {
     if (result.kind === 'kept') return;
     setError(''); setNotice('');
@@ -158,31 +135,17 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
   }
   function childBusy(value: boolean) { setBusy(value); current.current.onBusyChange?.(value); }
   async function apply() {
-    if (!reviewed || !bank || reviewed.error || ('checking' in reviewed && reviewed.checking)) return;
+    if (!reviewed || !bank || reviewed.error) return;
     const captured = reviewed;
-    if (captured.kind === 'delete-dealer' && (!captured.eligibility?.allowed || dealerDelete && dealerDelete.requiresAcknowledgement && !captured.acknowledged)) return;
-    if (captured.kind === 'dealer' && captured.archived && !captured.impact) return;
     await run(async () => {
       const unchanged = () => stillCurrent(captured);
-      if (captured.kind === 'clips') {
-        const completed = await client.archiveClips({ project, inventory, dealerId: captured.dealerId, ids: captured.ids, archived: captured.archived, stillCurrent: unchanged });
-        setNotice(`${completed.length} klipp ${captured.archived ? 'flyttade till arkivet' : 'återställda'}. Mediafilerna är bevarade.`);
-      } else if (captured.kind === 'dealer') {
-        await client.dealerLifecycle(project, captured.dealerId, captured.archived, captured.impact, unchanged);
-        setNotice(captured.archived ? 'Dealern, berörda sammansättningar och klipp ligger i papperskorgen. Filerna är bevarade.' : 'Dealern är återställd till utkast med tal avstängt. Rum och bolagspaket återöppnas separat.');
-      } else {
-        await client.deleteDealer(project, captured.dealerId, unchanged);
-        setNotice('Dealeridentiteten och alla dess egna mediafiler är permanent raderade.');
-      }
+      const completed = await client.archiveClips({ project, inventory, dealerId: captured.dealerId, ids: captured.ids, archived: captured.archived, stillCurrent: unchanged });
+      setNotice(`${completed.length} klipp ${captured.archived ? 'flyttade till arkivet' : 'återställda'}. Mediafilerna är bevarade.`);
     }, true);
   }
-  const clipPlan = reviewed?.kind === 'clips' ? clipArchivePlan({ project, inventory, dealerId: selectedDealer, ids: reviewed.ids, archived: reviewed.archived }) : null;
-  const dealerPlan = reviewed?.kind === 'dealer' && bank ? reviewed.archived ? dealerArchivePlan({ label: bank.dealer.label, impact: reviewed.impact }) : dealerRestorePlan({ label: bank.dealer.label, compositions: project.dealerTrash?.find(row => row.dealer.id === selectedDealer)?.compositions ?? [] }) : null;
-  const dealerDelete = reviewed?.kind === 'delete-dealer' && bank ? dealerDeletePlan({ label: bank.dealer.label, mediaCount: bank.videos.length, eligibility: reviewed.eligibility, pending: bank.deletionPending }) : null;
-  const dialog = clipPlan ?? dealerPlan ?? dealerDelete;
+  const dialog = reviewed ? clipArchivePlan({ project, inventory, dealerId: selectedDealer, ids: reviewed.ids, archived: reviewed.archived }) : null;
   const dialogError = plan && !reviewed ? 'Registret har ändrats sedan dialogen öppnades. Stäng och granska igen.' : reviewed?.error || dialog?.error || '';
-  const dialogChecking = Boolean(reviewed && 'checking' in reviewed && reviewed.checking);
-  const dialogConfirm = reviewed && !dialogError && !dialogChecking && !(reviewed.kind === 'dealer' && reviewed.archived && !reviewed.impact) ? dialog?.confirmLabel : undefined;
+  const dialogConfirm = reviewed && !dialogError ? dialog?.confirmLabel : undefined;
   return <section className="studio-lifecycle-panel flex flex-col gap-4 text-xs" aria-label="Arkiv och livscykel">
     <header><p className="font-mono text-[10px] uppercase tracking-widest text-sg-muted">Registrerade resurser</p><h2 className="mt-1 text-base font-semibold">Klipp & arkiv</h2></header>
     <label className="flex flex-col gap-1 text-sg-muted">Dealeridentitet
@@ -231,23 +194,13 @@ export function StudioLifecyclePanel({ project, inventory, catalog, dealerId, bl
       <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={disabled || !selected.length} onClick={() => reviewClips(selected, !archivedView)}>{archivedView ? <RotateCcw size={13} /> : <Trash2 size={13} />}{archivedView ? 'Återställ valda' : 'Radera valda'} ({selected.length})</button>
         {!archivedView && <button type="button" className={button} disabled={disabled || bank.archived || !visible.length} onClick={() => reviewClips(visible.map(row => row.id), true, true)}>Radera alla {visible.length} klipp</button>}
       </div>
-      <details className="rounded border border-sg-line p-3"><summary className="cursor-pointer">Hela dealeridentiteten</summary>
-        {project.dealerSets?.some(row => row.dealerId === selectedDealer) && <p className="mt-2 text-amber-300">Dealern har sparade eller arkiverade kategorier. Ta bort kategorietiketterna och spara först. Kategoriernas klipp bevaras.</p>}
-        <p className="my-3 text-sg-muted">Att ta bort dealern flyttar även dess klipp och berörda sammansättningar till papperskorgen, stänger av tal och ändrar berörda rum och bolagspaket. Filer och historik bevaras.</p>
-        <div className="flex flex-wrap gap-2">
-          {bank.deletionPending ? <p className="text-amber-300">Permanent radering har påbörjats. Återställning är spärrad.</p> : <button type="button" className={button} disabled={disabled} onClick={() => void reviewDealer(!bank.archived)}>{bank.archived ? <RotateCcw size={13} /> : <Trash2 size={13} />}{bank.archived ? 'Återställ dealern' : 'Ta bort dealern'}</button>}
-          {bank.archived && <button type="button" className={button} disabled={disabled} onClick={() => void reviewDealerDeletion()}><Trash2 size={13} />{bank.deletionPending ? 'Slutför radering' : 'Radera dealern permanent'}</button>}
-        </div>
-      </details>
+      <p className="text-sg-muted">Hela dealern flyttas till papperskorgen, återställs och raderas under <Link href="/admin/dealers">Dealers</Link>.</p>
       </>}
     </>}
     <ConfirmDialog open={plan !== null} title={dialog?.title ?? 'Granska åtgärden'} description={dialog?.summary} consequences={dialog?.items ?? []}
-      checking={dialogChecking} checkingLabel={plan?.kind === 'delete-dealer' ? 'Kontrollerar lagring och beroenden…' : 'Kontrollerar rum, bolag och publiceringar…'}
-      error={dialogError} busy={busy && plan !== null && !dialogChecking} busyLabel={dialog?.busyLabel}
-      confirmLabel={dialogConfirm} confirmDisabled={disabled && !busy || Boolean(dealerDelete?.requiresAcknowledgement && reviewed?.kind === 'delete-dealer' && !reviewed.acknowledged)}
+      error={dialogError} busy={busy && plan !== null} busyLabel={dialog?.busyLabel}
+      confirmLabel={dialogConfirm} confirmDisabled={disabled && !busy}
       cancelLabel={plan && !reviewed || reviewed?.error ? 'Stäng' : dialog?.cancelLabel}
-      onConfirm={() => void apply()} onCancel={() => { if (!busy || dialogChecking) setPlan(null); }}>
-      {dealerDelete?.requiresAcknowledgement && reviewed?.kind === 'delete-dealer' && !dialogError && <ConfirmAcknowledgement checked={reviewed.acknowledged} label={dealerDelete.acknowledgement} disabled={busy} onChange={checked => patchPlan(reviewed, { acknowledged: checked })} />}
-    </ConfirmDialog>
+      onConfirm={() => void apply()} onCancel={() => { if (!busy) setPlan(null); }} />
   </section>;
 }
