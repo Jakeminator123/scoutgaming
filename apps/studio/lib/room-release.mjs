@@ -318,7 +318,12 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       affectedRooms.push({id:room.id, name:room.name, bound, rebinds});
       if (!rebinds || !storage) continue;
       const config = await publishedConfig(pool, state.current, room);
-      if (!isNativeRoomMaterial(config?.material)) continue;
+      // J08 binder om icke-nativt material bara med oförändrad presentation och dealer
+      // (room-game-publication.mjs): en ändrad kandidat blir annars 422 vid publiceringen.
+      if (!isNativeRoomMaterial(config?.material)) {
+        blockers.push({area:'rooms', code:'studio_room_game_material_unavailable', roomId:room.id});
+        continue;
+      }
       try { resolveNativeRoomGameMaterial({package:structuredClone(built.candidate), room:structuredClone(room), language:config.gameConfig.language},
         {version:nativeRoomMaterialVersion(config.material)}); }
       catch (error) {
@@ -331,6 +336,20 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     gameConfig, live:publicAreas(view.liveAreas), candidate:publicAreas(view.nextAreas), changes:view.changes, changed:view.changed,
     affectedRooms, ready:view.changed && blockers.length === 0, blockers, previewToken:view.previewToken,
     ...(built?.materialWarnings?.length ? {materialWarnings:structuredClone(built.materialWarnings)} : {})};
+  }
+
+  // Ett utkast lika med live är inget att publicera; det tas bort med CAS på administrationens
+  // revision så att det inte ligger kvar som väntande. Svaret är ändå 422 studio_release_unchanged.
+  async function dropNoopDraft({state, roomId, live, gameConfig, actor}) {
+    const drafts = validateRoomGameDrafts(state.administration.roomGameConfigs ?? [], state.administration.rooms);
+    const draft = drafts.find(row => row.roomId === roomId), same = value => canonicalStudioJson(value) === canonicalStudioJson(gameConfig);
+    if (!draft || !live || !same(draft.gameConfig) || !same(live.gameConfig)) return;
+    const value = {...state.administration, roomGameConfigs:drafts.filter(row => row.roomId !== roomId)};
+    try {
+      // Egen transaktion utanför publiceringens: vägran ska inte rulla tillbaka borttagningen.
+      await repository.transaction(() => repository.saveDocument('administration', {value,
+        expectedRevision:state.snapshot.administrationDocument.revision, actor}), {presentationMutation:[{kind:'administration', value}]});
+    } catch (error) { if (error?.code === 'studio_conflict') conflict('administration'); throw error; }
   }
 
   // Steg 1: förbered utanför SQL-låset. Inaktuell förhandsvisning stoppas före provider-I/O.
@@ -348,7 +367,10 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     const built = await buildCandidate({...state, operatorId:body.operatorId, rows:await materialRows(pool, body.operatorId)});
     const view = compare({state, live, gameConfig:body.gameConfig, built});
     if (view.previewToken !== body.previewToken) refuse('studio_release_preview_stale', 409);
-    if (!view.changed) invalid('studio_release_unchanged');
+    if (!view.changed) {
+      await dropNoopDraft({state, roomId:body.roomId, live, gameConfig:body.gameConfig, actor:context.actor.user});
+      invalid('studio_release_unchanged');
+    }
     await roomMaterial({snapshot:state.snapshot, candidate:built.candidate, presentation:built.presentation, room:state.room, gameConfig:body.gameConfig});
     if (built.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(built.mediaPreconditions);
     const administration = structuredClone(state.administration);
@@ -410,6 +432,9 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       } catch (error) {
         // Paketets revision är redan låst och kontrollerad: en konflikt här gäller spelbordens huvuden.
         if (error?.code === 'studio_conflict' && !error.step) conflict('room_config_head');
+        // J08 löser om grannrummens nativa material: skälet ur den fasta listan blir materialReason.
+        if (error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && error.materialReason === undefined)
+          refuse(error.code, 422, isRoomGameMaterialReason(error.reason) ? {materialReason:error.reason} : {});
         throw error;
       }
       // Rummets utkast för spelinställningar tas bort med CAS på administrationens revision.

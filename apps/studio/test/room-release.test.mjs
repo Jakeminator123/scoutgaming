@@ -1,7 +1,11 @@
 // En publicering per spelbord (room-release.mjs, ADMIN-FORENKLING §7) på riktig
 // PostgreSQL-SQL (PGlite, en session): produktens Studio-repository, operatörsbutik,
-// J08-skrivare och 009-lagring. Låskonkurrens mellan sessioner provas i CI:s isolerade Postgres.
+// J08-skrivare och 009-lagring. PGlite är en enda session: låskonkurrens mellan sessioner
+// provas inte här (inte heller i tools/studio-isolated-qa.mjs). Samtidighet provas som
+// CAS: en förberedelse vars revisioner, utkast, medieposter eller material ändras före
+// transaktionen stoppas med 409 och skriver inget.
 import test from 'node:test';
+import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
 import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
@@ -13,6 +17,7 @@ import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-ca
 import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {createOperatorPackageApi} from '../lib/operator-package-api.mjs';
+import {createOperatorMaterialStore} from '../lib/operator-material-store.mjs';
 import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
@@ -83,7 +88,7 @@ async function releaseFixture(t,{without009=false}={}) {
     audits:await rows('SELECT count(*)::int AS count FROM croupier_studio.operator_audit_events WHERE environment_id=$1',own),
     ...(!without009?{configs:await rows('SELECT room_id,version,body FROM croupier_game.shared_table_configs WHERE room_id LIKE $1 ORDER BY room_id,version',prefix),
       heads:await rows('SELECT room_id,version FROM croupier_game.shared_table_config_heads WHERE room_id LIKE $1 ORDER BY room_id',prefix)}:{})});
-  return {pool,raw,repository,api,direct,io,lane,source,scope,id,post,read,saveDraft,bodyOf,rows,persisted,publish:view=>post(bodyOf(view))};
+  return {pool,raw,repository,videoRegistry,api,direct,io,lane,source,scope,id,post,read,saveDraft,bodyOf,rows,persisted,publish:view=>post(bodyOf(view))};
 }
 
 test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
@@ -132,6 +137,15 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     await assert.rejects(f.publish(view),code('studio_conflict',409,{step:'package'}));
     await assert.rejects(f.publish(again),code('studio_release_invalid',422,{reason:'studio_release_unchanged'}));
     assert.deepEqual(await f.persisted(),stable);
+    // Ett utkast lika med live: vägran tar bort det med CAS, så att det inte ligger kvar som väntande.
+    await f.saveDraft('north-a',{language:'sv',limitPreset:'prive'});
+    const noop=await f.read(),pending=await f.persisted();
+    assert.equal(noop.changed,false);assert.equal(typeof noop.revisions.roomGameConfigDraft,'string');
+    await assert.rejects(f.publish(noop),code('studio_release_invalid',422,{reason:'studio_release_unchanged'}));
+    const cleared=await f.read(),left=await f.persisted();
+    assert.equal(cleared.revisions.roomGameConfigDraft,null,'the no-op draft is removed');
+    assert.deepEqual((await f.raw.readDocument('administration')).value.roomGameConfigs,[]);
+    assert.deepEqual({...left,documents:null},{...pending,documents:null},'only the administration document moves');
   });
 
   await t.test('a stale preview is a 409 before provider I/O and writes nothing',async()=>{
@@ -189,6 +203,32 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     assert.equal(rebound.heads[0].version,rebound.binding);
   });
 
+  await t.test('a neighbour whose material J08 cannot rebind blocks the preview and is a 422 with its material reason',async()=>{
+    // En ny fryst kandidat (ändrad metadata) binder om grannrummet B.
+    const idle=f.source.records[0],media=await f.raw.getMedia(idle.id);
+    await f.raw.classifyMedia(idle.id,{sha256:idle.sha256,expectedRevision:media.revision,metadata:{...media.classification,notes:'Grannrummet binds om'},actor:'fixture'});
+    const version=await binding('north-b'),[{body:original}]=await f.rows('SELECT body FROM croupier_game.shared_table_configs WHERE room_id=$1 AND version=$2',[room('north-b'),version]);
+    const store=async change=>{const value=JSON.parse(original);change(value);
+      await f.pool.query('UPDATE croupier_game.shared_table_configs SET body=$3 WHERE room_id=$1 AND version=$2',[room('north-b'),version,JSON.stringify(value)]);};
+    try {
+      for(const [change,materialReason] of [
+        // Icke-nativt material: J08 vägrar en ändrad presentation (fail utan skäl).
+        [value=>{value.material.revision='legacy-room-material';delete value.material.film;},undefined],
+        // Nativt material på ett språk utan godkänt tal: J08:s omlösning kastar med skäl.
+        [value=>{value.language='en';value.material.language='en';},'native_material_speech_unbound']]) {
+        await store(change);
+        const view=await f.read();
+        const blocker={area:'rooms',code:'studio_room_game_material_unavailable',roomId:room('north-b'),...(materialReason?{materialReason}:{})};
+        assert.equal(view.ready,false);assert.deepEqual(view.blockers,[blocker]);
+        const before=await f.persisted();
+        await assert.rejects(f.publish(view),error=>code('studio_room_game_material_unavailable',422)(error)&&error.materialReason===materialReason);
+        assert.deepEqual(await f.persisted(),before);
+      }
+    } finally {
+      await f.pool.query('UPDATE croupier_game.shared_table_configs SET body=$3 WHERE room_id=$1 AND version=$2',[room('north-b'),version,original]);
+    }
+  });
+
   await t.test('HTTP: exact read query, {error, code, step} and runtime negotiation before SQL',async()=>{
     const origin='https://studio.invalid',transactions=[];
     const mutationTransaction=createNativePresentationMutationTransaction({repository:f.repository,boDb:{transaction:work=>work()},pool:f.pool,scope:f.scope});
@@ -239,6 +279,26 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     assert.ok(code('studio_conflict',409,{step:'package'})(outcomes.find(row=>row.status==='rejected').reason));
     assert.equal((await f.direct.getCurrentPackage('north')).revision,view.revisions.package+1);
     await assert.rejects(f.api.handlers.get(POST)({...context,prepared:{...one}}),code('studio_release_invalid',422),'a copied preparation never writes');
+    // Varje revision läses om under låset: en ändring efter förberedelsen är 409 och skriver inget.
+    await f.saveDraft('north-a',{language:'sv',limitPreset:'casual'});
+    const late=async(change,check)=>{
+      const fresh=await f.read(),later={body:f.bodyOf(fresh),actor,scope:f.scope};
+      assert.equal(fresh.ready,true,JSON.stringify(fresh.blockers));
+      const prepared=await f.api.preparations.get(POST)(later);
+      await change();const stable=await f.persisted();
+      await assert.rejects(f.api.handlers.get(POST)({...later,prepared}),check);
+      assert.deepEqual(await f.persisted(),stable);
+    };
+    await late(async()=>{const doc=await f.raw.readDocument('project');
+      await f.raw.saveDocument('project',{value:{...doc.value,lanes:doc.value.lanes.map((lane,index)=>index?lane:{...lane,label:`${lane.label} (ändrad)`})},expectedRevision:doc.revision,actor:'fixture'});},
+    code('studio_conflict',409,{step:'project'}));
+    await late(()=>f.saveDraft('north-b',{language:'sv',limitPreset:'prive'}),code('studio_conflict',409,{step:'administration'}));
+    // Det nativa materialet binder varje infångad post för dealern; omkontrollen av de infångade
+    // medieposterna svarar före materialkontrollen (som annars ger 422).
+    const action=f.source.records.find(row=>row.classification.kind==='action');
+    await late(async()=>{const media=await f.raw.getMedia(action.id);
+      await f.raw.classifyMedia(action.id,{sha256:action.sha256,expectedRevision:media.revision,metadata:{...media.classification,notes:'Ändrad efter förberedelsen'},actor:'fixture'});},
+    code('studio_conflict',409,{step:'media'}));
     // Another writer moved room A's head without a package: the J08 head CAS refuses and nothing is written.
     await f.saveDraft('north-a',{language:'sv',limitPreset:'casual'});
     const moved='room-config-00000000-0000-4000-8000-000000000099',ready=await f.read();
@@ -249,14 +309,35 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     assert.deepEqual(await f.persisted(),stable);
   });
 
+  await t.test('company material changed after the preparation is a 409 at step materials',async()=>{
+    const materials=sql=>createOperatorMaterialStore({sql,scope:f.scope});
+    const api=createOperatorPackageApi({pool:f.pool,scope:f.scope,repository:f.repository,videoRegistry:f.videoRegistry,materials});
+    const view=await api.handlers.get(GET)({actor,scope:f.scope,
+      request:new Request(`https://studio.invalid/studio/api/admin/room-release?operatorId=north&roomId=${room('north-b')}`)});
+    assert.equal(view.ready,true,JSON.stringify(view.blockers));
+    const context={body:f.bodyOf(view),actor,scope:f.scope},prepared=await api.preparations.get(POST)(context);
+    const materialId='0d0d0d0d-0000-4000-8000-00000000b0f1',sha256='6'.repeat(64);
+    await materials(f.pool).appendMaterial({actor:'staff-1',audit:{actorId:'staff-1',accessClass:'internal-admin',requestId:randomUUID()},
+      operatorId:'north',materialId,expectedRevision:0,state:'pending',source:'upload',asset:{schemaVersion:1,id:materialId,role:'background',
+        label:'Bolagets bakgrund',sha256,size:4096,contentType:'image/png',width:1920,height:1080,pathname:`croupier/media/backgrounds/${materialId}/${sha256}.png`}});
+    const stable=await f.persisted();
+    await assert.rejects(api.handlers.get(POST)({...context,prepared}),code('studio_conflict',409,{step:'materials'}));
+    assert.deepEqual(await f.persisted(),stable);
+  });
+
   await t.test('an open company appearance draft blocks the release (first version)',async()=>{
     await f.saveDraft('north-b',{language:'sv',limitPreset:'casual'});
+    const ready=await f.read('north-b'),context={body:f.bodyOf(ready),actor,scope:f.scope};
+    assert.equal(ready.ready,true,JSON.stringify(ready.blockers));
+    const prepared=await f.api.preparations.get(POST)(context);
     const pack=await f.direct.getCurrentPackage('north');
     await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:pack.revision,branding:{color:'#112233'}});
     const view=await f.read('north-b');
     assert.equal(view.ready,false);assert.deepEqual(view.blockers,[{area:'roomChoices',code:'studio_room_choices_draft_pending',draftRevision:1}]);
     const before=await f.persisted();
     await assert.rejects(f.publish(view),code('studio_room_choices_draft_pending',409));
+    // Ett utkast sparat efter förberedelsen stoppas under låset.
+    await assert.rejects(f.api.handlers.get(POST)({...context,prepared}),code('studio_room_choices_draft_pending',409));
     assert.deepEqual(await f.persisted(),before);
   });
 });
