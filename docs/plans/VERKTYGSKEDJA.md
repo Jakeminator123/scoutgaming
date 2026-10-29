@@ -10,7 +10,7 @@ Plan för steg **H** i [ADMIN-FORENKLING §9](ADMIN-FORENKLING.md#9-leveransordn
 
 | | Admin (`client/admin`) | Lobby (`client/lobby`) | Next-sidorna (`/partner`, inloggning) |
 | --- | --- | --- | --- |
-| Tailwind | **v3.4.17** (`tailwindcss3`, `tailwind.config.ts`, `tailwindcss-animate`) | **v4.1.9** (`@tailwindcss/postcss`, `tw-animate-css`) | ingen |
+| Tailwind | **v4.1.9** sedan A3 (`@theme` i `admin/app/globals.css`, `tw-animate-css`; ingen `tailwind.config.ts`, inget `tailwindcss3` eller `tailwindcss-animate`) | **v4.1.9** (`@tailwindcss/postcss`, `tw-animate-css`) | ingen |
 | Tokens | `admin/app/globals.css` (shadcn-HSL, nästan oanvända: 54 klassträffar) + `admin/app/studio.css` (`--sg-*`, 44 namn) | `lobby/app/globals.css` (oklch, egen palett) | `app/scout-theme.css` (`--sg-*`, 38 namn) + `kevin-bo/partner-portal.css` och `partner-workspace.module.css` (egna `--bg/--surface`) |
 | Mörkt läge | `studio.css` följer **OS** (`prefers-color-scheme`); `index.html` sätter ändå `class="dark"`, vilket bara styr de nästan oanvända shadcn-tokens | `.dark`-klass | `html[data-theme]` från `localStorage['sg-theme']`; partnerportalen har ett eget val `sg-partner-theme` |
 | CSS-moduler | 28 komponenter, 22 `*.module.css` i `apps/studio/components`, byggda av esbuild till `admin/app.css` | – | samma moduler, byggda av Next |
@@ -43,7 +43,7 @@ Samma `--sg-*`-namn har alltså olika värden (34 gemensamma namn, 4 bara i `sco
 | --- | --- | --- |
 | **A1 tokenfil** | `packages/ui/tokens.css` med dagens `studio.css`-värden; `build.mjs` läser in den före `studio.css` (Tailwind 3-vägen löser inte `@import`, filerna slås ihop som text i dag); `watch-design-preview.mjs` bevakar `packages/ui`; `scout-theme.css` oförändrad | `admin/theme.css` har samma deklarationer före och efter, och diffen visar bara flyttade rader (se §7); `admin`-sviten grön |
 | **A2 ett mörkt läge** | klass i stället för OS; startskript i `index.html` och `layout.tsx`; `scout-theme.css` importerar tokenfilen och tappar sina egna `--sg-*` | Admin och `/partner` visar samma färg för samma token i båda lägena; valet sparas; skärmbilder ljust/mörkt till Jakob |
-| **A3 Admin på Tailwind v4** | `@theme` i stället för `tailwind.config.ts`, `tw-animate-css`, skalan låst med `@theme`-överskrivningar så att inga klasser i komponenterna ändras; `tailwindcss3` och `tailwindcss-animate` bort | `prepare-design-preview` grönt, en version av `tailwindcss` i `client/package-lock.json`, `admin-kit-browser`-provet grönt, skärmbildsjämförelse av fem sidor utan avvikelser |
+| **A3 Admin på Tailwind v4** (gjort, PR #582) | `@theme` i stället för `tailwind.config.ts`, `tw-animate-css`, skalan låst med `@theme`-överskrivningar så att inga klasser i komponenterna ändras; `tailwindcss3` och `tailwindcss-animate` bort | `prepare-design-preview` grönt, en version av `tailwindcss` i `client/package-lock.json`, `admin-kit-browser`-provet grönt, skärmbildsjämförelse av fem sidor utan avvikelser |
 | **A4 Tailwind-uppgradering** | `tailwindcss`/`@tailwindcss/postcss` 4.1.9 → senaste 4.x (4.3.3 i dag, samma som `apps/web`) | bygget grönt, `theme.css` ändras bara i ordning/kommentarer |
 | **A5 partnerportalen** (efter steg G) | `partner-portal.css` och `partner-workspace.module.css` byter `--bg/--surface/...` mot `--sg-*`; `sg-partner-theme` blir `sg-theme` | en tokenfil i hela `apps/studio`; `git grep -- '--surface:'` hittar bara `tokens.css` |
 

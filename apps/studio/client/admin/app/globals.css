@@ -21,9 +21,24 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant hover (&:hover);
 
+/* Tailwind 3-konfigurationens typsnittslistor: Admins typsnitt (--sg-next-*, studio.css) med
+   reservtypsnitt, så att font-sans och font-mono aldrig faller till webbläsarens standard. */
 @theme inline {
-  --default-font-family: var(--font-sans), system-ui, sans-serif;
-  --default-mono-font-family: var(--font-mono), ui-monospace, monospace;
+  --font-sans: var(--sg-next-body), system-ui, sans-serif;
+  --font-mono: var(--sg-next-mono), ui-monospace, monospace;
+  --default-font-family: var(--sg-next-body), system-ui, sans-serif;
+  --default-mono-font-family: var(--sg-next-mono), ui-monospace, monospace;
+}
+
+/* Tailwind 3:s outline-none: en genomskinlig kontur, inte outline-style:none, så att fokus syns
+   i Windows högkontrastläge (forced colors), där konturen får systemets färg. Tailwind 4 skriver
+   ändå ut sin egen outline-none efter denna, för varje variant; :not(.\#) matchar alla element
+   och ger regeln en klass mer specificitet, så att den vinner (provet i test/admin-tailwind.test.mjs). */
+@utility outline-none {
+  &:not(.\#) {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
 }
 
 @theme {
@@ -158,7 +173,7 @@
 /* Tailwind 3:s space-y och divide: avståndet och linjen ligger ovanför varje synligt barn utom det
    första (Tailwind 4 lägger dem under varje barn utom det sista). Tailwind 4:s regler har
    specificitet 0 och nollställs här; Tailwind 3:s regler läggs till. Ett nytt värde i komponenterna
-   behöver en rad här (provet i test/ui-tokens.test.mjs säger till). */
+   behöver en rad här (provet i test/admin-tailwind.test.mjs säger till). */
 :where(.space-y-1, .space-y-2, .space-y-3, .space-y-4, .space-y-5, .space-y-6) > :where(:not(:last-child)) {
   margin-block-end: 0;
 }

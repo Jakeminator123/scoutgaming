@@ -45,3 +45,18 @@ test('the built Admin stylesheet has no utility or base layer', { skip: !existsS
   assert.match(css, /\.space-y-2 > :not\(\[hidden\]\) ~ :not\(\[hidden\]\)/);
   assert.doesNotMatch(css, /@tailwind|@apply|@theme|@source|@custom-variant/, 'Tailwind compiled every directive');
 });
+
+// Tailwind 4:s outline-none är outline-style:none och tar bort fokus i Windows högkontrastläge.
+// Varje outline-none-klass i bygget ska ha Tailwind 3:s genomskinliga kontur med en klass mer
+// specificitet än Tailwind 4:s regel för samma selektor.
+test('every built outline-none class keeps the Tailwind 3 transparent outline', { skip: !existsSync(built) && 'no Admin build' }, () => {
+  const css = readFileSync(built, 'utf8'), rules = new Map();
+  for (const [, selector, body] of css.matchAll(/^(\S[^\n{]*outline-none[^\n{]*) \{\n([\s\S]*?)^\}/gm)) {
+    rules.set(selector, [...(rules.get(selector) ?? []), body]);
+  }
+  assert.ok(rules.has('.outline-none') && rules.has('.focus-visible\\:outline-none'), 'the build has the classes the kit uses');
+  for (const [selector, bodies] of rules) {
+    const kept = bodies.find(body => /&:not\(\.\\#\) \{\s*outline: 2px solid transparent;\s*outline-offset: 2px;\s*\}/.test(body));
+    assert.ok(kept, `${selector} has the transparent outline with the extra class`);
+  }
+});
