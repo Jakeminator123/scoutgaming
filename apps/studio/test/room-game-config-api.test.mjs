@@ -367,3 +367,15 @@ test('J08 public material error is restricted to its action, status and fixed co
     assert.equal(response.status,statusCode);assert.deepEqual(await response.json(),expected);
   }
 });
+test('a missing draft is no blocker: the receipt checks the material that Publicera would save (enkel väg, klass C)',async()=>{
+  const languages=[],f=fixture({resolver:input=>{languages.push(input.language);return {...f.material(),language:input.language};}});
+  const first=await f.invoke('GET');
+  assert.equal(first.draft,null);assert.deepEqual(first.publication,{ready:true},'no studio_room_game_draft_required');
+  assert.deepEqual(languages,['en'],'without draft or publication the standard choice is checked');
+  const result=await f.publish(await f.save({language:'sv',limitPreset:'prive'}));
+  assert.equal(result.draft,null);assert.deepEqual(result.publication,{ready:true},'the published choice was just checked');
+  languages.length=0;assert.deepEqual((await f.invoke('GET')).publication,{ready:true});assert.deepEqual(languages,['sv'],'then the published choice');
+  const failing=fixture({resolver:()=>{throw Object.assign(Error('x'),{statusCode:422,code:'studio_room_game_material_unavailable',reason:'native_material_measurement_missing'});}});
+  assert.deepEqual((await failing.invoke('GET')).publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
+  for(const body of [first,result])assert.doesNotMatch(JSON.stringify(body),/draft_required/);
+});
