@@ -20,7 +20,8 @@ const pageScript = `
   const {createLocalCardOverlay}=await import('/local-card-overlay.mjs');
   root.dataset.sharedRoom='1';
   const selection=${JSON.stringify(selection)};
-  let restore;const connection=new AbortController(),sent=[];
+  // sendDelay: milliseconds before a command's reply, so a test sees the pending state (every control closed) in frames.
+  let restore,sendDelay=0;const connection=new AbortController(),sent=[];
   class Player{dispose(){}}
   // ?plane=film: a composition plane without table geometry, the film contain-fitted to the scene (no Admin boxes).
   const plane=new URLSearchParams(location.search).get('plane')==='film';
@@ -30,11 +31,11 @@ const pageScript = `
     fetchImpl:async url=>{const query=new URL(url,location.origin).searchParams;
       return Response.json({owner:'web',roomId:selection.roomId,configVersion:query.get('configVersion'),windowId:query.get('windowId'),
         presentationContext:{operatorSlug:selection.operator,roomId:selection.roomId,packageRevision:selection.packageRevision,dealerId:selection.dealer},selection});},
-    createCommands:()=>({state:'idle',async send(intent){sent.push(intent);return{status:'ok',result:{op:intent.op,version:0,...(intent.op==='pause'?{pausedUntil:0}:{})}};},retry(){},stop(){this.state='stopped';}}),
+    createCommands:()=>({state:'idle',async send(intent){if(sendDelay>0)await new Promise(done=>setTimeout(done,sendDelay));sent.push(intent);return{status:'ok',result:{op:intent.op,version:0,...(intent.op==='pause'?{pausedUntil:0}:{})}};},retry(){},stop(){this.state='stopped';}}),
     createSocket:options=>{restore=options.restoreSnapshot;return{start(){},stop(){},reconnect(){},status:()=>({state:'running'})};},
     createPresentation:async options=>mountSharedRoomPresentation({...options,createComposition:()=>composition,
       loadAdapters:async()=>[{PerformancePlayer:Player},{createLocalPresentation:async media=>({state(){},prepareSequence(){},present:async()=>true,close(){},start(){media.onIdle();}})},{createLocalCardOverlay}]})});
-  window.fixture={app,sent,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),ready:true};
+  window.fixture={app,sent,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),delay:ms=>{sendDelay=ms;},ready:true};
 `;
 
 export function tableSnapshot({ version = 1, own = [], others = {}, phase = 'bets', bets = {}, round = null, plan = null, settings = {}, lastSettlement = null } = {}) {
@@ -89,6 +90,8 @@ export async function openLayoutFixture(browserModule, { channel } = {}) {
     page.on('pageerror', error => pageErrors.push(error.message));
     await page.goto(origin + (plane ? `/?plane=${plane}` : '')); await page.waitForFunction(() => window.fixture?.ready);
     return { page, context,
+      // Replies to commands wait this long from now on (0 answers at once).
+      delay: ms => page.evaluate(value => window.fixture.delay(value), ms),
       async show(snapshot) {
         await page.evaluate(value => window.fixture.push(value), snapshot);
         await page.waitForFunction(version => window.fixture.app.controller.state.snapshot?.version === version
