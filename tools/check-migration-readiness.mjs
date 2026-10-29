@@ -195,16 +195,19 @@ export function readinessOutput(result, { only, apply = false } = {}) {
 
 // L3 PR 4: companies whose current package has no `rooms` (Studio 023) yet, per scope; they are
 // published again by tools/republish-rooms.mjs. `to_jsonb(p)->>'rooms'` is NULL both before the
-// column exists and when unset. Information only: null when it cannot be read, and the line never
-// blocks readiness or changes the exit code.
+// column exists and when unset; it is read for each company's current row only (the rows carry
+// frozen presentations). Information only: null when it cannot be read, and the line never blocks
+// readiness or changes the exit code.
 export async function countPackagesWithoutRooms({ pool } = {}) {
   let rows;
   try {
     rows = (await pool.query(`/* readiness:packages-without-rooms */
-      SELECT environment_id, workspace_id, count(*)::integer AS missing
-      FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) environment_id, workspace_id, to_jsonb(p)->>'rooms' AS rooms
-        FROM croupier_studio.operator_packages p ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) latest
-      WHERE rooms IS NULL GROUP BY environment_id, workspace_id ORDER BY environment_id, workspace_id`))?.rows;
+      SELECT p.environment_id, p.workspace_id, count(*)::integer AS missing
+      FROM croupier_studio.operator_packages p
+      JOIN (SELECT environment_id, workspace_id, operator_id, max(package_revision) AS package_revision
+        FROM croupier_studio.operator_packages GROUP BY environment_id, workspace_id, operator_id) latest
+        USING (environment_id, workspace_id, operator_id, package_revision)
+      WHERE to_jsonb(p)->>'rooms' IS NULL GROUP BY p.environment_id, p.workspace_id ORDER BY p.environment_id, p.workspace_id`))?.rows;
   } catch { return null; }
   if (!Array.isArray(rows)) return null;
   const scopes = [];

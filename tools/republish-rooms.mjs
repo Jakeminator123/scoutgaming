@@ -39,9 +39,10 @@ const MESSAGES = Object.freeze({
   republish_rooms_scope_required: 'CROUPIER_STUDIO_ENVIRONMENT_ID och CROUPIER_STUDIO_WORKSPACE_ID krävs.',
   republish_rooms_database_required: 'CROUPIER_GAME_DATABASE_URL krävs.',
   republish_rooms_host_rejected: 'CROUPIER_GAME_DATABASE_URL måste peka på en Neon-värd.',
-  republish_rooms_migration_required: 'Studio 023 saknas i ledgern, inget är skrivet. Kör först node tools/check-migration-readiness.mjs --apply --only 023.',
+  republish_rooms_migration_required: 'Studio 023 saknas i ledgern, inget är skrivet. Kör först node tools/check-migration-readiness.mjs --apply --only 023 (med --skip för väntande valfria före den).',
   republish_rooms_operator_not_found: 'Inget bolag med det id:t i scopet, inget är skrivet.',
   republish_rooms_not_written: 'Paketet skrevs utan rooms trots Studio 023 i ledgern. Körningen stoppades.',
+  republish_rooms_operator_changed: 'Bolagets adress pekar på ett annat bolag än vid läsningen.',
   republish_rooms_unreachable: 'Databasen gick inte att läsa.',
 });
 const refuse = code => Object.assign(new Error(code), { code });
@@ -93,7 +94,8 @@ export async function republishRooms({ pool, scope, dryRun = false, operatorId =
     const entry = { operatorId: owner.id, slug: owner.slug, fromRevision: null };
     try {
       // One statement: the package and the administration document from the same snapshot.
-      const { package: pack, administration } = await store.getCurrentPresentationContext(owner.slug);
+      const { operator: current, package: pack, administration } = await store.getCurrentPresentationContext(owner.slug);
+      if (current && current.id !== owner.id) throw refuse('republish_rooms_operator_changed');
       if (!pack || pack.rooms !== null) continue;
       Object.assign(entry, { fromRevision: pack.revision, tables: pack.tables.length });
       const input = { actor: REPUBLISH_ROOMS_ACTOR, operatorId: owner.id, expectedRevision: pack.revision,
