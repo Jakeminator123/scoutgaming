@@ -7,7 +7,7 @@
 - **Ett skal för båda nivåerna** (Admin och bolagets portal): sidomeny 248px, mörk i båda lägena. Gruppetiketter i mono-versaler; aktivt val = ljusare yta + 4px limekant till vänster.
 - **En sidmall**: eyebrow (mono 11px, versaler) → titel (Space Grotesk 30px) → ingress → åtgärder till höger → flikar. Högst två flikrader.
 - **En plats per uppgift.** Detaljer öppnas i sidopanel 460px; modal bara för bekräftelse.
-- **Väntande** syns som räknare i menyn och som lista på Översikt.
+- **Väntande** syns som räknare i menyn och som lista på Översikt. Räknarna finns (#676): vid Dealers (dealers där klipp saknas) och vid Bolag och spelbord (spelbord som inte är spelbara).
 - **Låsta val** (utanför bolagets tilldelning) visas avstängda med "Låst av Scoutgaming".
 - **Förhandsvisning per enhet** (dator, platta, mobil) där spelbord och miljö visas.
 - **Mobil**: menyn blir en låda, 16px gutter.

@@ -113,6 +113,11 @@ const KEY_REFUSALS: Record<string, string> = {
   partner_key_operator_schema_pending: 'Nyckeln skapades inte: databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012). Nycklar kan skapas när Scoutgaming har lagt in den.',
   partner_key_operator_invalid: 'Nyckeln skapades inte: bolaget finns inte eller är avstängt. Välj ett aktivt bolag och försök igen.',
 };
+// Taldrift per dealer: the one fixed code moving-drift answers for a dealer without a drift profile.
+const DRIFT_REFUSALS: Record<string, string> = {
+  drift_unknown_dealer: 'Den här dealern har ingen driftprofil för rörligt tal.',
+};
+const REFUSALS: Record<string, string> = { ...KEY_REFUSALS, ...DRIFT_REFUSALS };
 export class StudioAdminUiError extends Error {
   readonly status: number;
   readonly code?: string;
@@ -127,19 +132,21 @@ export class StudioAdminUiError extends Error {
       501: 'Funktionen är ännu inte ansluten till den här administrationsytan.',
       503: 'Tjänsten är tillfälligt otillgänglig. Inga lokala ersättningsdata används.',
     };
-    const known = typeof code === 'string' && Object.hasOwn(KEY_REFUSALS, code) ? code : undefined;
-    super(known ? KEY_REFUSALS[known] : messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
+    const known = typeof code === 'string' && Object.hasOwn(REFUSALS, code) ? code : undefined;
+    super(known ? REFUSALS[known] : messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
     this.name = 'StudioAdminUiError';
     this.status = status;
     if (known) this.code = known;
   }
 }
-/** The fixed refusal code of a failed apikeys/create, when it is one Admin explains; never other text. */
-async function keyRefusal(method: Method, action: string, response: Response): Promise<string | undefined> {
-  if (method !== 'POST' || action !== 'apikeys/create' || ![422, 503].includes(response.status)) return undefined;
+/** The fixed refusal code of a failed apikeys/create or moving-drift, when it is one Admin explains; never other text. */
+async function refusalCode(method: Method, action: string, response: Response): Promise<string | undefined> {
+  const codes = method === 'POST' && action === 'apikeys/create' && [422, 503].includes(response.status) ? KEY_REFUSALS
+    : action === 'moving-drift' && response.status === 422 ? DRIFT_REFUSALS : null;
+  if (!codes) return undefined;
   try {
     const body = object(await response.json());
-    return typeof body?.code === 'string' && Object.hasOwn(KEY_REFUSALS, body.code) ? body.code : undefined;
+    return typeof body?.code === 'string' && Object.hasOwn(codes, body.code) ? body.code : undefined;
   } catch { return undefined; }
 }
 
@@ -186,8 +193,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
   async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor, query?: Record<string,string>) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
-    if (query !== undefined && (method!=='GET'||action!=='shared-table-proof'||!object(query)||!query.roomId
-      || Object.keys(query).some(key=>!['roomId','shoeId'].includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
+    // Läsfrågor: delad bordskontroll (roomId, shoeId) och taldrift per dealer (dealerId).
+    const queryKeys = action === 'shared-table-proof' ? ['roomId','shoeId'] : action === 'moving-drift' ? ['dealerId'] : [];
+    if (query !== undefined && (method!=='GET'||!object(query)||!query[queryKeys[0]]
+      || Object.keys(query).some(key=>!queryKeys.includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
@@ -203,7 +212,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
     }
     const response = await send(method, action, body, signal, query);
-    if (!response.ok) throw new StudioAdminUiError(response.status, await keyRefusal(method, action, response));
+    if (!response.ok) throw new StudioAdminUiError(response.status, await refusalCode(method, action, response));
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
       || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
