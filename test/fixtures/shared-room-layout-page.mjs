@@ -9,6 +9,12 @@ import { pathToFileURL } from 'node:url';
 import { build } from '../../apps/web/tools/player-ui-build.mjs';
 import { decorateGameEntryHtml } from '../../services/game/public/game-entry-contract.mjs';
 import { withSharedRoomEntry } from '../../services/game/shared-room-entry.mjs';
+import { defaultBlackjackAutoScale, defaultBlackjackTableGeometry } from '../../packages/presentation/contracts/composition-settings.mjs';
+
+// ?plane=table: published table geometry with automatic landing, card size and chips in both formats, so the
+// cards and the seats stand on the dealer's filmed boxes as on a table drawn after the landing template.
+const tableGeometry = defaultBlackjackTableGeometry('00000000-0000-4000-8000-0000000000aa');
+for (const format of ['mobile', 'desktop']) tableGeometry[format].autoScale = defaultBlackjackAutoScale();
 
 export const roomId = 'layout-room', actorId = 'layout-alice';
 const selection = { lane: 'layout-lane', dealer: 'paow', localDealer: 'paow', presentation: 'local', operator: 'fixture',
@@ -24,9 +30,18 @@ const pageScript = `
   let restore,sendDelay=0;const connection=new AbortController(),sent=[];
   class Player{dispose(){}}
   // ?plane=film: a composition plane without table geometry, the film contain-fitted to the scene (no Admin boxes).
-  const plane=new URLSearchParams(location.search).get('plane')==='film';
+  const mode=new URLSearchParams(location.search).get('plane'),plane=mode==='film';
+  // ?plane=table: the composed canvas (1920x1080, a phone 1080x1920) contain-fitted to the scene, as the compositor
+  // draws it; the dealer plane is that canvas's 1080x1920 stage, which places the cards and the seats.
+  const stage=()=>{const scene=document.getElementById('scene').getBoundingClientRect(),phone=matchMedia('(max-width: 860px)').matches;
+    const dims=phone?[1080,1920]:[1920,1080],fit=Math.min(scene.width/dims[0],scene.height/dims[1]),s=Math.min(dims[0]/1080,dims[1]/1920);
+    return {layout:phone?'mobile':'desktop',x:(scene.width-dims[0]*fit)/2+(dims[0]-1080*s)/2*fit,y:(scene.height-dims[1]*fit)/2+(dims[1]-1920*s)/2*fit,scale:s*fit};};
+  const tableGeometry=${JSON.stringify(tableGeometry)};
   const composition=plane?{referencePlane(){const scene=document.getElementById('scene').getBoundingClientRect(),scale=Math.min(scene.width/1080,scene.height/1920);
-      return{x:(scene.width-1080*scale)/2,y:(scene.height-1920*scale)/2,scale,sourceAligned:true};},onGeometryChange:()=>()=>{},setBackground(){},setTable(){},close(){}}:null;
+      return{x:(scene.width-1080*scale)/2,y:(scene.height-1920*scale)/2,scale,sourceAligned:true};},onGeometryChange:()=>()=>{},setBackground(){},setTable(){},close(){}}
+    :mode==='table'?{referencePlane(){const {layout,...dealerPlane}=stage();
+      return{tableGeometry,tableLayout:layout,tableId:tableGeometry.tableId,rect:{x:dealerPlane.x,y:dealerPlane.y,width:1080*dealerPlane.scale,height:1920*dealerPlane.scale},dealerPlane};},
+      onGeometryChange:()=>()=>{},setBackground(){},setTable(){},close(){}}:null;
   const app=await mountSharedRoomApp({
     fetchImpl:async url=>{const query=new URL(url,location.origin).searchParams;
       return Response.json({owner:'web',roomId:selection.roomId,configVersion:query.get('configVersion'),windowId:query.get('windowId'),
@@ -35,7 +50,7 @@ const pageScript = `
     createSocket:options=>{restore=options.restoreSnapshot;return{start(){},stop(){},reconnect(){},status:()=>({state:'running'})};},
     createPresentation:async options=>mountSharedRoomPresentation({...options,createComposition:()=>composition,
       loadAdapters:async()=>[{PerformancePlayer:Player},{createLocalPresentation:async media=>({state(){},prepareSequence(){},present:async()=>true,close(){},start(){media.onIdle();}})},{createLocalCardOverlay}]})});
-  window.fixture={app,sent,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),delay:ms=>{sendDelay=ms;},ready:true};
+  window.fixture={app,sent,stage,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),delay:ms=>{sendDelay=ms;},ready:true};
 `;
 
 export function tableSnapshot({ version = 1, own = [], others = {}, phase = 'bets', bets = {}, round = null, plan = null, settings = {}, lastSettlement = null } = {}) {

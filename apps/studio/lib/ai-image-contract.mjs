@@ -18,6 +18,29 @@ export const AI_IMAGE_REFERENCE_MAX_EDGE = 1536;
 export const AI_IMAGE_REFERENCE_FILE_MAX_BYTES = 8*1024*1024;
 // The scene's desktop format; phones show its centre strip.
 export const AI_BACKGROUND_SIZE = Object.freeze({width:1920,height:1080});
+// Camera contract for every AI background (Jakob 2026-10-29): the image is a
+// backdrop plate shot from the dealer camera, whatever the theme. A room seen
+// from above or as a montage works as an illustration but not behind a table
+// graphic, which then floats. The theme (preset, staff text, inspiration photo)
+// sets materials, colours and peripheral props only, never these values.
+// Shares of the image height (0 = top), measured against production's Privé
+// backdrop and the default scene template's table (compositor/geometry.js).
+export const AI_BACKGROUND_CAMERA = Object.freeze({
+  // A level camera at the dealer's eye height puts the vanishing point, and so
+  // the horizon, near the middle of the frame. The Privé backdrop's floor
+  // lines converge there; 45-50 % keeps the floor receding, not seen from above.
+  horizon:Object.freeze({min:.45,max:.5}),
+  // Where the back wall meets the floor in the outer columns. The default table
+  // graphic (desktop x 656-1264, top at y 43) ends its outer rail at y 644 at
+  // the column edges and y 724 at the front: 60-67 %. The Privé backdrop shows
+  // floor from about 55-60 % at the image edges. At 60 % the junction hides
+  // behind the rail's ends, and the floor is visible from there to the bottom
+  // edge, so the table graphic stands on it.
+  floorLine:.6,
+  // Sconces and lamps at the dealer's head and shoulder height: the Privé
+  // backdrop's wall lights span 7-28 % of the height, beside the dealer.
+  lights:Object.freeze({min:.1,max:.35}),
+});
 // Presets match the generic backgrounds. "Fri" sends only the staff text.
 export const AI_IMAGE_PRESETS = Object.freeze([
   // Jakob 2026-10-29: bolder styles first; the earlier four stay.

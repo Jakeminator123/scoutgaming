@@ -17,15 +17,18 @@ import {WorkspaceTool} from './workspace-tools';
 import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
 import {RoomPicture} from './room-picture';
+import {RoomSettingsWarning,RoomStateChip} from './room-settings-warning';
 import {DealerAvatar,DealerFaces} from './dealer-identity-portrait';
 import {ControlResourceLifecycle} from '../../../../components/control-resource-lifecycle';
 import {PartnerJournal} from '../../../../components/partner-journal-loader.mjs';
+import {TrashPermanentDelete} from './permanent-delete';
 
 type Props={page:'companies'|'company'|'room';id:string;active:boolean;disabled:boolean;onChanged:()=>void};
 type Operator=Catalog['administration']['operators'][number];type Room=Catalog['administration']['rooms'][number];
 // Status chips in the direction's tones: live (öppet, aktivt, publicerat), warn (pausat, avstängt) and the
 // neutral pair for a draft or the trash (hollow dot), never the error tone for an ordinary state.
-const stateChip=(room:Room)=><Chip tone={room.state==='live'?'live':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip>;
+// An open room without published game settings reads "förbereds" (room-settings-warning.tsx).
+const stateChip=(room:Room)=><RoomStateChip room={room}/>;
 const publishedChip=(room:Room)=>room.published?<Chip tone="live">publicerat</Chip>:<Chip tone="draft">inte publicerat</Chip>;
 const operatorChip=(operator:Operator)=><Chip tone={operator.archivedAt?'off':operator.status==='active'?'live':'warn'} dot>{operator.archivedAt?'i papperskorgen':operator.status==='active'?'aktivt':'avstängt'}</Chip>;
 const companyHref=(operator:Pick<Operator,'id'>,flik='tilldelning')=>`/admin/companies/${encodeURIComponent(operator.id)}?flik=${flik}`;
@@ -76,7 +79,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     ...(withOperator?[{id:'operator',header:'Bolag',sort:(room:Room)=>operatorName(room.operatorId),cell:(room:Room)=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>}]:[]),
     {id:'dealers',header:'Dealer',sort:room=>room.dealers.map(dealer=>dealer.name).join(', '),cell:room=><DealerFaces dealers={room.dealers.map(dealer=>({id:dealer.id,label:dealer.name}))}/>},
     {id:'scene',header:'Scenmall',sort:room=>laneLabel(room.compositionId),cell:room=>laneLabel(room.compositionId)},
-    {id:'state',header:'Läge',sort:room=>room.state,cell:stateChip},
+    {id:'state',header:'Läge',sort:room=>room.state,cell:room=><span className="grid justify-items-start gap-1">{stateChip(room)}<RoomSettingsWarning room={room} compact/></span>},
     {id:'published',header:'Publicerat',sort:room=>room.published?1:0,cell:publishedChip},
     {id:'open',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:room=><Link className={buttonVariants({size:'sm'})} href={roomHref(room)}>Öppna</Link>},
   ];
@@ -135,6 +138,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         <Sheet open={Boolean(restoring)} title={'Återställ hos '+(restoring?.name??'bolaget')} description="Spelbordet kommer tillbaka pausat." onClose={()=>navigate(trashHref())}>
           {restoring&&<RoomTrash key={restoring.id} operatorId={restoring.id} disabled={disabled} onChanged={changed}/>}
         </Sheet>
+        <TrashPermanentDelete disabled={disabled} onChanged={changed}/>
       </div>}
     </HubPage>;
   }
@@ -196,6 +200,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     </>}>
     <Tabs items={adminRoomTabs} active={tab}/>
     {status}
+    {room&&tab!=='spel'&&<RoomSettingsWarning room={room} className="mb-4"/>}
     {room&&operator&&<>
       {tab==='utseende'&&<RegisteredStudio mode="room" section="appearance" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed} onRoomStatus={setRoomStatus}/>}
       {tab==='dealer'&&<Card title="Dealer" aside={plural(room.dealers.length,'dealer','dealers')+' i spelbordets scenmall'}>

@@ -13,6 +13,7 @@ export const AI_IMAGE_REFERENCE_MAX_BYTES: number;
 export const AI_IMAGE_REFERENCE_MAX_EDGE: number;
 export const AI_IMAGE_REFERENCE_FILE_MAX_BYTES: number;
 export const AI_BACKGROUND_SIZE: {readonly width:number;readonly height:number};
+export const AI_BACKGROUND_CAMERA: {readonly horizon:{readonly min:number;readonly max:number};readonly floorLine:number;readonly lights:{readonly min:number;readonly max:number}};
 export const AI_IMAGE_PRESETS: readonly {readonly id:AiImagePresetId;readonly label:string}[];
 export function sha256Hex(text:string):string;
 export function aiPlacementHash(composition:Pick<CompositionSettings,'mobile'|'desktop'>):string;
