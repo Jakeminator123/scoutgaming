@@ -26,6 +26,9 @@ export function filterEntries(entries:Entry[],query:string) {
   return words.length?entries.filter(entry=>{const text=(entry.label+' '+entry.hint+' '+entry.group).toLocaleLowerCase('sv');return words.every(word=>text.includes(word));}):entries;
 }
 
+// Webbläsaren skickar en stängd dialogs close-händelse först vid nästa bildruta. Har paletten öppnats igen
+// emellan (Enter hoppar, Ctrl+K direkt efter) får den sena händelsen inte stänga den nya paletten, så
+// onClose gör bara något när dialogen verkligen är stängd.
 export function CommandPalette() {
   const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[active,setActive]=useState(0);
   const [catalog,setCatalog]=useState<Catalog|null>(null),[failed,setFailed]=useState(false);
@@ -55,7 +58,7 @@ export function CommandPalette() {
   useEffect(()=>{list.current?.querySelector(`[data-index="${current}"]`)?.scrollIntoView({block:'nearest'});},[current]);
   const go=(entry:Entry|undefined)=>{if(!entry)return;setOpen(false);navigate(entry.href);};
   const groups=[...new Set(entries.map(entry=>entry.group))];
-  return <dialog ref={dialog} aria-label="Sök i Admin" onCancel={event=>{event.preventDefault();setOpen(false);}} onClose={()=>setOpen(false)} onClick={event=>{if(event.target===event.currentTarget)setOpen(false);}}
+  return <dialog ref={dialog} aria-label="Sök i Admin" onCancel={event=>{event.preventDefault();setOpen(false);}} onClose={event=>{if(!event.currentTarget.open)setOpen(false);}} onClick={event=>{if(event.target===event.currentTarget)setOpen(false);}}
     className="mx-auto mt-[12vh] w-[min(620px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-sg-border bg-sg-surface p-0 text-sg-text shadow-2xl backdrop:bg-[rgba(15,16,18,.5)] backdrop:backdrop-blur-[2px] open:animate-in open:fade-in-0 open:zoom-in-95 open:duration-150">
     {open&&<>
       <div className="flex items-center gap-2.5 border-b border-sg-line-2 px-4"><Search className="size-4 text-sg-faint" aria-hidden="true"/>
