@@ -2,8 +2,8 @@ import {useEffect,useState} from 'react';
 import {Building2,LayoutGrid,Plus,Presentation,Table2,Upload,UserRound,Users} from 'lucide-react';
 import {Bar,BarChart,CartesianGrid,XAxis,YAxis} from 'recharts';
 import Link from '../../../runtime/navigation';
-import {HubPage,Card,Chip,Row,Empty,KV} from '../ui/hub';
-import {buttonVariants,cn,formatNumber,Loading,plural,Stat} from '../ui/kit';
+import {HubPage,Card,Chip,Row,Empty,KV,AsideLink} from '../ui/hub';
+import {buttonVariants,cn,Footnote,formatNumber,Loading,plural,Stat,textLinkClass} from '../ui/kit';
 import {ChartContainer,ChartTooltip,ChartTooltipContent} from '../ui/chart';
 import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
 import {dealerCoverage,dealerStill} from '../../lib/dealer-coverage.mjs';
@@ -92,7 +92,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
           {data&&!pending.length&&<Empty chip={null} title="Inget väntar" text="Alla dealers har sina klipp och alla spelbord är publicerade."/>}
           {pending.length>0&&<div className="grid">{pending.map(row=><Row key={row.type+row.title} chip={<Chip tone={row.kind}>{row.type}</Chip>} title={row.title} text={row.text} href={row.href}/>)}</div>}
         </Card>
-        {registry&&<Card title="Bolag och spelbord" aside={<Link href="/admin/companies" className="font-semibold text-sg-accent-text no-underline hover:underline">Alla →</Link>}>
+        {registry&&<Card title="Bolag och spelbord" aside={<AsideLink href="/admin/companies">Alla</AsideLink>}>
           {!activeOperators.length?<Empty chip={null} title="Inga aktiva bolag" action={<Link className={buttonVariants()} href="/admin/companies?view=create">Nytt bolag</Link>}/>:<div className="grid gap-3 md:grid-cols-2">
             {activeOperators.map(operator=>{const mine=rooms.filter(room=>room.operatorId===operator.id);return <div key={operator.id} className="rounded-xl border border-sg-line-2 bg-sg-surface-2 p-4">
               <div className="mb-2 flex items-center justify-between gap-2"><Link className="font-semibold text-sg-text no-underline hover:underline" href={`/admin/companies/${encodeURIComponent(operator.id)}`}>{operator.name}</Link><Chip>{operator.packageRevision===null?'ingen tilldelning':`version ${operator.packageRevision}`}</Chip></div>
@@ -109,13 +109,13 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/companies?tab=spelbord&view=create"><Table2 aria-hidden="true"/>Nytt spelbord</Link>
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link>
         </div></Card>
-        {data&&dealers.length>0&&<Card title="Dealers" aside={<Link href="/admin/dealers" className="font-semibold text-sg-accent-text no-underline hover:underline">Alla →</Link>}>
+        {data&&dealers.length>0&&<Card title="Dealers" aside={<AsideLink href="/admin/dealers">Alla</AsideLink>}>
           <ul className="m-0 grid list-none gap-2.5 p-0">{dealers.slice(0,5).map(dealer=>{const coverage=dealerCoverage(data.project,data.inventory,dealer.id);return <li key={dealer.id}><Link href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`} className="flex items-center gap-3 rounded-lg text-sg-text no-underline hover:bg-sg-surface-2">
             <DealerAvatar dealer={dealer} still={dealerStill(data.project,data.inventory,dealer.id)} size={36}/><span className="min-w-0 flex-1 truncate font-semibold">{dealer.label}</span><Chip tone={coverage.complete?'ok':'warn'} dot>{coverage.complete?'redo':'klipp saknas'}</Chip></Link></li>;})}</ul>
         </Card>}
-        <Card title="Spelhändelser" aside={<Link href="/admin/system?flik=drift" className="font-semibold text-sg-accent-text no-underline hover:underline">System →</Link>}>
+        <Card title="Spelhändelser" aside={<AsideLink href="/admin/system?flik=drift">Drift</AsideLink>}>
           {overview.status==='loading'&&<Loading label="Läser spelhändelser…" rows={4}/>}
-          {overview.status==='unavailable'&&<Empty title="Inte anslutet för din roll" text="Siffrorna kräver administratörsbehörighet; drift och skor finns under System › Drift."/>}
+          {overview.status==='unavailable'&&<Empty title="Inte anslutet för din roll" text="Siffrorna kräver administratörsbehörighet. Drift och skor finns under System, fliken Drift."/>}
           {overview.status==='ready'&&(tx.length?<ChartContainer config={txConfig} className="aspect-auto h-56 w-full" aria-label="Antal journalhändelser per typ">
             <BarChart accessibilityLayer data={tx} layout="vertical" margin={{left:0,right:12}}>
               <CartesianGrid horizontal={false}/><XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false}/>
@@ -126,7 +126,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
         </Card>
         <Card title="Så hänger det ihop">
           <KV items={[['Admin','skapar och tilldelar'],['Bolaget','väljer inom tilldelningen'],['Spelaren','ser bara det publicerade']]}/>
-          <p className="mb-0 mt-3 text-[12.5px] text-sg-muted">Bolag → tilldelning → spelbord (scenmall, dealer, språk, insatsprofil) → spelet.</p>
+          <Footnote>Varje <Link href="/admin/companies" className={textLinkClass}>bolag</Link> får en tilldelning. Bolagets spelbord har scenmall, dealer, språk och insatsprofil, och det är spelbordet spelaren möter i spelet.</Footnote>
         </Card>
       </div>
     </div>

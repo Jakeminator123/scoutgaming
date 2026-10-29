@@ -2,6 +2,7 @@ import {cloneElement,isValidElement,useId,type ComponentProps,type ReactElement,
 import {cva,type VariantProps} from 'class-variance-authority';
 import {clsx,type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';
+import {ChevronRight} from 'lucide-react';
 
 // The Admin kit: shadcn-style primitives on the --sg-* tokens (light by default, dark with the system
 // setting). Pages build from these and from the layout in hub.tsx; nothing here reads data.
@@ -84,11 +85,21 @@ export function formatNumber(value:number,options?:Intl.NumberFormatOptions) { r
 /** Plain-language plural: plural(1,'scenmall','scenmallar') → "1 scenmall". */
 export function plural(count:number,one:string,many:string) { return `${formatNumber(count)} ${count===1?one:many}`; }
 
-/** Technical identities stay out of names and cards; they live folded at the bottom of an object's page. */
-export function TechnicalDetails({items}:{items:[string,ReactNode][]}) {
-  if(!items.length)return null;
-  return <details className="group mt-8 rounded-xl border border-dashed border-sg-border px-4 py-3 text-[12.5px] text-sg-muted">
-    <summary className={cn('cursor-pointer select-none font-semibold text-sg-muted marker:text-sg-faint hover:text-sg-text',focusRing)}>Tekniska detaljer</summary>
-    <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1.5">{items.map(([key,value])=><div key={key} className="contents"><dt>{key}</dt><dd className="m-0 min-w-0 break-all font-mono text-xs text-sg-text">{value}</dd></div>)}</dl>
+/** A quiet note under a card's content: what the numbers mean or where something else is changed. Write
+ * it as words or real links, never as "A → B" or "X › Y" paths. `className` moves it (e.g. above the content). */
+export function Footnote({children,className}:{children:ReactNode;className?:string}) {
+  return <p className={cn('mb-0 mt-3 text-[12.5px] text-sg-muted',className)}>{children}</p>;
+}
+/** A link inside running text and footnotes. */
+export const textLinkClass='rounded font-semibold text-sg-accent-text underline-offset-2 hover:underline '+focusRing;
+
+/** Folded section at the bottom of a page: technical identities (`items`) or a short secondary action
+ * (`children`). The chevron replaces the browser's marker and turns when the section opens. */
+export function TechnicalDetails({items=[],title='Tekniska detaljer',children,className}:{items?:[string,ReactNode][];title?:ReactNode;children?:ReactNode;className?:string}) {
+  if(!items.length&&!children)return null;
+  return <details className={cn('group mt-8 text-[12.5px] text-sg-muted',className)}>
+    <summary className={cn('inline-flex cursor-pointer select-none list-none items-center gap-1.5 rounded font-medium text-sg-muted hover:text-sg-text [&::-webkit-details-marker]:hidden',focusRing)}><ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-sg-faint transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"/>{title}</summary>
+    {items.length>0&&<dl className="mb-0 ml-5 mt-3 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1.5">{items.map(([key,value])=><div key={key} className="contents"><dt>{key}</dt><dd className="m-0 min-w-0 break-all font-mono text-xs text-sg-text">{value}</dd></div>)}</dl>}
+    {children&&<div className="ml-5 mt-3 grid gap-2">{children}</div>}
   </details>;
 }
