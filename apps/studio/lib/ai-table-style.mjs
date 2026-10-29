@@ -3,6 +3,7 @@
 // check measures) and the words the brief uses. Pure data and text, shared by
 // the route and its tests; nothing here calls a provider.
 import {AI_IMAGE_PRESETS} from './ai-image-contract.mjs';
+import {LANDING_STROKE_CONTRAST_MIN,contrastRatio,parseStroke} from './ai-table-landing-check.mjs';
 
 // look: felt (centre), light (the pool under the dealer's light), rail and its
 // highlight, inlay gradient, trim line, apron gradient, metal (pedestal ring,
@@ -42,14 +43,18 @@ export function aiTableStyle(preset) {
 }
 
 // "Fri" with an inspiration image: the mock-up's felt takes the image's dominant
-// colour, kept dark enough for the box stroke (white) to stand out.
+// colour, darkened until the box stroke (white) has WCAG contrast (3:1, relative
+// luminance, the landing check's measure) against the brightest felt shade, the
+// light pool. A saturated red, blue or yellow keeps its hue.
 export function aiTableLookFromColour({r,g,b}) {
   if (![r,g,b].every(channel=>Number.isInteger(channel)&&channel>=0&&channel<=255)) return null;
-  const luminance=.2126*r+.7152*g+.0722*b,scale=luminance>70?70/luminance:1;
-  const channel=value=>Math.round(value*scale).toString(16).padStart(2,'0');
-  const felt='#'+[r,g,b].map(channel).join('');
-  const light='#'+[r,g,b].map(value=>Math.min(255,Math.round(value*scale*1.6+12)).toString(16).padStart(2,'0')).join('');
-  return {felt,light};
+  const [sr,sg,sb,alpha]=parseStroke(AI_TABLE_STYLES.free.stroke);
+  const shades=scale=>({felt:[r,g,b].map(value=>Math.round(value*scale)),light:[r,g,b].map(value=>Math.min(255,Math.round(value*scale*1.6+12)))});
+  const strokeContrast=colour=>contrastRatio([sr,sg,sb].map((channel,index)=>alpha*channel+(1-alpha)*colour[index]),colour);
+  let look=shades(0);
+  for (let step=100;step>0;step--) { const next=shades(step/100); if (strokeContrast(next.light)>=LANDING_STROKE_CONTRAST_MIN) { look=next; break; } }
+  const hex=colour=>'#'+colour.map(value=>value.toString(16).padStart(2,'0')).join('');
+  return {felt:hex(look.felt),light:hex(look.light)};
 }
 
 /** The brief for one table proposal; the template and request decide every fixed number. */

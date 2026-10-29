@@ -550,8 +550,18 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     const adopted = {...state, snapshot:{...state.snapshot, projectDocument:{...state.snapshot.projectDocument, value:project}}};
     const built = await buildCandidate({...adopted, operatorId:body.operatorId, rows});
     const view = compare({state:adopted, live, gameConfig:live.gameConfig, built});
+    // Samma klick två gånger: inget skiljer sig från live, så inget publiceras (N→N+1 utan ändring).
+    if (!view.changed) invalid('studio_release_unchanged');
     // Ett eget val hos bolaget eller spelbordet skulle dölja mallens standard: då publiceras inget.
     if (body.materials.some(({role, assetId}) => view.nextAreas?.roomChoices?.[role] !== assetId)) invalid('ai_adopt_room_choice');
+    // Ny bredd gäller hela scenmallen. Ett annat öppet spelbord i paketet på samma mall som visar
+    // ett annat bord (eget val) skulle breddas utan att synas i kvittot: då publiceras inget.
+    if (body.tableWidth) {
+      const table = body.materials.find(row => row.role === 'table').assetId;
+      const others = listPackageRooms({administration:state.administration, package:built.candidate, operatorId:body.operatorId})
+        .filter(room => room.id !== body.roomId && room.state === 'live' && room.presentationLaneId === body.compositionId);
+      if (others.some(room => releaseAreas(built.candidate, built.presentation, room, null)?.roomChoices.table !== table)) invalid('ai_adopt_other_room_table');
+    }
     await roomMaterial({snapshot:state.snapshot, candidate:built.candidate, presentation:built.presentation, room:state.room, gameConfig:live.gameConfig});
     if (built.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(built.mediaPreconditions);
     const administration = structuredClone(state.administration);

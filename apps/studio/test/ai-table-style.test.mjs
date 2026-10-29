@@ -6,7 +6,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import {aiImageEnabled,aiImageSetup,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
-import {filmedTableFit,filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
+import {filmedTableFit,filmedTableRequestSize,filmedTableSvg,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
+import {AI_TABLE_STYLES,aiTableLookFromColour} from '../lib/ai-table-style.mjs';
+import {LANDING_STROKE_CONTRAST_MIN,contrastRatio,landingCheck,parseStroke,tableLandingZones} from '../lib/ai-table-landing-check.mjs';
 import {aiPlacementHash} from '../lib/ai-image-contract.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'test',workspaceId:'studio-test'};
@@ -45,4 +47,19 @@ test('table styles colour the 3D mock-up; "Fri" with an inspiration image takes 
   const answer=await (await api().handle(post({...base,preset:'casino'}))).json();
   assert.deepEqual(answer.fit,{dealerId:'paow',placement:aiPlacementHash(composition)});
   assert.deepEqual([answer.images[0].width,answer.images[0].height],[template.canvas.width,template.canvas.height]);
+});
+
+test('"Fri" keeps a saturated inspiration colour but darkens it until the box stroke has 3:1 contrast (relative luminance)',async()=>{
+  const fit=filmedTableFit('paow'),template=filmedTableTemplate('paow',{composition:fit.suggested.composition}),zones=tableLandingZones(template);
+  const rgb=hex=>[1,3,5].map(index=>parseInt(hex.slice(index,index+2),16));
+  const [sr,sg,sb,alpha]=parseStroke(AI_TABLE_STYLES.free.stroke);
+  const strokeOver=colour=>contrastRatio([sr,sg,sb].map((channel,index)=>alpha*channel+(1-alpha)*colour[index]),colour);
+  for (const [name,colour,hue] of [['red',{r:255,g:0,b:0},0],['blue',{r:0,g:0,b:255},2],['yellow',{r:255,g:240,b:0},0],['white',{r:255,g:255,b:255},null]]) {
+    const look=aiTableLookFromColour(colour);
+    for (const shade of ['felt','light']) assert.ok(strokeOver(rgb(look[shade]))>=LANDING_STROKE_CONTRAST_MIN,`${name} ${shade} ${look[shade]}`);
+    if (hue!==null) assert.equal(rgb(look.felt).indexOf(Math.max(...rgb(look.felt))),hue,`${name} keeps its hue: ${look.felt}`);
+    // The rendered mock-up passes the same landing check the server runs on a proposal.
+    const check=await landingCheck(sharp(Buffer.from(filmedTableSvg(template,'surface',{look}))),zones,{stroke:AI_TABLE_STYLES.free.stroke});
+    assert.equal(check.ok,true,`${name}: ${JSON.stringify(check.worst)}`);
+  }
 });

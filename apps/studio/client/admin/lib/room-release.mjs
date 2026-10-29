@@ -63,6 +63,8 @@ const invalidReasons = Object.freeze({
   studio_room_game_config_missing:'Spelbordet saknar publicerade spelinställningar. Publicera spelbordet en gång först.',
   ai_adopt_other_template:'Spelbordet använder en annan scenmall än den bordet ritades för.',
   ai_adopt_room_choice:'Bolaget eller spelbordet har ett eget val som döljer scenmallens standard. Välj materialet under Utseende.',
+  ai_adopt_other_room_table:'Ett annat öppet spelbord hos bolaget på samma scenmall visar ett annat bord och skulle få den nya bredden. Ta bort dess eget bordsval under Utseende eller ändra bredden i scenmallen.',
+  ai_adopt_template_table_misfit:'Ett annat AI-bord i scenmallen är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur mallen eller rita om det först.',
   ai_adopt_template_missing:'Scenmallen finns inte längre.',
   ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
   ai_adopt_table_misfit:'Bordsgrafiken passar inte scenmallens dealers eller placering.',

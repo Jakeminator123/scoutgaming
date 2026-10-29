@@ -193,7 +193,7 @@ test('styles: the bolder presets come first, every preset has a table style, and
   assert.deepEqual(AI_IMAGE_PRESETS.map(row=>row.label),['Mörk lyx','Aggressiv neon','Klassiskt casino','Mörk studio','Varm lounge','Ljus studio','Fri']);
   assert.deepEqual(Object.keys(AI_TABLE_STYLES).sort(),AI_IMAGE_PRESETS.map(row=>row.id).sort());
   for (const [id,style] of Object.entries(AI_TABLE_STYLES)) assert.match(style.stroke,/^rgba\(/,id);
-  assert.deepEqual(aiTableLookFromColour({r:20,g:120,b:60}),{felt:'#0f592c',light:'#249a53'},'kept dark enough for the white box stroke');
+  assert.deepEqual(aiTableLookFromColour({r:20,g:120,b:60}),{felt:'#0d4f28',light:'#218b4b'},'kept dark enough for the white box stroke');
   assert.equal(aiTableLookFromColour({r:300,g:0,b:0}),null);
 });
 

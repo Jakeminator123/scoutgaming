@@ -7,7 +7,7 @@
 import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,retainBlackjackTableGeometry,validateCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetFitsGame} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {aiTableFitsTemplate} from './ai-image-contract.mjs';
+import {aiTableMisfits} from './ai-image-contract.mjs';
 
 export const AI_ADOPT_ACTION = 'adopt-room-material';
 // Fixed reasons, also the server's studio_release_invalid reasons.
@@ -15,6 +15,7 @@ export const AI_ADOPT_REASONS = Object.freeze({
   ai_adopt_template_missing:'Scenmallen finns inte längre.',
   ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
   ai_adopt_table_misfit:'Bordsgrafiken passar inte scenmallens dealers eller placering.',
+  ai_adopt_template_table_misfit:'Ett annat AI-bord i scenmallen är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur mallen eller rita om det först.',
   ai_adopt_invalid:'Valet kunde inte läggas in i scenmallen.',
 });
 export class AiAdoptError extends Error { constructor(code) { super(AI_ADOPT_REASONS[code]??AI_ADOPT_REASONS.ai_adopt_invalid); this.code=code; } }
@@ -62,7 +63,11 @@ export function adoptLayerAssets(project,{compositionId,materials,tableWidth=nul
     retainBlackjackTableGeometry(composition,lane.layers.table.allowed);
     lane.composition=composition;lane.renderer='layered';
   }
-  const table=checked.materials.find(row=>row.role==='table');
-  if (table&&!aiTableFitsTemplate(next.layerAssets.find(row=>row.id===table.assetId),lane).ok) fail('ai_adopt_table_misfit');
+  // The whole template after the change: the new table must fit, and so must every
+  // AI table already allowed there (a new width would leave older ones misfit and
+  // stop the template's next publication for every company that uses it).
+  const table=checked.materials.find(row=>row.role==='table'),misfits=aiTableMisfits([lane],next.layerAssets??[]);
+  if (table&&misfits.some(row=>row.assetId===table.assetId)) fail('ai_adopt_table_misfit');
+  if (misfits.length) fail('ai_adopt_template_table_misfit');
   try { return validateProject(next); } catch { return fail('ai_adopt_invalid'); }
 }

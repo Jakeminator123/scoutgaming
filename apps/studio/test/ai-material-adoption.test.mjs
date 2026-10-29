@@ -16,11 +16,11 @@ import {layerAssetPath} from '../../../packages/presentation/contracts/presentat
 import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
-import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
+import {NATIVE_FILMED_PLANNING_MUTATION,wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {createOperatorPackageApi} from '../lib/operator-package-api.mjs';
 import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
 import {AI_ADOPT_ACTION,AiAdoptError,adoptLayerAssets,validateAdoptMaterials} from '../lib/ai-material-adoption.mjs';
-import {aiImageLabel,aiPlacementHash} from '../lib/ai-image-contract.mjs';
+import {aiImageLabel,aiPlacementHash,aiTableMisfits} from '../lib/ai-image-contract.mjs';
 import {filmedTableFit} from '../lib/filmed-table-template.mjs';
 
 const actor={user:'adopt-admin',role:'admin'};
@@ -87,8 +87,29 @@ async function adoptFixture(t) {
   const body=async(patch={})=>({action:AI_ADOPT_ACTION,operatorId:'north',roomId:id('north-a'),compositionId:lane,
     materials:[{role:'table',assetId:TABLE},{role:'background',assetId:BACKGROUND}],tableWidth:width,
     expectedProjectRevision:(await raw.readDocument('project')).revision,...patch});
-  return {pool,raw,direct,api,lane,id,post,read,body,persisted};
+  return {pool,raw,direct,api,lane,id,post,read,body,persisted,scope,repository};
 }
+// The fixture's helpers for the guards below: more library material (optionally allowed
+// in the template), a published room, and the company's published own choices.
+async function addAssets(f,assets,edit=lane=>lane) {
+  const doc=await f.raw.readDocument('project');
+  await f.raw.saveDocument('project',{value:{...doc.value,layerAssets:[...doc.value.layerAssets,...assets],lanes:doc.value.lanes.map(lane=>lane.id===f.lane?edit(structuredClone(lane)):lane)},
+    expectedRevision:doc.revision,actor:'fixture'});
+}
+async function publishRoom(f) {
+  const view=await f.read();
+  return f.post({action:'publish-room',operatorId:'north',roomId:f.id('north-a'),gameConfig:view.gameConfig,expectedPackageRevision:view.revisions.package,
+    expectedProjectRevision:view.revisions.project,expectedAdministrationRevision:view.revisions.administration,previewToken:view.previewToken});
+}
+async function setBranding(f,edit) {
+  const pack=await f.direct.getCurrentPackage('north');
+  return f.repository.withMutationContext(()=>f.direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,
+    tables:pack.tables,branding:edit(structuredClone(pack.branding))}),[{kind:'presentation-package',value:readPackagePresentation(pack)},NATIVE_FILMED_PLANNING_MUTATION]);
+}
+const BG2='00000000-0000-4000-8000-00000000ad04',GREEN='00000000-0000-4000-8000-00000000ad05',OLD='00000000-0000-4000-8000-00000000ad06';
+const bg2Asset=asset(BG2,'background','AI · Andra'),greenAsset=asset(GREEN,'table','Grön filt');
+// An older AI table drawn for the template's current (default) width.
+const oldAsset=asset(OLD,'table',aiImageLabel('Äldre',{dealerId:'dragan',placement:aiPlacementHash(defaultCompositionSettings())}));
 
 test('one click: the AI table and background are allowed, become the defaults with the fitted width, and the room is published in one transaction',async t=>{
   const f=await adoptFixture(t);
@@ -159,4 +180,67 @@ test('adoption into a scene template is pure: defaults, allowed lists, width and
     assert.throws(()=>adoptLayerAssets(project,input),error=>error instanceof AiAdoptError&&error.code===reason,reason);
   }
   assert.throws(()=>validateAdoptMaterials([{role:'table',assetId:TABLE}],{mobile:.05,desktop:.3}),AiAdoptError);
+});
+
+test('an own choice by the company or the room stops adoption and is never overwritten',async t=>{
+  const f=await adoptFixture(t);
+  await addAssets(f,[bg2Asset],lane=>{lane.layers.background.allowed=[BG2];return lane;});
+  await publishRoom(f);
+  const backgroundOnly={materials:[{role:'background',assetId:BACKGROUND}],tableWidth:null};
+  for (const [label,edit] of [['company',branding=>({...branding,background:BG2})],
+    ['room',branding=>({...branding,roomOverrides:{...(branding.roomOverrides??{}),[f.id('north-a')]:{background:BG2}}})]]) {
+    await setBranding(f,edit);
+    const stable=await f.persisted(),branding=(await f.direct.getCurrentPackage('north')).branding;
+    await assert.rejects(f.post(await f.body(backgroundOnly)),code('studio_release_invalid',422,{reason:'ai_adopt_room_choice'}),label);
+    assert.deepEqual(await f.persisted(),stable,label+': nothing written');
+    assert.deepEqual((await f.direct.getCurrentPackage('north')).branding,branding,label+': the own choice stays');
+    await setBranding(f,branding=>{delete branding.background;if (branding.roomOverrides) delete branding.roomOverrides[f.id('north-a')];
+      if (branding.roomOverrides&&!Object.keys(branding.roomOverrides).length) delete branding.roomOverrides;return branding;});
+  }
+  assert.equal((await f.post(await f.body(backgroundOnly))).ok,true,'without the own choice the same click goes through');
+});
+
+test('a new width is refused when another open room in the package on the same template shows another table',async t=>{
+  const f=await adoptFixture(t);
+  await addAssets(f,[greenAsset],lane=>{lane.layers.table.allowed=[GREEN];return lane;});
+  await publishRoom(f);
+  // north-b (same company, same template) keeps its own table choice: the width would reach it unseen.
+  await setBranding(f,branding=>({...branding,roomOverrides:{...(branding.roomOverrides??{}),[f.id('north-b')]:{table:GREEN}}}));
+  const stable=await f.persisted(),before=readPackagePresentation(await f.direct.getCurrentPackage('north')).lanes.find(lane=>lane.id===f.lane);
+  await assert.rejects(f.post(await f.body({materials:[{role:'table',assetId:TABLE}]})),code('studio_release_invalid',422,{reason:'ai_adopt_other_room_table'}));
+  assert.deepEqual(await f.persisted(),stable,'nothing written');
+  assert.deepEqual(readPackagePresentation(await f.direct.getCurrentPackage('north')).lanes.find(lane=>lane.id===f.lane).composition,before.composition,'north-b keeps its width');
+  // Without a new width the other room is not touched, so a background still goes through.
+  assert.equal((await f.post(await f.body({materials:[{role:'background',assetId:BACKGROUND}],tableWidth:null}))).ok,true);
+});
+
+test('an unpublished settings draft for the room stops adoption and is kept',async t=>{
+  const f=await adoptFixture(t);
+  const configs=createRoomGameConfigApi({repository:f.raw,scope:f.scope});
+  const admin=await f.raw.readDocument('administration'),current=await f.direct.getCurrentPackage('north');
+  await configs.handlers.get('POST /studio/api/admin/room-game-config')({actor,scope:f.scope,body:{action:'save-draft',operatorId:'north',roomId:f.id('north-a'),
+    expectedAdministrationRevision:admin.revision,expectedPackageRevision:current.revision,gameConfig:{language:'sv',limitPreset:'high'}}});
+  const stable=await f.persisted();
+  await assert.rejects(f.post(await f.body()),code('studio_release_invalid',422,{reason:'studio_release_other_changes'}));
+  assert.deepEqual(await f.persisted(),stable);
+  assert.ok((await f.raw.readDocument('administration')).value.roomGameConfigs.some(row=>row.roomId===f.id('north-a')&&row.gameConfig.limitPreset==='high'),'the draft is kept');
+});
+
+test('the same click twice publishes once: the second is studio_release_unchanged and writes nothing',async t=>{
+  const f=await adoptFixture(t);
+  assert.equal((await f.post(await f.body())).ok,true);
+  const stable=await f.persisted();
+  await assert.rejects(f.post(await f.body()),code('studio_release_invalid',422,{reason:'studio_release_unchanged'}));
+  assert.deepEqual(await f.persisted(),stable,'no N→N+1 without a change');
+});
+
+test('a new width that leaves an older AI table in the template misfit is refused',()=>{
+  const project=structuredClone(nativeRoomMaterialFixture({capture:false}).project);
+  project.layerAssets=[...(project.layerAssets??[]),tableAsset,backgroundAsset,oldAsset];
+  const lane=project.lanes[0];lane.layers.table.allowed=[OLD];lane.layers.table.default=OLD;lane.layers.table.enabled=true;
+  assert.deepEqual(aiTableMisfits(project.lanes,project.layerAssets),[],'the older table fits before');
+  assert.throws(()=>adoptLayerAssets(project,{compositionId:lane.id,materials:[{role:'table',assetId:TABLE}],tableWidth:width}),
+    error=>error instanceof AiAdoptError&&error.code==='ai_adopt_template_table_misfit');
+  // A background alone leaves the width, so the older table still fits.
+  assert.equal(adoptLayerAssets(project,{compositionId:lane.id,materials:[{role:'background',assetId:BACKGROUND}]}).lanes[0].layers.table.default,OLD);
 });
