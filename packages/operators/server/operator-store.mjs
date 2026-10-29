@@ -30,6 +30,9 @@ const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system
 const auditActions = new Set(OPERATOR_AUDIT_ACTIONS);
 const tableActions = new Set(PARTNER_TABLE_ACTIONS);
 const requestActions = new Set(PARTNER_REQUEST_ACTIONS);
+// Begäranden per bolag och glidande timme (recordPartnerRequest).
+export const PARTNER_REQUEST_LIMIT = 20;
+export const PARTNER_REQUEST_WINDOW_MS = 60 * 60 * 1000;
 // The draft chain's own rows, read into the journal from operator_branding_drafts.
 const draftActions = new Set(['draft.save', 'draft.restore', 'draft.publish']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
@@ -636,7 +639,9 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   }
   // Partnerns begäran (material, nyckelrotation) är en journalpost och inget annat:
   // ingen konfiguration ändras. Före 022 tillåter journalens CHECK inte åtgärden;
-  // då skrivs ingenting och svaret är 503 studio_migration_required.
+  // då skrivs ingenting och svaret är 503 studio_migration_required. Under bolagets
+  // lås räknas bolagets begäranden den senaste timmen: högst PARTNER_REQUEST_LIMIT,
+  // annars 429 partner_request_limit och inget skrivet.
   async function recordPartnerRequest(input = {}) {
     actorOf(input);
     const operatorId = idText(ownValue(input, 'operatorId'));
@@ -648,6 +653,11 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     return withOperatorLock(async txQuery => {
       await partnerJournalReady(txQuery);
       if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      const recent = await txQuery(`/* operator-store:partner-request-window */
+        SELECT count(*)::integer AS requests FROM croupier_studio.operator_audit_events
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND action = ANY($4::text[]) AND occurred_at_ms > $5`,
+      [operatorId, [...PARTNER_REQUEST_ACTIONS], clock() - PARTNER_REQUEST_WINDOW_MS]);
+      if (recent.length !== 1 || !(Number(recent[0].requests) < PARTNER_REQUEST_LIMIT)) fail('partner_request_limit', 429);
       await auditWrite(txQuery, input, { operatorId, action, resourceType: 'operator', resourceId: operatorId, after: { message } });
       return Object.freeze({ operatorId, action, message });
     });

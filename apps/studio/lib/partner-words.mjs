@@ -15,10 +15,12 @@ export function partnerRoleWord(roleId, fallback = '', language = 'sv') {
 export const PARTNER_PERMISSION_WORDS = Object.freeze({
   sv: Object.freeze({ 'overview.read': 'se översikten', 'tables.read': 'se spelborden', 'tables.configure': 'ändra spelbordens inställningar', 'presentations.read': 'se scenmallar och utseende',
     'presentations.configure': 'ändra spelbordets utseende och publicera', 'players.read': 'se spelare', 'reports.read': 'se ekonomi', 'integrations.read': 'se integration',
-    'team.read': 'se teamet', 'team.invite': 'bjuda in medlemmar', 'team.roles.assign': 'byta roll på medlemmar', 'team.suspend': 'stänga av och återaktivera medlemmar' }),
+    'team.read': 'se teamet', 'team.invite': 'bjuda in medlemmar', 'team.roles.assign': 'byta roll på medlemmar', 'team.suspend': 'stänga av och återaktivera medlemmar',
+    'material.request': 'begära material', 'integration.request': 'begära nyckelrotation' }),
   en: Object.freeze({ 'overview.read': 'see the overview', 'tables.read': 'see the tables', 'tables.configure': 'change table settings', 'presentations.read': 'see scene templates and appearance',
     'presentations.configure': 'change table appearance and publish', 'players.read': 'see players', 'reports.read': 'see finance', 'integrations.read': 'see integration',
-    'team.read': 'see the team', 'team.invite': 'invite members', 'team.roles.assign': 'change member roles', 'team.suspend': 'suspend and reactivate members' }),
+    'team.read': 'see the team', 'team.invite': 'invite members', 'team.roles.assign': 'change member roles', 'team.suspend': 'suspend and reactivate members',
+    'material.request': 'request material', 'integration.request': 'request key rotation' }),
 });
 export function partnerPermissionWord(permission, language = 'sv') {
   return PARTNER_PERMISSION_WORDS[language === 'en' ? 'en' : 'sv'][permission] ?? permission;

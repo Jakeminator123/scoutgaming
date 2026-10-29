@@ -68,8 +68,9 @@ const API_TABLE_WRITES = [
   { id: 'room-state POST', path: 'room-state', action: 'pause', requires: TABLE_WRITE,
     body: { roomId: 'alfa-bord', state: 'pending', expectedState: 'live', expectedPackageRevision: 1 } },
   // Begäran som journalpost kräver Studio-migrering 022 (partner-requests.test.mjs, PGlite).
-  { id: 'request POST material', path: 'request', action: 'material', requires: BRANDING_WRITE, body: { kind: 'material' } },
-  { id: 'request POST key-rotation', path: 'request', action: 'key-rotation', requires: ['integrations.read'], body: { kind: 'key-rotation' } },
+  // Egna behörigheter enligt ADMIN-FORENKLING 5.4: material.request och integration.request.
+  { id: 'request POST material', path: 'request', action: 'material', requires: ['material.request'], body: { kind: 'material' } },
+  { id: 'request POST key-rotation', path: 'request', action: 'key-rotation', requires: ['integrations.read', 'integration.request'], body: { kind: 'key-rotation' } },
 ];
 
 const ROLES = [
@@ -194,8 +195,8 @@ async function prepare(f, write) {
   throw new Error(`okänd åtgärd ${write.action}`);
 }
 
-test('kartan täcker alla tolv behörigheter, alla vyer i menyn och varje vy har en behörighet', () => {
-  assert.equal(PARTNER_PERMISSIONS.length, 12);
+test('kartan täcker alla fjorton behörigheter, alla vyer i menyn och varje vy har en behörighet', () => {
+  assert.equal(PARTNER_PERMISSIONS.length, 14);
   // Låser vyernas behörigheter: en vy som flyttas till fel behörighet i policyn ska fälla provet.
   assert.deepEqual({ ...PARTNER_VIEW_PERMISSIONS }, {
     overview: 'overview.read', rooms: 'tables.read', players: 'players.read', reports: 'reports.read',

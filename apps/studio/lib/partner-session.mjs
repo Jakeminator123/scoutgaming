@@ -97,8 +97,10 @@ function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
   // 503 studio_migration_required: koden väntar på en Studio-migrering (t.ex. 022).
+  // 429 partner_request_limit: bolagets tak för begäranden per timme är nått.
   const reason = status === 409 && [...PARTNER_TEAM_CONFLICTS, ...PARTNER_TABLE_CONFLICTS].includes(error?.reason) ? error.reason
-    : status === 503 && error?.code === 'studio_migration_required' ? error.code : null;
+    : status === 503 && error?.code === 'studio_migration_required' ? error.code
+      : status === 429 && error?.code === 'partner_request_limit' ? error.code : null;
   return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
@@ -572,12 +574,17 @@ async function dealerResponse(prepared, config) {
   return json(savedView(saved), 200, [], { vary: true });
 }
 // Begära material eller nyckelrotation (ADMIN-FORENKLING 5.5): en journalpost i
-// bolagets journal (operator_audit_events), som Admin läser. Inget annat ändras.
-// Material kräver utseendets ändringsrätt, nyckelrotation integrations.read.
-// Före Studio-migrering 022 svarar lagret 503 studio_migration_required.
+// bolagets journal (operator_audit_events). Inget annat ändras. Den enda läsaren i
+// dag är partnerjournalen (`journal`, team.read + team.roles.assign), utan egen
+// etikett för request.* och utan meddelandet; en Admin-läsare av begäranden och
+// etiketterna i journalvyn är en egen UI-PR efter steg C.
+// Behörigheterna följer planen (ADMIN-FORENKLING 5.4): material.request (alla
+// standardroller) och integration.request (Integration-vyn kräver integrations.read).
+// Före Studio-migrering 022 svarar lagret 503 studio_migration_required, och högst
+// PARTNER_REQUEST_LIMIT begäranden per bolag och timme (429 partner_request_limit).
 export const PARTNER_REQUEST_KINDS = Object.freeze({
-  material: Object.freeze({ action: 'request.material', requires: Object.freeze(['presentations.read', 'presentations.configure']) }),
-  'key-rotation': Object.freeze({ action: 'request.key-rotation', requires: Object.freeze(['integrations.read']) }),
+  material: Object.freeze({ action: 'request.material', requires: Object.freeze(['material.request']) }),
+  'key-rotation': Object.freeze({ action: 'request.key-rotation', requires: Object.freeze(['integrations.read', 'integration.request']) }),
 });
 async function requestResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
