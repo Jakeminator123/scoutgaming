@@ -342,7 +342,7 @@ async function roundResultReply(ws, roundId, dealer) {
   if (!text) return;
   ws.resultFor = roundId;
   const id = `x${Date.now().toString(36)}`;
-  const alt = ['dragge', 'paow', 'astrid2'].includes(dealer) ? dealer : null;
+  const alt = ['dragge', 'paow', 'astrid2', ...LOCAL_DEALERS].includes(dealer) ? dealer : null;   // + local dealers (Adebayor): his own voice, not Astrid's pipeline
   let voiced = null;
   if (localQA) voiced = null;
   else if (alt) voiced = hasVoice(alt) && draggeVoiceReady(alt) ? await Promise.race([draggeSay(text, language, ANSWERS, { dealer: alt }).catch(() => null), new Promise(r => setTimeout(() => r(null), VOICE_WAIT_MS))]) : null;
@@ -828,7 +828,7 @@ room.on("connection", (ws) => {
       if(ws.guest&&shared.paused(ws.guest)){send(ws,{t:'notice',text:RESPONSES.support});return;}
       // Dragge, Paow and Astrid 2.0 (a viewer's alternative dealers) answer with their own brain, memory and
       // voice; Astrid keeps her reviewed pipeline below.
-      const alt=['dragge','paow','astrid2'].includes(j.dealer)?j.dealer:null;
+      const alt=['dragge','paow','astrid2',...LOCAL_DEALERS].includes(j.dealer)?j.dealer:null;
       if(text&&alt&&!['privacy','support'].includes(localResponse(text))){
         // Never leave them "thinking": any failure still answers with a reviewed line.
         talkReply(ws,text,alt).catch(()=>{send(ws,{t:'answer',id:`r${Date.now().toString(36)}`,to:ws.name,dealer:alt,text:localizeResponse(RESPONSES.social,shared.language(ws.session))});send(ws,{t:'thinking',on:false,queued:0});});

@@ -457,11 +457,12 @@ function setThinking(on, queued) {
 let ws, tries = 0;
 // While Dragge is chosen, keep his lip-sync GPU awake (it sleeps after 5 quiet minutes); the server
 // sends at most one tiny warm-up job per 4 minutes.
-setInterval(()=>{ if (["dragge", "paow", "astrid2"].includes(dealer.id) && ws?.readyState === 1 && !document.hidden) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); }, 120000);
+const MOVING = ["dragge", "paow", "astrid2", ...(globalThis.LOCAL_DEALERS ?? [])];   // the dealers with a moving lip sync to keep warm
+setInterval(()=>{ if (MOVING.includes(dealer.id) && ws?.readyState === 1 && !document.hidden) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); }, 120000);
 function connect() {
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + `/?session=${encodeURIComponent(tableSession)}`);
   ws.onopen = () => { tries = 0; const n = store.get("astrid.name"); if (n) ws.send(JSON.stringify({ t: "name", name: n }));
-    if (["dragge", "paow", "astrid2"].includes(dealer.id)) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); };   // wakes his lip-sync GPU before the first question
+    if (MOVING.includes(dealer.id)) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); };   // wakes his lip-sync GPU before the first question
   ws.binaryType = "arraybuffer";
   let lipMeta = null;   // a {t:'lip'} piece whose bytes come in the next binary frame
   ws.onmessage = (ev) => {
