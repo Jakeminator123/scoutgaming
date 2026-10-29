@@ -2,7 +2,7 @@
 // i en valuta i taget, med rundor och netto per dag i ett diagram.
 import React, { useState } from 'react';
 import { Activity, ArrowDownLeft, Coins, TrendingUp } from 'lucide-react';
-import { Bars, Card, Chip, Empty, Note, Page, Stat, Tip, TrendChart, fmtInt } from './ui.jsx';
+import { Bars, Card, Badge, Empty, Note, Page, Stat, Tip, TrendChart, fmtInt } from './ui.tsx';
 import { CurrencySwitch } from './overview.jsx';
 import { amountIn, formatMoney, reportCurrency, reportDays, reportFigures, reportsReady, reportsTruncatedNotice, reportsUnavailableReason } from './report-figures.mjs';
 
@@ -23,7 +23,7 @@ export function PartnerReports({ snapshot, copy, language = 'sv' }) {
   return <Page title={copy.reports} intro={t('Hur det går per spelbord: rundor, insatser, utbetalt och netto för avslutade rundor.', 'How each table does: rounds, stakes, payouts and net for settled rounds.')}
     actions={<>{figures ? <CurrencySwitch currencies={figures.currencies} value={currency} onChange={setChosen} label={t('Valuta', 'Currency')} /> : null}
       <div className="seg" role="group" aria-label={t('Period', 'Period')}>{periods.map(([value, label]) => <button key={value} type="button" aria-pressed={days === value ? 'true' : 'false'} onClick={() => setDays(value)}>{label}</button>)}</div></>}>
-    {!ready ? <Empty icon={<Activity size={20} />} title={copy.notConnected} text={reportsUnavailableReason(reports, language)} /> : <>
+    {!ready ? <Empty chip={null} icon={<Activity size={20} />} title={copy.notConnected} text={reportsUnavailableReason(reports, language)} /> : <>
       {figures.truncated ? <Note tone="warn" role="status">{reportsTruncatedNotice(figures, language)}</Note> : null}
       <div className="grid c4 stats">
         <Card><Stat icon={<Activity size={16} />} value={fmtInt(figures.rounds, language)} label={t('rundor', 'rounds')} /></Card>
@@ -55,7 +55,7 @@ export function PartnerReports({ snapshot, copy, language = 'sv' }) {
           <p className="small muted mt">{t('Insats är det spelaren satsat i rundan (dubbling, split, sidoinsats och försäkring ingår); utbetalt är det spelaren fått tillbaka. Demokrediter räknas inte.', 'Stake is what the player wagered in the round (double, split, side bet and insurance included); paid out is what the player got back. Demo credits are not counted.')}</p>
         </Card>
       </div>
-      {figures.mixed ? <p className="small muted"><Chip>{currency}</Chip> {t('Perioden har spel i flera valutor; byt valuta överst. Beloppen räknas aldrig ihop.', 'The period has play in several currencies; switch currency at the top. Amounts are never added together.')}</p> : null}
+      {figures.mixed ? <p className="small muted"><Badge>{currency}</Badge> {t('Perioden har spel i flera valutor; byt valuta överst. Beloppen räknas aldrig ihop.', 'The period has play in several currencies; switch currency at the top. Amounts are never added together.')}</p> : null}
     </>}
   </Page>;
 }

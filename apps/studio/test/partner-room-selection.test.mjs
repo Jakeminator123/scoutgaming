@@ -174,7 +174,7 @@ function actualAppearance(session) {
     const code=transformSync(require('node:fs').readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:name==='PartnerAppearance'?'typescript':'ecmascript',tsx:name==='PartnerAppearance',jsx:name!=='PartnerAppearance'},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
     const local=createRequire(file),module={exports:{}};
     require('node:vm').runInNewContext(code,{module,exports:module.exports,fetch:()=>assert.fail('No server write belongs in a navigation test'),
-      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-choices'?{AppearanceChoices}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
+      require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-choices'?{AppearanceChoices}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.tsx')&&key.startsWith('./')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
   const wrapper=mount('../components/partner/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;

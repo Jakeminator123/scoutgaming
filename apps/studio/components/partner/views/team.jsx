@@ -1,8 +1,9 @@
 // Team: medlemmar, roller, inbjudan, rollbyte, avstängning. Åtgärderna ligger i en
-// åtgärdsmeny (⋯) per medlem med bekräftelse och körs bara genom den serverkontrollerade
-// adaptern (partner-team-loader.mjs). Journalen renderas av laddaren under vyn.
+// åtgärdsmeny (⋯) per medlem; varje åtgärd bekräftas i en ConfirmDialog med konsekvenser och
+// körs bara genom den serverkontrollerade adaptern (partner-team-loader.mjs). Journalen renderas
+// av laddaren under vyn.
 import React, { useState } from 'react';
-import { ActionMenu, Card, Chip, Page, Tip } from './ui.jsx';
+import { ActionMenu, Badge, Card, ConfirmDialog, Page, Rows, Tip } from './ui.tsx';
 import { partnerRoleWord } from '../partner-copy.mjs';
 import { partnerPermissionWord } from '../../../lib/partner-words.mjs';
 
@@ -48,6 +49,7 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
   const [query, setQuery] = useState('');
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
+  const [pending, setPending] = useState(null);
   const members = (Array.isArray(snapshot?.team) ? snapshot.team : []).filter(member => member && typeof member === 'object' && sameOperator(member, operatorId));
   const choices = roleChoices(snapshot, members, operatorId);
   const word = role => partnerRoleWord(role.id, role.label, lang);
@@ -73,21 +75,23 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
     const name = text(member.name) || text(member.id) || '—';
     if (!live) return <span className="faint">—</span>;
     const items = [];
+    // Varje val öppnar bekräftelsen; först "Byt roll", "Stäng av" eller "Återaktivera" där kör anropet.
+    const confirm = (id, label, run, dialog, tone = '') => items.push({ id, label, tone, onSelect: () => setPending({ ...dialog, tone, run }) });
     for (const roleId of live.assignable(member) ?? []) {
       const next = choices.find(role => role.id === roleId) ?? { id: roleId, label: roleId };
-      items.push({ id: `role:${roleId}`, label: t(`Byt roll till ${word(next)}`, `Change role to ${word(next)}`), onSelect: () => void live.role(member, roleId),
-        confirm: { title: t(`Byt roll för ${name}?`, `Change role for ${name}?`), impact: [t(`Ny roll: ${word(next)}.`, `New role: ${word(next)}.`), t('Gäller direkt och loggas i journalen.', 'Applies immediately and is logged in the journal.')], button: t('Byt roll', 'Change role'), cancel: t('Avbryt', 'Cancel') } });
+      confirm(`role:${roleId}`, t(`Byt roll till ${word(next)}`, `Change role to ${word(next)}`), () => void live.role(member, roleId),
+        { title: t(`Byt roll för ${name}?`, `Change role for ${name}?`), consequences: [t(`Ny roll: ${word(next)}.`, `New role: ${word(next)}.`), t('Gäller direkt och loggas i journalen.', 'Applies immediately and is logged in the journal.')], confirmLabel: t('Byt roll', 'Change role') });
     }
-    if (live.canSuspend?.(member)) items.push({ id: 'suspend', tone: 'danger', label: t('Stäng av', 'Suspend'), onSelect: () => void live.status(member, 'suspend'),
-      confirm: { title: t(`Stäng av ${name}?`, `Suspend ${name}?`), impact: [t('Medlemmen kan inte längre logga in i Partnerportalen.', 'The member can no longer sign in to the partner portal.'), t('Loggas i journalen. Kan återaktiveras senare.', 'Logged in the journal. Can be reactivated later.')], button: t('Stäng av', 'Suspend'), cancel: t('Avbryt', 'Cancel') } });
-    if (live.canReactivate?.(member)) items.push({ id: 'reactivate', label: t('Återaktivera', 'Reactivate'), onSelect: () => void live.status(member, 'reactivate'),
-      confirm: { title: t(`Återaktivera ${name}?`, `Reactivate ${name}?`), impact: [t('Medlemmen kan logga in igen med sin roll.', 'The member can sign in again with their role.'), t('Loggas i journalen.', 'Logged in the journal.')], button: t('Återaktivera', 'Reactivate'), cancel: t('Avbryt', 'Cancel') } });
+    if (live.canSuspend?.(member)) confirm('suspend', t('Stäng av', 'Suspend'), () => void live.status(member, 'suspend'),
+      { title: t(`Stäng av ${name}?`, `Suspend ${name}?`), consequences: [t('Medlemmen kan inte längre logga in i Partnerportalen.', 'The member can no longer sign in to the partner portal.'), t('Loggas i journalen. Kan återaktiveras senare.', 'Logged in the journal. Can be reactivated later.')], confirmLabel: t('Stäng av', 'Suspend') }, 'danger');
+    if (live.canReactivate?.(member)) confirm('reactivate', t('Återaktivera', 'Reactivate'), () => void live.status(member, 'reactivate'),
+      { title: t(`Återaktivera ${name}?`, `Reactivate ${name}?`), consequences: [t('Medlemmen kan logga in igen med sin roll.', 'The member can sign in again with their role.'), t('Loggas i journalen.', 'Logged in the journal.')], confirmLabel: t('Återaktivera', 'Reactivate') });
     if (!items.length) return lastAdmin(member)
-      ? <Chip>{t('sista administratören', 'last administrator')}</Chip>
+      ? <Badge>{t('sista administratören', 'last administrator')}</Badge>
       : <span className="faint">—</span>;
-    return <ActionMenu id={`team-actions-${text(member.id)}`} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} items={items} disabled={busy} />;
+    return <ActionMenu id={`team-actions-${text(member.id)}`} name={name} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} actions={items} disabled={busy} small />;
   };
-  const statusChip = status => <Chip tone={status === 'active' ? 'ok' : status === 'invited' ? 'warn' : status === 'suspended' ? 'danger' : ''} dot>{STATUS[lang][status] ?? status ?? '—'}</Chip>;
+  const statusChip = status => <Badge tone={status === 'active' ? 'ok' : status === 'invited' ? 'warn' : status === 'suspended' ? 'danger' : ''} dot>{STATUS[lang][status] ?? status ?? '—'}</Badge>;
   return <Page title={copy?.team ?? t('Team', 'Team')} intro={t('Medlemmar, roller och inbjudningar. Administratör utses bara av Scoutgaming; den sista administratören kan inte stängas av.', 'Members, roles and invitations. Administrators are appointed by Scoutgaming only; the last administrator cannot be suspended.')}>
     <div className="grid main-aside">
       <div className="stack">
@@ -116,15 +120,17 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
       </div>
       <div className="stack">
         <Card title={t('Rollerna', 'The roles')}>
-          <div className="rows">{choices.map(role => <div className="row" key={role.id}>
-            <div><Chip tone={adminRoles.has(role.id) ? 'accent' : ''}>{word(role)}</Chip></div>
+          <Rows>{choices.map(role => <div className="row" key={role.id}>
+            <div><Badge tone={adminRoles.has(role.id) ? 'accent' : ''}>{word(role)}</Badge></div>
             <div>{partnerRoleWord(role.id, '', lang) !== role.id ? null : <div className="title">{role.label}</div>}
               <div className="text">{Array.isArray(role.permissions) ? role.permissions.map(permission => partnerPermissionWord(permission, language)).join(', ') : t('Rättighetsdetaljer saknas.', 'Permission details are unavailable.')}</div>
               {typeof role.delegable === 'boolean' ? <div className="text">{role.delegable ? t('Kan tilldelas av bolagets administratör.', 'May be assigned by the company administrator.') : t('Utses bara av Scoutgaming.', 'Appointed by Scoutgaming only.')}</div> : null}</div>
             <div />
-          </div>)}</div>
+          </div>)}</Rows>
         </Card>
       </div>
     </div>
+    <ConfirmDialog open={Boolean(pending)} title={pending?.title ?? ''} consequences={pending?.consequences ?? []} confirmLabel={pending?.confirmLabel} cancelLabel={t('Avbryt', 'Cancel')}
+      danger={pending?.tone === 'danger'} onCancel={() => setPending(null)} onConfirm={() => { const chosen = pending; setPending(null); chosen?.run(); }} />
   </Page>;
 }
