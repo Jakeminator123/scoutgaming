@@ -136,11 +136,6 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     };
   });
 
-  change('room', ['id','state'], (value, body) => {
-    if (!text(body.id,100) || !['live','preview','pending'].includes(body.state) || !Array.isArray(value.rooms)) fail();
-    const room = value.rooms.find(item => item?.id === body.id); if (!room) fail(404);
-    room.state = body.state;
-  });
   if (typeof canAssignDealer === 'function') change('tier', ['tier','dealer'], async (value, body) => {
     const dealers = await savedDealerSet();
     if (!['classic','high','vip'].includes(body.tier) || !dealers.has(body.dealer) || !Object.hasOwn(value.tiers || {}, body.tier)) fail();

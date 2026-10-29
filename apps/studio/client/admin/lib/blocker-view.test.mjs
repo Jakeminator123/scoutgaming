@@ -7,7 +7,7 @@ const RAW = /[a-z]+_[a-z_]+/;
 const ctx = {roomId:'north-a', operatorId:'north', dealerId:'paow', dealerName:'PAOW', compositionId:'lane-1', language:'sv'};
 // Driftskoder har ingen knapp: inget i Admin åtgärdar dem.
 const NO_ACTION = new Set(['studio_release_unchanged','studio_presentation_runtime_update_required','studio_room_config_storage_missing',
-  'studio_media_registry_unavailable','studio_room_not_found']);
+  'studio_media_registry_unavailable','studio_room_not_found','studio_room_game_config_unavailable']);
 
 test('every blocker code is one Swedish line with a button to the right place and never shows the code', () => {
   for (const code of BLOCKER_CODES) {
@@ -23,6 +23,10 @@ test('every blocker code is one Swedish line with a button to the right place an
   assert.deepEqual(blockerView('studio_room_choices_draft_pending', ctx).action, {label:'Öppna Utseende', href:'/admin/rooms/north-a?flik=utseende'});
   assert.equal(blockerView('studio_presentation_shared_dealer_conflict', ctx).action.href, '/admin/companies/north?flik=tilldelning');
   assert.equal(blockerView('studio_presentation_room_environment_required', ctx).action.href, '/admin/scenes?tab=miljoer&composition=lane-1');
+  // Nytt spelbord: utan spelbord öppnas bolagets journal för utkastet; tilldelningens stopp öppnar tilldelningen.
+  assert.deepEqual(blockerView('studio_room_choices_draft_pending', {operatorId:'north'}).action, {label:'Öppna bolagets journal', href:'/admin/companies/north?flik=journal'});
+  assert.equal(blockerView('studio_presentation_package_too_large', ctx).action.href, '/admin/companies/north?flik=tilldelning');
+  assert.equal(blockerView('native_material_profile_missing', ctx).text, 'Dealern använder PAOW:s landningar (ingen egen filmad profil).');
   for (const unknown of ['studio_secret_detail', '__proto__', undefined]) {
     const view = blockerView(unknown, ctx);
     assert.equal(view.text, 'Något hindrar publiceringen.');assert.equal(view.action, null);

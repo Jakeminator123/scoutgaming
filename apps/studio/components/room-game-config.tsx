@@ -8,8 +8,6 @@ import {blockerView,runBlockerAction} from '../client/admin/lib/blocker-view.mjs
 const profiles=roomLimitProfiles();
 
 type RoomDealer={id:string;name:string};
-// Utkastet är ett mellansteg: Publicera sparar själv, så "utkast krävs" visas aldrig.
-const DRAFT_REQUIRED='studio_room_game_draft_required';
 
 export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
@@ -25,7 +23,8 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
   const [fixing,setFixing]=useState(''),[fixed,setFixed]=useState('');
   const off=disabled||busy||!current||fixing!=='';
   const publication=receipt?.publication,single=dealers.length===1?dealers[0]:null;
-  const blocker=publication&&!publication.ready&&publication.reason!==DRAFT_REQUIRED?blockerView(publication.reason,{roomId,operatorId,dealerId:single?.id,dealerName:single?.name,
+  // Utan utkast prövar servern det som Publicera sparar (#662), så spärren är alltid ett materialskäl.
+  const blocker=publication&&!publication.ready?blockerView(publication.reason,{roomId,operatorId,dealerId:single?.id,dealerName:single?.name,
     language:state.fields.language,materialReason:publication.materialReason}):null;
   // Publicera sparar först när fälten är ändrade eller inget utkast finns; sedan publiceras utkastet om materialet räcker.
   const publishable=Boolean(receipt)&&!state.stale&&(dirty||!receipt?.draft||Boolean(publication?.ready));

@@ -11,7 +11,9 @@ const enc = encodeURIComponent;
 const roomHref = (roomId, flik) => id(roomId) ? '/admin/rooms/' + enc(roomId) + '?flik=' + flik : '/admin/companies';
 const dealerHref = (dealerId, flik) => id(dealerId) ? '/admin/dealers/' + enc(dealerId) + '?flik=' + flik : '/admin/dealers';
 const sceneHref = compositionId => '/admin/scenes?' + new URLSearchParams({tab:'miljoer', ...(id(compositionId) ? {composition:compositionId} : {})});
-const assignmentHref = operatorId => id(operatorId) ? '/admin/companies/' + enc(operatorId) + '?flik=tilldelning' : '/admin/companies';
+const companyHref = (operatorId, flik) => id(operatorId) ? '/admin/companies/' + enc(operatorId) + '?flik=' + flik : '/admin/companies';
+const assignmentHref = operatorId => companyHref(operatorId, 'tilldelning');
+const assignment = ctx => ({label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)});
 const environment = ctx => ({label:'Öppna miljön', href:sceneHref(ctx.compositionId)});
 const environments = Object.freeze({label:'Öppna Miljöer', href:'/admin/scenes?tab=miljoer'});
 const appearance = ctx => ({label:'Öppna Utseende', href:roomHref(ctx.roomId, 'utseende')});
@@ -38,7 +40,8 @@ function material(reason, ctx) {
   if (MEASURE.includes(reason)) return {title:'Tidsmätning', text:'Klippen saknar aktuell tidsmätning.', action:{label:'Mät omätta klipp', href:dealerHref(ctx.dealerId, 'klipp'), run:'measure'}};
   if (SPEECH.includes(reason)) return {title:'Röst och tal', text:'En replik saknar godkänt tal på ' + language(ctx.language) + '.', action:{label:'Öppna Röst och tal', href:dealerHref(ctx.dealerId, 'tal')}};
   if (BANK.includes(reason)) return {title:'Klipp', text:dealer + ' saknar klipp för ett fack.', action:clipMap(ctx)};
-  if (reason === 'native_material_profile_missing') return {title:'Landningar', text:dealer + ' saknar landningar.', action:{label:'Öppna Landningar', href:dealerHref(ctx.dealerId, 'landningar')}};
+  // En dealer utan egen filmad profil ärver PAOW:s (#657).
+  if (reason === 'native_material_profile_missing') return {title:'Landningar', text:'Dealern använder PAOW:s landningar (ingen egen filmad profil).', action:{label:'Öppna Landningar', href:dealerHref(ctx.dealerId, 'landningar')}};
   if (reason === 'native_material_dealer_missing') return {title:'Miljö', text:'Dealern finns inte i miljön.', action:{label:'Öppna miljön', href:sceneHref(ctx.compositionId)}};
   return {title:'Klipp', text:'Ett klipp är tekniskt fel' + (technical[reason] ? ': ' + technical[reason] : '') + '.', action:clipMap(ctx)};
 }
@@ -47,23 +50,33 @@ const reload = {label:'Läs in igen', href:null, run:'reload'};
 const views = {
   studio_presentation_room_environment_required:ctx => ({title:'Miljö', text:'Miljön har flera bakgrunder. Välj en som standard.', action:environment(ctx)}),
   studio_presentation_room_environment_conflict:ctx => ({title:'Miljö', text:'Miljön delas av andra spelbord. Använd en egen miljö för det nya spelbordet.', action:environment(ctx)}),
-  studio_presentation_shared_layer_conflict:ctx => ({title:'Tilldelning', text:'Bolagets tilldelning är äldre än miljön. Publicera tilldelningen igen.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
-  studio_operator_package_missing:ctx => ({title:'Tilldelning', text:'Bolaget har ingen publicerad tilldelning.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
+  studio_presentation_shared_layer_conflict:ctx => ({title:'Tilldelning', text:'Bolagets tilldelning är äldre än miljön. Publicera tilldelningen igen.', action:assignment(ctx)}),
+  studio_operator_package_missing:ctx => ({title:'Tilldelning', text:'Bolaget har ingen publicerad tilldelning.', action:assignment(ctx)}),
+  // Nytt spelbord (presentation-room-api.mjs och snabbskapandet, room-quick-create.mjs).
+  studio_presentation_package_conflict:ctx => ({title:'Tilldelning', text:'Bolagets tilldelning behöver publiceras igen innan ett nytt spelbord kan läggas till.', action:assignment(ctx)}),
+  studio_presentation_package_too_large:ctx => ({title:'Tilldelning', text:'Tilldelningen blir för stor med det här spelbordet.', action:assignment(ctx)}),
+  studio_presentation_lane_incompatible:ctx => ({title:'Miljö', text:'Miljön saknar en spelbar dealer eller bakgrund.', action:environment(ctx)}),
+  environment_dealer:ctx => ({title:'Miljö', text:'Miljön har en annan dealer som standard.', action:environment(ctx)}),
+  no_dealer:() => ({title:'Dealer', text:'Det finns ingen dealer att skapa spelbordet med.', action:{label:'Öppna Dealers', href:'/admin/dealers'}}),
   studio_presentation_game_lane_conflict:() => ({title:'Spelbord', text:'Spelbordet krockar med ett äldre spelbord. Läs in igen.', action:reload}),
   studio_conflict:() => ({title:'Ändrat', text:'Någon annan sparade just. Läs in igen.', action:reload}),
   studio_room_game_config_missing:ctx => ({title:'Spelinställningar', text:'Spelbordet saknar spelinställningar.', action:{label:'Öppna Spelinställningar', href:roomHref(ctx.roomId, 'spel')}}),
-  studio_room_choices_draft_pending:ctx => ({title:'Utseende', text:'Bolaget har ett opublicerat utseendeutkast.', action:{label:'Öppna Utseende', href:roomHref(ctx.roomId, 'utseende')}}),
+  // Utan spelbord (nytt spelbord) publiceras eller slängs utkastet från bolagets journal.
+  studio_room_choices_draft_pending:ctx => ({title:'Utseende', text:'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det först.',
+    action:!id(ctx.roomId) && id(ctx.operatorId) ? {label:'Öppna bolagets journal', href:companyHref(ctx.operatorId, 'journal')} : {label:'Öppna Utseende', href:roomHref(ctx.roomId, 'utseende')}}),
   studio_release_unchanged:() => ({title:'Inget att publicera', text:'Inget skiljer sig från live.', tone:'info', action:null}),
   studio_release_other_changes:ctx => ({title:'Spelbord', text:'Spelbordet har andra opublicerade ändringar. Publicera visar dem.', action:{label:'Publicera', href:roomHref(ctx.roomId, 'utseende')}}),
   ai_table_misfit:ctx => ({title:'Bordsgrafik', text:'Bordsgrafiken är ritad för en annan dealer eller placering.', action:{label:'Skapa nytt bord med AI', href:sceneHref(ctx.compositionId)}}),
   studio_room_activation_blocked:ctx => ({title:'Tillgänglighet', text:'Spelbordet kan inte öppnas än.', action:{label:'Öppna spelbordet', href:roomHref(ctx.roomId, 'tillganglighet')}}),
   composition_assigned:ctx => ({title:'Tilldelning', text:'Miljön är tilldelad ett bolag.', action:{label:'Öppna tilldelningen', href:assignmentHref(ctx.operatorId)}}),
   studio_presentation_runtime_update_required:() => ({title:'Drift', text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', action:null}),
+  studio_room_game_config_unavailable:() => ({title:'Drift', text:'Spelinställningarna kan inte publiceras just nu. Försök igen om en stund.', action:null}),
   studio_room_config_storage_missing:() => ({title:'Drift', text:'Databasen saknar lagringen för spelinställningar. Kontakta drift.', action:null}),
   studio_media_registry_unavailable:() => ({title:'Drift', text:'Medieregistret svarar inte just nu. Försök igen om en stund.', action:null}),
   studio_room_not_found:() => ({title:'Spelbord', text:'Spelbordet är inte öppet hos bolaget eller ingår inte i tilldelningen.', action:null}),
 };
 for (const [alias, to] of [['studio_presentation_shared_dealer_conflict','studio_presentation_shared_layer_conflict'],
+  ['studio_presentation_legacy_package_conflict','studio_presentation_package_conflict'],
   ['studio_presentation_room_rejected','studio_presentation_game_lane_conflict'],['studio_presentation_room_binding_conflict','studio_presentation_game_lane_conflict'],
   ['studio_release_preview_stale','studio_conflict'],['studio_room_restore_blocked','studio_room_activation_blocked']]) views[alias] = views[to];
 

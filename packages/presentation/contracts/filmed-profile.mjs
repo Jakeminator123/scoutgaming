@@ -15,7 +15,9 @@ export function filmedDealTarget(event) {
   return event.to === 'box' && Number.isInteger(event.box) && event.box >= 0 && event.box < 7 ? String(event.box + 1) : null;
 }
 export function validateFilmedDealProfile(profile) {
-  keys(profile, ['version','id','game','source','plane','card','positions','tracks','takes','timingEvidence']);
+  // `inherited` marks PAOW's profile used as another dealer's standard (registry).
+  keys(profile, ['version','id','game','source','plane','card','positions','tracks','takes','timingEvidence',...(object(profile) && 'inherited' in profile ? ['inherited'] : [])]);
+  if (profile.inherited !== undefined && profile.inherited !== 'paow') fail();
   if (profile.version !== 1 || profile.game !== 'blackjack' || !/^[a-z0-9-]{1,100}$/.test(profile.id)
       || !/^[a-z0-9-]{1,100}$/.test(profile.timingEvidence)) fail();
   keys(profile.source,['commit','sources']);

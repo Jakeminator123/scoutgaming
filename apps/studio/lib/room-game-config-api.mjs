@@ -17,6 +17,8 @@ const object=value=>value&&typeof value==='object'&&!Array.isArray(value);
 const exact=(value,keys)=>object(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)&&!['__proto__','constructor','prototype'].includes(value);
 const bindingKey='roomGameConfigVersions';
+// Samma standardval som Admin (room-game-config-client.mjs ROOM_GAME_DEFAULTS).
+const ROOM_GAME_FALLBACK=Object.freeze({language:'en',limitPreset:'prive'});
 const materialReasons=new Set(['native_material_bank_incomplete','native_material_contract_unsupported','native_material_dealer_missing',
   'native_material_frozen_v3_required','native_material_idle_missing','native_material_invalid_publication','native_material_measurement_mismatch',
   'native_material_measurement_missing','native_material_media_limit','native_material_profile_missing','native_material_room_mismatch',
@@ -101,9 +103,12 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     }
     return published;
   }
-  async function receipt(client,saved) {
+  // Utkastet är ett mellansteg (enkel väg §3, klass C): utan utkast prövas materialet för det
+  // som Publicera sparar, det publicerade valet eller standardvalen. Efter en publicering är
+  // materialet för det publicerade valet nyss prövat (`checked`), så det läses inte om.
+  async function receipt(client,saved,checked=null) {
     const published=await publishedConfig(client,saved);
-    const available=saved.draft?await material(saved,saved.draft.gameConfig):{ready:false,reason:'studio_room_game_draft_required'};
+    const available=checked??await material(saved,saved.draft?.gameConfig??published?.gameConfig??ROOM_GAME_FALLBACK);
     return {ok:true,roomId:saved.room.id,operatorId:saved.operator.id,administrationRevision:saved.document.revision,packageRevision:saved.pack.revision,
       draft:saved.draft?{revision:saved.draft.revision,gameConfig:saved.draft.gameConfig}:null,published,
       publication:{ready:available.ready,...(available.reason?{reason:available.reason}:{}),...(available.materialReason?{materialReason:available.materialReason}:{})}};
@@ -139,13 +144,39 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       {roomId:body.roomId,gameConfig:saved.draft.gameConfig,material:resolved.material});
     const drafts=saved.drafts.filter(row=>row.roomId!==body.roomId);
     const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:saved.document.revision,actor:actor.user});
-    return receipt(client,{...saved,pack,document,drafts,draft:null});
+    return receipt(client,{...saved,pack,document,drafts,draft:null},{ready:true});
   }
   handlers.set('POST /studio/api/admin/room-game-config',async context=>{
     trusted(context);const body=intent(context.body);
     return repository.transaction(()=>repository.withTransactionClient(client=>write(client,body,{user:context.actor.user,audit:operatorAuditContext(context.actor)})));
   });
+  // Nytt spelbord med spelinställningar (presentation-room-api.mjs): anroparen äger transaktionen och bolagets
+  // lås, har sparat administrationsdokumentet med spelbordet och skickar paketkandidaten med spelbordet.
+  // En materialupplösning och en paketversion (som room-release.mjs); inget utkast skrivs eller raderas.
+  async function publishNewRoom(client,{operators,operator,room,candidate,expectedPackageRevision,gameConfig},actor) {
+    gameConfig=validateRoomGameConfig(gameConfig);
+    const document=await repository.readDocument('administration');
+    if(!document)fail('studio_storage_unavailable',503);
+    const presentation=readPackagePresentation(candidate);
+    if(!presentation?.lanes.some(row=>row.id===room.presentationLaneId))fail('studio_room_not_found',404);
+    const resolved=await material({operator,document,administration:document.value,pack:candidate,room,presentation},gameConfig);
+    const unavailable=reason=>{throw Object.assign(new StudioStorageError('studio_room_game_material_unavailable',422),isRoomGameMaterialReason(reason)?{materialReason:reason}:{});};
+    if(!resolved.ready)unavailable(resolved.materialReason);
+    let pack;
+    try {
+      ({package:pack}=await operators.publishRoomGameConfig({actor:actor.user,audit:actor.audit,operatorId:operator.id,expectedRevision:expectedPackageRevision,
+        lanes:candidate.lanes,games:candidate.games,tables:candidate.tables,branding:candidate.branding},{roomId:room.id,gameConfig,material:resolved.material}));
+    } catch(error) {
+      // J08 löser om grannrummens material: skälet ur den fasta listan blir materialReason.
+      if(error?.code==='studio_room_game_material_unavailable'&&error.statusCode===422&&error.materialReason===undefined)unavailable(error.reason);
+      throw error;
+    }
+    return {pack,published:await publishedConfig(client,{operator,pack,room})};
+  }
   // Partnerportalens väg: anroparen äger transaktionen, sessionen och bolaget.
   return Object.freeze({handlers,
-    writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);}});
+    writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);},
+    publishNewRoom,
+    // Ett spelbords publicerade spelinställningar (null utan), för omförsök med samma idempotensnyckel.
+    readPublished:(client,{operator,pack,room})=>publishedConfig(client,{operator,pack,room})});
 }

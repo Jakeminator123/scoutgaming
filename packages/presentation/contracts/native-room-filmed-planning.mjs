@@ -1,5 +1,5 @@
 import { validateRoomGameMaterial } from './room-game-config.mjs';
-import { registeredFilmedProfile } from './filmed-profiles/registry.mjs';
+import { filmedProfileOrPaow } from './filmed-profiles/registry.mjs';
 
 export const NATIVE_ROOM_MATERIAL_V2_PREFIX = 'native-film-v2-';
 export const isNativeRoomMaterial = material => typeof material?.revision === 'string' && material.revision.startsWith('native-film-');
@@ -11,7 +11,7 @@ export const nativeRoomMaterialVersion = material => material?.revision?.startsW
 export function nativeRoomFilmedPlanning(material) {
   if (nativeRoomMaterialVersion(material)!==2) return null;
   validateRoomGameMaterial(material,{dealerId:material.dealerId,language:material.language});
-  const profile=registeredFilmedProfile(material.dealerId);
+  const profile=filmedProfileOrPaow(material.dealerId);
   if(!profile||profile.id!==material.film.profileId)throw Error('native_room_film_profile_mismatch');
   const dealerId=material.dealerId;
   const inventory={videos:material.media.map(row=>({...row,available:true,classification:{dealerId}}))};

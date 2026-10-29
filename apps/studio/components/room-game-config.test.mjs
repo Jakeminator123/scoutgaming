@@ -38,7 +38,7 @@ test('every material reason is one Swedish sentence with a button, never a raw c
   ['native_material_measurement_missing',/Klippen saknar aktuell tidsmätning\./,/data-action="blocker-measure"[^>]*>Mät omätta klipp</],
   ['native_material_speech_slot_missing',/En replik saknar godkänt tal på svenska\./,/href="\/admin\/dealers\/paow\?flik=tal"[^>]*>Öppna Röst och tal</],
   ['native_material_bank_incomplete',/PAOW saknar klipp för ett fack\./,/href="\/admin\/dealers\/paow\?flik=klipp"[^>]*>Öppna Klippkartan</],
-  ['native_material_profile_missing',/PAOW saknar landningar\./,/href="\/admin\/dealers\/paow\?flik=landningar"[^>]*>Öppna Landningar</],
+  ['native_material_profile_missing',/Dealern använder PAOW:s landningar \(ingen egen filmad profil\)\./,/href="\/admin\/dealers\/paow\?flik=landningar"[^>]*>Öppna Landningar</],
   ['native_material_take_audio_truncated',/Ett klipp är tekniskt fel: ljudet fortsätter efter klippbytet\./,/>Öppna Klippkartan</],
  ];
  for(const [materialReason,text,action] of expected){
@@ -48,7 +48,8 @@ test('every material reason is one Swedish sentence with a button, never a raw c
  }
 });
 test('a missing draft is no blocker: Publicera saves it, and unknown reasons stay neutral',()=>{
- const draftless=render({ready:false,reason:'studio_room_game_draft_required',draft:null});
+ // Utan utkast prövar servern det som Publicera sparar (#662): kvittot är klart eller har ett materialskäl.
+ const draftless=render({ready:true,draft:null});
  assert.doesNotMatch(draftless,/utkast som|draft_required|Något hindrar/);
  assert.doesNotMatch(draftless,/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
  for(const options of [
