@@ -275,8 +275,12 @@ function takeOperatorSlug(url) {
 function preparePartnerRequest(request, config) {
   if (!config) fail(503);
   const url = new URL(request.url);
-  let operatorSlugValue, journalCursor = null, journalLimit = 50;
+  let operatorSlugValue, journalCursor = null, journalLimit = 50, journalKind = 'all';
   if (partnerAction(url.pathname, config) === 'journal') {
+    // kind=publications: bara publiceringshistoriken (se journalResponse).
+    const kinds = url.searchParams.getAll('kind');
+    if (kinds.length > 1 || kinds.length && kinds[0] !== 'publications') fail(400);
+    if (kinds.length) { journalKind = 'publications'; url.searchParams.delete('kind'); }
     const limits = url.searchParams.getAll('limit');
     if (limits.length > 1 || limits.length && !/^(?:[1-9][0-9]?|100)$/.test(limits[0])) fail(400);
     if (limits.length) { journalLimit = Number(limits[0]); url.searchParams.delete('limit'); }
@@ -336,7 +340,7 @@ function preparePartnerRequest(request, config) {
     if (normalized.headers.get('origin') !== origin || !['same-origin', 'none'].includes(normalized.headers.get('sec-fetch-site') || '')
       || normalized.headers.has('next-action')) fail(403);
   }
-  return { request: normalized, action, operatorSlug: operatorSlugValue, journalCursor, journalLimit };
+  return { request: normalized, action, operatorSlug: operatorSlugValue, journalCursor, journalLimit, journalKind };
 }
 
 function sameOperatorScope(left, right) {
@@ -416,6 +420,20 @@ async function decidedPartnerContext({ session, store, operator, context, member
     } : null,
   };
 }
+// tables.read styr spelbordslistan, som i snapshoten (partner-data.mjs). Utan den
+// bär utseendet bara bolagets val: inga spelbord (namn, scenmall, spel), inga
+// dealerval per spelbord och, i granskningen, bara bolagsradernas ändringar; en
+// tom `affectedRooms` betyder då att spelborden inte visas, inte att inga berörs
+// (en publicering gäller alltid alla bolagets spelbord). Formen är densamma, så
+// klienten (partner-appearance-state.mjs) läser tomma listor som inga spelbord.
+// Spelbordens id som nycklar i branding.roomOverrides hör till utseendet
+// (presentations.read), precis som i snapshotens branding.
+function brandingWithoutTables(view) {
+  if (Object.hasOwn(view, 'reviewToken')) {
+    return { ...view, affectedRooms: [], changes: (view.changes ?? []).filter(row => row.roomId === null) };
+  }
+  return { ...view, rooms: [], roomDealerChoices: {} };
+}
 async function brandingResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const { session, store, operator } = found;
@@ -435,12 +453,16 @@ async function brandingResponse(prepared, config) {
   // ändring kräver både presentations.read och presentations.configure.
   const mayConfigure=decided=>['presentations.read','presentations.configure']
     .every(permission=>allowsWorkspaceResource(decided,permission,{scope:session.scope,operatorId:operator.id}));
+  // tables.read läses om i transaktionen tillsammans med ändringsrätten, så att
+  // svaret efter en ändring följer rollen som den var när ändringen gjordes.
+  let reauthorized=null;
   const reauthorize=async source=>{
     const current=await partnerOperatorContext(prepared,{...config,store:source});
     const decided=await decidedPartnerContext(current);
     if(current.operator.id!==operator.id||current.session.accountId!==session.accountId
       ||current.session.accessClass!==session.accessClass
       ||!sameOperatorScope(decided.scope,session.scope))fail(403);
+    reauthorized=decided;
     return mayConfigure(decided);
   };
   const withWriteContext=async(work,options={})=>{
@@ -474,7 +496,11 @@ async function brandingResponse(prepared, config) {
   // kräver presentations.read, ändring dessutom presentations.configure.
   if (!allowsWorkspaceResource(decided, 'presentations.read', { scope, operatorId: operator.id })) fail(403);
   const canConfigure = mayConfigure(decided);
-  if (prepared.request.method === 'GET') return json({ ...await api.readState({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
+  const mayReadTables = context => allowsWorkspaceResource(context, 'tables.read', { scope: session.scope, operatorId: operator.id });
+  if (prepared.request.method === 'GET') {
+    const view = await api.readState({ operatorId: operator.id });
+    return json({ ...(mayReadTables(decided) ? view : brandingWithoutTables(view)), canConfigure }, 200, [], { vary: true });
+  }
   if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);
   const actionFields={
@@ -487,16 +513,27 @@ async function brandingResponse(prepared, config) {
   if(!Object.hasOwn(actionFields,body.action))fail(400);
   keys(body,actionFields[body.action]);
   const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
-  return json({...saved,canConfigure:true},200,[],{vary:true});
+  return json({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true},200,[],{vary:true});
 }
+// Publiceringshistoriken: bolagets publicerade versioner, utan ändringsinnehåll.
+const PUBLICATION_ACTIONS = Object.freeze(['package.publish']);
+const publicationEntry = entry => { const copy = { ...entry }; delete copy.changes; return copy; };
 async function journalResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const decided = await decidedPartnerContext(found);
   const resource = { scope: decided.scope, operatorId: found.operator.id };
-  if (!allowsWorkspaceResource(decided,'team.read',resource) || !allowsWorkspaceResource(decided,'team.roles.assign',resource)) fail(403);
+  const publications = prepared.journalKind === 'publications';
+  // Hela journalen, med teamets händelser, kräver team.read och team.roles.assign.
+  // kind=publications läses med reports.read, samma behörighet som snapshotens
+  // publiceringar (partner-data.mjs): bara package.publish, utan `changes`.
+  if (publications ? !allowsWorkspaceResource(decided,'reports.read',resource)
+    : !allowsWorkspaceResource(decided,'team.read',resource) || !allowsWorkspaceResource(decided,'team.roles.assign',resource)) fail(403);
   if (typeof found.store.listAuditEvents !== 'function') fail(503);
-  const result = await found.store.listAuditEvents(found.operator.id,{cursor:prepared.journalCursor,limit:prepared.journalLimit});
-  return json({...result,nextCursor:result.nextCursor ? Buffer.from(JSON.stringify(result.nextCursor)).toString('base64url') : null},200,[],{vary:true});
+  const result = await found.store.listAuditEvents(found.operator.id,{cursor:prepared.journalCursor,limit:prepared.journalLimit,
+    ...(publications ? { actions: [...PUBLICATION_ACTIONS] } : {})});
+  // Försvar på djupet: även om lagret skulle lämna andra rader bär svaret bara publiceringar.
+  const entries = publications ? result.entries.filter(entry => PUBLICATION_ACTIONS.includes(entry?.action)).map(publicationEntry) : result.entries;
+  return json({...result,entries,nextCursor:result.nextCursor ? Buffer.from(JSON.stringify(result.nextCursor)).toString('base64url') : null},200,[],{vary:true});
 }
 // Invite links an existing partner account, or creates an invited one (N2.6).
 async function teamResponse(prepared, config) {

@@ -26,6 +26,8 @@ const membershipStatuses = new Set(['active', 'suspended', 'invited']);
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
 const auditActions = new Set(['operator.create', 'role.save', 'membership.create', 'membership.update', 'team.invite', 'team.role', 'team.suspend', 'team.reactivate', 'membership.activate', 'membership.compensate', 'package.publish']);
+// The draft chain's own rows, read into the journal from operator_branding_drafts.
+const draftActions = new Set(['draft.save', 'draft.restore', 'draft.publish']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
 
 function plain(value) {
@@ -435,10 +437,16 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       [operatorId,id,actorId,accessClass,requestedAction,resourceType,resourceId,beforeRevision,afterRevision,clock(),requestId,canonicalStudioJson({before,after})]);
     if (rows.length !== 1 || rows[0].event_id !== id) fail('studio_storage_unavailable');
   }
-  async function listAuditEvents(operatorId, { limit = 50, cursor = null } = {}) {
+  // actions: null reads the whole journal; a list narrows it in SQL to those
+  // actions, so a page and its cursor count only matching rows.
+  async function listAuditEvents(operatorId, { limit = 50, cursor = null, actions = null } = {}) {
     operatorId = idText(operatorId);
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('studio_invalid_data', 400);
     if (cursor !== null && (!plain(cursor) || !Number.isSafeInteger(cursor.atMs) || cursor.atMs < 0 || !uuidPattern.test(cursor.id))) fail('studio_invalid_data', 400);
+    if (actions !== null && !Array.isArray(actions)) fail('studio_invalid_data', 400);
+    const only = actions === null ? null : [...actions];
+    if (only !== null && (!only.length || new Set(only).size !== only.length
+      || only.some(action => !auditActions.has(action) && !draftActions.has(action)))) fail('studio_invalid_data', 400);
     const rows = await query(`/* operator-store:list-audit */
       SELECT environment_id,workspace_id,operator_id,event_id,actor_id,access_class,action,resource_type,resource_id,before_revision,after_revision,occurred_at_ms,request_id,changes
       FROM (
@@ -451,11 +459,12 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       ) journal
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
         AND ($4::bigint IS NULL OR (occurred_at_ms,event_id) < ($4::bigint,$5::text))
-      ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $6`, [operatorId,cursor?.atMs ?? null,cursor?.id ?? null,limit+1]);
+        AND ($7::text[] IS NULL OR action = ANY($7::text[]))
+      ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $6`, [operatorId,cursor?.atMs ?? null,cursor?.id ?? null,limit+1,only]);
     const entries = rows.slice(0,limit).map(row => {
       if (row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId || row.operator_id !== operatorId
         || !uuidPattern.test(row.event_id) || !uuidPattern.test(row.request_id) || !auditClasses.has(row.access_class)
-        || !auditActions.has(row.action) && !['draft.save','draft.restore','draft.publish'].includes(row.action)) fail('studio_corrupt_operator');
+        || !auditActions.has(row.action) && !draftActions.has(row.action) || only !== null && !only.includes(row.action)) fail('studio_corrupt_operator');
       return {id:row.event_id,atMs:integer(row.occurred_at_ms,0,'studio_corrupt_operator',503),actor:idText(row.actor_id,'studio_corrupt_operator',503),
         accessClass:row.access_class,action:row.action,resourceType:row.resource_type,resourceId:idText(row.resource_id,'studio_corrupt_operator',503),
         beforeRevision:row.before_revision === null ? null : integer(row.before_revision,1,'studio_corrupt_operator',503),
