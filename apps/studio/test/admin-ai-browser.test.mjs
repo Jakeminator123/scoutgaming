@@ -61,8 +61,9 @@ async function openFixture(browser,start=dialog(),ready=f=>dialogReady(f,'elin')
     assert.equal(url.origin,origin,'all requests are intercepted; unexpected destinations fail');
     if(request.isNavigationRequest()){
       assert.equal(method,'GET');documents.push(url.pathname+url.search);
-      // Öppna spelrum lämnar Dialogtest med ett dokumentbyte; spelrummet självt ligger utanför provet.
-      if(/^\/admin\/rooms(?:\/|$)/.test(url.pathname))return route.fulfill({contentType:'text/html',body:'<h1>Isolerat spelrum</h1>'});
+      // Öppna spelrum lämnar Dialogtest med ett dokumentbyte; spelrummet (eller spelbordslistan vid
+      // tvetydiga bord) ligger utanför provet.
+      if(/^\/admin\/(?:rooms(?:\/|$)|companies$)/.test(url.pathname))return route.fulfill({contentType:'text/html',body:'<h1>Isolerat spelrum</h1>'});
       assert.ok(appDocument(url.pathname),'unexpected document '+url.pathname);
       return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});
     }
@@ -125,7 +126,7 @@ const reply=(f,dealer,text)=>dialogRegion(f).getByText('Svar för '+dealer+': '+
 async function sendChat(f,text){await chatInput(f).fill(text);await sendButton(f).click();}
 const studioLink=f=>f.page.getByRole('navigation',{name:/^Studio för /}).getByRole('link',{name:'Röst & tal',exact:true});
 const savedNotice=(f,primary)=>f.page.getByRole('status').filter({hasText:'croupier-director: '+primary+' sparad och bekräftad i OpenClaws inställningar.'});
-const roomDocument=f=>f.documents.filter(path=>/^\/admin\/rooms(?:[/?]|$)/.test(path));
+const roomDocument=f=>f.documents.filter(path=>/^\/admin\/(?:rooms(?:[/?]|$)|companies(?:\?|$))/.test(path));
 
 test('Dialogtest and AI-agenter keep context on links and bookmarks, and an accepted dealer change isolates conversations',{skip},()=>withBrowser(async browser=>{
   // Det gamla bokmärket /admin/dealer-agent landar på Dialogtest under dealerns Röst och tal med hela kontexten.
@@ -205,7 +206,8 @@ test('aborted old-dealer chat cannot contaminate a new session, and an unknown d
     const mixed=dialog('elin')+'&table=room-b&room=room-c&operator=other';await move(f,mixed);await dialogReady(f,'elin');
     const studio=new URL(await studioLink(f).getAttribute('href'),origin);assert.deepEqual(studio.searchParams.getAll('table'),['room-a','room-b']);assert.deepEqual(studio.searchParams.getAll('operator'),['operator-a','other']);assert.equal(studio.searchParams.get('room'),'room-c');
     await roomButton(f).click();await f.page.getByRole('heading',{name:'Isolerat spelrum',exact:true}).waitFor();
-    const room=new URL(roomDocument(f).at(-1),origin);assert.deepEqual(room.searchParams.getAll('table'),['room-a','room-b']);assert.deepEqual(room.searchParams.getAll('operator'),['operator-a','other']);assert.equal(room.searchParams.get('room'),'room-c');
+    // Tvetydiga bord väljs aldrig tyst: länken går till bolagets spelbordslista, inte till första bordet.
+    const room=new URL(roomDocument(f).at(-1),origin);assert.equal(room.pathname,'/admin/companies');assert.equal(room.searchParams.get('tab'),'spelbord');assert.deepEqual(room.searchParams.getAll('table'),['room-a','room-b']);assert.equal(room.searchParams.get('room'),'room-c');
     // Modellvalet är globalt: blandade spelbord i adressen ändrar inte vad PATCH gäller.
     const modelsBookmark='/admin/ai/models'+new URL(mixed,origin).search.replace(/^\?flik=tal&verktyg=dialog&?/,'?');await f.page.goto(origin+modelsBookmark);await modelsReady(f);
     assert.deepEqual(new URL(f.page.url()).searchParams.getAll('table'),['room-a','room-b']);assert.equal(new URL(f.page.url()).searchParams.get('room'),'room-c');
