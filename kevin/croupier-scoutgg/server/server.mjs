@@ -726,8 +726,8 @@ async function handleHttp(req, res) {
     res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${desk};`); return; }
   // Kevin 24 Oct: "Runpod is down can you add we currently doing maintance work notification in prod": a banner on the
   // table and the lobby while MAINTENANCE_NOTICE=1 in the env, text from MAINTENANCE_TEXT (maintenance-notice.js)
-  if (p === "/local-dealers.js") { let v = 0, land = null; try { const f = path.join(PUBLIC, "media", "dealers", "adebayor", "v2", "meta.json"); v = Math.round(statSync(f).mtimeMs); land = JSON.parse(readFileSync(f, "utf8")).land ?? null; } catch {}
-    res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.LOCAL_DEALERS=${JSON.stringify(LOCAL_DEALERS)};globalThis.LOCAL_DEALERS_V=${v};globalThis.LOCAL_DEALERS_LAND=${JSON.stringify(land)};`); return; }
+  if (p === "/local-dealers.js") { let v = 0, land = null, idles = null; try { const f = path.join(PUBLIC, "media", "dealers", "adebayor", "v2", "meta.json"); v = Math.round(statSync(f).mtimeMs); const m = JSON.parse(readFileSync(f, "utf8")); land = m.land ?? null; idles = Object.keys(m.picks ?? {}).filter(t => !/^(pos|hole|flip)/.test(t)); } catch {}
+    res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.LOCAL_DEALERS=${JSON.stringify(LOCAL_DEALERS)};globalThis.LOCAL_DEALERS_V=${v};globalThis.LOCAL_DEALERS_LAND=${JSON.stringify(land)};globalThis.LOCAL_DEALERS_IDLES=${JSON.stringify(idles)};`); return; }
   if (p === "/notice.js") { const text = runpodNotice.text(null); res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.

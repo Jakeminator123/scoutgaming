@@ -40,7 +40,7 @@ const ASTRID2_READY = { in: 24, land: { 1: 27, 2: 31, 3: 28, 4: 27, 5: 26, 6: 26
 // Kevin 21 Oct: while the table waits for a player (hit or stand, insurance) only the calm takes play (calm: true):
 // breathing, a deep breath, shoulders, straightening the back, a shift of weight, fingers. Turns of the head, glances,
 // nods and leaning forward are for between rounds and under speech. The server lays the wait chain from these.
-const CALM_IDLE = /^(andas|andasb|djupandetag|fingrar|axlar|rakrygg|vikt|lugnandetag)/;
+const CALM_IDLE = /^(andas|andasb|djupandetag|fingrar|axlar|rakrygg|vikt|lugnandetag|hand)/;
 const calmIdle = id => CALM_IDLE.test(id);
 const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], ['djupandetag', 8, 'ett djupare andetag'],
   ['blickvanster', 6, 'blicken mot spelarna till vänster'], ['blickhoger', 4, 'blicken mot spelarna till höger'],
@@ -123,12 +123,16 @@ export const DEALERS = {
 // his nine takes get even weights so every one shows (nerupp counts as calm: a quiet look down and up; nick is a nod, not calm)
 // Kevin 29 Oct: not many head movements at rest, more hands: the hand and breathing takes carry the weight, the head takes
 // (huvud, the glances, nick, nerupp) are rare and never calm
-const ADEBAYOR_WEIGHTS = { fingrar: 12, andas: 10, lugnandetag: 8, djupandetag: 6, blickvanster: 1, blickhoger: 1, huvud: 1, nerupp: 1, nick: 1 };
+const ADEBAYOR_WEIGHTS = { fingrar: 12, andas: 10, lugnandetag: 8, djupandetag: 6, blickvanster: 1, blickhoger: 1, huvud: 1, nerupp: 1, nick: 1,
+  handtrumma: 10, handflytt: 8, handknapp: 8, handgnid: 8, handstryk: 8, handlyft: 6 };   // the hand takes (pass 11), once built
 const adebayorWeights = idles => idles.map(i => ({ ...i, vikt: ADEBAYOR_WEIGHTS[i.id] ?? i.vikt }));
-const ADEBAYOR_NEW_IDLES = [['lugnandetag', 'andas lugnt'], ['nerupp', 'ser ner och upp igen'], ['nick', 'nickar lätt']];   // axlar, blinkhuvud, blickskon out (Spel-QA 29 Oct: the smile grows to a grin, teeth show, a big turn down)
+const ADEBAYOR_NEW_IDLES = [['lugnandetag', 'andas lugnt'], ['nerupp', 'ser ner och upp igen'], ['nick', 'nickar lätt'],
+  ['handtrumma', 'fingrarna trummar lätt'], ['handflytt', 'händerna flyttas lite'], ['handknapp', 'knäpper händerna och släpper'], ['handgnid', 'tummen gnider pekfingret'], ['handstryk', 'en hand stryker över filten'], ['handlyft', 'lyfter en hand lätt']];
+// only the takes the live build has made (/local-dealers.js from v2/meta.json); a listed clip that does not exist would stall the preload
+const adebayorBuilt = idles => (globalThis.LOCAL_DEALERS_IDLES ? idles.filter(i => globalThis.LOCAL_DEALERS_IDLES.includes(i.id)) : idles);   // axlar, blinkhuvud, blickskon out (Spel-QA 29 Oct: the smile grows to a grin, teeth show, a big turn down)
 if (globalThis.LOCAL_DEALERS?.includes('adebayor')) DEALERS.adebayor = { id: 'adebayor', name: 'Adebayor', label: 'Adebayor (lokal)', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/adebayor.jpg' + V,
   keyed: { still: '/media/dealers/adebayor/v2/vila.png?v=' + (globalThis.LOCAL_DEALERS_V ?? 0) }, layerScale: 1, ready: ADEBAYOR_READY,
-  clips: '/media/dealers/adebayor/v2/', land: ADEBAYOR_READY.land, /* no recorded lines: Astrid's are skipped (unusedLine); his voice is TTS over the moving lip sync */ idles: headMovesRarely(adebayorWeights([...h3IdlesFor('adebayor', 'v2', 1.625, ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud']), ...extraIdles('adebayor', ADEBAYOR_NEW_IDLES)])), handMatte: false, serverGreets: true };   // the server greets his players by name over his idle chain, like Paow and Dragan
+  clips: '/media/dealers/adebayor/v2/', land: ADEBAYOR_READY.land, /* no recorded lines: Astrid's are skipped (unusedLine); his voice is TTS over the moving lip sync */ idles: headMovesRarely(adebayorWeights(adebayorBuilt([...h3IdlesFor('adebayor', 'v2', 1.625, ['andas', 'blickhoger', 'blickvanster', 'djupandetag', 'fingrar', 'huvud']), ...extraIdles('adebayor', ADEBAYOR_NEW_IDLES)]))), handMatte: false, serverGreets: true };   // the server greets his players by name over his idle chain, like Paow and Dragan
 
 function pick() {
   try {
