@@ -89,7 +89,7 @@ export function TeamView({ snapshot, runtime, toast, language = 'sv', copy }) {
     if (!items.length) return lastAdmin(member)
       ? <Badge>{t('sista administratören', 'last administrator')}</Badge>
       : <span className="faint">—</span>;
-    return <ActionMenu id={`team-actions-${text(member.id)}`} name={name} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} actions={items} disabled={busy} />;
+    return <ActionMenu id={`team-actions-${text(member.id)}`} name={name} label={t(`Åtgärder för ${name}`, `Actions for ${name}`)} actions={items} disabled={busy} small />;
   };
   const statusChip = status => <Badge tone={status === 'active' ? 'ok' : status === 'invited' ? 'warn' : status === 'suspended' ? 'danger' : ''} dot>{STATUS[lang][status] ?? status ?? '—'}</Badge>;
   return <Page title={copy?.team ?? t('Team', 'Team')} intro={t('Medlemmar, roller och inbjudningar. Administratör utses bara av Scoutgaming; den sista administratören kan inte stängas av.', 'Members, roles and invitations. Administrators are appointed by Scoutgaming only; the last administrator cannot be suspended.')}>

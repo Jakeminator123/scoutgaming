@@ -39,7 +39,7 @@ Konsumentbevis med `git grep -F <filnamn> -- apps packages services ops tools te
 | `views/integration.jsx` (59) | startadress och bolagets egna nycklar, maskerade (#561) | ja: `partner-operator-workspace.jsx:15` | – | **behåll**; inget i den här planen rör nycklarna (NYCKEL-BOLAG C äger kravhöjningen) |
 | `views/help.jsx` (60) | rollens rättigheter, orden, Begär material som e-postutkast | ja: `partner-operator-workspace.jsx:16` | – | **behåll**; e-postutkastet ersätts av en journalpost i steg C |
 | `views/team.jsx` (130) | team, inbjudan, åtgärdsmeny med bekräftelse, sista-administratör-märket | ja: `partner-operator-workspace.jsx:17` via `partner-team-loader.mjs:176-183` | – | **behåll**; kit-paritet (PR 4) |
-| `views/ui.jsx` (143) | portalens egna primitiver: `Page`, `Crumbs`, `Card`, `Chip`, `Btn`, `Row`, `Empty`, `KV`, `Note`, `Stat`, `Tip`, `Bars`, `TrendChart`, `ActionMenu`, formatering | ja: alla sju vyer | parallellt kit till Admins `client/admin/components/ui/*` | **konvertera**: samma namn och props som Admins kit (PR 4) |
+| `views/ui.jsx` (143; läget före steg 4, nu `views/ui.tsx`) | portalens egna primitiver: `Page`, `Crumbs`, `Card`, `Chip`, `Btn`, `Row`, `Empty`, `KV`, `Note`, `Stat`, `Tip`, `Bars`, `TrendChart`, `ActionMenu`, formatering | ja: alla sju vyer | parallellt kit till Admins `client/admin/components/ui/*` | **konvertera**: samma namn och props som Admins kit (PR 4) |
 | `views/report-figures.mjs` (81) | siffror per valuta och dag ur `snapshot.reports` | ja: `views/overview.jsx:8`, `views/reports.jsx:7` | – | **behåll** |
 
 ### 2.2 Komponenter utanför mappen som portalen använder
