@@ -211,6 +211,18 @@ export function createSharedRoomService({
       return Object.freeze({ binding, dealerId: presentationContext?.dealerId, presentationContext, snapshot });
     }, combined);
   }
+  // Chat admission (review fix): socket authorization and the in-memory client snapshot, without
+  // any SQL lock. The chat route checks membership, round, keys and its rate limit on this first,
+  // so only an admitted question reaches chatContext's locked read.
+  function chatMember(request, { roomId, signal } = {}) {
+    const combined = request?.signal && signal ? AbortSignal.any([request.signal, signal]) : request?.signal ?? signal;
+    return read(async active => {
+      const binding = await access.authorize(request, { roomId, signal: active });
+      active.throwIfAborted(); requireRoomReady(roomId);
+      const snapshot = projectSharedRoomSnapshot(await runtime.coordinator.snapshot(roomId, binding.actorId, { client: true }), binding);
+      return Object.freeze({ binding, snapshot });
+    }, combined);
+  }
   function emitChat(roomId, entry) { requireReady(); channel.emitChat(roomId, entry); }
   function release() {
     if (cleanup) return cleanup;
@@ -262,7 +274,7 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health, command, chatContext, emitChat, withSharedCommittedReceipt, withActiveRoomPresentation,
+  return Object.freeze({ start, close, stop: close, health, command, chatMember, chatContext, emitChat, withSharedCommittedReceipt, withActiveRoomPresentation,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }
 
