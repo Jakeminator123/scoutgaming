@@ -65,8 +65,9 @@ export function Row({ chip, title, text, href, action }: { chip?: ReactNode; tit
 export function Rows({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={clsx('rows', className)}>{children}</div>;
 }
-/** Ärligt tomläge. Standardmärket säger att ytan inte är ansluten; `chip={null}` ger ett vanligt "inget här". */
-export function Empty({ title, text, action, chip = 'Inte anslutet', icon }: { title: ReactNode; text?: ReactNode; action?: ReactNode; chip?: ReactNode | null; icon?: ReactNode }) {
+/** Ärligt tomläge. Inget märke som standard (portalen har två språk); anroparen skickar `chip`,
+ *  till exempel "Inte anslutet"/"Not connected", när ytan inte är ansluten. */
+export function Empty({ title, text, action, chip = null, icon }: { title: ReactNode; text?: ReactNode; action?: ReactNode; chip?: ReactNode | null; icon?: ReactNode }) {
   return <div className="empty">{icon ? <div className="empty-icon" aria-hidden="true">{icon}</div> : null}{chip ? <Badge tone="warn">{chip}</Badge> : null}<h3>{title}</h3>{text ? <p className="small">{text}</p> : null}{action ? <div className="mt">{action}</div> : null}</div>;
 }
 export function KV({ items }: { items: [ReactNode, ReactNode][] }) {
@@ -134,8 +135,8 @@ export function TrendChart({ data, bars, line, height = 240, label }: { data: Re
 export type MenuAction = { id: string; label: ReactNode; tone?: 'danger' | ''; disabled?: string; onSelect: () => void; icon?: ReactNode };
 // Åtgärdsmeny (⋯) per objekt (Radix DropdownMenu). Menyn gör inget själv; onSelect gör anropet
 // eller öppnar anroparens ConfirmDialog. `label` ersätter "Åtgärder för <name>" i andra språk;
-// `disabled` låser hela menyn medan något sparas.
-export function ActionMenu({ name, actions, label, id, disabled = false, small = true }: { name: string; actions: MenuAction[]; label?: string; id?: string; disabled?: boolean; small?: boolean }) {
+// `disabled` låser hela menyn medan något sparas; `small` ger den lilla knappen (standard av, som i Admin).
+export function ActionMenu({ name, actions, label, id, disabled = false, small = false }: { name: string; actions: MenuAction[]; label?: string; id?: string; disabled?: boolean; small?: boolean }) {
   const container = usePortal();
   const text = label ?? `Åtgärder för ${name}`;
   return <Dropdown.Root modal={false}>

@@ -16,6 +16,8 @@ rollen saknar enligt `PARTNER_VIEW_PERMISSIONS`) → `partner-operator-workspace
 - `partner-workspace-context.mjs`: validerar snapshoten mot fel bolag och fixturer.
 - `partner-portal.css`: alla stilar, fästa under `.partner-portal`; färgerna är `--sg-*` ur
   `packages/ui/tokens.css`, och de få egna namnen (diagram, mjuk lime, skugga) heter också `--sg-*`.
+  Typsnittet är `--sg-font-body` (`--sg-next-body`, annars Inter) och `--sg-font-mono`; den
+  gamla reservkedjan med Segoe UI finns kvar bara i bolagslistan (`partner-workspace.module.css`).
 - `views/`: `overview.jsx`, `rooms.jsx` (kort + `components/partner-appearance.tsx` i flikar),
   `players.jsx` (tomläge till steg F), `reports.jsx` (aggregat ur `lib/partner-game-readout.mjs`),
   `team.jsx`, `integration.jsx`, `help.jsx`, sifferhjälpare i `report-figures.mjs` och
