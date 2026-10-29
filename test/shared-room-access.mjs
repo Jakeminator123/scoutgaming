@@ -60,7 +60,7 @@ function fixture({realAuth=false}={}) {
   if(realAuth) {
     const db={prepare(sql){return {async get(...args){trace.push('auth:sql');
       if(sql.includes('FROM player_sessions'))return state.session&&args[0]===sessionId.slice(7)?{player_id:state.session.actorId,source_stamp:null,display_name:null,expires:state.session.expiresAt}:undefined;
-      if(sql==='SELECT status FROM players WHERE id=?')return {status:'active'};
+      if(sql==="SELECT status,to_jsonb(p)->>'operator_id' AS operator_id FROM players p WHERE id=?")return {status:'active',operator_id:null};
       assert.fail('Unexpected auth query: '+sql);
     }};}};
     Object.assign(auth,playerAuth(db,()=>assert.fail('read-only auth cannot create players')));
