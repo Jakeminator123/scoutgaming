@@ -302,8 +302,8 @@ miljöbilden, annars bakgrunden och bordsgrafiken på sin placering för dator.
   sparade scenen för dator (1920 × 1080: bakgrund, bordsgrafik och dealern på
   sin placering) och sparar den som nytt material, "<Miljö> · miljöbild v2".
   Spara utkastet först. Den nya bilden väljs i utkastet. Miljöns äldre
-  exporterade bilder som ingen miljö visar flyttas till **Arkiverat** och kan
-  återställas där; den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
+  exporterade bilder som ingen miljö visar flyttas till materialarkivet (de
+  räknas inte som bakgrund eller bordsgrafik); den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
   designillustration. Insatsprofilen väljer ingen bild.
 - **Lager och placering**: **Spel** (Blackjack eller Roulette) väljer vad
   som förhandsvisas och placeras. **Redigera gemensam miljö** låser upp
