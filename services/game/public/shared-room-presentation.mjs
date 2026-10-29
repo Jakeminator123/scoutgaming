@@ -42,10 +42,17 @@ const stepLate = () => Object.assign(new DOMException('Step time is over', 'Abor
 const DEALER_LOADING = 'Dealern laddas…', DEALER_UNAVAILABLE = 'Dealern kunde inte visas.';
 // The dealer rests in its decide phase while a player decides (as app.mjs on the native table), else between hands.
 export const sharedIdlePhase = snapshot => snapshot?.phase === 'round' && ['decisions', 'insurance'].includes(snapshot.round?.phase) ? 'decide' : 'bets';
+// The player's sound choice for this tab. A republished package mounts the table anew, which started muted every
+// time. Storage can be absent or throw (a private window, blocked site data): the table then starts muted.
+const SOUND_KEY = 'scoutgaming.shared-room.sound';
+function readSound(window) { try { return window?.sessionStorage?.getItem(SOUND_KEY) === 'on'; } catch { return false; } }
+function writeSound(window, on) { try { window?.sessionStorage?.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* The choice holds for this mount. */ } }
 const readyOf = snapshot => snapshot.players?.some(p => p.id === snapshot.me.id && p.ready) === true;
 export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
+  // The window presentation a new mount found in progress (its placebets). A reconnect of this mount never replays it.
+  let mountWindow = null;
   // playing: a presentation runs on `state`. held: a newer state of it arrived meanwhile. resting: the dealer's last idle input.
   let playing = false, held = false, resting;
   const timelineFor=presentation=>{
@@ -68,7 +75,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
   return Object.freeze({
     restoreSnapshot(snapshot,{signal,receivedAt=clock()} = {}) {
       signal?.throwIfAborted(); if(closed)return;
-      const reconnect = !state || previousSignal?.aborted;
+      const reconnect = !state || previousSignal?.aborted, mounted = !state;
       // K04 B1: a newer state of the presentation that plays (same connection, presentation, window, configuration
       // and round: the same committed cards) waits for its end here. The film, the card cursor, the table clock
       // and the dealer's state stay as they are; the controls already show the newer state.
@@ -84,6 +91,9 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       if(reconnect){cards.restore(snapshot.round);restoredThrough=snapshot.presentationVer;}
       else if(snapshot.roundId!==state.roundId){cards.clear();cards.sync(snapshot.round);}
       else cards.sync(snapshot.round);
+      // Preview 28 Oct 2026: a republished package mounts the table anew, and the open window's placebets was
+      // consumed as history, so the dealer never invited the bets. A new mount still plays it while that window is open.
+      mountWindow=mounted&&snapshot.phase==='bets'?{ver:snapshot.presentationVer,windowId:snapshot.windowId}:reconnect?null:mountWindow;
       state=snapshot;previousSignal=signal;offset=snapshot.serverNow-receivedAt;
       // Only ready, the idle phase or a new connection changes the dealer's state. Every call stops and restarts the
       // idle film (local-presentation.mjs state()), so another player's bet or ready leaves it playing.
@@ -94,7 +104,13 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       signal?.throwIfAborted();if(closed||!state)return;
       if(presentation.ver!==state.presentationVer||presentation.roomId!==state.roomId)throw new Error('shared_room_presentation_mismatch');
       onPresentation(presentation);
-      if(presentation.ver<=restoredThrough)return;
+      const windowOpen=presentation.kind==='window'&&mountWindow?.ver===presentation.ver&&mountWindow.windowId===presentation.windowId
+        &&state.phase==='bets'&&state.windowId===presentation.windowId&&(!Number.isFinite(state.deadline)||state.deadline>clock()+offset);
+      mountWindow=null;
+      if(presentation.ver<=restoredThrough&&!windowOpen)return;
+      // The replayed line competes with the dealer's first idle file, and the controls wait for the presentation: it
+      // may not hold the table longer than any step waits for its media. Not shown by then, it is left without text.
+      const replayDueAt=presentation.ver<=restoredThrough?clock()+offset+MAX_STEP_WAIT_MS:Infinity;
       if(presentation.kind==='plan'&&presentation.endAt<=clock()+offset){cards.restore(state.round);restoredThrough=presentation.ver;return;}
       const timeline=timelineFor(presentation),fitted=Boolean(timeline?.fit);
       const tableNow=()=>clock()+offset,elapsed=()=>tableNow()-presentation.startAt;
@@ -111,7 +127,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // time on the table clock, and a step whose answer is still missing at the end of its time is left.
       media.prepareSequence?.(presentation.events.map((event,index)=>{const step=timeline?.eventIndex.get(index);
         // A plan that already carries the server's choice for the step (K04 F5c, #506) keeps it.
-        return step&&!event.filmedTake?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}),{selectAhead:!turnPassed()});
+        return step&&!event.filmedTake?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}),{selectAhead:!turnPassed(),...(['en','sv'].includes(presentation.language)?{language:presentation.language}:{})});
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
       // unavailable: a step's exact media was missing (404/410) or declared
@@ -145,7 +161,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           signal?.throwIfAborted();if(closed)return;cursor=index;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
           if(unavailable||skipRest||turnPassed()){commit(index);continue;}
-          const step=timeline?.eventIndex.get(index)??null;let timing={},dueAt=turnAt??Infinity;
+          const step=timeline?.eventIndex.get(index)??null;let timing={},dueAt=Math.min(turnAt??Infinity,replayDueAt);
           if(step){
             const placed=fitted?step.fit:step;
             if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(placed.playbackStartMs??placed.startMs));
@@ -259,9 +275,11 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   let dealerShown=false;
   const dealerFrame=()=>{if(!dealerShown){dealerShown=true;placeholder.remove();}onReady(dealer.id);};
   let player;
-  let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection,latest,restoreColor=()=>{};
+  let media,cards,version=0,muted=!readSound(window),lastLayout,currentPresentation,currentConnection,latest,restoreColor=()=>{};
   const sound=document.getElementById('sound-btn');
-  const onSound=()=>{muted=!muted;paintSound();media?.state({});};
+  // Preview 28 Oct 2026: the toggle restarted the presentation (state({}) stops the film that plays), so it cut the
+  // line it was meant to make heard. Now only the playing line's video.muted changes.
+  const onSound=()=>{muted=!muted;writeSound(window,!muted);paintSound();media?.sound?.();};
   const paintSound=()=>{if(sound){sound.textContent=muted?'🔇':'🔊';sound.setAttribute('aria-label',muted?'Slå på dealerljud':'Stäng av dealerljud');sound.setAttribute('aria-pressed',String(!muted));}};
   try {
     player=new PerformancePlayer({host});

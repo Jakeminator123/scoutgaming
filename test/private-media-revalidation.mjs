@@ -47,3 +47,21 @@ test('nonmatching validators preserve data, and failures or unverified identitie
   const checked304 = await revalidatePrivateMedia(media(304),request({'if-none-match':etag}),sha256);
   assert.equal(checked304.status,304); assert.equal(checked304.headers.get('cache-control'),'private, no-cache, must-revalidate');
 });
+
+// Speech lag (28 Oct 2026): a sha-bound room-video file may stay in the browser cache; nothing else may.
+test('immutable bytes keep a year in the browser only when verified; errors, mismatches and unbound URLs never do', async () => {
+  for (const status of [200, 206]) {
+    const response = await revalidatePrivateMedia(media(status), request(), sha256, {immutable: true});
+    assert.equal(response.status, status); assert.equal(await response.text(), 'original-bytes');
+    assert.equal(response.headers.get('cache-control'), 'private, max-age=31536000, immutable');
+  }
+  const conditional = await revalidatePrivateMedia(media(), request({'if-none-match': etag}), sha256, {immutable: true});
+  assert.equal(conditional.status, 304); assert.equal(conditional.headers.get('cache-control'), 'private, max-age=31536000, immutable');
+  for (const [label, response] of [['another identity', media(200, '"sha256-' + 'b'.repeat(64) + '"')], ['a server error', media(503)]]) {
+    const result = await revalidatePrivateMedia(response, request(), sha256, {immutable: true});
+    assert.equal(result.headers.get('cache-control'), 'private, no-store', label);
+  }
+  assert.equal((await revalidatePrivateMedia(media(), request({}, 'POST'), sha256, {immutable: true})).headers.get('cache-control'), 'private, no-store');
+  for (const immutable of [undefined, false, 'true', 1])
+    assert.equal((await revalidatePrivateMedia(media(), request(), sha256, {immutable})).headers.get('cache-control'), 'private, no-cache, must-revalidate', String(immutable));
+});

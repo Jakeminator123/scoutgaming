@@ -226,7 +226,7 @@ test('native access rejects changed measurements or approvals even with a refres
   }
 });
 
-test('explicit ports/scope and non-partner live session required before all registry reads',async()=>{
+test('explicit ports/scope and a complete live session required before all registry reads',async()=>{
   const h=fixture();assert.throws(()=>createSharedRoomAccess({scope}),TypeError);
   assert.throws(()=>createSharedRoomAccess({auth:h.auth,repository:h.repository,scope:{...scope,workspaceId:'other'}}),TypeError);
   for(const value of [null,{...h.state.session,partnerKeyId:'key-a'},{actorId:'player-a',sessionId,expiresAt:999999},{...h.state.session,expiresAt:1000},{...h.state.session,sessionId:'raw-bearer'}]) {
@@ -307,5 +307,82 @@ test('actual channel prepare composes with access before any game/presentation r
     readSnapshot:()=>assert.fail('prepare cannot read game state'),readPresentation:()=>assert.fail('prepare cannot read presentation')});
   try {const result=await channel.prepare(request());assert.equal(typeof result.attach,'function');
     h.state.session=null;await assert.rejects(channel.prepare(request()),denied);
+  } finally {channel.close();h.assertReleased();}
+});
+
+// Speech lag (28 Oct 2026): a room-video URL names an immutable package revision, its dealer and a media id, so the
+// verified file may stay in the browser; room-idle names no media id and still revalidates. Errors are never kept.
+test('a room-video file of the active package is cached as immutable; the room idle and an error revalidate',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read(),captured=await h.readLocked(binding,h.original.configVersion);
+  const video=captured.authority.media.find(row=>row.classification.kind!=='idle')??captured.authority.media[0];
+  const served=(path,{fail=false}={})=>createActiveRoomPresentationContext({...captured,request:new Request('https://engine.invalid'+path),
+    privateMedia:async record=>fail?new Response(null,{status:503}):new Response('bytes',{status:200,headers:{etag:'"sha256-'+record.sha256+'"','content-type':'video/mp4'}})}).response();
+  const file=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id);
+  assert.equal(file.status,200);assert.equal(file.headers.get('etag'),'"sha256-'+video.sha256+'"');
+  assert.equal(file.headers.get('cache-control'),'private, max-age=31536000, immutable');
+  const idle=await served('/api/presentation/room-idle/north/room-a/1/dragan');
+  assert.equal(idle.status,200);assert.equal(idle.headers.get('cache-control'),'private, no-cache, must-revalidate');
+  const failed=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id,{fail:true});
+  assert.equal(failed.headers.get('cache-control'),'private, no-store');
+  h.assertReleased();
+});
+
+test('the package port reads exactly one operator package revision and grants nothing',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read();
+  const current=await h.access.readPackage(binding.operatorId,binding.packageRevision);
+  assert.equal(current.revision,binding.packageRevision);assert.equal(current.operatorId,binding.operatorId);
+  const earlier=await h.access.readPackage(binding.operatorId,1);assert.equal(earlier.revision,1);
+  assert.equal(await h.access.readPackage(binding.operatorId,99),null);
+  for(const [operatorId,revision] of [['bad id',1],[binding.operatorId,0],[binding.operatorId,'1']])
+    await assert.rejects(h.access.readPackage(operatorId,revision),{statusCode:403});
+  h.assertReleased();
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters its key's company's rooms
+// with a player's rights, and is refused by name in another company's room or without a company.
+const partner=(h,operatorId='north',partnerKeyId='key-a')=>{h.state.session={...h.state.session,partnerKeyId,operatorId};};
+test('a partner session bound to the room company is admitted in authorize, revalidate and revalidateLocked',async()=>{
+  const h=fixture();partner(h);
+  const binding=await h.read();
+  assert.deepEqual(binding,{actorId:'player-a',sessionId,expiresAt:999999,operatorId:'north',roomId:'room-a',packageRevision:1});
+  assert.deepEqual(await h.access.revalidate(binding),binding);
+  const locked=await h.repository.transaction(()=>h.access.revalidateLocked(binding));
+  assert.deepEqual(locked,binding);assert.ok(Object.isFrozen(locked));
+  const native=nativeFixture();partner(native);
+  const captured=await native.readLocked(await native.read(),null);assert.equal(captured.context.operatorSlug,'north');
+  h.assertReleased();native.assertReleased();
+});
+
+test('another company, a key without company and a changed key binding are refused at every admission',async()=>{
+  const mismatch={code:'partner_operator_mismatch',statusCode:403},unbound={code:'partner_key_unbound',statusCode:403};
+  const other=fixture();partner(other,'south');
+  await assert.rejects(other.read(),mismatch);other.assertReleased();
+  const none=fixture();partner(none,null);
+  await assert.rejects(none.read(),unbound);
+  assert.equal(none.trace.includes('connect'),false,'a key without a company is refused before any registry read');
+  for(const value of [{partnerKeyId:'key-a'},{partnerKeyId:'key-a',operatorId:''},{partnerKeyId:'',operatorId:'north'},{partnerKeyId:'key-a',operatorId:42}]) {
+    const h=fixture();h.state.session={...h.state.session,...value};
+    await assert.rejects(h.read(),denied,JSON.stringify(value));assert.equal(h.trace.includes('connect'),false);
+  }
+  // An open binding is checked against the session's current key every time: another company, no company,
+  // or rotation/revocation (which deletes the session) all end it.
+  for(const [change,expected] of [[s=>{s.session.operatorId='south';},mismatch],[s=>{s.session.operatorId=null;},unbound],
+    [s=>{s.session=null;},denied]]) {
+    const h=fixture();partner(h);const binding=await h.read();change(h.state);
+    await assert.rejects(h.access.revalidate(binding),expected);
+    await assert.rejects(h.repository.transaction(()=>h.access.revalidateLocked(binding)),expected);h.assertReleased();
+  }
+  // A native binding never becomes a partner one inside the same admission.
+  const swapped=fixture();swapped.after(marker=>{if(marker==='shared-room-access:config')partner(swapped);});
+  await assert.rejects(swapped.read(),denied);swapped.assertReleased();
+});
+
+test('the room company check runs inside the channel prepare, so the upgrade refusal keeps its code',async()=>{
+  const h=fixture(),channel=createSharedRoomChannel({origin:'https://ui.invalid',...h.access,now:()=>1000,
+    readSnapshot:()=>assert.fail('prepare cannot read game state'),readPresentation:()=>assert.fail('prepare cannot read presentation')});
+  try {
+    partner(h,'south');await assert.rejects(channel.prepare(request()),{code:'partner_operator_mismatch',statusCode:403});
+    partner(h,null);await assert.rejects(channel.prepare(request()),{code:'partner_key_unbound',statusCode:403});
+    partner(h);assert.equal(typeof (await channel.prepare(request())).attach,'function');
   } finally {channel.close();h.assertReleased();}
 });

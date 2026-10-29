@@ -463,7 +463,11 @@ test('the view closes side bets without a main bet on their box and shows why on
 // K04 F8: a revoked session ended the table with "Ladda om sidan", which only met the same refusal again.
 test('a session the socket refused twice asks for a new sign-in with a link; other terminal errors keep the reload text',async t=>{
   for(const [code,notice,signIn] of [['shared_room_unauthorized','Din session har gått ut. Logga in igen.',true],
-    ['shared_room_renderer_failed','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],[undefined,'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
+    ['shared_room_renderer_failed','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],[undefined,'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false],
+    // Nyckel→bolag: a partner refused for its key's company sees why; neither a reload nor a sign-in changes it.
+    ['partner_operator_mismatch','Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.',false],
+    ['partner_key_unbound','Nyckeln är inte kopplad till något spelbolag.',false],
+    ['constructor','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
     const h=harness(t);await h.restore(seated(1));h.controller.fail(code);
     const r=h.renders.at(-1);assert.equal(r.notice,notice);assert.equal(r.signIn,signIn,String(code));assert.equal(r.can.bet,false);
     assert.equal(h.commands.state,'stopped');
@@ -1548,4 +1552,79 @@ test('the mounted table sends wait after a full table\'s snapshot, and not while
   await h.restore(fullTable(2));
   for(let i=0;i<100&&!h.writes.length;i++)await delay(2);
   assert.deepEqual(h.writes,[{op:'wait'}]);
+});
+
+// Speech lag (preview 28 Oct 2026): a republished package mounts the table anew, which started muted every time, and
+// the sound button ran the presentation's state({}), which stops the line that plays.
+const SOUND_KEY='scoutgaming.shared-room.sound';
+async function soundMount(window){
+  const {document,nodes}=documentFixture(),button=new Element('button');nodes.set('sound-btn',button);
+  window.matchMedia=()=>({matches:false});window.fetch=async()=>Response.json({});
+  const selection={presentation:'local',dealer:'paow',localDealer:'paow',operator:'north',roomId,packageRevision:1,registeredDealers:[{id:'paow',label:'PAOW'}]};
+  const calls=[];let options;
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},setProjection(){},close(){}};
+  const port=await mountSharedRoomPresentation({document,window,selection,onReady(){},onError(){},createComposition:()=>null,
+    loadAdapters:async()=>[{PerformancePlayer:class{dispose(){}}},{createLocalPresentation:async value=>{options=value;
+      return{state:patch=>calls.push(['state',patch]),sound:()=>calls.push(['sound',value.muted()]),start(){value.onIdle();},close(){}};}},{createLocalCardOverlay:()=>cards}]});
+  return{port,options,calls,button};
+}
+test('the sound choice survives a new mount, and the toggle never restarts the presentation',async()=>{
+  const stored=new Map(),window=Object.assign(new EventTarget(),{sessionStorage:{getItem:key=>stored.get(key)??null,setItem:(key,value)=>stored.set(key,String(value))}});
+  const first=await soundMount(window);
+  assert.equal(first.options.muted(),true,'a new tab starts muted');assert.equal(first.button.attributes['aria-pressed'],'false');
+  const before=first.calls.length;first.button.click();
+  assert.equal(first.options.muted(),false);assert.deepEqual(first.calls.slice(before),[['sound',false]],'only the playing line follows: no state() that stops it');
+  assert.equal(stored.get(SOUND_KEY),'on');assert.equal(first.button.attributes['aria-pressed'],'true');
+  first.port.close();
+  const second=await soundMount(window);
+  assert.equal(second.options.muted(),false,'a new mount (a republished package) keeps the choice');assert.equal(second.button.attributes['aria-pressed'],'true');
+  second.button.click();assert.equal(stored.get(SOUND_KEY),'off');assert.equal(second.options.muted(),true);second.port.close();
+  const third=await soundMount(window);assert.equal(third.options.muted(),true);third.port.close();
+});
+for(const [label,window] of [['missing',()=>new EventTarget()],['throwing',()=>Object.defineProperty(new EventTarget(),'sessionStorage',{get(){throw new DOMException('Blocked','SecurityError');}})],
+  ['refusing writes',()=>Object.assign(new EventTarget(),{sessionStorage:{getItem:()=>null,setItem(){throw new DOMException('Full','QuotaExceededError');}}})]])
+test(`storage that is ${label} starts the table muted and the toggle still works for the mount`,async()=>{
+  const mount=await soundMount(window());
+  assert.equal(mount.options.muted(),true);mount.button.click();assert.equal(mount.options.muted(),false);
+  assert.deepEqual(mount.calls.at(-1),['sound',false]);mount.port.close();
+});
+
+test('a new mount plays the placebets of the betting window still open; a reconnect, a closed window or a plan is not replayed',async()=>{
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){}};
+  const opened={roomId,ver:4,talkId:'window-1:window',kind:'window',status:'ready',windowId:'window-1',configVersion:'cfg-1',language:'sv',startAt:500,endAt:500,
+    events:[{type:'speak',line:'placebets'},{type:'idle'}]};
+  const mount=()=>{const seen=[],prepared=[];
+    const media={state(){},prepareSequence:(events,options)=>prepared.push([events.map(event=>event.line??event.type),options]),async present(event){seen.push(event.line);return true;},close(){}};
+    return{seen,prepared,ports:createSharedRoomPresentationPorts({media,cards,clock:()=>1000})};};
+  for(const [label,extra,expected] of [['without a bet yet',{},['placebets']],['before its deadline',{deadline:5000},['placebets']],['after its deadline',{deadline:900},[]],
+    ['in another window',{windowId:'window-2'},[]]]){
+    const {seen,prepared,ports}=mount(),signal=new AbortController().signal;
+    ports.restoreSnapshot(seated(4,{presentationVer:4,...extra}),{signal});await ports.present(opened,{signal});
+    assert.deepEqual(seen,expected,label);
+    if(expected.length)assert.deepEqual(prepared,[[['placebets','idle'],{selectAhead:true,language:'sv'}]],`${label}: the line is prepared in the room's language`);
+    ports.close();
+  }
+  const {seen,ports}=mount(),first=new AbortController();
+  ports.restoreSnapshot(seated(4,{presentationVer:4}),{signal:first.signal});await ports.present(opened,{signal:first.signal});
+  assert.deepEqual(seen,['placebets']);first.abort();
+  const again=new AbortController();ports.restoreSnapshot(seated(4,{presentationVer:4}),{signal:again.signal});await ports.present(opened,{signal:again.signal});
+  assert.deepEqual(seen,['placebets'],'a reconnect of the same mount never replays the line');ports.close();
+  const plan=mount(),planSignal=new AbortController().signal;
+  plan.ports.restoreSnapshot(seated(4,{presentationVer:4,phase:'round',roundId:'round-1'}),{signal:planSignal});
+  await plan.ports.present({...opened,kind:'plan',talkId:'plan-4',endAt:999999,events:[{type:'speak',line:'goodluck'}]},{signal:planSignal});
+  assert.deepEqual(plan.seen,[],'a plan in progress at mount is still history');plan.ports.close();
+});
+
+test('a replayed placebets that shows no frame within a step\'s wait is left without error, so it never holds the controls',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){}},errors=[],signals=[];
+  const media={state(){},prepareSequence(){},close(){},present:(event,{signal})=>new Promise((resolve,reject)=>{signals.push(signal);signal.addEventListener('abort',()=>reject(signal.reason),{once:true});})};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,onError:code=>errors.push(code)}),signal=new AbortController().signal;
+  ports.restoreSnapshot(seated(4,{presentationVer:4}),{signal});
+  const playing=ports.present({roomId,ver:4,talkId:'window-1:window',kind:'window',status:'ready',windowId:'window-1',configVersion:'cfg-1',language:'sv',startAt:500,endAt:500,
+    events:[{type:'speak',line:'placebets'},{type:'idle'}]},{signal});
+  await flushRender();assert.equal(signals.length,1);
+  t.mock.timers.tick(4999);await flushRender();assert.equal(signals[0].aborted,false);
+  t.mock.timers.tick(1);await playing;
+  assert.equal(signals[0].reason?.late,true,'left as late');assert.deepEqual(errors,[]);ports.close();
 });

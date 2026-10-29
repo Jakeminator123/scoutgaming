@@ -45,22 +45,22 @@ run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tool
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs apps/studio/client/admin/lib/lifecycle-actions.test.mjs apps/studio/client/admin/lib/confirm-dialog.test.mjs
 run_check contracts migration-status 30 node migrering/status.mjs --check
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs test/prepare-lissabon-retirement.mjs
-run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs test/shared-room-k04-qa.mjs
+run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs
 run_node_tests contracts o02-freeze-check test/o02-freeze-check.mjs test/merge-pr.mjs
 run_node_tests contracts o02-receipt test/o02-receipt.mjs
 run_check contracts no-sqlite 60 node tools/check-no-sqlite.mjs
 run_check contracts repo-limits 60 node tools/check-repo-limits.mjs
-run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-no-sqlite.mjs test/check-repo-limits.mjs test/run-engine-qa.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
-run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
+run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-no-sqlite.mjs test/check-repo-limits.mjs test/run-engine-qa.mjs test/check-orphan-tests.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
+run_node_tests contracts material-catalog test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
-run_node_tests contracts retention-archive test/retention-archive.mjs test/studio-retirement-plan.mjs
+run_node_tests contracts retention-archive test/retention-archive.mjs
 run_node_tests contracts partner-access-policy test/partner-access-policy.mjs test/operator-store.mjs test/admin-publication-chain.mjs
 run_node_tests contracts operator-appearance-api test/operator-appearance-api.mjs test/operator-appearance-boundary.mjs test/operator-appearance-integration.mjs test/partner-branding-postgres.mjs
 run_node_tests database moving-drift test/moving-drift-controller.mjs test/postgres-moving-drift.mjs test/moving-drift-executor.mjs test/moving-drift-observer.mjs test/moving-drift-diagnostics.mjs
 run_node_tests database studio-repository test/studio-repository.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/check-migration-readiness.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs test/partner-team-postgres.mjs test/studio-isolated-partner-qa.mjs
 run_node_tests database studio-game-policy test/studio-game-policy.mjs test/studio-media-runtime.mjs test/studio-game-authority.mjs test/studio-game-commands.mjs test/studio-admin-accounts.mjs test/studio-native-auth-actions.mjs test/studio-cutover-integration.mjs
 run_node_tests database speech-journal-runtime test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs test/speech-ledger-import.mjs test/postgres-operator-speech-qa.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
-run_node_tests database pglite-pool test/pglite-pool.mjs test/o02-snapshot.mjs test/operator-materials-postgres.mjs
+run_node_tests database pglite-pool test/pglite-pool.mjs test/o02-snapshot.mjs test/api-key-operator-migration.mjs test/operator-materials-postgres.mjs
 run_node_tests presentation registered-cloud-idle test/registered-cloud-idle.mjs test/registered-cloud-playback.mjs
 run_node_tests presentation managed-media-contract test/managed-media-contract.mjs test/frozen-dealer-idle.mjs test/native-room-game-material.mjs test/frozen-presentation-capture.mjs test/frozen-dealer-events.mjs test/frozen-dealer-presentation.mjs test/private-media-revalidation.mjs test/presentation-capability-contract.mjs test/presentation-capabilities.mjs test/presentation-package-compression.mjs
 run_node_tests presentation shared-room-channel test/shared-room-channel.mjs test/shared-room-upgrade.mjs test/shared-room-access.mjs test/shared-room-service.mjs test/shared-room-origins.mjs test/shared-room-client.mjs test/shared-room-command-contract.mjs test/shared-room-command.mjs test/shared-room-http.mjs test/shared-room-command-service.mjs test/shared-room-entry.mjs test/shared-room-command-client.mjs test/shared-room-app.mjs test/shared-room-layout.mjs test/shared-room-shortcuts.mjs test/shared-room-browser.mjs test/shared-room-layout-browser.mjs test/shared-room-shortcuts-browser.mjs test/shared-room-presentation-access.mjs test/shared-room-presentation-api.mjs test/shared-room-filmed-steps.mjs test/shared-command-auth.mjs test/game-upgrade-dispatcher.mjs
@@ -70,7 +70,7 @@ run_node_tests presentation moving-speech-deal test/moving-speech-deal-plan.mjs 
 run_node_tests presentation presentation-layers test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/layer-media-inspection.mjs test/composition-runtime.mjs test/registered-idle.mjs
 run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs test/composition-anchors.mjs test/scene-layout-publication.mjs
 run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs test/preview-table.mjs
-run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
+run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-partner.mjs test/partner-key-operator.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
 run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/partner-metadata.mjs
 # Complete package sets, once per full run (including CI).
@@ -78,7 +78,7 @@ run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/op
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access postgres-persistence test/postgres-persistence.mjs test/postgres-native-table.mjs
 run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs test/platform-room-socket.mjs test/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
-run_node_tests access media-layout test/media-layout.mjs test/media-blob-export.mjs test/lane-media-audit.mjs
+run_node_tests access media-layout test/media-layout.mjs test/media-blob-export.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
 run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-catalog.mjs --check
@@ -100,7 +100,7 @@ run_node_tests gameplay generations-api test/generations-api.mjs
 run_node_tests gameplay native-partner-events test/native-partner-events.mjs test/native-observation-publisher.mjs
 run_node_tests gameplay native-observation test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests gameplay roulette test/roulette.mjs test/roulette-room.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
-run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs test/room-idle-kevin-parity.mjs test/table-behaviours-kevin.mjs test/table-limits-kevin.mjs test/table-restart-kevin.mjs test/shared-room-overlap.mjs test/shared-table-full.mjs test/shared-room-waiting.mjs
+run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs test/room-idle-kevin-parity.mjs test/table-behaviours-kevin.mjs test/table-limits-kevin.mjs test/table-restart-kevin.mjs test/shared-room-overlap.mjs test/shared-table-full.mjs test/shared-table-settled.mjs test/shared-room-waiting.mjs
 run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs test/blackjack-sidebets.mjs
 run_node_tests gameplay generation-media test/generation-media.mjs test/qa-process-guard.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
@@ -110,6 +110,6 @@ run_node_tests gameplay player-results test/player-results.mjs
 # Real engine over HTTP on PostgreSQL. Without the harness these skip with a reason;
 # CI runs exactly this list through tools/run-engine-qa.mjs (owned TLS cluster), which
 # reads it from here and fails on any skip.
-run_node_tests engine engine-http test/engine-public-routes-http.mjs test/table-http.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
+run_node_tests engine engine-http test/engine-public-routes-http.mjs test/table-http.mjs test/partner-launch-http.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
 # Pinned OpenClaw Gateway image on Linux Docker; CI runs it as its own job beside the regression legs.
 run_node_tests container gateway-container services/openclaw/lab/deploy/container/gateway-container.test.mjs

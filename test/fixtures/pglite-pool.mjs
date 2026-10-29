@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { createPostgresStore } from '../../services/game/storage/postgres-store.mjs';
+import { prepareApiKeyOperator } from '../../tools/prepare-api-key-operator.mjs';
 
 // Local PostgreSQL for module tests: PGlite (PostgreSQL compiled to WASM, in process),
 // a devDependency of services/game only. `npm ci --omit=dev` keeps it out of the Render
@@ -31,6 +32,14 @@ const schemaFile = file => new URL(`../../ops/neon-game/${file}`, import.meta.ur
 // Forward game migrations after product-schema.sql. 011 is an optional reviewed retirement.
 export const GAME_MIGRATIONS = Object.freeze(['006-player-profile.sql', '007-roulette-tables.sql',
   '008-shared-wallet.sql', '009-shared-blackjack.sql', '010-presentation-receiver.sql']);
+// 012 stays optional until PR C (docs/plans/NYCKEL-BOLAG.md): tests run the same code with and
+// without it, rendered by its own offline tool for PGlite's single role and database.
+export const API_KEY_OPERATOR_MIGRATION = '012-api-key-operator.sql';
+export const WITH_API_KEY_OPERATOR = Object.freeze([...GAME_MIGRATIONS, API_KEY_OPERATOR_MIGRATION]);
+const pgliteEvidence = Object.freeze({ database: 'postgres', role: 'postgres', releaseSha: '0'.repeat(40),
+  rollbackSha: '0'.repeat(40), backupSha256: '0'.repeat(64) });
+const migrationSource = async file => file === API_KEY_OPERATOR_MIGRATION
+  ? (await prepareApiKeyOperator({ ...pgliteEvidence })).sql : readFile(schemaFile(file), 'utf8');
 // PGlite spreads `parsers` over its own, so list every builtin oid that pg parses.
 const parsers = Object.fromEntries(Object.values(pg.types.builtins).map(oid => [oid, pg.types.getTypeParser(oid, 'text')]));
 const serializers = new Proxy({}, { get: () => value => value }); // already pg-prepared text
@@ -50,7 +59,7 @@ async function template(migrations) {
       await db.exec(product);
       await db.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
         ['product-v1', createHash('sha256').update(product).digest('hex'), '{}', new Date(0).toISOString()]);
-      for (const file of migrations) await db.exec(await readFile(schemaFile(file), 'utf8'));
+      for (const file of migrations) await db.exec(await migrationSource(file));
       return await db.dumpDataDir('none');
     } finally { await db.close(); }
   })());

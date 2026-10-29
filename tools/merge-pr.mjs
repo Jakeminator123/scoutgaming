@@ -11,6 +11,12 @@
 // --freeze <SHA> (O02) requires the SHA on origin/main and refuses any file, old or new path,
 // under the runtime prefixes of tools/o02-freeze-check.mjs. A PR that changes .github/workflows/
 // or .github/actions/ also changes the CI that judges it, so it needs --allow-workflow-change.
+// fresh: the ruleset does not require an up-to-date branch, so green CI may have tested the merge
+// into an older main. The tested base is the first parent of the merge commit the CI run checked
+// out (named in the log of the run's changes job, parents from the commits API). It passes when that
+// base is origin/main, or when main's changes since then share no file and no package root
+// (PACKAGE_ROOTS) with the PR; otherwise, or when the base cannot be determined, it refuses.
+// review: the PR body needs the author's "Buggranskning: <verktyg/modell>, <nivå>, <fynd>" line.
 // --dry-run prints the decisions and merges nothing.
 // Exit code 0 when merged (or a dry run passes), 1 when refused, 2 on usage errors.
 import { spawnSync } from 'node:child_process';
@@ -21,12 +27,16 @@ import { featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const REQUIRED_CHECK = 'CI';
-export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles';
+export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles,body';
 // Other people's branches stay theirs even when the PR was opened from Jakob's account. The policy
 // file lists kevin*, codex/kevin-*, john* and emil*; the codex/<name>-* forms for John and Emil are
 // not in it yet, so they are fixed here and every person in people.json adds <branch>* and codex/<branch>-*.
 export const BASELINE_FOREIGN_BRANCHES = Object.freeze(['kevin*', 'codex/kevin-*', 'john*', 'codex/john-*', 'emil*', 'codex/emil-*']);
 const CI_PATHS = ['.github/workflows/', '.github/actions/'];
+// The CI job that checks out the PR merge commit; its log names that commit's full SHA.
+export const CI_BASE_JOB = 'changes';
+// Shared roots where a change on main can break a PR that only touches other files in the same root.
+export const PACKAGE_ROOTS = Object.freeze(['services/game/', 'packages/<name>/', 'apps/studio/lib/', 'apps/web/']);
 const fullSha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 export function parseArgs(args) {
@@ -91,6 +101,47 @@ export function changedPaths(files) {
 }
 
 // Only safe fields: exit status, attention codes and the open incident count. Never excerpts.
+export function packageRoot(path) {
+  const value = String(path);
+  const pkg = /^packages\/[^/]+\//.exec(value);
+  if (pkg) return pkg[0];
+  return PACKAGE_ROOTS.find(root => !root.includes('<') && value.startsWith(root)) ?? null;
+}
+
+// freshness: { base, main, behind, files } from readFreshness, or { reason } when it could not be read.
+export function freshnessVerdict(freshness, paths, complete) {
+  const advice = 'merga origin/main in i branchen och låt CI köra om';
+  if (!fullSha(freshness?.base) || !fullSha(freshness?.main)) return { ok: false, reason: `CI-basen kunde inte avgöras: ${freshness?.reason ?? 'okänd orsak'}` };
+  if (freshness.base === freshness.main) return { ok: true, reason: `CI mot aktuell main ${freshness.main.slice(0, 12)}` };
+  if (!complete) return { ok: false, reason: 'kan inte prövas utan fullständig fillista' };
+  if (!Array.isArray(freshness.files) || !Number.isSafeInteger(freshness.behind)) return { ok: false, reason: `ändringarna på main sedan ${freshness.base.slice(0, 12)} kunde inte läsas` };
+  const behind = `CI mot main ${freshness.base.slice(0, 12)}, ${freshness.behind} commits bakåt`;
+  const mainFiles = new Set(freshness.files);
+  const overlap = [...new Set(paths)].filter(path => mainFiles.has(path));
+  if (overlap.length) return { ok: false, reason: `${behind}; main har sedan dess ändrat ${overlap.length} av PR:ens filer, t.ex. ${overlap[0]}; ${advice}` };
+  const mainRoots = new Set(freshness.files.map(packageRoot).filter(Boolean));
+  const shared = [...new Set(paths.map(packageRoot))].filter(root => root && mainRoots.has(root));
+  if (shared.length) return { ok: false, reason: `${behind}; main och PR:en ändrar båda i ${shared.join(', ')}; ${advice}` };
+  return { ok: true, reason: `${behind}, ingen överlappning (${freshness.files.length} filer ändrade på main sedan dess)` };
+}
+
+// The PR author's own bug review (AGENTS.md "Leverans och merge"): one line in the PR body that
+// starts with Buggranskning:, optionally after list, quote or emphasis markdown, with content after the colon.
+// HTML comments and fenced code are not read, and the unedited <placeholder> template does not count.
+export const REVIEW_MISSING = "PR-beskrivningen saknar raden 'Buggranskning: <verktyg/modell>, <nivå>, <fynd>'";
+export function reviewVerdict(body) {
+  let fenced = false;
+  for (const raw of String(body ?? '').replace(/<!--[\s\S]*?(?:-->|$)/g, '').split(/\r?\n/)) {
+    if (/^\s*(?:```|~~~)/.test(raw)) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    const line = raw.replace(/^\s*(?:(?:[-*+]|\d+[.)])\s+|>\s*)*/, '').trim();
+    const match = /^(?:\*\*|__|\*|_)?buggranskning(?:\*\*|__|\*|_)?\s*:(.*)$/i.exec(line);
+    const content = match?.[1].replace(/^(?:\*\*|__|\*|_)/, '').replace(/[\u0000-\u001f\u007f]/g, '').trim() ?? '';
+    if (/[\p{L}\p{N}]/u.test(content) && !/<[^<>]+>/.test(content)) return { ok: true, reason: `Buggranskning: ${content.length > 100 ? `${content.slice(0, 97)}...` : content}` };
+  }
+  return { ok: false, reason: REVIEW_MISSING };
+}
+
 export function securityVerdict(result) {
   // unreadable: the command could not run or its output could not be parsed (worth one retry);
   // a readable report with attention codes refuses at once.
@@ -108,7 +159,7 @@ export function securityVerdict(result) {
 }
 
 export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = false, allowWorkflowChange = false,
-  jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false }) {
+  jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false, freshness = null }) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), reason });
   check('pr', pr?.number !== undefined, pr ? `#${pr.number}` : 'PR kunde inte läsas');
@@ -137,6 +188,10 @@ export function evaluateMerge({ pr, files, head, freeze = null, freezeOnMain = f
   check('workflow', complete && (!workflow.length || allowWorkflowChange), !complete ? 'kan inte prövas utan fullständig fillista'
     : !workflow.length ? 'ingen CI-ändring'
     : allowWorkflowChange ? `${workflow.length} CI-filer, tillåtet med --allow-workflow-change` : `${workflow.length} CI-filer, t.ex. ${workflow[0]}; kräver --allow-workflow-change`);
+  const fresh = freshnessVerdict(freshness, paths ?? [], complete);
+  check('fresh', fresh.ok, fresh.reason);
+  const review = reviewVerdict(pr?.body);
+  check('review', review.ok, review.reason);
   if (freeze) {
     const runtime = (paths ?? []).filter(touchesRuntime);
     check('freeze', complete && freezeOnMain === true && runtime.length === 0, freezeOnMain !== true
@@ -172,6 +227,55 @@ export function readPrFiles(gh, number) {
   try { return result.stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)); } catch { return null; }
 }
 
+// The main SHA that the green CI run tested against: the CI check names its run, the log of the run's
+// changes job names the merge commit it fetched (+<sha>:refs/remotes/pull/<nr>/merge), and that
+// commit's parents are [tested main, head]. The run's pull_requests[].base.sha is not used: it is the
+// PR's live base, not the one the run tested, and a re-run tests the original merge commit again.
+export function readCiBase(gh, { number, head, rollup }) {
+  const runIds = new Set((Array.isArray(rollup) ? rollup : [])
+    .filter(entry => entry?.name === REQUIRED_CHECK && entry.__typename === 'CheckRun' && entry.workflowName === CI_WORKFLOW)
+    .map(entry => /\/actions\/runs\/(\d+)\/job\//.exec(String(entry.detailsUrl ?? ''))?.[1] ?? 'okänd'));
+  if (runIds.size !== 1 || runIds.has('okänd')) return { reason: `CI-körningen kunde inte identifieras (${runIds.size} körningar)` };
+  const [runId] = runIds;
+  const jobs = gh(['api', `repos/${REPO}/actions/runs/${runId}/jobs?per_page=100`, '--paginate', '--jq', '.jobs[] | {id, name, head_sha, workflow_name}']);
+  if (jobs.error || jobs.status !== 0) return { reason: `jobben i körning ${runId} kunde inte läsas` };
+  let named;
+  try { named = jobs.stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(job => job?.name === CI_BASE_JOB); }
+  catch { return { reason: `jobben i körning ${runId} gav oläsbart svar` }; }
+  if (named.length !== 1 || named[0].head_sha !== head || named[0].workflow_name !== CI_WORKFLOW) {
+    return { reason: `jobben ${CI_BASE_JOB} på head ${String(head).slice(0, 12)} finns inte entydigt i körning ${runId}` };
+  }
+  const log = gh(['api', '--allow-escape-sequences', `repos/${REPO}/actions/jobs/${named[0].id}/logs`]);
+  if (log.error || log.status !== 0) return { reason: `loggen för ${CI_BASE_JOB} i körning ${runId} kunde inte läsas` };
+  const merges = new Set([...String(log.stdout).matchAll(/\+([0-9a-f]{40}):refs\/remotes\/pull\/(\d+)\/merge\b/g)]
+    .map(match => Number(match[2]) === number ? match[1] : 'annan PR'));
+  if (merges.size !== 1 || merges.has('annan PR')) return { reason: `merge-commiten för PR #${number} finns inte entydigt i loggen för körning ${runId}` };
+  const [merge] = merges;
+  const commit = gh(['api', `repos/${REPO}/commits/${merge}`, '--jq', '[.parents[].sha]']);
+  let parents = null;
+  if (!commit.error && commit.status === 0) { try { parents = JSON.parse(commit.stdout); } catch { parents = null; } }
+  if (!Array.isArray(parents) || parents.length !== 2 || !fullSha(parents[0]) || parents[1] !== head) {
+    return { reason: `merge-commiten ${merge.slice(0, 12)} har inte föräldrarna [main, ${String(head).slice(0, 12)}]` };
+  }
+  return { base: parents[0], merge, runId };
+}
+
+// What main changed since the tested base, from freshly fetched origin/main.
+export function readFreshness(gh, git, { number, head, rollup }) {
+  const ci = readCiBase(gh, { number, head, rollup });
+  if (!ci.base) return ci;
+  const rev = git(['rev-parse', 'origin/main']);
+  const main = !rev.error && rev.status === 0 ? String(rev.stdout).trim() : null;
+  if (!fullSha(main)) return { reason: 'origin/main kunde inte läsas' };
+  if (ci.base === main) return { base: ci.base, main, behind: 0, files: [] };
+  if (git(['merge-base', '--is-ancestor', ci.base, 'origin/main']).status !== 0) return { reason: `CI-basen ${ci.base.slice(0, 12)} ingår inte i origin/main` };
+  // -z: raw path bytes, never core.quotepath's quoted "caf\303\251" form that matches no PR path.
+  const diff = git(['diff', '--name-only', '--no-renames', '-z', ci.base, 'origin/main']);
+  const count = git(['rev-list', '--count', `${ci.base}..origin/main`]);
+  if (diff.error || diff.status !== 0 || count.error || count.status !== 0) return { reason: `git diff mot CI-basen ${ci.base.slice(0, 12)} misslyckades` };
+  return { base: ci.base, main, behind: Number(String(count.stdout).trim()), files: String(diff.stdout).split('\0').filter(Boolean) };
+}
+
 function readTrustedJson(git, path) {
   const result = git(['show', `origin/main:${path}`]);
   if (result.error || result.status !== 0) throw Error(`Kan inte läsa ${path} från origin/main; kör git fetch origin main`);
@@ -193,10 +297,11 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   let pr = null;
   if (!view.error && view.status === 0) { try { pr = JSON.parse(view.stdout); } catch { pr = null; } }
   const files = pr ? readPrFiles(gh, options.number) : null;
+  const freshness = pr ? readFreshness(gh, git, { number: options.number, head: options.head, rollup: pr.statusCheckRollup }) : null;
   const sec = pr ? readSecurity(security, { sleep, log }) : { result: null, retried: false };
   const verdict = evaluateMerge({ pr, files, head: options.head, freeze: options.freeze, freezeOnMain,
     allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
-    foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried });
+    foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried, freshness });
   for (const entry of verdict.checks) log(`${entry.ok ? 'ok ' : 'nej'} ${entry.name}: ${entry.reason}`);
   if (!verdict.ok) { log(`nekad: PR #${options.number} mergas inte`); return 1; }
   if (options.dryRun) { log(`dry-run: PR #${options.number} skulle mergas på ${options.head}`); return 0; }

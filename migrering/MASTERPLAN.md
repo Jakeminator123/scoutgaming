@@ -48,7 +48,7 @@ E4  J07 + O01 → J08      K01 + K04 → K05      J05 + J07 → J09      J08 + K
 E5  K04 + K06 → K07      J06 + J09 → J10      K07 + J10 → O02 → O03
 ```
 
-Migreringen är klar: alla 20 aktiviteter VERIFIED (O03 via #527, granskning i [O03-REVIEW](../docs/2026-10-28-O03-REVIEW.md)). Nästa arbete står i [NEXT-AGENT](../docs/NEXT-AGENT.md#efter-o03).
+Migreringen är klar: alla 20 aktiviteter VERIFIED (O03 via #527; granskningen och kvittona är raderade och listas i [docs/HISTORIK](../docs/HISTORIK.md)). Nästa arbete står i [NEXT-AGENT](../docs/NEXT-AGENT.md#efter-o03).
 
 ## När migreringen är klar
 

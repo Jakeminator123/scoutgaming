@@ -8,7 +8,7 @@ Läsordning:
 2. **[docs/NEXT-AGENT.md](docs/NEXT-AGENT.md)**: aktuellt läge, återstående aktiviteter och vem som agerar.
 3. **[migrering/STATUS.md](migrering/STATUS.md)**: aktivitetsstatus, genererad från [status.json](migrering/status.json), som är enda statuskällan.
 
-Reglerna står i [AGENTS.md](AGENTS.md) och orden i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md).
+Reglerna står i [AGENTS.md](AGENTS.md). Vad orden betyder beskrivs brett i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) (referens, inte tvingande ordlista).
 
 ## En produktväg
 
@@ -69,8 +69,8 @@ Preview är den tidigare stagingen, som behålls efter O03 (Jakobs beslut D5, 20
 
 1. `git fetch`, sedan egen branch `jakob/*` från färsk `origin/main` (Claude-underagenter: `jakob/claude-*` i en worktree under `.claude/worktrees`).
 2. Committa med repots hookar, aldrig `--no-verify`. Läs `node tools/security-status.mjs` före push och merge.
-3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`.
-4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>` (under O02 även `--freeze <kandidat-sha>`).
+3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`, öppnad som klar (inte draft), med raden `Buggranskning: <verktyg/modell>, <nivå>, <fynd>` efter egen granskning av diffen ([AGENTS.md](AGENTS.md#leverans-och-merge)).
+4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>` (under O02 även `--freeze <kandidat-sha>`), som nekar om main sedan CI-körningen ändrat samma filer eller paketrot; merga då in `origin/main` och låt CI köra om.
 5. Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
 
 ## Kanoniska dokument
@@ -80,11 +80,11 @@ Preview är den tidigare stagingen, som behålls efter O03 (Jakobs beslut D5, 20
 | Läge, återstående arbete, kända fällor | [NEXT-AGENT](docs/NEXT-AGENT.md) |
 | Aktivitetsstatus och plan | [STATUS](migrering/STATUS.md), [MASTERPLAN](migrering/MASTERPLAN.md) |
 | Regler för agenter | [AGENTS](AGENTS.md) |
-| Ord och begrepp | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) |
+| Vad orden betyder (bred referens) | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
 | Arbetssteg i Admin | [användarguiden](apps/studio/docs/README.md) |
 | Drift, moln och återställning | [CLOUD-MIGRATION](docs/CLOUD-MIGRATION.md), [ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md), [RENDER-V3](ops/cloud/RENDER-V3.md) |
 | Miljövariabler | [ENVIRONMENT-VARIABLES](docs/ENVIRONMENT-VARIABLES.md) |
 | Lagrings- och uppspelningskontrakt | [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md) |
 | AI-verktyg och OpenClaw | [docs/AI](docs/AI/README.md) |
 | Alla dokument: vad, för vem, när de uppdateras | [docs/README](docs/README.md) |
-| Daterade kvitton (bevis, inte läge) | `docs/<datum>-*-ACCEPTANCE.json` och `*-REVIEW.md` |
+| Daterade kvitton (bevis, inte läge) och raderade dokument | `docs/<datum>-*-ACCEPTANCE.json`; raderade står i [HISTORIK](docs/HISTORIK.md) |

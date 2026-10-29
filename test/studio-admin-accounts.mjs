@@ -6,7 +6,9 @@ import { createStudioAdminData } from '../apps/studio/lib/studio-admin-data.mjs'
 
 const scope = {environment:'fixture',workspaceId:'croupier'}, publicOrigin = 'https://studio.example.invalid';
 function fixture(overrides = {}) {
-  let state = {users:[],tokens:[],apiKeys:[],playerAccounts:[]};
+  // operatorColumn: game migration 012 (docs/plans/NYCKEL-BOLAG.md); operators: croupier_studio.operators in this scope.
+  let state = {users:[],tokens:[],apiKeys:[],playerAccounts:[],operatorColumn:true,
+    operators:[{operator_id:'north',status:'active'},{operator_id:'paused',status:'suspended'}]};
   const writes = [],sent = [],requests = [], failure = {sql:null};
   const boDb = { transaction:async work => {
     const previous = structuredClone(state);
@@ -16,6 +18,10 @@ function fixture(overrides = {}) {
       if (failure.sql && sql.startsWith(failure.sql)) throw Error('PRIVATE DATABASE URL');
       if (sql.startsWith('SELECT id FROM users WHERE lower')) return state.users.filter(user => user.username.toLowerCase() === args[0] || user.email?.toLowerCase() === args[1]);
       if (sql === 'SELECT id,username,email,role,hash FROM users WHERE username=? FOR UPDATE') return state.users.filter(user => user.username === args[0]);
+      if (sql.includes(' FROM pg_attribute ') && sql.includes("attname='operator_id'")) return [{present:state.operatorColumn}];
+      if (sql.startsWith('SELECT operator_id,status FROM croupier_studio.operators WHERE environment_id=? AND workspace_id=? AND operator_id=? FOR SHARE')) {
+        return args[0] === scope.environment && args[1] === scope.workspaceId ? state.operators.filter(row => row.operator_id === args[2]) : [];
+      }
       writes.push({sql,args});
       if (sql.startsWith('INSERT INTO users')) { state.users.push({id:String(state.users.length+1),username:args[0],email:args[1],role:args[2],created_at:args[3],hash:null}); return []; }
       if (sql === 'DELETE FROM tokens WHERE username=?') { state.tokens = state.tokens.filter(token => token.username !== args[0]); return []; }
@@ -111,34 +117,71 @@ test('role, server scope, unknown fields and missing mail are enforced before ac
 });
 
 test('partner create validates exact scopes and creates one-time credentials in existing Neon domain', async () => {
-  const f = fixture(), result = await f.call('apikeys/create',{name:' Example ',scopes:['launch','events'],walletUrl:'https://wallet.example.com/wallet',ipAllow:'203.0.113.7,2001:db8::1'});
+  const f = fixture(), result = await f.call('apikeys/create',{name:' Example ',scopes:['launch','events'],walletUrl:'https://wallet.example.com/wallet',ipAllow:'203.0.113.7,2001:db8::1',operatorId:'north'});
   assert.equal(result.ok,true); assert.match(result.key.key,/^ck_live_/); assert.match(result.key.secret,/^cs_/);
   assert.deepEqual(result.key.scopes,['launch','events']); assert.equal(f.state.apiKeys.length,1);
   assert.equal(f.state.apiKeys[0][7],'operator'); assert.equal(f.state.apiKeys[0][5],'https://wallet.example.com/wallet');
+  assert.equal(f.state.apiKeys[0][9],'north');
   for (const body of [{name:'Example',scopes:['bogus']},{name:'Example',scopes:['play','play']},{name:'Example',scopes:[]},{name:'Example',secret:'injected'},{name:'Example',ipAllow:'*'}]) {
-    await assert.rejects(f.call('apikeys/create',body));
+    await assert.rejects(f.call('apikeys/create',{...body,operatorId:'north'}),error=>error.statusCode===400);
   }
-  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'Example'},role),error=>error.statusCode===403);
+  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'Example',operatorId:'north'},role),error=>error.statusCode===403);
   assert.equal(f.state.apiKeys.length,1);
 });
 
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): every new key belongs to one active company, and no key
+// is created before migration 012, so the table stays empty for it.
+test('partner create requires one active company in scope and creates nothing before migration 012', async () => {
+  const f = fixture();
+  for (const operatorId of [undefined,null,'',42,['north'],{id:'north'},'-north','a'.repeat(101),'north;drop']) {
+    const body = {name:'Example',scopes:['launch']}; if (operatorId !== undefined) body.operatorId = operatorId;
+    await assert.rejects(f.call('apikeys/create',body),error=>error.statusCode===400,JSON.stringify(operatorId));
+  }
+  for (const operatorId of ['unknown','paused']) {
+    await assert.rejects(f.call('apikeys/create',{name:'Example',operatorId}),{code:'partner_key_operator_invalid',statusCode:422});
+  }
+  assert.deepEqual(f.state.apiKeys,[]); assert.equal(f.writes.length,0);
+  const pending = fixture(); pending.state.operatorColumn = false;
+  await assert.rejects(pending.call('apikeys/create',{name:'Example',operatorId:'north'}),{code:'partner_key_operator_schema_pending',statusCode:503});
+  assert.deepEqual(pending.state.apiKeys,[]); assert.equal(pending.writes.length,0);
+  // Once the column exists, a new key carries its company in the same INSERT.
+  pending.state.operatorColumn = true;
+  await pending.call('apikeys/create',{name:'Example',operatorId:'north'});
+  assert.equal(pending.state.apiKeys.length,1); assert.equal(pending.state.apiKeys[0][9],'north');
+  assert.match(pending.writes[0].sql,/^INSERT INTO api_keys \(id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at,operator_id\) /);
+});
+
+test('Admin HTTP names the company and schema refusals of a partner create without provider text', async () => {
+  for (const [change,body,status,code] of [[()=>{}, {name:'Example',operatorId:'paused'},422,'partner_key_operator_invalid'],
+    [f=>{f.state.operatorColumn=false;}, {name:'Example',operatorId:'north'},503,'partner_key_operator_schema_pending'],
+    [()=>{}, {name:'Example'},400,undefined]]) {
+    const f = fixture(); change(f);
+    const api = createStudioAdminApi({ authorize: () => ({ user: 'operator', role: 'admin', scope }), handlers: f.data.handlers, gates: f.data.gates,
+      allowedOrigins: [publicOrigin], publicHosts: [new URL(publicOrigin).host], mutationTransaction: work => f.boDb.transaction(work) });
+    const reply = await api.handle(new Request(`${publicOrigin}/studio/api/admin/apikeys/create`, { method: 'POST',
+      headers: { origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+    assert.equal(reply.status, status); assert.equal((await reply.json()).code, code);
+    assert.deepEqual(f.state.apiKeys, []);
+  }
+});
+
 test('demo create (purpose demo) stores a demo- key but its reply, also over HTTP, carries no key or secret', async () => {
-  const f = fixture(), response = await f.call('apikeys/create',{name:' demo-Johns Bet ',scopes:['launch','play'],purpose:'demo'});
+  const f = fixture(), response = await f.call('apikeys/create',{name:' demo-Johns Bet ',scopes:['launch','play'],purpose:'demo',operatorId:'north'});
   const [id, name, key, secret, scopes] = f.state.apiKeys[0];
   assert.deepEqual(response,{ok:true,key:{id,name:'demo-Johns Bet'}});
   assert.doesNotMatch(JSON.stringify(response),/ck_live_|cs_|secret|scopes|walletUrl|note/);
-  assert.equal(name,'demo-Johns Bet'); assert.match(key,/^ck_live_/); assert.match(secret,/^cs_/); assert.equal(scopes,'["launch","play"]');
+  assert.equal(name,'demo-Johns Bet'); assert.equal(f.state.apiKeys[0][9],'north'); assert.match(key,/^ck_live_/); assert.match(secret,/^cs_/); assert.equal(scopes,'["launch","play"]');
   for (const body of [{name:'Johns Bet',purpose:'demo'},{name:'Demo-x',purpose:'demo'},{name:'demo-x',purpose:'integration'},{name:'demo-x',purpose:''},
     {name:'demo-x',purpose:null},{name:'demo-x',purpose:true},{name:'demo-x',purpose:['demo']}]) {
-    await assert.rejects(f.call('apikeys/create',body),error=>error.statusCode===400,JSON.stringify(body));
+    await assert.rejects(f.call('apikeys/create',{...body,operatorId:'north'}),error=>error.statusCode===400,JSON.stringify(body));
   }
-  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'demo-x',purpose:'demo'},role),error=>error.statusCode===403);
+  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'demo-x',purpose:'demo',operatorId:'north'},role),error=>error.statusCode===403);
   assert.equal(f.state.apiKeys.length,1);
   const api = createStudioAdminApi({ authorize: () => ({ user: 'operator', role: 'admin', scope }), handlers: f.data.handlers, gates: f.data.gates,
     allowedOrigins: [publicOrigin], publicHosts: [new URL(publicOrigin).host], mutationTransaction: work => f.boDb.transaction(work) });
   const reply = await api.handle(new Request(`${publicOrigin}/studio/api/admin/apikeys/create`, { method: 'POST',
     headers: { origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'demo-Acme', scopes: ['launch','play'], purpose: 'demo' }) }));
+    body: JSON.stringify({ name: 'demo-Acme', scopes: ['launch','play'], purpose: 'demo', operatorId: 'north' }) }));
   assert.equal(reply.status, 200);
   const text = await reply.text(), stored = f.state.apiKeys[1];
   assert.deepEqual(JSON.parse(text), { ok: true, key: { id: stored[0], name: 'demo-Acme' } });
@@ -146,7 +189,7 @@ test('demo create (purpose demo) stores a demo- key but its reply, also over HTT
 });
 
 test('create without purpose shows the secret exactly once, in its reply; the key list never returns key or secret', async () => {
-  const f = fixture(), created = await f.call('apikeys/create',{name:'Partner AB',scopes:['launch','wallet']});
+  const f = fixture(), created = await f.call('apikeys/create',{name:'Partner AB',scopes:['launch','wallet'],operatorId:'north'});
   const stored = f.state.apiKeys[0];
   assert.equal(created.key.key, stored[2]); assert.equal(created.key.secret, stored[3]); assert.match(created.key.secret,/^cs_[A-Za-z0-9_-]{43}$/);
   assert.equal(JSON.stringify(created).split(stored[3]).length - 1, 1);
@@ -176,7 +219,7 @@ test('wallet callback metadata rejects local addresses, credentials and malforme
   for (const walletUrl of ['http://wallet.example.com','https://127.0.0.1/wallet','https://[::1]/wallet','https://10.10.1.1',
     'https://169.254.169.254/metadata','https://172.16.1.1','https://192.168.1.1','https://100.64.0.1','https://service.local',
     'https://user:password@wallet.example.com','https://wallet.example.com:8443','https://wallet.example.com/#secret']) {
-    await assert.rejects(f.call('apikeys/create',{name:'Example',walletUrl}));
+    await assert.rejects(f.call('apikeys/create',{name:'Example',walletUrl,operatorId:'north'}),error=>error.statusCode===400);
   }
   assert.equal(f.state.apiKeys.length,0);
 });

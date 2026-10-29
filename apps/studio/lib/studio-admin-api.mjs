@@ -178,6 +178,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         const code = 'studio_room_game_material_unavailable';
         return json({ error: code, code }, status);
       }
+      // Nyckel→bolag: Admin names why the chosen company cannot own a new key.
+      if (action === 'apikeys/create' && status === 422 && error instanceof StudioStorageError && error.code === 'partner_key_operator_invalid') {
+        return json({ error: publicErrors.get(status), code: error.code }, status);
+      }
       // A refused AI table graphic: fixed code, scene template, material and reason code.
       const misfit = status === 422 ? aiTableMisfitBody(error) : null;
       if (misfit) return json(misfit, status);

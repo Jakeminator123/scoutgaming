@@ -199,7 +199,9 @@ test('async internal bindings share credential, BO epoch and partner validation 
     }
     const before=await f.players.prepare('SELECT * FROM player_sessions ORDER BY digest').all();
     for(const s of sessions){
-      const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt,partnerKeyId:s.publicSession.partnerKeyId};
+      // A partner binding also names its key's company; this fixture key has none (before 012).
+      const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt,partnerKeyId:s.publicSession.partnerKeyId,
+        ...(s.publicSession.partnerKeyId?{operatorId:null}:{})};
       const bound=await auth.binding(s.request),byId=await auth.bindingById(s.sessionId);
       assert.deepEqual(bound,expected);assert.equal(Object.isFrozen(bound),true);
       assert.deepEqual(byId,expected);assert.equal(Object.isFrozen(byId),true);

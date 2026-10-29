@@ -11,7 +11,7 @@ Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (s
 
 ## 0. Läget
 
-- **Kvitton som redan finns** (i `docs/`, alla tagna före frysningen): K04 [omprov 3](../2026-10-28-K04-BROWSER-RERUN-3-ACCEPTANCE.json) på `1f66245b` (omprov 4 efter #481 återstår), K06 [omprovet](../2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json) och K07 [omprovet](../2026-10-28-K07-STAGING-RERUN-ACCEPTANCE.json) på `13aa5a01`, K05 [produktionen](../2026-10-27-K05-PRODUCTION-ACCEPTANCE.json), granskningarna [K04/K05](../2026-10-28-K04-K05-REVIEW.md), [K06/K07](../2026-10-28-K06-K07-REVIEW.md) och [K07](../2026-10-28-K07-REVIEW.md).
+- **Kvitton som redan finns** (i `docs/`, alla tagna före frysningen): K04 omprov 3 på `1f66245b` (omprov 4 efter #481 återstår), K06 [omprovet](../2026-10-28-K06-STAGING-RERUN-ACCEPTANCE.json) och K07 [omprovet](../2026-10-28-K07-STAGING-RERUN-ACCEPTANCE.json) på `13aa5a01`, K05 produktionen, granskningarna K04/K05, K06/K07 och K07. De som inte länkas är raderade efter O03 och läses ur Git enligt [HISTORIK](../HISTORIK.md).
 - **Inget av dem gäller kandidaten.** Torrkörning 2026-10-28 ca 05:13 UTC mot main `c8a26b64`: runtimediffen mot kandidaten är 183 filer för K04-kvittot och 454 för K06/K07. Alla tre tas därför om på kandidaten (F8).
 - **Staging** (läst read-only samma tid): Render kör `6a158180`, health 200. Rum `room-33b37ff3…` har `room-config-e0be09e9-414e-4a84-a77d-9fefe98c2932`, operatör A paket 15 och B paket 1 (Neon `red-violet-36066351`, `shared_table_config_heads` och `operator_packages`). Anonyma Admin-anrop ger 401, `/control` och `/lab` 307 → `/admin`, `/bo` 404. SQLite-förbudet är platt (`tools/check-no-sqlite.mjs`), utan allowlist.
 - **Jakobs beslut som bokförs i status.json när K04–K07 blir VERIFIED** (ställs inte igen):
@@ -20,7 +20,7 @@ Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (s
   - *Slå på ljud* stryks; knappen finns bara på nativebordet, som avvecklas efter O03.
   - K06:s fält för dealerval, idle, marker och rummets utseende via `roomOverrides` bevisas i O02 (V4 och kedjan K2 på kandidaten).
   - K06 F1: delat bord från O03, nativebordet avvecklas och omladdning är interimspolicy.
-  - Jakob godkände PAOW:s 35 giv-, hål- och revealklipp 01:55 UTC ([omprov 2](../2026-10-28-K04-BROWSER-RERUN-2-ACCEPTANCE.json), `visualApproval`).
+  - Jakob godkände PAOW:s 35 giv-, hål- och revealklipp 01:55 UTC (K04 omprov 2, `visualApproval`; kvittot är raderat, se [HISTORIK](../HISTORIK.md)).
 
 ## 1. Fryst kandidat
 
