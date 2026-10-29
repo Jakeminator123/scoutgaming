@@ -347,3 +347,72 @@ test('an invalid renderer, model, reasoning, cap or API form is "invalid setting
   assert.deepEqual({...aiImageSetup({OPENAI_API_KEY:KEY})},{settings:aiImageConfiguration({OPENAI_API_KEY:KEY}),problem:null});
   assert.equal(aiImageSetup({}).problem,'missing_key');
 });
+
+// Landing check: synthetic images only. A calm grey felt with fine grain passes,
+// a checkered pattern warns, and a warning never removes the proposal.
+async function syntheticPng(width,height,shade) {
+  const raw=Buffer.alloc(width*height*3);
+  for (let y=0;y<height;y++) for (let x=0;x<width;x++) {
+    const value=Math.max(0,Math.min(255,Math.round(shade(x,y)))),at=(y*width+x)*3;
+    raw[at]=value;raw[at+1]=value;raw[at+2]=value;
+  }
+  return sharp(raw,{raw:{width,height,channels:3}}).png().toBuffer();
+}
+const grain=(x,y)=>((Math.imul(y*7919+x+1,2654435761)>>>24)/255-.5)*12;
+const calm=base=>(x,y)=>base+grain(x,y);
+const checkered=(x,y)=>((Math.floor(x/8)+Math.floor(y/8))%2?190:60);
+const respondWith=bytes=>()=>Response.json({status:'completed',output:[{type:'image_generation_call',status:'completed',result:bytes.toString('base64')}]});
+const ZONES=['box-1','box-2','box-3','box-4','box-5','box-6','box-7','dealer'];
+
+test('table landing check: calm felt passes, a checkered felt warns on every zone, a dark felt under a dark stroke warns on contrast',async()=>{
+  const template=filmedTableTemplate('paow'),size=filmedTableRequestSize(template),table={role:'table',dealerId:'paow',prompt:'Grå filt',preset:'casino',count:1};
+  const ask=async(bytes,body=table)=>{
+    const response=await api({respond:respondWith(bytes)}).handle(post(body));
+    assert.equal(response.status,200,'a warning never refuses the proposal');
+    const [proposal]=(await response.json()).images;
+    assert.match(proposal.dataUrl,/^data:image\/webp;base64,/);
+    return proposal.check;
+  };
+  const quiet=await ask(await syntheticPng(size.width,size.height,calm(70)));
+  assert.equal(quiet.ok,true,JSON.stringify(quiet.worst));
+  assert.deepEqual(quiet.zones.map(zone=>zone.zone),ZONES);
+  for (const zone of quiet.zones) { assert.ok(zone.spread<8&&zone.edges<.01&&zone.contrast>=3,JSON.stringify(zone)); assert.equal(zone.ok,true); }
+  assert.ok(quiet.worst.score<=1&&ZONES.includes(quiet.worst.zone));
+  const busy=await ask(await syntheticPng(size.width,size.height,checkered));
+  assert.equal(busy.ok,false);assert.ok(['busy','edges'].includes(busy.worst.reason));assert.ok(busy.worst.score>1);
+  assert.ok(busy.zones.every(zone=>!zone.ok),'the pattern covers every landing');
+  // Light studio draws a dark stroke; on a near-black felt it disappears.
+  const dark=await ask(await syntheticPng(size.width,size.height,()=>18),{...table,preset:'light-studio'});
+  assert.equal(dark.ok,false);assert.equal(dark.worst.reason,'low_contrast');assert.ok(dark.zones.every(zone=>zone.contrast<3));
+  // Detail only between the boxes leaves the landings calm.
+  const boxes=[...template.seats,template.dealer].map(seat=>seat.box);
+  const scaleX=size.width/template.canvas.width,scaleY=size.height/template.canvas.height;
+  const inBox=(x,y)=>boxes.some(box=>x>=box.x*scaleX-4&&x<=(box.x+box.width)*scaleX+4&&y>=box.y*scaleY-4&&y<=(box.y+box.height)*scaleY+4);
+  const between=await ask(await syntheticPng(size.width,size.height,(x,y)=>inBox(x,y)?calm(70)(x,y):checkered(x,y)));
+  assert.equal(between.ok,true,JSON.stringify(between.worst));
+  // One busy box is named as the worst zone.
+  const four=template.seats.find(seat=>seat.id==='4').box;
+  const inFour=(x,y)=>x>=four.x*scaleX&&x<=(four.x+four.width)*scaleX&&y>=four.y*scaleY&&y<=(four.y+four.height)*scaleY;
+  const one=await ask(await syntheticPng(size.width,size.height,(x,y)=>inFour(x,y)?checkered(x,y):calm(70)(x,y)));
+  assert.equal(one.ok,false);assert.equal(one.worst.zone,'box-4');
+  assert.deepEqual(one.zones.filter(zone=>!zone.ok).map(zone=>zone.zone),['box-4']);
+});
+
+test('background landing check covers the area behind the dealer and the phone strip only',async()=>{
+  const ask=async bytes=>{
+    const response=await api({respond:respondWith(bytes)}).handle(post(background));
+    assert.equal(response.status,200);
+    return (await response.json()).images[0].check;
+  };
+  const quiet=await ask(await syntheticPng(1920,1088,(x,y)=>calm(40+y/20)(x,y)));
+  assert.equal(quiet.ok,true,JSON.stringify(quiet.worst));assert.deepEqual(quiet.zones.map(zone=>zone.zone),['dealer','phone']);
+  assert.ok(quiet.zones.every(zone=>zone.contrast===null),'a background has no box stroke');
+  const busy=await ask(await syntheticPng(1920,1088,checkered));
+  assert.equal(busy.ok,false);assert.ok(busy.zones.every(zone=>!zone.ok));
+  // Detail on the desktop-only sides (outside x 656-1264) is allowed.
+  const sides=await ask(await syntheticPng(1920,1088,(x,y)=>x<600||x>1320?checkered(x,y):calm(50)(x,y)));
+  assert.equal(sides.ok,true,JSON.stringify(sides.worst));
+  // A busy area above the table line behind the head warns as "dealer".
+  const head=await ask(await syntheticPng(1920,1088,(x,y)=>x>800&&x<1120&&y<380?checkered(x,y):calm(50)(x,y)));
+  assert.equal(head.ok,false);assert.equal(head.worst.zone,'dealer');
+});

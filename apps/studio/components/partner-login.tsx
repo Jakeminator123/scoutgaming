@@ -7,9 +7,9 @@ import styles from './studio-administration.module.css';
 type AuthBase = '/api/partner' | '/studio/api/partner';
 
 function noticeFor(status: number) {
-  if (status === 401 || status === 400) return 'Inloggningen kunde inte verifieras. Intern personal loggar in via Kontrollpanelen nedan.';
+  if (status === 401 || status === 400) return 'Inloggningen kunde inte verifieras. Scoutgamings personal loggar in i Admin via länken nedan.';
   if (status === 429) return 'För många försök. Vänta 15 minuter och försök igen.';
-  if (status === 403) return 'Inloggningen måste göras från partnerportalen.';
+  if (status === 403) return 'Inloggningen måste göras från Partnerportalen.';
   return 'Inloggningstjänsten är tillfälligt otillgänglig.';
 }
 
@@ -57,9 +57,9 @@ export function PartnerLogin({ authBase, returnTo }: { authBase: AuthBase; retur
 
   return <main className={styles.administration} style={{ maxWidth: '40rem', margin: '2rem auto', padding: '1rem' }}>
     <section className={styles.section} aria-busy={busy}>
-      <h1>Logga in i partnerportalen</h1>
-      <p>Operatörspersonal loggar in med sitt Croupier-konto. Intern personal använder Kontrollpanelen.</p>
-      <p><a href={internalLoginHref(authBase, returnTo)}>Logga in som intern administratör</a></p>
+      <h1>Logga in i Partnerportalen</h1>
+      <p>Bolagets team loggar in med sitt konto. Scoutgamings personal loggar in i Admin.</p>
+      <p><a href={internalLoginHref(authBase, returnTo)}>Logga in i Admin</a></p>
       <noscript><p>Aktivera JavaScript för att använda den säkra inloggningen.</p></noscript>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
       <form className={styles.form} method="post" action={`${authBase}/login`} onSubmit={event => void submit(event)}>

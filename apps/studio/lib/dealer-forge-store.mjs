@@ -8,7 +8,7 @@ import { canonicalStudioJson, StudioStorageError } from '../../../packages/studi
 // Thrown inside repository transactions: only StudioStorageError survives the repository's failure sanitizer, so codes carry the meaning.
 const fail = (message, statusCode = 503, code = 'studio_forge_store_failed') => { const error = new StudioStorageError(code, statusCode); error.detail = message; throw error; };
 // prepared: journaled, no provider POST has started (safe to pay or to drop). submitting: a POST may be in flight.
-export const JOB_STATUSES = Object.freeze(['prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled']);
+const JOB_STATUSES = Object.freeze(['prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled']);
 export const ACTIVE_STATUSES = Object.freeze(['prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 

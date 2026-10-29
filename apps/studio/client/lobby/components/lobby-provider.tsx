@@ -5,7 +5,7 @@ import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, type LobbyCatalo
 import { studioHistory } from '../../../lib/studio-history.mjs';
 import { roomSelection, rememberRoomSelection, readRoomSelection, type RoomSelection } from '../../../../../packages/player-catalog/room-selection.mjs';
 
-export const STEP_IDS = { operator: 'bolag', room: 'spelrum', dealer: 'dealers' } as const;
+export const STEP_IDS = { operator: 'bolag', room: 'spelbord', dealer: 'dealers' } as const;
 export type LobbyStep = 1 | 2 | 3 | 4;
 export function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
@@ -121,7 +121,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const step: LobbyStep = !operator ? 1 : !room ? 2 : !dealer ? 3 : 4;
   return <LobbyContext.Provider value={{ ...catalog, status, error, reload, operator, room, dealer,
     availableRooms, availableDealers, step, selectOperator, selectRoom, selectDealer, reset, choices, selectEnvironment, prepareLaunch, launchError }}>
-    {status === 'ready' && requested.unavailable && <p role="alert" className="border-b border-border bg-card px-5 py-4 text-sm text-off md:px-10">Det länkade valet är inte tillgängligt. Välj bolag och rum igen.</p>}
+    {status === 'ready' && requested.unavailable && <p role="alert" className="border-b border-border bg-card px-5 py-4 text-sm text-off md:px-10">Det länkade valet är inte tillgängligt. Välj bolag och spelbord igen.</p>}
     {children}
   </LobbyContext.Provider>;
 }

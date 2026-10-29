@@ -40,12 +40,12 @@ isolation:isolate;min-height:100vh;background:var(--sg-bg);color:var(--sg-text);
 .partner-portal .side a.nav .nav-icon{color:var(--sg-side-muted)}
 .partner-portal .side a.nav .label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .partner-portal .side a.nav:hover{background:var(--sg-side-2)}
-.partner-portal .side a.nav[aria-current="page"]{background:var(--sg-lime);color:var(--sg-on-accent);font-weight:600}
-.partner-portal .side a.nav[aria-current="page"] .nav-icon{color:var(--sg-on-accent)}
-/* Mörk inre ram på den lime valda posten; en ram utanför klipps i den rullande mobilmenyn. */
-.partner-portal .side a.nav[aria-current="page"]:focus-visible{outline-color:var(--sg-on-accent);outline-offset:-4px}
+.partner-portal .side a.nav[aria-current="page"]{background:var(--sg-side-2);color:var(--sg-side-text);font-weight:600;border-radius:3px 8px 8px 3px;box-shadow:inset 4px 0 0 var(--sg-lime)}
+.partner-portal .side a.nav[aria-current="page"] .nav-icon{color:var(--sg-lime)}
+/* Ljus inre ram på den valda posten (yta + limekant, som Admins meny); en ram utanför klipps i den rullande mobilmenyn. */
+.partner-portal .side a.nav[aria-current="page"]:focus-visible{outline-color:var(--sg-side-text);outline-offset:-4px}
 .partner-portal .side a.nav .count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--sg-side-line);color:var(--sg-side-text);font-size:11px;font-weight:600;display:grid;place-items:center}
-.partner-portal .side a.nav[aria-current="page"] .count{background:rgba(0,0,0,.16);color:var(--sg-on-accent)}
+.partner-portal .side a.nav[aria-current="page"] .count{background:var(--sg-side-line);color:var(--sg-side-text)}
 .partner-portal .side .foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--sg-side-line);display:grid;gap:10px;font-size:12.5px}
 .partner-portal .side .who{display:flex;align-items:center;gap:10px;min-width:0}
 .partner-portal .side .who>div{min-width:0;flex:1}

@@ -79,7 +79,7 @@ export function TrashPermanentDelete({disabled=false,onChanged}:{disabled?:boole
   const deleted=()=>{setReload(value=>value+1);onChanged();};
   const companies=data?.operators.filter(row=>row.status!=='active')??[],rooms=data?.rooms.filter(row=>row.archivedAt)??[];
   const company=(id:string)=>data?.operators.find(row=>row.id===id)?.name??id;
-  return <Card title="Radera permanent" className="mt-4">
+  return <Card title="Radera permanent">
     <Note className="mb-3">Radera tar bort spelbordet eller bolaget för gott. Det som publicerats till spelare förblir historik; uppladdade filer raderas inte.</Note>
     {failed?<p role="alert" className="m-0 text-[13px]">Papperskorgen kunde inte läsas. <Button size="sm" onClick={()=>setReload(value=>value+1)}>Försök igen</Button></p>
       :!data?<Loading label="Läser papperskorgen…" rows={2}/>

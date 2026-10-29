@@ -13,12 +13,12 @@ export const DEFAULT_POSITIONS = Object.freeze({
   4: Object.freeze({ cx: 540, cy: 1115 }), 5: Object.freeze({ cx: 684, cy: 1105 }), 6: Object.freeze({ cx: 827, cy: 1075 }),
   7: Object.freeze({ cx: 970, cy: 1025 }), dealer: Object.freeze({ cx: 540, cy: 895 }),
 });
-export const DEFAULT_TABLE_GEOMETRY = Object.freeze({
+const DEFAULT_TABLE_GEOMETRY = Object.freeze({
   rearY: 740,
   outline: Object.freeze([[105, 740], [970, 740], [1080, 848], [1080, 1420], [1030, 1515], [947, 1600], [840, 1668], [700, 1732], [540, 1764], [380, 1732], [240, 1668], [133, 1600], [50, 1515], [0, 1420], [0, 848]].map(Object.freeze)),
   frontLine: Object.freeze([[0, 1220], [80, 1400], [195, 1509], [340, 1582], [540, 1627], [740, 1582], [885, 1509], [1000, 1400], [1080, 1220]].map(Object.freeze)),
 });
-export const DEFAULT_PROFILE = Object.freeze({
+const DEFAULT_PROFILE = Object.freeze({
   schemaVersion: 1,
   subject: 'the dealer', // Short identity text used in prompts, e.g. "woman with dark hair, white shirt, black vest".
   theme: 'elegant dark casino, warm architectural lights, restrained luxury',
@@ -32,8 +32,8 @@ export const DEFAULT_PROFILE = Object.freeze({
 });
 
 // Checked 2026-10-12 against https://docs.dev.runwayml.com/guides/pricing/. 1 credit = 0.01 USD before tax.
-export const PRICE_CHECKED = '2026-10-12';
-export const QUALITIES = Object.freeze({
+const PRICE_CHECKED = '2026-10-12';
+const QUALITIES = Object.freeze({
   720: Object.freeze({ id: '720', label: 'Prov / webb · 720p', portrait: [720, 1280], landscape: [1280, 720], wanRate: 10, wanRatio: 'auto_720p', wanPortrait: '720:1280', imageModel: 'gen4_image', imageCredits: 5, imageRatio: { portrait: '720:1280', landscape: '1280:720' } }),
   1080: Object.freeze({ id: '1080', label: 'Hög upplösning · 1080p', portrait: [1080, 1920], landscape: [1920, 1080], wanRate: 20, wanRatio: 'auto_1080p', wanPortrait: '1080:1920', imageModel: 'gen4_image', imageCredits: 8, imageRatio: { portrait: '1080:1920', landscape: '1920:1080' } }),
 });
@@ -95,13 +95,6 @@ export function slotById(project, slotId) {
   return slot;
 }
 
-export function stageTransform(size, cropTop = 108) {
-  const [w, h] = size;
-  if (w > h) { const scale = h / FORGE_CANVAS.height * (FORGE_CANVAS.height / 1080); return { scale: h / 1080, offsetX: (w - 1080 * (h / 1080)) / 2, offsetY: -cropTop * (h / 1080), scaleNote: scale }; }
-  const scale = Math.min(w / 1080, h / 1920);
-  return { scale, offsetX: (w - 1080 * scale) / 2, offsetY: (h - 1920 * scale) / 2 };
-}
-
 /** Normalize a client-supplied positions map: eight targets within the canvas. */
 export function validatePositions(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Positioner ska vara ett objekt.');
@@ -159,7 +152,7 @@ const positionText = (profile, target) => {
   return `Target center on the canonical 1080x1920 canvas: x=${point.cx}, y=${point.cy} (${(point.cx / 1080).toFixed(4)} across, ${(point.cy / 1920).toFixed(4)} down). Card footprint: ${FORGE_CARD.width}x${FORGE_CARD.height} pixels. `;
 };
 
-export const REACTION_MOTION = Object.freeze({
+const REACTION_MOTION = Object.freeze({
   'turn.player': 'She looks toward the active player, gives a small inviting nod and an open-palm gesture that asks for a decision, then returns to the resting pose.',
   'settle.blackjack': 'A warm congratulating smile and a small approving nod; hands stay at rest on the green. Return to the neutral resting pose.',
   'settle.dealerBust': 'A small apologetic smile and a brief acknowledging nod toward the players; hands stay at rest. Return to the neutral resting pose.',

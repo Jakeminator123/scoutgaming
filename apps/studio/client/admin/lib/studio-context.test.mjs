@@ -159,6 +159,7 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
   const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
     :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
+    :name==='./assignment-field'?{AssignmentField:stub('data-assignment-field',props=>[props.operatorId,props.revision??'none'].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
@@ -326,13 +327,49 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   assert.equal(hrefs(html).some(href=>/other|archived|operator=|\/control/.test(href)),false,'another company\'s room, the archive and query-selected owners stay out');
   assert.ok(hrefs(html).includes('/admin/companies/a?flik=spelbord&view=create'));assert.doesNotMatch(html,/data-registered-studio=/,'room creation opens only on request');
   assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions}),/data-registered-studio="create:a::"/);
-  assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions}),/data-registered-studio="package:a::"/);
+  const assigned=await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions});
+  assert.match(assigned,/data-registered-studio="package:a::"/);
+  // Bolag › Tilldelat: tilldelningens fält för samma bolag och dess publicerade revision.
+  assert.match(assigned,/data-assignment-field="a:/);
   const other=await companiesPageHtml({page:'company',id:'b',search:'?flik=spelbord',compositions});
   assert.deepEqual([...new Set(hrefs(other).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/other?flik=utseende']);
   const missing=await companiesPageHtml({page:'company',id:'missing',search:'?flik=spelbord',compositions});
   assert.match(missing,/data-not-found="company"/,'the page states that the company is not registered');assert.doesNotMatch(other,/data-not-found=/,'a known company is not reported missing');assert.doesNotMatch(missing,/data-registered-studio=|\/admin\/rooms\//);
   const filtered=await companiesPageHtml({page:'companies',search:'?tab=spelbord&operator=a',compositions});
   assert.deepEqual([...new Set(hrefs(filtered).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/bj?flik=utseende','/admin/rooms/roulette?flik=utseende'],'the room list filters by company');
+});
+
+// Papperskorg (the kit's pilot, docs/plans/DESIGNSYSTEM.md): the tab names the state, so rows carry no trash
+// chip; an empty list is an empty state, not a table with only its header; a room is restored in the side
+// panel through the company's rooms lifecycle, never another company's.
+test('Papperskorg shows the archive date and count instead of a status chip, and an empty state instead of an empty table',async()=>{
+  const operators=[{id:'a',name:'Alfa',slug:'a',status:'active',archivedAt:null,packageRevision:1},{id:'z',name:'Zeta',slug:'z',status:'suspended',archivedAt:'2026-10-28T09:00:00Z',packageRevision:null}];
+  const html=await companiesPageHtml({page:'companies',search:'?tab=papperskorg',operators,rooms:[registryRoom(catalog.administration.rooms[0])],compositions});
+  assert.doesNotMatch(html.slice(html.indexOf('data-trash')),/>(?:i )?papperskorg(?:en)?</i,'no trash chip on a row under the Papperskorg tab');
+  assert.ok(shows(html,'Arkiverat 28 okt. 2026 · 0 spelbord'));
+  assert.match(html,/<a[^>]*href="\/admin\/companies\/z\?flik=installningar"[^>]*aria-label="Återställ Zeta"/,'a company is restored under its Inställningar');
+  assert.equal((html.match(/<table/g)??[]).length,1,'only the archived companies get a table');
+  assert.ok(shows(html,'Inga arkiverade spelbord'));assert.equal(roleCount(html,'status'),1,'the missing rooms are one empty state');
+  assert.doesNotMatch(html,/>Alla bolag</,'no lone filter between the sections');
+  const empty=await companiesPageHtml({page:'companies',search:'?tab=papperskorg',operators:[operators[0]],rooms:[registryRoom(catalog.administration.rooms[0])]});
+  assert.doesNotMatch(empty,/<table/);assert.ok(shows(empty,'Papperskorgen är tom'));assert.equal(roleCount(empty,'status'),1);
+});
+
+test('Papperskorg restores a room in the side panel of its own company and filters by company only with several owners',async()=>{
+  const rooms=[...catalog.administration.rooms.map(registryRoom),registryRoom({id:'old',name:'Gamla',operatorId:'b',state:'archived',game:'blackjack',compositionId:'one'})];
+  const html=await companiesPageHtml({page:'companies',search:'?tab=papperskorg',rooms,compositions});
+  assert.ok(hrefs(html).includes('/admin/companies?tab=papperskorg&restore=a')&&hrefs(html).includes('/admin/companies?tab=papperskorg&restore=b'));
+  assert.ok(hrefs(html).includes('/admin/companies?tab=papperskorg&operator=b'),'two owners: filter chips');
+  assert.doesNotMatch(html,/data-lifecycle=/,'the panel opens only on request');
+  const filtered=await companiesPageHtml({page:'companies',search:'?tab=papperskorg&operator=b&restore=b',rooms,compositions});
+  assert.match(filtered,/data-lifecycle="rooms"/);assert.ok(shows(filtered,'Återställ hos b'));
+  assert.ok(hrefs(filtered).includes('/admin/companies?tab=papperskorg&operator=b&restore=b'),'the filter stays when the panel opens');
+  assert.equal(hrefs(filtered).some(href=>href.includes('restore=a')),false,'the filtered list shows only the company\'s rooms');
+  const none=await companiesPageHtml({page:'companies',search:'?tab=papperskorg&operator=missing',rooms,compositions});
+  assert.equal((none.match(/<table/g)??[]).length,0,'a filter without rooms is an empty state, not a table of headers');assert.equal(roleCount(none,'status'),1);
+  assert.doesNotMatch(await companiesPageHtml({page:'companies',search:'?tab=papperskorg&restore=missing',rooms,compositions}),/data-lifecycle=/,'an unknown company opens no lifecycle');
+  const single=await companiesPageHtml({page:'companies',search:'?tab=papperskorg',rooms:[...catalog.administration.rooms.map(registryRoom)],compositions});
+  assert.equal(hrefs(single).some(href=>href.includes('operator=')),false,'one owner: no filter chips');
 });
 
 test('saved room bookmarks land on the room nav with their owner, room and fragment',()=>{
