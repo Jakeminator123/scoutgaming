@@ -10,7 +10,7 @@ import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, P
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
-import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
+import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
 import { mergeOperatorMaterialsForPublication, operatorMaterialFingerprint, presentationFits, publicationRooms } from './operator-material-publication.mjs';
 import { encodePresentationPackage } from '../../../packages/presentation/server/presentation-package.mjs';
@@ -53,17 +53,6 @@ export function adjustableForPackage(laneIds, saved) {
     for (const item of items) if (ADJUSTABLE_ORDER.includes(item)) found.add(item);
   }
   return ADJUSTABLE_ORDER.filter(item => found.has(item));
-}
-
-function gateKeys(branding, adjustable) {
-  if (!plainObject(branding)) fail(422);
-  const allowed = new Set(adjustable);
-  for (const key of Object.keys(branding)) {
-    if (key === PRESENTATION_PACKAGE_KEY) fail(422);
-    if (key === 'lane') continue;
-    const token = key === TABLE_COLOR_BRANDING_KEY ? 'table.color' : key === 'background' ? 'background' : key === 'dealer' ? 'dealer' : key === 'table' ? 'table' : 'branding';
-    if (!allowed.has(token)) fail(422);
-  }
 }
 
 function view(pack, adjustable) {
@@ -110,44 +99,6 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     if (presentation) document ??= await administrationSnapshot();
     return { ...view(pack, adjustableForPackage(pack.lanes, saved)), ...(presentation ? { presentation, dealerChoices:choices(pack,presentation,document) } : {}) };
   }
-  async function prepareBranding(current, branding, document) {
-    if (!Array.isArray(current.lanes) || !current.lanes.length) fail(409);
-    const presentation = readPackagePresentation(current);
-    const source = presentation ? { lanes: presentation.lanes } : await savedProject();
-    const assigned = new Set(projectLanes(source).map(lane => lane.id));
-    if (current.lanes.some(id => !assigned.has(id))) fail(409);
-    const adjustable = adjustableForPackage(current.lanes, source);
-    gateKeys(branding, adjustable);
-    let nextBranding={...structuredClone(current.branding),...branding};
-    if (presentation) {
-      const laneId = branding.lane ?? current.branding.lane ?? presentation.lanes[0].id;
-      const lane = presentation.lanes.find(item => item.id === laneId);
-      if (!lane) fail(422);
-      const previous={...current.branding};
-      if((previous.lane??presentation.lanes[0].id)!==laneId) {
-        for(const key of ['dealer','table','background','color'])delete previous[key];
-      }
-      const base=normalizePresentationBranding({...previous,lane:laneId},presentation);
-      const merged = {...base,...branding};
-      const rights = new Set(effectivePartnerAdjustments(lane));
-      gateKeys(branding,[...rights]);
-      for (const role of ['background', 'table', 'dealer']) {
-        if (Object.hasOwn(branding,role) && !rights.has(role)) fail(422);
-        if (merged[role] !== undefined && merged[role] !== null && !partnerLayerChoices(lane, role).includes(merged[role])) fail(422);
-      }
-      // The chosen table must fit this template when it is an AI table graphic.
-      assertAiTableChoiceFits(lane, presentation.assets, merged.table ?? lane.layers.table.default);
-      if (Object.hasOwn(branding,'dealer') || merged.dealer !== undefined && merged.dealer !== null) {
-        const wanted = merged.dealer ?? lane.layers.dealer.default;
-        if (!choices(current,presentation,document)[lane.id].includes(wanted)) fail(409);
-      }
-      if (Object.hasOwn(branding,'color') && (!rights.has('table.color') || !/^#[a-f0-9]{6}$/.test(branding.color)
-        || lane.layers.table.colors?.length && !lane.layers.table.colors.includes(branding.color))) fail(422);
-      nextBranding={...merged,[PRESENTATION_PACKAGE_KEY]:current.branding[PRESENTATION_PACKAGE_KEY]};
-    } else if (Object.hasOwn(branding,'lane')) fail(422);
-    return nextBranding;
-  }
-
   function requireDraftStore(source) {
     if(!['getBrandingDraft','saveBrandingDraft','publishBrandingDraft','getPackage','listPackages'].every(key=>typeof source?.[key]==='function'))fail(503);
   }
@@ -365,33 +316,5 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   return Object.freeze({
     readState:({operatorId})=>state(operatorId),
     command,
-    async read({ operatorId }) { return present(await load(operatorId)); },
-    async write({ operatorId, actor, audit, expectedRevision, branding }) {
-      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) fail(400);
-      if (!plainObject(branding)) fail(422);
-      // Capture the request before any await; a caller cannot change the intent.
-      branding=structuredClone(branding);
-      const current=await load(operatorId), presentation=readPackagePresentation(current);
-      const captured=presentation?await administrationSnapshot():null;
-      const rows=await materialRowsBeforeSql(operatorId),materialFingerprint=operatorMaterialFingerprint(rows);
-      const candidate=await brandingWithMaterials(current,rows,captured,pack=>prepareBranding(pack,branding,captured));
-      if (current.revision !== expectedRevision) fail(409);
-      if (typeof withWriteContext !== 'function') fail(503);
-      return withWriteContext(async context=>{
-        if (await context.reauthorize() !== true) fail(403);
-        const locked=await load(operatorId,context.store);
-        const document=presentation?await administrationSnapshot(context.readAdministration):null;
-        if (locked.revision !== current.revision || document?.revision !== captured?.revision) fail(409);
-        const nextBranding=await brandingWithMaterials(locked,await lockedMaterialRows(context,operatorId,materialFingerprint),document,
-          pack=>prepareBranding(pack,branding,document));
-        await checkPublication(context,{...locked,branding:nextBranding});
-        let published;
-        try {
-          published=await context.store.publishPackage({actor,audit,operatorId,expectedRevision:locked.revision,
-            lanes:[...locked.lanes],games:[...locked.games],tables:[...locked.tables],branding:nextBranding});
-        } catch(error) { if(Number.isInteger(error?.statusCode)) throw error; fail(503); }
-        return present(published,document);
-      },{presentationMutation:publicationMutation({...current,branding:candidate})});
-    },
   });
 }

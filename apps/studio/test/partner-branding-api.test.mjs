@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { createPartnerBrandingApi as createApi, TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
+import { publishThroughDraft, withBrandingDrafts } from './fixtures/branding-draft-store.mjs';
 
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const clock = () => 1_700_000_000_000;
@@ -100,7 +101,7 @@ async function seeded(lanes = ['vip-table', 'mobile-phone']) {
 
 function apiFor(store, lanes) {
   return createPartnerBrandingApi({
-    store,
+    store: withBrandingDrafts(store),
     readProject: async () => ({ project: { lanes } }),
   });
 }
@@ -108,11 +109,11 @@ function apiFor(store, lanes) {
 test('adjustable uses only saved package lanes and does not manufacture a standard lane', async () => {
   const { store } = await seeded(['mobile-phone', 'missing-lane']);
   const fallback = apiFor(store, [{ id: 'vip-table', operatorAdjustable: ['dealer'] }]);
-  const fallen = await fallback.read({ operatorId });
+  const fallen = await fallback.readState({ operatorId });
   assert.deepEqual(fallen.adjustable, []);
   assert.equal(fallen.packageRevision, 1);
   const pinned = apiFor(store, [{ id: 'mobile-phone', operatorAdjustable: ['dealer'] }]);
-  assert.deepEqual((await pinned.read({ operatorId })).adjustable, ['dealer']);
+  assert.deepEqual((await pinned.readState({ operatorId })).adjustable, ['dealer']);
   const mixed = apiFor(store, [
     { id: 'mobile-phone', operatorAdjustable: ['table.color'] },
     { id: 'vip-table', operatorAdjustable: ['branding', 'background'] },
@@ -121,53 +122,28 @@ test('adjustable uses only saved package lanes and does not manufacture a standa
   assert.deepEqual((await apiFor(both, [
     { id: 'mobile-phone', operatorAdjustable: ['table.color'] },
     { id: 'vip-table', operatorAdjustable: ['branding', 'background'] },
-  ]).read({ operatorId })).adjustable, ['table.color', 'background', 'branding']);
-  await assert.rejects(() => mixed.read({ operatorId: 'missing-operator' }), error => error.statusCode === 404);
+  ]).readState({ operatorId })).adjustable, ['table.color', 'background', 'branding']);
+  await assert.rejects(() => mixed.readState({ operatorId: 'missing-operator' }), error => error.statusCode === 404);
 });
 
-test('a matching revision publishes branding and keeps lanes, games and tables', async () => {
+test('a package without a frozen presentation is never changed through the draft, and nothing is published', async () => {
   const { pool, store } = await seeded();
   const api = apiFor(store, [
     { id: 'mobile-phone', operatorAdjustable: ['table.color', 'branding'] },
     { id: 'vip-table', operatorAdjustable: [] },
   ]);
-  const saved = await api.write({
-    operatorId, actor, expectedRevision: 1,
-    branding: { [TABLE_COLOR_BRANDING_KEY]: '#00ff00', logo: 'mark' },
-  });
-  assert.equal(saved.packageRevision, 2);
-  assert.deepEqual(saved.lanes, ['mobile-phone', 'vip-table']);
-  assert.deepEqual(saved.branding, { [TABLE_COLOR_BRANDING_KEY]: '#00ff00', logo: 'mark', name: 'Unibet' });
-  const current = await store.getCurrentPackage(operatorId);
-  assert.equal(current.revision, 2);
-  assert.deepEqual([...current.lanes], ['mobile-phone', 'vip-table']);
-  assert.deepEqual([...current.games], ['blackjack']);
-  assert.deepEqual([...current.tables], ['table-a']);
-  assert.equal(pool.packageCount(), 2);
-});
-
-test('the wrong revision is 409 and a key outside the lane is 422', async () => {
-  const { pool, store } = await seeded(['mobile-phone']);
-  const colorOnly = apiFor(store, [{ id: 'mobile-phone', operatorAdjustable: ['table.color'] }]);
-  await assert.rejects(
-    () => colorOnly.write({ operatorId, actor, expectedRevision: 4, branding: { name: 'Nord' } }),
-    error => error.statusCode === 422,
-  );
-  await assert.rejects(
-    () => colorOnly.write({ operatorId, actor, expectedRevision: 9, branding: { [TABLE_COLOR_BRANDING_KEY]: '#00ff00' } }),
-    error => error.statusCode === 409,
-  );
-  const brandingOnly = apiFor(store, [{ id: 'mobile-phone', operatorAdjustable: ['branding'] }]);
-  await assert.rejects(
-    () => brandingOnly.write({ operatorId, actor, expectedRevision: 1, branding: { [TABLE_COLOR_BRANDING_KEY]: '#00ff00' } }),
-    error => error.statusCode === 422,
-  );
-  await assert.rejects(
-    () => brandingOnly.write({ operatorId, actor, expectedRevision: 1, branding: { constructor: 'nope' } }),
-    error => error.statusCode === 422,
-  );
+  const before = await store.getCurrentPackage(operatorId);
+  for (const branding of [{ [TABLE_COLOR_BRANDING_KEY]: '#00ff00' }, { lane: 'mobile-phone' }]) {
+    await assert.rejects(() => api.command({ operatorId, actor, action: 'save-draft', expectedDraftRevision: 0, expectedPackageRevision: 1, branding }),
+      error => error.statusCode === 409);
+  }
+  // Fields outside the editable surface are refused before anything else.
+  for (const branding of [{ logo: 'mark' }, { name: 'Nord' }, { constructor: 'nope' }]) {
+    await assert.rejects(() => api.command({ operatorId, actor, action: 'save-draft', expectedDraftRevision: 0, expectedPackageRevision: 1, branding }),
+      error => error.statusCode === 422);
+  }
   assert.equal(pool.packageCount(), 1);
-  assert.equal((await store.getCurrentPackage(operatorId)).revision, 1);
+  assert.deepEqual(await store.getCurrentPackage(operatorId), before);
 });
 
 import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
@@ -178,53 +154,69 @@ import {wrapNativePresentationRepository} from '../lib/presentation-runtime-read
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
-function makePresentation(layered=true) {
+function makePresentation(layered=true,operatorAdjustable=['table','table.color','background','dealer','branding']) {
   const assets=[['table',tableId,'Bordbild','image/png'],['background',backgroundId,'Bakgrundsfilm','video/webm']].map(([role,id,label,contentType])=>{
     const asset={schemaVersion:1,id,role,label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};
     return {...asset,pathname:layerAssetPath(asset)};
   });
-  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','nora'],operatorAdjustable:['table','table.color','background','dealer','branding'],
+  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','nora'],operatorAdjustable,
     layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','nora']}},
     ...(layered?{composition:defaultCompositionSettings()}: {})};
   return cloudPresentationFixture({lanes:[lane],assets}).presentation;
 }
 
+const draft=(api,branding,{expectedPackageRevision=1,expectedDraftRevision=0}={})=>api.command({operatorId,actor,action:'save-draft',expectedDraftRevision,expectedPackageRevision,branding});
+
 test('canonical package rejects incompatible baked layer choices while retaining approved playback',async()=>{
   const presentation=makePresentation(false);
   const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
   let writes=0;
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}},readProject:async()=>assert.fail('published package must be authoritative')});
-  assert.deepEqual((await api.read({operatorId})).adjustable,['dealer','branding']);
-  for(const branding of [{table:tableId},{background:backgroundId},{color:'#112233'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===422);
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}}),readProject:async()=>assert.fail('published package must be authoritative')});
+  assert.deepEqual((await api.readState({operatorId})).adjustable,['dealer','branding']);
+  for(const branding of [{table:tableId},{background:backgroundId},{color:'#112233'}])await assert.rejects(draft(api,branding),error=>error.statusCode===422);
   assert.equal(writes,0);
-  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',dealer:'nora'}});
+  const saved=await publishThroughDraft(api,{operatorId,actor,expectedPackageRevision:1,branding:{lane:'mobile-phone',dealer:'nora'}});
   assert.equal(saved.presentation.lanes[0].layers.dealer.default,'astrid');
   assert.equal(writes,1);
 });
-test('canonical separate layers accept exact assigned assets and preserve games and room IDs',async()=>{
+test('canonical separate layers accept exact assigned assets and preserve games, room IDs and N1 metadata',async()=>{
   const presentation=makePresentation();
-  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async input=>{current={...input,revision:current.revision+1};return current;}},readProject:async()=>assert.fail('no live catalogue fallback')});
-  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{background:'foreign-asset'}}),error=>error.statusCode===422);
-  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'nora'}});
+  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({name:'Unibet'},presentation)};
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async input=>{current={...input,revision:current.revision+1};return current;}}),readProject:async()=>assert.fail('no live catalogue fallback')});
+  await assert.rejects(draft(api,{background:'foreign-asset'}),error=>error.statusCode===422);
+  const saved=await publishThroughDraft(api,{operatorId,actor,expectedPackageRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'nora'}});
   assert.equal(saved.packageRevision,2);
   assert.equal(saved.branding.table,tableId);
   assert.equal(saved.presentation.assets.find(asset=>asset.id===tableId).contentType,'image/png');
   assert.deepEqual(current.games,['blackjack']);
   assert.deepEqual(current.tables,['room-1']);
   assert.deepEqual(current.lanes,['mobile-phone']);
+  assert.equal(current.branding.name,'Unibet','N1 metadata is kept');
+});
+
+test('a stale package revision is 409 and a field outside the template rights is 422; nothing is published',async()=>{
+  let writes=0;
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async()=>{writes++;return current;}}),readProject:async()=>assert.fail('frozen only')});
+  assert.deepEqual((await api.readState({operatorId})).adjustable,['table.color']);
+  for(const branding of [{background:backgroundId},{table:tableId},{dealer:'nora'},{name:'Nord'},{constructor:'nope'},{_scoutPresentation:{}}])
+    await assert.rejects(draft(api,branding),error=>error.statusCode===422);
+  await assert.rejects(draft(api,{color:'#112233'},{expectedPackageRevision:9}),error=>error.statusCode===409);
+  await assert.rejects(draft(api,{color:'#112233'},{expectedDraftRevision:4}),error=>error.statusCode===409);
+  assert.equal((await draft(api,{color:'#112233'})).draft.branding.color,'#112233');
+  assert.equal(writes,0);assert.equal(current.revision,1);
 });
 
 test('a package changed after the read is rejected by the atomic publisher',async()=>{
   const presentation=makePresentation();
   const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
   let attempts=0;
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
     attempts++;
     assert.equal(input.expectedRevision,1);
     throw Object.assign(Error('changed while awaiting publication'),{statusCode:409});
-  }},readProject:async()=>assert.fail('no live fallback')});
-  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{dealer:'nora'}}),error=>error.statusCode===409);
+  }}),readProject:async()=>assert.fail('no live fallback')});
+  await assert.rejects(publishThroughDraft(api,{operatorId,actor,expectedPackageRevision:1,branding:{dealer:'nora'}}),error=>error.statusCode===409);
   assert.equal(attempts,1);
   assert.equal(current.revision,1);
 });
@@ -242,15 +234,15 @@ function createPartnerBrandingApi(options) {
 test('empty and unresolved package selections cannot be republished through branding',async()=>{
  for(const lanes of [[],['mobile-phone']]){
   let writes=0;const current={operatorId,revision:1,lanes,games:['blackjack'],tables:[],branding:{name:'Company'}};
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}},readProject:async()=>({lanes:[]})});
-  assert.deepEqual((await api.read({operatorId})).adjustable,[]);
-  for(const branding of [{},{name:'Changed'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===409);
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}}),readProject:async()=>({lanes:[]})});
+  assert.deepEqual((await api.readState({operatorId})).adjustable,[]);
+  for(const branding of [{},{lane:'mobile-phone'}])await assert.rejects(draft(api,branding),error=>error.statusCode===409);
   assert.equal(writes,0);assert.equal(current.revision,1);assert.deepEqual(current.branding,{name:'Company'});
  }
 });
 
 function guardedLegacyFixture({version=21,anchors=true,acquireAnchors=false}={}){
-  let locked=false,writes=0;
+  let locked=false,writes=0,armed=false;
   const calls=[],presentation=makePresentation();
   function addAnchors(value){
     const geometry=defaultBlackjackTableGeometry(tableId);
@@ -259,12 +251,12 @@ function guardedLegacyFixture({version=21,anchors=true,acquireAnchors=false}={})
   }
   if(anchors)addAnchors(presentation);
   let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
-  const store={getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
+  const store=withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
     assert.equal(locked,true);writes++;current={...structuredClone(input),revision:2};return current;
-  }};
+  }});
   const repository=wrapNativePresentationRepository({transaction:async work=>{
     calls.push('BEGIN');locked=true;
-    if(acquireAnchors){const changed=structuredClone(presentation);addAnchors(changed);current.branding=withPackagePresentation({},changed);}
+    if(acquireAnchors&&armed){const changed=structuredClone(presentation);addAnchors(changed);current.branding=withPackagePresentation({},changed);}
     try{return await work();}finally{locked=false;}
   }},{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
     assert.equal(locked,false,'legacy publication must not fetch under SQL lock');
@@ -276,17 +268,25 @@ function guardedLegacyFixture({version=21,anchors=true,acquireAnchors=false}={})
   const api=createApi({store,readProject:async()=>assert.fail('frozen payload only'),readAdministration,
     withWriteContext:(work,options)=>repository.transaction(()=>work({store,readAdministration,reauthorize:async()=>true,
       withMutationContext:repository.withMutationContext}),options)});
-  return {write:()=>api.write({operatorId,actor,expectedRevision:1,branding:{color:'#112233'}}),calls,get writes(){return writes;}};
+  // Save and review run first; the calls are counted from the publication itself.
+  async function publish(){
+    const base={operatorId,actor,expectedPackageRevision:1};
+    await api.command({...base,action:'save-draft',expectedDraftRevision:0,branding:{color:'#112233'}});
+    const review=await api.command({...base,action:'review',expectedDraftRevision:1});
+    calls.length=0;armed=true;
+    return api.command({...base,action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken});
+  }
+  return {publish,calls,get writes(){return writes;}};
 }
-for(const version of [19,20])test(`legacy partner write cannot copy frozen anchors to reader${version}`,async()=>{
+for(const version of [19,20])test(`partner publication cannot copy frozen anchors to reader${version}`,async()=>{
   const f=guardedLegacyFixture({version});
-  await assert.rejects(f.write,error=>error.statusCode===503);
+  await assert.rejects(f.publish,error=>error.statusCode===503);
   assert.equal(f.writes,0);assert.deepEqual(f.calls,[21]);
 });
-test('legacy partner write preflights reader21 and checks the actual payload inside the mutation context',async()=>{
+test('partner publication preflights reader21 and checks the actual payload inside the mutation context',async()=>{
   const f=guardedLegacyFixture();
-  assert.equal((await f.write()).packageRevision,2);assert.equal(f.writes,1);assert.deepEqual(f.calls,[21,'BEGIN']);
+  assert.equal((await f.publish()).packageRevision,2);assert.equal(f.writes,1);assert.deepEqual(f.calls,[21,'BEGIN']);
   const changed=guardedLegacyFixture({version:19,anchors:false,acquireAnchors:true});
-  await assert.rejects(changed.write,error=>error.statusCode===503);
+  await assert.rejects(changed.publish,error=>error.statusCode===503);
   assert.equal(changed.writes,0);assert.deepEqual(changed.calls,[4,'BEGIN']);
 });
