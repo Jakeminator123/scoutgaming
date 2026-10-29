@@ -28,7 +28,7 @@ import { openClawChat } from './openclaw-chat.mjs';
 import { normalizeAstridObservation } from '../../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
-import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { completeChatWithSpeech, selectChatSpeechStream } from './generated-speech-chat.mjs';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
@@ -177,6 +177,9 @@ const playerChatMemory = (await createPlayerChatMemory(db, {studioScope:studioPo
 let presentationApi;
 const activePlayerChats = new Map();
 let speechStreamService = null;
+// Streamed still-image speech is optional: none of its three provider values means it is off.
+const stillSpeechDisabled = process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1'
+  && !['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'].some(name => process.env[name]);
 let movingSpeechService = null;
 const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
@@ -521,7 +524,7 @@ const operatorSpeechQa = createOperatorSpeechQa({
     : undefined,
   origin: process.env.PUBLIC_URL ?? gameOrigin,
   authenticate: boSessionOk,
-  service: () => speechStreamService,
+  service: () => typeof speechStreamService?.prepare === 'function' ? speechStreamService : null,
   decide: (request, status, signal) => openClawChat(request, status, {
     fetchImpl: ((url, options = {}) => fetch(url, { ...options,
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
@@ -941,7 +944,8 @@ const server = createServer(async (req, res) => {
         if(incoming.presentationVersion!==undefined&&(!movingSpeechService?.supports(dealerId)
           ||!Number.isSafeInteger(incoming.presentationVersion)||String(incoming.presentationVersion)!==incoming.roundRevision))
           throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
-        if (registeredSpeech && (typeof selectedSpeechStream?.prepare !== 'function' || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
+        const speechRoute = selectChatSpeechStream({ dealerId, registeredSpeech, selected: selectedSpeechStream,
+          acceptsSpeechStream: incoming.acceptsSpeechStream, stillSpeechDisabled });
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
             if (speechStreamService && incoming.acceptsSpeechStream === true && Number.isSafeInteger(ms) && ms >= 0) {
@@ -962,7 +966,7 @@ const server = createServer(async (req, res) => {
             })) });
           },
           service: dealerId==='astrid'?getGeneratedSpeechService():null,
-          streamService: (dealerId==='astrid'||registeredSpeech)&&incoming.acceptsSpeechStream === true ? selectedSpeechStream : null,
+          streamService: speechRoute.streamService, textOnlyReason: speechRoute.textOnlyReason,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
@@ -1193,14 +1197,15 @@ if (sharedRoomsEnabled) {
     engineOrigin:roomOrigins.engineOrigin});
   // Speech services are created below; the chat reads them per request (PR 2: ticket to the asker).
   sharedRoomChat = createSharedRoomChat({service:sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin,
-    speech:()=>({movingSpeech:movingSpeechService,speechStream:speechStreamService,dealerSpeech:dealerSpeechRuntime})});
+    speech:()=>({movingSpeech:movingSpeechService,speechStream:speechStreamService,dealerSpeech:dealerSpeechRuntime,stillSpeechDisabled})});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
   try { await sharedRoomService.start(); }
   catch (error) { gameUpgradeDispatcher.close(); await sharedRoomService.close(); throw error; }
 }
-if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
+if (stillSpeechDisabled) console.info(JSON.stringify({ event: 'generated_speech_still_disabled' }));
+else if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(gameUpgradeDispatcher?.port('speech') ?? server, streaming.configuration, {

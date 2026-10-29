@@ -145,7 +145,8 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 | `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | villkorlig, par | Director för spelchatt, genererat tal och kamera. Utan paret avvisas chatten som okonfigurerad; inspelade repliker behöver det inte. Halvt par stoppar starten |
 | `CROUPIER_PRESENTATION_DIRECTOR_URL`, `CROUPIER_PRESENTATION_DIRECTOR_TOKEN` | valfri, par | Presentationsanslutning till Director |
 | `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_SPEECH_TIMEOUT_MS` | valfri | Tidsgränser; `OPENCLAW_SPEECH_TIMEOUT_MS=20000` på både motorn och Director före adaptiv chatt |
-| `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH` | villkorlig, båda `1` eller båda av | Genererat tal; kräver `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` |
+| `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH` | villkorlig, båda `1` eller båda av | Genererat tal. Helfilstal utan streaming kräver stillbildstrion nedan |
+| `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` | villkorlig, alla tre eller ingen | Stillbildstal (astrid-gpu-worker). Med streaming och ingen av dem är stillbildsvägen av: rörligt tal går, dealers med stillbildsprofil svarar med text (`generated_speech_still_not_configured`). Delvis satt stoppar starten |
 | `CROUPIER_GENERATED_SPEECH_STREAMING` | villkorlig | Strömmat tal; kräver olika `CROUPIER_SPEECH_STREAM_WORKER_SECRET` och `CROUPIER_SPEECH_STREAM_TICKET_SECRET` (minst 32 tecken), `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD` (högst 10) och `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` (högst 20, minst reserven) |
 | `CROUPIER_SPEECH_FULLFILE_RESERVE_USD` | villkorlig | Reserv för helfilstal utan streaming; räknas mot samma dygnstak |
 | `CROUPIER_DEALER_SPEECH_PROFILES`, `ELEVENLABS_API_KEY` | villkorlig | Röstprofil per dealer; kräver streaming och Neon. Saknad röst ger fel, aldrig en annan dealers röst |
