@@ -864,7 +864,7 @@ function brandingApi(f,db){
       readAdministration,reauthorize:async()=>true,materials:db.store})))});
 }
 
-test('approved company material survives every rebuilding publisher: Admin package, scene layout, idle refresh, branding write and draft',async t=>{
+test('approved company material survives every rebuilding publisher: Admin package, scene layout, idle refresh and the company\'s drafts',async t=>{
   const db=await materialDatabase();t.after(()=>db.pool.end());
   const f=await nativeFixture({dealer:'paow',materials:()=>db.store});
   const lane=await unlockOwnMaterial(f);
@@ -898,16 +898,18 @@ test('approved company material survives every rebuilding publisher: Admin packa
   const idleReceipt=await admin(f,{action:'refresh-dealer-idle',operatorId:'north',roomId:room.id,dealerId:'paow',expectedPackageRevision:4});
   assert.equal(idleReceipt.packageRevision,5);assert.ok(idleReceipt.presentation.playback.media.some(row=>row.id===alternate.id));
   kept(idleReceipt.presentation,'idle refresh');kept(await stored(),'idle refresh stored');
-  // 4. The company's branding publication chooses its own background.
-  const branding=brandingApi(f,db);
-  const view=await branding.write({operatorId:'north',actor:'partner-1',expectedRevision:5,branding:{background:ownBackground}});
+  // 4. The company's draft chooses its own background: save, review and publish.
+  const branding=brandingApi(f,db),audit=()=>({actorId:'partner-1',accessClass:'partner',requestId:randomUUID()});
+  const cycle=async(choice,expectedPackageRevision,expectedDraftRevision)=>{
+    await branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'save-draft',expectedDraftRevision,expectedPackageRevision,branding:choice});
+    const review=await branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'review',expectedDraftRevision:expectedDraftRevision+1,expectedPackageRevision});
+    return branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'publish',expectedDraftRevision:expectedDraftRevision+1,expectedPackageRevision,reviewToken:review.reviewToken});
+  };
+  const view=await cycle({lane:lane.id,background:ownBackground},5,0);
   assert.equal(view.packageRevision,6);assert.equal(view.branding.background,ownBackground);
   kept(view.presentation,'branding');kept(await stored(),'branding stored');
-  // 5. The company's draft: save, review and publish.
-  const audit={actorId:'partner-1',accessClass:'partner',requestId:randomUUID()};
-  await branding.command({operatorId:'north',actor:'partner-1',audit,action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:6,branding:{lane:lane.id,background:ownBackground,table:ownTable}});
-  const review=await branding.command({operatorId:'north',actor:'partner-1',audit,action:'review',expectedDraftRevision:1,expectedPackageRevision:6});
-  const draftPublished=await branding.command({operatorId:'north',actor:'partner-1',audit,action:'publish',expectedDraftRevision:1,expectedPackageRevision:6,reviewToken:review.reviewToken});
+  // 5. The next draft also chooses the company's own table graphic.
+  const draftPublished=await cycle({lane:lane.id,background:ownBackground,table:ownTable},6,2);
   assert.equal(draftPublished.packageRevision,7);kept(draftPublished.presentation,'draft');kept(await stored(),'draft stored');
   assert.equal((await f.direct.getCurrentPackage('north')).branding.table,ownTable,'the company chose its own table graphic');
   // 6. Admin publishes the package again: the company's choice and material stay.
@@ -940,8 +942,14 @@ test('a material decision between preparation and commit is a conflict; nothing 
     withWriteContext:work=>f.repository.transaction(()=>f.repository.withTransactionClient(async client=>work({
       store:await createOperatorStore({sql:client,scope:nativeScope,now:clock,transaction:callback=>f.repository.withTransactionClient(callback)}),
       readAdministration:()=>f.repository.readDocument('administration'),reauthorize:async()=>true,materials:db.store})))});
-  await assert.rejects(stale.write({operatorId:'north',actor:'partner-1',expectedRevision:2,branding:{}}),error=>error.statusCode===409);
-  assert.equal((await branding.write({operatorId:'north',actor:'partner-1',expectedRevision:2,branding:{}})).packageRevision,3);
+  // Both APIs review the same draft; the stale one negotiated without the company's rows.
+  const audit=()=>({actorId:'partner-1',accessClass:'partner',requestId:randomUUID()}),base={operatorId:'north',actor:'partner-1',expectedPackageRevision:2};
+  const unchanged=(await branding.readState({operatorId:'north'})).branding;
+  await branding.command({...base,audit:audit(),action:'save-draft',expectedDraftRevision:0,branding:unchanged});
+  const review=await branding.command({...base,audit:audit(),action:'review',expectedDraftRevision:1});
+  await assert.rejects(stale.command({...base,audit:audit(),action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken}),error=>error.statusCode===409);
+  assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
+  assert.equal((await branding.command({...base,audit:audit(),action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken})).packageRevision,3);
 });
 
 test('without 021, with 021 but no material, and with another company\'s material: the exact package without company material',async t=>{

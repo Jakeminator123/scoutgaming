@@ -633,10 +633,27 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
   // Only the trusted J08 writer supplies a complete validated replacement. A
   // branding payload cannot turn itself into this method or choose its ID.
-  async function publishRoomGameConfig(input={},replacement) {
+  // brandingDraft: {expectedDraftRevision} tar bolagets öppna utseendeutkast med i samma
+  // transaktion (rummets publicering, room-release.mjs). input.branding bär då redan
+  // utkastets val; utkastet markeras publicerat precis som i publishBrandingDraft.
+  async function publishRoomGameConfig(input={},replacement,brandingDraft=null) {
     if(!replacement)fail('studio_invalid_data',422);
     const captured=cloneStudioJson(replacement),capturedInput=cloneStudioJson(input);
-    return withOperatorLock(txQuery=>publishWithin(txQuery,capturedInput,captured));
+    if(brandingDraft===null)return withOperatorLock(txQuery=>publishWithin(txQuery,capturedInput,captured));
+    const expected=integer(ownValue(brandingDraft,'expectedDraftRevision'),1,'studio_invalid_data',422);
+    const expectedPackage=integer(ownValue(capturedInput,'expectedRevision'),1,'studio_invalid_data',422);
+    return withOperatorLock(async txQuery=>{
+      const operatorId=idText(ownValue(capturedInput,'operatorId'));
+      if(!await lockOperator(txQuery,operatorId))fail('studio_operator_not_found',404);
+      const before=await latestDraft(txQuery,operatorId);
+      // Ett ändrat, slängt eller redan publicerat utkast är en konflikt i steget room_choices.
+      const draftConflict=()=>{throw Object.assign(new StudioStorageError('studio_conflict',409),{step:'room_choices'});};
+      if((before?.revision??0)!==expected)draftConflict();
+      try{assertPublishableDraft(before,expectedPackage);}catch(error){if(error?.code==='studio_conflict')draftConflict();throw error;}
+      const result=await publishWithin(txQuery,capturedInput,captured);
+      const draft=await markDraftPublished(txQuery,{...capturedInput,expectedPackageRevision:expectedPackage},before,result.package.revision);
+      return {...result,draft};
+    });
   }
   async function changeOperatorStatus(input={}) {
     actorOf(input);
@@ -722,6 +739,14 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if(saved.revision!==revision)fail('studio_corrupt_operator');
     return saved;
   }
+  // Ett utkast går att publicera bara om det är öppet och bygger på paketet som publiceras om.
+  function assertPublishableDraft(before,expectedPackage) {
+    if(!before||before.action==='draft.publish'||before.basePackageRevision!==expectedPackage)fail('studio_conflict',409);
+  }
+  // Publiceringen journalförs som en ny utkastrevision med action draft.publish och det
+  // publicerade paketets revision; samma rad för Utseendes publicering och rummets.
+  const markDraftPublished=(txQuery,input,before,packageRevision)=>
+    draftWrite(txQuery,input,{before,branding:before.branding,publishedPackageRevision:packageRevision});
   async function changeBrandingDraft(input,publish) {
     return withOperatorLock(async txQuery=>{
       const operatorId=idText(ownValue(input,'operatorId'));
@@ -733,12 +758,12 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const pack=rows[0]?packageRow(rows[0]):null;
       const before=await latestDraft(txQuery,operatorId);
       if(pack?.revision!==expectedPackage||(before?.revision??0)!==expected)fail('studio_conflict',409);
-      if(publish&&(!before||before.action==='draft.publish'||before.basePackageRevision!==expectedPackage))fail('studio_conflict',409);
+      if(publish)assertPublishableDraft(before,expectedPackage);
       const branding=storedJson(canonicalBranding(ownValue(input,'branding')),canonicalBranding);
       if(!publish)return draftWrite(txQuery,input,{before,branding});
       // One connection and transaction: any failure in either audit rolls back publication too.
       const saved=await publishWithin(txQuery,{...input,expectedRevision:expectedPackage,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding});
-      const draft=await draftWrite(txQuery,input,{before,branding:before.branding,publishedPackageRevision:saved.revision});
+      const draft=await markDraftPublished(txQuery,input,before,saved.revision);
       return {package:saved,draft};
     });
   }

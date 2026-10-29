@@ -8,6 +8,7 @@ import {dirname} from 'node:path';
 import {build, transformSync} from 'esbuild';
 import {addDealer,createSeedProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {studioHistory, studioHistoryBootstrap} from '../lib/studio-history.mjs';
+import {themeModeBootstrap} from '../lib/theme-mode.mjs';
 import {studioNavigationContextFromQuery, studioNavigationHref} from '../lib/studio-navigation.mjs';
 
 const require=createRequire(import.meta.url);
@@ -66,12 +67,16 @@ test('last consumer release/remount during compensation retains the accepted ent
 test('actual root layout installs the inert history proxy before Next hydration',()=>{
   const source=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8');
   const code=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,module={exports:{}};
-  runInNewContext(code,{module,exports:module.exports,process:{env:{}},require:name=>name==='next/font/local'?()=>({variable:'fixture-font'}):name==='next/script'?()=>null:name==='@/lib/studio-history.mjs'?{studioHistoryBootstrap}:name.endsWith('.css')?{}:require(name)});
+  runInNewContext(code,{module,exports:module.exports,process:{env:{}},require:name=>name==='next/font/local'?()=>({variable:'fixture-font'}):name==='next/script'?()=>null:name==='@/lib/studio-history.mjs'?{studioHistoryBootstrap}:name==='@/lib/theme-mode.mjs'?{themeModeBootstrap}:name.endsWith('.css')?{}:require(name)});
   const all=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(all):[node,...all(node.props?.children)];
   const child={type:'main',props:{children:'current-page'}},tree=all(module.exports.default({children:child}));
   assert.ok(tree.includes(child),'the root layout keeps the active page directly');
   const script=tree.find(node=>node.props?.id==='sg-history');
   assert.equal(script?.props.strategy,'beforeInteractive');assert.equal(script?.props.dangerouslySetInnerHTML.__html,studioHistoryBootstrap);
+  // A plain <script> in <head> runs while the HTML is parsed; next/script queues inline content until Next boots.
+  const head=tree.find(node=>node.type==='head'),mode=all(head?.props.children).find(node=>node.props?.id==='sg-theme');
+  assert.equal(mode?.type,'script','the mode script is a plain script element in <head>');assert.equal(mode.props.strategy,undefined);
+  assert.equal(mode.props.dangerouslySetInnerHTML.__html,themeModeBootstrap,'the shared mode is set before the first paint');
   const window=new EventTarget();let observed=0;
   runInNewContext(studioHistoryBootstrap,{window,Symbol});runInNewContext(studioHistoryBootstrap,{window,Symbol});
   assert.equal(window[Symbol.for('scout.studio-history')].handler,null);

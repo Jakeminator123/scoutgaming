@@ -139,7 +139,7 @@ test('retired AI documents reach their resource across flags and mounts without 
   const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
     const config = {publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware} = load('../middleware.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+    const {proxy:middleware} = load('../proxy.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     for (const section of ['/openclaw','/operator-chat','/control/openclaw','/control/operator-chat','/control/ops']) for (const tab of ['', 'chat', 'models']) {
       const context = {dealer:'dragan',event:'idle.ready',operator:'north',room:'room-1',table:'room-1',game:'roulette',lane:'portrait',variant:'take-2',...(tab?{tab}:{})};
@@ -277,7 +277,7 @@ test('Activity bookmarks retain only unambiguous observation identities across n
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     for(const section of ['/activity','/control/activity'])for(const duplicate of [false,true]){
       const query=new URLSearchParams({dealer:'saga',operator:'north',table:'room-1',room:'room-1',game:'roulette',lane:'portrait',event:'idle.ready',token:'private',unknown:'omit'});
@@ -361,9 +361,9 @@ test('actual Admin middleware preserves document access with Node transport befo
   const f = await createPublicationChain(publicOrigin);
   const platform = {publicOrigin, labUiOrigin: publicOrigin, backendOrigin:'https://engine.fixture.invalid',
     unifiedUi:true, nativeStudio:true};
-  const middleware = load('../middleware.ts', {
+  const middleware = load('../proxy.ts', {
     '../../packages/navigation/server/platform-routing.mjs': {...routing, platformConfiguration:()=>platform},
-  }, {CROUPIER_VERCEL_UNIFIED_UI:'1'}).middleware;
+  }, {CROUPIER_VERCEL_UNIFIED_UI:'1'}).proxy;
   const runtime = {...nativeRuntime, nativeStudioAdminEnabled:()=>true, nativeStudioAdminConfiguration:()=>f.config,
     studioNativeRuntime:async()=>({authorize:createStudioNativeAuth({boDb:f.auth.boDb,scope:f.config.scope,now:f.config.now})})};
   const guard = load('../lib/ui-server.ts', {'./studio-native-runtime.mjs':runtime});
@@ -447,7 +447,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for(const basePath of ['','/studio']) for(const unified of [false,true]) {
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio:unified};
-    const {middleware}=load('../middleware.ts',{
+    const {proxy:middleware}=load('../proxy.ts',{
       '../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config},
     },{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
@@ -495,7 +495,7 @@ test('retired publication and tool documents redirect with context in every nati
   const context={operator:'north',room:'room-1',table:'room-1',dealer:'dragan',game:'roulette',composition:'portrait',event:'idle.ready',variant:'take-2',situation:'dealer-hole',category:'greeting'};
   for(const basePath of ['','/studio']) for(const unified of [false,true]) for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     for(const [section,target,owner] of targets){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
@@ -524,7 +524,7 @@ test('historical tool documents reach Admin with context before unified frontend
   const clips=['/admin/dealers/saga?flik=klipp',true],scene=['/admin/scenes?tab=mallar',false];
   for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     for(const [section,target,dealerNav] of [['events',...clips],['tree',...clips],['compositions',...scene],['rehearsal','/admin/companies?tab=spelbord',false],['preview',...scene],['zones',...scene],['clips',...clips]])for(const selected of [false,true]){
       const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
@@ -558,7 +558,7 @@ test('retired Administration entries preserve context across mounts and flags wi
     tables:'/admin/companies?tab=spelbord','media-review':'/admin/dealers/elin?flik=tal'};
   for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://studio.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries(targets)){
       const query='tab='+tab+'&dealer=elin&operator=north&table=room-a&room=one&room=two&lane=portrait&game=roulette';
       const url=config.publicOrigin+basePath+entry+'?'+query+'#selected';

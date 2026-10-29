@@ -1,9 +1,10 @@
-// Hjälp och kontakt: vad rollen får göra, orden, och Begär material (öppnas som
+// Hjälp och kontakt: menyn (samma källa som skalet), vad rollen får göra, orden, och Begär material (öppnas som
 // e-post till Scoutgaming; inget skickas härifrån och inget hamnar i tilldelningen).
 import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
-import { Btn, Card, KV, Note, Page } from './ui.jsx';
+import { Btn, Card, KV, Note, Page } from './ui.tsx';
 import { partnerPermissionWord } from '../../../lib/partner-words.mjs';
+import { partnerNavigation } from '../partner-copy.mjs';
 
 // Typerna; "Önska bakgrund" har ett eget beskrivningsfält. Begäran är bara en förfrågan.
 const KINDS = [
@@ -29,7 +30,7 @@ export function PartnerHelp({ snapshot, copy, language = 'sv', user }) {
   const [description, setDescription] = useState('');
   const kind = KINDS.find(item => item.id === kindId) ?? KINDS[0], kindLabel = en ? kind.en : kind.sv;
   const may = (snapshot.permissions ?? []).map(permission => partnerPermissionWord(permission, language));
-  const role = snapshot.role?.label ?? copy.member;
+  const role = snapshot.role?.label ?? copy.member, menu = partnerNavigation(language, snapshot.permissions);
   return <Page title={copy.help} intro={t('Vad ni får göra, orden vi använder och hur ni begär material.', 'What you may do, the words we use and how to request material.')}>
     <div className="grid main-aside">
       <Card title={t('Begär material', 'Request material')} icon={<Mail size={15} />}>
@@ -42,6 +43,9 @@ export function PartnerHelp({ snapshot, copy, language = 'sv', user }) {
         <Note tone="accent">{t('Begäran öppnas som ett e-postutkast i ert e-postprogram; fyll i Scoutgamings adress och skicka. Inget ändras i era spelbord förrän Scoutgaming publicerat.', 'The request opens as an email draft in your mail program; add the Scoutgaming address and send. Nothing changes on your tables until Scoutgaming has published.')}</Note>
       </Card>
       <div className="stack">
+        <Card title={t('Menyn', 'The menu')}>
+          <KV items={menu.map(item => [item.label, item.description])} />
+        </Card>
         <Card title={t(`Rollen ${role} får`, `The role ${role} may`)}>
           {may.length ? <ul className="small list">{may.map(item => <li key={item}>{item}</li>)}</ul> : <p className="muted">—</p>}
           <KV items={[[t('Dealer, bakgrund, bordsgrafik', 'Dealer, background, table graphics'), t('väljs bland det Scoutgaming tilldelat', 'chosen among what Scoutgaming assigned')],

@@ -1,0 +1,100 @@
+/* Scoutgamings designtokens: den enda platsen där --sg-* får ett värde.
+   Läses av Next-sidorna (app/scout-theme.css) och Admin (client/admin/app/studio.css).
+   Mörkt läge är standard (steg H, beslut 2026-10-29). Ljust läge gäller när <html> har
+   klassen light; startskriptet i lib/theme-mode.mjs sätter dark eller light efter det
+   sparade valet (localStorage 'sg-theme'), aldrig efter operativsystemets läge.
+   Sidomenyn (--sg-side*) är mörk i båda lägena. Lime är knappfyllning; text i accentfärg
+   använder --sg-accent-text (minst 4,5:1). Markeringar och fokusringar ska använda
+   --sg-mark, som har minst 3:1 mot alla ytor i båda lägena; Admins Tailwind-klasser gör det
+   (focusRing i kit.tsx, ring-sg-mark) och ett källprov vaktar dem. Typsnitten läser --sg-next-*, som Next
+   sätter med next/font och Admin med sina egna typsnittsfiler. */
+:root {
+  color-scheme: dark;
+  --sg-bg: #0A0B0D;
+  --sg-side: #0D0F12;
+  --sg-side-2: #24262a;
+  --sg-side-line: #33363b;
+  --sg-side-text: #e6e8eb;
+  --sg-side-muted: #8b9098;
+  --sg-surface: #121418;
+  --sg-surface-2: #1A1E24;
+  --sg-hover: #15181D;
+  --sg-border: #23272E;
+  --sg-line-2: #1E2228;
+  --sg-field: #0D0F12;
+  --sg-field-line: #2A2F37;
+  --sg-strong: #353A43;
+  --sg-text: #F2F1ED;
+  --sg-muted: #A3A59F;
+  --sg-faint: #8A8D88;
+  --sg-ink: #0A0B0D;
+  --sg-lime: #D6FF3A;
+  --sg-lime-hover: #E6FF85;
+  --sg-mark: #D6FF3A;
+  --sg-on-accent: #0A0B0D;
+  --sg-accent-text: #D6FF3A;
+  --sg-accent-bg: #2b3313;
+  --sg-accent-line: #647333;
+  --sg-chip-text: #C9CBC5;
+  --sg-live-bg: rgba(214, 255, 58, 0.12);
+  --sg-live-text: #D6FF3A;
+  --sg-ok: #6ad48f;
+  --sg-ok-bg: #163322;
+  --sg-info: #78AAFF;
+  --sg-info-bg: rgba(120, 170, 255, 0.14);
+  --sg-info-text: #9DC0FF;
+  --sg-warning: #FFB547;
+  --sg-warn-text: #FFC46B;
+  --sg-warn-bg: rgba(255, 181, 71, 0.14);
+  --sg-danger-text: #ffb4ac;
+  --sg-danger-bg: #2b2128;
+  --sg-danger-line: #725057;
+  --sg-disabled-bg: #2A2F37;
+  --sg-disabled-text: #8A8D88;
+  --sg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.6);
+  --sg-font-body: var(--sg-next-body, Inter), Inter, system-ui, sans-serif;
+  --sg-font-display: var(--sg-next-display, "Space Grotesk"), "Space Grotesk", system-ui, sans-serif;
+  --sg-font-mono: var(--sg-next-mono, "JetBrains Mono"), "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Ljust läge: den godkända Admin-skissen. Bara värden som skiljer sig från mörkt läge. */
+:root.light {
+  color-scheme: light;
+  --sg-bg: #f4f5f7;
+  --sg-side: #1b1c1e;
+  --sg-surface: #ffffff;
+  --sg-surface-2: #f7f8fa;
+  --sg-hover: #eef0f3;
+  --sg-border: #e3e5e9;
+  --sg-line-2: #eef0f3;
+  --sg-field: #ffffff;
+  --sg-field-line: #e3e5e9;
+  --sg-strong: #c9ccd2;
+  --sg-text: #1b1c1e;
+  --sg-muted: #666c75;
+  --sg-faint: #8d939b;
+  --sg-ink: #1b1c1e;
+  /* Lime når inte 3:1 mot ljusa ytor; markeringen (vald flik, fokusring) blir mörk oliv. */
+  --sg-mark: #4d6b00;
+  --sg-on-accent: #1b1c1e;
+  --sg-accent-text: #4d6b00;
+  --sg-accent-bg: #f4ffcf;
+  --sg-accent-line: #b9cf5e;
+  --sg-chip-text: #3A3C37;
+  --sg-live-bg: #EEFFB8;
+  --sg-live-text: #3E5200;
+  --sg-ok: #1f8a4c;
+  --sg-ok-bg: #e6f6ec;
+  --sg-info: #2a5db0;
+  --sg-info-bg: #e6eefb;
+  --sg-info-text: #1E4FA8;
+  --sg-warning: #9a6200;
+  --sg-warn-text: #9a6200;
+  --sg-warn-bg: #fff3d6;
+  --sg-danger-text: #b4232c;
+  --sg-danger-bg: #fde8ea;
+  --sg-danger-line: #f2b8be;
+  --sg-disabled-bg: #eef0f3;
+  --sg-disabled-text: #8d939b;
+  --sg-shadow: 0 1px 2px rgba(20,22,26,.05), 0 8px 24px -16px rgba(20,22,26,.25);
+}

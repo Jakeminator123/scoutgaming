@@ -13,7 +13,8 @@ import { defaultCompositionSettings } from '../../../packages/presentation/contr
 import { withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { cloudPresentationFixture } from './fixtures/cloud-presentation.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
-import { validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
+import { validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
+import { partnerNavigation } from '../components/partner/partner-copy.mjs';
 
 // Partnerportalen per role: the server decides every view, not the menu.
 // partner-editor: overview, tables, presentations (configure). partner-viewer: every *.read.
@@ -112,6 +113,20 @@ test('a redaktör is denied Team, Spelare, Ekonomi and Integration by direct add
   assert.equal((await api(f, f.editor, 'journal')).status, 403);
 });
 
+test('for every standard role the menu offers exactly the views the server opens, and every other view is denied by address', async () => {
+  const f = await fixture();
+  for (const [cookie, roleId] of [[f.admin, 'partner-admin'], [f.editor, 'partner-editor'], [f.viewer, 'partner-viewer']]) {
+    const loaded = await page(f, cookie, 'overview');
+    const menu = partnerNavigation('sv', loaded.snapshot.permissions).map(item => item.id);
+    assert.ok(menu.includes('overview') && menu.includes('help'), roleId);
+    for (const view of PARTNER_VIEWS) {
+      const opened = await page(f, cookie, view);
+      assert.equal(opened.denied === undefined, menu.includes(view), `${roleId} ${view}`);
+      if (opened.denied) assert.deepEqual(opened.denied.permission, PARTNER_VIEW_PERMISSIONS[view], `${roleId} ${view}`);
+    }
+  }
+});
+
 test('a läsare opens all seven views but every write is refused on the server', async () => {
   const f = await fixture();
   for (const view of PARTNER_VIEWS) {
@@ -145,12 +160,12 @@ test('the snapshot carries the assignment, room state, lobby link, config versio
     ['john-paused', 'pending', 'pending', null, null, { id: 'astrid', label: 'Astrid' }],
   ]);
   assert.equal(snapshot.tables[0].settings, undefined, 'no game settings are invented when the game table cannot be read');
-  assert.equal(snapshot.summary.activeTables, 1);
+  assert.equal(snapshot.tables.filter(room => room.status === 'active').length, 1);
   assert.deepEqual(snapshot.reports, { status: 'not-connected', reason: 'read-failed' }, 'the fixture pool has no game journal, so Ekonomi says so');
   assert.equal(snapshot.draft, null); assert.equal(snapshot.invitations, 0);
   assert.deepEqual(snapshot.publications, [{ revision: 1, publishedAt: now }]);
-  for (const key of ['players', 'transactions', 'unavailableSections', 'notConnected', 'integration']) assert.equal(snapshot[key], undefined, key);
-  assert.equal(snapshot.summary.playersToday, undefined); assert.equal(snapshot.summary.roundsToday, undefined);
+  // Fält utan läsare i klienten skickas inte: inga hårdkodade nollor, ingen Kevin-sammanfattning.
+  for (const key of ['players', 'transactions', 'unavailableSections', 'notConnected', 'integration', 'presentations', 'roomBindings', 'summary', 'mode']) assert.equal(snapshot[key], undefined, key);
   // A saved draft and a pending invitation show up as waiting work.
   await f.store.saveBrandingDraft({ actor: '42', operatorId: john.id, expectedDraftRevision: 0, expectedPackageRevision: 1, branding: { lane: 'john-lane', dealer: 'astrid' },
     audit: { actorId: '42', accessClass: 'partner', action: 'draft.save', requestId: '00000000-0000-4000-8000-000000000001' } });
@@ -213,15 +228,15 @@ test('the snapshot carries only the sections the role may read, so a denied or n
   assert.deepEqual(editor.tables.map(room => room.id), ['john-room', 'john-paused']);
   assert.equal(editor.presentation?.lanes?.length, 1); assert.ok(editor.assignment); assert.equal(editor.draft, null);
   assert.deepEqual([editor.team, editor.invitations, editor.publications, editor.reports], [[], 0, [], undefined]);
-  assert.deepEqual(editor.summary, { activeTables: 1 });
+  for (const key of ['presentations', 'roomBindings', 'summary', 'mode']) assert.equal(editor[key], undefined, key);
   // A custom role with overview.read alone: no rooms, no scene template, no assignment, no draft, no economy, no team.
   await f.store.upsertRole({ actor: 'fixture', operatorId: john.id, roleId: 'night-shift', label: 'Nattskift', permissions: ['overview.read'], delegable: false });
   await f.store.upsertMembership({ actor: 'fixture', operatorId: john.id, userId: '47', roleId: 'night-shift', status: 'active' });
   const narrow = (await page(f, f.night, 'overview')).snapshot;
   assert.deepEqual(narrow.role, { id: 'night-shift', label: 'Nattskift' }); assert.deepEqual(narrow.permissions, ['overview.read']);
-  assert.deepEqual([narrow.tables, narrow.presentations, narrow.team, narrow.publications], [[], [], [], []]);
-  for (const key of ['presentation', 'branding', 'roomBindings', 'assignment', 'reports']) assert.equal(narrow[key], undefined, key);
-  assert.equal(narrow.draft, null); assert.deepEqual(narrow.summary, {});
+  assert.deepEqual([narrow.tables, narrow.team, narrow.publications], [[], [], []]);
+  for (const key of ['presentation', 'branding', 'assignment', 'reports', 'presentations', 'roomBindings', 'summary', 'mode']) assert.equal(narrow[key], undefined, key);
+  assert.equal(narrow.draft, null);
   assert.equal(narrow.packageRevision, '1', 'the revision in the sidebar needs only overview.read');
   assert.doesNotMatch(JSON.stringify(narrow), /john-room|astrid|john-admin|Johns blackjack/);
   for (const view of ['rooms', 'players', 'reports', 'team', 'integration']) {

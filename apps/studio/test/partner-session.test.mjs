@@ -238,10 +238,9 @@ test('a north membership cannot read demo-south, and a suspended membership is d
   assert.deepEqual(body.role, { id: 'role-partner', label: 'Partner' });
   assert.equal(JSON.stringify(body).includes('demo-south'), false);
   assert.deepEqual(body.team, []); // This role has overview.read, but not team.read.
-  for (const key of ['tables', 'presentations']) {
-    assert.ok(body[key].length > 0, key);
-    for (const item of body[key]) assert.equal(item.operatorId, northId, key);
-  }
+  assert.ok(body.tables.length > 0);
+  for (const item of body.tables) assert.equal(item.operatorId, northId);
+  assert.equal(body.presentations, undefined);
   assert.equal(body.packageRevision, '3');
   const south = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-south`, {
     headers: { host: 'public.example.invalid', cookie },
@@ -432,16 +431,16 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
   const body=await response.json();
-  assert.equal(body.presentations[0].name,'Publicerad North');
-  assert.equal(body.presentations[0].dealer,'astrid');
-  assert.equal(body.presentations[0].operatorId,northId);
-  assert.equal(body.presentations[0].compatibility,'full-frame');
-  assert.deepEqual(body.presentations[0].layers.table.allowed,[]);
+  // Den frysta presentationen och tilldelningen bär scenmallen.
+  assert.equal(body.presentation.lanes[0].label,'Publicerad North');
+  assert.deepEqual(body.assignment.lanes,[{id:body.presentation.lanes[0].id,label:'Publicerad North'}]);
+  assert.deepEqual(body.assignment.dealers.map(dealer=>dealer.id),['astrid']);
+  assert.deepEqual(body.assignment.tables,[]);
   assert.equal(body.presentation.projectRevision,'frozen-r1');
   assert.equal(body.packageRevision,'7');
   assert.equal(JSON.stringify(body).includes('_scoutPresentation'),false);
   assert.deepEqual(body.tables,[]);
-  assert.equal(body.roomBindings,'operator-owned-v2');
+  for(const key of ['presentations','roomBindings','summary','mode'])assert.equal(body[key],undefined,key);
 });
 
 for (const schemaVersion of [1,2,3]) test('partner tables require cloud registration and actual room ownership with presentation v'+schemaVersion,async()=>{
@@ -464,13 +463,13 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
   const body=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
   if(schemaVersion===1){
     assert.deepEqual(body.tables,[],'historical names alone do not authorize cloud rooms');
-    assert.equal(body.summary.activeTables,0);
+    assert.equal(body.summary,undefined);
   }else{
     assert.deepEqual(body.tables.map(row=>row.id),['room-live','room-preview']);
     assert.equal(body.tables[0].name,'Johns blackjack');
     assert.equal(body.tables[0].operatorId,northId);
     assert.equal(body.tables[0].presentationId,'published-portrait');
-    assert.equal(body.summary.activeTables,1);
+    assert.deepEqual(body.tables.filter(row=>row.status==='active').map(row=>row.id),['room-live']);
     administration.rooms[0].game='roulette';
     const roulette=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
     assert.equal(roulette.tables[0].game,'roulette');
@@ -482,7 +481,7 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
   const rejected=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
     config:{...config,readAdministration:async()=>incompatible}});
   assert.deepEqual(rejected.tables,[]);
-  assert.equal(rejected.summary.activeTables,0);
+  assert.equal(rejected.summary,undefined);
   await assert.rejects(partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
     config:{...config,readAdministration:async()=>{throw Object.assign(Error('unavailable'),{statusCode:503});}}}),
     error=>error.statusCode===503);

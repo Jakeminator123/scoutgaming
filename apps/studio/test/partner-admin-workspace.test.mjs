@@ -117,8 +117,8 @@ test('Johns real slug opens an honest empty package and SSR identifies the admin
   assert.deepEqual(loaded.session, { user: 'jakob', role: 'admin', accessClass: 'internal-admin' });
   assert.deepEqual(loaded.snapshot.operator, john);
   assert.deepEqual(loaded.snapshot.permissions, [...PARTNER_PERMISSIONS]);
-  for (const key of ['tables', 'presentations', 'publications']) assert.deepEqual(loaded.snapshot[key], []);
-  for (const key of ['players', 'transactions', 'unavailableSections', 'notConnected', 'integration']) assert.equal(loaded.snapshot[key], undefined, key);
+  for (const key of ['tables', 'publications']) assert.deepEqual(loaded.snapshot[key], []);
+  for (const key of ['players', 'transactions', 'unavailableSections', 'notConnected', 'integration', 'presentations', 'roomBindings', 'summary', 'mode']) assert.equal(loaded.snapshot[key], undefined, key);
   assert.equal(loaded.snapshot.team.some(member => member.id === '7'), false);
   assert.equal(loaded.snapshot.packageRevision, undefined);
   assert.deepEqual(loaded.snapshot.role, { id: 'internal-admin', label: 'Scoutgamings personal' });

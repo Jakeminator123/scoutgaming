@@ -32,7 +32,7 @@ function browserBundle() {
     import React from 'react';
     import {createRoot} from 'react-dom/client';
     import {PresentationRoomCreate} from './apps/studio/components/presentation-room-create.tsx';
-    import {PartnerOperatorWorkspace} from './apps/studio/components/kevin-bo/partner-operator-workspace.jsx';
+    import {PartnerOperatorWorkspace} from './apps/studio/components/partner/partner-operator-workspace.jsx';
     import {LobbyProvider} from './apps/studio/client/lobby/components/lobby-provider.tsx';
     import {OperatorsSection} from './apps/studio/client/lobby/components/sections/operators-section.tsx';
     import {RoomsSection} from './apps/studio/client/lobby/components/sections/rooms-section.tsx';
@@ -336,10 +336,10 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     await useCookie(f.auth.north);
     await page.goto(origin + rooms + roomQuery); await assertRoom();
     assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).count(), 0, 'no table colour control for partners');
-    assert.deepEqual(await appearance.getByRole('tab').allTextContents(), ['Utseende', 'Historik']);
+    assert.deepEqual(await appearance.getByRole('tab').allTextContents(), ['Utseende', 'Dealer', 'Spelinställningar', 'Tillgänglighet', 'Historik']);
     const locked = await appearance.locator('[data-locked]').evaluateAll(rows => rows.map(row => row.dataset.locked).sort());
     assert.deepEqual(locked, ['background', 'dealer', 'table'], 'background, table graphics and dealer are shown as locked, not hidden');
-    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /bestäms av Scoutgaming/);
+    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /låst av Scoutgaming/);
     const color = '#445566', endpointPath = '/studio/api/partner/branding?operator=' + company.slug, endpoint = origin + endpointPath;
     const expectedBranding = {...branding.branding, roomOverrides: {[receipt.room.id]: {color}}};
     const southBefore = await f.store.getCurrentPackage(otherCompany.id);

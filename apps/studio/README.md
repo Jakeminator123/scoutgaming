@@ -18,7 +18,7 @@ Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
   lokalt produktregister och ingen diskreserv.
 - `/control`, `/lab` och `/labb` svarar bara med redirect till motsvarande
   `/admin`-sida (`packages/navigation/control-flow.mjs`,
-  `admin-workspace-routes.mjs`, `middleware.ts` och
+  `admin-workspace-routes.mjs`, `proxy.ts` och
   `lib/legacy-studio-document.mjs`); `/bo` är borta. Bygg inga nya flöden där.
 
 ## Starta och bygga
@@ -67,7 +67,7 @@ Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma pre
 ```text
 app/          Next.js-sidor och API-rutter (app/api/…)
 client/       Admin- och lobbyklienten (eget bygge)
-components/   delade React-komponenter, bland annat Partnerportalens arbetsyta (kevin-bo/)
+components/   delade React-komponenter, bland annat Partnerportalens arbetsyta (partner/)
 lib/          serveradaptrar: lagring, behörighet, observation, tal
 policies/     appens egna policyer, till exempel social.seed.json
 schemas/      appens egna scheman (manifest, social policy)

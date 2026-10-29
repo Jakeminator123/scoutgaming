@@ -94,7 +94,7 @@ export function ConnectedEconomy({journal,active=true}:{journal:SharedStudioAdmi
       </div>}
       <p className="text-xs text-sg-muted">Beloppen summerar verifierade kontoändringar, inte bolagets intäkt. Öppningssaldo och valutabyte visas som saldoobservationer men räknas inte som rörelser. Okända händelsetyper finns kvar i journalen utan att påverka beloppen. GGR, avtal och revshare saknar ännu anslutet underlag. Datum visas i UTC.</p>
       <details className="rounded-xl border border-sg-border bg-sg-surface">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-sg-lime">Visa journal · {summary.count} {summary.count===1?'post':'poster'}</summary>
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-sg-mark">Visa journal · {summary.count} {summary.count===1?'post':'poster'}</summary>
         <div className="overflow-x-auto border-t border-sg-line-2"><table className="w-full text-left text-xs">
           <caption className="sr-only">Journalposter bakom händelsediagrammet och verifierade kontorörelser</caption>
           <thead className="border-b border-sg-line-2 text-sg-muted"><tr>{['Tid (UTC)','Händelse','Belopp','Spelare'].map(label=><th scope="col" key={label} className="px-4 py-3 font-medium">{label}</th>)}</tr></thead>

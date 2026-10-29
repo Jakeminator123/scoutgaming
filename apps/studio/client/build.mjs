@@ -1,13 +1,13 @@
 import { build } from 'esbuild';
 import postcss from 'postcss';
-import tailwind3 from 'tailwindcss3';
-import tailwind4 from '@tailwindcss/postcss';
+import tailwind from '@tailwindcss/postcss';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { surfaceBundleOptions } from './surface-bundle.mjs';
+import { themeModeBootstrap } from '../lib/theme-mode.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const output = resolve(root, '../design-preview-build');
@@ -25,24 +25,11 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   const assetSurface = publicLobby ? 'lobby' : surface;
   await mkdir(outdir, { recursive: true });
   await build({ ...surfaceBundleOptions(surface), outfile: resolve(outdir, 'app.js') });
+  // Samma Tailwind 4-väg för båda ytorna. Admins globals.css anger sina egna källor; lobbyns
+  // begränsas här till sina mappar.
   let css = await readFile(resolve(source, 'app/globals.css'), 'utf8');
-  let plugins;
-  if (surface === 'admin') {
-    // The original Tailwind config uses require; load it as CJS for unchanged plugin semantics.
-    const cjs = await build({ entryPoints: [resolve(source, 'tailwind.config.ts')], bundle: true,
-      platform: 'node', format: 'cjs', write: false, packages: 'external' });
-    const cjsFile = resolve(root, '.cache/tailwind-admin.cjs');
-    await mkdir(dirname(cjsFile), { recursive: true });
-    await writeFile(cjsFile, cjs.outputFiles[0].text);
-    const imported = await import(pathToFileURL(cjsFile).href);
-    const config = imported.default.default;
-    plugins = [tailwind3({ ...config, content: [source.replaceAll('\\', '/') + '/**/*.{ts,tsx}', resolve(root,'../components').replaceAll('\\','/')+'/**/*.{ts,tsx,mjs}'] })];
-    css += '\n' + await readFile(resolve(source, 'app/studio.css'), 'utf8');
-  } else {
-    css = css.replace("@import 'tailwindcss';", "@import 'tailwindcss' source(none);\n@source '../components';\n@source '../app';\n@source '../entry.tsx';");
-    plugins = [tailwind4({ base: source })];
-  }
-  const result = await postcss(plugins).process(css, { from: resolve(source, 'app/globals.css') });
+  if (surface !== 'admin') css = css.replace("@import 'tailwindcss';", "@import 'tailwindcss' source(none);\n@source '../components';\n@source '../app';\n@source '../entry.tsx';");
+  const result = await postcss([tailwind({ base: source })]).process(css, { from: resolve(source, 'app/globals.css') });
   await writeFile(resolve(outdir, 'theme.css'), result.css + '\n' + (publicLobby
     ? commonCss.replaceAll('/admin/_assets/fonts/', '/lobby/_assets/fonts/') : commonCss));
   // Admin has no static files of its own; the lobby ships its portraits and hero media and must have them.
@@ -53,6 +40,13 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
 }
 await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
   define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio':'')}});
+// Lägesvalet (lib/theme-mode.mjs) körs före Admins stilmall. CSP:n tillåter inga inline-skript,
+// så startskriptet är en egen fil som Admin-dokumentet laddar direkt efter teckenkodningen.
+await writeFile(resolve(output, 'admin/theme-mode.js'), themeModeBootstrap + '\n');
+const adminDocument = resolve(output, 'admin/index.html'), modeScript = '<script src="/admin/_assets/admin/theme-mode.js"></script>';
+const adminHtml = (await readFile(adminDocument, 'utf8')).replace('<meta charset="utf-8">', '$&' + modeScript);
+if (!adminHtml.includes(modeScript)) throw new Error('The Admin document has no <meta charset="utf-8"> to place the mode script after.');
+await writeFile(adminDocument, adminHtml);
 await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
   await cp(resolve(root, '../app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));
