@@ -77,7 +77,7 @@ Studio läser inte längre `CROUPIER_STREAM_LANE` (Admins `connectedLane` är al
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
-## Att ta bort i panelen (efter deploy av #PR_NUMMER)
+## Att ta bort i panelen (efter deploy av #664)
 
 <a id="att-ta-bort-i-panelen"></a><a id="att-ta-bort-ur-vercel-production"></a>
 
@@ -85,7 +85,7 @@ Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsninge
 
 Den förra listan (talflaggorna, `DEMO_GUEST_ACCESS`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` och `CROUPIER_LAB_UI_ORIGIN` i `scoutgaming`) är utförd: ingen av dem finns i panelen 16:10. Kvar från den är Preview- och Development-scopet för `CROUPIER_DEALER_IMPORT_AI`.
 
-### Efter deploy av #PR_NUMMER (Miljövariabler 1)
+### Efter deploy av #664 (Miljövariabler 1)
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
