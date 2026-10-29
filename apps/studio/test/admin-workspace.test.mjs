@@ -193,7 +193,7 @@ test('merged dependency bookmarks redirect to System › Beroenden with their se
   for(const path of ['/admin/deletion/','/admin/deletions','/admin/deletion-extra','/admin/system?flik=beroenden&operator=north'])assert.equal(adminDocumentHref(path),path);
 });
 
-// Every retired Admin page (ADMIN-KARTA "Pensionerade adresser") lands on its menu page and tab in one redirect,
+// Every retired Admin page (the redirect table in packages/navigation/admin-workspace-routes.mjs) lands on its menu page and tab in one redirect,
 // with company, room, dealer, revision and fragment kept. API keys stay global until step F, so /admin/admin/api
 // opens System › Integration rather than a company tab.
 test('every retired Admin page lands on its new tab with its context in one redirect',()=>{

@@ -7,7 +7,7 @@ import {adminNavigationGroups,adminDealerSteps,adminDealerTabs,adminCompanyTabs,
 // Hjälp (/admin/guide): the menu, who may change what, the words, the dealer flow and where the data comes from.
 const GUIDE='https://github.com/Jakeminator123/scoutgaming/blob/main/apps/studio/docs/README.md';
 const GLOSSARY='https://github.com/Jakeminator123/scoutgaming/blob/main/apps/studio/docs/TERMINOLOGI.md';
-// Per page/tab: the read that fills it, and where that read ends up. Verified against docs/plans/ADMIN-KARTA.md 2026-10-28.
+// Per page/tab: the read that fills it, and where that read ends up. Verified 2026-10-28 against the Admin map (docs/plans/ADMIN-KARTA.md, since deleted: docs/HISTORIK.md).
 const sources:[string,string,string][]=[
   ['Översikt','GET /admin/_data/catalog + /studio/api/videos','doc.project, doc.administration, operators, operator_packages, media_records'],
   ['Dealers','GET /admin/_data/catalog + /studio/api/videos','doc.project dealers[], lines[]; media_records'],
