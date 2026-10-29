@@ -66,10 +66,16 @@ const conflictSteps = Object.freeze({
   materials:'Bolagets eget material har ändrats sedan förhandsvisningen.',
 });
 const RELOAD = ' Läs in igen.';
+// "Inget publicerades" sägs bara när servern med en känd kod har vägrat före commit. Ett 5xx-svar
+// utan känd kod kan komma från en proxy eller en timeout efter commit: utfallet är då okänt.
 const NOTHING = ' Inget publicerades.';
+const UNCERTAIN = ' Läs in igen för att se om publiceringen gick igenom.';
 
-/** Begriplig svensk text för felkontraktet {error, code, step} och HTTP-status. */
-export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reason, materialReason} = {}) {
+/**
+ * Begriplig svensk text för felkontraktet {error, code, step} och HTTP-status. `phase` är
+ * 'publish' (standard) eller 'read' (förhandsvisningen, där inget kan ha publicerats).
+ */
+export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reason, materialReason, phase = 'publish'} = {}) {
   switch (errorCode) {
     case 'studio_release_preview_stale': return 'Något har ändrats sedan förhandsvisningen.' + RELOAD;
     case 'studio_conflict': return (conflictSteps[step] ?? 'Uppgifterna har ändrats under tiden.') + NOTHING + RELOAD;
@@ -86,7 +92,9 @@ export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reas
   if (status === 401) return 'Logga in igen för att fortsätta.';
   if (status === 403) return 'Du saknar behörighet att publicera spelbordet.';
   if (status === 409) return 'Uppgifterna har ändrats.' + NOTHING + RELOAD;
-  if (status === 503) return 'Publiceringen är tillfälligt otillgänglig.' + NOTHING;
+  const raw = code(errorCode) ? ' (' + errorCode + ')' : '';
+  if (status === 0 || status >= 500) return phase === 'read' ? 'Jämförelsen med live kunde inte läsas' + raw + '.' + RELOAD
+    : 'Servern kunde inte bekräfta publiceringen' + raw + '.' + UNCERTAIN;
   return 'Publiceringen gick inte igenom' + (code(errorCode) ? ': ' + errorCode : '') + '.' + NOTHING;
 }
 
@@ -128,7 +136,7 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms
 
 // En rad per område, i den ordning Admin visar dem. Oförändrade områden visas också.
 /** @returns {{area:string;label:string;changed:boolean;rows:string[]}[]} */
-export function roomReleaseAreas(preview) {
+export function roomReleaseAreas(preview, {dealerName} = {}) {
   const changes = Array.isArray(preview?.changes) ? preview.changes : [];
   const of = area => changes.filter(row => row?.area === area);
   const take = value => value?.takeId ? 'tagning ' + value.takeId : 'ingen tagning';
@@ -143,7 +151,9 @@ export function roomReleaseAreas(preview) {
     if (row.before?.limitPreset !== row.after?.limitPreset) parts.push('Insatsprofil ' + (row.before ? limitLabel(row.before.limitPreset) : '–') + ' → ' + limitLabel(row.after?.limitPreset));
     return parts.join(', ') || 'Inställningarna publiceras';
   });
-  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + (row.before ?? '–') + ' → ' + (row.after ?? '–'));
+  // Dealerns namn finns i klienten (registret); bakgrund och bordsgrafik har bara id här.
+  const choice = (key, value) => value == null ? '–' : key === 'dealer' && typeof dealerName === 'function' ? dealerName(value) || value : value;
+  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after));
   const rebinding = (Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []).filter(row => row?.rebinds)
     .map(row => (row.name || row.id) + ' binds om och behåller sina spelinställningar');
   const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra scenmallar eller dealers)');
@@ -185,13 +195,13 @@ function validPreview(value, {operatorId, roomId}) {
     && (value.gameConfig === null || object(value.gameConfig));
 }
 
-async function failure(response) {
+async function failure(response, phase) {
   let body = null;
   try { body = await response.json(); } catch { body = null; }
   const errorCode = code(body?.code) ? body.code : code(body?.error) ? body.error : undefined;
   const detail = {status:response.status, code:errorCode, ...(code(body?.step) ? {step:body.step} : {}),
     ...(code(body?.reason) ? {reason:body.reason} : {}), ...(code(body?.materialReason) ? {materialReason:body.materialReason} : {})};
-  return {ok:false, ...detail, error:roomReleaseErrorMessage(detail)};
+  return {ok:false, ...detail, error:roomReleaseErrorMessage({...detail, phase})};
 }
 
 /** GET room-release: live och kandidat per område, hinder, revisioner och previewToken. */
@@ -205,7 +215,7 @@ export async function readRoomRelease({operatorId, roomId, fetchImpl = fetch, si
     if (signal?.aborted) throw error;
     return {ok:false, status:0, error:'Jämförelsen med live kunde inte läsas. Läs in igen.'};
   }
-  if (!response.ok) return failure(response);
+  if (!response.ok) return failure(response, 'read');
   let value;
   try { value = await response.json(); } catch { value = null; }
   if (!validPreview(value, {operatorId, roomId})) return {ok:false, status:response.status, error:'Serverns jämförelse stämmer inte med spelbordet. Läs in igen.'};
@@ -238,9 +248,9 @@ export async function publishRoomRelease({preview, fetchImpl = fetch} = {}) {
     response = await fetchImpl(labUrl(ROOM_RELEASE_PUBLISH_PATH), {method:'POST', credentials:'same-origin', cache:'no-store', redirect:'error',
       headers:{'content-type':'application/json', accept:'application/json'}, body:JSON.stringify(roomReleaseBody(preview))});
   } catch {
-    return {ok:false, status:0, error:'Svaret kom inte fram. Läs in igen för att se om publiceringen gick igenom.'};
+    return {ok:false, status:0, error:'Svaret kom inte fram.' + UNCERTAIN};
   }
-  if (!response.ok) return failure(response);
+  if (!response.ok) return failure(response, 'publish');
   let value;
   try { value = await response.json(); } catch { value = null; }
   if (!validReceipt(value, preview)) return {ok:false, status:response.status, error:'Publiceringskvittot kunde inte bekräftas. Läs in igen innan du fortsätter.'};

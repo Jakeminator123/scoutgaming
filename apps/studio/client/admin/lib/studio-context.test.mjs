@@ -360,6 +360,19 @@ test('beforeunload guards drafts and writes in the layer editor and the game set
   }
 });
 
+test('the room publication is keyed by company and room, and holds the room lifecycle while it publishes',async()=>{
+  const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'});
+  const release=()=>walk(h.render(),node=>node.props?.['eligible']!==undefined&&typeof node.props.onPublished==='function')[0];
+  const reader=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
+  // En ny key per bolag och spelbord: kvitto, fel och ruta från ett spelbord följer aldrig med till ett annat.
+  assert.equal(release().key,'release:a:bj');
+  h.setProps({roomId:'roulette'});assert.equal(release().key,'release:a:roulette');
+  h.setProps({operatorId:'b',roomId:'other'});await settle(1);assert.equal(release().key,'release:b:other');
+  assert.equal(reader().props.disabled,false);
+  release().props.onBusyChange(true);assert.equal(reader().props.disabled,true,'the room cannot be opened or paused while it publishes');
+  release().props.onBusyChange(false);assert.equal(reader().props.disabled,false);
+});
+
 test('the assignment publishes the acknowledged company package with the lifecycle revision and re-reads it',async()=>{
   const requests=[];let reply;
   const catalogResponse=()=>registry({operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:4})),compositions});

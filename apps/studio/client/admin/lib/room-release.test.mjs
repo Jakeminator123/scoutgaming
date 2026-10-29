@@ -130,3 +130,109 @@ test('the Publicera button renders inactive before the comparison is read and fo
   }
   assert.doesNotMatch(html({eligible:true}),/Publicera nu/,'the dialog is closed until the button is used');
 });
+
+test('a 5xx without a known code leaves the outcome open; only a known code refused before commit says Inget publicerades',async()=>{
+  for(const [status,body] of [[503,null],[502,{error:'bad_gateway'}],[500,{error:'internal_error'}],[504,'<html>']]){
+    const result=await publishRoomRelease({preview:preview(),fetchImpl:recorder([{status,body}]).fetchImpl});
+    assert.equal(result.ok,false);assert.doesNotMatch(result.error,/Inget publicerades/,String(status));
+    assert.match(result.error,/Läs in igen för att se om publiceringen gick igenom/,String(status));
+  }
+  const known=await publishRoomRelease({preview:preview(),fetchImpl:recorder([{status:503,body:{error:'studio_media_registry_unavailable',code:'studio_media_registry_unavailable'}}]).fetchImpl});
+  assert.match(known.error,/Medieregistret svarar inte.*Inget publicerades/,'a known code refused before commit');
+  // Förhandsvisningen publicerar inget: ett 5xx där säger bara att jämförelsen inte kunde läsas.
+  const read=await readRoomRelease({operatorId:'north',roomId:'north-a',fetchImpl:recorder([{status:503,body:null}]).fetchImpl});
+  assert.equal(read.ok,false);assert.equal(read.error,'Jämförelsen med live kunde inte läsas. Läs in igen.');
+});
+
+test('an aborted read rejects instead of becoming an error message, and blockers stop ready:true',async()=>{
+  const controller=new AbortController();
+  const fetchImpl=async(url,init)=>{controller.abort();assert.equal(init.signal,controller.signal);throw new DOMException('aborted','AbortError');};
+  await assert.rejects(readRoomRelease({operatorId:'north',roomId:'north-a',fetchImpl,signal:controller.signal}),{name:'AbortError'});
+  const lost=await readRoomRelease({operatorId:'north',roomId:'north-a',fetchImpl:recorder([new TypeError('network')]).fetchImpl,signal:new AbortController().signal});
+  assert.equal(lost.ok,false,'a network error without abort is still shown');
+  const inconsistent=preview({ready:true,blockers:[{area:'settings',code:'studio_room_game_config_missing'}]});
+  assert.equal(roomReleaseCanPublish(inconsistent),false,'ready:true with a blocker never publishes');
+  const {calls,fetchImpl:never}=recorder([{status:200,body:receipt()}]);
+  assert.equal((await publishRoomRelease({preview:inconsistent,fetchImpl:never})).ok,false);assert.equal(calls.length,0);
+});
+
+test('the room choices name the dealer from the registry; other ids stay as they are',()=>{
+  const view=preview({changes:[{area:'roomChoices',key:'dealer',before:'dragan',after:'paow'},{area:'roomChoices',key:'table',before:null,after:'blue'}]});
+  const names={dragan:'Dragan',paow:'PAOW'};
+  assert.deepEqual(roomReleaseAreas(view,{dealerName:id=>names[id]}).find(row=>row.area==='roomChoices').rows,['Dealer: Dragan → PAOW','Bordsgrafik: – → blue']);
+  assert.deepEqual(roomReleaseAreas(view).find(row=>row.area==='roomChoices').rows,['Dealer: dragan → paow','Bordsgrafik: – → blue']);
+});
+
+// ---- RoomRelease med fejkade hooks: knapparna klickas, svaren styrs och effekterna körs i ordning.
+function fakeHooks(React){
+  const slots=[],effects=[];let cursor=0;
+  const react={...React,
+    useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},
+    useRef(value){return slots[cursor++]??={current:value};},
+    useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
+  return {react,reset(){cursor=0;},flush(){for(const effect of effects.splice(0))effect();}};
+}
+const elements=(node,predicate)=>{
+  if(Array.isArray(node))return node.flatMap(child=>elements(child,predicate));
+  if(!node||typeof node!=='object'||!node.props)return [];
+  return [...(predicate(node)?[node]:[]),...Object.values(node.props).flatMap(value=>elements(value,predicate))];
+};
+const text=node=>Array.isArray(node)?node.map(text).join(''):node==null||typeof node==='boolean'?'':typeof node!=='object'?String(node):text(node.props?.children);
+const settle=async()=>{for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));};
+function mountRelease(props,responses){
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),hooks=fakeHooks(React);
+  const calls=[],fetchImpl=async(url,init)=>{calls.push({url:String(url),method:init.method});const next=responses.shift();
+    if(typeof next==='function')return next();return {ok:next.status>=200&&next.status<300,status:next.status,json:async()=>next.body};};
+  const lib={...release,readRoomRelease:input=>release.readRoomRelease({...input,fetchImpl}),publishRoomRelease:input=>release.publishRoomRelease({...input,fetchImpl})};
+  const stub=()=>null;
+  const module={exports:{}};
+  runInNewContext(transformSync(readFileSync(new URL('../components/studio/room-release.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,AbortController,require:name=>name==='react'?hooks.react:name==='../../lib/room-release.mjs'?lib
+      :name==='../ui/kit'?{Button:stub,cn:(...names)=>names.filter(Boolean).join(' '),TechnicalDetails:stub}:name==='../ui/dialog'?{Dialog:stub}
+      :name==='../../../runtime/navigation'?{__esModule:true,default:stub}:require(name)});
+  const busy=[],published=[],focused=[];
+  const render=()=>{hooks.reset();const tree=module.exports.RoomRelease({operatorId:'north',roomId:'north-a',roomName:'Norr A',eligible:true,
+    onBusyChange:value=>busy.push(value),onPublished:value=>published.push(value),...props});
+    // React fäster ref före effekterna; här får kvittots ref en nod som noterar fokus.
+    for(const node of elements(tree,node=>node.props.tabIndex===-1&&node.props.ref))node.props.ref.current??={focus:()=>focused.push(true)};
+    hooks.flush();return tree;};
+  const find=action=>elements(render(),node=>node.props['data-action']===action)[0];
+  render();
+  // Som React: rendera om efter ett klick så att effekterna startar, vänta på svaren och rendera igen.
+  const idle=async()=>{render();await settle();render();};
+  return {render,find,idle,calls,busy,published,focused,responses,
+    dialog:()=>elements(render(),node=>node.props.title==='Det här ändras jämfört med live')[0],
+    reloadButton:()=>elements(render(),node=>text(node.props.children)==='Läs in igen'&&typeof node.props.onClick==='function')[0],
+    announced:()=>text(elements(render(),node=>node.props.role==='status'&&node.props.className==='sr-only')[0].props.children),
+    receipt:()=>elements(render(),node=>node.props['data-release-receipt']==='')[0]};
+}
+
+test('Publicera nu sends one request for a double click, reports busy, and after an error waits for a new read',async()=>{
+  let answer;
+  const h=mountRelease({},[{status:200,body:preview()}]);
+  await h.idle();
+  assert.equal(h.announced(),'1 ändring ej publicerad');
+  assert.equal(h.receipt().props.role,'status','the receipt region exists before any receipt');
+  h.responses.push({status:200,body:preview()});h.find('room-release').props.onClick();
+  assert.equal(h.announced(),'1 ändring ej publicerad','a re-read does not announce Jämför med live…');
+  await h.idle();assert.equal(h.dialog().props.open,true);
+  h.responses.push(()=>new Promise(resolve=>{answer=resolve;}));
+  const confirm=h.find('room-release-confirm');assert.equal(confirm.props.disabled,false);
+  confirm.props.onClick();confirm.props.onClick();await h.idle();
+  assert.equal(h.calls.filter(call=>call.method==='POST').length,1,'the second click is held by the lock');
+  assert.deepEqual(h.busy,[true]);assert.equal(h.find('room-release-confirm').props.disabled,true,'inactive while publishing');
+  answer({ok:false,status:409,json:async()=>({error:'studio_conflict',code:'studio_conflict',step:'package'})});await h.idle();
+  assert.deepEqual(h.busy,[true,false]);
+  assert.match(text(elements(h.dialog().props.children,node=>node.props.role==='alert')[0]?.props.children),/Bolagets publicering har ändrats/);
+  assert.equal(h.find('room-release-confirm').props.disabled,true,'an error requires a new read first');
+  h.find('room-release-confirm').props.onClick();await h.idle();
+  assert.equal(h.calls.filter(call=>call.method==='POST').length,1,'no second POST before the preview is read again');
+  h.responses.push({status:200,body:preview()});h.reloadButton().props.onClick();await h.idle();
+  assert.equal(h.find('room-release-confirm').props.disabled,false,'a fresh preview unlocks Publicera nu');
+  h.responses.push({status:200,body:receipt()},{status:200,body:preview({changed:false,changes:[]})});
+  h.find('room-release-confirm').props.onClick();await h.idle();
+  assert.equal(h.published.length,1);assert.equal(h.dialog().props.open,false);
+  assert.match(text(h.receipt().props.children),/^Publicerat · version 8/);assert.deepEqual(h.focused,[true],'focus moves to the receipt');
+  await h.idle();assert.equal(h.calls.at(-1).method,'GET','the comparison is read again after the receipt');
+  assert.equal(h.announced(),'Sparat läge är detsamma som live');
+});
