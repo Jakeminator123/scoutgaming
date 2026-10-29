@@ -57,3 +57,33 @@ test('the company nav has Spelbord, Tilldelning, Team and Inställningar, and ol
   assert.ok(html.includes('Bolagets flikar: Spelbord · Tilldelning · Team · Inställningar.'));
   assert.doesNotMatch(html,/Bolag, fliken (Journal|Integration|Spelare)/);
 });
+
+// Enkel väg 5: the dealer has five steps with real done states, and nothing in its nav pretends to work.
+const steps=['Skapa','Lägg till klipp','Klipp per fack','Röst och tal','Tilldela'];
+test('the dealer flow has five steps and Hjälp lists exactly those',()=>{
+  assert.equal(navigation.adminDealerSteps.length,5);
+  assert.deepEqual(navigation.adminDealerSteps,steps);
+  const {AdminHelp}=loadHelp();
+  const html=renderToStaticMarkup(React.createElement(AdminHelp));
+  const listed=[...html.matchAll(/<li[^>]*><span[^>]*>(\d)<\/span>([^<]+)<\/li>/g)].map(match=>[Number(match[1]),match[2]]);
+  assert.deepEqual(listed,steps.map((step,index)=>[index+1,step]));
+  assert.doesNotMatch(html,/Mät landningar|Godkänn|mätningen kommer senare/);
+});
+
+test('the dealer nav and its clip map drawer have no disabled "kommer senare" controls',()=>{
+  const read=file=>readFileSync(new URL('../client/admin/components/studio/'+file,import.meta.url),'utf8');
+  const hub=read('dealer-hub.tsx'),map=read('connected-clip-map.tsx');
+  for(const [name,source] of [['dealer-hub.tsx',hub],['connected-clip-map.tsx',map]]){
+    // No opening tag (arrow functions skipped) is disabled while its title promises a later feature.
+    for(const [tag] of source.matchAll(/<[a-zA-Z][^<]*?(?<!=)>/g))
+      if(/\b(?:aria-)?disabled\b/.test(tag))assert.doesNotMatch(tag,/title="[^"]*kommer senare/i,name+': '+tag.slice(0,80));
+    assert.doesNotMatch(source,/Godkänn dealern|Mät landningar|Exportera landningsmall|Skapa material|Landningar mätta|Scenförhandsvisning|Tal vid inaktivitet/,name);
+  }
+  // Redo för spel only shows rows with a real state: klart or saknas.
+  assert.match(hub,/<Card title="Redo för spel"/);
+  assert.doesNotMatch(hub,/<Chip tone="warn">kommer senare<\/Chip>} title=\{text\}/);
+  // The drawer: Klipp, Körregel and Lägg till klipp. Provspela is the dealer nav's flyout; Scen & lager sits in the toolbar.
+  const nav=map.match(/<nav className="studio-inspector-nav"[^>]*>([\s\S]*?)<\/nav>/);
+  assert.ok(nav,'the drawer nav');
+  assert.deepEqual([...nav[1].matchAll(/\}>([A-ZÅÄÖ][^<{]*)/g)].map(match=>match[1]),['Klipp','Körregel','Lägg till klipp']);
+});
