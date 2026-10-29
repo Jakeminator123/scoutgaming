@@ -34,6 +34,9 @@ export function appearanceReview(value, { draftRevision, packageRevision, brandi
   return object(value) && typeof value.reviewToken === 'string' && value.reviewToken.length > 0 && value.reviewToken.length <= 4096
     && value.draftRevision === draftRevision && value.packageRevision === packageRevision && sameAppearance(value.branding, branding)
     && Array.isArray(value.affectedRooms) && value.affectedRooms.every(id => typeof id === 'string')
+    // Without tables.read the server hides the table rows: it counts them and flags the hidden tables.
+    && (value.hiddenTableChanges === undefined || Number.isSafeInteger(value.hiddenTableChanges) && value.hiddenTableChanges >= 0)
+    && (value.tablesHidden === undefined || typeof value.tablesHidden === 'boolean')
     && Array.isArray(value.changes) && value.changes.every(row => object(row) && (row.roomId === null || typeof row.roomId === 'string')
       && (KEYS.includes(row.key) || ROOM_KEYS.some(key => row.key === 'roomOverrides.' + key)) && [row.before, row.after].every(item => item === null || typeof item === 'string'));
 }
