@@ -55,3 +55,59 @@ test('a lime focus ring is caught, and only a dark sidebar is exempt', () => {
   assert.ok(darkSidebar.test('.studio-sidebar a:focus-visible'));
   assert.ok(!darkSidebar.test('.studio-sidebar-note a:focus-visible'));
 });
+
+// Den valda posten i en mörk sidomeny har lime bakgrund. En lime fokusram med negativ offset
+// hamnar innanför posten, mot samma lime (1:1), och syns inte alls. Provet räknar fram vilken
+// outline den valda posten får vid fokus (förenklad kaskad: specificitet, sedan källordning) och
+// kräver att den inte är både lime och negativt förskjuten.
+const selectedEntries = [
+  { file: 'apps/studio/client/admin/app/studio.css', classes: ['studio-sidebar'] },
+  { file: 'apps/studio/components/partner/partner-portal.css', classes: ['partner-portal', 'side', 'nav'] },
+];
+
+// Fokusregelns delselektorer som kan träffa en vald länk (a med aria-current) i sidomenyn.
+function selectedRing(css, classes) {
+  const candidates = [];
+  focusRules(css).forEach((rule, order) => {
+    for (const part of rule.selector.split(',').map(text => text.trim())) {
+      if (!part.endsWith(':focus-visible')) continue;
+      const bare = part.slice(0, -':focus-visible'.length);
+      const used = [...bare.matchAll(/\.([\w-]+)/g)].map(match => match[1]);
+      const attributes = [...bare.matchAll(/\[([^\]]+)\]/g)].map(match => match[1]);
+      const tags = bare.replace(/\[[^\]]*\]|\.[\w-]+/g, ' ').split(/[\s>+~]+/).filter(Boolean);
+      if (!used.every(name => classes.includes(name))) continue;
+      if (!attributes.every(text => /^aria-current/.test(text))) continue;
+      if (!tags.every(tag => tag === 'a')) continue;
+      candidates.push({ specificity: (used.length + attributes.length + 1) * 100 + tags.length, order, body: rule.body });
+    }
+  });
+  candidates.sort((a, b) => a.specificity - b.specificity || a.order - b.order);
+  const ring = { color: '', offset: '0' };
+  for (const { body } of candidates) {
+    for (const [, property, value] of body.matchAll(/(outline(?:-color|-offset)?)\s*:\s*([^;]+)/g)) {
+      if (property === 'outline-offset') ring.offset = value.trim();
+      else if (property === 'outline-color') ring.color = value.trim();
+      else ring.color = value.replace(/\b\d+px\b|\b(solid|dashed|dotted|double)\b/g, '').trim() || ring.color;
+    }
+  }
+  return ring;
+}
+
+const isLime = color => /--sg-lime\b|#d6ff3a|#ccff00/i.test(color);
+
+test('the selected entry in a dark sidebar does not get a lime focus ring inside its lime background', () => {
+  for (const { file, classes } of selectedEntries) {
+    const ring = selectedRing(readFileSync(new URL(file, `file://${root}`), 'utf8'), classes);
+    assert.ok(ring.color, `${file}: the selected entry has a focus ring`);
+    assert.ok(!(isLime(ring.color) && ring.offset.startsWith('-')), `${file}: lime ring at ${ring.offset} sits on the lime entry (1:1)`);
+  }
+});
+
+test('a lime ring with negative offset on the selected entry is caught', () => {
+  const before = '.studio-sidebar a:focus-visible,.studio-sidebar button:focus-visible{outline:2px solid var(--sg-lime);outline-offset:-2px}';
+  assert.deepEqual(selectedRing(before, ['studio-sidebar']), { color: 'var(--sg-lime)', offset: '-2px' });
+  const after = `${before}.studio-sidebar [aria-current=page]:focus-visible{outline-color:var(--sg-on-accent);outline-offset:-4px}`;
+  assert.deepEqual(selectedRing(after, ['studio-sidebar']), { color: 'var(--sg-on-accent)', offset: '-4px' });
+  const partner = '.partner-portal :focus-visible{outline:2px solid var(--sg-text);outline-offset:2px}.partner-portal .side :focus-visible{outline-color:var(--sg-lime)}.partner-portal .card:focus-visible{outline-offset:-9px}';
+  assert.deepEqual(selectedRing(partner, ['partner-portal', 'side', 'nav']), { color: 'var(--sg-lime)', offset: '2px' });
+});

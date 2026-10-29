@@ -248,6 +248,8 @@
 .studio-sidebar>nav{display:flex;flex-direction:column;gap:2px}
 .studio-nav-group{display:flex;flex-direction:column;gap:2px;margin-top:10px}.studio-nav-label{margin:8px 10px 4px;color:var(--sg-side-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .studio-sidebar a:focus-visible,.studio-sidebar button:focus-visible{outline:2px solid var(--sg-lime);outline-offset:-2px}
+/* Den valda posten är lime, så en lime ram innanför den syns inte. Mörk inre ram mot lime: 17,1:1 i mörkt läge, 14,8:1 i ljust. */
+.studio-sidebar [aria-current=page]:focus-visible{outline-color:var(--sg-on-accent);outline-offset:-4px}
 .studio-sidebar nav>a,.studio-nav-group>a{display:flex;align-items:center;gap:10px;padding:9px 10px;font-size:13.5px;font-weight:500;line-height:1.45;color:var(--sg-side-text);border-radius:8px;cursor:pointer;text-decoration:none}.studio-sidebar nav svg{flex-shrink:0}.studio-sidebar nav>a:hover,.studio-nav-group>a:hover{background:var(--sg-side-2)}.studio-sidebar [aria-current=page]{background:var(--sg-lime);color:var(--sg-on-accent);font-weight:600}
 .studio-sidebar-foot{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-top:auto;padding-top:12px;border-top:1px solid var(--sg-side-line);color:var(--sg-side-muted);font-size:12.5px;line-height:1.4}
 /* Portalraden: 1 Admin · 2 Partnerportalen · 3 Lobbyn. */
