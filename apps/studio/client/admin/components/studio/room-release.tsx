@@ -9,6 +9,7 @@ import {publishRoomRelease,readRoomRelease,roomReleaseAreas,roomReleaseBlocker,r
 // Spelbordets enda publicering (ADMIN-FORENKLING §7): en primär knapp, rutan "Det här ändras
 // jämfört med live" och ett kvitto. Servern (lib/room-release.mjs) gör alla kontroller; här
 // skickas förhandsvisningens token och revisioner, och inget försök upprepas automatiskt.
+// Föräldern sätter `key` per bolag och spelbord, så kvitto, fel och ruta aldrig följer med till ett annat spelbord.
 type Status='idle'|'loading'|'ready'|'error';
 export type RoomReleaseProps={operatorId:string;roomId:string;roomName:string;
   /** Öppet, publicerat blackjack-spelbord; annars svarar servern 404 och inget läses. */
@@ -18,11 +19,13 @@ export type RoomReleaseProps={operatorId:string;roomId:string;roomName:string;
   /** Ändras när editorn sparat eller registret lästs om: jämförelsen läses då igen. */
   refreshKey?:string;
   playUrl?:string|null;rooms?:{id:string;name:string}[];
+  /** Dealerns namn ur registret; bakgrund och bordsgrafik visas med id. */
+  dealerName?:(id:string)=>string;
   onBusyChange?:(busy:boolean)=>void;onPublished?:(receipt:RoomReleaseReceipt)=>void};
 
 const linkClass='inline-flex items-center gap-1 font-semibold text-sg-accent-text no-underline hover:underline';
 
-export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',refreshKey='',playUrl,rooms=[],onBusyChange,onPublished}:RoomReleaseProps) {
+export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',refreshKey='',playUrl,rooms=[],dealerName,onBusyChange,onPublished}:RoomReleaseProps) {
   const [status,setStatus]=useState<Status>('idle');
   const [preview,setPreview]=useState<RoomReleasePreview|null>(null);
   const [readError,setReadError]=useState('');
@@ -35,6 +38,9 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
   const [reads,setReads]=useState(0);
   const lock=useRef(false),callbacks=useRef({onBusyChange,onPublished});
   callbacks.current={onBusyChange,onPublished};
+  const receiptRef=useRef<HTMLDivElement>(null),announced=useRef('');
+  // Efter en lyckad publicering flyttas fokus till kvittot (rutan har stängts).
+  useEffect(()=>{if(receipt)receiptRef.current?.focus();},[receipt]);
 
   useEffect(()=>{
     if(!eligible){setStatus('idle');setPreview(null);return undefined;}
@@ -68,24 +74,27 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
     }finally{lock.current=false;setPublishing(false);callbacks.current.onBusyChange?.(false);}
   }
   const dealerId=preview?.candidate?.dealerId??preview?.live?.dealerId??null;
-  const areas=roomReleaseAreas(preview);
+  const areas=roomReleaseAreas(preview,{dealerName});
   const blockers=preview?.blockers??[];
   const canPublish=status==='ready'&&!mustReload&&!blockedBy&&!publishing&&roomReleaseCanPublish(preview);
+  // Statusregionen annonserar bara slutlägen och fel, inte "Jämför med live…" vid varje omläsning.
+  if(status==='ready'||status==='error')announced.current=status==='error'?readError:button.hint;
 
   return <section aria-label="Publicera spelbordet" className="grid gap-3">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sg-border bg-sg-surface px-4 py-3 shadow-sg">
       <div className="min-w-0">
         <p className="m-0 text-[13px] font-semibold text-sg-text">{preview?`Live · version ${preview.revisions.package}`:'Publicering'}</p>
-        <p role="status" className="m-0 text-[12.5px] text-sg-muted">{status==='error'?readError:button.hint}</p>
+        <p className="m-0 text-[12.5px] text-sg-muted" aria-hidden="true">{status==='error'?readError:button.hint}</p>
+        <p role="status" className="sr-only">{announced.current}</p>
       </div>
       <Button variant="primary" data-action="room-release" disabled={button.disabled||publishing} onClick={openDialog}>{publishing?'Publicerar…':button.label}</Button>
     </div>
-    {receipt&&<div role="status" className="grid gap-1 rounded-lg bg-sg-ok-bg px-3.5 py-2.5 text-[13px] text-sg-ok">
+    <div role="status" data-release-receipt="">{receipt&&<div ref={receiptRef} tabIndex={-1} className="grid gap-1 rounded-lg bg-sg-ok-bg px-3.5 py-2.5 text-[13px] text-sg-ok outline-none">
       <p className="m-0"><strong className="font-semibold">{roomReleaseReceiptText(receipt)}</strong></p>
       {playUrl&&<p className="m-0"><a className={linkClass} href={playUrl} target="_blank" rel="noopener">Öppna spelbordet <ArrowUpRight size={13} aria-hidden="true"/></a></p>}
       <TechnicalDetails className="mt-1" items={[['configVersion',receipt.configVersion],['Paketrevision före',String(receipt.previousPackageRevision)],
         ['Paketrevision efter',String(receipt.packageRevision)],['Publicerat (UTC)',receipt.publishedAt],['Av',receipt.actor]]}/>
-    </div>}
+    </div>}</div>
     <Dialog open={open} size="lg" busy={publishing} ariaBusy={status==='loading'||publishing} onClose={()=>setOpen(false)}
       title="Det här ändras jämfört med live"
       description={`${roomName}${preview?` · live version ${preview.revisions.package}`:''}`}

@@ -192,7 +192,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   // a notice or a pending request. Tillgänglighet shows it in its own slot; every other mode mounts it last.
   const lifecycleReader = operator && (mode !== 'room' || selectedRoom) ? <div id="room-lifecycle" className={ui.slot}>
     <ControlResourceLifecycle operatorId={operator.id} kind="rooms" available refreshKey={lifecycleRefresh} compact request={roomRequest} onRequestHandled={()=>setRoomRequest(undefined)}
-      disabled={disabled||roomBusy||gameBusy||createBusy||publishBusy||anyDraft} onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/>
+      disabled={disabled||roomBusy||gameBusy||createBusy||publishBusy||releaseBusy||anyDraft} onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/>
   </div> : null;
   const stateSection = mode === 'room' && section === 'state';
   return <>
@@ -208,9 +208,9 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
             {roomId&&!selectedRoom&&<p role="alert" className={ui.message}>Spelbordet finns inte hos detta aktiva bolag.</p>}
             {selectedRoom&&<>
               {disabled&&<p role="status" className={ui.message}>Spara det pågående arbetet innan du ändrar spelbordets val.</p>}
-              <RoomRelease operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name} eligible={gameSettingsRoom(selectedRoom)}
+              <RoomRelease key={'release:'+operator.id+':'+selectedRoom.id} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name} eligible={gameSettingsRoom(selectedRoom)}
                 blockedBy={disabled?'Spara det pågående arbetet först':roomDirty||gameDirty?'Spara spelbordets ändringar först':!editorsIdle?'Väntar på pågående åtgärd':''}
-                refreshKey={refresh+':'+lifecycleRefresh+':'+releaseTick} playUrl={selectedRoom.playUrl} rooms={operatorRooms.map(row=>({id:row.id,name:row.name}))}
+                refreshKey={refresh+':'+lifecycleRefresh+':'+releaseTick} playUrl={selectedRoom.playUrl} rooms={operatorRooms.map(row=>({id:row.id,name:row.name}))} dealerName={dealerName}
                 onBusyChange={setReleaseBusy} onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);reload();onChanged?.();}}/>
               {section==='appearance'&&<>
                 {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className="m-0 flex flex-wrap items-center gap-2 text-[12.5px] text-sg-muted" aria-label="Publicerat nu"><div className="flex items-center gap-2"><dt className="inline-flex items-center gap-1.5 font-semibold text-sg-text"><span className="size-1.5 rounded-full bg-sg-ok" aria-hidden="true"/>Publicerat nu</dt><dd className="m-0">{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}

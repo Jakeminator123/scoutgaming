@@ -15,7 +15,7 @@ export type RoomReleasePreview = {
 export type RoomReleaseReceipt = { ok: true; operatorId: string; roomId: string; previousPackageRevision: number; packageRevision: number;
   configVersion: string; gameConfig: RoomReleaseGameConfig; administrationRevision: string; publishedAt: string; actor: string; changes: RoomReleaseChange[] };
 export type RoomReleaseFailure = { ok: false; status: number; error: string; code?: string; step?: string; reason?: string; materialReason?: string };
-export type RoomReleaseErrorDetail = { status?: number; code?: string; step?: string; reason?: string; materialReason?: string };
+export type RoomReleaseErrorDetail = { status?: number; code?: string; step?: string; reason?: string; materialReason?: string; phase?: 'read'|'publish' };
 
 export const ROOM_RELEASE_READ_PATH: string;
 export const ROOM_RELEASE_PUBLISH_PATH: string;
@@ -24,7 +24,7 @@ export function limitLabel(value: unknown): string;
 export function materialReasonText(reason: unknown): string;
 export function roomReleaseErrorMessage(detail?: RoomReleaseErrorDetail): string;
 export function roomReleaseBlocker(blocker: RoomReleaseBlocker, context?: { roomId?: string; dealerId?: string|null; rooms?: { id: string; name: string }[] }): { text: string; href: string|null; linkLabel: string|null };
-export function roomReleaseAreas(preview: RoomReleasePreview|null|undefined): { area: string; label: string; changed: boolean; rows: string[] }[];
+export function roomReleaseAreas(preview: RoomReleasePreview|null|undefined, options?: { dealerName?: (id: string) => string }): { area: string; label: string; changed: boolean; rows: string[] }[];
 export function roomReleaseChangeCount(preview: RoomReleasePreview|null|undefined): number;
 export function roomReleaseButton(input?: { status?: 'idle'|'loading'|'ready'|'error'; preview?: RoomReleasePreview|null; blockedBy?: string }): { disabled: boolean; label: string; hint: string };
 export function roomReleaseCanPublish(preview: RoomReleasePreview|null|undefined): boolean;

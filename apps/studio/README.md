@@ -18,7 +18,7 @@ Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
   lokalt produktregister och ingen diskreserv.
 - `/control`, `/lab` och `/labb` svarar bara med redirect till motsvarande
   `/admin`-sida (`packages/navigation/control-flow.mjs`,
-  `admin-workspace-routes.mjs`, `middleware.ts` och
+  `admin-workspace-routes.mjs`, `proxy.ts` och
   `lib/legacy-studio-document.mjs`); `/bo` är borta. Bygg inga nya flöden där.
 
 ## Starta och bygga

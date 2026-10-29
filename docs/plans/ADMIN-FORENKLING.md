@@ -55,7 +55,7 @@ Där gränsen läcker i dag (fil:rad i kartan): spelarna är inte knutna till bo
 
 ### 4.1 Meny: från 17 sidor till 8
 
-Nya namn kräver inga nya adresser: alla omdirigeringar i `packages/navigation/admin-workspace-routes.mjs` och `apps/studio/middleware.ts` behålls, och gamla djuplänkar landar på rätt flik med bibehållen bolag, rum, dealer och revision.
+Nya namn kräver inga nya adresser: alla omdirigeringar i `packages/navigation/admin-workspace-routes.mjs` och `apps/studio/proxy.ts` behålls, och gamla djuplänkar landar på rätt flik med bibehållen bolag, rum, dealer och revision.
 
 | Menyval | Ersätter i dag | Innehåll |
 |---|---|---|

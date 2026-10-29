@@ -43,10 +43,3 @@ export function partnerLaneState(lane, branding = {}, assets = [], registeredDea
   }));
   return { id: lane.id, name: lane.label, compatibility: lane.composition ? 'per-clip' : 'full-frame', layers, adjustable: effectivePartnerAdjustments(lane) };
 }
-
-export function partnerPackageProfiles(presentation, branding, operatorId) {
-  return presentation.lanes.map(lane => {
-    const state = partnerLaneState(lane, { ...branding, lane: branding?.lane ?? presentation.lanes[0].id }, presentation.assets, presentation.registeredDealers);
-    return { ...state, operatorId, dealer: state.layers.dealer.selected, background: state.layers.background.label, table: state.layers.table.label, status: 'published' };
-  });
-}
