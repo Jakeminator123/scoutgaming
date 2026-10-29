@@ -13,7 +13,7 @@ export const environmentPictureLabel='Miljöbild – visas i lobbyn och Admin, a
 
 /** The environment's miljöbild: choose one of its exported pictures, or export the saved scene as a new one.
  * The export renders the saved environment on the server and only adds a material; the choice is a draft edit
- * (saved with Spara utkast), and older pictures stay in the library. */
+ * (saved with Spara utkast). The export archives this environment's older pictures that no environment shows. */
 export function EnvironmentPicture({project,savedProject,inventory,laneId,blocked,dirty,onEdit,onExported}:{project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;laneId:string;blocked:boolean;dirty:boolean;onEdit:(project:StudioProject)=>void;onExported:(remote:StudioProject,id:string)=>void}) {
   const id=useId(),lane=project.lanes?.find(row=>row.id===laneId),savedLane=savedProject?.lanes?.find(row=>row.id===laneId);
   const pictures=(project.layerAssets??[]).filter(row=>row.role==='illustration');

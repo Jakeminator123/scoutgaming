@@ -3,14 +3,16 @@
 // geometry) and saves it as a new material with the role `illustration` ("<Miljö> · miljöbild v<n>").
 // The server renders from the saved project; the browser only supplies one frame of the dealer's idle clip,
 // because this server has no video decoder. The frame is keyed here with the clip's own registered settings.
-// Nothing is selected or archived: the editor chooses the new picture in its draft, and older pictures stay.
+// The new picture replaces this environment's earlier ones that no saved environment shows: they move to the
+// archive (Material › Arkiverat), so repeated exports do not fill the shared library. A picture that an active
+// or archived environment still shows stays. The editor chooses the new picture in its draft.
 import {createHash,randomUUID} from 'node:crypto';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {canonicalStudioJson,StudioStorageError,validateActor,validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {assertNativeStudioRequest,nativeStudioErrorResponse,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
-import {getPrivateMedia,isCloudMediaConfigured,putPrivateMedia,validatePrivateMedia} from './cloud-media-store.mjs';
+import {deletePrivateMedia,getPrivateMedia,isCloudMediaConfigured,putPrivateMedia,validatePrivateMedia} from './cloud-media-store.mjs';
 import {layerAssetPath,validateLayerAsset} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {DEFAULT_DEALER_FRAMING,dealerFrameRect,keyGreenPixels,validateDealerFraming} from '../../../packages/presentation/contracts/dealer-framing.mjs';
 import {effectiveDealerCompositing} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
@@ -19,6 +21,8 @@ import {SCENE_STILL_SIZE,desktopSceneStill} from '../../../packages/presentation
 const HEADERS=Object.freeze({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
 // Vercel's request body ceiling is 4.5 MB; the browser sends one WebP or PNG frame well below it.
 const BODY_LIMIT=4_400_000,FRAME_MAX_BYTES=3_200_000,FRAME_MAX_EDGE=4096,PIXEL_LIMIT=40_000_000,LABEL_MAX=80;
+// The project's archive holds at most this many materials (studio-model layerAssetTrash).
+const TRASH_LIMIT=128;
 const STATUS=Object.freeze({scene_export_invalid_request:400,scene_export_lane_missing:404,scene_export_stale:409,
   scene_export_dealer_invalid:422,scene_export_empty:422,scene_export_unavailable:503});
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/,LANE=/^[a-z][a-z0-9-]{0,63}$/,REVISION=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
@@ -49,15 +53,32 @@ export function validateSceneExportRequest(body) {
   return Object.freeze({laneId:body.laneId,expectedRevision:body.expectedRevision,dealer});
 }
 
-/** "<Miljö> · miljöbild v<n>", one past the highest version of this environment's pictures, including archived ones. */
-export function illustrationLabel(laneLabel,project) {
+// "<Miljö> · miljöbild v<n>" for this environment's label: the version, or 0 for another label.
+function pictureVersion(laneLabel,label) {
   const clean=String(laneLabel).replace(/[\u0000-\u001f\u007f-\u009f<>]/gu,'').replace(/\s+/g,' ').trim()||'Miljö';
   const suffix=n=>` · miljöbild v${n}`,named=n=>clean.slice(0,LABEL_MAX-suffix(n).length).trim()+suffix(n);
-  const used=[...(project.layerAssets??[]),...(project.layerAssetTrash??[]).map(row=>row.asset)].filter(row=>row?.role==='illustration').map(row=>{
-    const match=/ · miljöbild v(\d{1,6})$/.exec(row.label);
-    return match&&row.label===named(Number(match[1]))?Number(match[1]):0;
-  });
-  return named(Math.max(0,...used)+1);
+  const match=typeof label==='string'?/ · miljöbild v(\d{1,6})$/.exec(label):null;
+  return {version:match&&label===named(Number(match[1]))?Number(match[1]):0,named};
+}
+
+/** "<Miljö> · miljöbild v<n>", one past the highest version of this environment's pictures, including archived ones. */
+export function illustrationLabel(laneLabel,project) {
+  const used=[...(project.layerAssets??[]),...(project.layerAssetTrash??[]).map(row=>row.asset)].filter(row=>row?.role==='illustration')
+    .map(row=>pictureVersion(laneLabel,row.label).version);
+  return pictureVersion(laneLabel,'').named(Math.max(0,...used)+1);
+}
+
+/** The project with `record` added and this environment's earlier, unshown pictures archived (oldest first, while
+ * the archive has room). A picture that any active or archived environment shows is kept. */
+export function withExportedIllustration(project,laneLabel,record,now=new Date().toISOString(),{archive=true}={}) {
+  if (!archive) return {...project,layerAssets:[...(project.layerAssets??[]),record]};
+  const shown=new Set([...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(entry=>entry.compositions??[])].map(lane=>lane.illustration).filter(Boolean));
+  const trash=project.layerAssetTrash??[];
+  const earlier=(project.layerAssets??[]).filter(row=>row.role==='illustration'&&!shown.has(row.id)&&pictureVersion(laneLabel,row.label).version>0)
+    .sort((a,b)=>pictureVersion(laneLabel,a.label).version-pictureVersion(laneLabel,b.label).version).slice(0,Math.max(0,TRASH_LIMIT-trash.length));
+  const archived=new Set(earlier.map(row=>row.id));
+  return {...project,layerAssets:[...(project.layerAssets??[]).filter(row=>!archived.has(row.id)),record],
+    ...(earlier.length?{layerAssetTrash:[...trash,...earlier.map(asset=>({asset,archivedAt:now}))]}:{})};
 }
 
 // Resize an image to `rect` and keep only the part inside the frame, as raw RGBA for a composite.
@@ -117,7 +138,7 @@ async function readBounded(request) {
 }
 
 export function createSceneExportApi({authorize,config,repository,mutationTransaction,env=process.env,imageLibrary=loadSharp,
-  privateMedia={get:getPrivateMedia,put:putPrivateMedia},newId=randomUUID}={}) {
+  privateMedia={get:getPrivateMedia,put:putPrivateMedia,delete:deletePrivateMedia},newId=randomUUID,now=()=>new Date().toISOString()}={}) {
   if (typeof authorize!=='function'||!config||!['/api/admin','/studio/api/admin'].includes(config.apiBase)
     ||!repository?.readDocument||!repository?.saveDocument||!repository?.getMedia||typeof mutationTransaction!=='function') throw new StudioStorageError('studio_invalid_configuration',503);
   const scope=validateStudioScope(config.scope),path=`${config.apiBase==='/api/admin'?'/api':'/studio/api'}/layer-assets/scene-export`;
@@ -184,18 +205,36 @@ export function createSceneExportApi({authorize,config,repository,mutationTransa
       await stillAuthorized();
       // The game server must read the new material role before any byte is stored (capability v33).
       if (typeof repository.withMutationContext==='function') await repository.withMutationContext(()=>{},{kind:'project',value:{layerAssets:[record]}});
-      await privateMedia.put(record.pathname,still.bytes,{sha256,size:record.size,contentType:record.contentType,env:mediaOptions.env,cacheDir:mediaOptions.cacheDir});
-      // The new material joins the library only; the miljöbild choice stays with the editor's draft.
-      const presentationMutation={kind:'project',value:{...project,layerAssets:[...(project.layerAssets??[]),record]}};
-      const saved=await mutationTransaction(async()=>{
-        await stillAuthorized();
-        return repository.transaction(async()=>{
-          const current=await repository.readDocument('project');
-          if (!current) throw new StudioStorageError('studio_document_missing',404);
-          if (current.revision!==captured.revision) throw new StudioStorageError('studio_conflict',409);
-          return repository.saveDocument('project',{expectedRevision:current.revision,value:{...current.value,layerAssets:[...(current.value.layerAssets??[]),record]},actor:principal.user});
+      const storage=await privateMedia.put(record.pathname,still.bytes,{sha256,size:record.size,contentType:record.contentType,env:mediaOptions.env,cacheDir:mediaOptions.cacheDir});
+      // The new material joins the library and replaces this environment's earlier, unshown pictures (archived);
+      // the miljöbild choice stays with the editor's draft.
+      // Archiving changes the project's material archive, which only the server's lifecycle save may write.
+      const archive=typeof repository.saveDealerLifecycle==='function',archivedAt=now();
+      const replaced=value=>withExportedIllustration(value,lane.label,record,archivedAt,{archive});
+      const presentationMutation={kind:'project',value:replaced(project)};
+      let saved;
+      try {
+        saved=await mutationTransaction(async()=>{
+          await stillAuthorized();
+          return repository.transaction(async()=>{
+            const current=await repository.readDocument('project');
+            if (!current) throw new StudioStorageError('studio_document_missing',404);
+            if (current.revision!==captured.revision) throw new StudioStorageError('studio_conflict',409);
+            const next=replaced(current.value),options={expectedRevision:current.revision,actor:principal.user};
+            return (next.layerAssetTrash??[]).length!==(current.value.layerAssetTrash??[]).length
+              ?repository.saveDealerLifecycle(next,options):repository.saveDocument('project',{...options,value:next});
+          },{presentationMutation});
         },{presentationMutation});
-      },{presentationMutation});
+      } catch (error) {
+        // Nothing refers to the new object unless the project already lists it: remove it, keep the original error.
+        // A failed cleanup (or an unreadable project) leaves the object in place rather than risk a listed one.
+        try {
+          const current=await repository.readDocument('project');
+          if (current&&!(current.value.layerAssets??[]).some(row=>row.id===record.id))
+            await privateMedia.delete?.(storage??validatePrivateMedia({provider:'vercel-blob',pathname:record.pathname,sha256,size:record.size,contentType:record.contentType}),{env:mediaOptions.env,cacheDir:mediaOptions.cacheDir});
+        } catch {}
+        throw error;
+      }
       return Response.json({ok:true,id:record.id,label:record.label,skipped,project:saved.value},{headers:HEADERS});
     } catch (error) {
       if (error instanceof SceneExportError) return Response.json({error:error.code,code:error.code},{status:STATUS[error.code],headers:HEADERS});

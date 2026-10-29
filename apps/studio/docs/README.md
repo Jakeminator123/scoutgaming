@@ -297,8 +297,9 @@ bakgrunden och bordsgrafiken på sin placering för dator.
   miljöns bilder eller **Ingen miljöbild**. **Exportera miljöbild** ritar den
   sparade scenen för dator (1920 × 1080: bakgrund, bordsgrafik och dealern på
   sin placering) och sparar den som nytt material, "<Miljö> · miljöbild v2".
-  Spara utkastet först. Den nya bilden väljs i utkastet; äldre bilder ligger
-  kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
+  Spara utkastet först. Den nya bilden väljs i utkastet. Miljöns äldre
+  exporterade bilder som ingen miljö visar flyttas till **Arkiverat** och kan
+  återställas där; den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
   designillustration. Insatsprofilen väljer ingen bild.
 - **Dealers i den gemensamma miljön** och **Förvald dealer**: här tillåter du
   dealern i miljön, steg 7 i arbetsgången.

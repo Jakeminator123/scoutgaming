@@ -15,6 +15,7 @@ import {buildPresentationPackage,layerAssetPath,validateLayerAsset,validatePrese
 import {changeMaterialTrash} from '../lib/material-trash.mjs';
 import {createSceneExportApi,illustrationLabel,validateSceneExportRequest} from '../lib/scene-export-api.mjs';
 import {desktopSceneStill} from '../../../packages/presentation/runtime/scene-still.mjs';
+import {validatePrivateMedia} from '../../../packages/studio-registry/server/private-media-contract.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'scene-export-test',workspaceId:'isolated'};
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid','studio.example.invalid']};
@@ -51,7 +52,8 @@ async function fixture(t,{version=33}={}){
   const blobs=new Map([[background.pathname,backgroundBytes],[table.pathname,tableBytes]]),puts=[];
   const privateMedia={
     async get(storage){const bytes=blobs.get(storage.pathname);return bytes&&sha(bytes)===storage.sha256?new Response(bytes,{headers:{'content-type':storage.contentType}}):new Response(null,{status:404});},
-    async put(pathname,bytes,options){assert.equal(sha(bytes),options.sha256);puts.push(pathname);blobs.set(pathname,Buffer.from(bytes));},
+    // Like the real Blob store: only a valid private reference is written, and it is returned.
+    async put(pathname,bytes,options){assert.equal(sha(bytes),options.sha256);const record=validatePrivateMedia({provider:'vercel-blob',pathname,sha256:options.sha256,size:options.size,contentType:options.contentType});puts.push(pathname);blobs.set(pathname,Buffer.from(bytes));return record;},
   };
   const dealerRecord={id:videoId,revision:'media-1',classification:{dealerId:'astrid',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}};
   // Only the dealer clip's registration is a stand-in; documents, revisions and readiness are the real ones.
@@ -78,7 +80,7 @@ test('export renders the saved scene on a computer screen and saves a new illust
   assert.deepEqual([asset.contentType,asset.width,asset.height],['image/webp',1920,1080]);
   assert.match(asset.pathname,/^croupier\/media\/illustrations\//);
   assert.deepEqual(f.puts,[asset.pathname]);
-  assert.deepEqual(saved.value.lanes,before.value.lanes,'the export never selects, replaces or archives a picture');
+  assert.deepEqual(saved.value.lanes,before.value.lanes,'the export never selects a picture on the environment');
   assert.deepEqual(body.project.layerAssets.map(row=>row.id),saved.value.layerAssets.map(row=>row.id));
   // The stored bytes are the rendered still: background, the table at its saved placement, the keyed dealer on top.
   const bytes=f.blobs.get(asset.pathname);assert.equal(sha(bytes),asset.sha256);
@@ -90,12 +92,14 @@ test('export renders the saved scene on a computer screen and saves a new illust
   assert.ok(blue[2]>180&&blue[0]<80,'the table sits at its saved placement, not on the lower half: '+blue);
   assert.ok(white.every(value=>value>220),'the dealer stays in front: '+white);
   assert.ok(f.fetches.includes(33),'storing an illustration negotiates the v33 runtime first');
-  // A second export is the next version; the first stays in the library.
+  // A second export is the next version and replaces the first, which no environment shows: it moves to the archive.
   const again=await f.api().handle(f.post({laneId:'studion',expectedRevision:saved.revision}));
   assert.equal(again.status,200);
   const second=await again.json(),after=await f.raw.readDocument('project');
   assert.equal(second.label,'Studion · miljöbild v2');
-  assert.deepEqual(after.value.layerAssets.filter(row=>row.role==='illustration').map(row=>row.label),['Studion · miljöbild v1','Studion · miljöbild v2']);
+  assert.deepEqual(after.value.layerAssets.filter(row=>row.role==='illustration').map(row=>row.label),['Studion · miljöbild v2']);
+  assert.deepEqual(after.value.layerAssetTrash.map(row=>row.asset),[asset]);
+  assert.deepEqual(after.value.layerAssets.filter(row=>row.role!=='illustration'),saved.value.layerAssets.filter(row=>row.role!=='illustration'));
 });
 
 test('a miljöbild is chosen on the environment, travels in the package and can never be a background or a table',async t=>{
@@ -134,6 +138,41 @@ test('a miljöbild is chosen on the environment, travels in the package and can 
   assert.deepEqual(archived.lanes[0].layers,stored.value.lanes[0].layers);
   assert.equal(archived.layerAssetTrash[0].asset.id,id);
   assert.equal(illustrationLabel('Studion',archived),'Studion · miljöbild v2','an archived picture keeps its version number');
+});
+
+test('repeated exports keep the shown picture, archive the rest and never fill the shared library',async t=>{
+  const f=await fixture(t),export_=async()=>{const current=await f.raw.readDocument('project');const response=await f.api().handle(f.post({laneId:'studion',expectedRevision:current.revision}));assert.equal(response.status,200);return response.json();};
+  const first=await export_(),current=await f.raw.readDocument('project');
+  // The environment shows v1 (saved); a picture of another environment and its layers are never touched.
+  const other={...material(9,'illustration',Buffer.alloc(4096,1),1920,1080),label:'Annan miljö · miljöbild v1',contentType:'image/webp'};other.pathname=layerAssetPath(other);
+  await f.repository.saveDocument('project',{expectedRevision:current.revision,actor:'Personal',
+    value:{...current.value,layerAssets:[...current.value.layerAssets,other],lanes:current.value.lanes.map(lane=>({...lane,illustration:first.id}))}});
+  for(let n=0;n<5;n++)await export_();
+  const after=await f.raw.readDocument('project'),pictures=after.value.layerAssets.filter(row=>row.role==='illustration');
+  assert.deepEqual(pictures.map(row=>row.label).sort(),['Annan miljö · miljöbild v1','Studion · miljöbild v1','Studion · miljöbild v6']);
+  assert.deepEqual(after.value.layerAssetTrash.map(row=>row.asset.label),['Studion · miljöbild v2','Studion · miljöbild v3','Studion · miljöbild v4','Studion · miljöbild v5']);
+  assert.equal(after.value.lanes[0].illustration,first.id);
+  // An archived picture is restored like any material.
+  const restored=changeMaterialTrash(after.value,{id:after.value.layerAssetTrash[0].asset.id,archived:false});
+  assert.equal(restored.layerAssets.at(-1).label,'Studion · miljöbild v2');
+});
+
+test('a save that loses the race removes the new object and keeps the project',async t=>{
+  const f=await fixture(t),current=await f.raw.readDocument('project'),deleted=[];
+  const racing=createSceneExportApi({authorize:async()=>({user:'Personal',role:'admin',scope}),config,
+    repository:{...f.repository,getMedia:f.repository.getMedia},env,imageLibrary:async()=>sharp,
+    mutationTransaction:async(work,{presentationMutation}={})=>{
+      const latest=await f.raw.readDocument('project');
+      await f.raw.saveDocument('project',{expectedRevision:latest.revision,value:{...latest.value,lanes:latest.value.lanes.map(lane=>({...lane,label:'Studion ändrad'}))},actor:'Annan'});
+      return f.repository.withMutationContext(work,presentationMutation);
+    },
+    privateMedia:{get:async storage=>new Response(f.blobs.get(storage.pathname)),async put(pathname,bytes,options){const record=validatePrivateMedia({provider:'vercel-blob',pathname,sha256:options.sha256,size:options.size,contentType:options.contentType});f.puts.push(pathname);f.blobs.set(pathname,Buffer.from(bytes));return record;},
+      async delete(storage){deleted.push(storage.pathname);f.blobs.delete(storage.pathname);}}});
+  const response=await racing.handle(f.post({laneId:'studion',expectedRevision:current.revision}));
+  assert.equal(response.status,409);
+  assert.equal(f.puts.length,1);assert.deepEqual(deleted,f.puts,'the ownerless object is removed');assert.equal(f.blobs.has(f.puts[0]),false);
+  const after=await f.raw.readDocument('project');
+  assert.equal(after.value.layerAssets.some(row=>row.role==='illustration'),false);assert.equal(after.value.lanes[0].label,'Studion ändrad');
 });
 
 test('an older game server, a stale editor and foreign or broken input store nothing',async t=>{
