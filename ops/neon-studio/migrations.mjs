@@ -5,6 +5,7 @@ import { StudioStorageError, canonicalStudioJson, studioStorageFailure } from '.
 
 import { OPERATOR_AUDIT_ACTIONS, OPERATOR_AUDIT_ACTIONS_006, OPERATOR_AUDIT_ACTION_CONSTRAINT, PARTNER_JOURNAL_ALTER, operatorAuditActionCheck } from '../../packages/operators/server/operator-audit-actions.mjs';
 import { EXTENDED_PRESENTATION_ALTERS, EXTENDED_PRESENTATION_CHECKS, EXTENDED_BRANDING_LIMIT, presentationBrandingCheck } from '../../packages/presentation/server/presentation-storage.mjs';
+import { PACKAGE_ROOMS_MAX_TEXT } from '../../packages/presentation/contracts/package-rooms.mjs';
 
 const schema = 'croupier_studio';
 const hash = text => createHash('sha256').update(text).digest('hex');
@@ -76,6 +77,11 @@ const sources = Object.freeze([
   // studio_migration_required. Appliceras efter Jakobs ja.
   { version:'022', file:'022-partner-journal.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_audit_events'] },
+  // Spelborden i paketet (plan L3): en kolumn operator_packages.rooms med sin längd-CHECK.
+  // Tolerant kod först: utan 023 skrivs paketen utan rooms och läsarna använder dokumentet.
+  // Kravet höjs först i L3 PR 5. Appliceras efter Jakobs ja, preview före produktion.
+  { version:'023', file:'023-operator-package-rooms.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['operator_packages'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -103,6 +109,9 @@ const movingCapacityDefinition = (column,ceiling) => `CHECK (${column} >= 1 AND 
 const movingCapacityAlters = ceiling => movingCapacityChecks.map(({table,column,name}) =>
   `ALTER TABLE croupier_studio.${table} DROP CONSTRAINT ${name}, ADD CONSTRAINT ${name} CHECK (${column} BETWEEN 1 AND ${ceiling})`);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
+const packageRoomsConstraint = 'operator_packages_rooms_check';
+const packageRoomsAlter = `ALTER TABLE croupier_studio.operator_packages ADD COLUMN rooms text CONSTRAINT ${packageRoomsConstraint} CHECK (rooms IS NULL OR length(rooms) BETWEEN 2 AND ${PACKAGE_ROOMS_MAX_TEXT})`;
+const packageRoomsDefinition = `CHECK (rooms IS NULL OR length(rooms) >= 2 AND length(rooms) <= ${PACKAGE_ROOMS_MAX_TEXT})`;
 
 function statements(sql) {
   const result = []; let part = '', quoted = false, comment = false;
@@ -123,6 +132,11 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
+  if (source.version === '023') {
+    const parts = statements(sql);
+    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== packageRoomsAlter) refuse('studio_migration_invalid_source', 422);
+    return;
+  }
   if (source.version === '022') {
     const parts = statements(sql);
     if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== PARTNER_JOURNAL_ALTER) refuse('studio_migration_invalid_source', 422);
@@ -335,17 +349,27 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
     movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
   }
+  // Only a ledgered 023 may project its exact column and CHECK out of operator_packages for
+  // the proofs recorded before it (005, 020). 020 after 023 fails closed, like 019 without 018.
+  let packagesHistorical = objects;
+  if (installed.some(row => row.version === '023')) {
+    const column = objects.columns.filter(row => row.table_name === 'operator_packages' && row.name === 'rooms');
+    const check = objects.constraints.filter(row => row.table_name === 'operator_packages' && row.name === packageRoomsConstraint);
+    if (column.length !== 1 || column[0].type !== 'text' || column[0].not_null !== false || column[0].default_expression !== null
+      || check.length !== 1 || check[0].definition !== packageRoomsDefinition) refuse('studio_migration_structure_mismatch');
+    packagesHistorical = {...objects,columns:objects.columns.filter(row => row !== column[0]),constraints:objects.constraints.filter(row => row !== check[0])};
+  }
   // Only a ledgered 020 may project the two exact extended CHECKs back to
   // the original 005/007 definitions. Source/history records stay unchanged.
-  let brandingHistorical = objects;
+  let brandingHistorical = packagesHistorical;
   if (installed.some(row => row.version === '020')) {
     const replacements = new Map();
     for (const {table,name} of EXTENDED_PRESENTATION_CHECKS) {
-      const matches = objects.constraints.filter(row => row.table_name === table && row.name === name);
+      const matches = packagesHistorical.constraints.filter(row => row.table_name === table && row.name === name);
       if (matches.length !== 1 || matches[0].definition !== presentationBrandingCheck(EXTENDED_BRANDING_LIMIT)) refuse('studio_migration_structure_mismatch');
       replacements.set(matches[0],{...matches[0],definition:presentationBrandingCheck(8000)});
     }
-    brandingHistorical = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+    brandingHistorical = {...packagesHistorical,constraints:packagesHistorical.constraints.map(row => replacements.get(row) ?? row)};
   }
   // Only a ledgered 022 may project the journal's action CHECK back to 006's list.
   let auditHistorical = objects;
@@ -354,7 +378,7 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== operatorAuditActionCheck(OPERATOR_AUDIT_ACTIONS)) refuse('studio_migration_structure_mismatch');
     auditHistorical = {...objects,constraints:objects.constraints.map(row => row === matches[0] ? {...row,definition:operatorAuditActionCheck(OPERATOR_AUDIT_ACTIONS_006)} : row)};
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '006' ? auditHistorical : ['005','007'].includes(row.version) ? brandingHistorical : row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '017' ? movingCapacityCurrent : row.version === '018' ? dailyBeforeWidening : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '006' ? auditHistorical : ['005','007'].includes(row.version) ? brandingHistorical : row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '017' ? movingCapacityCurrent : row.version === '018' ? dailyBeforeWidening : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : row.version === '020' ? packagesHistorical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply };
 }
 

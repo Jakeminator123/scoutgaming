@@ -10,7 +10,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
-import { PACKAGE_ROOMS_MAX_TEXT, validatePackageRooms } from '../../presentation/contracts/package-rooms.mjs';
+import { PACKAGE_ROOMS_MAX_TEXT, checkPackageRooms, validatePackageRooms } from '../../presentation/contracts/package-rooms.mjs';
+import { readPackagePresentation } from '../../presentation/server/presentation-package.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
 // Samma nyckel som PARTNER_ASSIGNMENT_KEY (packages/presentation/server/presentation-package.mjs).
 const ASSIGNMENT_KEY = 'assignment';
@@ -408,9 +409,15 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       try { client?.release?.(); } catch { /* Caller owns pool health. */ }
     }
   }
-  async function lockOperator(txQuery, operatorId) {
+  // publishWithin also reads, in the same statement, whether Studio 023's column exists and the
+  // administration document's rooms (packageRoomsWithin).
+  async function lockOperator(txQuery, operatorId, { packageRooms = false } = {}) {
     const rows = await txQuery(`/* operator-store:lock-operator */
-      SELECT environment_id, workspace_id, operator_id
+      SELECT environment_id, workspace_id, operator_id${packageRooms ? `,
+        EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='croupier_studio'
+          AND table_name='operator_packages' AND column_name='rooms') AS package_rooms_column,
+        (SELECT d.value->'rooms' FROM croupier_studio.documents d
+          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='administration') AS administration_rooms` : ''}
       FROM croupier_studio.operators
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
       FOR UPDATE`, [operatorId]);
@@ -610,6 +617,39 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       return saved;
     });
   }
+  // Studio 023 (plan L3 PR 2): the package's own tables, written in the same row as `tables`.
+  // Without the column (023 not applied) undefined: the row is written exactly as before. Explicit
+  // `rooms` wins (validated either way); null or absent means the administration document's rooms
+  // for these tables, in the document's order. A table the document lacks, or a document room that
+  // breaks the readers' own invariant (e.g. an environment the package or its frozen presentation
+  // lacks: old data the readers skip today), leaves `rooms` null with a warning (the readers keep the
+  // document), never a partial list and never a 503 for the operator's publications. Only an explicit
+  // `rooms` list breaking the invariant is refused with the readers' code, so a written package is
+  // never a 503 afterwards.
+  function packageRoomsWithin(locked, input, next) {
+    const column = locked.package_rooms_column === true;
+    let rooms = optionalOwn(input, 'rooms');
+    const explicit = rooms !== undefined && rooms !== null;
+    if (!explicit) {
+      if (!column) return undefined;
+      rooms = Array.isArray(locked.administration_rooms) ? locked.administration_rooms.filter(room => room?.schemaVersion === 2
+        && room.operatorId === next.operatorId && next.tables.includes(room.id)) : [];
+      const missing = next.tables.filter(id => !rooms.some(room => room.id === id));
+      if (missing.length) { console.warn('operator_package_rooms_missing', { operatorId: next.operatorId, missing }); return null; }
+    }
+    const presentation = readPackagePresentation(next);
+    const checked = checkPackageRooms({ ...next, rooms }, presentation);
+    if (!checked && !explicit) {
+      const tables = rooms.filter(room => !next.lanes.includes(room.presentationLaneId)
+        || presentation && !presentation.lanes.some(lane => lane.id === room.presentationLaneId)).map(room => room.id);
+      console.warn('operator_package_rooms_invalid', { operatorId: next.operatorId, tables,
+        reason: tables.length ? 'presentation_lane_missing' : 'rooms_contract' });
+      return null;
+    }
+    if (!checked) fail('studio_corrupt_operator');
+    const text = canonicalPackageRooms(checked, next.operatorId, next.tables);
+    return column ? text : undefined;
+  }
   async function publishWithin(txQuery,input,replacement=null) {
       // Validation is part of the transaction callback, so a caught local error
       // poisons a shared repository mutation just like an SQL/CAS failure.
@@ -621,7 +661,8 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       let branding = canonicalBranding(ownValue(input, 'branding'));
       const expectedRevision = optionalOwn(input, 'expectedRevision');
       if (expectedRevision !== undefined && expectedRevision !== null) integer(expectedRevision, 1, 'studio_invalid_data', 422);
-      if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      const locked = await lockOperator(txQuery, operatorId, { packageRooms: true });
+      if (!locked) fail('studio_operator_not_found', 404);
       let current=null;
       {
         const rows = await txQuery(`/* operator-store:current-package */
@@ -656,13 +697,15 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         next:{operatorId,revision:(current?.revision??0)+1,lanes:JSON.parse(lanes),games:JSON.parse(games),tables:JSON.parse(tables),branding:nextBranding},replacement}):null;
       if(roomPublication)branding=canonicalBranding(roomPublication.branding);
       if (isExtendedPresentationEnvelope(JSON.parse(branding)[PRESENTATION_STORAGE_KEY])) await assertExtendedPresentationStorage(txQuery);
+      const rooms = packageRoomsWithin(locked, input, { operatorId, lanes: JSON.parse(lanes), tables: JSON.parse(tables), branding: JSON.parse(branding) });
+      const withRooms = rooms !== undefined;
       const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
-        (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms)
+        (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms${withRooms ? ', rooms' : ''})
       SELECT $1,$2,$3,COALESCE((SELECT MAX(package_revision) FROM croupier_studio.operator_packages
-        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3),0)+1,$4,$5,$6,$7,$8
-      RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms`,
-    [operatorId, lanes, games, tables, branding, clock()]))[0];
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3),0)+1,$4,$5,$6,$7,$8${withRooms ? ',$9' : ''}
+      RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms${withRooms ? ', rooms' : ''}`,
+    [operatorId, lanes, games, tables, branding, clock(), ...(withRooms ? [rooms] : [])]))[0];
     if (!row) fail('studio_storage_unavailable');
       const saved=packageRow(row);
       if(roomPublication)await roomWriter.writeRoomGamePublication(txQuery,roomPublication,saved.revision);

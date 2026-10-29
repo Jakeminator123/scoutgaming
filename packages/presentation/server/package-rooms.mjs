@@ -3,7 +3,7 @@ import { PRESENTATION_ROOM_SCHEMA_VERSION, isPresentationRoom, isRoomOperatorId 
 import { readPackagePresentation } from './presentation-package.mjs';
 import { StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 import { assertPresentationRoomMaterials } from '../contracts/presentation-material-game.mjs';
-import { validatePackageRooms } from '../contracts/package-rooms.mjs';
+import { checkPackageRooms } from '../contracts/package-rooms.mjs';
 
 
 // Read historical publication bindings separately from game eligibility.
@@ -22,9 +22,9 @@ export function inspectPackageRooms({ administration, package: pack, operatorId:
   catch { throw new StudioStorageError('studio_corrupt_game_policy'); }
   const result = [], seen = new Set();
   if (packaged) {
-    const rooms = validatePackageRooms(pack.rooms, { operatorId: owner, tables: pack.tables });
-    if (!rooms || rooms.some(room => !pack.lanes.includes(room.presentationLaneId)
-      || !presentation.lanes.some(lane => lane.id === room.presentationLaneId))) throw new StudioStorageError('studio_corrupt_operator');
+    // The same check publishWithin runs before it writes `rooms`, so a written package never fails it.
+    const rooms = checkPackageRooms(pack, presentation);
+    if (!rooms) throw new StudioStorageError('studio_corrupt_operator');
     // The game adapter stays in the administration document until L3 PR 7; consumers check it too.
     for (const room of rooms) if (gameLanes.some(lane => lane.id === room.gameLaneId)) result.push(inspectMaterials(presentation, room));
     return result;

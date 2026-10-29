@@ -985,3 +985,75 @@ test('package reads tolerate operator_packages with and without the rooms column
     await assert.rejects(store.getCurrentPackage('north'), refusal('studio_corrupt_operator'), `revision ${revision}`);
   }
 });
+
+// L3 PR 2: publishWithin writes `rooms` beside `tables` once Studio 023 exists, derived from the
+// administration document in its order and checked with the readers' own invariant. Real PostgreSQL
+// (PGlite) with every reviewed Studio migration, first without 023 and then with it.
+test('publishWithin writes package rooms only with Studio 023, in document order, under the readers\' invariant', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }, { listPackageRooms }, { PACKAGE_ROOMS_MAX_TEXT }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/presentation/server/package-rooms.mjs'),
+    import('../packages/presentation/contracts/package-rooms.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true, deferOptional: ['023'] });
+  const source = nativeRoomMaterialFixture(), first = source.input.room, operatorId = first.operatorId;
+  // Document order differs from id order, so a writer that sorts is caught.
+  const second = { ...first, id: 'room-a-second', name: 'Second' }, foreign = { ...first, id: 'room-foreign', operatorId: 'operator-other' };
+  const gameLanes = [{ schemaVersion: 1, id: first.gameLaneId, label: 'Fixture', renderer: 'portrait-video', dealer: 'dragan', mediaCollection: 'dragan-presentation' }];
+  const administration = rooms => ({ rooms, gameLane: first.gameLaneId, gameLanes });
+  const saveDocument = value => pool.query(`INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'administration','admin-1',$3::jsonb)
+    ON CONFLICT (environment_id,workspace_id,kind) DO UPDATE SET value=EXCLUDED.value`, [north.environment, north.workspaceId, JSON.stringify(value)]);
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock });
+  await store.createOperator({ operatorId, slug: 'fixture', name: 'Fixture', status: 'active', actor });
+  await saveDocument(administration([first, foreign, second]));
+  const publish = (tables = [first.id, second.id]) => store.publishPackage({ actor, operatorId, lanes: source.input.package.lanes, games: ['blackjack'], tables, branding: source.input.package.branding });
+  // (a) Without 023 the package is written exactly as today.
+  assert.equal((await publish()).rooms, null);
+  assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
+  // Even a document room breaking the readers' invariant is neither validated nor warned about
+  // without the column, and the row carries no rooms at all.
+  const warn = t.mock.method(console, 'warn', () => {});
+  const broken = { ...second, presentationLaneId: 'other-lane' };
+  await saveDocument(administration([first, broken]));
+  const unchecked = await publish();
+  assert.equal(unchecked.revision, 2); assert.equal(unchecked.rooms, null);
+  assert.equal(warn.mock.callCount(), 0);
+  const hasRooms = async () => (await pool.query(`SELECT to_jsonb(p) ? 'rooms' AS has FROM croupier_studio.operator_packages p
+    WHERE operator_id=$1 ORDER BY package_revision DESC LIMIT 1`, [operatorId])).rows[0].has;
+  assert.equal(await hasRooms(), false);
+  await saveDocument(administration([first, foreign, second]));
+  const plan = await planStudioMigrations({ pool });
+  assert.deepEqual(plan.optionalPending.map(row => row.version), ['023']);
+  assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, ['023']);
+  // (b) With 023: the document's rooms for these tables, in its order, returned by the INSERT and every read.
+  const written = await publish();
+  assert.deepEqual(written.rooms, [first, second]); assert.deepEqual(written.tables, [second.id, first.id]);
+  const current = await store.getCurrentPackage(operatorId);
+  assert.equal(current.revision, 3); assert.deepEqual(current.rooms, [first, second]);
+  assert.deepEqual(listPackageRooms({ administration: administration([]), package: current, operatorId }), [first, second]);
+  // A table the document lacks leaves rooms null (the readers keep the document), never a partial list.
+  assert.equal((await publish([first.id, second.id, 'room-missing'])).rooms, null);
+  assert.equal(warn.mock.callCount(), 1);
+  // (c) A document room whose environment the package lacks (old data the readers skip) is treated
+  // as a missing table: the publication succeeds with rooms null and a warning naming the table,
+  // while the readers still refuse such a package list with their code.
+  await saveDocument(administration([first, broken]));
+  const skipped = await publish();
+  assert.equal(skipped.revision, 5); assert.equal(skipped.rooms, null);
+  assert.equal(warn.mock.callCount(), 2);
+  assert.deepEqual(warn.mock.calls[1].arguments, ['operator_package_rooms_invalid', { operatorId, tables: [broken.id], reason: 'presentation_lane_missing' }]);
+  assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
+  assert.equal(await hasRooms(), true);
+  assert.throws(() => listPackageRooms({ administration: administration([]), package: { ...current, rooms: [first, broken] }, operatorId }),
+    error => error.code === 'studio_corrupt_operator' && error.statusCode === 503);
+  // 32 rooms at every field's maximum fit both the contract and 023's CHECK; one character more does not.
+  const owner = 'O'.repeat(100), id = index => `r${String(index).padStart(2, '0')}`.padEnd(64, 'a');
+  const widest = Array.from({ length: 32 }, (_, index) => ({ schemaVersion: 2, id: id(index), name: '"'.repeat(100), operatorId: owner,
+    presentationLaneId: 'p'.repeat(64), gameLaneId: 'g'.repeat(64), state: 'pending', game: 'roulette' }));
+  await pool.query('INSERT INTO croupier_studio.operators VALUES ($1,$2,$3,$4,$5,$6,$7)', [north.environment, north.workspaceId, owner, 'widest', 'Widest', 'active', 1]);
+  const row = (revision, rooms) => pool.query(`INSERT INTO croupier_studio.operator_packages (environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms,rooms)
+    VALUES ($1,$2,$3,$4,$5,'["roulette"]',$6,'{}',1,$7)`, [north.environment, north.workspaceId, owner, revision, canonicalStudioJson(['p'.repeat(64)]), canonicalStudioJson(widest.map(room => room.id).sort()), rooms]);
+  await row(1, canonicalStudioJson(widest));
+  assert.ok(canonicalStudioJson(widest).length <= PACKAGE_ROOMS_MAX_TEXT);
+  assert.equal((await store.getPackage(owner, 1)).rooms.length, 32);
+  await assert.rejects(row(2, 'x'.repeat(PACKAGE_ROOMS_MAX_TEXT + 1)), error => error.code === '23514');
+});

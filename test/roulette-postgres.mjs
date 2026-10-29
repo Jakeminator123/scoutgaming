@@ -49,6 +49,10 @@ async function publicationPoolChecks(pool) {
   const before=await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]]);
   const saved=await repository.readDocument('administration');administration.rooms[0].state='preview';
   await repository.saveDocument('administration',{value:administration,actor:'qa',expectedRevision:saved.revision});
+  // With Studio 023 the package's own rooms freeze the state, so the pause is also published as
+  // pkg+1 with the document's rooms (the dual write L3 PR 3 gives A:room-state). Without 023 the
+  // package has no rooms and the document alone revokes, as before.
+  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)});
   await assert.rejects(run({id:ids[0],op:'spin',requestId:randomUUID(),version:1,currency:'USD',bets:[{id:'red',amount:1}]},context),/roulette_room_not_found/);
   assert.deepEqual((await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]])).rows,before.rows);
   assert.equal(active,0);
