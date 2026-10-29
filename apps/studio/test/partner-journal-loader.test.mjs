@@ -19,3 +19,18 @@ test('journal pagination is encoded, uncached and scoped; failed or mismatched r
   response = new Response(JSON.stringify(page), { status: 403 }); assert.equal((await client.read()).journal, null);
   response = new Response(JSON.stringify({ ...page, operatorId: 'south' })); assert.equal((await client.read()).journal, null);
 });
+// Spelbordets Historik: GET /journal?kind=publications (reports.read) bär bara id, tid och revisioner.
+test('publication history reads the narrow form with kind=publications and keeps only id, time and revisions', async () => {
+  const publication = { id: 'event-2', atMs: 1700000000000, beforeRevision: 6, afterRevision: 7 };
+  const narrow = { operatorId: 'north', entries: [publication], nextCursor: null };
+  assert.deepEqual(readPartnerJournal(narrow, 'north', 'publications'), narrow);
+  assert.equal(readPartnerJournal(narrow, 'north'), null, 'the full journal form still requires actor and action');
+  assert.equal(readPartnerJournal(narrow, 'south', 'publications'), null);
+  assert.equal(readPartnerJournal(narrow, 'north', 'team'), null);
+  for (const bad of [{ ...publication, id: 7 }, { ...publication, atMs: -1 }, { ...publication, afterRevision: 0 }]) assert.equal(readPartnerJournal({ ...narrow, entries: [bad] }, 'north', 'publications'), null);
+  assert.deepEqual(Object.keys(readPartnerJournal({ ...narrow, entries: [{ ...publication, actor: '42', changes: {} }] }, 'north', 'publications').entries[0]).sort(), ['afterRevision', 'atMs', 'beforeRevision', 'id']);
+  const calls = [];
+  const client = createPartnerJournalClient({ base: '/studio/api/partner', operatorSlug: 'north', operatorId: 'north', kind: 'publications', fetcher: async url => { calls.push(url); return new Response(JSON.stringify(narrow)); } });
+  assert.deepEqual((await client.read('next')).journal, narrow);
+  assert.equal(calls[0], '/studio/api/partner/journal?operator=north&limit=25&kind=publications&cursor=next');
+});

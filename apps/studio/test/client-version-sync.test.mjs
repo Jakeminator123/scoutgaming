@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 // De delade komponenterna i apps/studio/components byggs både av Next och av
-// Admin-bundeln i apps/studio/client; se apps/studio/client/README.md.
-const SHARED=['react','react-dom','@types/react','@types/react-dom','esbuild','typescript'];
+// Admin-bundeln i apps/studio/client; se apps/studio/client/README.md. Diagrammen
+// (recharts och dess react-is) finns i båda och hålls också lika.
+const SHARED=['react','react-dom','react-is','recharts','@types/react','@types/react-dom','esbuild','typescript'];
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const version=(manifest,name)=>manifest.dependencies?.[name]??manifest.devDependencies?.[name];
 

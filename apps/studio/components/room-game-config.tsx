@@ -11,20 +11,20 @@ function publicationHelp(publication:RoomGameReceipt['publication']) {
   if(publication.reason==='studio_room_game_material_unavailable')switch(publication.materialReason){
     case 'native_material_measurement_missing':
     case 'native_material_measurement_mismatch':
-      return 'Klippen saknar aktuella tidsmätningar. Öppna dealerns klipp och välj Mät speltid. Publicera sedan paketet igen och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+      return 'Klippen saknar aktuella tidsmätningar. Öppna dealerns klipp och välj Mät speltid. Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
     case 'native_material_speech_slot_missing':
     case 'native_material_speech_unbound':
-      return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera paketet igen efter rättning.';
+      return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera i spelbordet efter rättning.';
     case 'native_material_bank_incomplete':
     case 'native_material_idle_missing':
-      return 'Den publicerade klippbanken är ofullständig. Kontrollera att filmprofilens spelklipp och viloklipp finns med i paketet. Publicera sedan paketet igen.';
+      return 'Den publicerade klippbanken är ofullständig. Kontrollera att filmprofilens spelklipp och viloklipp finns med i paketet. Publicera sedan i spelbordet.';
     case 'native_material_profile_missing':
     case 'native_material_contract_unsupported':
       return 'Den valda filmprofilen saknar stöd för dessa spelinställningar. Profilens koppling till spelmotorn behöver rättas innan du kan publicera.';
     case 'native_material_speech_timing_mismatch':
-      return 'Talets uppmätta bildrutor eller ljud stämmer inte med inspelningsunderlaget. Kontrollera inspelningen och dess koppling innan du publicerar paketet igen.';
+      return 'Talets uppmätta bildrutor eller ljud stämmer inte med inspelningsunderlaget. Kontrollera inspelningen och dess koppling innan du publicerar i spelbordet.';
     case 'native_material_take_audio_truncated':
-      return 'Ett spelklipps ljud fortsätter efter bytet till nästa klipp. Klippet och dess övergång behöver rättas och granskas innan du publicerar paketet igen.';
+      return 'Ett spelklipps ljud fortsätter efter bytet till nästa klipp. Klippet och dess övergång behöver rättas och granskas innan du publicerar i spelbordet.';
     case 'native_material_timing_limit':
       return 'Klippen ger för långa uppspelningssekvenser för dessa spelinställningar. Klippens längd och övergångar behöver granskas innan du kan publicera.';
   }
