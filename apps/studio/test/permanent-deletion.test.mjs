@@ -72,6 +72,63 @@ test('a company with a published package is refused with the published versions 
  assert.equal(await f.count('operators','north'),1);
 });
 
+// Ett tomt bolag i papperskorgen med standardroller; varje prov nedan lägger till precis ett hinder.
+async function emptyCompanyInTrash(f,operatorId='empty'){
+ await f.direct.createOperator({actor:'fixture',operatorId,slug:operatorId,name:'Tomt bolag'});
+ for(const role of STANDARD_OPERATOR_ROLES)await f.direct.upsertRole({actor:'fixture',operatorId,roleId:role.id,label:role.label,permissions:[...role.permissions],delegable:role.delegable});
+}
+
+test('a published package alone refuses the deletion, without any room in the trash',async t=>{
+ const f=await fixture(t);
+ await emptyCompanyInTrash(f,'solo');
+ const pack=await f.pack('solo');
+ await f.direct.publishPackage({actor:'fixture',operatorId:'solo',expectedRevision:pack?.revision??null,lanes:[f.lane.id],games:pack?.games??[],tables:[],branding:pack?.branding??{}});
+ await f.archiveOperator('solo');
+ const before=await f.count('operator_packages','solo');
+ const {check,result}=await f.remove({kind:'operator',id:'solo'});
+ assert.deepEqual(check.blockers.map(row=>row.code),['operator_published'],JSON.stringify(check));
+ assert.equal(result.status,409);assert.equal(result.body.code,'studio_resource_delete_blocked');
+ assert.equal(await f.count('operators','solo'),1);assert.equal(await f.count('operator_packages','solo'),before);
+});
+
+test('players pointing at the company refuse the deletion after game-014; before 014 they cannot point and nothing blocks',async t=>{
+ const f=await fixture(t);
+ await emptyCompanyInTrash(f);await f.archiveOperator('empty');
+ // Before game-014: the engine's players table (product schema) has no operator_id.
+ await f.pool.query(`INSERT INTO croupier_game.players (id,name,created_at) VALUES ('p-1','Spelare ett','fixture')`);
+ const before=(await f.send('resource-delete-check',{kind:'operator',id:'empty'})).body;
+ assert.equal(before.allowed,true,JSON.stringify(before));
+ // After game-014: one of this company's players and one of another's.
+ await f.pool.query(`ALTER TABLE croupier_game.players ADD COLUMN operator_id text;UPDATE croupier_game.players SET operator_id='empty';
+  INSERT INTO croupier_game.players (id,name,created_at,operator_id) VALUES ('p-2','Annans spelare','fixture','north')`);
+ const {check,result}=await f.remove({kind:'operator',id:'empty'});
+ assert.deepEqual(check.blockers,[{code:'operator_players',items:[{id:'p-1',name:'Spelare ett'}]}]);
+ assert.equal(result.status,409);assert.equal(result.body.code,'studio_resource_delete_blocked');
+ assert.equal(await f.count('operators','empty'),1);
+ // The players move elsewhere: nothing points at the company and it is deleted.
+ await f.pool.query(`UPDATE croupier_game.players SET operator_id='north'`);
+ const after=await f.remove({kind:'operator',id:'empty'});
+ assert.equal(after.check.allowed,true,JSON.stringify(after.check));assert.equal(after.result.status,200,JSON.stringify(after.result.body));
+ assert.equal(await f.count('operators','empty'),0);
+});
+
+test('a key table that exists but cannot be read refuses the deletion instead of counting as absent',async t=>{
+ const f=await fixture(t);
+ await emptyCompanyInTrash(f);await f.archiveOperator('empty');
+ // The engine's key table exists (product schema); this role may read Studio and the players, not the keys.
+ await f.pool.query(`CREATE ROLE studio_limited NOLOGIN;GRANT USAGE ON SCHEMA croupier_studio, croupier_auth, croupier_game TO studio_limited;
+  GRANT SELECT ON croupier_game.players TO studio_limited;
+  GRANT ALL ON ALL TABLES IN SCHEMA croupier_studio TO studio_limited;GRANT ALL ON ALL SEQUENCES IN SCHEMA croupier_studio TO studio_limited`);
+ await f.pool.query('SET ROLE studio_limited');t.after(()=>f.pool.query('RESET ROLE').catch(()=>{}));
+ const {check,result}=await f.remove({kind:'operator',id:'empty'});
+ assert.deepEqual(check.blockers,[{code:'operator_check_unreadable',items:[{id:'croupier_auth.api_keys',name:'API-nycklar'}]}]);
+ assert.equal(result.status,409);assert.equal(result.body.code,'studio_resource_delete_blocked');
+ await f.pool.query('RESET ROLE');
+ assert.equal(await f.count('operators','empty'),1);
+ // Readable and empty: the same company is allowed.
+ assert.equal((await f.send('resource-delete-check',{kind:'operator',id:'empty'})).body.allowed,true);
+});
+
 test('a room in the trash is deleted, leaves every list and is journalled; a live room is refused',async t=>{
  const f=await fixture(t),roomId=f.id('north-a');
  const live=await f.send('resource-delete-check',{kind:'room',id:roomId,operatorId:'north'});

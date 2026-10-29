@@ -8,9 +8,10 @@
 //   spelbord  → en ny paketversion utan spelbordets papperskorgspost (journal: package.publish med
 //               lifecycle.deleted) och dess sparade spelinställningsutkast i administrationen.
 //   scenmall  → projektet sparas utan mallen (journal: document_history + audit_events save_document).
-//   bolag     → bara ett bolag i papperskorgen som aldrig publicerat innehåll: dess utkast, journal,
-//               paket, medlemskap, roller och sist bolagsraden. Journalen har FK till bolaget och en
-//               fast CHECK på åtgärden, så `operator.delete` kan inte sparas utan migrering (se PR).
+//   bolag     → bara ett bolag i papperskorgen som aldrig publicerat innehåll och saknar spelare: dess
+//               utkast, journal, paket, medlemskap, roller och sist bolagsraden. Bolagsraden låses innan
+//               planen läses. En tabell som kan peka på bolaget men inte kan läsas är ett hinder, aldrig
+//               frånvaro. Journalen har FK till bolaget och en fast CHECK på åtgärden, så `operator.delete` kan inte sparas utan migrering (se PR).
 import {createHash} from 'node:crypto';
 import * as savedGameDocumentContract from '../../../packages/studio-registry/server/document-contract.mjs';
 import {canonicalStudioJson,StudioStorageError,validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -30,7 +31,7 @@ const fail=(code,status=409)=>{throw new StudioStorageError(code,status);};
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
 const KINDS=['operator','room','composition'];
 // Fasta hinderkoder; klienten översätter dem och listar `items` (id och namn) under texten.
-export const RESOURCE_DELETE_BLOCKERS=Object.freeze(['operator_active','operator_published','operator_rooms_in_trash','operator_api_keys','operator_materials',
+export const RESOURCE_DELETE_BLOCKERS=Object.freeze(['operator_active','operator_published','operator_rooms_in_trash','operator_api_keys','operator_players','operator_materials','operator_check_unreadable',
  'room_not_in_trash','composition_used_by_rooms','composition_used_by_archived_rooms','composition_assigned','composition_project_reference']);
 const rows=result=>Array.isArray(result)?result:Array.isArray(result?.rows)?result.rows:fail('studio_storage_unavailable',503);
 const parse=value=>typeof value==='string'?JSON.parse(value):value;
@@ -52,10 +53,24 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
 
  // The transaction client takes the scope as $1/$2 on every statement, also on catalog reads.
  const scoped='$1::text IS NOT NULL AND $2::text IS NOT NULL';
- // A table this role cannot read counts as absent, so an optional check never poisons the transaction.
- async function exists(client,name){return rows(await client.query(`SELECT has_table_privilege(to_regclass($3),'SELECT') AS readable WHERE ${scoped}`,[...params,name]))[0]?.readable===true;}
+ // The catalog is readable by every role, so a lookup never poisons the transaction. 'absent' means the
+ // table does not exist; 'unreadable' means it exists but this role cannot read it (schema or table).
+ async function access(client,schema,table){
+  const [row]=rows(await client.query(`SELECT has_schema_privilege(n.oid,'USAGE') AND has_table_privilege(c.oid,'SELECT') AS readable
+   FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+   WHERE ${scoped} AND n.nspname=$3 AND c.relname=$4 AND c.relkind IN ('r','p','v','m','f')`,[...params,schema,table]));
+  return !row?'absent':row.readable===true?'readable':'unreadable';
+ }
+ // Optional own tables: only a readable table is deleted from.
+ const exists=async(client,name)=>await access(client,...name.split('.'))==='readable';
  async function column(client,schema,table,name){
-  return rows(await client.query(`SELECT 1 FROM information_schema.columns WHERE ${scoped} AND table_schema=$3 AND table_name=$4 AND column_name=$5`,[...params,schema,table,name])).length>0;
+  return rows(await client.query(`SELECT 1 FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_class c ON c.oid=a.attrelid
+   JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE ${scoped} AND n.nspname=$3 AND c.relname=$4 AND a.attname=$5
+   AND a.attnum>0 AND NOT a.attisdropped`,[...params,schema,table,name])).length>0;
+ }
+ // Bolagsraden låses innan planen läses, så att inget hinder hinner uppstå mellan kontroll och radering.
+ async function lockOperator(client,operatorId){
+  await client.query(`SELECT 1 FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE`,[...params,operatorId]);
  }
  async function readState(operators){
   const administration=await repository.readDocument('administration'),project=await repository.readDocument('project');
@@ -119,12 +134,26 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
   }
   if(published.length)blockers.push({code:'operator_published',items:published});
   if(lifecycle.rooms.length)blockers.push({code:'operator_rooms_in_trash',items:named(lifecycle.rooms.map(row=>row.room))});
-  if(await exists(client,'croupier_auth.api_keys')&&await column(client,'croupier_auth','api_keys','operator_id')){
+  const unreadable=[];
+  const keyTable=await access(client,'croupier_auth','api_keys');
+  if(keyTable==='unreadable')unreadable.push({id:'croupier_auth.api_keys',name:'API-nycklar'});
+  else if(keyTable==='readable'&&await column(client,'croupier_auth','api_keys','operator_id')){
    const keys=rows(await client.query(`SELECT id,name FROM croupier_auth.api_keys WHERE ${scoped} AND operator_id=$3 ORDER BY id`,[...params,operator.id]));
    if(keys.length)blockers.push({code:'operator_api_keys',items:named(keys)});
   }
+  // Spelare bär saldo och historik. Före game-014 saknar spelarna kolumnen operator_id och kan inte peka på bolaget.
+  const playerTable=await access(client,'croupier_game','players');
+  if(playerTable==='unreadable')unreadable.push({id:'croupier_game.players',name:'Spelare'});
+  else if(playerTable==='readable'&&await column(client,'croupier_game','players','operator_id')){
+   const players=rows(await client.query(`SELECT id,name,(count(*) OVER ())::integer AS total FROM croupier_game.players WHERE ${scoped} AND operator_id=$3 ORDER BY id LIMIT 20`,[...params,operator.id]));
+   const total=players[0]?.total??0,items=named(players);
+   if(total>items.length)items.push({id:'more',name:`och ${total-items.length} till`});
+   if(total)blockers.push({code:'operator_players',items});
+  }
   const own=['operator_material_policies','operator_ai_attempts'];
-  if(await exists(client,'croupier_studio.operator_materials')){
+  const materialTable=await access(client,'croupier_studio','operator_materials');
+  if(materialTable==='unreadable')unreadable.push({id:'croupier_studio.operator_materials',name:'Bolagets material'});
+  if(materialTable==='readable'){
    const materials=rows(await client.query(`SELECT DISTINCT material_id AS id FROM croupier_studio.operator_materials
     WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 ORDER BY material_id`,[...params,operator.id]));
    // Bolagets eget material pekar på Blob-objekt; att tappa journalen vore att tappa enda referensen.
@@ -134,10 +163,12 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
    WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3`,[...params,operator.id]))[0].n);
   const removes={packages:history.length,journal:await count('operator_audit_events'),drafts:await count('operator_branding_drafts'),
    memberships:await count('operator_memberships'),roles:await count('operator_roles')};
+  if(unreadable.length)blockers.push({code:'operator_check_unreadable',items:unreadable});
   const extra=[];for(const table of own)if(await exists(client,'croupier_studio.'+table))extra.push(table);
   return {name:operator.name,blockers,removes,company,extra};
  }
  async function plan(body,operators,client){
+  if(body.kind!=='composition')await lockOperator(client,body.kind==='operator'?body.id:body.operatorId);
   const state=await readState(operators);
   const result=body.kind==='room'?await roomPlan(state,body):body.kind==='composition'?await compositionPlan(state,body):await operatorPlan(state,body,client);
   return {...result,state,token:tokenOf(body,state)};
