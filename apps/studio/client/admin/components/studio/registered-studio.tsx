@@ -202,7 +202,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     finally {publishLock.current=false;setPublishBusy(false);}
   }
   const lifecycleNavigation = {
-    compositionHref: (_owner: {id:string}, room: {id:string;presentationLaneId:string}) => '/admin/scenes?' + new URLSearchParams({ tab:'mallar', composition: room.presentationLaneId, table: room.id }),
+    compositionHref: (_owner: {id:string}, room: {id:string;presentationLaneId:string}) => '/admin/scenes?' + new URLSearchParams({ tab:'miljoer', composition: room.presentationLaneId, table: room.id }),
     rehearsalLabel: 'Öppna spelbordet',
   };
   const liveLabel = (value: string|null, label: string) => value ? label : '–';
@@ -259,7 +259,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
             <header className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="m-0 text-[15px] font-semibold">Miljöer som {operator.name} får använda</h3><p className="mb-0 mt-1 max-w-[70ch] text-[13px] text-sg-muted">Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Varje publicering blir en ny version av bolagets tilldelning.</p></div>
               <span className="whitespace-nowrap rounded-full border border-sg-border px-2.5 py-1 text-xs font-semibold text-sg-muted">{operator.packageRevision===null&&operatorPackage.revision===null?'Ingen publicering ännu':'Senast publicerat · version '+(operatorPackage.revision??operator.packageRevision)}</span></header>
             {operatorPackage.needsRefresh&&<p role="status" className={ui.problem}>Uppgifterna behöver kontrolleras. <button type="button" className={buttonVariants({size:'sm'})} disabled={anyBusy} onClick={reload}>Läs in aktuella uppgifter</button></p>}
-            {!compositions.length&&<p role="status" className={ui.message}>Det finns inga sparade miljöer. <a className={linkClass} href="/admin/scenes?tab=mallar">Skapa en miljö</a> innan du skapar ett spelbord.</p>}
+            {!compositions.length&&<p role="status" className={ui.message}>Det finns inga sparade miljöer. <a className={linkClass} href="/admin/scenes?tab=miljoer">Skapa en miljö</a> innan du skapar ett spelbord.</p>}
             {!operatorPackage.chosen.length&&compositions.length>0&&<p role="status" className={ui.message}>Välj minst en miljö för att publicera. Stäng bolagets spel genom att pausa eller arkivera spelborden.</p>}
             <form onSubmit={event=>{event.preventDefault();void publishPackage(false);}}>
               <fieldset className="m-0 grid min-w-0 gap-2.5 border-0 p-0 sm:grid-cols-2 2xl:grid-cols-3" disabled={disabled||anyBusy||operatorPackage.needsRefresh}><legend className="mb-2 p-0 text-[13px] font-semibold text-sg-muted">Miljöer som bolaget får använda</legend>

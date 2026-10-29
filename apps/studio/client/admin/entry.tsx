@@ -46,11 +46,11 @@ function App() {
   const [workspace,setWorkspace]=useState<{current:ClipMapWorkspace|null;saved:StudioProject|null}>({current:null,saved:null});
   const workspaceChanged=useCallback((current:ClipMapWorkspace|null,saved:StudioProject|null)=>setWorkspace({current,saved}),[]);
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
-  // The clip map is one instance: under the dealer nav and under Miljöer › Miljöer.
+  // The clip map is one instance under the dealer nav. Miljöer och material has its own environment editor.
   const dealerTab=route.page==='dealer'?adminTabId('dealer',query.get('flik')):'';
   const sceneTab=route.page==='scenes'?adminTabId('scenes',query.get('tab')):'';
-  const mapRoute=route.page==='dealer'?{kind:'dealer' as const,dealerId:route.id,base:'/admin/dealers/'+encodeURIComponent(route.id)}:route.page==='scenes'?{kind:'scenes' as const,base:'/admin/scenes'}:null;
-  const mapShown=!redirected&&(route.page==='dealer'&&mapTabs.has(dealerTab)||sceneTab==='mallar');
+  const mapRoute=route.page==='dealer'?{kind:'dealer' as const,dealerId:route.id,base:'/admin/dealers/'+encodeURIComponent(route.id)}:null;
+  const mapShown=!redirected&&route.page==='dealer'&&mapTabs.has(dealerTab);
   const mapActive=mapShown&&query.get('tool')!=='import';
   const [mapVisited,setMapVisited]=useState(Boolean(mapRoute)&&!redirected);
   useEffect(()=>{if(mapRoute&&!redirected)setMapVisited(true);},[mapRoute?.kind,redirected]);
@@ -79,14 +79,15 @@ function App() {
       {show('home')&&<AdminHome workspace={workspace.current}/>}
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
-      {show('scenes')&&<ScenesPage part="head" tab={sceneTab} workspace={workspace.current}/>}
       <div className="flex min-h-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
         {mapVisited&&lastMapRoute&&<Clips active={mapShown} dealerId={lastMapRoute.kind==='dealer'?lastMapRoute.dealerId:''} base={lastMapRoute.base} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>
           <ConnectedClipMap route={lastMapRoute} active={mapActive} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} onWorkspaceChange={workspaceChanged} refreshKey={studioRefresh}/>
         </Clips>}
       </div>
       {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
-      {visited.includes('scenes')&&<div hidden={!show('scenes')||sceneTab==='mallar'}><ScenesPage part="tail" tab={sceneTab} visible={show('scenes')} disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
+      {visited.includes('scenes')&&<div hidden={!show('scenes')}><ScenesPage tab={sceneTab} filter={route.page==='scenes'?query.get('filter'):null} compositionId={route.page==='scenes'?query.get('composition')??'':''} game={route.page==='scenes'?query.get('game'):null}
+        operator={route.page==='scenes'?query.get('operator'):null} table={route.page==='scenes'?query.get('table'):null}
+        visible={show('scenes')} blocked={studioDirty||importBusy} onChanged={materialChanged} refreshKey={studioRefresh+':'+studioRevision}/></div>}
       {(visited.includes('companies')||visited.includes('company')||visited.includes('room'))&&<div hidden={!(show('companies')||show('company')||show('room'))}><CompaniesPage page={route.page==='company'?'company':route.page==='room'?'room':'companies'} id={route.id} active={show('companies')||show('company')||show('room')} disabled={studioDirty||importBusy} onChanged={materialChanged}/></div>}
       {visited.includes('system')&&<div hidden={!show('system')}><SystemPage active={show('system')} tab={adminTabId('system',query.get('flik'))}/></div>}
       {show('guide')&&<AdminHelp/>}

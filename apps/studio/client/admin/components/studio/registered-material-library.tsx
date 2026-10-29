@@ -15,7 +15,7 @@ import {layerAssetFitsGame} from '../../../../../../packages/presentation/contra
 import {createStudioClient,type Room,type VideoInventory} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
-// Mounted per tab under Miljöer och material (Bakgrunder, Bordsgrafik); `trashOnly` is the role's part of the Papperskorg tab.
+// Mounted per filter under Miljöer och material › Material (Bakgrund, Bordsgrafik); `trashOnly` is the role's part of the Arkiverat filter.
 export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true,trashOnly=false}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean;trashOnly?:boolean}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   // The video register only feeds the AI dialog's scene preview (the dealer's idle).
@@ -27,7 +27,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
   const roomIds=query.getAll('room'),fromRoom=roomIds.length===1?rooms.find(row=>row.id===roomIds[0]&&row.state==='live'&&row.published&&row.game!=='roulette'):undefined;
   const aiRoom=fromRoom?{id:fromRoom.id,name:fromRoom.name,operatorId:fromRoom.operatorId,compositionId:fromRoom.compositionId}:null;
-  function select(key:'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);next.set('tab',role==='background'?'bakgrunder':'bordsgrafik');navigate(base+'?'+next);}
+  function select(key:'game',value:string){const next=new URLSearchParams({tab:'material',filter:role==='background'?'bakgrund':'bordsgrafik'});for(const [name,item] of query)if(!['tab','filter',key].includes(name))next.append(name,item);next.set(key,value);navigate(base+'?'+next);}
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [reload,setReload]=useState(0);
   const active=useRef(new Set<string>()),busyRef=useRef(false);

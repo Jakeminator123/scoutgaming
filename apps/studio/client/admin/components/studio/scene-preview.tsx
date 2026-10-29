@@ -43,7 +43,7 @@ export function ScenePreview({active,laneId,dealerId,game='blackjack',revision,s
   const dealerHref=`/admin/dealers/${encodeURIComponent(scene.dealerId||dealerId||'')}?flik=klipp${game==='roulette'?'&game=roulette':''}`;
   const clipAssets=(role:'background'|'table')=>lane?(value?.project.layerAssets??[]).filter(row=>row.role===role&&lane.layers[role].allowed.includes(row.id))
     .map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType})):[];
-  const templateHref=`/admin/scenes?tab=mallar&composition=${encodeURIComponent(laneId)}`;
+  const templateHref=`/admin/scenes?tab=miljoer&composition=${encodeURIComponent(laneId)}`;
   return <div className="grid gap-4">
     {(studio.status==='idle'||studio.status==='loading')&&<Loading label="Läser den sparade scenen…" rows={4}/>}
     {studio.status==='error'&&<Empty chip={null} title="Den sparade scenen kunde inte läsas" text="Projektet eller klippregistret svarade inte. Stäng förhandsvisningen och öppna den igen."/>}

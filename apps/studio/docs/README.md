@@ -12,7 +12,7 @@ eller **sammansättning** (miljö); guiden citerar knapparna som de står.
 | --- | --- | --- |
 | Översikt | `/admin` | Det som väntar på dig, med länk dit det åtgärdas |
 | Dealers | `/admin/dealers`, en dealer `/admin/dealers/{dealer}` | Klippkarta · Röst och tal · Landningar · Används av · Inställningar |
-| Miljöer och material | `/admin/scenes?tab=…` | Miljöer · Bakgrunder · Bordsgrafik · Papperskorg |
+| Miljöer och material | `/admin/scenes?tab=…` | Miljöer · Material (Bakgrund, Bordsgrafik, Arkiverat) |
 | Bolag och spelbord | `/admin/companies?tab=…` | Bolag · Alla spelbord · Papperskorg |
 | ett bolag | `/admin/companies/{bolag}?flik=…` | Tilldelning · Spelbord · Spelare och ekonomi · Team · Integration · Journal · Inställningar |
 | ett spelbord | `/admin/rooms/{spelbord}?flik=…` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik |
@@ -63,8 +63,9 @@ Under **Avancerat** finns smala knappar för det huvudknappen inte når:
 
 - **Publicera igen** (Bolag › Tilldelning) fryser om ett oförändrat urval,
   till exempel för roulette eller ett spelbord som inte är öppet.
-- **Publicera sparad placering** (Miljöer) uppdaterar placeringen i alla
-  bolagets spelbord som använder miljön.
+- **Publicera sparad placering** (dealerns Klippkarta › Scen & lager, med
+  bolaget valt under **Spelbord och publicering**) uppdaterar placeringen i
+  alla bolagets spelbord som använder miljön.
 - **Publicera PAOWs viloklipp** (Spelbord › Utseende) uppdaterar PAOWs
   vilosekvens, även när miljön är borttagen eller klippen underkänns.
 
@@ -296,15 +297,24 @@ En miljö placerar bakgrund, dealer och bordsgrafik för dator och mobil och
 säger vilka dealers och vilket material den tillåter. Flera spelbord kan dela
 samma miljö.
 
+Sidan har två flikar, **Miljöer** och **Material**. En miljö öppnas i en egen
+vy med tre delar: **Miljöbild**, **Lager och placering** och **Används av**,
+sist **Radera miljön**.
+**Alla miljöer** leder tillbaka. Gamla bokmärken (`tab=mallar`,
+`tab=bakgrunder` och så vidare) öppnar rätt flik.
+Öppnas miljön från ett spelbord (portalen, **Beroenden**, bolagets
+spelbordslista) står spelbordet överst, och **Lager och placering** kan
+publicera den sparade placeringen för det bolaget; använder spelbordet en annan
+miljö länkar rutan dit. Medan en fil laddas upp i miljön går det inte att lämna
+sidan. Miljöerna läses bara på fliken **Miljöer**.
+
 ### Miljöer
 
 Korten visar varje miljö med dealers och spelbord som använder den. Välj ett
-kort för att redigera. **Ny miljö** skapar en ny miljö med namn och
-dealer; det tekniska id:t skapas automatiskt. Kortet visar miljöbilden, annars
-bakgrunden och bordsgrafiken på sin placering för dator.
+kort för att öppna miljön. **Ny miljö** frågar efter namn och dealer och
+skapar miljön i utkastet; det tekniska id:t skapas automatiskt. Kortet visar
+miljöbilden, annars bakgrunden och bordsgrafiken på sin placering för dator.
 
-- **Redigera gemensam miljö** låser upp miljön; editorn visar vilka spelbord
-  som berörs.
 - **Miljöbild – visas i lobbyn och Admin, aldrig i spelet**: välj en av
   miljöns bilder eller **Ingen miljöbild**. **Exportera miljöbild** ritar den
   sparade scenen för dator (1920 × 1080: bakgrund, bordsgrafik och dealern på
@@ -313,6 +323,18 @@ bakgrunden och bordsgrafiken på sin placering för dator.
   exporterade bilder som ingen miljö visar flyttas till materialarkivet (de
   räknas inte som bakgrund eller bordsgrafik); den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
   designillustration. Insatsprofilen väljer ingen bild.
+- **Lager och placering**: **Spel** (Blackjack eller Roulette) väljer vad
+  som förhandsvisas och placeras. **Redigera gemensam miljö** låser upp
+  miljön. Längst ned visar **Förhandsvisning av den sparade miljön**
+  dealerns vila i scenen, med provspelning.
+- **Används av**: spelborden som använder miljön, med länk till spelbordet.
+  Publicering sker i spelbordet. Ett öppet blackjackbord utan publicerade
+  spelinställningar står som **Förbereds** med varningen "Saknar
+  spelinställningar – spelare kan inte sätta sig" och en länk till
+  **Spelinställningar**.
+- **Radera miljön**: **Radera permanent** (miljöer har ingen papperskorg).
+  Spara eller kasta utkastet först; serverns kontroll visar vilka spelbord
+  eller tilldelningar som hindrar.
 - **Dealers i den gemensamma miljön** och **Förvald dealer**: här tillåter du
   dealern i miljön, steg 7 i arbetsgången.
 - **Förhandsvisa och placera** växlar mellan tillåtet material utan att ändra
@@ -360,15 +382,14 @@ basbilden.
 
 #### Spara och publicera placering
 
-**Spara utkast** sparar miljön; **Kasta ändringar** hämtar senast
-sparade. För att publicera bara placeringen: öppna **Spelbord och
-publicering**, välj bolag och sedan **Publicera sparad placering**; rutan
-visar berörda spelbord. **Läs in placering i mallen** hämtar ett bolags
-publicerade placering som utgångspunkt.
+**Spara utkast** och **Kasta ändringar** står överst i miljön och gäller hela
+utkastet. Spelborden får ändringen när de publiceras: öppna spelbordet under
+**Används av** och välj **Publicera**.
 
-### Bakgrunder och Bordsgrafik
+### Material
 
-Materialbiblioteket per lager. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
+Filtren **Bakgrund**, **Bordsgrafik** och **Arkiverat** visar materialbiblioteket
+per lager respektive det arkiverade materialet. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
 välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
 synligt; rumsbilder blir miljöbilder. Valt förslag visas i miljön för dator och mobil;
@@ -376,6 +397,9 @@ en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
 svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara miljöer med samma placering. Uppladdning ändrar inga
 scenval; **Visa var den används** visar vilka miljöer som använder filen.
+
+Arkiverade bakgrunder och bordsgrafik kan återställas; permanent radering är
+ett eget steg. Publicerade spelbord påverkas inte.
 
 #### Bord och bakgrund med AI
 
@@ -425,12 +449,6 @@ spelbordet**, som öppnar samma dialog för det spelbordet.
   välj ett av varje och **Använd** lägger in båda. Miljöbilden hoppas över
   och dialogen säger det: scenexporten och rollen illustration finns inte
   ännu.
-
-### Papperskorg
-
-Bakgrunder och bordsgrafik i papperskorgen kan återställas; permanent radering
-är ett eget steg. Publicerade spelbord påverkas inte. En miljö har ingen
-papperskorg; den tas bort när inget spelbord använder den.
 
 ## Bolag och spelbord
 
@@ -575,10 +593,12 @@ ingenting; nekar servern visas orsaken.
   pausat) och öppna det under Tillgänglighet när beroendena är giltiga.
 - **Spelbord**: Admin har i dag ingen knapp för att flytta ett enskilt
   spelbord till papperskorgen; pausa det under Tillgänglighet.
-- **Material**: bakgrunder och bordsgrafik flyttas till Miljöer ›
-  Papperskorg och kopplas loss där de används; publicerade versioner behålls.
+- **Material**: bakgrunder och bordsgrafik flyttas till Material ›
+  Arkiverat och kopplas loss där de används; publicerade versioner behålls.
 - **Miljöer**: borttagning ändrar utkastet; publicerade spelbord behåller
-  sin version.
+  sin version. **Radera permanent** ligger i miljöns egen vy under **Radera
+  miljön** och går bara när inget spelbord och ingen aktiv tilldelning
+  använder miljön.
 
 ## Lobby och spelstart
 
