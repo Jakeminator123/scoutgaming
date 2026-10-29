@@ -1,4 +1,4 @@
-const OWNED = ['tables', 'team', 'presentations'];
+const OWNED = ['tables', 'team'];
 
 export function validatePartnerSnapshot(snapshot) {
   if (!snapshot || snapshot.preview !== false) throw Error('En verklig partnerarbetsyta krävs.');
