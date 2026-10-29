@@ -4,10 +4,18 @@ import { createHash } from 'node:crypto';
 import { DRAGAN_KEVIN_PROFILE as profile } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { planFilmedTimeline } from '../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import { nativeRoomFilmedPlanning } from '../packages/presentation/contracts/native-room-filmed-planning.mjs';
-import { withFilmedSteps, createFilmedStepReader } from '../services/game/shared-room-filmed-steps.mjs';
+import { withFilmedSteps, withSpeechTakes, createFilmedStepReader } from '../services/game/shared-room-filmed-steps.mjs';
 import { createSharedRoomChannel } from '../services/game/shared-room-channel.mjs';
 import { selectSharedRoomPresentation } from '../services/game/shared-room-presentation-selection.mjs';
 import { createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
+import { nativeRoomMaterialFixture, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
+import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
+import { nativeRoomSpeechClips } from '../packages/presentation/server/native-room-speech-clips.mjs';
+import { readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { frozenPlaybackProject } from '../packages/presentation/contracts/frozen-dealer-playback.mjs';
+import { canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
+import { NATIVE_ROOM_SPEECH_SLOTS } from '../packages/presentation/contracts/native-room-game-budget.mjs';
+import { selectPresentation } from '../services/game/presentation-selection.mjs';
 
 // K04 F5c: the server attaches each filmed step's choice to the committed plan, so a client
 // can play a decision's first step without waiting for POST select (median 3.3 s in staging).
@@ -153,4 +161,138 @@ test('the frame choice equals the select answer: same take, sha256 and video id'
     compared++;
   }
   assert.equal(compared, 4);
+});
+
+// Speech lag (preview 28 Oct 2026): every spoken line waited for POST select (0.9-4.3 s) before its file was asked
+// for. The engine's plan and betting window now carry each line's standard clip as speechTake { id, sha256 }.
+const hashJson = value => createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
+function speechRoom(dealerId = 'paow') {
+  const f = withNativeFilmTransitions(nativeRoomMaterialFixture({ dealerId }));
+  const speechMaterial = resolveNativeRoomGameMaterial(f.input, { version: 2 }), pack = f.input.package;
+  const config = { configVersion: 'room-config-' + '1'.repeat(8) + '-1111-4111-8111-' + '1'.repeat(12), roomId: f.input.room.id, operatorId: pack.operatorId,
+    packageRevision: pack.revision, presentationLaneId: f.input.room.presentationLaneId, presentationHash: hashJson(readPackagePresentation(pack)),
+    language: 'sv', material: speechMaterial };
+  return { f, pack, config, dealerId, material: speechMaterial };
+}
+
+test('a native room\'s speech clips are exactly what POST select chooses for each line in the off mode', async () => {
+  const { f, pack, config, dealerId, material: speechMaterial } = speechRoom();
+  const clips = nativeRoomSpeechClips({ package: pack, config });
+  assert.deepEqual(Object.keys(clips).sort(), [...NATIVE_ROOM_SPEECH_SLOTS].sort(), 'every slot of the native room has its clip');
+  // POST select's own path (shared-room-presentation-selection.mjs) over the frozen package, as frozen-dealer-presentation.mjs resolves it.
+  const presentation = readPackagePresentation(pack), context = { operatorSlug: 'north', roomId: config.roomId, packageRevision: pack.revision, dealerId };
+  const project = frozenPlaybackProject(presentation.playback, { registeredDealers: presentation.registeredDealers, projectRevision: presentation.projectRevision });
+  const records = presentation.playback.media.filter(row => row.classification.dealerId === dealerId);
+  const videos = records.map(row => ({ id: row.id, dealer: dealerId, sha256: row.sha256, bytes: row.size, available: true, integrity: 'verified', eventId: row.classification.eventId,
+    playbackType: 'once', fileName: row.classification.label, classification: structuredClone(row.classification) }));
+  const frozen = { context, dealer: { id: dealerId }, project, inventory: { videos, families: [] }, projectRevision: presentation.projectRevision,
+    configurationSource: 'operator-package-v3', lane: { openclaw: { speak: 'off', idle: 'off' } } };
+  const frozenDealerContext = { resolve: async () => frozen, publicVideo: (_frozen, id) => {
+    const row = records.find(item => item.id === id);
+    return row ? { id: row.id, sha256: row.sha256, fileName: row.classification.label, src: '/api/presentation/room-video/' + ['north', config.roomId, pack.revision, dealerId, row.id].join('/'),
+      recordedSpeech: structuredClone(row.classification.recordedSpeech) } : null; } };
+  for (const line of NATIVE_ROOM_SPEECH_SLOTS) {
+    const event = { type: 'speak', line };
+    const capture = { sourceEvent: event, published: [event], material: speechMaterial, configVersion: config.configVersion, version: 4, roomId: config.roomId, talkId: 'talk-4',
+      language: 'sv', presentationContext: context, operatorId: pack.operatorId, packageRevision: pack.revision };
+    const body = { dealerId, mode: 'off', version: 4, event, presentationContext: context, sharedRoom: { roomId: config.roomId, ver: 4, talkId: 'talk-4' } };
+    const answer = await selectSharedRoomPresentation({ capture, body, frozenDealerContext, select: selectPresentation, request: null, playerId: 'alice', signal: new AbortController().signal });
+    assert.deepEqual(clips[line], { id: answer.video.id, sha256: answer.video.sha256 }, line);
+  }
+  assert.ok(f.records.length > 10);
+});
+
+test('speech clips need the config\'s own package, presentation and native material; anything else gives none', () => {
+  const { pack, config } = speechRoom();
+  assert.equal(nativeRoomSpeechClips({ package: { ...pack, revision: pack.revision + 1 }, config }), null, 'another package revision');
+  assert.equal(nativeRoomSpeechClips({ package: { ...pack, operatorId: 'operator-other' }, config }), null, 'another operator');
+  assert.equal(nativeRoomSpeechClips({ package: pack, config: { ...config, presentationHash: 'f'.repeat(64) } }), null, 'another frozen presentation');
+  assert.equal(nativeRoomSpeechClips({ package: pack, config: { ...config, material: { ...config.material, revision: 'casual-' + 'a'.repeat(16) } } }), null, 'not native material');
+  assert.equal(nativeRoomSpeechClips({ package: null, config }), null);
+  // A clip the config's material does not list is never offered.
+  const listed = { ...config.material, media: config.material.media.filter(row => row.id !== nativeRoomSpeechClips({ package: pack, config }).goodluck.id) };
+  assert.equal(Object.hasOwn(nativeRoomSpeechClips({ package: pack, config: { ...config, material: listed } }) ?? {}, 'goodluck'), false);
+});
+
+const speechWindow = (extra = {}) => ({ roomId: 'room-a', ver: 5, talkId: 'window-a:window', auditSeq: 10, kind: 'window', status: 'ready', windowId: 'window-a',
+  configVersion: 'config-a', language: 'sv', startAt: 1000, endAt: 1000, lines: [], events: [{ type: 'speak', line: 'placebets', family: 'speak.other/placebets' }, { type: 'idle', family: 'idle' }], ...extra });
+const speechClipsFixture = { placebets: { id: id(700), sha256: sha('placebets') }, goodluck: { id: id(701), sha256: sha('goodluck') } };
+
+test('a plan and a betting window carry each spoken line\'s clip; other events, kinds and unknown lines are unchanged', () => {
+  const window = withSpeechTakes(speechWindow(), speechClipsFixture);
+  assert.deepEqual(window.events[0], { type: 'speak', line: 'placebets', family: 'speak.other/placebets', speechTake: speechClipsFixture.placebets });
+  assert.deepEqual(window.events[1], { type: 'idle', family: 'idle' });
+  const opened = withSpeechTakes(withFilmedSteps(plan(opening(null)), material), speechClipsFixture);
+  assert.deepEqual(opened.events[0].speechTake, speechClipsFixture.goodluck);
+  assert.ok(opened.events[1].filmedTake, 'the filmed choices stay');
+  assert.deepEqual(opened.events.map(({ speechTake, ...event }) => event), withFilmedSteps(plan(opening(null)), material).events, 'nothing else changes');
+  const lose = speechWindow({ events: [{ type: 'speak', line: 'lose' }] });
+  assert.equal(withSpeechTakes(lose, speechClipsFixture), lose, 'a line without a clip');
+  const collect = speechWindow({ kind: 'collect' });
+  assert.equal(withSpeechTakes(collect, speechClipsFixture), collect);
+  assert.equal(withSpeechTakes(speechWindow(), null).events[0].speechTake, undefined);
+  for (const broken of [{ id: 'bad id', sha256: sha('x') }, { id: id(1), sha256: 'not-a-hash' }, null])
+    assert.equal(withSpeechTakes(speechWindow(), { placebets: broken }).events[0].speechTake, undefined, 'a clip the channel would refuse is never attached');
+});
+
+test('the reader reads a config\'s package once for its speech clips; a failed read is neither fatal nor cached', async () => {
+  const room = speechRoom();
+  let packageReads = 0, failing = true;
+  const enrich = createFilmedStepReader({ readConfig: async (roomId, version) => ({ ...room.config, roomId, configVersion: version }),
+    readPackage: async (operatorId, revision) => { packageReads++; assert.deepEqual([operatorId, revision], [room.pack.operatorId, room.pack.revision]);
+      if (failing) throw Error('unavailable'); return room.pack; } });
+  const window = speechWindow({ roomId: room.config.roomId });
+  assert.equal((await enrich(room.config.roomId, window)).events[0].speechTake, undefined, 'the window goes out; select remains');
+  failing = false;
+  const clips = nativeRoomSpeechClips({ package: room.pack, config: room.config });
+  assert.deepEqual((await enrich(room.config.roomId, window)).events[0].speechTake, clips.placebets, 'the next read asks again');
+  const opened = await enrich(room.config.roomId, plan([{ type: 'speak', line: 'goodluck', blocking: true }], { roomId: room.config.roomId, ver: 6, talkId: 'talk-6' }));
+  assert.deepEqual(opened.events[0].speechTake, clips.goodluck);
+  assert.equal(packageReads, 2, 'one successful read per config version');
+  const silent = createFilmedStepReader({ readConfig: async (roomId, version) => ({ ...room.config, roomId, configVersion: version }),
+    readPackage: async () => assert.fail('a plan without speech reads no package') });
+  assert.equal((await silent(room.config.roomId, plan([deal(0, 1, '5')], { roomId: room.config.roomId }))).events[0].speechTake, undefined);
+  const legacy = createFilmedStepReader({ readConfig: async (roomId, version) => ({ ...room.config, roomId, configVersion: version }) });
+  assert.equal((await legacy(room.config.roomId, window)).events[0].speechTake, undefined, 'without the package port the window is unchanged');
+});
+
+test('sockets that read a new config at the same time share one package read; a shared failed read is retried later', async () => {
+  const room = speechRoom();
+  let packageReads = 0, failing = true, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const enrich = createFilmedStepReader({ readConfig: async (roomId, version) => ({ ...room.config, roomId, configVersion: version }),
+    readPackage: async () => { packageReads++; await gate; if (failing) throw Error('unavailable'); return room.pack; } });
+  const window = speechWindow({ roomId: room.config.roomId });
+  const reads = Array.from({ length: 5 }, () => enrich(room.config.roomId, structuredClone(window)));
+  release();
+  for (const read of await Promise.all(reads)) assert.equal(read.events[0].speechTake, undefined, 'every socket gets the window; select remains');
+  assert.equal(packageReads, 1, 'five sockets, one package read');
+  failing = false;
+  const clips = nativeRoomSpeechClips({ package: room.pack, config: room.config });
+  const again = await Promise.all(Array.from({ length: 3 }, () => enrich(room.config.roomId, structuredClone(window))));
+  for (const read of again) assert.deepEqual(read.events[0].speechTake, clips.placebets);
+  assert.equal(packageReads, 2, 'the failed read was not kept; the next reads share one new read');
+});
+
+test('the channel sends a spoken line\'s clip to the player and refuses a malformed one', async t => {
+  const origin = 'https://game.invalid', binding = { actorId: 'player-a', sessionId: 'session-a', operatorId: 'operator-a', roomId: 'room-a', packageRevision: 7, expiresAt: Date.now() + 60000 };
+  const snapshot = { contract: 'blackjack-table/1', roomId: 'room-a', version: 1, presentationVer: 5, configVersion: 'config-a', windowId: 'window-a', phase: 'bets',
+    roundId: null, turnSeq: 0, owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 })),
+    deadline: null, actionDeadline: null, plan: null, round: null, shoe: null, players: [], serverNow: 1000,
+    me: { id: 'player-a', seats: [], memberGen: 0, active: false, available: 100, pausedUntil: null, insuranceDue: false, lastSettlement: null } };
+  let presentation = withSpeechTakes(speechWindow({ lines: [{ index: 0, line: 'placebets', lineId: 'a'.repeat(32) }] }), speechClipsFixture);
+  const channel = createSharedRoomChannel({ origin, authorize: async () => binding, revalidate: async () => binding,
+    readSnapshot: async () => snapshot, readPresentation: async () => presentation });
+  t.after(() => channel.close());
+  const frames = [], closed = [];
+  const socket = { readyState: 1, bufferedAmount: 0, listeners: {}, on(event, fn) { this.listeners[event] = fn; }, off() {},
+    send(text, done) { frames.push(JSON.parse(text)); done?.(); }, close(code, reason) { closed.push({ code, reason }); this.readyState = 3; } };
+  (await channel.prepare(new Request(`${origin}/shared-room/room-a`, { headers: { origin } }))).attach(socket);
+  for (let n = 0; n < 50 && !frames.length && !closed.length; n++) await new Promise(setImmediate);
+  assert.deepEqual(closed, []);
+  assert.deepEqual(frames[0].presentation.events[0].speechTake, speechClipsFixture.placebets);
+  presentation = { ...presentation, events: [{ ...presentation.events[0], speechTake: { id: 'bad id', sha256: sha('x') } }, presentation.events[1]] };
+  channel.emitCommitted('room-a');
+  for (let n = 0; n < 50 && !closed.length; n++) await new Promise(setImmediate);
+  assert.deepEqual(closed, [{ code: 1011, reason: 'shared_room_unavailable' }]);
 });

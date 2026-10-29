@@ -133,7 +133,8 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     if (resolved.schemaVersion === 2) return record.id === resolved.record?.id ? publicIdle(record,resolved.context) : null;
     return {...publicIdle(record,resolved.context), src:videoPrefix + [resolved.context.operatorSlug,resolved.context.roomId,resolved.context.packageRevision,resolved.context.dealerId,record.id].join('/')};
   }
-  async function response(request) {
+  // immutable (the shared room's room-video only): a media file of this exact package revision, named by its id.
+  async function response(request, {immutable = false} = {}) {
     const url = new URL(request.url);
     const eventMedia = url.pathname.startsWith(videoPrefix);
     if (!eventMedia && !url.pathname.startsWith(prefix)) return null;
@@ -150,7 +151,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       if (!record) return json(404, 'studio_presentation_idle_media_unavailable');
       const { pathname, sha256, size, contentType } = record;
       const media = await privateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }, request);
-      return await revalidatePrivateMedia(media, request, sha256);
+      return await revalidatePrivateMedia(media, request, sha256, {immutable: immutable === true && eventMedia});
     } catch (error) {
       const status = [400, 404, 409].includes(error?.statusCode) ? error.statusCode : 503;
       const code = typeof error?.code === 'string' && error.code.startsWith('studio_presentation_idle_') ? error.code : 'studio_presentation_idle_media_unavailable';

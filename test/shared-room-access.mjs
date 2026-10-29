@@ -310,6 +310,34 @@ test('actual channel prepare composes with access before any game/presentation r
   } finally {channel.close();h.assertReleased();}
 });
 
+// Speech lag (28 Oct 2026): a room-video URL names an immutable package revision, its dealer and a media id, so the
+// verified file may stay in the browser; room-idle names no media id and still revalidates. Errors are never kept.
+test('a room-video file of the active package is cached as immutable; the room idle and an error revalidate',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read(),captured=await h.readLocked(binding,h.original.configVersion);
+  const video=captured.authority.media.find(row=>row.classification.kind!=='idle')??captured.authority.media[0];
+  const served=(path,{fail=false}={})=>createActiveRoomPresentationContext({...captured,request:new Request('https://engine.invalid'+path),
+    privateMedia:async record=>fail?new Response(null,{status:503}):new Response('bytes',{status:200,headers:{etag:'"sha256-'+record.sha256+'"','content-type':'video/mp4'}})}).response();
+  const file=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id);
+  assert.equal(file.status,200);assert.equal(file.headers.get('etag'),'"sha256-'+video.sha256+'"');
+  assert.equal(file.headers.get('cache-control'),'private, max-age=31536000, immutable');
+  const idle=await served('/api/presentation/room-idle/north/room-a/1/dragan');
+  assert.equal(idle.status,200);assert.equal(idle.headers.get('cache-control'),'private, no-cache, must-revalidate');
+  const failed=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id,{fail:true});
+  assert.equal(failed.headers.get('cache-control'),'private, no-store');
+  h.assertReleased();
+});
+
+test('the package port reads exactly one operator package revision and grants nothing',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read();
+  const current=await h.access.readPackage(binding.operatorId,binding.packageRevision);
+  assert.equal(current.revision,binding.packageRevision);assert.equal(current.operatorId,binding.operatorId);
+  const earlier=await h.access.readPackage(binding.operatorId,1);assert.equal(earlier.revision,1);
+  assert.equal(await h.access.readPackage(binding.operatorId,99),null);
+  for(const [operatorId,revision] of [['bad id',1],[binding.operatorId,0],[binding.operatorId,'1']])
+    await assert.rejects(h.access.readPackage(operatorId,revision),{statusCode:403});
+  h.assertReleased();
+});
+
 // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters its key's company's rooms
 // with a player's rights, and is refused by name in another company's room or without a company.
 const partner=(h,operatorId='north',partnerKeyId='key-a')=>{h.state.session={...h.state.session,partnerKeyId,operatorId};};

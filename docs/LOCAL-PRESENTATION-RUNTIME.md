@@ -197,6 +197,17 @@ Webbläsare nekar ljud innan spelaren har interagerat med sidan. När ljudsatt t
 
 Ljudlösa klipp, viloklipp och handlingsklipp påverkas inte. Ett spel utan klick är inget talbevis. Riktig iOS- och desktop-Safari är inte provad.
 
+### Tal på delat bord
+
+Mätningen i preview den 28 oktober (48 repliker i 17 händer) visade att varje replik väntade på `POST /api/presentation/select` (0,9–4,3 s), sedan på sin GET och sin hash: 1,0–7,4 s innan ljudet kom. Det gäller nu i stället:
+
+- Motorns plan och insatsfönster bär varje repliks standardklipp som `speechTake: {id, sha256}` (`services/game/shared-room-filmed-steps.mjs`, `packages/presentation/server/native-room-speech-clips.mjs`). Det är samma klipp som select väljer i läget *off* för rummets frysta paket. Klienten spelar det direkt i select-svarets form när rummets tal följer standard (`openclaw.speak` är `off`) och vilan inte följer regler. Ett annat läge, en äldre motor utan fältet eller ett okänt klipp går via select som förut.
+- Planens repliker förbereds och förvärms tillsammans med korten. Utan `speechTake` hittas tagningen via `recordedSpeech.lineId` i rummets språk, och mer än en kandidat ger inget val. Planens första kort laddas före talet.
+- Efter dealerns första ruta förvärms rummets alla repliker, en fil i taget. För PAOW:s tio svenska fack är det cirka 7,7 MB. Förvärmningen sker bara mellan presentationer och aldrig i en dold flik, med datasparläge eller på 2G. Buffertens budget och LRU gäller.
+- Ljudknappen ändrar bara den pågående replikens `video.muted`, så repliken stoppas eller startas aldrig om. Valet sparas för fliken i `sessionStorage` (`scoutgaming.shared-room.sound`), och en ny montering, till exempel efter en ompublicering, behåller ljudet. Utan lagring startar bordet ljudlöst.
+- En ny montering spelar fortfarande insatsfönstrets placebets om fönstret är öppet. Repliken väntar högst 5 s på sin första ruta.
+- `room-video` skickas med `Cache-Control: private, max-age=31536000, immutable` när servern har verifierat filen mot postens SHA-256. Adressen namnger en paketrevision som inte kan ändras och ett media-ID, så samma adress kan aldrig ge andra bytes. `room-idle`, `registered-*` och felsvar revaliderar eller lagras inte, som förut.
+
 ### Saknat media och långsam uppkoppling
 
 Gäller sedan K04-rättningen (PR #451). På delat bord öppnas plats, marker, insats och **Redo** när presentationsadaptern är monterad och servern har bekräftat samma bindning före och efter monteringen; dealerns första filmruta är ingen grind längre. Tills den första verifierade rutan visas står *Dealern laddas…* på dealerns plats (*Dealern kunde inte visas.* om idlefilmen fallerar). Den verifierade bufferten begränsar en nedladdning med tystnad (15 s utan nya byte), aldrig med filens längd. Mottagna byte förnyar stegets framstegsvakt, och presentationens frysta totalbudget är fortfarande den absoluta gränsen. En ofullständig nedladdning som sista ägaren lämnar fortsätter i 5 s, så att en omstartad idle eller nästa steg återanvänder samma byte. Ett exakt klipp som svarar 404/410 eller `studio_presentation_idle_media_unavailable` avslutar sitt steg direkt utan standardfilm. Resten av samma presentationsversion visar sina committade kort utan film, och spelarens knappar öppnas vid serverns `turnAt`. Spelaren ser *Talet kunde inte spelas.* eller *Filmen kunde inte spelas.* i minst 6 s; kvittot behåller `reason`, `code`, `status`, `serverCode` och `unavailable`. Kontrollerna av SHA-256, UUID, paket och talidentitet är oförändrade.

@@ -38,8 +38,9 @@ const snapshotShape = {
 // K04 F5c: a filmed step's server choice (shared-room-filmed-steps.mjs); never a card.
 const clipRef = fields('id sha256');
 const filmed = {filmedTake:fields('profileId takeKey id sha256'),filmedTransitions:{before:clipRef,after:clipRef}};
+// Speech lag (28 Oct 2026): a spoken line's standard clip (shared-room-filmed-steps.mjs withSpeechTakes).
 const eventShapes = {
-  speak:fields('type line blocking family'),idle:fields('type family'),
+  speak:{...fields('type line blocking family'),speechTake:clipRef},idle:fields('type family'),
   deal:{...fields('type to box handIndex faceDown shoeDraw family'),card,clip:fields('action prefer fallback'),...filmed},
   reveal:{...fields('type to shoeDraw family'),card,...filmed},
   settle:{...fields('type dealerTotal dealerBlackjack'),hands:list(fields('box stake returned outcome'),28)},
@@ -91,6 +92,7 @@ function publicPair(rawSnapshot,rawPresentation,binding) {
     const sha=ref=>typeof ref?.sha256==='string'&&/^[a-f0-9]{64}$/.test(ref.sha256)&&id(ref.id);
     if(take!==undefined&&(!sha(take)||!id(take.profileId)||!id(take.takeKey)))fail();
     if(moves!==undefined&&(take===undefined||!object(moves)||['before','after'].some(key=>moves[key]!==null&&!sha(moves[key]))))fail();
+    if(value.speechTake!==undefined&&!sha(value.speechTake))fail();
     return value;
   });
   if(!Array.isArray(p.lines))fail();
