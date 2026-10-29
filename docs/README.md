@@ -9,7 +9,7 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [NEXT-AGENT](NEXT-AGENT.md) | Aktuellt läge, återstående arbete, kända fällor | Agent som börjar kallt | Vid varje överlämning (status-PR:n) |
-| [migrering/STATUS](../migrering/STATUS.md) och [MASTERPLAN](../migrering/MASTERPLAN.md) | Aktivitetsstatus (genererad från `status.json`) och plan; migreringen är klar (20/20), MASTERPLAN pekar framåt under "Efter O03" | Alla | När en aktivitet ändrar status |
+| [migrering/STATUS](../migrering/STATUS.md) och [MASTERPLAN](../migrering/MASTERPLAN.md) | Aktivitetsstatus, genererad från `status.json`; migreringen är avslutad (20/20). MASTERPLAN är en pekare: nästa arbete står i NEXT-AGENT, hela planen i Git, och den listar det som är kvar i `migrering/` och varför | Alla | Bara om en aktivitet återöppnas |
 | [HISTORIK](HISTORIK.md) | En rad per raderat dokument: vad det var och var det läses i Git | Den som letar efter ett gammalt kvitto, en granskning eller en plan | I samma PR som ett dokument raderas |
 
 ## Drift och miljö

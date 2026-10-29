@@ -13,6 +13,7 @@ import type {AppearanceRoomStatus} from '../../../../components/partner-appearan
 import {RegisteredStudio} from './registered-studio';
 import {WorkspaceTool} from './workspace-tools';
 import {SavedScenePreview} from './saved-scene-preview';
+import {ScenePreview} from './scene-preview';
 import {RoomPicture} from './room-picture';
 import {DealerAvatar,DealerFaces} from './dealer-identity-portrait';
 import {ControlResourceLifecycle} from '../../../../components/control-resource-lifecycle';
@@ -56,6 +57,8 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   useEffect(()=>{setRoomStatus(null);},[page,id]);
   const changed=()=>{setRefresh(value=>value+1);onChanged();};
   const operators=catalog?.administration.operators??[],compositions=catalog?.administration.compositions??[];
+  // The saved project revision that "Provspela sparad scen" starts against (room preview and Nytt spelbord).
+  const revision=catalog?.administration.revisions?.project;
   // Archived rooms stay with their company until restored through the rooms lifecycle; companies in the
   // trash (archivedAt) are listed only under Papperskorg, beside the archived rooms.
   const groups=companyListGroups(operators,catalog?.administration.rooms??[]);
@@ -98,7 +101,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='spelbord'&&<>
         {filters('/admin/companies?tab=spelbord',operators.filter(row=>!row.archivedAt))}
         {create&&!createOperator&&<Empty chip={null} title="Inget aktivt bolag" text="Skapa ett bolag först."/>}
-        <CreateRoomDialog open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
+        <CreateRoomDialog revision={revision} open={create&&Boolean(createOperator)} operators={operators.filter(row=>row.status==='active'&&!row.archivedAt)} initialOperator={createOperator?.id??''} compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed}
           onClose={()=>navigate('/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):''))}/>
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
@@ -128,14 +131,14 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const tab=adminTabId('company',query.get('flik')),create=query.get('view')==='create';
     const own=operator?rooms.filter(room=>room.operatorId===operator.id):[];
     return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies'},{label:operator?.name??'Bolag'}]}/>} title={operator?.name??'Bolag'} chip={operator?operatorChip(operator):undefined}
-      intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?`Bolaget ${id} finns inte i registret.`:'Läser katalogen…'}
+      intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?<span data-not-found="company">{`Bolaget ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
       actions={operator&&<><Link className={buttonVariants()} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link><a className={buttonVariants()} href={'/partner/'+encodeURIComponent(operator.slug)}>Öppna Partnerportalen<ExternalLink aria-hidden="true"/></a></>}>
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
       {operator&&<>
         {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning scenmallar att välja bland. Dealers, bakgrunder och bordsgrafik följer med via scenmallarna. Upplåsning per val (dealer, bordsgrafik, bakgrund, språk, insatsprofil) kommer senare.</Note><RegisteredStudio mode="package" operatorId={operator.id} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
-          <CreateRoomDialog open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
+          <CreateRoomDialog revision={revision} open={create} operators={[operator]} initialOperator={operator.id} fixedOperator compositions={compositions} rooms={rooms} disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Tilldela innehåll, publicera tilldelningen och skapa sedan ett spelbord."/>}
         </Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
@@ -168,7 +171,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     ...(status_?[status_.draft?'sparat utkast väntar på publicering':'inget opublicerat utkast']:[])]:[];
   return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies?tab=spelbord'},...(operator?[{label:operator.name,href:companyHref(operator,'spelbord')}]:[]),{label:room?.name??'Spelbord'}]}/>}
     title={room?<span className="inline-flex min-w-0 items-center gap-4"><RoomPicture room={room} className="h-12 w-20 max-md:h-10 max-md:w-16"/><span className="min-w-0">{room.name}</span></span>:'Spelbord'} chip={room?<>{stateChip(room)}{status_?.draft&&<Chip tone="info">utkast</Chip>}</>:undefined}
-    intro={room?facts.join(' · '):catalog?`Spelbordet ${id} finns inte i registret.`:'Läser katalogen…'}
+    intro={room?facts.join(' · '):catalog?<span data-not-found="room">{`Spelbordet ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
     actions={room&&<>
       {room.playUrl&&<a className={buttonVariants()} href={room.playUrl} target="_blank" rel="noopener">Öppna i spelet<ExternalLink aria-hidden="true"/></a>}
       <ActionMenu name={room.name} actions={[
@@ -191,7 +194,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       {tab==='bolagets-val'&&<OperatorAdjustable laneId={room.compositionId} operator={operator} active={active&&tab==='bolagets-val'}/>}
       {tab==='historik'&&<Card title="Historik" aside="Bolagets publiceringar och utkast"><Footnote className="mb-3 mt-0">Journalen gäller hela bolaget; raderna för det här spelbordet nämner dess namn.</Footnote><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
       <TechnicalDetails items={[['Spelbords-id',room.id],['Scenmall-id',room.compositionId],['Spellane-id',room.laneId],['Bolags-id',room.operatorId]]}/>
-      <RoomPreview room={room}/>
+      <RoomPreview room={room} revision={revision}/>
     </>}
   </HubPage>;
 }
@@ -201,7 +204,7 @@ type Composition=Catalog['administration']['compositions'][number];
 // game and name on the same step. The last step is the same room creation as before (RegisteredStudio create mode,
 // the presentation-room call); background and table graphics are chosen afterwards under Utseende,
 // because the creation call does not take them.
-function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,compositions,rooms,disabled,onChanged,onClose}:{open:boolean;operators:Operator[];initialOperator:string;fixedOperator?:boolean;compositions:Composition[];rooms:Room[];disabled:boolean;onChanged:()=>void;onClose:()=>void}) {
+function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,compositions,rooms,revision,disabled,onChanged,onClose}:{revision?:string;open:boolean;operators:Operator[];initialOperator:string;fixedOperator?:boolean;compositions:Composition[];rooms:Room[];disabled:boolean;onChanged:()=>void;onClose:()=>void}) {
   const [step,setStep]=useState(fixedOperator?1:0),[operatorId,setOperatorId]=useState(initialOperator),[compositionId,setCompositionId]=useState('');
   useEffect(()=>{if(open){setStep(fixedOperator?1:0);setOperatorId(initialOperator);setCompositionId('');}},[open,initialOperator,fixedOperator]);
   const operator=operators.find(row=>row.id===operatorId)??operators[0];
@@ -220,7 +223,7 @@ function CreateRoomDialog({open,operators,initialOperator,fixedOperator=false,co
         <span className="font-semibold">{row.name}</span><span className="text-xs text-sg-muted">{row.dealerIds.length?plural(row.dealerIds.length,'dealer','dealers'):'Inga dealers'} · {plural(rooms.filter(room=>room.compositionId===row.id).length,'spelbord','spelbord')} använder mallen</span></button>)}
         {!compositions.length&&<Empty chip={null} title="Inga scenmallar ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=mallar">Till Scenmallar</Link>}/>}</div>
       {composition&&<div className="grid min-w-0 content-start gap-4">
-        <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
+        <div className="rounded-xl border border-sg-border bg-sg-surface-2 p-3"><div className="mb-2 text-xs font-semibold text-sg-muted">Så ser scenen ut · {composition.name}</div><SavedScenePreview active={open&&step===1} presentationLaneId={composition.id} revision={revision} dealerId={composition.defaultDealerId||composition.dealerIds[0]} game="blackjack"/></div>
         <RegisteredStudio mode="create" operatorId={operator.id} compositionId={composition.id} disabled={disabled} onChanged={onChanged}/>
       </div>}
     </div>}
@@ -259,10 +262,10 @@ function OperatorAdjustable({laneId,operator,active}:{laneId:string;operator:Ope
   </Card>;
 }
 
-function RoomPreview({room}:{room:Room}) {
+function RoomPreview({room,revision}:{room:Room;revision?:string}) {
   const [open,setOpen]=useState(false);
   return <PreviewFlyout title={'Förhandsvisning · '+room.name} open={open} onOpenChange={setOpen}>
-    {room.game==='blackjack'?<SavedScenePreview active={open} presentationLaneId={room.compositionId} dealerId={room.dealerIds[0]} game="blackjack"/>:<Empty chip={null} title="Provspelningen stöder Blackjack"/>}
-    <Footnote>Provar den sparade scenmallen med testsaldo, inte spelbordets publicerade val. Dator; mobilvyn kommer senare.</Footnote>
+    <ScenePreview active={open} laneId={room.compositionId} dealerId={room.dealerIds[0]} game={room.game==='roulette'?'roulette':'blackjack'} revision={revision}/>
+    <Footnote>Visar den sparade scenmallen, inte spelbordets publicerade val. Dator; mobilvyn kommer senare.</Footnote>
   </PreviewFlyout>;
 }
