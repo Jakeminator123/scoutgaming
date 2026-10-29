@@ -22,8 +22,12 @@ import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {isPresentationRoomReadQuery} from '../lib/studio-admin-contract.mjs';
+import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 
+// Utan konto-id: en betrodd adapter utan rätt att publicera utseende (som före andra versionen).
 const actor={user:'release-admin',role:'admin'};
+// En N1-administratör med konto: får publicera utseende (internal-admin, presentations.configure).
+const designer={user:'release-designer',role:'admin',accountId:'release-designer-1'};
 const POST='POST /studio/api/admin/operator-package',GET='GET /studio/api/admin/room-release';
 const code=(expected,status,extra={})=>error=>error?.code===expected&&error.statusCode===status
   &&Object.entries(extra).every(([key,value])=>error[key]===value);
@@ -86,6 +90,7 @@ async function releaseFixture(t,{without009=false}={}) {
   const persisted=async()=>({packages:await rows('SELECT operator_id,package_revision,branding FROM croupier_studio.operator_packages WHERE environment_id=$1 ORDER BY operator_id,package_revision',own),
     documents:await rows('SELECT kind,revision FROM croupier_studio.documents WHERE environment_id=$1 ORDER BY kind',own),
     audits:await rows('SELECT count(*)::int AS count FROM croupier_studio.operator_audit_events WHERE environment_id=$1',own),
+    drafts:await rows('SELECT operator_id,draft_revision,action,published_package_revision FROM croupier_studio.operator_branding_drafts WHERE environment_id=$1 ORDER BY operator_id,draft_revision',own),
     ...(!without009?{configs:await rows('SELECT room_id,version,body FROM croupier_game.shared_table_configs WHERE room_id LIKE $1 ORDER BY room_id,version',prefix),
       heads:await rows('SELECT room_id,version FROM croupier_game.shared_table_config_heads WHERE room_id LIKE $1 ORDER BY room_id',prefix)}:{})});
   return {pool,raw,repository,videoRegistry,api,direct,io,lane,source,scope,id,post,read,saveDraft,bodyOf,rows,persisted,publish:view=>post(bodyOf(view))};
@@ -325,21 +330,23 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     assert.deepEqual(await f.persisted(),stable);
   });
 
-  await t.test('an open company appearance draft blocks the release (first version)',async()=>{
+  await t.test('an open appearance draft blocks a caller without the right to publish appearance, as before',async()=>{
     await f.saveDraft('north-b',{language:'sv',limitPreset:'casual'});
     const ready=await f.read('north-b'),context={body:f.bodyOf(ready),actor,scope:f.scope};
-    assert.equal(ready.ready,true,JSON.stringify(ready.blockers));
+    assert.equal(ready.ready,true,JSON.stringify(ready.blockers));assert.equal(ready.appearanceDraft,null);
     const prepared=await f.api.preparations.get(POST)(context);
     const pack=await f.direct.getCurrentPackage('north');
     await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:pack.revision,branding:{color:'#112233'}});
     const view=await f.read('north-b');
     assert.equal(view.ready,false);assert.deepEqual(view.blockers,[{area:'roomChoices',code:'studio_room_choices_draft_pending',draftRevision:1}]);
+    assert.deepEqual(view.appearanceDraft,{revision:1,included:false});assert.equal(view.changes.some(row=>row.area==='appearance'),false);
     const before=await f.persisted();
     await assert.rejects(f.publish(view),code('studio_room_choices_draft_pending',409));
     // Ett utkast sparat efter förberedelsen stoppas under låset.
     await assert.rejects(f.api.handlers.get(POST)({...context,prepared}),code('studio_room_choices_draft_pending',409));
     assert.deepEqual(await f.persisted(),before);
   });
+
 });
 
 test('without the 009 game-settings storage the preview blocks and publication is a 503 before any write',async t=>{
@@ -350,4 +357,112 @@ test('without the 009 game-settings storage the preview blocks and publication i
   assert.equal(view.ready,false);assert.ok(view.blockers.some(row=>row.code==='studio_room_config_storage_missing'));
   await assert.rejects(f.publish(view),code('studio_room_config_storage_missing',503));
   assert.deepEqual(await f.persisted(),before);
+});
+
+// Andra versionen (ADMIN-FORENKLING §7 punkt 3): bolagets utseendeutkast följer med i samma
+// transaktion för den som får publicera utseende. Egen fixtur: provet ovan flyttar north-a:s huvud.
+test('room release with the company appearance draft in the same transaction',async t=>{
+  const f=await releaseFixture(t);
+  const room=name=>f.id(name);
+  // Andra versionen: utkastet följer med i samma transaktion för den som får publicera utseende.
+  const as=(who,view,extra={})=>{const context={body:f.bodyOf(view),actor:who,scope:f.scope,...extra};
+    return f.api.preparations.get(POST)(context).then(prepared=>({context,prepared}));};
+  const latestDraft=async operatorId=>(await f.rows(`SELECT draft_revision::int,action,published_package_revision::int,base_package_revision::int FROM croupier_studio.operator_branding_drafts
+    WHERE environment_id=$1 AND operator_id=$2 ORDER BY draft_revision DESC LIMIT 1`,[f.scope.environment,operatorId]))[0];
+
+  await t.test('the appearance draft is a changed area and is published and consumed in the same transaction',async()=>{
+    await f.saveDraft('north-a',{language:'sv',limitPreset:'prive'});
+    const start=await f.direct.getCurrentPackage('north');
+    await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:start.revision,branding:{color:'#112233'}});
+    const southPack=await f.direct.getCurrentPackage('south');
+    await f.direct.saveBrandingDraft({actor:'partner-2',operatorId:'south',expectedDraftRevision:0,expectedPackageRevision:southPack.revision,branding:{color:'#445566'}});
+    // Utseendes egen granskning gäller: bordsfärgen går inte att ändra i den här mallen.
+    const misfit=await f.read('north-a','north',{actor:designer}),untouched=await f.persisted();
+    assert.equal(misfit.ready,false);assert.deepEqual(misfit.appearanceDraft,{revision:1,included:true});
+    assert.deepEqual(misfit.blockers,[{area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}]);
+    await assert.rejects(f.post(f.bodyOf(misfit),{actor:designer}),code('studio_release_invalid',422,{reason:'studio_room_choices_draft_invalid'}));
+    assert.deepEqual(await f.persisted(),untouched);
+    const before=await f.direct.getCurrentPackage('north');
+    await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:1,expectedPackageRevision:before.revision,branding:{dealer:'dragan'}});
+    const view=await f.read('north-a','north',{actor:designer});
+    assert.equal(view.ready,true,JSON.stringify(view.blockers));assert.deepEqual(view.blockers,[]);
+    assert.deepEqual(view.appearanceDraft,{revision:2,included:true});assert.equal(view.revisions.brandingDraft,2);
+    const appearance=view.changes.find(row=>row.area==='appearance');
+    assert.equal(appearance.draftRevision,2);assert.ok(appearance.changes.some(row=>row.roomId===null&&row.key==='dealer'&&row.after==='dragan'),JSON.stringify(appearance));
+    assert.ok(view.changes.some(row=>row.area==='settings'));
+    // Samma förhandsvisning utan rätten är en annan: utkastet hindrar i stället.
+    assert.notEqual((await f.read('north-a')).previewToken,view.previewToken);
+    const {context,prepared}=await as(designer,view);
+    const receipt=await f.api.handlers.get(POST)({...context,prepared}),after=await f.direct.getCurrentPackage('north');
+    assert.equal(receipt.packageRevision,before.revision+1);assert.equal(after.revision,before.revision+1,'one package revision for settings and appearance');
+    assert.equal(receipt.appearanceDraftRevision,2);assert.deepEqual(receipt.changes,view.changes);
+    assert.equal(after.branding.dealer,'dragan');assert.equal(after.branding.roomGameConfigVersions[room('north-a')],receipt.configVersion);
+    // Samma journalrad som "Publicera granskat utkast": draft.publish med det nya paketets revision.
+    assert.deepEqual(await latestDraft('north'),{draft_revision:3,action:'draft.publish',published_package_revision:after.revision,base_package_revision:before.revision});
+    assert.equal((await f.direct.getBrandingDraft('north')).action,'draft.publish');
+    const again=await f.read('north-a','north',{actor:designer});
+    assert.equal(again.appearanceDraft,null);assert.equal(again.changed,false);assert.deepEqual(again.blockers,[]);
+    // Bolagsisolering: det andra bolagets utkast och paket är orörda.
+    assert.deepEqual(await f.direct.getCurrentPackage('south'),southPack);assert.equal((await latestDraft('south')).action,'draft.save');
+    await assert.rejects(f.read('south','north',{actor:designer}),code('studio_room_not_found',404));
+    // Bara utseendet ändras: utkastet ensamt är något att publicera.
+    await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:3,expectedPackageRevision:after.revision,
+      branding:{dealer:'dragan',roomOverrides:{[room('north-a')]:{dealer:'dragan'}}}});
+    const only=await f.read('north-a','north',{actor:designer});
+    assert.equal(only.ready,true,JSON.stringify(only.blockers));assert.deepEqual(only.changes.map(row=>row.area),['appearance']);
+    const second=await f.post(f.bodyOf(only),{actor:designer});
+    assert.equal(second.packageRevision,after.revision+1);
+    assert.deepEqual((await f.direct.getCurrentPackage('north')).branding.roomOverrides,{[room('north-a')]:{dealer:'dragan'}});
+    assert.equal((await latestDraft('north')).action,'draft.publish');
+  });
+
+  await t.test('a draft changed after the preview or the preparation is a 409 and writes nothing',async()=>{
+    let pack=await f.direct.getCurrentPackage('north');
+    const save=async branding=>f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:(await latestDraft('north')).draft_revision,
+      expectedPackageRevision:pack.revision,branding});
+    await save({dealer:'dragan'});
+    const view=await f.read('north-a','north',{actor:designer});
+    assert.equal(view.ready,true,JSON.stringify(view.blockers));
+    await save({});
+    let stable=await f.persisted();
+    await assert.rejects(f.post(f.bodyOf(view),{actor:designer}),code('studio_release_preview_stale',409));
+    assert.deepEqual(await f.persisted(),stable);
+    const fresh=await f.read('north-a','north',{actor:designer}),{context,prepared}=await as(designer,fresh);
+    await save({dealer:'dragan'});
+    stable=await f.persisted();
+    await assert.rejects(f.api.handlers.get(POST)({...context,prepared}),code('studio_conflict',409,{step:'room_choices'}));
+    assert.deepEqual(await f.persisted(),stable);
+    // Ett utkast som slängs efter förberedelsen är också en konflikt, inte en tyst publicering.
+    const third=await f.read('north-a','north',{actor:designer}),next=await as(designer,third);
+    pack=await f.direct.getCurrentPackage('north');
+    await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:(await latestDraft('north')).draft_revision,expectedPackageRevision:pack.revision,
+      branding:{...Object.fromEntries(['lane','table','background','dealer','color'].filter(key=>Object.hasOwn(pack.branding,key)).map(key=>[key,pack.branding[key]])),
+        ...(pack.branding.roomOverrides?{roomOverrides:pack.branding.roomOverrides}:{})},sourcePackageRevision:pack.revision});
+    stable=await f.persisted();
+    await assert.rejects(f.api.handlers.get(POST)({...next.context,prepared:next.prepared}),code('studio_conflict',409,{step:'room_choices'}));
+    assert.deepEqual(await f.persisted(),stable);
+  });
+
+  await t.test('a failure in a later step rolls back the draft status with the package and the settings',async()=>{
+    const pack=await f.direct.getCurrentPackage('north'),open=await latestDraft('north');
+    await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:open.draft_revision,expectedPackageRevision:pack.revision,branding:{}});
+    await f.saveDraft('north-a',{language:'sv',limitPreset:'high'});
+    // Borttagningen av spelbordets utkast (efter J08-skrivaren och utkastets publicering) misslyckas.
+    let injected=0;
+    const failing={...f.repository,saveDocument:(kind,...rest)=>kind==='administration'
+      ?(injected++,Promise.reject(new StudioStorageError('injected_failure',503))):f.repository.saveDocument(kind,...rest)};
+    const api=createOperatorPackageApi({pool:f.pool,scope:f.scope,repository:failing,videoRegistry:f.videoRegistry});
+    const view=await api.handlers.get(GET)({actor:designer,scope:f.scope,
+      request:new Request(`https://studio.invalid/studio/api/admin/room-release?operatorId=north&roomId=${room('north-a')}`)});
+    assert.equal(view.ready,true,JSON.stringify(view.blockers));assert.ok(view.changes.some(row=>row.area==='appearance'));
+    const context={body:f.bodyOf(view),actor:designer,scope:f.scope},prepared=await api.preparations.get(POST)(context);
+    const stable=await f.persisted(),draftBefore=await latestDraft('north');
+    // Repositoryt redovisar ett okänt fel i transaktionen som 503 utan intern kod.
+    await assert.rejects(api.handlers.get(POST)({...context,prepared}),{statusCode:503});assert.equal(injected,1);
+    assert.deepEqual(await f.persisted(),stable,'no package, no settings and no draft.publish row');
+    assert.deepEqual(await latestDraft('north'),draftBefore);assert.equal((await f.direct.getBrandingDraft('north')).action,'draft.save');
+    // Utan felet publiceras samma förhandsvisning, med utkastet.
+    const receipt=await f.post(f.bodyOf(view),{actor:designer});
+    assert.equal(receipt.appearanceDraftRevision,draftBefore.draft_revision);assert.equal((await latestDraft('north')).action,'draft.publish');
+  });
 });
