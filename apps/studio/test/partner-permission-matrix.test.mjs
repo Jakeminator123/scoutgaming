@@ -233,6 +233,12 @@ test('varje roll får exakt de läsningar kartan ger, och läsningen bär bara v
         assert.equal(body.rooms.length > 0, role.permissions.includes('tables.read'), `${role.id} spelbord i utseendet`);
         assert.equal(body.canConfigure, allows(role, BRANDING_WRITE), `${role.id} canConfigure`);
       }
+      if (read.id === 'assignment') {
+        // Spelborden kräver tables.read; knapparna följer var sin configure-rättighet.
+        assert.equal('rooms' in body, role.permissions.includes('tables.read'), `${role.id} spelbord i tilldelningen`);
+        assert.deepEqual(body.canConfigure, { presentations: role.permissions.includes('presentations.configure'),
+          tables: role.permissions.includes('tables.configure') }, `${role.id} canConfigure i tilldelningen`);
+      }
       if (read.id === 'team GET') {
         // Teamvyns knappar följer samma karta som servern använder för skrivningarna.
         const can = action => allows(role, API_WRITES.find(item => item.path === 'team' && item.action === action).requires);

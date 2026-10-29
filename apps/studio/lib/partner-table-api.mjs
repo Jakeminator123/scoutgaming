@@ -54,7 +54,9 @@ export function publishedRoomSettings({ query, operatorId, rooms, pack }) {
 }
 
 // Läsa tilldelningen: kräver presentations.read. Spelborden (namn, läge,
-// dealer, spelinställningar och deras utkast) kräver dessutom tables.read.
+// dealer och publicerade spelinställningar) kräver dessutom tables.read.
+// Admins opublicerade spelinställningsutkast är ett arbetsläge, inte något
+// spelarna ser: de visas bara med tables.configure (minsta behörighet).
 // Revisionerna är de som skrivvägarna kontrollerar (CAS).
 export async function readPartnerAssignment({ found, decided, config }) {
   const { store, operator, session } = found;
@@ -72,8 +74,12 @@ export async function readPartnerAssignment({ found, decided, config }) {
   const brandingDraft = typeof store.getBrandingDraft === 'function' ? await store.getBrandingDraft(operator.id) : null;
   if (brandingDraft && brandingDraft.operatorId !== operator.id) fail(403);
   let drafts = [];
-  if (administration && may('tables.read')) {
-    try { drafts = validateRoomGameDrafts(administration.roomGameConfigs ?? [], administration.rooms); } catch { fail(503); }
+  if (administration && may('tables.read') && may('tables.configure')) {
+    // Bara bolagets egna utkast på bolagets egna spelbord valideras: en trasig
+    // eller inaktuell rad hos ett annat bolag får aldrig fälla den här läsningen.
+    const own = (Array.isArray(administration.roomGameConfigs) ? administration.roomGameConfigs : [])
+      .filter(row => row?.operatorId === operator.id && rooms.some(room => room.id === row.roomId));
+    try { drafts = validateRoomGameDrafts(own, administration.rooms); } catch { fail(503); }
   }
   const dealerLabel = id => presentation?.registeredDealers?.find(dealer => dealer.id === id)?.label ?? id;
   return {

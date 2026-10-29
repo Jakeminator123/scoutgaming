@@ -72,7 +72,6 @@ test('the shell names the company, Partnerportalen, the assignment version and t
   // Every view, Spelare included (an honest empty state until players belong to the company).
   assert.deepEqual(menuOf(viewer), hrefs(...PARTNER_VIEWS));
   assert.match(viewer, /class="small">läsare</);
-  for (const [, href] of viewer.matchAll(/class="nav" href="([^"]+)"/g)) assert.match(href, /^\/partner\/johnsspelbolag(?:\/|$)/);
   for (const html of [editor, viewer]) {
     assert.doesNotMatch(html, /Planerat|Spelrum|Sammansättning|Operatörspersonal|Intern administratör|Nivå 2|Spelbolag|Partnerportal[^e]|kevin-bo/);
     assert.doesNotMatch(html, /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);

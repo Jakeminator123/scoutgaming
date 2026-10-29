@@ -21,7 +21,7 @@ export const partnerNavigationItems = Object.freeze([
   item('team', 'users-round', 'Team', 'Team',
     'Bolagets team och roller; administratören bjuder in och ändrar roller.', 'The company team and roles; the administrator invites and changes roles.'),
   item('integration', 'plug', 'Integration', 'Integration',
-    'Startadressen och bolagets egna nycklar, maskerade.', 'The launch address and the company’s own keys, masked.'),
+    'Startadressen och bolagets egna nycklar, maskerade.', 'The start address and the company’s own keys, masked.'),
   item('help', 'life-buoy', 'Hjälp och kontakt', 'Help and contact',
     'Vad rollen får göra, orden och hur ni begär material.', 'What the role may do, the words and how to request material.'),
 ]);

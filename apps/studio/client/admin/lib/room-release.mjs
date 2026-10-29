@@ -1,0 +1,265 @@
+import {labUrl} from '../../../lib/lab-url.mjs';
+import {aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
+
+// Spelbordets publicering i Admin (docs/plans/ADMIN-FORENKLING.md §7). Servern äger alla
+// kontroller (apps/studio/lib/room-release.mjs); här läses förhandsvisningen, kroppen byggs
+// exakt av den, kvittot kontrolleras och felkontraktet {error, code, step} översätts till
+// svenska. Klienten försöker aldrig igen automatiskt: varje nytt försök börjar med att
+// användaren läser in förhandsvisningen igen.
+
+const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
+const code = value => typeof value === 'string' && /^[a-z][a-z0-9_]{0,100}$/.test(value);
+const revision = value => typeof value === 'string' && value.length > 0 && value.length <= 200;
+const token = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+const count = value => Number.isSafeInteger(value) && value >= 0;
+
+export const ROOM_RELEASE_READ_PATH = '/api/admin/room-release';
+export const ROOM_RELEASE_PUBLISH_PATH = '/api/admin/operator-package';
+
+const languages = Object.freeze({en:'engelska', sv:'svenska'});
+const limits = Object.freeze({casual:'Casual', prive:'Privé', high:'High'});
+const roles = Object.freeze({background:'Bakgrund', dealer:'Dealer', table:'Bordsgrafik'});
+export const languageLabel = value => languages[value] ?? String(value ?? '–');
+export const limitLabel = value => limits[value] ?? String(value ?? '–');
+
+// Materialskälen ur den fasta listan (room-game-config-api.mjs) som användaren kan åtgärda.
+const materialReasons = Object.freeze({
+  native_material_take_unrecognized:'ingen godkänd tagning',
+  native_material_take_mismatch:'tagningen stämmer inte med klippet',
+  native_material_take_audio_truncated:'tagningens ljud är avklippt',
+  native_material_speech_unbound:'repliken saknar tal',
+  native_material_speech_slot_missing:'en replik saknar klipp',
+  native_material_speech_timing_mismatch:'talets längd stämmer inte med klippet',
+  native_material_speech_pose_unsupported:'talklippets pose stöds inte',
+  native_material_bank_incomplete:'klippbanken är inte komplett',
+  native_material_idle_missing:'vila saknas',
+  native_material_dealer_missing:'dealern saknas i scenmallen',
+  native_material_video_unavailable:'ett klipp är inte tillgängligt',
+  native_material_transition_pose_missing:'en övergång saknar pose',
+  native_material_measurement_missing:'klippen är inte uppmätta',
+  native_material_measurement_mismatch:'klippens mätning stämmer inte',
+  native_material_size_mismatch:'klippens storlek stämmer inte',
+});
+export function materialReasonText(reason) {
+  return materialReasons[reason] ?? (code(reason) ? 'materialet är inte komplett (' + reason + ')' : 'materialet är inte komplett');
+}
+
+// Fasta skäl i studio_release_invalid.
+const invalidReasons = Object.freeze({
+  studio_release_unchanged:'Inget skiljer sig från live, så inget publicerades.',
+  studio_room_binding_incompatible:'Ett öppet spelbord hos bolaget kan inte visas med den sparade scenmallen.',
+  studio_presentation_required:'Bolagets scenmallar är inte sparade eller saknas.',
+  studio_dealer_idle_required:'Dealern saknar sparad vila.',
+  studio_roulette_idle_required:'Roulettedealern saknar sparad vila.',
+  studio_dealer_idle_policy_mismatch:'Dealerns vila stämmer inte med de sparade klippen.',
+  studio_dealer_background_required:'Scenmallen saknar bakgrund.',
+  studio_media_binding_invalid:'Ett klipp i scenmallen är felkopplat.',
+});
+
+const conflictSteps = Object.freeze({
+  package:'Bolagets publicering har ändrats sedan förhandsvisningen.',
+  project:'Scenmallarna har sparats om sedan förhandsvisningen.',
+  administration:'Spelbordets uppgifter har ändrats sedan förhandsvisningen.',
+  room_config_head:'Spelinställningarna har publicerats från ett annat håll.',
+  media:'Ett klipp har ändrats medan publiceringen förbereddes.',
+  materials:'Bolagets eget material har ändrats sedan förhandsvisningen.',
+});
+const RELOAD = ' Läs in igen.';
+// "Inget publicerades" sägs bara när servern med en känd kod har vägrat före commit. Ett 5xx-svar
+// utan känd kod kan komma från en proxy eller en timeout efter commit: utfallet är då okänt.
+const NOTHING = ' Inget publicerades.';
+const UNCERTAIN = ' Läs in igen för att se om publiceringen gick igenom.';
+
+/**
+ * Begriplig svensk text för felkontraktet {error, code, step} och HTTP-status. `phase` är
+ * 'publish' (standard) eller 'read' (förhandsvisningen, där inget kan ha publicerats).
+ */
+export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reason, materialReason, phase = 'publish'} = {}) {
+  switch (errorCode) {
+    case 'studio_release_preview_stale': return 'Något har ändrats sedan förhandsvisningen.' + RELOAD;
+    case 'studio_conflict': return (conflictSteps[step] ?? 'Uppgifterna har ändrats under tiden.') + NOTHING + RELOAD;
+    case 'studio_room_choices_draft_pending': return 'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det under Utseende först.' + NOTHING;
+    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '. Öppna Röst och tal.' + NOTHING;
+    case 'studio_release_invalid': return (invalidReasons[reason] ?? 'Publiceringen kan inte göras med de sparade valen' + (code(reason) ? ' (' + reason + ')' : '') + '.')
+      + (reason === 'studio_release_unchanged' ? '' : NOTHING);
+    case 'studio_room_not_found': return 'Spelbordet är inte öppet hos bolaget eller ingår inte i bolagets publicerade tilldelning.' + NOTHING;
+    case 'studio_presentation_runtime_update_required': return 'Spelmotorn behöver uppdateras innan ändringen kan publiceras.' + NOTHING;
+    case 'studio_room_config_storage_missing': return 'Databasen saknar lagringen för spelinställningar. Kontakta drift.' + NOTHING;
+    case 'studio_media_registry_unavailable': return 'Medieregistret svarar inte just nu.' + NOTHING + ' Försök igen om en stund.';
+    default: break;
+  }
+  if (status === 401) return 'Logga in igen för att fortsätta.';
+  if (status === 403) return 'Du saknar behörighet att publicera spelbordet.';
+  if (status === 409) return 'Uppgifterna har ändrats.' + NOTHING + RELOAD;
+  const raw = code(errorCode) ? ' (' + errorCode + ')' : '';
+  if (status === 0 || status >= 500) return phase === 'read' ? 'Jämförelsen med live kunde inte läsas' + raw + '.' + RELOAD
+    : 'Servern kunde inte bekräfta publiceringen' + raw + '.' + UNCERTAIN;
+  return 'Publiceringen gick inte igenom' + (code(errorCode) ? ': ' + errorCode : '') + '.' + NOTHING;
+}
+
+// Ett hinder i förhandsvisningen: text och länk till det ställe där det åtgärdas.
+const roomHref = (roomId, flik) => '/admin/rooms/' + encodeURIComponent(roomId) + '?flik=' + flik;
+const dealerHref = (dealerId, flik) => '/admin/dealers/' + encodeURIComponent(dealerId) + '?flik=' + flik;
+/** @returns {{text:string;href:string|null;linkLabel:string|null}} */
+export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms = []} = {}) {
+  const link = (href, linkLabel) => ({href, linkLabel});
+  const none = {href:null, linkLabel:null};
+  const dealer = id(dealerId) ? dealerId : null;
+  switch (blocker?.code) {
+    case 'studio_room_game_config_missing':
+      return {text:'Spelinställningar saknas: välj språk och insatsprofil och spara.', ...link(roomHref(roomId, 'spel'), 'Öppna Spelinställningar')};
+    case 'studio_room_config_storage_missing':
+      return {text:'Databasen saknar lagringen för spelinställningar. Kontakta drift.', ...none};
+    case 'studio_room_choices_draft_pending':
+      return {text:'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det först.', ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
+    case 'studio_room_game_material_unavailable': {
+      if (blocker.area === 'rooms' && id(blocker.roomId)) {
+        const name = rooms.find(row => row?.id === blocker.roomId)?.name ?? blocker.roomId;
+        return {text:'Spelbordet ' + name + ' kan inte bindas om: ' + materialReasonText(blocker.materialReason) + '.', ...link(roomHref(blocker.roomId, 'spel'), 'Öppna spelbordet')};
+      }
+      return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
+    }
+    case 'ai_table_misfit':
+      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna scenmallen')};
+    case 'studio_release_invalid': {
+      const text = invalidReasons[blocker.reason] ?? 'Scenmallarna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
+      if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return {text, ...link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klippkarta')};
+      return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Scenmallar')};
+    }
+    case 'studio_media_registry_unavailable': return {text:'Medieregistret svarar inte just nu. Läs in igen om en stund.', ...none};
+    case 'studio_presentation_runtime_update_required': return {text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', ...none};
+    case 'studio_conflict': return {text:'Uppgifterna ändrades medan förhandsvisningen lästes. Läs in igen.', ...none};
+    default: return {text:'Hinder' + (code(blocker?.code) ? ': ' + blocker.code : '') + '.', ...none};
+  }
+}
+
+// En rad per område, i den ordning Admin visar dem. Oförändrade områden visas också.
+/** @returns {{area:string;label:string;changed:boolean;rows:string[]}[]} */
+export function roomReleaseAreas(preview, {dealerName} = {}) {
+  const changes = Array.isArray(preview?.changes) ? preview.changes : [];
+  const of = area => changes.filter(row => row?.area === area);
+  const take = value => value?.takeId ? 'tagning ' + value.takeId : 'ingen tagning';
+  const speech = of('speech').map(row => (row.lineId || 'replik') + ' · ' + (row.language ?? '–') + ': ' + take(row.before) + ' → ' + take(row.after)
+    + (row.after?.approvedBy ? ', godkänd av ' + row.after.approvedBy : row.after ? ', inte godkänd' : ''));
+  const clips = of('clips').map(row => (count(row.added) ? row.added : 0) + ' tillkommer, ' + (count(row.removed) ? row.removed : 0) + ' tas bort');
+  const idle = of('idle').map(row => !row.before?.mediaId && !row.before?.policySha256 ? 'Vila läggs till' : !row.after?.mediaId && !row.after?.policySha256 ? 'Vila tas bort' : 'Vila byts');
+  const placement = of('placement').map(() => 'Placeringen i scenmallen är ändrad');
+  const settings = of('settings').map(row => {
+    const parts = [];
+    if (row.before?.language !== row.after?.language) parts.push('Språk ' + (row.before ? languageLabel(row.before.language) : '–') + ' → ' + languageLabel(row.after?.language));
+    if (row.before?.limitPreset !== row.after?.limitPreset) parts.push('Insatsprofil ' + (row.before ? limitLabel(row.before.limitPreset) : '–') + ' → ' + limitLabel(row.after?.limitPreset));
+    return parts.join(', ') || 'Inställningarna publiceras';
+  });
+  // Dealerns namn finns i klienten (registret); bakgrund och bordsgrafik har bara id här.
+  const choice = (key, value) => value == null ? '–' : key === 'dealer' && typeof dealerName === 'function' ? dealerName(value) || value : value;
+  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after));
+  const rebinding = (Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []).filter(row => row?.rebinds)
+    .map(row => (row.name || row.id) + ' binds om och behåller sina spelinställningar');
+  const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra scenmallar eller dealers)');
+  const area = (key, label, rows) => ({area:key, label, changed:rows.length > 0, rows});
+  return [area('speech', 'Tal per replik', speech), area('clips', 'Klipp', clips), area('idle', 'Vila', idle), area('placement', 'Placering', placement),
+    area('settings', 'Inställningar', settings), area('roomChoices', 'Spelbordets val', choices), area('rooms', 'Andra spelbord', rebinding),
+    ...(other.length ? [area('package', 'Övrigt', other)] : [])];
+}
+
+/** Antal ändringar som väntar, för statusraden. */
+export const roomReleaseChangeCount = preview => Array.isArray(preview?.changes) ? preview.changes.length : 0;
+
+/**
+ * Huvudknappens läge. Inaktiv med "Inget att publicera" när inget skiljer sig och inget hinder
+ * finns; inaktiv när editorn har osparade ändringar; annars öppnar den rutan.
+ * @returns {{disabled:boolean;label:string;hint:string}}
+ */
+export function roomReleaseButton({status, preview, blockedBy = ''} = {}) {
+  if (status === 'loading' || status === 'idle') return {disabled:true, label:'Publicera', hint:'Jämför med live…'};
+  if (status === 'error') return {disabled:false, label:'Publicera', hint:'Jämförelsen kunde inte läsas'};
+  if (blockedBy) return {disabled:true, label:'Publicera', hint:blockedBy};
+  const blockers = Array.isArray(preview?.blockers) ? preview.blockers.length : 0;
+  if (!preview?.changed && !blockers) return {disabled:true, label:'Inget att publicera', hint:'Sparat läge är detsamma som live'};
+  const changes = roomReleaseChangeCount(preview);
+  return {disabled:false, label:'Publicera', hint:blockers ? (blockers === 1 ? '1 hinder' : blockers + ' hinder') + ' före publicering'
+    : changes === 1 ? '1 ändring ej publicerad' : changes + ' ändringar ej publicerade'};
+}
+
+/** "Publicera nu" är aktiv bara när servern säger ready och hinderlistan är tom. */
+export const roomReleaseCanPublish = preview => preview?.ready === true && preview.changed === true
+  && Array.isArray(preview.blockers) && preview.blockers.length === 0 && token(preview.previewToken);
+
+function validPreview(value, {operatorId, roomId}) {
+  const r = value?.revisions;
+  return object(value) && value.ok === true && value.operatorId === operatorId && value.roomId === roomId
+    && object(r) && Number.isSafeInteger(r.package) && r.package > 0 && revision(r.project) && revision(r.administration)
+    && typeof value.ready === 'boolean' && typeof value.changed === 'boolean' && Array.isArray(value.changes) && Array.isArray(value.blockers)
+    && value.blockers.every(row => object(row) && typeof row.code === 'string') && Array.isArray(value.affectedRooms) && token(value.previewToken)
+    && (value.gameConfig === null || object(value.gameConfig));
+}
+
+async function failure(response, phase) {
+  let body = null;
+  try { body = await response.json(); } catch { body = null; }
+  const errorCode = code(body?.code) ? body.code : code(body?.error) ? body.error : undefined;
+  const detail = {status:response.status, code:errorCode, ...(code(body?.step) ? {step:body.step} : {}),
+    ...(code(body?.reason) ? {reason:body.reason} : {}), ...(code(body?.materialReason) ? {materialReason:body.materialReason} : {})};
+  return {ok:false, ...detail, error:roomReleaseErrorMessage({...detail, phase})};
+}
+
+/** GET room-release: live och kandidat per område, hinder, revisioner och previewToken. */
+export async function readRoomRelease({operatorId, roomId, fetchImpl = fetch, signal} = {}) {
+  if (!id(operatorId) || !id(roomId)) return {ok:false, status:0, error:'Välj ett registrerat spelbord.'};
+  let response;
+  try {
+    response = await fetchImpl(labUrl(ROOM_RELEASE_READ_PATH) + '?' + new URLSearchParams({operatorId, roomId}), {method:'GET',
+      credentials:'same-origin', cache:'no-store', redirect:'error', signal, headers:{accept:'application/json'}});
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return {ok:false, status:0, error:'Jämförelsen med live kunde inte läsas. Läs in igen.'};
+  }
+  if (!response.ok) return failure(response, 'read');
+  let value;
+  try { value = await response.json(); } catch { value = null; }
+  if (!validPreview(value, {operatorId, roomId})) return {ok:false, status:response.status, error:'Serverns jämförelse stämmer inte med spelbordet. Läs in igen.'};
+  return {ok:true, preview:value};
+}
+
+/** Exakt kropp för publish-room, byggd ur förhandsvisningen: token och alla förväntade revisioner. */
+export function roomReleaseBody(preview) {
+  return {action:'publish-room', operatorId:preview.operatorId, roomId:preview.roomId, gameConfig:preview.gameConfig,
+    expectedPackageRevision:preview.revisions.package, expectedProjectRevision:preview.revisions.project,
+    expectedAdministrationRevision:preview.revisions.administration, previewToken:preview.previewToken};
+}
+
+function validReceipt(value, preview) {
+  return object(value) && value.ok === true && value.operatorId === preview.operatorId && value.roomId === preview.roomId
+    && value.previousPackageRevision === preview.revisions.package && value.packageRevision === preview.revisions.package + 1
+    && (value.package_revision === undefined || value.package_revision === value.packageRevision)
+    && revision(value.configVersion) && typeof value.publishedAt === 'string' && Number.isFinite(Date.parse(value.publishedAt))
+    && typeof value.actor === 'string' && value.actor.length > 0 && Array.isArray(value.changes);
+}
+
+/**
+ * POST operator-package {action:'publish-room'}. Ett anrop per klick; vid fel eller okänt utfall
+ * ska användaren läsa in förhandsvisningen igen innan nästa försök.
+ */
+export async function publishRoomRelease({preview, fetchImpl = fetch} = {}) {
+  if (!roomReleaseCanPublish(preview)) return {ok:false, status:0, error:'Det finns hinder eller inget att publicera. Läs in igen.'};
+  let response;
+  try {
+    response = await fetchImpl(labUrl(ROOM_RELEASE_PUBLISH_PATH), {method:'POST', credentials:'same-origin', cache:'no-store', redirect:'error',
+      headers:{'content-type':'application/json', accept:'application/json'}, body:JSON.stringify(roomReleaseBody(preview))});
+  } catch {
+    return {ok:false, status:0, error:'Svaret kom inte fram.' + UNCERTAIN};
+  }
+  if (!response.ok) return failure(response, 'publish');
+  let value;
+  try { value = await response.json(); } catch { value = null; }
+  if (!validReceipt(value, preview)) return {ok:false, status:response.status, error:'Publiceringskvittot kunde inte bekräftas. Läs in igen innan du fortsätter.'};
+  return {ok:true, receipt:value};
+}
+
+/** "Publicerat · version N · tid · av vem". */
+export function roomReleaseReceiptText(receipt) {
+  const at = new Date(receipt.publishedAt);
+  const when = at.toLocaleString('sv-SE', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Stockholm'});
+  return 'Publicerat · version ' + receipt.packageRevision + ' · ' + when + ' · av ' + receipt.actor;
+}
