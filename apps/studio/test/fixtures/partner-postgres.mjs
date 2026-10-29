@@ -37,7 +37,11 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
   const pool = await createPglitePool(); t.after(() => pool.end());
   const plan = await planStudioMigrations({ pool });
   await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true, deferOptional });
-  const engine = createPostgresStore({ pool });
+  // Konton och sessioner i en egen PGlite: PGlite har en enda session, och
+  // partnerns skrivvägar läser sessionen igen medan Studio-transaktionen är öppen
+  // (i produktionen två anslutningar ur samma pool).
+  const accounts = await createPglitePool(); t.after(() => accounts.end());
+  const engine = createPostgresStore({ pool: accounts });
   const source = nativeRoomMaterialChoicesFixture();
   // Scenmallen ger bolaget dealervalet (operatorAdjustable), som Admin gör i Scenmallar.
   const lane = source.project.lanes[0];

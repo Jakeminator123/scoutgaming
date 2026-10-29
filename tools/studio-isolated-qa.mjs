@@ -93,6 +93,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs', 'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
       'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'apps/studio/test/fixtures/cloud-presentation.mjs',
       'apps/studio/lib/partner-branding-api.mjs', 'apps/studio/lib/partner-presentation-choices.mjs', 'apps/studio/lib/partner-package-view.mjs',
+      'ops/neon-studio/022-partner-journal.sql', 'packages/operators/server/operator-audit-actions.mjs',
       'ops/neon-studio/021-operator-materials.sql', 'apps/studio/lib/operator-material-store.mjs', 'apps/studio/lib/operator-material-publication.mjs', 'packages/presentation/server/operator-material-merge.mjs',
       'packages/operators/contracts/branding.mjs', 'packages/presentation/server/game-entry-selector.mjs', 'services/game/operator-appearance-api.mjs',
       'packages/navigation/operator-entry.mjs', 'packages/navigation/operator-slug.mjs',

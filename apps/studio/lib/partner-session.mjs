@@ -90,10 +90,15 @@ export function rejectPartnerMethod() {
     headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
   });
 }
+// 409 med kod från spelbordens skrivvägar (partner-table-api.mjs): spelbordet är
+// pausat av Admin (eller aldrig pausat av bolaget självt), och bara Admin öppnar det.
+export const PARTNER_TABLE_CONFLICTS = Object.freeze(['admin-pause']);
 function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
-  const reason = status === 409 && PARTNER_TEAM_CONFLICTS.includes(error?.reason) ? error.reason : null;
+  // 503 studio_migration_required: koden väntar på en Studio-migrering (t.ex. 022).
+  const reason = status === 409 && [...PARTNER_TEAM_CONFLICTS, ...PARTNER_TABLE_CONFLICTS].includes(error?.reason) ? error.reason
+    : status === 503 && error?.code === 'studio_migration_required' ? error.code : null;
   return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
@@ -263,7 +268,7 @@ async function logout(request, body, config) {
 // Partner-API:ts egna vägar (ADMIN-FORENKLING 5.5, partner-table-api.mjs):
 // läsningar med GET och åtgärder med POST, alltid med ?operator=<slug>.
 const PARTNER_TABLE_GETS = Object.freeze(['assignment']);
-const PARTNER_TABLE_POSTS = Object.freeze([]);
+const PARTNER_TABLE_POSTS = Object.freeze(['dealer', 'room-settings', 'room-state']);
 const PARTNER_OPERATOR_POSTS = Object.freeze(['branding', 'team', ...PARTNER_TABLE_POSTS]);
 function partnerAction(pathname, config) {
   const base = partnerApiBase(config);
@@ -442,7 +447,8 @@ function brandingWithoutTables(view) {
   }
   return { ...view, rooms: [], roomDealerChoices: {} };
 }
-async function brandingResponse(prepared, config) {
+// Utseendets API med partnersessionen: delas av `branding` och `dealer`.
+async function partnerBranding(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const { session, store, operator } = found;
   const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
@@ -505,6 +511,12 @@ async function brandingResponse(prepared, config) {
   if (!allowsWorkspaceResource(decided, 'presentations.read', { scope, operatorId: operator.id })) fail(403);
   const canConfigure = mayConfigure(decided);
   const mayReadTables = context => allowsWorkspaceResource(context, 'tables.read', { scope: session.scope, operatorId: operator.id });
+  // Svaret efter en ändring följer rollen som den var när ändringen gjordes.
+  const savedView = saved => ({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true});
+  return { found, api, decided, canConfigure, mayReadTables, savedView };
+}
+async function brandingResponse(prepared, config) {
+  const { found: { session, operator }, api, decided, canConfigure, mayReadTables, savedView } = await partnerBranding(prepared, config);
   if (prepared.request.method === 'GET') {
     const view = await api.readState({ operatorId: operator.id });
     return json({ ...(mayReadTables(decided) ? view : brandingWithoutTables(view)), canConfigure }, 200, [], { vary: true });
@@ -521,7 +533,43 @@ async function brandingResponse(prepared, config) {
   if(!Object.hasOwn(actionFields,body.action))fail(400);
   keys(body,actionFields[body.action]);
   const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
-  return json({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true},200,[],{vary:true});
+  return json(savedView(saved),200,[],{vary:true});
+}
+// Byta dealer för ett eget spelbord inom tilldelningen (ADMIN-FORENKLING 5.5):
+// presentations.configure och allow.dealer. Valet sparas i bolagets
+// utseendeutkast (roomOverrides) med samma CAS som `branding`; publiceringen
+// går sedan genom utkastets granskning och publicering som förut.
+async function dealerResponse(prepared, config) {
+  const { found: { session, store, operator }, api, canConfigure, savedView } = await partnerBranding(prepared, config);
+  if (!canConfigure) fail(403);
+  const [{ cleanBrandingDraft }, { partnerAllow, partnerAssignment }, { readPackagePresentation }, { publicEditableBranding }] = await Promise.all([
+    import('./partner-branding-api.mjs'), import('./partner-assignment.mjs'),
+    import('../../../packages/presentation/server/presentation-package.mjs'), import('../../../packages/operators/contracts/branding.mjs')]);
+  const body = await bodyOf(prepared.request);
+  keys(body, ['roomId', 'dealer', 'expectedDraftRevision', 'expectedPackageRevision']);
+  if (!/^[a-z][a-z0-9-]{0,63}$/.test(body.roomId ?? '') || !text(body.dealer, 100)
+    || !Number.isSafeInteger(body.expectedDraftRevision) || body.expectedDraftRevision < 0
+    || !Number.isSafeInteger(body.expectedPackageRevision) || body.expectedPackageRevision < 1) fail(400);
+  if (!['getBrandingDraft', 'getCurrentPackage'].every(name => typeof store[name] === 'function')) fail(503);
+  const pack = await store.getCurrentPackage(operator.id);
+  if (!pack) fail(404);
+  if (pack.operatorId !== operator.id) fail(403);
+  // Utkastets bas läses vid de revisioner anroparen såg; transaktionen i
+  // api.command kontrollerar samma revisioner igen under bolagets lås.
+  if (pack.revision !== body.expectedPackageRevision) fail(409);
+  const presentation = readPackagePresentation(pack);
+  if (!partnerAllow(pack, presentation).dealer) fail(403);
+  if (!partnerAssignment(pack, presentation).dealers.some(dealer => dealer.id === body.dealer)) fail(422);
+  const draft = await store.getBrandingDraft(operator.id);
+  if ((draft?.revision ?? 0) !== body.expectedDraftRevision) fail(409);
+  const clean = await cleanBrandingDraft(draft, pack, store);
+  const base = clean ? clean.branding : publicEditableBranding(pack.branding);
+  const overrides = { ...(base.roomOverrides ?? {}) };
+  overrides[body.roomId] = { ...(overrides[body.roomId] ?? {}), dealer: body.dealer };
+  const saved = await api.command({ action: 'save-draft', expectedDraftRevision: body.expectedDraftRevision,
+    expectedPackageRevision: body.expectedPackageRevision, branding: { ...base, roomOverrides: overrides },
+    operatorId: operator.id, actor: session.user, audit: operatorAuditContext(session) });
+  return json(savedView(saved), 200, [], { vary: true });
 }
 // Tilldelningen (presentations.read; spelborden med tables.read), partner-table-api.mjs.
 async function assignmentResponse(prepared, config) {
@@ -689,6 +737,11 @@ export async function handlePartnerAuth(request, injected) {
     if (prepared.action === 'team') return await teamResponse(prepared, config);
     if (prepared.action === 'journal') return await journalResponse(prepared, config);
     if (prepared.action === 'assignment') return await assignmentResponse(prepared, config);
+    if (prepared.action === 'dealer') return await dealerResponse(prepared, config);
+    if (prepared.action === 'room-settings' || prepared.action === 'room-state') {
+      const { partnerTableAction } = await import('./partner-table-api.mjs');
+      return json(await partnerTableAction(prepared, config, () => bodyOf(prepared.request)), 200, [], { vary: true });
+    }
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     if (prepared.action === 'set-password') return await setPassword(prepared.request, body, config);

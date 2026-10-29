@@ -90,7 +90,7 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       throw error;
     }
   }
-  async function receipt(client,saved) {
+  async function publishedConfig(client,saved) {
     const version=saved.pack.branding?.[bindingKey]?.[saved.room.id];let published=null;
     if(version!==undefined) {
       if(typeof version!=='string')fail('studio_corrupt_room_game_config',503);
@@ -99,6 +99,10 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       if(!value||value.configVersion!==version||value.operatorId!==saved.operator.id||value.roomId!==saved.room.id)fail('studio_corrupt_room_game_config',503);
       published={configVersion:version,packageRevision:value.packageRevision,gameConfig:validateRoomGameConfig({language:value.language,limitPreset:value.limitPreset}),...ROOM_GAME_TIMERS};
     }
+    return published;
+  }
+  async function receipt(client,saved) {
+    const published=await publishedConfig(client,saved);
     const available=saved.draft?await material(saved,saved.draft.gameConfig):{ready:false,reason:'studio_room_game_draft_required'};
     return {ok:true,roomId:saved.room.id,operatorId:saved.operator.id,administrationRevision:saved.document.revision,packageRevision:saved.pack.revision,
       draft:saved.draft?{revision:saved.draft.revision,gameConfig:saved.draft.gameConfig}:null,published,
@@ -109,29 +113,39 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     if(!isRoomGameConfigReadQuery('GET',url))fail('studio_invalid_data',400);
     return repository.transaction(()=>repository.withTransactionClient(async client=>receipt(client,await snapshot(client,url.searchParams.get('operatorId'),url.searchParams.get('roomId')))));
   });
+  // Admin och Partnerportalen skriver med samma kod. Admins väg kontrollerar
+  // administrationsdokumentets revision; partnerns väg (partner-table-api.mjs)
+  // ser inte det dokumentet och skickar i stället `guard`, som läser om
+  // behörighet och tilldelning och kontrollerar utkastets revision inne i
+  // transaktionen, efter att spelbordet visats höra till bolaget.
+  async function write(client,body,actor,guard=null) {
+    // The scope lock protects draft intent. The shared publication writer
+    // takes the operator lock then ordered room locks and rechecks all material.
+    const saved=await snapshot(client,body.operatorId,body.roomId);
+    if(guard)await guard({...saved,published:await publishedConfig(client,saved)});
+    else if(saved.document.revision!==body.expectedAdministrationRevision)fail('studio_conflict',409);
+    if(saved.pack.revision!==body.expectedPackageRevision)fail('studio_conflict',409);
+    if(body.action==='save-draft') {
+      const row={roomId:body.roomId,operatorId:body.operatorId,revision:`room-config-${randomUUID()}`,basePackageRevision:saved.pack.revision,gameConfig:validateRoomGameConfig(body.gameConfig)};
+      const drafts=[...saved.drafts.filter(row=>row.roomId!==body.roomId),row];
+      const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:saved.document.revision,actor:actor.user});
+      return receipt(client,{...saved,document,drafts,draft:row});
+    }
+    if(!saved.draft||saved.draft.revision!==body.expectedDraftRevision||saved.draft.basePackageRevision!==saved.pack.revision)fail('studio_conflict',409);
+    const resolved=await material(saved,saved.draft.gameConfig);
+    if(!resolved.ready)fail(resolved.reason,422);
+    const {package:pack}=await saved.operators.publishRoomGameConfig({actor:actor.user,audit:actor.audit,operatorId:body.operatorId,expectedRevision:body.expectedPackageRevision,
+      lanes:saved.pack.lanes,games:saved.pack.games,tables:saved.pack.tables,branding:saved.pack.branding},
+      {roomId:body.roomId,gameConfig:saved.draft.gameConfig,material:resolved.material});
+    const drafts=saved.drafts.filter(row=>row.roomId!==body.roomId);
+    const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:saved.document.revision,actor:actor.user});
+    return receipt(client,{...saved,pack,document,drafts,draft:null});
+  }
   handlers.set('POST /studio/api/admin/room-game-config',async context=>{
     trusted(context);const body=intent(context.body);
-    return repository.transaction(()=>repository.withTransactionClient(async client=>{
-      // The scope lock protects draft intent. The shared publication writer
-      // takes the operator lock then ordered room locks and rechecks all material.
-      const saved=await snapshot(client,body.operatorId,body.roomId);
-      if(saved.document.revision!==body.expectedAdministrationRevision||saved.pack.revision!==body.expectedPackageRevision)fail('studio_conflict',409);
-      if(body.action==='save-draft') {
-        const row={roomId:body.roomId,operatorId:body.operatorId,revision:`room-config-${randomUUID()}`,basePackageRevision:saved.pack.revision,gameConfig:validateRoomGameConfig(body.gameConfig)};
-        const drafts=[...saved.drafts.filter(row=>row.roomId!==body.roomId),row];
-        const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:body.expectedAdministrationRevision,actor:context.actor.user});
-        return receipt(client,{...saved,document,drafts,draft:row});
-      }
-      if(!saved.draft||saved.draft.revision!==body.expectedDraftRevision||saved.draft.basePackageRevision!==saved.pack.revision)fail('studio_conflict',409);
-      const resolved=await material(saved,saved.draft.gameConfig);
-      if(!resolved.ready)fail(resolved.reason,422);
-      const {package:pack}=await saved.operators.publishRoomGameConfig({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,expectedRevision:body.expectedPackageRevision,
-        lanes:saved.pack.lanes,games:saved.pack.games,tables:saved.pack.tables,branding:saved.pack.branding},
-        {roomId:body.roomId,gameConfig:saved.draft.gameConfig,material:resolved.material});
-      const drafts=saved.drafts.filter(row=>row.roomId!==body.roomId);
-      const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:body.expectedAdministrationRevision,actor:context.actor.user});
-      return receipt(client,{...saved,pack,document,drafts,draft:null});
-    }));
+    return repository.transaction(()=>repository.withTransactionClient(client=>write(client,body,{user:context.actor.user,audit:operatorAuditContext(context.actor)})));
   });
-  return Object.freeze({handlers});
+  // Partnerportalens väg: anroparen äger transaktionen, sessionen och bolaget.
+  return Object.freeze({handlers,
+    writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);}});
 }
