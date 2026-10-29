@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -55,9 +55,9 @@ test('separates Blueprint service environment keys', () => {
   assert.deepEqual([...blueprintNames(source, 'second')], ['SECOND']);
 });
 
-test('the five fixed flags are named nowhere in tracked code, tests, build scripts or config', () => {
+test('the fixed names are named nowhere in tracked code, tests, build scripts or config', () => {
   const names = hardcodedNames(committedRegistry());
-  assert.equal(names.length, 5);
+  assert.ok(names.length > 0);
   assert.deepEqual(hardcodedNameReferences(names), []);
   // A fixed name is never also listed as read by a service.
   const registry = committedRegistry();
@@ -89,4 +89,29 @@ test('a reintroduced read of a fixed flag is caught in source, test, build scrip
   assert.deepEqual(found.map(row => row.path).sort(), ['apps/studio/next.config.mjs', 'packages/example/runtime.mjs', 'test/example.mjs', 'vercel.json']);
   assert.ok(found.every(row => row.line === 1 && row.names.length === 1 && row.names[0] === name));
   assert.deepEqual(hardcodedNameReferences([], { cwd: repository }), []);
+});
+
+test('the CLI fails a repository whose tracked code names a fixed flag, and passes it once the name is gone', t => {
+  const repository = mkdtempSync(join(tmpdir(), 'croupier-hardcoded-cli-'));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  const registry = { schema: 1, hardcodedNames: { names: ['FIXED_FLAG'] },
+    services: { sample: { sources: [], required: [], firstBoot: [], conditional: [], managed: [], blocked: [] } } };
+  const files = {
+    'tools/check-environment-variables.mjs': readFileSync(new URL('../tools/check-environment-variables.mjs', import.meta.url), 'utf8'),
+    'docs/environment-variables.json': JSON.stringify(registry),
+    'packages/example/runtime.mjs': "export const on = process.env.FIXED_FLAG === '1';\n",
+  };
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(join(repository, dirname(path)), { recursive: true });
+    writeFileSync(join(repository, path), text);
+  }
+  const git = (...args) => execFileSync('git', args, { cwd: repository });
+  git('init', '-q'); git('add', '.');
+  const cli = () => spawnSync(process.execPath, ['tools/check-environment-variables.mjs'], { cwd: repository, encoding: 'utf8' });
+  const failed = cli();
+  assert.equal(failed.status, 1, failed.stdout);
+  assert.match(failed.stderr, /^packages\/example\/runtime\.mjs:1 names FIXED_FLAG, which is hard-coded/m);
+  git('rm', '-q', '--cached', 'packages/example/runtime.mjs');
+  const passed = cli();
+  assert.equal(passed.status, 0, passed.stderr);
 });

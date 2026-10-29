@@ -38,7 +38,7 @@ test('login returns only to known preview documents; never assets, queries or an
 
 test('public admin documents and assets route to Studio without changing control', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example', CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
-    CROUPIER_LAB_UI_ORIGIN: 'https://studio.example', CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
+    CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   assert.ok(config);
   for (const path of ['/admin','/admin/lobby','/admin/_assets/admin/app.js']) {
     assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'lab', destination: config.labUiOrigin + '/studio' + path });

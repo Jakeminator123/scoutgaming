@@ -29,16 +29,18 @@ test('engine without a published presentation refuses dealer queries, retired lo
     assert.match(html, /<html data-game-path="\/blackjack"/);
     assert.doesNotMatch(html, /data-game-dealer=|data-game-presentation=|data-dealer=|data-game-lane=/);
   }
-  for (const path of ['/dealer/streams/index.json', '/dealers/astrid/streams/index.json', '/dealers/amira/audio/en/bank.json', '/dealers/mei/poster.jpg',
-    '/Dealers/AsTrId/streams/index.json', '/dealers./vera./poster.jpg', '/%64ealers/%61strid/streams/index.json']) {
+  // Neon and private Blob are fixed: the Studio media runtime owns the canonical /dealers/
+  // paths (also percent-encoded) and, without a Blob token in this harness, answers 503.
+  // Aliases it does not own reach the retired local route (410). Each is an exact error
+  // object, never a file from the checkout.
+  const unavailable = [503, 'Service temporarily unavailable'], retired = [410, 'local_dealer_retired'];
+  for (const [path, [status, error]] of Object.entries({ '/dealers/astrid/streams/index.json': unavailable,
+    '/dealers/amira/audio/en/bank.json': unavailable, '/dealers/mei/poster.jpg': unavailable, '/%64ealers/%61strid/streams/index.json': unavailable,
+    '/dealer/streams/index.json': retired, '/Dealers/AsTrId/streams/index.json': retired, '/dealers./vera./poster.jpg': retired })) {
     const response = await get(path);
-    // Neon and private Blob are fixed: the Studio media runtime owns these paths first
-    // (503 here, without a Blob token); otherwise the retired local route answers 410.
-    // Either way an error object, never a file from the checkout.
-    assert.ok([410, 503].includes(response.status), path);
+    assert.equal(response.status, status, path);
     assert.match(response.headers.get('content-type') ?? '', /^application\/json/, path);
-    const body = await response.json();
-    assert.ok(['local_dealer_retired', 'Service temporarily unavailable'].includes(body.error), path);
+    assert.equal((await response.json()).error, error, path);
   }
   assert.equal((await get('/api/auth/session')).status, 200);
 

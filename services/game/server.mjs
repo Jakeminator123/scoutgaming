@@ -98,7 +98,6 @@ const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
 const { launchGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
-const gamePath = '/blackjack';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
@@ -640,8 +639,8 @@ const server = createServer(async (req, res) => {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
   }
-  { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
+  { const u=new URL(req.url,gameOrigin); const launch=u.searchParams.get('launch');
+    if(['/', '/game', '/game/', '/blackjack','/blackjack/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
       // Nyckel→bolag: after the verified signature and before any session, a key's company must be the
@@ -650,8 +649,7 @@ const server = createServer(async (req, res) => {
       try { operator = await partnerLaunchOperator(claims,u.searchParams,{operatorById:partnerOperatorById}); }
       catch (error) { if (error?.statusCode !== 403) throw error; partnerRefused(req,res,error.code); return; }
       // A partner launch is a blackjack start and lands on the one public game start.
-      const destination = neonStudioEnabled ? launchGameStart(u.searchParams,{origin:u.origin,operator})
-        : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
+      const destination = launchGameStart(u.searchParams,{origin:u.origin,operator});
       if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }

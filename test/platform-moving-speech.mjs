@@ -13,7 +13,7 @@ const {platformSocketRequest} = await import(pathToFileURL(frontendRequire.resol
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 
 const env = {CROUPIER_VERCEL_UI:'1', CROUPIER_PUBLIC_ORIGIN:'https://public.example.test',
-  CROUPIER_BACKEND_ORIGIN:'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN:'https://lab.example.test',
+  CROUPIER_BACKEND_ORIGIN:'https://isolated.onrender.com',
   CROUPIER_VERCEL_INGRESS_SECRET:'isolated-ingress-fixture-'.repeat(3)};
 const config = platformConfiguration(env), ingress = {transportOrigin:config.backendOrigin,publicOrigin:config.publicOrigin,secret:config.secret};
 const callback = '/lipsync-moving/'+'a'.repeat(48)+'?token='+'b'.repeat(64)+'&avatar=dragan';

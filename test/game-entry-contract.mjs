@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
 import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination, requestedGame, gameStartPath, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath} from '../packages/navigation/game-entry.mjs';
 import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
+import {platformConfiguration, platformRoute} from '../packages/navigation/server/platform-routing.mjs';
 const origin = 'https://game.example.invalid';
 test('canonical game address is /game and aliases preserve only unambiguous public selectors',() => {
   // The canonical entry is fixed (Neon is the registry): no variable selects another path.
@@ -191,4 +192,14 @@ test('the engine names the game on every /game return and never carries a launch
   // A partner launch is blackjack only; a roulette launch is refused instead of opening another game.
   assert.equal(publicGameStart('game=roulette&table=r-1',{origin,games:['blackjack']}),null);
   assert.equal(publicGameStart(new URLSearchParams('game=blackjack&dealer=astrid'),{origin,games:['blackjack']}),'/game?game=blackjack&dealer=astrid');
+});
+
+test('the platform router sends a root address with game selectors to the canonical /game start',() => {
+  const config = platformConfiguration({CROUPIER_PUBLIC_ORIGIN:'https://www.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
+    CROUPIER_VERCEL_INGRESS_SECRET:'isolated-routing-fixture-'.repeat(3)});
+  const route = path => platformRoute(new URL(path,config.publicOrigin),config);
+  // Only approved selectors survive; a forged or unknown value is dropped, not passed on.
+  assert.deepEqual(route('/?table=bj-1&rehearsal=1&returnTo=https://evil.invalid'),{kind:'redirect',destination:config.publicOrigin+'/game?rehearsal=1&table=bj-1'});
+  assert.deepEqual(route('/?dealer=linnea&presentation=evil&motion=smooth60'),{kind:'redirect',destination:config.publicOrigin+'/game?dealer=linnea'});
+  assert.notEqual(route('/').kind,'redirect');
 });

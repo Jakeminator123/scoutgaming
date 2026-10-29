@@ -23,7 +23,7 @@ const ingressEnv = () => ({
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-shared-room-origin-fixture'),
   PUBLIC_URL: publicOrigin, RENDER_EXTERNAL_URL: transport,
   CROUPIER_PUBLIC_ORIGIN: publicOrigin, CROUPIER_VERCEL_TRANSPORT_ORIGIN: transport,
-  CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3), CROUPIER_PUBLIC_GAME_PATH: '/game',
+  CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3),
   CROUPIER_SHARED_TABLE_ENABLED: '1',
   OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-only',
 });

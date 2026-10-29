@@ -57,8 +57,8 @@ test('published roulette browser contracts use exact backend routes without expo
 });
 
 test('unified Studio configuration needs no second UI origin and retains distinct game authority', () => {
-  // A legacy Lab alias in the panel is ignored: Studio is served from the public origin.
-  const unifiedEnv = {...env, CROUPIER_LAB_UI_ORIGIN:'https://lab-ui.vercel.app'};
+  // Studio is served from the public origin.
+  const unifiedEnv = {...env};
   const unified = platformConfiguration(unifiedEnv);
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
