@@ -433,7 +433,7 @@ export async function decidedPartnerContext({ session, store, operator, context,
   };
 }
 // tables.read styr spelbordslistan, som i snapshoten (partner-data.mjs). Utan den
-// bär utseendet bara bolagets val: inga spelbord (namn, scenmall, spel), inga
+// bär utseendet bara bolagets val: inga spelbord (namn, miljö, spel), inga
 // dealerval per spelbord och, i granskningen, bara bolagsradernas ändringar.
 // Granskningen säger då `tablesHidden: true` (en tom `affectedRooms` betyder att
 // spelborden inte visas, inte att inga berörs: en publicering gäller alltid alla

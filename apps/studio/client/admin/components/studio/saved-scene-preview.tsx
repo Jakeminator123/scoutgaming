@@ -15,7 +15,7 @@ export function SavedScenePreview(props:SavedScenePreviewProps){
   const contextKey=JSON.stringify([presentationLaneId,revision,dealerId,game]);
   const latest=useRef({active,blocked,contextKey});latest.current={active,blocked,contextKey};
   const unavailable=game!=='blackjack'?'Provspelningen stöder Blackjack.'
-    :!presentationLaneId?'Välj en sparad sammansättning för att provspela.'
+    :!presentationLaneId?'Välj en sparad miljö för att provspela.'
     :!revision?'Läs in den sparade projektrevisionen först.'
     :blocked?reason||'Spara eller avsluta det pågående arbetet före provspelning.':'';
 
@@ -70,6 +70,6 @@ export function SavedScenePreview(props:SavedScenePreviewProps){
       {(session||starting)&&<button type="button" className="studio-button" onClick={()=>stop()}>Stoppa provspelning</button>}</div>
     {unavailable&&<p>{unavailable}</p>}{message&&<p role="status">{message}</p>}{error&&<p role="alert">{error}</p>}
     {session&&active&&!blocked&&<iframe ref={frame} title="Sparad scen · Blackjack med testsaldo" src={session.entryUrl} onLoad={frameLoaded} referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin"/>}
-    <details><summary>Detaljer</summary><p>Provar den sparade sammansättningens startdealer och bibliotek i ett separat provspel. Ingen publicering sker. Chatt och genererat tal är avstängda.</p><p>Projektrevision: {session?.projectRevision??revision??'Ej inläst'}.</p></details>
+    <details><summary>Detaljer</summary><p>Provar den sparade miljöns startdealer och bibliotek i ett separat provspel. Ingen publicering sker. Chatt och genererat tal är avstängda.</p><p>Projektrevision: {session?.projectRevision??revision??'Ej inläst'}.</p></details>
   </section>;
 }

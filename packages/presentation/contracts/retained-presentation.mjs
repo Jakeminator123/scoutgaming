@@ -1,4 +1,4 @@
-import {validatePresentationPackage} from './presentation-layers.mjs';
+import {laneMaterialIds,validatePresentationPackage} from './presentation-layers.mjs';
 
 // The ordinary archive contract: retain whole surviving frozen lanes and only
 // their exact referenced records. Never recapture drafts or choose replacement
@@ -9,7 +9,7 @@ export function withoutPresentationLanes(presentation,removedIds) {
   next.lanes=next.lanes.filter(lane=>!removed.has(lane.id));
   if(!next.lanes.length)return null;
   const dealers=new Set(next.lanes.flatMap(lane=>[...lane.dealers,...lane.layers.dealer.allowed]));
-  const layerAssets=new Set(next.lanes.flatMap(lane=>['background','table'].flatMap(role=>lane.layers[role].allowed)));
+  const layerAssets=new Set(next.lanes.flatMap(laneMaterialIds));
   next.assets=next.assets.filter(asset=>layerAssets.has(asset.id));
   if(next.registeredDealers)next.registeredDealers=next.registeredDealers.filter(dealer=>dealers.has(dealer.id));
   if(next.playback) {

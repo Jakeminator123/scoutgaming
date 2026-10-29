@@ -28,7 +28,7 @@ test('every existing Control tool and registered N1 view has a served Admin dest
   assert.deepEqual(Object.values(ADMIN_WORKSPACE_TOOLS).map(tool=>tool.label),['Bolag','Svarsbibliotek','Dialogtest']);
   for(const name of ['replies','dealer-agent','dealer-studio'])assert.equal(adminDocumentHref('/admin/'+name),'/admin/dealers');
   assert.equal(adminDocumentHref('/partner/companies'),'/partner/companies');
-  assert.equal(adminDocumentHref('/control/zones'),'/admin/scenes?tab=mallar');
+  assert.equal(adminDocumentHref('/control/zones'),'/admin/scenes?tab=miljoer');
   // Each retired OpenClaw entry returns to its owning resource.
   assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealers/dragan?flik=tal&verktyg=dialog');
   assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealers/dragan?flik=tal&verktyg=dialog');
@@ -125,12 +125,12 @@ test('material library bookmarks share one destination and preserve their select
     const source=prefix+'?role=background&game=roulette&dealer=dragan&operator=north&room=one&room=two&lane=portrait#selected';
     const target=adminDocumentHref(source),url=new URL(target,'https://site.invalid');
     assert.equal(url.pathname,'/admin/scenes');assert.equal(url.hash,'#selected');
-    assert.equal(url.searchParams.get('tab'),'bakgrunder');assert.equal(url.searchParams.get('game'),'roulette');
+    assert.equal(url.searchParams.get('tab'),'material');assert.equal(url.searchParams.get('filter'),'bakgrund');assert.equal(url.searchParams.get('game'),'roulette');
     assert.equal(url.searchParams.get('dealer'),'dragan');assert.equal(url.searchParams.get('operator'),'north');
     assert.deepEqual(url.searchParams.getAll('room'),['one','two']);assert.equal(url.searchParams.get('composition'),'portrait');
     assert.equal(url.searchParams.has('lane'),false);assert.equal(url.searchParams.has('role'),false);
     const explicit=new URL(adminDocumentHref(prefix+'?role=background&tab=tables&game=roulette'),'https://site.invalid');
-    assert.equal(explicit.searchParams.get('tab'),'bordsgrafik');
+    assert.equal(explicit.searchParams.get('tab'),'material');assert.equal(explicit.searchParams.get('filter'),'bordsgrafik');
     assert.deepEqual(platformRoute(new URL(source,'https://site.invalid'),{nativeStudio:true,publicOrigin:'https://site.invalid'}),{kind:'redirect',destination:'https://site.invalid'+target});
   }
 });
@@ -168,9 +168,9 @@ test('retired tool bookmarks retain exact context and never redirect mutations',
   for(const [section,target] of [['guide','/admin/guide?operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
     ['videos','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],['probe','/admin/dealers/saga?flik=tal&operator=north&table=room-1&'+context+'&composition=portrait'],
     ['replies','/admin/dealers/saga?flik=tal&operator=north&table=room-1&'+context+'&composition=portrait'],['events','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],
-    ['tree','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],['compositions','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
-    ['rehearsal','/admin/rooms/room-1?operator=north&'+context],['preview','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
-    ['zones','/admin/scenes?tab=mallar&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+    ['tree','/admin/dealers/saga?flik=klipp&operator=north&table=room-1&'+context+'&composition=portrait'],['compositions','/admin/scenes?tab=miljoer&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
+    ['rehearsal','/admin/rooms/room-1?operator=north&'+context],['preview','/admin/scenes?tab=miljoer&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait'],
+    ['zones','/admin/scenes?tab=miljoer&operator=north&table=room-1&dealer=saga&'+context+'&composition=portrait']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&'+context+'#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,'https://site.invalid'+target+'#selected',section);
@@ -202,11 +202,11 @@ test('every retired Admin page lands on its new tab with its context in one redi
     ['/admin/clips','/admin/dealers'],['/admin/clips?dealer=saga','/admin/dealers/saga?flik=klipp'],
     ['/admin/clips?dealer=saga&panel=room','/admin/dealers/saga?flik=tal'],['/admin/clips?dealer=saga&panel=dealer','/admin/dealers/saga?flik=installningar'],
     ['/admin/clips?dealer=saga&panel=intake','/admin/dealers/saga?flik=klipp&panel=intake'],['/admin/clips?dealer=saga&tool=import','/admin/dealers/saga?flik=klipp&tool=import'],
-    ['/admin/clips?dealer=saga&panel=layers','/admin/scenes?tab=mallar&dealer=saga'],
+    ['/admin/clips?dealer=saga&panel=layers','/admin/scenes?tab=miljoer&dealer=saga'],
     ['/admin/replies?dealer=saga','/admin/dealers/saga?flik=tal'],['/admin/replies','/admin/dealers'],
     ['/admin/dealer-agent?dealer=saga','/admin/dealers/saga?flik=tal&verktyg=dialog'],
     ['/admin/dealer-studio?view=generate&dealer=saga','/admin/dealers/saga?flik=klipp&panel=generera'],['/admin/dealer-studio?dealer=saga','/admin/dealers/saga?flik=klipp'],
-    ['/admin/assets','/admin/scenes?tab=bordsgrafik'],['/admin/assets?tab=tables','/admin/scenes?tab=bordsgrafik'],['/admin/assets?tab=backgrounds','/admin/scenes?tab=bakgrunder'],
+    ['/admin/assets','/admin/scenes?tab=material&filter=bordsgrafik'],['/admin/assets?tab=tables','/admin/scenes?tab=material&filter=bordsgrafik'],['/admin/assets?tab=backgrounds','/admin/scenes?tab=material&filter=bakgrund'],
     ['/admin/rooms','/admin/companies?tab=spelbord'],['/admin/rooms?operator=north','/admin/companies?tab=spelbord&operator=north'],
     ['/admin/rooms?operator=north&room=room-1','/admin/rooms/room-1?operator=north'],['/admin/rooms?operator=north&table=room-1&composition=portrait&game=blackjack','/admin/rooms/room-1?operator=north'],
     ['/admin/players','/admin/system?flik=spelare'],['/admin/ekonomi','/admin/system?flik=spelare'],['/admin/admin/payments','/admin/system?flik=spelare'],['/admin/admin/players','/admin/system?flik=spelare'],
@@ -215,7 +215,7 @@ test('every retired Admin page lands on its new tab with its context in one redi
     ['/admin/ai/models','/admin/system?flik=agenter'],['/admin/openclaw','/admin/dealers'],['/admin/openclaw?tab=models','/admin/system?flik=agenter'],['/admin/openclaw?tab=agent&dealer=saga','/admin/dealers/saga?flik=tal&verktyg=dialog'],
     ['/admin/structure','/admin/system?flik=beroenden'],['/admin/deletion','/admin/system?flik=beroenden'],
     ['/admin/tools','/admin/dealers'],['/admin/admin/log','/admin/companies'],['/admin/ai/chat','/admin'],['/admin/admin/operators','/admin/companies'],
-    ['/admin/material-library','/admin/scenes?tab=bordsgrafik'],['/admin/compositions','/admin/scenes?tab=mallar'],['/admin/media-review?dealer=saga','/admin/dealers/saga?flik=tal'],
+    ['/admin/material-library','/admin/scenes?tab=material&filter=bordsgrafik'],['/admin/compositions','/admin/scenes?tab=miljoer'],['/admin/media-review?dealer=saga','/admin/dealers/saga?flik=tal'],
   ];
   for(const [source,target] of cases)for(const prefix of ['','/studio']){
     assert.equal(adminDocumentHref(prefix+source),target,source);
@@ -235,7 +235,7 @@ test('every retired Admin page lands on its new tab with its context in one redi
 
 test('retired Admin editors redirect once to the owned panel with complete context',()=>{
   for(const [source,target] of [['/admin/dealer-studio?view=speech','/admin/dealers/saga?flik=tal'],['/admin/dealer-studio?view=settings','/admin/dealers/saga?flik=installningar'],
-    ['/admin/videos?view=clips','/admin/dealers/saga?flik=klipp'],['/admin/compositions?view=preview','/admin/scenes?tab=mallar'],['/admin/probe?view=probe','/admin/dealers/saga?flik=tal'],
+    ['/admin/videos?view=clips','/admin/dealers/saga?flik=klipp'],['/admin/compositions?view=preview','/admin/scenes?tab=miljoer'],['/admin/probe?view=probe','/admin/dealers/saga?flik=tal'],
     ['/admin/rehearsal?view=log','/admin/companies?tab=spelbord'],['/admin/events?event=deal.player.left','/admin/dealers/saga?flik=klipp']]){
     for(const prefix of ['', '/studio']){
       const href=adminDocumentHref(prefix+source+'&dealer=saga&operator=north&room=one&room=two&lane=portrait#selection');

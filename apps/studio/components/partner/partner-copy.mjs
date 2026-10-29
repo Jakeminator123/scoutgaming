@@ -6,7 +6,7 @@ import { applyThemeMode, defaultThemeMode, readThemeMode, themeModes } from '../
 export { PARTNER_ROLE_WORDS, partnerRoleWord } from '../../lib/partner-words.mjs';
 
 // Orden följer apps/studio/docs/TERMINOLOGI.md: Partnerportalen, bolag, spelbord,
-// bordsgrafik, scenmall, tilldelning, version, utkast/publicerad,
+// bordsgrafik, miljö, tilldelning, version, utkast/publicerad,
 // administratör/redaktör/läsare. Menyvalens namn kommer ur packages/navigation/partner-navigation.mjs.
 const viewLabels = language => Object.fromEntries(partnerNavigationItems.map(item => [item.id, item.label[language]]));
 const COPY = Object.freeze({

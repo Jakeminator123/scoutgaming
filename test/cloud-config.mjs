@@ -15,13 +15,12 @@ fixtureConnection.username='fixture';fixtureConnection.password=randomUUID();
 const manifestFor = dealerId => ({ provider:'vercel-blob',sha256:hash('fixture manifest '+dealerId),size:4096,contentType:'application/json',
   pathname:`croupier/media/dealers/${dealerId}/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest '+dealerId)}.json` });
 const privateManifest = manifestFor('dragan'), paowManifest = manifestFor('paow');
-const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postgres',
-  CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
+const base = () => ({NODE_ENV:'production',PORT:'10000',  CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob',
   PUBLIC_URL:'https://game.example.test',BO_URL:'https://bo.example.test',LAB_PUBLIC_URL:'https://lab.example.test',RENDER_EXTERNAL_URL:'https://fixture-game.onrender.com',
   CROUPIER_GAME_ORIGIN:'https://game.example.test',BETTALOTTO_PARTNER_BASE_URL:'https://game.example.test',
-  CROUPIER_STREAM_LANE:'lissabon-stream-lane',OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test',OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-product-speech',
+  OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test',OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-product-speech',
   CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',CROUPIER_GENERATED_SPEECH_STREAMING:'1',
   CROUPIER_DEALER_SPEECH_PROFILES:'1',CROUPIER_SPEECH_STREAM_WORKER_SECRET:'fixture-worker-'.repeat(4),
   CROUPIER_SPEECH_STREAM_TICKET_SECRET:'fixture-astrid-ticket-'.repeat(4),CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD:'1',
@@ -36,6 +35,17 @@ const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH
   CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4),
   CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([driftProfile])});
 const children = env => childSpecifications(validateCloudConfig(env),env);
+
+test('database path and stream lane are fixed in code; panel values are ignored, never forwarded',()=>{
+  const web=children(base()).web.env;
+  assert.equal(web.CROUPIER_STREAM_LANE,'lissabon-stream-lane');
+  assert.equal(web.CROUPIER_DATABASE,undefined);
+  for(const stale of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_STREAM_LANE:'other'}]){
+    const env={...base(),...stale};
+    assert.equal(children(env).web.env.CROUPIER_STREAM_LANE,'lissabon-stream-lane');
+    assert.equal(children(env).web.env.CROUPIER_DATABASE,undefined);
+  }
+});
 
 test('moving configuration is explicit and passes its private values to Web only; Astrid stays unchanged',()=>{
   const legacy=children(base()),env={...base(),...moving()},configured=children(env);
@@ -83,7 +93,7 @@ test('unset and disabled moving flags forward no staged credentials and preserve
 test('moving activation requires registered profiles, Neon and private Blob without enabling them implicitly',()=>{
   const env={...base(),...moving()};
   for(const change of [{CROUPIER_DEALER_SPEECH_PROFILES:'0'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATABASE:'sqlite'},
+    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},
     {CROUPIER_GENERATED_SPEECH_STREAMING:'0'},
     {CROUPIER_GAME_DATABASE_URL:fixtureConnection.href.replace('game.neon.tech','other.example.test')}])
     assert.throws(()=>validateCloudConfig({...env,...change}));
@@ -129,6 +139,18 @@ test('two dealers each get a verified bank and drift profile; Dragan alone is un
   const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_a,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:_b,...rest}=both;
   const {CROUPIER_MOVING_SPEECH_BANK_RECORDS:_c,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:_d,...single}=draganOnly;
   assert.deepEqual(rest,single);
+});
+
+// docs/PAOW-BANK-KORNING.md step 7: preview carries Paow alone; its profile's bankHash is the archive hash and its
+// releaseDigest is the image's release, so Dragan's production values are never copied to preview.
+test('preview with Paow alone: own bank and endpoint pass; a foreign release or Dragan bank is refused',()=>{
+  const paowOnly={...base(),...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:paowManifest}),
+    CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([paowProfile])};
+  const web=children(paowOnly).web.env;
+  assert.deepEqual(JSON.parse(web.CROUPIER_MOVING_SPEECH_BANK_RECORDS),{paow:paowManifest});
+  assert.deepEqual(movingDriftConfiguration(web).profiles,[paowProfile]);
+  assert.throws(()=>validateCloudConfig({...paowOnly,CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('other release')}),/DRIFT_API\/PROFILES/);
+  assert.throws(()=>validateCloudConfig({...paowOnly,CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:privateManifest})}),/bank of another dealer for paow/);
 });
 
 test('bank and profile refusals name the dealer: wrong dealer, profile without a bank, bank without a profile',()=>{

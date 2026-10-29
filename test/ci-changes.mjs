@@ -142,8 +142,7 @@ test('local and CI prose selection share reviewed guides and prose folders while
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
     'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/SAMARBETE-OCH-ATKOMST.md', 'migrering/new-runtime.md',
     'START-HERE.md', 'inbox/README.md', 'ops/cloud/README.md', 'ops/cloud/RENDER-V3.md',
-    'docs/history/2026-10-27-j08-staging-acceptance.md', 'docs/history/2026-10-27-receipt.json',
-    'docs/history/2026-10-19-plain-language-note.txt']) {
+    'docs/2026-10-27-j08-staging-acceptance.md']) {
     assert.equal(documentationOnly([change(path)]), true, path);
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
@@ -151,7 +150,7 @@ test('local and CI prose selection share reviewed guides and prose folders while
   for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
     'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md',
     'migrering/status.mjs', 'migrering/config.json', 'ops/cloud/config.mjs', 'ops/cloud/deploy/README.md', 'inbox/people.json',
-    'docs/history/run.mjs', 'docs/history/receipt.sh']) {
+    'docs/history/run.mjs', 'docs/history/receipt.sh', 'docs/2026-10-27-receipt.json', 'docs/2026-10-19-note.txt']) {
     assert.equal(documentationOnly([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
   }

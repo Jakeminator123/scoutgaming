@@ -12,11 +12,11 @@ import {aiTableMisfits} from './ai-image-contract.mjs';
 export const AI_ADOPT_ACTION = 'adopt-room-material';
 // Fixed reasons, also the server's studio_release_invalid reasons.
 export const AI_ADOPT_REASONS = Object.freeze({
-  ai_adopt_template_missing:'Scenmallen finns inte längre.',
+  ai_adopt_template_missing:'Miljön finns inte längre.',
   ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
-  ai_adopt_table_misfit:'Bordsgrafiken passar inte scenmallens dealers eller placering.',
-  ai_adopt_template_table_misfit:'Ett annat AI-bord i scenmallen är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur mallen eller rita om det först.',
-  ai_adopt_invalid:'Valet kunde inte läggas in i scenmallen.',
+  ai_adopt_table_misfit:'Bordsgrafiken passar inte miljöns dealers eller placering.',
+  ai_adopt_template_table_misfit:'Ett annat AI-bord i miljön är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur miljön eller rita om det först.',
+  ai_adopt_invalid:'Valet kunde inte läggas in i miljön.',
 });
 export class AiAdoptError extends Error { constructor(code) { super(AI_ADOPT_REASONS[code]??AI_ADOPT_REASONS.ai_adopt_invalid); this.code=code; } }
 const fail=code=>{ throw new AiAdoptError(code); };

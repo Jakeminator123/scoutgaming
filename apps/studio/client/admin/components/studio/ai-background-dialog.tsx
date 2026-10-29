@@ -41,7 +41,7 @@ type Phase = 'form' | 'generating' | 'results' | 'saving';
 type Role = 'background' | 'table';
 // What a generation was drawn for; "Använd" adopts exactly that.
 type Drawn = {theme: boolean; templateId: string; tableWidth: {mobile: number; desktop: number} | null; composition: CompositionSettings | undefined};
-const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en scenmall som publiceras.';
+const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en miljö som publiceras.';
 const UNSUPPORTED = 'Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.';
 const field = 'min-w-0 w-full rounded-lg border border-sg-border bg-sg-surface px-3 py-2 text-[13.5px] text-sg-text';
 const notice = 'm-0 rounded-lg border border-sg-border bg-sg-surface-2 p-3';
@@ -169,17 +169,17 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
         if (publishRoom && room) {
           const result = await adoptInRoom({operatorId: room.operatorId, roomId: room.id, compositionId: target, materials, tableWidth, expectedProjectRevision: latest.revision});
           outcome = result.ok
-            ? `Sparad i ${labels}, tillåten och standard i scenmallen ${targetLabel} och publicerad i spelbordet ${room.name} (version ${result.receipt.packageRevision}).`
+            ? `Sparad i ${labels}, tillåten och standard i miljön ${targetLabel} och publicerad i spelbordet ${room.name} (version ${result.receipt.packageRevision}).`
             : `Sparad i ${labels}, men inte publicerad: ${result.error}`;
         } else if (saveProject) {
           const saved = await adoptInTemplate({project: latest, compositionId: target, materials, tableWidth}, {save: saveProject, signal: controller.signal});
           if (own && mounted.current) onRegistered(saved, own);
-          outcome = `Sparad i ${labels}, tillåten och standard i scenmallen ${targetLabel}${tableWidth ? ` med Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil)` : ''}. Publicera spelbordet för att visa det för spelarna.`;
+          outcome = `Sparad i ${labels}, tillåten och standard i miljön ${targetLabel}${tableWidth ? ` med Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil)` : ''}. Publicera spelbordet för att visa det för spelarna.`;
         }
       } catch (cause) {
-        outcome = `Sparad i ${labels}, men scenmallen ändrades inte: ${cause instanceof Error ? cause.message : 'försök igen'}.`;
+        outcome = `Sparad i ${labels}, men miljön ändrades inte: ${cause instanceof Error ? cause.message : 'försök igen'}.`;
       }
-    } else if (tableWidth) outcome += ` Bordet är ritat för Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil); sätt dem i scenmallens Avancerat innan du väljer det.`;
+    } else if (tableWidth) outcome += ` Bordet är ritat för Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil); sätt dem i miljöns Avancerat innan du väljer det.`;
     if (request.current === controller) request.current = null;
     if (!mounted.current) return;
     setProgress(null); setConfirmation(outcome); close(false);
@@ -247,19 +247,19 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
             <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
           </label> : null}
           {table && filmed.length ? <label className="grid gap-1">
-            <span className="font-medium">Scenmall</span>
+            <span className="font-medium">Miljö</span>
             <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
               {scenes.map(row => <option key={row.id} value={row.id}>{row.label}{row.id === roomTemplate ? ' · spelbordets' : ''}</option>)}
-              <option value="">Standardplacering (ingen scenmall)</option>
+              <option value="">Standardplacering (ingen miljö)</option>
             </select>
-            <span className="text-xs text-sg-muted">Bordsgrafiken passar scenmallens placering. Ändras placeringen senare behöver bordet ritas om.</span>
+            <span className="text-xs text-sg-muted">Bordsgrafiken passar miljöns placering. Ändras placeringen senare behöver bordet ritas om.</span>
           </label> : null}
           {suggestion ? <div className="flex items-start gap-2">
             <Checkbox id="ai-fit-width" checked={fitWidth} disabled={busy || !suggestion.changed} onCheckedChange={value => setFitWidth(value === true)} className="mt-0.5" />
             <Label htmlFor="ai-fit-width" className="grid gap-0.5">
               <span className="font-medium">Anpassa bordets bredd efter dealerns räckvidd</span>
               <span className="text-xs text-sg-muted">{suggestion.changed
-                ? `Boxarna fyller ${share(suggestion.current.share)} av bordet; med Bordsbredd ${percent(suggestion.suggested.percent.desktop)} (dator) och ${percent(suggestion.suggested.percent.mobile)} (mobil) fyller de ${share(suggestion.suggested.share)}, så spelaren sitter nära och bordets ändar böjer mot dealern. Bredden följer med till scenmallen.`
+                ? `Boxarna fyller ${share(suggestion.current.share)} av bordet; med Bordsbredd ${percent(suggestion.suggested.percent.desktop)} (dator) och ${percent(suggestion.suggested.percent.mobile)} (mobil) fyller de ${share(suggestion.suggested.share)}, så spelaren sitter nära och bordets ändar böjer mot dealern. Bredden följer med till miljön.`
                 : `Boxarna fyller redan ${share(suggestion.current.share)} av bordet.`}</span>
             </Label>
           </div> : null}
@@ -297,7 +297,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
           {preview ? <div className="grid gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="m-0 font-medium">Förhandsvisning i scenen</p>
-              {!table && templates.length ? <label className="flex items-center gap-2 text-xs text-sg-muted">Scenmall
+              {!table && templates.length ? <label className="flex items-center gap-2 text-xs text-sg-muted">Miljö
                 <select className={cn(field, 'w-auto py-1 text-xs')} value={previewId} disabled={phase === 'saving'} onChange={event => setPreviewId(event.target.value)}>
                   {templates.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
                 </select>
@@ -311,8 +311,8 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
             <Label htmlFor="ai-adopt" className="grid gap-0.5">
               <span className="font-medium">{publishRoom && room ? `Använd i miljön ${targetLabel} och i spelbordet ${room.name}` : `Använd i miljön ${targetLabel}`}</span>
               <span className="text-xs text-sg-muted">{publishRoom
-                ? 'Tillåts i scenmallen, blir standard och publiceras i spelbordet i ett steg. Finns andra opublicerade ändringar publiceras inget; materialet ligger då kvar i biblioteket.'
-                : 'Tillåts i scenmallen och blir standard i det sparade utkastet. Publicera spelbordet för att visa det för spelarna.'}{drawn?.tableWidth ? ` Bordsbredd ${percent(drawn.tableWidth.desktop * 100)} (dator) och ${percent(drawn.tableWidth.mobile * 100)} (mobil) följer med.` : ''} Utan bocken sparas bara i biblioteket.</span>
+                ? 'Tillåts i miljön, blir standard och publiceras i spelbordet i ett steg. Finns andra opublicerade ändringar publiceras inget; materialet ligger då kvar i biblioteket.'
+                : 'Tillåts i miljön och blir standard i det sparade utkastet. Publicera spelbordet för att visa det för spelarna.'}{drawn?.tableWidth ? ` Bordsbredd ${percent(drawn.tableWidth.desktop * 100)} (dator) och ${percent(drawn.tableWidth.mobile * 100)} (mobil) följer med.` : ''} Utan bocken sparas bara i biblioteket.</span>
             </Label>
           </div> : null}
           {phase === 'saving' ? <p role="status" className="m-0">{progress === null ? `Sparar i ${drawn?.theme ? 'biblioteket' : place}…` : `Laddar upp · ${progress} %`}</p> : null}

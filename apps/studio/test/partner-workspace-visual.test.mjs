@@ -62,7 +62,7 @@ test('the shell names the company, Partnerportalen, the assignment version and t
   assert.deepEqual(menuOf(editor), hrefs('overview', 'rooms', 'help'));
   assert.match(editor, /class="name">Johns Bet</); assert.match(editor, /class="sub">Partnerportalen</);
   assert.match(editor, /Tilldelning från Scoutgaming/); assert.match(editor, /<b>Version 7<\/b>/);
-  assert.match(editor, /1 dealer · 1 bakgrund · 2 bordsgrafik/); assert.doesNotMatch(editor, /scenmall|revision 7/);
+  assert.match(editor, /1 dealer · 1 bakgrund · 2 bordsgrafik/); assert.doesNotMatch(editor, /miljö|revision 7/);
   assert.match(editor, /class="small">redaktör</);
   assert.match(editor, /<a href="\/partner\/johnsspelbolag" class="nav" aria-current="page"/);
   assert.equal([...editor.matchAll(/aria-current="page"/g)].length, 1, 'one current menu entry');
@@ -73,7 +73,7 @@ test('the shell names the company, Partnerportalen, the assignment version and t
   assert.deepEqual(menuOf(viewer), hrefs(...PARTNER_VIEWS));
   assert.match(viewer, /class="small">läsare</);
   for (const html of [editor, viewer]) {
-    assert.doesNotMatch(html, /Planerat|Spelrum|Sammansättning|Operatörspersonal|Intern administratör|Nivå 2|Spelbolag|Partnerportal[^e]|kevin-bo/);
+    assert.doesNotMatch(html, /Planerat|Spelrum|Miljö|Operatörspersonal|Intern administratör|Nivå 2|Spelbolag|Partnerportal[^e]|kevin-bo/);
     assert.doesNotMatch(html, /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
     assert.match(html, /Byt konto/); assert.match(html, /Logga ut/);
   }

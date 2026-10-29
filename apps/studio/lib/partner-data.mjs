@@ -203,7 +203,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   // 403-kort med HTTP 200 (`denied`; API-vägarna svarar 403), och snapshoten
   // bär bara de avsnitt rollen får läsa:
   // tables.read → spelbord och deras inställningar, presentations.read →
-  // scenmall/utseende/tilldelning/utkast, reports.read → ekonomi och
+  // miljö/utseende/tilldelning/utkast, reports.read → ekonomi och
   // publiceringar, team.read → team och inbjudningar, integrations.read →
   // bolagets egna API-nycklar, maskerade (partner-api-keys.mjs).
   const required = PARTNER_VIEW_PERMISSIONS[view];

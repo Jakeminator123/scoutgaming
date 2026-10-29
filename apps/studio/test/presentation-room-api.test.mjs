@@ -200,12 +200,12 @@ test('a background playback switch and a missing default cannot create a fixed-e
 
 test('baked environments are explicit and multiple dealers do not prove a shared scene', async () => {
   const f = await fixture(), ready = await f.prepare();
-  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
+  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' });
   const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
   lane.dealers = ['astrid', 'elin']; lane.layers.dealer.allowed = ['astrid', 'elin'];
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
   const blocked = await f.prepare(), before = f.pool.snapshot();
-  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
+  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Bakgrunden följer vald dealer' });
   assert.equal(blocked.reason, 'presentation_room_environment_required');
   await assert.rejects(f.create(await f.payload()), error => error.code === 'studio_presentation_room_environment_required');
   assert.deepEqual(f.pool.snapshot(), before);

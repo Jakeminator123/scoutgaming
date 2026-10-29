@@ -131,6 +131,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 | Pose och utdelning | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `services/game/filmed-deal-selection.mjs` |
 | Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealer-lifecycle.mjs` |
 | Talrepliker | `packages/presentation/server/speech-reply-repository.mjs` |
+| `media/blob-index.json` (manuellt, inget skript anropar det) | `tools/export-media-blob.mjs`: torrkörning utan flaggor; `--output media/blob-index.json` skriver indexet, `--apply` laddar upp privat och verifierar |
 | Rörligt tal | `services/moving-gpu-worker/`, `services/game/moving-speech-*.mjs`, `services/game/generated-speech-stream.mjs` |
 
 Radera inte tester för aktiva kontrakt för att deras namn innehåller Astrid eller Kevin. Medieoriginal, kalibrering och privata checkpoints är aldrig genererbara byggrester.
