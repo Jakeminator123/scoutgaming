@@ -1,16 +1,21 @@
 'use client';
-import {Check, ImagePlus, RefreshCw, Sparkles} from 'lucide-react';
+import {Check, ImagePlus, Layers, RefreshCw, Sparkles} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import type {CompositionSettings} from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMAGE_REFERENCE_TYPES, aiImageLabel, type AiImagePresetId} from '../../../../lib/ai-image-contract.mjs';
-import {aiImageErrorMessage, aiSceneTemplates, aiTableDealers, prepareReferenceImage, readAiImageStatus, registerAiProposal, requestAiProposals, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
+import {AI_THEME_ENVIRONMENT_NOTE, adoptInRoom, adoptInTemplate, aiImageErrorMessage, aiSceneTemplates, aiTableDealers, aiTableWidthSuggestion, prepareReferenceImage, readAiImageStatus,
+  registerAiProposal, requestAiProposals, type AiAdoptMaterial, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
 import type {AiTableFit} from '../../../../lib/ai-image-contract.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
 import {AiLandingBadge, AiProposalPreview} from './ai-proposal-preview';
 import {Dialog} from '../ui/dialog';
+import {Checkbox, Label} from '../ui/form';
 import {Button, buttonVariants, cn} from '../ui/kit';
 
+/** The spelbord the dialog was opened from (Admin › spelbordet › Utseende). */
+export type AiDialogRoom = {id: string; name: string; operatorId: string; compositionId: string};
 export type AiBackgroundDialogProps = {
   /** Bakgrund (default) or filmed-dealer bordsgrafik. */
   role?: 'background' | 'table';
@@ -23,27 +28,38 @@ export type AiBackgroundDialogProps = {
   /** The saved project and video register for the preview on a scene template (background, dealer, table). */
   project?: StudioProject | null;
   inventory?: VideoInventory | null;
+  /** Opened from a spelbord: "Använd" can also publish it there (steg D). */
+  room?: AiDialogRoom | null;
+  /** Saves the project draft (connected-studio save); needed for "Använd i miljön" without a spelbord. */
+  saveProject?: (project: StudioProject, signal?: AbortSignal) => Promise<StudioProject>;
   disabled?: boolean;
   onRegistered: (project: StudioProject, id: string) => void;
   onBusyChange?: (busy: boolean) => void;
 };
 
 type Phase = 'form' | 'generating' | 'results' | 'saving';
+type Role = 'background' | 'table';
+// What a generation was drawn for; "Använd" adopts exactly that.
+type Drawn = {theme: boolean; templateId: string; tableWidth: {mobile: number; desktop: number} | null; composition: CompositionSettings | undefined};
 const PUBLICATION_NOTE = 'Bilden hamnar i materialbiblioteket. Inget bolag ser den förrän den ligger i en miljö som publiceras.';
 const UNSUPPORTED = 'Bordsgrafik med AI kräver Blackjack och en dealer med filmad profil.';
 const field = 'min-w-0 w-full rounded-lg border border-sg-border bg-sg-surface px-3 py-2 text-[13.5px] text-sg-text';
 const notice = 'm-0 rounded-lg border border-sg-border bg-sg-surface-2 p-3';
+const percent = (value: number) => value.toLocaleString('sv-SE', {maximumFractionDigits: 1}) + ' %';
+const share = (value: number) => Math.round(value * 100) + ' %';
 
-// Proposals are drafts in this dialog only. "Använd" registers one through the
-// existing layer-asset upload; it reaches no operator until a scene template
-// lists it and is published.
-export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], templates = [], project = null, inventory = null, disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
+// Proposals are drafts in this dialog only. "Använd" registers the chosen ones through the existing
+// layer-asset upload and, when asked, allows them in the scene template as its defaults; from a
+// spelbord the server also publishes the room in the same transaction.
+export function AiBackgroundDialog({role = 'background', game = 'blackjack', dealers = [], templates = [], project = null, inventory = null, room = null, saveProject, disabled = false, onRegistered, onBusyChange}: AiBackgroundDialogProps) {
   const table = role === 'table', filmed = aiTableDealers(dealers), unsupported = table && (game !== 'blackjack' || filmed.length === 0);
   const [open, setOpen] = useState(false), [phase, setPhase] = useState<Phase>('form');
   const [status, setStatus] = useState<AiImageStatus | null>(null), [statusError, setStatusError] = useState('');
-  const [prompt, setPrompt] = useState(''), [preset, setPreset] = useState<AiImagePresetId>('dark-studio'), [count, setCount] = useState(2);
+  const [prompt, setPrompt] = useState(''), [preset, setPreset] = useState<AiImagePresetId>('dark-luxury'), [count, setCount] = useState(2);
   const [dealerId, setDealerId] = useState(''), [templateId, setTemplateId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
-  const [proposals, setProposals] = useState<AiProposal[]>([]), [selected, setSelected] = useState<string | null>(null), [fit, setFit] = useState<AiTableFit | null>(null);
+  const [fitWidth, setFitWidth] = useState(true), [adopt, setAdopt] = useState(true), [drawn, setDrawn] = useState<Drawn | null>(null);
+  const [proposals, setProposals] = useState<Record<Role, AiProposal[]>>({table: [], background: []});
+  const [selected, setSelected] = useState<Record<Role, string | null>>({table: null, background: null}), [fit, setFit] = useState<AiTableFit | null>(null);
   const [error, setError] = useState(''), [progress, setProgress] = useState<number | null>(null), [confirmation, setConfirmation] = useState('');
   const request = useRef<AbortController | null>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
   busyCallback.current = onBusyChange;
@@ -52,14 +68,13 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   useEffect(() => { busyCallback.current?.(busy); }, [busy]);
   const filmedIds = filmed.map(row => row.id).join(',');
   useEffect(() => { const ids = filmedIds ? filmedIds.split(',') : []; if (table && !ids.includes(dealerId)) setDealerId(ids[0] ?? ''); }, [table, filmedIds, dealerId]);
-  // Default: the first scene template that allows the chosen dealer; '' = the composition defaults.
-  const scenes = aiSceneTemplates(templates, dealerId), sceneIds = scenes.map(row => row.id).join(',');
-  useEffect(() => { const ids = sceneIds ? sceneIds.split(',') : []; setTemplateId(current => ids.includes(current) ? current : ids[0] ?? ''); }, [sceneIds]);
+  // Default: the spelbord's own scene template, else the first that allows the chosen dealer; '' = the composition defaults.
+  const scenes = aiSceneTemplates(templates, dealerId), sceneIds = scenes.map(row => row.id).join(','), roomTemplate = room?.compositionId ?? '';
+  useEffect(() => { const ids = sceneIds ? sceneIds.split(',') : []; setTemplateId(current => ids.includes(current) ? current : ids.includes(roomTemplate) ? roomTemplate : ids[0] ?? ''); }, [sceneIds, roomTemplate]);
   const scene = scenes.find(row => row.id === templateId) ?? null;
   // A background is previewed on any scene template; a table on the one it is drawn for.
   const [previewId, setPreviewId] = useState(''), templateIds = templates.map(row => row.id).join(',');
-  useEffect(() => { const ids = templateIds ? templateIds.split(',') : []; setPreviewId(current => ids.includes(current) ? current : ids[0] ?? ''); }, [templateIds]);
-  const previewLane = table ? templateId : previewId;
+  useEffect(() => { const ids = templateIds ? templateIds.split(',') : []; setPreviewId(current => ids.includes(current) ? current : ids.includes(roomTemplate) ? roomTemplate : ids[0] ?? ''); }, [templateIds, roomTemplate]);
   useEffect(() => {
     if (!open) return undefined;
     const controller = new AbortController();
@@ -69,16 +84,27 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
     return () => controller.abort();
   }, [open]);
 
+  // The table follows the dealer's reach: the boxes fill 70-80 % of its width, written to the template's Bordsbredd %.
+  const suggestion = table && dealerId ? aiTableWidthSuggestion(dealerId, scene?.composition) : null;
+  const widened = fitWidth && Boolean(suggestion?.changed);
+  const drawComposition = widened ? suggestion!.suggested.composition : scene?.composition;
   const noun = table ? 'bordsgrafik' : 'bakgrund', place = table ? 'Bordsgrafik' : 'Bakgrunder';
   const text = prompt.replace(/\s+/g, ' ').trim();
   const off = status?.enabled === false, misconfigured = status?.enabled === true && status.problem === 'invalid_setting';
-  const offline = status?.enabled === true && !status.configured && !misconfigured, exhausted = status?.configured === true && status.remaining < count;
-  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !misconfigured && !offline && !exhausted && !unsupported;
+  const offline = status?.enabled === true && !status.configured && !misconfigured;
+  const available = (theme: boolean) => status?.configured === true && status.remaining >= count * (theme ? 2 : 1);
+  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !misconfigured && !offline && !unsupported;
+  const exhausted = status?.configured === true && !available(false);
+  // Where "Använd" puts the material: the drawn table's template (a theme's background too), a background's preview template.
+  const target = drawn ? (table ? drawn.templateId : previewId) : '';
+  const targetLabel = templates.find(row => row.id === target)?.label ?? '';
+  const publishRoom = Boolean(room && target && room.compositionId === target);
+  const chosen = (kind: Role) => proposals[kind].find(row => row.id === selected[kind]) ?? null;
 
   function close(next: boolean) {
     if (next) { setOpen(true); setConfirmation(''); return; }
     request.current?.abort(); request.current = null;
-    setOpen(false); setPhase('form'); setProposals([]); setSelected(null); setFit(null); setError(''); setProgress(null);
+    setOpen(false); setPhase('form'); setProposals({table: [], background: []}); setSelected({table: null, background: null}); setFit(null); setDrawn(null); setError(''); setProgress(null);
   }
   async function pickReference(file: File | undefined) {
     if (!file || busy) return;
@@ -86,48 +112,101 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
     try { const value = await prepareReferenceImage(file); if (mounted.current) { setReference(value); setReferenceName(file.name); } }
     catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'Inspirationsbilden kunde inte läsas.'); }
   }
-  async function generate() {
-    if (!ready || busy) return;
+  // One run: this role's proposals, and with a theme a table and a background from the same description, style and image.
+  async function generate(theme = false) {
+    if (!ready || busy || !available(theme)) return;
     const controller = new AbortController(); request.current = controller;
-    setPhase('generating'); setError(''); setProposals([]); setSelected(null); setFit(null);
-    try {
-      const result = await requestAiProposals({role, prompt: text, preset, count, ...(table ? {dealerId, sceneTemplate: scene ? {id: scene.id, composition: scene.composition} : null} : {}), reference}, {signal: controller.signal});
-      if (!mounted.current || controller.signal.aborted) return;
-      setProposals(result.images); setSelected(result.images[0]?.id ?? null); setFit(result.fit); setPhase('results');
-      setStatus(current => current ? {...current, remaining: result.remaining} : current);
-    } catch (cause) {
-      if (!mounted.current) return;
-      setError(aiImageErrorMessage(cause)); setPhase('form');
-    } finally { if (request.current === controller) request.current = null; }
+    const next: Drawn = {theme, templateId: scene?.id ?? '', tableWidth: table && widened ? suggestion!.suggested.tableWidth : null, composition: drawComposition};
+    setPhase('generating'); setError(''); setProposals({table: [], background: []}); setSelected({table: null, background: null}); setFit(null); setDrawn(next);
+    const sceneTemplate = scene || widened ? {id: scene?.id ?? 'standardplacering', composition: drawComposition} : null;
+    const ask = (kind: Role) => requestAiProposals({role: kind, prompt: text, preset, count, ...(kind === 'table' ? {dealerId, sceneTemplate} : {}), reference}, {signal: controller.signal});
+    const kinds: Role[] = theme ? ['table', 'background'] : [role];
+    const results = await Promise.allSettled(kinds.map(ask));
+    if (request.current === controller) request.current = null;
+    if (!mounted.current || controller.signal.aborted) { if (mounted.current) { setError(aiImageErrorMessage(results.find(row => row.status === 'rejected')?.reason)); setPhase('form'); } return; }
+    const found: Record<Role, AiProposal[]> = {table: [], background: []};
+    const left: number[] = [], problems: unknown[] = [];
+    for (const [index, row] of results.entries()) {
+      if (row.status === 'rejected') { problems.push(row.reason); continue; }
+      found[kinds[index]] = row.value.images; left.push(row.value.remaining);
+      if (kinds[index] === 'table') setFit(row.value.fit);
+    }
+    if (!found.table.length && !found.background.length) { setError(aiImageErrorMessage(problems[0])); setPhase('form'); return; }
+    setProposals(found); setSelected({table: found.table[0]?.id ?? null, background: found.background[0]?.id ?? null});
+    if (problems.length) setError((theme ? 'En del av temat kunde inte skapas: ' : '') + aiImageErrorMessage(problems[0]));
+    if (left.length) setStatus(current => current ? {...current, remaining: Math.min(...left)} : current);
+    setPhase('results');
   }
   async function use() {
-    const proposal = proposals.find(row => row.id === selected);
-    if (!proposal || busy) return;
+    const items = (drawn?.theme ? ['background', 'table'] as Role[] : [role]).map(kind => ({kind, proposal: chosen(kind)})).filter(row => row.proposal);
+    if (!items.length || busy || !drawn) return;
     const controller = new AbortController(); request.current = controller;
-    let commitStarted = false;
+    let commitStarted = false, latest: StudioProject | null = null;
+    const ids: Partial<Record<Role, string>> = {};
     setPhase('saving'); setError(''); setProgress(null);
     try {
-      const saved = await registerAiProposal(proposal, {role, prompt: text, fit}, {signal: controller.signal,
-        onUploadProgress: event => { if (mounted.current) setProgress(Math.round(event.percentage)); },
-        onCommit: () => { commitStarted = true; }});
-      if (!mounted.current) return;
-      onRegistered(saved.project, saved.id);
-      setConfirmation(`Sparad i ${place} som "${aiImageLabel(text, table ? fit : null)}". ${PUBLICATION_NOTE}`);
-      close(false);
+      for (const {kind, proposal} of items) {
+        commitStarted = false;
+        const saved = await registerAiProposal(proposal!, {role: kind, prompt: text, fit: kind === 'table' ? fit : null}, {signal: controller.signal,
+          onUploadProgress: event => { if (mounted.current) setProgress(Math.round(event.percentage)); },
+          onCommit: () => { commitStarted = true; }});
+        latest = saved.project; ids[kind] = saved.id;
+      }
     } catch (cause) {
-      if (!mounted.current) return;
-      setError(layerUploadFailureMessage(cause, {aborted: controller.signal.aborted, commitStarted})); setPhase('results');
-    } finally { if (request.current === controller) request.current = null; if (mounted.current) setProgress(null); }
+      if (mounted.current) { setError(layerUploadFailureMessage(cause, {aborted: controller.signal.aborted, commitStarted})); setPhase('results'); setProgress(null); }
+      if (request.current === controller) request.current = null;
+      return;
+    }
+    if (!mounted.current || !latest) return;
+    const own = ids[role];
+    if (own) onRegistered(latest, own);
+    const labels = items.map(({kind}) => `${kind === 'table' ? 'Bordsgrafik' : 'Bakgrunder'} som "${aiImageLabel(text, kind === 'table' ? fit : null)}"`).join(' och ');
+    const materials: AiAdoptMaterial[] = items.map(({kind}) => ({role: kind, assetId: ids[kind]!}));
+    const tableWidth = materials.some(row => row.role === 'table') ? drawn.tableWidth : null;
+    let outcome = `Sparad i ${labels}. ${PUBLICATION_NOTE}`;
+    if (adopt && target) {
+      try {
+        if (publishRoom && room) {
+          const result = await adoptInRoom({operatorId: room.operatorId, roomId: room.id, compositionId: target, materials, tableWidth, expectedProjectRevision: latest.revision});
+          outcome = result.ok
+            ? `Sparad i ${labels}, tillåten och standard i miljön ${targetLabel} och publicerad i spelbordet ${room.name} (version ${result.receipt.packageRevision}).`
+            : `Sparad i ${labels}, men inte publicerad: ${result.error}`;
+        } else if (saveProject) {
+          const saved = await adoptInTemplate({project: latest, compositionId: target, materials, tableWidth}, {save: saveProject, signal: controller.signal});
+          if (own && mounted.current) onRegistered(saved, own);
+          outcome = `Sparad i ${labels}, tillåten och standard i miljön ${targetLabel}${tableWidth ? ` med Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil)` : ''}. Publicera spelbordet för att visa det för spelarna.`;
+        }
+      } catch (cause) {
+        outcome = `Sparad i ${labels}, men miljön ändrades inte: ${cause instanceof Error ? cause.message : 'försök igen'}.`;
+      }
+    } else if (tableWidth) outcome += ` Bordet är ritat för Bordsbredd ${percent(tableWidth.desktop * 100)} (dator) och ${percent(tableWidth.mobile * 100)} (mobil); sätt dem i miljöns Avancerat innan du väljer det.`;
+    if (request.current === controller) request.current = null;
+    if (!mounted.current) return;
+    setProgress(null); setConfirmation(outcome); close(false);
   }
 
+  const theme = table;
   const footer = phase === 'saving' ? undefined : <>
     {phase === 'generating' ? <Button onClick={() => request.current?.abort()}>Avbryt</Button> : null}
-    {phase === 'form' ? <Button variant="primary" disabled={!ready} onClick={() => void generate()}><Sparkles aria-hidden="true" />Skapa förslag</Button> : null}
+    {phase === 'form' && theme ? <Button disabled={!ready || !available(true)} onClick={() => void generate(true)}><Layers aria-hidden="true" />Skapa bord + bakgrund + miljöbild från samma tema</Button> : null}
+    {phase === 'form' ? <Button variant="primary" disabled={!ready || exhausted} onClick={() => void generate(false)}><Sparkles aria-hidden="true" />Skapa förslag</Button> : null}
     {phase === 'results' ? <>
-      <Button disabled={!ready} onClick={() => void generate()}><RefreshCw aria-hidden="true" />Skapa nya</Button>
-      <Button variant="primary" disabled={!selected} onClick={() => void use()}><Check aria-hidden="true" />Använd</Button>
+      <Button disabled={!ready || !available(Boolean(drawn?.theme))} onClick={() => void generate(Boolean(drawn?.theme))}><RefreshCw aria-hidden="true" />Skapa nya</Button>
+      <Button variant="primary" disabled={!chosen('table') && !chosen('background')} onClick={() => void use()}><Check aria-hidden="true" />Använd</Button>
     </> : null}
   </>;
+  const results = (kind: Role) => proposals[kind].length ? <div className="grid gap-2">
+    <p className="m-0 font-medium">{drawn?.theme ? (kind === 'table' ? 'Välj bord' : 'Välj bakgrund') : 'Välj ett förslag'}</p>
+    <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={kind === 'table' ? 'Förslag på bord' : 'Förslag på bakgrund'}>
+      {proposals[kind].map((row, index) => <button key={row.id} type="button" role="radio" aria-checked={selected[kind] === row.id} disabled={phase === 'saving'}
+        className={cn('relative overflow-hidden rounded-lg border-2 bg-sg-surface-2', selected[kind] === row.id ? 'border-sg-lime' : 'border-sg-border')} onClick={() => setSelected(current => ({...current, [kind]: row.id}))}>
+        <img src={row.dataUrl} alt={`Förslag ${index + 1}`} className="block h-auto w-full" />
+        {selected[kind] === row.id ? <span className="absolute right-2 top-2 rounded-full bg-sg-lime p-1 text-sg-on-accent"><Check className="size-3.5" aria-hidden="true" /></span> : null}
+        <AiLandingBadge role={kind} proposal={row} className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate" />
+      </button>)}
+    </div>
+  </div> : null;
+  const shown: Role = drawn?.theme ? 'table' : role, preview = chosen(shown), companion = drawn?.theme ? chosen('background') : null;
 
   return <span className="inline-flex flex-col items-center gap-1">
     <Button variant="ink" aria-haspopup="dialog" disabled={disabled || unsupported} title={unsupported ? UNSUPPORTED : undefined} onClick={() => close(true)}>
@@ -143,21 +222,22 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
         {offline ? <p role="status" className={notice}><strong>Inte anslutet.</strong> OpenAI-nyckeln saknas på servern, så inga förslag kan skapas här ännu. Manuell uppladdning fungerar som vanligt.</p> : null}
         {status?.configured ? <p className="m-0 text-xs text-sg-muted">{status.remaining} av {status.dailyLimit} bilder kvar i dag på den här servern.</p> : null}
         {unsupported ? <p role="status" className={notice}>{UNSUPPORTED}</p> : null}
+        {room ? <p className="m-0 text-xs text-sg-muted">Öppnad från spelbordet {room.name}.</p> : null}
 
         {phase === 'form' || phase === 'generating' ? <div className="grid gap-4">
           <label className="grid gap-1">
             <span className="font-medium">Beskriv {table ? 'bordet' : 'bakgrunden'}</span>
             <textarea className={field} rows={3} maxLength={AI_IMAGE_PROMPT_LENGTH.max} value={prompt} disabled={busy}
-              placeholder={table ? 'T.ex. mörkgrön filt med smal guldkant' : 'T.ex. lugn kvällsstudio med mjukt sidoljus'} onChange={event => setPrompt(event.target.value)} />
+              placeholder={table ? 'T.ex. svart filt, tjock läderrail och guldkant' : 'T.ex. lugn kvällsstudio med mjukt sidoljus'} onChange={event => setPrompt(event.target.value)} />
             <span className="text-xs text-sg-muted">{text.length}/{AI_IMAGE_PROMPT_LENGTH.max} tecken. Text, logotyper, personer, kort och marker tas aldrig med.</span>
           </label>
           <fieldset className="grid gap-2" disabled={busy}>
-            <legend className="mb-1 font-medium">Förinställning</legend>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Förinställning">
+            <legend className="mb-1 font-medium">Stil</legend>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Stil">
               {AI_IMAGE_PRESETS.map(row => <button key={row.id} type="button" role="radio" aria-checked={preset === row.id}
                 className={cn(buttonVariants({size: 'sm', variant: preset === row.id ? 'ink' : 'secondary'}), 'rounded-full')} onClick={() => setPreset(row.id)}>{row.label}</button>)}
             </div>
-            {preset === 'free' ? <span className="text-xs text-sg-muted">Fri: bara din beskrivning styr stilen.</span> : null}
+            {preset === 'free' ? <span className="text-xs text-sg-muted">Fri: din beskrivning och inspirationsbilden styr material och färg.</span> : null}
           </fieldset>
           {table && filmed.length ? <label className="grid gap-1">
             <span className="font-medium">Dealer</span>
@@ -169,11 +249,20 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
           {table && filmed.length ? <label className="grid gap-1">
             <span className="font-medium">Miljö</span>
             <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
-              {scenes.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+              {scenes.map(row => <option key={row.id} value={row.id}>{row.label}{row.id === roomTemplate ? ' · spelbordets' : ''}</option>)}
               <option value="">Standardplacering (ingen miljö)</option>
             </select>
             <span className="text-xs text-sg-muted">Bordsgrafiken passar miljöns placering. Ändras placeringen senare behöver bordet ritas om.</span>
           </label> : null}
+          {suggestion ? <div className="flex items-start gap-2">
+            <Checkbox id="ai-fit-width" checked={fitWidth} disabled={busy || !suggestion.changed} onCheckedChange={value => setFitWidth(value === true)} className="mt-0.5" />
+            <Label htmlFor="ai-fit-width" className="grid gap-0.5">
+              <span className="font-medium">Anpassa bordets bredd efter dealerns räckvidd</span>
+              <span className="text-xs text-sg-muted">{suggestion.changed
+                ? `Boxarna fyller ${share(suggestion.current.share)} av bordet; med Bordsbredd ${percent(suggestion.suggested.percent.desktop)} (dator) och ${percent(suggestion.suggested.percent.mobile)} (mobil) fyller de ${share(suggestion.suggested.share)}, så spelaren sitter nära och bordets ändar böjer mot dealern. Bredden följer med till miljön.`
+                : `Boxarna fyller redan ${share(suggestion.current.share)} av bordet.`}</span>
+            </Label>
+          </div> : null}
           <div className="grid gap-1 rounded-lg border border-dashed border-sg-border p-3" onDragOver={event => { event.preventDefault(); }}
             onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>
             <span className="font-medium">Inspirationsbild · valfri</span>
@@ -185,7 +274,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               <ImagePlus aria-hidden="true" />Välj bild
               <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
             </label>}
-            <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
+            <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av; material och färg följer bilden. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
           </div>
           <label className="grid w-fit gap-1">
             <span className="font-medium">Antal förslag</span>
@@ -193,6 +282,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               {Array.from({length: AI_IMAGE_MAX_PROPOSALS}, (_, index) => index + 1).map(value => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
+          {theme ? <p className="m-0 text-xs text-sg-muted">Samma tema: bord och bakgrund med samma beskrivning, stil och inspirationsbild ({count * 2} bilder). {AI_THEME_ENVIRONMENT_NOTE}</p> : null}
         </div> : null}
 
         {phase === 'generating' ? <div className="grid gap-2">
@@ -202,34 +292,35 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
           </div>
         </div> : null}
 
-        {phase === 'results' || phase === 'saving' ? <div className="grid gap-2">
-          <p className="m-0 font-medium">Välj ett förslag</p>
-          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Förslag">
-            {proposals.map((row, index) => <button key={row.id} type="button" role="radio" aria-checked={selected === row.id} disabled={phase === 'saving'}
-              className={cn('relative overflow-hidden rounded-lg border-2 bg-sg-surface-2', selected === row.id ? 'border-sg-lime' : 'border-sg-border')} onClick={() => setSelected(row.id)}>
-              <img src={row.dataUrl} alt={`Förslag ${index + 1}`} className="block h-auto w-full" />
-              {selected === row.id ? <span className="absolute right-2 top-2 rounded-full bg-sg-lime p-1 text-sg-on-accent"><Check className="size-3.5" aria-hidden="true" /></span> : null}
-              <AiLandingBadge role={role} proposal={row} className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate" />
-            </button>)}
-          </div>
-          {proposals.some(row => row.id === selected) ? <div className="grid gap-2">
+        {phase === 'results' || phase === 'saving' ? <div className="grid gap-3">
+          {drawn?.theme ? <>{results('table')}{results('background')}<p className="m-0 text-xs text-sg-muted">{AI_THEME_ENVIRONMENT_NOTE}</p></> : results(role)}
+          {preview ? <div className="grid gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="m-0 font-medium">Förhandsvisning i scenen</p>
-              {!table && templates.length ? <label className="flex items-center gap-2 text-xs text-sg-muted">Scenmall
+              {!table && templates.length ? <label className="flex items-center gap-2 text-xs text-sg-muted">Miljö
                 <select className={cn(field, 'w-auto py-1 text-xs')} value={previewId} disabled={phase === 'saving'} onChange={event => setPreviewId(event.target.value)}>
                   {templates.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
                 </select>
               </label> : null}
             </div>
-            <AiProposalPreview role={role} proposal={proposals.find(row => row.id === selected)!} project={project} inventory={inventory} laneId={previewLane} dealerId={table ? dealerId : undefined}
-              composition={table ? scene?.composition : undefined} />
+            <AiProposalPreview role={shown} proposal={preview} companion={companion} project={project} inventory={inventory} laneId={table ? drawn?.templateId ?? '' : previewId}
+              dealerId={table ? dealerId : undefined} composition={table ? drawn?.composition : undefined} />
           </div> : null}
-          {phase === 'saving' ? <p role="status" className="m-0">{progress === null ? `Sparar i ${place}…` : `Laddar upp · ${progress} %`}</p> : null}
+          {target && (publishRoom || saveProject) ? <div className="flex items-start gap-2 rounded-lg border border-sg-border p-3">
+            <Checkbox id="ai-adopt" checked={adopt} disabled={phase === 'saving'} onCheckedChange={value => setAdopt(value === true)} className="mt-0.5" />
+            <Label htmlFor="ai-adopt" className="grid gap-0.5">
+              <span className="font-medium">{publishRoom && room ? `Använd i miljön ${targetLabel} och i spelbordet ${room.name}` : `Använd i miljön ${targetLabel}`}</span>
+              <span className="text-xs text-sg-muted">{publishRoom
+                ? 'Tillåts i miljön, blir standard och publiceras i spelbordet i ett steg. Finns andra opublicerade ändringar publiceras inget; materialet ligger då kvar i biblioteket.'
+                : 'Tillåts i miljön och blir standard i det sparade utkastet. Publicera spelbordet för att visa det för spelarna.'}{drawn?.tableWidth ? ` Bordsbredd ${percent(drawn.tableWidth.desktop * 100)} (dator) och ${percent(drawn.tableWidth.mobile * 100)} (mobil) följer med.` : ''} Utan bocken sparas bara i biblioteket.</span>
+            </Label>
+          </div> : null}
+          {phase === 'saving' ? <p role="status" className="m-0">{progress === null ? `Sparar i ${drawn?.theme ? 'biblioteket' : place}…` : `Laddar upp · ${progress} %`}</p> : null}
         </div> : null}
 
         {error ? <p role="alert" className="m-0 rounded-lg bg-sg-danger-bg px-3 py-2 text-sg-danger">{error}</p> : null}
       </div>
     </Dialog>
-    {confirmation ? <p role="status" className="m-0 max-w-[32ch] text-center text-xs text-sg-ok">{confirmation}</p> : null}
+    {confirmation ? <p role="status" className="m-0 max-w-[40ch] text-center text-xs text-sg-ok">{confirmation}</p> : null}
   </span>;
 }

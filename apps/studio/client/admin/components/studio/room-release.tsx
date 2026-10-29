@@ -109,7 +109,7 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
         :preview&&<div className="grid gap-4">
           {blockers.length>0&&<div role="alert" className="grid gap-1.5 rounded-lg border border-sg-danger-line bg-sg-danger-bg px-3.5 py-3 text-[13.5px] text-sg-danger">
             <p className="m-0 font-semibold">{blockers.length===1?'Ett hinder':blockers.length+' hinder'} före publicering</p>
-            <ul className="m-0 grid gap-1 pl-4">{blockers.map((blocker,index)=>{const view=roomReleaseBlocker(blocker,{roomId,dealerId,rooms});
+            <ul className="m-0 grid gap-1 pl-4">{blockers.map((blocker,index)=>{const view=roomReleaseBlocker(blocker,{roomId,dealerId,dealerName:dealerId&&dealerName?dealerName(dealerId):'',rooms});
               return <li key={index} data-blocker={blocker.code}>{view.text}{view.href&&<> <Link className={cn(linkClass,'text-sg-danger')} href={view.href}>{view.linkLabel} →</Link></>}</li>;})}</ul>
           </div>}
           {!preview.changed&&!blockers.length&&<p className="m-0 text-sg-muted">Sparat läge är detsamma som live. Inget att publicera.</p>}

@@ -43,6 +43,8 @@ const materialReasons = Object.freeze({
   native_material_measurement_mismatch:'klippens mätning stämmer inte',
   native_material_size_mismatch:'klippens storlek stämmer inte',
 });
+// Saknad eller inaktuell tidsmätning åtgärdas med Mät omätta klipp på dealerns flik Klipp.
+const measurementReason = reason => reason === 'native_material_measurement_missing' || reason === 'native_material_measurement_mismatch';
 export function materialReasonText(reason) {
   return materialReasons[reason] ?? (code(reason) ? 'materialet är inte komplett (' + reason + ')' : 'materialet är inte komplett');
 }
@@ -58,6 +60,17 @@ const invalidReasons = Object.freeze({
   studio_dealer_background_required:'Miljön saknar bakgrund.',
   studio_media_binding_invalid:'Ett klipp i miljön är felkopplat.',
   studio_room_choices_draft_invalid:'Utseendeutkastet passar inte med de sparade miljöerna.',
+  // "Använd i miljön och i spelbordet" (AI-dialogen, action adopt-room-material).
+  studio_release_other_changes:'Spelbordet har andra sparade ändringar som inte är publicerade. Materialet ligger i biblioteket; publicera spelbordet med Publicera, där skillnaden visas.',
+  studio_room_game_config_missing:'Spelbordet saknar publicerade spelinställningar. Publicera spelbordet en gång först.',
+  ai_adopt_other_template:'Spelbordet använder en annan miljö än den bordet ritades för.',
+  ai_adopt_room_choice:'Bolaget eller spelbordet har ett eget val som döljer miljöns standard. Välj materialet under Utseende.',
+  ai_adopt_other_room_table:'Ett annat öppet spelbord hos bolaget i samma miljö visar ett annat bord och skulle få den nya bredden. Ta bort dess eget bordsval under Utseende eller ändra bredden i miljön.',
+  ai_adopt_template_table_misfit:'Ett annat AI-bord i miljön är ritat för en annan bredd eller dealer och skulle inte passa längre. Ta bort det ur miljön eller rita om det först.',
+  ai_adopt_template_missing:'Miljön finns inte längre.',
+  ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
+  ai_adopt_table_misfit:'Bordsgrafiken passar inte miljöns dealers eller placering.',
+  ai_adopt_invalid:'Valet kunde inte läggas in i miljön.',
 });
 
 const conflictSteps = Object.freeze({
@@ -84,7 +97,8 @@ export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reas
     case 'studio_release_preview_stale': return 'Något har ändrats sedan förhandsvisningen.' + RELOAD;
     case 'studio_conflict': return (conflictSteps[step] ?? 'Uppgifterna har ändrats under tiden.') + NOTHING + RELOAD;
     case 'studio_room_choices_draft_pending': return 'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det under Utseende först.' + NOTHING;
-    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '. Öppna Röst och tal.' + NOTHING;
+    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '.'
+      + (measurementReason(materialReason) ? ' Öppna Dealers › dealern och välj Mät omätta klipp.' : ' Öppna Röst och tal.') + NOTHING;
     case 'studio_release_invalid': return (invalidReasons[reason] ?? 'Publiceringen kan inte göras med de sparade valen' + (code(reason) ? ' (' + reason + ')' : '') + '.')
       + (reason === 'studio_release_unchanged' ? '' : NOTHING);
     case 'studio_room_not_found': return 'Spelbordet är inte öppet hos bolaget eller ingår inte i bolagets publicerade tilldelning.' + NOTHING;
@@ -106,7 +120,7 @@ export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reas
 const roomHref = (roomId, flik) => '/admin/rooms/' + encodeURIComponent(roomId) + '?flik=' + flik;
 const dealerHref = (dealerId, flik) => '/admin/dealers/' + encodeURIComponent(dealerId) + '?flik=' + flik;
 /** @returns {{text:string;href:string|null;linkLabel:string|null}} */
-export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms = []} = {}) {
+export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, dealerName = '', rooms = []} = {}) {
   const link = (href, linkLabel) => ({href, linkLabel});
   const none = {href:null, linkLabel:null};
   const dealer = id(dealerId) ? dealerId : null;
@@ -122,6 +136,9 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms
         const name = rooms.find(row => row?.id === blocker.roomId)?.name ?? blocker.roomId;
         return {text:'Spelbordet ' + name + ' kan inte bindas om: ' + materialReasonText(blocker.materialReason) + '.', ...link(roomHref(blocker.roomId, 'spel'), 'Öppna spelbordet')};
       }
+      if (measurementReason(blocker.materialReason)) return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '. Öppna Dealers › '
+        + (dealer ? (typeof dealerName === 'string' && dealerName.trim() ? dealerName.trim() : dealer) : 'dealern') + ' och välj Mät omätta klipp.',
+        ...(dealer ? link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klipp') : none)};
       return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
     }
     case 'ai_table_misfit':
@@ -273,6 +290,9 @@ function validPreview(value, {operatorId, roomId}) {
     && value.blockers.every(row => object(row) && typeof row.code === 'string') && Array.isArray(value.affectedRooms) && token(value.previewToken)
     && (value.gameConfig === null || object(value.gameConfig));
 }
+
+/** Felkontraktet som text, för andra anrop på samma väg (AI-dialogens "Använd i miljön och i spelbordet"). */
+export async function roomReleaseFailure(response, phase = 'publish') { return failure(response, phase); }
 
 async function failure(response, phase) {
   let body = null;

@@ -32,7 +32,7 @@ const round = (value, digits = 3) => Math.round(value*10**digits)/10**digits;
 const luminance = (r, g, b) => .2126*r+.7152*g+.0722*b;
 const linear = channel => { const value = channel/255; return value<=.04045?value/12.92:((value+.055)/1.055)**2.4; };
 const relative = ([r, g, b]) => .2126*linear(r)+.7152*linear(g)+.0722*linear(b);
-const contrastRatio = (one, two) => { const [high, low] = [relative(one), relative(two)].sort((a, b) => b-a); return (high+.05)/(low+.05); };
+export const contrastRatio = (one, two) => { const [high, low] = [relative(one), relative(two)].sort((a, b) => b-a); return (high+.05)/(low+.05); };
 
 // "rgba(r,g,b,a)" or "#rrggbb" as [r,g,b,a]; anything else is null.
 export function parseStroke(value) {

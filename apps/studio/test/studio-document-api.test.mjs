@@ -221,3 +221,36 @@ test('Native Nora composition saves preflight before outer product SQL; old save
   assert.equal(pool.snapshot().history.length,before.history.length+1);
   assert.equal(pool.snapshot().audits.at(-1).actor,'Operator');assert.equal(activeSql,0);
 });
+
+// Review of #647: the moving bank is the server's check, not only Admin's.
+test('a project save refuses a new motion reference for a dealer without a moving bank, but keeps an unchanged active profile', async () => {
+  const reference = { kind: 'motion-video', videoId: 'astrid-idle', sha256: 'a'.repeat(64), offsetMs: 0 };
+  const voice = { provider: 'elevenlabs', voiceId: 'voice-a', modelId: 'eleven_v3' };
+  const profile = (extra = {}) => ({ schemaVersion: 2, state: 'enabled', voice, reference, ...extra });
+  const withProfile = (project, speechProfile) => ({ ...structuredClone(project), dealers: project.dealers.map(row => row.id === 'astrid' ? { ...row, speechProfile } : row) });
+  let banks = [];
+  const { api, initial } = await fixture({ movingSpeechDealers: () => banks });
+  const put = async (project, expectedRevision) => {
+    const response = await api.handle(request(undefined, { method: 'PUT', body: { project, expectedRevision } }));
+    return { status: response.status, body: await response.json() };
+  };
+  let result = await put(withProfile(initial.value, profile()), initial.revision);
+  assert.equal(result.status, 422); assert.equal(result.body.code, 'studio_speech_bank_missing');
+  result = await put(withProfile(initial.value, profile({ reference: { ...reference, kind: 'video-frame' } })), initial.revision);
+  assert.equal(result.status, 200, 'a still-frame reference needs no bank');
+  result = await put(withProfile(result.body.project, profile({ state: 'preparation' })), result.body.project.revision);
+  assert.equal(result.status, 200, 'a motion reference may be prepared without a bank');
+  banks = ['astrid'];
+  result = await put(withProfile(result.body.project, profile()), result.body.project.revision);
+  assert.equal(result.status, 200, 'the dealer with a bank may request AI speech');
+  // Dragan in production: an active profile saved before the check stays, and its voice may change.
+  banks = ['paow'];
+  let saved = result.body.project;
+  result = await put(saved, saved.revision); assert.equal(result.status, 200, 'unchanged active profile');
+  saved = result.body.project;
+  result = await put(withProfile(saved, profile({ voice: { ...voice, voiceId: 'voice-b' } })), saved.revision);
+  assert.equal(result.status, 200, 'voice-only change of an active profile');
+  saved = result.body.project;
+  result = await put(withProfile(saved, profile({ voice: { ...voice, voiceId: 'voice-b' }, reference: { ...reference, offsetMs: 125 } })), saved.revision);
+  assert.equal(result.status, 422, 'a changed motion reference needs the bank'); assert.equal(result.body.code, 'studio_speech_bank_missing');
+});

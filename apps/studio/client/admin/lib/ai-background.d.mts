@@ -31,3 +31,15 @@ export function prepareReferenceImage(file:File,options?:{
   shrink?:(file:File,size:{width:number;height:number},quality:number)=>Promise<Blob|null>;
 }):Promise<string>;
 export function aiPackageMisfit(input:{endpoint:string;lanes:readonly string[];fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<import('../../../lib/ai-image-contract.mjs').AiTableMisfit|null>;
+
+export type AiTableWidthSuggestion={changed:boolean;range:{readonly min:number;readonly target:number;readonly max:number};
+  current:{share:number;percent:{desktop:number;mobile:number}};
+  suggested:{share:number;percent:{desktop:number;mobile:number};composition:CompositionSettings;tableWidth:{mobile:number;desktop:number}}};
+export function aiTableWidthSuggestion(dealerId:string,composition?:CompositionSettings|null):AiTableWidthSuggestion|null;
+export const AI_THEME_ENVIRONMENT_NOTE: string;
+export type AiAdoptMaterial={role:AiImageRole;assetId:string};
+export function adoptInTemplate(input:{project:StudioProject;compositionId:string;materials:AiAdoptMaterial[];tableWidth?:{mobile:number;desktop:number}|null},
+  options:{save:(project:StudioProject,signal?:AbortSignal)=>Promise<StudioProject>;signal?:AbortSignal}):Promise<StudioProject>;
+export type AiAdoptReceipt={ok:true;operatorId:string;roomId:string;previousPackageRevision:number;packageRevision:number;projectRevision:string;configVersion:string;publishedAt:string;actor:string};
+export function adoptInRoom(input:{operatorId:string;roomId:string;compositionId:string;materials:AiAdoptMaterial[];tableWidth?:{mobile:number;desktop:number}|null;expectedProjectRevision:string},
+  options?:{fetchImpl?:typeof fetch}):Promise<{ok:true;receipt:AiAdoptReceipt}|{ok:false;status:number;error:string;code?:string;reason?:string}>;
