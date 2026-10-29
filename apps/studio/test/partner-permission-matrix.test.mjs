@@ -54,8 +54,10 @@ const API_WRITES = [
 ];
 // Spelbordens skrivvägar (partner-table-api.mjs) går genom Studio-transaktionen och den nativa
 // grinden, som minnesfixturen saknar. Här provas nekandet: utan behörigheten 403 och inget ändrat,
-// med den aldrig 403. Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat
-// bolags spelbord (404) och CAS (409) provas på PGlite i partner-table-actions.test.mjs.
+// med den aldrig 403 (tillåtna anrop stannar här på 503 före lagret, så "inget ändrat" säger lite).
+// Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat bolags spelbord (404)
+// och CAS (409) provas på PGlite i partner-table-actions.test.mjs, där varje nekat anrop jämför
+// administrations-, paket- och utkastrevisionen och spelbordsjournalen före och efter.
 const TABLE_WRITE = ['tables.read', 'tables.configure'];
 const API_TABLE_WRITES = [
   { id: 'room-settings POST save-draft', path: 'room-settings', action: 'save-draft', requires: TABLE_WRITE,
