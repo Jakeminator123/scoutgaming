@@ -1,4 +1,5 @@
 import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
+import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './room-release.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -80,7 +81,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
     return STUDIO_ADMIN_ENDPOINTS.filter(endpoint => ready(endpoint) && studioRoleMeetsMinimum(actor.role, endpoint.minimumRole)).map(endpoint => `${endpoint.method} ${endpoint.action}`);
   }
   async function handle(request) {
-    let action;
+    let action, release = false;
     try {
       const url = new URL(request.url);
       if (!hosts.has(url.host) || !origins.has(url.origin) || url.username || url.password) throw failure(403);
@@ -108,6 +109,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       }
       if (!ready(endpoint)) throw failure(503);
       const body = request.method === 'GET' ? null : await readObject(request);
+      // Rummets publicering svarar med sitt fasta felkontrakt {error, code, step}.
+      release = endpoint.action === 'room-release' || endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
       if (['users/role', 'users/remove'].includes(endpoint.action)) {
         if (typeof body.username !== 'string' || !body.username.trim()) throw failure(400);
         if (body.username.trim().toLowerCase() === actor.user.trim().toLowerCase()) throw failure(403);
@@ -139,6 +142,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Negotiate the exact saved-scene candidate before the transaction.
       const sceneLayout = endpoint.action === 'operator-package' && body?.action === 'publish-scene-layout';
       if (sceneLayout && (invocation.prepared?.action !== 'publish-scene-layout' || !invocation.prepared.presentation)) throw failure(503);
+      const roomRelease = endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
+      if (roomRelease && (invocation.prepared?.action !== ROOM_RELEASE_ACTION || !invocation.prepared.presentation)) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
@@ -160,6 +165,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
+        // The room publication writes the package, the room's game settings (v31 film
+        // planning) and administration without the room's draft; negotiate all before SQL.
+        : roomRelease ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
+          presentationMutation: [{ kind: 'presentation-package', value: invocation.prepared.presentation },
+            { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] }
         : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
@@ -187,6 +197,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (misfit) return json(misfit, status);
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
+      }
+      const releaseBody = release ? roomReleaseErrorBody(error, status) : null;
+      if (releaseBody) {
+        if (status >= 500) logStudioServerFailure(error, { method: request.method, route: action });
+        return json(releaseBody, status);
       }
       if (status !== 503 && status !== 500) return json({ error: publicErrors.get(status) }, status);
       logStudioServerFailure(error, { method: request.method, route: action });
