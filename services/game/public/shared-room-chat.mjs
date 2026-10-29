@@ -25,6 +25,7 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
   const panel = make('section', 'room-chat'), toggle = make('button', 'room-chat-toggle', 'Chatt'), unreadBadge = make('span', 'room-chat-unread');
   const body = make('div', 'room-chat-body'), log = make('ol', 'room-chat-log'), status = make('p', 'room-chat-status');
   const form = make('form', 'room-chat-form'), input = make('input', 'room-chat-input'), send = make('button', 'room-chat-send', 'Skicka');
+  const shut = make('button', 'room-chat-close', '×');
   panel.id = 'shared-room-chat'; panel.setAttribute('aria-label', 'Chatt med dealern');
   body.id = 'shared-room-chat-body'; body.hidden = true;
   toggle.type = 'button'; toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-controls', body.id);
@@ -32,8 +33,12 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
   log.setAttribute('aria-live', 'polite'); status.setAttribute('role', 'status');
   input.type = 'text'; input.maxLength = 1000; input.autocomplete = 'off'; input.placeholder = 'Fråga dealern…';
   input.setAttribute('aria-label', 'Meddelande till dealern'); send.type = 'submit';
-  toggle.append(unreadBadge); form.append(input, send); body.append(log, status, form); panel.append(toggle, body);
-  document.body.append(panel);
+  shut.type = 'button'; shut.setAttribute('aria-label', 'Stäng chatten');
+  toggle.append(unreadBadge); form.append(input, send); body.append(log, status, form, shut); panel.append(toggle, body);
+  // The folded pill is one of the seat controls in the header's flow (shared-room-view), so it can never cover a seat,
+  // a bet or a decision at any width; opened, the log is an overlay below the header with its own close button.
+  const host = document.getElementById?.('shared-room-controls');
+  if (host) { panel.classList.toggle('room-chat-docked', true); host.append(panel); } else document.body.append(panel);
   // Sit just below the header, whose height wraps with its buttons (phones get two rows).
   const header = document.getElementById?.('hud-top');
   const place = () => { const bottom = header?.getBoundingClientRect?.().bottom;
@@ -60,6 +65,8 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
     open = !open; body.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); panel.classList.toggle('open', open);
     if (open) { unread = 0; unreadBadge.hidden = true; log.scrollTop = log.scrollHeight; input.focus(); }
   }
+  function onClose() { if (open) onToggle(); toggle.focus(); }
+  function onKey(event) { if (event.key === 'Escape') { event.preventDefault?.(); onClose(); } }
   async function onSubmit(event) {
     event.preventDefault();
     const message = input.value.trim(), snapshot = state()?.snapshot;
@@ -85,12 +92,14 @@ export function createSharedRoomChatPanel({ document, roomId, state, fetchImpl, 
     }
   }
   toggle.addEventListener('click', onToggle); form.addEventListener('submit', onSubmit);
+  shut.addEventListener('click', onClose); body.addEventListener('keydown', onKey);
   return Object.freeze({
     receive,
     close() {
       if (closed) return;
       closed = true; pending?.abort(); pending = null; observer?.disconnect();
-      toggle.removeEventListener('click', onToggle); form.removeEventListener('submit', onSubmit); panel.remove();
+      toggle.removeEventListener('click', onToggle); form.removeEventListener('submit', onSubmit);
+      shut.removeEventListener('click', onClose); body.removeEventListener('keydown', onKey); panel.remove();
     },
   });
 }

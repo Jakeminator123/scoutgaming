@@ -48,7 +48,10 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
         nativeBar: document.getElementById('actions').checkVisibility(),
         pause: document.getElementById('pitboss').checkVisibility(),
         heading: document.getElementById('table-profile').textContent,
+        chat: document.querySelector('#shared-room-controls .room-chat-toggle')?.checkVisibility() ?? false,
       }));
+      // The folded chat is one of the seat controls, so measureLayout above proves it covers nothing (PR 4a fix).
+      assert.equal(state.chat, true, `${viewport.width}, ${label}: Chatt sits with the seat controls`);
       // "Visa platser" only where the table shows three boxes; "Lämna platser" only for a seated player.
       assert.equal(state.windows, phone, `${viewport.width}: seat window chooser`);
       if (phone) assert.match(state.windowText, /^Visa platser \d–\d$/);
@@ -97,6 +100,13 @@ test('Chrome shared-table play path: every phase\'s controls take a real click a
       };
       const where = `${viewport.width}${plane ? ' plane' : ''}`;
       await show(tableSnapshot({ version: 1, others: { 1: 'bob' } }));
+      // The opened chat is an overlay with its own close; Escape closes it too, and focus returns to Chatt.
+      await page.getByRole('button', { name: /^Chatt/ }).click();
+      await page.getByRole('textbox', { name: 'Meddelande till dealern' }).waitFor();
+      await button('Stäng chatten').click(); await page.locator('#shared-room-chat-body').waitFor({ state: 'hidden' });
+      await page.getByRole('button', { name: /^Chatt/ }).click(); await page.keyboard.press('Escape');
+      await page.locator('#shared-room-chat-body').waitFor({ state: 'hidden' });
+      assert.equal(await page.evaluate(() => document.activeElement?.className), 'room-chat-toggle', `${where}: focus returns to Chatt`);
       await button('Välj plats 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
       await show(tableSnapshot({ version: 2, own: [3] }));
       await button('Plats 4, huvudinsats, 0').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
