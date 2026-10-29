@@ -71,14 +71,14 @@ function speechReason(error) {
  * on the bank's rest frame when the dealer has a lane (room context, never a deal presentationVersion),
  * else the still-image stream. Null service plus a reason means the answer stays text-only. */
 async function selectSpeech(ports, context, sessionRevision) {
-  const { movingSpeech, speechStream, dealerSpeech } = ports ?? {};
+  const { movingSpeech, speechStream, dealerSpeech, stillSpeechDisabled } = ports ?? {};
   try {
     if (await dealerSpeech?.requested?.(context.dealerId) !== true) return { reason: 'generated_speech_profile_not_enabled' };
     if (movingSpeech?.supports?.(context.dealerId) && context.presentationContext?.dealerId === context.dealerId) {
       return { service: movingSpeech.forContext(context.presentationContext, undefined, sessionRevision, { room: true }) };
     }
     if (typeof speechStream?.prepare === 'function') return { service: speechStream };
-    return { reason: 'moving_speech_dealer_unavailable' };
+    return { reason: stillSpeechDisabled ? 'generated_speech_still_not_configured' : 'moving_speech_dealer_unavailable' };
   } catch (error) { return { reason: speechReason(error) }; }
 }
 
