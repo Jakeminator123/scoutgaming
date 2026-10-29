@@ -29,6 +29,8 @@ const versions = Object.freeze([
   // PR C i docs/plans/NYCKEL-BOLAG.md gör 012 obligatorisk här samtidigt som motorn kräver den vid start.
   { version: 'game-012-api-key-operator', file: '012-api-key-operator.sql', deploymentOptional: true },
   { version: 'game-013-ledger-backfill', file: '013-ledger-backfill.sql', deploymentOptional: true },
+  // Steg F (docs/plans/STEG-F.md): spelarens bolag. Valfri tills kravsteget kräver den vid start.
+  { version: 'game-014-player-operator', file: '014-player-operator.sql', deploymentOptional: true },
 ].map(Object.freeze));
 
 export const GAME_LEDGER_VERSIONS = versions;

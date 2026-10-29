@@ -2,6 +2,7 @@ import { registeredDealerIds } from '../../../packages/presentation/contracts/de
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createPlayerAdministration } from '../../../packages/storage/server/player-administration.mjs';
+import { PLAYER_OPERATOR_COLUMN, playerOperator } from '../../../packages/storage/server/player-operator.mjs';
 import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../../packages/presentation/contracts/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
@@ -100,11 +101,19 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     ]);
     return { tiers: saved.value.tiers, rooms: saved.value.rooms, revision: saved.revision, players: total.n, tx };
   });
-  register('GET', 'players', async () => ({
-    players: await db.prepare('SELECT players.id,name,currency,balance,created_at,status,closed_at,EXISTS(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed FROM players ORDER BY created_at DESC LIMIT 500').all()
-      .then(rows => rows.map(row => ({ ...row, passwordChangeAllowed: row.passwordChangeAllowed === true || row.passwordChangeAllowed === 1 }))),
-    administration: true, storage: 'postgres',
-  }));
+  // Steg F (docs/plans/STEG-F.md): each player names its company once game migration 014 exists.
+  // Before it the column is absent, every player reads as without company and operatorBinding is pending.
+  register('GET', 'players', async () => {
+    const column = await db.prepare(PLAYER_OPERATOR_COLUMN).get();
+    const rows = await db.prepare("SELECT players.id,name,currency,balance,created_at,status,closed_at,to_jsonb(players)->>'operator_id' AS operator_id,EXISTS(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed FROM players ORDER BY created_at DESC LIMIT 500").all();
+    return {
+      players: rows.map(({ operator_id: operatorId = null, ...row }) => ({ ...row,
+        passwordChangeAllowed: row.passwordChangeAllowed === true || row.passwordChangeAllowed === 1,
+        operatorId: (() => { try { return playerOperator({ operator_id: operatorId }); } catch { return null; } })() })),
+      operatorBinding: column?.present === true ? 'ready' : 'pending',
+      administration: true, storage: 'postgres',
+    };
+  });
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
   register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,(hash IS NOT NULL)::integer AS active FROM users ORDER BY id').all() }));
   // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): each key names its company, and Admin chooses
