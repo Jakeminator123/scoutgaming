@@ -1,7 +1,7 @@
 import { createLayerComposition } from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import { combineAbortSignals } from './abort-signals.mjs';
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
-import { fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
+import { SEAT_HALF_PX, fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import { nativeRoomFilmedPlanning } from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
@@ -48,13 +48,31 @@ const SOUND_KEY = 'scoutgaming.shared-room.sound';
 function readSound(window) { try { return window?.sessionStorage?.getItem(SOUND_KEY) === 'on'; } catch { return false; } }
 function writeSound(window, on) { try { window?.sessionStorage?.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* The choice holds for this mount. */ } }
 const readyOf = snapshot => snapshot.players?.some(p => p.id === snapshot.me.id && p.ready) === true;
-export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
+// Both kinds are valid answers, but only moving-speech-stream plays here: its path takes assertCurrent, so a mute,
+// a disconnect or a newer answer stops it mid-line. generated-speech-stream plays its own unmuted <video> without that
+// check, so it is shown as text (speech_kind_unsupported) until its stream path takes assertCurrent too.
+const SPEECH_KINDS = new Set(['moving-speech-stream', 'generated-speech-stream']), PLAYABLE_SPEECH_KINDS = new Set(['moving-speech-stream']);
+export const SHARED_ROOM_SOUND_ACTION = 'Slå på ljud';
+// playSpeech: generated-speech-player.mjs playGeneratedSpeech (the descriptor's own validation, ticket and stream).
+// muted(): the tab's sound choice. caption: {show(text)} for the dealer's spoken or text-only line.
+export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null,
+  playSpeech = null, muted = () => false, caption = null, host = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
   // The window presentation a new mount found in progress (its placebets). A reconnect of this mount never replays it.
   let mountWindow = null;
   // playing: a presentation runs on `state`. held: a newer state of it arrived meanwhile. resting: the dealer's last idle input.
   let playing = false, held = false, resting;
+  // speaking: the one chat answer that owns the dealer's speech. A presentation, a disconnect, a newer answer or close
+  // hands the dealer over (stop); the idle film is then theirs to restart, never this answer's.
+  let speaking = null;const idleWaiters = new Set();
+  const speechLive = () => Boolean(speaking?.live && !speaking.controller.signal.aborted);
+  const untilIdle = signal => new Promise((resolve, reject) => {
+    if (!playing) { resolve(); return; }
+    const done = () => { idleWaiters.delete(wake); signal.removeEventListener('abort', abort); };
+    const wake = () => { done(); resolve(); }, abort = () => { done(); reject(signal.reason); };
+    idleWaiters.add(wake); signal.addEventListener('abort', abort, { once: true });
+  });
   const timelineFor=presentation=>{
     if(!filmedProfile||presentation.kind!=='plan'||!Number.isFinite(presentation.startAt))return null;
     let planning={profile:filmedProfile,dealerId:dealerId??'filmed'};
@@ -83,7 +101,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
         state=snapshot;held=true;return;
       }
       previousSignal?.removeEventListener('abort',abortMedia);
-      abortMedia=()=>{onPresentation(null);media.state({action:true,speech:false,command:'shared-disconnect'});};
+      abortMedia=()=>{speaking?.stop('disconnect');onPresentation(null);media.state({action:true,speech:false,command:'shared-disconnect'});};
       signal?.addEventListener('abort',abortMedia,{once:true});
       // Only an authoritative transition on this connection confirms collection.
       if(!reconnect&&state.phase==='settled'&&snapshot.phase==='bets'&&snapshot.windowId!==state.windowId)
@@ -98,7 +116,8 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // Only ready, the idle phase or a new connection changes the dealer's state. Every call stops and restarts the
       // idle film (local-presentation.mjs state()), so another player's bet or ready leaves it playing.
       const ready=readyOf(snapshot),rest=`${ready}:${sharedIdlePhase(snapshot)}`;
-      if(reconnect||rest!==resting){resting=rest;media.state({ready,action:false,speech:false});}
+      // A chat answer that speaks keeps its speech flag: the idle film stays paused until the answer ends.
+      if(reconnect||rest!==resting){resting=rest;media.state({ready,action:false,speech:speechLive()});}
     },
     async present(presentation,{signal,superseded} = {}) {
       signal?.throwIfAborted();if(closed||!state)return;
@@ -119,6 +138,8 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       const turnAt=presentation.kind==='plan'&&state.phase==='round'&&['decisions','insurance'].includes(state.round?.phase)
         &&Number.isFinite(state.plan?.turnAt)?state.plan.turnAt:null;
       const turnPassed=()=>turnAt!==null&&tableNow()>=turnAt;
+      // The server's presentation owns the dealer from here: a chat answer that speaks or waits stops now.
+      speaking?.stop('presentation');
       // The lookahead names each planned step's exact take, so the next file is prepared before its time.
       // K04 F5 (staging 28 Oct 2026): asked for only when its time began, a step's server answer (1-1.7 s)
       // outlasted the step, so every filmed deal and reveal was left as late. This plan is already committed
@@ -251,14 +272,64 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           const ready=readyOf(state);resting=`${ready}:${sharedIdlePhase(state)}`;media.state({action:false,speech:false,ready});
         }
         held=false;
+        for(const wake of [...idleWaiters])wake();
       }
     },
-    close(){if(closed)return;closed=true;previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},
+    // One chat answer's speech (PR 3, plan-chatt-tal-lipsync §3). It waits while a plan plays and stops when a
+    // presentation starts. Resolves {speech:'played'|'text-only'|'cancelled',reason?}; rejects for a descriptor of
+    // another dealer, a missing authority or the caller's own abort. The text is always shown in #caption.
+    async speak(descriptor,{signal}={}){
+      signal?.throwIfAborted();
+      if(closed||!state)throw new Error('shared_room_media_authority_unavailable');
+      const text=descriptor?.exactText;
+      if(!SPEECH_KINDS.has(descriptor?.kind)||typeof text!=='string'||!text.trim()||text.length>500)throw new Error('shared_room_speech_invalid');
+      if(!dealerId||descriptor.dealerId!==dealerId)throw new Error('shared_room_speech_dealer_mismatch');
+      const roomId=state.roomId,configVersion=state.configVersion;
+      speaking?.stop('replaced');
+      const owner={controller:new AbortController(),live:false,reason:null};
+      owner.stop=reason=>{if(owner.controller.signal.aborted)return;owner.reason=reason;owner.controller.abort(new DOMException('Shared room speech '+reason,'AbortError'));};
+      speaking=owner;
+      const relay=()=>owner.stop('caller');signal?.addEventListener('abort',relay,{once:true});
+      // Same room, binding and dealer as when the answer arrived, and the player still listens.
+      const current=()=>{
+        owner.controller.signal.throwIfAborted();
+        if(closed||speaking!==owner||state.roomId!==roomId||state.configVersion!==configVersion||descriptor.dealerId!==dealerId)throw new Error('shared_room_speech_stale');
+        if(muted())throw new Error('shared_room_speech_muted');
+      };
+      const textOnly=reason=>{caption?.show(text);return{speech:'text-only',reason,...(reason==='muted'?{action:SHARED_ROOM_SOUND_ACTION}:{})};};
+      try{
+        if(muted())return textOnly('muted');
+        if(!PLAYABLE_SPEECH_KINDS.has(descriptor.kind))return textOnly('speech_kind_unsupported');
+        if(!playSpeech)return textOnly('speech_player_unavailable');
+        while(playing)await untilIdle(owner.controller.signal);
+        current();
+        owner.live=true;media.state({speech:true,ready:false});
+        await playSpeech(descriptor,{exactText:text,dealerId,requestId:descriptor.requestId,mount:host,signal:owner.controller.signal,
+          beforeStart:async()=>current(),assertCurrent:current,
+          prepareRendering:(compositing,framing)=>composition?.prepareClip(compositing??undefined,framing),
+          renderFrame:(video,presented)=>composition?.renderFrame(video,presented)??false,
+          setMovingSpeechLayer:layer=>composition?.setMovingSpeechLayer(layer),
+          onStart:spoken=>caption?.show(spoken)});
+        return{speech:'played'};
+      }catch(error){
+        if(owner.reason==='caller')throw signal?.reason??error;
+        if(owner.reason)return{speech:'cancelled',reason:owner.reason};
+        return textOnly(muted()?'muted':'speech_playback_failed');
+      }finally{
+        signal?.removeEventListener('abort',relay);
+        if(speaking===owner)speaking=null;
+        // Only an answer that ended itself (or its caller) gives the dealer back to the idle film. A replaced answer
+        // does too when the newer one does not speak (muted, text only, failed): otherwise the idle film stays paused.
+        if(owner.live&&!closed&&([null,'caller'].includes(owner.reason)||(owner.reason==='replaced'&&!speechLive())))media.state({speech:false,ready:readyOf(state)});
+      }
+    },
+    close(){if(closed)return;closed=true;speaking?.stop('closed');previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},
   });
 }
 
 export async function mountSharedRoomPresentation({ document, window, selection, onReady, onError, signal, transport = null,
-  createComposition=createLayerComposition, loadAdapters=()=>Promise.all([import('./performance-player.mjs'),import('./local-presentation.mjs'),import('./local-card-overlay.mjs')]) }) {
+  createComposition=createLayerComposition, loadAdapters=()=>Promise.all([import('./performance-player.mjs'),import('./local-presentation.mjs'),import('./local-card-overlay.mjs')]),
+  loadSpeechPlayer=()=>import('../../../packages/presentation/runtime/generated-speech-player.mjs') }) {
   if(selection.presentation!=='local')throw new Error('shared_room_presentation_adapter_unavailable');
   const host=document.getElementById('scene');
   const dealer=selection.registeredDealers?.find(row=>row.id===selection.dealer);
@@ -313,7 +384,12 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     if(chosen.tableValue)composition?.setTable(chosen.tableValue);
     restoreColor=roomColor(document,chosen.tableColor);
   } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();placeholder.remove();throw error;}
-  const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
+  // The speech player loads with the first chat answer, never with the table.
+  const captionNode=document.getElementById('caption');let captionTimer;
+  const caption={show(text){if(!captionNode)return;clearTimeout(captionTimer);captionNode.textContent=text;captionNode.classList?.add('show');
+    captionTimer=setTimeout(()=>captionNode.classList?.remove('show'),Math.min(27000,3000+text.length*70));}};
+  const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id,
+    host,muted:()=>muted,caption,playSpeech:async(...args)=>(await loadSpeechPlayer()).playGeneratedSpeech(...args)});
   let floorSize,floorTop;
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
@@ -331,7 +407,10 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,hud.top-scene.top);
     const floor=floorTop??height-150,below=compact?28:140;
     let projected;
-    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile});
+    // The seats stand on the same boxes as the cards (layoutGameOverlay): centred under each box, the circle just
+    // below the hand total at a fixed pixel size, in every window shape. A phone moves its three touch targets apart
+    // only as far as they need, evenly around the boxes.
+    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile,seatHalf:SEAT_HALF_PX});
     // Without a composition plane the seats stand on the dealer's filmed landings (shared-room-layout.mjs); the
     // calibrated row only stands in for a dealer without a filmed profile. No board or dealer is selected here.
     else projected=fallbackSeatLayout({width,height,boxes,filmedProfile,compact:Boolean(compact)});
@@ -342,11 +421,13 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const unGeometry=composition?.onGeometryChange(layout);
   const resize=()=>layout();window.addEventListener('resize',resize);sound?.addEventListener('click',onSound);paintSound();
   let closed=false;
-  const close=()=>{if(closed)return;closed=true;window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();placeholder.remove();};
+  const close=()=>{if(closed)return;closed=true;clearTimeout(captionTimer);window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();placeholder.remove();};
   try{signal?.throwIfAborted();media.start();}catch(error){close();throw error;}
   return Object.freeze({
     restoreSnapshot(snapshot,options){latest=snapshot;currentConnection=options?.signal;version=snapshot.presentationVer;if(currentPresentation?.ver!==version)currentPresentation=null;return ports.restoreSnapshot(snapshot,options);},
-    present:ports.present,layout,
+    present:ports.present,layout,speak:ports.speak,
+    // The chat's "Slå på ljud" for a text-only answer: the same toggle as the sound button.
+    enableSound(){if(!closed&&muted)onSound();},
     close,
   });
 }

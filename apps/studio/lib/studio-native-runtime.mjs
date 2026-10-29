@@ -43,6 +43,7 @@ import { createDesignCatalogReader } from './design-preview-catalog.mjs';
 import { movingDriftDealerIds } from '../../../packages/presentation/contracts/moving-drift.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
+import { createPermanentDeletionApi } from './permanent-deletion-api.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {materialTrashPlan} from './material-trash.mjs';
@@ -233,7 +234,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    for (const [key, handler] of createResourceLifecycleApi({ repository, scope: config.scope }).handlers) {
+    for (const [key, handler] of [...createResourceLifecycleApi({ repository, scope: config.scope }).handlers, ...createPermanentDeletionApi({ repository, scope: config.scope }).handlers]) {
       if (handlers.has(key)) unavailable(); handlers.set(key, handler);
     }
     const drift = createMovingDriftAdminApi({pool,boDb:store.boDb,scope:config.scope,env});

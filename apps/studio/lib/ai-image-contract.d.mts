@@ -1,7 +1,7 @@
 import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 export type AiImageErrorCode='ai_image_disabled'|'ai_image_misconfigured'|'ai_image_unavailable'|'ai_image_limit_reached'|'ai_image_budget_exhausted'|'ai_image_rejected'|'ai_image_invalid_request';
 export type AiImageRole='background'|'table';
-export type AiImagePresetId='dark-studio'|'warm-lounge'|'light-studio'|'casino'|'free';
+export type AiImagePresetId='dark-luxury'|'neon'|'casino'|'dark-studio'|'warm-lounge'|'light-studio'|'free';
 export type AiTableFit={dealerId:string;placement:string};
 export const AI_IMAGE_ERROR_CODES: readonly AiImageErrorCode[];
 export const AI_IMAGE_ROLES: readonly AiImageRole[];
@@ -13,6 +13,7 @@ export const AI_IMAGE_REFERENCE_MAX_BYTES: number;
 export const AI_IMAGE_REFERENCE_MAX_EDGE: number;
 export const AI_IMAGE_REFERENCE_FILE_MAX_BYTES: number;
 export const AI_BACKGROUND_SIZE: {readonly width:number;readonly height:number};
+export const AI_BACKGROUND_CAMERA: {readonly horizon:{readonly min:number;readonly max:number};readonly floorLine:number;readonly lights:{readonly min:number;readonly max:number}};
 export const AI_IMAGE_PRESETS: readonly {readonly id:AiImagePresetId;readonly label:string}[];
 export function sha256Hex(text:string):string;
 export function aiPlacementHash(composition:Pick<CompositionSettings,'mobile'|'desktop'>):string;

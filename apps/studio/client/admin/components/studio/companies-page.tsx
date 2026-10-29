@@ -21,6 +21,7 @@ import {RoomSettingsWarning,RoomStateChip} from './room-settings-warning';
 import {DealerAvatar,DealerFaces} from './dealer-identity-portrait';
 import {ControlResourceLifecycle} from '../../../../components/control-resource-lifecycle';
 import {PartnerJournal} from '../../../../components/partner-journal-loader.mjs';
+import {TrashPermanentDelete} from './permanent-delete';
 
 type Props={page:'companies'|'company'|'room';id:string;active:boolean;disabled:boolean;onChanged:()=>void};
 type Operator=Catalog['administration']['operators'][number];type Room=Catalog['administration']['rooms'][number];
@@ -137,6 +138,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         <Sheet open={Boolean(restoring)} title={'Återställ hos '+(restoring?.name??'bolaget')} description="Spelbordet kommer tillbaka pausat." onClose={()=>navigate(trashHref())}>
           {restoring&&<RoomTrash key={restoring.id} operatorId={restoring.id} disabled={disabled} onChanged={changed}/>}
         </Sheet>
+        <TrashPermanentDelete disabled={disabled} onChanged={changed}/>
       </div>}
     </HubPage>;
   }
