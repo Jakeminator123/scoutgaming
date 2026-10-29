@@ -90,11 +90,6 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "media/site/source/design-kit/prive-blackjack-ui-kit.html",
-    "maxBytes": 2397187,
-    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
-  },
-  {
     "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png",
     "maxBytes": 1628428,
     "reason": "Fanns på main när grinden infördes (2026-10-28)"
