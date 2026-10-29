@@ -152,13 +152,13 @@ export function applyStudioVariantPolicy(project,inventory,dealerId,slot,variant
   const draft=structuredClone(project);
   if(scope.family){
     if(!scope.family.variantIds.includes(variantId)||!scope.clips.some(row=>row.id===variantId))fail('Välj ett tillgängligt alternativ i den exakta mediefamiljen.');
-    if(Object.hasOwn(patch,'frequencyPercent')&&!scope.frequency)fail('Frekvens hör bara till Astrids exakta utdelningsfack.');
+    if(Object.hasOwn(patch,'frequencyPercent')&&!scope.frequency)fail('Frekvens finns bara i ett utdelningsfack med frekvensstyrning.');
     const current=mediaVariantPolicy(project,scope.family,variantId);
     if(scope.frequency&&Object.hasOwn(patch,'selection'))fail('Utdelningsfackets urval styrs av dess frekvenser.');
     const policy={...structuredClone(current),...structuredClone(patch)};
     draft.mediaPolicy=upsertMediaVariantPolicy(draft.mediaPolicy,scope.family.id,policy);
   }else{
-    if(Object.hasOwn(patch,'frequencyPercent'))fail('Frekvens behöver en registrerad Astridfamilj.');
+    if(Object.hasOwn(patch,'frequencyPercent'))fail('Frekvens behöver en registrerad mediefamilj för utdelningen.');
     const line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     const variant=line.variants.find(row=>row.id===variantId);
     if(!variant||variant.id===line.baselineVariantId||!scope.clips.some(row=>row.id===variant.videoGenerationId))fail('Välj en kopplad klippvariant i detta fack. Standardvarianten är fast.');
