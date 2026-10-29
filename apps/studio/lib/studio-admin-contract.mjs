@@ -29,7 +29,7 @@ export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
-    'operator-package', 'room-game-config', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'moving-drift']
+    'operator-package', 'room-game-config', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'resource-delete-check', 'resource-delete', 'moving-drift']
     .map(action => adminEndpoint('POST', action)),
 ]);
 

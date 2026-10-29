@@ -603,8 +603,11 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         current = rows[0] ? packageRow(rows[0]) : null;
         if (expectedRevision !== undefined && (current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
         const lifecycle = optionalOwn(input, 'lifecycle');
-        if (lifecycle !== undefined && (!plain(lifecycle) || Object.keys(lifecycle).sort().join(',') !== 'archived,resourceId,resourceType'
-          || !['operator','room'].includes(lifecycle.resourceType) || typeof lifecycle.archived !== 'boolean')) fail('studio_invalid_data',422);
+        // `deleted: true` marks a permanent room deletion from the trash (permanent-deletion-api.mjs):
+        // the journal's package.publish entry then records which archived room left the package.
+        if (lifecycle !== undefined && (!plain(lifecycle) || !['archived,resourceId,resourceType','archived,deleted,resourceId,resourceType'].includes(Object.keys(lifecycle).sort().join(','))
+          || !['operator','room'].includes(lifecycle.resourceType) || typeof lifecycle.archived !== 'boolean'
+          || Object.hasOwn(lifecycle,'deleted') && (lifecycle.deleted !== true || lifecycle.resourceType !== 'room' || lifecycle.archived !== true))) fail('studio_invalid_data',422);
         if (lifecycle !== undefined) idText(lifecycle.resourceId);
         const nextBranding = JSON.parse(branding);
         // Ordinary publication, including restoration of design drafts, may not

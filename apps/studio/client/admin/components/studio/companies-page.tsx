@@ -18,6 +18,7 @@ import {RoomPicture} from './room-picture';
 import {DealerAvatar,DealerFaces} from './dealer-identity-portrait';
 import {ControlResourceLifecycle} from '../../../../components/control-resource-lifecycle';
 import {PartnerJournal} from '../../../../components/partner-journal-loader.mjs';
+import {TrashPermanentDelete} from './permanent-delete';
 
 type Props={page:'companies'|'company'|'room';id:string;active:boolean;disabled:boolean;onChanged:()=>void};
 type Operator=Catalog['administration']['operators'][number];type Room=Catalog['administration']['rooms'][number];
@@ -122,6 +123,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
           {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:room=>filter===room.operatorId?<span className="text-[12.5px] text-sg-muted">återställ nedan</span>:<Link className={buttonVariants({size:'sm'})} href={'/admin/companies?tab=papperskorg&operator='+encodeURIComponent(room.operatorId)}>Återställ</Link>},
         ]}/></Card>}
         {filter&&operators.some(row=>row.id===filter)&&<Card title={`Återställ hos ${operatorName(filter)}`} className="mt-4"><RoomTrash operatorId={filter} disabled={disabled} onChanged={changed}/></Card>}
+        <TrashPermanentDelete disabled={disabled} onChanged={changed}/>
       </>}
     </HubPage>;
   }
