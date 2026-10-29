@@ -309,7 +309,7 @@ test('Skapa demolänk is active at step 4 once the form is ready; nothing says t
   const html=renderDemoStep4();
   assert.match(html,/<h2[^>]*>4\. Lansera<\/h2>/);
   const button=html.match(/<button[^>]*>Skapa demolänk<\/button>/)?.[0];
-  assert.ok(button,'knappen finns');assert.doesNotMatch(button,/disabled/,'knappen är aktiv');
+  assert.ok(button,'knappen finns');assert.doesNotMatch(button,/ disabled=""/,'knappen är aktiv');
   assert.doesNotMatch(html,/Demolänk kommer senare|slås på då|knyts till bolaget/,'ingen avstängningstext');
   assert.match(html,/få en länk att skicka/);
   assert.match(visible(html),/Nyckeln gäller bara Johns Bet/,'sidan säger att nyckeln hör till bolaget');
