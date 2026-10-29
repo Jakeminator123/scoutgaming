@@ -48,11 +48,11 @@ export function DealersSection() {
         </div>
         <p className="max-w-md leading-relaxed text-muted-foreground md:col-span-5 md:justify-self-end">{!locked
           ? `Välj bland publicerade dealers i ${room.name} hos ${operator.name}. Klicka på ett porträtt för att öppna bordet.`
-          : 'En förhandstitt på våra dealers. Välj bolag och spelrum för att låsa upp de porträtt som ingår.'}</p>
+          : 'En förhandstitt på våra dealers. Välj bolag och spelbord för att låsa upp de porträtt som ingår.'}</p>
       </div>
       {!locked && <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-4">
         <p className="text-sm text-off">{room.name} <span className="text-muted-foreground">hos {operator.name}</span></p>
-        <button type="button" onClick={() => scrollToSection(STEP_IDS.room)} className="text-sm text-lime underline-offset-4 hover:underline">Byt spelrum</button>
+        <button type="button" onClick={() => scrollToSection(STEP_IDS.room)} className="text-sm text-lime underline-offset-4 hover:underline">Byt spelbord</button>
       </div>}
       <div className="relative mt-8">
         <ul aria-label="Dealers" aria-hidden={locked} className={cn(
@@ -64,7 +64,7 @@ export function DealersSection() {
             const selected = available && dealer?.id === item.id;
             return <li key={item.id}>
               <button type="button" disabled={!available} aria-pressed={selected}
-                aria-label={available ? `Välj ${item.name}` : `${item.name} – inte tillgänglig i valt spelrum`}
+                aria-label={available ? `Välj ${item.name}` : `${item.name} – inte tillgänglig vid valt spelbord`}
                 onClick={event => {
                   if (!available || !room) return;
                   dialogTrigger.current = event.currentTarget;
@@ -81,14 +81,14 @@ export function DealersSection() {
                     : !available && !locked ? <span className="absolute right-3 top-3 rounded-full bg-ink/80 p-2 text-off"><Lock size={16} aria-hidden /></span> : null}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent px-4 pb-4 pt-12">
                     <h3 className="display text-2xl text-off md:text-3xl">{item.name}</h3>
-                    <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-off/70">{locked ? 'Dealer' : available ? 'Tillgänglig i ditt rum' : 'Ej i detta spelrum'}</p>
+                    <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-off/70">{locked ? 'Dealer' : available ? 'Tillgänglig vid ditt spelbord' : 'Ej vid detta spelbord'}</p>
                   </div>
                 </div>
               </button>
             </li>;
           })}
         </ul>
-        {locked && <LockedOverlay title={operator ? 'Välj spelrum först' : 'Välj bolag först'} step={operator ? '02' : '01'} onClick={() => scrollToSection(operator ? STEP_IDS.room : STEP_IDS.operator)} />}
+        {locked && <LockedOverlay title={operator ? 'Välj spelbord först' : 'Välj bolag först'} step={operator ? '02' : '01'} onClick={() => scrollToSection(operator ? STEP_IDS.room : STEP_IDS.operator)} />}
       </div>
       {dealer && openFor !== selectionKey && <div className="max-w-md"><RoomChoices /></div>}
     </div>

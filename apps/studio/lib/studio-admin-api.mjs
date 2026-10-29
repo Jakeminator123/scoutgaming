@@ -144,6 +144,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (sceneLayout && (invocation.prepared?.action !== 'publish-scene-layout' || !invocation.prepared.presentation)) throw failure(503);
       const roomRelease = endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
       if (roomRelease && (invocation.prepared?.action !== ROOM_RELEASE_ACTION || !invocation.prepared.presentation)) throw failure(503);
+      // Bolag › Tilldelat: den förberedda kandidaten bär exakt det paket transaktionen förhandlar.
+      const assignment = endpoint.action === 'operator-package' && body?.action === 'publish-assignment';
+      if (assignment && (invocation.prepared?.action !== 'publish-assignment' || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
@@ -170,6 +173,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         : roomRelease ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
           presentationMutation: [{ kind: 'presentation-package', value: invocation.prepared.presentation },
             { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] }
+        : assignment ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
+          presentationMutation: invocation.prepared.mutations }
         : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;

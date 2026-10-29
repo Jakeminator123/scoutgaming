@@ -141,7 +141,7 @@ export function HeroSection() {
                   </h1>
 
                   <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-foreground/80 md:text-xl">
-                    Börja med ditt spelbolag. Då öppnas bolagets spelrum – och i rummet väljer du dealer och miljö.
+                    Börja med ditt spelbolag. Då öppnas bolagets spelbord – och vid spelbordet väljer du dealer och miljö.
                   </p>
 
                   <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -176,7 +176,7 @@ export function HeroSection() {
                     <div>
                       <p className="text-sm font-medium text-off">{status === "ready" ? `${dealers.length} publicerade dealers` : "Publicerat spelutbud"}</p>
                       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        {status === "ready" ? `${openOperators} bolag med rum · ${rooms.length} spelrum` : status === "error" ? "Spelkatalogen är otillgänglig" : "Hämtas från spelkatalogen"}
+                        {status === "ready" ? `${openOperators} bolag med spelbord · ${rooms.length} spelbord` : status === "error" ? "Spelkatalogen är otillgänglig" : "Hämtas från spelkatalogen"}
                       </p>
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export function HeroSection() {
                   cinematic ? "opacity-0" : "opacity-100",
                 )}
               >
-                01 Bolag → 02 Spelrum → 03 Dealer & miljö
+                01 Bolag → 02 Spelbord → 03 Dealer & miljö
               </span>
             </div>
           </div>

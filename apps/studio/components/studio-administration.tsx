@@ -149,7 +149,7 @@ const WRITE_NOTICES = {
   acknowledged: 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.',
   'acknowledged-unrefreshed': 'Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.',
   'email-not-sent': 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.',
-  'invite-sent': 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
+  'invite-sent': 'Inbjudan till Scoutgamings personal har skickats för leverans. Kontot ger tillgång till Admin, Partnerportalen och spelet; bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
   'resend-sent': 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.',
 } as const;
 const writeNoticeKind = (notice: string) => (Object.keys(WRITE_NOTICES) as (keyof typeof WRITE_NOTICES)[]).find(kind => WRITE_NOTICES[kind] === notice);
@@ -441,7 +441,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </>}
       </>}
       {section === 'players' && <>
-        <p>Spelarkonton ger tillgång till nivå 3: spelarlobbyn och spelen. För adminåtkomst använder du Bjud in adminpersonal – nivå 1 under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
+        <p>Spelarkonton ger tillgång till lobbyn och spelen. För åtkomst till Admin använder du Bjud in personal till Admin under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
         {missing(resources.players, 'players')}
         {unavailableWrite('players/create')}{unavailableWrite('players/status')}{unavailableWrite('players/password')}
         {resources.players?.payload && <><EmptyRows count={rows(resources.players.payload.players).length} /><div className={styles.tableWrap}><table>
@@ -479,9 +479,9 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </form></details>}
       </>}
       {section === 'users' && <>
-        <p>Intern adminpersonal hos ScoutGamingGroup bjuds in med e-post till nivå 1. Behörigheten omfattar hela nivå 1 (intern administration), nivå 2 (spelbolagens arbetsytor) och nivå 3 (spelarlobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord på alla tre nivåerna. Bolagsåtkomst följer tilldelade medlemskap.</p>
+        <p>Scoutgamings personal bjuds in med e-post. Behörigheten omfattar Admin, Partnerportalen (bolagens arbetsytor) och spelet (lobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord överallt. Bolagsåtkomst följer tilldelade medlemskap.</p>
         {missing(resources.users, 'users')}
-        {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas. Att skapa ett spelarkonto ger inte Studioåtkomst.</p>}
+        {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Admin behöver konfigureras innan inbjudningar kan skickas. Att skapa ett spelarkonto ger inte åtkomst till Admin.</p>}
         {['users/role', 'users/remove'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.users?.payload && <><EmptyRows count={rows(resources.users.payload.users).length} />{rows(resources.users.payload.users).map((user, index) => <div className={styles.row} key={label(user.username, String(index))}>
           <div><strong>{label(user.username)}</strong><p>{accountRole(user.role)} · {user.active ? 'aktiverat' : 'väntar på aktivering'}</p></div>
@@ -491,9 +491,9 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
-        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in adminpersonal – nivå 1</summary><p>Ange administratörens e-postadress. Mejlet bjuder in intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3. Bolagsåtkomst följer tilldelade medlemskap. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
+        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in personal till Admin</summary><p>Ange administratörens e-postadress. Mejlet bjuder in Scoutgamings personal med behörighet till Admin, Partnerportalen och spelet. Bolagsåtkomst följer tilldelade medlemskap. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
-          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör – nivå 1, 2 och 3</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
+          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form></details>}
       </>}
       {section === 'apikeys' && <>

@@ -612,6 +612,17 @@ async function assignmentResponse(prepared, config) {
 // och utan vem/hur (konto-id, accessClass, requestId, resourceType/Id).
 const PUBLICATION_ACTIONS = Object.freeze(['package.publish']);
 const publicationEntry = ({ id, atMs, beforeRevision, afterRevision }) => ({ id, atMs, beforeRevision, afterRevision });
+// Administrationsdokumentets revision (spelbordens läge, spelinställningsutkast)
+// är Scoutgamings interna, delade revision: den stannar i journalen på servern
+// och skickas aldrig till bolaget.
+const withoutAdministrationRevision = value => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const { administrationRevision: _hidden, ...rest } = value;
+  return rest;
+};
+const partnerJournalEntry = entry => (entry?.changes && typeof entry.changes === 'object' && !Array.isArray(entry.changes)
+  ? { ...entry, changes: Object.fromEntries(Object.entries(withoutAdministrationRevision(entry.changes))
+    .map(([key, value]) => [key, withoutAdministrationRevision(value)])) } : entry);
 async function journalResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const decided = await decidedPartnerContext(found);
@@ -626,7 +637,8 @@ async function journalResponse(prepared, config) {
   const result = await found.store.listAuditEvents(found.operator.id,{cursor:prepared.journalCursor,limit:prepared.journalLimit,
     ...(publications ? { actions: [...PUBLICATION_ACTIONS] } : {})});
   // Försvar på djupet: även om lagret skulle lämna andra rader bär svaret bara publiceringar.
-  const entries = publications ? result.entries.filter(entry => PUBLICATION_ACTIONS.includes(entry?.action)).map(publicationEntry) : result.entries;
+  const entries = publications ? result.entries.filter(entry => PUBLICATION_ACTIONS.includes(entry?.action)).map(publicationEntry)
+    : result.entries.map(partnerJournalEntry);
   return json({...result,entries,nextCursor:result.nextCursor ? Buffer.from(JSON.stringify(result.nextCursor)).toString('base64url') : null},200,[],{vary:true});
 }
 // Invite links an existing partner account, or creates an invited one (N2.6).

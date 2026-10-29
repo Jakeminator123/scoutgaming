@@ -183,7 +183,15 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       }
     }
     checkedValues(defaults,resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},null,laneId),lane,choices(pack,presentation,document)[laneId]);
-    for(const id of Object.keys(branding.roomOverrides??{}))if(!rooms.some(room=>room.id===id))fail(422);
+    // Ett pausat (eller annars inte redigerbart) spelbord som fortfarande hör
+    // till bolagets paket behåller sin publicerade override oförändrad: utkastet
+    // får bära den vidare, men aldrig lägga till eller ändra den. Ett arkiverat
+    // spelbord finns inte i paketets spelbord och nekas som förut.
+    const held=new Set(listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).map(room=>room.id));
+    for(const [id,value]of Object.entries(branding.roomOverrides??{})){
+      if(rooms.some(room=>room.id===id))continue;
+      if(!held.has(id)||!Object.hasOwn(base.roomOverrides??{},id)||canonicalStudioJson(value)!==canonicalStudioJson(base.roomOverrides[id]))fail(422);
+    }
     for(const room of rooms){
       const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
       // Explicit overrides change future inheritance even when today's rendered value is equal.
