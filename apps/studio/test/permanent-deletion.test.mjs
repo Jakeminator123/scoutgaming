@@ -112,6 +112,38 @@ test('players pointing at the company refuse the deletion after game-014; before
  assert.equal(await f.count('operators','empty'),0);
 });
 
+test('a partner player reached through the company key blocks even when the player row has no company (written after game-014)',async t=>{
+ const f=await fixture(t);
+ await emptyCompanyInTrash(f);await f.archiveOperator('empty');
+ await f.pool.query(`ALTER TABLE croupier_game.players ADD COLUMN operator_id text;ALTER TABLE croupier_auth.api_keys ADD COLUMN operator_id text;
+  INSERT INTO croupier_auth.api_keys (id,name,key,secret,scopes,created_at,operator_id) VALUES ('k-empty','Partnernyckel','pk-empty','s','play','fixture','empty');
+  INSERT INTO croupier_game.players (id,name,created_at,operator_id) VALUES ('p-1','Spelare ett','fixture','empty'),('p-3','Ny partnerspelare','fixture',NULL);
+  INSERT INTO croupier_game.partner_players VALUES ('k-empty','ext-1','p-1'),('k-empty','ext-3','p-3')`);
+ const {check,result}=await f.remove({kind:'operator',id:'empty'});
+ assert.deepEqual(check.blockers,[{code:'operator_api_keys',items:[{id:'k-empty',name:'Partnernyckel'}]},
+  {code:'operator_players',items:[{id:'p-1',name:'Spelare ett'},{id:'p-3',name:'Ny partnerspelare'}]}]);
+ assert.equal(result.status,409);assert.equal(result.body.code,'studio_resource_delete_blocked');
+ assert.equal(await f.count('operators','empty'),1);
+});
+
+test('an own FK table that exists but cannot be read is a named blocker, not an FK error at deletion',async t=>{
+ const f=await fixture(t);
+ await emptyCompanyInTrash(f);await f.archiveOperator('empty');
+ // The fixture has studio-021: the policy table has an FK to the company.
+ await f.pool.query(`INSERT INTO croupier_studio.operator_material_policies (environment_id,workspace_id,operator_id,revision,daily_ai_limit,blocked,actor_id,access_class,updated_at_ms)
+  VALUES ('${f.scope.environment}','${f.scope.workspaceId}','empty',1,5,false,'fixture','system',0);
+  CREATE ROLE studio_policy NOLOGIN;GRANT USAGE ON SCHEMA croupier_studio, croupier_auth, croupier_game TO studio_policy;
+  GRANT SELECT ON ALL TABLES IN SCHEMA croupier_game, croupier_auth TO studio_policy;
+  GRANT ALL ON ALL TABLES IN SCHEMA croupier_studio TO studio_policy;GRANT ALL ON ALL SEQUENCES IN SCHEMA croupier_studio TO studio_policy;
+  REVOKE ALL ON croupier_studio.operator_material_policies FROM studio_policy`);
+ await f.pool.query('SET ROLE studio_policy');t.after(()=>f.pool.query('RESET ROLE').catch(()=>{}));
+ const {check,result}=await f.remove({kind:'operator',id:'empty'});
+ assert.deepEqual(check.blockers,[{code:'operator_check_unreadable',items:[{id:'croupier_studio.operator_material_policies',name:'Bolagets materialpolicyer'}]}]);
+ assert.equal(result.status,409);assert.equal(result.body.code,'studio_resource_delete_blocked');
+ await f.pool.query('RESET ROLE');
+ assert.equal(await f.count('operators','empty'),1);
+});
+
 test('a key table that exists but cannot be read refuses the deletion instead of counting as absent',async t=>{
  const f=await fixture(t);
  await emptyCompanyInTrash(f);await f.archiveOperator('empty');

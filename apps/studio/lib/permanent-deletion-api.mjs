@@ -10,7 +10,7 @@
 //   scenmall  → projektet sparas utan mallen (journal: document_history + audit_events save_document).
 //   bolag     → bara ett bolag i papperskorgen som aldrig publicerat innehåll och saknar spelare: dess
 //               utkast, journal, paket, medlemskap, roller och sist bolagsraden. Bolagsraden låses innan
-//               planen läses. En tabell som kan peka på bolaget men inte kan läsas är ett hinder, aldrig
+//               planen läses (se lockOperator för vad låset garanterar). En tabell som kan peka på bolaget men inte kan läsas är ett hinder, aldrig
 //               frånvaro. Journalen har FK till bolaget och en fast CHECK på åtgärden, så `operator.delete` kan inte sparas utan migrering (se PR).
 import {createHash} from 'node:crypto';
 import * as savedGameDocumentContract from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -61,14 +61,15 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
    WHERE ${scoped} AND n.nspname=$3 AND c.relname=$4 AND c.relkind IN ('r','p','v','m','f')`,[...params,schema,table]));
   return !row?'absent':row.readable===true?'readable':'unreadable';
  }
- // Optional own tables: only a readable table is deleted from.
- const exists=async(client,name)=>await access(client,...name.split('.'))==='readable';
  async function column(client,schema,table,name){
   return rows(await client.query(`SELECT 1 FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_class c ON c.oid=a.attrelid
    JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE ${scoped} AND n.nspname=$3 AND c.relname=$4 AND a.attname=$5
    AND a.attnum>0 AND NOT a.attisdropped`,[...params,schema,table,name])).length>0;
  }
- // Bolagsraden låses innan planen läses, så att inget hinder hinner uppstå mellan kontroll och radering.
+ // Bolagsraden låses innan planen läses. Det serialiserar mot Studios egna skrivningar på bolaget (status, paket,
+ // roller). Spelare och API-nycklar har ingen FK till bolaget, så låset hindrar inte att sådana skapas samtidigt;
+ // i praktiken fångas de av `operator_published` (spelbord kräver publicerat innehåll) och `operator_api_keys`
+ // (partnerspelare kräver en nyckel). `operator_players` är en extra kontroll, inte en garanti.
  async function lockOperator(client,operatorId){
   await client.query(`SELECT 1 FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE`,[...params,operatorId]);
  }
@@ -141,11 +142,24 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
    const keys=rows(await client.query(`SELECT id,name FROM croupier_auth.api_keys WHERE ${scoped} AND operator_id=$3 ORDER BY id`,[...params,operator.id]));
    if(keys.length)blockers.push({code:'operator_api_keys',items:named(keys)});
   }
-  // Spelare bär saldo och historik. Före game-014 saknar spelarna kolumnen operator_id och kan inte peka på bolaget.
+  // Spelare bär saldo och historik. Före game-014 saknar spelarna kolumnen operator_id; efter 014 har bara spelare
+  // från backfillen den satt (nya spelare skrivs utan bolag). Partnerspelare nås därför också via sin nyckel.
   const playerTable=await access(client,'croupier_game','players');
   if(playerTable==='unreadable')unreadable.push({id:'croupier_game.players',name:'Spelare'});
-  else if(playerTable==='readable'&&await column(client,'croupier_game','players','operator_id')){
-   const players=rows(await client.query(`SELECT id,name,(count(*) OVER ())::integer AS total FROM croupier_game.players WHERE ${scoped} AND operator_id=$3 ORDER BY id LIMIT 20`,[...params,operator.id]));
+  const sources=[];
+  if(playerTable==='readable'&&await column(client,'croupier_game','players','operator_id'))
+   sources.push('SELECT id,name FROM croupier_game.players WHERE operator_id=$3');
+  if(keyTable==='readable'&&await column(client,'croupier_auth','api_keys','operator_id')){
+   const mapTable=await access(client,'croupier_game','partner_players');
+   if(mapTable==='unreadable')unreadable.push({id:'croupier_game.partner_players',name:'Partnerspelare'});
+   else if(mapTable==='readable')sources.push(playerTable==='readable'
+    ?`SELECT m.player_id AS id,coalesce(p.name,m.player_id) AS name FROM croupier_game.partner_players m JOIN croupier_auth.api_keys k ON k.id=m.key_id
+     LEFT JOIN croupier_game.players p ON p.id=m.player_id WHERE k.operator_id=$3`
+    :`SELECT m.player_id AS id,m.player_id AS name FROM croupier_game.partner_players m JOIN croupier_auth.api_keys k ON k.id=m.key_id WHERE k.operator_id=$3`);
+  }
+  if(sources.length){
+   const players=rows(await client.query(`SELECT id,name,(count(*) OVER ())::integer AS total FROM (${sources.join(' UNION ')}) s
+    WHERE ${scoped} ORDER BY id LIMIT 20`,[...params,operator.id]));
    const total=players[0]?.total??0,items=named(players);
    if(total>items.length)items.push({id:'more',name:`och ${total-items.length} till`});
    if(total)blockers.push({code:'operator_players',items});
@@ -163,8 +177,14 @@ export function createPermanentDeletionApi({repository,scope,now=Date.now}={}){
    WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3`,[...params,operator.id]))[0].n);
   const removes={packages:history.length,journal:await count('operator_audit_events'),drafts:await count('operator_branding_drafts'),
    memberships:await count('operator_memberships'),roles:await count('operator_roles')};
+  // Egna tabeller med FK till bolaget: en som finns men inte kan läsas ger annars FK-fel vid raderingen.
+  const extra=[];
+  for(const table of own){
+   const state=await access(client,'croupier_studio',table);
+   if(state==='readable')extra.push(table);
+   else if(state==='unreadable')unreadable.push({id:'croupier_studio.'+table,name:table==='operator_ai_attempts'?'Bolagets AI-försök':'Bolagets materialpolicyer'});
+  }
   if(unreadable.length)blockers.push({code:'operator_check_unreadable',items:unreadable});
-  const extra=[];for(const table of own)if(await exists(client,'croupier_studio.'+table))extra.push(table);
   return {name:operator.name,blockers,removes,company,extra};
  }
  async function plan(body,operators,client){
