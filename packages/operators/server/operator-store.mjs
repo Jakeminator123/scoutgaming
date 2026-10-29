@@ -11,6 +11,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
+// Samma nyckel som PARTNER_ASSIGNMENT_KEY (packages/presentation/server/presentation-package.mjs).
+const ASSIGNMENT_KEY = 'assignment';
 import { OPERATOR_AUDIT_ACTIONS, PARTNER_REQUEST_ACTIONS, PARTNER_TABLE_ACTIONS, PARTNER_JOURNAL_STORAGE_VERSION } from './operator-audit-actions.mjs';
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
@@ -634,7 +636,13 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (!row) fail('studio_storage_unavailable');
       const saved=packageRow(row);
       if(roomPublication)await roomWriter.writeRoomGamePublication(txQuery,roomPublication,saved.revision);
-      await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {})}});
+      // Admins tilldelning (Bolag › Tilldelat, branding.assignment) journalförs före och efter när den ändras.
+      const assignmentBefore=current?.branding?.[ASSIGNMENT_KEY]??null,assignmentAfter=saved.branding?.[ASSIGNMENT_KEY]??null;
+      const assignmentChanged=canonicalStudioJson(assignmentBefore)!==canonicalStudioJson(assignmentAfter);
+      await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,
+        ...(assignmentChanged ? {before:{assignment:structuredClone(assignmentBefore)}} : {}),
+        after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {}),
+          ...(assignmentChanged ? {assignment:structuredClone(assignmentAfter)} : {})}});
       return replacement?{package:saved,config:structuredClone(roomPublication.configs.find(row=>row.roomId===replacement.roomId).body)}:saved;
   }
   // Partnerns begäran (material, nyckelrotation) är en journalpost och inget annat:

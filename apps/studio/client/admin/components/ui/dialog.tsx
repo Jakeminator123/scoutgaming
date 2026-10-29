@@ -41,7 +41,7 @@ function DialogShell({open,children,onClose,busy,className,labelledBy,describedB
   },[open,initialFocus]);
   return <dialog ref={dialog} aria-labelledby={labelledBy} aria-describedby={describedBy} aria-busy={ariaBusy||undefined} data-danger={danger||undefined} {...handlers}
     onClick={event=>{if(event.target===event.currentTarget)dismiss();}}
-    className={cn('m-auto max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-32px))] overflow-visible rounded-2xl border border-sg-border bg-sg-surface p-0 text-sg-text shadow-2xl backdrop:bg-[rgba(15,16,18,.55)] backdrop:backdrop-blur-[2px] open:animate-in open:fade-in-0 open:zoom-in-95 open:duration-150',className)}>
+    className={cn('m-auto max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-32px))] overflow-visible rounded-xl border border-sg-border bg-sg-surface p-0 text-sg-text shadow-sg backdrop:bg-sg-overlay backdrop:backdrop-blur-[2px] open:animate-in open:fade-in-0 open:zoom-in-95 open:duration-150',className)}>
     {children}
   </dialog>;
 }
@@ -54,7 +54,7 @@ export function Dialog({open,title,description,children,footer,onClose,busy=fals
     {open?<div className="relative flex max-h-[calc(100dvh-34px)] flex-col">
       <div className="min-w-0 px-6 pb-2 pr-14 pt-5"><h2 id={id+'-title'} className="m-0 text-lg font-semibold tracking-[-0.01em]">{title}</h2>{description&&<p className="mb-0 mt-1 text-[13.5px] text-sg-muted">{description}</p>}</div>
       <div id={id+'-body'} className="min-h-0 flex-1 overflow-y-auto px-6 py-3 text-[14px]">{children}</div>
-      {footer&&<div className="flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-sg-line-2 bg-sg-surface-2 px-6 py-3.5">{footer}</div>}
+      {footer&&<div className="flex flex-wrap items-center justify-end gap-2 rounded-b-xl border-t border-sg-line-2 bg-sg-surface-2 px-6 py-3.5">{footer}</div>}
       {/* Last in the tab order, so the dialog opens on its first field or action, not on the close button. */}
       <Button variant="ghost" size="icon-sm" aria-label={closeLabel} disabled={busy} onClick={onClose} className="absolute right-3 top-3.5"><X aria-hidden="true"/></Button>
     </div>:null}
@@ -73,14 +73,15 @@ export function DialogSteps({steps,current,onSelect,reachable=-1,className}:{ste
     </li>;})}</ol>;
 }
 
-/** A panel sliding in from the right (preview, assistant). Non-modal: the page stays usable beside it. */
-export function Sheet({open,title,children,onClose,width='min(720px,100vw)',actions}:{open:boolean;title:ReactNode;children?:ReactNode;onClose:()=>void;width?:string;actions?:ReactNode}) {
+/** A panel sliding in from the right: details (460px, VISUELL-RIKTNING), preview and assistant (wider).
+ *  Non-modal: the page stays usable beside it. `description` is one quiet line under the title. */
+export function Sheet({open,title,description,children,onClose,width='min(460px,100vw)',actions}:{open:boolean;title:ReactNode;description?:ReactNode;children?:ReactNode;onClose:()=>void;width?:string;actions?:ReactNode}) {
   const [id]=useState(()=>'sheet-'+(++sequence));
   const {dialog,handlers}=useNativeDialog({open,onClose,modal:false});
   return <dialog ref={dialog} aria-labelledby={id+'-title'} {...handlers} style={{width}}
-    className="fixed inset-y-0 left-auto right-0 z-40 m-0 h-dvh max-h-none max-w-none border-0 border-l border-sg-border bg-sg-surface p-0 text-sg-text shadow-[-16px_0_40px_-24px_rgba(0,0,0,.45)] open:animate-in open:slide-in-from-right open:duration-200">
+    className="fixed inset-y-0 left-auto right-0 z-40 m-0 h-dvh max-h-none max-w-none border-0 border-l border-sg-border bg-sg-surface p-0 text-sg-text shadow-sg open:animate-in open:slide-in-from-right open:duration-200">
     {open?<div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-sg-line-2 px-5 py-3.5"><h2 id={id+'-title'} className="m-0 truncate text-[15px] font-semibold">{title}</h2><div className="flex items-center gap-1">{actions}<Button variant="ghost" size="icon-sm" aria-label="Stäng panelen" onClick={onClose}><X aria-hidden="true"/></Button></div></div>
+      <div className="flex items-start justify-between gap-3 border-b border-sg-line-2 px-5 py-3.5"><div className="min-w-0"><h2 id={id+'-title'} className="m-0 truncate text-[15px] font-semibold">{title}</h2>{description&&<p className="mb-0 mt-0.5 text-[13px] text-sg-muted">{description}</p>}</div><div className="flex items-center gap-1">{actions}<Button variant="ghost" size="icon-sm" aria-label="Stäng panelen" onClick={onClose}><X aria-hidden="true"/></Button></div></div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
     </div>:null}
   </dialog>;

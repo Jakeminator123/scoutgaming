@@ -2,7 +2,7 @@
 // CSRF rules as the other native Studio routes; forge-specific errors keep a
 // readable message because operators act on them (credits, missing anchor…).
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { assertNativeStudioRequest, nativeStudioAdminEnabled, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { createDealerForgeService, ForgeError } from './dealer-forge-service.mjs';
@@ -21,7 +21,7 @@ const CODE_MESSAGES = Object.freeze({
   studio_forge_invalid_status: 'Ogiltig jobbstatus.', studio_forge_invalid_job: 'Ogiltigt jobb-ID.', studio_forge_actor_required: 'Inloggad aktör saknas.',
   studio_forge_store_failed: 'Forge-lagret svarade inte.', studio_forge_store_configuration: 'Forge-lagret är felkonfigurerat.',
 });
-export function forgeErrorResponse(error) {
+function forgeErrorResponse(error) {
   if (error instanceof ForgeError || error instanceof RunwayError || (error?.code && /^(forge_|runway_|studio_forge_)/.test(error.code))) {
     const status = [400, 402, 403, 404, 409, 413, 415, 422, 503].includes(error.statusCode) ? error.statusCode : 503;
     const message = error.detail ?? (error.message && error.message !== error.code ? error.message : CODE_MESSAGES[error.code] ?? error.code);
@@ -107,16 +107,4 @@ async function nativeForgeApi() {
 export async function handleNativeDealerForge(request) {
   try { return await (await nativeForgeApi()).handle(request); }
   catch (error) { return forgeErrorResponse(error); }
-}
-
-/** Server-rendered first paint for /control/dealer-forge. The page has already passed authorizeUiPage. */
-export async function dealerForgeInitialData(dealerId, { enabled = nativeStudioAdminEnabled } = {}) {
-  if (!enabled()) return { index: null, state: null };
-  try {
-    const { service } = await nativeForgeApi();
-    const index = { ...(await service.status()), dealers: await service.listDealers() };
-    const id = dealerId && index.dealers.some(row => row.id === dealerId) ? dealerId : index.dealers[0]?.id;
-    const state = id ? await service.state(id) : null;
-    return { index, state };
-  } catch { return { index: null, state: null }; }
 }

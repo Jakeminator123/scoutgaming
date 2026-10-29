@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { assertLocalPageRequest } from './http-guard.mjs';
 import { studioInitialData } from './studio-server.mjs';
-import { remoteUiConfiguration, authorizeRemoteUi, remoteUiInitialData } from './remote-ui.mjs';
 import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { nextStudioLoginRedirect } from './next-page-navigation.mjs';
@@ -33,9 +32,7 @@ async function nativeUi(request: Request) {
 
 export async function authorizeUiPage(request: Request) {
   if (nativeStudioAdminEnabled()) { await nativeUi(request); return; }
-  if (!remoteUiConfiguration()) { assertLocalPageRequest(request); return; }
-  // The retired Lab login (/api/auth/lab/start) is gone; a missing session stays a 401.
-  await authorizeRemoteUi(request);
+  assertLocalPageRequest(request);
 }
 
 export async function studioUiInitialData(request: Request) {
@@ -47,6 +44,6 @@ export async function studioUiInitialData(request: Request) {
     ]);
     return {project: saved.project, videos, status: {configured: true, provider: 'neon', message: 'Sparad Studio-policy läses från Neon.'}};
   }
-  if (!remoteUiConfiguration()) { assertLocalPageRequest(request); return studioInitialData(); }
-  return await remoteUiInitialData(request);
+  assertLocalPageRequest(request);
+  return studioInitialData();
 }

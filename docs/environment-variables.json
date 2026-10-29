@@ -414,7 +414,6 @@
     "vercel-lab-ui": {
       "sources": [
         "apps/studio/proxy.ts",
-        "apps/studio/lib/remote-ui.mjs",
         "apps/studio/lib/studio-native-runtime.mjs",
         "apps/studio/lib/studio-native-mail.mjs",
         "packages/presentation/server/saved-game-policy.mjs",
@@ -455,7 +454,6 @@
       "firstBoot": [],
       "conditional": [
         "CROUPIER_VERCEL_UNIFIED_UI",
-        "CROUPIER_LAB_REMOTE_UI",
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_BACKEND_ORIGIN",
         "CROUPIER_LAB_UI_ORIGIN",
