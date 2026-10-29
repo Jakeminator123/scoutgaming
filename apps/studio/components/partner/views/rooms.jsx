@@ -9,7 +9,7 @@ import { availablePartnerRooms, initialPartnerRoomSelection } from '../../../lib
 import { partnerLaneState } from '../../../lib/partner-package-view.mjs';
 import { resolveRoomBranding } from '../../../../../packages/operators/contracts/branding.mjs';
 import { workspaceSurfacePath } from '../../../../../packages/navigation/workspace-surfaces.mjs';
-import { Btn, Chip, Crumbs, Note, Page, Tip } from './ui.jsx';
+import { Btn, Badge, Crumbs, Empty, Note, Page, Tip } from './ui.tsx';
 
 const PRESETS = { casual: 'Casual', prive: 'Privé', high: 'High' };
 const languageWord = (value, en) => value === 'sv' ? (en ? 'Swedish' : 'svenska') : value === 'en' ? (en ? 'English' : 'engelska') : value;
@@ -69,7 +69,7 @@ export function PartnerRoomWorkspace({ snapshot, copy, language = 'sv', apiBase,
       <SceneThumb snapshot={snapshot} room={room} />
       <div className="room-card-body">
         <div className="room-card-text"><Tip content={room.name}><div className="strong ellipsis">{room.name}</div></Tip><div className="small muted ellipsis">{details(room) || '—'}</div></div>
-        <div className="room-card-chips"><Chip tone={open ? 'ok' : 'warn'} dot>{open ? t('öppet', 'open') : t('pausat', 'paused')}</Chip>{snapshot.draft && editable ? <Chip tone="accent">{t('utkast', 'draft')}</Chip> : null}</div>
+        <div className="room-card-chips"><Badge tone={open ? 'ok' : 'warn'} dot>{open ? t('öppet', 'open') : t('pausat', 'paused')}</Badge>{snapshot.draft && editable ? <Badge tone="accent">{t('utkast', 'draft')}</Badge> : null}</div>
       </div>
     </>;
     return editable
@@ -96,7 +96,7 @@ export function PartnerRoomWorkspace({ snapshot, copy, language = 'sv', apiBase,
   return <Page title={copy.rooms} intro={t('Välj ett spelbord för att byta dealer, bakgrund eller bordsgrafik. Ni sparar ett utkast, granskar och publicerar; spelarna får den nya versionen vid nästa runda.', 'Choose a table to change dealer, background or table graphics. You save a draft, review and publish; players get the new version at the next round.')}
     actions={<Btn href={helpHref}><Plus size={15} aria-hidden="true" />{t('Begär ett spelbord till', 'Request another table')}</Btn>}>
     {all.length ? <div className="room-grid" role="list" aria-label={copy.rooms}>{all.map(room => <div role="listitem" key={room.id}>{card(room)}</div>)}</div>
-      : <div className="empty"><div className="empty-icon" aria-hidden="true"><Spade size={20} /></div><h3>{t('Inga spelbord ännu', 'No tables yet')}</h3><p className="small">{t('Scoutgaming skapar och publicerar bolagets spelbord.', 'Scoutgaming creates and publishes the company tables.')}</p></div>}
+      : <Empty chip={null} icon={<Spade size={20} />} title={t('Inga spelbord ännu', 'No tables yet')} text={t('Scoutgaming skapar och publicerar bolagets spelbord.', 'Scoutgaming creates and publishes the company tables.')} />}
     {rooms.length ? <div className="room-default"><button type="button" className="link-quiet" onClick={() => setRoomId('')}>{t('Bolagets standard', 'Company default')}<ChevronRight size={14} aria-hidden="true" /></button>
       <span className="small muted">{t('val som gäller alla spelbord som inte har egna', 'choices for every table without its own')}</span></div> : null}
     {editor}

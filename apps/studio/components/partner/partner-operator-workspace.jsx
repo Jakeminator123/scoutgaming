@@ -15,7 +15,7 @@ import { PartnerReports } from './views/reports.jsx';
 import { PartnerIntegration } from './views/integration.jsx';
 import { PartnerHelp } from './views/help.jsx';
 import { TeamView } from './views/team.jsx';
-import { Btn, Card, Chip, PortalRoot, count } from './views/ui.jsx';
+import { Btn, Card, Badge, PortalRoot, TechnicalDetails, count } from './views/ui.tsx';
 import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { partnerView, resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
 import { partnerTeamView } from '../partner-team-loader.mjs';
@@ -198,10 +198,10 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
 // (the permission's code name sits in a tooltip-free detail line for support).
 function DeniedView({denied,copy,language,href}) {
   return <div className="page"><Card className="denied" role="alert">
-    <Chip tone="danger">403</Chip>
+    <Badge tone="danger">403</Badge>
     <h2>{copy.deniedTitle}</h2>
     <p className="muted">{copy.deniedBody.replace('{role}',denied.role?.label??'—').replace('{permission}',partnerPermissionWord(denied.permission,language))}</p>
-    <details className="tech"><summary>{language==='en'?'Technical details':'Tekniska detaljer'}</summary><code>{denied.permission}</code></details>
+    <TechnicalDetails title={language==='en'?'Technical details':'Tekniska detaljer'}><code>{denied.permission}</code></TechnicalDetails>
     <Btn href={href}>{copy.toOverview}</Btn>
   </Card></div>;
 }

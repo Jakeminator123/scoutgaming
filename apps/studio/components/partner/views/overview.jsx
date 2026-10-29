@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ArrowUpRight, Coins, Inbox, Spade, TrendingUp, Activity } from 'lucide-react';
 import { workspaceSurfacePath } from '../../../../../packages/navigation/workspace-surfaces.mjs';
 import { displayLabel } from '../../partner-preview-media.mjs';
-import { Bars, Btn, Card, Chip, KV, Page, Row, Stat, Tip, TrendChart, fmtDate, fmtInt } from './ui.jsx';
+import { Bars, Btn, Card, Badge, KV, Note, Page, Row, Rows, Stat, Tip, TrendChart, fmtDate, fmtInt } from './ui.tsx';
 import { amountIn, formatMoney, reportCurrency, reportDays, reportFigures, reportsTruncatedNotice } from './report-figures.mjs';
 
 const PRESETS = { casual: 'Casual', prive: 'Privé', high: 'High' };
@@ -32,11 +32,11 @@ export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
   const assignment = snapshot.assignment ?? { games: [], dealers: [], lanes: [], backgrounds: [], tables: [] };
   const names = (list, word = item => displayLabel(item.label ?? item)) => list.length ? list.map(word).join(', ') : '—';
   const waiting = [];
-  if (snapshot.draft) waiting.push({ key: 'draft', chip: <Chip tone="warn">{t('Utkast', 'Draft')}</Chip>, href: path('rooms'),
+  if (snapshot.draft) waiting.push({ key: 'draft', chip: <Badge tone="warn">{t('Utkast', 'Draft')}</Badge>, href: path('rooms'),
     title: t('Ett sparat utkast väntar', 'A saved draft is waiting'), text: t('Granska och publicera under Spelbord.', 'Review and publish under Tables.') });
-  if (snapshot.invitations > 0) waiting.push({ key: 'invitations', chip: <Chip tone="info">{t('Inbjudan', 'Invitation')}</Chip>, href: path('team'),
+  if (snapshot.invitations > 0) waiting.push({ key: 'invitations', chip: <Badge tone="info">{t('Inbjudan', 'Invitation')}</Badge>, href: path('team'),
     title: snapshot.invitations === 1 ? t('1 inbjudan väntar på svar', '1 invitation is waiting') : t(`${snapshot.invitations} inbjudningar väntar på svar`, `${snapshot.invitations} invitations are waiting`), text: t('Medlemmen aktiverar kontot via mejlet.', 'The member activates the account from the email.') });
-  if (revision) waiting.push({ key: 'published', chip: <Chip tone="accent">{t('Publicerad', 'Published')}</Chip>,
+  if (revision) waiting.push({ key: 'published', chip: <Badge tone="accent">{t('Publicerad', 'Published')}</Badge>,
     title: t(`Senaste tilldelning: version ${revision}`, `Latest assignment: version ${revision}`),
     text: snapshot.publishedAt ? t(`Publicerad av Scoutgaming ${fmtDate(snapshot.publishedAt, language)}.`, `Published by Scoutgaming ${fmtDate(snapshot.publishedAt, language)}.`) : null });
   const stats = [];
@@ -48,7 +48,7 @@ export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
     : t('Ingen tilldelning är publicerad ännu. Scoutgaming publicerar era spelbord först.', 'No assignment is published yet. Scoutgaming publishes your tables first.')}
     actions={<>{figures ? <CurrencySwitch currencies={figures.currencies} value={currency} onChange={setChosen} label={t('Valuta', 'Currency')} /> : null}<Btn href={path('help')}>{t('Begär material', 'Request material')}</Btn></>}>
     {stats.length ? <div className={`grid c${Math.min(4, stats.length)} stats`}>{stats}</div> : null}
-    {figures?.truncated ? <div className="note warn" role="status">{reportsTruncatedNotice(figures, language)}</div> : null}
+    {figures?.truncated ? <Note tone="warn" role="status">{reportsTruncatedNotice(figures, language)}</Note> : null}
     <div className="grid main-aside">
       <div className="stack">
         {canTables ? <Card title={t('Var ni är publicerade', 'Where you are published')} aside={<a href={path('rooms')} className="link-quiet">{copy.rooms} →</a>}>
@@ -59,7 +59,7 @@ export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
               const details = [displayLabel(room.dealer?.label ?? ''), room.settings?.limitPreset ? PRESETS[room.settings.limitPreset] ?? room.settings.limitPreset : null, room.settings?.language === 'sv' ? t('svenska', 'Swedish') : room.settings?.language === 'en' ? t('engelska', 'English') : null].filter(Boolean).join(' · ');
               return <tr key={room.id} className="link">
                 <td className="name-cell"><Tip content={room.name}><a href={path('rooms') + '?room=' + encodeURIComponent(room.id)} className="strong ellipsis">{room.name}</a></Tip>{details ? <div className="small muted ellipsis">{details}</div> : null}</td>
-                <td><Chip tone={open ? 'ok' : 'warn'} dot>{open ? t('öppet', 'open') : t('pausat', 'paused')}</Chip></td>
+                <td><Badge tone={open ? 'ok' : 'warn'} dot>{open ? t('öppet', 'open') : t('pausat', 'paused')}</Badge></td>
                 <td>{revision ? <Tip content={room.configVersion ? t(`Spelinställningar: ${room.configVersion}`, `Game settings: ${room.configVersion}`) : null}><span>{t('version', 'version')} {revision}</span></Tip> : '—'}</td>
                 {figures ? <td>{figure ? <Bars values={figure.perDay} label={t(`${figure.rounds} rundor senaste 7 dagarna`, `${figure.rounds} rounds in the last 7 days`)} /> : <span className="faint small">—</span>}</td> : null}
                 <td>{room.playUrl ? <Tip content={room.playUrl}><a className="link-quiet" href={room.playUrl} target="_blank" rel="noopener">{t('Öppna', 'Open')}<ArrowUpRight size={13} aria-hidden="true" /></a></Tip> : <span className="faint small">{t('inte i lobbyn', 'not in the lobby')}</span>}</td>
@@ -74,10 +74,10 @@ export function PartnerOverview({ snapshot, copy, language = 'sv' }) {
       </div>
       <div className="stack">
         <Card title={t('Väntar', 'Waiting')} icon={<Inbox size={15} />}>
-          {waiting.length ? <div className="rows">{waiting.map(item => <Row key={item.key} chip={item.chip} title={item.title} text={item.text} href={item.href} />)}</div>
+          {waiting.length ? <Rows>{waiting.map(item => <Row key={item.key} chip={item.chip} title={item.title} text={item.text} href={item.href} />)}</Rows>
             : <p className="muted">{t('Inget väntar just nu.', 'Nothing is waiting right now.')}</p>}
         </Card>
-        {canPresentations ? <Card title={t('Er tilldelning', 'Your assignment')} aside={revision ? <Chip tone="accent">{t('version', 'version')} {revision}</Chip> : null}>
+        {canPresentations ? <Card title={t('Er tilldelning', 'Your assignment')} aside={revision ? <Badge tone="accent">{t('version', 'version')} {revision}</Badge> : null}>
           <KV items={[
             [t('Spel', 'Games'), names(assignment.games, game => GAMES[game] ?? game)],
             ['Dealers', names(assignment.dealers)],
