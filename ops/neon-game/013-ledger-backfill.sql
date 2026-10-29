@@ -1,9 +1,11 @@
 -- Granskningsunderlag; renderas bara med tools/prepare-ledger-backfill.mjs. Körs aldrig vid start.
--- Bara DML i spelets ledger, ingen DDL: efterhandsrader för delat bord 008–010, som applicerades
--- med tools/prepare-shared-schema.mjs utan ledgerrad, och en egen rad game-013-ledger-backfill.
--- Raderna skrivs bara när 008–010:s objekt finns i katalogen. Idempotent: finns en rad redan med
--- samma checksumma lämnas den orörd; en rad med annan checksumma nekar hela transaktionen.
--- applied_at för 008–010 är dagen de applicerades i målet (--applied-on); klockslaget är okänt.
+-- Bara DML i spelets ledger, ingen DDL: efterhandsrader för spelarprofil 006 och roulettebord 007,
+-- som applicerades för hand innan spelversioner fick ledgerrader, för delat bord 008–010, som
+-- applicerades med tools/prepare-shared-schema.mjs utan ledgerrad, och en egen rad game-013-ledger-backfill.
+-- Raderna skrivs bara när 006:s, 007:s och 008–010:s objekt finns i katalogen, var och en med egen
+-- kontroll. Idempotent: finns en rad redan med samma checksumma lämnas den orörd; en rad med annan
+-- checksumma nekar hela transaktionen. applied_at är dagen versionen applicerades i målet
+-- (--applied-on-006, --applied-on-007 och --applied-on för 008–010); klockslaget är okänt.
 BEGIN;
 SET LOCAL lock_timeout = '2s';
 SET LOCAL statement_timeout = '30s';
@@ -40,11 +42,33 @@ BEGIN
     RAISE EXCEPTION 'ledger_backfill_unknown_ledger_hook';
   END IF;
   IF EXISTS (SELECT FROM croupier_game.storage_migrations m
-      JOIN (VALUES ('game-008-shared-wallet',{{sharedWalletChecksum}}),('game-009-shared-blackjack',{{sharedBlackjackChecksum}}),
+      JOIN (VALUES ('game-006-player-profile',{{playerProfileChecksum}}),('game-007-roulette-tables',{{rouletteTablesChecksum}}),
+        ('game-008-shared-wallet',{{sharedWalletChecksum}}),('game-009-shared-blackjack',{{sharedBlackjackChecksum}}),
         ('game-010-presentation-receiver',{{presentationReceiverChecksum}}),('game-013-ledger-backfill',{{migrationChecksum}}))
         AS expected(version,checksum) ON expected.version=m.version
       WHERE m.checksum IS DISTINCT FROM expected.checksum) THEN
     RAISE EXCEPTION 'ledger_backfill_ledger_mismatch';
+  END IF;
+  -- 006: spelarens namn och språk, med båda kontrollvillkoren.
+  IF (SELECT count(*) FROM pg_attribute WHERE attrelid='croupier_game.players'::regclass AND NOT attisdropped
+      AND attname IN ('display_name','locale') AND atttypid='text'::regtype AND NOT attnotnull) <> 2
+    OR (SELECT count(*) FROM pg_constraint WHERE conrelid='croupier_game.players'::regclass AND contype='c' AND convalidated
+      AND conname IN ('players_display_name_check','players_locale_check')) <> 2 THEN
+    RAISE EXCEPTION 'ledger_backfill_player_profile_mismatch';
+  END IF;
+  -- 007: roulettebordet med rumsavgränsad primärnyckel och referens till spelaren.
+  IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='croupier_game' AND c.relname='roulette_tables' AND c.relkind='r') <> 1
+    OR (SELECT count(*) FROM pg_attribute WHERE attrelid=to_regclass('croupier_game.roulette_tables') AND attnum > 0 AND NOT attisdropped
+      AND attname IN ('player_id','operator_id','room_id','state') AND atttypid='text'::regtype AND attnotnull) <> 4
+    OR (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM pg_constraint p
+      CROSS JOIN LATERAL unnest(p.conkey) WITH ORDINALITY AS k(attnum,ord)
+      JOIN pg_attribute a ON a.attrelid=p.conrelid AND a.attnum=k.attnum
+      WHERE p.conrelid=to_regclass('croupier_game.roulette_tables') AND p.contype='p')
+      IS DISTINCT FROM ARRAY['player_id','operator_id','room_id']
+    OR NOT EXISTS (SELECT FROM pg_constraint WHERE conrelid=to_regclass('croupier_game.roulette_tables') AND contype='f'
+      AND convalidated AND confrelid='croupier_game.players'::regclass) THEN
+    RAISE EXCEPTION 'ledger_backfill_roulette_tables_mismatch';
   END IF;
   -- Samma objekt som prepare-shared-schema.mjs kontrollerar efter 008→009→010, utan kravet på tomma tabeller.
   IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -71,18 +95,21 @@ BEGIN
 END $preflight$;
 -- BACKFILL MUTATIONS
 INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES
-  ('game-008-shared-wallet',{{sharedWalletChecksum}},{{sharedWalletEvidence}},{{appliedOn}}),
-  ('game-009-shared-blackjack',{{sharedBlackjackChecksum}},{{sharedBlackjackEvidence}},{{appliedOn}}),
-  ('game-010-presentation-receiver',{{presentationReceiverChecksum}},{{presentationReceiverEvidence}},{{appliedOn}}),
+  ('game-006-player-profile',{{playerProfileChecksum}},{{playerProfileEvidence}},{{playerProfileAppliedOn}}),
+  ('game-007-roulette-tables',{{rouletteTablesChecksum}},{{rouletteTablesEvidence}},{{rouletteTablesAppliedOn}}),
+  ('game-008-shared-wallet',{{sharedWalletChecksum}},{{sharedWalletEvidence}},{{sharedWalletAppliedOn}}),
+  ('game-009-shared-blackjack',{{sharedBlackjackChecksum}},{{sharedBlackjackEvidence}},{{sharedBlackjackAppliedOn}}),
+  ('game-010-presentation-receiver',{{presentationReceiverChecksum}},{{presentationReceiverEvidence}},{{presentationReceiverAppliedOn}}),
   ('game-013-ledger-backfill',{{migrationChecksum}},{{evidence}},clock_timestamp()::text)
 ON CONFLICT (version) DO NOTHING;
 DO $postflight$
 BEGIN
   IF (SELECT checksum FROM croupier_game.storage_migrations WHERE version='product-v1') IS DISTINCT FROM {{productChecksum}}
     OR (SELECT count(*) FROM croupier_game.storage_migrations m
-      JOIN (VALUES ('game-008-shared-wallet',{{sharedWalletChecksum}}),('game-009-shared-blackjack',{{sharedBlackjackChecksum}}),
+      JOIN (VALUES ('game-006-player-profile',{{playerProfileChecksum}}),('game-007-roulette-tables',{{rouletteTablesChecksum}}),
+        ('game-008-shared-wallet',{{sharedWalletChecksum}}),('game-009-shared-blackjack',{{sharedBlackjackChecksum}}),
         ('game-010-presentation-receiver',{{presentationReceiverChecksum}}),('game-013-ledger-backfill',{{migrationChecksum}}))
-        AS expected(version,checksum) ON expected.version=m.version AND expected.checksum=m.checksum) <> 4 THEN
+        AS expected(version,checksum) ON expected.version=m.version AND expected.checksum=m.checksum) <> 6 THEN
     RAISE EXCEPTION 'ledger_backfill_postflight_failed';
   END IF;
 END $postflight$;

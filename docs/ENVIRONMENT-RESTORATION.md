@@ -68,26 +68,26 @@ Efter en restore eller PITR återöppnas inga rum och inget tal aktiveras automa
 
 ### Två migreringsledgrar
 
-Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012 är andra migreringar än Studios 011 och 012, så `node tools/check-migration-readiness.mjs` läser båda och skriver dem i samma rad som `studio-NNN` och `game-NNN` (till exempel `studio-012` och `game-012`). En obligatorisk version som saknas i någon av dem ger exit 1 och blockerar CI; en ändrad checksumma eller en okänd version ger exit 2. `--apply`, `--only` och `--skip` gäller bara Studios versioner.
+Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012 är andra migreringar än Studios 011 och 012, så `node tools/check-migration-readiness.mjs` läser båda och skriver dem i samma rad som `studio-NNN` och `game-NNN` (till exempel `studio-012` och `game-012`). En obligatorisk version som saknas i någon av dem ger exit 1 och blockerar CI; en ändrad checksumma eller en okänd version ger exit 2. `--apply`, `--only` och `--skip` gäller bara Studios versioner och tar Studios nakna nummer (`--only 021`); stderr-raderna (`migration_apply_plan`, vägran) namnger dem `studio-NNN`.
 
 | Ledger | Format | Register och skrivare |
 | --- | --- | --- |
 | Studio `croupier_studio.storage_migrations` | `version` (`001`–`021`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
-| Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` från 008 registreras där i samma PR. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
+| Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` registreras där i samma PR och mergas till `main` innan den körs. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
 
-Spelversionerna 008–013 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). 006 och 007 applicerades innan spelversioner fick ledgerrader och har inga.
+Spelversionerna 006–013 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.
 
-**Efterhandsrader för 008–010 (`013-ledger-backfill.sql`).** `tools/prepare-shared-schema.mjs` skriver ingen ledgerrad, så delat bord syntes bara i katalogen. 013 skriver `game-008-shared-wallet`, `game-009-shared-blackjack` och `game-010-presentation-receiver` med filernas checksummor och appliceringsdagen, plus sin egen rad `game-013-ledger-backfill`. Den är bara DML i ledgern, kontrollerar först att 008–010:s 15 tabeller, index, funktioner, triggrar och kolumner finns och är idempotent: en andra körning ändrar inget, och en befintlig rad med annan checksumma nekar hela transaktionen. Datumet för produktionen är 27 oktober 2026 (`git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`, "Uppdatering 27 oktober 2026", efter backupgrenen `backup-before-008-010-20261027` 17:41:31Z); klockslaget är okänt. Verktyget ansluter aldrig till databasen; Jakob kör som `croupier_game` mot den direkta endpointen:
+**Efterhandsrader för 006–010 (`013-ledger-backfill.sql`).** 006 och 007 applicerades för hand innan spelversioner fick ledgerrader, och `tools/prepare-shared-schema.mjs` skriver ingen ledgerrad, så de syntes bara i katalogen. 013 skriver `game-006-player-profile`, `game-007-roulette-tables`, `game-008-shared-wallet`, `game-009-shared-blackjack` och `game-010-presentation-receiver` med filernas checksummor och respektive appliceringsdag, plus sin egen rad `game-013-ledger-backfill`. Den är bara DML i ledgern, kontrollerar först med en egen kontroll per version att 006:s kolumner och kontrollvillkor, 007:s tabell med primärnyckel och spelarreferens och 008–010:s 15 tabeller, index, funktioner, triggrar och kolumner finns (annars avbryts den utan skrivning) och är idempotent: en andra körning ändrar inget, och en befintlig rad med annan checksumma nekar hela transaktionen. Datumet för 008–010 i produktionen är 27 oktober 2026 (`git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`, "Uppdatering 27 oktober 2026", efter backupgrenen `backup-before-008-010-20261027` 17:41:31Z); klockslaget är okänt. För 006 och 007 finns inget antecknat appliceringsdatum; datumen nedan är filernas första commit i Git (006: `d5e3ffd5` 8 oktober 2026, 007: `15aa3192` 27 oktober 2026) och är osäkra. Verktyget ansluter aldrig till databasen; Jakob kör som `croupier_game` mot den direkta endpointen:
 
 ```sh
-node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on 2026-10-27 --readiness-sql > <privat-katalog>/013-readiness.sql
-node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on 2026-10-27 --sql > <privat-katalog>/013.sql
+node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on-006 2026-10-08 --applied-on-007 2026-10-27 --applied-on 2026-10-27 --readiness-sql > <privat-katalog>/013-readiness.sql
+node tools/prepare-ledger-backfill.mjs --database croupier_game --role croupier_game --applied-on-006 2026-10-08 --applied-on-007 2026-10-27 --applied-on 2026-10-27 --sql > <privat-katalog>/013.sql
 psql "<direkt anslutning som croupier_game, sslmode=verify-full>" -X -v ON_ERROR_STOP=1 -f <privat-katalog>/013-readiness.sql
 psql "<direkt anslutning som croupier_game, sslmode=verify-full>" -X -v ON_ERROR_STOP=1 -f <privat-katalog>/013.sql
 node tools/check-migration-readiness.mjs
 ```
 
-Förkontrollen slutar med ROLLBACK. Efter körningen visar readiness `game-008`, `game-009`, `game-010` och `game-013` bland `applied`. Preview fick 008–010 ett annat datum och körs inte med produktionens.
+Förkontrollen slutar med ROLLBACK. Efter körningen visar readiness `game-006`–`game-010` och `game-013` bland `applied`. Preview fick 006–010 andra datum och körs inte med produktionens.
 
 ### Migrerat schema i produktionen
 

@@ -10,14 +10,16 @@ import { createHash } from 'node:crypto';
 // som sin SQL-fil. `checksum` är sha256 av källfilen med LF-radslut (för 011–013 mallen
 // före rendering), samma regel som motorns startkontroll av product-v1
 // (packages/storage/server/postgres-store.mjs) och prepare-verktygen i tools/.
-// Ordningen i ledgern är inte versionsordningen: 008–010 bokförs i efterhand av 013.
-// 006 och 007 applicerades innan spelversioner fick ledgerrader och har inga; de står
-// därför inte här och syns bara i katalogen.
+// Ordningen i ledgern är inte versionsordningen: 006–010 bokförs i efterhand av 013.
 const hash = text => createHash('sha256').update(text).digest('hex');
 const versions = Object.freeze([
   { version: 'product-v1', file: 'product-schema.sql' },
   // Produktionens engångsimport från SQLite 2 oktober 2026. Finns bara där och väntar aldrig.
   { version: 'sqlite-import-v1', file: 'product-schema.sql', historical: true },
+  // Spelarprofil och roulettebord. Applicerade för hand före spelets ledgerrader; 013 skriver
+  // raderna i efterhand. Obligatoriska i en uppföljande PR när 013 är körd i produktionen.
+  { version: 'game-006-player-profile', file: '006-player-profile.sql', deploymentOptional: true },
+  { version: 'game-007-roulette-tables', file: '007-roulette-tables.sql', deploymentOptional: true },
   // Delat bord. Applicerade i produktionen 27 oktober 2026 med tools/prepare-shared-schema.mjs,
   // som inte skriver ledgerrader; 013 skriver raderna i efterhand.
   { version: 'game-008-shared-wallet', file: '008-shared-wallet.sql', deploymentOptional: true },

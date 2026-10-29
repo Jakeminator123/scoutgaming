@@ -220,11 +220,12 @@ async function main() {
   try {
     const { Pool } = requireLab('@neondatabase/serverless');
     pool = new Pool({ connectionString, max: 1, connectionTimeoutMillis: 10000 });
-    const onPlan = versions => console.error(`migration_apply_plan ${versions.length ? versions.join(',') : 'none'}`);
+    // stderr namnger Studios versioner som rapportraden (studio-NNN); --only och --skip tar de nakna numren.
+    const onPlan = versions => console.error(`migration_apply_plan ${versions.length ? versions.map(studioLabel).join(',') : 'none'}`);
     const result = await checkMigrationReadiness({ pool, apply, confirm: apply && confirmed, only, skip, onPlan, planGame: planGameMigrations });
     if (result.exitCode === 2) {
       const named = Array.isArray(result.versions) && result.versions.length && result.versions.every(version => /^[0-9]{3}$/.test(version))
-        ? `${result.code} ${result.versions.join(',')}` : result.code;
+        ? `${result.code} ${result.versions.map(studioLabel).join(',')}` : result.code;
       console.error(safeLine(named) ? named : 'migration_check_unreachable');
       code = 2;
     } else {
