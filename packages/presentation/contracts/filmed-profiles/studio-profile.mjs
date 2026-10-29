@@ -12,6 +12,17 @@ const exact=(value,required,optional=[])=>object(value)&&required.every(key=>Obj
   &&Object.keys(value).every(key=>required.includes(key)||optional.includes(key));
 const fail=()=>{throw Object.assign(new Error('studio_filmed_profile_invalid'),{code:'studio_filmed_profile_invalid',statusCode:422});};
 const TAKE_KEY=/^(?:[1-7]|dealer|hole|flip):(?:base|i|u|iu|v|iv)$/,POSES=['VILA','REDO'];
+// Measured landings share Kevin's portrait plane; the card is a card, not the frame.
+export const STUDIO_MEASURED_PLANE=Object.freeze({width:1080,height:1920,fps:24});
+export const STUDIO_MEASURED_CARD_MAX=Object.freeze({width:216,height:320});
+/** A copy may bind a longer clip than the code take (dealer-fabriken's -iu takes:
+ * 68-81 frames against Kevin's 60, frames 0-59 identical). The take's window
+ * (offsetFrames + tracked frames, every timed frame) ends at or before take.frames
+ * (validateFilmedDealProfile), so any clip at least that long holds it; at most
+ * twice as long. Returns the clip's frame count, or null when it does not fit. */
+export function copyTakeFrames(take,frameCount) {
+  return Number.isInteger(frameCount)&&Number.isInteger(take?.frames)&&frameCount>=take.frames&&frameCount<=take.frames*2?frameCount:null;
+}
 
 function expand(value,dealerId) {
   const source={studio:{dealerId,kind:value.kind,...(value.kind==='copy'?{base:value.base}:{})}};
@@ -19,7 +30,7 @@ function expand(value,dealerId) {
   if(value.kind==='copy') {
     const base=registeredFilmedProfileById(value.base);
     return validateFilmedDealProfile({...base,id:value.id,source,takes:base.takes.filter(take=>Object.hasOwn(value.takes,take.key))
-      .map(take=>({...take,sha256:value.takes[take.key].sha256,repositoryPath:repositoryPath(take.key)}))});
+      .map(take=>({...take,sha256:value.takes[take.key].sha256,repositoryPath:repositoryPath(take.key),frames:value.takes[take.key].frames??take.frames}))});
   }
   return validateFilmedDealProfile({version:1,id:value.id,game:'blackjack',source,plane:{...value.plane},card:{...value.card},
     positions:structuredClone(value.positions),tracks:{},timingEvidence:'studio-measured',
@@ -36,9 +47,17 @@ function checked(value,dealerId) {
   const takes=object(value.takes)?Object.entries(value.takes):[];
   if(value.kind==='copy') {
     const base=exact(value,['schemaVersion','id','kind','base','takes'])&&registeredFilmedProfileById(value.base);
-    if(!base||!takes.length||takes.some(([key,take])=>!base.takes.some(row=>row.key===key)||!exact(take,['sha256']))) fail();
+    // A copy binds the dealer's own clips: never the code profile's own (Kevin's) media.
+    const own=new Set(base?base.takes.map(row=>row.sha256):[]);
+    if(!base||!takes.length||takes.some(([key,take])=>{
+      const row=base.takes.find(item=>item.key===key);
+      return !row||!exact(take,['sha256'],['frames'])||own.has(take.sha256)
+        ||Object.hasOwn(take,'frames')&&(take.frames===row.frames||copyTakeFrames(row,take.frames)===null);
+    })) fail();
   } else if(value.kind==='measured') {
     if(!exact(value,['schemaVersion','id','kind','plane','card','positions','takes','measuredAt'])||!takes.length||takes.length>128
+      ||!exact(value.plane,['width','height','fps'])||Object.keys(STUDIO_MEASURED_PLANE).some(key=>value.plane[key]!==STUDIO_MEASURED_PLANE[key])
+      ||!exact(value.card,['width','height'])||Object.keys(STUDIO_MEASURED_CARD_MAX).some(key=>!Number.isFinite(value.card[key])||value.card[key]<=0||value.card[key]>STUDIO_MEASURED_CARD_MAX[key])
       ||typeof value.measuredAt!=='string'||!Number.isFinite(Date.parse(value.measuredAt))||new Date(value.measuredAt).toISOString()!==value.measuredAt
       ||takes.some(([key,take])=>!TAKE_KEY.test(key)||!exact(take,['sha256','frames','startPose','endPose','landFrame'],['contactFrame','clearFrame'])
         ||!POSES.includes(take.startPose)||!POSES.includes(take.endPose))) fail();

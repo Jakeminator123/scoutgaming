@@ -69,3 +69,36 @@ test('the saved project accepts the profile only on its own non-seed dealer',()=
   project.dealers.find(row=>row.id==='paow').filmedProfile=studioCopyProfile('paow','dragan');
   assert.throws(()=>validateProject(project),/filmedProfile/);
 });
+
+test('a copy is PAOW in every field but its id, source and takes (version, game, plane, card, positions, tracks, timingEvidence)',()=>{
+  const compact=studioCopyProfile('jakob-2','paow');
+  const {id,source,takes,...inherited}=expandStudioFilmedProfile(compact,{dealerId:'jakob-2'}),{id:_id,source:_source,takes:_takes,...code}=paow;
+  assert.deepEqual(inherited,code);assert.equal(id,compact.id);assert.equal(takes.length,paow.takes.length);
+  assert.deepEqual(Object.keys(inherited).sort(),Object.keys(paow).filter(key=>!['id','source','takes'].includes(key)).sort());
+});
+
+test('a copy never binds the code profile\'s own (Kevin\'s) clips',()=>{
+  const compact=studioCopyProfile('jakob-2','paow');
+  for(const [key,sha256] of [['1:base',paow.takes.find(take=>take.key==='1:base').sha256],['1:base',paow.takes.find(take=>take.key==='flip:base').sha256]])
+    assert.throws(()=>validateStudioFilmedProfile({...compact,takes:{...compact.takes,[key]:{sha256}}},{dealerId:'jakob-2'}),invalid);
+});
+
+test('a copied take keeps a longer factory clip (-iu, 68-81 frames against 60) and refuses shorter, equal-noted or far longer ones',()=>{
+  const compact=studioCopyProfile('jakob-2','paow'),code=paow.takes.find(take=>take.key==='1:i');
+  for(const frames of [68,81,120]){
+    const value={...compact,takes:{...compact.takes,'1:i':{...compact.takes['1:i'],frames}}};
+    assert.deepEqual(validateStudioFilmedProfile(value,{dealerId:'jakob-2'}),value);
+    const take=expandStudioFilmedProfile(value,{dealerId:'jakob-2'}).takes.find(row=>row.key==='1:i');
+    assert.deepEqual({...take,frames:code.frames,sha256:code.sha256,repositoryPath:code.repositoryPath},code,'only the frame count is the clip\'s own');
+    assert.equal(take.frames,frames);
+  }
+  for(const frames of [59,60,121,68.5,'68',null])
+    assert.throws(()=>validateStudioFilmedProfile({...compact,takes:{...compact.takes,'1:i':{...compact.takes['1:i'],frames}}},{dealerId:'jakob-2'}),invalid,String(frames));
+});
+
+test('measured landings use Kevin\'s 1080×1920 plane at 24 fps and a card-sized card',()=>{
+  assert.ok(validateStudioFilmedProfile({...measured(),card:{width:216,height:320}},{dealerId:'jakob-2'}));
+  for(const patch of [{plane:{width:720,height:1280,fps:24}},{plane:{width:1080,height:1920,fps:25}},{plane:{width:1,height:1,fps:0.001}},{plane:{width:1080,height:1920,fps:24,extra:1}},
+    {card:{width:1080,height:1920}},{card:{width:217,height:106}},{card:{width:78,height:321}},{card:{width:0,height:106}},{card:{width:78,height:106,extra:1}}])
+    assert.throws(()=>validateStudioFilmedProfile({...measured(),...patch},{dealerId:'jakob-2'}),invalid,JSON.stringify(patch));
+});
