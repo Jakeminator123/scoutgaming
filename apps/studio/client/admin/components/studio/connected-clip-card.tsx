@@ -27,6 +27,18 @@ function filmedVideoBound(data:CardData,video:VideoEntry){
 }
 function droppedFiles(data:CardData,files:FileList){const list=Array.from(files);if(!list.length)return;if(data.onFiles)data.onFiles(list);else data.onFile(list[0]);}
 export type CardNode = Node<CardData, 'registeredClip'>;
+// One status per card, derived once: the shown text is looked up from the key, so the text and data-status
+// cannot drift apart. No key means published; a saved binding is only part of the draft (`bound`).
+export const CLIP_STATUS_LABEL = {
+  busy:'Bearbetar…', rendered:'Serverstyrt utfall', local:'Lokalt prov · inte sparat', planned:'Planerat fack',
+  registered:'Registrerat · ej spelkopplat', missing:'Material saknas', changed:'Ändrat lokalt · ej sparat', bound:'Kopplat i sparat utkast',
+  'selected-other-variant':'Valt för prov · ej kopplat till vald variant', selected:'Valt för prov · ej kopplat', none:'Ingen tagning vald',
+} as const;
+export type ClipStatusKey = keyof typeof CLIP_STATUS_LABEL;
+function clipStatusKey(data:CardData,{selected,ready,exactBinding,rendered=false,empty}:{selected?:VideoEntry;ready:boolean;exactBinding:boolean;rendered?:boolean;empty:ClipStatusKey}):ClipStatusKey {
+  return data.busy?'busy':rendered?'rendered':data.localPreviewUrl?'local':data.slot.planned?'planned':data.slot.intakeOnly?data.clips.length?'registered':'missing'
+    :ready?data.usageChanged?'changed':'bound':selected?exactBinding?'selected-other-variant':'selected':empty;
+}
 export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{data:CardData;settingsOpen?:boolean;active?:boolean}) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
@@ -55,6 +67,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
   const ready=Boolean(selected&&(filmed?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const ruleEditor=!intake&&data.slot.game!=='roulette'&&data.slot.sourceType!=='speak';
+  const status=clipStatusKey(data,{selected,ready,exactBinding,empty:'none'});
   return <article className={`studio-clip-detail ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties}
     aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}
     onDragOver={event=>{event.preventDefault();event.stopPropagation();if(!data.busy)setDrag(true);}} onDragLeave={()=>setDrag(false)}
@@ -63,14 +76,14 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
     <div className="studio-card-body nodrag nowheel">
       <section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{slotExplanation(data.slot)}</p></section>
       {data.group.slots.length>1&&<label className="studio-card-select">Situation<select aria-label={`Situation i ${data.group.title}`} value={data.slot.id} disabled={data.busy} onChange={event=>data.onSlot(event.target.value)}>{data.group.slots.map(slot=><option key={slot.id} value={slot.id}>{slotCaption(slot)}</option>)}</select></label>}
-      {!filmed&&<ClipGuide slot={data.slot}/>}<p className="studio-preview-caption">Klippförhandsvisning · visar den valda filen, inte ett prov i spelmotorn.</p>
+      {!filmed&&<ClipGuide slot={data.slot}/>}<p className="studio-preview-caption" data-preview-caption="">Klippförhandsvisning · visar den valda filen, inte ett prov i spelmotorn.</p>
       <div className="studio-card-media-row"><div className="studio-card-video">{data.localPreviewUrl?<img src={data.localPreviewUrl} alt="Tillfällig lokal VILA-bild"/>:selected&&image?<img src={selected.previewUrl} alt={selected.label}/>:selected?<video ref={preview} key={selected.id} src={selected.previewUrl} controls muted playsInline preload="metadata" aria-label={`Förhandsvisa ${selected.label}`} onPlay={event=>{if(!active||document.hidden)event.currentTarget.pause();}}/>
         :<div className="studio-preview-empty"><Film size={28}/><span>Välj ett klipp för att förhandsvisa</span></div>}</div>
         <div className="studio-card-summary"><span className="studio-card-eyebrow">{image?'Bild':'Valt klipp'}</span>
           <p title={selected?.label}>{selected?.label??(planned?'Återstår att ansluta':image?'Dra in en PNG':'Dra in ett klipp')}</p>
-          {chain&&<span className={`studio-pose-chain ${chain.declared?'':'is-missing'}`} title={chain.declared?'Angiven vid import · inte kontrollerad mot bildrutorna':undefined}>{chain.declared?<>Poskedja <strong>{chain.text}</strong></>:chain.text}</span>}
-          <span className={`studio-card-status ${ready?'is-ready':''}`}>{ready?<Check size={11}/>:<span className="studio-empty-dot"/>}{data.busy?'Bearbetar…':data.localPreviewUrl?'Lokalt prov · inte sparat':planned?'Planerat fack':intake?data.clips.length?'Registrerat · ej spelkopplat':'Material saknas':ready?data.usageChanged?'Ändrat lokalt · ej sparat':'Kopplat i sparat utkast':selected?exactBinding?'Valt för prov · ej kopplat till vald variant':'Valt för prov · ej kopplat':'Ingen tagning vald'}</span></div></div>
-      {recording&&<section className="studio-recorded-speech" aria-label="Inspelad replik"><strong>Inspelat tal · originalets ljud</strong><p>{recording.exactText}</p><small>Språk: {recording.language}. Text, ljud och video hör ihop; ny generering är ett separat val i Röst &amp; tal.</small></section>}
+          {chain&&<span className={`studio-pose-chain ${chain.declared?'':'is-missing'}`} data-pose-chain={chain.declared?chain.text:''} title={chain.declared?'Angiven vid import · inte kontrollerad mot bildrutorna':undefined}>{chain.declared?<>Poskedja <strong>{chain.text}</strong></>:chain.text}</span>}
+          <span className={`studio-card-status ${ready?'is-ready':''}`} data-status={status}>{ready?<Check size={11}/>:<span className="studio-empty-dot"/>}{CLIP_STATUS_LABEL[status]}</span></div></div>
+      {recording&&<section className="studio-recorded-speech" data-recorded-speech={recording.language} aria-label="Inspelad replik"><strong>Inspelat tal · originalets ljud</strong><p>{recording.exactText}</p><small>Språk: {recording.language}. Text, ljud och video hör ihop; ny generering är ett separat val i Röst &amp; tal.</small></section>}
       {data.variants.length>1&&<label className="studio-card-select">Standard och varianter<select aria-label={`Variant ${data.slot.id}`} value={data.variantId} disabled={data.busy} onChange={event=>data.onVariant(event.target.value)}>{data.variants.map(row=><option key={row.id} value={row.id}>{row.baseline?'Standardklipp':row.label}</option>)}</select></label>}
       {!planned&&data.slot.game!=='roulette'&&data.library?.length?<div className="studio-clip-library" aria-label="Klipp i vald situation">{data.library.map(group=><section key={group.id}><h3>{group.label}<span>{group.clips.length}</span></h3><div>{group.clips.map(clip=><button key={clip.id} type="button" disabled={data.busy} aria-pressed={clip.id===data.selectedId} onClick={()=>data.onSelect(clip.id)}><Film size={15} aria-hidden="true"/><span>{clip.label}<small>{clip.id===data.selectedId?'Visas i förhandsvisningen':data.boundIds.includes(clip.id)?'Ingår i utkastet':'Välj för att förhandsvisa'}</small></span></button>)}</div></section>)}</div>:!planned&&<label className="studio-card-select">Välj klipp<select aria-label={`Befintligt klipp ${data.slot.id}`} value={data.selectedId} disabled={data.busy} onChange={event=>data.onSelect(event.target.value)}><option value="">Välj registrerad video…</option>{data.clips.map(row=><option key={row.id} value={row.id}>{row.label}{data.boundIds.includes(row.id)?' · används i utkast':''}</option>)}</select></label>}
       {!planned&&<div className="studio-card-actions">
@@ -78,15 +91,15 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
         {data.actions}</div>}
       {wheelStart&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Kalibrera startfilm</button>}
       {selected&&!settingsOpen&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
-      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>{filmedProfile?`Koppla hela givbanken · ${filmedProfile.takes.length} klipp`:'Koppla till utkast'}</button>}
-      {selected&&data.slot.eventId==='transition.shoe'&&!data.slot.family&&data.boundId&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind(true)}>Lägg till som variant</button>}
-      {filmedProfile&&data.onBindNative&&<><button type="button" disabled={data.busy} className="studio-card-bind" onClick={()=>{if(!data.busy)data.onBindNative?.();}}>Koppla för delat bord</button><p>Endast filmer som kan behövas med dina valda skoklipp kopplas till utkastet. Befintliga kopplingar behålls. Spara och publicera separat.</p></>}
+      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" data-action="bind" onClick={()=>data.onBind()}>{filmedProfile?`Koppla hela givbanken · ${filmedProfile.takes.length} klipp`:'Koppla till utkast'}</button>}
+      {selected&&data.slot.eventId==='transition.shoe'&&!data.slot.family&&data.boundId&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" data-action="bind-variant" onClick={()=>data.onBind(true)}>Lägg till som variant</button>}
+      {filmedProfile&&data.onBindNative&&<><button type="button" disabled={data.busy} className="studio-card-bind" data-action="bind-native" onClick={()=>{if(!data.busy)data.onBindNative?.();}}>Koppla för delat bord</button><p>Endast filmer som kan behövas med dina valda skoklipp kopplas till utkastet. Befintliga kopplingar behålls. Spara och publicera separat.</p></>}
       {filmedProfile&&<p>Hela givbanken innehåller {filmedProfile.takes.length} exakta filmvarianter, inklusive övergångar till och från vila.</p>}
       {selected&&!wheelStart&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
       <section className="studio-card-rule" aria-label={`Körregel ${data.slot.id}`}><h3>Körregel · projektutkast</h3>
         {(filmed?['Spelserverns givsekvens väljer rätt plats och posevariant. Klippen väljs inte slumpmässigt.']:data.usage?.rules??['Välj ett klipp för att se dess körregel.']).map(rule=><p key={rule}>{rule}</p>)}
         {data.usageChanged&&<p className="studio-card-rule-dirty">Regeln eller kopplingen har ändrats lokalt.</p>}
-        {!filmed&&ruleEditor&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Redigera körregel</button>}
+        {!filmed&&ruleEditor&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" data-action="edit-rule" onClick={data.onSettings}>Redigera körregel</button>}
       </section>
       <details className="studio-card-identity"><summary>Tekniska detaljer</summary><p>{data.usage?.when||data.slot.description}</p>{selected&&<dl><dt>ID</dt><dd>{selected.id}</dd><dt>Format</dt><dd>{selected.contentType||'Ej angivet'}</dd><dt>SHA-256</dt><dd>{selected.sha256||'Inte tillgänglig i registret'}</dd></dl>}</details>
     </div><footer><span>{planned?'Spelkoppling återstår':image?'PNG · VILA':data.slot.sourceType==='speak'?'Exakt ljud + talvideo':drag?'Släpp videon här':'Släpp video på kortet'}</span><span>{data.clips.length} filer</span></footer>
@@ -104,6 +117,7 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
   const ready=Boolean(selected&&(filmedProfileFor(selected)?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const rendered=isRenderedOutcome(data.slot);
+  const status=clipStatusKey(data,{selected,ready,exactBinding,rendered,empty:'missing'});
   const intake=data.intakeDrag&&!rendered?data.intakeDrag.check(data.slot.id):null;
   const intakeAccepts=(slotId:string)=>Boolean(data.intakeDrag&&!rendered&&data.intakeDrag.check(slotId).accepted);
   function dropIntake(event:DragEvent,slotId:string){
@@ -124,10 +138,10 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
         <ClipThumb url={data.slot.game==='roulette'||data.slot.planned||data.slot.intakeOnly?undefined:selected?.previewUrl}/>
         <div>
           <p className="studio-map-card-file">{selected?.label??(rendered?'Ritas i spelet':data.slot.planned?'Planerat fack':'Inget klipp valt')}</p>
-          <p className={`studio-card-status ${ready||rendered?'is-ready':''}`}>{data.busy?'Bearbetar…':rendered?'Serverstyrt utfall':data.localPreviewUrl?'Lokalt prov · inte sparat':data.slot.planned?'Planerat fack':data.slot.intakeOnly?data.clips.length?'Registrerat · ej spelkopplat':'Material saknas':ready?data.usageChanged?'Ändrat lokalt · ej sparat':'Kopplat i sparat utkast':selected?exactBinding?'Valt för prov · ej kopplat till vald variant':'Valt för prov · ej kopplat':'Material saknas'}</p>
+          <p className={`studio-card-status ${ready||rendered?'is-ready':''}`} data-status={status}>{CLIP_STATUS_LABEL[status]}</p>
         </div>
       </div>
-      <button id={`studio-card-open-${data.group.id}`} type="button" className="studio-card-open" aria-controls="studio-clip-inspector" disabled={data.busy} aria-expanded={Boolean(data.active)} onClick={data.onOpen}><Film size={17}/>{rendered?'Visa funktion':'Förhandsvisa och redigera'}</button>
+      <button id={`studio-card-open-${data.group.id}`} type="button" className="studio-card-open" data-action="open" aria-controls="studio-clip-inspector" disabled={data.busy} aria-expanded={Boolean(data.active)} onClick={data.onOpen}><Film size={17}/>{rendered?'Visa funktion':'Förhandsvisa och redigera'}</button>
     </div>
     <footer>{intake?<span className={intake.accepted?'studio-intake-hint is-ok':'studio-intake-hint'}>{intake.accepted?`Släpp här: ${slotCaption(data.slot)}`:intake.reason}</span>:<><span>{data.group.slots.length} fack</span><span>{data.clips.length} filer i valt fack</span></>}</footer>
   </article>;

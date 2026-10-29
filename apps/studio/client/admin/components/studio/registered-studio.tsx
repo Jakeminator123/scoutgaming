@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, RefreshCw } from 'lucide-react';
-import { buttonVariants, cn } from '../ui/kit';
+import { buttonVariants, cn, TechnicalDetails } from '../ui/kit';
 import {lifecycleSnapshotKey, operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {PartnerAppearanceLoader} from '../../../../components/partner-appearance-loader.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
@@ -220,12 +220,12 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
                 {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className="m-0 flex flex-wrap items-center gap-2 text-[12.5px] text-sg-muted" aria-label="Publicerat nu"><div className="flex items-center gap-2"><dt className="inline-flex items-center gap-1.5 font-semibold text-sg-text"><span className="size-1.5 rounded-full bg-sg-ok" aria-hidden="true"/>Publicerat nu</dt><dd className="m-0">{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}
                 {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||createBusy||publishBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>{setRoomStatus(status);onRoomStatus?.(status);}} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
                   : <div className={ui.unpublished} role="status"><h3>Spelbordet saknar ett publicerat paket</h3><p>Utseendet kan väljas när bolagets scenmallar är publicerade under Bolag › Tilldelning.</p></div>}
-                <details className="group rounded-xl border border-dashed border-sg-border px-4 py-3 text-[13px] text-sg-muted" aria-label="Publicera (tills vidare)"><summary className="cursor-pointer select-none font-semibold text-sg-muted hover:text-sg-text">Publicera (tills vidare)</summary>
-                  <div className="mt-2 grid gap-2"><p className="m-0">Utseendet publiceras med editorns egna knappar, spelinställningarna under sin flik och tilldelningen under bolaget. En gemensam publicering för hela spelbordet kommer senare.</p>
+                <TechnicalDetails title="Publicera (tills vidare)" className="mt-0">
+                  <p className="m-0">Utseendet publiceras med editorns egna knappar, spelinställningarna under sin flik och tilldelningen under bolaget. En gemensam publicering för hela spelbordet kommer senare.</p>
                   {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<><p className="m-0">Uppdatera PAOWs sparade vilosekvens i bolagets publicerade spelbord. Övriga publicerade val och placeringar behålls.</p>
-                    <p className="m-0"><button type="button" className={buttonVariants({size:'sm'})} disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button></p>
+                    <p className="m-0"><button type="button" data-action="refresh-dealer-idle" className={buttonVariants({size:'sm'})} disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button></p>
                     {operatorPackage.message&&<p role="status" className="m-0">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert" className="m-0 text-sg-warn">{operatorPackage.error}</p>}</>}
-                </div></details>
+                </TechnicalDetails>
               </>}
               {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name}
                 disabled={disabled||lifecycleBusy||roomBusy||roomDirty||createBusy||publishBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}

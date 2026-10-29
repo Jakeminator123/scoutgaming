@@ -119,7 +119,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const openNext=(href:string)=>{const done=created;setCreating(false);setCreated(null);if(done)toast(`${done.name} är sparad.`);navigate(href);};
   const warn='mb-4 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn';
   return <HubPage title="Dealers" intro="Dealern bär allt innehåll: klipp, tal och landningar. En dealer vars klipp och tal räcker för spel kan tilldelas bolag."
-    actions={<><Button ref={createButton} variant="primary" disabled={disabled} onClick={()=>{setCreated(null);setError('');setCreating(true);}}><Plus aria-hidden="true"/>Ny dealer</Button><Button size="icon" aria-label="Uppdatera dealers" title="Uppdatera" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw aria-hidden="true"/></Button></>}>
+    actions={<><Button ref={createButton} variant="primary" data-action="create" disabled={disabled} onClick={()=>{setCreated(null);setError('');setCreating(true);}}><Plus aria-hidden="true"/>Ny dealer</Button><Button size="icon" aria-label="Uppdatera dealers" title="Uppdatera" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw aria-hidden="true"/></Button></>}>
     {blocked&&<p role="note" className={warn}>Spara det öppna utkastet i klippkartan eller avsluta den pågående importen innan du ändrar dealers.</p>}
     {error&&!creating&&<p role="alert" className={warn}>{error}</p>}
     {notice&&<p role="status" className="mb-4 rounded-lg bg-sg-accent-bg px-3.5 py-2.5 text-[13px] text-sg-text">{notice}</p>}
@@ -151,14 +151,14 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
     })}</ul>
     {workspace&&<Card title={<span className="inline-flex items-center gap-2">Papperskorg<span className="rounded-full bg-sg-hover px-1.5 text-[11px] font-semibold tabular-nums text-sg-muted">{trash.length}</span></span>} className="mt-8" aside="Återställ, eller radera permanent efter serverns kontroll">
       {!trash.length?<p className="m-0 text-[12.5px] text-sg-muted">Papperskorgen är tom.</p>:<ul className="m-0 grid list-none p-0">{trash.map(row=><li className="flex flex-wrap items-center gap-3 border-t border-sg-line-2 py-3 first:border-t-0 first:pt-0" key={row.dealer.id}><div className="min-w-0 flex-1"><div className="font-semibold">{row.dealer.label}</div>{row.deletion&&<div className="text-[13px] text-sg-muted">radering påbörjad</div>}</div>
-        <div className="flex flex-wrap gap-2"><Button size="sm" disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}>Återställ</Button>
-        <Button size="sm" variant="danger" disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}>{row.deletion?'Slutför radering':'Radera permanent'}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button size="sm" data-action="restore" disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}>Återställ</Button>
+        <Button size="sm" variant="danger" data-action="delete" disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}>{row.deletion?'Slutför radering':'Radera permanent'}</Button></div>
       </li>)}</ul>}
     </Card>}
     <Dialog open={creating} title={created?`${created.name} är sparad`:'Ny dealer'} onClose={closeCreate} busy={busy}
       description={created?'Nästa steg är dealerns klipp. Tal och landningar lägger du till på dealerns sida.':'Ge dealern ett namn. Klipp, tal och landningar lägger du till efteråt.'}
-      footer={created?<><Button onClick={closeCreate}>Stäng</Button><Button variant="primary" onClick={()=>openNext(dealerHref(created.id,'klipp',{panel:'intake'}))}><Upload aria-hidden="true"/>Lägg till klipp</Button></>
-        :<><Button disabled={busy} onClick={closeCreate}>Avbryt</Button><Button variant="primary" type="submit" form="dealer-create" disabled={disabled||!name.trim()}>{busy?'Sparar…':'Skapa dealer'}{!busy&&<ArrowRight aria-hidden="true"/>}</Button></>}>
+      footer={created?<><Button onClick={closeCreate}>Stäng</Button><Button variant="primary" data-action="intake" onClick={()=>openNext(dealerHref(created.id,'klipp',{panel:'intake'}))}><Upload aria-hidden="true"/>Lägg till klipp</Button></>
+        :<><Button data-action="cancel" disabled={busy} onClick={closeCreate}>Avbryt</Button><Button variant="primary" type="submit" form="dealer-create" disabled={disabled||!name.trim()}>{busy?'Sparar…':'Skapa dealer'}{!busy&&<ArrowRight aria-hidden="true"/>}</Button></>}>
       <DialogSteps steps={['Namn','Klipp','Tal och landningar']} current={created?1:0}/>
       {!created?<form id="dealer-create" className="grid gap-4" onSubmit={event=>void create(event)}>
         <div className="flex items-center gap-4">
