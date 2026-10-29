@@ -1,6 +1,7 @@
 // Nytt spelbord på ett steg (plan-enkel-vag §1–2): standardval och kedjan som gör resten med dagens
-// åtgärder. Miljö (lås eller kopiera) → mät omätta klipp → skapa spelbordet (publicerar tilldelningen)
-// → spelinställningar (spara + publicera). Stannar kedjan blir det en mening och en knapp (stopView).
+// åtgärder. Miljö (lås eller kopiera) → mät omätta klipp → spelbord, tilldelning och spelinställningar i en
+// POST (presentation-room gameConfig: en transaktion, en paketversion). Stannar kedjan blir det en mening
+// och en knapp (stopView).
 import {defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {createStudioClient} from './connected-studio.mjs';
 import {dealerCoverage} from './dealer-coverage.mjs';
@@ -11,7 +12,11 @@ import {createRoomGameConfigClient,ROOM_GAME_DEFAULTS} from '../../../lib/room-g
 import {roomLimitProfiles} from '../../../lib/room-limit-profiles.mjs';
 
 export const PAOW_DEALER_ID = 'paow';
-export const QUICK_CREATE_STEPS = Object.freeze([['miljo','Miljö'],['matning','Mät klipp'],['spelbord','Spelbord och tilldelning'],['spel','Spelinställningar']]);
+export const QUICK_CREATE_STEPS = Object.freeze([['miljo','Miljö'],['matning','Mät klipp'],['spelbord','Spelbord, tilldelning och spelinställningar']]);
+/** Utan dealer med hela klippbanken förväljs ingen: dialogen visar meningen och knappen är inaktiv. */
+export const QUICK_CREATE_NO_DEALER = 'Ingen dealer har klipp som räcker för spel än. Välj en dealer under Avancerat eller komplettera klippen under Dealers.';
+/** Meningen när ingen miljö har dealern som standard: kedjan skapar en ny, utan vald bakgrund. */
+export const newLaneText = dealerLabel => `Ingen miljö har ${dealerLabel} som standard. En ny miljö skapas utan vald bakgrund: bakgrunden i dealerns klipp används.`;
 const GAMES = {blackjack:'Blackjack',roulette:'Roulette'};
 const live = room => room.state !== 'archived';
 const companyRooms = (catalog, operatorId) => (catalog?.administration.rooms ?? []).filter(room => room.operatorId === operatorId);
@@ -37,11 +42,12 @@ export function roomName({catalog, operatorId, dealerId, dealerLabel, game = 'bl
   while (names.has(name())) n++;
   return name();
 }
-/** Standardvalen (§2). Språket läses separat (defaultLanguage) eftersom det kräver en läsning. */
+/** Standardvalen (§2): bara en dealer med hela klippbanken (dealerCoverage complete), annars ingen.
+ *  Språket läses separat (defaultLanguage) eftersom det kräver en läsning. */
 export function quickCreateDefaults({catalog, project, inventory, operatorId, isComplete = id => complete(project, inventory, id)}) {
   const active = project.dealers.map(row => row.id), ok = id => active.includes(id) && isComplete(id);
   const last = companyRooms(catalog, operatorId).filter(live).map(room => roomDealer(catalog, room)).reverse().find(id => active.includes(id));
-  const dealerId = last && ok(last) ? last : active.includes(PAOW_DEALER_ID) ? PAOW_DEALER_ID : active.find(ok) ?? last ?? active[0] ?? '';
+  const dealerId = last && ok(last) ? last : ok(PAOW_DEALER_ID) ? PAOW_DEALER_ID : active.find(ok) ?? '';
   const dealerLabel = project.dealers.find(row => row.id === dealerId)?.label ?? dealerId;
   return {game:'blackjack', dealerId, laneId:laneChoices({catalog, project, operatorId, dealerId})[0]?.id ?? '', ...ROOM_GAME_DEFAULTS,
     name:dealerId ? roomName({catalog, operatorId, dealerId, dealerLabel}) : ''};
@@ -84,7 +90,7 @@ const newLaneId = (project, label, newKey) => {
  * kopierar en delad miljö (andra spelbord rörs inte) eller skapar dealerns standardmiljö.
  * @returns {{action:'use'|'lock'|'copy'|'create', laneId:string, project:object|null} | {stop:string, laneId:string}}
  */
-export function planEnvironment({catalog, project, dealerId, laneId, dealerLabel = project.dealers.find(row => row.id === dealerId)?.label ?? dealerId, roomLabel = '', forceCopy = false, newKey = () => crypto.randomUUID()}) {
+export function planEnvironment({catalog, project, dealerId, laneId, operatorId = '', dealerLabel = project.dealers.find(row => row.id === dealerId)?.label ?? dealerId, roomLabel = '', forceCopy = false, newKey = () => crypto.randomUUID()}) {
   const lane = (project.lanes ?? []).find(row => row.id === laneId);
   const add = next => ({...structuredClone(project), lanes:[...(project.lanes ?? []), next]});
   if (!lane) {
@@ -95,7 +101,9 @@ export function planEnvironment({catalog, project, dealerId, laneId, dealerLabel
   if (laneEnvironmentFixed(project, lane) && !forceCopy) return {action:'use', laneId, project:null};
   const locked = lockLane(project, lane, dealerId);
   if (!locked) return {stop:'environment_choice', laneId};
-  const shared = forceCopy || (catalog?.administration.rooms ?? []).some(room => room.compositionId === laneId);
+  // Delad: ett spelbord (vilket bolag som helst) använder miljön, eller ett annat bolags tilldelning har den.
+  const shared = forceCopy || (catalog?.administration.rooms ?? []).some(room => room.compositionId === laneId)
+    || (catalog?.administration.operators ?? []).some(row => row.id !== operatorId && row.packageLanes?.includes(laneId));
   if (!shared) return {action:'lock', laneId, project:{...structuredClone(project), lanes:project.lanes.map(row => row.id === laneId ? locked : row)}};
   locked.label = `${lane.label} · ${roomLabel || dealerLabel}`.slice(0, 80); locked.id = newLaneId(project, locked.label, newKey);
   return {action:'copy', laneId:locked.id, project:add(locked)};
@@ -110,7 +118,7 @@ const roomHref = (roomId, flik) => `/admin/rooms/${encodeURIComponent(roomId)}?f
  * kedjan ('retry', samma spelbord) eller läser in allt igen ('reload').
  * @returns {{text:string, href?:string, label?:string, action?:'retry'|'reload'}}
  */
-export function stopView(code, {operatorId = '', dealerId = '', laneId = '', roomId = '', detail = ''} = {}) {
+export function stopView(code, {operatorId = '', dealerId = '', laneId = '', detail = ''} = {}) {
   const lane = {href:laneHref(laneId), label:'Öppna miljön'}, assignment = {href:companyHref(operatorId, 'tilldelning'), label:'Öppna tilldelningen'};
   const reload = {action:'reload', label:'Läs in igen'}, retry = {action:'retry', label:'Försök igen'};
   if (/^native_material_/.test(code)) {
@@ -136,31 +144,36 @@ export function stopView(code, {operatorId = '', dealerId = '', laneId = '', roo
     case 'conflict': return {text:'Någon annan sparade just. Läs in igen.', ...reload};
     case 'uncertain': return {text:'Svaret kom inte fram; försök igen så används samma spelbord.', ...retry};
     case 'aborted': return {text:'Avbrutet. Det som hann bli klart står kvar.', ...retry};
-    case 'game_settings': return {text:'Spelinställningarna kan inte publiceras ännu.', href:roomHref(roomId, 'spel'), label:'Öppna Spelinställningar'};
+    case 'material': return {text:'Spelinställningarna kan inte publiceras med dealerns klipp.', href:dealerHref(dealerId, 'klipp'), label:'Öppna Klippkartan'};
     default: return {text:detail || 'Åtgärden kunde inte bekräftas.', ...retry};
   }
 }
 
-const sameConfig = (a, b) => a?.language === b?.language && a?.limitPreset === b?.limitPreset;
 /**
- * Kedjan. `memo` lever mellan försök i samma dialog så att Försök igen återanvänder miljön och
- * spelbordets idempotensnyckel (servern svarar duplicate). `onStep(id, status, text)` ritar raderna.
+ * Kedjan. `memo` lever mellan försök i samma dialog (även efter Läs in igen): miljön (memo.laneId) och
+ * mätningen görs en gång, och ett osäkert svar (memo.uncertain) försöks igen med samma idempotensnyckel och
+ * samma spelinställningar (servern svarar duplicate). Ett bekräftat nej skapade inget: nästa försök får en ny
+ * nyckel. `onStep(id, status, text)` ritar raderna.
  * @returns {Promise<{ok:true, room:object, playUrl:string, roomHref:string} | {ok:false, step:string, text:string, href?:string, label?:string, action?:string}>}
  */
 export async function runQuickCreate(choice, {operator, memo = {}, onStep = () => {}, signal, fetchImpl = fetch, newKey = () => crypto.randomUUID(),
-  studio = createStudioClient({fetchImpl}), rooms = createPresentationRoomClient({fetchImpl}), gameClient = createRoomGameConfigClient({fetchImpl})} = {}) {
+  studio = createStudioClient({fetchImpl}), rooms = createPresentationRoomClient({fetchImpl})} = {}) {
   const {dealerId, game = 'blackjack', name} = choice, refs = {operatorId:operator.id, dealerId, laneId:memo.laneId || choice.laneId};
   const stop = (step, code, detail = '') => { const view = stopView(signal?.aborted ? 'aborted' : code, {...refs, detail}); onStep(step, 'stopped', view.text); return {ok:false, step, ...view}; };
   if (operator.appearanceDraft) return stop('miljo', 'appearance_draft');
   if (!dealerId) return stop('miljo', 'no_dealer');
   let workspace, project, forceCopy = false;
-  async function environment() {
+  async function environment(replan = false) {
     onStep('miljo', 'running', 'Kontrollerar miljön…');
     try { workspace = await studio.load(signal); } catch (error) { return stop('miljo', error?.statusCode === 409 ? 'conflict' : 'failed', error?.message); }
-    const dealerLabel = workspace.project.dealers.find(row => row.id === dealerId)?.label ?? dealerId;
-    const plan = planEnvironment({catalog:workspace.catalog, project:workspace.project, dealerId, laneId:refs.laneId, dealerLabel, roomLabel:name, forceCopy, newKey});
-    if (plan.stop) return stop('miljo', plan.stop);
     project = workspace.project;
+    // Miljön från ett tidigare försök används som den är: ingen ny kopia.
+    const kept = !replan && memo.laneId && project.lanes?.find(row => row.id === memo.laneId);
+    if (kept) { onStep('miljo', 'done', `${kept.label} används (klar sedan förra försöket).`); return null; }
+    if (!replan) { delete memo.laneId; refs.laneId = choice.laneId; }
+    const dealerLabel = project.dealers.find(row => row.id === dealerId)?.label ?? dealerId;
+    const plan = planEnvironment({catalog:workspace.catalog, project, dealerId, laneId:refs.laneId, operatorId:operator.id, dealerLabel, roomLabel:name, forceCopy, newKey});
+    if (plan.stop) return stop('miljo', plan.stop);
     if (plan.project) {
       try { project = await studio.save(plan.project, signal); } catch (error) { return stop('miljo', error?.statusCode === 409 ? 'conflict' : 'failed', error?.message); }
     }
@@ -170,7 +183,9 @@ export async function runQuickCreate(choice, {operator, memo = {}, onStep = () =
     return null;
   }
   const stopped = await environment(); if (stopped) return stopped;
-  if (game === 'blackjack') {
+  if (game !== 'blackjack') onStep('matning', 'skipped', 'Behövs inte för roulette.');
+  else if (memo.measured === dealerId) onStep('matning', 'done', 'Klippen mättes i förra försöket.');
+  else {
     const clips = unmeasuredClips(workspace.inventory, dealerId);
     if (clips.length) {
       onStep('matning', 'running', `0 av ${clips.length} klipp`);
@@ -179,41 +194,41 @@ export async function runQuickCreate(choice, {operator, memo = {}, onStep = () =
       if (result.failed.length) return stop('matning', 'measure_failed', `${result.failed.length} av ${clips.length} klipp (${result.failed[0].label}: ${result.failed[0].message.replace(/\.$/, '')})`);
       onStep('matning', 'done', `${clips.length} klipp mättes.`);
     } else onStep('matning', 'done', 'Alla klipp är redan mätta.');
-  } else onStep('matning', 'skipped', 'Behövs inte för roulette.');
+    memo.measured = dealerId;
+  }
+  const gameConfig = game === 'blackjack' ? {language:choice.language, limitPreset:choice.limitPreset} : null;
   let created;
   for (;;) {
-    onStep('spelbord', 'running', 'Skapar spelbordet…');
+    onStep('spelbord', 'running', gameConfig ? 'Skapar spelbordet och publicerar spelinställningarna…' : 'Skapar spelbordet…');
     const lane = project.lanes.find(row => row.id === refs.laneId);
     const context = {operator:{id:operator.id, slug:operator.slug, name:operator.name}, presentation:{id:refs.laneId, label:lane?.label ?? refs.laneId}, projectRevision:project.revision};
     let prepared;
     try { prepared = await rooms.read(context, {signal, game}); } catch (error) { return stop('spelbord', error?.status === 409 ? 'conflict' : 'failed', error?.message); }
-    const same = memo.payload && memo.payload.presentationLaneId === refs.laneId && memo.payload.name === name && (memo.payload.game ?? 'blackjack') === game;
-    if (!prepared.ready && !same) {
+    // Bara ett osäkert svar kan ha skapat spelbordet: då samma nyckel och samma inställningar.
+    const retry = memo.uncertain && memo.payload && memo.payload.presentationLaneId === refs.laneId && memo.payload.name === name && (memo.payload.game ?? 'blackjack') === game
+      && JSON.stringify(memo.payload.gameConfig ?? null) === JSON.stringify(gameConfig);
+    if (!prepared.ready && !retry) {
       // En publicerad miljö som ändrats sedan: kopian får den nya bakgrunden, de gamla spelborden behåller sin (en gång).
-      if (prepared.conflictCode === 'presentation_room_environment_conflict' && !forceCopy) { forceCopy = true; const again = await environment(); if (again) return again; continue; }
+      if (prepared.conflictCode === 'presentation_room_environment_conflict' && !forceCopy) { forceCopy = true; const again = await environment(true); if (again) return again; continue; }
       return stop('spelbord', prepared.conflictCode ?? prepared.reason ?? 'failed');
     }
-    const payload = {operatorId:operator.id, presentationLaneId:refs.laneId, name, idempotencyKey:same ? memo.payload.idempotencyKey : newKey(), ...(game === 'roulette' ? {game} : {}),
-      expectedProjectRevision:prepared.projectRevision, expectedAdministrationRevision:prepared.administrationRevision, expectedPackageRevision:prepared.packageRevision};
+    const payload = {operatorId:operator.id, presentationLaneId:refs.laneId, name, idempotencyKey:retry ? memo.payload.idempotencyKey : newKey(), ...(game === 'roulette' ? {game} : {}),
+      expectedProjectRevision:prepared.projectRevision, expectedAdministrationRevision:prepared.administrationRevision, expectedPackageRevision:prepared.packageRevision,
+      ...(gameConfig ? {gameConfig} : {})};
     memo.payload = payload;
     try { created = await rooms.create(context, payload, {signal}); }
-    catch (error) { return stop('spelbord', error?.status === 409 ? 'conflict' : error?.uncertain ? 'uncertain' : 'failed', error?.message); }
+    catch (error) {
+      memo.uncertain = Boolean(error?.uncertain);
+      if (error?.uncertain) return stop('spelbord', 'uncertain', error?.message);
+      // Bekräftade nej: inget skrevs (servern rullar tillbaka spelbordet med inställningarna).
+      if (error?.status === 409 && error.code === 'studio_room_choices_draft_pending') return stop('spelbord', 'appearance_draft');
+      if (error?.status === 422 && error.code === 'studio_room_game_material_unavailable') return stop('spelbord', error.materialReason ?? 'material');
+      return stop('spelbord', error?.status === 409 ? 'conflict' : 'failed', error?.message);
+    }
     break;
   }
-  memo.room = created.room; refs.roomId = created.room.id;
-  onStep('spelbord', 'done', `${created.room.name} är öppet och tilldelningen publicerad (version ${created.packageRevision}).`);
-  const done = () => ({ok:true, room:created.room, playUrl:created.playUrl, roomHref:roomHref(created.room.id, 'spel')});
-  if (game !== 'blackjack') { onStep('spel', 'skipped', 'Roulette har inga spelinställningar.'); return done(); }
-  onStep('spel', 'running', 'Sparar och publicerar…');
-  const wanted = {language:choice.language, limitPreset:choice.limitPreset}, context = {operatorId:operator.id, roomId:created.room.id};
-  try {
-    let current = await gameClient.read(context, {signal});
-    if (!(sameConfig(current.published?.gameConfig, wanted) && !current.draft)) {
-      if (!sameConfig(current.draft?.gameConfig, wanted)) current = await gameClient.save(context, current, wanted, {signal});
-      if (!current.publication.ready) return stop('spel', current.publication.materialReason ?? 'game_settings');
-      current = await gameClient.publish(context, current, {signal});
-    }
-    onStep('spel', 'done', `Språk ${wanted.language === 'sv' ? 'svenska' : 'engelska'}, insatsprofil ${roomLimitProfiles().find(row => row.id === wanted.limitPreset)?.label ?? wanted.limitPreset} · version ${current.packageRevision}.`);
-  } catch (error) { return stop('spel', error?.status === 409 ? 'conflict' : 'failed', error?.message); }
-  return done();
+  memo.uncertain = false; memo.room = created.room; refs.roomId = created.room.id;
+  const settings = created.published ? ` Språk ${created.published.gameConfig.language === 'sv' ? 'svenska' : 'engelska'}, insatsprofil ${roomLimitProfiles().find(row => row.id === created.published.gameConfig.limitPreset)?.label ?? created.published.gameConfig.limitPreset}.` : '';
+  onStep('spelbord', 'done', `${created.room.name} är öppet och publicerat (version ${created.packageRevision}).${settings}`);
+  return {ok:true, room:created.room, playUrl:created.playUrl, roomHref:roomHref(created.room.id, 'spel')};
 }

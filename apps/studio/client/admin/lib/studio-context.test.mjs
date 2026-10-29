@@ -351,6 +351,7 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
 // Nytt spelbord på ett steg (room-quick-create.mjs): standardvalen står i dialogen, Skapa och publicera kör kedjan
 // och den gamla guiden (RegisteredStudio create, scenmallsval i två steg) finns inte kvar.
 test('Nytt spelbord is one dialog with every choice preselected and one Skapa och publicera',async()=>{
+  const {QUICK_CREATE_NO_DEALER}=await import('./room-quick-create.mjs');
   const {addDealer,createEmptyProject,defaultPresentationLane}=await import('../../../../../packages/presentation/contracts/studio-model.mjs');
   const lane=(id,label,dealerId)=>({...defaultPresentationLane(dealerId),id,label});
   const project={...addDealer(addDealer(createEmptyProject(),'astrid','Astrid'),'paow-v2','Paow'),revision:'p1',lanes:[lane('one','Standard','astrid'),lane('two','Kväll','paow-v2')]};
@@ -361,8 +362,10 @@ test('Nytt spelbord is one dialog with every choice preselected and one Skapa oc
   const operators=value.administration.operators;
   const html=await companiesPageHtml({page:'company',id:'a',compositions,fetchImpl,dialog:{open:true,operators:[operators[0]],initialOperator:'a',fixedOperator:true,disabled:false,onChanged(){},onClose(){}}});
   assert.ok(['/admin/_data/catalog','/studio/api/project','/studio/api/videos'].every(path=>reads.includes(path)));
-  assert.match(html,/value="Paow Blackjack 1"/,'the company\'s last dealer names the room');
-  assert.match(html,/Roulette · enkel nolla/);assert.match(html,/<option value="two" selected="">Kväll<\/option>/,'the dealer\'s environment is preselected');
+  // Inga klipp: ingen dealer har hela klippbanken, så ingen förväljs (room-quick-create.test.mjs prövar förvalen).
+  assert.match(html,new RegExp(QUICK_CREATE_NO_DEALER.slice(0,40)),'one sentence instead of a silent incomplete dealer');
+  assert.match(html,/<option value="" selected="">Välj dealer<\/option>/);assert.match(html,/<button[^>]*disabled=""[^>]*>Skapa och publicera/,'nothing to create with');
+  assert.match(html,/Paow · klippen räcker inte än/);assert.match(html,/Roulette · enkel nolla/);
   assert.match(html,/<option value="prive" selected="">/,'Privé is the bet profile');assert.match(html,/<option value="en" selected="">Engelska/);
   assert.match(html,/Skapa och publicera/);assert.match(html,/blir öppet/);assert.doesNotMatch(html,/skapas pausat|Nästa: välj scenmall/);
 });

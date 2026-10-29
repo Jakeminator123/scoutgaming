@@ -10,7 +10,7 @@ import {insetTableClass} from '../ui/table';
 import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
 import {createStudioClient,type Catalog,type Workspace} from '../../lib/connected-studio.mjs';
-import {dealerChoices,defaultLanguage,laneChoices,QUICK_CREATE_STEPS,quickCreateDefaults,roomName,runQuickCreate,type QuickChoice,type QuickMemo,type QuickStepId,type QuickStepStatus} from '../../lib/room-quick-create.mjs';
+import {dealerChoices,defaultLanguage,laneChoices,newLaneText,QUICK_CREATE_NO_DEALER,QUICK_CREATE_STEPS,quickCreateDefaults,roomName,runQuickCreate,type QuickChoice,type QuickMemo,type QuickStepId,type QuickStepStatus} from '../../lib/room-quick-create.mjs';
 import {roomLimitProfiles} from '../../../../lib/room-limit-profiles.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
@@ -212,8 +212,10 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
 }
 
 // Nytt spelbord på ett steg (lib/room-quick-create.mjs): allt är förvalt och går att ändra under Avancerat;
-// Skapa och publicera kör kedjan (miljö → mät klipp → spelbord och tilldelning → spelinställningar) och
-// stannar med en mening och en knapp. Spelbordet skapas öppet och spelbart när kedjan går igenom.
+// Skapa och publicera kör kedjan (miljö → mät klipp → spelbord, tilldelning och spelinställningar i en
+// transaktion) och stannar med en mening och en knapp. Spelbordet skapas öppet och spelbart när kedjan går
+// igenom. Efter ett stopp är miljön redan klar: dealer, miljö och namn låses, och ett nytt försök (även efter
+// Läs in igen) kör bara om det som återstår med samma miljö.
 const limitLabels=Object.fromEntries(roomLimitProfiles().map(row=>[row.id,row.label]));
 const stepChip:Record<QuickStepStatus,ReactNode>={running:<Chip tone="info">pågår</Chip>,done:<Chip tone="live">klart</Chip>,skipped:<Chip tone="draft">behövs inte</Chip>,stopped:<Chip tone="warn">hinder</Chip>};
 type QuickResult=Awaited<ReturnType<typeof runQuickCreate>>;
@@ -224,15 +226,18 @@ export function CreateRoomDialog({open,operators,initialOperator,fixedOperator=f
   const [choice,setChoice]=useState<QuickChoice|null>(null),[steps,setSteps]=useState<Partial<Record<QuickStepId,{status:QuickStepStatus;text:string}>>>({});
   const [result,setResult]=useState<QuickResult|null>(null),[busy,setBusy]=useState(false);
   const memo=useRef<QuickMemo>({}),abort=useRef<AbortController|null>(null);
-  useEffect(()=>{if(open)setOperatorId(initialOperator);},[open,initialOperator]);
+  // Ett nytt öppnande börjar om; Läs in igen läser bara om uppgifterna och behåller kedjans minne.
+  useEffect(()=>{if(open){setOperatorId(initialOperator);setSteps({});setResult(null);setChoice(null);memo.current={};}},[open,initialOperator]);
   useEffect(()=>{
     if(!open)return;
-    const controller=new AbortController();setWorkspace(null);setLoadError('');setSteps({});setResult(null);memo.current={};
+    const controller=new AbortController();setWorkspace(null);setLoadError('');setResult(null);
     createStudioClient({fetchImpl:request}).load(controller.signal).then(value=>{if(!controller.signal.aborted)setWorkspace(value);},cause=>{if(!controller.signal.aborted)setLoadError(cause instanceof Error?cause.message:'Uppgifterna kunde inte läsas.');});
     return()=>controller.abort();
   },[open,reload]);
   useEffect(()=>{
     if(!workspace||!operatorId)return;
+    // Påbörjad kedja: valen står kvar (miljön finns redan); standardvalen räknas inte om.
+    if(memo.current.laneId||memo.current.uncertain)return;
     const picked=quickCreateDefaults({catalog:workspace.catalog,project:workspace.project,inventory:workspace.inventory,operatorId});
     setChoice(picked);memo.current={};
     const controller=new AbortController();
@@ -244,24 +249,30 @@ export function CreateRoomDialog({open,operators,initialOperator,fixedOperator=f
   const dealerLabel=(id:string)=>dealers.find(row=>row.id===id)?.label??id;
   const lanes=workspace&&choice?laneChoices({catalog:workspace.catalog,project:workspace.project,operatorId,dealerId:choice.dealerId}):[];
   const finished=Boolean(result?.ok),locked=busy||finished;
+  // Miljön är skapad eller låst (memo.laneId): dealer, spel, miljö, namn och bolag står fast. Ett osäkert svar
+  // låser också spelinställningarna, så att Försök igen skickar exakt samma begäran.
+  const started=Boolean(memo.current.laneId),uncertain=Boolean(memo.current.uncertain);
+  const pickLocked=locked||started||uncertain,settingsLocked=locked||uncertain;
   function change(patch:Partial<QuickChoice>){
     if(!workspace||!choice||locked)return;
+    const picks=(['dealerId','laneId','name','game'] as const).some(key=>patch[key]!==undefined);
+    if(picks?pickLocked:settingsLocked)return;
     const next={...choice,...patch};
     if(patch.dealerId!==undefined)next.laneId=laneChoices({catalog:workspace.catalog,project:workspace.project,operatorId,dealerId:next.dealerId})[0]?.id??'';
     if(patch.dealerId!==undefined||patch.game!==undefined)next.name=roomName({catalog:workspace.catalog,operatorId,dealerId:next.dealerId,dealerLabel:dealerLabel(next.dealerId),game:next.game});
-    memo.current={};setSteps({});setResult(null);setChoice(next);
+    setResult(null);setChoice(next);
   }
   async function start(){
     if(!choice||!operator||disabled||busy)return;
-    const controller=new AbortController();abort.current=controller;setBusy(true);setResult(null);setSteps({});
+    const controller=new AbortController();abort.current=controller;setBusy(true);setResult(null);
     try{
       const value=await runQuickCreate({...choice,name:choice.name.trim()},{operator,memo:memo.current,signal:controller.signal,fetchImpl:request,onStep:(id,status,text)=>setSteps(current=>({...current,[id]:{status,text}}))});
       setResult(value);if(value.ok||memo.current.room)onChanged();
     }finally{setBusy(false);abort.current=null;}
   }
   const stop=result&&!result.ok?result:null;
-  const select=(label:string,value:string,onChange:(value:string)=>void,options:[string,string][])=><label className="grid gap-1.5 text-[13px] font-semibold">{label}
-    <select className={fieldClass} value={value} disabled={locked} onChange={event=>onChange(event.target.value)}>{options.map(([id,text])=><option key={id} value={id}>{text}</option>)}</select></label>;
+  const select=(label:string,value:string,onChange:(value:string)=>void,options:[string,string][],disabledHere:boolean)=><label className="grid gap-1.5 text-[13px] font-semibold">{label}
+    <select className={fieldClass} value={value} disabled={disabledHere} onChange={event=>onChange(event.target.value)}>{options.map(([id,text])=><option key={id} value={id}>{text}</option>)}</select></label>;
   return <Dialog open={open} size="lg" busy={busy} title={operator?`Nytt spelbord hos ${operator.name}`:'Nytt spelbord'} onClose={()=>{abort.current?.abort();onClose();}}
     description="Allt är förvalt. Skapa och publicera gör resten: spelbordet blir öppet och spelbart, och visas som förbereds bara om ett steg stannar."
     footer={<>{busy?<Button onClick={()=>abort.current?.abort()}>Avbryt</Button>:<Button onClick={onClose}>{finished?'Stäng':'Avbryt'}</Button>}
@@ -274,17 +285,20 @@ export function CreateRoomDialog({open,operators,initialOperator,fixedOperator=f
     {!workspace&&!loadError&&<Loading label="Väljer dealer, miljö och språk…" rows={3}/>}
     {workspace&&choice&&<div className="grid gap-4">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <label className="grid gap-1.5 text-[13px] font-semibold">Namn<input className={fieldClass} value={choice.name} maxLength={100} disabled={locked} onChange={event=>change({name:event.target.value})}/></label>
-        <p className="m-0 self-end text-[13px] text-sg-muted">{[gameLabel(choice.game),dealerLabel(choice.dealerId)||'ingen dealer',lanes.find(row=>row.id===choice.laneId)?.label??'ny miljö',choice.language==='sv'?'svenska':'engelska',limitLabels[choice.limitPreset]??choice.limitPreset].join(' · ')}</p>
+        <label className="grid gap-1.5 text-[13px] font-semibold">Namn<input className={fieldClass} value={choice.name} maxLength={100} disabled={pickLocked} onChange={event=>change({name:event.target.value})}/></label>
+        <p className="m-0 self-end text-[13px] text-sg-muted">{[gameLabel(choice.game),dealerLabel(choice.dealerId)||'ingen dealer',started?'miljön från förra försöket':lanes.find(row=>row.id===choice.laneId)?.label??'ny miljö utan vald bakgrund',choice.language==='sv'?'svenska':'engelska',limitLabels[choice.limitPreset]??choice.limitPreset].join(' · ')}</p>
       </div>
-      <details className="rounded-xl border border-sg-border bg-sg-surface-2 px-3.5 py-2.5"><summary className="cursor-pointer text-[13px] font-semibold">Avancerat</summary>
+      {!choice.dealerId&&<p role="status" className="m-0 text-[13px] text-sg-warn">{QUICK_CREATE_NO_DEALER}</p>}
+      {choice.dealerId&&!choice.laneId&&!started&&<p role="status" className="m-0 text-[13px] text-sg-muted">{newLaneText(dealerLabel(choice.dealerId))}</p>}
+      {started&&!finished&&<p className="m-0 text-[13px] text-sg-muted">Miljön är klar sedan förra försöket: dealer, miljö och namn står fast{uncertain?'':'; språk och insatsprofil kan ändras'}.</p>}
+      <details open={!choice.dealerId||(!choice.laneId&&!started)||undefined} className="rounded-xl border border-sg-border bg-sg-surface-2 px-3.5 py-2.5"><summary className="cursor-pointer text-[13px] font-semibold">Avancerat</summary>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {!fixedOperator&&operators.length>1&&select('Bolag',operatorId,value=>{if(!locked)setOperatorId(value);},operators.map(row=>[row.id,row.name]))}
-          {select('Spel',choice.game,value=>change({game:value as QuickChoice['game']}),[['blackjack','Blackjack'],['roulette','Roulette · enkel nolla']])}
-          {select('Dealer',choice.dealerId,value=>change({dealerId:value}),dealers.map(row=>[row.id,row.label+(row.complete?'':' · klippen räcker inte än')]))}
-          {select('Miljö',choice.laneId,value=>change({laneId:value}),[...lanes.map(row=>[row.id,row.label] as [string,string]),['','Ny miljö för '+dealerLabel(choice.dealerId)]])}
-          {choice.game==='blackjack'&&select('Bordsspråk',choice.language,value=>change({language:value as QuickChoice['language']}),[['en','Engelska'],['sv','Svenska']])}
-          {choice.game==='blackjack'&&select('Insatsprofil',choice.limitPreset,value=>change({limitPreset:value as QuickChoice['limitPreset']}),Object.entries(limitLabels))}
+          {!fixedOperator&&operators.length>1&&select('Bolag',operatorId,value=>{if(!pickLocked)setOperatorId(value);},operators.map(row=>[row.id,row.name]),pickLocked)}
+          {select('Spel',choice.game,value=>change({game:value as QuickChoice['game']}),[['blackjack','Blackjack'],['roulette','Roulette · enkel nolla']],pickLocked)}
+          {select('Dealer',choice.dealerId,value=>change({dealerId:value}),[...(choice.dealerId?[]:[['','Välj dealer'] as [string,string]]),...dealers.map(row=>[row.id,row.label+(row.complete?'':' · klippen räcker inte än')] as [string,string])],pickLocked)}
+          {select('Miljö',choice.laneId,value=>change({laneId:value}),[...lanes.map(row=>[row.id,row.label] as [string,string]),['','Ny miljö för '+dealerLabel(choice.dealerId)+' (utan vald bakgrund)']],pickLocked)}
+          {choice.game==='blackjack'&&select('Bordsspråk',choice.language,value=>change({language:value as QuickChoice['language']}),[['en','Engelska'],['sv','Svenska']],settingsLocked)}
+          {choice.game==='blackjack'&&select('Insatsprofil',choice.limitPreset,value=>change({limitPreset:value as QuickChoice['limitPreset']}),Object.entries(limitLabels),settingsLocked)}
         </div>
         <Footnote>En miljö som andra spelbord använder kopieras i stället för att ändras. Bakgrund och bordsgrafik följer miljöns standard.</Footnote>
       </details>

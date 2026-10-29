@@ -37,13 +37,16 @@ export interface PresentationRoomPayload {
   game?: 'blackjack' | 'roulette';
   operatorId: string; presentationLaneId: string; name: string; idempotencyKey: string;
   expectedProjectRevision: string; expectedAdministrationRevision: string; expectedPackageRevision: number | null;
+  /** Blackjack: spelinställningarna publiceras i samma transaktion och paketversion. */
+  gameConfig?: { language: string; limitPreset: string };
 }
 export interface PresentationRoomReceipt {
   ok: true; duplicate: boolean;
   room: { schemaVersion: 2; id: string; name: string; operatorId: string; presentationLaneId: string; gameLaneId: string; state: 'live'; game?: 'blackjack' | 'roulette' };
   administrationRevision: string; packageRevision: number; playUrl: string;
+  published?: { packageRevision: number; gameConfig: { language: string; limitPreset: string } };
 }
-export class PresentationRoomError extends Error { status: number; uncertain: boolean; constructor(message: string, options?: { status?: number; uncertain?: boolean }) }
+export class PresentationRoomError extends Error { status: number; uncertain: boolean; code: string|null; materialReason: string|null; constructor(message: string, options?: { status?: number; uncertain?: boolean; code?: string|null; materialReason?: string|null }) }
 export function presentationRoomContextKey(context: PresentationRoomContext): string;
 export function presentationRoomPlayUrl(value: unknown, expected: { operatorSlug: string; roomId: string }): string;
 export interface PresentationRoomClient {

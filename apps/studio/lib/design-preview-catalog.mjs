@@ -34,7 +34,9 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     // Bolagets öppna utseendeutkast (samma bedömning som publiceringen): Nytt spelbord startar inte då.
     const appearanceDraft = Boolean(pack && typeof store.getBrandingDraft === 'function' && await cleanBrandingDraft(await store.getBrandingDraft(row.id), pack, store));
     operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
-      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack), appearanceDraft });
+      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack), appearanceDraft,
+      // Miljöerna i tilldelningen: Nytt spelbord kopierar en miljö som ett annat bolag har i stället för att låsa den.
+      packageLanes: pack ? [...pack.lanes] : [] });
   }
   // The published settings heads per company, read once and shared by Admin's warning and the lobby below,
   // so both say what the shared table says (room_config_missing).

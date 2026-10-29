@@ -17,7 +17,9 @@ export type Catalog = { source:'registered'; readAt:string; administration:{ rev
     /** Bolag › Tilldelat (partner-assignment.mjs adminAssignmentView); null utan fryst presentation. */
     assignment?:import('../components/studio/assignment-field').AssignmentView|null;
     /** Ett opublicerat utseendeutkast hos bolaget (cleanBrandingDraft); Nytt spelbord väntar då. */
-    appearanceDraft?:boolean}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[]; compositions:{id:string;name:string;dealerIds:string[];defaultDealerId:string;illustration?:string}[] };
+    appearanceDraft?:boolean;
+    /** Miljöerna i bolagets publicerade tilldelning (Nytt spelbord låser bara en miljö som inget annat bolag har). */
+    packageLanes?:string[]}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[]; compositions:{id:string;name:string;dealerIds:string[];defaultDealerId:string;illustration?:string}[] };
   /** Dealers with a drift profile and bank hash in this environment (studio-native-runtime withMovingSpeechDealers). */
   movingSpeech?:{dealerIds:string[]} };
 export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null; game?:'roulette'; intakeOnly?:boolean; planned?:boolean; localOnly?:boolean };

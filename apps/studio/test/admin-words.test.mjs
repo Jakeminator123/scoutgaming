@@ -30,7 +30,6 @@ const PENDING = new Set([
   'apps/studio/components/lane-editor.tsx',
   'apps/studio/components/layer-asset-manager.tsx',
   'apps/studio/components/layer-selectors.tsx',
-  'apps/studio/components/presentation-room-create.tsx',
   'apps/studio/components/room-game-config.tsx',
 ]);
 

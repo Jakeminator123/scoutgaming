@@ -1,10 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import vm from 'node:vm';
-import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { labBasePath } from '../lib/lab-url.mjs';
 import { createPresentationRoomClient, createPresentationRoomController, presentationRoomContextKey, presentationRoomPlayUrl } from '../lib/presentation-room-client.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
@@ -287,85 +282,6 @@ test('wrong receipt owner, lane, name, room identifier or current revisions neve
   }
 });
 
-const require = createRequire(import.meta.url), url = new URL('../components/presentation-room-create.tsx', import.meta.url);
-const { transformSync } = require('next/dist/build/swc');
-const compiled = transformSync(readFileSync(url, 'utf8'), { filename: 'presentation-room-create.tsx',
-  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
-function componentHarness(controller) {
-  const refs = [], effects = []; let cursor = 0, queued = [];
-  const react = { ...React, useRef(value) { return refs[cursor++] ??= { current: value }; },
-    useSyncExternalStore(_subscribe, snapshot) { return snapshot(); },
-    useEffect(fn, deps) { const i = cursor++, old = effects[i]; if (!old || deps.some((value, index) => value !== old.deps[index])) {
-      queued.push(() => { old?.cleanup?.(); effects[i] = { deps, cleanup: fn() }; });
-    } } };
-  const module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, URLSearchParams, require: name => name === 'react' ? react : name.endsWith('.module.css')
-    ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) } : name.includes('presentation-room-client')
-      ? { createPresentationRoomController: () => controller, presentationRoomContextKey } : require(name) });
-  return { render(props = context) { cursor = 0; queued = []; const tree = module.exports.PresentationRoomCreate(props); for (const effect of queued) effect(); return tree; },
-    unmount() { for (const effect of effects) effect?.cleanup?.(); } };
-}
-function find(tree, type) {
-  if (!tree || typeof tree !== 'object') return null;
-  if (tree.type === type) return tree;
-  for (const child of React.Children.toArray(tree.props?.children)) { const found = find(child, type); if (found) return found; }
-  return null;
-}
-test('standalone form has one name field and create action, with no extra acceptance input', () => {
-  const h = fixture(), ui = componentHarness(h.controller);
-  const tree = ui.render({ ...context, projectSaved: false });
-  const html = renderToStaticMarkup(tree);
-  assert.match(html, /Skapa spelrum/); assert.match(html, /Rumsnamn/); assert.match(html, /Spara miljön först/);
-  assert.equal((html.match(/<input/g) ?? []).length, 1); assert.equal(html.includes('checkbox'), false);
-  assert.equal(find(tree, 'button').props.disabled, true); assert.equal(h.requests.length, 0); ui.unmount();
-});
-test('component delivers only a current verified receipt once, reports busy and exposes its validated link', async () => {
-  const h = fixture(), ui = componentHarness(h.controller), receipts = [], busy = [];
-  const props = { ...context, onCreated: value => receipts.push(value), onBusyChange: value => busy.push(value) };
-  ui.render(props); h.reply(0, prepared()); await tick();
-  let tree = ui.render(props); find(tree, 'input').props.onChange({ target: { value: 'Mitt rum' } }); tree = ui.render(props);
-  find(tree, 'form').props.onSubmit({ preventDefault() {} }); find(tree, 'form').props.onSubmit({ preventDefault() {} });
-  assert.equal(h.requests.length, 2); ui.render(props); assert.equal(busy.at(-1), true);
-  h.reply(1, prepared()); await tick(); const payload = JSON.parse(h.requests[2].options.body); h.reply(2, created(payload)); await tick();
-  tree = ui.render(props); ui.render(props); assert.equal(receipts.length, 1); assert.equal(busy.at(-1), false);
-  assert.equal(find(tree, 'a').props.href, '/lobby?operator=sg-test'); assert.ok(renderToStaticMarkup(tree).includes(created(payload).playUrl.replaceAll('&','&amp;'))); ui.unmount(); assert.equal(busy.at(-1), false);
-});
-test('component renders a changed selection immediately empty and never delivers the previous late receipt', async () => {
-  const h = fixture(), ui = componentHarness(h.controller), receipts = [];
-  const props = { ...context, onCreated: value => receipts.push(value) }; ui.render(props); h.reply(0, prepared()); await tick();
-  let tree = ui.render(props); find(tree, 'input').props.onChange({ target: { value: 'Mitt rum' } }); tree = ui.render(props);
-  find(tree, 'form').props.onSubmit({ preventDefault() {} }); h.reply(1, prepared()); await tick();
-  const payload = JSON.parse(h.requests[2].options.body), other = { ...props, presentation: { id: 'second', label: 'Andra' } };
-  tree = ui.render(other); assert.equal(find(tree, 'input').props.value, ''); assert.equal(find(tree, 'button').props.disabled, true);
-  h.reply(2, created(payload)); h.reply(3, prepared(other)); await tick(); tree = ui.render(other);
-  assert.equal(receipts.length, 0); assert.equal(find(tree, 'a'), null); ui.unmount();
-});
-
-test('the game selector clears the previous failure and enables creation only after roulette v15 preflight',async()=>{
-  const h=fixture(),ui=componentHarness(h.controller);ui.render(context);
-  h.reply(0,prepared(context,{ready:false,reason:'presentation_lane_incompatible'}));await tick();
-  let tree=ui.render(context);find(tree,'input').props.onChange({target:{value:'Annas roulette'}});
-  const selection=find(tree,'select').props.onChange({target:{value:'roulette'}});
-  tree=ui.render(context);assert.equal(find(tree,'select').props.value,'roulette');assert.equal(find(tree,'select').props.disabled,true);
-  assert.equal(find(tree,'button').props.disabled,true);assert.match(renderToStaticMarkup(tree),/Kontrollerar/);
-  assert.equal(new URL(h.requests[1].path,'https://studio.invalid').searchParams.get('game'),'roulette');
-  h.reply(1,prepared(context,{capabilities:rouletteCapability}));await selection;
-  tree=ui.render(context);assert.equal(find(tree,'select').props.disabled,false);assert.equal(find(tree,'button').props.disabled,false);
-  assert.equal(find(tree,'input').props.value,'Annas roulette');assert.equal(h.keys,0);ui.unmount();
-});
-
-test('a receipt arriving just before new unsaved edits cannot invoke onCreated or expose the old link', async () => {
-  const h = fixture(), ui = componentHarness(h.controller), receipts = [];
-  const props = { ...context, onCreated: value => receipts.push(value) };
-  ui.render(props); h.reply(0, prepared()); await tick();
-  let tree = ui.render(props); find(tree, 'input').props.onChange({ target: { value: 'Mitt rum' } }); tree = ui.render(props);
-  find(tree, 'form').props.onSubmit({ preventDefault() {} }); h.reply(1, prepared()); await tick();
-  const payload = JSON.parse(h.requests[2].options.body); h.reply(2, created(payload)); await tick();
-  tree = ui.render({ ...props, projectSaved: false });
-  assert.equal(receipts.length, 0); assert.equal(find(tree, 'a'), null); assert.equal(find(tree, 'button').props.disabled, true);
-  assert.equal(h.requests.length, 3); ui.unmount();
-});
-
 test('refresh after a Render upgrade changes unavailable to ready without replacing the context or room name', async () => {
   const h = fixture();
   await h.ready(context, { ready: false, reason: 'studio_presentation_runtime_update_required',
@@ -398,84 +314,10 @@ test('existing rooms have validated scoped links and cannot inject another compa
   for(const extra of wrong){const broken=fixture();await broken.ready(context,extra);assert.equal(broken.controller.getSnapshot().status,'error');assert.equal(broken.controller.getSnapshot().preflight,null);}
 });
 
-test('room list opens the existing room before creating and hides stale links on company changes', async () => {
-  const h=fixture(),ui=componentHarness(h.controller);
-  ui.render(context);
-  const room={id,name:'Johannas blackjack',playUrl:'/play/blackjack?operator=sg-test&table='+id};
-  h.reply(0,prepared(context,{rooms:[room],packageRevision:1}));await tick();
-  let tree=ui.render(context),html=renderToStaticMarkup(tree);
-  assert.match(html,/<ul aria-label="Befintliga spelrum">/);
-  assert.equal(find(tree,'a').props.href,'/lobby?operator=sg-test');
-  assert.ok(html.includes(room.playUrl.replaceAll('&','&amp;')));
-  assert.match(html,/Öppna bolagets spellobby/);
-  assert.match(html,/<details[^>]*><summary>Skapa nytt spelrum<\/summary>/);
-  assert.equal(h.requests.length,1,'viewing existing rooms performs no create request');
-  const other={...context,operator:{id:'other',slug:'other',name:'Annat bolag'}};
-  tree=ui.render(other);assert.equal(find(tree,'a'),null);
-  h.reply(1,prepared(other));await tick();tree=ui.render(other);
-  assert.equal(find(tree,'a'),null);assert.equal(h.keys,0);ui.unmount();
-});
-
 test('room creation accepts the exact v4 capability for frozen event packages',async()=>{
   const h=fixture();await h.ready(context,{capabilities:{...capability,schemaVersion:4,frozenDealerEvents:'operator-package-v3'}});
   assert.equal(h.controller.getSnapshot().status,'ready');
   assert.equal(h.controller.getSnapshot().preflight.capabilities.schemaVersion,4);
-});
-
-test('preflight causes provide distinct recovery without silently creating or republishing', async () => {
-  for (const [extra, label, href] of [
-    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/admin/rooms?operator=sg-test'],
-    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/admin/rooms?operator=sg-test'],
-    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera miljön', '/admin/scenes?composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera miljön', '/admin/scenes?composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_room_environment_required', environment: { kind: 'variable', fixed: false, label: 'Välj en fast bakgrund för rummet' } },
-      'Välj och lås miljön i Miljöer', '/admin/scenes?composition=portrait-live'],
-  ]) {
-    const h = fixture(), ui = componentHarness(h.controller);
-    ui.render(context); h.reply(0, prepared(context, extra)); await tick();
-    const tree = ui.render(context), html = renderToStaticMarkup(tree);
-    assert.match(html, new RegExp(label)); assert.doesNotMatch(html, /Uppdatera uppgifter/);
-    assert.equal(find(tree, 'a').props.href, labBasePath() + href);
-    find(tree, 'form').props.onSubmit({ preventDefault() {} });
-    assert.equal(h.requests.length, 1, 'a blocked preflight never submits');
-    assert.equal(h.keys, 0); ui.unmount();
-  }
-});
-
-test('form displays the saved fixed or baked environment without extra writes or a false room preview', async () => {
-  for (const environment of [
-    { kind: 'image', fixed: true, label: 'Casino' },
-    { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' },
-  ]) {
-    const h = fixture(), ui = componentHarness(h.controller);
-    ui.render(context); h.reply(0, prepared(context, { environment })); await tick();
-    const html = renderToStaticMarkup(ui.render(context));
-    assert.match(html, /Rummets miljö/); assert.ok(html.includes(environment.label));
-    assert.match(html, environment.kind === 'baked' ? /inbakad miljö/ : /fast bakgrund/);
-    assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
-  }
-});
-
-test('uncertain room creation retries its exact payload after the saved environment is no longer eligible', async () => {
-  const h = fixture(); await h.ready(); const attempt = await h.start('Mitt rum');
-  attempt.post.reject(Error('lost response')); await attempt.pending;
-  await h.ready(context, { ready: false, reason: 'presentation_room_environment_required',
-    projectRevision: 'new-draft', environment: { kind: 'variable', fixed: false, label: 'Flera miljöval' } });
-  assert.equal(h.controller.getSnapshot().status, 'uncertain');
-  const ui = componentHarness(h.controller);
-  // Mounting starts another read; the pending original intent must survive it.
-  const readIndex = h.requests.length; ui.render(context);
-  h.reply(readIndex, prepared(context, { ready: false, reason: 'presentation_room_environment_required',
-    projectRevision: 'new-draft', environment: { kind: 'variable', fixed: false, label: 'Flera miljöval' } }));
-  await tick();
-  const tree = ui.render(context), html = renderToStaticMarkup(tree);
-  assert.match(html, /Försök igen/); assert.doesNotMatch(html, /Välj och lås miljön/);
-  const postIndex = h.requests.length;
-  find(tree, 'form').props.onSubmit({ preventDefault() {} }); await tick();
-  assert.equal(h.requests[postIndex].options.method, 'POST');
-  assert.deepEqual(JSON.parse(h.requests[postIndex].options.body), attempt.payload);
-  h.reply(postIndex, created(attempt.payload, context, { duplicate: true })); await tick();
-  assert.equal(h.controller.getSnapshot().receipt.duplicate, true); assert.equal(h.keys, 1); ui.unmount();
 });
 
 test('fixed environment accepts the full registered layer label limit without widening room names', async () => {
@@ -502,45 +344,6 @@ test('preflight rejects contradictory environment metadata', async () => {
   }
 });
 
-test('a shared published environment conflict directs to a separate composition without submitting', async () => {
-  const h = fixture(), ui = componentHarness(h.controller);
-  ui.render(context);
-  h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: 'presentation_room_environment_conflict' }));
-  await tick(); const tree = ui.render(context), html = renderToStaticMarkup(tree);
-  assert.match(html, /Skapa en separat miljö/); assert.match(html, /redan av publicerade rum/);
-  assert.equal(find(tree, 'a').props.href, labBasePath() + '/admin/scenes?composition=portrait-live');
-  find(tree, 'form').props.onSubmit({ preventDefault() {} });
-  assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
-});
-
-test('a valid existing room stays visible when changed draft content blocks another room creation', async () => {
-  const h = fixture(), ui = componentHarness(h.controller);
-  const room = { id, name: 'Befintligt rum', playUrl: '/play/blackjack?operator=sg-test&table=' + id };
-  ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', packageRevision: 1, rooms: [room] })); await tick();
-  const html = renderToStaticMarkup(ui.render(context));
-  assert.match(html, /Öppna Befintligt rum/); assert.match(html, /Öppna bolagets spellobby/);
-  assert.doesNotMatch(html, /Inget publicerat spelrum/); assert.equal(h.requests.length, 1);
-  ui.unmount();
-});
-
-
-test('typed conflicts offer visible explicit recovery while keeping creation blocked and never publishing', async () => {
-  for (const code of ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict', 'presentation_room_binding_conflict', 'presentation_game_lane_conflict']) {
-    const h = fixture(), ui = componentHarness(h.controller);
-    ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: code })); await tick();
-    const tree = ui.render(context), html = renderToStaticMarkup(tree), together = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(code);
-    assert.equal(h.controller.getSnapshot().status, 'unavailable');
-    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/admin/rooms?operator=sg-test');
-    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera spelrummet/);
-    if (together) assert.match(html, /publicera alla dessa presentationer tillsammans först.*Behåll befintliga rum och dealers/);
-    else assert.doesNotMatch(html, /publicera alla dessa presentationer/);
-    const message = h.controller.getSnapshot().message; h.controller.setName('Nytt rum');
-    assert.equal(h.controller.getSnapshot().message, message);
-    find(tree, 'form').props.onSubmit({ preventDefault() {} });
-    assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
-  }
-});
-
 test('conflict code validation rejects unknown, non-string, prototype and inconsistent diagnostics', async () => {
   for (const extra of [
     { conflictCode: 'private-code' }, { conflictCode: {} }, { conflictCode: 'constructor' },
@@ -556,39 +359,24 @@ test('conflict code validation rejects unknown, non-string, prototype and incons
 });
 
 
-test('room name changes notify the parent immediately and busy starts before a parent can switch company',async()=>{
-  const h=fixture(),ui=componentHarness(h.controller),drafts=[],busy=[];
-  const props={...context,onDraftChange:value=>drafts.push(value),onBusyChange:value=>busy.push(value)};
-  ui.render(props);h.reply(0,prepared());await tick();
-  let tree=ui.render(props);find(tree,'input').props.onChange({target:{value:'Mitt rum'}});assert.equal(drafts.at(-1),true);
-  tree=ui.render(props);find(tree,'form').props.onSubmit({preventDefault(){}});assert.equal(busy.at(-1),true);
-  ui.unmount();assert.equal(drafts.at(-1),false);
-});
-
-
-test('temporary sibling locks retain a verified room receipt and never report it as an unsaved name',async()=>{
-  const h=fixture(),ui=componentHarness(h.controller),drafts=[];
-  const props={...context,onDraftChange:value=>drafts.push(value)};
-  ui.render(props);h.reply(0,prepared());await tick();let tree=ui.render(props);
-  find(tree,'input').props.onChange({target:{value:'Mitt rum'}});tree=ui.render(props);
-  find(tree,'form').props.onSubmit({preventDefault(){}});h.reply(1,prepared());await tick();
-  const payload=JSON.parse(h.requests[2].options.body);h.reply(2,created(payload));await tick();ui.render(props);
-  assert.equal(drafts.at(-1),false);const count=h.requests.length;
-  ui.render({...props,interactionDisabled:true});tree=ui.render(props);
-  assert.equal(h.requests.length,count);assert.equal(drafts.at(-1),false);
-  assert.match(renderToStaticMarkup(tree),/Mitt rum är klart/);ui.unmount();
-});
-
-test('visual game cards use the selected game preflight and preserve the entered name',async()=>{
-  const h=fixture(),ui=componentHarness(h.controller),props={...context,visual:true};
-  ui.render(props);h.reply(0,prepared());await tick();
-  let tree=ui.render(props);find(tree,'input').props.onChange({target:{value:'Roulette VIP'}});
-  function buttons(node){return !node||typeof node!=='object'?[]:[...(node.type==='button'?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(buttons)];}
-  const roulette=buttons(tree).find(button=>button.props.children==='◉ Roulette');roulette.props.onClick();
-  assert.equal(new URL(h.requests[1].path,'https://studio.invalid').searchParams.get('game'),'roulette');
-  tree=ui.render(props);assert.equal(buttons(tree).find(button=>button.props.children==='◉ Roulette').props.disabled,true);
-  h.reply(1,prepared(context,{capabilities:rouletteCapability}));await tick();tree=ui.render(props);
-  assert.equal(find(tree,'input').props.value,'Roulette VIP');
-  assert.equal(buttons(tree).find(button=>button.props.children==='◉ Roulette').props['aria-pressed'],true);
-  ui.unmount();
+test('gameConfig: kvittot måste bära exakt de publicerade inställningarna; serverns kod och materialskäl når anroparen', async () => {
+  const gameConfig = { language: 'sv', limitPreset: 'prive' };
+  const payload = { operatorId: owner.id, presentationLaneId: context.presentation.id, name: 'Mitt rum', idempotencyKey: keyOne,
+    expectedProjectRevision: context.projectRevision, expectedAdministrationRevision: 'admin-1', expectedPackageRevision: null, gameConfig };
+  const published = { configVersion: 'v1', packageRevision: 1, gameConfig, betMs: 20000, actionMs: 15000 };
+  let h = fixture(), pending = h.client.create(context, payload); h.reply(0, created(payload, context, { published }));
+  const receipt = await pending;
+  assert.deepEqual(receipt.published, { packageRevision: 1, gameConfig });
+  assert.deepEqual(JSON.parse(h.requests[0].options.body).gameConfig, gameConfig);
+  for (const wrong of [undefined, { ...published, gameConfig: { language: 'en', limitPreset: 'prive' } }, { ...published, packageRevision: 0 }]) {
+    h = fixture(); pending = h.client.create(context, payload); h.reply(0, created(payload, context, { published: wrong }));
+    await assert.rejects(pending, error => error.uncertain === true);
+  }
+  await assert.rejects(h.client.create(context, { ...payload, game: 'roulette' }), /verifieras/);
+  for (const [status, body, code, materialReason] of [[409, { error: 'studio_room_choices_draft_pending', code: 'studio_room_choices_draft_pending' }, 'studio_room_choices_draft_pending', null],
+    [422, { error: 'studio_room_game_material_unavailable', code: 'studio_room_game_material_unavailable', materialReason: 'native_material_speech_slot_missing' }, 'studio_room_game_material_unavailable', 'native_material_speech_slot_missing'],
+    [409, { error: 'Conflict' }, null, null], [422, { code: 'Bad Code', materialReason: 'other' }, null, null]]) {
+    h = fixture(); pending = h.client.create(context, payload); h.reply(0, body, status);
+    await assert.rejects(pending, error => error.status === status && error.code === code && error.materialReason === materialReason && error.uncertain === false);
+  }
 });

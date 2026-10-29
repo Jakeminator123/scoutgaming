@@ -34,6 +34,10 @@ test('standardval per fält: senast använda dealer med hela klippbanken, annars
   noPaow.catalog = structuredClone(w.catalog); noPaow.catalog.administration.rooms = [];
   const first = quickCreateDefaults({...noPaow, operatorId:'north', isComplete:id => id === 'astrid'});
   assert.equal(first.dealerId, 'astrid'); assert.equal(first.laneId, '', 'ingen miljö har Astrid som standard: kedjan skapar en');
+  // Standardvalet kräver hela klippbanken: PAOW utan den förväljs inte, och utan komplett dealer förväljs ingen.
+  assert.equal(quickCreateDefaults({...base, isComplete:id => id === 'astrid'}).dealerId, 'astrid', 'ofullständig PAOW förväljs inte');
+  const none = quickCreateDefaults({...base, isComplete:() => false});
+  assert.deepEqual([none.dealerId, none.name], ['', ''], 'ingen komplett dealer: inget förval (dialogen visar QUICK_CREATE_NO_DEALER)');
   assert.equal(roomName({catalog:w.catalog, operatorId:'north', dealerId:'paow', dealerLabel:'Paow', game:'roulette'}), 'Paow Roulette 1');
   const read = [];
   const gameClient = {read:async context => { read.push(context.roomId); return {published:{gameConfig:{language:'sv', limitPreset:'high'}}, draft:null}; }};
@@ -58,6 +62,11 @@ test('miljösteget: fast används, olåst låses, delad kopieras, saknad skapas,
   const image = structuredClone(w.project); image.lanes[0].layers.background = {enabled:true, mode:'image', default:null, allowed:['a', 'b']};
   assert.deepEqual(planEnvironment({...base, project:image, dealerId:'paow', laneId:'paow-bord'}), {stop:'environment_choice', laneId:'paow-bord'});
   assert.equal(planEnvironment({...base, dealerId:'paow', laneId:'dragan-gammal'}).stop, 'environment_dealer');
+  // Ett annat bolags tilldelning räknas som delad även utan spelbord; bolagets egen gör det inte.
+  const assigned = workspace(), lanes = {...assigned, newKey:keys()};
+  assigned.catalog.administration.operators.push({id:'south', name:'South', slug:'south', status:'active', archivedAt:null, packageRevision:3, packageLanes:['dragan-delad']});
+  assert.equal(planEnvironment({...lanes, dealerId:'dragan', laneId:'dragan-delad', operatorId:'north'}).action, 'copy', 'south har miljön i sin tilldelning');
+  assert.equal(planEnvironment({...lanes, dealerId:'dragan', laneId:'dragan-delad', operatorId:'south'}).action, 'lock', 'bara bolagets egen tilldelning');
 });
 
 const capabilities = presentationCapabilitiesForVersion(15);
@@ -73,11 +82,7 @@ function server(w, overrides = {}) {
     'POST /studio/api/videos/measure-timing':body => ({media:{id:body.id, revision:'r2', mediaTiming:{ok:true}}}),
     'GET /api/admin/presentation-room':(_, url) => ({ok:true, operator:{id:'north', slug:'north', name:'North'}, presentationLaneId:url.searchParams.get('presentationLaneId'),
       projectRevision:project.revision, administrationRevision:'a1', packageRevision:1, ready:true, reason:null, capabilities, rooms:[]}),
-    'POST /api/admin/presentation-room':body => ({ok:true, duplicate:false, room:{schemaVersion:2, id:ROOM, name:body.name, operatorId:'north', presentationLaneId:body.presentationLaneId, gameLaneId:'room-lane-x', state:'live'},
-      administrationRevision:'a2', packageRevision:2, playUrl:`/play/blackjack?operator=north&table=${ROOM}`}),
-    'GET /api/admin/room-game-config':() => receipt({}),
-    'POST /api/admin/room-game-config':body => body.action === 'save-draft' ? receipt({administrationRevision:'a3', draft:{revision:'room-config-' + uuid(5), gameConfig:body.gameConfig}, publication:{ready:true}})
-      : receipt({administrationRevision:'a4', packageRevision:3, published:{configVersion:'v1', packageRevision:3, gameConfig:{language:'sv', limitPreset:'prive'}, betMs:20000, actionMs:15000}}),
+    'POST /api/admin/presentation-room':body => createdRoom(body),
     ...overrides,
   };
   const fetchImpl = async (path, init = {}) => {
@@ -89,47 +94,103 @@ function server(w, overrides = {}) {
   };
   return {fetchImpl, calls, bodies};
 }
-const receipt = patch => ({ok:true, roomId:ROOM, operatorId:'north', administrationRevision:'a2', packageRevision:2, draft:null, published:null, publication:{ready:false, reason:'studio_room_game_draft_required'}, ...patch});
+// Servern publicerar spelbordet, tilldelningen och spelinställningarna i en paketversion (presentation-room-api.mjs gameConfig).
+const createdRoom = (body, duplicate = false) => ({ok:true, duplicate, room:{schemaVersion:2, id:ROOM, name:body.name, operatorId:'north', presentationLaneId:body.presentationLaneId, gameLaneId:'room-lane-x', state:'live',
+  ...(body.game ? {game:body.game} : {})}, administrationRevision:'a2', packageRevision:2, playUrl:`/play/${body.game ?? 'blackjack'}?operator=north&table=${ROOM}`,
+  ...(body.gameConfig ? {published:{configVersion:'v1', packageRevision:2, gameConfig:body.gameConfig, betMs:20000, actionMs:15000}} : {})});
+const refused = (status, code, extra = {}) => () => Response.json({error:code, code, ...extra}, {status});
+const posts = s => s.calls.map((call, index) => call === 'POST /api/admin/presentation-room' ? s.bodies[index] : null).filter(Boolean);
+const puts = s => s.calls.filter(call => call === 'PUT /studio/api/project').length;
 const operator = {id:'north', slug:'north', name:'North'};
 const choice = {game:'blackjack', dealerId:'dragan', laneId:'dragan-delad', language:'sv', limitPreset:'prive', name:'Dragan Blackjack 2'};
 
-test('kedjan: lås miljön → mät omätta klipp → skapa spelbordet → spara och publicera spelinställningarna', async () => {
+test('kedjan: lås miljön → mät omätta klipp → spelbord, tilldelning och spelinställningar i en POST', async () => {
   const w = workspace();
   w.inventory.videos = [{id:'v1', label:'Giv 1', available:true, integrity:'verified', previewUrl:'', revision:'r1', sha256:'a'.repeat(64), contentType:'video/mp4', classification:{dealerId:'dragan', archived:false}}];
-  const {fetchImpl, calls} = server(w), steps = [];
-  const result = await runQuickCreate(choice, {operator, fetchImpl, newKey:keys(), onStep:(id, status, text) => steps.push(`${id}:${status}`)});
+  const s = server(w), steps = [];
+  const result = await runQuickCreate(choice, {operator, fetchImpl:s.fetchImpl, newKey:keys(), onStep:(id, status, text) => steps.push(`${id}:${status}`)});
   assert.equal(result.ok, true, result.text); assert.equal(result.playUrl, `/play/blackjack?operator=north&table=${ROOM}`);
-  assert.deepEqual(calls, ['GET /admin/_data/catalog', 'GET /studio/api/project', 'GET /studio/api/videos', 'PUT /studio/api/project', 'POST /studio/api/videos/measure-timing',
-    'GET /api/admin/presentation-room', 'POST /api/admin/presentation-room', 'GET /api/admin/room-game-config', 'POST /api/admin/room-game-config save-draft', 'POST /api/admin/room-game-config publish']);
-  assert.deepEqual(steps.filter(row => row.endsWith(':done')), ['miljo:done', 'matning:done', 'spelbord:done', 'spel:done']);
+  assert.deepEqual(s.calls, ['GET /admin/_data/catalog', 'GET /studio/api/project', 'GET /studio/api/videos', 'PUT /studio/api/project', 'POST /studio/api/videos/measure-timing',
+    'GET /api/admin/presentation-room', 'POST /api/admin/presentation-room']);
+  assert.deepEqual(posts(s)[0].gameConfig, {language:'sv', limitPreset:'prive'}, 'spelinställningarna i samma begäran');
+  assert.deepEqual(steps.filter(row => row.endsWith(':done')), ['miljo:done', 'matning:done', 'spelbord:done']);
+  const roulette = server(w), plain = await runQuickCreate({...choice, game:'roulette', name:'Dragan Roulette 1'}, {operator, fetchImpl:roulette.fetchImpl, newKey:keys()});
+  assert.equal(plain.ok, true, plain.text); assert.equal(Object.hasOwn(posts(roulette)[0], 'gameConfig'), false, 'roulette har inga spelinställningar');
 });
 
-test('kedjan stannar med en mening och rätt knapp, och Försök igen återanvänder samma spelbord', async () => {
+test('kedjan stannar med en mening och rätt knapp; bara ett osäkert svar försöks igen med samma nyckel', async () => {
   const w = workspace();
   const none = server(w);
   const draft = await runQuickCreate(choice, {operator:{...operator, appearanceDraft:true}, fetchImpl:none.fetchImpl});
   assert.deepEqual([draft.ok, draft.href, none.calls.length], [false, '/admin/companies/north?flik=journal', 0], 'öppet utseendeutkast: inget skrivs');
   assert.match(draft.text, /opublicerat utseendeutkast/);
-  const material = server(w, {'POST /api/admin/room-game-config':body => receipt({administrationRevision:'a3', draft:{revision:'room-config-' + uuid(5), gameConfig:body.gameConfig},
-    publication:{ready:false, reason:'studio_room_game_material_unavailable', materialReason:'native_material_speech_slot_missing'}})});
+  const pending = server(w, {'POST /api/admin/presentation-room':refused(409, 'studio_room_choices_draft_pending')});
+  const late = await runQuickCreate(choice, {operator, fetchImpl:pending.fetchImpl, newKey:keys()});
+  assert.deepEqual([late.step, late.href], ['spelbord', '/admin/companies/north?flik=journal'], 'utkastet som kom under tiden: serverns kod');
+  const material = server(w, {'POST /api/admin/presentation-room':refused(422, 'studio_room_game_material_unavailable', {materialReason:'native_material_speech_slot_missing'})});
   const stopped = await runQuickCreate(choice, {operator, fetchImpl:material.fetchImpl, newKey:keys()});
-  assert.deepEqual([stopped.ok, stopped.step, stopped.href, stopped.label], [false, 'spel', '/admin/dealers/dragan?flik=tal', 'Öppna Röst och tal']);
-  assert.equal(material.calls.at(-1), 'POST /api/admin/room-game-config save-draft', 'inget publiceras när materialet inte räcker');
+  assert.deepEqual([stopped.ok, stopped.step, stopped.href, stopped.label], [false, 'spelbord', '/admin/dealers/dragan?flik=tal', 'Öppna Röst och tal']);
+  const reasonless = server(w, {'POST /api/admin/presentation-room':refused(422, 'studio_room_game_material_unavailable')});
+  assert.equal((await runQuickCreate(choice, {operator, fetchImpl:reasonless.fetchImpl, newKey:keys()})).href, '/admin/dealers/dragan?flik=klipp');
   const shared = server(w, {'GET /api/admin/presentation-room':(_, url) => ({ok:true, operator:{id:'north', slug:'north', name:'North'}, presentationLaneId:url.searchParams.get('presentationLaneId'),
     projectRevision:'p2', administrationRevision:'a1', packageRevision:1, ready:false, reason:'presentation_package_conflict', conflictCode:'presentation_shared_dealer_conflict', capabilities, rooms:[]})});
   const conflict = await runQuickCreate(choice, {operator, fetchImpl:shared.fetchImpl, newKey:keys()});
   assert.deepEqual([conflict.step, conflict.href, conflict.label], ['spelbord', '/admin/companies/north?flik=tilldelning', 'Öppna tilldelningen']);
   let lost = true;
-  const flaky = server(w, {'POST /api/admin/presentation-room':body => { if (lost) { lost = false; return new Response('{}', {status:502}); }
-    return {ok:true, duplicate:true, room:{schemaVersion:2, id:ROOM, name:body.name, operatorId:'north', presentationLaneId:body.presentationLaneId, gameLaneId:'room-lane-x', state:'live'},
-      administrationRevision:'a2', packageRevision:2, playUrl:`/play/blackjack?operator=north&table=${ROOM}`}; }});
+  const flaky = server(w, {'POST /api/admin/presentation-room':body => { if (lost) { lost = false; return new Response('{}', {status:502}); } return createdRoom(body, true); }});
   const memo = {}, newKey = keys();
   const first = await runQuickCreate(choice, {operator, fetchImpl:flaky.fetchImpl, memo, newKey});
-  assert.deepEqual([first.step, first.action, first.label], ['spelbord', 'retry', 'Försök igen']);
+  assert.deepEqual([first.step, first.action, first.label, memo.uncertain], ['spelbord', 'retry', 'Försök igen', true]);
   const again = await runQuickCreate(choice, {operator, fetchImpl:flaky.fetchImpl, memo, newKey});
   assert.equal(again.ok, true, again.text);
-  const posts = flaky.calls.map((call, index) => call === 'POST /api/admin/presentation-room' ? index : -1).filter(index => index >= 0);
-  assert.equal(posts.length, 2); assert.equal(flaky.bodies[posts[0]].idempotencyKey, flaky.bodies[posts[1]].idempotencyKey, 'samma idempotensnyckel');
-  assert.equal(flaky.calls.filter(call => call === 'PUT /studio/api/project').length, 1, 'den låsta miljön används igen, inget nytt sparas');
+  const [a, b] = posts(flaky);
+  assert.equal(a.idempotencyKey, b.idempotencyKey, 'samma idempotensnyckel'); assert.deepEqual(a.gameConfig, b.gameConfig, 'samma spelinställningar');
+  assert.equal(puts(flaky), 1, 'den låsta miljön används igen, inget nytt sparas');
   assert.deepEqual(stopView('native_material_measurement_missing', {dealerId:'paow'}), {text:'Spelinställningarna kan inte publiceras: klippen är inte uppmätta.', href:'/admin/dealers/paow?flik=klipp', label:'Mät omätta klipp'});
+});
+
+test('efter ett stopp (material eller konflikt, även efter Läs in igen) används samma miljö: ingen ny kopia, ny nyckel', async () => {
+  const w = workspace();
+  w.catalog.administration.rooms.push({...w.catalog.administration.rooms[0], id:'s2', compositionId:'dragan-delad', operatorId:'south'});
+  let english = true;
+  const s = server(w, {'POST /api/admin/presentation-room':body => body.gameConfig.language === 'en' && english
+    ? Response.json({error:'studio_room_game_material_unavailable', code:'studio_room_game_material_unavailable', materialReason:'native_material_speech_slot_missing'}, {status:422}) : createdRoom(body)});
+  const memo = {}, newKey = keys();
+  const first = await runQuickCreate({...choice, language:'en'}, {operator, fetchImpl:s.fetchImpl, memo, newKey});
+  assert.equal(first.step, 'spelbord'); assert.ok(memo.laneId?.startsWith('dragan-delad-'), 'miljön kopierades'); assert.equal(memo.uncertain, false);
+  // Dialogen behåller minnet när språket ändras (change) och vid Läs in igen.
+  const second = await runQuickCreate({...choice, language:'sv'}, {operator, fetchImpl:s.fetchImpl, memo, newKey});
+  assert.equal(second.ok, true, second.text);
+  assert.equal(puts(s), 1, 'en kopia, inte två');
+  const [a, b] = posts(s);
+  assert.equal(a.presentationLaneId, b.presentationLaneId, 'samma miljö'); assert.notEqual(a.idempotencyKey, b.idempotencyKey, 'bekräftat nej: ny nyckel');
+  assert.equal(s.calls.filter(call => call === 'POST /studio/api/videos/measure-timing').length, 0);
+  const busy = server(w, {'POST /api/admin/presentation-room':() => new Response('{}', {status:409})});
+  const conflictMemo = {};
+  const stale = await runQuickCreate(choice, {operator, fetchImpl:busy.fetchImpl, memo:conflictMemo, newKey:keys()});
+  assert.deepEqual([stale.step, stale.action], ['spelbord', 'reload']);
+  await runQuickCreate(choice, {operator, fetchImpl:busy.fetchImpl, memo:conflictMemo, newKey:keys()});
+  assert.equal(puts(busy), 1, 'Läs in igen och nytt försök: samma kopia');
+  const [c, d] = posts(busy); assert.equal(c.presentationLaneId, d.presentationLaneId);
+  assert.notEqual(c.idempotencyKey, d.idempotencyKey, 'en bekräftad konflikt skapade inget: ny nyckel, även med samma val');
+});
+
+test('en publicerad miljö med annan bakgrund kopieras en gång; ett klipp som inte kan mätas stoppar före spelbordet', async () => {
+  const w = workspace();
+  let conflicts = 0;
+  const s = server(w, {'GET /api/admin/presentation-room':(_, url) => {
+    const laneId = url.searchParams.get('presentationLaneId'), conflict = laneId === 'dragan-gammal';
+    if (conflict) conflicts++;
+    return {ok:true, operator:{id:'north', slug:'north', name:'North'}, presentationLaneId:laneId, projectRevision:'p2', administrationRevision:'a1', packageRevision:1,
+      ready:!conflict, reason:conflict ? 'presentation_package_conflict' : null, conflictCode:conflict ? 'presentation_room_environment_conflict' : null, capabilities, rooms:[]};
+  }});
+  const result = await runQuickCreate({...choice, laneId:'dragan-gammal'}, {operator, fetchImpl:s.fetchImpl, newKey:keys()});
+  assert.equal(result.ok, true, result.text); assert.equal(conflicts, 1);
+  const [post] = posts(s);
+  assert.ok(post.presentationLaneId.startsWith('dragan-gammal-'), 'spelbordet får kopian'); assert.equal(puts(s), 1, 'den fasta miljön används, och vid konflikten kopieras den');
+  w.inventory.videos = [{id:'v1', label:'Giv 1', available:true, integrity:'verified', previewUrl:'', revision:'r1', sha256:'a'.repeat(64), contentType:'video/mp4', classification:{dealerId:'dragan', archived:false}}];
+  const broken = server(w, {'POST /studio/api/videos/measure-timing':() => Response.json({error:'Mätningen misslyckades.'}, {status:422})});
+  const stopped = await runQuickCreate(choice, {operator, fetchImpl:broken.fetchImpl, newKey:keys()});
+  assert.deepEqual([stopped.ok, stopped.step, stopped.href], [false, 'matning', '/admin/dealers/dragan?flik=klipp']); assert.match(stopped.text, /Giv 1/);
+  assert.equal(posts(broken).length, 0, 'inget spelbord skapas när mätningen stannar');
 });
