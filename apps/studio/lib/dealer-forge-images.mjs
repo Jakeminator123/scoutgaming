@@ -14,7 +14,7 @@ async function sharpModule() {
 
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
-export async function imageInfo(bytes) {
+async function imageInfo(bytes) {
   const sharp = await sharpModule();
   let meta;
   try { meta = await sharp(bytes, { limitInputPixels: 64_000_000 }).metadata(); } catch { fail('Filen kunde inte läsas som bild.'); }

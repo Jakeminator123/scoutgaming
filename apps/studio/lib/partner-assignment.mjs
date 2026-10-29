@@ -56,6 +56,48 @@ export function partnerAssignment(pack, presentation, settings = new Map()) {
   };
 }
 
+// Admins fält (Bolag › Tilldelat): vad scenmallarna i paketet ger bolaget
+// (dealer, bordsgrafik, bakgrund), det Admin uttryckligen sagt och valen att
+// välja bland. null utan fryst presentation i paketet.
+export const ASSIGNMENT_LIMIT_PRESETS = Object.freeze(Object.keys(ROOM_LIMIT_PRESETS));
+function laneLayers(presentation) {
+  const lanes = presentation?.lanes ?? [];
+  return Object.fromEntries(Object.entries(LAYER_TOKENS).map(([key, token]) => [key, lanes.some(lane => effectivePartnerAdjustments(lane).includes(token))]));
+}
+export function adminAssignmentView(pack, presentation) {
+  if (!presentation) return null;
+  const given = stated(pack);
+  return {
+    allow: partnerAllow(pack, presentation),
+    adjustable: laneLayers(presentation),
+    limitPresets: knownList(given.limitPresets, ASSIGNMENT_LIMIT_PRESETS) ?? [],
+    languages: knownList(given.languages, PARTNER_LANGUAGES) ?? [...PARTNER_LANGUAGES],
+    options: { limitPresets: [...ASSIGNMENT_LIMIT_PRESETS], languages: [...PARTNER_LANGUAGES] },
+  };
+}
+
+// Admins skrivning av `assignment`: exakt { allow, limitPresets, languages }.
+// allow har alla sex nycklar som ja/nej; dealer, bordsgrafik och bakgrund får
+// bara vara ja om scenmallen ger bolaget lagret (smalnar av, vidgar aldrig).
+// Listorna är kända, unika värden; ett upplåst val kräver minst ett alternativ.
+export function validateAdminAssignment(value, presentation) {
+  const reject = () => { throw Object.assign(new Error('assignment_invalid'), { statusCode: 422 }); };
+  const plainObject = item => item && typeof item === 'object' && !Array.isArray(item) && Object.getPrototypeOf(item) === Object.prototype;
+  const sameKeys = (item, keys) => plainObject(item) && Object.keys(item).sort().join(',') === [...keys].sort().join(',');
+  if (!presentation || !sameKeys(value, ['allow', 'limitPresets', 'languages']) || !sameKeys(value.allow, PARTNER_ALLOW_KEYS)) reject();
+  if (PARTNER_ALLOW_KEYS.some(key => typeof value.allow[key] !== 'boolean')) reject();
+  const layers = laneLayers(presentation);
+  if (Object.keys(LAYER_TOKENS).some(key => value.allow[key] && !layers[key])) reject();
+  const list = (items, known) => {
+    if (!Array.isArray(items) || items.length > known.length || new Set(items).size !== items.length
+      || items.some(item => typeof item !== 'string' || !known.includes(item))) reject();
+    return known.filter(item => items.includes(item));
+  };
+  const limitPresets = list(value.limitPresets, ASSIGNMENT_LIMIT_PRESETS), languages = list(value.languages, PARTNER_LANGUAGES);
+  if (value.allow.limit && !limitPresets.length || value.allow.language && !languages.length) reject();
+  return { allow: Object.fromEntries(PARTNER_ALLOW_KEYS.map(key => [key, value.allow[key]])), limitPresets, languages };
+}
+
 // Hela tilldelningen för läs-API:t och skrivvägarnas kontroll: alltid med
 // insatsprofiler, språk och `allow`.
 export function partnerAssignmentDetail(pack, presentation, settings = new Map()) {

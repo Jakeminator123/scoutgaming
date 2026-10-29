@@ -59,7 +59,7 @@ export function CommandPalette() {
   const go=(entry:Entry|undefined)=>{if(!entry)return;setOpen(false);navigate(entry.href);};
   const groups=[...new Set(entries.map(entry=>entry.group))];
   return <dialog ref={dialog} aria-label="Sök i Admin" onCancel={event=>{event.preventDefault();setOpen(false);}} onClose={event=>{if(!event.currentTarget.open)setOpen(false);}} onClick={event=>{if(event.target===event.currentTarget)setOpen(false);}}
-    className="mx-auto mt-[12vh] w-[min(620px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-sg-border bg-sg-surface p-0 text-sg-text shadow-2xl backdrop:bg-[rgba(15,16,18,.5)] backdrop:backdrop-blur-[2px] open:animate-in open:fade-in-0 open:zoom-in-95 open:duration-150">
+    className="mx-auto mt-[12vh] w-[min(620px,calc(100vw-32px))] overflow-hidden rounded-xl border border-sg-border bg-sg-surface p-0 text-sg-text shadow-sg backdrop:bg-sg-overlay backdrop:backdrop-blur-[2px] open:animate-in open:fade-in-0 open:zoom-in-95 open:duration-150">
     {open&&<>
       <div className="flex items-center gap-2.5 border-b border-sg-line-2 px-4"><Search className="size-4 text-sg-faint" aria-hidden="true"/>
         <input ref={input} role="combobox" aria-expanded="true" aria-controls="command-list" aria-activedescendant={entries[current]?'command-'+entries[current].id:undefined} aria-autocomplete="list"

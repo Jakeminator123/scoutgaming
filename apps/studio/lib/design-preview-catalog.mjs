@@ -9,7 +9,13 @@ import { readOperatorLifecycle } from '../../../packages/operators/server/operat
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
 import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/room-game-config.mjs';
+import { adminAssignmentView } from './partner-assignment.mjs';
 
+// Bolag › Tilldelat: Admins tilldelning ur det publicerade paketet (null utan fryst presentation).
+// Ett paket vars presentation inte går att läsa visar ingen tilldelning i stället för att fälla katalogen.
+function assignmentOf(pack) {
+  try { return adminAssignmentView(pack, readPackagePresentation(pack)); } catch { return null; }
+}
 const unavailable = () => { throw Object.assign(new Error('design_catalog_unavailable'), { statusCode: 503 }); };
 
 // Reads existing scoped registers only. No migrations, seeds, publication or
@@ -26,7 +32,7 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     if (pack && pack.operatorId !== row.id) unavailable();
     packages.set(row.id, pack);
     operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
-      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null });
+      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack) });
   }
   // Each public room is checked by the same selector used at game entry, using
   // captured data throughout the response. Game entry revalidates on launch.

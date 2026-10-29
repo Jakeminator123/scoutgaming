@@ -11,7 +11,7 @@ import { logStudioServerFailure } from './studio-error-log.mjs';
 import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 
 const MAX_BODY = 64 * 1024;
-const administrationMutations = new Set(['tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
+const administrationMutations = new Set(['tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
 const RESOURCE_DELETE_CODES = new Set(['studio_resource_delete_blocked','studio_delete_name_mismatch','studio_conflict','studio_room_not_found','studio_composition_not_found','studio_operator_not_found']);
@@ -145,6 +145,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (sceneLayout && (invocation.prepared?.action !== 'publish-scene-layout' || !invocation.prepared.presentation)) throw failure(503);
       const roomRelease = endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
       if (roomRelease && (invocation.prepared?.action !== ROOM_RELEASE_ACTION || !invocation.prepared.presentation)) throw failure(503);
+      // Bolag › Tilldelat: den förberedda kandidaten bär exakt det paket transaktionen förhandlar.
+      const assignment = endpoint.action === 'operator-package' && body?.action === 'publish-assignment';
+      if (assignment && (invocation.prepared?.action !== 'publish-assignment' || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
@@ -174,6 +177,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         : roomRelease ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
           presentationMutation: [{ kind: 'presentation-package', value: invocation.prepared.presentation },
             { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] }
+        : assignment ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
+          presentationMutation: invocation.prepared.mutations }
         : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
