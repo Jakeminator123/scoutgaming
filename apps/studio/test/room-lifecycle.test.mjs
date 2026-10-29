@@ -29,8 +29,8 @@ function withFrozenAnchors(value){
  for(const layout of ['mobile','desktop'])board[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
  presentation.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};return presentation;
 }
-async function fixture({shared=false,nativeVersion,frozenAnchors=false}={}){
- const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]}),project=cloud.project;
+async function fixture({shared=false,nativeVersion,frozenAnchors=false,packageRooms=false}={}){
+ const pool=combinedPool(scope,{packageRooms}),repository=createStudioRepository({pool,scope}),cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]}),project=cloud.project;
  const gameLane={schemaVersion:1,id:'room-lane-test',label:'Generated',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
  const base={...gameLane,id:'mobile-phone',label:'Default'};
  const room={schemaVersion:2,id:'room-north',name:'North room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:gameLane.id,state:'live'};
@@ -94,6 +94,32 @@ test('restore preserves room identity, returns pending, and opening needs a sepa
  const open=await f.body();delete open.archived;open.state='live';
  assert.equal((await f.post('room-state',open)).status,200);assert.equal((await f.get()).rooms[0].state,'live');
  const before=f.pool.snapshot();assert.equal((await f.post('room-state',{...open,operatorId:'other',expectedPackageRevision:null})).status,409);assert.deepEqual(f.pool.snapshot(),before);
+});
+// Plan L3 PR 3: Pausa/Öppna is a package revision (pkg+1) where only `rooms` differs, with and without
+// Studio 023; the document keeps the same state. With 023 every room writer sends `rooms` explicitly
+// (the fixture does not model the lock statement's document read, so nothing else could write them).
+for(const packageRooms of [false,true])test(`pause and opening are package revisions ${packageRooms?'with':'without'} Studio 023; archive and restore send rooms`,async t=>{
+ const warn=t.mock.method(console,'warn',()=>{});
+ const f=await fixture({shared:true,packageRooms}),before=await f.pack(),states=pack=>pack.rooms?.map(row=>[row.id,row.state])??null;
+ const body=await f.body();delete body.archived;body.state='pending';
+ const paused=await f.post('room-state',body);assert.equal(paused.status,200);
+ assert.equal(paused.body.packageRevision,before.revision+1);assert.equal((await f.pack()).revision,before.revision+1);
+ assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'pending']]:null);
+ const admin=(await f.repository.readDocument('administration')).value;
+ assert.equal(admin.rooms.find(row=>row.id===f.room.id).state,'pending');
+ assert.deepEqual(listPackageRooms({administration:admin,package:await f.pack(),operatorId:'north'}).map(row=>row.state),['pending']);
+ assert.deepEqual(readPackagePresentation(await f.pack()),readPackagePresentation(before),'only the state differs');
+ const opened=await f.post('room-state',{...body,state:'live',expectedAdministrationRevision:paused.body.administrationRevision,expectedPackageRevision:paused.body.packageRevision});
+ assert.equal(opened.status,200);assert.equal(opened.body.packageRevision,before.revision+2);
+ assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'live']]:null);
+ // A table the package does not hold changes only in the document, as before.
+ const other={...body,operatorId:'other',roomId:'room-other',expectedAdministrationRevision:opened.body.administrationRevision,expectedPackageRevision:null};
+ const unpublished=await f.post('room-state',other);assert.equal(unpublished.status,200);assert.equal(unpublished.body.packageRevision,null);
+ assert.equal(await f.stored(store=>store.getCurrentPackage('other')),null);
+ assert.equal((await f.post('room-lifecycle',await f.body())).status,200);assert.deepEqual(states(await f.pack()),packageRooms?[]:null);
+ assert.equal((await f.post('room-lifecycle',await f.body({archived:false}))).status,200);
+ assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'pending']]:null);
+ assert.equal(warn.mock.calls.every(call=>call.arguments[0]==='operator_package_rooms_missing'),true);
 });
 test('cross-operator room archive is refused without changing either tenant',async()=>{
  const f=await fixture(),before=f.pool.snapshot();

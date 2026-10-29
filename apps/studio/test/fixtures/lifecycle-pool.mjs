@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../../packages/presentation/server/presentation-storage.mjs';
 const clone=value=>structuredClone(value);
-export function combinedPool(scope,{extendedPresentationReady=false}={}) {
+// packageRooms: Studio 023's column exists. The lock statement's read of the administration document is
+// not modelled, so only a writer's explicit `rooms` reaches the row (plan L3 PR 3).
+export function combinedPool(scope,{extendedPresentationReady=false,packageRooms=false}={}) {
   let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], roomConfigs: [], roomConfigHeads: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
@@ -28,7 +30,8 @@ export function combinedPool(scope,{extendedPresentationReady=false}={}) {
       assert.ok(working, 'all domain queries use the repository transaction');
       if (marker === 'extended-presentation-ready') return result(extendedPresentationReady ? [{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}] : []);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
-      if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
+      if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2])
+        .map(row => marker === 'lock-operator' && packageRooms ? { ...row, package_rooms_column: true, administration_rooms: null } : row));
       if (marker === 'list-operators') return result(working.operators.filter(row=>sameScope(row,values)));
       if (marker === 'lifecycle-packages') return result(working.packages.filter(row=>sameScope(row,values)));
       if (marker === 'operator-status') {const row=working.operators.find(row=>sameScope(row,values)&&row.operator_id===values[2]&&row.status===values[4]);if(!row)return result();row.status=values[3];return result([row]);}
@@ -53,7 +56,7 @@ export function combinedPool(scope,{extendedPresentationReady=false}={}) {
       if (marker === 'used-key') return result(packages().filter(row => JSON.parse(row.tables).includes(values[3])).slice(0, 1));
       if (marker === 'publish-package') {
         const row = { environment_id: values[0], workspace_id: values[1], operator_id: values[2], package_revision: Math.max(0, ...packages().map(row => row.package_revision)) + 1,
-          lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
+          lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7], ...(values.length > 8 ? { rooms: values[8] } : {}) };
         working.packages.push(row); return result([row]);
       }
       if (marker === 'list-media') return result([...working.media.values()].filter(row => sameScope(row, values)));

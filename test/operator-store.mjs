@@ -1057,3 +1057,51 @@ test('publishWithin writes package rooms only with Studio 023, in document order
   assert.equal((await store.getPackage(owner, 1)).rooms.length, 32);
   await assert.rejects(row(2, 'x'.repeat(PACKAGE_ROOMS_MAX_TEXT + 1)), error => error.code === '23514');
 });
+
+// L3 PR 3: every package revision carries the company's open appearance draft over to itself in the
+// same transaction (the rule: a draft is never thrown away), so a pause or a new table never makes it
+// stale. A published or discarded draft, and one already based on an older package, stay as they are.
+// Real PostgreSQL (PGlite) with every reviewed Studio migration.
+test('a package revision carries the open appearance draft over; published, discarded and older drafts stay', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }, { publicEditableBranding }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/operators/contracts/branding.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock }), operatorId = 'north';
+  await store.createOperator({ operatorId, slug: 'north', name: 'North', status: 'active', actor });
+  const publish = async () => store.publishPackage({ actor, operatorId, expectedRevision: (await store.getCurrentPackage(operatorId))?.revision ?? null,
+    lanes: [], games: ['blackjack'], tables: [], branding: { name: 'North' } });
+  const draft = () => store.getBrandingDraft(operatorId);
+  const audit = { actorId: 'actor-partner', accessClass: 'partner', requestId: '00000000-0000-4000-8000-0000000000aa' };
+  await publish();
+  await store.saveBrandingDraft({ operatorId, actor, audit, expectedDraftRevision: 0, expectedPackageRevision: 1, branding: { color: '#112233' } });
+  const open = await draft();
+  assert.equal((await publish()).revision, 2);
+  const kept = await draft();
+  assert.deepEqual([kept.revision, kept.action, kept.basePackageRevision, kept.sourcePackageRevision, kept.publishedPackageRevision],
+    [open.revision + 1, 'draft.save', 2, null, null]);
+  assert.deepEqual(kept.branding, open.branding, 'the same choices on the new base');
+  // Publishable on the new base, through the ordinary publication (no second carry-over row).
+  const published = await store.publishBrandingDraft({ operatorId, actor, expectedDraftRevision: kept.revision, expectedPackageRevision: 2, branding: { name: 'North', color: '#112233' } });
+  assert.deepEqual([published.package.revision, published.draft.revision, published.draft.action], [3, kept.revision + 1, 'draft.publish']);
+  await publish();
+  assert.deepEqual(await draft(), published.draft, 'a published draft stays');
+  // A restore of an older package keeps its source; a discard (restore of the base) stays discarded.
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: published.draft.revision, expectedPackageRevision: 4, sourcePackageRevision: 2,
+    branding: publicEditableBranding((await store.getPackage(operatorId, 2)).branding) });
+  const restored = await draft();
+  await publish();
+  assert.deepEqual([(await draft()).action, (await draft()).sourcePackageRevision, (await draft()).basePackageRevision], ['draft.restore', 2, 5]);
+  const base = await store.getCurrentPackage(operatorId);
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: restored.revision + 1, expectedPackageRevision: base.revision, sourcePackageRevision: base.revision,
+    branding: publicEditableBranding(base.branding) });
+  const discarded = await draft();
+  await publish();
+  assert.deepEqual(await draft(), discarded, 'a discarded draft is not brought back');
+  // A draft already based on an older package (written before this rule) stays as it is.
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: discarded.revision, expectedPackageRevision: 6, branding: { color: '#445566' } });
+  await pool.query('UPDATE croupier_studio.operator_branding_drafts SET base_package_revision=5 WHERE operator_id=$1 AND draft_revision=$2', [operatorId, discarded.revision + 1]);
+  const older = await draft();
+  await publish();
+  assert.deepEqual(await draft(), older);
+});

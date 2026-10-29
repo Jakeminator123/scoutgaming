@@ -165,7 +165,7 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     let pack;
     try {
       ({package:pack}=await operators.publishRoomGameConfig({actor:actor.user,audit:actor.audit,operatorId:operator.id,expectedRevision:expectedPackageRevision,
-        lanes:candidate.lanes,games:candidate.games,tables:candidate.tables,branding:candidate.branding},{roomId:room.id,gameConfig,material:resolved.material}));
+        lanes:candidate.lanes,games:candidate.games,tables:candidate.tables,rooms:candidate.rooms??null,branding:candidate.branding},{roomId:room.id,gameConfig,material:resolved.material}));
     } catch(error) {
       // J08 löser om grannrummens material: skälet ur den fasta listan blir materialReason.
       if(error?.code==='studio_room_game_material_unavailable'&&error.statusCode===422&&error.materialReason===undefined)unavailable(error.reason);

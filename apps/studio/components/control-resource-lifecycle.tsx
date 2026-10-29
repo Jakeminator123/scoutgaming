@@ -96,7 +96,8 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
       const result=await response.json().catch(()=>null);
       const target=intent.kind==='operator'?result?.operator:result?.room;
       const administrationConfirmed=typeof result?.administrationRevision==='string'&&Boolean(result.administrationRevision)&&(intent.kind==='operator'||result.administrationRevision!==snapshot.administrationRevision);
-      const packageConfirmed=revision(result?.packageRevision)&&result.packageRevision===(intent.kind==='state'?body.expectedPackageRevision:(body.expectedPackageRevision??0)+1);
+      // Every action here is a package revision, a pause or an opening too (plan L3 PR 3).
+      const packageConfirmed=revision(result?.packageRevision)&&result.packageRevision===(body.expectedPackageRevision??0)+1;
       if(!response.ok||result?.ok!==true||!confirmsIntent(target)||!administrationConfirmed||!packageConfirmed)throw Error(result?.code==='studio_presentation_runtime_update_required'?'Spelmotorn behöver uppdateras innan bolag eller spelbord kan ändras.':response.status===409?'Uppgifterna har ändrats eller ett beroende hindrar åtgärden. Läs in aktuella uppgifter och försök igen.':'Ändringen kunde inte bekräftas. Läs in aktuella uppgifter innan du försöker igen.');
       if(ticket!==epoch.current)return;
       const value=await read();

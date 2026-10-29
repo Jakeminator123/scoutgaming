@@ -142,6 +142,17 @@ test('active room context reads its exact old package, dealer, branding and geom
   assert.deepEqual(h.state,snapshot,'all active and historical reads are immutable');h.assertReleased();
 });
 
+// Plan L3 PR 3: the package's own rooms (Studio 023) carry the table's state. A table the package pauses is
+// refused at the shared table (403) even where the administration document still says live.
+test('a table the package pauses is refused although the administration document still says live',async()=>{
+  const h=fixture();
+  h.state.pack.rooms=canonicalStudioJson(h.state.administration.rooms.map(room=>room.id==='room-a'?{...room,state:'pending'}:room));
+  assert.equal(h.state.administration.rooms.find(room=>room.id==='room-a').state,'live');
+  await assert.rejects(h.read('room-a'),denied);
+  assert.equal((await h.read('room-b')).roomId,'room-b','the other table of the same package still enters');
+  h.assertReleased();
+});
+
 test('active package lookup cannot resurrect revoked sessions, rooms, dealers, media or trashed layers',async()=>{
   for(const change of [
     h=>{h.state.session=null;},h=>{h.state.operator.status='archived';},h=>{h.state.administration.rooms[0].state='draft';},

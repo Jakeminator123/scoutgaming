@@ -40,6 +40,18 @@ export function inspectPackageRooms({ administration, package: pack, operatorId:
   }
   return result;
 }
+// The package's own rooms (Studio 023, plan L3 PR 3) that every room writer sends explicitly with
+// its publication: the administration document's rooms for `next.tables`, in the document's order,
+// as the writer has just saved them. Null when a table lacks its room or the list breaks the
+// readers' invariant (old data): publishWithin then keeps PR 2's path and never refuses the write.
+export function packageRoomsFor(administration, next) {
+  const rooms = (Array.isArray(administration?.rooms) ? administration.rooms : []).filter(room => room?.schemaVersion === PRESENTATION_ROOM_SCHEMA_VERSION
+    && room.operatorId === next.operatorId && next.tables.includes(room.id));
+  // A frozen presentation the readers cannot read is not this list's to refuse: today's path decides.
+  let presentation;
+  try { presentation = readPackagePresentation(next); } catch { return null; }
+  return checkPackageRooms({ ...next, rooms }, presentation);
+}
 function inspectMaterials(presentation, room) {
   let materialsCompatible=true;
   try { assertPresentationRoomMaterials(presentation,room); }

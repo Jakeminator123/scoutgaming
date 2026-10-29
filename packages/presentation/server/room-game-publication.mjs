@@ -111,7 +111,10 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
   const presentation=readPackagePresentation(next),configs=[],media=new Map(),packages=new Map(current?[[current.revision,current]]:[]);
   for(const id of ids) {
     const matches=roomRows.filter(room=>room?.id===id),room=matches.length===1?matches[0]:null;
-    if(!isPresentationRoom(room)||roomGame(room)!=='blackjack'||room.state!=='live'||room.operatorId!==next.operatorId
+    // A paused room (plan L3 PR 3: a pause is a package revision) keeps its published settings as
+    // they are; nobody plays it, and reopening it publishes again and checks them then.
+    const paused=room?.state==='pending'&&replacement?.roomId!==id;
+    if(!isPresentationRoom(room)||roomGame(room)!=='blackjack'||room.state!=='live'&&!paused||room.operatorId!==next.operatorId
       ||!retained.has(id)||!next.games.includes('blackjack')||!next.lanes.includes(room.presentationLaneId))conflict();
     const heads=await query(`/* operator-store:room-config-current */ SELECT h.version,c.body
       FROM croupier_game.shared_table_config_heads h LEFT JOIN croupier_game.shared_table_configs c
@@ -119,6 +122,7 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
       WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id=$3`,[id]);
     if(heads.length>1||previous[id]&&(heads.length!==1||heads[0].version!==previous[id]))conflict();
     const expectedVersion=heads[0]?.version??null;
+    if(paused){map[id]=expectedVersion;continue;}
     let body;
     if(replacement?.roomId===id) {
       if(expectedVersion!==null) {
