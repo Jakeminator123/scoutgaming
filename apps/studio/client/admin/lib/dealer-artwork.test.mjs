@@ -6,7 +6,6 @@ const lobby = '/admin/_assets/lobby';
 
 test('registered lobby dealers receive their portrait and clip when both id and name match', () => {
   const expected = [
-    [{ id: 'astrid', name: 'Astrid' }, 'astrid.jpg', 'astrid-look.mp4'],
     [{ id: 'paow', name: 'PAOW' }, 'paow.jpg', 'paow-hair.mp4'],
     [{ id: 'paow', name: 'Paow' }, 'paow.jpg', 'paow-hair.mp4'],
     [{ id: 'paow-v2', name: ' paow ' }, 'paow.jpg', 'paow-hair.mp4'],
@@ -25,7 +24,7 @@ test('registered lobby dealers receive their portrait and clip when both id and 
 });
 
 test('unverified identity, label mismatch and unpublished slots never inherit another person\'s portrait', () => {
-  for (const dealer of [{ id: 'other', name: 'PAOW' }, { id: 'paow-v2', name: 'Johanna' }, { id: 'paow', name: 'Astrid' },
+  for (const dealer of [{ id: 'other', name: 'PAOW' }, { id: 'paow-v2', name: 'Johanna' }, { id: 'paow', name: 'Dragge' }, { id: 'astrid', name: 'Astrid' },
     { id: '__proto__', name: 'PAOW' }, { id: 'constructor', name: 'Anna' }, { id: 'unpublished-1', name: 'Ej publicerad' },
     { id: 'dragan', name: 'Anna' }, { id: 'anna', name: '' }, { id: 'viktor', name: 'Viktor' }, { id: 'new', name: 'Paow' }, null, undefined]) {
     assert.equal(suppliedDealerArtwork(dealer), undefined, JSON.stringify(dealer));
@@ -33,7 +32,7 @@ test('unverified identity, label mismatch and unpublished slots never inherit an
 });
 
 test('portrait playback requires an explicit static poster/video pair, no arbitrary URL or private catalogue value', () => {
-  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'astrid', name: 'Astrid' });
+  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'paow', name: 'Paow' });
   assert.equal(isSuppliedPortraitVideo(`${lobby}/images/dealers/dragge.jpg`, approvedVideo), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, src: 'https://private.invalid/take.mp4' }), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, approved: false }), false);
