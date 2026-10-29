@@ -289,3 +289,43 @@ test('review fix: closing the chat route aborts open questions', async t => {
   const body = await Promise.race([pending, pause(1000).then(() => null)]);
   assert.deepEqual(body?.at(-1), { type: 'error', error: 'shared_room_chat_cancelled' });
 });
+
+// Fake DOM for the 1b chat panel: only what createSharedRoomChatPanel touches.
+function fakeDocument() {
+  const node = tag => {
+    const element = { tagName: tag, className: '', textContent: '', hidden: false, id: '', value: '', children: [], attributes: {}, listeners: {},
+      style: { setProperty() {} }, classList: { toggle() {} }, scrollTop: 0, scrollHeight: 0,
+      setAttribute(name, value) { this.attributes[name] = value; }, focus() {},
+      addEventListener(type, listener) { this.listeners[type] = listener; }, removeEventListener(type) { delete this.listeners[type]; },
+      append(...nodes) { for (const child of nodes) { child.parent = this; this.children.push(child); } },
+      remove() { const list = this.parent?.children; if (list) list.splice(list.indexOf(this), 1); },
+      get firstElementChild() { return this.children[0] ?? null; } };
+    return element;
+  };
+  return { createElement: node, body: node('body') };
+}
+
+test('review fix (1b): the panel deduplicates on server line ids, so a reused requestId never replaces the asker\'s answer', async () => {
+  const { createSharedRoomChatPanel } = await import('../services/game/public/shared-room-chat.mjs');
+  const document = fakeDocument(), ids = { bobQ: 'q-' + 'b'.repeat(24), bobA: 'a-' + 'b'.repeat(24), aliceQ: 'q-' + 'a'.repeat(24), aliceA: 'a-' + 'a'.repeat(24) };
+  let panel;
+  const fetchImpl = async (url, options) => {
+    const body = JSON.parse(options.body);
+    assert.equal(body.requestId, 'chat-x');
+    // Bob reused Alice's requestId; his lines and Alice's own question echo arrive over the socket first.
+    panel.receive({ lineId: ids.bobQ, requestId: 'chat-x', who: 'player', seat: 3, text: 'Bobs fråga', at: 1 });
+    panel.receive({ lineId: ids.bobA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Bob', at: 2 });
+    panel.receive({ lineId: ids.aliceQ, requestId: 'chat-x', who: 'you', seat: 1, text: 'Alices fråga', at: 3 });
+    const frames = [{ type: 'progress', stage: 'text', elapsedMs: 0 }, { type: 'preview', exactText: 'Svar till Alice' },
+      { type: 'result', decision: { kind: 'generatedText', requestId: 'chat-x', dealerId: 'paow', questionLineId: ids.aliceQ, exactText: 'Svar till Alice', lineId: ids.aliceA } }];
+    return new Response(frames.map(frame => JSON.stringify(frame) + '\n').join(''), { headers: { 'content-type': 'application/x-ndjson' } });
+  };
+  panel = createSharedRoomChatPanel({ document, roomId: 'room-a', state: () => ({ snapshot: snapshot() }), fetchImpl, randomId: () => 'x' });
+  const root = document.body.children[0], body = root.children[1], log = body.children[0], form = body.children[2], input = form.children[0];
+  input.value = 'Alices fråga';
+  await form.listeners.submit({ preventDefault() {} });
+  panel.receive({ lineId: ids.aliceA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Alice', at: 4 });
+  const lines = log.children.map(item => item.children.map(part => part.textContent));
+  assert.deepEqual(lines, [['plats 3', 'Bobs fråga'], ['dealern', 'Svar till Bob'], ['du', 'Alices fråga'], ['dealern', 'Svar till Alice']]);
+  panel.close();
+});
