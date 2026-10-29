@@ -273,6 +273,24 @@ test('inherited room override changes appear in review even without an immediate
   assert.equal(changes.length,1);assert.match(textOf(changes[0]),/Huvudrum/);assert.doesNotMatch(textOf(reviewSection(render())),/roomOverrides/,'the inherited key is named, not shown raw');
   assert.equal(dialog(render()).props.open,true,'a valid review opens the publish dialog');
 });
+// Utan tables.read: granskningen döljer spelbordsraderna men räknar dem, och
+// en tom affectedRooms med tablesHidden betyder dolda spelbord, inte inga.
+test('a review with only hidden table changes can publish and names the hidden tables',async()=>{
+  const initial=withDraft({rooms:[],roomDealerChoices:{}});
+  const {render}=stateful(initial,async()=>response(reviewed(initial,{changes:[],affectedRooms:[],hiddenTableChanges:2,tablesHidden:true})));
+  await byAction(render(),'review').props.onClick();assert.equal(dialog(render()).props.open,true);
+  assert.equal(byAction(render(),'publish').props.disabled,false);
+  const text=textOf(reviewSection(render()));
+  assert.match(text,/2 ändringar på spelborden visas inte för din roll\./);assert.doesNotMatch(text,/Inga ändringar att publicera/);
+  assert.match(text,/Berörda spelbord: Spelborden visas inte för din roll/);assert.doesNotMatch(text,/inga befintliga spelbord/);
+});
+test('a review without changes or hidden table changes cannot publish; tables shown keep the old wording',async()=>{
+  const initial=withDraft();
+  const {render}=stateful(initial,async()=>response(reviewed(initial,{changes:[],affectedRooms:[],hiddenTableChanges:0})));
+  await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,true);
+  const text=textOf(reviewSection(render()));
+  assert.match(text,/Inga ändringar att publicera\./);assert.match(text,/Berörda spelbord: inga befintliga spelbord/);
+});
 test('room dealers use room-specific choices and frozen schema3 labels',()=>{
   const initial=initialState();initial.presentation={...initial.presentation,schemaVersion:3,registeredDealers:[{id:'astrid',label:'Frozen Astrid',idle:null},{id:'vera',label:'Frozen Vera',idle:null}],playback:{}};
   const {render}=stateful(initial,()=>assert.fail('no request'));scope(render()).props.onChange({target:{value:'north-vip'}});
