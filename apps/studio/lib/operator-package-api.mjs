@@ -19,6 +19,7 @@ import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
 import {createRoomRelease,ROOM_RELEASE_ACTION} from './room-release.mjs';
+import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
 import {adminAssignmentView,validateAdminAssignment,PARTNER_ASSIGNMENT_KEY} from './partner-assignment.mjs';
 import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
 import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
@@ -220,7 +221,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   }
   async function prepare(context) {
     if(context.body?.action===ASSIGNMENT_ACTION)return prepareAssignment(context);
-    if(context.body?.action===ROOM_RELEASE_ACTION)return release.prepare(context);
+    if([ROOM_RELEASE_ACTION,AI_ADOPT_ACTION].includes(context.body?.action))return release.prepare(context);
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
     if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
     const expectedPackageRevision = requestedPackageRevision(context.body);
@@ -290,7 +291,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         return {ok:true,operatorId:published.operatorId,packageRevision:published.revision,assignment:adminAssignmentView(published,candidate.presentation)};
       }),{presentationMutation:prepared.mutations});
     }
-    if(context.body?.action===ROOM_RELEASE_ACTION)return release.publish(context);
+    if([ROOM_RELEASE_ACTION,AI_ADOPT_ACTION].includes(context.body?.action))return release.publish(context);
     if(context.body?.action==='refresh-dealer-idle'){
       const body=idleRefreshIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);

@@ -162,7 +162,8 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
     :name==='./assignment-field'?{AssignmentField:stub('data-assignment-field',props=>[props.operatorId,props.revision??'none'].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
-    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
+    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
+    :name==='./room-settings-warning'?compile('../components/studio/room-settings-warning.tsx',dep=>dep.endsWith('runtime/navigation')?navigation:dep.startsWith('../ui/')?uiRequire('./'+dep.slice('../ui/'.length)):require(dep))
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
   const render=()=>{hooks.reset();const tree=module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
   render();await settle(1);
@@ -262,6 +263,21 @@ test('the room editor vetoes in-app navigation over a draft or a write in flight
   editor().props.onBusyChange(false);h.render();h.allowLeave(true);
   assert.equal(attempt(),false);assert.equal(h.confirms,2);
   assert.equal(editor().props.roomId,'roulette','the editor never remounts over its draft');assert.equal(h.href,'/admin/rooms/roulette');
+});
+
+// Preview 29 Oct 2026: an open room without published game settings stood "öppet · publicerat". The room page
+// warns with a link to Spelinställningar, and the list's state reads "förbereds" with the same reason.
+test('an open room without published game settings is marked in the room page and the room list, with a link to its settings',async()=>{
+  const missing=registryRoom({...catalog.administration.rooms[0],settingsMissing:true}),others=catalog.administration.rooms.slice(1).map(registryRoom);
+  const reason='Saknar spelinställningar – spelare kan inte sätta sig';
+  const page=await companiesPageHtml({page:'room',id:'bj',search:'?flik=utseende',compositions,rooms:[missing,...others]});
+  assert.ok(shows(page,reason));assert.ok(hrefs(page).includes('/admin/rooms/bj?flik=spel'));assert.match(page,/>förbereds</);assert.doesNotMatch(page,/>öppet</);
+  assert.match(page,/data-room-settings-missing=""/);
+  assert.doesNotMatch(await companiesPageHtml({page:'room',id:'bj',search:'?flik=spel',compositions,rooms:[missing,...others]}),/data-room-settings-missing=/,'the settings tab itself is where they are published');
+  const list=await companiesPageHtml({page:'companies',search:'?tab=spelbord',compositions,rooms:[missing,...others]});
+  assert.ok(shows(list,reason));assert.ok(hrefs(list).includes('/admin/rooms/bj?flik=spel'));
+  const ready=await companiesPageHtml({page:'room',id:'bj',search:'?flik=utseende',compositions});
+  assert.equal(shows(ready,reason),false);assert.match(ready,/>öppet</);
 });
 
 test('the room nav resolves the registered owner and never falls back for an unknown or archived room',async()=>{
@@ -720,4 +736,11 @@ test('the room editor publishes through the room release and keeps the PAOW idle
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:7,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'other'}}));
   paow().props.onClick();await p.settle();
   assert.equal(paow().props.disabled,true,'an unconfirmed receipt blocks the next refresh until readback');
+});
+
+// The AI link uses the shared context keys (hub.tsx tabContext), so the spelbord survives a switch between the Scenes tabs.
+test('a blackjack room\'s appearance links to the AI table dialog with its company and room as shared context',async()=>{
+  const html=await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},{compositions});
+  const link=hrefs(html).find(href=>href.startsWith('/admin/scenes?tab=bordsgrafik'));
+  assert.equal(link,'/admin/scenes?tab=bordsgrafik&operator=a&room=bj');
 });

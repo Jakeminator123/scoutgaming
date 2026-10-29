@@ -32,7 +32,7 @@ const round = (value, digits = 3) => Math.round(value*10**digits)/10**digits;
 const luminance = (r, g, b) => .2126*r+.7152*g+.0722*b;
 const linear = channel => { const value = channel/255; return value<=.04045?value/12.92:((value+.055)/1.055)**2.4; };
 const relative = ([r, g, b]) => .2126*linear(r)+.7152*linear(g)+.0722*linear(b);
-const contrastRatio = (one, two) => { const [high, low] = [relative(one), relative(two)].sort((a, b) => b-a); return (high+.05)/(low+.05); };
+export const contrastRatio = (one, two) => { const [high, low] = [relative(one), relative(two)].sort((a, b) => b-a); return (high+.05)/(low+.05); };
 
 // "rgba(r,g,b,a)" or "#rrggbb" as [r,g,b,a]; anything else is null.
 export function parseStroke(value) {
@@ -104,6 +104,53 @@ function measure(data, info, rect, stroke) {
   if (contrast!==null) parts.push(['low_contrast', LANDING_STROKE_CONTRAST_MIN/contrast]);
   const [reason, score] = parts.reduce((worst, part) => part[1]>worst[1]?part:worst);
   return {spread: round(spread, 2), edges: round(density, 4), contrast: contrast===null?null:round(contrast, 2), score: round(score), reason};
+}
+
+// Floor line (Jakob 2026-10-29): a background shot from the dealer camera has
+// a wall above the camera contract's floor line and a floor below it, so the
+// two bands next to the line differ in colour or brightness. A room seen from
+// above (floor on both sides of the line) or a flat backdrop (no floor) does
+// not, and the table graphic then floats. Measured in the outer columns only:
+// the table graphic covers the centre column there.
+// Band height on each side of the line, and the gap left around it because
+// the model's line is not pixel-exact (shares of the image height).
+export const FLOOR_BAND = .1;
+export const FLOOR_GAP = .02;
+// Distance between the bands' mean sRGB colours (0-441). 16 is about 4 % of the
+// full range and 9 grey levels: grain, an even wall and a soft top-to-bottom
+// light falloff (one level per 20 px) stay under it; a floor that differs from
+// the wall by about a tenth in brightness or tone is over it.
+export const FLOOR_DIFFERENCE_MIN = 16;
+export const NO_FLOOR_MESSAGE = 'Bakgrunden saknar synligt golv – bordet kommer att sväva';
+
+function meanColour(data, info, rect) {
+  const box = clip(rect, info.width, info.height);
+  if (!box) return null;
+  const sum = [0, 0, 0];
+  for (let y = box.y0; y<box.y1; y++) for (let x = box.x0; x<box.x1; x++) {
+    const at = (y*info.width+x)*info.channels; sum[0] += data[at]; sum[1] += data[at+1]; sum[2] += data[at+2];
+  }
+  const count = (box.x1-box.x0)*(box.y1-box.y0);
+  return sum.map(value => value/count);
+}
+
+/**
+ * Floor check for a background (a sharp instance at size). frame.dealer is the
+ * centre column [x0, x1]; floorLine a share of the height.
+ * Returns {ok, code:'no_floor'|null, message, sides:[{side, difference}]}.
+ * Both sides need a clear line: the table stands in the middle of the floor.
+ */
+export async function floorCheck(image, frame, size, {floorLine}) {
+  const {data, info} = await image.toColourspace('srgb').raw().toBuffer({resolveWithObject: true});
+  const line = floorLine*size.height, band = FLOOR_BAND*size.height, gap = FLOOR_GAP*size.height;
+  const sides = [['left', 0, frame.dealer[0]], ['right', frame.dealer[1], size.width]].map(([side, x0, x1]) => {
+    const above = meanColour(data, info, {x: x0, y: line-gap-band, width: x1-x0, height: band});
+    const below = meanColour(data, info, {x: x0, y: line+gap, width: x1-x0, height: band});
+    if (!above||!below) throw Error('no_floor_zone');
+    return {side, difference: round(Math.hypot(...above.map((value, index) => value-below[index])), 2)};
+  });
+  const ok = sides.every(side => side.difference>=FLOOR_DIFFERENCE_MIN);
+  return {ok, code: ok?null:'no_floor', message: ok?null:NO_FLOOR_MESSAGE, sides};
 }
 
 /**

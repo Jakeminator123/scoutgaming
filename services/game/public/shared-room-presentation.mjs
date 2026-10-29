@@ -1,7 +1,7 @@
 import { createLayerComposition } from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import { combineAbortSignals } from './abort-signals.mjs';
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
-import { fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
+import { SEAT_HALF_PX, fallbackSeatLayout, seatWindow } from './shared-room-layout.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
 import { nativeRoomFilmedPlanning } from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
@@ -407,7 +407,10 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,hud.top-scene.top);
     const floor=floorTop??height-150,below=compact?28:140;
     let projected;
-    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile});
+    // The seats stand on the same boxes as the cards (layoutGameOverlay): centred under each box, the circle just
+    // below the hand total at a fixed pixel size, in every window shape. A phone moves its three touch targets apart
+    // only as far as they need, evenly around the boxes.
+    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:Math.max(200,floor-below+16)},{compact,filmedProfile,seatHalf:SEAT_HALF_PX});
     // Without a composition plane the seats stand on the dealer's filmed landings (shared-room-layout.mjs); the
     // calibrated row only stands in for a dealer without a filmed profile. No board or dealer is selected here.
     else projected=fallbackSeatLayout({width,height,boxes,filmedProfile,compact:Boolean(compact)});
