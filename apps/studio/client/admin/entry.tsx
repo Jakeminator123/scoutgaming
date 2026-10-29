@@ -78,7 +78,7 @@ function App() {
       </select></label>
       {show('home')&&<AdminHome workspace={workspace.current}/>}
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
-      {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
+      {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
       {show('scenes')&&<ScenesPage part="head" tab={sceneTab} workspace={workspace.current}/>}
       <div className="flex min-h-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
         {mapVisited&&lastMapRoute&&<Clips active={mapShown} dealerId={lastMapRoute.kind==='dealer'?lastMapRoute.dealerId:''} base={lastMapRoute.base} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>
