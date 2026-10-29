@@ -5,6 +5,7 @@ import {House,Users,LayoutDashboard,Building2,Settings,CircleHelp,type LucideIco
 import {adminNavigationGroups} from '../../lib/admin-navigation';
 import {parseAdminPath} from '../../../runtime/admin-routing.mjs';
 import {AdminLogout} from './admin-logout';
+import {ThemeToggle} from './theme-toggle';
 
 const icons:Record<string,LucideIcon>={'/admin/dealers':Users,'/admin/scenes':LayoutDashboard,'/admin/companies':Building2,'/admin/system':Settings,'/admin/guide':CircleHelp};
 // A nav page marks the menu entry it belongs to, so exactly one entry is current.
@@ -19,6 +20,6 @@ export function StudioSidebar() {
         {group.links.map(({label,href})=>{const Icon=icons[href]??House;return <Link key={href} href={href} title={label} aria-current={current===href?'page':undefined}><Icon size={17} aria-hidden="true"/><span>{label}</span></Link>;})}
       </div>)}
     </nav>
-    <div className="studio-sidebar-foot"><AdminLogout/></div>
+    <div className="studio-sidebar-foot"><ThemeToggle/><AdminLogout/></div>
   </aside>;
 }
