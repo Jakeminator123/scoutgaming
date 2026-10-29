@@ -259,12 +259,14 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       <legend className={styles.srOnly}>{t('Spelbordets val','Table choices')}</legend>
       {keys.includes('background') && lane && !lane.composition ? <p className={styles.hint}>{t('Scenen är en enda film; bakgrund och bordsgrafik ingår i den. Be Scoutgaming om separata lager om ni vill kunna byta dem.','The scene is a single video; background and table graphics are part of it. Ask Scoutgaming for separate layers if you want to change them.')}</p> : null}
       {fields}
-      {!fields.length ? <p className={styles.hint}>{t('Scoutgaming har inte låst upp något val här för det här spelbordet. Vill ni byta något: Hjälp och kontakt.','Scoutgaming has not unlocked any choice here for this table. To change something: Help and contact.')}</p> : null}
+      {!fields.length ? <p className={styles.hint}>{t('Scoutgaming har inte låst upp något val för det här spelbordet. Vill ni byta något: Hjälp och kontakt.','Scoutgaming has not unlocked any choice for this table. To change something: Help and contact.')}</p> : null}
       {quietList(keys, [])}
     </fieldset>;
   };
+  // Väljaren "Gäller för" visas både i Admins rumsläge och i portalens flikar; en definition.
+  const scopeSelect = roomId === undefined ? <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label> : null;
   const editor = <>
-  {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
+  {scopeSelect}
   <fieldset className={styles.editor} disabled={!editable || busy}>
     <legend className={styles.srOnly}>{t('Spelbordets val','Table choices')}</legend>
     {lane && !lane.composition ? <p className={styles.hint}>{t('Scenen är en enda film; bakgrund och bordsgrafik ingår i den. Be Scoutgaming om separata lager om ni vill kunna byta dem.','The scene is a single video; background and table graphics are part of it. Ask Scoutgaming for separate layers if you want to change them.')}</p> : null}
@@ -375,7 +377,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
         {/* Utseende och Dealer delar scenen till höger; valen byts med fliken. */}
         <div className={styles.tabPanel} hidden={!TAB_LAYERS[tab]}>
           <div className={styles.workbench}><div className={styles.workChoices}>
-            {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
+            {scopeSelect}
             <Tabs.Content forceMount value="utseende" hidden={tab !== 'utseende'}>{editorFor(TAB_LAYERS.utseende!)}</Tabs.Content>
             <Tabs.Content forceMount value="dealer" hidden={tab !== 'dealer'}>{editorFor(TAB_LAYERS.dealer!)}</Tabs.Content>
             {resetLink}

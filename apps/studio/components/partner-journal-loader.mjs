@@ -76,17 +76,17 @@ export function PartnerJournal({ base, operatorSlug, operatorId, language = 'sv'
     versions(row)];
   return h('div', { className: 'stack' }, h('section', { className: 'card flat', 'aria-label': title },
     h('div', { className: 'card-head' }, h('h2', null, title),
-      h('button', { type: 'button', className: 'btn small', 'aria-expanded': open, onClick: () => setOpen(value => !value) }, open ? (en ? 'Hide journal' : 'Dölj journal') : (en ? 'Show journal' : 'Visa journal')),
+      h('button', { type: 'button', className: 'btn small', 'aria-expanded': open, onClick: () => setOpen(value => !value) }, open ? (publications ? (en ? 'Hide publications' : 'Dölj publiceringar') : (en ? 'Hide journal' : 'Dölj journal')) : (publications ? (en ? 'Show publications' : 'Visa publiceringar') : (en ? 'Show journal' : 'Visa journal'))),
       open ? h('button', { type: 'button', className: 'btn small', disabled: state.status === 'loading', onClick: () => setRefresh(value => value + 1) }, en ? 'Refresh' : 'Uppdatera') : null),
     open ? h(React.Fragment, null,
       h('p', { className: 'note' }, publications
         ? (en ? 'When each version was published for the company. Logging starts when this feature is activated; older publications are not reconstructed.' : 'När varje version publicerades för bolaget. Loggningen börjar när funktionen aktiveras; äldre publiceringar återskapas inte.')
         : (en ? 'Saved changes for this operator. Logging starts when this feature is activated; older changes are not reconstructed.' : 'Bolagets journal. Loggningen börjar när funktionen aktiveras; äldre ändringar återskapas inte.')),
-      state.status === 'error' ? h('p', { className: 'note', role: 'alert' }, en ? 'The journal could not be loaded. Access may have changed. Refresh to try again.' : 'Journalen kunde inte hämtas. Behörigheten kan ha ändrats. Uppdatera för att försöka igen.') : null,
-      state.status === 'loading' ? h('p', { className: 'note', role: 'status' }, en ? 'Loading changes…' : 'Hämtar ändringar…') : null,
+      state.status === 'error' ? h('p', { className: 'note', role: 'alert' }, publications ? (en ? 'The publications could not be loaded. Access may have changed. Refresh to try again.' : 'Publiceringarna kunde inte hämtas. Behörigheten kan ha ändrats. Uppdatera för att försöka igen.') : (en ? 'The journal could not be loaded. Access may have changed. Refresh to try again.' : 'Journalen kunde inte hämtas. Behörigheten kan ha ändrats. Uppdatera för att försöka igen.')) : null,
+      state.status === 'loading' ? h('p', { className: 'note', role: 'status' }, publications ? (en ? 'Loading publications…' : 'Hämtar publiceringar…') : (en ? 'Loading changes…' : 'Hämtar ändringar…')) : null,
       state.status === 'ready' && state.entries.length === 0 ? h('p', { className: 'note' }, publications ? (en ? 'No recorded publications yet.' : 'Inga registrerade publiceringar ännu.') : (en ? 'No recorded changes yet.' : 'Inga registrerade ändringar ännu.')) : null,
       state.entries.length ? h('div', { className: 'scroll-x' }, h('table', { className: 'table' },
         h('thead', null, h('tr', null, columns.map(label => h('th', { key: label, scope: 'col' }, label)))),
         h('tbody', null, state.entries.map(row => h('tr', { key: row.id }, ...cells(row)))))) : null,
-      state.nextCursor ? h('button', { type: 'button', className: 'btn', disabled: state.status === 'loading', onClick: () => void load(state.nextCursor) }, en ? 'Load older changes' : 'Hämta äldre ändringar') : null) : null));
+      state.nextCursor ? h('button', { type: 'button', className: 'btn', disabled: state.status === 'loading', onClick: () => void load(state.nextCursor) }, publications ? (en ? 'Load older publications' : 'Hämta äldre publiceringar') : (en ? 'Load older changes' : 'Hämta äldre ändringar')) : null) : null));
 }
