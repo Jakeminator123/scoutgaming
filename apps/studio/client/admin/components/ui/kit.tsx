@@ -91,7 +91,7 @@ export function Footnote({children,className}:{children:ReactNode;className?:str
   return <p className={cn('mb-0 mt-3 text-[12.5px] text-sg-muted',className)}>{children}</p>;
 }
 /** A link inside running text and footnotes. */
-export const textLinkClass='rounded font-semibold text-sg-accent-text underline-offset-2 hover:underline '+focusRing;
+export const textLinkClass='rounded font-semibold text-sg-accent-text underline decoration-sg-faint underline-offset-2 hover:decoration-current '+focusRing;
 
 /** Folded section at the bottom of a page: technical identities (`items`) or a short secondary action
  * (`children`). The chevron replaces the browser's marker and turns when the section opens. */

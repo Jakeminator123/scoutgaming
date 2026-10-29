@@ -92,7 +92,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
           {data&&!pending.length&&<Empty chip={null} title="Inget väntar" text="Alla dealers har sina klipp och alla spelbord är publicerade."/>}
           {pending.length>0&&<div className="grid">{pending.map(row=><Row key={row.type+row.title} chip={<Chip tone={row.kind}>{row.type}</Chip>} title={row.title} text={row.text} href={row.href}/>)}</div>}
         </Card>
-        {registry&&<Card title="Bolag och spelbord" aside={<AsideLink href="/admin/companies">Alla</AsideLink>}>
+        {registry&&<Card title="Bolag och spelbord" aside={<AsideLink href="/admin/companies" label="Alla bolag">Alla</AsideLink>}>
           {!activeOperators.length?<Empty chip={null} title="Inga aktiva bolag" action={<Link className={buttonVariants()} href="/admin/companies?view=create">Nytt bolag</Link>}/>:<div className="grid gap-3 md:grid-cols-2">
             {activeOperators.map(operator=>{const mine=rooms.filter(room=>room.operatorId===operator.id);return <div key={operator.id} className="rounded-xl border border-sg-line-2 bg-sg-surface-2 p-4">
               <div className="mb-2 flex items-center justify-between gap-2"><Link className="font-semibold text-sg-text no-underline hover:underline" href={`/admin/companies/${encodeURIComponent(operator.id)}`}>{operator.name}</Link><Chip>{operator.packageRevision===null?'ingen tilldelning':`version ${operator.packageRevision}`}</Chip></div>
@@ -109,7 +109,7 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/companies?tab=spelbord&view=create"><Table2 aria-hidden="true"/>Nytt spelbord</Link>
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link>
         </div></Card>
-        {data&&dealers.length>0&&<Card title="Dealers" aside={<AsideLink href="/admin/dealers">Alla</AsideLink>}>
+        {data&&dealers.length>0&&<Card title="Dealers" aside={<AsideLink href="/admin/dealers" label="Alla dealers">Alla</AsideLink>}>
           <ul className="m-0 grid list-none gap-2.5 p-0">{dealers.slice(0,5).map(dealer=>{const coverage=dealerCoverage(data.project,data.inventory,dealer.id);return <li key={dealer.id}><Link href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`} className="flex items-center gap-3 rounded-lg text-sg-text no-underline hover:bg-sg-surface-2">
             <DealerAvatar dealer={dealer} still={dealerStill(data.project,data.inventory,dealer.id)} size={36}/><span className="min-w-0 flex-1 truncate font-semibold">{dealer.label}</span><Chip tone={coverage.complete?'ok':'warn'} dot>{coverage.complete?'redo':'klipp saknas'}</Chip></Link></li>;})}</ul>
         </Card>}

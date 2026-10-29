@@ -48,10 +48,8 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   // Admin has no static files of its own; the lobby ships its portraits and hero media and must have them.
   if (surface !== 'admin' || existsSync(resolve(source, 'public'))) await cp(resolve(source, 'public'), resolve(outdir), { recursive: true });
   const title = surface === 'admin' ? 'Scoutgaming Admin' : 'Spellobby · Arbetsversion · Scoutgaming';
-  // The site chat (Scoutguiden, assistant-widget.js) is for the lobby's visitors; Admin pages do not load it.
-  const assistant = surface === 'admin' ? '' : `<script src="${process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : ''}/assistant-widget.js" defer></script>`;
   const extra = surface === 'admin' ? '<link rel="stylesheet" href="/admin/_assets/admin/app.css">' : '';
-  await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title}</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script>${assistant}</body></html>`);
+  await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title}</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script><script src="${process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : ''}/assistant-widget.js" defer></script></body></html>`);
 }
 await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
   define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio':'')}});

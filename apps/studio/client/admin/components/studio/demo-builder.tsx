@@ -72,10 +72,10 @@ function DealerStep({company,dealers,selected,onSelect}:{company:DemoCompany;dea
   </div>;
 }
 
-function CreditsReadout({credits,company,room}:{credits:Load<Credits>;company:DemoCompany;room:DemoRoom}) {
+function CreditsReadout({credits,room}:{credits:Load<Credits>;room:DemoRoom}) {
   if(credits.status==='loading')return <p className={small} role="status">Läser spelbordets spelinställningar…</p>;
   if(credits.status==='error')return <p className={small}>{credits.message}</p>;
-  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem på spelbordets sida, under Spelinställningar.</p>;
+  if(!credits.value)return <p className={small}>Spelbordet {room.name} har inga publicerade spelinställningar, så påfyllningen av demosaldot är okänd. Publicera dem under spelbordets <Link className={linkClass} href={`/admin/rooms/${encodeURIComponent(room.id)}?flik=spel`}>Spelinställningar</Link>.</p>;
   const value=credits.value;
   return <KV items={[
     ['Startsaldo','Bestäms av spelmotorn när testsessionen skapas och visas i kvittot. Det går inte att välja här; efter lanseringen kan du fylla på demosaldot.'],
@@ -95,7 +95,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <Field id="demo-currency" label="Valuta"><select id="demo-currency" className={fieldClass} value={state.form.currency} onChange={event=>onEdit('currency',event.target.value)}>{DEMO_CURRENCIES.map(row=><option key={row}>{row}</option>)}</select></Field>
     </div>
     <section aria-labelledby="demo-credits-title" className="grid gap-2.5"><h3 id="demo-credits-title" className="m-0 text-[13.5px] font-semibold text-sg-text">Saldo och giltighet</h3>
-      <CreditsReadout credits={credits} company={company} room={room}/>
+      <CreditsReadout credits={credits} room={room}/>
       <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; kommer senare). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
     <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> för <b>{company.name}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> med <b>{dealer.name}</b>. Nyckeln gäller bara {company.name}, och nyckel och hemlighet lämnar aldrig servern.</Note>

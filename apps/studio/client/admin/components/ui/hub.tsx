@@ -40,13 +40,14 @@ export function Chip({tone='',dot,children,title}:{tone?:Tone;dot?:boolean;child
   return <Badge tone={tone} dot={dot} title={title}>{children}</Badge>;
 }
 export function Row({chip,title,text,href,action}:{chip?:ReactNode;title:ReactNode;text?:ReactNode;href?:string;action?:ReactNode}) {
-  const body=<><div>{chip}</div><div className="min-w-0"><div className="font-semibold text-sg-text">{title}</div>{text&&<div className="text-[13px] text-sg-muted">{text}</div>}</div><div>{action??(href?<ChevronRight aria-hidden="true" className="size-4 text-sg-faint transition-[color,transform] duration-150 group-hover/row:translate-x-0.5 group-hover/row:text-sg-text motion-reduce:transition-none max-md:hidden"/>:null)}</div></>;
+  const body=<><div>{chip}</div><div className="min-w-0"><div className="font-semibold text-sg-text">{title}</div>{text&&<div className="text-[13px] text-sg-muted">{text}</div>}</div><div className={action?undefined:'max-md:hidden'}>{action??(href?<ChevronRight aria-hidden="true" className="size-4 text-sg-faint transition-[color,transform] duration-150 group-hover/row:translate-x-0.5 group-hover/row:text-sg-text motion-reduce:transition-none"/>:null)}</div></>;
   const cls='group/row grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 border-t border-sg-line-2 py-3 text-inherit no-underline first:border-t-0 first:pt-0 last:pb-0 max-md:grid-cols-1 max-md:gap-1.5';
   return href?<Link href={href} className={cn(cls,'rounded-sm hover:[&_.font-semibold]:underline',focusRing)}>{body}</Link>:<div className={cls}>{body}</div>;
 }
-/** A link in a card's header (Card `aside`): the words say where it goes, the chevron replaces a typed arrow. */
-export function AsideLink({href,children}:{href:string;children:ReactNode}) {
-  return <Link href={href} className={cn('inline-flex items-center gap-0.5 rounded font-semibold text-sg-accent-text no-underline hover:underline',focusRing)}>{children}<ChevronRight aria-hidden="true" className="size-3.5 shrink-0"/></Link>;
+/** A link in a card's header (Card `aside`): the words say where it goes, the chevron replaces a typed arrow.
+ * `label` names the target for screen readers when the visible word is short ("Alla" → "Alla bolag"). */
+export function AsideLink({href,label,children}:{href:string;label?:string;children:ReactNode}) {
+  return <Link href={href} aria-label={label} className={cn('inline-flex items-center gap-0.5 rounded font-semibold text-sg-accent-text no-underline hover:underline',focusRing)}>{children}<ChevronRight aria-hidden="true" className="size-3.5 shrink-0"/></Link>;
 }
 export function Rows({children,className}:{children:ReactNode;className?:string}) { return <div className={cn('grid',className)}>{children}</div>; }
 /** Honest empty state. The default chip says the surface is not connected; pass `chip={null}` for an ordinary "nothing here". */

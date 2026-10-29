@@ -206,7 +206,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
   return <section className={`dealer-import ${mode==='chat'?'is-chat':''}`} aria-labelledby="dealer-import-title">
     <header className="dealer-import-heading"><div><p className="dealer-import-eyebrow">Studio · Registrerade dealers</p>
       <h1 id="dealer-import-title">{mode==='chat'?'Klippassistent':'Låt assistenten sortera klippen'}</h1>
-      <p>{mode==='chat'?'Ställ frågor om dealers och klippimport.':'Välj dealer, lägg in dina filer och beskriv dem. Granska förslaget innan du sparar i klippbanken.'}</p></div>
+      <p>{mode==='chat'?'Ställ frågor om dealers och klippimport. Detta samtal är separat från Adminroboten.':'Välj dealer, lägg in dina filer och beskriv dem. Granska förslaget innan du sparar i klippbanken.'}</p></div>
       <span className="dealer-import-badge"><ShieldCheck size={15}/> {dealer?`Klippbank · ${dealer.label}`:'Välj klippbank'}</span>
     </header>
     {loading ? <p role="status">Läser registrerade dealers och exakta klippfack…</p> : !catalog ? <div className="dealer-import-panel">
@@ -284,7 +284,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
         </section>}
       </div><aside className="dealer-import-panel dealer-import-chat" aria-labelledby="dealer-import-chat-title"><h2 id="dealer-import-chat-title"><MessageCircle size={18}/> Samtal</h2>
         <p className="dealer-import-provider">{catalog.provider.configured?'Chatt: Luna 5.6':'AI-chatt är inte ansluten'}</p>
-        <p>Fråga om klippen här.</p>
+        <p>Fråga om klippen här. Vill du dra in filmer direkt i chatten och placera dem, öppna Adminroboten.</p>
         <div className="dealer-import-conversation" role="log" aria-label="Samtal med Klippassistenten" aria-live="polite">{chat.length?chat.map((entry,index)=><div key={index} className={entry.speaker==='Du'?'is-user':''}><strong>{entry.speaker}</strong><p>{entry.text}</p></div>):<div><strong>Assistent</strong><p>Vad vill du ha hjälp med i Studio? Du kan fråga direkt. Välj en befintlig dealer när du vill importera klipp.</p></div>}</div>
         <form onSubmit={event=>void ask('chat',event)}><label>Meddelande till assistenten<textarea value={question} maxLength={2000} rows={3} disabled={Boolean(busy)} placeholder="Vad är skillnaden mellan vila och redo?" onChange={event=>setQuestion(event.target.value)}/></label>
           <button disabled={Boolean(busy)||!question.trim()} type="submit">{busy==='chat'?'Svarar…':'Fråga assistenten'}</button></form>

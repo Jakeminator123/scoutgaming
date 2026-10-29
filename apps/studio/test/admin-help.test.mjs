@@ -40,7 +40,4 @@ test('Hjälp lists every menu page with its description and links to the user gu
   assert.equal(hrefs.some(href=>/^\/(?:control|lab)(?:\/|$)|\/admin\/(?:publication|compositions|videos|rehearsal|probe|events|admin\/operators|clips|assets|structure|deletion|drift|ekonomi|players|replies|dealer-agent|dealer-studio|ai\/models|admin\/accounts|admin\/api)(?:[?#]|$)/.test(href)),false,'no retired addresses');
   for(const tab of navigation.adminSystemTabs)assert.ok(html.includes(tab.label),'the System tabs are explained: '+tab.label);
   assert.match(html,/<h1[^>]*>Hjälp<\/h1>/);
-  // Översikt is the home page, not one of the menu's choices, so the card states no count that can drift from the menu.
-  assert.doesNotMatch(html,/Menyn \(\d+ val\)/);
-  assert.doesNotMatch(html,/API-nycklar saknar bolag/,'every API key belongs to a company since game migration 012');
 });

@@ -106,7 +106,7 @@ function ApprovalCard({coverage,templates}:{coverage:Coverage;templates:{id:stri
   ];
   return <Card title="Godkännande" aside="Krävs för att dealern ska kunna tilldelas" className="mt-3">
     <div className="grid">{rows.map(([text,ok])=><Row key={text} chip={ok===null?<Chip tone="warn">kommer senare</Chip>:ok?<Chip tone="ok">klart</Chip>:<Chip tone="danger">saknas</Chip>} title={text}/>)}</div>
-    <Footnote>Checklistan visar läget; godkännandet sparas inte ännu. Dealern tilldelas ett bolag på bolagets sida, under <Link href="/admin/companies" className={textLinkClass}>Bolag och spelbord</Link>. Mätningen av landningar i Admin kommer senare; i dag finns de bara för två filmade dealers.</Footnote>
+    <Footnote>Checklistan visar läget; godkännandet sparas inte ännu. Dealern tilldelas under bolagets flik Tilldelning i <Link href="/admin/companies" className={textLinkClass}>Bolag och spelbord</Link>. Mätningen av landningar i Admin kommer senare; i dag finns de bara för två filmade dealers.</Footnote>
   </Card>;
 }
 
