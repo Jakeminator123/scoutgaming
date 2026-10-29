@@ -213,7 +213,8 @@ test('material readiness exposes only fixed native reason codes and leaves publi
     await assert.rejects(f.publish(draft),error=>error.code==='studio_room_game_material_unavailable'&&error.reason===undefined);
   }
   const native=fixture({resolver:resolveNativeRoomGameMaterial}),draft=await native.save();
-  assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_profile_missing'});
+  // A dealer without its own filmed profile inherits PAOW's and reaches the material checks.
+  assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
 });
 test('J08 role and tenant failures happen before data reads; wrong room cannot publish',async()=>{
   const f=fixture();await assert.rejects(f.invoke('GET',undefined,{actor:{user:'partner',role:'partner'}}),{statusCode:403});

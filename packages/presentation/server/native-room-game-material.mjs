@@ -3,7 +3,7 @@ import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/s
 import { readPackagePresentation, resolvePackageRoomDealer } from './presentation-package.mjs';
 import { isPresentationRoom, roomGame } from '../contracts/presentation-room.mjs';
 import { frozenPlaybackProject } from '../contracts/frozen-dealer-playback.mjs';
-import { registeredFilmedProfile } from '../contracts/filmed-profiles/registry.mjs';
+import { filmedProfileOrPaow } from '../contracts/filmed-profiles/registry.mjs';
 import { validateFilmedDealProfile } from '../contracts/filmed-profile.mjs';
 import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../contracts/media-timing.mjs';
 import { recordedSpeechForVideo } from '../contracts/recorded-speech.mjs';
@@ -50,7 +50,8 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const dealerId = resolvePackageRoomDealer(pack, room, presentation);
     if (!dealerId
       || !presentation.registeredDealers.some(row => row.id === dealerId && row.idle)) fail('native_material_dealer_missing');
-    const profile = registeredFilmedProfile(dealerId);
+    // Without its own filmed profile the dealer inherits PAOW's (never blocked).
+    const profile = filmedProfileOrPaow(dealerId);
     if (!profile) fail('native_material_profile_missing');
     validateFilmedDealProfile(profile); compatible(profile);
     const project = frozenPlaybackProject(presentation.playback, {registeredDealers:presentation.registeredDealers, projectRevision:presentation.projectRevision});
