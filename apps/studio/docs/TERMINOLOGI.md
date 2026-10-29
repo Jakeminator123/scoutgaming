@@ -55,7 +55,7 @@ Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på de
 | Rum, spelrum | kodnamnet `room`; i UI lobbyn (`client/lobby`) | spelbord |
 | Mall, sammansättning | `lane`, `composition` | scenmall |
 | Nivå 1/2/3, intern administration | i UI `studio-administration.tsx` | Admin, Partnerportalen, spelaren |
-| Körregel, sammanhängande vilosekvens | i UI klippkortet och vilopanelen | vila, vilosekvens |
+| Sammanhängande vilosekvens | i UI vilopanelen | vilosekvens |
 | K0x, J0x, O0x | kodkommentarer, testnamn; i UI importvarningen "K05-urvalet" | beskriv saken, inte koden |
 | k06-k07-staging | Neon, Blob och Render-adressen för preview | preview |
 | GitLab | en källkommentar; push-policyn nekar GitLab | GitHub |
