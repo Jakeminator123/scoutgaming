@@ -3,7 +3,7 @@ import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
 export function layerAssetReferences(project,id){
   const lanes=[...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];
   return lanes.filter(lane=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))
-    ||lane.composition?.blackjackTables?.some(row=>row.tableId===id)).map(lane=>({id:lane.id,label:compositionLabel(lane.label)}));
+    ||lane.composition?.blackjackTables?.some(row=>row.tableId===id)||lane.illustration===id).map(lane=>({id:lane.id,label:compositionLabel(lane.label)}));
 }
 export function removeLayerAsset(project,id){
   if(!project.layerAssets?.some(asset=>asset.id===id))throw Error('Filen finns inte längre i biblioteket.');

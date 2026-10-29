@@ -9,7 +9,7 @@ import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.
 import {createNeonProjectStore} from '../lib/neon-project-store.mjs';
 
 const scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
-const env = {CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
+const env = {CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
 async function fixture() {
   const pool = createStudioMemoryPool(),repository = createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{value:createSeedProject(),actor:'migration'});
@@ -48,7 +48,7 @@ test('disabled gate fails closed without initializing storage; invalid DB/schema
   assert.equal(connects,0);
   assert.throws(() => assertRenderStudioWritable({}),error => error.statusCode === 410);
   assert.throws(() => assertRenderStudioWritable(env),error => error.statusCode === 410);
-  for (const changed of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_GAME_DATABASE_URL:'postgresql://u:p@other.example/game?sslmode=require'},
+  for (const changed of [{CROUPIER_GAME_DATABASE_URL:'postgresql://u:p@other.example/game?sslmode=require'},
     {CROUPIER_ZONES_DATABASE_URL:env.CROUPIER_GAME_DATABASE_URL}]) {
     await assert.rejects(createStudioRenderPersistence({env:{...env,...changed},poolFactory:()=> {throw new Error('must not connect');}}),error => error.statusCode === 503);
   }

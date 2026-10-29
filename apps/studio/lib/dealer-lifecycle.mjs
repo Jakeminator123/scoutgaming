@@ -53,6 +53,8 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
     for(const lane of compositions)for(const role of ['background','table'])for(const id of lane.layers[role].allowed){
       if(!(next.layerAssets??[]).some(asset=>asset.id===id&&asset.role===role))fail('studio_dealer_restore_conflict');
     }
+    // An archived environment's miljöbild needs no check here: validateProject above already
+    // requires every trashed lane.illustration to be an `illustration` in the library.
     if(entry.dealerSets?.some(row=>next.dealerSets?.some(active=>active.id===row.id)))fail('studio_dealer_restore_conflict');
     next.dealers.push(speechOff(entry.dealer));next.lines.push(...entry.lines);
     if(entry.dealerSets?.length)next.dealerSets=[...(next.dealerSets??[]),...entry.dealerSets];

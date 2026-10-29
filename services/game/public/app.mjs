@@ -69,7 +69,7 @@ if(lobbyReturn){
     : entrySelection.operator?{operator:entrySelection.operator,...(entrySelection.roomId?{room:entrySelection.roomId}:{})}:{});
   lobbyReturn.href=(studioPreview?'/admin/compositions':'/lobby')+(returnQuery.size?'?'+returnQuery:'');
   if(studioPreview){
-    lobbyReturn.textContent=window.parent===window?'Till Sammansättning':'Stäng provspel';
+    lobbyReturn.textContent=window.parent===window?'Till Miljö':'Stäng provspel';
     lobbyReturn.onclick=async event=>{
       if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
       event.preventDefault();

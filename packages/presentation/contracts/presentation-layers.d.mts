@@ -12,6 +12,7 @@ export type PresentationPackage = LegacyPresentationPackage|FrozenPresentationPa
 export function validateFrozenRegisteredDealers(value:unknown, options:{dealerIds:readonly string[]}):FrozenRegisteredDealer[];
 export function layerAssetPath(asset: Partial<LayerAsset>): string;
 export function validateLayerAsset(value: unknown): LayerAsset;
+export function laneMaterialIds(lane: StudioLane): string[];
 export function validatePresentationLane(value: unknown, options?:{dealerIds?:readonly string[]}): StudioLane;
 export function validatePresentationPackage(value: unknown): PresentationPackage;
 export function buildPresentationPackage(project: StudioProject, ids: string[], library: LayerAsset[], options?:{registeredDealers?:readonly FrozenRegisteredDealer[]; playback?:FrozenDealerPlayback}): PresentationPackage;

@@ -18,7 +18,7 @@ const asset = (n, role = 'background') => ({ schemaVersion: 1, id: uuid(n), role
 const material = (n, { role = 'background', state = 'approved', laneId = 'open', at = n } = {}) => ({ materialId: uuid(n), revision: state === 'pending' ? 1 : 2,
   state, source: 'upload', role, asset: asset(n, role), occurredAtMs: at,
   tableBinding: role === 'table' ? { dealerId: 'astrid', profileId: 'profile', laneId, templateSha256: 'f'.repeat(64) } : null });
-const lane = (id, patch = {}) => ({ id, label: `Mall ${id}`, renderer: 'layered', dealers: ['astrid'],
+const lane = (id, patch = {}) => ({ id, label: `Miljö ${id}`, renderer: 'layered', dealers: ['astrid'],
   layers: { background: { enabled: true, mode: 'image', default: null, allowed: [] }, table: { enabled: true, default: null, allowed: [] },
     dealer: { enabled: true, default: 'astrid', allowed: ['astrid'] } },
   openclaw: { idle: 'active', deal: 'active', reveal: 'active', speak: 'active', probe: 'off' },

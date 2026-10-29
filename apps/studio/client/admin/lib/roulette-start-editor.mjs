@@ -29,7 +29,7 @@ export function rouletteStartForm(project,dealerId,videoId) {
 export function bindRouletteStart(project,inventory,dealerId,laneId,form) {
   const dealer=project.dealers.find(row=>row.id===dealerId);
   if(!rouletteStartCompositions(project,dealerId).some(lane=>lane.id===laneId))
-    throw Error('Välj en sammansättning som tillåter denna dealer och ett registrerat roulettebord.');
+    throw Error('Välj en miljö som tillåter denna dealer och ett registrerat roulettebord.');
   if(!dealer?.rouletteIdle)throw Error('Koppla roulettens grundloop innan du kopplar startfilmen.');
   const idle=inventory.videos.find(row=>row.id===dealer.rouletteIdle.videoId);
   if(!rouletteClipMatches(idle,dealerId,idleSlot))throw Error('Den kopplade roulette-grundloopen är inte tillgänglig.');
@@ -37,7 +37,7 @@ export function bindRouletteStart(project,inventory,dealerId,laneId,form) {
   const video=inventory.videos.find(row=>row.id===form.videoId);
   if(!rouletteClipMatches(video,dealerId,startSlot))throw Error('Välj en tillgänglig startfilm registrerad för denna dealer och roulette.');
   if(!rouletteStartTables(project,laneId).some(row=>row.designId===form.tableDesignId))
-    throw Error('Välj en registrerad rouletteborddesign som är tillåten i sammansättningen.');
+    throw Error('Välj en registrerad rouletteborddesign som är tillåten i miljön.');
   const profile={tableDesignId:form.tableDesignId};
   for(const key of ['durationMs','wheelImpulseMs','ballReleaseMs']) {
     if(typeof form[key]!=='string'||!/^\d+$/.test(form[key]))throw Error('Ange filmens längd, hjulimpuls och kulsläpp som hela millisekunder.');

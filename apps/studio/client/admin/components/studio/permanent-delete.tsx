@@ -4,7 +4,7 @@ import {Card,Row,Note} from '../ui/hub';
 import {Button,Loading} from '../ui/kit';
 import {ConfirmDialog} from '../ui/dialog';
 
-// Radera permanent (bolag, spelbord, scenmall): a self-contained action and two small lists, kept apart from the
+// Radera permanent (bolag, spelbord, miljö): a self-contained action and two small lists, kept apart from the
 // pages' layouts. The server (resource-delete-check, resource-delete) decides; this only shows its answer.
 type Kind='operator'|'room'|'composition';
 type Target={kind:Kind;id:string;operatorId?:string;name:string};
@@ -20,17 +20,17 @@ const blockerText:Record<string,string>={
   operator_materials:'Bolaget har eget material, som pekar på lagrade filer:',
   operator_check_unreadable:'Kontrollen kan inte läsa allt som kan peka på bolaget, så det raderas inte:',
   room_not_in_trash:'Spelbordet är inte i papperskorgen. Flytta det dit först.',
-  composition_used_by_rooms:'Scenmallen används av spelbord:',
-  composition_used_by_archived_rooms:'Scenmallen används av spelbord i papperskorgen. Radera eller byt mall på dem först:',
-  composition_assigned:'Scenmallen ingår i aktiva bolags tilldelning. Ta bort den ur tilldelningen och publicera först:',
-  composition_project_reference:'Något annat i projektet pekar fortfarande på scenmallen.',
+  composition_used_by_rooms:'Miljön används av spelbord:',
+  composition_used_by_archived_rooms:'Miljön används av spelbord i papperskorgen. Radera eller byt miljö på dem först:',
+  composition_assigned:'Miljön ingår i aktiva bolags tilldelning. Ta bort den ur tilldelningen och publicera först:',
+  composition_project_reference:'Något annat i projektet pekar fortfarande på miljön.',
 };
 const errorText:Record<string,string>={
   studio_resource_delete_blocked:'Något hindrar fortfarande raderingen. Kontrollera igen.',
   studio_delete_name_mismatch:'Namnet stämmer inte.',
   studio_conflict:'Uppgifterna har ändrats sedan kontrollen. Stäng och försök igen.',
 };
-const kindText:Record<Kind,string>={operator:'bolaget',room:'spelbordet',composition:'scenmallen'};
+const kindText:Record<Kind,string>={operator:'bolaget',room:'spelbordet',composition:'miljön'};
 async function post(action:string,body:object) {
   const response=await fetch(api+action,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(body)});
   const value=await response.json().catch(()=>null);
@@ -93,7 +93,7 @@ export function TrashPermanentDelete({disabled=false,onChanged}:{disabled?:boole
   </Card>;
 }
 
-// Scenmallar och material › Papperskorg: scene templates have no trash, so each one can be deleted when nothing uses it.
+// Miljöer och material › Papperskorg: environments have no trash, so each one can be deleted when nothing uses it.
 export function CompositionPermanentDelete({disabled=false,onChanged}:{disabled?:boolean;onChanged:()=>void}) {
   const [lanes,setLanes]=useState<{id:string;label:string}[]|null>(null),[failed,setFailed]=useState(false),[reload,setReload]=useState(0);
   useEffect(()=>{
@@ -104,11 +104,11 @@ export function CompositionPermanentDelete({disabled=false,onChanged}:{disabled?
       .catch(()=>{if(!controller.signal.aborted)setFailed(true);});
     return()=>controller.abort();
   },[reload]);
-  return <Card title="Scenmallar" aside="Radera permanent">
-    <Note className="mb-3">Scenmallar har ingen papperskorg. En scenmall går att radera när inget spelbord och ingen aktiv tilldelning använder den; kontrollen visar vad som hindrar.</Note>
-    {failed?<p role="alert" className="m-0 text-[13px]">Scenmallarna kunde inte läsas. <Button size="sm" onClick={()=>setReload(value=>value+1)}>Försök igen</Button></p>
-      :!lanes?<Loading label="Läser scenmallarna…" rows={2}/>
-      :!lanes.length?<p className="m-0 text-[13px] text-sg-muted">Inga scenmallar.</p>
+  return <Card title="Miljöer" aside="Radera permanent">
+    <Note className="mb-3">Miljöer har ingen papperskorg. En miljö går att radera när inget spelbord och ingen aktiv tilldelning använder den; kontrollen visar vad som hindrar.</Note>
+    {failed?<p role="alert" className="m-0 text-[13px]">Miljöerna kunde inte läsas. <Button size="sm" onClick={()=>setReload(value=>value+1)}>Försök igen</Button></p>
+      :!lanes?<Loading label="Läser miljöerna…" rows={2}/>
+      :!lanes.length?<p className="m-0 text-[13px] text-sg-muted">Inga miljöer.</p>
       :<div className="grid">{lanes.map(lane=><Row key={lane.id} title={lane.label} action={<PermanentDeleteButton target={{kind:'composition',id:lane.id,name:lane.label}} disabled={disabled} onDeleted={()=>{setReload(value=>value+1);onChanged();}}/>}/>)}</div>}
   </Card>;
 }
