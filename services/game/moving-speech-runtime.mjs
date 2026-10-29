@@ -266,6 +266,10 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     async prepare(input) {
       if (closing || !input) fail('moving_speech_input');
       if (!api.supports(input.dealerId)) fail('moving_speech_dealer_unavailable');
+      // Solo and shared-room contexts both name the published dealer; evidence is read with that
+      // context, so it must be this dealer's. A room context has no presentationVersion: the dealer
+      // speaks on the bank's rest frame and no deal reservation is taken (room deal speech is later).
+      if (!input.context || typeof input.context !== 'object' || input.context.dealerId !== input.dealerId) fail('moving_speech_input');
       if (!ID.test(input.requestId ?? '') || !input.owner
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
         || input.text !== input.text.trim() || input.text.length > 500 || /[\u0000-\u001f\u007f-\u009f]/.test(input.text)) fail('moving_speech_input');

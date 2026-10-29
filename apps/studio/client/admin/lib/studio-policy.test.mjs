@@ -166,7 +166,7 @@ test('Astrid deal percentages retain exact slots and reject totals over 100 or a
   assert.throws(()=>applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[5],{frequencyPercent:10}),/fyra/);
 });
 test('frequency cannot leak into a different dealer or non-deal family',()=>{
-  const f=fixture();assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:10}),/Astrid/);
+  const f=fixture();assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:10}),/Frekvens finns bara i ett utdelningsfack med frekvensstyrning/);
 });
 test('own idle schema uses supplied measured duration and preserves global policy and other dealer lines',()=>{
   const f=fixture('idle.ready','',false),before=structuredClone(f.project);

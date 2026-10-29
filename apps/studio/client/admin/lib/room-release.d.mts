@@ -28,6 +28,7 @@ export function languageLabel(value: unknown): string;
 export function limitLabel(value: unknown): string;
 export function materialReasonText(reason: unknown): string;
 export function roomReleaseErrorMessage(detail?: RoomReleaseErrorDetail): string;
+export function roomReleaseFailure(response: Response, phase?: 'read'|'publish'): Promise<RoomReleaseFailure>;
 export function roomReleaseBlocker(blocker: RoomReleaseBlocker, context?: { roomId?: string; dealerId?: string|null; rooms?: { id: string; name: string }[] }): { text: string; href: string|null; linkLabel: string|null };
 export function roomReleaseAreas(preview: RoomReleasePreview|null|undefined, options?: { dealerName?: (id: string) => string; rooms?: { id: string; name: string }[] }): { area: string; label: string; changed: boolean; rows: string[] }[];
 export function roomReleaseChangeCount(preview: RoomReleasePreview|null|undefined): number;

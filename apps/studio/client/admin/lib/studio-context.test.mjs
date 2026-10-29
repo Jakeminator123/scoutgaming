@@ -162,7 +162,7 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
     :name==='./assignment-field'?{AssignmentField:stub('data-assignment-field',props=>[props.operatorId,props.revision??'none'].join(':'))}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
-    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}
+    :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
     :name==='./room-settings-warning'?compile('../components/studio/room-settings-warning.tsx',dep=>dep.endsWith('runtime/navigation')?navigation:dep.startsWith('../ui/')?uiRequire('./'+dep.slice('../ui/'.length)):require(dep))
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
   const render=()=>{hooks.reset();const tree=module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
@@ -736,4 +736,11 @@ test('the room editor publishes through the room release and keeps the PAOW idle
   p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:7,lanes:['one','retired'],idleRefreshed:{dealerId:'paow',roomId:'other'}}));
   paow().props.onClick();await p.settle();
   assert.equal(paow().props.disabled,true,'an unconfirmed receipt blocks the next refresh until readback');
+});
+
+// The AI link uses the shared context keys (hub.tsx tabContext), so the spelbord survives a switch between the Scenes tabs.
+test('a blackjack room\'s appearance links to the AI table dialog with its company and room as shared context',async()=>{
+  const html=await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},{compositions});
+  const link=hrefs(html).find(href=>href.startsWith('/admin/scenes?tab=bordsgrafik'));
+  assert.equal(link,'/admin/scenes?tab=bordsgrafik&operator=a&room=bj');
 });
