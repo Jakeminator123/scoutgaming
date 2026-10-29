@@ -207,6 +207,21 @@ test('a stale package revision is 409 and a field outside the template rights is
   assert.equal(writes,0);assert.equal(current.revision,1);
 });
 
+test('review with a stale package revision is 409 from the API itself; review never writes to the store',async()=>{
+  // Review only reads, so the fixture's CAS in saveBrandingDraft/publishBrandingDraft never sees it:
+  // the 409 must come from the API's own check of the package revision.
+  let writes=0;
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
+  const store=withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async()=>{writes++;return current;}});
+  const api=createPartnerBrandingApi({store,readProject:async()=>assert.fail('frozen only')});
+  await draft(api,{color:'#112233'});
+  const base={operatorId,actor,action:'review',expectedDraftRevision:1};
+  await assert.rejects(api.command({...base,expectedPackageRevision:9}),error=>error.statusCode===409);
+  assert.equal(typeof (await api.command({...base,expectedPackageRevision:1})).reviewToken,'string');
+  assert.equal((await store.getBrandingDraft(operatorId)).revision,1);
+  assert.equal(writes,0);
+});
+
 test('a package changed after the read is rejected by the atomic publisher',async()=>{
   const presentation=makePresentation();
   const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};

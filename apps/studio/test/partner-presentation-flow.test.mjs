@@ -108,7 +108,9 @@ for(const lane of ['first-presentation','vip-presentation',undefined,'unknown-pr
   assert.deepEqual(f.pack(),before,'selection never mutates shared package branding');
 });
 
-test('N2 lane switching clears hidden choices from the previous presentation and preserves company branding',async()=>{
+test('N2 lane switching publishes the draft as the whole editable surface: old choices left out are dropped, company branding is preserved',async()=>{
+  // The API does not strip anything itself (both templates allow these choices); the draft replaces the
+  // editable branding, so choices the switch does not send are gone after publication.
   const f=fixture();f.setBranding({lane:f.lanes[0].id,dealer:'elin',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'});
   const saved=await f.publish({lane:f.lanes[1].id,background:f.assets[2].id});
   assert.equal(saved.branding.lane,f.lanes[1].id);assert.equal(saved.branding.background,f.assets[2].id);

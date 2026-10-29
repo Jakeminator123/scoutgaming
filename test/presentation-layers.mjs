@@ -85,6 +85,13 @@ test('switching or republishing a lane removes incompatible old design choices w
   // the draft is checked per room, and a room may only change what its template lets the company change.
   const first={...presentation.lanes[0],composition:defaultCompositionSettings()};
   const expanded={...presentation,lanes:[first,second]};
+  // Baked variant: the old lane keeps its baked composition, so its room cannot drop the company's old
+  // choices and the same switch is refused before anything is drafted or published.
+  const baked={...presentation,lanes:[presentation.lanes[0],second]};let bakedWrites=0;
+  const bakedPack={...pack,tables:['room-main','room-vip'],lanes:baked.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},baked)};
+  const bakedApi=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>bakedPack,publishPackage:async()=>{bakedWrites++;return bakedPack;}}),readProject:async()=>{throw Error('not the mutable project');}});
+  await assert.rejects(publishThroughDraft(bakedApi,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{lane:'vip-table',dealer:'astrid'}}),error=>error.statusCode===422);
+  assert.equal(bakedWrites,0);
   let current={...pack,tables:['room-main','room-vip'],lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
   const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})}),readProject:async()=>{throw Error('not the mutable project');}});
   await assert.rejects(api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding:{lane:'vip-table',background:presentation.assets[0].id}}),error=>error.statusCode===422);
