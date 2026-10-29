@@ -37,8 +37,6 @@ export function createPartnerBrandingApi(options:{
    withMutationContext?<T>(work:()=>Promise<T>,descriptor:PresentationMutation):Promise<T>;
    materials?:{listMaterials(operatorId:string):Promise<readonly unknown[]>}})=>Promise<T>,options?:{presentationMutation?:PresentationMutation}):Promise<T>;
 }):{
- read(input:{operatorId:string}):Promise<PartnerBrandingView>;
  readState(input:{operatorId:string}):Promise<PartnerBrandingView>;
  command(input:{operatorId:string;actor:string;audit?:Audit;action:'save-draft'|'review'|'publish'|'restore';expectedDraftRevision:number;expectedPackageRevision:number;branding?:Record<string,unknown>;sourcePackageRevision?:number;reviewToken?:string}):Promise<PartnerBrandingView|{reviewToken:string;draftRevision:number;packageRevision:number;branding:Record<string,unknown>;changes:{roomId:string|null;key:string;before:unknown;after:unknown}[];affectedRooms:string[]}>;
- write(input:{operatorId:string;actor:string;audit?:Audit;expectedRevision:number;branding:Record<string,unknown>}):Promise<PartnerBrandingView>;
 };

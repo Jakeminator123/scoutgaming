@@ -6,6 +6,7 @@ import {defaultCompositionSettings} from '../../../packages/presentation/contrac
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
+import {publishThroughDraft,withBrandingDrafts} from './fixtures/branding-draft-store.mjs';
 import {partnerPresentationDealerChoices} from '../lib/partner-presentation-choices.mjs';
 import {partnerLaneState} from '../lib/partner-package-view.mjs';
 import {createGameEntrySelector} from '../../../packages/presentation/server/game-entry-selector.mjs';
@@ -33,9 +34,9 @@ function fixture({layered=false,fullFrame=false}={}) {
   if(layered)gameLanes.push({schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'});
   const room=(id,presentationLaneId,gameLaneId=layered?'portrait-linnea':'portrait-astrid',operatorId='north',state='live')=>({schemaVersion:2,id,name:id,presentationLaneId,gameLaneId,operatorId,state});
   const administration={gameLane:layered?'portrait-linnea':'portrait-astrid',gameLanes,rooms:lanes.map((row,index)=>room(index?'room-vip':'room-first',row.id))};
-  const store={getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
+  const store=withBrandingDrafts({getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
     assert.equal(input.expectedRevision,pack.revision);pack={...input,revision:pack.revision+1};return structuredClone(pack);
-  }};
+  }});
   const readAdministration=async()=>({revision:'admin-frozen',value:structuredClone(administration)});
   const api=createPartnerBrandingApi({store,readAdministration,readProject:()=>assert.fail('mutable project must not select N2 content'),
     withWriteContext:work=>work({store,readAdministration,reauthorize:async()=>true})});
@@ -46,12 +47,15 @@ function fixture({layered=false,fullFrame=false}={}) {
     for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g))dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
     return gameLaneFromDocument(dataset);
   }
-  return {assets,lanes,presentation,administration,api,select,room,document,pack:()=>structuredClone(pack),setBranding:branding=>{pack={...pack,branding:{...pack.branding,...branding}};},addTables:ids=>{pack.tables.push(...ids);}};
+  // write() published directly; the company now saves a draft, reviews it and publishes it with the review token.
+  const publish=(branding,{expectedPackageRevision=1,expectedDraftRevision=0}={})=>publishThroughDraft(api,{operatorId:'north',actor:'partner',branding,expectedPackageRevision,expectedDraftRevision});
+  const draft=(branding,{expectedPackageRevision=1,expectedDraftRevision=0}={})=>api.command({operatorId:'north',actor:'partner',action:'save-draft',branding,expectedPackageRevision,expectedDraftRevision});
+  return {assets,lanes,presentation,administration,api,publish,draft,select,room,document,pack:()=>structuredClone(pack),setBranding:branding=>{pack={...pack,branding:{...pack.branding,...branding}};},addTables:ids=>{pack.tables.push(...ids);}};
 }
 
 test('N2 frozen allowed choices save once and reach actual HTML/client with N1 geometry and room IDs intact',async()=>{
   const f=fixture({layered:true}),before=f.pack();
-  const saved=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lanes[0].id,dealer:'nora',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'}});
+  const saved=await f.publish({lane:f.lanes[0].id,dealer:'nora',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'});
   assert.equal(saved.packageRevision,2);assert.deepEqual(saved.dealerChoices[f.lanes[0].id],['linnea','nora','elin']);
   assert.deepEqual(f.pack().tables,before.tables);assert.deepEqual(readPackagePresentation(f.pack()),f.presentation);
   let {selection}=await f.select('operator=north&table=room-first');selection=f.document(selection);
@@ -66,23 +70,25 @@ test('N2 frozen allowed choices save once and reach actual HTML/client with N1 g
   assert.equal(switched.dealer,'nora');assert.equal(switched.roomId,'room-first');assert.equal(switched.operator,'north');
   assert.equal(switched.presentation,'local');assert.equal(next.navigateDealer,null);
   assert.equal(next.tableValue,f.assets[1].id);assert.equal(next.backgroundValue,f.assets[3].id);
-  assert.equal((await f.api.read({operatorId:'north'})).branding.dealer,'nora');
+  assert.equal((await f.api.readState({operatorId:'north'})).branding.dealer,'nora');
 });
 
 test('dealer choices require published compatible live rooms and exclude foreign, missing and retired adapters',async()=>{
   const f=fixture(),id=f.lanes[0].id;
   f.administration.rooms.push(f.room('room-portrait',id,'portrait-astrid'),f.room('room-retired',id,'indexed'));
   f.addTables(['room-portrait','room-retired']);
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[id],['astrid','elin']);
-  const before=f.pack();await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:id,dealer:'foreign'}}),error=>error.statusCode===422);
+  assert.deepEqual((await f.api.readState({operatorId:'north'})).dealerChoices[id],['astrid','elin']);
+  const before=f.pack();await assert.rejects(f.draft({lane:id,dealer:'foreign'}),error=>error.statusCode===422);
   assert.deepEqual(f.pack(),before);
   f.administration.rooms.find(row=>row.id==='room-portrait').state='preview';
   f.administration.rooms.push(f.room('room-foreign',id,'portrait-astrid','south'),f.room('room-unpublished',id,'portrait-astrid'));
   f.addTables(['room-foreign','room-missing']);
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[id],['astrid','elin']);
+  assert.deepEqual((await f.api.readState({operatorId:'north'})).dealerChoices[id],['astrid','elin']);
   f.administration.rooms=f.administration.rooms.filter(row=>row.presentationLaneId!==id||row.state!=='live'||row.operatorId!=='north'||!f.pack().tables.includes(row.id));
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[id],[]);
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:id,dealer:null}}),error=>error.statusCode===409);
+  assert.deepEqual((await f.api.readState({operatorId:'north'})).dealerChoices[id],[]);
+  // The template's own default dealer is no choice either while no compatible live room offers it.
+  const unchanged=f.pack();await assert.rejects(f.draft({lane:id,dealer:'astrid'}),error=>error.statusCode===409);
+  assert.deepEqual(f.pack(),unchanged);
 });
 
 for(const lane of ['first-presentation','vip-presentation',undefined,'unknown-presentation'])test('runtime layer overrides are bound to '+String(lane)+' while global company branding survives',async()=>{
@@ -102,12 +108,14 @@ for(const lane of ['first-presentation','vip-presentation',undefined,'unknown-pr
   assert.deepEqual(f.pack(),before,'selection never mutates shared package branding');
 });
 
-test('N2 lane switching clears hidden choices from the previous presentation and preserves company branding',async()=>{
+test('N2 lane switching publishes the draft as the whole editable surface: old choices left out are dropped, company branding is preserved',async()=>{
+  // The API does not strip anything itself (both templates allow these choices); the draft replaces the
+  // editable branding, so choices the switch does not send are gone after publication.
   const f=fixture();f.setBranding({lane:f.lanes[0].id,dealer:'elin',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'});
-  const saved=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lanes[1].id,background:f.assets[2].id}});
+  const saved=await f.publish({lane:f.lanes[1].id,background:f.assets[2].id});
   assert.equal(saved.branding.lane,f.lanes[1].id);assert.equal(saved.branding.background,f.assets[2].id);
   for(const key of ['dealer','table','color'])assert.equal(saved.branding[key],undefined);
-  assert.equal(saved.branding.name,'North');assert.equal(saved.branding.primary,'#abcdef');
+  assert.equal(f.pack().branding.name,'North');assert.equal(f.pack().branding.primary,'#abcdef');
   assert.equal(partnerLaneState(f.lanes[0],saved.branding,f.assets).layers.dealer.selected,'astrid');
 });
 
@@ -115,10 +123,11 @@ test('permissions remain bound to the selected frozen presentation and fresh pac
   const f=fixture();const restricted=f.presentation.lanes[1];restricted.operatorAdjustable=[];
   // Reconstruct a frozen package with this N1 grant, rather than changing latest Studio.
   f.setBranding({_scoutPresentation:withPackagePresentation({},f.presentation)._scoutPresentation});
-  const before=f.pack();await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:restricted.id,background:f.assets[2].id}}),error=>error.statusCode===422);
+  const before=f.pack();await assert.rejects(f.draft({lane:restricted.id,background:f.assets[2].id}),error=>error.statusCode===422);
   assert.deepEqual(f.pack(),before);
-  await f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lanes[0].id,table:f.assets[1].id}});
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lanes[0].id,table:f.assets[0].id}}),error=>error.statusCode===409);
+  await f.publish({lane:f.lanes[0].id,table:f.assets[1].id});
+  // The draft chain is current (revision 2 after save and publish); only the package revision is stale.
+  await assert.rejects(f.draft({lane:f.lanes[0].id,table:f.assets[0].id},{expectedPackageRevision:1,expectedDraftRevision:2}),error=>error.statusCode===409);
   assert.equal(f.pack().revision,2);assert.equal(f.pack().branding.table,f.assets[1].id);
 });
 
