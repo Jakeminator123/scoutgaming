@@ -7,6 +7,37 @@ import { isDocumentationPath } from './documentation-paths.mjs';
 // Only prose with no runtime role takes the short PR path. Unknown paths,
 // runtime prompts, machine registries and workflow changes run the full suite.
 
+// The regression legs of .github/workflows/croupier.yml. The workflow reads its
+// matrix from the classifier output, so the leg table lives here, next to the
+// scope table that selects legs; test/ci-changes.mjs proves the legs partition
+// the suites of .githooks/pre-commit-full (engine and container run separately).
+export const REGRESSION_LEGS = Object.freeze([
+  { leg: 'studio', suites: 'studio' },
+  { leg: 'admin-contracts', suites: 'admin contracts', policy: true },
+  { leg: 'database-engine', suites: 'database', postgres: true },
+  { leg: 'presentation', suites: 'presentation' },
+  { leg: 'access', suites: 'access', build: true },
+  { leg: 'speech-gameplay', suites: 'speech gameplay', speech_node: true, lipsync: true },
+  { leg: 'browser', suites: '', browser: true },
+].map(Object.freeze));
+export const LIPSYNC_LEG = 'speech-gameplay';
+
+// Scope matrix (which regression legs a classified PR diff runs). Unknown or
+// shared paths (packages/*, test/fixtures/*, .githooks, tools, ops) are 'full'.
+//   documentation    reviewed prose only                      no legs; documentation job
+//   openclaw-deploy  only services/openclaw/lab/deploy/**     admin-contracts, access (+ gateway container)
+//   full             everything else                          every leg
+// openclaw-deploy is safe because the Gateway image copies only deploy/ files,
+// and deploy/ is imported solely by the access suite (deploy/*.test.mjs,
+// test/backup-render-state.mjs, the lab check) and scanned by the contracts
+// suite (no-sqlite, orphan tests). lab/src/ is copied into Postgres fixtures,
+// so it stays 'full'.
+export const SCOPE_LEGS = Object.freeze({
+  documentation: Object.freeze([]),
+  'openclaw-deploy': Object.freeze(['admin-contracts', 'access']),
+  full: Object.freeze(REGRESSION_LEGS.map(({ leg }) => leg)),
+});
+
 export function parseDiff(raw) {
   if (raw === '') return [];
   if (!raw.endsWith('\0')) throw Error('Incomplete CI diff');
@@ -21,12 +52,27 @@ export function parseDiff(raw) {
   return changes;
 }
 
+// Plain file edits (no symlinks, modes or type changes) with a safe repository path.
+function ordinaryChange({ before, after, status, path }) {
+  return /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode))
+    && typeof path === 'string' && path !== '' && !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part));
+}
+
 export function documentationOnly(changes) {
-  return changes.length > 0 && changes.every(({ before, after, status, path }) =>
-    /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode)) &&
-    !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part)) &&
-    isDocumentationPath(path)
-  );
+  return changes.length > 0 && changes.every(change => ordinaryChange(change) && isDocumentationPath(change.path));
+}
+
+export function openClawDeployOnly(changes) {
+  return changes.length > 0 && changes.every(change => ordinaryChange(change) && change.path.startsWith('services/openclaw/lab/deploy/'));
+}
+
+export function scopeOf(changes) {
+  return documentationOnly(changes) ? 'documentation' : openClawDeployOnly(changes) ? 'openclaw-deploy' : 'full';
+}
+
+export function regressionLegs(scope) {
+  const names = SCOPE_LEGS[scope] ?? SCOPE_LEGS.full;
+  return REGRESSION_LEGS.filter(({ leg }) => names.includes(leg));
 }
 
 function migrationSensitivePath(path) {
@@ -65,13 +111,39 @@ export function movingWorkerRequired(changes) {
     || path === '.github/workflows/moving-gpu-build.yml');
 }
 
+export function gatewayContainerRequired(changes) {
+  // The pinned Gateway image is built from services/openclaw/lab with only deploy/
+  // inputs (Dockerfile.gateway COPY lines). Its own test, the lab root files, the
+  // hook registry and the workflow that runs it also count; uncertain input stays strict.
+  return !changes.length || changes.some(({path}) =>
+    !path || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))
+    || path.startsWith('services/openclaw/lab/deploy/')
+    || /^services\/openclaw\/lab\/[^/]+$/.test(path)
+    || path.startsWith('.github/') || path.startsWith('.githooks/')
+    || path === 'tools/regression-group.mjs');
+}
+
+const LONG_LIVED_REFS = ['refs/heads/main', 'refs/heads/preview'];
+
+function readEvent(env) {
+  try { return JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')); } catch { return null; }
+}
+
+// A draft PR runs only the classifier and the targeted job (precommit-checks on
+// the merge diff); the gate is then named "CI (utkast)" so the required check
+// CI stays missing until the PR is ready. Anything unreadable counts as ready.
+export function draftPullRequest({ env = process.env } = {}) {
+  if (env.GITHUB_EVENT_NAME !== 'pull_request' || !env.GITHUB_EVENT_PATH) return false;
+  return readEvent(env)?.pull_request?.draft === true;
+}
+
 export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
-  // Main and manual runs always verify the complete product after integration.
-  const complete = {scope: 'full', migration: true, moving: true};
+  // Long-lived branches (main, preview) and manual runs always verify the complete product after integration.
+  const complete = {scope: 'full', migration: true, moving: true, gateway: true, draft: false};
   const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, stdio: ['ignore','pipe','pipe'] });
   // Rebuilding an unchanged isolated worker image adds no new acceptance.
-  // Only a complete, verified push range may skip that image build on main.
-  if (env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/main'
+  // Only a complete, verified push range may skip that image build on main/preview.
+  if (env.GITHUB_EVENT_NAME === 'push' && LONG_LIVED_REFS.includes(env.GITHUB_REF)
     && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '') && env.GITHUB_EVENT_PATH) {
     try {
       const event = JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
@@ -92,19 +164,35 @@ export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Checkout's PR merge commit includes current main. Comparing its first
   // parent avoids misclassifying an old branch or looking only at its last push.
   const changes = parseDiff(git(['diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', '-z', 'HEAD^1', 'HEAD', '--']));
-  return {scope: documentationOnly(changes) ? 'documentation' : 'full', migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes)};
+  return {scope: scopeOf(changes), migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes),
+    gateway: gatewayContainerRequired(changes), draft: draftPullRequest({ env })};
 }
 
 export function ciScope(options) {
   return ciSelection(options).scope;
 }
 
+// GITHUB_OUTPUT lines for the workflow: scope, booleans, the leg list and the
+// dealer-regression matrix (fromJSON in the workflow).
+export function ciOutputs(selection) {
+  const legs = regressionLegs(selection.scope);
+  return {
+    scope: selection.scope, migration: String(selection.migration), moving: String(selection.moving),
+    gateway: String(selection.gateway), draft: String(selection.draft),
+    legs: JSON.stringify(legs.map(({ leg }) => leg)), matrix: JSON.stringify({ include: legs }),
+  };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const {scope, migration, moving} = ciSelection();
-  console.log(`CI scope: ${scope}; production migration readiness: ${migration}; Moving image check: ${moving}`);
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\nmigration=${migration}\nmoving=${moving}\n`);
+  const selection = ciSelection();
+  const outputs = ciOutputs(selection);
+  const {scope, migration, moving, gateway, draft} = outputs;
+  console.log(`CI scope: ${scope}; draft: ${draft}; regression legs: ${outputs.legs}; production migration readiness: ${migration}; Moving image check: ${moving}; Gateway container: ${gateway}`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(outputs).map(([key, value]) => `${key}=${value}\n`).join(''));
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-    `### Verification scope: ${scope}\n\n${scope === 'documentation'
+    `### Verification scope: ${scope}${draft === 'true' ? ' (draft: targeted checks only, no CI check until ready for review)' : ''}\n\n${scope === 'documentation'
       ? 'Prose-only PR: environment registry, delivery policy and documentation checks. No runtime acceptance is claimed.'
-      : `Full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks. Live migration readiness: ${migration ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
+      : draft === 'true'
+        ? 'Draft PR: precommit-checks on the merge diff only. The full regression runs when the PR is marked ready for review.'
+        : `Regression legs: ${JSON.parse(outputs.legs).join(', ')}${scope === 'full' ? ' (full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks)' : ''}. Gateway container: ${gateway}. Live migration readiness: ${migration === 'true' ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
 }
