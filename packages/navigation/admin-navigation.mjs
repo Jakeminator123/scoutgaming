@@ -17,7 +17,8 @@ export const adminDealerTabs = [
   {id:'klipp',label:'Klippkarta'},{id:'tal',label:'Röst och tal'},{id:'landningar',label:'Landningar'},
   {id:'anvands',label:'Används av'},{id:'installningar',label:'Inställningar'},
 ];
-export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','Mät landningar','Röst och tal','Godkänn','Tilldela'];
+// Five steps, each with a real done state: timing is measured in the clip's panel, and no dealer approval is stored.
+export const adminDealerSteps = ['Skapa','Lägg till klipp','Klipp per fack','Röst och tal','Tilldela'];
 // Miljöer och material: two tabs. A miljö opens in its own editor (`composition=<id>`); Material filters by kind.
 export const adminSceneTabs = [{id:'miljoer',label:'Miljöer'},{id:'material',label:'Material'}];
 export const adminMaterialFilters = [{id:'bakgrund',label:'Bakgrund'},{id:'bordsgrafik',label:'Bordsgrafik'},{id:'arkiverat',label:'Arkiverat'}];
