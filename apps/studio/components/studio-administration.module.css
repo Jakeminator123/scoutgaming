@@ -1,6 +1,6 @@
-.administration { composes: workspace from './studio-theme.module.css'; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; min-width: 0; color: var(--text); font-size: 14px; line-height: 1.6; }
-.administration > :not(.headerActions) { grid-column: 1 / -1; }
-.administration :global(.sg-page-head) { grid-column: 1; grid-row: 1; padding: 4px 16px 0 0; }
+.administration { composes: workspace from './studio-theme.module.css'; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; min-width: 0; line-height: 1.6; }
+:is(.administration) > :not(.headerActions) { grid-column: 1 / -1; }
+:is(.administration) :global(.sg-page-head) { grid-column: 1; grid-row: 1; padding: 4px 16px 0 0; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .header h1 { font-size: 23px; margin: 0 0 5px; letter-spacing: -.6px; }
 .section h3, .section h4 { margin: 0 0 10px; }
@@ -10,12 +10,12 @@
 .headerActions { grid-column: 2; grid-row: 1; align-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .areaLabel { align-self:center; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-right:12px; }
 .groups { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
-.administration button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); min-height: 40px; padding: 9px 14px; cursor: pointer; font: inherit; }
-.administration button:not(:disabled):hover { border-color: var(--teal); }
+:is(.administration) button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); min-height: 40px; padding: 9px 14px; cursor: pointer; font: inherit; }
+:is(.administration) button:not(:disabled):hover { border-color: var(--teal); }
 .groups button { border-color: transparent; background: transparent; color: var(--muted); font-size: 13px; }
 .groups button[aria-pressed="true"] { background: var(--panel-hover); border-color: var(--line); color: var(--text); }
-.administration button:disabled { opacity: .55; cursor: not-allowed; }
-.administration :is(button, input, select, summary, a, [tabindex]):focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+:is(.administration) button:disabled { opacity: .55; cursor: not-allowed; }
+:is(.administration) :is(button, input, select, summary, a, [tabindex]):focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 .sections { display: grid; gap: 14px; min-width: 0; }
 .section { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 20px; background: var(--panel); overflow-wrap: anywhere; }
 .section > p { max-width: 90ch; }
@@ -30,16 +30,16 @@
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); align-items: end; gap: 12px; padding-top: 12px; }
 .form h4 { grid-column: 1 / -1; }
 .disclosure { min-width: 0; margin-top: 12px; }
-.administration summary { cursor: pointer; min-height: 40px; padding: 8px 0; line-height: 1.6; }
+:is(.administration) summary { cursor: pointer; min-height: 40px; padding: 8px 0; line-height: 1.6; }
 .disclosure > summary { color: var(--teal); font-size: 14px; }
 .disclosure[open] > summary { margin-bottom: 8px; }
 .disclosure form { margin-top: 10px; }
-.administration label { display: grid; gap: 7px; font-size: 14px; }
-.administration input, .administration select { color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; min-width: 0; max-width: 100%; }
-.administration input:not([type="checkbox"]), .administration select { min-height: 42px; }
-.administration fieldset { border: 1px solid var(--line); border-radius: 7px; padding: 12px; min-width: 0; }
-.administration legend { padding: 0 6px; }
-.administration code { font-size: 13px; overflow-wrap: anywhere; user-select: text; }
+:is(.administration) label { display: grid; gap: 7px; font-size: 14px; }
+:is(.administration) input, :is(.administration) select { color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; min-width: 0; max-width: 100%; }
+:is(.administration) input:not([type="checkbox"]), :is(.administration) select { min-height: 42px; }
+:is(.administration) fieldset { border: 1px solid var(--line); border-radius: 7px; padding: 12px; min-width: 0; }
+:is(.administration) legend { padding: 0 6px; }
+:is(.administration) code { font-size: 13px; overflow-wrap: anywhere; user-select: text; }
 .checkbox { display: flex !important; align-items: center; gap: 8px !important; margin: 8px 0; }
 .tableWrap { min-width: 0; max-width: 100%; overflow-x: auto; }
 .tableWrap table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6; }
@@ -66,8 +66,8 @@
 .shell { composes: workspace from './studio-theme.module.css'; padding: 22px 24px 40px; max-width: 1368px; margin: auto; min-height: calc(100vh - 64px); }
 .embedded { composes: workspace from './studio-theme.module.css'; width: 100%; min-width: 0; }
 @media (max-width: 640px) {
-  .embedded .administration { grid-template-columns: minmax(0, 1fr); }
-  .embedded .administration :global(.sg-page-head) { grid-column: 1; grid-row: auto; padding-right: 0; }
-  .embedded .headerActions { grid-column: 1; grid-row: auto; justify-content: flex-start; }
+  :is(.embedded) .administration { grid-template-columns: minmax(0, 1fr); }
+  :is(.embedded) :is(.administration) :global(.sg-page-head) { grid-column: 1; grid-row: auto; padding-right: 0; }
+  :is(.embedded) .headerActions { grid-column: 1; grid-row: auto; justify-content: flex-start; }
 }
 @media (max-width: 640px) { .shell { padding: 18px 14px 32px; } .section { padding: 14px; } .groups button { flex: 1 1 45%; } .row { display: grid; grid-template-columns: minmax(0, 1fr); } .headerActions { width: 100%; } }

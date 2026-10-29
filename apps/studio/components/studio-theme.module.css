@@ -18,19 +18,22 @@
   background: transparent;
   font-size: 14px;
 }
-.workspace, .workspace * { box-sizing: border-box; }
-.workspace :is(button, input, select, textarea) { font: inherit; min-width: 0; max-width: 100%; }
-.workspace :is(input, select, textarea) { background: var(--bg); color: var(--text); border-color: var(--line); }
-.workspace :is(button, a):focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 3px; }
-.workspace :global(.primary-button) { min-width: 0; min-height: 36px; max-width: 100%; padding: 9px 14px; white-space: normal; overflow-wrap: anywhere; border-radius: 7px; box-shadow: none; }
-.workspace :global(.primary-button):hover:not(:disabled) { transform: none; box-shadow: none; }
-.workspace :global(.text-button) { min-height: 32px; padding: 5px 0; white-space: normal; overflow-wrap: anywhere; color: var(--teal); }
-.workspace :global(.eyebrow) { color: var(--muted); letter-spacing: .08em; }
-.workspace :global(.inspector) { background: var(--panel); border-color: var(--line); box-shadow: none; transform: none; animation: none; }
-.workspace :global(.inspector-heading) { background: transparent; border-color: var(--line); }
-.workspace :global(.inspector-content) { max-height: none; }
-.workspace :global(.variant-option) { background: var(--panel-soft); color: var(--text); border-color: var(--line); white-space: normal; }
-.workspace :global(.variant-option):hover { transform: none; background: var(--panel-hover); }
-.workspace :global(.variant-option.active) { border-color: var(--teal); box-shadow: none; }
-.workspace :global(.panel) { background: var(--panel); border-color: var(--line); }
-.workspace :global(.field) { color: var(--muted); }
+/* Regler för ättlingar skrivs med :is(.workspace): samma selektor och specificitet som .workspace,
+   men esbuilds composes-kontroll (undefined-composes-from) räknar då bara rotklassens egna värden.
+   Klasser som komponerar workspace använder samma form för sina ättlingar. */
+.workspace, :is(.workspace) * { box-sizing: border-box; }
+:is(.workspace) :is(button, input, select, textarea) { font: inherit; min-width: 0; max-width: 100%; }
+:is(.workspace) :is(input, select, textarea) { background: var(--bg); color: var(--text); border-color: var(--line); }
+:is(.workspace) :is(button, a):focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 3px; }
+:is(.workspace) :global(.primary-button) { min-width: 0; min-height: 36px; max-width: 100%; padding: 9px 14px; white-space: normal; overflow-wrap: anywhere; border-radius: 7px; box-shadow: none; }
+:is(.workspace) :global(.primary-button):hover:not(:disabled) { transform: none; box-shadow: none; }
+:is(.workspace) :global(.text-button) { min-height: 32px; padding: 5px 0; white-space: normal; overflow-wrap: anywhere; color: var(--teal); }
+:is(.workspace) :global(.eyebrow) { color: var(--muted); letter-spacing: .08em; }
+:is(.workspace) :global(.inspector) { background: var(--panel); border-color: var(--line); box-shadow: none; transform: none; animation: none; }
+:is(.workspace) :global(.inspector-heading) { background: transparent; border-color: var(--line); }
+:is(.workspace) :global(.inspector-content) { max-height: none; }
+:is(.workspace) :global(.variant-option) { background: var(--panel-soft); color: var(--text); border-color: var(--line); white-space: normal; }
+:is(.workspace) :global(.variant-option):hover { transform: none; background: var(--panel-hover); }
+:is(.workspace) :global(.variant-option.active) { border-color: var(--teal); box-shadow: none; }
+:is(.workspace) :global(.panel) { background: var(--panel); border-color: var(--line); }
+:is(.workspace) :global(.field) { color: var(--muted); }
