@@ -1,5 +1,5 @@
-// Spelare: menyvalet är dolt tills spelare kopplats till bolaget (servern kontrollerar
-// fortfarande players.read på adressen). Den som ändå öppnar sidan får en kort rad.
+// Spelare: ett ärligt tomläge tills spelare kopplats till bolaget (steg F). Servern
+// kontrollerar players.read för menyvalet och adressen.
 import React from 'react';
 import { Users } from 'lucide-react';
 import { Empty, Page } from './ui.jsx';
