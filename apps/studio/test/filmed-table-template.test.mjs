@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FILMED_TABLE_BOX_PAD,filmedTableRequestSize,filmedTableSvg,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
+import sharp from 'sharp';
+import {AI_TABLE_FILL,FILMED_TABLE_BOX_PAD,filmedTableBody,filmedTableFit,filmedTableReach,filmedTableRequestSize,filmedTableSvg,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
+import {landingCheck,tableLandingZones} from '../lib/ai-table-landing-check.mjs';
+import {AI_TABLE_STYLES} from '../lib/ai-table-style.mjs';
 import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {stageGeometry,tableRect} from '../../../packages/presentation/compositor/geometry.js';
@@ -91,7 +94,7 @@ test('renderer size keeps the template aspect in multiples of 16 within the mode
 
 test('the SVG parts carry the exact boxes and no text',()=>{
   const template=filmedTableTemplate('paow');
-  for (const part of ['reference','mask','boxes']) {
+  for (const part of ['reference','surface','mask','boxes']) {
     const svg=filmedTableSvg(template,part);
     assert.match(svg,new RegExp(`^<svg xmlns="http://www.w3.org/2000/svg" width="${template.canvas.width}" height="${template.canvas.height}"`));
     assert.doesNotMatch(svg,/<text|<image|href=/);
@@ -99,4 +102,73 @@ test('the SVG parts carry the exact boxes and no text',()=>{
   const boxes=filmedTableSvg(template,'boxes');
   for (const seat of [...template.seats,template.dealer]) assert.ok(boxes.includes(`<rect x="${seat.box.x}" y="${seat.box.y}" width="${seat.box.width}" height="${seat.box.height}"`));
   assert.throws(()=>filmedTableSvg(template,'other'));
+});
+
+test('the table width follows the dealer\'s reach: boxes fill 70-80 % and still land exactly on the filmed landings',()=>{
+  // Default placement: the boxes fill 89 % of the graphic, so the table widens around its centre.
+  const fit=filmedTableFit('paow');
+  assert.equal(fit.changed,true);assert.ok(Math.abs(fit.current.share-.8926)<.001);
+  assert.ok(Math.abs(fit.suggested.share-AI_TABLE_FILL.target)<.005,String(fit.suggested.share));
+  // Bordsbredd %: 119 % on the phone and 37.7 % on desktop instead of 100 % and 31.6 %.
+  assert.deepEqual([fit.suggested.composition.mobile.table.width,fit.suggested.composition.desktop.table.width].map(value=>Math.round(value*1000)/1000),[1.19,.377]);
+  for (const layout of ['mobile','desktop']) for (const key of ['x','y']) assert.equal(fit.suggested.composition[layout].table[key],fit.current.composition[layout].table[key]);
+  const template=filmedTableTemplate('paow',{composition:fit.suggested.composition});
+  for (const layout of ['mobile','desktop']) for (const point of scenePoints(template,fit.suggested.composition,layout)) {
+    assert.ok(Math.abs(point.box.x-point.card.x)<.05&&Math.abs(point.box.y-point.card.y)<.05,`${layout} ${point.id}`);
+  }
+  // The table-template draft's 50 % is too wide (boxes 56 %): it narrows to the same table.
+  const facit=defaultCompositionSettings();facit.desktop.table={width:.5,x:0,y:.35};facit.mobile.table={width:1.58,x:0,y:.35};
+  const narrow=filmedTableFit('paow',facit);
+  assert.ok(narrow.current.share<.6&&narrow.changed);assert.ok(Math.abs(narrow.suggested.share-.75)<.005);
+  assert.ok(Math.abs(narrow.suggested.composition.desktop.table.width-fit.suggested.composition.desktop.table.width)<.002,'one reach, one width');
+  // Inside the range nothing changes; no profile gives no suggestion.
+  const kept=filmedTableFit('paow',fit.suggested.composition);
+  assert.equal(kept.changed,false);assert.deepEqual(kept.suggested.composition,fit.suggested.composition);
+  assert.equal(filmedTableFit('astrid'),null);assert.equal(filmedTableFit('paow',{mobile:{}}),null);
+  assert.deepEqual(filmedTableReach(template),{...filmedTableReach(template),share:fit.suggested.share});
+});
+
+// Point in polygon (even-odd) for the body's closed outlines.
+function inside([x,y],polygon) {
+  let hit=false;
+  for (let i=0,j=polygon.length-1;i<polygon.length;j=i++) {
+    const [xi,yi]=polygon[i],[xj,yj]=polygon[j];
+    if ((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) hit=!hit;
+  }
+  return hit;
+}
+test('the table body is a half-moon whose felt holds every box, with rail, apron and a pedestal down to the frame',()=>{
+  const fit=filmedTableFit('paow'),template=filmedTableTemplate('paow',{composition:fit.suggested.composition}),body=filmedTableBody(template);
+  assert.equal(body.open,false);assert.ok(body.exponent>=2&&body.exponent<=8);
+  const felt=[[body.centre-body.half,body.top],[body.centre+body.half,body.top],...[...body.edge].reverse()];
+  for (const seat of [...template.seats,template.dealer]) for (const corner of [[seat.box.x,seat.box.y],[seat.box.x+seat.box.width,seat.box.y],
+    [seat.box.x,seat.box.y+seat.box.height],[seat.box.x+seat.box.width,seat.box.y+seat.box.height]]) assert.ok(inside(corner,felt),`${seat.id??'dealer'} ${corner}`);
+  // The player sits close: the felt edge is just past the box row at the centre, the rail right after it.
+  const four=template.seats.find(seat=>seat.id==='4'),centre=body.edge.reduce((best,row)=>Math.abs(row[0]-body.centre)<Math.abs(best[0]-body.centre)?row:best);
+  const below=centre[1]-(four.box.y+four.box.height);
+  assert.ok(below>0&&below<template.card.height*.5,String(below));
+  // The ends turn up to the back edge just behind the dealer's spot; the rail is outside the felt edge.
+  for (const line of [body.edge,body.inlayEdge,body.railEdge,body.apronEdge]) { assert.equal(line[0][1],body.top);assert.equal(line.at(-1)[1],body.top); }
+  assert.ok(body.top<template.dealer.box.y&&body.top>=template.felt.top);
+  for (const [index,[x,y]] of body.edge.entries()) assert.ok(body.railEdge[index][1]>=y-.01&&Math.abs(body.railEdge[index][0]-body.centre)>=Math.abs(x-body.centre)-.01);
+  assert.ok(body.pedestal&&body.pedestal.bottom===template.canvas.height&&body.pedestal.top<template.canvas.height);
+  // Boxes over nearly the whole graphic (the default 89 %): no room for the turn, the rail runs off both sides.
+  const open=filmedTableBody(filmedTableTemplate('paow'));
+  assert.equal(open.open,true);assert.equal(open.edge[0][0],0);assert.equal(open.edge.at(-1)[0],1215);
+});
+
+test('the 3D mock-up keeps the landings calm for every style (landing check), and the mask covers the whole body',async()=>{
+  const fit=filmedTableFit('paow'),template=filmedTableTemplate('paow',{composition:fit.suggested.composition});
+  for (const [id,style] of Object.entries(AI_TABLE_STYLES)) {
+    const image=sharp(Buffer.from(filmedTableSvg(template,'surface',{look:style.look??undefined})));
+    const check=await landingCheck(image,tableLandingZones(template),{stroke:style.stroke});
+    assert.equal(check.ok,true,`${id}: ${JSON.stringify(check.worst)}`);
+  }
+  const {data,info}=await sharp(Buffer.from(filmedTableSvg(template,'mask'))).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const alpha=(x,y)=>data[(Math.round(y)*info.width+Math.round(x))*4+3];
+  for (const seat of [...template.seats,template.dealer]) assert.equal(alpha(seat.center.x,seat.center.y),255);
+  const body=filmedTableBody(template);
+  assert.equal(alpha(body.centre,body.railEdge[48][1]-2),255,'the rail');assert.equal(alpha(body.centre,template.canvas.height-2),255,'the pedestal');
+  assert.equal(alpha(4,4),0);assert.equal(alpha(4,template.canvas.height-2),0);assert.equal(alpha(body.centre,body.top-4),0,'behind the back edge');
+  assert.throws(()=>filmedTableSvg(template,'reference',{look:{felt:'red'}}),/invalid_table_look/);
 });

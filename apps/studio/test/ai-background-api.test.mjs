@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,aiImageEnabled,aiImageSetup,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
 import {filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
-import {AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
+import {AI_BACKGROUND_CAMERA,AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
+import {NO_FLOOR_MESSAGE} from '../lib/ai-table-landing-check.mjs';
+import {stageGeometry,tableRect} from '../../../packages/presentation/compositor/geometry.js';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 // No real provider call anywhere: every test injects fetchImpl.
@@ -154,6 +156,8 @@ test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the 
     const [part,...images]=sent.input[0].content,text=part.text;
     assert.equal(part.type,'input_text');
     for (const phrase of ['1920x1080','x 656-1264','PHONE CROP','DEALER SAFE AREA','TABLE SAFE AREA','text, letters, digits','logos','people, faces','playing cards, chips, markers','amber, walnut',
+      'CAMERA (fixed','dealer camera at the dealer\'s eye height','HORIZON at y 486 (45 %)-540 (50 %)','FLOOR: the back wall meets the floor','about y 648 (60 %)','bird\'s-eye',
+      'LIGHT:','y 108 (10 %)-378 (35 %)','DEPTH: slight depth of field','THEME:','never move the camera','chairs, stools',
       'Lugn kvällsstudio med mjukt sidoljus',`VARIATION ${index+1} of 2`]) assert.ok(text.includes(phrase),phrase);
     // The reference photo goes along, re-encoded in memory without its metadata.
     assert.equal(images.length,1);assert.equal(images[0].type,'input_image');assert.match(images[0].image_url,/^data:image\/jpeg;base64,/);
@@ -213,14 +217,17 @@ test('table mode sends the computed landing template and draws the boxes exactly
   assert.deepEqual([proposal.width,proposal.height],[template.canvas.width,template.canvas.height]);
   const sent=calls[0].body,[brief,landing]=sent.input[0].content;
   assert.equal(sent.tools[0].action,'edit');assert.equal(sent.tools[0].size,`${size.width}x${size.height}`);
-  assert.match(brief.text,/landing template/);assert.match(brief.text,/FORBIDDEN: text, letters, digits/);assert.match(brief.text,/painted box outlines/);
+  assert.match(brief.text,/rendered 3D mock-up/);assert.match(brief.text,/FORBIDDEN: text, letters, digits/);assert.match(brief.text,/painted box outlines/);
+  assert.match(brief.text,/LOOK: Classic casino/);assert.match(brief.text,/"Grön filt".*"Lila neon".*"Ljus ek"/s,'the pre-made tables as words');
   const reference=await sharp(Buffer.from(landing.image_url.split(',')[1],'base64')).metadata();
   assert.deepEqual([reference.format,reference.width,reference.height],['png',size.width,size.height]);
   const {data,info}=await sharp(Buffer.from(proposal.dataUrl.split(',')[1],'base64')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
   assert.equal(info.channels,4);
   const pixel=(x,y)=>{const at=(Math.round(y)*info.width+Math.round(x))*4;return [...data.subarray(at,at+4)];};
   assert.equal(pixel(4,4)[3],0,'outside the table is transparent');
-  assert.equal(pixel(template.canvas.width/2,template.canvas.height-2)[3],0,'below the rail is transparent');
+  // Below the rail the apron and the pedestal stay; beside the pedestal the scene shows through.
+  assert.equal(pixel(template.canvas.width/2,template.canvas.height-2)[3],255,'the pedestal reaches the frame');
+  assert.equal(pixel(4,template.canvas.height-2)[3],0,'beside the pedestal is transparent');
   for (const seat of [...template.seats,template.dealer]) {
     const inside=pixel(seat.center.x,seat.center.y),edge=pixel(seat.box.x,seat.center.y);
     assert.equal(inside[3],255);assert.ok(Math.abs(inside[1]-felt.g)<24,'felt inside the box');
@@ -415,4 +422,52 @@ test('background landing check covers the area behind the dealer and the phone s
   // A busy area above the table line behind the head warns as "dealer".
   const head=await ask(await syntheticPng(1920,1088,(x,y)=>x>800&&x<1120&&y<380?checkered(x,y):calm(50)(x,y)));
   assert.equal(head.ok,false);assert.equal(head.worst.zone,'dealer');
+});
+
+test('every background brief carries the same camera contract, whatever the theme',async()=>{
+  const camera=async body=>{
+    const calls=[];await api({calls}).handle(post(body));
+    return calls[0].body.input[0].content[0].text.split('\n').filter(line=>/^(MODE|FRAME|CAMERA|FLOOR|DEALER SAFE AREA|TABLE SAFE AREA|LIGHT|DEPTH|PHONE CROP|THEME|FORBIDDEN)\b/.test(line));
+  };
+  const lounge=await camera({...background,preset:'warm-lounge'});
+  assert.equal(lounge.length,11);
+  assert.deepEqual(await camera({...background,preset:'free',prompt:'Röd marsyta med kratrar, sett uppifrån som en karta'}),lounge);
+  assert.deepEqual(await camera({...background,preset:'casino',prompt:'Djungel med lianer och fukt'}),lounge);
+});
+
+test('the floor line follows the default table: below its rail ends, above its front edge',()=>{
+  const composition=defaultCompositionSettings(),template=filmedTableTemplate('paow');
+  const scene={layout:'desktop',stage:{mobile:composition.mobile.dealer,desktop:composition.desktop.dealer},tablePlacement:composition.desktop.table};
+  const geometry=stageGeometry(scene),[x,y,width]=tableRect(scene,template.canvas,geometry),k=width/template.canvas.width;
+  assert.deepEqual([Math.round(x),Math.round(x+width)],[656,1264],'the table sits in the dealer column');
+  const rail=template.felt.railOuter.map(([,railY])=>y+railY*k),floor=AI_BACKGROUND_CAMERA.floorLine*1080;
+  assert.ok(floor>=Math.min(...rail)&&floor<=Math.max(...rail),`floor ${floor} within rail ${Math.min(...rail)}-${Math.max(...rail)}`);
+  assert.ok(y+template.felt.top*k<AI_BACKGROUND_CAMERA.horizon.max*1080,'the felt starts above the horizon');
+  assert.ok(AI_BACKGROUND_CAMERA.horizon.max<AI_BACKGROUND_CAMERA.floorLine&&AI_BACKGROUND_CAMERA.lights.max<AI_BACKGROUND_CAMERA.horizon.min);
+});
+
+test('floor check: a wall over a floor passes; a flat backdrop, a soft falloff, a room from above or a one-sided floor warns no_floor',async()=>{
+  const floorOf=async shade=>{
+    const response=await api({respond:respondWith(await syntheticPng(1920,1088,shade))}).handle(post(background));
+    assert.equal(response.status,200,'a warning never refuses the proposal');
+    return (await response.json()).images[0].check.floor;
+  };
+  // The renderer's 1088 rows are cropped centred to 1080: 4 rows off the top.
+  const line=AI_BACKGROUND_CAMERA.floorLine*1080+4;
+  const standing=await floorOf((x,y)=>calm(y<line?40:85)(x,y));
+  assert.equal(standing.ok,true,JSON.stringify(standing));assert.equal(standing.code,null);
+  assert.deepEqual(standing.sides.map(side=>side.side),['left','right']);assert.ok(standing.sides.every(side=>side.difference>60));
+  // A floor only a dozen grey levels lighter than the wall still counts.
+  assert.equal((await floorOf((x,y)=>calm(y<line?50:62)(x,y))).ok,true);
+  for (const [name,shade] of [['flat',calm(50)],['falloff',(x,y)=>calm(40+y/20)(x,y)],['from above',(x,y)=>calm(y<300?40:85)(x,y)],
+    ['one side',(x,y)=>calm(x<656&&y>=line?85:40)(x,y)]]) {
+    const floor=await floorOf(shade);
+    assert.equal(floor.ok,false,name);assert.equal(floor.code,'no_floor');assert.equal(floor.message,NO_FLOOR_MESSAGE);
+  }
+  assert.equal(NO_FLOOR_MESSAGE,'Bakgrunden saknar synligt golv – bordet kommer att sväva');
+  // The floor under the table in the centre column is not measured.
+  assert.equal((await floorOf((x,y)=>calm(x>=656&&x<1264&&y>=line?85:40)(x,y))).ok,false);
+  // Table graphics carry no floor check.
+  const table=await api({respond:respondWith(await png())}).handle(post({role:'table',dealerId:'paow',prompt:'Grå filt',preset:'casino',count:1}));
+  assert.equal((await table.json()).images[0].check.floor,undefined);
 });
