@@ -77,9 +77,8 @@ const publicAssetPath = (...parts) => {
 const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
   ? (await import(pathToFileURL(join(mediaRepository, 'services/game/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
-// One product path: PostgreSQL only, named explicitly so a missing variable never
-// selects a backend. The retired SQLite directory must not linger in an environment.
-if (process.env.CROUPIER_DATABASE !== 'postgres') throw Error(process.env.CROUPIER_DATABASE === 'sqlite' ? 'sqlite_backend_removed' : 'postgres_required');
+// One product path: PostgreSQL only; no variable selects a backend.
+// The retired SQLite directory must not linger in an environment.
 if (process.env.CROUPIER_DATA_DIR !== undefined) throw Error('croupier_data_dir_retired');
 const sharedRoomFlag = process.env.CROUPIER_SHARED_TABLE_ENABLED;
 if (sharedRoomFlag !== undefined && !['0','1'].includes(sharedRoomFlag)) throw Error('shared_room_flag_invalid');

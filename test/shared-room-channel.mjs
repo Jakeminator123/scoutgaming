@@ -369,3 +369,25 @@ test('chat review fixes: the last socket out clears the room log, a room without
   const joined=await h.attach();await until(()=>joined.frames.length>=2);
   assert.deepEqual(joined.frames.filter(f=>f.type==='shared-room-chat').map(f=>f.text),['Rad 3']);
 });
+
+test('PR 4: a spoken dealer line goes to each socket with its own ticket, bound to its session and lifetime; never logged',async t=>{
+  const h=setup(t,{authorize:async(req,{roomId})=>({...binding(roomId),actorId:req.headers.get('x-fixture-actor')??'player-a',
+    sessionId:'session-'+(req.headers.get('x-fixture-actor')??'player-a')}),revalidate:async b=>b,
+    readSnapshot:async(room,actor)=>{const s=snapshot(room);s.me={...s.me,id:actor};return s;}});
+  const a=await h.attach(),b=new Socket();
+  (await h.channel.prepare(new Request(`${origin}/shared-room/room-a`,{headers:{origin,'x-fixture-actor':'player-b'}}))).attach(b);
+  const elsewhere=await h.attach('room-b');
+  await until(()=>a.frames.length===1&&b.frames.length===1&&elsewhere.frames.length===1);
+  const recipients=[],line={lineId:'a-'+'4'.repeat(24),requestId:'chat-4',text:'Sexton, stanna.',at:9};
+  h.channel.emitSpeech('room-a',line,recipient=>{recipients.push(recipient);return {kind:'moving-speech-stream',ticket:'ticket-'+recipients.length};});
+  const spoken=socket=>socket.frames.filter(f=>f.type==='shared-room-chat'&&f.speech);
+  assert.deepEqual(recipients.map(r=>[r.owner,r.playerId,r.signal.aborted]),[['session-player-a','player-a',false],['session-player-b','player-b',false]]);
+  assert.deepEqual(spoken(a),[{type:'shared-room-chat',roomId:'room-a',...line,who:'dealer',seat:null,speech:{kind:'moving-speech-stream',ticket:'ticket-1'}}]);
+  assert.deepEqual(spoken(b).map(f=>f.speech.ticket),['ticket-2']);assert.equal(spoken(elsewhere).length,0);
+  b.emit('close');assert.equal(recipients[1].signal.aborted,true,'a closed socket takes its ticket with it');
+  h.channel.emitSpeech('room-a',{...line,lineId:'a-'+'5'.repeat(24)},()=>null);
+  assert.equal(spoken(a).length,1,'no ticket (answer gone): the socket keeps the text');
+  const late=await h.attach();await until(()=>late.frames.length>=1);
+  assert.equal(late.frames.some(f=>f.speech),false,'a socket that attaches later gets no speech');
+  assert.throws(()=>h.channel.emitSpeech('room-a',{...line,lineId:'q-'+'4'.repeat(24)},()=>null),/shared_room_request_rejected/);
+});

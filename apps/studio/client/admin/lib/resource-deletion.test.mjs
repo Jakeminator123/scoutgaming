@@ -310,7 +310,7 @@ test('published room UI renders its own defaults and counted history without dup
   f.lifecycle.presentations=[{id:'shared',publishedTo:[{id:'company-a',name:'Bolag A'}],historicalPackageReferences:3}];
   const h=harness(f);await h.settle();const view=h.render(),all=nodes(view,()=>true),ids=all.map(row=>row.props?.id).filter(Boolean);
   assert.match(text(view),/Publicerade spelval · paket 2/);
-  assert.match(text(view),/Publicerad snö.*rummets förval/);
+  assert.match(text(view),/Publicerad snö.*spelbordets förval/);
   assert.match(text(view),/Historiska paketreferenser: 3/);
   assert.match(text(view),/Historikräkning: komplett registerläsning/);
   assert.match(text(view),/Klippimporten tar för närvarande emot MP4 och WebM/);

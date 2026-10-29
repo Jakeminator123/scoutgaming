@@ -12,8 +12,7 @@ export function readStorageExportConfig(env = process.env) {
   // Freezes legacy Studio files before their explicit Neon import. An omitted
   // flag is ambiguous: maintenance must never start the new shared writer or
   // permit either full-file or streaming provider work.
-  if (env.CROUPIER_DATABASE !== 'postgres'
-    || env.CROUPIER_STUDIO_NEON_POLICY !== '0'
+  if (env.CROUPIER_STUDIO_NEON_POLICY !== '0'
     || env.CROUPIER_GENERATED_SPEECH !== '0'
     || env.CROUPIER_CLOUD_GENERATED_SPEECH !== '0'
     || env.CROUPIER_GENERATED_SPEECH_STREAMING !== '0') throw Error('Invalid storage maintenance configuration.');

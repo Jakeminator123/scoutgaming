@@ -16,14 +16,17 @@ const snapshot = (over = {}) => ({ contract: 'blackjack-table/1', roomId: 'room-
 const binding = { actorId: 'player-a', sessionId: 'player-' + 'f'.repeat(64), operatorId: 'operator-a', roomId: 'room-a', packageRevision: 2, expiresAt: Date.now() + 60000 };
 
 const roomContext = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'paow' });
-async function fixture(t, { settings = { speechUrl: 'https://director.invalid', speechToken: 'token' }, read = () => snapshot(), decide, now, speech = null } = {}) {
-  const emitted = [], decided = [], contexts = [], members = [];
+async function fixture(t, { settings = { speechUrl: 'https://director.invalid', speechToken: 'token' }, read = () => snapshot(), decide, now, speech = null, others = {} } = {}) {
+  const emitted = [], decided = [], contexts = [], members = [], spoken = [];
   let engineOrigin, clock = 1000;
   // chatMember is the unlocked admission read; chatContext stands for the locked read (room lock,
   // the player's FOR UPDATE row and the audit advisory lock), counted in contexts.
   const service = {
     async chatMember(request, { roomId }) {
       members.push(roomId);
+      // others: cookie -> binding of another member at the table (PR 4 listeners).
+      const other = others[request.headers.get('cookie')];
+      if (other) return { binding: other, snapshot: read('member', members.length) };
       if (request.headers.get('cookie') !== cookie) throw Object.assign(Error('private'), { statusCode: 401 });
       return { binding, snapshot: read('member', members.length) };
     },
@@ -33,6 +36,12 @@ async function fixture(t, { settings = { speechUrl: 'https://director.invalid', 
       return { binding, dealerId: 'paow', presentationContext: roomContext, snapshot: read('locked', contexts.length) };
     },
     emitChat: (roomId, entry) => emitted.push({ roomId, ...entry }),
+    // Every room socket: the asker's own and one per other member, as shared-room-channel.mjs emitSpeech does.
+    emitSpeech: (roomId, entry, issue) => {
+      for (const member of [binding, ...Object.values(others)]) {
+        spoken.push({ roomId, entry, member, speech: issue({ owner: member.sessionId, playerId: member.actorId, signal: new AbortController().signal }) });
+      }
+    },
   };
   let chat;
   const server = createServer(async (req, res) => {
@@ -47,7 +56,7 @@ async function fixture(t, { settings = { speechUrl: 'https://director.invalid', 
   const post = (body, { headers = {}, method = 'POST', room = 'room-a', signal } = {}) => fetch(`${engineOrigin}/api/shared-room/${room}/chat`, {
     method, headers: { origin, cookie, 'content-type': 'application/json', ...headers }, signal,
     ...(method === 'POST' ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}) });
-  return { post, emitted, decided, contexts, members, close: () => chat.close(), tick: ms => { clock += ms; } };
+  return { post, emitted, decided, contexts, members, spoken, close: () => chat.close(), tick: ms => { clock += ms; } };
 }
 const ask = (over = {}) => ({ requestId: 'chat-1', message: '  Vad har jag?  ', roundRevision: 'shared-room-a-round-4', acceptsSpeechStream: false, ...over });
 const frames = async response => (await response.text()).trim().split('\n').map(line => JSON.parse(line));
@@ -139,9 +148,11 @@ function speechPorts({ supports = true, requested = true, prepare, still = null 
   const calls = { forContext: [], prepare: [], cancelled: [] };
   const descriptor = Object.freeze({ schemaVersion: 1, kind: 'moving-speech-stream', id: 'a'.repeat(32), url: '/moving-speech-stream', ticket: 'body.sig' });
   const movingSpeech = { supports: dealerId => supports && dealerId === 'paow', cancelOwner: owner => calls.cancelled.push(owner),
-    forContext: (context, presentationVersion, sessionRevision) => {
-      calls.forContext.push({ context, presentationVersion, sessionRevision });
-      return { prepare: async input => { calls.prepare.push(input); await input.beforeCostly(); return prepare ? prepare(input) : descriptor; } };
+    forContext: (context, presentationVersion, sessionRevision, options) => {
+      calls.forContext.push({ context, presentationVersion, sessionRevision, options });
+      return { prepare: async input => { calls.prepare.push(input); await input.beforeCostly(); return prepare ? prepare(input) : descriptor; },
+        // PR 4: one more listener's own ticket for the same answer.
+        ...(options?.room ? { issue: (value, recipient) => { (calls.issued ??= []).push(recipient); return { ...value, ticket: 'ticket-' + calls.issued.length }; } } : {}) };
     } };
   return { calls, descriptor, speech: () => ({ movingSpeech, speechStream: still, dealerSpeech: { requested: async dealerId => requested && dealerId === 'paow' } }) };
 }
@@ -233,46 +244,6 @@ test('review fix: control, bidi and zero-width characters are refused before the
   assert.equal((await h.post(ask({ message: 'Rad ett\nrad två å ä ö 👍' }))).status, 200);
 });
 
-// Fake DOM for the 1b chat panel: only what createSharedRoomChatPanel touches.
-function fakeDocument() {
-  const node = tag => {
-    const element = { tagName: tag, className: '', textContent: '', hidden: false, id: '', value: '', children: [], attributes: {}, listeners: {},
-      style: { setProperty() {} }, classList: { toggle() {} }, scrollTop: 0, scrollHeight: 0,
-      setAttribute(name, value) { this.attributes[name] = value; }, focus() {},
-      addEventListener(type, listener) { this.listeners[type] = listener; }, removeEventListener(type) { delete this.listeners[type]; },
-      append(...nodes) { for (const child of nodes) { child.parent = this; this.children.push(child); } },
-      remove() { const list = this.parent?.children; if (list) list.splice(list.indexOf(this), 1); },
-      get firstElementChild() { return this.children[0] ?? null; } };
-    return element;
-  };
-  return { createElement: node, body: node('body') };
-}
-
-test('review fix (1b): the panel deduplicates on server line ids, so a reused requestId never replaces the asker\'s answer', async () => {
-  const { createSharedRoomChatPanel } = await import('../services/game/public/shared-room-chat.mjs');
-  const document = fakeDocument(), ids = { bobQ: 'q-' + 'b'.repeat(24), bobA: 'a-' + 'b'.repeat(24), aliceQ: 'q-' + 'a'.repeat(24), aliceA: 'a-' + 'a'.repeat(24) };
-  let panel;
-  const fetchImpl = async (url, options) => {
-    const body = JSON.parse(options.body);
-    assert.equal(body.requestId, 'chat-x');
-    // Bob reused Alice's requestId; his lines and Alice's own question echo arrive over the socket first.
-    panel.receive({ lineId: ids.bobQ, requestId: 'chat-x', who: 'player', seat: 3, text: 'Bobs fråga', at: 1 });
-    panel.receive({ lineId: ids.bobA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Bob', at: 2 });
-    panel.receive({ lineId: ids.aliceQ, requestId: 'chat-x', who: 'you', seat: 1, text: 'Alices fråga', at: 3 });
-    const frames = [{ type: 'progress', stage: 'text', elapsedMs: 0 }, { type: 'preview', exactText: 'Svar till Alice' },
-      { type: 'result', decision: { kind: 'generatedText', requestId: 'chat-x', dealerId: 'paow', questionLineId: ids.aliceQ, exactText: 'Svar till Alice', lineId: ids.aliceA } }];
-    return new Response(frames.map(frame => JSON.stringify(frame) + '\n').join(''), { headers: { 'content-type': 'application/x-ndjson' } });
-  };
-  panel = createSharedRoomChatPanel({ document, roomId: 'room-a', state: () => ({ snapshot: snapshot() }), fetchImpl, randomId: () => 'x' });
-  const root = document.body.children[0], body = root.children[1], log = body.children[0], form = body.children[2], input = form.children[0];
-  input.value = 'Alices fråga';
-  await form.listeners.submit({ preventDefault() {} });
-  panel.receive({ lineId: ids.aliceA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Alice', at: 4 });
-  const lines = log.children.map(item => item.children.map(part => part.textContent));
-  assert.deepEqual(lines, [['plats 3', 'Bobs fråga'], ['dealern', 'Svar till Bob'], ['du', 'Alices fråga'], ['dealern', 'Svar till Alice']]);
-  panel.close();
-});
-
 // Review fix (PR 2): the room lock is global (pg_advisory_xact_lock), so speech never holds it per chunk.
 test('review fix: a spoken answer takes two locked reads, however many chunks it prepares and streams', async t => {
   let stream;
@@ -328,4 +299,111 @@ test('review fix: closing the chat route aborts open questions', async t => {
   await hit; h.close();
   const body = await Promise.race([pending, pause(1000).then(() => null)]);
   assert.deepEqual(body?.at(-1), { type: 'error', error: 'shared_room_chat_cancelled' });
+});
+
+// Fake DOM for the 1b chat panel: only what createSharedRoomChatPanel touches.
+function fakeDocument() {
+  const node = tag => {
+    const element = { tagName: tag, className: '', textContent: '', hidden: false, id: '', value: '', children: [], attributes: {}, listeners: {},
+      style: { setProperty() {} }, classList: { toggle() {} }, scrollTop: 0, scrollHeight: 0,
+      setAttribute(name, value) { this.attributes[name] = value; }, focus() {},
+      addEventListener(type, listener) { this.listeners[type] = listener; }, removeEventListener(type) { delete this.listeners[type]; },
+      append(...nodes) { for (const child of nodes) { child.parent = this; this.children.push(child); } },
+      remove() { const list = this.parent?.children; if (list) list.splice(list.indexOf(this), 1); },
+      get firstElementChild() { return this.children[0] ?? null; } };
+    return element;
+  };
+  return { createElement: node, body: node('body') };
+}
+
+test('review fix (1b): the panel deduplicates on server line ids, so a reused requestId never replaces the asker\'s answer', async () => {
+  const { createSharedRoomChatPanel } = await import('../services/game/public/shared-room-chat.mjs');
+  const document = fakeDocument(), ids = { bobQ: 'q-' + 'b'.repeat(24), bobA: 'a-' + 'b'.repeat(24), aliceQ: 'q-' + 'a'.repeat(24), aliceA: 'a-' + 'a'.repeat(24) };
+  let panel;
+  const fetchImpl = async (url, options) => {
+    const body = JSON.parse(options.body);
+    assert.equal(body.requestId, 'chat-x');
+    // Bob reused Alice's requestId; his lines and Alice's own question echo arrive over the socket first.
+    panel.receive({ lineId: ids.bobQ, requestId: 'chat-x', who: 'player', seat: 3, text: 'Bobs fråga', at: 1 });
+    panel.receive({ lineId: ids.bobA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Bob', at: 2 });
+    panel.receive({ lineId: ids.aliceQ, requestId: 'chat-x', who: 'you', seat: 1, text: 'Alices fråga', at: 3 });
+    const frames = [{ type: 'progress', stage: 'text', elapsedMs: 0 }, { type: 'preview', exactText: 'Svar till Alice' },
+      { type: 'result', decision: { kind: 'generatedText', requestId: 'chat-x', dealerId: 'paow', questionLineId: ids.aliceQ, exactText: 'Svar till Alice', lineId: ids.aliceA } }];
+    return new Response(frames.map(frame => JSON.stringify(frame) + '\n').join(''), { headers: { 'content-type': 'application/x-ndjson' } });
+  };
+  panel = createSharedRoomChatPanel({ document, roomId: 'room-a', state: () => ({ snapshot: snapshot() }), fetchImpl, randomId: () => 'x' });
+  const root = document.body.children[0], body = root.children[1], log = body.children[0], form = body.children[2], input = form.children[0];
+  input.value = 'Alices fråga';
+  await form.listeners.submit({ preventDefault() {} });
+  panel.receive({ lineId: ids.aliceA, requestId: 'chat-x', who: 'dealer', seat: null, text: 'Svar till Alice', at: 4 });
+  const lines = log.children.map(item => item.children.map(part => part.textContent));
+  assert.deepEqual(lines, [['plats 3', 'Bobs fråga'], ['dealern', 'Svar till Bob'], ['du', 'Alices fråga'], ['dealern', 'Svar till Alice']]);
+  panel.close();
+});
+
+// PR 4: everyone at the table hears the answer, and listeners never take the global room lock.
+test('a spoken answer reaches every room socket with its own ticket; three listeners keep it at two locked reads', async t => {
+  const other = name => ({ ...binding, actorId: 'player-' + name, sessionId: 'player-' + name.repeat(64).slice(0, 64) });
+  const others = { 'croupier_session=bob': other('b'), 'croupier_session=carol': other('c') };
+  const ports = speechPorts(), h = await fixture(t, { speech: ports.speech, others });
+  const result = (await frames(await h.post(ask({ acceptsSpeechStream: true })))).at(-1);
+  assert.deepEqual(ports.calls.forContext[0].options, { room: true });
+  assert.equal(h.spoken.length, 3, 'one personal frame per room socket');
+  assert.deepEqual(h.spoken.map(row => row.speech.ticket), ['ticket-1', 'ticket-2', 'ticket-3']);
+  assert.ok(h.spoken.every(row => row.speech.id === result.decision.speechStream.id && row.entry.lineId === result.decision.lineId && row.entry.text === result.decision.exactText));
+  assert.deepEqual(ports.calls.issued.map(recipient => recipient.owner), [binding.sessionId, others['croupier_session=bob'].sessionId, others['croupier_session=carol'].sessionId]);
+  // Redemption: each listener's freshness is its own unlocked read; a cookie of another member fails.
+  const cookies = { [binding.sessionId]: cookie, ...Object.fromEntries(Object.entries(others).map(([value, member]) => [member.sessionId, value])) };
+  const before = h.members.length;
+  for (const recipient of ports.calls.issued) await recipient.check({ headers: { cookie: cookies[recipient.owner] } });
+  await assert.rejects(ports.calls.issued[1].check({ headers: { cookie: 'croupier_session=carol' } }), /stale_round_revision/);
+  assert.equal(h.members.length - before, 4);
+  assert.equal(h.contexts.length, 2, `locked reads for an answer heard by three listeners: ${h.contexts.length}`);
+});
+
+test('PR 4 panel: every member plays the dealer answer once per line; a muted member gets text and Slå på ljud', async () => {
+  const { createSharedRoomChatPanel } = await import('../services/game/public/shared-room-chat.mjs');
+  const document = fakeDocument(), played = [], answer = 'a-' + 'c'.repeat(24), descriptor = { kind: 'moving-speech-stream', ticket: 'mine' };
+  let enabled = 0, sent;
+  const fetchImpl = async (url, options) => {
+    sent = JSON.parse(options.body);
+    const frames = [{ type: 'result', decision: { kind: 'generatedText', requestId: sent.requestId, dealerId: 'paow', questionLineId: 'q-' + 'c'.repeat(24),
+      exactText: 'Svar', lineId: answer, speechStream: { ...descriptor, ticket: 'asker' } } }];
+    return new Response(frames.map(frame => JSON.stringify(frame) + '\n').join(''), { headers: { 'content-type': 'application/x-ndjson' } });
+  };
+  const panel = createSharedRoomChatPanel({ document, roomId: 'room-a', state: () => ({ snapshot: snapshot() }), fetchImpl, randomId: () => 'y',
+    speak: async value => { played.push(value.ticket); return { speech: 'text-only', reason: 'muted', action: 'Slå på ljud' }; }, enableSound: () => enabled++ });
+  const root = document.body.children[0], body = root.children[1], form = body.children[2], sound = body.children[3];
+  // Another member's answer arrives over this socket with this socket's own ticket, after its text line.
+  panel.receive({ lineId: 'a-' + 'd'.repeat(24), requestId: 'chat-z', who: 'dealer', seat: null, text: 'Till Bob', at: 1 });
+  panel.receive({ lineId: 'a-' + 'd'.repeat(24), requestId: 'chat-z', who: 'dealer', seat: null, text: 'Till Bob', at: 1, speech: descriptor });
+  panel.receive({ lineId: 'a-' + 'd'.repeat(24), requestId: 'chat-z', who: 'dealer', seat: null, text: 'Till Bob', at: 1, speech: descriptor });
+  await pause(0);
+  assert.deepEqual(played, ['mine'], 'one playback per answer line');
+  assert.equal(body.children[0].children.length, 1, 'the text line is shown once');
+  assert.equal(sound.hidden, false); assert.equal(sound.textContent, 'Slå på ljud');
+  sound.listeners.click(); assert.equal(enabled, 1); assert.equal(sound.hidden, true);
+  // The asker: NDJSON result asks for speech, and the socket's own frame for the same line does not play again.
+  body.children[2].children[0].value = 'Fråga';
+  await form.listeners.submit({ preventDefault() {} });
+  assert.equal(sent.acceptsSpeechStream, true);
+  panel.receive({ lineId: answer, requestId: sent.requestId, who: 'dealer', seat: null, text: 'Svar', at: 2, speech: descriptor });
+  await pause(0);
+  assert.deepEqual(played, ['mine', 'asker']);
+  panel.close();
+});
+
+// Rättelser efter oberoende granskning (PR 4b): a listener's ticket needs a seat at the table now and this round.
+test('a listener who left the table or is in a new round cannot redeem the spoken answer', async t => {
+  const other = { ...binding, actorId: 'player-b', sessionId: 'player-' + 'b'.repeat(64) };
+  let state = 'seated';
+  const read = () => state === 'left' ? snapshot({ me: { id: 'player-b', seats: [], active: false } })
+    : state === 'next' ? snapshot({ roundId: 'shared-room-a-round-5' }) : snapshot();
+  const ports = speechPorts(), h = await fixture(t, { speech: ports.speech, read, others: { 'croupier_session=bob': other } });
+  await frames(await h.post(ask({ acceptsSpeechStream: true })));
+  const bob = ports.calls.issued.find(recipient => recipient.owner === other.sessionId), req = { headers: { cookie: 'croupier_session=bob' } };
+  await bob.check(req);
+  state = 'left'; await assert.rejects(bob.check(req), /stale_round_revision/, 'left the table with the socket still open');
+  state = 'next'; await assert.rejects(bob.check(req), /stale_round_revision/, 'a new round');
+  state = 'seated'; await bob.check(req);
 });

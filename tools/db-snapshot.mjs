@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// O02 database snapshot — READ-ONLY (Scoutgaming migration, activity O02, O02-PLAN.md §3.3 step R2).
+// Database snapshot — READ-ONLY. Step 8 of the restore runbook in docs/ENVIRONMENT-RESTORATION.md
+// (built for O02's restore-replay; its format id o02-db-snapshot/v1 is unchanged).
 //
 // Takes a content snapshot of croupier_game, croupier_studio and croupier_auth so that the
 // source (S0) and a restore target (S1), or the source before and after a proof (S0 / S0′),
@@ -14,8 +15,8 @@
 // string is read from a file and never printed; the output holds no row data, only hashes.
 //
 // Usage, from the repository root:
-//   node tools/o02-snapshot.mjs --url-file <file with the connection string> --out s0.json [--label S0]
-//   node tools/o02-snapshot.mjs --compare s0.json s1.json
+//   node tools/db-snapshot.mjs --url-file <file with the connection string> --out s0.json [--label S0]
+//   node tools/db-snapshot.mjs --compare s0.json s1.json
 // Exit codes: 0 equal/ok, 1 differences found (--compare), 2 usage or connection failure.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';

@@ -338,11 +338,11 @@ test('inside the environment editor the panel leaves publication, the room list 
   const harness=panelHarness();
   const plain=text(harness.render());
   assert.equal(nodes(harness.render(),node=>node.type===harness.ScenePublication).length,1);
-  assert.match(plain,/Rum som använder miljön/);
+  assert.match(plain,/Spelbord som använder miljön/);
   harness.props.inEnvironment=true;
   const tree=harness.render();
   assert.equal(nodes(tree,node=>node.type===harness.ScenePublication).length,0,'publication happens in the room');
-  assert.doesNotMatch(text(tree),/Rum som använder miljön|Välj material för/);
+  assert.doesNotMatch(text(tree),/Spelbord som använder miljön|Välj material för/);
   assert.equal(nodes(tree,node=>node.type===harness.EnvironmentPicture).length,0,'the miljöbild is the editor\'s own section');
   assert.ok(nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö').length,'the shared edit gate stays');
 });

@@ -2,7 +2,7 @@
 // Engine HTTP harness: one owned loopback PostgreSQL cluster with TLS, then the
 // `engine` suite from .githooks/pre-commit-full. Each test file creates its own
 // database and role (test/fixtures/engine-qa.mjs) and starts services/game/server.mjs
-// the way the cloud does: CROUPIER_DATABASE=postgres and a verify-full TLS URL.
+// the way the cloud does: PostgreSQL with a verify-full TLS URL.
 // No system install, service, credential, dotenv or network beyond loopback.
 import { spawn } from 'node:child_process';
 import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
