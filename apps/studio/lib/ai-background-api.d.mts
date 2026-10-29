@@ -8,7 +8,9 @@ export type AiImageRequest={readonly role:AiImageRole;readonly prompt:string;rea
   readonly reference:{contentType:string;bytes:Uint8Array}|null};
 // The landing check from ai-table-landing-check.mjs; it only warns.
 export type AiLandingCheck={ok:boolean;worst:{zone:string;score:number;reason:'busy'|'edges'|'low_contrast'};
-  zones:{zone:string;ok:boolean;score:number;reason:'busy'|'edges'|'low_contrast';spread:number;edges:number;contrast:number|null}[]};
+  zones:{zone:string;ok:boolean;score:number;reason:'busy'|'edges'|'low_contrast';spread:number;edges:number;contrast:number|null}[];
+  // Backgrounds only: the floor line check; null when it could not be measured.
+  floor?:{ok:boolean;code:'no_floor'|null;message:string|null;sides:{side:'left'|'right';difference:number}[]}|null};
 export type AiImageDailyLimit={remaining(limit:number):number;reserve(limit:number,count:number):boolean};
 
 export const AI_IMAGE_DEFAULT_MODEL: string;
