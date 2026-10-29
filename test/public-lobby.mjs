@@ -263,8 +263,13 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       ['Välj Nora', false], ['Välj Oskar', false],
       ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
     ], 'published dealers first, then disabled teasers');
-    assert.ok(portraitRequests.has('/lobby/_assets/lobby/images/dealers/astrid.jpg'));
-    assert.ok(portraitRequests.has('/lobby/_assets/lobby/images/lobby/room-loungen.png'), 'the High room card shows Loungen from the public base');
+    // The image request reaches the fixture server after the buttons render; wait for it (up to 5 s).
+    const requested = async (path, message) => {
+      for (let i = 0; i < 100 && !portraitRequests.has(path); i++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.ok(portraitRequests.has(path), message);
+    };
+    await requested('/lobby/_assets/lobby/images/dealers/astrid.jpg', 'the Astrid teaser loads its portrait from the public base');
+    await requested('/lobby/_assets/lobby/images/lobby/room-loungen.png', 'the High room card shows Loungen from the public base');
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
       const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
       await trigger.focus(); await trigger.press('Enter');

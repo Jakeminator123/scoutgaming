@@ -74,7 +74,8 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
     }finally{lock.current=false;setPublishing(false);callbacks.current.onBusyChange?.(false);}
   }
   const dealerId=preview?.candidate?.dealerId??preview?.live?.dealerId??null;
-  const areas=roomReleaseAreas(preview,{dealerName});
+  // Spelbordens namn för området Utseende (bolagets utkast kan gälla flera spelbord).
+  const areas=roomReleaseAreas(preview,{dealerName,rooms});
   const blockers=preview?.blockers??[];
   const canPublish=status==='ready'&&!mustReload&&!blockedBy&&!publishing&&roomReleaseCanPublish(preview);
   // Statusregionen annonserar bara slutlägen och fel, inte "Jämför med live…" vid varje omläsning.

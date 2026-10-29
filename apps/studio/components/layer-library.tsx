@@ -30,7 +30,7 @@ function dimensions(file:File,signal:AbortSignal) {
 // then Ladda upp. The upload itself is unchanged (uploadCompositionLayer, /api/layer-assets/upload).
 const suggestedName=(file:{name:string})=>file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().slice(0,80);
 const checker={backgroundImage:'repeating-conic-gradient(var(--sg-hover) 0 25%, var(--sg-surface) 0 50%)',backgroundSize:'16px 16px'};
-const button='inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime';
+const button='inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-mark';
 export function LayerLibrary({role,game='blackjack',onRegistered,available=true,disabled=false,onBusyChange,aside}:{role:Role;game?:'blackjack'|'roulette';available?:boolean;disabled?:boolean;onRegistered:(project:StudioProject,id:string)=>void;onBusyChange?:(busy:boolean)=>void;aside?:ReactNode}) {
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[label,setLabel]=useState(''),[progress,setProgress]=useState<number|null>(null),[committing,setCommitting]=useState(false);
   const [file,setFile]=useState<File|null>(null),[preview,setPreview]=useState(''),[dragging,setDragging]=useState(false);
