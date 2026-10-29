@@ -6,6 +6,8 @@ import { createPlayerAdministration } from '../../../packages/storage/server/pla
 import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../../packages/presentation/contracts/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
+// Game migration 012 adds croupier_auth.api_keys.operator_id; the same probe as apikeys/create.
+const KEY_OPERATOR_COLUMN = "SELECT EXISTS (SELECT FROM pg_attribute WHERE attrelid=to_regclass('croupier_auth.api_keys') AND attname='operator_id' AND NOT attisdropped) AS present";
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
 function bodyKeys(body, allowed, required = allowed) {
   if (!body || typeof body !== 'object' || Array.isArray(body)
@@ -106,8 +108,25 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
   }));
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
   register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,(hash IS NOT NULL)::integer AS active FROM users ORDER BY id').all() }));
-  register('GET', 'apikeys', async () => ({ keys: await boDb.prepare('SELECT id,name,scopes,(wallet_url IS NOT NULL AND wallet_url<>\'\') AS wallet_configured,created_at,last_used,revoked_at FROM api_keys ORDER BY created_at DESC').all()
-    .then(rows => rows.map(row => ({ ...row, scopes: (() => { try { const value = JSON.parse(row.scopes); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; } catch { return []; } })() }))) }));
+  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): each key names its company, and Admin chooses
+  // among this scope's companies when it creates one. Before game migration 012 the column is
+  // absent: keys read as without company and operatorBinding says creation waits for it.
+  register('GET', 'apikeys', async () => {
+    const column = await boDb.prepare(KEY_OPERATOR_COLUMN).get();
+    const bound = column?.present === true;
+    const rows = await boDb.prepare(`SELECT k.id,k.name,k.scopes,(k.wallet_url IS NOT NULL AND k.wallet_url<>'') AS wallet_configured,k.created_at,k.last_used,k.revoked_at${bound ? ',k.operator_id' : ''} FROM api_keys k ORDER BY k.created_at DESC`).all();
+    const operators = (await boDb.prepare('SELECT operator_id,name,status FROM croupier_studio.operators WHERE environment_id=? AND workspace_id=? ORDER BY name,operator_id')
+      .all(scope.environment, scope.workspaceId)).map(row => ({ id: row.operator_id, name: row.name, status: row.status }));
+    const names = new Map(operators.map(row => [row.id, row.name]));
+    return {
+      operatorBinding: bound ? 'ready' : 'pending',
+      operators,
+      keys: rows.map(({ operator_id: operatorId = null, ...row }) => ({ ...row,
+        scopes: (() => { try { const value = JSON.parse(row.scopes); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; } catch { return []; } })(),
+        operatorId: typeof operatorId === 'string' ? operatorId : null,
+        operatorName: typeof operatorId === 'string' ? names.get(operatorId) ?? null : null })),
+    };
+  });
 
   change('room', ['id','state'], (value, body) => {
     if (!text(body.id,100) || !['live','preview','pending'].includes(body.state) || !Array.isArray(value.rooms)) fail();

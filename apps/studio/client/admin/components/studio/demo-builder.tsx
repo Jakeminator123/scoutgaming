@@ -6,7 +6,7 @@ import {Button, buttonVariants, cn, plural, TechnicalDetails} from '../ui/kit';
 import {ConfirmDialog, DialogSteps} from '../ui/dialog';
 import {toast} from '../ui/toast';
 import {DealerAvatar} from './dealer-identity-portrait';
-import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DEMO_LAUNCH_ENABLED, DEMO_LAUNCH_OFF_TEXT, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
+import {DEMO_STEPS, DEMO_CURRENCIES, DEMO_KEY_SCOPES, DEMO_LANGUAGES, DemoError, chooseCompany, chooseDealer, chooseRoom, creditDemo, demoCompanies, demoCredits, demoDealers, demoDisplayName,
   demoKeyName, demoNameBase, demoPermissions, demoRooms, editDemo, expiryText, formatMoney, goToStep, initialDemoState, launchDemo, nextLabel, nextStep, previousStep, reachableStep,
   readCreditAmount, readDemoCatalogFrom, readDemoSession, readRoomGameConfig, revokeDemoKey, stepRequirement,
   type DemoAdministration, type DemoCompany, type DemoCredits as Credits, type DemoDealer, type DemoKey, type DemoLaunch, type DemoPermissions, type DemoRoom, type DemoState} from '../../lib/demo-builder.mjs';
@@ -98,7 +98,7 @@ function LaunchStep({state,company,room,dealer,permissions,credits,onEdit}:{stat
       <CreditsReadout credits={credits} company={company} room={room}/>
       <p className={small}>Giltighetstid går inte att välja: länken gäller 6 timmar; nyckeln tills den återkallas. Nycklar har ingen utgångstid i dag (fältet saknas i databasen; kommer senare). Återkalla finns i kvittot och stänger demospelarens sessioner direkt.</p>
     </section>
-    <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> hos <b>{company.name}</b> med <b>{dealer.name}</b>. Nyckel och hemlighet lämnar aldrig servern.</Note>
+    <Note tone="accent">Skapar nyckeln <b>{name?keyName:'(namn saknas)'}</b> för <b>{company.name}</b> med rättigheterna {SCOPE_TEXT} och en testsession med demokrediter; länken anger spelbordet <b>{room.name}</b> med <b>{dealer.name}</b>. Nyckeln gäller bara {company.name}, och nyckel och hemlighet lämnar aldrig servern.</Note>
     {permissions.blocker&&<div role="note"><Note tone="warn">{permissions.blocker}</Note></div>}
   </div>;
 }
@@ -232,7 +232,7 @@ export function DemoBuilder() {
     if(!company||!room||!dealer||!permissions?.canLaunch||!requirement.ready||busy)return;
     setLaunch({phase:'create'});setRevoke({phase:'idle'});
     try{
-      const value=await launchDemo({fetchImpl:fetch,form:state.form,permissions,operatorSlug:company.slug,roomId:room.id,dealerId:dealer.id,onPhase:phase=>setLaunch({phase})});
+      const value=await launchDemo({fetchImpl:fetch,form:state.form,permissions,operatorId:company.id,operatorSlug:company.slug,roomId:room.id,dealerId:dealer.id,onPhase:phase=>setLaunch({phase})});
       setLaunch({phase:'done',value});
     }catch(error){setLaunch({phase:'error',message:error instanceof Error?error.message:'Okänt fel.',key:(error as {key?:DemoKey}).key??null});}
   };
@@ -255,7 +255,7 @@ export function DemoBuilder() {
   else if(effective.step===3&&company)body=<DealerStep company={company} dealers={dealers} selected={dealer?.id??null} onSelect={id=>setState(current=>chooseDealer(current,id))}/>;
   else if(company&&room&&dealer)body=<LaunchStep state={state} company={company} room={room} dealer={dealer} permissions={permissions??demoPermissions(null)} credits={session.status==='ready'?credits:session.status==='loading'?{status:'loading'}:session} onEdit={(field,value)=>setState(current=>editDemo(current,field,value))}/>;
   const launchReady=effective.step===4?requirement.ready&&Boolean(permissions?.canLaunch)&&!busy:requirement.ready;
-  const launchMissing=effective.step===4&&!DEMO_LAUNCH_ENABLED?DEMO_LAUNCH_OFF_TEXT:effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
+  const launchMissing=effective.step===4&&session.status==='loading'?'Läser dina behörigheter…':effective.step===4&&permissions&&!permissions.canLaunch?permissions.blocker:requirement.missing;
   const key=launch.phase==='done'?launch.value.key:launch.phase==='error'?launch.key:null;
   const receipt=launch.phase==='done'?launch.value.receipt:null;
   const technical:[string,ReactNode][]=[
@@ -266,11 +266,10 @@ export function DemoBuilder() {
     ...(key?[['Nyckel-id',key.id]] as [string,ReactNode][]:[]),
     ...(receipt?.playerId?[['Demospelare',receipt.playerId]] as [string,ReactNode][]:[]),
     ...(receipt?.playerRef?[['Spelarreferens',receipt.playerRef]] as [string,ReactNode][]:[]),
-    ['Skrivningar','apikeys/create och apikeys/launch; Fyll på: apikeys/credit; Återkalla: apikeys/revoke'],
+    ['Skrivningar','apikeys/create (med bolags-id) och apikeys/launch; Fyll på: apikeys/credit; Återkalla: apikeys/revoke'],
   ];
   return <HubPage eyebrow={<Crumbs items={[{label:'Översikt',href:'/admin'},{label:'Skapa demo'}]}/>} title="Skapa demo"
-    chip={DEMO_LAUNCH_ENABLED?undefined:<Chip tone="warn" title={DEMO_LAUNCH_OFF_TEXT}>Demolänk kommer senare</Chip>}
-    intro={`Bygg en demo åt ett bolag i fyra steg${DEMO_LAUNCH_ENABLED?' och få en länk att skicka':''}. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.`}>
+    intro="Bygg en demo åt ett bolag i fyra steg och få en länk att skicka. Demon använder bolagets publicerade paket och spelbord; inget ändras i paketet.">
     <DialogSteps steps={DEMO_STEPS.map(step=>step.label)} current={done?DEMO_STEPS.length:effective.step-1} reachable={reachableStep(effective)-1} onSelect={done||busy?undefined:index=>go(index+1)} className="mb-5"/>
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]">
       <div className="min-w-0" aria-live="polite"><Card title={done?stepTitle:`${effective.step}. ${stepTitle}`} aside={!done&&catalog.status==='ready'?(effective.step===1?`${companies.length} aktiva bolag`:effective.step===2?`${rooms.filter(row=>row.selectable).length} av ${rooms.length} spelbara`:effective.step===3?`${dealers.selectable.length} i paketet`:undefined):undefined}>
