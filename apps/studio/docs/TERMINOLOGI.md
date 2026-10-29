@@ -21,7 +21,7 @@ Det ett bolag kan ändra är en delmängd av det Admin kan ändra; spelaren ser 
 - **Klippkarta** (`slots`): dealerns klipp ordnade per situation.
 - **Vila** (`idle`): dealerns grundloop mellan händelserna; **vilosekvens** (`rotation`) är flera viloklipp i följd.
 - **Replik** och **tagning** (`take`): en mening med exakt text, och en godkänd inspelning av den.
-- **Röst och tal** (`speech`): dealerns inspelade och genererade tal.
+- **Röst och tal** (`speech`): dealerns inspelade och genererade tal. **Röstprofil** (`speechProfile.voice`): dealerns sparade röst (ElevenLabs röst-ID och modell) i projektet i Neon; talet läser den, röstkatalogen föreslår bara.
 - **Landningar** (`landing`): var dealerns hand lägger korten i bild.
 - **Scenmall** (`lane`, `composition`): hur bakgrund, dealer och bordsgrafik placeras, och vad mallen tillåter.
 - **Placering** (`placement`): scenmallens skala och läge per lager, för dator och mobil.
