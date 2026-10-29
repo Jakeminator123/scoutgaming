@@ -37,7 +37,7 @@ Kodåtergång, när en deploy är fel:
 
 **Backupgren före varje schemaändring i produktionen.** En Neon-gren från `main` är en omedelbar, fullständig kopia av alla databaser. Den skapas med Jakobs go före varje DDL, namnges `backup-<syfte>-<datum>` och raderas av Jakob tidigast en vecka efter ändringen. Hittills: `backup-before-008-010-20261027` (`br-round-wind-b120esv6`), `backup-ren-start-20261028` (`br-morning-scene-b1a0ykzk`) och `backup-before-o03-20261028` (`br-winter-sunset-b1dnm0kb`, LSN `0/2F1E6850`, 13:08:33Z). Projektets historik räcker sex timmar bakåt; inom det fönstret kan `main` också återställas till en tidpunkt (PITR). En grenåterställning skriver över allt efter tidpunkten, även plånbokstransaktioner, och används bara om ingen har spelat efter felet. PITR är inte provad.
 
-**`pg_dump` mot ett tomt mål** är den portabla vägen. Provad mot produktionens migrerade schema 28 oktober 2026: dump av backupgrenen och restore till databasen `croupier_restore_o03` på grenen `o03-restore-proof`, med identisk ögonblicksbild (S0 = S1), samma ledger och readiness och lika ägare och ACL på 94 objekt ([O03-kvittot](2026-10-28-O03-RELEASE-ACCEPTANCE.json), blocket `backup`). Tidigare prov: preview 25 oktober och O02:s restore-replay 28 oktober.
+**`pg_dump` mot ett tomt mål** är den portabla vägen. Provad mot produktionens migrerade schema 28 oktober 2026: dump av backupgrenen och restore till databasen `croupier_restore_o03` på grenen `o03-restore-proof`, med identisk ögonblicksbild (S0 = S1), samma ledger och readiness och lika ägare och ACL på 94 objekt (O03-kvittot, blocket `backup`; kvittot är raderat och läses ur Git, se [HISTORIK](HISTORIK.md)). Tidigare prov: preview 25 oktober och O02:s restore-replay 28 oktober.
 
 1. **Stoppa skrivare vid en verklig återställning:** spelmotorn, Vercel-API:erna och bakgrundsjobb, med Jakobs beslut och ett avtalat fönster. Ett restoreprov behöver inget stopp: dumpa då från en ny backupgren, som ingen skriver till.
 2. **Frys identiteten:** projekt, gren, endpoint, databas, roll och kodens SHA. `node tools/check-migration-readiness.mjs` (utan `--apply`) visar schemaledgern.
@@ -83,7 +83,7 @@ Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 01
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)
 
-`ops/neon-game/011-retire-lissabon.sql` tar bort de tomma tabellerna `lissabon_profiles` och `lissabon_profile_sessions` och skriver ledgerraden `game-011-retire-lissabon`. Ingen kod läser eller skriver tabellerna. Den ingår inte i startup eller deploykrav. I O03 kördes den 2026-10-28 av orkestratorn med Jakobs uttryckliga ja, utan skrivarstopp (D1), efter backupgrenen och restoreprovet ovan: förkontrollen ca 14:19Z (exit 0, ROLLBACK), sedan transaktionen (exit 0, COMMIT, ledgerraden 14:21:48Z). Efteråt finns lissabon-tabellerna inte, katalogen har 74 tabeller och `/__cloud/health` svarar 200. SQL, manifest och evidens står med hashar i [O03-kvittot](2026-10-28-O03-RELEASE-ACCEPTANCE.json), blocket `ddl`.
+`ops/neon-game/011-retire-lissabon.sql` tar bort de tomma tabellerna `lissabon_profiles` och `lissabon_profile_sessions` och skriver ledgerraden `game-011-retire-lissabon`. Ingen kod läser eller skriver tabellerna. Den ingår inte i startup eller deploykrav. I O03 kördes den 2026-10-28 av orkestratorn med Jakobs uttryckliga ja, utan skrivarstopp (D1), efter backupgrenen och restoreprovet ovan: förkontrollen ca 14:19Z (exit 0, ROLLBACK), sedan transaktionen (exit 0, COMMIT, ledgerraden 14:21:48Z). Efteråt finns lissabon-tabellerna inte, katalogen har 74 tabeller och `/__cloud/health` svarar 200. SQL, manifest och evidens står med hashar i O03-kvittot (raderat, se [HISTORIK](HISTORIK.md)), blocket `ddl`.
 
 `node tools/prepare-lissabon-retirement.mjs --evidence <privat-json>` bygger manifestet offline (`--readiness-sql` för förkontroller med ROLLBACK, `--sql` för hela transaktionen); verktyget ansluter aldrig till databasen. Evidensfilen binder `database`, `role`, `releaseSha`, `rollbackSha`, `consumerInventorySha256`, `backupSha256` och `restoreReceiptSha256`. Rollen måste vara schemaägaren `croupier_game`, och inga händelsetriggers får finnas. Förkontrollerna nekar fel ägare, ändrad produktchecksumma, icke-tomma tabeller och okända beroenden; låsen hålls genom transaktionen med `lock_timeout` 2 s. `DROP` låser `croupier_game.players` kort för de främmande nycklarnas triggrar, så spelarfrågor väntar högst två sekunder eller så avbryts transaktionen utan ändring. CI provar vägen med `node tools/run-shared-table-qa.mjs --lissabon-retirement --postgres-bin /usr/lib/postgresql/16/bin`.
 
@@ -160,11 +160,11 @@ Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-
 
 ## Daterade kvitton
 
-Rubrikerna finns kvar för länkar från [migrering/](../migrering/STATUS.md). Äldre kvitton raderades ur `main` 28 oktober 2026 och läses med `git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`. Nya kvitton skrivs som `docs/<datum>-…-ACCEPTANCE.json`.
+Rubrikerna finns kvar för länkar från [migrering/](../migrering/STATUS.md). Äldre kvitton raderades ur `main` 28 oktober 2026 och läses med `git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`. Nya kvitton skrivs som `docs/<datum>-…-ACCEPTANCE.json` och raderas med en rad i [HISTORIK](HISTORIK.md) när aktiviteten är verifierad.
 
 ### O03: release och restoreprov mot produktionens schema — 28 oktober
 
-[2026-10-28-O03-RELEASE-ACCEPTANCE.json](2026-10-28-O03-RELEASE-ACCEPTANCE.json): backupgren, dump och restore (S0 = S1), 011, flaggan, deployer och verifiering i produktionen.
+`docs/2026-10-28-O03-RELEASE-ACCEPTANCE.json` (raderat, läses ur Git enligt [HISTORIK](HISTORIK.md)): backupgren, dump och restore (S0 = S1), 011, flaggan, deployer och verifiering i produktionen.
 
 ### J05: verifierad runtime och sparat spel — 26 oktober
 
