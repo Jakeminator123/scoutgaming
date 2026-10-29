@@ -43,28 +43,31 @@ Dealerns sida visar de sju första stegen överst och markerar de som är klara.
 8. **Spelbord**: **Nytt spelbord** hos bolaget. Det skapas pausat.
 9. **Publicera** och öppna spelbordet under **Tillgänglighet**.
 
-### Publicera i dag: flera knappar
+### Publicera i dag: en huvudknapp per spelbord
 
 Att spara ändrar bara utkastet; spelaren ser ändringen först efter
-publicering. En gemensam knapp per spelbord är planerad (steg D i
-[ADMIN-FORENKLING](../../../docs/plans/ADMIN-FORENKLING.md), avsnitt 7). Tills
-den finns publicerar du i den här ordningen:
+publicering. Huvudvägen är spelbordets egen **Publicera** (steg D i
+[ADMIN-FORENKLING](../../../docs/plans/ADMIN-FORENKLING.md), avsnitt 7), som
+visar vad som ändras jämfört med live och tar med tal, klipp, vila och
+placering för bolaget:
 
 | Knapp | Var | Vad den publicerar |
 | --- | --- | --- |
-| **Publicera för {bolag}** (sedan **Publicera igen**) | Bolag › Tilldelning | Bolagets scenmallar med dealers, klipp, tal, vila och placering, fryst som ny version |
+| **Publicera** → **Publicera nu** | Spelbord (öppet blackjackbord) | Bolagets sparade tal, klipp, vila och placering, fryst som ny version |
+| **Publicera för {bolag}** | Bolag › Tilldelning | Ett ändrat urval av scenmallar |
 | **Publicera · N ändringar** → **Publicera nu** | Spelbord › Utseende | Spelbordets bakgrund, dealer och bordsgrafik |
 | **Publicera spelinställningar** | Spelbord › Spelinställningar | Bordsspråk och insatsprofil |
 
-Två smala knappar uppdaterar bara en del av det publicerade:
+Under **Avancerat** finns smala knappar för det huvudknappen inte når:
 
+- **Publicera igen** (Bolag › Tilldelning) fryser om ett oförändrat urval,
+  till exempel för roulette eller ett spelbord som inte är öppet.
 - **Publicera sparad placering** (Scenmallar) uppdaterar placeringen i alla
   bolagets spelbord som använder scenmallen.
-- **Publicera PAOWs viloklipp** (Spelbord › Utseende › **Publicera (tills
-  vidare)**) uppdaterar PAOWs vilosekvens.
+- **Publicera PAOWs viloklipp** (Spelbord › Utseende) uppdaterar PAOWs
+  vilosekvens, även när scenmallen är borttagen eller klippen underkänns.
 
-Nytt tal används först när tilldelningen och därefter spelinställningarna är
-publicerade.
+Nytt tal används först efter **Publicera** i spelbordet.
 
 ## Översikt
 
@@ -173,10 +176,10 @@ sekvensen kan kopplas.
 3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
    utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
    urvalet** bort dem; knappen visas bara då.
-4. Spara utkastet och publicera bolagets tilldelning. För PAOW är stegen
-   **Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp** i
-   spelbordet (produktionsutkastet har ingen sekvens än, så **Uppdatera
-   till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
+4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
+   **Koppla 21 viloklipp** → spara → **Publicera** (eller **Avancerat** ›
+   **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
+   ingen sekvens än, så **Uppdatera till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
    sekvensen; originalen behålls.
 
 #### Övergångar och delat bord
@@ -210,8 +213,8 @@ repliker som har filer.
    **Ta bort bedömning**.
 3. **Sätt som standard i talfacket** lägger tagningen som standard i
    projektutkastet. Spara utkastet.
-4. Publicera tilldelningen och därefter spelbordets spelinställningar; först då
-   används de godkända tagningarna.
+4. Välj **Publicera** i spelbordet; först då används de godkända
+   tagningarna.
 
 Status per tagning: **Godkänd av**, **Underkänd**, **Väntar på granskning**
 eller **Saknar talkvitto** (kan inte godkännas). **Godkänn tal** kräver en
