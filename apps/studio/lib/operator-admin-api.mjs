@@ -17,11 +17,12 @@ export const STANDARD_OPERATOR_ROLES = Object.freeze([
   Object.freeze({ id: 'partner-admin', label: 'Partner administrator', delegable: false, permissions: Object.freeze([...PARTNER_PERMISSIONS]) }),
   Object.freeze({
     id: 'partner-editor', label: 'Partner editor', delegable: true,
-    permissions: Object.freeze(['overview.read', 'tables.read', 'presentations.read', 'presentations.configure']),
+    permissions: Object.freeze(['overview.read', 'tables.read', 'presentations.read', 'presentations.configure', 'material.request']),
   }),
+  // "Begär material" gäller alla roller (ADMIN-FORENKLING 4.1); nyckelrotation bara administratören.
   Object.freeze({
     id: 'partner-viewer', label: 'Partner viewer', delegable: true,
-    permissions: Object.freeze(PARTNER_PERMISSIONS.filter(permission => permission.endsWith('.read'))),
+    permissions: Object.freeze(PARTNER_PERMISSIONS.filter(permission => permission.endsWith('.read') || permission === 'material.request')),
   }),
 ]);
 

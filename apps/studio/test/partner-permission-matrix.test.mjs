@@ -53,7 +53,8 @@ const API_WRITES = [
   { id: 'dealer POST', path: 'dealer', action: 'dealer', requires: BRANDING_WRITE },
 ];
 // Spelbordens skrivvägar (partner-table-api.mjs) går genom Studio-transaktionen och den nativa
-// grinden, som minnesfixturen saknar. Här provas nekandet: utan behörigheten 403 och inget ändrat,
+// grinden, och journalposterna (även begäran) kräver migrering 022; minnesfixturen saknar båda.
+// Här provas nekandet: utan behörigheten 403 och inget ändrat,
 // med den aldrig 403 (tillåtna anrop stannar här på 503 före lagret, så "inget ändrat" säger lite).
 // Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat bolags spelbord (404)
 // och CAS (409) provas på PGlite i partner-table-actions.test.mjs, där varje nekat anrop jämför
@@ -66,6 +67,10 @@ const API_TABLE_WRITES = [
     body: { action: 'publish', roomId: 'alfa-bord', expectedPackageRevision: 1, expectedDraftRevision: 'room-config-00000000-0000-4000-8000-000000000000' } },
   { id: 'room-state POST', path: 'room-state', action: 'pause', requires: TABLE_WRITE,
     body: { roomId: 'alfa-bord', state: 'pending', expectedState: 'live', expectedPackageRevision: 1 } },
+  // Begäran som journalpost kräver Studio-migrering 022 (partner-requests.test.mjs, PGlite).
+  // Egna behörigheter enligt ADMIN-FORENKLING 5.4: material.request och integration.request.
+  { id: 'request POST material', path: 'request', action: 'material', requires: ['material.request'], body: { kind: 'material' } },
+  { id: 'request POST key-rotation', path: 'request', action: 'key-rotation', requires: ['integrations.read', 'integration.request'], body: { kind: 'key-rotation' } },
 ];
 
 const ROLES = [
@@ -190,8 +195,8 @@ async function prepare(f, write) {
   throw new Error(`okänd åtgärd ${write.action}`);
 }
 
-test('kartan täcker alla tolv behörigheter, alla vyer i menyn och varje vy har en behörighet', () => {
-  assert.equal(PARTNER_PERMISSIONS.length, 12);
+test('kartan täcker alla fjorton behörigheter, alla vyer i menyn och varje vy har en behörighet', () => {
+  assert.equal(PARTNER_PERMISSIONS.length, 14);
   // Låser vyernas behörigheter: en vy som flyttas till fel behörighet i policyn ska fälla provet.
   assert.deepEqual({ ...PARTNER_VIEW_PERMISSIONS }, {
     overview: 'overview.read', rooms: 'tables.read', players: 'players.read', reports: 'reports.read',
@@ -270,7 +275,7 @@ test('varje roll får exakt de skrivningar kartan ger, och en nekad skrivning ä
   }
 });
 
-test('spelbordens skrivvägar: utan tables.read och tables.configure 403 och inget ändrat, med dem aldrig 403', async () => {
+test('spelbordens skrivvägar och begäran: utan kartans behörigheter 403 och inget ändrat, med dem aldrig 403', async () => {
   const f = await fixture();
   const before = JSON.stringify(f.pool.tables);
   for (const write of API_TABLE_WRITES) for (const role of ROLES) {

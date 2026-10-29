@@ -58,9 +58,12 @@ test('standard roles: only partner-admin can assign roles, and every role can op
     ['partner-viewer', 'Partner viewer', true],
   ]);
   assert.deepEqual([...STANDARD_OPERATOR_ROLES[0].permissions], [...PARTNER_PERMISSIONS]);
-  assert.deepEqual([...STANDARD_OPERATOR_ROLES[1].permissions], ['overview.read', 'tables.read', 'presentations.read', 'presentations.configure']);
+  assert.deepEqual([...STANDARD_OPERATOR_ROLES[1].permissions], ['overview.read', 'tables.read', 'presentations.read', 'presentations.configure', 'material.request']);
   assert.deepEqual([...STANDARD_OPERATOR_ROLES[2].permissions],
-    ['overview.read', 'players.read', 'team.read', 'tables.read', 'presentations.read', 'reports.read', 'integrations.read']);
+    ['overview.read', 'players.read', 'team.read', 'tables.read', 'presentations.read', 'material.request', 'reports.read', 'integrations.read']);
+  // Begära material gäller alla roller; nyckelrotation bara administratören (ADMIN-FORENKLING 5.4).
+  assert.deepEqual(STANDARD_OPERATOR_ROLES.map(role => [role.permissions.includes('material.request'), role.permissions.includes('integration.request')]),
+    [[true, true], [true, false], [true, false]]);
   for (const role of STANDARD_OPERATOR_ROLES) {
     assert.ok(role.permissions.includes('overview.read'), role.id);
     assert.equal(role.permissions.includes('team.roles.assign'), role.id === 'partner-admin', role.id);
@@ -80,7 +83,7 @@ test('operator-create stores the operator with the three standard roles and jour
   assert.equal(rows.length, 3);
   assert.equal(rows.find(row => row.role_id === 'partner-admin').delegable, false);
   assert.deepEqual(JSON.parse(rows.find(row => row.role_id === 'partner-viewer').permissions),
-    ['overview.read', 'players.read', 'team.read', 'tables.read', 'presentations.read', 'reports.read', 'integrations.read']);
+    ['overview.read', 'players.read', 'team.read', 'tables.read', 'presentations.read', 'material.request', 'reports.read', 'integrations.read']);
   const entries = journalEntries(context.logs);
   assert.deepEqual(entries.map(entry => [entry.action, entry.actor, entry.operatorId]), [
     ['operator-create', 'internal-admin', 'north-casino'],

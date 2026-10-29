@@ -1,15 +1,17 @@
 // Bolagsjournalens åtgärder (croupier_studio.operator_audit_events.action).
 // Listan speglar tabellens CHECK: 006 skapade den, Studio-migrering 022 utökar
-// den med partnerns egna åtgärder på spelborden (paus/öppning och
-// spelinställningsutkast). operator-store.mjs och ops/neon-studio/migrations.mjs
-// läser härifrån, så att lagret, migreringens källa och strukturbeviset aldrig
-// glider isär.
+// den med partnerns egna åtgärder: spelbordens läge och spelinställningsutkast
+// (#602) och begäran om material eller nyckelrotation (#605).
+// operator-store.mjs och ops/neon-studio/migrations.mjs läser härifrån, så att
+// lagret, migreringens källa och strukturbeviset aldrig glider isär.
 export const OPERATOR_AUDIT_ACTIONS_006 = Object.freeze(['operator.create', 'role.save', 'membership.create', 'membership.update',
   'team.invite', 'team.role', 'team.suspend', 'team.reactivate', 'membership.activate', 'membership.compensate', 'package.publish']);
 // Partnerns spelbordsåtgärder (partner-table-api.mjs): läge och spelinställningsutkast.
 export const PARTNER_TABLE_ACTIONS = Object.freeze(['room.state', 'room.settings']);
+// Partnerns begäran (partner-session.mjs): material och nyckelrotation.
+export const PARTNER_REQUEST_ACTIONS = Object.freeze(['request.material', 'request.key-rotation']);
 // Allt som 022 lägger till.
-export const PARTNER_JOURNAL_ACTIONS = Object.freeze([...PARTNER_TABLE_ACTIONS]);
+export const PARTNER_JOURNAL_ACTIONS = Object.freeze([...PARTNER_TABLE_ACTIONS, ...PARTNER_REQUEST_ACTIONS]);
 export const OPERATOR_AUDIT_ACTIONS = Object.freeze([...OPERATOR_AUDIT_ACTIONS_006, ...PARTNER_JOURNAL_ACTIONS]);
 // Tolerant kod före 022: utan versionen i ledgern skriver lagret ingen av
 // åtgärderna ovan och svarar 503 studio_migration_required.

@@ -11,7 +11,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
-import { OPERATOR_AUDIT_ACTIONS, PARTNER_TABLE_ACTIONS, PARTNER_JOURNAL_STORAGE_VERSION } from './operator-audit-actions.mjs';
+import { OPERATOR_AUDIT_ACTIONS, PARTNER_REQUEST_ACTIONS, PARTNER_TABLE_ACTIONS, PARTNER_JOURNAL_STORAGE_VERSION } from './operator-audit-actions.mjs';
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
@@ -26,9 +26,13 @@ const operatorStatuses = new Set(['active', 'suspended']);
 const membershipStatuses = new Set(['active', 'suspended', 'invited']);
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
-// Speglar journalens CHECK (006, utökad av 022 med partnerns egna åtgärder).
+// Speglar journalens CHECK (006, utökad av 022 med partnerns egna åtgärder och begäran).
 const auditActions = new Set(OPERATOR_AUDIT_ACTIONS);
 const tableActions = new Set(PARTNER_TABLE_ACTIONS);
+const requestActions = new Set(PARTNER_REQUEST_ACTIONS);
+// Begäranden per bolag och glidande timme (recordPartnerRequest).
+export const PARTNER_REQUEST_LIMIT = 20;
+export const PARTNER_REQUEST_WINDOW_MS = 60 * 60 * 1000;
 // The draft chain's own rows, read into the journal from operator_branding_drafts.
 const draftActions = new Set(['draft.save', 'draft.restore', 'draft.publish']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
@@ -633,6 +637,31 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {})}});
       return replacement?{package:saved,config:structuredClone(roomPublication.configs.find(row=>row.roomId===replacement.roomId).body)}:saved;
   }
+  // Partnerns begäran (material, nyckelrotation) är en journalpost och inget annat:
+  // ingen konfiguration ändras. Före 022 tillåter journalens CHECK inte åtgärden;
+  // då skrivs ingenting och svaret är 503 studio_migration_required. Under bolagets
+  // lås räknas bolagets begäranden den senaste timmen: högst PARTNER_REQUEST_LIMIT,
+  // annars 429 partner_request_limit och inget skrivet.
+  async function recordPartnerRequest(input = {}) {
+    actorOf(input);
+    const operatorId = idText(ownValue(input, 'operatorId'));
+    const action = ownValue(input, 'action');
+    if (!requestActions.has(action)) fail('studio_invalid_data', 422);
+    const message = optionalOwn(input, 'message') ?? null;
+    if (message !== null && (typeof message !== 'string' || message.length < 1 || message.length > 500 || message.trim() !== message
+      || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(message))) fail('studio_invalid_data', 422);
+    return withOperatorLock(async txQuery => {
+      await partnerJournalReady(txQuery);
+      if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      const recent = await txQuery(`/* operator-store:partner-request-window */
+        SELECT count(*)::integer AS requests FROM croupier_studio.operator_audit_events
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND action = ANY($4::text[]) AND occurred_at_ms > $5`,
+      [operatorId, [...PARTNER_REQUEST_ACTIONS], clock() - PARTNER_REQUEST_WINDOW_MS]);
+      if (recent.length !== 1 || !(Number(recent[0].requests) < PARTNER_REQUEST_LIMIT)) fail('partner_request_limit', 429);
+      await auditWrite(txQuery, input, { operatorId, action, resourceType: 'operator', resourceId: operatorId, after: { message } });
+      return Object.freeze({ operatorId, action, message });
+    });
+  }
   // Partnerns egna åtgärder (022) får bara skrivas när 022 står i ledgern; före
   // det tillåter journalens CHECK dem inte. Anroparen prövar detta i sin
   // transaktion före sina egna skrivningar, så att ingenting ändras utan journalpost:
@@ -818,6 +847,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, getPublishedRoomLimitPresets, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
-    assertPartnerJournalReady, recordPartnerTableEvent, listPartnerRoomPauses,
+    assertPartnerJournalReady, recordPartnerTableEvent, listPartnerRoomPauses, recordPartnerRequest,
   });
 }

@@ -70,9 +70,10 @@ const sources = Object.freeze([
   { version:'021', file:'021-operator-materials.sql', deploymentOptional:true,
     tables:['operator_materials','operator_material_policies','operator_ai_attempts'],
     indexes:['operator_materials_time_idx','operator_ai_attempts_day_idx'] },
-  // Partnerns egna åtgärder (spelbordens läge och spelinställningsutkast) som
-  // journalposter: bara 006:s CHECK-lista för action vidgas. Tolerant kod först:
-  // utan 022 svarar de vägarna 503 studio_migration_required. Appliceras efter Jakobs ja.
+  // Partnerns egna åtgärder (spelbordens läge, spelinställningsutkast och begäran
+  // om material eller nyckelrotation) som journalposter: bara 006:s CHECK-lista för
+  // action vidgas. Tolerant kod först: utan 022 svarar de vägarna 503
+  // studio_migration_required. Appliceras efter Jakobs ja.
   { version:'022', file:'022-partner-journal.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_audit_events'] },
 ]);

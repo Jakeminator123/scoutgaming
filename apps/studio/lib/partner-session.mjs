@@ -97,8 +97,10 @@ function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
   // 503 studio_migration_required: koden väntar på en Studio-migrering (t.ex. 022).
+  // 429 partner_request_limit: bolagets tak för begäranden per timme är nått.
   const reason = status === 409 && [...PARTNER_TEAM_CONFLICTS, ...PARTNER_TABLE_CONFLICTS].includes(error?.reason) ? error.reason
-    : status === 503 && error?.code === 'studio_migration_required' ? error.code : null;
+    : status === 503 && error?.code === 'studio_migration_required' ? error.code
+      : status === 429 && error?.code === 'partner_request_limit' ? error.code : null;
   return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
@@ -268,7 +270,7 @@ async function logout(request, body, config) {
 // Partner-API:ts egna vägar (ADMIN-FORENKLING 5.5, partner-table-api.mjs):
 // läsningar med GET och åtgärder med POST, alltid med ?operator=<slug>.
 const PARTNER_TABLE_GETS = Object.freeze(['assignment']);
-const PARTNER_TABLE_POSTS = Object.freeze(['dealer', 'room-settings', 'room-state']);
+const PARTNER_TABLE_POSTS = Object.freeze(['dealer', 'room-settings', 'room-state', 'request']);
 const PARTNER_OPERATOR_POSTS = Object.freeze(['branding', 'team', ...PARTNER_TABLE_POSTS]);
 function partnerAction(pathname, config) {
   const base = partnerApiBase(config);
@@ -571,6 +573,34 @@ async function dealerResponse(prepared, config) {
     operatorId: operator.id, actor: session.user, audit: operatorAuditContext(session) });
   return json(savedView(saved), 200, [], { vary: true });
 }
+// Begära material eller nyckelrotation (ADMIN-FORENKLING 5.5): en journalpost i
+// bolagets journal (operator_audit_events). Inget annat ändras. Den enda läsaren i
+// dag är partnerjournalen (`journal`, team.read + team.roles.assign), utan egen
+// etikett för request.* och utan meddelandet; en Admin-läsare av begäranden och
+// etiketterna i journalvyn är en egen UI-PR efter steg C.
+// Behörigheterna följer planen (ADMIN-FORENKLING 5.4): material.request (alla
+// standardroller) och integration.request (Integration-vyn kräver integrations.read).
+// Före Studio-migrering 022 svarar lagret 503 studio_migration_required, och högst
+// PARTNER_REQUEST_LIMIT begäranden per bolag och timme (429 partner_request_limit).
+export const PARTNER_REQUEST_KINDS = Object.freeze({
+  material: Object.freeze({ action: 'request.material', requires: Object.freeze(['material.request']) }),
+  'key-rotation': Object.freeze({ action: 'request.key-rotation', requires: Object.freeze(['integrations.read', 'integration.request']) }),
+});
+async function requestResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const { session, store, operator } = found;
+  const body = await bodyOf(prepared.request);
+  if (!body || !Object.hasOwn(PARTNER_REQUEST_KINDS, body.kind)) fail(400);
+  keys(body, ['kind', 'message'], ['kind']);
+  const kind = PARTNER_REQUEST_KINDS[body.kind];
+  if (!kind.requires.every(permission => allowsWorkspaceResource(decided, permission, { scope: session.scope, operatorId: operator.id }))) fail(403);
+  if (Object.hasOwn(body, 'message') && (!text(body.message, 500) || body.message.trim() !== body.message)) fail(400);
+  if (typeof store.recordPartnerRequest !== 'function') fail(503);
+  const saved = await store.recordPartnerRequest({ operatorId: operator.id, action: kind.action, actor: session.user,
+    audit: operatorAuditContext(session), ...(Object.hasOwn(body, 'message') ? { message: body.message } : {}) });
+  return json({ ok: true, kind: body.kind, message: saved.message }, 200, [], { vary: true });
+}
 // Tilldelningen (presentations.read; spelborden med tables.read), partner-table-api.mjs.
 async function assignmentResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
@@ -738,6 +768,7 @@ export async function handlePartnerAuth(request, injected) {
     if (prepared.action === 'journal') return await journalResponse(prepared, config);
     if (prepared.action === 'assignment') return await assignmentResponse(prepared, config);
     if (prepared.action === 'dealer') return await dealerResponse(prepared, config);
+    if (prepared.action === 'request') return await requestResponse(prepared, config);
     if (prepared.action === 'room-settings' || prepared.action === 'room-state') {
       const { partnerTableAction } = await import('./partner-table-api.mjs');
       return json(await partnerTableAction(prepared, config, () => bodyOf(prepared.request)), 200, [], { vary: true });

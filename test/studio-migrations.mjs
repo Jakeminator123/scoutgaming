@@ -829,7 +829,7 @@ test('--apply --only 021 installs exactly 021 when nothing earlier is pending, a
   assert.equal(pool.calls.some(row=>row.marker==='ddl-022'),false);
   // An earlier pending version must be named with --only or skipped with --skip.
   const gap=await installed();gap.change(remove016);gap.change(remove021);gap.calls.length=0;const before=gap.snapshot();
-  const refused=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021']});
+  const refused=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021','022']});
   assert.equal(refused.exitCode,2);assert.equal(refused.code,'migration_check_selection_order');assert.deepEqual(gap.snapshot(),before);
   const skipped=await checkMigrationReadiness({pool:gap,apply:true,confirm:true,only:['021'],skip:['016']});
   assert.equal(skipped.exitCode,0);assert.deepEqual(skipped.appliedNow,['021']);assert.deepEqual(skipped.optionalPending,['016','022']);
