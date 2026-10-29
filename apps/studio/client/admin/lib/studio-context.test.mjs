@@ -5,6 +5,7 @@ import * as reactDomServer from 'react-dom/server';
 import {adminDocumentHref} from '../../../../../packages/navigation/admin-workspace-routes.mjs';
 import {PACKAGE_RECEIPT_MISMATCH,packagePublishError,publishedPackageMessage} from '../../../lib/operator-package-client.mjs';
 import {aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
+import {assignmentPublishError} from '../../../lib/operator-assignment-client.mjs';
 const catalog={administration:{operators:[{id:'a',status:'active',archivedAt:null},{id:'b',status:'active',archivedAt:null}],rooms:[
   {id:'bj',operatorId:'a',game:'blackjack',compositionId:'one'},
   {id:'roulette',operatorId:'a',game:'roulette',compositionId:'two'},
@@ -128,6 +129,7 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
       :name==='./dealer-identity-portrait'?portraitStubs(React)
+      :name==='./assignment-field'?{AssignmentField:props=>React.createElement('section',{'data-assignment-field':String(props.revision??'none')})}
       :name==='./room-release'?{RoomRelease:props=>React.createElement('section',{'data-room-release':props.roomId,'data-eligible':String(Boolean(props.eligible)),'data-blocked-by':props.blockedBy??''})}
       :name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{hooks.reset();const tree=module.exports.RegisteredStudio(currentProps);hooks.flush();return tree;};
@@ -158,8 +160,7 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
   const stub=(tag,pick)=>props=>React.createElement('section',{[tag]:pick(props)});
   const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
-    :name==='./registered-studio'?{RegisteredStudio:stub('data-registered-studio',props=>[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'))}
-    :name==='./assignment-field'?{AssignmentField:stub('data-assignment-field',props=>[props.operatorId,props.revision??'none'].join(':'))}
+    :name==='./registered-studio'?{RegisteredStudio:props=>React.createElement('section',{'data-registered-studio':[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'),'data-assignment-revision':String(props.assignmentRevision??'none')})}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
@@ -345,8 +346,8 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions}),/data-registered-studio="create:a::"/);
   const assigned=await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions});
   assert.match(assigned,/data-registered-studio="package:a::"/);
-  // Bolag › Tilldelat: tilldelningens fält för samma bolag och dess publicerade revision.
-  assert.match(assigned,/data-assignment-field="a:/);
+  // Bolag › Tilldelat lives in the assignment form with the company's published revision, not beside it.
+  assert.match(assigned,/data-assignment-revision="1"/);assert.doesNotMatch(assigned,/data-assignment-field=/);
   const other=await companiesPageHtml({page:'company',id:'b',search:'?flik=spelbord',compositions});
   assert.deepEqual([...new Set(hrefs(other).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/other?flik=utseende']);
   const missing=await companiesPageHtml({page:'company',id:'missing',search:'?flik=spelbord',compositions});
@@ -689,7 +690,7 @@ test('an unchanged assignment is re-frozen only under Avancerat and a changed on
   republish().props.onClick();await p.settle();
   assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:4}],'the republish carries the CAS revision');
   assert.match(p.status(),/\b5\b/);
-  assert.equal(textOf(p.submit()).trim(),'Publicera för a','the form button keeps its name after a receipt');assert.equal(textOf(republish()).trim(),'Publicera igen');
+  assert.equal(textOf(p.submit()).trim(),'Publicera','the form button keeps its name after a receipt');assert.equal(textOf(republish()).trim(),'Publicera igen');
   p.checkbox('two').props.onChange({target:{checked:true}});
   assert.equal(p.submit().props.disabled,false,'a changed selection is published by the form');assert.equal(republish().props.disabled,true,'Avancerat waits');
   republish().props.onClick();await p.settle();assert.equal(p.requests.length,1,'Avancerat never publishes a changed selection');
@@ -743,4 +744,52 @@ test('a blackjack room\'s appearance links to the AI table dialog with its compa
   const html=await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},{compositions});
   const link=hrefs(html).find(href=>href.startsWith('/admin/scenes?tab=bordsgrafik'));
   assert.equal(link,'/admin/scenes?tab=bordsgrafik&operator=a&room=bj');
+});
+
+// Enkel väg 4: the company nav has four tabs with Spelbord first; retired tab ids land on the nearest tab.
+test('the company nav opens on Spelbord with start addresses, keeps the journal under Inställningar and maps old tab ids',async()=>{
+  const rooms=catalog.administration.rooms.map(row=>registryRoom({...row,playUrl:row.id==='bj'?'https://game.invalid/play/bj':null}));
+  const page=search=>companiesPageHtml({page:'company',id:'a',search,compositions,rooms});
+  const tabs=html=>[...html.matchAll(/href="\/admin\/companies\/a\?flik=([a-z]+)"/g)].map(match=>match[1]);
+  const plain=await page('');
+  assert.deepEqual([...new Set(tabs(plain))],['spelbord','tilldelning','team','installningar']);
+  const current=html=>html.match(/href="\/admin\/companies\/a\?flik=([a-z]+)" aria-current="page"/)?.[1];
+  assert.equal(current(plain),'spelbord','Spelbord is the default tab');
+  assert.ok(plain.includes('https://game.invalid/play/bj'),'start addresses are on Spelbord');
+  assert.doesNotMatch(plain,/Spelare och ekonomi|Inte anslutet ännu|data-journal=/,'no empty state and no journal on Spelbord');
+  for(const [old,tab,shows] of [['spelare','spelbord','https://game.invalid/play/bj'],['integration','spelbord','https://game.invalid/play/bj'],['journal','installningar','data-journal="a"']]){
+    const html=await page('?flik='+old);assert.equal(current(html),tab,old+' lands on its nearest tab');assert.ok(html.includes(shows),old);
+  }
+  const settings=await page('?flik=installningar');
+  assert.match(settings,/data-journal="a"/);assert.match(settings,/data-lifecycle="operator"/);
+  const list=await companiesPageHtml({page:'companies',search:'?tab=bolag',compositions});
+  assert.ok(hrefs(list).includes('/admin/companies/a?flik=spelbord'),'a company without a tab opens on Spelbord');
+});
+
+test('Tilldelning publishes the selection and what the company may change with one button, in order and on the first receipt',async()=>{
+  const view={allow:{dealer:true,tableAsset:false,background:false,language:false,limit:true,pause:false},adjustable:{dealer:true,tableAsset:false,background:false},
+    limitPresets:['casual'],languages:['sv'],options:{limitPresets:['casual','prive'],languages:['sv','en']}};
+  const p=await publicationHarness({props:{operatorId:'a',mode:'package',assignment:view,assignmentRevision:4}});
+  const field=()=>walk(p.h.render(),node=>typeof node.props?.onDraft==='function')[0];
+  const setPause=on=>{field().props.onDraft(current=>({...current,allow:{...current.allow,pause:on}}));p.h.render();};
+  p.lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(walk(p.h.render(),node=>node.type==='button'&&node.props.type==='submit').length,1,'one publish button for both');
+  assert.ok(walk(p.h.render(),node=>node.type==='form').flatMap(form=>walk(form,node=>typeof node.props?.onDraft==='function')).length,'the assignment is in the form');
+  assert.equal(p.submit().props.disabled,true,'nothing changed');
+  // Both changed: the selection first, then the assignment on revision 5 from the first receipt.
+  p.checkbox('two').props.onChange({target:{checked:true}});setPause(true);
+  assert.equal(p.submit().props.disabled,false);
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','two']}),Response.json({ok:true,operatorId:'a',packageRevision:6,assignment:view}));
+  await p.publish();
+  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['one','two'],expectedPackageRevision:4},
+    {action:'publish-assignment',operatorId:'a',expectedPackageRevision:5,assignment:{allow:{...view.allow,pause:true},limitPresets:['casual'],languages:['sv']}}]);
+  assert.match(p.status(),/\b6\b/);assert.equal(p.submit().props.disabled,true,'the sent draft waits for the new catalog read');
+  // The catalog reads revision 6; only the assignment changes: one call, and a 409 stops with a message.
+  p.h.setProps({assignment:{...view,allow:{...view.allow,pause:true}},assignmentRevision:6});
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
+  setPause(false);
+  await p.publish();
+  assert.deepEqual(p.requests.slice(2).map(row=>[row.body.action,row.body.expectedPackageRevision]),[['publish-assignment',6]]);
+  assert.ok(p.html().includes(escapeHtml(assignmentPublishError(409))));
+  await p.publish();assert.equal(p.requests.length,3,'no new attempt before the readback');
 });

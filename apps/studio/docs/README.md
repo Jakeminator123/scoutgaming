@@ -14,7 +14,7 @@ eller **sammansättning** (miljö); guiden citerar knapparna som de står.
 | Dealers | `/admin/dealers`, en dealer `/admin/dealers/{dealer}` | Klippkarta · Röst och tal · Landningar · Används av · Inställningar |
 | Miljöer och material | `/admin/scenes?tab=…` | Miljöer · Material (Bakgrund, Bordsgrafik, Arkiverat) |
 | Bolag och spelbord | `/admin/companies?tab=…` | Bolag · Alla spelbord · Papperskorg |
-| ett bolag | `/admin/companies/{bolag}?flik=…` | Tilldelning · Spelbord · Spelare och ekonomi · Team · Integration · Journal · Inställningar |
+| ett bolag | `/admin/companies/{bolag}?flik=…` | Spelbord · Tilldelning · Team · Inställningar |
 | ett spelbord | `/admin/rooms/{spelbord}?flik=…` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik |
 | System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden · Intern lobby |
 | Hjälp | `/admin/guide` | Menyn, vem som får ändra vad, orden och dealerflödet |
@@ -54,8 +54,7 @@ placering för bolaget:
 | Knapp | Var | Vad den publicerar |
 | --- | --- | --- |
 | **Publicera** → **Publicera nu** | Spelbord (öppet blackjackbord) | Bolagets sparade tal, klipp, vila och placering, fryst som ny version |
-| **Publicera för {bolag}** | Bolag › Tilldelning | Ett ändrat urval av miljöer |
-| **Publicera tilldelningen** | Bolag › Tilldelning | Vad bolaget får ändra själv, insatsprofiler och språk |
+| **Publicera** | Bolag › Tilldelning | Ett ändrat urval av miljöer och det bolaget får ändra själv (insatsprofiler, språk), i den ordningen |
 | **Publicera · N ändringar** → **Publicera nu** | Spelbord › Utseende | Spelbordets bakgrund, dealer och bordsgrafik |
 | **Publicera spelinställningar** | Spelbord › Spelinställningar | Bordsspråk och insatsprofil |
 
@@ -464,31 +463,36 @@ spelbordet**, som öppnar samma dialog för det spelbordet.
 
 ### Ett bolag
 
-- **Tilldelning**: kryssa i de miljöer bolaget får använda; dealers,
-  bakgrunder och bordsgrafik följer med via miljöerna. Markeringarna
-  ersätter urvalet, så behåll alla miljöer bolaget fortsatt ska ha.
-  **Publicera för {bolag}** fryser urvalet som en ny version.
-- **Tilldelat bolaget** (överst under Tilldelning): vad bolaget får ändra
-  själv i Partnerportalen. Kryssa i dealer, bordsgrafik och bakgrund (bara där
-  miljön tillåter det; annars *Låst i miljön*), bordsspråk,
-  insatsprofil och paus, och vilka insatsprofiler och språk bolaget väljer
-  bland. **Publicera tilldelningen** ger paketet en ny version och en rad i
-  bolagets journal; Partnerportalen läser den direkt. Ett upplåst språk eller
-  en upplåst insatsprofil kräver minst ett alternativ.
-- **Spelbord**: bolagets spelbord, **Nytt spelbord** och bolagets papperskorg.
-- **Spelare och ekonomi**: inte anslutet ännu; spelarkonton finns under
-  System › Spelarkonton.
+Bolaget öppnas på **Spelbord**. Gamla flikadresser leder vidare:
+`?flik=spelare` och `?flik=integration` till Spelbord, `?flik=journal` till
+Inställningar. Spelare och ekonomi per bolag kommer tillbaka när spelarna
+hör till ett bolag; tills dess finns de under System › Spelarkonton, och
+API-nycklarna under System › Integration.
+
+- **Spelbord**: bolagets spelbord, **Nytt spelbord**, startadress per
+  spelbord och bolagets papperskorg.
+- **Tilldelning**: en form med en knapp. Kryssa i de miljöer bolaget får
+  använda; dealers, bakgrunder och bordsgrafik följer med via miljöerna.
+  Markeringarna ersätter urvalet, så behåll alla miljöer bolaget fortsatt
+  ska ha. Under **Tilldelat bolaget** väljer du vad bolaget får ändra själv i
+  Partnerportalen: dealer, bordsgrafik och bakgrund (bara där miljön
+  tillåter det; annars *Låst i miljön*), bordsspråk, insatsprofil och
+  paus, och vilka insatsprofiler och språk bolaget väljer bland. Ett upplåst
+  språk eller en upplåst insatsprofil kräver minst ett alternativ.
+  **Publicera** skickar det som är ändrat: urvalet först och sedan det bolaget
+  får ändra, på versionen från första kvittot. Varje steg ger paketet en ny
+  version och en rad i journalen; Partnerportalen läser den direkt. Stoppas
+  ett steg (till exempel för att någon annan har publicerat) försöker Admin
+  inte igen; läs in bolaget och publicera på nytt.
 - **Team**: medlemmar, roller och inbjudningar. Ett fält
   tar ny e-post eller ett befintligt partnerkontos användarnamn; en ny adress
   får en aktiveringslänk. **Vad får rollerna göra?** visar rollernas
   rättigheter. Administratören utses bara av Admin, och den sista
   administratören kan inte stängas av.
-- **Integration**: startadress per spelbord. API-nycklarna skapas under
-  System › Integration.
-- **Journal**: bolagets ändringar med tid, aktör, åtgärd och version; **Hämta
-  äldre ändringar** visar nästa sida.
-- **Inställningar**: namn, status och **Livscykel** (**Flytta bolag till
-  papperskorgen**, **Återställ bolag**). Namnet ändras inte från Admin i dag.
+- **Inställningar**: namn, status, **Livscykel** (**Flytta bolag till
+  papperskorgen**, **Återställ bolag**) och **Journal**: bolagets ändringar
+  med tid, aktör, åtgärd och version; **Hämta äldre ändringar** visar nästa
+  sida. Namnet ändras inte från Admin i dag.
 
 Knapparna **Skapa demo** och **Öppna Partnerportalen** ligger i rubriken.
 
