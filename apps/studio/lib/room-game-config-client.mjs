@@ -18,21 +18,21 @@ function receipt(value, context) {
     || !(value.published === null || object(value.published) && revision(value.published.configVersion)
       && Number.isSafeInteger(value.published.packageRevision) && value.published.packageRevision > 0
       && validRoomGameConfig(value.published.gameConfig) && value.published.betMs === 20000 && value.published.actionMs === 15000)
-    || !object(value.publication) || typeof value.publication.ready !== 'boolean') throw new RoomGameConfigError('Serverns kvitto stämmer inte med spelrummet. Läs in aktuella uppgifter.');
+    || !object(value.publication) || typeof value.publication.ready !== 'boolean') throw new RoomGameConfigError('Serverns kvitto stämmer inte med spelbordet. Läs in aktuella uppgifter.');
   return value;
 }
 export function createRoomGameConfigClient({fetchImpl=fetch}={}) {
   async function send(context, body, signal) {
-    if (!id(context?.roomId) || !id(context?.operatorId)) throw new RoomGameConfigError('Välj ett registrerat spelrum.');
+    if (!id(context?.roomId) || !id(context?.operatorId)) throw new RoomGameConfigError('Välj ett registrerat spelbord.');
     const endpoint = labUrl('/api/admin/room-game-config');
     const url = body ? endpoint : endpoint+'?'+new URLSearchParams(context);
     let response;
     try { response = await fetchImpl(url, {method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',redirect:'error',signal,
       headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})}); }
     catch(error) { if(signal?.aborted)throw error; throw new RoomGameConfigError('Svaret kunde inte bekräftas. Läs in aktuella uppgifter innan du försöker igen.'); }
-    if (!response.ok) throw new RoomGameConfigError(({401:'Logga in igen för att fortsätta.',403:'Du saknar åtkomst till spelrummet.',
-      404:'Spelinställningarna är inte tillgängliga för det här rummet.',409:'Uppgifterna har ändrats. Läs in aktuella uppgifter; dina fält finns kvar.',
-      422:'Valen kan inte publiceras. Kontrollera språk, insatsprofil och rummets inspelade material.',503:'Spelinställningarna är tillfälligt otillgängliga.'})[response.status] || 'Åtgärden kunde inte bekräftas.',response.status);
+    if (!response.ok) throw new RoomGameConfigError(({401:'Logga in igen för att fortsätta.',403:'Du saknar åtkomst till spelbordet.',
+      404:'Spelinställningarna är inte tillgängliga för det här spelbordet.',409:'Uppgifterna har ändrats. Läs in aktuella uppgifter; dina fält finns kvar.',
+      422:'Valen kan inte publiceras. Kontrollera språk, insatsprofil och spelbordets inspelade material.',503:'Spelinställningarna är tillfälligt otillgängliga.'})[response.status] || 'Åtgärden kunde inte bekräftas.',response.status);
     let value; try {value=await response.json();}catch {throw new RoomGameConfigError('Serverns kvitto kunde inte läsas. Läs in aktuella uppgifter.');}
     return receipt(value,context);
   }

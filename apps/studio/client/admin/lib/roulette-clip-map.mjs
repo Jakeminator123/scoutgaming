@@ -6,7 +6,7 @@ import {validateRouletteStartBinding} from '../../../../../packages/presentation
 // Explicit roulette authoring. These records never become blackjack lines.
 const descriptions={
   'roulette.reference':'Prova VILA som lokal PNG. PNG kan ännu inte sparas under Dealers. Saknas bilden används första tillgängliga roulette-idle i förhandsvisningen.',
-  'roulette.idle':'Koppla en grundloop och högst tre glasögonvarianter till utkastet. Start och slut behöver matcha VILA. Ny grundloop rensar handmask och tidigare variationer. Publicera rummet separat.',
+  'roulette.idle':'Koppla en grundloop och högst tre glasögonvarianter till utkastet. Start och slut behöver matcha VILA. Ny grundloop rensar handmask och tidigare variationer. Publicera spelbordet separat.',
   'roulette.wheel-start':'Koppla en granskad VILA → VILA-startfilm med explicit borddesign, filmlängd, hjulimpuls och kulsläpp. Spelas efter serverns sparade kvitto.',
 };
 export function rouletteClipSlots() {

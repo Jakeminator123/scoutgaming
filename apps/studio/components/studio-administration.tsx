@@ -425,7 +425,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {missing(resources.overview, 'overview')}
         {overview && <><dl className={styles.metrics}>
           <div><dt>Spelare</dt><dd>{label(overview.players)}</dd></div>
-          <div><dt>Rum</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
+          <div><dt>Spelbord</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
         </dl><p className={styles.notice}>Senast hämtade uppgifter.</p></>}
       </>}
       {section === 'shoes' && <>
