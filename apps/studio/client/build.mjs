@@ -8,8 +8,17 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { surfaceBundleOptions } from './surface-bundle.mjs';
+import { themeModeBootstrap } from '../lib/theme-mode.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
+// Tailwind 3 löser inte @import; tokenfilen (packages/ui/tokens.css) läggs in där studio.css importerar den.
+async function readCssWithImports(file) {
+  const parts = (await readFile(file, 'utf8')).split(/^(@import '[^']+\.css';)$/m);
+  return (await Promise.all(parts.map(part => {
+    const path = /^@import '([^']+\.css)';$/.exec(part)?.[1];
+    return path ? readFile(resolve(dirname(file), path), 'utf8') : part;
+  }))).join('');
+}
 const output = resolve(root, '../design-preview-build');
 for (const surface of ['admin', 'lobby']) {
   const check = spawnSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--noEmit', '-p', surface],
@@ -37,7 +46,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
     const imported = await import(pathToFileURL(cjsFile).href);
     const config = imported.default.default;
     plugins = [tailwind3({ ...config, content: [source.replaceAll('\\', '/') + '/**/*.{ts,tsx}', resolve(root,'../components').replaceAll('\\','/')+'/**/*.{ts,tsx,mjs}'] })];
-    css += '\n' + await readFile(resolve(source, 'app/studio.css'), 'utf8');
+    css += '\n' + await readCssWithImports(resolve(source, 'app/studio.css'));
   } else {
     css = css.replace("@import 'tailwindcss';", "@import 'tailwindcss' source(none);\n@source '../components';\n@source '../app';\n@source '../entry.tsx';");
     plugins = [tailwind4({ base: source })];
@@ -53,6 +62,13 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
 }
 await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
   define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio':'')}});
+// Lägesvalet (lib/theme-mode.mjs) körs före Admins stilmall. CSP:n tillåter inga inline-skript,
+// så startskriptet är en egen fil som Admin-dokumentet laddar direkt efter teckenkodningen.
+await writeFile(resolve(output, 'admin/theme-mode.js'), themeModeBootstrap + '\n');
+const adminDocument = resolve(output, 'admin/index.html'), modeScript = '<script src="/admin/_assets/admin/theme-mode.js"></script>';
+const adminHtml = (await readFile(adminDocument, 'utf8')).replace('<meta charset="utf-8">', '$&' + modeScript);
+if (!adminHtml.includes(modeScript)) throw new Error('The Admin document has no <meta charset="utf-8"> to place the mode script after.');
+await writeFile(adminDocument, adminHtml);
 await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
   await cp(resolve(root, '../app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));

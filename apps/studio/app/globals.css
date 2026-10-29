@@ -113,34 +113,35 @@ body{
   .event-node,.variant-option,.main-nav a,.primary-button{transition-duration:.01ms!important}
 }
 /* Light shell only. Dark literals above stay the dark-mode values. */
-html[data-theme="light"] .operator-chat,
-html[data-theme="light"] .chat-choices>div{
+html.light body{background:var(--sg-bg)}
+html.light .operator-chat,
+html.light .chat-choices>div{
   background:var(--sg-surface);color:var(--sg-text);border-color:var(--sg-border);box-shadow:none
 }
-html[data-theme="light"] .operator-chat form{background:var(--sg-surface-2);border-top-color:var(--sg-border)}
-html[data-theme="light"] .operator-chat form textarea{
+html.light .operator-chat form{background:var(--sg-surface-2);border-top-color:var(--sg-border)}
+html.light .operator-chat form textarea{
   background:var(--sg-field);color:var(--sg-text);caret-color:var(--sg-text)
 }
-html[data-theme="light"] .chat-heading{background:var(--sg-surface);color:var(--sg-text)}
-html[data-theme="light"] .chat-project-note{color:var(--sg-muted)!important}
-html[data-theme="light"] .chat-message{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
-html[data-theme="light"] .chat-message>p{color:var(--sg-text)}
-html[data-theme="light"] .chat-message.user{background:var(--sg-hover);border-color:var(--sg-border)}
-html[data-theme="light"] .chat-empty>span,
-html[data-theme="light"] .chat-empty p{color:var(--sg-muted)}
-html[data-theme="light"] .chat-empty h3{color:var(--sg-text)}
-html[data-theme="light"] .suggested-prompt{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
-html[data-theme="light"] .inspector-tabs{background:var(--sg-surface-2);border-bottom-color:var(--sg-border)}
-html[data-theme="light"] .inspector-tabs button{color:var(--sg-muted)}
-html[data-theme="light"] .inspector-tabs button[aria-selected="true"]{color:var(--sg-text);border-bottom-color:var(--sg-mark)}
-html[data-theme="light"] .inspector-tabs button>span{background:var(--sg-hover);color:var(--sg-muted)}
-html[data-theme="light"] .variant-option{background:var(--sg-surface);border-color:var(--sg-border);color:var(--sg-text)}
-html[data-theme="light"] .variant-option.active{background:var(--sg-surface-2)}
-html[data-theme="light"] .variant-option strong,
-html[data-theme="light"] .variant-option.active strong{color:var(--sg-text)}
-html[data-theme="light"] .variant-option small,
-html[data-theme="light"] .variant-option.active small{color:var(--sg-muted)}
-html[data-theme="light"] .notice.subtle{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
-html[data-theme="light"] .notice.subtle p{color:var(--sg-muted)}
-html[data-theme="light"] .inspector-footer{background:var(--sg-surface-2);border-top-color:var(--sg-border);color:var(--sg-muted)}
-html[data-theme="light"] .inspector-footer>span{color:var(--sg-faint)}
+html.light .chat-heading{background:var(--sg-surface);color:var(--sg-text)}
+html.light .chat-project-note{color:var(--sg-muted)!important}
+html.light .chat-message{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
+html.light .chat-message>p{color:var(--sg-text)}
+html.light .chat-message.user{background:var(--sg-hover);border-color:var(--sg-border)}
+html.light .chat-empty>span,
+html.light .chat-empty p{color:var(--sg-muted)}
+html.light .chat-empty h3{color:var(--sg-text)}
+html.light .suggested-prompt{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
+html.light .inspector-tabs{background:var(--sg-surface-2);border-bottom-color:var(--sg-border)}
+html.light .inspector-tabs button{color:var(--sg-muted)}
+html.light .inspector-tabs button[aria-selected="true"]{color:var(--sg-text);border-bottom-color:var(--sg-mark)}
+html.light .inspector-tabs button>span{background:var(--sg-hover);color:var(--sg-muted)}
+html.light .variant-option{background:var(--sg-surface);border-color:var(--sg-border);color:var(--sg-text)}
+html.light .variant-option.active{background:var(--sg-surface-2)}
+html.light .variant-option strong,
+html.light .variant-option.active strong{color:var(--sg-text)}
+html.light .variant-option small,
+html.light .variant-option.active small{color:var(--sg-muted)}
+html.light .notice.subtle{background:var(--sg-surface-2);border-color:var(--sg-border);color:var(--sg-text)}
+html.light .notice.subtle p{color:var(--sg-muted)}
+html.light .inspector-footer{background:var(--sg-surface-2);border-top-color:var(--sg-border);color:var(--sg-muted)}
+html.light .inspector-footer>span{color:var(--sg-faint)}
