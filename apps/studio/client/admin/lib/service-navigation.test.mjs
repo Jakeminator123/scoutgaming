@@ -82,6 +82,21 @@ test('Taldrift mounts native controls on the freshly read actor, bound to the sh
   assert.equal(node(panel,item=>item.props?.role==='alert'),null);
 });
 
+// DealerHub has no key per dealer (entry.tsx), so the same panel instance moves from one dealer to the next.
+test('Taldrift binds a new client when the shown dealer changes, so B never reads or writes A',async()=>{
+  const h=harness();
+  h.render(h.page.TaldriftPanel,{dealerId:'paow'});await h.settle();
+  h.render(h.page.TaldriftPanel,{dealerId:'dragan'});await h.settle();
+  const controls=panelOf(h.render(h.page.TaldriftPanel,{dealerId:'dragan'}),h.markers.MovingDriftControls);
+  assert.equal(h.clients.length,2,'a new dealer reads the session again and gets its own client');
+  await controls.props.client.request('GET','moving-drift',undefined,undefined,undefined);
+  await controls.props.client.request('POST','moving-drift',{expectedRevision:1,commandId:'c-2',mode:'off'},undefined,undefined);
+  assert.deepEqual(plain(h.clients[1].calls.map(([method,,body,,,query])=>({method,body,query}))),[
+    {method:'GET',query:{dealerId:'dragan'}},
+    {method:'POST',body:{expectedRevision:1,commandId:'c-2',mode:'off',dealerId:'dragan'}}]);
+  assert.equal(h.clients[0].calls.length,0,'the first dealer\'s client is not reused');
+});
+
 test('Taldrift refuses an unverified session or action list and can retry',async()=>{
   for(const [options,expected] of [
     [{data:{availableActions:['GET moving-drift']}},/Serverstatus 401/],

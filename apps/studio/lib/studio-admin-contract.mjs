@@ -1,4 +1,5 @@
 import { studioAdminSectionPolicy, studioAdminActionPolicy } from './studio-access-policy.mjs';
+import { MOVING_DRIFT_DEALER_ID } from '../../../packages/presentation/contracts/moving-drift.mjs';
 
 // Future-only addresses, not active routes or an automatic proxy/redirect.
 // Descriptors never perform session, Origin/CSRF, input or revision/CAS checks.
@@ -90,9 +91,9 @@ export function isSharedTableProofReadQuery(method,url) {
   return method==='GET'&&['/studio/api/admin/shared-table-proof','/api/admin/shared-table-proof'].includes(url.pathname)
     &&keys.length>=1&&keys.length<=2&&new Set(keys).size===keys.length&&keys.includes('roomId')&&keys.every(key=>['roomId','shoeId'].includes(key)&&queryId(url.searchParams.get(key)));
 }
-// Taldrift per dealer: exakt en parameter, dealerId (samma form som driftprofilens dealer-id).
+// Taldrift per dealer: exakt en parameter, dealerId (driftprofilens egen dealer-id-form).
 export function isMovingDriftReadQuery(method,url) {
   const keys=[...url.searchParams.keys()];
   return method==='GET'&&['/studio/api/admin/moving-drift','/api/admin/moving-drift'].includes(url.pathname)
-    &&keys.length===1&&keys[0]==='dealerId'&&/^[a-z][a-z0-9-]{0,39}$/.test(url.searchParams.get('dealerId'));
+    &&keys.length===1&&keys[0]==='dealerId'&&MOVING_DRIFT_DEALER_ID.test(url.searchParams.get('dealerId'));
 }

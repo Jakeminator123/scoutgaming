@@ -291,6 +291,12 @@ test('a pending permanent deletion disables restore and only offers to finish th
   assert.equal(h.archives.length,1,'restore is never submitted');assert.equal(h.deletions.length,0);
 });
 
+test('dealer hub binds Taldrift to the shown dealer',()=>{
+  const source=readFileSync(new URL('../components/studio/dealer-hub.tsx',import.meta.url),'utf8');
+  assert.match(source,/<TaldriftPanel dealerId=\{dealer\.id\}\/>/);
+  assert.equal(source.match(/<TaldriftPanel\b/g)?.length,1,'one Taldrift panel, always with the dealer');
+});
+
 test('dealer hub says a dealer without its own filmed profile inherits PAOW landings',async()=>{
   const {dealerLandingsNote}=await import('./dealer-coverage.mjs');
   assert.equal(dealerLandingsNote('jakob-2'),"Ärver PAOW:s landningar");
