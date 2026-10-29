@@ -46,15 +46,23 @@ export function repositoryFromRemote(url) {
   return `${parts[0]}/${parts[1]}`;
 }
 
+// The part of a branch name that a policy wildcard or a plain environment name may consist of:
+// git's ref rules (no empty or slash-edged segments, no "..", "@{", ".lock" or trailing dot) on a
+// plain character set. `plain` additionally forbids slashes and the pseudo-ref HEAD.
+export function isValidRefPart(part, { plain = false } = {}) {
+  if (typeof part !== 'string' || !part) return false;
+  if (part.startsWith('/') || part.endsWith('/') || part.includes('//') || part.includes('..') || part.includes('@{') || part.endsWith('.lock') || part.endsWith('.')) return false;
+  if (plain) return part !== 'HEAD' && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(part);
+  return /^[A-Za-z0-9._/-]+$/.test(part);
+}
+
 export function matchesBranchPattern(name, pattern) {
   if (typeof name !== 'string' || typeof pattern !== 'string') return false;
   const parts = pattern.split('*');
   if (parts.length !== 2 || !parts[0].endsWith('/')) return false;
   const [prefix, suffix] = parts;
   if (!name.startsWith(prefix) || !name.endsWith(suffix)) return false;
-  const middle = name.slice(prefix.length, name.length - suffix.length);
-  if (!middle || middle.startsWith('/') || middle.endsWith('/') || middle.includes('//') || middle.includes('..') || middle.includes('@{') || middle.endsWith('.lock') || middle.endsWith('.')) return false;
-  return /^[A-Za-z0-9._/-]+$/.test(middle);
+  return isValidRefPart(name.slice(prefix.length, name.length - suffix.length));
 }
 
 export function featurePatterns(policy) {
@@ -76,7 +84,7 @@ export function isAllowedHead(name, policy) {
 // A name that is main, matches a feature pattern or a protected (someone else's) branch is refused.
 export function environmentBranches(policy) {
   const names = policy?.environmentBranches ?? [];
-  const invalid = !Array.isArray(names) || names.some(name => typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)
+  const invalid = !Array.isArray(names) || names.some(name => !isValidRefPart(name, { plain: true })
     || isProtectedBranch(name, policy) || featurePatterns(policy).some(pattern => matchesBranchPattern(name, pattern)));
   if (invalid) throw new Error('repository policy environmentBranches must list plain branch names such as preview, distinct from main, the feature patterns and protectedBranches.');
   return names;
@@ -92,7 +100,18 @@ export function isProtectedBranch(name, policy) {
   if (!Array.isArray(patterns) || patterns.some(pattern => typeof pattern !== 'string' || !pattern)) {
     throw new Error('repository policy protectedBranches must list branch names or patterns.');
   }
-  return name === policy.branch || patterns.some(pattern => {
+  return name === policy.branch || isForeignBranch(name, policy);
+}
+
+// Someone else's branch per protectedBranches (never main). The hook judges the remote ref, so this
+// also refuses a local checkout of kevin* as the source of any push: Kevin's work is never pushed
+// under Jakob's names or to the environment branch from his branches.
+export function isForeignBranch(name, policy) {
+  const patterns = policy?.protectedBranches;
+  if (!Array.isArray(patterns) || patterns.some(pattern => typeof pattern !== 'string' || !pattern)) {
+    throw new Error('repository policy protectedBranches must list branch names or patterns.');
+  }
+  return patterns.some(pattern => {
     const source = pattern.split('*').map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*');
     return new RegExp(`^${source}$`).test(name);
   });
@@ -131,7 +150,7 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor, m
   for (const line of String(updates || '').trim().split(/\r?\n/).filter(Boolean)) {
     const parts = line.trim().split(/\s+/);
     if (parts.length !== 4) throw new Error(refusal(policy));
-    const [, sha, remoteRef, remoteSha] = parts;
+    const [localRef, sha, remoteRef, remoteSha] = parts;
     if (!/^[a-f0-9]{40,64}$/.test(sha || '') || !/^[a-f0-9]{40,64}$/.test(remoteSha || '')) throw new Error(refusal(policy));
     if (remoteRef.startsWith('refs/tags/')) throw new Error('Tag updates are not allowed.');
     const name = remoteRef.startsWith('refs/heads/') ? remoteRef.slice('refs/heads/'.length) : '';
@@ -141,6 +160,10 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor, m
       continue;
     }
     if (!name || !(isAllowedHead(name, policy) || isEnvironmentBranch(name, policy))) throw new Error(refusal(policy));
+    const localName = localRef.startsWith('refs/heads/') ? localRef.slice('refs/heads/'.length) : '';
+    if (localName && isForeignBranch(localName, policy)) {
+      throw new Error(`Pushing from protected branch ${localName} is not allowed: other people's branches are never pushed under another name or to an environment branch.`);
+    }
     if (!zero(remoteSha) && !isAncestor(remoteSha, sha)) {
       throw new Error('Push would rewrite history, or the remote commit is not known locally. Fetch and inspect divergence; no force push.');
     }

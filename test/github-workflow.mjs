@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { environmentBranches, isEnvironmentBranch, redactSecrets, validatePush } from '../tools/check-push-target.mjs';
-import { deliver, parseDeliveryArgs, planGithubDelivery } from '../tools/push-github-work.mjs';
+import { deliver, divergenceAdvice, parseDeliveryArgs, planGithubDelivery } from '../tools/push-github-work.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
 const url = `git@github.com:${policy.repository}.git`;
@@ -50,9 +50,19 @@ test('the preview environment branch can be fast-forwarded from the policy but n
   assert.throws(() => validatePush(url, feature('kevin', sha('c'), sha('0')), policy), /environment branches \(preview\)/);
   // A policy without the field is still valid; a malformed one is refused before any ref is judged.
   assert.doesNotThrow(() => validatePush(url, update, { ...policy, environmentBranches: undefined }, () => true));
-  for (const bad of [['main'], ['jakob/preview'], ['kevin'], ['kevin-staging'], ['jakob-gren'], ['pre*'], [''], ['preview', 42], 'preview']) {
+  // Invalid ref names are refused by the same rules as the feature patterns: HEAD, "..", ".lock", trailing dot, "@{".
+  for (const bad of [['main'], ['jakob/preview'], ['kevin'], ['kevin-staging'], ['jakob-gren'], ['pre*'], [''], ['preview', 42], 'preview',
+    ['HEAD'], ['a..b'], ['x.lock'], ['x.'], ['a@{b'], ['-x'], ['pre/view']]) {
     assert.throws(() => validatePush(url, update, { ...policy, environmentBranches: bad }, () => true), /environmentBranches/, JSON.stringify(bad));
   }
+  assert.doesNotThrow(() => validatePush(url, update, { ...policy, environmentBranches: ['preview', 'preview-2', 'v1.0'] }, () => true));
+  // The hook judges the remote ref, so a local checkout of someone else's branch is refused as a source too.
+  for (const local of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-gren', 'roulette-on-kevin-staging']) {
+    assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/preview ${sha('d')}`, policy, () => true), /Pushing from protected branch/, local);
+    assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/jakob/port ${sha('0')}`, policy, () => true), /Pushing from protected branch/, local);
+  }
+  assert.doesNotThrow(() => validatePush(url, `refs/heads/main ${sha('a')} refs/heads/preview ${sha('b')}`, policy, () => true), 'main is a source for preview');
+  assert.doesNotThrow(() => validatePush(url, `HEAD ${sha('c')} refs/heads/preview ${sha('d')}`, policy, () => true), 'a detached HEAD is judged by its target only');
 });
 test('merged feature branches can be deleted; main, protected and unmerged branches cannot', () => {
   const main = () => sha('e');
@@ -125,7 +135,8 @@ test('delivery plans a feature branch and an explicit main emergency path', () =
 });
 test('delivery to the preview environment branch is a fast-forward from main, a feature branch or preview itself, never a PR', () => {
   const expected = source => ({ branch: 'preview', source, ref: 'refs/heads/preview', emergency: false, environment: true, pullRequest: null });
-  assert.deepEqual(planGithubDelivery({ branch: 'preview', policy }), expected('preview'));
+  // Standing on a local preview is not a request to push it: the environment is always named.
+  assert.throws(() => planGithubDelivery({ branch: 'preview', policy }), /preview is an environment branch, not a delivery branch\. Pass --environment preview/);
   assert.deepEqual(planGithubDelivery({ branch: 'preview', environment: 'preview', policy }), expected('preview'));
   assert.deepEqual(planGithubDelivery({ branch: 'main', environment: 'preview', policy }), expected('main'));
   assert.deepEqual(planGithubDelivery({ branch: 'jakob/claude-x', environment: 'preview', policy }), expected('jakob/claude-x'));
@@ -134,7 +145,7 @@ test('delivery to the preview environment branch is a fast-forward from main, a 
   }
   assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-x', environment: 'kevin', policy }), /not an environment branch/);
   assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-x', environment: 'main', policy }), /not an environment branch/);
-  assert.throws(() => planGithubDelivery({ branch: 'preview', policy: { ...policy, environmentBranches: [] } }), /not a delivery branch/);
+  assert.throws(() => planGithubDelivery({ branch: 'preview', policy: { ...policy, environmentBranches: [] } }), /not a delivery branch\. Use jakob/);
   assert.throws(() => planGithubDelivery({ branch: 'preview', adminMain: true, policy }), /only pushes main/);
   const local = sha('c');
   const { calls, git } = fakeGit({
@@ -169,8 +180,18 @@ test('delivery to the preview environment branch is a fast-forward from main, a 
     'ls-remote --heads https://github.com/Jakeminator123/scoutgaming refs/heads/preview': sha('b'),
     [`merge-base --is-ancestor ${sha('b')} ${local}`]: new Error('not ancestor'),
   });
-  assert.throws(() => deliver({ args: ['--environment', 'preview'], policy, git: diverged.git, log() {} }), /merge origin\/preview into main first, or open a pull request against preview.*No force push/);
+  // Divergence is resolved on GitHub's side (a PR with base preview); origin/preview is never merged into main or a feature branch.
+  const advice = /open a pull request from main with base preview, merged with node tools\/merge-pr\.mjs <nr> --head <sha> --base preview; never merge origin\/preview into main\)\. No force push/;
+  assert.throws(() => deliver({ args: ['--environment', 'preview'], policy, git: diverged.git, log() {} }), advice);
   assert.equal(diverged.calls.some(call => call.startsWith('push ')), false);
+  assert.match(divergenceAdvice({ environment: true, branch: 'preview', source: 'jakob/claude-x' }, 'jakob/claude-x'), /from jakob\/claude-x with base preview.*never merge origin\/preview into jakob\/claude-x/);
+  assert.doesNotMatch(divergenceAdvice({ environment: true, branch: 'preview', source: 'jakob/claude-x' }, 'jakob/claude-x'), /\(merge origin\/preview into jakob/);
+  assert.equal(divergenceAdvice({ environment: true, branch: 'preview', source: 'preview' }, 'preview'), ' (merge origin/preview into your local preview first)');
+  assert.equal(divergenceAdvice({ environment: false, branch: 'jakob/x', source: 'jakob/x' }, 'jakob/x'), '');
+  // From a local kevin checkout the plan itself refuses, before the hook would.
+  const foreign = fakeGit({ 'branch --show-current': 'kevin' });
+  assert.throws(() => deliver({ args: ['--environment', 'preview'], policy, git: foreign.git, log() {} }), /may be pushed to preview; not kevin/);
+  assert.equal(foreign.calls.some(call => call.startsWith('push ')), false);
 });
 
 function fakeGit(responses) {
