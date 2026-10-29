@@ -10,6 +10,7 @@ import { addDealer, createSeedProject as historicalProject } from '../packages/p
 import { playLocalFilm } from '../services/game/public/local-film-player.mjs';
 import { createPresentationStartup } from '../services/game/public/presentation-startup.mjs';
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
+import { recordedSpeechIdentity } from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
 import { DRAGAN_KEVIN_PROFILE as dragan } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
@@ -800,7 +801,7 @@ test('a shared table whose binding is confirmed plays its idle films without rea
   assert.ok(f.jobs.length>=2,'the idle film still plays');
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, idleConfigRead, connection} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, idleConfigRead, connection, muted: mutedPort = () => false} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -817,7 +818,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: () => false,
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: mutedPort,
     ...(idleConfigRead === undefined ? {} : {idleConfigRead}), ...(connection === undefined ? {} : {connection}) });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
@@ -2492,4 +2493,176 @@ test('a plan choice this dealer’s media cannot match falls back to select with
     assert.equal(player.plays.length, before + 1); assert.equal(player.plays.at(-1), reveal.sha256);
     player.finish(); assert.equal(await playing, true);
   }
+});
+
+// Speech lag (preview 28 Oct 2026, 48 lines in 17 hands): a shared room lists no families, so no spoken line was
+// prepared or warmed. Each one waited for select (0.9-4.3 s), then its GET (TTFB 0.5-4.4 s), then its hash.
+// Synthetic approved recorded takes of PAOW's lines; no real media.
+function speechRow(lineId, hex, { language = 'sv', dealerId = 'paow', id = `${lineId}-${language}`, bytes = 750000 } = {}) {
+  const sha256 = hex.repeat(64);
+  const value = { schemaVersion: 1, dealerId, lineId, takeId: `${lineId}_1`, language, exactText: 'En syntetisk testreplik.',
+    videoSha256: sha256, audioSha256: 'e'.repeat(64), indexSha256: 'f'.repeat(64), fps: 24, frameCount: 72, audioDelayMs: 0,
+    entryPose: 'VILA', exitPose: 'VILA', calibrationRevision: 'fixture-calibration-v1', recording: { status: 'pending' }, review: { status: 'pending' } };
+  const identity = recordedSpeechIdentity(value), by = 'fixture-reviewer', at = '2026-10-28T00:00:00.000Z';
+  value.recording = { status: 'verified-recording', by, at, identity: structuredClone(identity) };
+  value.review = { status: 'approved', by, at, identity: structuredClone(identity) };
+  return { id, sha256, fileName: id + '.mp4', src: `/api/presentation/room-video/north/room-a/7/${dealerId}/${id}`, available: true, contentType: 'video/mp4', bytes, recordedSpeech: value };
+}
+const speechRoom = { dealer: { id: 'paow', label: 'PAOW' } }, speechModes = { speak: 'off', idle: 'off', deal: 'off', reveal: 'off' };
+const plannedDeal = video => ({ ...source, shoeDraw: 7, filmedTake: { profileId: 'p', takeKey: 'k', id: video.id, sha256: video.sha256 }, filmedTransitions: { before: null, after: null } });
+const selectsOf = f => f.requests.filter(request => request.url === '/api/presentation/select');
+
+test('a shared room without families prepares and warms each spoken line by its recorded take, never ahead of the plan\'s first card', async t => {
+  const deal = roomVideo('deal-take', 'a'), goodluck = speechRow('goodluck', '1'), lose = speechRow('lose', '2'), english = speechRow('goodluck', '3', { language: 'en' });
+  const player = roomPlayer();
+  const f = await controllerFixture(t, { player, dealerId: 'paow', entry: roomEntry, configExtra: speechRoom, openclaw: speechModes,
+    customInventory: { videos: [deal, goodluck, lose, english], families: [] } });
+  const plan = [{ type: 'speak', line: 'goodluck', blocking: true }, plannedDeal(deal), { type: 'speak', line: 'lose' }];
+  f.controller.state({ action: true }); f.controller.prepareSequence(plan, { selectAhead: true, language: 'sv' });
+  for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.prepared, [goodluck.sha256], 'the opening line is prepared in the hidden element, found by its recorded line');
+  assert.deepEqual(player.warming.map(row => row.sha256), [deal.sha256], 'one file at a time on an unknown link: the first card goes first');
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [deal.sha256, goodluck.sha256]);
+  player.warming[1].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.warming.map(row => row.sha256), [deal.sha256, goodluck.sha256, lose.sha256], 'then the plan in order; the English take of goodluck is never fetched');
+  assert.deepEqual(selectsOf(f), [], 'warming asks the server nothing');
+});
+
+test('without the room\'s language only an unambiguous line is prepared, and the plan\'s speechTake is the exact clip', async t => {
+  const goodluck = speechRow('goodluck', '1'), lose = speechRow('lose', '2'), english = speechRow('goodluck', '3', { language: 'en' });
+  const player = roomPlayer();
+  const f = await controllerFixture(t, { player, dealerId: 'paow', entry: roomEntry, configExtra: speechRoom, openclaw: speechModes, customInventory: { videos: [goodluck, lose, english], families: [] } });
+  f.controller.prepareSequence([{ type: 'speak', line: 'goodluck' }]);
+  assert.deepEqual(player.prepared, [], 'two languages and no plan language: select chooses');
+  f.controller.prepareSequence([{ type: 'speak', line: 'lose' }]);
+  assert.deepEqual(player.prepared, [lose.sha256]);
+  f.controller.prepareSequence([{ type: 'speak', line: 'goodluck' }], { language: 'sv' });
+  assert.deepEqual(player.prepared, [lose.sha256, goodluck.sha256], 'the plan\'s language decides');
+  f.controller.prepareSequence([{ type: 'speak', line: 'goodluck', speechTake: { id: english.id, sha256: english.sha256 } }]);
+  assert.deepEqual(player.prepared, [lose.sha256, goodluck.sha256, english.sha256]);
+});
+
+test('a spoken line with the plan\'s speechTake plays at once without select in the off mode; an old engine or an unknown clip asks select as before', async t => {
+  const goodluck = speechRow('goodluck', '1'), player = roomPlayer();
+  const f = await controllerFixture(t, { player, dealerId: 'paow', entry: roomEntry, configExtra: speechRoom, openclaw: speechModes, selectedVideo: goodluck,
+    customInventory: { videos: [goodluck], families: [] } });
+  const line = { type: 'speak', line: 'goodluck', blocking: true, speechTake: { id: goodluck.id, sha256: goodluck.sha256 } };
+  f.controller.state({ action: true });
+  const played = f.controller.present(line); await settle(); await settle();
+  assert.deepEqual(selectsOf(f), [], 'no select round trip');
+  assert.deepEqual(player.plays, [goodluck.sha256]);
+  const selected = f.receipts.find(row => row.event === 'speech' && row.state === 'selected');
+  assert.equal(selected.provider, 'planned-speech'); assert.equal(selected.mode, 'off'); assert.deepEqual(selected.sourceEvent, { type: 'speak', line: 'goodluck', blocking: true });
+  player.finish(); assert.equal(await played, true);
+  for (const [label, event] of [['an old engine', { type: 'speak', line: 'goodluck', blocking: true }],
+    ['an unknown clip', { ...line, speechTake: { id: goodluck.id, sha256: '9'.repeat(64) } }]]) {
+    const before = selectsOf(f).length, playing = f.controller.present(event); await settle(); await settle();
+    assert.equal(selectsOf(f).length, before + 1, label);
+    assert.deepEqual(JSON.parse(selectsOf(f).at(-1).options.body).event, { type: 'speak', line: 'goodluck', blocking: true }, `${label}: select gets the committed event`);
+    player.finish(); assert.equal(await playing, true, label);
+  }
+});
+
+for (const [label, openclaw] of [['speech selected at random', { ...speechModes, speak: 'random' }], ['idle following rules', { ...speechModes, idle: 'rules' }]])
+test(`a room with ${label} still asks select for a spoken line that carries speechTake`, async t => {
+  const goodluck = speechRow('goodluck', '1'), player = roomPlayer();
+  const f = await controllerFixture(t, { player, dealerId: 'paow', entry: roomEntry, configExtra: speechRoom, openclaw, selectedVideo: goodluck, customInventory: { videos: [goodluck], families: [] } });
+  f.controller.state({ action: true });
+  const played = f.controller.present({ type: 'speak', line: 'goodluck', speechTake: { id: goodluck.id, sha256: goodluck.sha256 } }); await settle(); await settle();
+  assert.equal(selectsOf(f).length, 1); player.finish(); assert.equal(await played, true);
+});
+
+// The table's sound button ran state({}), which stops the film that plays: it cut the line it was meant to make heard.
+test('the sound toggle changes only the playing line\'s video.muted: it never stops, restarts or selects the line again', async t => {
+  let mutedNow = true; const elements = [], plays = [];
+  const goodluck = speechRow('goodluck', '1'), ownIdle = { id: 'paow-idle', fileName: 'idle.mp4', sha256: 'b'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/paow' };
+  const player = { playLocalClip(take, options) {
+    const video = { muted: options.muted }; elements.push(video); options.onVideo?.(video); plays.push(options);
+    return new Promise((resolve, reject) => { player.finish = () => resolve({ completed: true });
+      options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true }); }); } };
+  const f = await controllerFixture(t, { player, dealerId: 'paow', ownIdle, idlePolicy: false, entry: roomEntry, configExtra: speechRoom, openclaw: speechModes,
+    idleConfigRead: false, customInventory: { videos: [goodluck], families: [] }, muted: () => mutedNow });
+  f.controller.state({ action: true });
+  const playing = f.controller.present({ type: 'speak', line: 'goodluck', speechTake: { id: goodluck.id, sha256: goodluck.sha256 } }); await settle(); await settle();
+  assert.equal(elements.length, 1); assert.equal(elements[0].muted, true, 'the line starts as the player left the sound');
+  mutedNow = false; f.controller.sound();
+  assert.equal(elements[0].muted, false, 'the line that plays is heard at once');
+  mutedNow = true; f.controller.sound();
+  assert.equal(elements[0].muted, true);
+  assert.equal(plays[0].signal.aborted, false, 'the line plays on'); assert.equal(plays.length, 1, 'nothing restarts'); assert.deepEqual(selectsOf(f), []);
+  player.finish(); assert.equal(await playing, true);
+  f.controller.state({ action: false }); await settle(); await settle();
+  assert.equal(elements.length, 2, 'the dealer rests in its idle film'); mutedNow = false; f.controller.sound();
+  assert.equal(elements[1].muted, true, 'an idle film stays silent');
+});
+
+test('playLocalFilm hands its owner the element before it plays, with the sound it starts with', async t => {
+  const { page, host } = filmFixture(t), owner = new AbortController(), video = page.createElement('video'); let handed;
+  const result = playLocalFilm({ host, video, src: 'blob:speech', muted: true, signal: owner.signal, onVideo: element => { handed = { element, playCalls: element.playCalls, muted: element.muted }; } });
+  void result.catch(() => {}); t.after(() => owner.abort());
+  assert.deepEqual(handed, { element: video, playCalls: 0, muted: true });
+});
+
+// After the dealer's first frame every spoken line is warmed, one at a time, only between presentations.
+function speechWarmPlayer() {
+  const player = { warming: [], plays: [],
+    warmLocalClip(take, signal) { return new Promise((resolve, reject) => {
+      const row = { sha256: take.media.sha256, signal, done: false, finish: () => { row.done = true; resolve(); }, fail: () => { row.done = true; reject(new Error('Local film unavailable')); } };
+      player.warming.push(row); signal.addEventListener('abort', () => { row.done = true; reject(signal.reason); }, { once: true }); }); },
+    playLocalClip(take, options) { player.plays.push({ take, options }); return new Promise((resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true }); }); } };
+  player.loading = () => player.warming.filter(row => !row.done);
+  return player;
+}
+async function speechWarmFixture(t, { connection } = {}) {
+  const lines = { placebets: speechRow('placebets', '4'), goodluck: speechRow('goodluck', '1'), lose: speechRow('lose', '2'), english: speechRow('lose', '5', { language: 'en' }) };
+  const ownIdle = { id: 'paow-idle', fileName: 'idle.mp4', sha256: 'b'.repeat(64), src: '/api/presentation/room-idle/north/room-a/7/paow' };
+  const player = speechWarmPlayer();
+  const f = await controllerFixture(t, { player, dealerId: 'paow', ownIdle, idlePolicy: false, entry: roomEntry, configExtra: speechRoom, openclaw: speechModes, idleConfigRead: false,
+    filmedMaterial: { language: 'sv' }, customInventory: { videos: Object.values(lines), families: [] }, ...(connection ? { connection } : {}) });
+  f.controller.start(); for (let i = 0; i < 4; i++) await settle();
+  return { f, player, lines, ownIdle, frame: () => player.plays.at(-1).options.onReceipt({ state: 'presented' }) };
+}
+const shas = rows => rows.map(row => row.sha256);
+
+test('after the dealer\'s first frame every spoken line is warmed one at a time, the lines of every hand first, and a failed file is not asked again', async t => {
+  const { player, lines, ownIdle, frame } = await speechWarmFixture(t);
+  assert.deepEqual(shas(player.warming), [ownIdle.sha256], 'before the first frame only the dealer\'s own idle file loads');
+  frame(); await settle();
+  assert.deepEqual(shas(player.loading()), [ownIdle.sha256], 'the idle file still loads: no line competes with it');
+  player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.loading()), [lines.placebets.sha256]);
+  player.loading()[0].fail(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.loading()), [lines.goodluck.sha256], 'a failed line is left for its step');
+  player.loading()[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.loading()), [lines.lose.sha256]);
+  player.loading()[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(player.loading(), []);
+  assert.deepEqual(shas(player.warming), [ownIdle.sha256, lines.placebets.sha256, lines.goodluck.sha256, lines.lose.sha256], 'once each; the other language never');
+});
+
+test('the speech warm gives the link back to a presentation and a hidden tab, and resumes between presentations', async t => {
+  const { f, player, lines, frame } = await speechWarmFixture(t);
+  frame(); player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  const first = player.loading()[0]; assert.equal(first.sha256, lines.placebets.sha256);
+  f.controller.state({ action: true }); f.controller.prepareSequence([{ type: 'speak', line: 'win' }], { selectAhead: true }); for (let i = 0; i < 4; i++) await settle();
+  assert.equal(first.signal.aborted, true, 'a plan takes the link at once');
+  assert.deepEqual(player.loading(), [], 'no line loads in the background during a presentation');
+  f.controller.state({ action: false }); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.loading()), [lines.placebets.sha256], 'between presentations the cancelled line is warmed again');
+  const second = player.loading()[0];
+  f.setHidden(true); for (let i = 0; i < 4; i++) await settle();
+  assert.equal(second.signal.aborted, true); assert.deepEqual(player.loading(), [], 'nothing loads in a hidden tab');
+  f.setHidden(false); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.loading()), [lines.placebets.sha256]);
+  const third = player.loading()[0]; f.controller.close();
+  assert.equal(third.signal.aborted, true, 'closing the table stops it');
+});
+
+for (const [label, connection] of [['a data saver', { saveData: true, downlink: 10, effectiveType: '4g' }], ['a 2G link', { saveData: false, downlink: 0.2, effectiveType: '2g' }]])
+test(`no spoken line is warmed in the background on ${label}`, async t => {
+  const { player, ownIdle, frame } = await speechWarmFixture(t, { connection });
+  frame(); player.warming[0].finish(); for (let i = 0; i < 4; i++) await settle();
+  assert.deepEqual(shas(player.warming), [ownIdle.sha256]);
 });

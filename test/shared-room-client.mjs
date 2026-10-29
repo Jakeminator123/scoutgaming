@@ -537,6 +537,18 @@ test('a state restored beside a playing presentation does not renew the reconnec
   assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]); assert.equal(h.sockets.length, 2);
 });
 
+// Speech lag (28 Oct 2026): the engine adds speechTake to a spoken line. The frame check selects no event keys, so
+// a client of any age passes the field on and a later one is not refused either (an old client simply ignores it).
+test("a spoken line's speechTake, and any later event field, reaches the renderer: the frame check never refuses unknown event keys", async t => {
+  const presented = [];
+  const h = setup(t, { present: p => { presented.push(p.events[0]); } });
+  h.client.start();
+  const value = frame(); value.presentation.events[0] = { ...value.presentation.events[0], speechTake: { id: 'clip-1', sha256: 'a'.repeat(64) }, laterField: { any: 1 } };
+  h.sockets[0].message(value); await until(() => presented.length === 1);
+  assert.deepEqual(presented[0].speechTake, { id: 'clip-1', sha256: 'a'.repeat(64) });
+  assert.deepEqual(h.errors, []); assert.deepEqual(h.sockets[0].closed, []);
+});
+
 // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the O02 receipt showed 15 sockets over 60 s ending in the error page.
 // A partner refused for its key's company is named in the server's 1008 close; the client ends at once with it.
 test('a partner refusal close ends the client at once with its code, without another socket', async t => {
