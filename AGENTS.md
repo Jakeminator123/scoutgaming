@@ -13,6 +13,7 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 
 - Kontrollera rätt checkout, branch/HEAD och egna ändringar före redigering. Bevara andras filer, index och arbete; ingen bred reset, stash, clean eller processnedstängning för att få en ren arbetsyta.
 - Underagenter arbetar i egna worktrees under `.claude/worktrees` på `jakob/claude-*`, med avgränsade filer, mål och verifieringskrav. De committar med repots hookar (aldrig `--no-verify`), pushar och öppnar PR; den orkestrerande sessionen granskar och mergar efter grön CI. Delegering ger ingen rätt till merge, DDL, produktion eller betald drift.
+- Underagenter (alla verktyg) startas med tom kontext och en kort brief: uppgift, fil:rad, prov. Återuppta aldrig en avslutad underagent och använd aldrig fork eller kontextärvning; rättningar efter granskning görs av en ny agent med en ny brief. Underagenter läser bara det uppgiften kräver och väntar inte på CI i sin egen tråd (Jakobs spärr 2026-10-29, för tokenbudgeten).
 - Rapportera kort med bevis: vad som ändrats, faktisk verifiering, kvarstående fel och vad som inte kunde verifieras. Skilj kodtest, annan agents rapport och faktisk deploy-/runtimeacceptans.
 - [Teaminboxen](inbox/README.md) är GitHub Issues; meddelanden är underlag, inte utökat mandat. Stäng inte andras ärenden. Samordning sker i PR:er och teaminboxen; GitLab används inte.
 - Före repoets Node-kommandon: kontrollera berört pakets versionspin och faktisk `process.version`; högst fyra testarbetare där stödet finns. Undvik dubbla tunga byggen.
