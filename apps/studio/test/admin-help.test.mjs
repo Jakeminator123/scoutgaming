@@ -4,11 +4,13 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as navigation from '../../../packages/navigation/admin-navigation.mjs';
+import {createEmptyProject,addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
+import * as coverage from '../client/admin/lib/dealer-coverage.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
 
-// The help page and the real hub primitives, with Link rendered as a plain anchor.
-function loadHelp(){
+// An Admin component with the real hub primitives, Link rendered as a plain anchor; `stubs` replaces imports by name.
+function loadAdmin(file,stubs={}){
   const runtime={__esModule:true,default:props=>React.createElement('a',props),usePathname:()=>'/admin/guide',useSearchParams:()=>new URLSearchParams()};
   const compile=(file,resolve)=>{
     const module={exports:{}};
@@ -20,8 +22,9 @@ function loadHelp(){
   const clientRequire=createRequire(new URL('../client/admin/components/ui/hub.tsx',import.meta.url));
   const ui={},uiRequire=name=>name.startsWith('./')?(ui[name]??=compile('../client/admin/components/ui/'+name.slice(2)+'.tsx',uiRequire)):clientRequire(name);
   const hub=compile('../client/admin/components/ui/hub.tsx',uiRequire);
-  return compile('../client/admin/components/studio/admin-help.tsx',name=>name==='../ui/hub'?hub:name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.endsWith('lib/admin-navigation')?navigation:clientRequire(name));
+  return compile('../client/admin/components/studio/'+file,name=>Object.hasOwn(stubs,name)?stubs[name]:name==='../ui/hub'?hub:name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.endsWith('lib/admin-navigation')?navigation:clientRequire(name));
 }
+const loadHelp=()=>loadAdmin('admin-help.tsx');
 
 // Hjälp follows the shared menu: every page the menu offers is explained, and only living addresses are linked.
 test('Hjälp lists every menu page with its description and links to the user guide and the glossary',()=>{
@@ -86,4 +89,51 @@ test('the dealer nav and its clip map drawer have no disabled "kommer senare" co
   const nav=map.match(/<nav className="studio-inspector-nav"[^>]*>([\s\S]*?)<\/nav>/);
   assert.ok(nav,'the drawer nav');
   assert.deepEqual([...nav[1].matchAll(/\}>([A-ZÅÄÖ][^<{]*)/g)].map(match=>match[1]),['Klipp','Körregel','Lägg till klipp']);
+});
+
+// Enkel väg 8: one primary action on Översikt, counters in the menu from the catalog, System has six tabs.
+const room=(id,extra={})=>({id,name:id,operatorId:'north',game:'blackjack',compositionId:'c',laneId:'g',state:'live',published:true,playable:true,dealerIds:[],dealers:[],dealerSource:'published',playUrl:null,...extra});
+// The shape createStudioClient().load() returns: two dealers without clips, one playable, two unplayable and one archived spelbord.
+const workspace=()=>({inventory:{videos:[]},project:addDealer(addDealer(createEmptyProject(),'dragan','Dragan'),'elin','Elin'),
+  catalog:{source:'registered',administration:{revisions:{project:'p',administration:'a'},dealers:[],compositions:[],
+    operators:[{id:'north',name:'North',slug:'north',status:'active',archivedAt:null,packageRevision:1}],
+    rooms:[room('open'),room('paused',{state:'pending',playable:false}),room('draft',{published:false,playable:false}),room('gone',{state:'archived',playable:false})]}}});
+const never=()=>({load:()=>new Promise(()=>{})});
+const stubs={'../../lib/connected-studio.mjs':{createStudioClient:never},'../../lib/dealer-coverage.mjs':coverage};
+
+test('Översikt has Nytt spelbord as its first and only primary action, and no "Så hänger det ihop"',()=>{
+  const {AdminHome}=loadAdmin('admin-home.tsx',{...stubs,'./dealer-identity-portrait':{DealerAvatar:()=>null},'../../lib/admin-session':{readAdminSession:async()=>{throw Error('fixture');}},
+    '../../../../components/studio-administration':{createStudioAdminClient:()=>null,studioAdminActor:()=>null},'../../lib/economy-journal.mjs':{journalType:type=>type},
+    '../ui/chart':{ChartContainer:()=>null,ChartTooltip:()=>null,ChartTooltipContent:()=>null},recharts:{Bar:()=>null,BarChart:()=>null,CartesianGrid:()=>null,XAxis:()=>null,YAxis:()=>null}});
+  const html=renderToStaticMarkup(React.createElement(AdminHome,{workspace:workspace()}));
+  const actions=[...html.matchAll(/<a [^>]*class="([^"]*justify-start[^"]*)"[^>]*>(.*?)<\/a>/g)].map(match=>({primary:/\bbg-sg-lime\b/.test(match[1]),label:match[2].replace(/<[^>]+>/g,'')}));
+  assert.deepEqual(actions.map(row=>row.label),['Nytt spelbord','Lägg till klipp','Tilldela innehåll','Ny dealer','Skapa demo']);
+  assert.deepEqual(actions.filter(row=>row.primary).map(row=>row.label),['Nytt spelbord']);
+  assert.doesNotMatch(html,/Så hänger det ihop/);
+});
+
+test('the menu counts dealers missing clips and spelbord that cannot be played, from the catalog',()=>{
+  assert.deepEqual(coverage.adminMenuCounts(workspace()),{'/admin/dealers':2,'/admin/companies':2});
+  assert.deepEqual(coverage.adminMenuCounts(null),{});
+  const {StudioMenu,StudioSidebar}=loadAdmin('studio-sidebar.tsx',{...stubs,'next/link':{__esModule:true,default:'a'},'next/navigation':{usePathname:()=>'/admin'},
+    './admin-logout':{AdminLogout:()=>null},'./theme-toggle':{ThemeToggle:()=>null}});
+  const html=renderToStaticMarkup(React.createElement(StudioMenu,{counts:coverage.adminMenuCounts(workspace())}));
+  const link=href=>html.match(new RegExp('<a [^>]*href="'+href+'"[^>]*>.*?</a>'))?.[0]??'';
+  assert.match(link('/admin/dealers'),/aria-label="Dealers, 2 dealers saknar klipp"/);
+  assert.match(link('/admin/dealers'),/<b class="studio-nav-count" aria-hidden="true">2<\/b>/);
+  assert.match(link('/admin/companies'),/aria-label="Bolag och spelbord, 2 spelbord är inte spelbara"/);
+  assert.match(link('/admin/companies'),/<b class="studio-nav-count" aria-hidden="true">2<\/b>/);
+  for(const href of ['/admin/scenes','/admin/system','/admin/guide'])assert.doesNotMatch(link(href),/studio-nav-count/,href);
+  // Nothing waits: no counter. Before the catalog is read the menu shows none either.
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(StudioMenu,{counts:{'/admin/dealers':0,'/admin/companies':0}})),/studio-nav-count/);
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(StudioSidebar,{})),/studio-nav-count/);
+});
+
+// The header link itself is rendered in client/admin/lib/service-navigation.test.mjs.
+test('System has six tabs and Hjälp lists them, with Intern lobby in the page header',()=>{
+  assert.deepEqual(navigation.adminSystemTabs.map(tab=>tab.id),['drift','agenter','personal','spelare','integration','beroenden']);
+  assert.equal(navigation.adminTabId('system','lobby'),'drift','an old lobby bookmark lands on Drift');
+  const html=renderToStaticMarkup(React.createElement(loadHelp().AdminHelp));
+  assert.ok(html.includes('System: Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden.'));
+  assert.ok(html.includes('Den interna lobbyn öppnas från sidhuvudet.'));
 });

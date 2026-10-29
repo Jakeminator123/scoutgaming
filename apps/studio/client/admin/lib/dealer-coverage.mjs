@@ -16,6 +16,14 @@ export function dealerCoverage(project,inventory,dealerId){
   const anyClip=slots.some(slot=>bound(project,inventory,dealerId,slot));
   return {deal,speech,idle,optional,complete,anyClip,speechProfile:project.dealers.find(row=>row.id===dealerId)?.speechProfile??null};
 }
+/** The menu's counters, from the catalog Admin already reads: dealers whose clips are missing (Översikt's
+ *  "Klipp saknas") and spelbord that are not archived but cannot be played. Keyed by menu href. */
+export function adminMenuCounts(workspace){
+  if(!workspace)return {};
+  const dealers=workspace.project.dealers.filter(dealer=>!dealerCoverage(workspace.project,workspace.inventory,dealer.id).complete).length;
+  const rooms=(workspace.catalog.administration?.rooms??[]).filter(room=>room.state!=='archived'&&room.playable!==true).length;
+  return {'/admin/dealers':dealers,'/admin/companies':rooms};
+}
 /** A still for the dealer's card: the bound idle clip (its first second), else null for initials. */
 export function dealerStill(project,inventory,dealerId){
   const slot=clipSlots(project,inventory,dealerId,'blackjack').find(row=>row.eventId==='idle.ready'&&!row.planned);

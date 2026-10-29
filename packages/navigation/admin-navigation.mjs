@@ -8,7 +8,7 @@ export const adminNavigationGroups = [
     {label:'Bolag och spelbord',href:'/admin/companies',description:'Ett nav per bolag: spelbord, tilldelning, team och inställningar med journalen.'},
   ]},
   {id:'scoutgaming',label:'Scoutgaming',description:'Drift, personal och hjälp.',links:[
-    {label:'System',href:'/admin/system',description:'Drift, AI-agenter, Scoutgamings personal, spelarkonton, integration, beroenden och intern lobby.'},
+    {label:'System',href:'/admin/system',description:'Drift, AI-agenter, Scoutgamings personal, spelarkonton, integration och beroenden. Den interna lobbyn öppnas från sidhuvudet.'},
     {label:'Hjälp',href:'/admin/guide',description:'Menyn, vem som får ändra vad, orden, dealerflödet och var uppgifterna kommer ifrån.'},
   ]},
 ];
@@ -40,9 +40,10 @@ export const adminRoomTabs = [
   {id:'utseende',label:'Utseende'},{id:'dealer',label:'Dealer'},{id:'spel',label:'Spelinställningar'},
   {id:'tillganglighet',label:'Tillgänglighet'},{id:'bolagets-val',label:'Bolagets val'},{id:'historik',label:'Historik'},
 ];
+// Six tabs. Intern lobby is a link in System's page header; the retired tab id `lobby` lands on Drift.
 export const adminSystemTabs = [
   {id:'drift',label:'Drift'},{id:'agenter',label:'AI-agenter'},{id:'personal',label:'Scoutgamings personal'},{id:'spelare',label:'Spelarkonton'},
-  {id:'integration',label:'Integration'},{id:'beroenden',label:'Beroenden'},{id:'lobby',label:'Intern lobby'},
+  {id:'integration',label:'Integration'},{id:'beroenden',label:'Beroenden'},
 ];
 const tabsFor = {dealer:adminDealerTabs,scenes:adminSceneTabs,companies:adminCompanyListTabs,company:adminCompanyTabs,room:adminRoomTabs,system:adminSystemTabs};
 export const adminTabId = (page,value) => {
