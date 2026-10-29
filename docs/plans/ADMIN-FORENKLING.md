@@ -216,7 +216,7 @@ Kodens tolv (`packages/studio-access/server/partner-access-policy.mjs:12-19`) oc
 
 Fil och rad per behörighet, och luckorna (spelbordslistan via branding med bara presentations.read, journalen som kräver team-behörigheter), står i [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md) avsnitt 2.4.
 
-Administratör utses bara av Admin och kan inte delegeras. Den sista administratören kan inte stängas av (409). Nya behörigheter som behövs: tables.pause (eller `allow.pause` + tables.configure), players.block, integration.request, material.request. De läggs till i samma lista, inte i en ny modell.
+Administratör utses bara av Admin och kan inte delegeras. Den sista administratören kan inte stängas av (409). Nya behörigheter som behövs: tables.pause (eller `allow.pause` + tables.configure), players.block, integration.request, material.request. De läggs till i samma lista, inte i en ny modell. integration.request och material.request finns sedan steg C (#605); paus löstes som `allow.pause` + tables.configure.
 
 ### 5.5 Vad partner-API:t saknar (verifierat)
 

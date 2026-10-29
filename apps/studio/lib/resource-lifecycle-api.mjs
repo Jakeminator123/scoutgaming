@@ -176,20 +176,30 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   const pack=await operators.publishPackage(input);
   return {ok:true,room:{...room,...(body.archived?{state:'archived',archivedAt:lifecycle.rooms.find(entry=>entry.room.id===room.id).archivedAt}:{archivedAt:null})},administrationRevision:changed.revision,packageRevision:pack.revision};
  });
- endpoint('POST','room-state',async(context,operators)=>{
-  const body=context.body;exact(body,['operatorId','roomId','state','expectedAdministrationRevision','expectedPackageRevision']);
-  if(!id(body.operatorId)||!id(body.roomId)||!['live','pending'].includes(body.state)||!revision(body.expectedPackageRevision))fail('studio_invalid_request',400);
-  validateRevision(body.expectedAdministrationRevision);
+ // Admin och Partnerportalen byter läge med samma kod. Admins väg kontrollerar
+ // administrationsdokumentets revision; partnerns väg (partner-table-api.mjs)
+ // skickar i stället `guard`, som kontrollerar spelbordets läge (CAS) och
+ // bolagets rätt inne i transaktionen, efter att spelbordet visats höra till bolaget.
+ async function setRoomState(operators,body,actor,guard=null){
   const saved={...await documents(),...await selected(operators,body.operatorId)};
-  if(saved.administrationRevision!==body.expectedAdministrationRevision||(saved.pack?.revision??null)!==body.expectedPackageRevision)fail('studio_conflict');
+  if((!guard&&saved.administrationRevision!==body.expectedAdministrationRevision)||(saved.pack?.revision??null)!==body.expectedPackageRevision)fail('studio_conflict');
   const room=saved.administration.rooms.find(row=>row.id===body.roomId);if(!isPresentationRoom(room)||room.operatorId!==body.operatorId)fail('studio_room_not_found',404);
+  if(guard)await guard({...saved,room});
   if(body.state==='live'){
    const presentation=readPackagePresentation(saved.pack),gameLane=gameLaneConfiguration(saved.administration).gameLanes.find(row=>row.id===room.gameLaneId);
    if(saved.operator.status!=='active'||!saved.pack?.tables.includes(room.id)||!presentation||!isPresentationRoomLaneCompatible(gameLane,presentation.lanes.find(row=>row.id===room.presentationLaneId),presentation,room.game??'blackjack'))fail('studio_room_activation_blocked');
   }
   room.state=body.state;
-  const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(saved.administration),expectedRevision:saved.administrationRevision,actor:context.actor.user});
+  const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(saved.administration),expectedRevision:saved.administrationRevision,actor:actor.user});
   return {ok:true,room:{...room,archivedAt:null},administrationRevision:changed.revision,packageRevision:saved.pack?.revision??null};
+ }
+ endpoint('POST','room-state',async(context,operators)=>{
+  const body=context.body;exact(body,['operatorId','roomId','state','expectedAdministrationRevision','expectedPackageRevision']);
+  if(!id(body.operatorId)||!id(body.roomId)||!['live','pending'].includes(body.state)||!revision(body.expectedPackageRevision))fail('studio_invalid_request',400);
+  validateRevision(body.expectedAdministrationRevision);
+  return setRoomState(operators,body,context.actor);
  });
- return Object.freeze({handlers});
+ // Partnerportalens väg: anroparen äger transaktionen, sessionen och bolaget.
+ return Object.freeze({handlers,
+  setRoomState:(operators,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_request_rejected',403);return setRoomState(operators,body,actor,guard);}});
 }

@@ -10,6 +10,7 @@ import {
   matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readIsolation, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
 import { environmentBranches, featurePatterns } from '../tools/check-push-target.mjs';
+import { foreignBranchGuard } from '../tools/foreign-branch-guard.mjs';
 
 // tools/merge-pr.mjs is the orchestrator's only merge path. Every refusal rule has a case
 // here, and gh/git/security-status are injected so the test never touches the network.
@@ -60,7 +61,8 @@ test('each refusal rule refuses on its own', () => {
     base: [goodPr({ baseRefName: 'kevin' })],
     source: [goodPr({ isCrossRepository: true })],
     head: [goodPr({ headRefOid: OTHER }), goodPr({ headRefOid: HEAD.slice(0, 12) })],
-    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: null })],
+    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: { login: 'Johncleochile' } }), goodPr({ author: { login: 'EmaCodeHero' } }),
+      goodPr({ author: { login: 'jakeminator123' } }), goodPr({ author: null })],
     ci: [goodPr({ statusCheckRollup: [] }),
       goodPr({ statusCheckRollup: [ciRun({ status: 'IN_PROGRESS', conclusion: '' })] }),
       goodPr({ statusCheckRollup: [ciRun({ conclusion: 'FAILURE' })] }),
@@ -97,7 +99,7 @@ test('only Jakob\'s delivery branches pass, and other people\'s branches never d
   const patterns = foreignBranchPatterns({ policy, people });
   for (const pattern of BASELINE_FOREIGN_BRANCHES) assert.ok(patterns.includes(pattern), pattern);
   for (const branch of ['kevin', 'kevin-ks', 'kevin/port', 'Kevin/Port', 'codex/kevin-fix', 'john', 'john/design', 'codex/john-x',
-    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging',
+    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging', 'kevin-staging', 'kevin-merge-admin', 'emil/x',
     // Not a featureBranches pattern even though Jakob opened it.
     'codex/fix-foo', 'feature/x', 'codex/jakob-x', 'main', 'jakob', 'jakob/', 'jakob-export']) {
     assert.deepEqual(failed(decide(goodPr({ headRefName: branch }))), ['branch'], branch);
@@ -134,8 +136,13 @@ test('--base preview merges into the environment branch with the same gate, and 
   assert.deepEqual(failed(decide(goodPr({ headRefName: 'main' }))), ['branch']);
   assert.deepEqual(failed(decide(intoPreview({ headRefName: 'preview' }), { base: 'preview' })), ['branch']);
   assert.deepEqual(failed(decide(goodPr({ headRefName: 'preview' }))), ['branch']);
-  for (const branch of ['kevin', 'kevin/port', 'codex/kevin-fix', 'john', 'roulette-on-kevin-staging']) {
+  for (const branch of ['kevin', 'kevin/port', 'kevin-staging', 'kevin-merge-admin', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+    'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging']) {
     assert.deepEqual(failed(decide(intoPreview({ headRefName: branch }), { base: 'preview' })), ['branch'], branch);
+  }
+  // Another GitHub account is refused into preview exactly as into main.
+  for (const login of ['invoicesolv', 'Johncleochile', 'EmaCodeHero']) {
+    assert.deepEqual(failed(decide(intoPreview({ author: { login } }), { base: 'preview' })), ['author'], login);
   }
   // The freshness diff names the base branch.
   const stale = freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: 2, files: ['docs/x.md'] }, ['docs/x.md'], true, 'preview');
@@ -612,4 +619,36 @@ test('readIsolation on a real repository: preview history never reaches main thr
   assert.equal(run(work, ['rev-parse', 'origin/preview']), run(temp, ['-C', remote, 'rev-parse', 'preview']));
   assert.match(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: ['preview'] }).reason, /origin\/preview kunde inte hämtas/);
   assert.deepEqual(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: [] }), { ok: true, reason: 'inga miljöbrancher i policyn' });
+});
+
+test('the Foreign branch guard check refuses other people\'s branches and other authors into main and preview', () => {
+  const guard = (overrides = {}) => foreignBranchGuard({ head: 'jakob/claude-x', author: 'Jakeminator123', base: 'main', policy, people, ...overrides });
+  for (const base of ['main', 'preview']) {
+    assert.equal(guard({ base }).ok, true, base);
+    assert.equal(guard({ base, head: 'main' }).ok, true, 'main into preview is not foreign');
+    for (const head of ['kevin', 'kevin/x', 'kevin-staging', 'kevin-merge-admin', 'Kevin-x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+      'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging', '']) {
+      const verdict = guard({ base, head });
+      assert.equal(verdict.ok, false, `${base} ${head}`);
+      assert.match(verdict.reasons.join('\n'), head ? /någon annans branch/ : /okänd/, head);
+    }
+    for (const author of ['invoicesolv', 'Johncleochile', 'EmaCodeHero', 'dependabot[bot]', '', undefined]) {
+      const verdict = guard({ base, author });
+      assert.equal(verdict.ok, false, `${base} ${author}`);
+      assert.match(verdict.reasons.join('\n'), /inte Jakeminator123/, String(author));
+    }
+  }
+  assert.equal(guard({ people: { ...people, jakob: {} } }).ok, false, 'no trusted owner, no pass');
+  assert.equal(guard({ base: 'kevin', head: 'kevin', author: 'invoicesolv' }).ok, true, 'other bases are not guarded');
+});
+
+test('the Foreign branch guard workflow runs from main on pull_request_target and is named for the ruleset', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/foreign-branch-guard.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  assert.match(yaml, /^name: Foreign branch guard$/m);
+  assert.match(yaml, /^ {4}name: Foreign branch guard$/m, 'the job name is the required check');
+  assert.match(yaml, /^ {2}pull_request_target:\n {4}branches: \[main, preview\]$/m);
+  assert.match(yaml, /^ {10}ref: main$/m, 'the policy is read from main, never from the pull request');
+  assert.doesNotMatch(yaml, /head\.sha|\$\{\{ *secrets\.|^ +pull_request:/m, 'no pull request code, no secrets');
+  assert.match(yaml, /HEAD_REF: \$\{\{ github\.event\.pull_request\.head\.ref \}\}/);
+  assert.match(yaml, /run: node tools\/foreign-branch-guard\.mjs$/m);
 });

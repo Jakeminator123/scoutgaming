@@ -57,7 +57,11 @@ test('the preview environment branch can be fast-forwarded from the policy but n
   }
   assert.doesNotThrow(() => validatePush(url, update, { ...policy, environmentBranches: ['preview', 'preview-2', 'v1.0'] }, () => true));
   // The hook judges the remote ref, so a local checkout of someone else's branch is refused as a source too.
-  for (const local of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-gren', 'roulette-on-kevin-staging']) {
+  for (const pattern of ['kevin*', 'codex/kevin-*', 'john*', 'codex/john-*', 'emil*', 'codex/emil-*', 'roulette-on-kevin-staging']) {
+    assert.ok(policy.protectedBranches.includes(pattern), pattern);
+  }
+  for (const local of ['kevin', 'kevin-staging', 'kevin-merge-admin', 'kevin/x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-fix',
+    'emil', 'emil/x', 'codex/emil-fix', 'jakob-gren', 'roulette-on-kevin-staging']) {
     assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/preview ${sha('d')}`, policy, () => true), /Pushing from protected branch/, local);
     assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/jakob/port ${sha('0')}`, policy, () => true), /Pushing from protected branch/, local);
   }
@@ -76,7 +80,8 @@ test('merged feature branches can be deleted; main, protected and unmerged branc
   assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/heads/jakob/gone ${sha('0')}`, policy, merged, main), /does not exist/);
   assert.throws(() => validatePush(url, deletion('main'), policy, merged, main), /deletion is not allowed for main/);
   assert.deepEqual(policy.protectedBranches.includes('kevin*'), true);
-  for (const name of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-export', 'jakob-gren', 'roulette-on-kevin-staging', 'codex/pr-automation']) {
+  for (const name of ['kevin', 'kevin-staging', 'kevin-merge-admin', 'kevin/x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-fix',
+    'emil', 'emil/x', 'codex/emil-fix', 'jakob-export', 'jakob-gren', 'roulette-on-kevin-staging', 'codex/pr-automation']) {
     assert.throws(() => validatePush(url, deletion(name), policy, merged, main), /protected branch/, name);
   }
   assert.throws(() => validatePush(url, deletion('codex/example'), policy, merged, main), /feature branches/);

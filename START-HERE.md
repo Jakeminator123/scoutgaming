@@ -8,7 +8,7 @@ Läsordning:
 2. **[docs/NEXT-AGENT.md](docs/NEXT-AGENT.md)**: aktuellt läge, återstående aktiviteter och vem som agerar.
 3. **[migrering/STATUS.md](migrering/STATUS.md)**: aktivitetsstatus, genererad från [status.json](migrering/status.json), som är enda statuskällan.
 
-Reglerna står i [AGENTS.md](AGENTS.md). Vad orden betyder beskrivs brett i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) (referens, inte tvingande ordlista).
+Reglerna står i [AGENTS.md](AGENTS.md). Orden står i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) (kort ordlista med gamla namn → nya).
 
 ## En produktväg
 
@@ -82,7 +82,7 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 | Läge, återstående arbete, kända fällor | [NEXT-AGENT](docs/NEXT-AGENT.md) |
 | Aktivitetsstatus (migreringen är avslutad) | [STATUS](migrering/STATUS.md) |
 | Regler för agenter | [AGENTS](AGENTS.md) |
-| Vad orden betyder (bred referens) | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
+| Vad orden betyder | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
 | Arbetssteg i Admin | [användarguiden](apps/studio/docs/README.md) |
 | Drift, moln och återställning | [CLOUD-MIGRATION](docs/CLOUD-MIGRATION.md), [ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md), [RENDER-V3](ops/cloud/RENDER-V3.md) |
 | Miljövariabler | [ENVIRONMENT-VARIABLES](docs/ENVIRONMENT-VARIABLES.md) |
