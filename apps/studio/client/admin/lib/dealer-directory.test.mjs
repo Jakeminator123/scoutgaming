@@ -290,3 +290,10 @@ test('a pending permanent deletion disables restore and only offers to finish th
   assert.deepEqual(h.deletionChecks,[{id:'dragan',revision:'studio.project.3'}]);
   assert.equal(h.archives.length,1,'restore is never submitted');assert.equal(h.deletions.length,0);
 });
+
+test('dealer hub says a dealer without its own filmed profile inherits PAOW landings',async()=>{
+  const {dealerLandingsNote}=await import('./dealer-coverage.mjs');
+  assert.equal(dealerLandingsNote('jakob-2'),"Ärver PAOW:s landningar");
+  for(const dealerId of ['paow','dragan'])assert.equal(dealerLandingsNote(dealerId),null);
+  assert.match(readFileSync(new URL('../components/studio/dealer-hub.tsx',import.meta.url),'utf8'),/\{dealerLandingsNote\(dealerId\)\?\?'kommer senare'\}/);
+});

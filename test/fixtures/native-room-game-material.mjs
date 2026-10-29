@@ -51,7 +51,7 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
   const record = ({sha256,id=uuid(n++),classification}) => ({id,sha256,size:4096,contentType:'video/mp4',
     pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
     classification:{dealerId,role:'alternative',label:'Synthetic contract fixture',notes:'Unit test only',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0},...classification}});
-  for (const take of profile.takes) {
+  for (const take of profile?.takes ?? []) {
     const box = Number(take.target)-1;
     const eventId = take.target === 'flip' ? 'reveal.dealer' : ['dealer','hole'].includes(take.target) ? 'deal.dealer'
       : `deal.player.${box<2?'left':box<5?'centre':'right'}`;
@@ -59,7 +59,8 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
     rows.push(measuredFixtureRecord(record({sha256:take.sha256,classification:{eventId,situation,kind:'action',startPose:take.startPose,endPose:take.endPose}}),{frames:take.frames,fps:profile.plane.fps}));
   }
   const inventory = () => ({videos:rows.map(row => ({...row,dealer:dealerId,available:true,integrity:'verified',bytes:row.size})),families:[]});
-  project = bindFilmedBank(project,inventory(),dealerId);
+  // A dealer without its own filmed profile has no filmed bank to bind.
+  if (profile) project = bindFilmedBank(project,inventory(),dealerId);
   for (const lineId of allSpeechSlots ? SPEECH_SLOT_IDS : NATIVE_ROOM_SPEECH_SLOTS) {
     const sha256 = hash(`synthetic:${dealerId}:${language}:${lineId}`), eventId = speechSlotEventId(lineId);
     const speech = {schemaVersion:speechSchemaVersion,dealerId,lineId,takeId:lineId+'_1',language,exactText:'Synthetic unit test line.',
