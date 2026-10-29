@@ -5,7 +5,7 @@ Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (s
 | Verktyg | Vad |
 | --- | --- |
 | [tools/o02-freeze-check.mjs](../../tools/o02-freeze-check.mjs) | F1, F2, F5 automatiskt; F3 och F8 förifyllda; skriver `frozen-candidate.json` |
-| [tools/o02-receipt.mjs](../../tools/o02-receipt.mjs) | Granskarens kvittoskelett: GET mot staging, `BEGIN READ ONLY` mot Neon, kvitton ur Git på `--receipts-ref` (standard `origin/main`) |
+| `tools/o02-receipt.mjs` | Borttaget efter migreringen; kan läsas ur Git. Var granskarens kvittoskelett: GET mot staging, `BEGIN READ ONLY` mot Neon, kvitton ur Git på `--receipts-ref` (standard `origin/main`) |
 | [tools/o02-snapshot.mjs](../../tools/o02-snapshot.mjs) | S0/S1/S0′-paritet för restore-replay |
 | [O02-RESTORE-REPLAY](O02-RESTORE-REPLAY.md) | Körklar kommandolista för §3 (inte körd) |
 

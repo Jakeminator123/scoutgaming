@@ -61,6 +61,6 @@ Korta filer som pekar på [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.
 
 ## Kvitton
 
-Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Kvar i `docs/` är bara de som `tools/o02-receipt.mjs` och `test/o02-receipt.mjs` läser: J08, isolerat prov, K04 staging, K04 omprov 6, K06 omprov 1–2 och K07 omprov 1–2. De raderas tillsammans med O02-verktygen.
+Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Kvar i `docs/` är bara de som `tools/o02-receipt.mjs` läste (verktyget är borttaget efter migreringen och kan läsas ur Git): J08, isolerat prov, K04 staging, K04 omprov 6, K06 omprov 1–2 och K07 omprov 1–2. Ingen levande kod läser dem längre.
 
 Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git ([HISTORIK](HISTORIK.md)).
