@@ -35,7 +35,7 @@ import {presentationPackageRequiresV29,PRESENTATION_RUNTIME_UPDATE_REQUIRED,NATI
 import {operatorAuditContext} from './operator-audit-context.mjs';
 import {cleanBrandingDraft,createPartnerBrandingApi} from './partner-branding-api.mjs';
 import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
-import {PARTNER_BRANDING_FIELDS,publicEditableBranding} from '../../../packages/operators/contracts/branding.mjs';
+import {PARTNER_BRANDING_FIELDS,PARTNER_ROOM_BRANDING_FIELDS,publicEditableBranding} from '../../../packages/operators/contracts/branding.mjs';
 import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
 import {isRoomReleaseReadQuery} from './studio-admin-contract.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
@@ -69,6 +69,31 @@ function withEditableBranding(branding, editable) {
   const next = structuredClone(branding ?? {});
   for (const key of [...PARTNER_BRANDING_FIELDS, 'roomOverrides']) delete next[key];
   return {...next, ...publicEditableBranding(editable)};
+}
+// Utseendes granskning avvisar ett utkast som inte passar med 400, 409, 413 eller 422. Granskningen
+// körs mot en fryst kopia (kandidatens presentation, utkastet, administrationen), så 409 betyder här
+// att ett val inte ryms i kandidaten (t.ex. en dealer mallen inte tillåter), inte en samtidig ändring.
+// Andra statusar (503 och liknande) är tillfälliga och släpps igenom som de är.
+const DRAFT_REJECTIONS = Object.freeze([400, 409, 413, 422]);
+export const isDraftValidationFailure = error => error instanceof StudioStorageError && error.code === 'partner_branding_rejected'
+  && DRAFT_REJECTIONS.includes(error.statusCode);
+/**
+ * De val utkastet ändrar mot live (bolagets fält och spelbordens egna val) som kandidatens
+ * presentation tappar. Bara utkastets nycklar jämförs: ett live-val som presentationen tar bort
+ * utan att utkastet rör det hindrar inte, precis som samma publicering utan utkast.
+ * @returns {string[]} sökvägar som 'dealer' eller 'roomOverrides.<spelbord>.table'
+ */
+export function lostDraftChoices({live, draft, candidate}) {
+  const before = publicEditableBranding(live), after = publicEditableBranding(withEditableBranding(live, draft)), next = publicEditableBranding(candidate);
+  const same = (a, b) => canonicalStudioJson(a ?? null) === canonicalStudioJson(b ?? null);
+  const lost = [];
+  for (const key of PARTNER_BRANDING_FIELDS) if (!same(before[key], after[key]) && !same(after[key], next[key])) lost.push(key);
+  const rooms = new Set([...Object.keys(before.roomOverrides ?? {}), ...Object.keys(after.roomOverrides ?? {})]);
+  for (const roomId of [...rooms].sort()) for (const key of PARTNER_ROOM_BRANDING_FIELDS) {
+    const wanted = after.roomOverrides?.[roomId]?.[key];
+    if (!same(before.roomOverrides?.[roomId]?.[key], wanted) && !same(wanted, next.roomOverrides?.[roomId]?.[key])) lost.push('roomOverrides.' + roomId + '.' + key);
+  }
+  return lost;
 }
 
 /** Den publika felkroppen för rummets publicering, eller null för andra fel. */
@@ -235,7 +260,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
       return await api.command({action:'review', operatorId:current.operatorId, expectedDraftRevision:rawBrandingDraft.revision,
         expectedPackageRevision:current.revision, actor:actor.user, audit:operatorAuditContext(actor)});
     } catch (error) {
-      if (error instanceof StudioStorageError && error.code === 'partner_branding_rejected') invalid(DRAFT_INVALID);
+      if (isDraftValidationFailure(error)) invalid(DRAFT_INVALID);
       throw error;
     }
   }
@@ -276,8 +301,7 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
     const candidate = {operatorId, revision:current.revision + 1, lanes:[...current.lanes], games:[...current.games], tables:[...current.tables],
       branding:withPackagePresentation(baseBranding, presentation, {allowExtended:canExtend()})};
     // Presentationen tar tyst bort val den inte bär; ett utkastval får inte försvinna så.
-    if (includeDraft && canonicalStudioJson(publicEditableBranding(candidate.branding)) !== canonicalStudioJson(publicEditableBranding(baseBranding)))
-      invalid(DRAFT_INVALID);
+    if (includeDraft && lostDraftChoices({live:current.branding, draft:brandingDraft.branding, candidate:candidate.branding}).length) invalid(DRAFT_INVALID);
     return {presentation, candidate, mediaPreconditions:captured.mediaPreconditions, materialWarnings, materialFingerprint};
   }
   // Samma materialkontroll som room-game-config-api.mjs material(): rummets material
@@ -500,6 +524,8 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
         prepared.appearanceDraftRevision === null ? null : {expectedDraftRevision:prepared.appearanceDraftRevision});
       } catch (error) {
         // Paketets revision är redan låst och kontrollerad: en konflikt här gäller spelbordens huvuden.
+        // Butikens CAS på utkastet (operator-store.mjs) bär steget room_choices.
+        if (error?.code === 'studio_conflict' && error.step === 'room_choices') conflict('room_choices');
         if (error?.code === 'studio_conflict' && !error.step) conflict('room_config_head');
         // J08 löser om grannrummens nativa material: skälet ur den fasta listan blir materialReason.
         if (error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && error.materialReason === undefined)

@@ -646,8 +646,10 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const operatorId=idText(ownValue(capturedInput,'operatorId'));
       if(!await lockOperator(txQuery,operatorId))fail('studio_operator_not_found',404);
       const before=await latestDraft(txQuery,operatorId);
-      if((before?.revision??0)!==expected)fail('studio_conflict',409);
-      assertPublishableDraft(before,expectedPackage);
+      // Ett ändrat, slängt eller redan publicerat utkast är en konflikt i steget room_choices.
+      const draftConflict=()=>{throw Object.assign(new StudioStorageError('studio_conflict',409),{step:'room_choices'});};
+      if((before?.revision??0)!==expected)draftConflict();
+      try{assertPublishableDraft(before,expectedPackage);}catch(error){if(error?.code==='studio_conflict')draftConflict();throw error;}
       const result=await publishWithin(txQuery,capturedInput,captured);
       const draft=await markDraftPublished(txQuery,{...capturedInput,expectedPackageRevision:expectedPackage},before,result.package.revision);
       return {...result,draft};
