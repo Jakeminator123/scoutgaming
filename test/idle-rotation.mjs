@@ -195,3 +195,73 @@ test('publishing freezes exactly the bound original identities and pose policy, 
     mediaRows[bound].revision='replaced';assert.throws(()=>assertFrozenMediaPreconditions(capture.mediaPreconditions,mediaRows));
   }
 });
+
+// OpenClaw or a game rule may propose one rest clip of the sequence; it plays once, then the sequence continues.
+function proposing(selection=null) {
+  const f=registered('paow'),policy=structuredClone(prepareIdleRotation(f.base,f.inventory,{selection}).policy);
+  const id=name=>f.inventory.videos.find(video=>video.sha256===f.source.clips.find(take=>take.id===name).sha256).id;
+  for(const [name,use] of [['djupandetag','openclaw'],['fingrar','rules'],['blickvanster','openclaw']])policy.variants.find(row=>row.videoId===id(name)).use=use;
+  let clock=0;
+  const c=createLiveIdleController({policy:validateIdlePolicy(policy),inventory:f.inventory,dealerId:'paow',seed:42,now:()=>clock,initialScene:{active:true}});
+  const finish=()=>{const clip=c.snapshot().clip;c.presented(clip.playId);return c.completed(clip.playId).clip;};
+  // The current clip ends at rest, so a proposal can follow it.
+  const atRest=()=>{for(let i=0;policy.rotation.clips.find(row=>row.videoId===c.snapshot().clip.videoId).to!=='rest'&&i<300;i++)finish();};
+  return {f,policy,id,c,finish,atRest,tick:ms=>{clock+=ms;return clock;},at:()=>clock};
+}
+
+test('a proposed rest clip plays once at the next boundary at rest, then the sequence resumes',()=>{
+  for(const use of ['openclaw','rules']) {
+    const p=proposing(),target=p.id(use==='openclaw'?'djupandetag':'fingrar');
+    assert.equal(p.c.snapshot().clip.standardBase,true);
+    assert.equal(p.c.offerVariant({videoId:target,requestId:`${use}-1`,expiresAt:p.at()+30000},{use}),true);
+    const played=p.finish();
+    assert.deepEqual([played.videoId,played.reason,played.requestId,played.kind],[target,use,`${use}-1`,'variant']);
+    p.tick(1625);const next=p.finish();
+    assert.equal(next.reason,'pose-rotation');assert.equal(next.requestId,undefined);
+    for(let i=0;i<300;i++){p.tick(1625);assert.equal(p.finish().reason,'pose-rotation');}
+  }
+});
+
+test('proposals keep the use, pose, phase, TTL and one start per minute; stale ones give way to the sequence',()=>{
+  const p=proposing(),openclaw=p.id('djupandetag'),rules=p.id('fingrar'),head=p.id('blickvanster'),plain=p.id('vikt6103');
+  const offer=(videoId,requestId,ttl=10000,use)=>p.c.offerVariant({videoId,requestId,expiresAt:p.at()+ttl},use?{use}:undefined);
+  assert.equal(offer(rules,'wrong-use'),false,'a rules clip is not OpenClaw\'s');
+  assert.equal(offer(openclaw,'wrong-use-2',10000,'rules'),false);
+  assert.equal(offer(plain,'sequence-only'),false,'a clip left to the sequence is never proposed');
+  assert.equal(offer(openclaw,'manual',10000,'manual'),false);
+  assert.equal(offer(openclaw,'too-long',30001),false);assert.equal(offer(openclaw,'expired',0),false);
+  assert.equal(p.c.offerVariant({videoId:openclaw,requestId:'extra',expiresAt:p.at()+1000,note:1}),false);
+  p.c.updateScene({phase:'decide'});assert.equal(offer(head,'restless'),false,'only calm clips while the player decides');
+  p.c.updateScene({phase:'bets'});
+  // One proposal waits at a time; a request id is used once.
+  assert.equal(offer(openclaw,'first'),true);assert.equal(offer(head,'second'),false);
+  p.c.clearOffers();assert.equal(offer(openclaw,'first'),false,'a used request id stays used');
+  // Expired before the boundary: the sequence goes on.
+  p.atRest();assert.equal(offer(openclaw,'short',1000),true);p.tick(2000);
+  assert.equal(p.finish().reason,'pose-rotation');
+  // Played once; another proposal within a minute of its start is refused, after a minute accepted.
+  p.tick(10);p.atRest();assert.equal(offer(head,'now'),true);const played=p.finish();
+  assert.equal(played.reason,'openclaw');assert.equal(played.videoId,head);
+  assert.equal(offer(openclaw,'queued'),false,'a proposal waiting to start blocks the next');
+  p.c.presented(played.playId);p.tick(30000);assert.equal(offer(openclaw,'too-soon'),false);
+  p.tick(30001);assert.equal(offer(openclaw,'next-minute'),true);
+  // Speech, a block or a changed scene drops a waiting proposal.
+  p.atRest();p.c.updateScene({revision:'1'});assert.equal(p.finish().reason,'pose-rotation');
+  p.atRest();assert.equal(offer(openclaw,'speech'),true);p.c.updateScene({speechReady:true});assert.equal(offer(openclaw,'during-speech'),false);
+  assert.equal(p.finish().reason,'pose-rotation');
+});
+
+test('a proposal waits for the sequence to return to rest; only rest clips may carry a proposer',()=>{
+  const p=proposing(),target=p.id('djupandetag');
+  for(let i=0;p.c.snapshot().clip&&p.policy.rotation.clips.find(row=>row.videoId===p.c.snapshot().clip.videoId).to!=='clasped'&&i<300;i++){p.tick(100);p.finish();}
+  const row=videoId=>p.policy.rotation.clips.find(item=>item.videoId===videoId);
+  assert.equal(row(p.c.snapshot().clip.videoId).to,'clasped');
+  assert.equal(p.c.offerVariant({videoId:target,requestId:'wait',expiresAt:p.at()+30000}),true);
+  let seen=null;
+  for(let i=0;i<40&&!seen;i++){p.tick(100);const next=p.finish();if(next.reason==='openclaw')seen=next;else assert.equal(row(next.videoId).from===row(next.videoId).to||row(next.videoId).to==='rest'||row(next.videoId).from==='rest',true);}
+  assert.ok(seen,'played after the exit to rest');assert.equal(seen.videoId,target);
+  const bad=structuredClone(p.policy);bad.variants.find(item=>row(item.videoId).to==='clasped').use='openclaw';
+  assert.throws(()=>validateIdlePolicy(bad),IdlePolicyError);
+  const exit=structuredClone(p.policy);exit.variants.find(item=>row(item.videoId).from==='clasped'&&row(item.videoId).to==='rest').use='rules';
+  assert.throws(()=>validateIdlePolicy(exit),IdlePolicyError);
+});

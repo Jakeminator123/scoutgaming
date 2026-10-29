@@ -1,10 +1,13 @@
 // Explicit, registered media only. Pose names describe joins, never filenames.
 const fields = ['videoId', 'phase', 'from', 'to', 'weight', 'head', 'calm'];
 const poses = new Set(['rest', 'clasped']);
+// Every clip stays in the sequence. One that starts and ends at rest may also be
+// proposed once by OpenClaw or a game rule (capability v32, idleRotationOffers).
+const ROTATION_USES = new Set(['rotation', 'openclaw', 'rules']);
 export function validateIdleRotation(rotation, policy) {
   const fail = () => { throw new Error('Ogiltig vilosekvens: kontrollera klipp, poser och återgång till vila.'); };
   if (!rotation || Object.keys(rotation).join(',') !== 'clips' || !Array.isArray(rotation.clips)
-    || policy.base.length !== 1 || policy.variants.some(row => row.use !== 'rotation')
+    || policy.base.length !== 1 || policy.variants.some(row => !ROTATION_USES.has(row.use))
     || rotation.clips.length !== policy.base.length + policy.variants.length) fail();
   const members = new Set([...policy.base, ...policy.variants].map(row => row.videoId)), seen = new Set();
   for (const row of rotation.clips) {
@@ -15,6 +18,10 @@ export function validateIdleRotation(rotation, policy) {
     if ((row.from === 'clasped' || row.to === 'clasped') && (row.phase !== 'bets' || !row.calm || row.head)) fail();
     if (row.head && (row.phase !== 'any' || row.calm)) fail();
     seen.add(row.videoId);
+  }
+  for (const row of policy.variants) if (row.use !== 'rotation') {
+    const clip = rotation.clips.find(item => item.videoId === row.videoId);
+    if (clip?.from !== 'rest' || clip.to !== 'rest') fail();
   }
   const primary = rotation.clips.find(row => row.videoId === policy.base[0].videoId);
   if (primary?.from !== 'rest' || primary.to !== 'rest' || primary.phase !== 'any' || !primary.calm || primary.head) fail();
@@ -50,10 +57,37 @@ function weighted(pool, last, random) {
   return choices.find(row => (value -= row.weight) < 0) ?? choices.at(-1) ?? null;
 }
 
+// A proposal from OpenClaw or a game rule: a fresh request id, valid for at most
+// 30 s, and at most one proposed start per minute. Shape and limits only; the
+// controller decides whether the clip may play from its current pose.
+export const IDLE_OFFER_TTL_MS = 30000;
+export function createIdleOffers() {
+  let pending = null, starts = [];
+  const seen = new Set();
+  const recent = at => (starts = starts.filter(start => at - start < 60000)).length;
+  return {
+    read(value, use, at) {
+      if (!['openclaw', 'rules'].includes(use) || !value || typeof value !== 'object' || Object.keys(value).length !== 3
+        || !['videoId', 'requestId', 'expiresAt'].every(key => Object.hasOwn(value, key)) || typeof value.videoId !== 'string'
+        || typeof value.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value.requestId)
+        || !Number.isFinite(value.expiresAt) || value.expiresAt <= at || value.expiresAt > at + IDLE_OFFER_TTL_MS
+        || seen.has(value.requestId) || seen.size >= 512) return null;
+      seen.add(value.requestId);
+      return { videoId: value.videoId, requestId: value.requestId, expiresAt: value.expiresAt, use };
+    },
+    hold(offer, at) { if (pending || recent(at) >= 1) return false; pending = offer; return true; },
+    take(at) { const offer = pending; pending = null; return offer && offer.expiresAt > at && recent(at) < 1 ? offer : null; },
+    started(at) { recent(at); starts.push(at); },
+    clear() { pending = null; },
+    reset() { pending = null; starts = []; },
+  };
+}
+const proposed = clip => clip?.reason === 'openclaw' || clip?.reason === 'rules';
+
 export function createRotationIdle({ policy, inventory, dealerId, random, scene, sceneValue, blocked, now, validate }) {
   let currentPolicy, allowed = [], clip = null, suspended = null, serial = 0, closed = false;
   let pose = 'rest', last = null, sinceHead = Infinity, lastTime = -Infinity, faulted = false;
-  const failed = new Set();
+  const failed = new Set(), offers = createIdleOffers();
   const time = () => { const at = now(); if (!Number.isFinite(at) || at < 0 || at < lastTime) throw Error('Live idle clock must be monotonic'); lastTime = at; return at; };
   function configure(nextPolicy, nextInventory) {
     currentPolicy = structuredClone(validate(nextPolicy));
@@ -62,7 +96,7 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
       && video.available === true && video.familyId === family?.id
       && (row.videoId === currentPolicy.base[0].videoId ? video.role === 'standard' && family.standardIds.includes(video.id)
         : video.role === 'variant' && family.variantIds.includes(video.id))));
-    clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; failed.clear(); faulted = false;
+    clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; failed.clear(); faulted = false; offers.clear();
   }
   function choose(primary = false) {
     if (closed || blocked(scene) || faulted) { clip = null; return; }
@@ -72,9 +106,34 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
       last, sinceHead, primaryId, random });
     clip = next ? { ...next, playId: ++serial, started: false, presented: false, offset: 0, standardBase: next.videoId === primaryId } : null;
   }
+  // A proposed clip starts and ends at rest, carries the proposer's use and fits
+  // the game phase the way the sequence itself would (calm while the player decides).
+  function offerable(videoId, use) {
+    const row = allowed.find(item => item.videoId === videoId);
+    return currentPolicy.variants.some(item => item.videoId === videoId && item.use === use) && row && !failed.has(videoId)
+      && row.from === 'rest' && row.to === 'rest' && (row.phase === 'any' || row.phase === scene.phase)
+      && (scene.phase !== 'decide' || row.calm) ? row : null;
+  }
+  // Played once at the next boundary at rest; the sequence then continues from it.
+  function playOffer(at) {
+    if (pose !== 'rest' || closed || faulted || blocked(scene) || scene.speechReady) return false;
+    const offer = offers.take(at), row = offer && offerable(offer.videoId, offer.use);
+    if (!row) return false;
+    clip = { ...row, playId: ++serial, started: false, presented: false, offset: 0, standardBase: false,
+      reason: offer.use, requestId: offer.requestId, expiresAt: offer.expiresAt, counted: false };
+    return true;
+  }
+  // The first real start of a proposed clip counts against the one-per-minute limit.
+  // A proposal that expired before it started gives way to the sequence.
+  function begin(at) {
+    if (!proposed(clip) || clip.counted) return true;
+    if (clip.expiresAt <= at) { clip = null; choose(); return false; }
+    clip.counted = true; offers.started(at); return true;
+  }
   function snapshot() {
     return { clip: clip ? { playId: clip.playId, kind: clip.standardBase ? 'base' : 'variant', videoId: clip.videoId,
-      reason: 'pose-rotation', repeat: false, standardBase: clip.standardBase, startOffset: clip.offset } : null,
+      reason: clip.reason ?? 'pose-rotation', repeat: false, standardBase: clip.standardBase, startOffset: clip.offset,
+      ...(clip.requestId ? { requestId: clip.requestId } : {}) } : null,
       idleReady: Boolean(clip?.standardBase && clip.presented && !blocked(scene) && !closed),
       state: closed ? 'closed' : blocked(scene) ? 'blocked' : clip ? 'idle' : 'unavailable' };
   }
@@ -84,7 +143,13 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
     updateScene(patch) {
       time(); if (closed) return snapshot();
       const previous = scene; scene = sceneValue({ ...scene, ...patch });
-      if (scene.identity !== previous.identity) { clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; failed.clear(); faulted = false; }
+      // Any change of the scene makes a waiting proposal stale.
+      if (Object.keys(scene).some(key => scene[key] !== previous[key])) offers.clear();
+      if (scene.identity !== previous.identity) { clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; failed.clear(); faulted = false; offers.reset(); }
+      else if (scene.revision !== previous.revision) {
+        if (proposed(clip) && !clip.started) clip = null;
+        if (proposed(suspended) && !suspended.presented) suspended = null;
+      }
       if (blocked(scene)) { if (clip) suspended = clip; clip = null; }
       else if (!clip && suspended && !faulted) { clip = { ...suspended, playId: ++serial, started: false, presented: false }; suspended = null; }
       else if (!clip) choose(true);
@@ -92,17 +157,29 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
     },
     // A different, verified film took the screen. Its existing pose contract owns
     // the return; an interrupted idle must not resume over that film's final pose.
-    interruptPose() { time(); clip = suspended = null; faulted = true; return snapshot(); },
-    resetPose() { time(); clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; faulted = false; choose(true); return snapshot(); },
+    interruptPose() { time(); clip = suspended = null; faulted = true; offers.clear(); return snapshot(); },
+    resetPose() { time(); clip = suspended = null; pose = 'rest'; last = null; sinceHead = Infinity; faulted = false; offers.clear(); choose(true); return snapshot(); },
     updatePolicy(next, nextInventory) { time(); if (!closed) { configure(next, nextInventory); choose(true); } return snapshot(); },
-    clearOffers() { time(); return snapshot(); }, offerVariant() { time(); return false; },
-    started(id) { time(); if (own(id)) clip.started = true; return snapshot(); },
-    presented(id) { time(); if (own(id)) { clip.started = true; clip.presented = true; } return snapshot(); },
+    // A mode change drops a waiting proposal and one not yet started; a playing one finishes.
+    clearOffers() {
+      time(); offers.clear();
+      if (proposed(clip) && !clip.started) { clip = null; choose(true); }
+      if (proposed(suspended) && !suspended.presented) suspended = null;
+      return snapshot();
+    },
+    offerVariant(value, { use = 'openclaw' } = {}) {
+      const at = time(), offer = closed ? null : offers.read(value, use, at);
+      if (!offer || blocked(scene) || scene.speechReady || faulted || !offerable(offer.videoId, use)
+        || [clip, suspended].some(row => proposed(row) && !row.counted)) return false;
+      return offers.hold(offer, at);
+    },
+    started(id) { const at = time(); if (own(id) && begin(at)) clip.started = true; return snapshot(); },
+    presented(id) { const at = time(); if (own(id) && begin(at)) { clip.started = true; clip.presented = true; } return snapshot(); },
     progress(id, seconds) { if (own(id) && Number.isFinite(seconds) && seconds >= 0) clip.offset = seconds; },
     completed(id) {
-      time(); if (!own(id) || !clip.started) return snapshot();
+      const at = time(); if (!own(id) || !clip.started) return snapshot();
       pose = clip.to; last = clip.videoId; sinceHead = clip.head ? 0 : sinceHead + 1;
-      clip = null; choose(); return snapshot();
+      clip = null; if (!playOffer(at)) choose(); return snapshot();
     },
     failed(id) {
       time(); if (!own(id)) return snapshot();
@@ -111,6 +188,6 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
       // expose failure rather than jumping to another take with incompatible hands.
       faulted = clip.presented || pose !== 'rest'; clip = null; suspended = null; choose(true); return snapshot();
     },
-    close() { closed = true; clip = suspended = null; return snapshot(); },
+    close() { closed = true; clip = suspended = null; offers.clear(); return snapshot(); },
   });
 }
