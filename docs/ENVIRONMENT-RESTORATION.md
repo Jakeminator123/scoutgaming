@@ -112,6 +112,16 @@ Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 
 SELECT p.environment_id, p.operator_id, p.package_revision, r->>'id' AS table_id, r->>'presentationLaneId' AS lane FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) * FROM croupier_studio.operator_packages ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) p JOIN croupier_studio.documents d ON d.environment_id = p.environment_id AND d.workspace_id = p.workspace_id AND d.kind = 'administration' CROSS JOIN LATERAL jsonb_array_elements(d.value->'rooms') r WHERE r->>'operatorId' = p.operator_id AND p.tables::jsonb ? (r->>'id') AND NOT p.lanes::jsonb ? (r->>'presentationLaneId');
 ```
 
+**Efter Studio 023 (Jakob): ompublicera paketen.** Paketraderna är oföränderliga, så ingen DML fyller i `rooms` i gamla versioner. I stället publicerar `tools/republish-rooms.mjs` varje bolag vars nuvarande paket saknar `rooms` som en ny version (pkg+1) genom produktens skrivare, med bordens rum ur administrationsdokumentet. Bolagets öppna utseendeutkast följer med; spelinställningsutkast på den gamla versionen sparas om i Admin (utskriften säger hur många). Utan 023 i ledgern nekar verktyget. Det är idempotent: en andra körning publicerar inget. Varje pkg+1 ger bolagets anslutna spelare 1008 och en ny socket, så kör det när borden är tomma, först i preview och sedan här, i Jakobs terminal med samma `CROUPIER_GAME_DATABASE_URL` och scope (`CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`) som miljöns Vercel-projekt:
+
+```sh
+node tools/republish-rooms.mjs --dry-run              # listar bolag, revisioner och antal bord, skriver inget
+node tools/republish-rooms.mjs                        # skarpt; --operator <id> begränsar till ett bolag
+node tools/check-migration-readiness.mjs              # stderr: paket utan rooms: 0
+```
+
+Ett bolag vars bord saknas i dokumentet hoppas över och står kvar i raden `paket utan rooms`. Exit 1 betyder att minst ett bolag misslyckades (koden står på raden); kör om efter rättning.
+
 Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern bara `product-v1` och `game-012-api-key-operator`; 011 är inte körd där). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)

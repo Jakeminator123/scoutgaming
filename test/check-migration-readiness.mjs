@@ -293,3 +293,38 @@ test('the printed --only/--apply lists name Studio versions studio-NNN', () => {
   assert.deepEqual(line, { database: 'croupier_game', role: 'croupier_game', applied: ['studio-020', 'game-012'], pending: [], optionalPending: [],
     ready: true, selected: ['studio-021'], appliedNow: ['studio-021'] });
 });
+
+// L3 PR 4: the report's information line `paket utan rooms: N` (stderr beside the JSON line; it
+// never blocks): companies whose current package has no rooms (Studio 023), per scope, as
+// tools/republish-rooms.mjs runs per scope. Real PostgreSQL (PGlite) with every reviewed Studio migration.
+test('readiness counts the companies whose current package has no rooms, per scope', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }, { createOperatorStore }, { countPackagesWithoutRooms, packageRoomsLine }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/operators/server/operator-store.mjs'),
+    import('../tools/check-migration-readiness.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true, deferOptional: ['023'] });
+  const line = async () => packageRoomsLine(await countPackagesWithoutRooms({ pool }));
+  assert.equal(await line(), 'paket utan rooms: 0');
+  const actor = 'readiness-test';
+  const production = await createOperatorStore({ sql: pool, scope: { environment: 'production', workspaceId: 'croupier' } });
+  const preview = await createOperatorStore({ sql: pool, scope: { environment: 'staging_k06_k07', workspaceId: 'croupier' } });
+  const publish = (store, operatorId) => store.publishPackage({ actor, operatorId, lanes: [], games: ['blackjack'], tables: [], branding: { name: operatorId } });
+  for (const [store, operatorId] of [[production, 'alpha'], [production, 'beta'], [preview, 'gamma'], [production, 'empty']]) {
+    await store.createOperator({ operatorId, slug: operatorId, name: operatorId, status: 'active', actor });
+    if (operatorId !== 'empty') await publish(store, operatorId);
+  }
+  // Without 023 every current package lacks rooms; a company counts once, and one without a package not at all.
+  await publish(production, 'alpha');
+  assert.equal(await line(), 'paket utan rooms: 3 (production/croupier: 2, staging_k06_k07/croupier: 1)');
+  const plan = await planStudioMigrations({ pool });
+  await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true });
+  // With 023 a new revision carries rooms: only the current package counts, not the history.
+  assert.deepEqual((await publish(production, 'alpha')).rooms, []);
+  assert.equal(await line(), 'paket utan rooms: 2 (production/croupier: 1, staging_k06_k07/croupier: 1)');
+  for (const [store, operatorId] of [[production, 'beta'], [preview, 'gamma']]) await publish(store, operatorId);
+  assert.equal(await line(), 'paket utan rooms: 0');
+  // An unreadable count is `okänt`, never an error and never a driver message.
+  const failing = { async query() { throw new Error(`count failed ${secret}`); } };
+  assert.equal(packageRoomsLine(await countPackagesWithoutRooms({ pool: failing })), 'paket utan rooms: okänt');
+  assert.equal(packageRoomsLine(await countPackagesWithoutRooms({ pool: { async query() { return { rows: [{ environment_id: 'x', workspace_id: 'y', missing: 'many' }] }; } } })), 'paket utan rooms: okänt');
+});
