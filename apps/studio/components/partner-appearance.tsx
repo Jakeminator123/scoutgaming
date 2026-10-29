@@ -93,7 +93,9 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   const reviewValid = Boolean(review && server.draft && !dirty && !stale && review.draftRevision === draftRevision && review.packageRevision === server.packageRevision && sameAppearance(review.branding, branding));
   const canSave = editable && (dirty || stale);
   const canReview = editable && server.draft && !dirty && !stale;
-  const canPublish = editable && reviewValid && Boolean(review?.changes.length);
+  // Without tables.read the review hides the table rows but counts them: they are still published.
+  const hiddenTableChanges = review?.hiddenTableChanges ?? 0;
+  const canPublish = editable && reviewValid && Boolean(review?.changes.length || hiddenTableChanges);
   // What the primary action would publish: the saved draft against live, or the local edits against live.
   const pending = appearanceChangeCount(dirty ? branding : appearanceDraftBranding(server), server.branding);
   const endpoint = `${apiBase}/branding?operator=${encodeURIComponent(operatorSlug)}`;
@@ -289,8 +291,9 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
           <Dialog.Description id="appearance-review-description">{t('Det här ändras jämfört med det spelarna ser nu.','This changes compared with what players see now.')}</Dialog.Description>
           <section className={styles.review} aria-label={t('Granskning före publicering','Review before publishing')}>
             {reviewValid && review ? <>
-              {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><b>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('spelbordsval','table choice') + ')' : labels[row.key] ?? row.key}</b><span>{labelOf(row.before)} <span aria-hidden="true">→</span> <strong>{labelOf(row.after)}</strong></span></li>)}</ul> : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
-              <p className={styles.hint}><strong>{t('Berörda spelbord','Affected tables')}:</strong> {review.affectedRooms.length ? review.affectedRooms.map(roomLabel).join(', ') : t('inga befintliga spelbord','no existing tables')}</p>
+              {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><b>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('spelbordsval','table choice') + ')' : labels[row.key] ?? row.key}</b><span>{labelOf(row.before)} <span aria-hidden="true">→</span> <strong>{labelOf(row.after)}</strong></span></li>)}</ul> : hiddenTableChanges ? null : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
+              {hiddenTableChanges ? <p>{hiddenTableChanges === 1 ? t('1 ändring på spelborden visas inte för din roll.','1 change to the tables is not shown for your role.') : t(`${hiddenTableChanges} ändringar på spelborden visas inte för din roll.`,`${hiddenTableChanges} changes to the tables are not shown for your role.`)}</p> : null}
+              <p className={styles.hint}><strong>{t('Berörda spelbord','Affected tables')}:</strong> {review.tablesHidden ? t('Spelborden visas inte för din roll','Tables are not shown for your role') : review.affectedRooms.length ? review.affectedRooms.map(roomLabel).join(', ') : t('inga befintliga spelbord','no existing tables')}</p>
             </> : <p>{t('Spara utkastet och granska igen för att se skillnaden.','Save the draft and review again to see the difference.')}</p>}
             {!roomLayout ? <p className={styles.note}>{t('Utkastet är gemensamt för bolagets spelbord: en publicering gäller alla spelbord i bolaget', 'The draft is shared by the company tables: one publication applies to every table in the company')}{allRooms.length ? ` (${allRooms.join(', ')})` : ''}. {t('Pågående rundor spelas klart; nästa runda får den nya versionen.','Rounds in play finish; the next round gets the new version.')}</p> : null}
           </section>
