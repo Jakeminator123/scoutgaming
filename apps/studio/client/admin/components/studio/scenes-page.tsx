@@ -23,7 +23,7 @@ export function ScenesPage({tab,filter,compositionId,game,operator=null,table=nu
   const workspace=useEnvironmentWorkspace({active:visible&&tab==='miljoer',refreshKey,onChanged});
   const {data,status,dirty,error}=workspace;
   const [creating,setCreating]=useState(false);
-  if(tab==='miljoer'&&compositionId)return <EnvironmentEditor workspace={workspace} laneId={compositionId} game={game==='roulette'?'roulette':'blackjack'} visible={visible} blocked={blocked} operator={operator} table={table}/>;
+  if(tab==='miljoer'&&compositionId)return <EnvironmentEditor workspace={workspace} laneId={compositionId} game={game==='roulette'?'roulette':'blackjack'} visible={visible} blocked={blocked} operator={operator} table={table} onChanged={onChanged}/>;
   const project=data?.project,counts=environmentCounts(project),lanes=project?.lanes??[],assets=project?.layerAssets??[];
   const materialFilter=adminMaterialFilterId(filter);
   const dealerOf=(id:string)=>({id,label:project?.dealers.find(row=>row.id===id)?.label??'Okänd dealer'});

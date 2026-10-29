@@ -10,11 +10,14 @@ import type {EnvironmentWorkspace} from './environment-workspace';
 import {EnvironmentPicture} from './environment-picture';
 import {StudioCompositionPanel} from './studio-composition-panel';
 import {ScenePreview} from './scene-preview';
+import {PermanentDeleteButton} from './permanent-delete';
+import {RoomSettingsWarning,roomPreparing} from './room-settings-warning';
 
 /** One environment in its own view, in three sections: Miljöbild; Lager och placering (the placement editor,
  * layers, allowed dealers and material, and the saved scene's preview); Används av (the tables that use it,
- * each linking to its own editor, where publication happens). Saving is one draft for the whole project. */
-export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operator=null,table=null}:{workspace:EnvironmentWorkspace;laneId:string;game:'blackjack'|'roulette';visible:boolean;blocked:boolean;operator?:string|null;table?:string|null}) {
+ * each linking to its own editor, where publication happens, and warning when a table cannot be played yet); last
+ * Radera miljön (permanent; the server's check names what still uses it). Saving is one draft for the whole project. */
+export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operator=null,table=null,onChanged}:{workspace:EnvironmentWorkspace;laneId:string;game:'blackjack'|'roulette';visible:boolean;blocked:boolean;operator?:string|null;table?:string|null;onChanged:()=>void}) {
   const {data,base,status,busy,dirty,error,notice,conflicts,stale}=workspace;
   const lane=data?.project.lanes?.find(row=>row.id===laneId),savedLane=base?.lanes?.find(row=>row.id===laneId);
   const locked=blocked||busy||status!=='ready';
@@ -66,12 +69,16 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operato
       <Card title="Används av" id="anvands" flush>
         {rooms.length?<ul className="m-0 grid list-none p-0" aria-label="Spelbord som använder miljön">{rooms.map(room=><li key={room.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-sg-line-2 px-5 py-3 first:border-t-0">
           <span className="grid min-w-0"><Link href={room.href} className="truncate font-semibold text-sg-text hover:underline">{room.name}</Link>
-            <span className="text-[12.5px] text-sg-muted">{room.operatorName} · {room.game==='roulette'?'Roulette':'Blackjack'}</span></span>
-          <span className="flex items-center gap-2">{room.state==='live'?<Badge tone="live" dot>Öppet</Badge>:<Badge tone="warn" dot>Pausat</Badge>}
+            <span className="text-[12.5px] text-sg-muted">{room.operatorName} · {room.game==='roulette'?'Roulette':'Blackjack'}</span>
+            <RoomSettingsWarning room={room} compact/></span>
+          <span className="flex items-center gap-2">{roomPreparing(room)?<Badge tone="warn" dot>Förbereds</Badge>:room.state==='live'?<Badge tone="live" dot>Öppet</Badge>:<Badge tone="warn" dot>Pausat</Badge>}
             <Link className={buttonVariants({variant:'ghost',size:'sm'})} href={room.href}>Publicera i spelbordet</Link></span>
         </li>)}</ul>
           :<div className="p-5"><Empty chip={null} title="Inget spelbord använder miljön" text="Ett spelbord väljer miljö när det skapas under Bolag och spelbord." action={<Link className={buttonVariants({variant:'secondary'})} href="/admin/companies?tab=spelbord">Till spelborden</Link>}/></div>}
         {rooms.length>0&&<p className="m-0 border-t border-sg-line-2 px-5 py-3 text-[12.5px] text-sg-muted">{plural(rooms.length,'spelbord använder','spelbord använder')} miljön. Ändringar här når spelarna först när spelbordet publiceras.</p>}
+      </Card>
+      <Card title="Radera miljön" id="radera" aside={<PermanentDeleteButton target={{kind:'composition',id:lane.id,name:lane.label}} disabled={locked||dirty||!savedLane} onDeleted={()=>{navigate(listHref);onChanged();}}/>}>
+        <p className="m-0 text-[13px] text-sg-muted">Miljöer har ingen papperskorg. En miljö går att radera permanent när inget spelbord och ingen aktiv tilldelning använder den; kontrollen visar vad som hindrar.{dirty&&' Spara eller kasta utkastet först.'}</p>
       </Card>
     </div>
   </HubPage>;

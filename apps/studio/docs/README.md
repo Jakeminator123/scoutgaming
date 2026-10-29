@@ -286,7 +286,8 @@ säger vilka dealers och vilket material den tillåter. Flera spelbord kan dela
 samma miljö.
 
 Sidan har två flikar, **Miljöer** och **Material**. En miljö öppnas i en egen
-vy med tre delar: **Miljöbild**, **Lager och placering** och **Används av**.
+vy med tre delar: **Miljöbild**, **Lager och placering** och **Används av**,
+sist **Radera miljön**.
 **Alla miljöer** leder tillbaka. Gamla bokmärken (`tab=mallar`,
 `tab=bakgrunder` och så vidare) öppnar rätt flik.
 Öppnas miljön från ett spelbord (portalen, **Beroenden**, bolagets
@@ -315,7 +316,13 @@ miljöbilden, annars bakgrunden och bordsgrafiken på sin placering för dator.
   miljön. Längst ned visar **Förhandsvisning av den sparade miljön**
   dealerns vila i scenen, med provspelning.
 - **Används av**: spelborden som använder miljön, med länk till spelbordet.
-  Publicering sker i spelbordet.
+  Publicering sker i spelbordet. Ett öppet blackjackbord utan publicerade
+  spelinställningar står som **Förbereds** med varningen "Saknar
+  spelinställningar – spelare kan inte sätta sig" och en länk till
+  **Spelinställningar**.
+- **Radera miljön**: **Radera permanent** (miljöer har ingen papperskorg).
+  Spara eller kasta utkastet först; serverns kontroll visar vilka spelbord
+  eller tilldelningar som hindrar.
 - **Dealers i den gemensamma miljön** och **Förvald dealer**: här tillåter du
   dealern i miljön, steg 7 i arbetsgången.
 - **Förhandsvisa och placera** växlar mellan tillåtet material utan att ändra
@@ -372,7 +379,8 @@ utkastet. Spelborden får ändringen när de publiceras: öppna spelbordet under
 Filtren **Bakgrund**, **Bordsgrafik** och **Arkiverat** visar materialbiblioteket
 per lager respektive det arkiverade materialet. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Valt förslag visas i miljön för dator och mobil;
+välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
+synligt; rumsbilder blir miljöbilder. Valt förslag visas i miljön för dator och mobil;
 en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
 svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara miljöer med samma placering. Uppladdning ändrar inga
@@ -527,7 +535,9 @@ ingenting; nekar servern visas orsaken.
 - **Material**: bakgrunder och bordsgrafik flyttas till Material ›
   Arkiverat och kopplas loss där de används; publicerade versioner behålls.
 - **Miljöer**: borttagning ändrar utkastet; publicerade spelbord behåller
-  sin version.
+  sin version. **Radera permanent** ligger i miljöns egen vy under **Radera
+  miljön** och går bara när inget spelbord och ingen aktiv tilldelning
+  använder miljön.
 
 ## Lobby och spelstart
 

@@ -14,6 +14,7 @@ const MAX_BODY = 64 * 1024;
 const administrationMutations = new Set(['tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
+const RESOURCE_DELETE_CODES = new Set(['studio_resource_delete_blocked','studio_delete_name_mismatch','studio_conflict','studio_room_not_found','studio_composition_not_found','studio_operator_not_found']);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
 function json(value, status = 200, extra = {}) {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ...extra } });
@@ -157,6 +158,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // hold that same product lock while validating current identity and writing.
       const presentationOptions = ['material-trash-check','material-trash'].includes(endpoint.action)
         ? {presentationDocuments:['project','administration'],presentationMaterialTrash:{id:body.id,archived:body.archived,expectedRevision:body.expectedRevision},presentationMutation:{kind:'material-trash',value:{}}}
+        // Radera permanent: both documents, and for a room its company's frozen package (the new version keeps it).
+        : ['resource-delete-check','resource-delete'].includes(endpoint.action)
+        ? { presentationDocuments: ['project','administration'], ...(body?.kind==='room'&&typeof body.operatorId==='string'?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : endpoint.action === 'room-game-config'
@@ -208,6 +212,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         if (status >= 500) logStudioServerFailure(error, { method: request.method, route: action });
         return json(releaseBody, status);
       }
+      // Radera permanent names why it refused (blocked, wrong name, stale check), never provider text.
+      if (action === 'resource-delete' && error instanceof StudioStorageError && RESOURCE_DELETE_CODES.has(error.code)) return json({ error: publicErrors.get(status), code: error.code }, status);
       if (status !== 503 && status !== 500) return json({ error: publicErrors.get(status) }, status);
       logStudioServerFailure(error, { method: request.method, route: action });
       // Storage codes are fixed product identifiers (see StudioStorageError), never provider text.

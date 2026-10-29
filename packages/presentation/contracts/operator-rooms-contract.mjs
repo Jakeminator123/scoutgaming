@@ -31,7 +31,7 @@ function rows(value, max, check) {
 // every known key is checked as strictly as before, and the rest of the catalogue stays exact. Add new
 // optional public fields on the room, never elsewhere, and list them in ROOM_OPTIONAL.
 const ROOM_REQUIRED = ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl'];
-const ROOM_OPTIONAL = ['game', 'limitPreset', 'illustration'];
+const ROOM_OPTIONAL = ['game', 'limitPreset', 'illustration', 'status'];
 function roomFields(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(value)) || Object.getOwnPropertySymbols(value).length) fail();
@@ -65,6 +65,10 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
     if (Object.hasOwn(room,'limitPreset') && (typeof room.limitPreset !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.limitPreset))) fail();
     // The miljöbild of the room's published environment (an illustration material id), for the lobby's picture only.
     if (Object.hasOwn(room,'illustration') && (typeof room.illustration !== 'string' || !UUID.test(room.illustration))) fail();
+    // 'preparing': an open blackjack room without published game settings, shown as being prepared, never played.
+    // The format is checked; a status this build does not know is passed on and means no game start, never a
+    // rejected catalogue (forward compatibility, see ROOM_OPTIONAL above).
+    if (Object.hasOwn(room,'status') && (typeof room.status !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.status))) fail();
     if (!isGameLaneId(room.id) || !isGameLaneId(room.laneId)) fail();
     text(room.name, 100); exact(room.presentation, ['id', 'label']);
     if (!isGameLaneId(room.presentation.id)) fail();

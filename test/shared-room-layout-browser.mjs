@@ -143,3 +143,28 @@ test('Chrome shared-table focus: choosing another own seat and a round that empt
     await context.close();
   }
 });
+
+// Platsbrickorna (2026-10-29): on a table with published geometry the seat circle stands centred under the box where
+// the cards land, just below the hand total, in a 16:9, 16:10 and 21:9 window and on a phone (box 4 in the middle of 3-5).
+test('Chrome shared-table seat circles: centred under the cards\' box at 16:9, 16:10, 21:9 and on a phone', { skip, timeout: 180000 }, async t => {
+  const fixture = await openLayoutFixture(browserModule, { channel });
+  t.after(() => fixture.close());
+  for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 800 }, { width: 2560, height: 1080 }, { width: 390, height: 844 }]) {
+    const { page, context, show } = await fixture.open(viewport, { plane: 'table' });
+    await show(decision([3]));
+    const where = `${viewport.width}x${viewport.height}`;
+    const m = await page.evaluate(() => {
+      const box = rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, x: rect.left + rect.width / 2 });
+      const scene = document.getElementById('scene').getBoundingClientRect(), stage = window.fixture.stage();
+      return { circle: box(document.querySelector('.seat[data-seat="3"] .seat-shared-join').getBoundingClientRect()),
+        total: box(document.querySelector('#local-card-overlay .card-totals [data-seat="4"]').getBoundingClientRect()),
+        landing: scene.left + stage.x + 540 * stage.scale };
+    });
+    assert.ok(Math.abs(m.circle.x - m.landing) <= 1, `${where}: the circle is centred on box 4 (${m.circle.x} vs ${m.landing})`);
+    assert.ok(Math.abs(m.total.x - m.landing) <= 1, `${where}: the hand total is centred on box 4`);
+    const gap = m.circle.top - m.total.bottom;
+    assert.ok(gap >= -0.5 && gap <= 8, `${where}: the circle is ${gap.toFixed(1)} px below the hand total`);
+    assert.deepEqual(await page.evaluate(measureLayout), [], `${where}: no control covers another`);
+    await context.close();
+  }
+});

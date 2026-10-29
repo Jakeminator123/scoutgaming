@@ -10,11 +10,12 @@ function setup(t, hooks = {}) {
   const health = { running: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null };
   const binding = { actorId: 'actor-a', sessionId: 'digest-a', roomId: 'room-a', operatorId: 'operator-a', packageRevision: 3, expiresAt: Date.now() + 60000 };
   const options = { pool, walletMode: 'demo', origin: 'https://player.invalid', engineOrigin: 'https://engine.invalid',
-    scope: { environment: 'test', workspaceId: 'workspace-a' }, auth: {}, repository: {}, privateMedia:hooks.privateMedia, lockTimeoutMs: 200, statementTimeoutMs: 500 };
+    scope: { environment: 'test', workspaceId: 'workspace-a' }, auth: {}, repository: hooks.repository ?? {}, privateMedia:hooks.privateMedia, lockTimeoutMs: 200, statementTimeoutMs: 500 };
   const dependencies = {
     createAccess(value) { config.access = value; return {
       async authorize(req, context) { calls.push(['authorize', req, context]); return hooks.authorize ? hooks.authorize(req, context) : binding; },
       async revalidate(value, context) { calls.push(['revalidate', value, context]); return hooks.revalidate ? hooks.revalidate(value, context) : value; },
+      ...(hooks.presentationContext ? { readPresentationContextLocked: (value, context) => hooks.presentationContext(value, context) } : {}),
     }; },
     createReceiver(value) { config.receiver = value; return {
       async assertInstalled() { calls.push(['receiver-installed']); await hooks.installed?.(); },
@@ -34,6 +35,7 @@ function setup(t, hooks = {}) {
       emitCommitted(room) { calls.push(['hint', room]); },
       emitActorsCommitted(actors, options) { calls.push(['actor-hint', actors, options]); },
       close() { calls.push(['channel-close']); hooks.channelClose?.(); },
+      emitChat(room, entry) { calls.push(['chat', room, entry]); },
     }; },
     createUpgrade(value) { config.upgrade = value; return {
       handleUpgrade(req, socket, head) { calls.push(['upgrade', req, socket, head]); return req.url === '/unowned' ? false : value.channel.prepare(req); },
@@ -192,3 +194,32 @@ test('service shutdown aborts active media and cancels a late response before re
   delayed.resolve();await rejected;await closing;assert.equal(cancelled,1);assert.equal(h.service.health().inFlight,false);
 });
 
+
+test('chat context: socket authorization, the room dealer under the room lock and the projected client snapshot', async t => {
+  const locks = [], configs = [];
+  const full = hole => ({ contract: 'blackjack-table/1', roomId: 'room-a', version: 4, presentationVer: 2, configVersion: 'config-a', windowId: 'window-a',
+    phase: 'decisions', roundId: 'round-a', shoeOrder: ['private'], round: { phase: 'decisions', holeDraw: 9, hands: [],
+      dealer: [{ r: 'K', s: '♠', shoeDraw: 8 }, ...(hole ? [{ r: 'Q', s: '♥', shoeDraw: 9 }] : [])] },
+    me: { id: 'actor-a', seats: [0], active: true } });
+  let hole = false;
+  const h = setup(t, { repository: { sharedTransaction: work => work() },
+    lockedRead: (spec, work) => { locks.push(spec); return work({ room: async () => ({ configVersion: 'room-config-a' }) }); },
+    presentationContext: (value, context) => { configs.push([value.actorId, context.configVersion]); return { context: { dealerId: 'paow' } }; },
+    snapshot: () => full(hole) });
+  await assert.rejects(h.service.chatContext(request(), { roomId: 'room-a' }), { statusCode: 503 });
+  assert.throws(() => h.service.emitChat('room-a', {}), { statusCode: 503 });
+  await h.service.start();
+  const context = await h.service.chatContext(request(), { roomId: 'room-a' });
+  assert.equal(context.dealerId, 'paow'); assert.equal(context.binding, h.binding);
+  assert.deepEqual(locks, [{ rooms: ['room-a'], players: ['actor-a'] }]); assert.deepEqual(configs, [['actor-a', 'room-config-a']]);
+  assert.equal(context.snapshot.shoeOrder, undefined); assert.equal(context.snapshot.roundId, 'round-a');
+  // Review fix: chat admission reads authorization and the client snapshot without any lock.
+  const member = await h.service.chatMember(request(), { roomId: 'room-a' });
+  assert.equal(member.binding, h.binding); assert.equal(member.snapshot.roundId, 'round-a'); assert.equal(member.snapshot.shoeOrder, undefined);
+  assert.equal(locks.length, 1, 'chatMember takes no locked read'); assert.equal(configs.length, 1);
+  hole = true;
+  await assert.rejects(h.service.chatMember(request(), { roomId: 'room-a' }), { statusCode: 503 });
+  await assert.rejects(h.service.chatContext(request(), { roomId: 'room-a' }), { statusCode: 503 });
+  h.service.emitChat('room-a', { requestId: 'chat-1' });
+  assert.deepEqual(h.calls.filter(call => call[0] === 'chat'), [['chat', 'room-a', { requestId: 'chat-1' }]]);
+});

@@ -1,4 +1,4 @@
-import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../../packages/operators/server/public-rooms.mjs';
+import { createPublicOperatorRooms, isUnplayableOperatorRooms, readRoomConfigHeads, roomSettingsMissing } from '../../../packages/operators/server/public-rooms.mjs';
 import { validatePublicOperatorRooms } from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../../packages/presentation/contracts/room-environment.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
@@ -33,6 +33,10 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
       archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack) });
   }
+  // The published settings heads per company, read once and shared by Admin's warning and the lobby below,
+  // so both say what the shared table says (room_config_missing).
+  const heads = new Map();
+  for (const [id, pack] of packages) if (pack) heads.set(id, await readRoomConfigHeads(store, pack));
   // Each public room is checked by the same selector used at game entry, using
   // captured data throughout the response. Game entry revalidates on launch.
   const frozenStore = {
@@ -40,6 +44,7 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     getCurrentPackage: async id => packages.get(id) ?? null,
     // The published bet profile per room, read for the captured package above (the lobby's room picture).
     ...(typeof store.getPublishedRoomLimitPresets === 'function' ? { getPublishedRoomLimitPresets: pack => store.getPublishedRoomLimitPresets(pack) } : {}),
+    ...(typeof store.getPublishedRoomConfigHeads === 'function' ? { getPublishedRoomConfigHeads: async pack => heads.get(pack.operatorId) ?? null } : {}),
   };
   const roomReader = createPublicOperatorRooms({ store: frozenStore, policy: {
     readSaved: async () => saved,
@@ -92,7 +97,10 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       environment: playable ? roomEnvironment(playable, operator.slug) : null,
       ...(composition?.illustration ? { illustration: composition.illustration } : {}),
       playUrl: playable?.playUrl ?? null,
-      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
+      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}),
+      // The shared table admits a blackjack seat only with the package's game settings binding and its published
+      // head (services/game/shared-room-access.mjs room_config_missing); Admin warns until they are published.
+      ...(published&&roomGame(row)==='blackjack'&&roomSettingsMissing(pack,row.id,heads.get(row.operatorId)??null)?{settingsMissing:true}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
     administration: { revisions: { project: saved.projectRevision, administration: saved.administrationRevision },

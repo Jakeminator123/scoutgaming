@@ -23,13 +23,14 @@ function page({search='',workspace}){
   const ui={},uiUrl=name=>new URL('../components/ui/'+name+'.tsx',import.meta.url);
   const uiRequire=name=>name.endsWith('runtime/navigation')?navigation:name.endsWith('lib/admin-navigation')?adminNavigation:name.startsWith('./')?(ui[name]??=compile(uiUrl(name.slice(2)),uiRequire)):require(name);
   const stub=tag=>props=>h('section',{[tag]:JSON.stringify(Object.fromEntries(Object.entries(props).filter(([,value])=>typeof value!=='function'&&typeof value!=='object'||Array.isArray(value)&&value.every(item=>typeof item==='string'))))});
-  const panels=[],hookCalls=[];
+  const panels=[],hookCalls=[],deletes=[];
   const shared=name=>name==='react'||name.startsWith('react/')?require(name):name.endsWith('runtime/navigation')?navigation:name.startsWith('../ui/')?uiRequire('./'+name.slice(6))
     :name==='../../lib/admin-navigation'?adminNavigation:name==='../../lib/environment-workspace.mjs'?environmentWorkspace:name==='../../lib/connected-studio.mjs'?{compositionUses}
     :name==='./environment-workspace'?{useEnvironmentWorkspace:args=>{hookCalls.push(args);return workspace;}}:null;
   const editor=compile(new URL('../components/studio/environment-editor.tsx',import.meta.url),name=>shared(name)??(name==='./environment-picture'?{EnvironmentPicture:stub('data-picture')}
     :name==='./studio-composition-panel'?{StudioCompositionPanel:props=>{panels.push(props);return h('section',{'data-layers':props.compositionId,'data-game':props.game,'data-in-environment':String(props.inEnvironment),'data-dealer':props.dealerId});}}
-    :name==='./scene-preview'?{ScenePreview:stub('data-preview')}:name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
+    :name==='./scene-preview'?{ScenePreview:stub('data-preview')}:name==='./permanent-delete'?{PermanentDeleteButton:props=>{deletes.push(props);return h('button',{'data-permanent-delete':props.target.id,disabled:props.disabled});}}
+    :name==='./room-settings-warning'?compile(new URL('../components/studio/room-settings-warning.tsx',import.meta.url),shared):name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
   const scenes=compile(new URL('../components/studio/scenes-page.tsx',import.meta.url),name=>shared(name)??(name==='./environment-editor'?editor
     :name==='./registered-material-library'?{RegisteredMaterialLibrary:stub('data-library')}:name==='./dealer-identity-portrait'?{DealerFaces:()=>null}
     :name==='./scene-cover'?{SceneCover:props=>h('span',{'data-cover':props.lane.id})}
@@ -37,7 +38,7 @@ function page({search='',workspace}){
     :name==='../../../../components/studio-types'?{activeStudioDealers:project=>project.dealers}:name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
   const tab=adminNavigation.adminTabId('scenes',query.get('tab'));
   const html=renderToStaticMarkup(h(scenes.ScenesPage,{tab,filter:query.get('filter'),compositionId:query.get('composition')??'',game:query.get('game'),operator:query.get('operator'),table:query.get('table'),visible:true,blocked:false,onChanged(){},refreshKey:'0'}));
-  return {html,panels,navigated,hookCalls};
+  return {html,panels,navigated,hookCalls,deletes};
 }
 function fixture({dirty=false}={}){
   const project=addDealer(createSeedProject(),'nora','Nora');
@@ -112,6 +113,20 @@ test('an environment opens in its own view with Miljöbild, Lager och placering 
   const roulette=page({search:'tab=miljoer&composition=lounge&game=roulette',workspace:fixture()});
   assert.equal(roulette.panels[0].game,'roulette');assert.match(roulette.html,/Inget spelbord använder miljön/);
   assert.match(page({search:'tab=miljoer&composition=borta',workspace:fixture()}).html,/Miljön finns inte i projektet/);
+});
+
+test('Används av warns about a table without published game settings, and the environment is deleted from its own view',()=>{
+  const workspace=fixture();workspace.data.catalog.administration.rooms[0].settingsMissing=true;
+  const {html,deletes,navigated}=page({search:'tab=miljoer&composition=studion',workspace});
+  const used=html.slice(html.indexOf('>Används av<'),html.indexOf('>Radera miljön<'));
+  assert.match(used,/>Förbereds</);assert.match(used,/data-room-settings-missing/);assert.match(used,/Saknar spelinställningar/);
+  assert.ok(hrefs(used).includes('/admin/rooms/kvall?flik=spel'),'the warning links to the table\'s Spelinställningar');
+  assert.equal(used.match(/data-room-settings-missing/g).length,1,'only the table without settings warns');
+  assert.doesNotMatch(page({search:'tab=miljoer&composition=studion',workspace:fixture()}).html,/data-room-settings-missing/);
+  // Radera permanent (#632): the server's check decides; the button follows the draft and returns to the list.
+  assert.equal(deletes.length,1);assert.equal(JSON.stringify(deletes[0].target),JSON.stringify({kind:'composition',id:'studion',name:'Studion'}));assert.equal(deletes[0].disabled,false);
+  deletes[0].onDeleted();assert.deepEqual(navigated,['/admin/scenes?tab=miljoer']);
+  assert.equal(page({search:'tab=miljoer&composition=studion',workspace:fixture({dirty:true})}).deletes[0].disabled,true,'an unsaved draft is saved or discarded first');
 });
 
 test('save and discard sit in the editor header and follow the draft',()=>{

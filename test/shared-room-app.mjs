@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
-import { createSharedRoomController } from '../services/game/public/shared-room-controller.mjs';
+import { createSharedRoomController, ROOM_NOT_READY } from '../services/game/public/shared-room-controller.mjs';
 import { createSharedRoomView } from '../services/game/public/shared-room-view.mjs';
 import { createSharedRoomPresentationPorts, mountSharedRoomPresentation } from '../services/game/public/shared-room-presentation.mjs';
 import { createSharedRoomCommandClient } from '../services/game/public/shared-room-command-client.mjs';
@@ -467,6 +467,8 @@ test('a session the socket refused twice asks for a new sign-in with a link; oth
     // Nyckel→bolag: a partner refused for its key's company sees why; neither a reload nor a sign-in changes it.
     ['partner_operator_mismatch','Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.',false],
     ['partner_key_unbound','Nyckeln är inte kopplad till något spelbolag.',false],
+    // Preview 29 Oct 2026: an open room without published game settings says so; a reload does not help until they are published.
+    ['room_config_missing','Spelbordet är inte klart än (saknar spelinställningar).',false],
     ['constructor','Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.',false]]){
     const h=harness(t);await h.restore(seated(1));h.controller.fail(code);
     const r=h.renders.at(-1);assert.equal(r.notice,notice);assert.equal(r.signIn,signIn,String(code));assert.equal(r.can.bet,false);
@@ -493,6 +495,26 @@ test('the mounted app hands the socket\'s unauthorized code to the table and lin
   assert.equal(viewOptions.signInHref,'/player-login?game=blackjack&table=north-1&operator=north','the sign-in keeps the table and never a launch token');
   socketOptions.onError({code:'shared_room_unauthorized'});
   assert.equal(rendered.notice,'Din session har gått ut. Logga in igen.');assert.equal(rendered.signIn,true);
+});
+
+// Preview 29 Oct 2026: the loading screen said "Spelbordet kunde inte visas. Ladda om sidan" for a room without game settings.
+test('a room without game settings says so on the loading screen and on the table; other failures keep the generic text',async t=>{
+  for(const [code,text] of [['room_config_missing','Spelbordet är inte klart än (saknar spelinställningar).'],
+    ['shared_room_renderer_failed','Spelbordet kunde inte visas. Ladda om sidan för att försöka igen.']]){
+    const {document,nodes}=documentFixture();const window=new EventTarget();window.location={origin:'https://game.invalid',href:'https://game.invalid/game?game=blackjack&operator=north&table=north-1'};
+    let socketOptions,rendered;
+    const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),
+      createCommands:()=>({state:'idle',send:async()=>({status:'rejected',httpStatus:409,code:'STALE_COMMAND'}),stop(){this.state='stopped';}}),
+      createView:()=>({bind(){},render:value=>{rendered=value;},close(){}}),
+      createSocket:options=>{socketOptions=options;return{start(){},stop(){},status:()=>({state:'failed'})};},
+      // The dealer never shows a frame: the socket's refusal arrives while the loading screen is up.
+      createPresentation:async()=>({restoreSnapshot(){},present(){},close(){}})});
+    t.after(app.close);
+    socketOptions.onError({code});
+    assert.equal(document.documentElement.dataset.presentationStartup,'failed',code);
+    assert.match(nodes.get('presentation-loading').textContent,new RegExp('^'+text.replace(/[().]/g,'\\$&')),code);
+    if(code==='room_config_missing')assert.equal(rendered.notice,ROOM_NOT_READY);
+  }
 });
 
 test('mounted application wires real WS and HTTP clients; duplicate reconnect state never replays presentation',async t=>{
