@@ -158,7 +158,7 @@ test('chat draft and in-flight response guard actual Admin navigation and Back/F
     await chatInput(f).fill('Keep this question');let gate;
     if(mode==='request'){gate=f.hold('POST','/api/chat');await sendButton(f).click();await waitRequest(gate);}
     assert.equal(await f.page.evaluate(()=>window.__navigate('/admin/system?flik=agenter')),false);
-    const before=f.page.url(),documents=f.documents.length;await roomButton(f).click();assert.equal(f.page.url(),before);assert.equal(f.documents.length,documents);
+    const before=f.page.url(),documents=f.documents.length;await roomButton(f).click();assert.equal(f.page.url(),before);assert.equal(f.documents.length,documents);assert.deepEqual(f.dialogs,[],'appens eget skydd stoppar, inte webbläsarens beforeunload-dialog');
     await rejectTraversal(f,delta);
     if(mode==='draft'){assert.equal(await chatInput(f).inputValue(),'Keep this question');await chatInput(f).fill('');}
     else{assert.equal(await sendButton(f).isDisabled(),true);gate.release();await dialogRegion(f).getByText(/^Svar för (?:elin|lina): Keep this question$/).waitFor();assert.equal(f.writes.length,1);}
