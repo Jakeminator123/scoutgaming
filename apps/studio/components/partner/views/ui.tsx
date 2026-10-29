@@ -100,12 +100,13 @@ export function Tip({ content, children, side = 'top' }: { content?: ReactNode; 
   </Tooltip.Root></Tooltip.Provider>;
 }
 
-// Spelbordets små staplar per dag och större diagram (recharts). Tomma dagar syns som stubbar.
+// Spelbordets små staplar per dag och större diagram (recharts 3). Tomma dagar syns som stubbar.
+// Omslaget är role="img"; därför stängs recharts tangentbordslager av så att inget fokuserbart ligger inuti.
 export function Bars({ values, label, height = 36 }: { values: number[]; label: string; height?: number }) {
   const max = Math.max(1, ...values);
   const data = values.map((value, index) => ({ index, value, stub: value ? 0 : max * 0.08 }));
   return <div className="bars" style={{ height }} role="img" aria-label={label}>
-    <ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }} barCategoryGap={2}>
+    <ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer={false} data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }} barCategoryGap={2}>
       <YAxis hide domain={[0, max]} />
       <Bar dataKey="value" stackId="day" fill="var(--sg-chart-1)" radius={[2, 2, 0, 0]} isAnimationActive={false} />
       <Bar dataKey="stub" stackId="day" fill="var(--sg-border)" isAnimationActive={false} />
@@ -113,18 +114,20 @@ export function Bars({ values, label, height = 36 }: { values: number[]; label: 
   </div>;
 }
 type Series = { key: string; label: string; color?: string; format?: (value: number, axis?: boolean) => string };
-// Rundor (staplar) och netto (linje, egen axel) per dag över perioden, med verktygstips.
+// Rundor (staplar) och netto (linje, egen axel) per dag över perioden, med verktygstips där
+// staplarna står först (recharts 3 sorterar annars raderna efter namn).
 export function TrendChart({ data, bars, line, height = 240, label }: { data: Record<string, unknown>[]; bars: Series; line?: Series; height?: number; label: string }) {
   const axis = { tickLine: false, axisLine: false, tick: { fill: 'var(--sg-faint)', fontSize: 11 } };
   const names: Record<string, Series> = { [bars.key]: bars, ...(line ? { [line.key]: line } : {}) };
   return <div className="chart" style={{ height }} role="img" aria-label={label}>
-    <ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{ top: 8, right: line ? 0 : 4, bottom: 0, left: -12 }} barCategoryGap="24%">
-      <CartesianGrid vertical={false} stroke="var(--sg-line-2)" />
+    <ResponsiveContainer width="100%" height="100%"><ComposedChart accessibilityLayer={false} data={data} margin={{ top: 8, right: line ? 0 : 4, bottom: 0, left: -12 }} barCategoryGap="24%">
+      <CartesianGrid yAxisId="bars" vertical={false} stroke="var(--sg-line-2)" />
       <XAxis dataKey="label" {...axis} interval="preserveStartEnd" minTickGap={16} />
       <YAxis yAxisId="bars" {...axis} allowDecimals={false} width={40} />
       {line ? <YAxis yAxisId="line" orientation="right" {...axis} width={56} tickFormatter={value => line.format ? line.format(value, true) : value} /> : null}
       <ChartTooltip cursor={{ fill: 'var(--sg-surface-2)' }} contentStyle={{ background: 'var(--sg-surface)', border: '1px solid var(--sg-border)', borderRadius: 8, color: 'var(--sg-text)', fontSize: 12, boxShadow: 'var(--sg-shadow)' }} labelStyle={{ color: 'var(--sg-muted)', marginBottom: 4 }}
-        formatter={(value, name) => [names[name]?.format ? names[name].format(Number(value)) : value, names[name]?.label ?? name]} />
+        itemSorter={item => item.dataKey === bars.key ? 0 : 1}
+        formatter={(value, name) => { const series = name === undefined ? undefined : names[name]; return [series?.format ? series.format(Number(value)) : value, series?.label ?? name]; }} />
       <Bar yAxisId="bars" dataKey={bars.key} fill={bars.color ?? 'var(--sg-chart-1)'} radius={[3, 3, 0, 0]} isAnimationActive={false} />
       {line ? <Line yAxisId="line" type="monotone" dataKey={line.key} stroke={line.color ?? 'var(--sg-chart-2)'} strokeWidth={2} dot={false} isAnimationActive={false} /> : null}
     </ComposedChart></ResponsiveContainer>
