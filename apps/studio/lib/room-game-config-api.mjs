@@ -146,6 +146,9 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     return repository.transaction(()=>repository.withTransactionClient(client=>write(client,body,{user:context.actor.user,audit:operatorAuditContext(context.actor)})));
   });
   // Partnerportalens väg: anroparen äger transaktionen, sessionen och bolaget.
+  // Admins väg inne i en annan skrivares transaktion (presentation-room-api.mjs, Nytt spelbord):
+  // samma CAS på administrationsdokumentet och paketet; anroparen äger transaktionen.
   return Object.freeze({handlers,
-    writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);}});
+    writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);},
+    writeAdmin:(client,body,actor)=>write(client,intent(body),actor)});
 }

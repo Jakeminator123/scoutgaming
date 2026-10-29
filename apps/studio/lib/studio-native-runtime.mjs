@@ -215,7 +215,8 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope, materials,
+    const roomGameConfig = createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:input=>resolveNativeRoomGameMaterial(input,{version:2})});
+    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope, materials, roomGameConfig,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
       runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
@@ -226,7 +227,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     }
     // Pure frozen-material resolution stays inside the captured SQL snapshot;
     // byte inspection is a separate capability and runs before mutation admission.
-    for (const service of [createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:input=>resolveNativeRoomGameMaterial(input,{version:2})}),createSharedTableProofReadout({repository,scope:config.scope})]) {
+    for (const service of [roomGameConfig,createSharedTableProofReadout({repository,scope:config.scope})]) {
       for (const [key,handler] of service.handlers) { if(handlers.has(key))unavailable();handlers.set(key,handler); }
     }
     for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }

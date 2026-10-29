@@ -171,7 +171,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? { presentationDocuments: ['project','administration'], presentationMutation: [{ kind: 'administration', value: { roomGameConfigs: [] } }, ...(body?.action==='publish'?[NATIVE_FILMED_PLANNING_MUTATION]:[])],
           ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
-        ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
+        ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : []),
+          // Nytt spelbord med spelinställningar: samma förhandling som room-game-config publish.
+          ...(body?.gameConfig ? [{ kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] : [])] }
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
