@@ -31,6 +31,19 @@ Alla fanns i `main` på `a05917c3a05f23963006fc4e778f9c4ac8bbadcf` (läs: `git s
 | 2026-10-28 | `docs/2026-10-28-O03-RELEASE-ACCEPTANCE.json` | O03: releasekvitto för `5f5bc88d` (Vercel `dpl_DGRnRtHpVUrMz9V6kv8iXvbJYcJV`, Render `dep-dbgvog0ae00c73dgivq0`/`dep-dbgvsc5g1s2s73cdoqkg`, migrering 011, backupgren `backup-before-o03-20261028`, restoreprov S0 = S1, flaggan `CROUPIER_SHARED_TABLE_ENABLED=1`) | #527 |
 | 2026-10-28 | `docs/2026-10-28-O03-REVIEW.md` | O03: oberoende granskning av releasekvittot, GODKÄND MED ANMÄRKNING | #527 |
 
+## Raderade 29 oktober 2026: `migrering/` efter avslutet
+
+Alla fanns i `main` på `6f2d8236` (läs: `git show 6f2d8236:<sökväg>`). Ingen kod, CI, hook eller allowlist läste dem; proven som nämner sökvägarna (`test/ci-changes.mjs`, `test/precommit-checks.mjs`, `test/check-no-sqlite.mjs`) använder bara strängarna som fixturer. [MASTERPLAN](../migrering/MASTERPLAN.md) kortades samtidigt till en pekare; hela planen läses med `git show 6f2d8236:migrering/MASTERPLAN.md`.
+
+| Datum | Fil | Vad det var | PR |
+| --- | --- | --- | --- |
+| 2026-10-28 | `migrering/jakob-main-migrering/AKTIVITETER.md` | Kriterier, bevis och läge för J01–J10 | #514 |
+| 2026-10-28 | `migrering/kevin-ks-migrering/AKTIVITETER.md` | Kriterier, bevis och läge för K01–K07 (provkommentaren "AKTIVITETER K03" avser K03 här) | #514 |
+| 2026-10-27 | `migrering/kevin-ks-migrering/K01/O01-svar.md` | O01: de låsta kontrakten för kommandon, händelser, lagring, presentation och configversion (kodens "O01-svar 2.x" avser avsnitt 2.x här) | #433 |
+| 2026-10-29 | `migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md` | K05: Kevins begrepp mot mains, med jämförelsetabell (vilosekvensen uppdaterad i #560) | #560 |
+| 2026-10-27 | `migrering/kevin-ks-migrering/K05/tools/validate-k05-manifest.mjs` | Engångsvalidering av K05-manifestet; inget körde det | #433 |
+| 2026-10-27 | `migrering/kevin-ks-migrering/K06-K07/K06-K07-forberedelse.md` | K06 och K07: förberedelse och gapanalys mot Kevins prov (provens "K06-K07-forberedelse §2.x" avser avsnitt 2.x här) | #433 |
+
 ## Tidigare raderingar
 
 - `docs/history/` (överlämningar, körlistor och kvitton från före 28 oktober) raderades i `8ad45fbf` och `a90dde8d` (28 oktober 2026). Läs med `git show 29ed6626bf:docs/history/<fil>`; `git log --diff-filter=D -- docs/history` listar filerna.
