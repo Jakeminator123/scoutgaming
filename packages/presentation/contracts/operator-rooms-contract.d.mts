@@ -8,6 +8,8 @@ export interface PublicOperatorRoom {
   game?: 'blackjack' | 'roulette';
   /** The published bet profile's key (casual, prive, high); absent when the room has no published game settings. */
   limitPreset?: string;
+  /** 'preparing': an open blackjack room without published game settings; no seat can be taken yet. */
+  status?: 'preparing';
   id: string; name: string; laneId: string; presentation: { id: string; label: string };
   dealerDefault: string; dealers: PublicRoomDealer[]; playUrl: string;
 }

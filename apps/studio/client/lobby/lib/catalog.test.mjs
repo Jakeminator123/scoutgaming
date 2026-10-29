@@ -100,6 +100,16 @@ test("each room's illustration follows its published bet profile, and an unknown
   }
 });
 
+// A room without published game settings (status 'preparing') is listed but offers no game start.
+test('a room being prepared is shown without a game start; any other status closes the catalog', () => {
+  const source = publication('alpha', 'nora', 'Nora Studio'), template = source.rooms[0];
+  const ready = parseLobbyCatalog(payload([source])), preparing = parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status: 'preparing' }] }]));
+  const pick = catalog => lobbySelection(catalog, { operatorId: 'alpha', roomKey: catalog.rooms[0].key, dealerId: catalog.dealers[0].id });
+  assert.equal(ready.rooms[0].preparing, undefined); assert.equal(typeof playUrlFor(pick(ready)), 'string');
+  assert.equal(preparing.rooms[0].preparing, true); assert.equal(playUrlFor(pick(preparing)), undefined);
+  for (const status of ['live', 'Preparing', '', null, true]) assert.throws(() => parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status }] }])));
+});
+
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora Studio'), publication('beta', 'elin', 'Elin')]));
   const wrongTenant = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-table', dealerId: 'nora' });

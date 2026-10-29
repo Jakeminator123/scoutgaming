@@ -94,7 +94,10 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       environment: playable ? roomEnvironment(playable, operator.slug) : null,
       playUrl: playable?.playUrl ?? null,
       ...(savedProfiles.has(row.operatorId + '/' + row.id) ? { savedLimitPreset: savedProfiles.get(row.operatorId + '/' + row.id) } : {}),
-      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
+      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}),
+      // The shared table admits a blackjack seat only with the package's game settings binding
+      // (services/game/shared-room-access.mjs room_config_missing); Admin warns until they are published.
+      ...(published&&roomGame(row)==='blackjack'&&!Object.hasOwn(pack?.branding?.roomGameConfigVersions??{},row.id)?{settingsMissing:true}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
     administration: { revisions: { project: saved.projectRevision, administration: saved.administrationRevision },

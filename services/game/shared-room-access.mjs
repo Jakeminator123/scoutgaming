@@ -16,6 +16,11 @@ const mediaIdentity=value=>({...value,classification:Object.fromEntries(Object.e
 const layerIdentity=({label,...value})=>value;
 const aborted=signal=>{if(signal?.aborted)throw signal.reason??new DOMException('Aborted','AbortError');};
 const refuse=code=>{throw new StudioStorageError(code,403);};
+// A live room whose package binds no game settings, or whose binding has no published head, has
+// nothing a seat can use until Admin publishes its settings (Spelinställningar › Publicera). The
+// upgrade names this refusal in its 1008 close, so the page says so instead of retrying for a minute.
+export const ROOM_CONFIG_MISSING='room_config_missing';
+const configMissing=()=>refuse(ROOM_CONFIG_MISSING);
 function session(value,now) {
   if(!value||!Object.hasOwn(value,'partnerKeyId')
     ||!id(value.actorId)||!/^player-[a-f0-9]{64}$/.test(value.sessionId)
@@ -75,7 +80,9 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       if(!presentation)deny();
       const dealerId=resolvePackageRoomDealer(pack,room,presentation);
       if(!dealerId||entry.selection.dealer!==dealerId)deny();
-      const version=pack.branding?.roomGameConfigVersions?.[roomId];
+      const bindings=pack.branding?.roomGameConfigVersions;
+      if(!bindings||typeof bindings!=='object'||!Object.hasOwn(bindings,roomId))configMissing();
+      const version=bindings[roomId];
       if(typeof version!=='string'||!/^room-config-[a-f0-9-]{36}$/.test(version))deny();
       // These are the existing ConfigPort tables. Read head + frozen body on
       // this same scoped client, without starting or modifying a game window.
@@ -83,6 +90,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
         FROM croupier_game.shared_table_config_heads h LEFT JOIN croupier_game.shared_table_configs c
         ON c.room_id=h.room_id AND c.version=h.version
         WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id=$3`,[...parameters,roomId]);
+      if(!result.rows.length)configMissing();
       if(result.rows.length!==1||result.rows[0].version!==version)deny();
       let config;try{config=typeof result.rows[0].body==='string'?JSON.parse(result.rows[0].body):result.rows[0].body;}catch{unavailable();}
       configMatches(config,{version,pack,room,presentation,dealerId});

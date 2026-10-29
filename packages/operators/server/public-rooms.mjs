@@ -127,8 +127,11 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
       const limitPreset = limitPresets.get(room.id);
+      // The shared table admits a blackjack seat only with the package's game settings binding
+      // (services/game/shared-room-access.mjs room_config_missing): without one the room is being prepared.
+      const preparing = game === 'blackjack' && !Object.hasOwn(pack.branding?.roomGameConfigVersions ?? {}, room.id);
       result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
-        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}),
+        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}), ...(preparing ? { status: 'preparing' } : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
         playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }

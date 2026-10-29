@@ -31,7 +31,7 @@ function rows(value, max, check) {
 // every known key is checked as strictly as before, and the rest of the catalogue stays exact. Add new
 // optional public fields on the room, never elsewhere, and list them in ROOM_OPTIONAL.
 const ROOM_REQUIRED = ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl'];
-const ROOM_OPTIONAL = ['game', 'limitPreset'];
+const ROOM_OPTIONAL = ['game', 'limitPreset', 'status'];
 function roomFields(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(value)) || Object.getOwnPropertySymbols(value).length) fail();
@@ -63,6 +63,8 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
     // The published bet profile's key (casual, prive, high), for the lobby's picture only. The format is
     // checked here; a key this build does not know is shown with the default picture, never rejected.
     if (Object.hasOwn(room,'limitPreset') && (typeof room.limitPreset !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.limitPreset))) fail();
+    // An open blackjack room whose package binds no game settings yet: shown as being prepared, never played.
+    if (Object.hasOwn(room,'status') && room.status !== 'preparing') fail();
     if (!isGameLaneId(room.id) || !isGameLaneId(room.laneId)) fail();
     text(room.name, 100); exact(room.presentation, ['id', 'label']);
     if (!isGameLaneId(room.presentation.id)) fail();

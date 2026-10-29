@@ -133,7 +133,13 @@ async function assertPublishedChain(f, receipt) {
   const selected = lobbySelection(catalog, {operatorId: company.slug,
     roomKey: `${company.slug}:${receipt.room.id}`, dealerId: 'astrid'});
   assert.equal(selected.room.id, receipt.room.id);
-  const href = playUrlFor(selected);
+  // A new room has no published game settings yet: the lobby lists it as being prepared and offers no game
+  // start (the shared table would refuse every seat with room_config_missing). The entry route itself still
+  // resolves the room, which is what the rest of this chain follows.
+  assert.equal(selected.room.preparing, true);
+  assert.equal(playUrlFor(selected), undefined);
+  const settled = selection => ({...selection, room: {...selection.room, preparing: undefined}});
+  const href = playUrlFor(settled(selected));
   const launch = await f.request(href, {cookie: ''});
   assert.equal(launch.status, 200);
   const entry = decodeEntry(await launch.text());
@@ -145,7 +151,8 @@ async function assertPublishedChain(f, receipt) {
 
   const southSelection = lobbySelection(catalog, {operatorId: otherCompany.slug,
     roomKey: `${otherCompany.slug}:${southReceipt.room.id}`, dealerId: 'astrid'});
-  const southLaunch = await f.request(playUrlFor(southSelection), {cookie: ''});
+  assert.equal(southSelection.room.preparing, true);
+  const southLaunch = await f.request(playUrlFor(settled(southSelection)), {cookie: ''});
   assert.equal(southLaunch.status, 200, 'South can launch its own published room before the cross-company denial');
   const southEntry = decodeEntry(await southLaunch.text());
   assert.equal(southEntry.operator, otherCompany.slug);

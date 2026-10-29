@@ -38,6 +38,8 @@ export function parseLobbyCatalog(payload) {
         environmentLabel: environment.label, environmentFixed: environment.fixed, environmentKind: environment.kind,
         ...(environment.image ? { image: environment.image } : {}),
         ...(room.limitPreset ? { limitPreset: room.limitPreset } : {}), illustration: roomIllustration(room.limitPreset),
+        // Without published game settings the room is shown as being prepared and offers no game start.
+        ...(room.status === 'preparing' ? { preparing: true } : {}),
         dealerDefault: room.dealerDefault,
         dealers: room.dealers.map(dealer => ({ ...dealer, name: dealer.label })),
         playUrl: room.playUrl,
@@ -95,6 +97,7 @@ export function lobbySelection(catalog, { operatorId = null, roomKey = null, dea
 /** Both tenant and room membership must still match when rendering a launch link.
  * The published playUrl is the engine's room contract; the link itself is the one game start. */
 export function playUrlFor({ operator, room, dealer }) {
+  if (room.preparing) return undefined;
   if (room.operatorId !== operator.id || !operator.roomIds.includes(room.key)
     || !room.dealers.some(row => row.id === dealer.id)) return undefined;
   const published = `/play/${room.game}?` + new URLSearchParams({ operator: operator.id, table: room.id });
