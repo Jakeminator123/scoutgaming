@@ -1,6 +1,8 @@
 import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
 import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './room-release.mjs';
 import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
+import {presentationRoomMutationOptions} from './presentation-room-api.mjs';
+import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -171,9 +173,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? { presentationDocuments: ['project','administration'], presentationMutation: [{ kind: 'administration', value: { roomGameConfigs: [] } }, ...(body?.action==='publish'?[NATIVE_FILMED_PLANNING_MUTATION]:[])],
           ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
-        ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : []),
-          // Nytt spelbord med spelinställningar: samma förhandling som room-game-config publish.
-          ...(body?.gameConfig ? [{ kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] : [])] }
+        // Nytt spelbord (med spelinställningar: samma förhandling som room-game-config publish).
+        ? presentationRoomMutationOptions(body, invocation.prepared)
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
@@ -203,6 +204,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (action === 'room-game-config' && status === 422 && error?.code === 'studio_room_game_material_unavailable') {
         const code = 'studio_room_game_material_unavailable';
         return json({ error: code, code }, status);
+      }
+      // Nytt spelbord med spelinställningar: ett öppet utseendeutkast (409) och materialets skäl (422) som room-release.
+      if (action === 'presentation-room' && error instanceof StudioStorageError && error.statusCode === status
+        && (status === 409 && error.code === 'studio_room_choices_draft_pending' || status === 422 && error.code === 'studio_room_game_material_unavailable')) {
+        return json({ error: error.code, code: error.code, ...(status === 422 && isRoomGameMaterialReason(error.materialReason) ? { materialReason: error.materialReason } : {}) }, status);
       }
       // Nyckel→bolag: Admin names why the chosen company cannot own a new key.
       if (action === 'apikeys/create' && status === 422 && error instanceof StudioStorageError && error.code === 'partner_key_operator_invalid') {

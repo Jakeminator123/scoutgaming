@@ -38,6 +38,15 @@ export const PRESENTATION_ROOM_MUTATION = Object.freeze({ kind: 'administration'
   rooms: Object.freeze([Object.freeze({ schemaVersion: 2 })]),
 }) });
 
+// Förhandlingen före SQL-låset för POST presentation-room (studio-admin-api.mjs) och, utan dokument och
+// bolag, samma kontroll inne i transaktionen. Med gameConfig: samma som room-game-config publish.
+export function presentationRoomMutationOptions(body, prepared, { documents = true } = {}) {
+  const game = prepared?.game ?? 'blackjack';
+  return { ...(documents ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId ? { presentationOperatorIds: [body.operatorId] } : {}) } : {}),
+    presentationMutation: [game === 'roulette' ? { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } } : PRESENTATION_ROOM_MUTATION,
+      ...(prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : []),
+      ...(body?.gameConfig ? [{ kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] : [])] };
+}
 function intent(body) {
   const keys = ['operatorId', 'presentationLaneId', 'name', 'idempotencyKey', 'expectedProjectRevision', 'expectedAdministrationRevision', 'expectedPackageRevision', ...(Object.hasOwn(body ?? {},'game')?['game']:[]), ...(Object.hasOwn(body ?? {},'gameConfig')?['gameConfig']:[])];
   if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== keys.length || keys.some(key => !Object.hasOwn(body, key))) fail(400);
@@ -337,7 +346,12 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         const room = resolvePackageRoom({ administration: saved.administration, package: saved.pack, operatorId: body.operatorId, roomId });
         if (!room) fail(409);
         assertReplayBinding(saved, room);
-        return receipt(saved, room, true);
+        if (!body.gameConfig) return receipt(saved, room, true);
+        // Samma nyckel med andra spelinställningar är en annan begäran, inte ett omförsök.
+        if (typeof roomGameConfig?.readPublished !== 'function') fail(503, 'studio_room_game_config_unavailable');
+        const published = await roomGameConfig.readPublished(client, { operator: saved.operator, pack: saved.pack, room: existing });
+        if (!published || canonicalStudioJson(published.gameConfig) !== canonicalStudioJson(validateRoomGameConfig(body.gameConfig))) fail(409);
+        return { ...receipt(saved, room, true), published };
       }
       const used = await client.query(`/* presentation-room:used-key */ SELECT package_revision FROM croupier_studio.operator_packages
         WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND tables::jsonb ? $4 LIMIT 1`, [...parameters, body.operatorId, roomId]);
@@ -348,7 +362,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       requireRoomEnvironment(saved.project, body.presentationLaneId);
       // Två publiceringar i följd gör ett öppet utseendeutkast inaktuellt: då skrivs inget.
       if (body.gameConfig) {
-        if (typeof roomGameConfig?.writeAdmin !== 'function') fail(503, 'studio_room_game_config_unavailable');
+        if (typeof roomGameConfig?.publishNewRoom !== 'function') fail(503, 'studio_room_game_config_unavailable');
         if (saved.pack && await cleanBrandingDraft(await saved.operators.getBrandingDraft(body.operatorId), saved.pack, saved.operators)) fail(409, 'studio_room_choices_draft_pending');
       }
       // The same company material as negotiated; a decision in between is a conflict.
@@ -363,22 +377,21 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live', ...(roomGame(body)==='roulette'?{game:'roulette'}:{}) };
       const administration = validateStudioGameAdministration({ ...plan.administration, rooms: [...saved.administration.rooms, room] });
       const changed = await repository.saveDocument('administration', { value: administration, expectedRevision: body.expectedAdministrationRevision, actor: context.actor.user });
-      const pack = await saved.operators.publishPackage({ actor: context.actor.user, audit: operatorAuditContext(context.actor), operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
-        lanes: presentation.lanes.map(lane => lane.id), games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])],
-        tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) });
-      if (!body.gameConfig) return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
-      // Spelinställningarna med Admins egen skrivare, på samma klient: ett fel här rullar tillbaka spelbordet också.
-      const actor = { user: context.actor.user, audit: operatorAuditContext(context.actor) }, ids = { operatorId: body.operatorId, roomId };
-      const draft = await roomGameConfig.writeAdmin(client, { action: 'save-draft', ...ids, expectedAdministrationRevision: changed.revision,
-        expectedPackageRevision: pack.revision, gameConfig: body.gameConfig }, actor);
-      if (!draft.publication.ready) throw Object.assign(new StudioStorageError(draft.publication.reason ?? 'studio_room_game_material_unavailable', 422),
-        draft.publication.materialReason ? { materialReason: draft.publication.materialReason } : {});
-      const settings = await roomGameConfig.writeAdmin(client, { action: 'publish', ...ids, expectedAdministrationRevision: draft.administrationRevision,
-        expectedPackageRevision: draft.packageRevision, expectedDraftRevision: draft.draft.revision }, actor);
-      return { ...receipt({ ...saved, administrationRevision: settings.administrationRevision, pack: { ...pack, revision: settings.packageRevision } }, room, false),
-        published: settings.published };
-    }), { presentationMutation: [roomGame(body)==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(prepared.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : []),
-      ...(body.gameConfig ? [{ kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] : [])] });
+      const actor = { user: context.actor.user, audit: operatorAuditContext(context.actor) };
+      const candidate = { operatorId: body.operatorId, revision: (saved.pack?.revision ?? 0) + 1, lanes: presentation.lanes.map(lane => lane.id),
+        games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])], tables: [...(saved.pack?.tables ?? []), room.id],
+        branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) };
+      if (!body.gameConfig) {
+        const pack = await saved.operators.publishPackage({ actor: actor.user, audit: actor.audit, operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
+          lanes: candidate.lanes, games: candidate.games, tables: candidate.tables, branding: candidate.branding });
+        return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
+      }
+      // Tilldelningen och spelinställningarna i samma paketversion (som room-release.mjs), på samma klient:
+      // räcker materialet inte rullas spelbordet tillbaka också.
+      const { pack, published } = await roomGameConfig.publishNewRoom(client, { operators: saved.operators, operator: saved.operator, room, candidate,
+        expectedPackageRevision: body.expectedPackageRevision, gameConfig: body.gameConfig }, actor);
+      return { ...receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false), published };
+    }), presentationRoomMutationOptions(body, prepared, { documents: false }));
   });
   return Object.freeze({ handlers, preparations });
 }

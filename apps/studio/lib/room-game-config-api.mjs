@@ -145,10 +145,33 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     trusted(context);const body=intent(context.body);
     return repository.transaction(()=>repository.withTransactionClient(client=>write(client,body,{user:context.actor.user,audit:operatorAuditContext(context.actor)})));
   });
+  // Nytt spelbord med spelinställningar (presentation-room-api.mjs): anroparen äger transaktionen och bolagets
+  // lås, har sparat administrationsdokumentet med spelbordet och skickar paketkandidaten med spelbordet.
+  // En materialupplösning och en paketversion (som room-release.mjs); inget utkast skrivs eller raderas.
+  async function publishNewRoom(client,{operators,operator,room,candidate,expectedPackageRevision,gameConfig},actor) {
+    gameConfig=validateRoomGameConfig(gameConfig);
+    const document=await repository.readDocument('administration');
+    if(!document)fail('studio_storage_unavailable',503);
+    const presentation=readPackagePresentation(candidate);
+    if(!presentation?.lanes.some(row=>row.id===room.presentationLaneId))fail('studio_room_not_found',404);
+    const resolved=await material({operator,document,administration:document.value,pack:candidate,room,presentation},gameConfig);
+    const unavailable=reason=>{throw Object.assign(new StudioStorageError('studio_room_game_material_unavailable',422),isRoomGameMaterialReason(reason)?{materialReason:reason}:{});};
+    if(!resolved.ready)unavailable(resolved.materialReason);
+    let pack;
+    try {
+      ({package:pack}=await operators.publishRoomGameConfig({actor:actor.user,audit:actor.audit,operatorId:operator.id,expectedRevision:expectedPackageRevision,
+        lanes:candidate.lanes,games:candidate.games,tables:candidate.tables,branding:candidate.branding},{roomId:room.id,gameConfig,material:resolved.material}));
+    } catch(error) {
+      // J08 löser om grannrummens material: skälet ur den fasta listan blir materialReason.
+      if(error?.code==='studio_room_game_material_unavailable'&&error.statusCode===422&&error.materialReason===undefined)unavailable(error.reason);
+      throw error;
+    }
+    return {pack,published:await publishedConfig(client,{operator,pack,room})};
+  }
   // Partnerportalens väg: anroparen äger transaktionen, sessionen och bolaget.
-  // Admins väg inne i en annan skrivares transaktion (presentation-room-api.mjs, Nytt spelbord):
-  // samma CAS på administrationsdokumentet och paketet; anroparen äger transaktionen.
   return Object.freeze({handlers,
     writeRoom:(client,body,actor,guard)=>{if(typeof guard!=='function')fail('studio_forbidden',403);return write(client,body,actor,guard);},
-    writeAdmin:(client,body,actor)=>write(client,intent(body),actor)});
+    publishNewRoom,
+    // Ett spelbords publicerade spelinställningar (null utan), för omförsök med samma idempotensnyckel.
+    readPublished:(client,{operator,pack,room})=>publishedConfig(client,{operator,pack,room})});
 }
