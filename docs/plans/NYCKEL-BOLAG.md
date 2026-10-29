@@ -1,6 +1,6 @@
 # Nyckel → bolag
 
-Plan för punkt 5 under "Efter O03" i [MASTERPLAN](../../migrering/MASTERPLAN.md): partnernyckeln binds till ett bolag och motorn kontrollerar bindningen. Skriven 28 oktober 2026 mot `main` d3bab9b970. Raderas när punkten är verifierad i drift. Radnumren gäller den SHA:n.
+Plan för bindningen nyckel → bolag under [Efter O03](../NEXT-AGENT.md#efter-o03): partnernyckeln binds till ett bolag och motorn kontrollerar bindningen. Skriven 28 oktober 2026 mot `main` d3bab9b970. Raderas när punkten är verifierad i drift. Radnumren gäller den SHA:n.
 
 ## 1. Mål
 
