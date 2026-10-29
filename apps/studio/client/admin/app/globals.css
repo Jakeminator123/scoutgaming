@@ -24,6 +24,7 @@
 /* Tailwind 3-konfigurationens typsnittslistor: Admins typsnitt (--sg-next-*, studio.css) med
    reservtypsnitt, så att font-sans och font-mono aldrig faller till webbläsarens standard. */
 @theme inline {
+  --font-display: var(--sg-font-display);
   --font-sans: var(--sg-next-body), system-ui, sans-serif;
   --font-mono: var(--sg-next-mono), ui-monospace, monospace;
   --default-font-family: var(--sg-next-body), system-ui, sans-serif;
@@ -58,7 +59,8 @@
   --radius-lg: var(--radius);
   --shadow-sg: var(--sg-shadow);
 
-  /* Ytor och toner följer --sg-*; lime, teal, amber och röd är fasta. */
+  /* Ytor och toner följer --sg-*; teal, amber och röd är fasta (äldre sidor). Kitet
+     (components/ui) använder bara --sg-*-färgerna nedan, aldrig hex. */
   --color-sg-bg: var(--sg-bg);
   --color-sg-panel: var(--sg-surface);
   --color-sg-line: var(--sg-border);
@@ -85,7 +87,21 @@
   --color-sg-danger: var(--sg-danger-text);
   --color-sg-danger-bg: var(--sg-danger-bg);
   --color-sg-danger-line: var(--sg-danger-line);
-  --color-sg-lime: #d6ff3a;
+  --color-sg-side: var(--sg-side);
+  --color-sg-side-2: var(--sg-side-2);
+  --color-sg-field: var(--sg-field);
+  --color-sg-field-line: var(--sg-field-line);
+  --color-sg-strong: var(--sg-strong);
+  --color-sg-chip-text: var(--sg-chip-text);
+  --color-sg-live-bg: var(--sg-live-bg);
+  --color-sg-live-text: var(--sg-live-text);
+  --color-sg-info-text: var(--sg-info-text);
+  --color-sg-accent-line: var(--sg-accent-line);
+  --color-sg-disabled-bg: var(--sg-disabled-bg);
+  --color-sg-disabled-text: var(--sg-disabled-text);
+  --color-sg-overlay: var(--sg-overlay);
+  --color-sg-lime: var(--sg-lime);
+  --color-sg-lime-hover: var(--sg-lime-hover);
   --color-sg-teal: #3ad6c4;
   --color-sg-amber: #ffb547;
   --color-sg-red: #ff5c6c;

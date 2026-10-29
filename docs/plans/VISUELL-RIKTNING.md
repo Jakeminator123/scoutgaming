@@ -15,7 +15,7 @@
 ## Typsnitt
 
 - Brödtext Inter 14px/1.5 (`--sg-font-sans`), rubriker Space Grotesk (`--sg-font-display`), siffror och ID i JetBrains Mono (`--sg-font-mono`) med tabellsiffror.
-- Tokenfilen laddar inga webbfonter, bara systemreserver. Next har egna filer via `--sg-next-*`; Admin har i dag bara Inter och mono. Att ladda alla tre likadant i båda byggena är nästa steg.
+- Tokenfilen laddar inga webbfonter, bara systemreserver. Next har egna filer via `--sg-next-*`; Admin läser alla tre ur sina egna filer (`client/runtime/preview.css`, rubrikerna sedan kitet i [DESIGNSYSTEM](DESIGNSYSTEM.md)).
 
 ## Färg
 
@@ -32,6 +32,7 @@
 - Kort: radie 10px, 1px ram (`--sg-border`), ingen tung skugga.
 - Täta tabeller: 13px, siffror högerställda i mono.
 - Filter som chips; tomläge med streckad ram, en mening och en knapp.
+- Komponenterna finns i kitet, se [DESIGNSYSTEM](DESIGNSYSTEM.md).
 
 ## Ordning
 

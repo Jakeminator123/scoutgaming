@@ -1,10 +1,11 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {ArrowRight,ExternalLink,Plus,Presentation} from 'lucide-react';
+import {ArrowRight,ExternalLink,Plus,Presentation,RotateCcw} from 'lucide-react';
 import Link, {navigate,useSearchParams} from '../../../runtime/navigation';
 import {HubPage,Crumbs,Tabs,Chip,Card,Row,Empty,KV,Note,PreviewFlyout,ActionMenu,AsideLink} from '../ui/hub';
-import {Button,buttonVariants,cn,Footnote,formatNumber,Loading,plural,TechnicalDetails} from '../ui/kit';
-import {Dialog,DialogSteps} from '../ui/dialog';
+import {Button,buttonVariants,chipVariants,cn,EmptyState,Footnote,formatDate,formatNumber,Loading,plural,TechnicalDetails} from '../ui/kit';
+import {Dialog,DialogSteps,Sheet} from '../ui/dialog';
 import {DataTable,type Column} from '../ui/data-table';
+import {insetTableClass} from '../ui/table';
 import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
 import type {Catalog} from '../../lib/connected-studio.mjs';
@@ -21,16 +22,19 @@ import {PartnerJournal} from '../../../../components/partner-journal-loader.mjs'
 
 type Props={page:'companies'|'company'|'room';id:string;active:boolean;disabled:boolean;onChanged:()=>void};
 type Operator=Catalog['administration']['operators'][number];type Room=Catalog['administration']['rooms'][number];
-const stateChip=(room:Room)=><Chip tone={room.state==='live'?'ok':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip>;
-const publishedChip=(room:Room)=>room.published?<Chip tone="ok">publicerat</Chip>:<Chip tone="warn">inte publicerat</Chip>;
-const operatorChip=(operator:Operator)=><Chip tone={operator.archivedAt?'danger':operator.status==='active'?'ok':'warn'} dot>{operator.archivedAt?'papperskorg':operator.status==='active'?'aktivt':'avstängt'}</Chip>;
+// Status chips in the direction's tones: live (öppet, aktivt, publicerat), warn (pausat, avstängt) and the
+// neutral pair for a draft or the trash (hollow dot), never the error tone for an ordinary state.
+const stateChip=(room:Room)=><Chip tone={room.state==='live'?'live':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip>;
+const publishedChip=(room:Room)=>room.published?<Chip tone="live">publicerat</Chip>:<Chip tone="draft">inte publicerat</Chip>;
+const operatorChip=(operator:Operator)=><Chip tone={operator.archivedAt?'off':operator.status==='active'?'live':'warn'} dot>{operator.archivedAt?'i papperskorgen':operator.status==='active'?'aktivt':'avstängt'}</Chip>;
 const companyHref=(operator:Pick<Operator,'id'>,flik='tilldelning')=>`/admin/companies/${encodeURIComponent(operator.id)}?flik=${flik}`;
 const roomHref=(room:Room,flik='utseende')=>`/admin/rooms/${encodeURIComponent(room.id)}?flik=${flik}`;
 const games:Record<string,string>={blackjack:'Blackjack',roulette:'Roulette'};
 const gameLabel=(game:string|undefined)=>games[game??'']??'Spel';
 const version=(operator:Operator)=>operator.packageRevision===null?'ingen publicering':`version ${operator.packageRevision}`;
 const linkClass='font-semibold text-sg-text no-underline hover:underline';
-const pill=(on:boolean)=>cn('inline-flex h-8 items-center rounded-full border px-3 text-[12.5px] font-semibold no-underline transition-colors',on?'border-transparent bg-sg-ink text-sg-side-text':'border-sg-border bg-sg-surface text-sg-muted hover:text-sg-text');
+const pill=(on:boolean)=>chipVariants({selected:on});
+const trashBase='/admin/companies?tab=papperskorg';
 
 // Bolag och spelbord: the company list and all rooms (two tabs), one nav per company and the room editor.
 // Reads the registered catalog once per visit; the editors read their own contracts as before.
@@ -80,10 +84,19 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const tab=adminTabId('companies',query.get('tab')),filter=query.get('operator')??'',create=query.get('view')==='create';
     const list=filter?rooms.filter(room=>room.operatorId===filter):rooms;
     const createOperator=operators.find(row=>row.id===filter&&row.status==='active'&&!row.archivedAt)??operators.find(row=>row.status==='active'&&!row.archivedAt);
-    const filters=(base:string,choices:Operator[])=><div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filtrera på bolag"><Link href={base} className={pill(!filter)} aria-current={!filter?'true':undefined}>Alla bolag</Link>{choices.map(operator=><Link key={operator.id} href={base+'&operator='+encodeURIComponent(operator.id)} className={pill(filter===operator.id)} aria-current={filter===operator.id?'true':undefined}>{operator.name}</Link>)}</div>;
-    return <HubPage title="Bolag och spelbord" intro="Varje bolag har ett eget nav: tilldelning, spelbord, spelare, team, integration och journal. Alla bolags spelbord finns på en flik."
-      actions={tab==='bolag'?<Link className={buttonVariants({variant:'primary'})} href="/admin/companies?tab=bolag&view=create"><Plus aria-hidden="true"/>Nytt bolag</Link>:tab==='spelbord'?<Link className={buttonVariants({variant:'primary'})} href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}><Plus aria-hidden="true"/>Nytt spelbord</Link>:undefined}>
-      <Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?groups.counts:{}}/>
+    const filters=(base:string,choices:Operator[],className='mb-4')=><div className={cn('flex flex-wrap gap-2',className)} role="group" aria-label="Filtrera på bolag"><Link href={base} className={pill(!filter)} aria-current={!filter?'true':undefined}>Alla bolag</Link>{choices.map(operator=><Link key={operator.id} href={base+'&operator='+encodeURIComponent(operator.id)} className={pill(filter===operator.id)} aria-current={filter===operator.id?'true':undefined}>{operator.name}</Link>)}</div>;
+    // Papperskorg: no status chip (the tab says it), the archive date and count on one quiet line, Återställ
+    // as a ghost action. A room is restored in the side panel (restore=<company>) through the rooms lifecycle.
+    const trashOwners=operators.filter(row=>archived.some(room=>room.operatorId===row.id));
+    const trashList=filter?archived.filter(room=>room.operatorId===filter):archived;
+    const archivedRooms=(operatorId:string)=>archived.filter(room=>room.operatorId===operatorId).length;
+    const trashHref=(extra='')=>trashBase+(filter?'&operator='+encodeURIComponent(filter):'')+extra;
+    const restoring=tab==='papperskorg'?operators.find(row=>row.id===query.get('restore')):undefined;
+    const ghost=buttonVariants({variant:'ghost',size:'sm'});
+    return <HubPage eyebrow="Bolag" title="Bolag och spelbord" intro="Varje bolag har ett eget nav: tilldelning, spelbord, spelare, team, integration och journal. Alla bolags spelbord finns på en flik."
+      actions={tab==='bolag'?<Link className={buttonVariants({variant:'primary'})} href="/admin/companies?tab=bolag&view=create"><Plus aria-hidden="true"/>Nytt bolag</Link>:tab==='spelbord'?<Link className={buttonVariants({variant:'primary'})} href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}><Plus aria-hidden="true"/>Nytt spelbord</Link>:undefined}
+      tabs={<Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?groups.counts:{}}/>}
+      note={tab==='papperskorg'?'Arkiverat ligger kvar tills det återställs. Ett bolag återställs under bolagets Inställningar; ett spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.':undefined}>
       {status}
       {tab==='bolag'&&<>
         <Dialog open={create} size="lg" title="Nytt bolag" description="Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under Tilldelning." onClose={()=>navigate('/admin/companies?tab=bolag')}
@@ -94,7 +107,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
           {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator)}>{operator.name}</Link>},
           {id:'status',header:'Status',sort:row=>row.status==='active'?0:1,cell:operatorChip},
           {id:'package',header:'Tilldelning',sort:row=>row.packageRevision??-1,cell:version},
-          {id:'rooms',header:'Spelbord',align:'right',sort:row=>rooms.filter(room=>room.operatorId===row.id).length,cell:operator=>formatNumber(rooms.filter(room=>room.operatorId===operator.id).length)},
+          {id:'rooms',header:'Spelbord',numeric:true,sort:row=>rooms.filter(room=>room.operatorId===row.id).length,cell:operator=>formatNumber(rooms.filter(room=>room.operatorId===operator.id).length)},
           {id:'actions',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><span className="inline-flex items-center gap-2"><a className={buttonVariants({variant:'ghost',size:'sm'})} href={'/partner/'+encodeURIComponent(operator.slug)}>Partnerportalen<ExternalLink aria-hidden="true"/></a><Link className={buttonVariants({size:'sm'})} href={companyHref(operator)}>Öppna</Link></span>},
         ]}/></Card>}
       </>}
@@ -105,24 +118,23 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
           onClose={()=>navigate('/admin/companies?tab=spelbord'+(filter?'&operator='+encodeURIComponent(filter):''))}/>
         {catalog&&<Card><DataTable label="Spelbord" rows={list} rowKey={row=>row.id} columns={roomColumns(true)} filter={{placeholder:'Sök spelbord, bolag eller dealer',text:room=>[room.name,operatorName(room.operatorId),...room.dealers.map(dealer=>dealer.name),laneLabel(room.compositionId)].join(' ')}} empty={`Inga spelbord${filter?' hos bolaget':''}.`}/></Card>}
       </>}
-      {tab==='papperskorg'&&<>
-        <Note className="mb-4">Arkiverade bolag och spelbord ligger kvar tills de återställs. Ett bolag återställs under bolagets Inställningar; ett återställt spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.</Note>
-        {catalog&&archivedOperators.length>0&&<Card title="Arkiverade bolag" aside={plural(archivedOperators.length,'bolag','bolag')} className="mb-4"><DataTable label="Arkiverade bolag" rows={archivedOperators} rowKey={row=>row.id} initialSort={{id:'name',dir:'asc'}} columns={[
-          {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator,'installningar')}>{operator.name}</Link>},
-          {id:'status',header:'Status',cell:operatorChip},
-          {id:'archived',header:'Arkiverat',sort:row=>row.archivedAt??'',cell:operator=>operator.archivedAt?<time dateTime={operator.archivedAt}>{new Date(operator.archivedAt).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'})}</time>:'–'},
-          {id:'rooms',header:'Arkiverade spelbord',align:'right',sort:row=>archived.filter(room=>room.operatorId===row.id).length,cell:operator=>archived.filter(room=>room.operatorId===operator.id).length},
-          {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><Link className={buttonVariants({size:'sm'})} href={companyHref(operator,'installningar')}>Återställ</Link>},
+      {tab==='papperskorg'&&catalog&&<div className="grid gap-4" data-trash="">
+        {!archivedOperators.length&&!archived.length&&<EmptyState title="Papperskorgen är tom" text="Arkiverade bolag och spelbord hamnar här och kan återställas." action={<Link className={buttonVariants({size:'sm'})} href="/admin/companies?tab=spelbord">Till alla spelbord</Link>}/>}
+        {archivedOperators.length>0&&<Card flush title="Arkiverade bolag" aside={plural(archivedOperators.length,'bolag','bolag')}><DataTable label="Arkiverade bolag" className={insetTableClass} rows={archivedOperators} rowKey={row=>row.id} initialSort={{id:'name',dir:'asc'}} columns={[
+          {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><><Link className={linkClass} href={companyHref(operator,'installningar')}>{operator.name}</Link>
+            <div className="text-[12.5px] text-sg-muted">{[operator.archivedAt?'Arkiverat '+formatDate(operator.archivedAt):'',plural(archivedRooms(operator.id),'spelbord','spelbord')].filter(Boolean).join(' · ')}</div></>},
+          {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:operator=><Link className={ghost} href={companyHref(operator,'installningar')} aria-label={'Återställ '+operator.name}><RotateCcw aria-hidden="true"/>Återställ</Link>},
         ]}/></Card>}
-        {filters('/admin/companies?tab=papperskorg',operators.filter(row=>archived.some(room=>room.operatorId===row.id)))}
-        {catalog&&<Card title={archivedOperators.length?'Arkiverade spelbord':undefined}><DataTable label="Arkiverade spelbord" rows={filter?archived.filter(room=>room.operatorId===filter):archived} rowKey={row=>row.id} empty={`Papperskorgen är tom${filter?' för bolaget':''}.`} columns={[
-          {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><><span className="font-semibold">{room.name}</span><div className="text-[12.5px] text-sg-muted">{gameLabel(room.game)}</div></>},
+        {archived.length>0&&<Card flush title="Arkiverade spelbord" aside={trashOwners.length>1||filter?filters(trashBase,trashOwners,''):plural(archived.length,'spelbord','spelbord')}>{trashList.length?<DataTable label="Arkiverade spelbord" className={insetTableClass} rows={trashList} rowKey={row=>row.id} initialSort={{id:'name',dir:'asc'}} columns={[
+          {id:'name',header:'Spelbord',sort:room=>room.name,cell:room=><><span className="font-semibold">{room.name}</span><div className="text-[12.5px] text-sg-muted">{gameLabel(room.game)} · {laneLabel(room.compositionId)}</div></>},
           {id:'operator',header:'Bolag',sort:room=>operatorName(room.operatorId),cell:room=><Link className="text-sg-text no-underline hover:underline" href={companyHref({id:room.operatorId},'spelbord')}>{operatorName(room.operatorId)}</Link>},
-          {id:'scene',header:'Scenmall',cell:room=>laneLabel(room.compositionId)},
-          {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:room=>filter===room.operatorId?<span className="text-[12.5px] text-sg-muted">återställ nedan</span>:<Link className={buttonVariants({size:'sm'})} href={'/admin/companies?tab=papperskorg&operator='+encodeURIComponent(room.operatorId)}>Återställ</Link>},
-        ]}/></Card>}
-        {filter&&operators.some(row=>row.id===filter)&&<Card title={`Återställ hos ${operatorName(filter)}`} className="mt-4"><RoomTrash operatorId={filter} disabled={disabled} onChanged={changed}/></Card>}
-      </>}
+          {id:'restore',header:<span className="sr-only">Åtgärder</span>,align:'right',cell:room=><Link className={ghost} href={trashHref('&restore='+encodeURIComponent(room.operatorId))} aria-label={'Återställ '+room.name}><RotateCcw aria-hidden="true"/>Återställ</Link>},
+        ]}/>:<EmptyState className="m-5" title="Bolaget har inga arkiverade spelbord" action={<Link className={buttonVariants({size:'sm'})} href={trashBase}>Visa alla bolag</Link>}/>}</Card>}
+        {archivedOperators.length>0&&!archived.length&&<EmptyState title="Inga arkiverade spelbord" text="Ett arkiverat spelbord hamnar här och kommer tillbaka pausat när det återställs." action={<Link className={buttonVariants({size:'sm'})} href="/admin/companies?tab=spelbord">Till alla spelbord</Link>}/>}
+        <Sheet open={Boolean(restoring)} title={'Återställ hos '+(restoring?.name??'bolaget')} description="Spelbordet kommer tillbaka pausat." onClose={()=>navigate(trashHref())}>
+          {restoring&&<RoomTrash key={restoring.id} operatorId={restoring.id} disabled={disabled} onChanged={changed}/>}
+        </Sheet>
+      </div>}
     </HubPage>;
   }
 
