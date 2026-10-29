@@ -21,7 +21,7 @@ const session=()=>({username:'fixture-admin',role:'admin',availableActions:['GET
 // Each component keeps its own hook slots so a page and its panels can be
 // rendered side by side; effects run on settle(), like the browser would.
 function harness({search='',pathname='/admin/system',data=session(),status=200}={}){
-  const requests=[],owners=new Map();let active=null,queue=[];
+  const requests=[],clients=[],owners=new Map();let active=null,queue=[];
   const owner=key=>owners.get(key)??owners.set(key,{slots:[],effects:[],cursor:0}).get(key);
   const hooks={...React,
     useState(initial){const o=active,i=o.cursor++;if(!(i in o.slots))o.slots[i]=typeof initial==='function'?initial():initial;return [o.slots[i],next=>{o.slots[i]=typeof next==='function'?next(o.slots[i]):next;}];},
@@ -30,7 +30,7 @@ function harness({search='',pathname='/admin/system',data=session(),status=200}=
   class StudioAdminUiError extends Error{constructor(status){super('Serverstatus '+status);this.status=status;}}
   const admin={...markers,StudioAdminUiError,
     studioAdminActor:value=>value&&typeof value.username==='string'&&typeof value.role==='string'?{username:value.username,role:value.role}:null,
-    createStudioAdminClient:options=>({options,available:()=>true,async request(){throw Error('no transport in this fixture');}}),
+    createStudioAdminClient:options=>{const client={options,calls:[],available:()=>true,async request(...args){client.calls.push(args);return {actor:{username:'fixture-admin',role:'admin'},payload:{}};}};clients.push(client);return client;},
     sharedStudioAdminRead:actions=>({actions,async read(){throw Error('no transport in this fixture');},refresh(){}})};
   const context={URL,URLSearchParams,AbortController,Error,location:{origin:'https://admin.invalid',get search(){return search;}},
     fetch:async(path,init)=>{requests.push({path,init});return {ok:status>=200&&status<300,status,json:async()=>typeof data==='function'?data():data};}};
@@ -49,30 +49,52 @@ function harness({search='',pathname='/admin/system',data=session(),status=200}=
   const hub=compile('../components/ui/hub.tsx',uiRequire);
   markers.ResourceConnections=marker('ResourceConnections');
   const system=compile('../components/studio/system-page.tsx',name=>name==='../ui/hub'?hub:name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.includes('runtime/navigation')?navigation:name.includes('admin-navigation')?adminNavigation:name==='./connected-services'?connected:name==='./resource-connections'?{ResourceConnections:markers.ResourceConnections}:admin);
-  return {page,connected,hub,system,requests,markers,
+  return {page,connected,hub,system,requests,clients,markers,
     navigate(next,path=pathname){search=next;pathname=path;},
     render(fn,props={},key=fn.name){const o=owner(key);active=o;o.cursor=0;return fn(props);},
     async settle(){for(let round=0;round<3&&queue.length;round++){const pending=queue;queue=[];for(const run of pending)run();await new Promise(setImmediate);}}};
 }
 const panelOf=(tree,type)=>node(tree,item=>item.type===type);
 
-test('Taldrift mounts native controls on the freshly read actor',async()=>{
+test('Taldrift mounts native controls on the freshly read actor, bound to the shown dealer',async()=>{
   const h=harness();
-  let panel=h.render(h.page.TaldriftPanel);
+  let panel=h.render(h.page.TaldriftPanel,{dealerId:'paow'});
   assert.ok(node(panel,item=>item.props?.role==='status'));assert.equal(panelOf(panel,h.markers.MovingDriftControls),null);
   await h.settle();
   assert.deepEqual(h.requests.map(row=>row.path),['/studio/api/auth/session']);
   const init=h.requests[0].init;assert.equal(init.credentials,'same-origin');assert.equal(init.cache,'no-store');assert.equal(init.redirect,'error');assert.ok(init.signal);
-  panel=h.render(h.page.TaldriftPanel);
+  panel=h.render(h.page.TaldriftPanel,{dealerId:'paow'});
   const controls=panelOf(panel,h.markers.MovingDriftControls);assert.ok(controls,'controls render once the session is verified');
   assert.deepEqual(plain(controls.props.expectedActor),{username:'fixture-admin',role:'admin'});
-  const {options}=controls.props.client;
+  assert.equal(h.clients.length,1);const [{options,calls}]=h.clients;
+  // Every read names the dealer as ?dealerId=, every write in the body; the command itself is kept.
+  await controls.props.client.request('GET','moving-drift',undefined,undefined,undefined);
+  await controls.props.client.request('POST','moving-drift',{expectedRevision:0,commandId:'c-1',mode:'off'},undefined,undefined);
+  assert.deepEqual(plain(calls.map(([method,action,body,,,query])=>({method,action,body,query}))),[
+    {method:'GET',action:'moving-drift',query:{dealerId:'paow'}},
+    {method:'POST',action:'moving-drift',body:{expectedRevision:0,commandId:'c-1',mode:'off',dealerId:'paow'}}]);
+  assert.equal(controls.props.client.available('GET','moving-drift'),true);
   assert.equal(options.apiBase,'/studio/api/admin');assert.equal(options.readIdentity,'response-headers-v1');
   assert.deepEqual(plain(options.availableActions),session().availableActions);
   // Writes preflight a fresh session, as NativeAdministration does; nothing else is contacted.
   await options.session();
   assert.deepEqual(h.requests.map(row=>row.path),['/studio/api/auth/session','/studio/api/auth/session']);
   assert.equal(node(panel,item=>item.props?.role==='alert'),null);
+});
+
+// DealerHub has no key per dealer (entry.tsx), so the same panel instance moves from one dealer to the next.
+test('Taldrift binds a new client when the shown dealer changes, so B never reads or writes A',async()=>{
+  const h=harness();
+  h.render(h.page.TaldriftPanel,{dealerId:'paow'});await h.settle();
+  h.render(h.page.TaldriftPanel,{dealerId:'dragan'});await h.settle();
+  const controls=panelOf(h.render(h.page.TaldriftPanel,{dealerId:'dragan'}),h.markers.MovingDriftControls);
+  assert.equal(h.clients.length,2,'a new dealer reads the session again and gets its own client');
+  await controls.props.client.request('GET','moving-drift',undefined,undefined,undefined);
+  await controls.props.client.request('POST','moving-drift',{expectedRevision:1,commandId:'c-2',mode:'off'},undefined,undefined);
+  assert.deepEqual(plain(h.clients[1].calls.map(([method,,body,,,query])=>({method,body,query}))),[
+    {method:'GET',query:{dealerId:'dragan'}},
+    {method:'POST',body:{expectedRevision:1,commandId:'c-2',mode:'off',dealerId:'dragan'}}]);
+  assert.equal(h.clients[0].calls.length,0,'the first dealer\'s client is not reused');
 });
 
 test('Taldrift refuses an unverified session or action list and can retry',async()=>{
@@ -122,6 +144,8 @@ test('system navigation retains explicit ambiguous scope on every tab link',()=>
   const h=harness({search:'?flik=spelare&dealer=elin&operator=north&operator=other&room=one&room=two&panel=intake'});
   const page=h.render(h.system.SystemPage,{active:true,tab:'spelare'}),tabs=descendants(page).find(row=>row.type===h.hub.Tabs);
   assert.equal(tabs.props.active,'spelare');
+  // Intern lobby is no tab but a link in System's page header (Enkel väg 8).
+  assert.equal(page.props.actions.props.href,'/admin/lobby');assert.equal(page.props.actions.props.children,'Intern lobby');
   const links=descendants(h.render(h.hub.Tabs,tabs.props)).filter(row=>row.type==='a');
   assert.deepEqual(links.map(link=>new URL(link.props.href,'https://test.invalid').searchParams.get('flik')),adminNavigation.adminSystemTabs.map(tab=>tab.id),'every System tab is a link');
   assert.deepEqual(links.filter(link=>link.props['aria-current']==='page').map(link=>link.props.children[0]),['Spelarkonton']);

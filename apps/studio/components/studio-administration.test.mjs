@@ -1266,6 +1266,30 @@ test('scoped proof GET carries only validated query fields through the identity-
  assert.equal(calls.length,1);
 });
 
+test('Taldrift GET names exactly one dealer in ?dealerId=; any other query shape is refused before fetch',async()=>{
+ const h=harness(),calls=[];
+ const actor={username:'admin',role:'admin'};
+ const client=h.createStudioAdminClient({apiBase:'/api/admin',session:async()=>actor,availableActions:['GET moving-drift','POST moving-drift'],
+   fetchImpl:async(url,options)=>{calls.push({url,options});return Response.json({schemaVersion:1,revision:3});}});
+ const result=await client.request('GET','moving-drift',undefined,undefined,actor,{dealerId:'paow'});
+ assert.equal(result.payload.revision,3);assert.equal(calls[0].url,'/api/admin/moving-drift?dealerId=paow');
+ for(const query of [{dealerId:'paow',extra:'x'},{},{roomId:'room-1'},{dealerId:'../paow'},{dealerId:7}])
+   await assert.rejects(client.request('GET','moving-drift',undefined,undefined,actor,query),error=>error.status===400,JSON.stringify(query));
+ // A write names the dealer in its body, never in the query.
+ await assert.rejects(client.request('POST','moving-drift',{expectedRevision:3,commandId:'c-1',mode:'off',dealerId:'paow'},undefined,actor,{dealerId:'paow'}),error=>error.status===400);
+ assert.equal(calls.length,1);
+});
+test('a dealer without a drift profile is told so by its fixed code; other drift refusals stay generic',async()=>{
+ const h=harness(),actor={username:'admin',role:'admin'};
+ const refusing=(status,code)=>h.createStudioAdminClient({apiBase:'/api/admin',session:async()=>actor,availableActions:['GET moving-drift'],
+   fetchImpl:async()=>Response.json({error:'server text',code},{status})});
+ await assert.rejects(refusing(422,'drift_unknown_dealer').request('GET','moving-drift',undefined,undefined,actor,{dealerId:'dragan'}),
+   error=>error.status===422&&error.code==='drift_unknown_dealer'&&error.message==='Den här dealern har ingen driftprofil för rörligt tal.');
+ for(const [status,code] of [[422,'drift_invalid_command'],[400,'drift_unknown_dealer'],[422,'partner_key_operator_invalid']])
+   await assert.rejects(refusing(status,code).request('GET','moving-drift',undefined,undefined,actor,{dealerId:'dragan'}),
+     error=>error.status===status&&error.code===undefined&&!/server text|driftprofil|Nyckeln/.test(error.message),code);
+});
+
 // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Admin chooses the company when it creates a key, the list
 // shows each key's company, and the server's fixed refusals are explained instead of a generic error.
 test('Integration creates a key for a chosen active company and shows each key\'s company', () => {

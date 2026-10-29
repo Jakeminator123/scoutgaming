@@ -200,7 +200,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
             {openLineId===OTHER_FILES&&recorded&&<div className="space-y-3 border-t border-border p-3"><label className="studio-field">Fil<select data-field="file" value={recorded.id} onChange={event=>setRecordedId(event.target.value)}>{groups.other.map(row=><option key={row.id} value={row.id}>{row.label} · {row.lineLabel||'ingen replik'} · {row.language?row.language.toUpperCase():'språk okänt'} · {row.id.slice(0,8)}</option>)}</select></label>{takeDetail}</div>}
           </li>}
         </ul>
-        <p className="text-xs text-muted-foreground">Vilken tagning rummet spelar väljs i klippkartans talfack och publiceras separat.</p></>:<p className="text-sm text-muted-foreground">Inga inspelade talfiler är registrerade för denna dealer och detta spel. En röstprofil eller textmall är ingen färdig inspelning.</p>}
+        <p className="text-xs text-muted-foreground">Vilken tagning spelbordet spelar väljs i klippkartans talfack och publiceras separat.</p></>:<p className="text-sm text-muted-foreground">Inga inspelade talfiler är registrerade för denna dealer och detta spel. En röstprofil eller textmall är ingen färdig inspelning.</p>}
     </section>
     <section className="mt-5 space-y-3 border-t border-border pt-4" aria-label="Genererat tal">
       <h3 className="font-semibold">Genererat tal · AI-röst</h3>
