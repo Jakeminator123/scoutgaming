@@ -620,20 +620,32 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   // Studio 023 (plan L3 PR 2): the package's own tables, written in the same row as `tables`.
   // Without the column (023 not applied) undefined: the row is written exactly as before. Explicit
   // `rooms` wins (validated either way); null or absent means the administration document's rooms
-  // for these tables, in the document's order. A table the document lacks leaves `rooms` null (the
-  // readers keep the document), never a partial list. A list breaking the readers' own invariant is
-  // refused with their code, so a written package is never a 503 afterwards.
+  // for these tables, in the document's order. A table the document lacks, or a document room that
+  // breaks the readers' own invariant (e.g. an environment the package or its frozen presentation
+  // lacks: old data the readers skip today), leaves `rooms` null with a warning (the readers keep the
+  // document), never a partial list and never a 503 for the operator's publications. Only an explicit
+  // `rooms` list breaking the invariant is refused with the readers' code, so a written package is
+  // never a 503 afterwards.
   function packageRoomsWithin(locked, input, next) {
     const column = locked.package_rooms_column === true;
     let rooms = optionalOwn(input, 'rooms');
-    if (rooms === undefined || rooms === null) {
+    const explicit = rooms !== undefined && rooms !== null;
+    if (!explicit) {
       if (!column) return undefined;
       rooms = Array.isArray(locked.administration_rooms) ? locked.administration_rooms.filter(room => room?.schemaVersion === 2
         && room.operatorId === next.operatorId && next.tables.includes(room.id)) : [];
       const missing = next.tables.filter(id => !rooms.some(room => room.id === id));
       if (missing.length) { console.warn('operator_package_rooms_missing', { operatorId: next.operatorId, missing }); return null; }
     }
-    const checked = checkPackageRooms({ ...next, rooms }, readPackagePresentation(next));
+    const presentation = readPackagePresentation(next);
+    const checked = checkPackageRooms({ ...next, rooms }, presentation);
+    if (!checked && !explicit) {
+      const tables = rooms.filter(room => !next.lanes.includes(room.presentationLaneId)
+        || presentation && !presentation.lanes.some(lane => lane.id === room.presentationLaneId)).map(room => room.id);
+      console.warn('operator_package_rooms_invalid', { operatorId: next.operatorId, tables,
+        reason: tables.length ? 'presentation_lane_missing' : 'rooms_contract' });
+      return null;
+    }
     if (!checked) fail('studio_corrupt_operator');
     const text = canonicalPackageRooms(checked, next.operatorId, next.tables);
     return column ? text : undefined;

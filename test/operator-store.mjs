@@ -1009,6 +1009,18 @@ test('publishWithin writes package rooms only with Studio 023, in document order
   // (a) Without 023 the package is written exactly as today.
   assert.equal((await publish()).rooms, null);
   assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
+  // Even a document room breaking the readers' invariant is neither validated nor warned about
+  // without the column, and the row carries no rooms at all.
+  const warn = t.mock.method(console, 'warn', () => {});
+  const broken = { ...second, presentationLaneId: 'other-lane' };
+  await saveDocument(administration([first, broken]));
+  const unchecked = await publish();
+  assert.equal(unchecked.revision, 2); assert.equal(unchecked.rooms, null);
+  assert.equal(warn.mock.callCount(), 0);
+  const hasRooms = async () => (await pool.query(`SELECT to_jsonb(p) ? 'rooms' AS has FROM croupier_studio.operator_packages p
+    WHERE operator_id=$1 ORDER BY package_revision DESC LIMIT 1`, [operatorId])).rows[0].has;
+  assert.equal(await hasRooms(), false);
+  await saveDocument(administration([first, foreign, second]));
   const plan = await planStudioMigrations({ pool });
   assert.deepEqual(plan.optionalPending.map(row => row.version), ['023']);
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, ['023']);
@@ -1016,17 +1028,21 @@ test('publishWithin writes package rooms only with Studio 023, in document order
   const written = await publish();
   assert.deepEqual(written.rooms, [first, second]); assert.deepEqual(written.tables, [second.id, first.id]);
   const current = await store.getCurrentPackage(operatorId);
-  assert.equal(current.revision, 2); assert.deepEqual(current.rooms, [first, second]);
+  assert.equal(current.revision, 3); assert.deepEqual(current.rooms, [first, second]);
   assert.deepEqual(listPackageRooms({ administration: administration([]), package: current, operatorId }), [first, second]);
   // A table the document lacks leaves rooms null (the readers keep the document), never a partial list.
-  const warn = t.mock.method(console, 'warn', () => {});
   assert.equal((await publish([first.id, second.id, 'room-missing'])).rooms, null);
   assert.equal(warn.mock.callCount(), 1);
-  // (c) A document room whose environment the package lacks is refused with the readers' code, and nothing is written.
-  const broken = { ...second, presentationLaneId: 'other-lane' };
+  // (c) A document room whose environment the package lacks (old data the readers skip) is treated
+  // as a missing table: the publication succeeds with rooms null and a warning naming the table,
+  // while the readers still refuse such a package list with their code.
   await saveDocument(administration([first, broken]));
-  await assert.rejects(publish(), error => error.code === 'studio_corrupt_operator' && error.statusCode === 503);
-  assert.equal((await store.getCurrentPackage(operatorId)).revision, 3);
+  const skipped = await publish();
+  assert.equal(skipped.revision, 5); assert.equal(skipped.rooms, null);
+  assert.equal(warn.mock.callCount(), 2);
+  assert.deepEqual(warn.mock.calls[1].arguments, ['operator_package_rooms_invalid', { operatorId, tables: [broken.id], reason: 'presentation_lane_missing' }]);
+  assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
+  assert.equal(await hasRooms(), true);
   assert.throws(() => listPackageRooms({ administration: administration([]), package: { ...current, rooms: [first, broken] }, operatorId }),
     error => error.code === 'studio_corrupt_operator' && error.statusCode === 503);
   // 32 rooms at every field's maximum fit both the contract and 023's CHECK; one character more does not.
