@@ -57,8 +57,9 @@ snapshots, walletägda transaktioner, historiska grants och protokollets
 
 `server/director-transport.mjs` äger en gemensam relay-implementation.
 `server/idle-advice.mjs` äger idle-validering, katalog och begränsad request-/
-meddelandecache; apparna tillför Director/model, settingsläsare, register, klocka
-och fetch. Studio behåller HTTP och sin process-singleton; game behåller sin
+meddelandecache för två utlösare: observerad chatt (`renderer-idle`) och en
+committad tur eller resultat (`game-event`, `idleGameEvent`); apparna tillför
+Director/model, settingsläsare, register, klocka och fetch. Studio behåller HTTP och sin process-singleton; game behåller sin
 API-instans och explicit current/frozen-register. Tidsgränser, cancellation,
 fingerprints, cacheScope och rategränser är oförändrade.
 
