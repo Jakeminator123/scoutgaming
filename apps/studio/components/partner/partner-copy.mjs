@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { partnerNavigationItems } from '../../../../packages/navigation/partner-navigation.mjs';
 import { PARTNER_VIEW_PERMISSIONS } from '../../../../packages/studio-access/server/partner-access-policy.mjs';
+import { applyThemeMode, defaultThemeMode, readThemeMode, themeModes } from '../../lib/theme-mode.mjs';
 // Rollens ord bor i en ren modul (ingen React) så att servern kan läsa dem.
 export { PARTNER_ROLE_WORDS, partnerRoleWord } from '../../lib/partner-words.mjs';
 
@@ -71,14 +72,15 @@ export function partnerNavigation(language, permissions = []) {
 }
 
 // Presentation preferences only; business data and drafts remain server-owned.
+// Temat är samma val som i Admin (lib/theme-mode.mjs): klassen på <html>, satt före första
+// målningen, så servern renderar standardläget och effekten läser det faktiska valet.
 export function usePartnerPreferences() {
-  const [language, setLanguage] = useState('sv'), [theme, setTheme] = useState('light');
+  const [language, setLanguage] = useState('sv'), [theme, setTheme] = useState(defaultThemeMode);
   useEffect(() => {
+    setTheme(readThemeMode());
     try {
       const savedLanguage = window.localStorage.getItem('sg-partner-language');
-      const savedTheme = window.localStorage.getItem('sg-partner-theme');
       if (['sv', 'en'].includes(savedLanguage)) setLanguage(savedLanguage);
-      if (['light', 'dark'].includes(savedTheme)) setTheme(savedTheme);
     } catch { /* Restricted browser storage must not block the portal. */ }
   }, []);
   const change = (key, setter, value, values) => {
@@ -88,5 +90,5 @@ export function usePartnerPreferences() {
   };
   return { language, theme, copy: partnerCopy(language),
     setLanguage: value => change('sg-partner-language', setLanguage, value, ['sv', 'en']),
-    setTheme: value => change('sg-partner-theme', setTheme, value, ['light', 'dark']) };
+    setTheme: value => { if (themeModes.includes(value)) setTheme(applyThemeMode(value)); } };
 }

@@ -12,7 +12,7 @@ export const designPreviewWatchRoots = Object.freeze([
   { path: 'apps/studio/client', recursive: false },
   ...['admin', 'lobby', 'runtime'].map(name => ({ path: `apps/studio/client/${name}`, recursive: true })),
   ...['components', 'lib', 'policies', 'app/fonts'].map(name => ({ path: `apps/studio/${name}`, recursive: true })),
-  ...['navigation', 'player-catalog', 'shared', 'director', 'presentation', 'operators', 'studio-access', 'studio-registry']
+  ...['navigation', 'player-catalog', 'shared', 'director', 'presentation', 'operators', 'studio-access', 'studio-registry', 'ui']
     .map(name => ({ path: `packages/${name}`, recursive: false })),
   // Pure registry validators are also imported by the Admin browser bundle.
   { path: 'packages/studio-registry/server', recursive: false },

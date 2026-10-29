@@ -1,0 +1,58 @@
+/* Admins bas efter Tailwind 4:s förflygning, i samma ordning som Tailwind 3:s @tailwind base.
+   Först de regler där Tailwind 3:s förflygning skilde sig från Tailwind 4:s (provat med beräknade
+   stilar i Chromium), sedan shadcn-aliasen och standardkanten. */
+button,
+[role="button"] {
+  cursor: pointer;
+}
+:disabled {
+  cursor: default;
+}
+input:where(:not([type="button"], [type="reset"], [type="submit"])),
+select,
+textarea,
+optgroup {
+  background-color: revert;
+}
+input::placeholder,
+textarea::placeholder {
+  opacity: 1;
+  color: #9ca3af;
+}
+dialog {
+  margin: auto;
+}
+
+/* shadcn-namnen är alias till --sg-* (packages/ui/tokens.css), så kitet, shadcn-klasserna och de
+   delade komponenterna visar samma färger i Admin och på Next-sidorna, i båda lägena. */
+:root {
+  --background: var(--sg-bg);
+  --foreground: var(--sg-text);
+  --card: var(--sg-surface);
+  --card-foreground: var(--sg-text);
+  --popover: var(--sg-surface);
+  --popover-foreground: var(--sg-text);
+  --primary: var(--sg-lime);
+  --primary-foreground: var(--sg-on-accent);
+  --secondary: var(--sg-surface-2);
+  --secondary-foreground: var(--sg-text);
+  --muted: var(--sg-surface-2);
+  --muted-foreground: var(--sg-muted);
+  --accent: var(--sg-hover);
+  --accent-foreground: var(--sg-text);
+  --destructive: var(--sg-danger-text);
+  --destructive-foreground: var(--sg-danger-bg);
+  --border: var(--sg-border);
+  --input: var(--sg-field-line);
+  --ring: var(--sg-lime);
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: var(--border);
+}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
