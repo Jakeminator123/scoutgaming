@@ -24,6 +24,10 @@ const DEALER_VOICES = {
   // Astrid 2.0: the voice her recorded lines have, Cartesia Freja like the first Astrid (Emil 14 Oct: not ElevenLabs), through
   // the server's Cartesia socket (useCartesia). She is lip-synced by the moving lip sync (rorlig-lipsync.mjs) only: no
   // rest-image endpoint exists for her, so without that worker her answer is text.
+  // Adebayor (Kevin 29 Oct: voice PiGyGh3I6t288DXzqeDV): ElevenLabs, lip-synced by the moving lip sync only (his pod lane);
+  // no rest-image endpoint, so without that worker his answer is text. He exists only where LOCAL_DEALERS lists him.
+  adebayor: { voice: 'PiGyGh3I6t288DXzqeDV', endpoint: process.env.ADEBAYOR_LIPSYNC_ENDPOINT ?? null,
+    reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } } } },
   astrid2: { tts: 'cartesia', voice: null, endpoint: process.env.ASTRID2_LIPSYNC_ENDPOINT ?? null,
     reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } } } },
 };

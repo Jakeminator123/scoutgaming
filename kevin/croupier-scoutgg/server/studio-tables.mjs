@@ -42,8 +42,11 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   // owner: the back office account that built it (Kevin 12 Oct: an aggregator only sees its own account).
   function create(input = {}, owner = null) {
     const config = {};
+    // Kevin 28 Oct: a dealer that exists only on this machine (LOCAL_DEALERS in the local .env, read here because the env
+    // file is loaded after this module) may have a table too, never on prod or staging
+    const localDealers = (process.env.LOCAL_DEALERS ?? "").split(",").map(s => s.trim()).filter(Boolean);
     for (const [key, allowed] of Object.entries(STUDIO_CHOICES)) {
-      if (!allowed.includes(input[key])) throw new Error(`Invalid ${key}`);
+      if (!(key === "dealer" ? [...allowed, ...localDealers] : allowed).includes(input[key])) throw new Error(`Invalid ${key}`);
       config[key] = input[key];
     }
     if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 28) throw new Error("Invalid table name");
