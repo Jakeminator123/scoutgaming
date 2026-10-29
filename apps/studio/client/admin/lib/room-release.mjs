@@ -1,5 +1,5 @@
 import {labUrl} from '../../../lib/lab-url.mjs';
-import {aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
+import {blockerView} from './blocker-view.mjs';
 
 // Spelbordets publicering i Admin (docs/plans/ADMIN-FORENKLING.md §7). Servern äger alla
 // kontroller (apps/studio/lib/room-release.mjs); här läses förhandsvisningen, kroppen byggs
@@ -43,10 +43,9 @@ const materialReasons = Object.freeze({
   native_material_measurement_mismatch:'klippens mätning stämmer inte',
   native_material_size_mismatch:'klippens storlek stämmer inte',
 });
-// Saknad eller inaktuell tidsmätning åtgärdas med Mät omätta klipp på dealerns flik Klipp.
-const measurementReason = reason => reason === 'native_material_measurement_missing' || reason === 'native_material_measurement_mismatch';
+// Koden visas aldrig i texten (blocker-view.mjs); den står under Detaljer.
 export function materialReasonText(reason) {
-  return materialReasons[reason] ?? (code(reason) ? 'materialet är inte komplett (' + reason + ')' : 'materialet är inte komplett');
+  return materialReasons[reason] ?? 'materialet är inte komplett';
 }
 
 // Fasta skäl i studio_release_invalid.
@@ -94,67 +93,50 @@ const UNCERTAIN = ' Läs in igen för att se om publiceringen gick igenom.';
  */
 export function roomReleaseErrorMessage({status = 0, code: errorCode, step, reason, materialReason, phase = 'publish'} = {}) {
   switch (errorCode) {
-    case 'studio_release_preview_stale': return 'Något har ändrats sedan förhandsvisningen.' + RELOAD;
+    case 'studio_release_preview_stale': return blockerView(errorCode).text;
     case 'studio_conflict': return (conflictSteps[step] ?? 'Uppgifterna har ändrats under tiden.') + NOTHING + RELOAD;
-    case 'studio_room_choices_draft_pending': return 'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det under Utseende först.' + NOTHING;
-    case 'studio_room_game_material_unavailable': return 'Spelbordets inspelade material räcker inte: ' + materialReasonText(materialReason) + '.'
-      + (measurementReason(materialReason) ? ' Öppna Dealers › dealern och välj Mät omätta klipp.' : ' Öppna Röst och tal.') + NOTHING;
-    case 'studio_release_invalid': return (invalidReasons[reason] ?? 'Publiceringen kan inte göras med de sparade valen' + (code(reason) ? ' (' + reason + ')' : '') + '.')
-      + (reason === 'studio_release_unchanged' ? '' : NOTHING);
-    case 'studio_room_not_found': return 'Spelbordet är inte öppet hos bolaget eller ingår inte i bolagets publicerade tilldelning.' + NOTHING;
-    case 'studio_presentation_runtime_update_required': return 'Spelmotorn behöver uppdateras innan ändringen kan publiceras.' + NOTHING;
-    case 'studio_room_config_storage_missing': return 'Databasen saknar lagringen för spelinställningar. Kontakta drift.' + NOTHING;
-    case 'studio_media_registry_unavailable': return 'Medieregistret svarar inte just nu.' + NOTHING + ' Försök igen om en stund.';
+    case 'studio_room_choices_draft_pending': case 'studio_room_not_found': case 'studio_presentation_runtime_update_required':
+    case 'studio_room_config_storage_missing': case 'studio_media_registry_unavailable':
+      return blockerView(errorCode).text + NOTHING;
+    case 'studio_room_game_material_unavailable': return blockerView(errorCode, {materialReason}).text + NOTHING;
+    // Inget att publicera är besked, inget fel (roomReleaseNotice).
+    case 'studio_release_invalid': return reason === 'studio_release_unchanged' ? blockerView(reason).text
+      : (invalidReasons[reason] ?? 'Publiceringen kan inte göras med de sparade valen.') + NOTHING;
     default: break;
   }
   if (status === 401) return 'Logga in igen för att fortsätta.';
   if (status === 403) return 'Du saknar behörighet att publicera spelbordet.';
   if (status === 409) return 'Uppgifterna har ändrats.' + NOTHING + RELOAD;
-  const raw = code(errorCode) ? ' (' + errorCode + ')' : '';
-  if (status === 0 || status >= 500) return phase === 'read' ? 'Jämförelsen med live kunde inte läsas' + raw + '.' + RELOAD
-    : 'Servern kunde inte bekräfta publiceringen' + raw + '.' + UNCERTAIN;
-  return 'Publiceringen gick inte igenom' + (code(errorCode) ? ': ' + errorCode : '') + '.' + NOTHING;
+  if (status === 0 || status >= 500) return phase === 'read' ? 'Jämförelsen med live kunde inte läsas.' + RELOAD
+    : 'Servern kunde inte bekräfta publiceringen.' + UNCERTAIN;
+  return 'Publiceringen gick inte igenom.' + NOTHING;
 }
 
-// Ett hinder i förhandsvisningen: text och länk till det ställe där det åtgärdas.
+/** Ett svar som är besked och inte fel: "Inget skiljer sig från live" (studio_release_unchanged). */
+export const roomReleaseNotice = failure => failure?.code === 'studio_release_invalid' && failure.reason === 'studio_release_unchanged';
+
+// Ett hinder i förhandsvisningen: en mening och en knapp (blocker-view.mjs). `run` är en
+// åtgärd som knappen utför direkt ('measure', 'reload'); annars leder `href` dit den görs.
 const roomHref = (roomId, flik) => '/admin/rooms/' + encodeURIComponent(roomId) + '?flik=' + flik;
 const dealerHref = (dealerId, flik) => '/admin/dealers/' + encodeURIComponent(dealerId) + '?flik=' + flik;
-/** @returns {{text:string;href:string|null;linkLabel:string|null}} */
-export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, dealerName = '', rooms = []} = {}) {
-  const link = (href, linkLabel) => ({href, linkLabel});
-  const none = {href:null, linkLabel:null};
+/** @returns {{text:string;href:string|null;linkLabel:string|null;run:string|null;detail:string}} */
+export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, dealerName = '', rooms = [], language} = {}) {
   const dealer = id(dealerId) ? dealerId : null;
-  switch (blocker?.code) {
-    case 'studio_room_game_config_missing':
-      return {text:'Spelinställningar saknas: välj språk och insatsprofil och spara.', ...link(roomHref(roomId, 'spel'), 'Öppna Spelinställningar')};
-    case 'studio_room_config_storage_missing':
-      return {text:'Databasen saknar lagringen för spelinställningar. Kontakta drift.', ...none};
-    case 'studio_room_choices_draft_pending':
-      return {text:'Bolaget har ett opublicerat utseendeutkast. Publicera eller släng det först.', ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
-    case 'studio_room_game_material_unavailable': {
-      if (blocker.area === 'rooms' && id(blocker.roomId)) {
-        const name = rooms.find(row => row?.id === blocker.roomId)?.name ?? blocker.roomId;
-        return {text:'Spelbordet ' + name + ' kan inte bindas om: ' + materialReasonText(blocker.materialReason) + '.', ...link(roomHref(blocker.roomId, 'spel'), 'Öppna spelbordet')};
-      }
-      if (measurementReason(blocker.materialReason)) return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '. Öppna Dealers › '
-        + (dealer ? (typeof dealerName === 'string' && dealerName.trim() ? dealerName.trim() : dealer) : 'dealern') + ' och välj Mät omätta klipp.',
-        ...(dealer ? link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klipp') : none)};
-      return {text:'Tal och klipp: ' + materialReasonText(blocker.materialReason) + '.', ...(dealer ? link(dealerHref(dealer, 'tal'), 'Öppna i Röst och tal') : none)};
-    }
-    case 'ai_table_misfit':
-      return {text:aiTableMisfitMessage({code:blocker.reason}), ...link('/admin/scenes?' + new URLSearchParams({tab:'mallar', ...(id(blocker.compositionId) ? {composition:blocker.compositionId} : {})}), 'Öppna scenmallen')};
-    case 'studio_release_invalid': {
-      const text = invalidReasons[blocker.reason] ?? 'Scenmallarna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
-      if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return {text, ...link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klippkarta')};
-      // Utkastet åtgärdas under Utseende, inte i scenmallarna.
-      if (blocker.reason === 'studio_room_choices_draft_invalid') return {text, ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
-      return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Scenmallar')};
-    }
-    case 'studio_media_registry_unavailable': return {text:'Medieregistret svarar inte just nu. Läs in igen om en stund.', ...none};
-    case 'studio_presentation_runtime_update_required': return {text:'Spelmotorn behöver uppdateras innan ändringen kan publiceras.', ...none};
-    case 'studio_conflict': return {text:'Uppgifterna ändrades medan förhandsvisningen lästes. Läs in igen.', ...none};
-    default: return {text:'Hinder' + (code(blocker?.code) ? ': ' + blocker.code : '') + '.', ...none};
+  const out = (text, action, detail = blocker?.code ?? '') => ({text, href:action?.href ?? null, linkLabel:action?.label ?? null, run:action?.run ?? null, detail});
+  if (blocker?.code === 'studio_room_game_material_unavailable' && blocker.area === 'rooms' && id(blocker.roomId)) {
+    const name = rooms.find(row => row?.id === blocker.roomId)?.name ?? blocker.roomId;
+    return out('Spelbordet ' + name + ' kan inte bindas om: ' + materialReasonText(blocker.materialReason) + '.', {href:roomHref(blocker.roomId, 'spel'), label:'Öppna spelbordet'});
   }
+  if (blocker?.code === 'studio_release_invalid') {
+    const text = invalidReasons[blocker.reason] ?? 'Scenmallarna kan inte publiceras.', detail = [blocker.code, code(blocker.reason) ? blocker.reason : ''].filter(Boolean).join(' · ');
+    if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return out(text, {href:dealerHref(dealer, 'klipp'), label:'Öppna dealerns klippkarta'}, detail);
+    // Utkastet åtgärdas under Utseende, inte i scenmallarna.
+    if (blocker.reason === 'studio_room_choices_draft_invalid') return out(text, {href:roomHref(roomId, 'utseende'), label:'Öppna Utseende'}, detail);
+    return out(text, {href:'/admin/scenes?tab=mallar', label:'Öppna Scenmallar'}, detail);
+  }
+  const view = blockerView(blocker?.code, {roomId, dealerId:dealer, dealerName:typeof dealerName === 'string' ? dealerName : '',
+    compositionId:blocker?.compositionId, materialReason:blocker?.materialReason, language});
+  return out(view.text, view.action, view.detail);
 }
 
 // En rad per område, i den ordning Admin visar dem. Oförändrade områden visas också.

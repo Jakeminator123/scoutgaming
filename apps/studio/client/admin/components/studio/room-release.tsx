@@ -3,8 +3,9 @@ import {ArrowUpRight} from 'lucide-react';
 import Link from '../../../runtime/navigation';
 import {Button,cn,TechnicalDetails} from '../ui/kit';
 import {Dialog} from '../ui/dialog';
-import {publishRoomRelease,readRoomRelease,roomReleaseAreas,roomReleaseBlocker,roomReleaseButton,roomReleaseCanPublish,roomReleaseReceiptText,
+import {publishRoomRelease,readRoomRelease,roomReleaseAreas,roomReleaseBlocker,roomReleaseButton,roomReleaseCanPublish,roomReleaseNotice,roomReleaseReceiptText,
   type RoomReleasePreview,type RoomReleaseReceipt} from '../../lib/room-release.mjs';
+import {runBlockerAction} from '../../lib/blocker-view.mjs';
 
 // Spelbordets enda publicering (ADMIN-FORENKLING §7): en primär knapp, rutan "Det här ändras
 // jämfört med live" och ett kvitto. Servern (lib/room-release.mjs) gör alla kontroller; här
@@ -32,6 +33,9 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
   const [open,setOpen]=useState(false);
   const [publishing,setPublishing]=useState(false);
   const [publishError,setPublishError]=useState('');
+  const [notice,setNotice]=useState('');
+  // Ett hinder med en knapp som åtgärdar det direkt (Mät omätta klipp): räknare, sedan ny jämförelse.
+  const [fixing,setFixing]=useState('');
   // Efter ett fel (eller okänt utfall) måste förhandsvisningen läsas in igen innan nästa försök.
   const [mustReload,setMustReload]=useState(false);
   const [receipt,setReceipt]=useState<RoomReleaseReceipt|null>(null);
@@ -60,14 +64,21 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
   </section>;
 
   const button=roomReleaseButton({status,preview,blockedBy});
-  const reload=()=>{setPublishError('');setReads(value=>value+1);};
+  const reload=()=>{setPublishError('');setNotice('');setReads(value=>value+1);};
+  async function fix(dealerIds:string[]){
+    if(lock.current)return;
+    lock.current=true;setFixing('Mäter…');
+    try{const result=await runBlockerAction({label:'',href:null,run:'measure'},{dealerIds,onProgress:({done,total})=>setFixing(`Mäter ${done}/${total}…`)});
+      reload();setFixing(result.ok?result.message??'':'');if(!result.ok)setPublishError(result.error??'');}
+    finally{lock.current=false;}
+  }
   function openDialog(){setPublishError('');setOpen(true);reload();}
   async function publish(){
     if(!preview||lock.current||mustReload||blockedBy||!roomReleaseCanPublish(preview))return;
     lock.current=true;setPublishing(true);setPublishError('');callbacks.current.onBusyChange?.(true);
     try{
       const result=await publishRoomRelease({preview});
-      if(!result.ok){setPublishError(result.error);setMustReload(true);return;}
+      if(!result.ok){if(roomReleaseNotice(result))setNotice(result.error);else setPublishError(result.error);setMustReload(true);return;}
       setReceipt(result.receipt);setOpen(false);
       callbacks.current.onPublished?.(result.receipt);
       reload();
@@ -109,8 +120,11 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
         :preview&&<div className="grid gap-4">
           {blockers.length>0&&<div role="alert" className="grid gap-1.5 rounded-lg border border-sg-danger-line bg-sg-danger-bg px-3.5 py-3 text-[13.5px] text-sg-danger">
             <p className="m-0 font-semibold">{blockers.length===1?'Ett hinder':blockers.length+' hinder'} före publicering</p>
-            <ul className="m-0 grid gap-1 pl-4">{blockers.map((blocker,index)=>{const view=roomReleaseBlocker(blocker,{roomId,dealerId,dealerName:dealerId&&dealerName?dealerName(dealerId):'',rooms});
-              return <li key={index} data-blocker={blocker.code}>{view.text}{view.href&&<> <Link className={cn(linkClass,'text-sg-danger')} href={view.href}>{view.linkLabel} →</Link></>}</li>;})}</ul>
+            <ul className="m-0 grid gap-1 pl-4">{blockers.map((blocker,index)=>{const view=roomReleaseBlocker(blocker,{roomId,dealerId,dealerName:dealerId&&dealerName?dealerName(dealerId):'',rooms,language:preview.gameConfig?.language});
+              return <li key={index} data-blocker={blocker.code}>{view.text}{view.run==='measure'&&dealerId?<> <Button size="sm" data-action="blocker-measure" disabled={fixing.endsWith('…')||publishing} onClick={()=>void fix([dealerId])}>{view.linkLabel}</Button></>
+                :view.run==='reload'?<> <Button size="sm" onClick={reload} disabled={publishing}>{view.linkLabel}</Button></>
+                :view.href&&<> <Link className={cn(linkClass,'text-sg-danger')} href={view.href}>{view.linkLabel} →</Link></>}</li>;})}</ul>
+            {fixing&&<p role="status" className="m-0 text-sg-text">{fixing}</p>}
           </div>}
           {!preview.changed&&!blockers.length&&<p className="m-0 text-sg-muted">Sparat läge är detsamma som live. Inget att publicera.</p>}
           <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2.5">
@@ -122,6 +136,7 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
           </dl>
           {(preview.materialWarnings?.length??0)>0&&<p role="note" className="m-0 rounded-lg bg-sg-warn-bg px-3 py-2 text-[13px] text-sg-warn">Bolagets eget material har varningar som följer med publiceringen.</p>}
         </div>}
+      {notice&&<p role="status" data-release-notice="" className="mb-0 mt-3 rounded-lg bg-sg-surface-2 px-3 py-2 text-[13.5px] text-sg-muted">{notice}</p>}
       {publishError&&<p role="alert" className="mb-0 mt-3 rounded-lg bg-sg-danger-bg px-3 py-2 text-[13.5px] text-sg-danger">{publishError}</p>}
     </Dialog>
   </section>;

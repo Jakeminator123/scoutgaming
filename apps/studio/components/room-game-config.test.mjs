@@ -6,8 +6,8 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
-function render({dirty=false,stale=false,ready=true,reason,materialReason,dealers}={}) {
- const state={context:{operatorId:'op',roomId:'room'},fields:{language:'sv',limitPreset:'high'},busy:false,stale,error:'',message:'',receipt:{draft:{revision:'draft-2'},published:{configVersion:'config-1'},packageRevision:4,publication:{ready,reason,materialReason}}};
+function render({dirty=false,stale=false,ready=true,reason,materialReason,dealers,draft={revision:'draft-2'}}={}) {
+ const state={context:{operatorId:'op',roomId:'room'},fields:{language:'sv',limitPreset:'high'},busy:false,stale,error:'',message:'',receipt:{draft,published:{configVersion:'config-1'},packageRevision:4,publication:{ready,reason,materialReason}}};
  const controller={subscribe:()=>()=>{},getSnapshot:()=>state,dirty:()=>dirty};
  const module={exports:{}};
  vm.runInNewContext(transformSync(readFileSync(new URL('./room-game-config.tsx',import.meta.url),'utf8'),{filename:'room-game-config.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,
@@ -29,41 +29,38 @@ test('bet profiles are image cards with the engine numbers, the lobby room pictu
  assert.ok(html.includes(n(100)+'–'+n(25000)));assert.ok(html.includes(n(50000)+' spelpengar'));assert.ok(html.includes('>'+n(200)+'<'));
  assert.match(html,/Samma spel och regler\. Skillnaden är insatsnivå, marker och påfyllning/);assert.match(html,/<legend[^>]*>Insatsprofil<\/legend>/);
 });
-test('unsaved fields, conflicts and unavailable media each keep publication disabled',()=>{
- for(const options of [{dirty:true},{stale:true},{ready:false}])assert.match(render(options),/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
- assert.match(render({ready:false}),/exakt inspelat material/);
+test('conflicts and unavailable media keep publication disabled; Publicera saves unsaved fields itself',()=>{
+ for(const options of [{stale:true},{ready:false}])assert.match(render(options),/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
+ assert.doesNotMatch(render({dirty:true,ready:false}),/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
+ assert.match(render({ready:false}),/Något hindrar publiceringen\./);
 });
-test('verified material reasons explain the next action while publication stays disabled',()=>{
+test('every material reason is one Swedish sentence with a button, never a raw code',()=>{
  const expected=[
-  ['native_material_measurement_missing',/Mät omätta klipp/],['native_material_measurement_mismatch',/Mät omätta klipp/],
-  ['native_material_speech_slot_missing',/godkänd talreplik för valt språk/],['native_material_speech_unbound',/godkänd talreplik för valt språk/],
-  ['native_material_bank_incomplete',/klippbanken är ofullständig/],['native_material_idle_missing',/klippbanken är ofullständig/],
-  ['native_material_profile_missing',/filmprofilen saknar stöd/],['native_material_contract_unsupported',/filmprofilen saknar stöd/],
-  ['native_material_speech_timing_mismatch',/Kontrollera inspelningen/],['native_material_take_audio_truncated',/övergång behöver rättas och granskas/],
-  ['native_material_timing_limit',/för långa uppspelningssekvenser/],
+  ['native_material_measurement_missing',/Klippen saknar aktuell tidsmätning\./,/data-action="blocker-measure"[^>]*>Mät omätta klipp</],
+  ['native_material_speech_slot_missing',/En replik saknar godkänt tal på svenska\./,/href="\/admin\/dealers\/paow\?flik=tal"[^>]*>Öppna Röst och tal</],
+  ['native_material_bank_incomplete',/PAOW saknar klipp för ett fack\./,/href="\/admin\/dealers\/paow\?flik=klipp"[^>]*>Öppna Klippkartan</],
+  ['native_material_profile_missing',/PAOW saknar landningar\./,/href="\/admin\/dealers\/paow\?flik=landningar"[^>]*>Öppna Landningar</],
+  ['native_material_take_audio_truncated',/Ett klipp är tekniskt fel: ljudet fortsätter efter klippbytet\./,/>Öppna Klippkartan</],
  ];
- for(const [materialReason,action] of expected){
-  const html=render({ready:false,reason:'studio_room_game_material_unavailable',materialReason});
-  assert.match(html,action);assert.doesNotMatch(html,/native_material_/);
+ for(const [materialReason,text,action] of expected){
+  const html=render({ready:false,reason:'studio_room_game_material_unavailable',materialReason,dealers:[{id:'paow',name:'PAOW'}]});
+  assert.match(html,text);assert.match(html,action);assert.doesNotMatch(html,/[a-z]+_[a-z]+_[a-z_]+/,materialReason);
   assert.match(html,/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
  }
- const measurement=render({ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
- assert.match(measurement,/Publicera sedan i spelbordet/);assert.match(measurement,/inget nytt bild- eller talgodkännande/);
- assert.match(measurement,/Öppna Dealers › dealern i spelbordet och välj Mät omätta klipp/);assert.doesNotMatch(measurement,/Mät speltid/);
- const linked=render({ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing',dealers:[{id:'paow',name:'PAOW'}]});
- assert.match(linked,/Öppna <span><a [^>]*href="\/admin\/dealers\/paow\?flik=klipp"[^>]*>Dealers › PAOW<\/a><\/span> och välj Mät omätta klipp\./);
 });
-test('draft requirement is separate and unknown or mismatched reasons remain neutral',()=>{
- assert.match(render({ready:false,reason:'studio_room_game_draft_required'}),/Spara spelinställningarna som utkast/);
+test('a missing draft is no blocker: Publicera saves it, and unknown reasons stay neutral',()=>{
+ const draftless=render({ready:false,reason:'studio_room_game_draft_required',draft:null});
+ assert.doesNotMatch(draftless,/utkast som|draft_required|Något hindrar/);
+ assert.doesNotMatch(draftless,/<button[^>]+disabled=""[^>]*>Publicera spelinställningar/);
  for(const options of [
-  {reason:'studio_room_game_material_unavailable',materialReason:'unknown_private_detail'},
-  {reason:'studio_room_game_material_unavailable',materialReason:'__proto__'},
   {reason:'unknown_private_detail',materialReason:'native_material_measurement_missing'},
   {materialReason:'native_material_measurement_missing'},
  ]){
-  const html=render({ready:false,...options});assert.match(html,/Kontrollera rummets sammansättning/);
-  assert.doesNotMatch(html,/unknown_private_detail|__proto__|Mät speltid/);
+  const html=render({ready:false,...options});assert.match(html,/Något hindrar publiceringen/);
+  assert.doesNotMatch(html,/unknown_private_detail|__proto__|Mät omätta/);
  }
+ for(const materialReason of ['unknown_private_detail','__proto__'])
+  assert.doesNotMatch(render({ready:false,reason:'studio_room_game_material_unavailable',materialReason}),/unknown_private_detail|__proto__|Mät omätta/);
  const ready=render({reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
- assert.doesNotMatch(ready,/Mät speltid|Kontrollera rummets sammansättning/);
+ assert.doesNotMatch(ready,/Mät omätta|Något hindrar/);
 });

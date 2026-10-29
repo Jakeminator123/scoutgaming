@@ -1,44 +1,15 @@
 'use client';
-import {useEffect,useRef,useSyncExternalStore} from 'react';
+import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {createRoomGameConfigController,type RoomGameReceipt} from '../lib/room-game-config-client.mjs';
 import {roomLimitProfiles,roomLimitProfileNote,formatAmount} from '../lib/room-limit-profiles.mjs';
 import styles from './admin-publication-page.module.css';
+import {blockerView,runBlockerAction} from '../client/admin/lib/blocker-view.mjs';
 
 const profiles=roomLimitProfiles();
 
 type RoomDealer={id:string;name:string};
-const dealerClips=(dealer:RoomDealer)=>'/admin/dealers/'+encodeURIComponent(dealer.id)+'?flik=klipp';
-// Mätningen görs på dealernavet; texten pekar dit med en länk per dealer i spelbordet.
-function measurementHelp(dealers:RoomDealer[]) {
-  const rest=' Publicera sedan i spelbordet och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
-  if(!dealers.length)return 'Klippen saknar aktuella tidsmätningar. Öppna Dealers › dealern i spelbordet och välj Mät omätta klipp.'+rest;
-  return <>Klippen saknar aktuella tidsmätningar. Öppna {dealers.map((dealer,index)=><span key={dealer.id}>{index?' eller ':''}<a className="font-semibold underline" href={dealerClips(dealer)}>Dealers › {dealer.name}</a></span>)} och välj Mät omätta klipp.{rest}</>;
-}
-
-function publicationHelp(publication:RoomGameReceipt['publication'],dealers:RoomDealer[]=[]) {
-  if(publication.reason==='studio_room_game_draft_required')return 'Spara spelinställningarna som utkast för att kontrollera materialet för valt språk.';
-  if(publication.reason==='studio_room_game_material_unavailable')switch(publication.materialReason){
-    case 'native_material_measurement_missing':
-    case 'native_material_measurement_mismatch':
-      return measurementHelp(dealers);
-    case 'native_material_speech_slot_missing':
-    case 'native_material_speech_unbound':
-      return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera i spelbordet efter rättning.';
-    case 'native_material_bank_incomplete':
-    case 'native_material_idle_missing':
-      return 'Den publicerade klippbanken är ofullständig. Kontrollera att filmprofilens spelklipp och viloklipp finns med i paketet. Publicera sedan i spelbordet.';
-    case 'native_material_profile_missing':
-    case 'native_material_contract_unsupported':
-      return 'Den valda filmprofilen saknar stöd för dessa spelinställningar. Profilens koppling till spelmotorn behöver rättas innan du kan publicera.';
-    case 'native_material_speech_timing_mismatch':
-      return 'Talets uppmätta bildrutor eller ljud stämmer inte med inspelningsunderlaget. Kontrollera inspelningen och dess koppling innan du publicerar i spelbordet.';
-    case 'native_material_take_audio_truncated':
-      return 'Ett spelklipps ljud fortsätter efter bytet till nästa klipp. Klippet och dess övergång behöver rättas och granskas innan du publicerar i spelbordet.';
-    case 'native_material_timing_limit':
-      return 'Klippen ger för långa uppspelningssekvenser för dessa spelinställningar. Klippens längd och övergångar behöver granskas innan du kan publicera.';
-  }
-  return 'Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets sammansättning.';
-}
+// Utkastet är ett mellansteg: Publicera sparar själv, så "utkast krävs" visas aldrig.
+const DRAFT_REQUIRED='studio_room_game_draft_required';
 
 export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
@@ -51,8 +22,20 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
   useEffect(()=>{void controller.configure({operatorId,roomId});return()=>controller.cancel();},[controller,operatorId,roomId]);
   useEffect(()=>{callbacks.current.onBusyChange?.(busy);return()=>callbacks.current.onBusyChange?.(false);},[busy]);
   useEffect(()=>{callbacks.current.onDirtyChange?.(dirty);return()=>callbacks.current.onDirtyChange?.(false);},[dirty]);
-  const off=disabled||busy||!current;
-  async function act(action:'refresh'|'save'|'publish'){if(off)return;callbacks.current.onBusyChange?.(true);try{const next=await controller[action]();if(action==='publish'&&next)callbacks.current.onPublished?.(next);}finally{callbacks.current.onBusyChange?.(controller.getSnapshot().busy);}}
+  const [fixing,setFixing]=useState(''),[fixed,setFixed]=useState('');
+  const off=disabled||busy||!current||fixing!=='';
+  const publication=receipt?.publication,single=dealers.length===1?dealers[0]:null;
+  const blocker=publication&&!publication.ready&&publication.reason!==DRAFT_REQUIRED?blockerView(publication.reason,{roomId,operatorId,dealerId:single?.id,dealerName:single?.name,
+    language:state.fields.language,materialReason:publication.materialReason}):null;
+  // Publicera sparar först när fälten är ändrade eller inget utkast finns; sedan publiceras utkastet om materialet räcker.
+  const publishable=Boolean(receipt)&&!state.stale&&(dirty||!receipt?.draft||Boolean(publication?.ready));
+  async function act(action:'refresh'|'save'|'publish'){if(off)return;callbacks.current.onBusyChange?.(true);setFixed('');try{
+    if(action==='publish'&&(dirty||!receipt?.draft)){const saved=await controller.save();if(!saved?.publication.ready)return;}
+    const next=await controller[action]();if(action==='publish'&&next)callbacks.current.onPublished?.(next);}finally{callbacks.current.onBusyChange?.(controller.getSnapshot().busy);}}
+  // Mät omätta klipp direkt (#655); mätningen följer med när spelbordet publiceras.
+  async function measure(){if(off)return;setFixing('Mäter…');setFixed('');try{
+    const result=await runBlockerAction(blocker?.action,{dealerIds:dealers.map(row=>row.id),onProgress:({done,total})=>setFixing(`Mäter ${done}/${total}…`)});
+    setFixed(result.ok?(result.message??'')+' Publicera spelbordet så följer mätningen med.':result.error??'');}finally{setFixing('');void controller.refresh();}}
   function edit(field:'language'|'limitPreset',value:string){controller.edit(field,value);callbacks.current.onDirtyChange?.(controller.dirty());}
   return <section className={styles.card} aria-label="Spelinställningar för rummet">
     <h2>Spelinställningar · {roomName}</h2>
@@ -85,11 +68,13 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
     <p>Insatstid: 20 sekunder. Beslutstid: 15 sekunder. Beloppen är demoenheter.</p>
     {current&&state.error?<p role="alert">{state.error}</p>:null}
     {current&&state.message?<p role="status">{state.message}</p>:null}
-    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication,dealers)}</p>:null}
+    {blocker?<p role="status" data-tone={blocker.tone}>{blocker.text}{' '}{blocker.action?.run==='measure'&&dealers.length?<button type="button" data-action="blocker-measure" className="sg-btn sg-btn-secondary" disabled={off} onClick={()=>void measure()}>{fixing||blocker.action.label}</button>
+      :blocker.action?.href?<a className="font-semibold underline" href={blocker.action.href}>{blocker.action.label}</a>:null}</p>:null}
+    {fixed?<p role="status">{fixed}</p>:null}
     <div className={styles.actions}>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</button>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</button>
-      <button type="button" className="sg-btn sg-btn-primary" disabled={off||!receipt?.draft||state.stale||dirty||!receipt?.publication.ready} onClick={()=>void act('publish')}>Publicera spelinställningar</button>
+      <button type="button" className="sg-btn sg-btn-primary" disabled={off||!publishable} onClick={()=>void act('publish')}>Publicera spelinställningar</button>
     </div>
     {busy?<p role="status">Hämtar eller sparar spelinställningar…</p>:null}
     {receipt?<details><summary>Versioner</summary><p>Sparat utkast: {receipt.draft?.revision??'Inget'}. Publicerad spelversion: {receipt.published?.configVersion??'Ingen'}. Paketversion: {receipt.packageRevision}.</p></details>:null}
