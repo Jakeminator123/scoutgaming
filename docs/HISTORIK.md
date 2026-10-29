@@ -6,7 +6,7 @@ Hänvisningar i `migrering/status.json` (fältet `evidence`) och i kodkommentare
 
 ## Raderade 29 oktober 2026
 
-Alla fanns i `main` på `a05917c3a05f23963006fc4e778f9c4ac8bbadcf` (läs: `git show a05917c3:<sökväg>`). Migreringen var klar (20/20, O03 VERIFIED via #527) och ingen kod eller CI läste filerna.
+Alla fanns i `main` på `a05917c3a05f23963006fc4e778f9c4ac8bbadcf` (läs: `git show a05917c3:<sökväg>`). Migreringen var klar (20/20, O03 VERIFIED via #527) och ingen kod eller CI läste filerna; kodkommentarer som citerar ett avsnitt ("K04-mappning G3", "K05-mappning 4b") står kvar och pekar på Git-versionen.
 
 | Datum | Fil | Vad det var | PR |
 | --- | --- | --- | --- |
