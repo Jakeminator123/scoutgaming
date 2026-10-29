@@ -19,6 +19,8 @@ export interface StudioSpeechPanelProps {
   blocked?:boolean
   projectDirty?:boolean
   onEdit:(project:StudioProject)=>void
+  /** Dealers with a drift profile and bank hash in this environment (T5); motion references may only be enabled for these. */
+  movingSpeechDealers?:readonly string[]
   /** Present where the caller accepts a server-saved project (Röstprofil). */
   onProjectSaved?:(project:StudioProject)=>void
   /** Present only where the caller replaces its inventory after a server review write. */
@@ -61,7 +63,7 @@ function RecordedSpeechPreview({row,active}:{row:StudioRecordedSpeech;active:boo
 }
 
 export function StudioSpeechPanel(props:StudioSpeechPanelProps){
-  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,onProjectSaved,onInventory,onBusyChange,onDirtyChange}=props
+  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,movingSpeechDealers,onProjectSaved,onInventory,onBusyChange,onDirtyChange}=props
   const dealer=project.dealers.find(row=>row.id===dealerId),saved=dealer?.speechProfile
   const [voiceDraft,setVoiceDraft]=useState(initialDealerVoiceDraft(dealer,saved?.voice))
   const [recordedId,setRecordedId]=useState(''),[lineChoice,setLineChoice]=useState(''),[languageChoice,setLanguageChoice]=useState('')
@@ -93,6 +95,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const [language,setLanguage]=useState<SpeechLanguage>('sv'),[lineId,setLineId]=useState('goodluck'),[all,setAll]=useState(false)
   const allowedLineIds=studioSpeechLineIds(game),selectedLineId=allowedLineIds.includes(lineId)?lineId:allowedLineIds[0]
   const [videoId,setVideoId]=useState(saved?.reference?.videoId??''),[offsetMs,setOffsetMs]=useState(saved?.reference?.offsetMs??0),[enabled,setEnabled]=useState(saved?.state==='enabled')
+  const [kindChoice,setKindChoice]=useState<'video-frame'|'motion-video'>(saved?.reference?.kind??'video-frame')
   const [frameReviewed,setFrameReviewed]=useState(false),[durationMs,setDurationMs]=useState(0)
   const [referenceError,setReferenceError]=useState('')
   const [plan,setPlan]=useState<SpeechBuildPlan|null>(null),[results,setResults]=useState<SpeechBuildResult[]>([])
@@ -103,7 +106,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   latest.current=props
   useEffect(()=>{if(!active)preview.current?.pause()},[active])
   const savedKey=JSON.stringify(saved??null)
-  useEffect(()=>{setVoiceDraft(initialDealerVoiceDraft(dealer,saved?.voice));setVideoId(saved?.reference?.videoId??'');setOffsetMs(saved?.reference?.offsetMs??0);setEnabled(saved?.state==='enabled');setFrameReviewed(false);setPlan(null);setResults([]);setBusy(false);setError('');setNotice('')},[dealerId,savedKey])
+  useEffect(()=>{setVoiceDraft(initialDealerVoiceDraft(dealer,saved?.voice));setVideoId(saved?.reference?.videoId??'');setKindChoice(saved?.reference?.kind??'video-frame');setOffsetMs(saved?.reference?.offsetMs??0);setEnabled(saved?.state==='enabled');setFrameReviewed(false);setPlan(null);setResults([]);setBusy(false);setError('');setNotice('')},[dealerId,savedKey])
   useEffect(()=>{return()=>{work.current?.abort();preview.current?.pause();latest.current.onBusyChange?.(false);latest.current.onDirtyChange?.(false)}},[])
   useEffect(()=>{return()=>{work.current?.abort();work.current=null;latest.current.onBusyChange?.(false)}},[dealerId])
   useEffect(()=>{setAwaitingProjectSave(null)},[dealerId])
@@ -114,10 +117,12 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const videos=inventory.videos.filter(row=>isSpeechReferenceVideo(row,dealerId)),selected=videos.find(row=>row.id===videoId)
   const referenceCheck=dealerSpeechReferenceCheck(selected,dealerId)
   const sourceKey=selected?selected.id+':'+(selected as typeof selected&{sha256?:string}).sha256:''
-  const referenceKind=saved?.reference?.kind??'video-frame'
-  const referenceUnchanged=Boolean((!enabled||saved?.state==='enabled')&&selected&&saved?.reference?.videoId===selected.id&&saved.reference.sha256===(selected as typeof selected&{sha256?:string}).sha256&&saved.reference.offsetMs===offsetMs)
-  const changedEnabledMotion=enabled&&referenceKind==='motion-video'&&!referenceUnchanged
-  const referenceDirty=videoId!==(saved?.reference?.videoId??'')||offsetMs!==(saved?.reference?.offsetMs??0)||enabled!==(saved?.state==='enabled')||Boolean(selected&&saved?.reference&&(selected as typeof selected&{sha256?:string}).sha256!==saved.reference.sha256)
+  const referenceKind=kindChoice,movingBank=Boolean(movingSpeechDealers?.includes(dealerId))
+  // A motion profile may be switched on only against this environment's verified bank; an already enabled one stays as saved.
+  const motionBlocked=referenceKind==='motion-video'&&!movingBank&&!(saved?.state==='enabled'&&saved.reference?.kind==='motion-video')
+  const referenceUnchanged=Boolean((!enabled||saved?.state==='enabled')&&selected&&saved?.reference?.videoId===selected.id&&saved.reference.kind===referenceKind&&saved.reference.sha256===(selected as typeof selected&{sha256?:string}).sha256&&saved.reference.offsetMs===offsetMs)
+  const changedEnabledMotion=enabled&&saved?.state==='enabled'&&saved.reference?.kind==='motion-video'&&!referenceUnchanged
+  const referenceDirty=videoId!==(saved?.reference?.videoId??'')||Boolean(videoId)&&referenceKind!==(saved?.reference?.kind??'video-frame')||offsetMs!==(saved?.reference?.offsetMs??0)||enabled!==(saved?.state==='enabled')||Boolean(selected&&saved?.reference&&(selected as typeof selected&{sha256?:string}).sha256!==saved.reference.sha256)
   const profileDirty=JSON.stringify(voiceDraft)!==JSON.stringify(dealerVoiceDraft(saved?.voice))||referenceDirty
   // Suggestions can be left untouched; applying one still requires the normal save flow.
   const formDirty=JSON.stringify(voiceDraft)!==JSON.stringify(initialDealerVoiceDraft(dealer,saved?.voice))||referenceDirty
@@ -130,7 +135,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
     try{const result=await reviewTake(studioRecordedSpeechReviewRequest(recorded,dealerId,verdict));onInventory(result.inventory);if(latest.current.dealerId===dealerId)setReviewNotice(verdict==='approved'?'Talet är godkänt. Använd Publicera i spelbordet för att använda tagningen.':verdict==='rejected'?'Tagningen är underkänd och spelas inte.':'Bedömningen är borttagen. Tagningen väntar på granskning.')}
     catch(cause){if(latest.current.dealerId===dealerId)setReviewError((cause instanceof Error?cause.message:'Bedömningen kunde inte sparas.'))}finally{setReviewBusy(false);onBusyChange?.(false)}}
   function readyFrame(){const video=preview.current;if(video&&video.readyState>=2&&!video.seeking&&Math.abs(video.currentTime*1000-offsetMs)<60){setFrameReviewed(true);setReferenceError('')}}
-  function saveProfile(){try{if(blocked||busy||!dealer)return;if(changedEnabledMotion)throw Error('Stäng av Begär AI-tal innan du sparar en ändrad rörelsereferens.');if(enabled&&(!referenceCheck.canEnable||referenceError))throw Error(referenceError||referenceCheck.message);if(videoId&&!referenceUnchanged&&(!selected||!frameReviewed||durationMs<1||offsetMs>=durationMs))throw Error('Granska vald position i dealerns egen referensvideo innan du lägger profilen i utkastet.');
+  function saveProfile(){try{if(blocked||busy||!dealer)return;if(changedEnabledMotion)throw Error('Stäng av Begär AI-tal innan du sparar en ändrad rörelsereferens.');if(enabled&&motionBlocked)throw Error('Rörligt tal kräver en verifierad bank för dealern i denna miljö.');if(enabled&&(!referenceCheck.canEnable||referenceError))throw Error(referenceError||referenceCheck.message);if(videoId&&!referenceUnchanged&&(!selected||!frameReviewed||durationMs<1||offsetMs>=durationMs))throw Error('Granska vald position i dealerns egen referensvideo innan du lägger profilen i utkastet.');
     const reference=referenceUnchanged?saved!.reference:selected?{kind:referenceKind,videoId:selected.id,sha256:(selected as typeof selected&{sha256:string}).sha256,offsetMs}:null
     const voice=dealerVoiceFromDraft(voiceDraft)
     onEdit(applyStudioSpeechProfile(project,inventory,dealerId,{schemaVersion:2,state:enabled?'enabled':'preparation',voice,reference}))
@@ -210,14 +215,16 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
     <details><summary>{generatedVoice?'Realtidstal · röst och referens':'Förbered röstprofil för realtidstal'}</summary><div className="mt-3 space-y-3">
       <h3 className="font-semibold">Realtidstal</h3>
       <p className="text-sm">{saved?.state==='enabled'?'Begärt i projektutkastets profil. Drift och åtkomst är inte verifierade här.':'Inte aktiverat i projektutkastets profil.'}</p>
-      <p className="text-xs text-muted-foreground">Ny rörlig läppsynk är inte ansluten i detta flöde. En sparad röstprofil startar inget talprov och visar inte att en talvideo finns.</p>
+      <p className="text-xs text-muted-foreground">{movingBank?`Rörlig läppsynk: en driftprofil med bankhash finns för ${dealer.label} i denna miljö. Spelmotorn kontrollerar banken vid start.`:'Ingen verifierad rörlig bank för denna dealer i denna miljö.'} En sparad röstprofil startar inget talprov och visar inte att en talvideo finns.</p>
       <p className="text-sm text-muted-foreground">Välj röst och dealerns egen videoreferens. Ändringarna sparas i projektutkastet.</p>
     <fieldset disabled={blocked||busy} className="space-y-3">
       <DealerVoicePicker dealer={dealer} value={voiceDraft} onChange={value=>{setVoiceDraft(value);if(!value.provider||!value.voiceId.trim()||!value.modelId.trim())setEnabled(false);}} fieldClass="studio-field"/>
       <label className="studio-field">Dealerns egen referensvideo<select data-field="reference-video" value={videoId} onChange={event=>{setVideoId(event.target.value);if(!event.target.value)setEnabled(false);}}><option value="">Inte vald</option>{videos.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+      <label className="studio-field">Referenstyp<select data-field="reference-kind" value={referenceKind} disabled={enabled} onChange={event=>setKindChoice(event.target.value==='motion-video'?'motion-video':'video-frame')}><option value="video-frame">Stillbild · en ruta ur videon</option><option value="motion-video">Rörlig · dealerns bank</option></select></label>
+      {referenceKind==='motion-video'&&<p className="text-xs text-muted-foreground" data-note="moving-bank">{movingBank?'Referensen ska vara ett av bankens klipp; spelmotorn avvisar annars talet. Begär AI-tal använder bankens rörelser och vilaruta.':'Ingen verifierad bank i denna miljö. Spara referensen som förberedelse: bankbygget tar vald position som vilaruta (docs/PAOW-BANK-KORNING.md).'}{offsetMs%125?' Bankbygget kräver en position i steg om 125 ms (hel ruta i 24 fps).':''}</p>}
       {!!selected&&<><label className="studio-field">Referensposition, millisekunder<input data-field="reference-offset" type="number" min={0} max={Math.max(0,durationMs-1)} step={1} value={offsetMs} onChange={event=>setOffsetMs(Number(event.target.value))}/></label>{previewUrl?<video ref={preview} src={previewUrl} controls muted playsInline preload="metadata" className="max-h-44 w-full rounded-md bg-black object-contain" onLoadedMetadata={()=>{const video=preview.current;if(video){setDurationMs(Math.round(video.duration*1000));video.currentTime=offsetMs/1000}}} onLoadedData={readyFrame} onSeeked={readyFrame} onError={()=>{setFrameReviewed(false);setReferenceError('Videoreferensen kunde inte visas. Kontrollera filen innan AI-tal aktiveras.')}} onTimeUpdate={()=>{const video=preview.current;if(video&&Math.abs(video.currentTime*1000-offsetMs)>60)setFrameReviewed(false)}}/>:<p className="text-sm">Referensen har ingen verifierad förhandsvisningsadress.</p>}<p className="text-xs text-muted-foreground">{frameReviewed?'Vald referensposition har visats.':'Visa vald position innan profilen läggs i utkastet.'}</p></>}
       {!!videoId&&<p className="text-xs text-muted-foreground" role={referenceError||!referenceCheck.canEnable?'alert':'status'}>{referenceError||referenceCheck.message}</p>}
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" data-field="enable-speech" checked={enabled} disabled={!enabled&&(!referenceCheck.canEnable||Boolean(referenceError)||!voiceDraft.provider||!voiceDraft.voiceId.trim()||!voiceDraft.modelId.trim()||referenceKind==='motion-video')} onChange={event=>setEnabled(event.target.checked)}/>Begär AI-tal med denna sparade profil</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" data-field="enable-speech" checked={enabled} disabled={!enabled&&(!referenceCheck.canEnable||Boolean(referenceError)||!voiceDraft.provider||!voiceDraft.voiceId.trim()||!voiceDraft.modelId.trim()||motionBlocked)} onChange={event=>setEnabled(event.target.checked)}/>Begär AI-tal med denna sparade profil</label>
       {changedEnabledMotion&&<p role="status" className="text-sm">Stäng av Begär AI-tal innan du sparar en ändrad rörelsereferens.</p>}
       <button className="studio-button" type="button" data-action="stage-profile" disabled={!profileDirty||changedEnabledMotion||enabled&&(!referenceCheck.canEnable||Boolean(referenceError))||Boolean(videoId&&!referenceUnchanged&&!frameReviewed)} onClick={saveProfile}>Lägg talprofil i utkast</button>
     </fieldset>
