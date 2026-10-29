@@ -134,7 +134,7 @@ export async function installStudioRuntime(t, database, { project, administratio
   // The engine's own factory (configuration, schema readiness, saved policy) must accept
   // the seed here, so a rejected seed fails with its own code instead of a boot timeout.
   const runtime = await createRenderStudioPolicy({ storage: database.store,
-    env: { ...env, CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: database.url } });
+    env: { ...env, CROUPIER_GAME_DATABASE_URL: database.url } });
   const seeded = { scope, migrations: appliedNow, ledger: plan.applied.map(row => row.version),
     documents: Object.fromEntries(documents.map(row => [row.kind, row.revision])),
     dealers: project.dealers.map(row => row.id), rooms: administration.rooms?.map(row => row.id) ?? [],
@@ -152,7 +152,7 @@ export async function startEngine(t, { database, env = {}, preload = [], port, t
   const child = spawn(process.execPath, [...preload.flatMap(url => ['--import', String(url)]), ENGINE_SERVER], {
     cwd: ENGINE_DIRECTORY, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...osEnvironment(), HOST: '127.0.0.1', PORT: String(port), ...env,
-      CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: database.url },
+      CROUPIER_GAME_DATABASE_URL: database.url },
   });
   let stdout = '', stderr = '', stopping = false, stopped;
   child.stdout.on('data', chunk => { stdout += chunk; });
@@ -185,7 +185,7 @@ export async function startEngine(t, { database, env = {}, preload = [], port, t
 /** Runs the engine expecting it to refuse startup; returns its exit and output. */
 export function engineBootFailure({ database, port, env = {}, timeoutMs = 20000 }) {
   const result = spawnSync(process.execPath, [ENGINE_SERVER], { cwd: ENGINE_DIRECTORY, encoding: 'utf8', timeout: timeoutMs, windowsHide: true,
-    env: { ...osEnvironment(), HOST: '127.0.0.1', PORT: String(port), ...env, CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: database.url } });
+    env: { ...osEnvironment(), HOST: '127.0.0.1', PORT: String(port), ...env, CROUPIER_GAME_DATABASE_URL: database.url } });
   return { error: result.error, status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 

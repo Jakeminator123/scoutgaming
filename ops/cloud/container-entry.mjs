@@ -11,7 +11,7 @@ export async function prepareContainerUser(env = process.env, { fs = { chown, ch
   let gameDatabase;try{gameDatabase=new URL(env.CROUPIER_GAME_DATABASE_URL);}catch{}
   const retiredDiskKeys=['CROUPIER_DATA_DIR','LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR',
     'CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR','LAB_VIDEO_ARCHIVE'];
-  const mountless=dataRoot===undefined&&env.CROUPIER_DATABASE==='postgres'&&env.CROUPIER_STUDIO_NEON_POLICY==='1'
+  const mountless=dataRoot===undefined&&env.CROUPIER_STUDIO_NEON_POLICY==='1'
     &&env.CROUPIER_MEDIA_STORAGE==='blob'&&typeof env.BLOB_READ_WRITE_TOKEN==='string'&&env.BLOB_READ_WRITE_TOKEN.length>0
     &&gameDatabase&&['postgres:','postgresql:'].includes(gameDatabase.protocol)&&gameDatabase.hostname.endsWith('.neon.tech')
     &&Boolean(gameDatabase.username)&&Boolean(gameDatabase.password)
@@ -21,7 +21,7 @@ export async function prepareContainerUser(env = process.env, { fs = { chown, ch
     throw new Error('Mountless container requires Postgres, Neon policy and private Blob with no retired disk configuration.');
   }
   if(dataRoot!=='/var/data') {
-    if(!mountless&&(!qa || env.CROUPIER_DATABASE!=='postgres' || env.CROUPIER_STUDIO_NEON_POLICY!=='1'
+    if(!mountless&&(!qa || env.CROUPIER_STUDIO_NEON_POLICY!=='1'
       || env.CROUPIER_STUDIO_ENVIRONMENT_ID!==`qa_native_${qa[1]}` || env.CROUPIER_STUDIO_WORKSPACE_ID!=='croupier'
       || !gameDatabase || !['postgres:','postgresql:'].includes(gameDatabase.protocol) || !gameDatabase.hostname.endsWith('.neon.tech')
       || gameDatabase.username!==`croupier_studio_qa_${qa[1]}` || gameDatabase.pathname!==`/croupier_studio_qa_${qa[1]}`)) {

@@ -9,8 +9,10 @@ export function exactPlatformOrigin(value, name) {
   return url.origin;
 }
 
+// The engine transport is on wherever the engine's origin is set (every Vercel
+// deployment of the product). The former CROUPIER_VERCEL_UI=1 switch was always on.
 export function platformConfiguration(env = process.env) {
-  if (env.CROUPIER_VERCEL_UI !== '1') return null;
+  if (!env.CROUPIER_BACKEND_ORIGIN) return null;
   const publicOrigin = exactPlatformOrigin(env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN');
   const backendOrigin = exactPlatformOrigin(env.CROUPIER_BACKEND_ORIGIN, 'CROUPIER_BACKEND_ORIGIN');
   const unifiedUi = env.CROUPIER_VERCEL_UNIFIED_UI === '1';

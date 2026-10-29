@@ -272,7 +272,7 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
  test('Render startup rejects missing required migrations 011, 012, 013, 014 or an unknown version', async () => {
   const {createRenderStudioPolicy}=await import('../services/game/storage/studio-runtime.mjs');
   const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
+  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const required=(await loadStudioMigrations()).filter(row=>!row.deploymentOptional).map(row=>row.version);
@@ -286,7 +286,7 @@ test('Render startup accepts complete required schema without changing saved pol
   const {createRenderStudioPolicy}=await import('../services/game/storage/studio-runtime.mjs');
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const migrations=await loadStudioMigrations();
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,
+  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,
   CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require','croupier_game')};
   const {pool,policy,repository}=await fixture(),before=await policy.readSaved();let asserted=0;
   const applied=migrations.map(row=>({version:row.version,checksum:row.checksum,structureChecksum:'a'.repeat(64)}));

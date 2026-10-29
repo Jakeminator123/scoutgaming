@@ -1,7 +1,7 @@
 # PostgreSQL och publicerad produktdata
 
-`storage/` är aktiv lagrings- och publiceringskod. `services/game/server.mjs` kräver
-`CROUPIER_DATABASE=postgres` och laddar modulerna här statiskt; de synkrona
+`storage/` är aktiv lagrings- och publiceringskod. `services/game/server.mjs` kör
+bara PostgreSQL och laddar modulerna här statiskt; de synkrona
 SQLite-tvillingarna togs bort 27 oktober 2026. Mappen är inte ett äldre BO-demo.
 
 | Modulgrupp | Ansvar |
