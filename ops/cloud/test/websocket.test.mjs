@@ -88,3 +88,14 @@ test('cloud gateway rejects speech upgrades when streaming is disabled', { timeo
     assert.match(await rejected(connect(url, '/speech-stream', { clientOrigin: origin })), /421/);
   } finally { await new Promise(resolve => gateway.close(resolve)); }
 });
+
+test('cloud gateway rejects speech upgrades when the still-image path is off', { timeout: 5000 }, async () => {
+  const config = { ...configuration(), streaming: true, speechProvider: null };
+  const gateway = createCloudGateway(config, {  });
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  try {
+    const url = `ws://127.0.0.1:${gateway.address().port}`;
+    assert.match(await rejected(connect(url, '/speech-stream', { clientOrigin: origin })), /421/);
+    assert.match(await rejected(connect(url, '/lipsync-worker', { authorization: `Bearer ${workerSecret}`, workerId: 'gpu-fixture' })), /421/);
+  } finally { await new Promise(resolve => gateway.close(resolve)); }
+});

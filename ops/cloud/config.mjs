@@ -115,7 +115,10 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const cartesiaKey = env.CARTESIA_API_KEY || '';
   const runpodKey = env.RUNPOD_API_KEY || '';
   const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
-  if (generatedSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
+  // Streamed still-image speech (astrid-gpu-worker) is optional as a group: all three or none.
+  // Without it, moving speech still runs and registered still dealers answer text-only.
+  const stillSpeech = generatedSpeech && (!streaming || Boolean(cartesiaKey || runpodKey || runpodEndpointId));
+  if (stillSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
     || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) fail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
   // Neon is the one registry and private Blob the one media store in every product
   // process; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
@@ -248,7 +251,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     fullfileBudget: fullfileBudgetRequired ? { reserveUsd:fullfileReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
-    speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null });
+    speechProvider: stillSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null });
 }
 
 // Read-only check. Filesystem existence cannot prove that a mount is durable.

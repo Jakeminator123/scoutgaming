@@ -258,3 +258,20 @@ test('today\'s production shape still starts: moving off, retired single-bank na
   await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
     /CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
 });
+
+test('streamed still-image speech is optional as a group: none means off, one of three still fails',()=>{
+  const still=['CARTESIA_API_KEY','RUNPOD_API_KEY','CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
+  const without=Object.fromEntries(Object.entries({...base(),...moving()}).filter(([key])=>!still.includes(key)));
+  const config=validateCloudConfig(without);
+  assert.equal(config.speechProvider,null); assert.equal(config.streaming,true); assert.ok(config.movingSpeech);
+  const web=childSpecifications(config,without).web.env;
+  for(const key of still)assert.equal(web[key],undefined);
+  assert.equal(web.CROUPIER_MOVING_SPEECH_ENABLED,'1');
+  assert.deepEqual(validateCloudConfig(base()).speechProvider,{cartesiaKey:'fixture-cartesia',runpodKey:'fixture-legacy-runpod',runpodEndpointId:'legacy-endpoint'});
+  for(const key of still){
+    assert.throws(()=>validateCloudConfig({...without,[key]:base()[key]}),/CARTESIA_API_KEY\/RUNPOD_API_KEY\/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/,key);
+  }
+  // Non-streamed generated speech has no moving path and still needs the provider.
+  const fullfile={...without,CROUPIER_GENERATED_SPEECH_STREAMING:'0',CROUPIER_DEALER_SPEECH_PROFILES:'0',CROUPIER_MOVING_SPEECH_ENABLED:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'1'};
+  assert.throws(()=>validateCloudConfig(fullfile),/CARTESIA_API_KEY\/RUNPOD_API_KEY\/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/);
+});

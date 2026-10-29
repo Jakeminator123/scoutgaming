@@ -144,7 +144,7 @@ test('one open question per actor and ten seconds between questions', async t =>
 });
 
 // PR 2: speech for the asker. A stubbed moving runtime records what the room hands it.
-function speechPorts({ supports = true, requested = true, prepare, still = null } = {}) {
+function speechPorts({ supports = true, requested = true, prepare, still = null, stillSpeechDisabled } = {}) {
   const calls = { forContext: [], prepare: [], cancelled: [] };
   const descriptor = Object.freeze({ schemaVersion: 1, kind: 'moving-speech-stream', id: 'a'.repeat(32), url: '/moving-speech-stream', ticket: 'body.sig' });
   const movingSpeech = { supports: dealerId => supports && dealerId === 'paow', cancelOwner: owner => calls.cancelled.push(owner),
@@ -154,7 +154,7 @@ function speechPorts({ supports = true, requested = true, prepare, still = null 
         // PR 4: one more listener's own ticket for the same answer.
         ...(options?.room ? { issue: (value, recipient) => { (calls.issued ??= []).push(recipient); return { ...value, ticket: 'ticket-' + calls.issued.length }; } } : {}) };
     } };
-  return { calls, descriptor, speech: () => ({ movingSpeech, speechStream: still, dealerSpeech: { requested: async dealerId => requested && dealerId === 'paow' } }) };
+  return { calls, descriptor, speech: () => ({ movingSpeech, speechStream: still, stillSpeechDisabled, dealerSpeech: { requested: async dealerId => requested && dealerId === 'paow' } }) };
 }
 
 test('acceptsSpeechStream: the moving runtime gets the room context and binding owner; the ticket goes to the asker', async t => {
@@ -177,6 +177,7 @@ test('speech never fails the text: busy, no profile and no lane answer text-only
   const busy = speechPorts({ prepare: () => { throw Object.assign(Error('generated_speech_session_busy'), { code: 'generated_speech_session_busy', statusCode: 429 }); } });
   const cases = [[busy, 'generated_speech_session_busy'], [speechPorts({ requested: false }), 'generated_speech_profile_not_enabled'],
     [speechPorts({ supports: false }), 'moving_speech_dealer_unavailable'],
+    [speechPorts({ supports: false, stillSpeechDisabled: true }), 'generated_speech_still_not_configured'],
     [speechPorts({ prepare: () => { throw Object.assign(Error('https://private.example/?key=secret'), { code: 'provider_private' }); } }), 'moving_speech_unavailable']];
   for (const [ports, reason] of cases) {
     const h = await fixture(t, { speech: ports.speech }), response = await h.post(ask({ acceptsSpeechStream: true }));
