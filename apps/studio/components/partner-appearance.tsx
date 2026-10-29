@@ -11,6 +11,7 @@ import type {PublicOperatorPreview} from '../../../packages/presentation/contrac
 import {PartnerAppearancePreview} from './partner-appearance-preview';
 import {adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
+import {partnerRoomTabs} from '../../../packages/navigation/partner-navigation.mjs';
 import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {displayLabel, loadPreviewMedia, previewChoiceMedia} from './partner-preview-media.mjs';
 import {appearanceBranding, appearanceChangeCount, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
@@ -29,7 +30,11 @@ export type AppearanceHeader = {title: ReactNode; crumbs?: ReactNode; playHref?:
 const LAYERS = ['dealer', 'background', 'table'] as const;
 type Action = 'save-draft'|'review'|'publish'|'restore'|'discard-draft';
 type LayerKey = typeof LAYERS[number];
-type Tab = 'appearance'|'history';
+// Partnerportalens flikar: samma id:n som Admins rumsflikar (partnerRoomTabs), så att Admins förhandsvisning landar rätt.
+type Tab = 'utseende'|'dealer'|'spel'|'tillganglighet'|'historik';
+const TAB_EN: Record<Tab, string> = {utseende:'Appearance', dealer:'Dealer', spel:'Game settings', tillganglighet:'Availability', historik:'History'};
+// Lagren per flik: Utseende är scenen runt dealern, Dealer är dealern själv.
+const TAB_LAYERS: Partial<Record<Tab, readonly LayerKey[]>> = {utseende:['background','table'], dealer:['dealer']};
 const HISTORY_SHOWN = 5;
 const ordered = (value:unknown):unknown => Array.isArray(value) ? value.map(ordered) : value&&typeof value==='object'
   ? Object.fromEntries(Object.entries(value).sort(([left],[right])=>left.localeCompare(right)).map(([key,item])=>[key,ordered(item)])) : value;
@@ -61,7 +66,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   const [problem, setProblem] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<Tab>('appearance');
+  const [tab, setTab] = useState<Tab>('utseende');
   const [reviewOpen, setReviewOpen] = useState(false);
   const [receipt, setReceipt] = useState<number|null>(null);
   const [allHistory, setAllHistory] = useState(false);
@@ -213,7 +218,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       : t('Senaste sparade version är inläst.','Latest saved version loaded.'));
   }
 
-  const preview = <div data-appearance-preview="frozen-composition" className={styles.previewBox}><PartnerAppearancePreview onMedia={setPreviewMedia} compact initiallyEnabled active={visible && (roomLayout || tab === 'appearance')} server={server} branding={branding}
+  const preview = <div data-appearance-preview="frozen-composition" className={styles.previewBox}><PartnerAppearancePreview onMedia={setPreviewMedia} compact initiallyEnabled active={visible && (roomLayout || Boolean(TAB_LAYERS[tab]))} server={server} branding={branding}
     scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setReviewOpen(false);setBlocked(true);setProblem(t('Spelbordets version har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The table version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
   const sceneLayoutLink = roomLayout && adminChoices && lane ? <a className={styles.linkButton} href={'/admin/scenes?'+new URLSearchParams({operator:server.operatorId,table:room?.id??'',composition:lane.id,game:room?.game??'blackjack'})}><ExternalLink size={13} aria-hidden="true"/>{t('Placering i scenmallen','Placement in the scene template')}</a> : null;
 
@@ -222,7 +227,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   const effectiveOf = (key: LayerKey) => selected[key] ?? inherited[key] ?? lane?.layers[key]?.default ?? undefined;
   const lockedText = (key: LayerKey) => key === 'background' && lane?.layers.background.mode === 'baked' ? t('inbakad i dealerfilmen', 'part of the dealer video')
     : key === 'dealer' && !dealerChoices.length ? t('ingen dealer är tilldelad det här spelet', 'no dealer is assigned to this game')
-    : roomLayout && !adminChoices ? t('låst i publicerat paket', 'locked in the published package') : roomLayout ? t('fast i scenmallen', 'fixed by the scene template') : t('bestäms av Scoutgaming', 'set by Scoutgaming');
+    : roomLayout && !adminChoices ? t('låst i publicerat paket', 'locked in the published package') : roomLayout ? t('fast i scenmallen', 'fixed by the scene template') : t('låst av Scoutgaming', 'locked by Scoutgaming');
   const unlocked = LAYERS.filter(key => allowed.has(key));
   const locked = LAYERS.filter(key => !allowed.has(key) && (key !== 'background' || lane?.layers.background.enabled !== false) && (key !== 'table' || lane?.layers.table.enabled !== false));
   const layerChoices = (key: LayerKey) => {
@@ -237,11 +242,27 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
     settingsLines.push([t('Bordsspråk','Table language'), settings.language === 'sv' ? t('Svenska','Swedish') : settings.language === 'en' ? t('Engelska','English') : settings.language]);
     settingsLines.push([t('Insatsprofil','Limit preset'), (PRESET_NAMES[settings.limitPreset] ?? settings.limitPreset) + (preset ? ` · ${amount(preset.min)}–${amount(preset.max)}` : '')]);
   }
-  const quiet = locked.length || settingsLines.length ? <dl className={styles.quiet} data-quiet="" aria-label={t('Bestäms av Scoutgaming','Set by Scoutgaming')}>
-    {locked.map(key => { const value = effectiveOf(key); return <div key={key} data-locked={key}><dt>{labels[key]}</dt><dd><span title={value ? labelOf(value) : undefined}>{value ? labelOf(value) : t('inget valt','none selected')}</span><small>{lockedText(key)}</small></dd></div>; })}
-    {settingsLines.map(([key, value]) => <div key={key}><dt>{key}</dt><dd><span>{value}</span><small>{t('bestäms av Scoutgaming','set by Scoutgaming')}</small></dd></div>)}
-  </dl> : null;
+  // Låsta lager och publicerade inställningar är lugna rader, aldrig val ("Låst av Scoutgaming", Admins ord).
+  const quietList = (keys: readonly LayerKey[], lines: [string, string][]) => {
+    const rows = locked.filter(key => keys.includes(key));
+    return rows.length || lines.length ? <dl className={styles.quiet} data-quiet="" aria-label={t('Låst av Scoutgaming','Locked by Scoutgaming')}>
+      {rows.map(key => { const value = effectiveOf(key); return <div key={key} data-locked={key}><dt>{labels[key]}</dt><dd><span title={value ? labelOf(value) : undefined}>{value ? labelOf(value) : t('inget valt','none selected')}</span><small>{lockedText(key)}</small></dd></div>; })}
+      {lines.map(([key, value]) => <div key={key}><dt>{key}</dt><dd><span>{value}</span><small>{t('låst av Scoutgaming','locked by Scoutgaming')}</small></dd></div>)}
+    </dl> : null;
+  };
+  // Admins rumsläge visar allt i en lista som förut; Partnerportalen delar upp det på flikarna.
+  const quiet = roomLayout ? quietList(LAYERS, settingsLines) : null;
   const resetLink = room && branding.roomOverrides?.[room.id] ? <button type="button" className={styles.linkButton} data-action="reset-room" disabled={!editable || busy} onClick={resetRoom}><RotateCcw size={13} aria-hidden="true"/>{t('Återställ spelbordet till bolagets standard','Reset the table to the company default')}</button> : null;
+  const editorFor = (keys: readonly LayerKey[]) => {
+    const fields = choiceFields.filter(field => keys.includes(field.props.kind));
+    return <fieldset className={styles.editor} disabled={!editable || busy}>
+      <legend className={styles.srOnly}>{t('Spelbordets val','Table choices')}</legend>
+      {keys.includes('background') && lane && !lane.composition ? <p className={styles.hint}>{t('Scenen är en enda film; bakgrund och bordsgrafik ingår i den. Be Scoutgaming om separata lager om ni vill kunna byta dem.','The scene is a single video; background and table graphics are part of it. Ask Scoutgaming for separate layers if you want to change them.')}</p> : null}
+      {fields}
+      {!fields.length ? <p className={styles.hint}>{t('Scoutgaming har inte låst upp något val här för det här spelbordet. Vill ni byta något: Hjälp och kontakt.','Scoutgaming has not unlocked any choice here for this table. To change something: Help and contact.')}</p> : null}
+      {quietList(keys, [])}
+    </fieldset>;
+  };
   const editor = <>
   {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
   <fieldset className={styles.editor} disabled={!editable || busy}>
@@ -273,7 +294,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
     <Dropdown.Portal container={portal ?? undefined}><Dropdown.Content className={styles.menu} align="end" sideOffset={6}>
       <Dropdown.Item className={styles.menuItem} data-action="refresh" disabled={busy} onClick={refresh}><RefreshCw size={14} aria-hidden="true"/>{t('Hämta senaste version','Fetch latest version')}</Dropdown.Item>
       {(server.draft||dirty)&&<Dropdown.Item className={styles.menuItem + ' ' + styles.danger} data-action="discard-draft" disabled={!editable||busy} onClick={()=>command('discard-draft')}><Trash2 size={14} aria-hidden="true"/>{server.draft?t('Kasta bolagets utkast','Discard company draft'):t('Kasta ändringar','Discard changes')}</Dropdown.Item>}
-      <Dropdown.Item className={styles.menuItem} onClick={() => setTab('history')}><History size={14} aria-hidden="true"/>{t('Historik','History')}</Dropdown.Item>
+      <Dropdown.Item className={styles.menuItem} onClick={() => setTab('historik')}><History size={14} aria-hidden="true"/>{t('Historik','History')}</Dropdown.Item>
     </Dropdown.Content></Dropdown.Portal>
   </Dropdown.Root>;
   const actions = <div className={styles.actions}>{header?.playHref ? <a className="sg-btn sg-btn-ghost" href={header.playHref} target="_blank" rel="noopener">{t('Provspela','Play test')}<ExternalLink size={14} aria-hidden="true"/></a> : null}{saveButton}{reviewButton}{more}</div>;
@@ -320,6 +341,19 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   </>;
   const workbench = <div className={styles.workbench}><div className={styles.workChoices}>{editor}</div><aside className={styles.workPreview}>{preview}</aside></div>;
 
+  // Spelinställningar och Tillgänglighet: läsvyer tills partner-API:t kan ändra dem (steg C).
+  const lockedNote = (text: string) => <p className={styles.hint}><strong>{t('Låst av Scoutgaming.','Locked by Scoutgaming.')}</strong> {text}</p>;
+  const gamePanel = <section className={styles.historyBox} data-readonly="spel"><h2>{t('Spelinställningar','Game settings')}</h2>
+    {lockedNote(t('Bordsspråk och insatsprofil sätts av Scoutgaming. Vill ni ändra dem: Hjälp och kontakt.','Table language and limit preset are set by Scoutgaming. To change them: Help and contact.'))}
+    {settingsLines.length ? quietList([], settingsLines) : <p className={styles.hint}>{room ? t('Det finns inga publicerade spelinställningar för spelbordet ännu.','The table has no published game settings yet.') : t('Spelinställningarna gäller per spelbord. Välj ett spelbord i listan.','Game settings apply per table. Choose a table in the list.')}</p>}
+  </section>;
+  const open = roomState === 'live';
+  const availabilityPanel = <section className={styles.historyBox} data-readonly="tillganglighet"><h2>{t('Tillgänglighet','Availability')}</h2>
+    {lockedNote(t('Att pausa eller öppna spelbordet begärs från Scoutgaming under Hjälp och kontakt.','Pausing or opening the table is requested from Scoutgaming under Help and contact.'))}
+    {roomState ? <dl className={styles.quiet} aria-label={t('Låst av Scoutgaming','Locked by Scoutgaming')}><div data-availability={open ? 'open' : 'paused'}><dt>{t('Läge','State')}</dt><dd><span>{open ? t('Öppet för spelare','Open to players') : t('Pausat: syns inte i lobbyn','Paused: hidden from the lobby')}</span><small>{t('låst av Scoutgaming','locked by Scoutgaming')}</small></dd></div></dl>
+      : <p className={styles.hint}>{t('Tillgängligheten gäller per spelbord. Välj ett spelbord i listan.','Availability applies per table. Choose a table in the list.')}</p>}
+  </section>;
+
   if (!roomLayout) {
     // Partnerportalen: one heading row, the scene beside the choices, history in its own tab.
     // Both panels stay mounted (hidden) so the draft, review and history survive a tab switch.
@@ -336,11 +370,20 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       {alerts}
       <Tabs.Root value={tab} onValueChange={value => setTab(value as Tab)} activationMode="manual">
         <Tabs.List className={styles.tabs} aria-label={t('Spelbordets inställningar','Table settings')}>
-          <Tabs.Trigger value="appearance">{t('Utseende','Appearance')}</Tabs.Trigger>
-          <Tabs.Trigger value="history">{t('Historik','History')}</Tabs.Trigger>
+          {partnerRoomTabs.map(item => <Tabs.Trigger key={item.id} value={item.id}>{en ? TAB_EN[item.id as Tab] : item.label}</Tabs.Trigger>)}
         </Tabs.List>
-        <Tabs.Content forceMount value="appearance" hidden={tab !== 'appearance'} className={styles.tabPanel}>{workbench}</Tabs.Content>
-        <Tabs.Content forceMount value="history" hidden={tab !== 'history'} className={styles.tabPanel}>
+        {/* Utseende och Dealer delar scenen till höger; valen byts med fliken. */}
+        <div className={styles.tabPanel} hidden={!TAB_LAYERS[tab]}>
+          <div className={styles.workbench}><div className={styles.workChoices}>
+            {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} data-field="scope" value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
+            <Tabs.Content forceMount value="utseende" hidden={tab !== 'utseende'}>{editorFor(TAB_LAYERS.utseende!)}</Tabs.Content>
+            <Tabs.Content forceMount value="dealer" hidden={tab !== 'dealer'}>{editorFor(TAB_LAYERS.dealer!)}</Tabs.Content>
+            {resetLink}
+          </div><aside className={styles.workPreview}>{preview}</aside></div>
+        </div>
+        <Tabs.Content forceMount value="spel" hidden={tab !== 'spel'} className={styles.tabPanel}>{gamePanel}</Tabs.Content>
+        <Tabs.Content forceMount value="tillganglighet" hidden={tab !== 'tillganglighet'} className={styles.tabPanel}>{availabilityPanel}</Tabs.Content>
+        <Tabs.Content forceMount value="historik" hidden={tab !== 'historik'} className={styles.tabPanel}>
           <section className={styles.historyBox}><h2>{t('Publicerade versioner','Published versions')}</h2>{historyList}</section>
           {history}
         </Tabs.Content>

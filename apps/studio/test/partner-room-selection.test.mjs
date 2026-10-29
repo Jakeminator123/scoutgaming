@@ -25,6 +25,16 @@ test('room deep links resolve exact registered ownership and active status witho
   for(const room of ['foreign-room','paused-room','archived-room','missing','', '../main-room',['main-room','vip-room']])
     assert.deepEqual(initialPartnerRoomSelection(snapshot,room),{roomId:'',unavailable:true});
 });
+// Spelbordets Historik läser publiceringarna (GET /journal?kind=publications) med reports.read,
+// inte med team.roles.assign: läsaren får historiken, en roll utan reports.read får den inte.
+test('the table history reads the publications with reports.read, not team.roles.assign',()=>{
+  const seen=[];const loader=require('../components/partner-appearance-loader.mjs');
+  const {PartnerRoomWorkspace:Rooms}=jsxRequire(import.meta.url,{'../../partner-appearance-loader.mjs':{...loader,PartnerAppearanceLoader:props=>{seen.push(props);return null;}}})('../components/partner/views/rooms.jsx');
+  const history=permissions=>{seen.length=0;renderToStaticMarkup(React.createElement(Rooms,{snapshot:{...snapshot,permissions},copy:partnerCopy('sv'),language:'sv',initialRoomId:'main-room',apiBase:'/studio/api/partner/snapshot'}));return seen.at(-1).history;};
+  const journal=history(['overview.read','tables.read','reports.read']);
+  assert.equal(journal.props.kind,'publications');assert.equal(journal.props.operatorId,'north');assert.equal(journal.props.base,'/studio/api/partner');
+  assert.equal(history(['overview.read','tables.read','team.read','team.roles.assign']),null);
+});
 test('unavailable room links render no default preview or appearance controls',()=>{
   for(const initialRoomId of ['foreign-room','missing',['main-room','vip-room']]){
     const html=renderToStaticMarkup(React.createElement(PartnerRoomWorkspace,{snapshot,copy:partnerCopy('sv'),language:'sv',initialRoomId,apiBase:'/studio/api/partner/snapshot'}));
