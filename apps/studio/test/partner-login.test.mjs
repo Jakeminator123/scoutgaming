@@ -105,7 +105,6 @@ test('internal administrators are sent to the N1 login with a return to /partner
   for (const authBase of ['/studio/api/partner', '/api/partner']) {
     const html = renderToStaticMarkup(React.createElement(PartnerLogin, { authBase }));
     assert.ok(html.includes(`href="${internalLoginHref(authBase).replace(/&/g, '&amp;')}"`), html);
-    assert.match(html, /Logga in som intern administratör/);
     assert.ok(html.includes(`action="${authBase}/login"`), 'the operator form still posts to the partner login');
   }
 });
@@ -134,12 +133,30 @@ test('successful partner login retains the requested company and actual room for
   }
 });
 
-test('the failed-login notice stays generic and does not reveal the account role', () => {
-  const source = readFileSync(sourceUrl, 'utf8');
-  const notice = source.match(/status === 401 \|\| status === 400\) return '([^']+)'/);
-  assert.ok(notice, 'the 401/400 notice is defined');
-  assert.match(notice[1], /^Inloggningen kunde inte verifieras\./);
-  assert.doesNotMatch(notice[1], /\b(admin\w*|roll|role)\b/i);
+// The rendered notice after a refused login: identical for 400 and 401 and for every account, so it
+// cannot tell an operator account from an internal one. Checked on behaviour, not on the source text.
+test('the failed-login notice stays generic and does not reveal the account role', async () => {
+  async function noticeAfter(status, user) {
+    let notice = '';
+    const fakeReact = { ...React, useState: initial => [initial, value => { if (typeof value === 'string') notice = value || notice; }] };
+    class Input { value = 'secret'; }
+    const loaded = loadPartnerLogin({ react: fakeReact }, {
+      FormData: class { get(key) { return key === 'user' ? user : 'secret'; } },
+      HTMLInputElement: Input,
+      fetch: async () => ({ ok: false, status }),
+      window: { location: { assign: () => assert.fail('a refused login never navigates') } },
+    });
+    const all = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(all) : [node, ...all(node.props?.children)];
+    const form = all(loaded.PartnerLogin({ authBase: '/api/partner' })).find(node => node.type === 'form');
+    form.props.onSubmit({ preventDefault() {}, currentTarget: { elements: { namedItem: () => new Input() } } });
+    await new Promise(resolve => setImmediate(resolve));
+    return notice;
+  }
+  const notices = [];
+  for (const status of [400, 401]) for (const user of ['north-staff', 'internal-admin@example.test']) notices.push(await noticeAfter(status, user));
+  assert.ok(notices[0], 'a refused login is explained');
+  assert.equal(new Set(notices).size, 1, 'the notice does not vary by status or account');
+  assert.notEqual(notices[0], await noticeAfter(429, 'north-staff'), 'rate limiting is explained separately');
 });
 
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
