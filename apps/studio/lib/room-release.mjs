@@ -96,6 +96,35 @@ export function lostDraftChoices({live, draft, candidate}) {
   return lost;
 }
 
+/**
+ * Live och utkastet så som Utseendes granskning ska se dem mot kandidaten. Utkastet är hela ytan
+ * och bär därför live-val det inte ändrar; ett sådant val som kandidatens presentation tar bort
+ * (samma fall som lostDraftChoices släpper igenom) får kandidatens värde i både live och utkastet.
+ * Granskningen prövar då bara det utkastet ändrar, och ett ändrat val som inte ryms stoppas som förut.
+ * @returns {{live:object, draft:object}} publika valbara ytor
+ */
+export function draftReviewSurfaces({live, draft, candidate}) {
+  const base = structuredClone(publicEditableBranding(live)), wanted = structuredClone(publicEditableBranding(withEditableBranding(live, draft)));
+  const next = publicEditableBranding(candidate);
+  const same = (a, b) => canonicalStudioJson(a ?? null) === canonicalStudioJson(b ?? null);
+  const settle = (from, to, value) => {
+    if (value === undefined) { delete from.object[from.key]; delete to.object[to.key]; }
+    else { from.object[from.key] = structuredClone(value); to.object[to.key] = structuredClone(value); }
+  };
+  for (const key of PARTNER_BRANDING_FIELDS) if (same(base[key], wanted[key]) && !same(wanted[key], next[key]))
+    settle({object:base, key}, {object:wanted, key}, next[key]);
+  for (const roomId of Object.keys(wanted.roomOverrides ?? {})) for (const key of PARTNER_ROOM_BRANDING_FIELDS) {
+    const was = base.roomOverrides?.[roomId], now = wanted.roomOverrides[roomId];
+    if (!was || !same(was[key], now[key]) || same(now[key], next.roomOverrides?.[roomId]?.[key])) continue;
+    settle({object:was, key}, {object:now, key}, next.roomOverrides?.[roomId]?.[key]);
+  }
+  for (const surface of [base, wanted]) {
+    for (const [roomId, value] of Object.entries(surface.roomOverrides ?? {})) if (!Object.keys(value).length) delete surface.roomOverrides[roomId];
+    if (surface.roomOverrides && !Object.keys(surface.roomOverrides).length) delete surface.roomOverrides;
+  }
+  return {live:base, draft:wanted};
+}
+
 /** Den publika felkroppen för rummets publicering, eller null för andra fel. */
 export function roomReleaseErrorBody(error, status) {
   if (!(error instanceof StudioStorageError) || error.statusCode !== status) return null;
@@ -249,8 +278,12 @@ export function createRoomRelease({pool, scope, repository, videoRegistry, store
   // kandidatens presentation: samma val, rättigheter, dealerval och bordskontroller som
   // "Granska publicering", utan skrivning. Ett utkast som inte passar är 422 med fast skäl.
   async function reviewDraft({state, built, actor}) {
-    const {operators, current, rawBrandingDraft} = state;
-    const view = {...current, branding:withEditableBranding(built.candidate.branding, current.branding)};
+    const {operators, current} = state;
+    // Bara det utkastet ändrar granskas: live-val som kandidaten tappar och utkastet inte rör
+    // rensas ur både live och utkastet (draftReviewSurfaces), precis som publiceringen utan utkast.
+    const surfaces = draftReviewSurfaces({live:current.branding, draft:state.brandingDraft.branding, candidate:built.candidate.branding});
+    const rawBrandingDraft = {...state.rawBrandingDraft, branding:surfaces.draft};
+    const view = {...current, branding:withEditableBranding(built.candidate.branding, surfaces.live)};
     const document = structuredClone(state.snapshot.administrationDocument);
     const readAdministration = async () => document;
     const source = {...operators, getCurrentPackage:async id => id === current.operatorId ? view : null, getBrandingDraft:async () => rawBrandingDraft};

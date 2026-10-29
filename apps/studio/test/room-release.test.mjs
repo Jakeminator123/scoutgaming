@@ -14,6 +14,7 @@ import {createOperatorStore} from '../../../packages/operators/server/operator-s
 import {runtimeCatalogJson,runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {PRESENTATION_CAPABILITY_VERSION_HEADER,presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
+import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {createOperatorPackageApi} from '../lib/operator-package-api.mjs';
@@ -23,7 +24,7 @@ import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {isPresentationRoomReadQuery} from '../lib/studio-admin-contract.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {isDraftValidationFailure,lostDraftChoices} from '../lib/room-release.mjs';
+import {draftReviewSurfaces,isDraftValidationFailure,lostDraftChoices} from '../lib/room-release.mjs';
 import {withNativeFilmedPlanningReadiness} from '../../../packages/presentation/server/native-filmed-readiness-context.mjs';
 
 // Utan konto-id: en betrodd adapter utan rätt att publicera utseende (som före andra versionen).
@@ -518,6 +519,48 @@ test('room release with the company appearance draft in the same transaction',as
   });
 });
 
+test('a live choice the new template removes does not stop a draft that leaves it unchanged; a changed choice it lacks does',async t=>{
+  const f=await releaseFixture(t);
+  // Bordsgrafikens id är materialets uuid.
+  const green='00000000-0000-4000-8000-00000000a001',blue='00000000-0000-4000-8000-00000000a002';
+  const asset=id=>{const row={schemaVersion:1,id,role:'table',label:id.slice(-4),contentType:'image/png',sha256:'a'.repeat(64),size:32,width:1920,height:1080};
+    return {...row,pathname:layerAssetPath(row)};};
+  const tables=async allowed=>{const doc=await f.raw.readDocument('project');
+    await f.raw.saveDocument('project',{value:{...doc.value,layerAssets:[...(doc.value.layerAssets??[]).filter(row=>![green,blue].includes(row.id)),asset(green),asset(blue)],lanes:doc.value.lanes.map((lane,index)=>index?lane
+      :{...lane,layers:{...lane.layers,table:{...lane.layers.table,allowed}}})},expectedRevision:doc.revision,actor:'fixture'});};
+  // Live: mallen har bordsgrafiken green och bolaget har valt den.
+  await tables([green,blue]);
+  await f.post({operatorId:'north',lanes:[f.lane]});
+  const first=await f.direct.getCurrentPackage('north');
+  await f.direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:first.revision,lanes:first.lanes,games:first.games,
+    tables:first.tables,branding:{...first.branding,table:green}});
+  await f.saveDraft('north-a',{language:'sv',limitPreset:'prive'});
+  // Den nya mallen tar bort green.
+  await tables([blue]);
+  const live=await f.direct.getCurrentPackage('north');
+  assert.equal(live.branding.table,green);
+  // Utkastet är hela ytan: det bär live-valet green och ändrar bara dealern.
+  await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:live.revision,
+    branding:{table:green,dealer:'dragan'}});
+  const view=await f.read('north-a','north',{actor:designer});
+  assert.equal(view.ready,true,JSON.stringify(view.blockers));assert.deepEqual(view.appearanceDraft,{revision:1,included:true});
+  const appearance=view.changes.find(row=>row.area==='appearance');
+  assert.deepEqual(appearance.changes.filter(row=>row.roomId===null),[{roomId:null,key:'dealer',before:null,after:'dragan'}],'only the changed choice is reviewed');
+  const receipt=await f.post(f.bodyOf(view),{actor:designer}),after=await f.direct.getCurrentPackage('north');
+  assert.equal(receipt.appearanceDraftRevision,1);assert.equal(after.revision,live.revision+1);
+  // Samma utfall som publiceringen utan utkast: mallen tappar green, dealern är utkastets.
+  assert.equal(after.branding.dealer,'dragan');assert.equal(Object.hasOwn(after.branding,'table'),false);
+  // Motprov: utkastet ändrar bordsgrafiken till green, som mallen inte har. Det stoppas och skriver inget.
+  const published=await f.direct.getBrandingDraft('north');
+  await f.direct.saveBrandingDraft({actor:'partner-1',operatorId:'north',expectedDraftRevision:published.revision,expectedPackageRevision:after.revision,
+    branding:{table:green,dealer:'dragan'}});
+  const misfit=await f.read('north-a','north',{actor:designer}),untouched=await f.persisted();
+  assert.equal(misfit.ready,false);
+  assert.deepEqual(misfit.blockers,[{area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}]);
+  await assert.rejects(f.post(f.bodyOf(misfit),{actor:designer}),code('studio_release_invalid',422,{reason:'studio_room_choices_draft_invalid'}));
+  assert.deepEqual(await f.persisted(),untouched);
+});
+
 test('only the choices the appearance draft changes are compared, and only validation failures become draft_invalid',()=>{
   const live={table:'green',dealer:'dragan',roomOverrides:{'r-a':{table:'blue'}}};
   // Kandidatens presentation tappar live-val som utkastet inte rör: inget hinder, som utan utkast.
@@ -526,6 +569,12 @@ test('only the choices the appearance draft changes are compared, and only valid
   // Utkastets egna val som försvinner är hinder, både bolagets och spelbordens.
   assert.deepEqual(lostDraftChoices({live,draft:{table:'green',dealer:'paow'},candidate:{table:'green'}}),['dealer']);
   assert.deepEqual(lostDraftChoices({live,draft:{...live,roomOverrides:{'r-a':{table:'blue'},'r-b':{dealer:'paow'}}},candidate:live}),['roomOverrides.r-b.dealer']);
+  // Granskningen ser live och utkastet utan de live-val kandidaten tappar och utkastet inte rör; ändrade val står kvar.
+  assert.deepEqual(draftReviewSurfaces({live,draft:{table:'green',dealer:'paow',roomOverrides:{'r-a':{table:'blue'}}},candidate:{dealer:'paow'}}),
+    {live:{dealer:'dragan'},draft:{dealer:'paow'}});
+  assert.deepEqual(draftReviewSurfaces({live,draft:{table:'red',dealer:'dragan',roomOverrides:{'r-a':{table:'blue'}}},candidate:{dealer:'dragan'}}),
+    {live:{table:'green',dealer:'dragan'},draft:{table:'red',dealer:'dragan'}});
+  assert.deepEqual(draftReviewSurfaces({live,draft:structuredClone(live),candidate:live}),{live,draft:live});
   for(const status of [400,409,413,422])assert.equal(isDraftValidationFailure(new StudioStorageError('partner_branding_rejected',status)),true,String(status));
   for(const status of [403,404,503])assert.equal(isDraftValidationFailure(new StudioStorageError('partner_branding_rejected',status)),false,String(status));
   assert.equal(isDraftValidationFailure(new StudioStorageError('studio_conflict',409)),false);
