@@ -35,9 +35,9 @@ function fixtureState(){
     rooms:[{id:'room-main',label:'Main',presentationLaneId:lane.id,game:'blackjack'},{id:'room-vip',label:'VIP',presentationLaneId:lane.id,game:'blackjack'}]};
   const operator={id:'north',slug:'north',name:'North',packageRevision:'7'};
   const table=(id,name)=>({id,name,operatorId:'north',game:'blackjack',state:'live',status:'active',presentationId:lane.id,dealer:{id:'astrid',label:'Astrid'},configVersion:null,settings:{language:'sv',limitPreset:'casual'},playUrl:'/game?game=blackjack&operator=north&table='+id});
-  const snapshot={schemaVersion:2,preview:false,mode:'live',accessClass:'partner',viewer:{user:'north-admin',accessClass:'partner'},operator,operators:[operator],
+  const snapshot={schemaVersion:2,preview:false,accessClass:'partner',viewer:{user:'north-admin',accessClass:'partner'},operator,operators:[operator],
     role:{id:'partner-admin',label:'administratör'},permissions:[...PARTNER_PERMISSIONS],view:'rooms',packageRevision:'7',generatedAt:'2026-10-28T12:00:00Z',
-    presentations:[],tables:[table('room-main','Main'),table('room-vip','VIP')],team:[],invitations:0,draft:null,publications:[],summary:{activeTables:2}};
+    tables:[table('room-main','Main'),table('room-vip','VIP')],team:[],invitations:0,draft:null,publications:[]};
   return {initial,snapshot};
 }
 

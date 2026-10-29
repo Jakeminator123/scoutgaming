@@ -11,7 +11,7 @@ import {jsxRequire} from './fixtures/jsx-require.mjs';
 const require=createRequire(import.meta.url);
 const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../components/partner/views/rooms.jsx');
 const operator={id:'north',slug:'north-casino',name:'North'};
-const snapshot={operator,presentations:[],tables:[
+const snapshot={operator,tables:[
   {id:'main-room',name:'Main',operatorId:'north',status:'active'},
   {id:'vip-room',name:'VIP',operatorId:'north',status:'active'},
   {id:'paused-room',name:'Paused',operatorId:'north',status:'paused'},
@@ -73,7 +73,7 @@ function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-cas
   const nested=jsxRequire(sourceUrl,stubs),module={exports:{}};
   require('node:vm').runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,structuredClone,window,Intl,
     require:name=>name.endsWith('.css')?{}:Object.hasOwn(stubs,name)?stubs[name]:nested(name)});
-  const initialSnapshot={...snapshot,tables:snapshot.tables.filter(room=>room.operatorId===operator.id),preview:false,accessClass,operators:[operator,{id:'south',slug:'south-casino',name:'South'}],team:[],presentations:[],permissions:[...PARTNER_PERMISSIONS],role:{id:'partner-admin',label:'administratör'}};
+  const initialSnapshot={...snapshot,tables:snapshot.tables.filter(room=>room.operatorId===operator.id),preview:false,accessClass,operators:[operator,{id:'south',slug:'south-casino',name:'South'}],team:[],permissions:[...PARTNER_PERMISSIONS],role:{id:'partner-admin',label:'administratör'}};
   const props={surface:'partner',initialSnapshot,initialRoomId,initialRoomScope,initialView:'rooms',apiBase:'/studio/api/partner/snapshot',user:'test'};
   const Session=module.exports.PartnerOperatorWorkspace(props).type;
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...React.Children.toArray(tree.props?.children).flatMap(walk)];

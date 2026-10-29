@@ -15,7 +15,7 @@ const { TeamView } = jsxRequire(import.meta.url)('../components/partner/views/te
 
 const operator = { id: 'north', name: 'North', slug: 'north' };
 const snapshot = {
-  schemaVersion: 1, preview: false, mode: 'live', operator, operators: [operator],
+  schemaVersion: 1, preview: false, operator, operators: [operator],
   roles: [], team: [{ id: '42', operatorId: 'north', name: 'north-admin', email: '', roleId: 'partner-admin', role: 'partner-admin', status: 'active' }],
 };
 const roles = [

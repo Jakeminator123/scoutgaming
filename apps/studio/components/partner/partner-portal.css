@@ -1,6 +1,6 @@
-/* Partnerportalen: skalet och primitiverna, efter den godkända skissen
-   (ny-admin-skiss/app/globals.css). Allt är fäst under .partner-portal och
-   ändrar inga globala Studio-stilar. Mörk sidomeny, lime för aktivt val.
+/* Partnerportalen: skalet och primitiverna, efter den godkända skissen.
+   Allt är fäst under .partner-portal och ändrar inga globala Studio-stilar.
+   Mörk sidomeny, lime för aktivt val.
    Färgerna kommer från packages/ui/tokens.css (--sg-*): mörkt som standard,
    ljust med klassen light på <html>, samma val som i Admin. Radix-portaler,
    paletten (cmdk) och toasts (sonner) monteras i samma rot och får samma tokens. */
@@ -229,8 +229,8 @@ isolation:isolate;min-height:100vh;background:var(--bg);color:var(--text);font:4
 .partner-portal .skeleton.block.tall{height:320px}
 .partner-portal .skeleton-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,46%);gap:18px}
 .partner-portal .appearance-state{display:grid;gap:16px}
-.partner-portal .kevin-appearance{min-width:0}
-.partner-portal .kevin-appearance-state{color:var(--muted);font-size:13px}
+.partner-portal .partner-appearance-panel{min-width:0}
+.partner-portal .partner-appearance-panel-state{color:var(--muted);font-size:13px}
 
 /* Spelbordslistan: kort med scenens bild överst */
 .partner-portal .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}

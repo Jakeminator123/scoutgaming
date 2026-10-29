@@ -18,7 +18,6 @@ import { TeamView } from './views/team.jsx';
 import { Btn, Card, Chip, PortalRoot, count } from './views/ui.jsx';
 import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { partnerView, resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
-import { partnerPackageProfiles } from '../../lib/partner-package-view.mjs';
 import { partnerTeamView } from '../partner-team-loader.mjs';
 import { partnerNavigation, usePartnerPreferences } from './partner-copy.mjs';
 import { partnerPermissionWord } from '../../lib/partner-words.mjs';
@@ -175,7 +174,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
             const previous=Number(current.packageRevision??current.operator.packageRevision);
             if(Number.isSafeInteger(previous)&&saved.packageRevision<=previous)return current;
             return {...current,packageRevision:String(saved.packageRevision),operator:{...current.operator,packageRevision:String(saved.packageRevision)},draft:null,
-              branding:saved.branding,presentation:saved.presentation,presentations:partnerPackageProfiles(saved.presentation,saved.branding,current.operator.id)};
+              branding:saved.branding,presentation:saved.presentation};
           })}/></ViewBoundary>}
       </main>
     </div>
