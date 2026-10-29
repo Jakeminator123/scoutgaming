@@ -52,6 +52,9 @@ const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('h
 // The room's idle mode active/shadow: a committed turn or settlement asks OpenClaw
 // for one idle reaction (no chat needed). Shadow only records the would-be choice.
 // Advice is optional: a refusal, rate limit or provider error answers null.
+// One answer per room and event: the request id, source and cache scope name the
+// room's event, never the player, so every player's request shares one Director
+// call. The source time is the event's publication, so the 30 s limit holds.
 const logAdvice=entry=>console.info(JSON.stringify(entry));
 async function gameEventAdvice({adviseIdle,frozen,project,capture,body,sourceEvent,requestId,mode,directorFetchFactory,request,playerId,signal,log}){
   const reaction=idleGameEvent(sourceEvent);
@@ -60,11 +63,12 @@ async function gameEventAdvice({adviseIdle,frozen,project,capture,body,sourceEve
     const fetchImpl=directorFetchFactory?await directorFetchFactory({req:request,playerId,project,readProject:async()=>project,signal}):null;
     if(fetchImpl!==null&&typeof fetchImpl!=='function')return null;
     signal.throwIfAborted();
+    if(!Number.isFinite(capture.publishedAt))return null;
     const key=[capture.roomId,capture.talkId,capture.version,sourceEvent.type,sourceEvent.box??null,sourceEvent.handIndex??null];
-    const result=await adviseIdle({requestId,project,dealerId:body.dealerId,mode,
+    const result=await adviseIdle({requestId:'game:'+digest([key,body.dealerId,mode]).slice(0,40),project,dealerId:body.dealerId,mode,
       sourceRef:{kind:'game-event',channel:'room:'+digest(capture.roomId).slice(0,32),revision:capture.version,
-        messageId:'event:'+digest(key).slice(0,40),at:new Date().toISOString(),event:reaction},gameEvent:sourceEvent},
-      {signal,committedEvent:true,videoRegistry:frozen.idleInventory,cacheScope:digest([playerId,body.presentationContext,fetchImpl?.cacheScope??null]),...(fetchImpl?{fetchImpl}:{})});
+        messageId:'event:'+digest(key).slice(0,40),at:new Date(capture.publishedAt).toISOString(),event:reaction},gameEvent:sourceEvent},
+      {signal,committedEvent:true,videoRegistry:frozen.idleInventory,cacheScope:digest([body.presentationContext,fetchImpl?.cacheScope??null]),...(fetchImpl?{fetchImpl}:{})});
     const own=id=>typeof id==='string'&&frozen.idleInventory.videos.some(row=>row.id===id&&row.role==='variant')?id:null;
     const advice={requestId,mode,event:reaction,videoId:mode==='active'?own(result?.videoId):null,wouldChooseId:own(result?.wouldChooseId),
       provider:typeof result?.provider==='string'?result.provider:'idle_advice_unavailable_baseline',expiresAt:result?.expiresAt??null,

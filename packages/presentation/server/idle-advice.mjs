@@ -26,8 +26,9 @@ export function idleGameEvent(event) {
   const money = event.hands.every(hand => Number.isFinite(hand?.stake) && Number.isFinite(hand?.returned));
   const staked = money ? event.hands.reduce((sum, hand) => sum + hand.stake, 0) : 0;
   const net = money ? event.hands.reduce((sum, hand) => sum + hand.returned - hand.stake, 0) : 0;
-  // Big: the round at least doubled the whole stake; anything less is small.
-  if (outcomes.includes('win')) return money && staked > 0 && net >= staked ? 'win-big' : 'win-small';
+  // returned includes the stake. Big: the round paid at least 3:2 on the whole stake
+  // (a blackjack's odds); an even-money win (10 staked, 20 back) is small.
+  if (outcomes.includes('win')) return money && staked > 0 && net * 2 >= staked * 3 ? 'win-big' : 'win-small';
   return outcomes.every(outcome => outcome === 'push') ? 'push' : 'lose';
 }
 

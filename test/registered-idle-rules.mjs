@@ -198,7 +198,11 @@ test('a committed turn or settlement is named for its idle reaction; stakes size
   assert.equal(idleGameEvent({ type: 'turn', box: 3, handIndex: 0, legalActions: ['stand'] }), 'turn');
   assert.equal(idleGameEvent(settle([hand('blackjack'), hand('lose')])), 'blackjack');
   assert.equal(idleGameEvent(settle([hand('win')], 24)), 'dealer-bust');
-  assert.equal(idleGameEvent(settle([hand('win'), hand('win', 20, 40)])), 'win-big');
+  // returned includes the stake: even money is small, 3:2 or better on the whole stake is big.
+  assert.equal(idleGameEvent(settle([hand('win', 10, 20)])), 'win-small');
+  assert.equal(idleGameEvent(settle([hand('win', 10, 25)])), 'win-big');
+  assert.equal(idleGameEvent(settle([hand('win'), hand('win', 20, 40)])), 'win-small');
+  assert.equal(idleGameEvent(settle([hand('win', 10, 60), hand('lose')])), 'win-big');
   assert.equal(idleGameEvent(settle([hand('win'), hand('lose')])), 'win-small');
   assert.equal(idleGameEvent(settle([hand('push'), hand('push')])), 'push');
   assert.equal(idleGameEvent(settle([hand('lose'), hand('push')])), 'lose');
@@ -206,7 +210,7 @@ test('a committed turn or settlement is named for its idle reaction; stakes size
 });
 
 test('OpenClaw answers a game event without chat: active returns the clip, shadow only the would-be choice', async () => {
-  const event = settle([hand('win'), hand('win', 20, 40)]);
+  const event = settle([hand('win', 10, 25), hand('win', 20, 50)]);
   for (const mode of ['active', 'shadow']) {
     const f = adviceFixture(), result = await f.advise(gameBody(f, event, { mode }));
     assert.equal(result.provider, 'responded');
@@ -240,18 +244,18 @@ test('a game event must be a committed turn or settlement whose name matches; no
   assert.equal(f.asked.length, 0);
 });
 
-function sharedRoomFixture(idleMode, adviseIdle) {
+function sharedRoomFixture(idleMode, adviseIdle, { publishedAt = Date.now() } = {}) {
   const f = adviceFixture(), context = { operatorSlug: 'north', roomId: 'room-a', packageRevision: 7, dealerId: 'linnea' };
   const frozen = { context, dealer: { id: 'linnea' }, project: f.project, inventory: { videos: structuredClone(f.inventory.videos), families: [] },
     idleInventory: f.idleInventory, projectRevision: 'frozen-7', configurationSource: 'operator-package-v3', lane: { openclaw: { idle: idleMode } } };
   const material = { revision: 'casual-' + 'a'.repeat(16), dealerId: 'linnea', language: 'sv', leadMs: 1000, cardMs: 1000,
     media: f.records.map(row => ({ id: row.id, sha256: row.sha256 })) };
   const logged = [];
-  const run = async sourceEvent => selectSharedRoomPresentation({
-    capture: { sourceEvent, published: [sourceEvent], material, version: 4, roomId: 'room-a', talkId: 'talk-4', language: 'sv', presentationContext: context, packageRevision: 7 },
+  const run = async (sourceEvent, playerId = 'alice') => selectSharedRoomPresentation({
+    capture: { sourceEvent, published: [sourceEvent], material, version: 4, roomId: 'room-a', talkId: 'talk-4', language: 'sv', presentationContext: context, packageRevision: 7, publishedAt },
     body: { dealerId: 'linnea', mode: idleMode, version: 4, event: sourceEvent, presentationContext: context, sharedRoom: { roomId: 'room-a', ver: 4, talkId: 'talk-4' } },
     frozenDealerContext: { resolve: async () => frozen, publicVideo: () => null }, select: async () => assert.fail('no media for a game event'),
-    request: null, playerId: 'alice', signal: new AbortController().signal, adviseIdle: adviseIdle ?? f.service, log: entry => logged.push(entry) });
+    request: null, playerId, signal: new AbortController().signal, adviseIdle: adviseIdle ?? ((body, options) => f.service(body, options)), log: entry => logged.push(entry) });
   return { f, run, logged };
 }
 
@@ -275,4 +279,26 @@ test('the shared table asks OpenClaw at turn and settlement when idle is active 
   // Optional advice: a provider failure leaves the committed event's answer intact.
   const failing = sharedRoomFixture('active', async () => { throw new Error('gateway down'); }), answer = await failing.run(won);
   assert.equal(Object.hasOwn(answer, 'idleAdvice'), false);assert.deepEqual(answer.decision.sourceEvent, won);
+});
+
+test('one Director call per room and event: four players at the table share its answer', async () => {
+  const won = settle([hand('win', 10, 25)]), s = sharedRoomFixture('active');
+  const answers = await Promise.all(['alice', 'bob', 'cleo', 'dana'].map(player => s.run(won, player)));
+  assert.equal(s.f.asked.length, 1, 'the players share one Director call');
+  for (const answer of answers) {
+    assert.equal(answer.idleAdvice.videoId, uuid(2));assert.equal(answer.idleAdvice.provider, 'responded');
+    assert.equal(answer.idleAdvice.requestId, answer.decision.requestId, 'each player binds the answer to its own request');
+  }
+  assert.equal(new Set(answers.map(answer => answer.decision.requestId)).size, 4);
+});
+
+test('the 30 s limit counts from the event\'s publication, not from the request', async () => {
+  const won = settle([hand('win', 10, 25)]);
+  const old = sharedRoomFixture('active', undefined, { publishedAt: Date.now() - 31000 }), answer = await old.run(won);
+  assert.equal(Object.hasOwn(answer, 'idleAdvice'), false);assert.equal(old.f.asked.length, 0, 'an old event never reaches the Director');
+  const unknown = sharedRoomFixture('active', undefined, { publishedAt: null });
+  assert.equal(Object.hasOwn(await unknown.run(won), 'idleAdvice'), false, 'no publication time, no advice');
+  assert.equal(unknown.f.asked.length, 0);
+  const fresh = sharedRoomFixture('active', undefined, { publishedAt: Date.now() - 1000 });
+  assert.equal((await fresh.run(won)).idleAdvice.videoId, uuid(2));
 });

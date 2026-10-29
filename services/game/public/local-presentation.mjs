@@ -237,7 +237,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
   const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
-  const behaviourUse = value => value === 'rules' ? 'rules' : !preview && ['active','shadow'].includes(value) ? 'openclaw' : null;
+  // OpenClaw's reaction to a game event is answered only for a shared table (idleConfigRead=false);
+  // a single-player table in active/shadow sends no request.
+  const behaviourUse = value => value === 'rules' ? 'rules' : !preview && !idleConfigRead && ['active','shadow'].includes(value) ? 'openclaw' : null;
   async function observeEvents(events, {command,previousVersion,signal} = {}) {
     if(signal?.aborted)return;
     // Successful collection completes the same settled round. Carry only its

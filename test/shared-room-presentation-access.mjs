@@ -18,7 +18,7 @@ const body = () => ({ dealerId: 'astrid', mode: 'off', version: 7, event: { ...c
   presentationContext: clone(context), sharedRoom: { roomId, ver: 7, talkId: 'talk-a' }, shoeTransitions: true });
 const state = () => ({ room: { roomId, presentationVer: 7, configVersion: 'config-a', windowId: 'window-a' },
   presentation: { roomId, ver: 7, talkId: 'talk-a', status: 'ready', kind: 'plan', configVersion: 'config-a', windowId: 'window-a',
-    language: 'en', events: [clone(cardEvent), { type: 'speak', line: 'goodluck' }], lines: [{ index: 1, line: 'goodluck', lineId: 'b'.repeat(32) }] },
+    language: 'en', startAt: 1793270000000, endAt: 1793270003000, events: [clone(cardEvent), { type: 'speak', line: 'goodluck' }], lines: [{ index: 1, line: 'goodluck', lineId: 'b'.repeat(32) }] },
   config: { roomId, operatorId: binding.operatorId, packageRevision: 1, configVersion: 'config-a', language: 'en', leadMs: 700, cardMs: 500,
     material: { revision: 'material-a', dealerId: 'astrid', language: 'en', leadMs: 700, cardMs: 500,
       media: [{ id: 'video-a', sha256: 'a'.repeat(64) }] } } });
@@ -73,7 +73,8 @@ test('two captures authorize before data and select outside G/S/R/P/A; callback 
   const output = await h.helper.withSharedCommittedReceipt(args(), (capture, { signal }) => {
     h.trace.push('select'); assert.equal(h.counters.active, false); assert.equal(h.counters.locked, false); assert.equal(signal.aborted, false);
     assert.deepEqual(Object.keys(capture).sort(), ['configVersion', 'language', 'material', 'operatorId', 'packageRevision', 'presentationContext',
-      'published', 'roomId', 'sourceEvent', 'talkId', 'version'].sort());
+      'published', 'publishedAt', 'roomId', 'sourceEvent', 'talkId', 'version'].sort());
+    assert.equal(capture.publishedAt, 1793270000000, 'the plan\'s publication time bounds advice on its events');
     assert.equal(capture.sourceEvent.card.r, 'K', 'browser supplied A must not replace committed K');
     assert.equal(capture.packageRevision,1,'the active config chooses its original package although authorization observes package 2');
     assert.equal(Object.isFrozen(capture.material.media[0]), true); assert.equal(Object.isFrozen(capture.published), true);
