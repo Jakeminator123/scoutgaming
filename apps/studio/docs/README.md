@@ -274,7 +274,7 @@ Spelbord, bolag och scenmallar som använder dealern, och **Alla kopplingar**
 - **Godkännande**: checklistan (giv, vila, tal, landningar, minst en
   scenmall). Den visar läget; godkännandet sparas inte ännu.
 - Dealerns klipp och arkiv: **Bibliotek** och **Arkiv**, kategorier, **Radera
-  valda**, **Radera alla** och **Ta bort dealern** (se
+  valda** och **Radera alla**. Hela dealern tas bort under Dealers (se
   [Ta bort och återställa](#ta-bort-och-återställa)).
 - **Tekniska detaljer**: dealer-id, lagringsmapp och scenmallar.
 
@@ -491,8 +491,8 @@ ingenting; nekar servern visas orsaken.
   arkivet finns **Återställ** och **Radera permanent**. Permanent radering
   kräver att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter)
   löpt ut och att inget använder det; annars **Behåll i arkivet**.
-- **Dealers**: **Arkivera** i dealerlistan eller **Ta bort dealern** under
-  Inställningar flyttar dealern till **Papperskorg**, stänger av AI-tal och
+- **Dealers**: **Arkivera** i dealerlistan flyttar dealern till
+  **Papperskorg** under Dealers, stänger av AI-tal och
   avpublicerar berörda spelbord; källfiler bevaras. **Återställ** ger dealern
   tillbaka som utkast utan att öppna spelbord. **Radera permanent** kräver
   kryss i **Jag förstår att filerna raderas permanent**. Vid avbrott visas
