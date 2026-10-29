@@ -196,7 +196,7 @@ test('registered Dragan shows the Dragge portrait under the published ID, by exa
   assert.equal(portraitFor(chosen.dealer).id, 'dragge');
   assert.equal(playUrlFor(chosen), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=dragan');
   assert.deepEqual(dealerCards(chosen.availableDealers).map(row => [row.id, row.available]),
-    [['dragan', true], ['astrid', false], ['marten', false], ['anna', false], ['paow', false]], 'no second, locked Dragge card');
+    [['dragan', true], ['marten', false], ['anna', false], ['paow', false]], 'no second, locked Dragge card');
   assert.equal(portraitFor({ id: 'dragan-2', name: 'Dragan' }), undefined);
   assert.equal(portraitFor({ id: 'nora', name: 'Dragge' }), undefined);
   assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'dragge' }).dealer, null);
@@ -222,7 +222,7 @@ test('registered choices come first in publication order, then only the unpublis
   const registered = [{ id: 'new-dealer', name: 'New' }, { id: 'anna', name: 'Anna' }, { id: 'paow', name: 'Paow' }, { id: 'dragge', name: 'Dragge' }, { id: 'dragan', name: 'Dragan' }];
   const cards = dealerCards(registered);
   assert.deepEqual(cards.map(row => [row.id, row.available]), [
-    ...registered.map(row => [row.id, true]), ['astrid', false], ['marten', false],
+    ...registered.map(row => [row.id, true]), ['marten', false],
   ]);
   assert.equal(portraitFor(cards[0]), undefined);
   assert.equal(portraitFor(cards[1]).id, 'anna');

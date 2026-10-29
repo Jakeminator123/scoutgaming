@@ -154,19 +154,9 @@ test('unavailable, archived and different-dealer videos cannot acquire a policy'
     assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{priority:3}),/tillgängligt alternativ/);
   }
 });
-test('Astrid deal percentages retain exact slots and reject totals over 100 or a fifth active variant',()=>{
-  const f=fixture('deal.player.left','box0');
-  let next=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:61});
-  next=applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[2],{frequencyPercent:39});
-  assert.equal(next.mediaPolicy[0].variants.reduce((sum,row)=>sum+row.frequencyPercent,0),100);
-  assert.throws(()=>applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[2],{frequencyPercent:40}),/100/);
-  assert.throws(()=>applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:1.5}));
-  assert.throws(()=>applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[1],{selection:{rules:true,model:false,random:false}}),/frekvenser/);
-  next=f.project;for(const id of ids.slice(1,5))next=applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,id,{frequencyPercent:20});
-  assert.throws(()=>applyStudioVariantPolicy(next,f.inventory,f.dealerId,f.slot,ids[5],{frequencyPercent:10}),/fyra/);
-});
-test('frequency cannot leak into a different dealer or non-deal family',()=>{
-  const f=fixture();assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:10}),/Frekvens finns bara i ett utdelningsfack med frekvensstyrning/);
+test('frequency is no editable policy field, not even in a deal family',()=>{
+  for(const f of [fixture(),fixture('deal.player.left','box0')])
+    assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:10}),/Okända policyfält/);
 });
 test('own idle schema uses supplied measured duration and preserves global policy and other dealer lines',()=>{
   const f=fixture('idle.ready','',false),before=structuredClone(f.project);
@@ -194,18 +184,6 @@ test('idle weights sum to 100 and invalid timing/ownership cannot edit the draft
   assert.throws(()=>applyStudioIdlePolicy(next,f.inventory,f.dealerId,f.slot,{...policy,base:policy.base.map(row=>({...row,weight:20}))}));
   f.inventory.videos[0].available=false;assert.throws(()=>applyStudioIdlePolicy(next,f.inventory,f.dealerId,f.slot,policy),/schemaklipp/);
 });
-test('Astrid idle manifest roles remain fixed and malformed automatic policies are rejected',()=>{
-  const f=fixture('idle.ready','',true);
-  const initial={schemaVersion:1,familyId:f.family.id,base:[{videoId:ids[0],weight:100,durationMs:2000}],variants:[]};
-  let next=applyStudioIdlePolicy(f.project,f.inventory,f.dealerId,f.slot,initial);
-  assert.throws(()=>addStudioIdleClip(next,f.inventory,f.dealerId,f.slot,ids[1],3000,true),/roller/);
-  next=addStudioIdleClip(next,f.inventory,f.dealerId,f.slot,ids[1],3000,false);
-  const policy=next.idlePolicy;
-  for(const patch of [{use:'unknown',automatic:null},{use:'automatic',automatic:{averageEveryMs:5000,jitterMs:5000,cooldownMs:0,maxPerMinute:1}}]){
-    assert.throws(()=>applyStudioIdlePolicy(next,f.inventory,f.dealerId,f.slot,{...policy,variants:[{...policy.variants[0],...patch}]}));
-  }
-  assert.equal(validateProject(next),next);
-});
 test('legacy variant policies edit only the exact bound nonstandard clip',()=>{
   const f=fixture('transition.shoe','to-shoe',false);
   f.project=addVariant(f.project,f.dealerId,f.slot.eventId,'Own alternative');
@@ -217,7 +195,6 @@ test('legacy variant policies edit only the exact bound nonstandard clip',()=>{
   assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,line.baselineVariantId,{priority:3}),/Standard/);
   assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,{...f.slot,situation:'from-shoe'},variant.id,{priority:3}),/Kortplats/);
 });
-
 
 test('usage describes the selected take, never borrowing another bound take or an approximate situation',()=>{
   const f=fixture(),before=structuredClone(f.project);
@@ -273,16 +250,6 @@ test('saved shoe choices explain publication and the standard-only pose sequence
   }
 });
 
-test('usage keeps exact frequency and unavailable alternatives share as standard fallback',()=>{
-  const f=fixture('deal.player.left','box0');
-  let project=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:61});
-  project=applyStudioVariantPolicy(project,f.inventory,f.dealerId,f.slot,ids[2],{frequencyPercent:20});
-  f.inventory.videos[2].available=false;
-  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/^61 %/);
-  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[0]).rules[0],/minst 19 %.*Otillgängliga alternativ/);
-  assert.equal(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[2]).configured,false);
-});
-
 test('idle usage flags non-event predicates as disconnected instead of claiming a working trigger',()=>{
   const f=fixture('idle.ready','',false);
   let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],2000,true);
@@ -295,7 +262,6 @@ test('idle usage flags non-event predicates as disconnected instead of claiming 
   const usage=studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]);
   assert.match(usage.rules.join(' '),/session.count minst 7/);assert.match(usage.rules.join(' '),/inte ansluten/);assert.doesNotMatch(usage.rules.join(' '),/Vilseledande namn/);
 });
-
 
 test('existing policy panel opens the selected take and never silently edits a different alternative',async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
@@ -316,7 +282,6 @@ test('existing policy panel opens the selected take and never silently edits a d
   const exact=render(ids[1],{...own,selectedVariantId:line.variants.at(-1).id});
   assert.ok(exact.includes(`value="${line.variants.at(-1).id}" selected=""`));assert.match(exact,/value="62"/);
 });
-
 
 test('idle rule view lists the four start modes and reads the schedule in plain language',async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');

@@ -46,9 +46,9 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
     try {
       const response = await requestJson<{ reply: string }>('/api/chat', { method: 'POST', signal:active.signal, body: JSON.stringify({ message: text, conversationId: id, dealerId }) });
       if(active.signal.aborted)return;
-      if (typeof response.reply !== 'string' || !response.reply.trim()) throw new Error('OpenClaw returnerade inget läsbart svar.');
+      if (typeof response.reply !== 'string' || !response.reply.trim()) throw new Error('Dialogtestet fick inget läsbart svar.');
       setMessages(current => [...current, { role: 'assistant', text: response.reply }]);
-    } catch (cause) { if(!active.signal.aborted)setError(cause instanceof Error ? cause.message : 'Chatten kunde inte nå OpenClaw.'); }
+    } catch (cause) { if(!active.signal.aborted)setError(cause instanceof Error ? cause.message : 'Dialogtestet kunde inte nå AI-agenterna.'); }
     finally { if(request.current===active){request.current=null;setBusy(false);} }
   }
 
@@ -70,8 +70,8 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
     <aside className={styles.context}>
       <h2>Anslutning</h2><p>{status.reachable===true?'Kontakt verifierad':status.configured?'Konfigurerad, kontakt ännu inte verifierad':'Ingen modell ansluten'}</p>
       {status.message && <details><summary>Anslutningsdetaljer</summary><p>{status.message}</p></details>}
-      <p>Dialogtestet använder serverns svar. Spelarens chatt och spel sker i det publicerade spelrummet.</p>
-      <button type="button" onClick={onPlayerChat}>Öppna spelrum</button>
+      <p>Dialogtestet använder serverns svar. Spelarens chatt och spel sker vid det publicerade spelbordet.</p>
+      <button type="button" onClick={onPlayerChat}>Öppna spelbord</button>
       {standaloneVoicePreviewAvailable && <VoicePreviewPanel available latestReply={messages.findLast(item=>item.role==='assistant')?.text??''}/>}
     </aside>
   </div>;

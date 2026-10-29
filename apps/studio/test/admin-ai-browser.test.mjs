@@ -61,7 +61,7 @@ async function openFixture(browser,start=dialog(),ready=f=>dialogReady(f,'elin')
     assert.equal(url.origin,origin,'all requests are intercepted; unexpected destinations fail');
     if(request.isNavigationRequest()){
       assert.equal(method,'GET');documents.push(url.pathname+url.search);
-      // Öppna spelrum lämnar Dialogtest med ett dokumentbyte; spelrummet (eller spelbordslistan vid
+      // Öppna spelbord lämnar Dialogtest med ett dokumentbyte; spelrummet (eller spelbordslistan vid
       // tvetydiga bord) ligger utanför provet.
       if(/^\/admin\/rooms(?:\/|$)/.test(url.pathname)||(url.pathname==='/admin/companies'&&url.searchParams.get('tab')==='spelbord'))return route.fulfill({contentType:'text/html',body:'<h1>Isolerat spelrum</h1>'});
       assert.ok(appDocument(url.pathname),'unexpected document '+url.pathname);
@@ -104,7 +104,7 @@ async function waitRequest(gate){let timer;try{await Promise.race([gate.seen,new
 const dialogRegion=f=>f.page.getByRole('region',{name:'Dialogtest för vald dealer',exact:true});
 const chatInput=f=>dialogRegion(f).getByRole('textbox',{name:'Meddelande',exact:true});
 const sendButton=f=>dialogRegion(f).getByRole('button',{name:'Skicka',exact:true});
-const roomButton=f=>f.page.getByRole('button',{name:'Öppna spelrum',exact:true});
+const roomButton=f=>f.page.getByRole('button',{name:'Öppna spelbord',exact:true});
 const modelSelect=f=>f.page.getByRole('combobox',{name:/^Modell för croupier-director/});
 const saveModel=f=>f.page.getByRole('button',{name:'Spara modell för croupier-director',exact:true});
 const labels={elin:'Elin',lina:'Lina'};
@@ -125,7 +125,7 @@ const contextOf=href=>{const query=new URL(href,origin).searchParams;return Obje
 const reply=(f,dealer,text)=>dialogRegion(f).getByText('Svar för '+dealer+': '+text,{exact:true});
 async function sendChat(f,text){await chatInput(f).fill(text);await sendButton(f).click();}
 const studioLink=f=>f.page.getByRole('navigation',{name:/^Studio för /}).getByRole('link',{name:'Röst & tal',exact:true});
-const savedNotice=(f,primary)=>f.page.getByRole('status').filter({hasText:'croupier-director: '+primary+' sparad och bekräftad i OpenClaws inställningar.'});
+const savedNotice=(f,primary)=>f.page.getByRole('status').filter({hasText:'croupier-director: '+primary+' sparad och bekräftad i AI-agenternas inställningar.'});
 const roomDocument=f=>f.documents.filter(path=>/^\/admin\/(?:rooms(?:[/?]|$)|companies(?:\?|$))/.test(path));
 
 test('Dialogtest and AI-agenter keep context on links and bookmarks, and an accepted dealer change isolates conversations',{skip},()=>withBrowser(async browser=>{
@@ -144,7 +144,7 @@ test('Dialogtest and AI-agenter keep context on links and bookmarks, and an acce
     const lina=new URL(f.page.url()),modelsBookmark='/admin/ai/models?'+new URLSearchParams([...lina.searchParams].filter(([key])=>!['flik','verktyg'].includes(key)).concat([['dealer','lina']]));
     await f.page.goto(origin+modelsBookmark);await modelsReady(f);assert.deepEqual(contextOf(f.page.url()),contextOf(modelsBookmark));assert.equal(new URL(f.page.url()).searchParams.get('dealer'),'lina');
     await f.page.goBack();await dialogReady(f,'lina');
-    // Öppna spelrum lämnar Dialogtest för det valda spelbordets nav; bolag och spelbord följer med.
+    // Öppna spelbord lämnar Dialogtest för det valda spelbordets nav; bolag och spelbord följer med.
     await roomButton(f).click();await f.page.getByRole('heading',{name:'Isolerat spelrum',exact:true}).waitFor();
     const room=new URL(roomDocument(f).at(-1),origin);assert.equal(room.pathname,'/admin/rooms/room-a');assert.deepEqual(room.searchParams.getAll('operator'),['operator-a']);assert.deepEqual(room.searchParams.getAll('table'),['room-a']);
     assert.equal(f.reads.some(row=>row.path==='/api/voice'),false);assert.deepEqual(f.dialogs,[]);
@@ -187,7 +187,7 @@ test('model conflict keeps the draft and requires fresh revision before retry; d
   const f=await openFixture(browser,models(),modelsReady);try{
     await modelSelect(f).selectOption('provider/new');f.conflict();await saveModel(f).click();await f.page.getByRole('alert').filter({hasText:'Inställningarna har ändrats av någon annan'}).waitFor();
     assert.equal(await modelSelect(f).inputValue(),'provider/new');assert.equal(await f.page.evaluate(target=>window.__navigate(target),dialog('elin')),false);
-    const dashboard=f.page.getByRole('button',{name:'Öppna OpenClaws egen dashboard ↗',exact:true});assert.equal(await dashboard.isDisabled(),true);assert.equal(await saveModel(f).isDisabled(),true);
+    const dashboard=f.page.getByRole('button',{name:'Öppna AI-agenternas egen dashboard ↗',exact:true});assert.equal(await dashboard.isDisabled(),true);assert.equal(await saveModel(f).isDisabled(),true);
     await f.page.getByRole('button',{name:'Hämta aktuella val',exact:true}).click();
     await saveModel(f).click();await savedNotice(f,'provider/new').waitFor();assert.equal(f.writes[1].body.baseHash,'revision-concurrent');
     await move(f,models({dealer:'lina'}));const handoff=f.hold('POST','/api/openclaw/admin');await dashboard.click();await waitRequest(handoff);await rejectTraversal(f,-1);assert.equal(await f.page.evaluate(target=>window.__navigate(target),dialog('elin')),false);
