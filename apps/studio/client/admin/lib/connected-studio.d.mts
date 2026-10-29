@@ -35,6 +35,10 @@ export type CompositionUse = {roomId:string;roomName:string;operatorName:string}
 export function compositionUses(catalog:Catalog,compositionId?:string):CompositionUse[];
 export function uploadMetadata(project:StudioProject,dealerId:string,slot:ClipSlot,file:File,compositing:VideoMetadata['compositing']):VideoMetadata;
 export type Workspace = {catalog:Catalog;project:StudioProject;inventory:VideoInventory};
+export type SharedWorkspace = Partial<Workspace>;
+export function shareWorkspace(part:SharedWorkspace|null|undefined):void;
+export function readSharedWorkspace():SharedWorkspace|null;
+export function subscribeSharedWorkspace(listener:()=>void):()=>void;
 export function createStudioClient(options?:{fetchImpl?:typeof fetch;uploadImpl?:typeof import('../../../lib/upload-native-video.mjs').uploadNativeVideo}):{
   load(signal?:AbortSignal):Promise<Workspace>;
   save(project:StudioProject,signal?:AbortSignal):Promise<StudioProject>;

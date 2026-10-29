@@ -74,7 +74,9 @@ spelbord och bolag utan publicerad tilldelning. Den primära åtgärden är
 **Nytt spelbord**; övriga genvägar: **Lägg till klipp**, **Tilldela innehåll**,
 **Ny dealer** och **Skapa demo** (`/admin/demo`). Menyn visar en räknare vid
 **Dealers** (dealers där klipp saknas) och vid **Bolag och spelbord**
-(spelbord som inte är spelbara).
+(spelbord som inte är spelbara). Räknarna bygger på det sidorna redan har
+läst eller sparat (`shareWorkspace` i `client/admin/lib/connected-studio.mjs`);
+menyn läser inget själv.
 
 ## Dealers
 

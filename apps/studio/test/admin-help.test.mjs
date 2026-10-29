@@ -99,7 +99,7 @@ const workspace=()=>({inventory:{videos:[]},project:addDealer(addDealer(createEm
     operators:[{id:'north',name:'North',slug:'north',status:'active',archivedAt:null,packageRevision:1}],
     rooms:[room('open'),room('paused',{state:'pending',playable:false}),room('draft',{published:false,playable:false}),room('gone',{state:'archived',playable:false})]}}});
 const never=()=>({load:()=>new Promise(()=>{})});
-const stubs={'../../lib/connected-studio.mjs':{createStudioClient:never},'../../lib/dealer-coverage.mjs':coverage};
+const stubs={'../../lib/connected-studio.mjs':{createStudioClient:never,readSharedWorkspace:()=>null,subscribeSharedWorkspace:()=>()=>{}},'../../lib/dealer-coverage.mjs':coverage};
 
 test('Översikt has Nytt spelbord as its first and only primary action, and no "Så hänger det ihop"',()=>{
   const {AdminHome}=loadAdmin('admin-home.tsx',{...stubs,'./dealer-identity-portrait':{DealerAvatar:()=>null},'../../lib/admin-session':{readAdminSession:async()=>{throw Error('fixture');}},
@@ -127,6 +127,45 @@ test('the menu counts dealers missing clips and spelbord that cannot be played, 
   // Nothing waits: no counter. Before the catalog is read the menu shows none either.
   assert.doesNotMatch(renderToStaticMarkup(React.createElement(StudioMenu,{counts:{'/admin/dealers':0,'/admin/companies':0}})),/studio-nav-count/);
   assert.doesNotMatch(renderToStaticMarkup(React.createElement(StudioSidebar,{})),/studio-nav-count/);
+});
+
+// #676: the menu loaded the catalog, the project and the videos itself (and again after each save), so every
+// Admin page read them three times. It now counts from what the pages read or saved, and requests nothing.
+test('the menu counters follow the pages\' own reads and saves without loading anything themselves',async()=>{
+  const connected=await import('../client/admin/lib/connected-studio.mjs');
+  const own=[],listeners=new Set();
+  // The menu's hooks as on a mounted page: effects run at once, store listeners are kept.
+  const hooks={...React,useEffect:effect=>{effect();},useState:value=>[typeof value==='function'?value():value,()=>{}],
+    useSyncExternalStore:(subscribe,read)=>{listeners.add(subscribe);return read();}};
+  const spy={...connected,createStudioClient:options=>{const client=connected.createStudioClient(options);return {...client,load:signal=>{own.push('load');return client.load(signal);}};}};
+  const file=new URL('../client/admin/components/studio/studio-sidebar.tsx',import.meta.url),fileRequire=createRequire(file),module={exports:{}};
+  runInNewContext(transformSync(readFileSync(file,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,AbortController,
+    fetch:async url=>{own.push(String(url));throw Error('the menu requests nothing');},
+    require:name=>name==='react'?hooks:name.endsWith('lib/connected-studio.mjs')?spy:name.endsWith('lib/dealer-coverage.mjs')?coverage:name.endsWith('lib/admin-navigation')?navigation:
+      name==='./admin-logout'?{AdminLogout:()=>null}:name==='./theme-toggle'?{ThemeToggle:()=>null}:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>'/admin'}:fileRequire(name)});
+  const counts=()=>module.exports.StudioSidebar({}).props.counts;
+  assert.deepEqual(counts(),{},'nothing read yet: no counters');
+  let changes=0;const unsubscribe=[...listeners].map(subscribe=>subscribe(()=>{changes+=1;}));
+  const fixture=workspace();fixture.catalog.administration.revisions.project=fixture.project.revision;
+  const pageReads=[],responses={'/admin/_data/catalog':fixture.catalog,'/studio/api/project':{project:fixture.project},'/studio/api/videos':fixture.inventory};
+  const fetchImpl=async(url,init={})=>{pageReads.push((init.method??'GET')+' '+url);
+    const body=init.method==='PUT'?{project:addDealer(createEmptyProject(),'dragan','Dragan')}:responses[url];return {ok:true,status:200,json:async()=>body};};
+  // A page reads the workspace once; the menu counts from that read.
+  await connected.createStudioClient({fetchImpl}).load();
+  assert.deepEqual(counts(),{'/admin/dealers':2,'/admin/companies':2});
+  // A saved change (one dealer left) updates the counter without another read.
+  await connected.createStudioClient({fetchImpl}).save(fixture.project);
+  assert.deepEqual(counts(),{'/admin/dealers':1,'/admin/companies':2});
+  // Bolag och spelbord re-reads its catalog after a change; the menu follows that catalog.
+  const rooms=fixture.catalog.administration.rooms.map(room=>room.id==='paused'?{...room,state:'live',playable:true}:room);
+  connected.shareWorkspace({catalog:{...fixture.catalog,administration:{...fixture.catalog.administration,rooms}}});
+  assert.deepEqual(counts(),{'/admin/dealers':1,'/admin/companies':1});
+  assert.equal(changes,3,'the menu is told about each read and save');
+  assert.deepEqual(pageReads,['GET /admin/_data/catalog','GET /studio/api/project','GET /studio/api/videos','PUT /studio/api/project']);
+  assert.deepEqual(own,[],'the menu makes no catalog, project or video requests of its own');
+  for(const stop of unsubscribe)stop();
+  const source=readFileSync(new URL('../client/admin/components/studio/studio-sidebar.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/createStudioClient|fetch\(|_data\/catalog/,'the menu has no loader of its own');
 });
 
 // The header link itself is rendered in client/admin/lib/service-navigation.test.mjs.

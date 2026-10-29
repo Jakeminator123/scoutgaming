@@ -67,7 +67,7 @@ function App() {
     const url=new URL(anchor.href,location.origin);
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
-    <StudioSidebar refreshKey={studioRefresh+':'+studioRevision}/><main className="flex min-w-0 flex-1 flex-col overflow-auto">
+    <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
       <header className="studio-portal-bar"><span>Scoutgaming Admin <span className="studio-portal-divider">/</span> {pageTitle}</span>
         <button type="button" onClick={openCommandPalette} aria-keyshortcuts="Control+K Meta+K" className={cn('ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted md:inline-flex',focusRing)}><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök dealers, bolag, spelbord…</span><Kbd>Ctrl K</Kbd></button>
         <nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>

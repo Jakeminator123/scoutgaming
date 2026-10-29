@@ -9,7 +9,7 @@ import {DataTable,type Column} from '../ui/data-table';
 import {insetTableClass} from '../ui/table';
 import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
-import {createStudioClient,type Catalog,type Workspace} from '../../lib/connected-studio.mjs';
+import {createStudioClient,shareWorkspace,type Catalog,type Workspace} from '../../lib/connected-studio.mjs';
 import {dealerChoices,defaultLanguage,laneChoices,newLaneText,QUICK_CREATE_NO_DEALER,QUICK_CREATE_STEPS,quickCreateDefaults,roomName,runQuickCreate,type QuickChoice,type QuickMemo,type QuickStepId,type QuickStepStatus} from '../../lib/room-quick-create.mjs';
 import {roomLimitProfiles} from '../../../../lib/room-limit-profiles.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
@@ -59,7 +59,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       if(!response.ok)throw Error([401,403].includes(response.status)?'Din inloggning saknas eller har gått ut.':'Katalogen kunde inte läsas.');
       const value=await response.json();
       if(value.source!=='registered'||!Array.isArray(value.administration?.operators))throw Error('Katalogens form kunde inte verifieras.');
-      if(!controller.signal.aborted)setCatalog(value);
+      if(!controller.signal.aborted){setCatalog(value);shareWorkspace({catalog:value});}
     }catch(cause){if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:'Katalogen kunde inte läsas.');}})();
     return()=>controller.abort();
   },[active,refresh,page,id]);

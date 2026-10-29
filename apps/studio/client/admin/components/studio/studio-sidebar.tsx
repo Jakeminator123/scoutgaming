@@ -1,5 +1,5 @@
 "use client"
-import {useEffect,useState} from 'react';
+import {useSyncExternalStore} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {House,Users,LayoutDashboard,Building2,Settings,CircleHelp,type LucideIcon} from 'lucide-react';
@@ -7,7 +7,7 @@ import {adminNavigationGroups} from '../../lib/admin-navigation';
 import {parseAdminPath} from '../../../runtime/admin-routing.mjs';
 import {AdminLogout} from './admin-logout';
 import {ThemeToggle} from './theme-toggle';
-import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
+import {readSharedWorkspace,subscribeSharedWorkspace} from '../../lib/connected-studio.mjs';
 import {adminMenuCounts} from '../../lib/dealer-coverage.mjs';
 
 const icons:Record<string,LucideIcon>={'/admin/dealers':Users,'/admin/scenes':LayoutDashboard,'/admin/companies':Building2,'/admin/system':Settings,'/admin/guide':CircleHelp};
@@ -18,15 +18,10 @@ const countHints:Record<string,(n:number)=>string>={
   '/admin/dealers':n=>n===1?'1 dealer saknar klipp':`${n} dealers saknar klipp`,
   '/admin/companies':n=>n===1?'1 spelbord är inte spelbart':`${n} spelbord är inte spelbara`,
 };
-// The menu reads the same catalog as the pages (no endpoint of its own), again whenever Admin saves a change
-// (refreshKey); a failed read keeps the last counts.
-export function StudioSidebar({refreshKey=''}:{refreshKey?:string}) {
-  const [workspace,setWorkspace]=useState<Workspace|null>(null);
-  useEffect(()=>{
-    const abort=new AbortController();
-    void createStudioClient().load(abort.signal).then(value=>{if(!abort.signal.aborted)setWorkspace(value);},()=>{});
-    return()=>abort.abort();
-  },[refreshKey]);
+// The menu reads nothing itself: it counts from what the pages last read or saved (shareWorkspace in
+// lib/connected-studio.mjs), so a saved change updates it and a page that has read nothing yet shows no counter.
+export function StudioSidebar() {
+  const workspace=useSyncExternalStore(subscribeSharedWorkspace,readSharedWorkspace,readSharedWorkspace);
   return <StudioMenu counts={adminMenuCounts(workspace)}/>;
 }
 export function StudioMenu({counts={}}:{counts?:Record<string,number>}={}) {
