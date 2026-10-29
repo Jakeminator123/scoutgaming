@@ -4,3 +4,10 @@
 import { loadEnv } from './env.mjs';
 loadEnv();
 globalThis.LOCAL_DEALERS = (process.env.LOCAL_DEALERS ?? '').split(',').map(s => s.trim()).filter(Boolean);
+// and which of his idle takes are built (v2/meta.json picks), so dealers.js lists only clips that exist
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+try {
+  const m = JSON.parse(readFileSync(fileURLToPath(new URL('../public/media/dealers/adebayor/v2/meta.json', import.meta.url)), 'utf8'));
+  globalThis.LOCAL_DEALERS_IDLES = Object.keys(m.picks ?? {}).filter(t => !/^(pos|hole|flip)/.test(t));
+} catch { globalThis.LOCAL_DEALERS_IDLES = null; }
