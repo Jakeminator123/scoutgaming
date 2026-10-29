@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "status": "template: empty until the GPU run in docs/PAOW-BANK-KORNING.md; rename XX to the day it is filled",
+  "dealerId": "paow",
+  "environment": "preview (scoutgaming-preview-engine, Vercel scoutgaming-preview)",
+  "runBy": "",
+  "date": "",
+  "profile": {
+    "projectRevision": "",
+    "voice": {"provider": "elevenlabs", "voiceId": "WZVEBKUreb9jAKojf0QF", "modelId": "", "language": ""},
+    "reference": {"kind": "motion-video", "videoId": "", "sha256": "", "offsetMs": null}
+  },
+  "sources": {
+    "sourceSetSha256": "",
+    "rest": {"videoId": "", "frame": null},
+    "clips": {"action": null, "idle": null, "total": null},
+    "skipped": [],
+    "list": "paow-sources/sources.json: [{videoId, sha256}] per clip, copied here when filled"
+  },
+  "pool": {"receiptSha256": "", "poolFrames": null},
+  "bank": {
+    "archive": {"sha256": "", "bytes": null, "pathname": ""},
+    "receipt": {"sha256": "", "bytes": null, "pathname": ""},
+    "manifest": {"sha256": "", "bytes": null, "pathname": ""}
+  },
+  "worker": {
+    "image": "ghcr.io/jakeminator123/moving-gpu-worker@sha256:",
+    "releaseSha256": "",
+    "publishCommit": "",
+    "publishRun": "",
+    "gpu": ""
+  },
+  "runpod": {
+    "account": "Kevin",
+    "endpointId": "",
+    "gpu": "",
+    "workers": {"min": 0, "max": 1},
+    "idleTimeoutSeconds": 60,
+    "executionTimeoutSeconds": 180,
+    "callbackOrigin": "https://croupier-k06-k07-staging.onrender.com"
+  },
+  "check": {"startCheck": "", "dialogTest": "", "approvedBy": ""}
+}

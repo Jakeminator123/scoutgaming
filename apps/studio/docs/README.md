@@ -228,6 +228,16 @@ röstprofil; dealers utan en sådan har **Förbered röstprofil för
 realtidstal**. Att spara en röstprofil gör inget betalt prov och godkänner
 ingen läppsynk.
 
+**Referenstyp** under realtidstal: **Stillbild** (en ruta ur dealerns egen
+video, stillbildsvägen) eller **Rörlig** (dealerns bank, `motion-video`).
+En rörlig referens kan alltid sparas som förberedelse; bankbygget tar den
+valda positionen som vilaruta och kräver steg om 125 ms (hel ruta i 24 fps).
+**Begär AI-tal** går att slå på för en rörlig referens bara när miljöns
+driftprofil för dealern har en bankhash (`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`
+på Vercel); referensen ska vara ett av bankens klipp. Referenstypen kan inte
+bytas medan AI-tal är begärt. Paows körning:
+[PAOW-BANK-KORNING](../../../docs/PAOW-BANK-KORNING.md).
+
 Under talpanelen finns:
 
 - **Tal vid inaktivitet**: inte anslutet per dealer ännu.

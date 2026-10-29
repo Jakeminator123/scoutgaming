@@ -8,6 +8,7 @@ export interface NativeStudioConfiguration {
 export function nativeStudioAdminEnabled(env?: Record<string,string | undefined>): boolean;
 export function nativeStudioAdminConfiguration(env?: Record<string,string | undefined>): NativeStudioConfiguration | null;
 export function assertNativeStudioRequest(request: Request, config: NativeStudioConfiguration | null): void;
+export function withMovingSpeechDealers<T extends object>(readCatalog: () => Promise<T>, env: Record<string,string | undefined>): () => Promise<T & {movingSpeech:{dealerIds:string[]}}>;
 export function readAssistantDatabaseInventory(pool: {query(sql: string): Promise<{rows: {table_schema:string;table_name:string}[]}>}): ReturnType<NativeStudioRuntime['assistantDatabaseInventory']>;
 export interface NativeStudioRuntime {
   /** Server-only derived signer; never include in a client payload. */

@@ -40,6 +40,7 @@ import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
+import { movingDriftDealerIds } from '../../../packages/presentation/contracts/moving-drift.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
@@ -52,6 +53,11 @@ import { performance } from 'node:perf_hooks';
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 // The cause stays server-side for the 503 log; responses never serialize it.
+// Admin › Röst och tal: which dealers have a drift profile with a bank hash
+// here (Vercel's CROUPIER_STUDIO_MOVING_DRIFT_PROFILES). Ids only, no endpoints.
+export function withMovingSpeechDealers(readCatalog, env) {
+  return async () => ({ ...await readCatalog(), movingSpeech: { dealerIds: movingDriftDealerIds(env) } });
+}
 const unavailable = cause => { throw Object.assign(cause === undefined ? new Error('studio_native_unavailable') : new Error('studio_native_unavailable', { cause }), { statusCode: 503 }); };
 const denied = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 // SQL is bundled source, not persistent user state. Explicit tracing preserves
@@ -237,7 +243,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     const native={ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
       replyRepository:createSpeechReplyRepository({sql:pool,scope:config.scope}),
-      readDesignCatalog: createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }),
+      readDesignCatalog: withMovingSpeechDealers(createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }), env),
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction, ...media,

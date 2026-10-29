@@ -550,3 +550,35 @@ test('Röst och tal shows the Röstprofil card only where the caller accepts a s
   assert.equal(card.props.dealer.id,'paow');assert.equal(card.props.projectDirty,false);
   card.props.onSaved({revision:'r9'});assert.deepEqual(saved,[{revision:'r9'}]);
 });
+
+// T5: Paow chooses a motion reference; "Begär AI-tal" opens only against this environment's verified bank.
+async function paowMotionPanel(movingSpeechDealers) {
+  const h=await panelHarness();h.props.dealerId='paow';h.props.projectDirty=false;h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow'}]};
+  if(movingSpeechDealers)h.props.movingSpeechDealers=movingSpeechDealers;
+  h.props.inventory.videos=[{id:'paow-vila',dealer:'paow',available:true,bytes:100,sha256:'c'.repeat(64),duration:3,previewUrl:'/studio/api/videos/paow-vila'}];
+  h.render();h.flush();h.field(h.render(),'reference-video').props.onChange({target:{value:'paow-vila'}});h.render();h.flush();
+  h.field(h.render(),'reference-kind').props.onChange({target:{value:'motion-video'}});
+  h.field(h.render(),'reference-offset').props.onChange({target:{value:'2875'}});h.render();h.flush();h.render();h.flush();
+  return {h,tree:reviewReference(h)};
+}
+test('Paow motion reference can be enabled against a verified bank and is saved as motion-video',async()=>{
+  const {h,tree}=await paowMotionPanel(['dragan','paow']);
+  assert.equal(h.field(tree,'reference-kind').props.value,'motion-video');
+  assert.equal(h.field(tree,'enable-speech').props.disabled,false,'a verified bank unlocks Begär AI-tal');
+  h.field(tree,'enable-speech').props.onChange({target:{checked:true}});let next=h.render();
+  assert.equal(h.field(next,'reference-kind').props.disabled,true,'the kind cannot change while speech is requested');
+  assert.equal(h.button(next,'stage-profile').props.disabled,false);h.button(next,'stage-profile').props.onClick();
+  const saved=h.props.project.dealers[0].speechProfile;
+  assert.equal(saved.state,'enabled');assert.deepEqual(saved.reference,{kind:'motion-video',videoId:'paow-vila',sha256:'c'.repeat(64),offsetMs:2875});
+  assert.equal(saved.voice.voiceId,'WZVEBKUreb9jAKojf0QF');assert.equal(saved.voice.modelId,'eleven_v3');assert.equal(h.calls.length,0);
+});
+test('without a verified bank a motion reference is kept as preparation for the bank build',async()=>{
+  for(const banks of [undefined,['dragan']]){
+    const {h,tree}=await paowMotionPanel(banks);
+    assert.equal(h.field(tree,'enable-speech').props.disabled,true);
+    assert.equal(h.nodes(tree,node=>node.props?.['data-note']==='moving-bank').length,1);
+    h.button(tree,'stage-profile').props.onClick();
+    const saved=h.props.project.dealers[0].speechProfile;
+    assert.equal(saved.state,'preparation');assert.equal(saved.reference.kind,'motion-video');assert.equal(saved.reference.offsetMs,2875);
+  }
+});

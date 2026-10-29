@@ -45,6 +45,16 @@ export function movingDriftConfiguration(env={}) {
   return Object.freeze({profiles:structuredClone(profiles)});
 }
 
+/** Dealers whose drift profile names a bank hash in this environment: what
+ * Admin may offer for "Begär AI-tal" with a motion reference. Advisory only;
+ * the engine verifies each bank archive against bankHash at start. */
+export function movingDriftDealerIds(env={}) {
+  let configuration=null;
+  try {configuration=movingDriftConfiguration(env);} catch {return [];}
+  return [...new Set((configuration?.profiles??[]).filter(profile=>/^[a-f0-9]{64}$/.test(profile.bankHash))
+    .map(profile=>profile.dealerId))].sort();
+}
+
 /** The one profile of a dealer, or null. The controller catalogue is this profile alone. */
 export function movingDriftDealerProfile(configuration,dealerId) {
   const matches=configuration?.profiles?.filter(profile=>profile.dealerId===dealerId)??[];

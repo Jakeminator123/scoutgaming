@@ -223,3 +223,16 @@ test('Admin reports connected only from a fresh shared executor lease, and loses
   assert.equal(body.capabilities.connected,false);assert.equal(body.admission.allowed,false);
   assert.equal(body.observed.status,'unknown');
 });
+
+test('Admin catalog lists only dealers whose drift profile names a bank hash; ids only, never endpoints',async()=>{
+  const {withMovingSpeechDealers}=await import('../lib/studio-native-runtime.mjs');
+  const paow={id:'paow',label:'Paow',dealerId:'paow',endpointId:'private-endpoint-2',releaseDigest:'a'.repeat(64),bankHash:'c'.repeat(64)};
+  const env=list=>({CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify(list)});
+  const read=async value=>withMovingSpeechDealers(async()=>({source:'registered',administration:{}}),value)();
+  const both=await read(env([paow,...profiles]));
+  assert.deepEqual(both.movingSpeech,{dealerIds:['dragan','paow']});assert.equal(both.source,'registered');
+  assert.equal(JSON.stringify(both).includes('private-endpoint'),false);
+  assert.deepEqual((await read(env([{...paow,bankHash:'pending'},...profiles]))).movingSpeech.dealerIds,['dragan']);
+  for(const off of [{},{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_API:'0'},{CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:'not json'}])
+    assert.deepEqual((await read(off)).movingSpeech.dealerIds,[]);
+});
