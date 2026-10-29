@@ -13,7 +13,7 @@ import { defaultCompositionSettings } from '../../../packages/presentation/contr
 import { withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { cloudPresentationFixture } from './fixtures/cloud-presentation.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
-import { validatePartnerSnapshot } from '../components/kevin-bo/partner-workspace-context.mjs';
+import { validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
 
 // Partnerportalen per role: the server decides every view, not the menu.
 // partner-editor: overview, tables, presentations (configure). partner-viewer: every *.read.

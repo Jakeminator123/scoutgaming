@@ -11,7 +11,7 @@ import { jsxRequire } from './fixtures/jsx-require.mjs';
 const require = createRequire(new URL('../package.json', import.meta.url));
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
-const { TeamView } = jsxRequire(import.meta.url)('../components/kevin-bo/views/team.jsx');
+const { TeamView } = jsxRequire(import.meta.url)('../components/partner/views/team.jsx');
 
 const operator = { id: 'north', name: 'North', slug: 'north' };
 const snapshot = {
@@ -173,7 +173,7 @@ test('the portal binds one stable team view per API base and renders Kevin\'s re
   }));
   assert.match(loading, /Åtgärderna är låsta tills teamåtkomsten har verifierats./);
   assert.match(tag(loading, 'team-invite-submit'), /disabled/);
-  const portal = await readFile(new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url), 'utf8');
+  const portal = await readFile(new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url), 'utf8');
   assert.match(portal, /teamView:partnerTeamView\(apiBase,TeamView\)/);
 });
 

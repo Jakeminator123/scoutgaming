@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { endPartnerSession } from '../lib/partner-session-actions.mjs';
-import { partnerCopy } from './kevin-bo/partner-copy.mjs';
+import { partnerCopy } from './partner/partner-copy.mjs';
 import styles from './partner-session-actions.module.css';
 
 export function PartnerSessionActions({ apiBase, accessClass, language, returnTo, beforeNavigate, onNavigationCancelled }: {

@@ -4,12 +4,12 @@ import {createRequire} from 'node:module';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {availablePartnerRooms,initialPartnerRoomSelection} from '../lib/partner-room-selection.mjs';
-import {partnerCopy,partnerNavigation} from '../components/kevin-bo/partner-copy.mjs';
+import {partnerCopy,partnerNavigation} from '../components/partner/partner-copy.mjs';
 import {PARTNER_PERMISSIONS} from '../../../packages/studio-access/server/partner-access-policy.mjs';
 import {workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
 import {jsxRequire} from './fixtures/jsx-require.mjs';
 const require=createRequire(import.meta.url);
-const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../components/kevin-bo/views/rooms.jsx');
+const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../components/partner/views/rooms.jsx');
 const operator={id:'north',slug:'north-casino',name:'North'};
 const snapshot={operator,presentations:[],tables:[
   {id:'main-room',name:'Main',operatorId:'north',status:'active'},
@@ -52,7 +52,7 @@ test('controlled room selection renders the current scope instead of its origina
 });
 
 function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-casino/rooms?room=main-room',accessClass='internal-admin'}={}) {
-  const sourceUrl=new URL('../components/kevin-bo/partner-operator-workspace.jsx',import.meta.url);
+  const sourceUrl=new URL('../components/partner/partner-operator-workspace.jsx',import.meta.url);
   const {transformSync}=require('next/dist/build/swc');
   const code=transformSync(require('node:fs').readFileSync(sourceUrl,'utf8'),{filename:'partner-operator-workspace.jsx',jsc:{parser:{syntax:'ecmascript',jsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
   const slots=[],effects=[],listeners=new Map(),entries=[{href:path,state:{consumer:'kept'}}];let cursor=0,index=0,queue=[],url=new URL(path,'https://partner.fixture.invalid');
@@ -177,7 +177,7 @@ function actualAppearance(session) {
       require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-choices'?{AppearanceChoices}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
-  const wrapper=mount('../components/kevin-bo/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
+  const wrapper=mount('../components/partner/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
   const render=()=>{
     const props=session.view().props;
