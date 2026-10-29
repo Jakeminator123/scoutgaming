@@ -25,6 +25,13 @@ async function expectedRing(){
   return ring.split(' ').filter(name=>name!=='focus-visible:outline-none').map(name=>name.replace(/^focus-visible:/,'[&_.recharts-surface:focus-visible]:'));
 }
 
+// Kontrast enligt WCAG 2.x utifrån webbläsarens beräknade rgb()-färger.
+function contrast(a,b){
+  const luminance=color=>{const [r,g,bl]=color.match(/[\d.]+/g).slice(0,3).map(Number).map(value=>{const c=value/255;return c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4;});return 0.2126*r+0.7152*g+0.0722*bl;};
+  const [light,dark]=[luminance(a),luminance(b)].sort((x,y)=>y-x);
+  return (light+0.05)/(dark+0.05);
+}
+
 test('diagramytan får Admins fokusring vid focus-visible', async () => {
   const code=await bundle(fixture+`\nimport {renderToStaticMarkup} from 'react-dom/server';export const html=()=>renderToStaticMarkup(<Chart/>);`,{platform:'node',format:'cjs'});
   const module={exports:{}};new Function('module','exports','require',code)(module,module.exports,createRequire(admin));
@@ -34,6 +41,7 @@ test('diagramytan får Admins fokusring vid focus-visible', async () => {
   const names=new Set((classes[1]??classes[2]).replaceAll('&amp;','&').split(/\s+/));
   for(const name of await expectedRing())assert.ok(names.has(name),'saknar '+name);
   assert.ok(names.has('[&_.recharts-surface]:outline-hidden'),'webbläsarens egen kontur ersätts av ringen');
+  assert.ok(!names.has('[&_.recharts-surface]:rounded-sm'),'svg-hörnen klipps inte utan fokus');
 });
 
 test('fokusringen syns i en riktig webbläsare när diagrammet nås med Tab',{skip:!browserModule},async () => {
@@ -48,16 +56,28 @@ test('fokusringen syns i en riktig webbläsare när diagrammet nås med Tab',{sk
     await page.route('**/*',route=>{const path=new URL(route.request().url()).pathname;
       if(path==='/theme.css')return route.fulfill({contentType:'text/css',body:css});
       if(path==='/fixture.js')return route.fulfill({contentType:'text/javascript',body:script});
-      return route.fulfill({contentType:'text/html',body:'<!doctype html><html class="dark"><head><link rel="stylesheet" href="/theme.css"></head><body class="preview-admin"><div id="root"></div><script src="/fixture.js"></script></body></html>'});});
-    await page.goto('https://admin-chart.fixture.invalid/');
-    const surface=page.locator('svg.recharts-surface[tabindex="0"]');await surface.waitFor();
-    const shadow=()=>surface.evaluate(node=>getComputedStyle(node).boxShadow);
-    assert.equal(await shadow(),'none','ingen ring utan fokus');
-    await page.locator('#before').focus();await page.keyboard.press('Tab');
-    assert.equal(await surface.evaluate(node=>document.activeElement===node),true,'diagramytan tar emot fokus från tangentbordet');
-    const ring=await shadow();
-    assert.notEqual(ring,'none','fokusringen syns');
-    assert.match(ring,/rgb\(214, 255, 58\)/,'ringen har Admins limefärg (--sg-lime)');
+      return route.fulfill({contentType:'text/html',body:'<!doctype html><html class="'+new URL(route.request().url()).searchParams.get('mode')+'"><head><link rel="stylesheet" href="/theme.css"></head><body class="preview-admin"><div id="root"></div><script src="/fixture.js"></script></body></html>'});});
+    for(const mode of ['dark','light']){
+      await page.goto('https://admin-chart.fixture.invalid/?mode='+mode);
+      const surface=page.locator('svg.recharts-surface[tabindex="0"]');await surface.waitFor();
+      const style=()=>surface.evaluate(node=>{const computed=getComputedStyle(node);return {shadow:computed.boxShadow,radius:computed.borderTopLeftRadius};});
+      const idle=await style();
+      assert.equal(idle.shadow,'none',mode+': ingen ring utan fokus');
+      assert.equal(idle.radius,'0px',mode+': svg-hörnen rundas bara vid fokus');
+      await page.locator('#before').focus();await page.keyboard.press('Tab');
+      assert.equal(await surface.evaluate(node=>document.activeElement===node),true,mode+': diagramytan tar emot fokus från tangentbordet');
+      const focused=await style();
+      assert.notEqual(focused.shadow,'none',mode+': fokusringen syns');
+      assert.notEqual(focused.radius,'0px',mode+': ytan rundas vid fokus');
+      // Tailwind ritar offset och ring som box-shadow-lager med spridning (offset 2px, ring 4px);
+      // tomma lager (0px) hoppas över. Den yttre ringen ligger mot offseten i ytans färg.
+      const colors=[...focused.shadow.matchAll(/(rgba?\([^)]+\)) 0px 0px 0px ([\d.]+)px/g)].filter(match=>Number(match[2])>0).map(match=>match[1]);
+      assert.equal(colors.length,2,mode+': ring och offset: '+focused.shadow);
+      const surfaceColor=await page.evaluate(()=>{const probe=document.createElement('div');probe.className='bg-sg-surface';document.body.append(probe);const color=getComputedStyle(probe).backgroundColor;probe.remove();return color;});
+      assert.equal(colors[0],surfaceColor,mode+': offseten har ytans färg (--sg-surface)');
+      const ratio=contrast(colors[1],surfaceColor);
+      assert.ok(ratio>=3,mode+': ringen '+colors[1]+' mot ytan '+surfaceColor+' har kontrast '+ratio.toFixed(2)+':1, WCAG 1.4.11 kräver 3:1');
+    }
     assert.deepEqual(failures,[]);
   }finally{await browser.close();}
 });
