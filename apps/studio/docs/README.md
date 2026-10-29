@@ -159,7 +159,7 @@ och publicerat. De
 väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
 till vila. Ett klipp på **OpenClaw** får fältet **Vad klippet visar** (högst
-80 tecken); OpenClaw väljer utifrån den texten vid tur, resultat eller chatt
+80 tecken); OpenClaw väljer utifrån den texten vid tur eller resultat
 när scenmallens vila står på **OpenClaw**.
 
 #### Sammanhängande vilosekvens

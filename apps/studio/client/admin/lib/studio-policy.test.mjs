@@ -240,7 +240,7 @@ test('usage exposes exact automatic timing, manual status and OpenClaw with its 
   assert.equal(usage.configured,true);assert.match(usage.rules.join(' '),/var 27 s, variation ±4 s/);assert.match(usage.rules.join(' '),/paus 18 s; högst 2/);
   assert.deepEqual(project,before);
   policy.variants[0].use='openclaw';policy.variants[0].automatic=null;
-  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/OpenClaw kan föreslå klippet vid tur, resultat eller chatt/);
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/OpenClaw kan föreslå klippet vid tur eller resultat när/);
   policy.variants[0].description='ler mot spelaren';
   assert.deepEqual(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules.slice(1),['Beskrivning för OpenClaw: ler mot spelaren']);
   assert.equal(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[2]).configured,false);
@@ -396,6 +396,22 @@ test('a saved sequence clip at rest can be left to OpenClaw with a description; 
   toggle(render(fewer),'djupandetag').props.onCheckedChange(false);assert.equal(variant(changes[6],'djupandetag').use,'rotation');
   assert.match(studioClipUsage(fewer,inventory,dealerId,slot,variant(fewer,'djupandetag').videoId).rules.join(' '),/ingår också i vilosekvensen\. Beskrivning för OpenClaw: tar ett djupt/i);
   assert.equal(studioClipUsage(fewer,inventory,dealerId,slot,variant(fewer,'blickvanster').videoId).rules[0],'Ingår i vilosekvensen.');
+});
+
+test('a sequence clip a game rule proposes keeps its rule: shown as Regler, without the OpenClaw switch',async()=>{
+  const Panel=await policyPanel(),source=idleRotationSource('paow');
+  const {project:saved,inventory,dealerId,slot}=idleBank('paow',source.clips),changes=[];
+  const render=project=>Panel({project,inventory,dealerId,slot,blocked:false,onEdit:next=>changes.push(next)});
+  const toggle=(tree,id)=>rendered(tree).find(row=>row.props?.['aria-label']===`OpenClaw får föreslå ${id}`);
+  const videoId=id=>inventory.videos.find(video=>video.label===id).id;
+  button(render(saved),'Koppla 21 viloklipp').props.onClick();
+  const ruled=structuredClone(changes[0]);
+  ruled.dealerIdlePolicies[0].policy.variants.find(row=>row.videoId===videoId('fingrar')).use='rules';
+  const tree=render(validateProject(ruled));
+  assert.equal(toggle(tree,'fingrar'),undefined,'the switch never turns a rule into OpenClaw or the sequence');
+  assert.match(text(rendered(tree)),/Regler · en spelregel får föreslå klippet\./);
+  assert.equal(toggle(tree,'djupandetag').props.checked,false,'other clips at rest keep the switch');
+  assert.equal(changes.length,1);
 });
 
 test('an OpenClaw behaviour clip outside a sequence gets the same description field',async()=>{

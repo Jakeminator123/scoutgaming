@@ -19,7 +19,7 @@ export const IDLE_USES:readonly {id:IdleVariantUse;label:string;hint:string}[]=O
   {id:'manual',label:'Av',hint:'Spelas bara vid manuellt prov. Grundloopen fortsätter.'},
   {id:'automatic',label:'Ibland · intervall',hint:'Startar av sig själv med jämna mellanrum medan dealern väntar, och återgår sedan till grundloopen.'},
   {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när rummet kör klippvalsläget Regler.'},
-  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur, resultat eller chatt när scenmallens vila står på OpenClaw. Beskriv vad klippet visar.'},
+  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när scenmallens vila står på OpenClaw. Beskriv vad klippet visar.'},
 ]);
 const automatic:IdleAutomaticPolicy={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
 const seconds=(ms:number)=>(ms/1000).toLocaleString('sv-SE',{maximumFractionDigits:1});
@@ -230,7 +230,9 @@ function DescriptionField({item,label,onChange}:{item:IdleVariantPolicy;label:st
   </Field>;
 }
 // Körregel of a saved sequence clip at rest: the sequence only, or also OpenClaw's proposal.
+// A clip a game rule proposes keeps its rule: shown as Regler, without the switch.
 function RotationClipRule({item,label,onChange}:{item:IdleVariantPolicy;label:string;onChange:(patch:Partial<IdleVariantPolicy>)=>void}){
+  if(item.use==='rules')return <p className="pl-6 text-[13px] text-sg-text">Regler · en spelregel får föreslå klippet.</p>;
   const openclaw=item.use==='openclaw';
   return <div className="grid gap-2 pl-6">
     <label className="inline-flex items-center gap-2 text-[13px] text-sg-text">
