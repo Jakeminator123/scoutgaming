@@ -1090,6 +1090,24 @@ test('v28 rejects rotation in active and archived policies before SQL, including
     }
 });
 
+test('v32 gates a rotation clip that OpenClaw or a rule may propose; a plain sequence keeps v28',async()=>{
+  const rotation={clips:[]};
+  for(const [variants,required] of [[[{use:'rotation'}],'28'],[[{use:'rotation'},{use:'openclaw'}],'32'],[[{use:'rules'}],'32']])
+    for(const version of [31,32]){
+      const value={dealerIdlePolicies:[{dealerId:'paow',policy:{rotation,variants}}]},descriptor={kind:'project',value};
+      const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Math.min(version,Number(headers['X-Presentation-Capability-Version']))))});
+      f.repository.transaction=async work=>work(f.repository);
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:descriptor});
+      if(required==='32'&&version===31)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],required);
+    }
+  // Without a sequence an OpenClaw behaviour clip needs no new reader.
+  const plain={kind:'project',value:{dealers:[{id:'paow'}],dealerIdlePolicies:[{dealerId:'paow',policy:{variants:[{use:'openclaw'}]}}]}};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await f.wrapped.saveDocument('project',{value:plain.value});
+  assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'3');
+});
+
 test('v28 requires exact rotation support for a valid frozen policy and keeps its accepted bytes',async()=>{
   const value=frozenPackage(pack=>{
     const id=pack.registeredDealers[0].idle.id;

@@ -1,5 +1,10 @@
 import { createRequire } from 'node:module';
 import { PARTNER_ROOM_REFUSALS } from './partner-operator.mjs';
+import { ROOM_CONFIG_MISSING } from './shared-room-access.mjs';
+
+// Refusals the browser sees by name in a 1008 close: a partner key's company, and a room without
+// published game settings. Every other refusal keeps its plain HTTP status.
+const NAMED_REFUSALS=new Set([...PARTNER_ROOM_REFUSALS,ROOM_CONFIG_MISSING]);
 
 const requireGateway=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url));
 const unavailable=()=>Object.assign(Error('shared_room_upgrade_unavailable'),{statusCode:503});
@@ -105,7 +110,7 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
       return true;
     }).catch(error=>{
       if(!active||controller.signal.aborted||socket.destroyed)return true;
-      if(error?.statusCode===403&&PARTNER_ROOM_REFUSALS.has(error.code)&&!stopped&&socket.writable&&!request.aborted){refuse(request,socket,bufferedHead,error.code);return true;}
+      if(error?.statusCode===403&&NAMED_REFUSALS.has(error.code)&&!stopped&&socket.writable&&!request.aborted){refuse(request,socket,bufferedHead,error.code);return true;}
       reject(socket,[401,403,409,429].includes(error?.statusCode)?error.statusCode:503);return true;})
       .finally(()=>{active=false;clearTimeout(timer);pending.delete(record);
         socket.off('close',abort);socket.off('end',abort);socket.off('error',abort);request.off('aborted',abort);});

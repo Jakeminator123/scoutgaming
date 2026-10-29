@@ -158,7 +158,9 @@ scenmallens **Automatik / OpenClaw** står på **Regler** och utkastet är spara
 och publicerat. De
 väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
-till vila.
+till vila. Ett klipp på **OpenClaw** får fältet **Vad klippet visar** (högst
+80 tecken); OpenClaw väljer utifrån den texten vid tur eller resultat
+när scenmallens vila står på **OpenClaw**.
 
 #### Sammanhängande vilosekvens
 
@@ -177,6 +179,12 @@ sekvensen kan kopplas.
 3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
    utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
    urvalet** bort dem; knappen visas bara då.
+   Ett kopplat klipp som börjar och slutar i vila har brytaren **OpenClaw
+   får föreslå klippet** och då fältet **Vad klippet visar**. Klippet ingår
+   fortfarande i sekvensen; OpenClaw kan dessutom föreslå det vid tur och
+   resultat, och då spelas det en gång innan sekvensen fortsätter. Valen och
+   beskrivningarna behålls när urvalet ändras. Spelmotorn behöver
+   runtimekapabilitet v32 innan en sådan sekvens kan sparas.
 4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
    **Koppla 21 viloklipp** → spara → **Publicera** (eller **Avancerat** ›
    **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
@@ -266,7 +274,7 @@ Spelbord, bolag och scenmallar som använder dealern, och **Alla kopplingar**
 - **Godkännande**: checklistan (giv, vila, tal, landningar, minst en
   scenmall). Den visar läget; godkännandet sparas inte ännu.
 - Dealerns klipp och arkiv: **Bibliotek** och **Arkiv**, kategorier, **Radera
-  valda**, **Radera alla** och **Ta bort dealern** (se
+  valda** och **Radera alla**. Hela dealern tas bort under Dealers (se
   [Ta bort och återställa](#ta-bort-och-återställa)).
 - **Tekniska detaljer**: dealer-id, lagringsmapp och scenmallar.
 
@@ -341,11 +349,61 @@ publicerade placering som utgångspunkt.
 
 Materialbiblioteket per lager. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Valt förslag visas i scenmallen för dator och mobil;
+välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
+synligt; rumsbilder blir miljöbilder. Valt förslag visas i scenmallen för dator och mobil;
 en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
 svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara scenmallar med samma placering. Uppladdning ändrar inga
 scenval; **Visa var den används** visar vilka scenmallar som använder filen.
+
+#### Bord och bakgrund med AI
+
+**Skapa med AI** i Bordsgrafik ritar bordet åt en vald dealer och scenmall.
+Spelbordets **Utseende** har länken **Skapa bord och bakgrund med AI för
+spelbordet**, som öppnar samma dialog för det spelbordet.
+
+- **Stil**: **Mörk lyx** (svart filt, rosenträ, guldkant) och **Aggressiv
+  neon** (svart filt, magenta och cyan ljuslinje) först, sedan **Klassiskt
+  casino** (grön filt, mahogny, guldrand) och de tre tidigare **Mörk studio**,
+  **Varm lounge** och **Ljus studio**. **Fri** följer bara beskrivningen och
+  inspirationsbilden; bildens dominerande färg blir bordets färg, mörkad
+  tills boxarnas vita streck har kontrasten 3:1 mot filten.
+- **Bredd**: bocken **Anpassa bordets bredd efter dealerns räckvidd** (på som
+  standard) ritar bordet så att boxarna fyller 75 % av bordet. Bordsbredd %
+  följer med till scenmallen för både dator och mobil; för PAOW blir det
+  37,7 % på dator (tidigare 31,6 %) och 119 % på mobil (tidigare 100 %).
+  Boxarna ritas exakt ur dealerns filmade profil, så korten landar i dem.
+- **Använd**: välj ett förslag och **Använd**. Med bocken **Använd i miljön
+  *scenmall* och i spelbordet *spelbord*** (när dialogen öppnats från ett
+  spelbord) tillåts materialet i scenmallen, blir standard, får sin
+  bordsbredd och spelbordet publiceras, allt i en transaktion. Utan spelbord
+  sparas scenmallen som utkast, och du publicerar själv. Utan bocken hamnar
+  förslaget bara i biblioteket. Detta stoppar **Använd** (felet
+  `studio_release_invalid` med skälet inom parentes); inget skrivs och
+  materialet ligger kvar i biblioteket:
+  - spelbordet har andra sparade men opublicerade ändringar, även ett
+    utkast till spelinställningarna (`studio_release_other_changes`; utkastet
+    står kvar), eller saknar publicerade spelinställningar
+    (`studio_room_game_config_missing`);
+  - spelbordet använder en annan scenmall (`ai_adopt_other_template`), eller
+    scenmallen eller materialet finns inte (`ai_adopt_template_missing`,
+    `ai_adopt_material_missing`);
+  - bolaget eller spelbordet har ett eget val som döljer mallens standard
+    (`ai_adopt_room_choice`); välj då materialet under Utseende;
+  - en ny bredd skulle nå ett annat öppet spelbord hos bolaget på samma
+    scenmall som visar ett annat bord, t.ex. Privé
+    (`ai_adopt_other_room_table`): bredden gäller hela mallen;
+  - bordsgrafiken passar inte scenmallens dealers eller placering
+    (`ai_adopt_table_misfit`), eller ett äldre AI-bord i mallen skulle bli
+    felpassat av den nya bredden (`ai_adopt_template_table_misfit`): ta bort
+    det ur mallen eller rita om det;
+  - samma material är redan live, så inget skiljer sig
+    (`studio_release_unchanged`).
+- **Tema**: **Skapa bord + bakgrund + miljöbild från samma tema** skapar bord
+  och bakgrund parallellt med samma beskrivning, stil och inspirationsbild;
+  välj ett av varje och **Använd** lägger in båda. Miljöbilden hoppas över
+  och dialogen säger det: scenexporten och rollen illustration finns inte
+  ännu.
 
 ### Papperskorg
 
@@ -483,8 +541,8 @@ ingenting; nekar servern visas orsaken.
   arkivet finns **Återställ** och **Radera permanent**. Permanent radering
   kräver att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter)
   löpt ut och att inget använder det; annars **Behåll i arkivet**.
-- **Dealers**: **Arkivera** i dealerlistan eller **Ta bort dealern** under
-  Inställningar flyttar dealern till **Papperskorg**, stänger av AI-tal och
+- **Dealers**: **Arkivera** i dealerlistan flyttar dealern till
+  **Papperskorg** under Dealers, stänger av AI-tal och
   avpublicerar berörda spelbord; källfiler bevaras. **Återställ** ger dealern
   tillbaka som utkast utan att öppna spelbord. **Radera permanent** kräver
   kryss i **Jag förstår att filerna raderas permanent**. Vid avbrott visas

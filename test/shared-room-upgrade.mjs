@@ -176,8 +176,9 @@ test('service shutdown closes an open real socket with 1012 before the transport
 // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a browser sees a rejected handshake only as 1006 and retried
 // for a minute (receipt O02 partner-key-shared-table). A partner refused by name for its key's company
 // gets 101 and at once 1008 with that code instead; no other refusal opens a socket.
-test('a partner refused for its key company is closed with 1008 and the code, never attached', async t => {
-  for (const code of ['partner_operator_mismatch', 'partner_key_unbound']) {
+// Preview 29 Oct 2026: an open room without published game settings is refused by name the same way.
+test('a partner refused for its key company, or a room without game settings, is closed with 1008 and the code, never attached', async t => {
+  for (const code of ['partner_operator_mismatch', 'partner_key_unbound', 'room_config_missing']) {
     const closed = [], attached = [];
     class Refused extends Client { close(status, reason) { closed.push([status, reason]); this.terminate(); } }
     class Server {
@@ -193,7 +194,8 @@ test('a partner refused for its key company is closed with 1008 and the code, ne
     assert.deepEqual(socket.writes, ['101']); assert.equal(socket.paused, false); clean(request, socket);
   }
   for (const [error, status] of [[{ code: 'studio_forbidden', statusCode: 403 }, 403], [{ code: 'partner_operator_mismatch', statusCode: 503 }, 503],
-    [{ code: 'partner_key_operator_invalid', statusCode: 403 }, 403], [{ code: 'shared_room_unauthorized', statusCode: 401 }, 401]]) {
+    [{ code: 'partner_key_operator_invalid', statusCode: 403 }, 403], [{ code: 'shared_room_unauthorized', statusCode: 401 }, 401],
+    [{ code: 'room_config_missing', statusCode: 503 }, 503]]) {
     const h = setup(t, { channel: { prepare: async () => { throw Object.assign(new Error(error.code), error); } } });
     const request = incoming(), socket = new Raw();
     assert.equal(await h.adapter.handleUpgrade(request, socket, Buffer.alloc(0)), true);

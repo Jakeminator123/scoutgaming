@@ -79,6 +79,9 @@ const recoverable = new Set(['shared_room_presentation_stale', 'shared_room_pres
 // A partner session refused for its key's company (docs/plans/NYCKEL-BOLAG.md): the server names the
 // reason in its 1008 close. No other socket changes that answer, so the client ends at once with it.
 const partnerRefusals = new Set(['partner_operator_mismatch', 'partner_key_unbound']);
+// A live room without published game settings (shared-room-access.mjs ROOM_CONFIG_MISSING). Admin can publish
+// them at any moment, so one more socket is tried; a second refusal ends the client with this code.
+export const ROOM_CONFIG_MISSING = 'room_config_missing';
 // A page and its network are optional wake-up sources; anything else is refused.
 const eventTarget = value => value && typeof value.addEventListener === 'function' && typeof value.removeEventListener === 'function';
 
@@ -107,7 +110,8 @@ const eventTarget = value => value && typeof value.addEventListener === 'functio
  * close (1008) gets one fresh socket, in case the browser renewed its session cookie
  * (which this client cannot read); a second refusal, or that socket closing before it
  * delivered a state, ends the client. A 1008 naming a partner refusal (another company, or a
- * key without one) ends it at once and reports that code.
+ * key without one) ends it at once and reports that code. A 1008 naming room_config_missing (the
+ * room has no published game settings) gets one more socket; a second one ends the client with it.
  * Renderer failure or timeout is terminal, except the recognized stale room binding
  * conflict and a binding read that kept failing transiently, which reconnect within
  * the same outage budget.
@@ -139,7 +143,7 @@ export function createSharedRoomClient({
   }
   const socketURL = `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}/shared-room/${roomId}`;
   let state = 'idle', connection, retryTimer, pumping = false, queue = [], playing = null;
-  let retries = 0, outageAt, outage, reauthorizing = false, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
+  let retries = 0, outageAt, outage, reauthorizing = false, configRetried = false, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
   const timers = new Set();
   const current = candidate => state === 'running' && connection === candidate && !candidate.controller.signal.aborted;
   const report = code => { try { onError(Object.freeze({ code })); } catch {} };
@@ -194,6 +198,11 @@ export function createSharedRoomClient({
     if (!current(candidate)) return;
     if ([1002, 1003, 1007, 1009].includes(code)) { finish('shared_room_invalid_state'); return; }
     if (code === 1008 && partnerRefusals.has(reason)) { finish(reason); return; }
+    if (code === 1008 && reason === ROOM_CONFIG_MISSING) {
+      // Two attempts in all: this socket and one more. No minute of retries behind "Återansluter…".
+      if (configRetried) { finish(ROOM_CONFIG_MISSING); return; }
+      configRetried = true; disconnected(candidate); return;
+    }
     if (reauthorizing || code === 1008) {
       // The one re-authenticating socket was refused again or closed before any state.
       if (reauthorizing) { finish('shared_room_unauthorized'); return; }
@@ -278,7 +287,7 @@ export function createSharedRoomClient({
     } catch { finish('shared_room_invalid_state'); return; }
     actorId ??= frame.snapshot.me.id;
     // The server authorized this socket: a later 1008 gets its own single re-authentication.
-    reauthorizing = false;
+    reauthorizing = false; configRetried = false;
     const s = frame.snapshot, tail = queue.at(-1)?.frame.snapshot;
     // Never queue a state older than one already rendered or pending.
     if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer

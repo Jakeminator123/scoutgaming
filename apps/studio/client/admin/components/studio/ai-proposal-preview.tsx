@@ -10,6 +10,8 @@ import {Badge} from '../ui/kit';
 export type AiProposalPreviewProps = {
   role: 'background' | 'table';
   proposal: AiProposal;
+  /** The other role's proposal from the same theme (a background under a table proposal), shown instead of the saved one. */
+  companion?: AiProposal | null;
   /** The saved project and video register: the template's other layers and the dealer's idle. */
   project?: StudioProject | null;
   inventory?: VideoInventory | null;
@@ -44,15 +46,16 @@ function Frame({layout, label}: {layout: AiPreviewLayout; label: string}) {
 
 /** A proposal drawn on the chosen scene template with the compositor's geometry, as a desktop (16:9) and a phone (9:16) frame.
  * Background or table is the proposal; the template's other layer and the dealer's idle come from the saved project. */
-export function AiProposalPreview({role, proposal, project = null, inventory = null, laneId, dealerId = '', composition}: AiProposalPreviewProps) {
+export function AiProposalPreview({role, proposal, companion = null, project = null, inventory = null, laneId, dealerId = '', composition}: AiProposalPreviewProps) {
   const lane = laneId ? project?.lanes?.find(row => row.id === laneId) : undefined;
   const scene = useScenePreviewMedia({project, inventory, lane, game: 'blackjack', dealerId});
   const settings = composition ?? scene.settings;
   const asset = (id: string | undefined) => project?.layerAssets?.find(row => row.id === id);
   const own: AiPreviewMedia = {url: proposal.dataUrl, width: proposal.width, height: proposal.height};
+  const paired: AiPreviewMedia | null = companion ? {url: companion.dataUrl, width: companion.width, height: companion.height} : null;
   const savedBackground = asset(scene.backgroundId), savedTable = scene.tableAsset;
-  const background = role === 'background' ? own : scene.background && savedBackground ? {url: scene.background.url, video: isVideo(scene.background.contentType), width: savedBackground.width, height: savedBackground.height} : null;
-  const table = role === 'table' ? own : scene.table && savedTable ? {url: scene.table.url, video: isVideo(scene.table.contentType), width: savedTable.width, height: savedTable.height} : null;
+  const background = role === 'background' ? own : paired ?? (scene.background && savedBackground ? {url: scene.background.url, video: isVideo(scene.background.contentType), width: savedBackground.width, height: savedBackground.height} : null);
+  const table = role === 'table' ? own : paired ?? (scene.table && savedTable ? {url: scene.table.url, video: isVideo(scene.table.contentType), width: savedTable.width, height: savedTable.height} : null);
   // Only a dealer with its own alpha is drawn; a green-screen idle needs the compositor's keying.
   const keyed = scene.dealer && scene.compositing?.mode === 'alpha';
   const dealer = keyed && scene.dealer ? {url: scene.dealer.url, video: isVideo(scene.dealer.contentType)} : null;

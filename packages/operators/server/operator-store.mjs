@@ -311,6 +311,18 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     }
     return presets;
   }
+  // The bound tables whose game settings have a published head: the row the shared table reads at entry
+  // (services/game/shared-room-access.mjs refuses a binding without a head with room_config_missing). The
+  // lobby and Admin read it so they say the same as the table. Same unscoped $1/$2 typing as above.
+  async function getPublishedRoomConfigHeads(pack) {
+    const bound = Object.keys(pack?.branding?.roomGameConfigVersions ?? {});
+    if (!bound.length) return new Set();
+    if (bound.length > 256) fail('studio_corrupt_operator');
+    const rows = await query(`/* operator-store:room-config-heads */
+      SELECT h.room_id FROM croupier_game.shared_table_config_heads h
+      WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id = ANY($3::text[])`, [bound]);
+    return new Set(rows.map(row => row.room_id));
+  }
   async function resolvePartnerContext({ account, operatorSlug } = {}) {
     const userId = idText(ownValue(account, 'userId'));
     const accountRole = ownValue(account, 'role');
@@ -605,8 +617,11 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         current = rows[0] ? packageRow(rows[0]) : null;
         if (expectedRevision !== undefined && (current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
         const lifecycle = optionalOwn(input, 'lifecycle');
-        if (lifecycle !== undefined && (!plain(lifecycle) || Object.keys(lifecycle).sort().join(',') !== 'archived,resourceId,resourceType'
-          || !['operator','room'].includes(lifecycle.resourceType) || typeof lifecycle.archived !== 'boolean')) fail('studio_invalid_data',422);
+        // `deleted: true` marks a permanent room deletion from the trash (permanent-deletion-api.mjs):
+        // the journal's package.publish entry then records which archived room left the package.
+        if (lifecycle !== undefined && (!plain(lifecycle) || !['archived,resourceId,resourceType','archived,deleted,resourceId,resourceType'].includes(Object.keys(lifecycle).sort().join(','))
+          || !['operator','room'].includes(lifecycle.resourceType) || typeof lifecycle.archived !== 'boolean'
+          || Object.hasOwn(lifecycle,'deleted') && (lifecycle.deleted !== true || lifecycle.resourceType !== 'room' || lifecycle.archived !== true))) fail('studio_invalid_data',422);
         if (lifecycle !== undefined) idText(lifecycle.resourceId);
         const nextBranding = JSON.parse(branding);
         // Ordinary publication, including restoration of design drafts, may not
@@ -854,7 +869,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
 
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, getPublishedRoomLimitPresets, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
+    getCurrentPackage, getPublishedRoomLimitPresets, getPublishedRoomConfigHeads, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
     assertPartnerJournalReady, recordPartnerTableEvent, listPartnerRoomPauses, recordPartnerRequest,
   });
 }

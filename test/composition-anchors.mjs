@@ -157,10 +157,13 @@ for(const [width,height]of [[390,844],[1920,1080]]){
     const j=await referencePlaneFor(scene(moved,{adjust}),{width,height}),plain=overlay(await referencePlaneFor(scene(moved),{width,height})),r=overlay(j),d=j.dealerPlane;
     close(r.scale/plain.scale,1.2);close(r.controlScale,Math.max(compact?.8:0,d.scale*1.5));
     const neutral=overlay(await referencePlaneFor(scene(moved,{adjust:{cards:adjust.cards,chips:{...adjust.chips,dx:0,dy:0}}}),{width,height}));
+    // A phone's touch row stays on screen: at the edge the offset moves it only as far as the screen allows.
+    const moveBy=compact?Math.min(.05*1080*d.scale,bounds.right-49-neutral.seats.at(-1).x):.05*1080*d.scale;
     for(const [i,box]of boxes.entries()){
       const seat=String(box+1),p=filmed(d,seat);
       close(r.x+r.positions[seat].cx*r.scale,p.x);close(r.y+r.positions[seat].cy*r.scale,p.y);
-      close(r.seats[i].x-neutral.seats[i].x,.05*1080*d.scale);
+      close(r.seats[i].x-neutral.seats[i].x,moveBy);
+      assert.ok(r.seats[i].x+49<=bounds.right+1e-6&&r.seats[i].x-49>=bounds.left-1e-6);
     }
   });
 }
