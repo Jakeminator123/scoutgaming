@@ -6,8 +6,9 @@ import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse, IdleAutomaticPolicy
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import { selectionFor } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
-import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, prepareStudioIdleRotation, savedIdleRotationSelection, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, prepareStudioIdleRotation, savedIdleRotationSelection, keepIdleRotationChoices, IDLE_DESCRIPTION_MAX, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 import type { PreparedIdleRotationClip } from '../../../../lib/idle-rotation-sources.mjs';
+import { Field, Input, Switch } from '../ui/form';
 
 export type StudioPolicyPanelProps = {
   project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
@@ -18,7 +19,7 @@ export const IDLE_USES:readonly {id:IdleVariantUse;label:string;hint:string}[]=O
   {id:'manual',label:'Av',hint:'Spelas bara vid manuellt prov. Grundloopen fortsätter.'},
   {id:'automatic',label:'Ibland · intervall',hint:'Startar av sig själv med jämna mellanrum medan dealern väntar, och återgår sedan till grundloopen.'},
   {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när rummet kör klippvalsläget Regler.'},
-  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet utifrån chatt och persona när rummets automatikläge tillåter det.'},
+  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet vid tur eller resultat när scenmallens vila står på OpenClaw. Beskriv vad klippet visar.'},
 ]);
 const automatic:IdleAutomaticPolicy={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
 const seconds=(ms:number)=>(ms/1000).toLocaleString('sv-SE',{maximumFractionDigits:1});
@@ -77,8 +78,12 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
     if(locked||!rotationSource)return;
     if(!savedRotation){setExcluded(current=>[...current.filter(row=>row!==id),...checked?[]:[id]]);return;}
     const prepared=prepareStudioIdleRotation(project,inventory,dealerId,slot,checked?[...rotationSelection,id]:rotationSelection.filter(row=>row!==id));
-    if(prepared?.policy)idle(prepared.policy);else setError(prepared?.error??'Urvalet kunde inte kopplas.');
+    if(prepared?.policy)idle(keepIdleRotationChoices(prepared.policy,policy));else setError(prepared?.error??'Urvalet kunde inte kopplas.');
   }
+  // OpenClaw may also propose a saved sequence clip that starts and ends at rest.
+  const rotationRule=(row:PreparedIdleRotationClip)=>savedRotation&&policy?.rotation&&!row.baseline&&row.from==='rest'&&row.to==='rest'
+    ?policy.variants.find(item=>item.videoId===row.videoId)??null:null;
+  const variantEditFor=(videoId:string)=>(patch:Partial<IdleVariantPolicy>)=>edit(()=>applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,videoId,patch));
   const choices=scope?.family?scope.clips.filter(video=>scope!.family!.variantIds.includes(video.id)).map(video=>({id:video.id,label:label(video.id)}))
     :scope?.line.variants.filter(row=>row.id!==scope!.line.baselineVariantId&&scope!.clips.some(video=>video.id===row.videoGenerationId)).map(row=>({id:row.id,label:row.label}))??[];
   const preferredId=scope?.family?selectedVideoId:scope?.line.variants.find(row=>row.id===selectedVariantId&&row.videoGenerationId===selectedVideoId)?.id
@@ -104,23 +109,27 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const caption=slot.eventId==='idle.ready'?'Vila (idle)':slot.title;
 
   return <section aria-label={`Policy för ${slot.title}`} className="studio-policy-panel">
-    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
+    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw väljer bara bland klipp markerade OpenClaw, och bara när scenmallens vila står på OpenClaw.</p></header>
     {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
         {rotationSource&&rotationCandidate&&<section className="studio-policy-section" aria-label="Vilosekvens">
           <h3>Sammanhängande vilosekvens</h3>
           <p>{savedRotation&&policy?.rotation?`${policy.rotation.clips.length} klipp är kopplade i utkastet.`:`Koppla Kevins urval för dealern. Befintliga original återanvänds.`} {rotationSource.matched} av {rotationSource.total} original finns i biblioteket (källa {rotationSource.ref.slice(0,8)}).</p>
           <p>Knäppta händer följer insatsfasen. Händerna mot bordet följer spelarens beslut. Övergångsklipp spelas färdigt före nästa pose. Bocka ur ett klipp för att lämna det utanför sekvensen.</p>
-          <div className="studio-policy-triggers" role="group" aria-label="Klipp i vilosekvensen">{rotationSource.clips.map(row=><label key={row.id} className="studio-policy-trigger">
-            <input type="checkbox" checked={rotationSelection.includes(row.id)} disabled={locked||row.baseline} onChange={event=>toggleRotationClip(row.id,event.target.checked)}/>
-            <span><strong>{row.id}</strong> · {rotationClipText(row)}{row.status!=='registered'&&<> · <em>{row.status==='missing'?'saknas i biblioteket':'flera original matchar'}</em></>}</span>
-          </label>)}</div>
+          {savedRotation&&<p>Ett kopplat klipp som börjar och slutar i vila kan också föreslås av OpenClaw vid tur och resultat. Det spelas då en gång och sekvensen fortsätter.</p>}
+          <div className="studio-policy-triggers" role="group" aria-label="Klipp i vilosekvensen">{rotationSource.clips.map(row=>{const rule=rotationRule(row);return <div key={row.id} className="grid gap-2">
+            <label className="studio-policy-trigger">
+              <input type="checkbox" checked={rotationSelection.includes(row.id)} disabled={locked||row.baseline} onChange={event=>toggleRotationClip(row.id,event.target.checked)}/>
+              <span><strong>{row.id}</strong> · {rotationClipText(row)}{row.status!=='registered'&&<> · <em>{row.status==='missing'?'saknas i biblioteket':'flera original matchar'}</em></>}</span>
+            </label>
+            {rule&&<RotationClipRule item={rule} label={row.id} onChange={variantEditFor(rule.videoId)}/>}
+          </div>;})}</div>
           {savedRotation&&savedRotation.outside>0&&<p className="studio-policy-warning">{savedRotation.outside} kopplade klipp finns inte i dealerns vilokälla och tas bort när du ändrar urvalet.</p>}
           {rotationCandidate.error&&<p role="alert" className="studio-policy-error">{rotationCandidate.error}</p>}
           {!savedRotation?<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Koppla {rotationCandidate.selected} viloklipp</button>
             :<><p>Ändringen når spelet efter Spara utkast och Publicera i spelbordet. Ett spelbord utan Publicera (roulette eller ej öppet) får den via Avancerat › Publicera igen under bolagets tilldelning.</p>
               <div className="studio-policy-actions">
-                {savedRotation.outside>0&&<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Uppdatera till urvalet</button>}
+                {savedRotation.outside>0&&<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(keepIdleRotationChoices(rotationCandidate.policy,policy));}}>Uppdatera till urvalet</button>}
                 <button type="button" className="studio-button" disabled={locked} onClick={()=>{if(!policy)return;const {rotation,...rest}=policy;setExcluded([]);idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
               </div></>}
         </section>}
@@ -196,6 +205,7 @@ function BehaviourClip({item,label,rule,onRule,onChange,onRemove}:{item:IdleVari
       {IDLE_USES.map(row=><button key={row.id} type="button" aria-pressed={item.use===row.id} onClick={()=>{if(item.use!==row.id)onChange({use:row.id,automatic:row.id==='automatic'?item.automatic??{...automatic}:null});}}>{row.label}</button>)}
     </div>
     <p className="studio-policy-hint">{use.hint}</p>
+    {item.use==='openclaw'&&<DescriptionField item={item} label={label} onChange={onChange}/>}
     {item.use==='rules'&&<>
       <label className="studio-field"><span>Spelhändelse</span><select value={rule} onChange={event=>onRule(event.target.value)}>
         {!rule&&<option value="">Egna villkor · välj för att ersätta</option>}
@@ -210,5 +220,25 @@ function BehaviourClip({item,label,rule,onRule,onChange,onRemove}:{item:IdleVari
       <p className="studio-policy-summary" role="status">{scheduleSummary(item.automatic)}</p>
     </>}
     <button type="button" className="studio-policy-link is-remove" onClick={onRemove}>Ta bort ur schemat</button>
+  </div>;
+}
+// The text OpenClaw reads when it chooses: what the clip shows, not when to play it.
+function DescriptionField({item,label,onChange}:{item:IdleVariantPolicy;label:string;onChange:(patch:Partial<IdleVariantPolicy>)=>void}){
+  return <Field label="Vad klippet visar" hint={`Högst ${IDLE_DESCRIPTION_MAX} tecken. OpenClaw väljer klippet utifrån beskrivningen.`}>
+    <Input value={item.description??''} maxLength={IDLE_DESCRIPTION_MAX} aria-label={`Vad ${label} visar`} placeholder="Till exempel: ler och nickar mot spelaren"
+      onChange={event=>onChange({description:event.target.value})}/>
+  </Field>;
+}
+// Körregel of a saved sequence clip at rest: the sequence only, or also OpenClaw's proposal.
+// A clip a game rule proposes keeps its rule: shown as Regler, without the switch.
+function RotationClipRule({item,label,onChange}:{item:IdleVariantPolicy;label:string;onChange:(patch:Partial<IdleVariantPolicy>)=>void}){
+  if(item.use==='rules')return <p className="pl-6 text-[13px] text-sg-text">Regler · en spelregel får föreslå klippet.</p>;
+  const openclaw=item.use==='openclaw';
+  return <div className="grid gap-2 pl-6">
+    <label className="inline-flex items-center gap-2 text-[13px] text-sg-text">
+      <Switch checked={openclaw} aria-label={`OpenClaw får föreslå ${label}`} onCheckedChange={checked=>onChange({use:checked?'openclaw':'rotation'})}/>
+      OpenClaw får föreslå klippet
+    </label>
+    {openclaw&&<DescriptionField item={item} label={label} onChange={onChange}/>}
   </div>;
 }

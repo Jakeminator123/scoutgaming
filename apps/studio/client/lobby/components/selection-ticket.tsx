@@ -58,7 +58,11 @@ export function SelectionTicket() {
         </ul>
 
         <div className="flex items-center p-1.5">
-          {room && dealer ? (
+          {room?.preparing ? (
+            <span role="status" className="flex h-8 items-center whitespace-nowrap rounded-full border border-border px-4 text-sm text-muted-foreground">
+              Förbereds
+            </span>
+          ) : room && dealer ? (
             <a
               href={playUrlFor({ operator, room, dealer })} onClick={prepareLaunch} onAuxClick={prepareLaunch}
               className="flex h-8 items-center gap-2 rounded-full bg-lime px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-85"

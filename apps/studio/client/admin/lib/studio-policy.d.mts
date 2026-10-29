@@ -10,6 +10,9 @@ export function applyStudioIdlePolicy(project:StudioProject,inventory:VideoInven
 export function addStudioIdleClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,durationMs:number,asBase?:boolean):StudioProject;
 export function setStudioBaseWeight(policy:IdlePolicy,videoId:string,weight:number):IdlePolicy;
 export const IDLE_EVENT_RULES:readonly {id:string;label:string;type:string;conditions:unknown[][]}[];
+export const IDLE_DESCRIPTION_MAX:number;
+export function idleDescription(value:unknown):string;
+export function keepIdleRotationChoices(next:IdlePolicy,previous:IdlePolicy|null|undefined):IdlePolicy;
 export function applyStudioIdleVariantPolicy(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,patch:Partial<IdleVariantPolicy>):StudioProject;
 export function studioIdleEventRule(project:StudioProject,dealerId:string,videoId:string):string;
 export function applyStudioIdleEventRule(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,ruleId:string):StudioProject;

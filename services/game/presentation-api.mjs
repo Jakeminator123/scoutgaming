@@ -79,6 +79,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
+  const adviseIdle=async(adviceBody,options)=>{adviceService??=createIdleAdviceServer({settings,registryLoader});return (await adviceService)(adviceBody,options);};
   async function idleAdvice({req,playerId,body,signal,context=frozenDealerContext}) {
     let frozen=null;
     if(body.presentationContext!==undefined) {
@@ -93,12 +94,10 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
       adviceBody.mode=idleMode;
     }
     const ownInventory=!frozen&&isDealerId(body.dealerId)?registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}):null;
-    adviceService??=createIdleAdviceServer({settings,registryLoader});
-    const advise=await adviceService;
     const fetchImpl=directorFetchFactory?await directorFetchFactory({req,playerId,project,
       readProject:async()=>frozen?(await context.resolve(frozen.context)).project:store.load(),signal}):null;
     if(fetchImpl!==null&&typeof fetchImpl!=='function')fail('Director transport unavailable',503);
-    return {...await advise({...adviceBody,project},{signal,...(ownInventory?{videoRegistry:ownInventory}:{}),
+    return {...await adviseIdle({...adviceBody,project},{signal,...(ownInventory?{videoRegistry:ownInventory}:{}),
       ...(fetchImpl?{fetchImpl,...(fetchImpl.cacheScope===undefined?{}:{cacheScope:fetchImpl.cacheScope})}:{}),
       ...(frozen?{videoRegistry:frozen.idleInventory,cacheScope:createHash('sha256').update(JSON.stringify([playerId,frozen.context,fetchImpl?.cacheScope??null])).digest('hex')}:{}),
     }),projectRevision:project.revision,configurationSource:frozen?.configurationSource??configurationSource};
@@ -208,7 +207,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         try{
           controller.signal.throwIfAborted();
           const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal,frozenDealerContext:activeContext})=>
-            selectSharedRoomPresentation({capture,body,frozenDealerContext:activeContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
+            selectSharedRoomPresentation({capture,body,frozenDealerContext:activeContext,select,settings,directorFetchFactory,request:req,playerId,signal,adviseIdle}));
           controller.signal.throwIfAborted();
           if(!value||Object.getPrototypeOf(value)!==Object.prototype)throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
           json(200,cloneStudioJson(value,{maxBytes:256*1024}));return true;
