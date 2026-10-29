@@ -41,3 +41,19 @@ test('Hjälp lists every menu page with its description and links to the user gu
   for(const tab of navigation.adminSystemTabs)assert.ok(html.includes(tab.label),'the System tabs are explained: '+tab.label);
   assert.match(html,/<h1[^>]*>Hjälp<\/h1>/);
 });
+
+// Enkel väg 4: a company has four tabs with Spelbord as the default; retired ids land on the nearest tab and Hjälp lists the four.
+test('the company nav has Spelbord, Tilldelning, Team and Inställningar, and old tab ids keep working',()=>{
+  assert.deepEqual(navigation.adminCompanyTabs.map(tab=>tab.id),['spelbord','tilldelning','team','installningar']);
+  assert.equal(navigation.adminTabId('company',null),'spelbord');
+  assert.equal(navigation.adminTabId('company','okand'),'spelbord');
+  assert.equal(navigation.adminTabId('company','constructor'),'spelbord','an inherited key is no alias');
+  for(const [old,tab] of [['spelare','spelbord'],['integration','spelbord'],['journal','installningar'],['tilldelning','tilldelning'],['team','team']])
+    assert.equal(navigation.adminTabId('company',old),tab,old);
+  // Aliases are per page: System keeps its own Spelarkonton and Integration tabs.
+  assert.equal(navigation.adminTabId('system','spelare'),'spelare');assert.equal(navigation.adminTabId('system','integration'),'integration');
+  const {AdminHelp}=loadHelp();
+  const html=renderToStaticMarkup(React.createElement(AdminHelp));
+  assert.ok(html.includes('Bolagets flikar: Spelbord · Tilldelning · Team · Inställningar.'));
+  assert.doesNotMatch(html,/Bolag, fliken (Journal|Integration|Spelare)/);
+});

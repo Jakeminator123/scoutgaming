@@ -9,7 +9,7 @@ test('redirected Control fragments open the corresponding Admin tool once', () =
   // Without a dealer the clip and speech fragments open the dealer list; with one, that dealer's nav tab.
   for (const [fragment, target, withDealer] of [
     ['clips', '/admin/dealers#deal', '/admin/dealers/astrid?flik=klipp#deal'], ['voice', '/admin/dealers#clips', '/admin/dealers/astrid?flik=tal#clips'],
-    ['speech', '/admin/dealers#clips', '/admin/dealers/astrid?flik=tal#clips'], ['backgrounds', '/admin/scenes?tab=bakgrunder', '/admin/scenes?tab=bakgrunder&dealer=astrid'],
+    ['speech', '/admin/dealers#clips', '/admin/dealers/astrid?flik=tal#clips'], ['backgrounds', '/admin/scenes?tab=material&filter=bakgrund', '/admin/scenes?tab=material&filter=bakgrund&dealer=astrid'],
     ['transactions', '/admin/system?flik=spelare', '/admin/system?flik=spelare&dealer=astrid'], ['integration', '/admin/system?flik=integration', '/admin/system?flik=integration&dealer=astrid'],
     ['game-tables', '/admin/companies?tab=spelbord', '/admin/companies?tab=spelbord&dealer=astrid'], ['overview', '/admin', '/admin?dealer=astrid'],
   ]) {

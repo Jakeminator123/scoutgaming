@@ -40,11 +40,6 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "apps/studio/client/lobby/public/videos/dealers/astrid-look.mp4",
-    "maxBytes": 2188722,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "apps/studio/client/lobby/public/videos/dealers/dragge-shirt.mp4",
     "maxBytes": 3841224,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"

@@ -2,7 +2,7 @@ import { validateProject, allowedPathDescriptors, addVariant } from '../../../..
 import { validateIdlePolicy } from '../../../../../packages/presentation/runtime/idle-policy.mjs';
 import { createRegisteredIdlePolicy, registeredIdleInventory } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { IDLE_ROTATION_DEALERS, prepareIdleRotation, savedIdleRotationSelection } from '../../../lib/idle-rotation-sources.mjs';
-import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
+import { mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { selectionFor } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './connected-studio.mjs';
 
@@ -100,12 +100,11 @@ export function studioPolicyContext(project, inventory, dealerId, slot) {
   const clips = clipsForSlot(inventory,dealerId,current).filter(video => !video.deletion);
   if (slot.eventId === 'idle.ready') {
     if (family && (family.playbackType !== 'idle-pool' || family.id !== `${dealerId}/idle.ready/ready`)) fail('Grundloopen behöver sin exakta idlefamilj.');
-    const global = dealerId === 'astrid' && family?.playbackType === 'idle-pool';
-    const policy = global ? project.idlePolicy ?? null : project.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy ?? null;
-    return { kind:'idle', family, line, clips, policy, global, frequency:false };
+    const policy = project.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy ?? null;
+    return { kind:'idle', family, line, clips, policy };
   }
   if (family?.playbackType === 'idle-pool') fail('Grundloopspolicy kan bara redigeras i Grundloop.');
-  return { kind:family ? 'family' : 'line',family,line,clips,policy:null,global:false,frequency:isAstridDealFamily(family) };
+  return { kind:family ? 'family' : 'line',family,line,clips,policy:null };
 }
 
 // The dealer's frozen idle source bound to its registered originals. Without a
@@ -124,17 +123,10 @@ export function applyStudioIdlePolicy(project, inventory, dealerId, slot, nextPo
   if (policy.familyId !== `${dealerId}/idle.ready/ready`) fail('Schemat tillhör en annan dealer.');
   const available = new Set(scope.clips.map(row => row.id));
   for (const item of [...policy.base,...policy.variants]) if (!available.has(item.videoId)) fail('Ett schemaklipp saknas eller tillhör ett annat fack.');
-  if (scope.global && scope.family) {
-    if (policy.base.some(row => !scope.family.standardIds.includes(row.videoId))
-      || policy.variants.some(row => !scope.family.variantIds.includes(row.videoId))) fail('Grundloopens bas och variationer måste behålla sina registrerade roller.');
-  }
   const draft = structuredClone(project);
-  if (scope.global) draft.idlePolicy = policy;
-  else {
-    const rows=draft.dealerIdlePolicies??[];
-    draft.dealerIdlePolicies=rows.some(row=>row.dealerId===dealerId)
-      ?rows.map(row=>row.dealerId===dealerId?{dealerId,policy}:row):[...rows,{dealerId,policy}];
-  }
+  const rows=draft.dealerIdlePolicies??[];
+  draft.dealerIdlePolicies=rows.some(row=>row.dealerId===dealerId)
+    ?rows.map(row=>row.dealerId===dealerId?{dealerId,policy}:row):[...rows,{dealerId,policy}];
   const line = draft.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId);
   const baseline = line.variants.find(row => row.id === line.baselineVariantId);
   if (!baseline || baseline.triggerIds.length) fail('Grundloopens standardvariant måste vara ovillkorlig.');
@@ -173,17 +165,14 @@ export function setStudioBaseWeight(policy,videoId,weight) {
 export function applyStudioVariantPolicy(project,inventory,dealerId,slot,variantId,patch) {
   const scope=studioPolicyContext(project,inventory,dealerId,slot);
   if(scope.kind==='idle')fail('Grundloopens variationer ändras i dess schema.');
-  if(!patch||Object.keys(patch).some(key=>!['selection','priority','triggerIds','frequencyPercent'].includes(key)))fail('Okända policyfält.');
+  if(!patch||Object.keys(patch).some(key=>!['selection','priority','triggerIds'].includes(key)))fail('Okända policyfält.');
   const draft=structuredClone(project);
   if(scope.family){
     if(!scope.family.variantIds.includes(variantId)||!scope.clips.some(row=>row.id===variantId))fail('Välj ett tillgängligt alternativ i den exakta mediefamiljen.');
-    if(Object.hasOwn(patch,'frequencyPercent')&&!scope.frequency)fail('Frekvens finns bara i ett utdelningsfack med frekvensstyrning.');
     const current=mediaVariantPolicy(project,scope.family,variantId);
-    if(scope.frequency&&Object.hasOwn(patch,'selection'))fail('Utdelningsfackets urval styrs av dess frekvenser.');
     const policy={...structuredClone(current),...structuredClone(patch)};
     draft.mediaPolicy=upsertMediaVariantPolicy(draft.mediaPolicy,scope.family.id,policy);
   }else{
-    if(Object.hasOwn(patch,'frequencyPercent'))fail('Frekvens behöver en registrerad mediefamilj för utdelningen.');
     const line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     const variant=line.variants.find(row=>row.id===variantId);
     if(!variant||variant.id===line.baselineVariantId||!scope.clips.some(row=>row.id===variant.videoGenerationId))fail('Välj en kopplad klippvariant i detta fack. Standardvarianten är fast.');
@@ -234,7 +223,6 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
     return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning, vändning, tur eller resultat; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
       : ['Regelurval valt, men inga kopplade händelsevillkor finns för tagningen.']);
   }
-  const frequency = scope.family && dealFrequencyPolicies(project,scope.family);
   const policies = scope.family ? project.mediaPolicy?.find(row => row.familyId === scope.family.id)?.variants ?? [] : [];
   const familyPolicy = policies.find(row => row.videoId === videoId);
   const configured = scope.family ? configuredClipIds(project,dealerId,slot,variantId,inventory).includes(videoId) || Boolean(familyPolicy)
@@ -244,9 +232,6 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
   const exactVariant=scope.line.variants.find(row=>row.id===variantId&&row.videoGenerationId===videoId);
   const standard = scope.family ? scope.family.standardIds[0] === videoId
     : (!exactVariant||exactVariant.id===scope.line.baselineVariantId) && (slot.sourceType==='speak'?currentClipId(project,dealerId,slot,scope.line.baselineVariantId,inventory):scope.line.variants.find(row=>row.id===scope.line.baselineVariantId)?.videoGenerationId) === videoId;
-  if (frequency) return result(true, [standard
-    ? `Standard/reserv · minst ${100-frequency.reduce((sum,row)=>sum+(row.frequencyPercent??0),0)} % av urvalet. Otillgängliga alternativ faller tillbaka till standard.`
-    : (familyPolicy?.frequencyPercent ?? 0) > 0 ? `${familyPolicy.frequencyPercent} % vid denna utdelningsplats; övriga regler styr inte frekvensurvalet.` : '0 % · endast manuellt prov.']);
   if (standard) return result(true, ['Standard/reserv när situationen inträffar.']);
   const variant = familyPolicy ?? exactVariant
     ?? scope.line.variants.find(row => row.videoGenerationId === videoId);
@@ -256,6 +241,6 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
   if (selection.random) rules.push('Tillåten i slumpurval.');
   if (selection.model) rules.push('OpenClaw-urval tillåtet i utkastet; faktisk triggeranslutning är inte verifierad i denna vy.');
   if (!rules.length) rules.push('Endast manuellt prov; inget automatiskt urval är aktiverat.');
-  else rules.push(`Prioritet ${variant.priority}. Rummets publicerade automatikläge avgör vilket urval som används.`);
+  else rules.push(`Prioritet ${variant.priority}. Spelbordets publicerade automatikläge avgör vilket urval som används.`);
   return result(true, rules);
 }
