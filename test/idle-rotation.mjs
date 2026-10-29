@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {IDLE_ROTATION_DEALERS,idleRotationSource,prepareIdleRotation,savedIdleRotationSelection,validateIdleRotationSource} from '../apps/studio/lib/idle-rotation-sources.mjs';
 import {createLiveIdleController} from '../packages/presentation/runtime/live-idle.mjs';
 import {validateIdlePolicy, createIdlePreviewPlan, IdlePolicyError} from '../packages/presentation/runtime/idle-policy.mjs';
-import {chooseRotationClip} from '../packages/presentation/runtime/idle-rotation.mjs';
+import {chooseRotationClip,createIdleOffers} from '../packages/presentation/runtime/idle-rotation.mjs';
 import {addDealer,createSeedProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {encodePresentationPackage,decodePresentationPackage} from '../packages/presentation/server/presentation-package.mjs';
@@ -264,4 +264,39 @@ test('a proposal waits for the sequence to return to rest; only rest clips may c
   assert.throws(()=>validateIdlePolicy(bad),IdlePolicyError);
   const exit=structuredClone(p.policy);exit.variants.find(item=>row(item.videoId).from==='clasped'&&row(item.videoId).to==='rest').use='rules';
   assert.throws(()=>validateIdlePolicy(exit),IdlePolicyError);
+});
+
+test('a proposal keeps the sequence spacing: no head movement within four clips, never the clip just played',()=>{
+  const p=proposing(),head=p.id('blickvanster'),openclaw=p.id('djupandetag'),rules=p.id('fingrar');
+  const row=videoId=>p.policy.rotation.clips.find(item=>item.videoId===videoId);
+  let req=0;const offer=(videoId,use)=>p.c.offerVariant({videoId,requestId:`spacing-${++req}`,expiresAt:p.at()+30000},use?{use}:undefined);
+  // Play the sequence until a head movement has just ended.
+  let i=0;for(;i<500;i++){const done=row(p.c.snapshot().clip.videoId);p.tick(100);p.finish();if(done.head)break;}
+  assert.ok(i<500,'the sequence plays a head movement');
+  for(let since=0;since<4;since++){
+    assert.equal(offer(head),false,`a head movement ${since} clips after the last one is refused`);
+    p.tick(100);p.finish();
+  }
+  assert.equal(offer(head),true,'after four clips a head movement may be proposed');
+  // The accepted proposal plays; the same clip may not be proposed straight after it.
+  p.atRest();const played=p.finish();assert.equal(played.videoId,head);
+  p.c.presented(played.playId);p.tick(100);
+  const after=p.c.completed(played.playId).clip;assert.notEqual(after.videoId,head);
+  p.tick(60001);
+  assert.equal(offer(head),false,'the clip just played is not proposed again');
+  // Never the clip just played, whoever played it.
+  const proposer=videoId=>videoId===openclaw?'openclaw':videoId===rules?'rules':null;
+  for(let n=0;n<500;n++){const done=p.c.snapshot().clip.videoId;p.tick(100);p.finish();if(proposer(done)&&row(done).to==='rest'){
+    assert.equal(offer(done,proposer(done)),false,'a proposal repeating the last clip is refused');
+    const other=done===openclaw?rules:openclaw;assert.equal(offer(other,proposer(other)),true);return;}}
+  assert.fail('the sequence plays a proposable clip');
+});
+
+test('used request ids are forgotten after 30 s, so the guard never fills up for good',()=>{
+  const offers=createIdleOffers(),read=(requestId,at)=>offers.read({videoId:'v',requestId,expiresAt:at+30000},'openclaw',at);
+  for(let i=0;i<512;i++)assert.ok(read(`r${i}`,0));
+  assert.equal(read('overflow',0),null,'at most 512 ids within 30 s');
+  assert.equal(read('r7',30000),null,'an id is still used 30 s later');
+  assert.ok(read('fresh',30001),'older ids are cleared, so a fresh one is accepted');
+  assert.equal(read('fresh',30002),null,'and that id is now used');
 });

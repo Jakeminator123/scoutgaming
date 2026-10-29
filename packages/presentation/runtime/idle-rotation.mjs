@@ -60,19 +60,23 @@ function weighted(pool, last, random) {
 // A proposal from OpenClaw or a game rule: a fresh request id, valid for at most
 // 30 s, and at most one proposed start per minute. Shape and limits only; the
 // controller decides whether the clip may play from its current pose.
+// A request id is remembered for the 30 s any offer carrying it can live; after
+// that a replay has expired anyway, so the id is forgotten.
 export const IDLE_OFFER_TTL_MS = 30000;
 export function createIdleOffers() {
   let pending = null, starts = [];
-  const seen = new Set();
+  const seen = new Map();
   const recent = at => (starts = starts.filter(start => at - start < 60000)).length;
+  const forget = at => { for (const [id, readAt] of seen) if (at - readAt > IDLE_OFFER_TTL_MS) seen.delete(id); };
   return {
     read(value, use, at) {
+      forget(at);
       if (!['openclaw', 'rules'].includes(use) || !value || typeof value !== 'object' || Object.keys(value).length !== 3
         || !['videoId', 'requestId', 'expiresAt'].every(key => Object.hasOwn(value, key)) || typeof value.videoId !== 'string'
         || typeof value.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value.requestId)
         || !Number.isFinite(value.expiresAt) || value.expiresAt <= at || value.expiresAt > at + IDLE_OFFER_TTL_MS
         || seen.has(value.requestId) || seen.size >= 512) return null;
-      seen.add(value.requestId);
+      seen.set(value.requestId, at);
       return { videoId: value.videoId, requestId: value.requestId, expiresAt: value.expiresAt, use };
     },
     hold(offer, at) { if (pending || recent(at) >= 1) return false; pending = offer; return true; },
@@ -108,11 +112,13 @@ export function createRotationIdle({ policy, inventory, dealerId, random, scene,
   }
   // A proposed clip starts and ends at rest, carries the proposer's use and fits
   // the game phase the way the sequence itself would (calm while the player decides).
+  // It keeps the sequence's own spacing too: never the clip just played, and a
+  // head movement only after four clips since the previous one.
   function offerable(videoId, use) {
     const row = allowed.find(item => item.videoId === videoId);
     return currentPolicy.variants.some(item => item.videoId === videoId && item.use === use) && row && !failed.has(videoId)
       && row.from === 'rest' && row.to === 'rest' && (row.phase === 'any' || row.phase === scene.phase)
-      && (scene.phase !== 'decide' || row.calm) ? row : null;
+      && (scene.phase !== 'decide' || row.calm) && (!row.head || sinceHead >= 4) && row.videoId !== last ? row : null;
   }
   // Played once at the next boundary at rest; the sequence then continues from it.
   function playOffer(at) {
