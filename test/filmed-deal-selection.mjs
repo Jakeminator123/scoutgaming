@@ -14,6 +14,8 @@ import {createPresentationApi,presentationInput} from '../services/game/presenta
 import {filmedDealSelection} from '../services/game/filmed-deal-selection.mjs';
 import {presentationEvents} from '../services/game/partner-presentation.mjs';
 import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import {PAOW_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
+import {nativeRoomMaterialFixture} from './fixtures/native-room-game-material.mjs';
 const uuid=n=>'71000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const box=(shoeDraw,seat=0)=>({type:'deal',to:'box',box:seat,shoeDraw,faceDown:false,card:{r:'6',s:'S'}});
 const hole=shoeDraw=>({type:'deal',to:'dealer',box:null,shoeDraw,faceDown:true,card:null});
@@ -199,4 +201,26 @@ for(const frozen of [false,true])test(`${frozen?'frozen':'native'} API rechecks 
   else {assert.equal(result.video,null);assert.equal(result.standard,null);assert.equal(result.decision.media.reason,'position_clip_missing');}
   assert.equal(f.counts().fallbackCalls,0);
   if(frozen)assert.ok(f.counts().resolveCalls>=2);
+});
+
+test('Landningar: the frozen context carries a new dealer\'s copied landings to selection and config; PAOW\'s stay the code profile',async()=>{
+  const context=dealerId=>({operatorSlug:'north',roomId:'room-native-fixture',packageRevision:7,dealerId});
+  const service=f=>createFrozenDealerPresentationContext({readCurrentContext:async()=>structuredClone({operator:{id:'operator-fixture',slug:'north',status:'active'},
+    package:{...f.input.package,frozen:f.presentation},administration:{rooms:[f.input.room],gameLanes:[{schemaVersion:1,id:'fixture-lane',label:'Fixture',
+      dealer:f.presentation.registeredDealers[0].id,renderer:'portrait-video',mediaCollection:f.presentation.registeredDealers[0].id+'-presentation'}]}}),
+    readPresentation:pack=>pack.frozen,privateMedia:async()=>{throw Error('selection must not fetch private bytes');}});
+  const f=nativeRoomMaterialFixture({dealerId:'jakob-2',copyOf:'paow'}),row=f.presentation.registeredDealers[0];
+  const frozen=await service(f).resolve(context('jakob-2'));
+  assert.equal(frozen.filmedProfile.id,row.filmedProfile.id);assert.deepEqual(frozen.filmedProfile.positions,PAOW_KEVIN_PROFILE.positions);
+  assert.deepEqual((await service(f).configuration(context('jakob-2'))).filmedProfile,row.filmedProfile,'the room\'s locked config carries it');
+  const events=[box(1)],choose=profile=>filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:'jakob-2',sourceEvent:events[0],published:events,profile});
+  const chosen=choose(frozen.filmedProfile);
+  assert.equal(chosen.filmedTake.profileId,row.filmedProfile.id);assert.match(chosen.filmedTake.takeKey,/^1:/);
+  assert.equal(chosen.video.sha256,row.filmedProfile.takes[chosen.filmedTake.takeKey].sha256,'its own clip for PAOW\'s landing');
+  assert.equal(choose(undefined),null,'without the frozen landings the code register has none for jakob-2');
+  // PAOW: no studio profile, so the frozen context and config look exactly as before.
+  const p=nativeRoomMaterialFixture({dealerId:'paow'}),paow=await service(p).resolve(context('paow'));
+  assert.equal(Object.hasOwn(paow,'filmedProfile'),false);assert.equal(Object.hasOwn(await service(p).configuration(context('paow')),'filmedProfile'),false);
+  const own=filmedDealSelection({project:paow.project,inventory:paow.inventory,dealerId:'paow',sourceEvent:events[0],published:events,profile:paow.filmedProfile});
+  assert.equal(own.filmedTake.profileId,PAOW_KEVIN_PROFILE.id);assert.equal(own.filmedTake.takeKey,chosen.filmedTake.takeKey);
 });
