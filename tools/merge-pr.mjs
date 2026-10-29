@@ -36,8 +36,9 @@ export const MAIN_BRANCH = 'main';
 export const REQUIRED_CHECK = 'CI';
 export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles,body';
 // Other people's branches stay theirs even when the PR was opened from Jakob's account. The policy
-// file lists kevin*, codex/kevin-*, john* and emil*; the codex/<name>-* forms for John and Emil are
-// not in it yet, so they are fixed here and every person in people.json adds <branch>* and codex/<branch>-*.
+// file lists kevin*, codex/kevin-*, john*, codex/john-*, emil* and codex/emil-*; the same forms are
+// fixed here as a floor, and every person in people.json adds <branch>* and codex/<branch>-*.
+// tools/foreign-branch-guard.mjs (the required GitHub check) uses the same patterns.
 export const BASELINE_FOREIGN_BRANCHES = Object.freeze(['kevin*', 'codex/kevin-*', 'john*', 'codex/john-*', 'emil*', 'codex/emil-*']);
 const CI_PATHS = ['.github/workflows/', '.github/actions/'];
 // The CI job that checks out the PR merge commit; its log names that commit's full SHA.
