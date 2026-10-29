@@ -12,7 +12,7 @@ import {ConfirmDialog,Dialog} from '../ui/dialog';
 import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetFitsGame} from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {createStudioClient,type VideoInventory} from '../../lib/connected-studio.mjs';
+import {createStudioClient,type Room,type VideoInventory} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
 // Mounted per tab under Scenmallar och material (Bakgrunder, Bordsgrafik); `trashOnly` is the role's part of the Papperskorg tab.
@@ -20,8 +20,12 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   // The video register only feeds the AI dialog's scene preview (the dealer's idle).
   const [inventory,setInventory]=useState<VideoInventory|null>(null);
+  // Opened from a spelbord (?spelbord=<id>): the AI dialog can also publish there.
+  const [rooms,setRooms]=useState<Room[]>([]);
   const query=useSearchParams();
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
+  const spelbord=query.get('spelbord')??'',fromRoom=rooms.find(row=>row.id===spelbord&&row.state==='live'&&row.published&&row.game!=='roulette');
+  const aiRoom=fromRoom?{id:fromRoom.id,name:fromRoom.name,operatorId:fromRoom.operatorId,compositionId:fromRoom.compositionId}:null;
   function select(key:'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);next.set('tab',role==='background'?'bakgrunder':'bordsgrafik');navigate(base+'?'+next);}
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [reload,setReload]=useState(0);
@@ -30,7 +34,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   useEffect(()=>{if(!visible)preview.current?.pause();return()=>preview.current?.pause();},[visible]);
   useEffect(()=>{const hide=()=>{if(document.hidden)preview.current?.pause();};document.addEventListener('visibilitychange',hide);return()=>{document.removeEventListener('visibilitychange',hide);preview.current?.pause();};},[]);
   useEffect(()=>{if(busy)return;const controller=new AbortController();setLoading(true);setError('');void client.load(controller.signal).then(value=>{
-    if(!controller.signal.aborted){setProject(value.project);setInventory(value.inventory??null);}
+    if(!controller.signal.aborted){setProject(value.project);setInventory(value.inventory??null);setRooms(value.catalog?.administration?.rooms??[]);}
   }).catch(()=>{if(!controller.signal.aborted)setError('Biblioteket kunde inte läsas. Kontrollera inloggningen och läs om.');})
     .finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[refreshKey,busy,reload]);
   useEffect(()=>{const unload=(event:BeforeUnloadEvent)=>{if(busyRef.current){event.preventDefault();event.returnValue='';}};
@@ -63,7 +67,8 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
     {project&&<div className="grid gap-5">
       {!trashOnly&&<LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={registered}
         aside={<div className="grid min-w-[200px] place-content-center justify-items-center gap-1.5 rounded-xl border border-sg-border bg-sg-surface-2 px-5 py-4 text-center">
-          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} project={project} inventory={inventory} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
+          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} project={project} inventory={inventory} room={aiRoom}
+            saveProject={(next,signal)=>client.save(next,signal)} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
           <span className="text-xs text-sg-faint">{role==='background'?'Förslag efter din beskrivning':'Ritas efter dealerns landningar'}</span></div>}/>}
       <div className="material-library" id={trashOnly?'material-trash-'+role:undefined}><LayerAssetManager key={role+game+(trashOnly?':trash':'')} project={project} role={role} disabled={blocked} expanded view={trashOnly?'trash':'library'}
         filterAsset={trashOnly?undefined:asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved} renderPlan={planDialog}

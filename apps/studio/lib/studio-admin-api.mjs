@@ -1,5 +1,6 @@
 import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
 import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './room-release.mjs';
+import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -10,6 +11,8 @@ import { StudioStorageError } from '../../../packages/studio-access/studio-scope
 import { logStudioServerFailure } from './studio-error-log.mjs';
 import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 
+// Spelbordets publicering och "Använd i miljön och i spelbordet" delar kontrakt och transaktion.
+const ROOM_RELEASE_ACTIONS = [ROOM_RELEASE_ACTION, AI_ADOPT_ACTION];
 const MAX_BODY = 64 * 1024;
 const administrationMutations = new Set(['tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
@@ -110,7 +113,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (!ready(endpoint)) throw failure(503);
       const body = request.method === 'GET' ? null : await readObject(request);
       // Rummets publicering svarar med sitt fasta felkontrakt {error, code, step}.
-      release = endpoint.action === 'room-release' || endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
+      release = endpoint.action === 'room-release' || endpoint.action === 'operator-package' && ROOM_RELEASE_ACTIONS.includes(body?.action);
       if (['users/role', 'users/remove'].includes(endpoint.action)) {
         if (typeof body.username !== 'string' || !body.username.trim()) throw failure(400);
         if (body.username.trim().toLowerCase() === actor.user.trim().toLowerCase()) throw failure(403);
@@ -142,8 +145,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Negotiate the exact saved-scene candidate before the transaction.
       const sceneLayout = endpoint.action === 'operator-package' && body?.action === 'publish-scene-layout';
       if (sceneLayout && (invocation.prepared?.action !== 'publish-scene-layout' || !invocation.prepared.presentation)) throw failure(503);
-      const roomRelease = endpoint.action === 'operator-package' && body?.action === ROOM_RELEASE_ACTION;
-      if (roomRelease && (invocation.prepared?.action !== ROOM_RELEASE_ACTION || !invocation.prepared.presentation)) throw failure(503);
+      const roomRelease = endpoint.action === 'operator-package' && ROOM_RELEASE_ACTIONS.includes(body?.action);
+      if (roomRelease && (invocation.prepared?.action !== body.action || !invocation.prepared.presentation)) throw failure(503);
       // Bolag › Tilldelat: den förberedda kandidaten bär exakt det paket transaktionen förhandlar.
       const assignment = endpoint.action === 'operator-package' && body?.action === 'publish-assignment';
       if (assignment && (invocation.prepared?.action !== 'publish-assignment' || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
@@ -172,7 +175,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         // planning) and administration without the room's draft; negotiate all before SQL.
         : roomRelease ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
           presentationMutation: [{ kind: 'presentation-package', value: invocation.prepared.presentation },
-            { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] }
+            { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION,
+            // Med AI-materialet skrivs även scenmallen i samma transaktion.
+            ...(invocation.prepared.projectWrite ? [{ kind: 'project', value: invocation.prepared.projectWrite }] : [])] }
         : assignment ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
           presentationMutation: invocation.prepared.mutations }
         : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;

@@ -58,6 +58,15 @@ const invalidReasons = Object.freeze({
   studio_dealer_background_required:'Scenmallen saknar bakgrund.',
   studio_media_binding_invalid:'Ett klipp i scenmallen är felkopplat.',
   studio_room_choices_draft_invalid:'Utseendeutkastet passar inte med de sparade scenmallarna.',
+  // "Använd i miljön och i spelbordet" (AI-dialogen, action adopt-room-material).
+  studio_release_other_changes:'Spelbordet har andra sparade ändringar som inte är publicerade. Materialet ligger i biblioteket; publicera spelbordet med Publicera, där skillnaden visas.',
+  studio_room_game_config_missing:'Spelbordet saknar publicerade spelinställningar. Publicera spelbordet en gång först.',
+  ai_adopt_other_template:'Spelbordet använder en annan scenmall än den bordet ritades för.',
+  ai_adopt_room_choice:'Bolaget eller spelbordet har ett eget val som döljer scenmallens standard. Välj materialet under Utseende.',
+  ai_adopt_template_missing:'Scenmallen finns inte längre.',
+  ai_adopt_material_missing:'Materialet finns inte i biblioteket eller passar inte Blackjack.',
+  ai_adopt_table_misfit:'Bordsgrafiken passar inte scenmallens dealers eller placering.',
+  ai_adopt_invalid:'Valet kunde inte läggas in i scenmallen.',
 });
 
 const conflictSteps = Object.freeze({
@@ -273,6 +282,9 @@ function validPreview(value, {operatorId, roomId}) {
     && value.blockers.every(row => object(row) && typeof row.code === 'string') && Array.isArray(value.affectedRooms) && token(value.previewToken)
     && (value.gameConfig === null || object(value.gameConfig));
 }
+
+/** Felkontraktet som text, för andra anrop på samma väg (AI-dialogens "Använd i miljön och i spelbordet"). */
+export async function roomReleaseFailure(response, phase = 'publish') { return failure(response, phase); }
 
 async function failure(response, phase) {
   let body = null;
