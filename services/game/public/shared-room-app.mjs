@@ -158,6 +158,9 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
       }
     },
     present(value,options){if(closed||!current?.authorized)throw new Error('shared_room_media_authority_unavailable');return current.port.present(value,options);},
+    // A chat answer's speech descriptor plays only through the confirmed binding's dealer (shared-room-presentation.mjs speak).
+    async speak(value,options){if(closed||!current?.authorized||!current.port.speak)throw new Error('shared_room_media_authority_unavailable');return current.port.speak(value,options);},
+    enableSound(){if(!closed&&current?.authorized)current.port.enableSound?.();},
     layout(value){current?.port.layout?.(value);},
     close(){if(closed)return;closed=true;++generation;job?.abort();for(const owned of pending)dispose(owned);dispose(current);current=null;},
   });
@@ -195,7 +198,8 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot,
       present:controller.present,onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
     socket.start();
-    return Object.freeze({close,controller});
+    // The room's chat panel plays an answer with presentation.speak(result.decision.speechStream).
+    return Object.freeze({close,controller,presentation:Object.freeze({speak:presentation.speak,enableSound:presentation.enableSound})});
   }catch(error){fail();close();throw error;}
 }
 if(globalThis.document?.documentElement?.dataset.sharedRoom==='1') {
