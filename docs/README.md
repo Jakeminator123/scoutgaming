@@ -38,7 +38,6 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
-| [plans/O02-PLAN](plans/O02-PLAN.md) och [O02-RESTORE-REPLAY](plans/O02-RESTORE-REPLAY.md) | Frysning, restore och replay inför O02 (klar); kvar bara för att `tools/o02-*.mjs` och `test/o02-*.mjs` pekar på dem | Ingen aktiv läsare | Raderas tillsammans med `tools/o02-*.mjs` i en kod-PR |
 | [plans/NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md) | Nyckel → bolag: `api_keys.operator_id`, migrering 012, motorns kontroll, prov och PR-sekvens | Orkestreraren och den som bygger bindningen | Tills bindningen är verifierad i drift, sedan raderas det |
 | [plans/STEG-F](plans/STEG-F.md) | Steg F, spelare knyts till bolag: inventering, `players.operator_id`, migrering game-014 med backfill, PR-ordning, risker och Jakobs tre beslut | Orkestreraren och den som bygger steg F | Tills steget är verifierat i drift, sedan raderas det |
 | [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: verifierat läge för röst, bank och RunPod, proven 28 oktober, varför inget aktiveras före O03, aktiviteten "dealer-generisk talkedja, Paow först" | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
@@ -66,6 +65,6 @@ Korta filer som pekar på [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.
 
 ## Kvitton
 
-Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Kvar i `docs/` är bara de som `tools/o02-receipt.mjs` läste (verktyget är borttaget efter migreringen och kan läsas ur Git): J08, isolerat prov, K04 staging, K04 omprov 6, K06 omprov 1–2 och K07 omprov 1–2. Ingen levande kod läser dem längre.
+Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Migreringens kvitton är raderade (alla 20 aktiviteter VERIFIED); `migrering/status.json` pekar på Git-versionerna, se [HISTORIK](HISTORIK.md). Kvar är bara [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) för Paows bank och [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md).
 
 Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git ([HISTORIK](HISTORIK.md)).
