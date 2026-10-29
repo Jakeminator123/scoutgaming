@@ -151,7 +151,7 @@ export function createSharedRoomPresentationAccess({ access, repository, withLoc
       const sourceEvent = committedEvent(input.event, published);
       return {context,state:{presentation,config,context},value:{sourceEvent,published,material,configVersion:config.configVersion,version:presentation.ver,
         roomId:binding.roomId,talkId:presentation.talkId,language:config.language,presentationContext:context.context,
-        operatorId:binding.operatorId,packageRevision:config.packageRevision}};
+        ...(Number.isFinite(presentation.startAt)?{publishedAt:presentation.startAt}:{}),operatorId:binding.operatorId,packageRevision:config.packageRevision}};
     },selectFrozen);
   }
   async function withActiveRoomPresentation(args = {}, selectFrozen) {

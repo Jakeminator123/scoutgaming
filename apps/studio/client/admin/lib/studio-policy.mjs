@@ -28,13 +28,38 @@ export function studioIdleEventRule(project,dealerId,videoId) {
     [0,...rule.conditions.map((_,i)=>i+1)].map(i=>`idle.behavior.${rule.id}.${i}`)))?.id??'';
 }
 
+// What a clip shows, for OpenClaw to choose by: at most 80 characters, no control
+// characters. An empty text removes the description.
+export const IDLE_DESCRIPTION_MAX = 80;
+export function idleDescription(value) {
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').slice(0, IDLE_DESCRIPTION_MAX);
+}
 export function applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,videoId,patch) {
   const scope=studioPolicyContext(project,inventory,dealerId,slot);
   if(scope.kind!=='idle'||!scope.policy?.variants.some(row=>row.videoId===videoId))fail('Välj ett kopplat beteendeklipp.');
   const definition=scope.line.variants.find(row=>row.id!==scope.line.baselineVariantId&&row.videoGenerationId===videoId&&row.triggerIds.length);
   if(patch.use==='rules'&&!definition)return applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,'turn');
+  const change=row=>{
+    const next={...row,...patch};
+    if(Object.hasOwn(patch,'description')){next.description=idleDescription(patch.description);if(!next.description.trim())delete next.description;}
+    return next;
+  };
   return applyStudioIdlePolicy(project,inventory,dealerId,slot,{...scope.policy,
-    variants:scope.policy.variants.map(row=>row.videoId===videoId?{...row,...patch}:row)});
+    variants:scope.policy.variants.map(row=>row.videoId===videoId?change(row):row)});
+}
+
+// A re-bound sequence keeps each clip's OpenClaw or rule choice and its description.
+// A choice only stays on a clip that starts and ends at rest; others return to the sequence.
+export function keepIdleRotationChoices(next,previous) {
+  if(!next?.rotation||!previous)return next;
+  const kept=structuredClone(next),rows=new Map(kept.rotation.clips.map(row=>[row.videoId,row]));
+  for(const variant of kept.variants){
+    const before=previous.variants?.find(row=>row.videoId===variant.videoId),row=rows.get(variant.videoId);
+    if(!before)continue;
+    if(Object.hasOwn(before,'description'))variant.description=before.description;else delete variant.description;
+    if(['openclaw','rules'].includes(before.use)&&row?.from==='rest'&&row.to==='rest')variant.use=before.use;
+  }
+  return kept;
 }
 
 export function applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,ruleId) {
@@ -152,13 +177,13 @@ export function applyStudioVariantPolicy(project,inventory,dealerId,slot,variant
   const draft=structuredClone(project);
   if(scope.family){
     if(!scope.family.variantIds.includes(variantId)||!scope.clips.some(row=>row.id===variantId))fail('Välj ett tillgängligt alternativ i den exakta mediefamiljen.');
-    if(Object.hasOwn(patch,'frequencyPercent')&&!scope.frequency)fail('Frekvens hör bara till Astrids exakta utdelningsfack.');
+    if(Object.hasOwn(patch,'frequencyPercent')&&!scope.frequency)fail('Frekvens finns bara i ett utdelningsfack med frekvensstyrning.');
     const current=mediaVariantPolicy(project,scope.family,variantId);
     if(scope.frequency&&Object.hasOwn(patch,'selection'))fail('Utdelningsfackets urval styrs av dess frekvenser.');
     const policy={...structuredClone(current),...structuredClone(patch)};
     draft.mediaPolicy=upsertMediaVariantPolicy(draft.mediaPolicy,scope.family.id,policy);
   }else{
-    if(Object.hasOwn(patch,'frequencyPercent'))fail('Frekvens behöver en registrerad Astridfamilj.');
+    if(Object.hasOwn(patch,'frequencyPercent'))fail('Frekvens behöver en registrerad mediefamilj för utdelningen.');
     const line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     const variant=line.variants.find(row=>row.id===variantId);
     if(!variant||variant.id===line.baselineVariantId||!scope.clips.some(row=>row.id===variant.videoGenerationId))fail('Välj en kopplad klippvariant i detta fack. Standardvarianten är fast.');
@@ -202,7 +227,9 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
       return result(true, [`Automatisk variation: i snitt var ${a.averageEveryMs/1000} s, variation ±${a.jitterMs/1000} s.`, `Minsta paus ${a.cooldownMs/1000} s; högst ${a.maxPerMinute} starter/minut. Spelhändelser kan skjuta upp starten.`]);
     }
     if (variation.use === 'manual') return result(true, ['Endast manuellt prov; startar inte automatiskt.']);
-    if (variation.use === 'openclaw') return result(true, ['OpenClaw-urval tillåtet i schemat. Faktisk triggeranslutning är inte verifierad i denna vy.']);
+    const description = variation.description?.trim() ? [`Beskrivning för OpenClaw: ${variation.description.trim()}`] : [];
+    if (variation.use === 'rotation') return result(true, ['Ingår i vilosekvensen.', ...description]);
+    if (variation.use === 'openclaw') return result(true, [`OpenClaw kan föreslå klippet vid tur eller resultat när scenmallens vila står på OpenClaw.${scope.policy.rotation ? ' Det ingår också i vilosekvensen.' : ''}`, ...description]);
     const definitions = scope.line.variants.filter(row => row.videoGenerationId === videoId && selectionFor(row).rules && row.triggerIds.length);
     return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning, vändning, tur eller resultat; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
       : ['Regelurval valt, men inga kopplade händelsevillkor finns för tagningen.']);
