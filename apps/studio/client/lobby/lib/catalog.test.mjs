@@ -104,6 +104,23 @@ test('the room picture is the miljöbild, then the published background, then th
   }
 });
 
+// A room without published game settings (status 'preparing') is listed but offers no game start.
+test('a room being prepared is shown without a game start; an unknown status means no game start, a malformed one closes the catalog', () => {
+  const source = publication('alpha', 'nora', 'Nora Studio'), template = source.rooms[0];
+  const ready = parseLobbyCatalog(payload([source])), preparing = parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status: 'preparing' }] }]));
+  const pick = catalog => lobbySelection(catalog, { operatorId: 'alpha', roomKey: catalog.rooms[0].key, dealerId: catalog.dealers[0].id });
+  assert.equal(ready.rooms[0].preparing, undefined); assert.equal(typeof playUrlFor(pick(ready)), 'string');
+  assert.equal(preparing.rooms[0].preparing, true); assert.equal(playUrlFor(pick(preparing)), undefined);
+  // Granskning PR #642: a status a newer engine sends that this build does not know never takes the company's
+  // catalogue down (ROOM_OPTIONAL forward compatibility); it is treated as no game start.
+  for (const status of ['live', 'paused', 'closed-for-maintenance']) {
+    const unknown = parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status }] }]));
+    assert.equal(unknown.rooms.length, 1, status); assert.equal(unknown.rooms[0].preparing, true, status);
+    assert.equal(playUrlFor(pick(unknown)), undefined, status);
+  }
+  for (const status of ['Preparing', '', null, true, 7, 'x'.repeat(40)]) assert.throws(() => parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status }] }])));
+});
+
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora Studio'), publication('beta', 'elin', 'Elin')]));
   const wrongTenant = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-table', dealerId: 'nora' });

@@ -347,6 +347,9 @@ test('shared room command transport routes only its exact HTTP path through the 
   const path = '/api/shared-room/room-1/command';
   assert.equal(backendPlatformPath(path), true);
   assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + path });
+  const chat = '/api/shared-room/room-1/chat'; // Room chat (PR 1) uses the same exact-path backend route.
+  assert.equal(backendPlatformPath(chat), true);
+  assert.deepEqual(platformRoute(new URL(chat, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + chat });
   const headers = platformBackendHeaders(new Headers({ cookie: 'player_session=browser', origin: config.publicOrigin,
     'x-croupier-vercel-secret': 'forged', 'x-croupier-public-origin': 'forged' }), config);
   assert.equal(headers.get('cookie'), 'player_session=browser'); assert.equal(headers.get('origin'), config.publicOrigin);

@@ -10,8 +10,12 @@ import {readPackagePresentation,withPackagePresentation} from '../../../packages
 import {materialSource} from '../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 
+const SETTINGS = 'room-config-00000000-0000-4000-8000-000000000001';
 function fixture() {
   const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });
+  // The room's published game settings: without this binding the shared table admits no seat
+  // and the room is shown as being prepared (see the test for an unbound room below).
+  f.pack.branding = { ...f.pack.branding, roomGameConfigVersions: { [f.room.id]: SETTINGS } };
   f.project = addDealer(f.project, 'unpublished', 'Unpublished dealer');
   const operators = [{ id: f.room.operatorId, slug: 'north', name: 'North', status: 'active', secret: 'private-operator-field' },
     { id: 'another', slug: 'another', name: 'Another', status: 'suspended' }];
@@ -73,6 +77,43 @@ test("the lobby shows the published miljöbild, Admin the saved one, and no bet 
   assert.equal(adminRoom.illustration, '/studio/api/layer-assets/' + saved.id, "Admin's room picture follows the saved environment");
   assert.equal(result.administration.compositions.find(row => row.id === laneId).illustration, '/studio/api/layer-assets/' + saved.id);
   assert.doesNotMatch(JSON.stringify(result.lobby), /croupier\/media|sha256/);
+});
+// Preview 29 Oct 2026: a new room was open and published without game settings; the lobby offered it and the
+// shared table refused every seat for a minute. Admin now warns, the lobby says "förbereds" and offers no start.
+test('an open published blackjack room without game settings is flagged in Admin and shown as being prepared in the lobby', async () => {
+  const f = fixture();
+  delete f.pack.branding.roomGameConfigVersions;
+  const result = await registeredDesignCatalog(f), admin = result.administration.rooms.find(row => row.id === f.room.id);
+  assert.equal(admin.published, true); assert.equal(admin.state, 'live'); assert.equal(admin.settingsMissing, true);
+  assert.equal(result.administration.rooms.find(row => row.id === 'not-published').settingsMissing, undefined, 'an unpublished room has its own warning');
+  assert.equal(result.lobby.catalogs[0].rooms[0].status, 'preparing');
+  const lobby = parseLobbyCatalog(result), choice = lobbySelection(lobby, { operatorId: 'north', roomKey: 'north:' + f.room.id, dealerId: 'linnea' });
+  assert.equal(choice.room.preparing, true); assert.equal(playUrlFor(choice), undefined, 'no game start for a room being prepared');
+  // Publishing the settings binds them in the package: the warning and the "preparing" state go away.
+  f.pack.branding.roomGameConfigVersions = { [f.room.id]: SETTINGS };
+  const ready = await registeredDesignCatalog(f);
+  assert.equal(ready.administration.rooms.find(row => row.id === f.room.id).settingsMissing, undefined);
+  assert.equal(Object.hasOwn(ready.lobby.catalogs[0].rooms[0], 'status'), false);
+  const room = parseLobbyCatalog(ready).rooms[0];
+  assert.equal(room.preparing, undefined);
+});
+// Granskning PR #642: the shared table also refuses a binding without its published head. Admin and the lobby
+// read the heads once per company and judge the room the same way; a failed read falls back to the binding.
+test('a bound room whose settings head is missing is flagged in Admin and the lobby alike, from one read', async () => {
+  const f = fixture(), read = [];
+  let heads = new Set();
+  f.store.getPublishedRoomConfigHeads = async pack => { read.push(pack.operatorId); if (heads instanceof Error) throw heads; return heads; };
+  const judged = async () => { const result = await registeredDesignCatalog(f);
+    return [result.administration.rooms.find(row => row.id === f.room.id).settingsMissing ?? false,
+      result.lobby.catalogs[0].rooms[0].status ?? null]; };
+  assert.deepEqual(await judged(), [true, 'preparing']);
+  assert.deepEqual(read, [f.room.operatorId], 'one heads read per company, shared by Admin and the lobby');
+  heads = new Set([f.room.id]);
+  assert.deepEqual(await judged(), [false, null]);
+  heads = Object.assign(new Error('heads unavailable'), { code: 'studio_storage_unavailable' });
+  const warn = console.warn; console.warn = () => {};
+  try { assert.deepEqual(await judged(), [false, null], 'a failed read judges the binding only and never takes the catalogue down'); }
+  finally { console.warn = warn; }
 });
 test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
-import { createSharedRoomClient } from '../services/game/public/shared-room-client.mjs';
+import { createSharedRoomClient, ROOM_CONFIG_MISSING } from '../services/game/public/shared-room-client.mjs';
 
 const browserOrigin = 'https://game.invalid';
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
@@ -550,6 +550,25 @@ test("a spoken line's speechTake, and any later event field, reaches the rendere
 });
 
 // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the O02 receipt showed 15 sockets over 60 s ending in the error page.
+// Preview 29 Oct 2026: a room without published game settings was retried for a minute and ended in the generic
+// error page. Named in the server's 1008 close, it gets one more socket and then ends the client with its code.
+test('a room without game settings is tried twice in all, then ends the client with room_config_missing', async t => {
+  const refused = socket => { socket.readyState = 3; socket.dispatchEvent(Object.assign(new Event('close'), { code: 1008, reason: 'room_config_missing' })); };
+  assert.equal(ROOM_CONFIG_MISSING, 'room_config_missing');
+  const h = setup(t); h.client.start();
+  refused(h.sockets[0]); await until(() => h.sockets.length === 2); assert.deepEqual(h.errors, [], 'one more socket, in case the settings were just published');
+  refused(h.sockets[1]); await delay(30);
+  assert.equal(h.sockets.length, 2, 'no third socket'); assert.deepEqual(h.errors, [{ code: 'room_config_missing' }]);
+  assert.equal(h.client.status().state, 'failed'); assert.equal(h.client.reconnect(), false);
+  // Settings published between the two attempts: the second socket delivers a state and the table plays on;
+  // a later refusal again gets its own second attempt.
+  const later = setup(t); later.client.start();
+  refused(later.sockets[0]); await until(() => later.sockets.length === 2);
+  later.sockets[1].message(frame()); await until(() => later.calls.length === 2);
+  refused(later.sockets[1]); await until(() => later.sockets.length === 3); assert.deepEqual(later.errors, []);
+  refused(later.sockets[2]); await delay(30); assert.deepEqual(later.errors, [{ code: 'room_config_missing' }]); assert.equal(later.sockets.length, 3);
+});
+
 // A partner refused for its key's company is named in the server's 1008 close; the client ends at once with it.
 test('a partner refusal close ends the client at once with its code, without another socket', async t => {
   const refused = (socket, reason) => { socket.readyState = 3; socket.dispatchEvent(Object.assign(new Event('close'), { code: 1008, reason })); };
@@ -568,4 +587,17 @@ test('a partner refusal close ends the client at once with its code, without ano
   await until(() => other.sockets.length === 2); assert.deepEqual(other.errors, []);
   const network = setup(t); network.client.start(); network.sockets[0].ended(1006);
   await until(() => network.sockets.length === 2); assert.deepEqual(network.errors, []);
+});
+
+test('chat frames reach onChat without touching snapshots; a malformed chat frame is an invalid state', async t => {
+  const lines = [];
+  const h = setup(t, { onChat: line => lines.push(line) });
+  h.client.start();
+  h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5 });
+  h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
+  assert.deepEqual(lines, [{ lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5 }]);
+  assert.ok(Object.isFrozen(lines[0])); assert.deepEqual(h.calls, [['snapshot', 1, 100], ['present', 1]]);
+  h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'q-' + '2'.repeat(24), requestId: 'chat-2', who: 'player', seat: 9, text: 'x', at: 6 });
+  await until(() => h.errors.length === 1);
+  assert.deepEqual(h.errors, [{ code: 'shared_room_invalid_state' }]); assert.equal(lines.length, 1);
 });

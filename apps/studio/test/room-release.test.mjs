@@ -20,6 +20,7 @@ import {wrapNativePresentationRepository} from '../lib/presentation-runtime-read
 import {createOperatorPackageApi} from '../lib/operator-package-api.mjs';
 import {createOperatorMaterialStore} from '../lib/operator-material-store.mjs';
 import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
+import {registeredDesignCatalog} from '../lib/design-preview-catalog.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {isPresentationRoomReadQuery} from '../lib/studio-admin-contract.mjs';
@@ -350,6 +351,44 @@ test('room release on PostgreSQL with the 009 game-settings storage',async t=>{
     assert.deepEqual(await f.persisted(),before);
   });
 
+});
+
+// Preview 29 Oct 2026: a new room was open and published (package version 2) without game settings; the lobby
+// offered it and the shared table refused every seat. The registered catalog now flags it for Admin and the lobby
+// until the room's Publicera binds its settings, read here from the rows this publication writes.
+test('an open room without published game settings is flagged in Admin and the lobby until the room release binds them',async t=>{
+  const f=await releaseFixture(t),store=await createOperatorStore({sql:f.pool,scope:f.scope});
+  const policy={readSaved:async()=>{
+    const project=await f.raw.readDocument('project'),administration=await f.raw.readDocument('administration');
+    return {project:project.value,administration:administration.value,projectRevision:project.revision,administrationRevision:administration.revision};
+  }};
+  const flagged=async()=>{
+    const catalog=await registeredDesignCatalog({store,policy});
+    return {admin:catalog.administration.rooms.filter(row=>row.settingsMissing).map(row=>row.id).sort(),
+      lobby:catalog.lobby.catalogs.flatMap(row=>row.rooms.filter(room=>room.status==='preparing').map(room=>room.id)).sort(),
+      open:catalog.lobby.catalogs.flatMap(row=>row.rooms.filter(room=>!room.status).map(room=>room.id)).sort()};
+  };
+  const all=['north-a','north-b','south'].map(f.id).sort();
+  const before=await flagged();
+  assert.deepEqual(before.admin,all,'every published room without settings is flagged');
+  assert.deepEqual(before.open,[],'no room is offered as open without settings');
+  assert.deepEqual(before.lobby,all,'the lobby lists them as being prepared');
+  assert.deepEqual(await f.rows('SELECT room_id FROM croupier_game.shared_table_config_heads WHERE room_id LIKE $1',[`r%-%`]),[],'no head yet: the table would refuse with room_config_missing');
+  await f.saveDraft('north-a',{language:'sv',limitPreset:'prive'});
+  const receipt=await f.publish(await f.read());
+  const [head]=await f.rows('SELECT version FROM croupier_game.shared_table_config_heads WHERE room_id=$1',[f.id('north-a')]);
+  assert.equal(head.version,receipt.configVersion);
+  const after=await flagged();
+  assert.deepEqual(after.admin,['north-b','south'].map(f.id).sort(),'only the published room loses its warning; its sibling and the other company keep theirs');
+  assert.deepEqual(after.lobby,['north-b','south'].map(f.id).sort());
+  assert.deepEqual(after.open,[f.id('north-a')],'the lobby offers the room once its settings are published');
+  // Granskning PR #642: the table also refuses a binding whose published head is missing (room_config_missing).
+  // Admin and the lobby read the same head, so they say the same as the table.
+  await f.pool.query('DELETE FROM croupier_game.shared_table_config_heads WHERE room_id=$1',[f.id('north-a')]);
+  const headless=await flagged();
+  assert.deepEqual(headless.admin,all,'a binding without its published head is flagged in Admin');
+  assert.deepEqual(headless.lobby,all,'and shown as being prepared in the lobby');
+  assert.deepEqual(headless.open,[]);
 });
 
 test('without the 009 game-settings storage the preview blocks and publication is a 503 before any write',async t=>{

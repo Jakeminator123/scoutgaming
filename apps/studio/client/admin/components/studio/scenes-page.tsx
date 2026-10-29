@@ -1,12 +1,13 @@
 import {ArrowRight} from 'lucide-react';
 import Link from '../../../runtime/navigation';
-import {HubPage,Tabs,Card,Chip,Row,Empty,Note,pageClass} from '../ui/hub';
+import {HubPage,Tabs,Card,Chip,Row,Note,pageClass} from '../ui/hub';
 import {buttonVariants,cn,focusRing,plural} from '../ui/kit';
 import {adminSceneTabs} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import {RegisteredMaterialLibrary} from './registered-material-library';
 import {DealerFaces} from './dealer-identity-portrait';
 import {SceneCover} from './scene-cover';
+import {CompositionPermanentDelete} from './permanent-delete';
 
 type Head={part:'head';tab:string;workspace:Workspace|null};
 type Tail={part:'tail';tab:string;visible:boolean;disabled:boolean;onChanged:()=>void;refreshKey:string};
@@ -39,7 +40,7 @@ export function ScenesPage(props:Head|Tail) {
       <Note>Material i papperskorgen kan återställas; permanent radering är ett eget steg. Arkiverade dealers finns under Dealers.</Note>
       <RegisteredMaterialLibrary role="background" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
       <RegisteredMaterialLibrary role="table" base="/admin/scenes" visible={visible} disabled={disabled} onChanged={onChanged} refreshKey={refreshKey} trashOnly/>
-      <Empty chip={null} title="Miljöer har ingen papperskorg" text="En miljö tas bort när inget spelbord använder den."/>
+      <CompositionPermanentDelete disabled={disabled} onChanged={onChanged}/>
     </div>}
   </div>;
 }
