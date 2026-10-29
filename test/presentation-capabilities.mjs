@@ -4,6 +4,17 @@ import { presentationCapabilitiesResponse } from '../services/game/presentation-
 import { validatePresentationCapabilities, presentationCapabilitiesForVersion } from '../packages/presentation/capability-contract.mjs';
 const endpoint = 'https://engine.example.invalid/api/presentation/capabilities';
 
+test('v34 negotiates frozen studio filmed profiles on top of the v33 miljöbild while v33 keeps its exact contract',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'34'}}));
+  assert.equal(response.status,200);
+  const text=await response.text();assert.ok(Buffer.byteLength(text)<=2048);
+  const cap=validatePresentationCapabilities(JSON.parse(text),{expectedVersion:34});
+  assert.equal(cap.filmedProfiles,'frozen-studio-profile-v1');
+  assert.equal(cap.laneIllustration,'environment-image-v1');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'33'}})).json();
+  assert.equal(Object.hasOwn(previous,'filmedProfiles'),false);
+});
+
 test('v33 negotiates the lane miljöbild while v32 keeps its exact contract',async()=>{
   const headers={'X-Presentation-Capability-Version':'33'};
   const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
@@ -72,7 +83,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '34', '033', '33, 33', '032', '32, 32', '031', '31, 31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '35', '034', '34, 34', '033', '33, 33', '032', '32, 32', '031', '31, 31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }

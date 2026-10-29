@@ -4,13 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, createEmptyProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,studioCopyProfile} from '../../../test/fixtures/native-room-game-material.mjs';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../lib/studio-native-runtime.mjs';
 import { fixtureDatabaseUrl } from '../../../test/fixtures/database-url.mjs';
-import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../../packages/presentation/contracts/presentation-layers.mjs';
@@ -1091,4 +1091,18 @@ test('a new room keeps the company\'s approved background and choice instead of 
   ({ raw, frozen } = allowed());
   assert.equal(frozen.assets.some(row => row.id === own), false, 'revoked material leaves the next room publication');
   assert.equal(Object.hasOwn(JSON.parse(raw.branding), 'background'), false, 'the choice falls back to the template');
+});
+
+test('a package carrying a dealer\'s own filmed profile is not published to a v32 or v33 runtime; v34 accepts it',async()=>{
+  for(const version of [32,33,34]){
+    const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(version)}),saved=await f.repository.readDocument('project');
+    saved.value.dealers.find(row=>row.id==='astrid').filmedProfile=studioCopyProfile('astrid','paow');
+    await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
+    const ready=await f.prepare();
+    if(version<34){
+      assert.equal(ready.ready,false);assert.equal(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED,`v${version}`);
+      const body=await f.payload(),before=f.pool.snapshot();
+      await assert.rejects(f.create(body),error=>error.statusCode===503&&error.message===PRESENTATION_RUNTIME_UPDATE_REQUIRED);assert.deepEqual(f.pool.snapshot(),before);
+    } else assert.notEqual(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+  }
 });
