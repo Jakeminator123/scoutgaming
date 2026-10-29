@@ -204,7 +204,17 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
       lanes: current.lanes, games: current.games, tables: current.tables, branding: current.branding });
     const before = await snapshot();
     await post({ action: 'publish', ...versions(state), reviewToken: reviewed.reviewToken }, { status: 409 });
-    assert.deepEqual(await snapshot(), before); assert.equal((await get()).draft.basePackageRevision, 1);
+    assert.deepEqual(await snapshot(), before);
+    // Plan L3 PR 3 (Jakob's rule: a draft is never thrown away): every package revision carries the
+    // company's open draft over to itself in the same transaction (operator-store.mjs rebaseOpenDraft).
+    // The draft therefore no longer stays on package 1. Scout's new package keeps it as the next draft
+    // revision, with the same choices, on the new base. The review was of package 1 and the old draft
+    // revision, so its token cannot publish the carried-over draft either, not even with fresh versions.
+    const carried = (await get()).draft;
+    assert.deepEqual([carried.revision, carried.basePackageRevision, carried.sourcePackageRevision, carried.branding],
+      [state.draft.revision + 1, current.revision + 1, state.draft.sourcePackageRevision, state.draft.branding]);
+    await post({ action: 'publish', ...versions(await get()), reviewToken: reviewed.reviewToken }, { status: 409 });
+    assert.deepEqual(await snapshot(), before);
     await post({ action: 'save-draft', ...versions(await get()), branding: editable });
   });
   await check('real SQL journal failure rolls back publication and draft marker atomically', async () => {
