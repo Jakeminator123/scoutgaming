@@ -385,9 +385,10 @@ jobs:
   migration-readiness:
     name: Studio migration readiness
     needs: changes
-    # Main/preview/nightly/manual runs always check the ledger. Client/test-only PR
-    # edits need no production access; server/schema/dependency changes still do,
-    # once the PR is ready for review. Forks receive no production credentials; the
+    # Main/preview/nightly/manual runs always check the ledger (push preview and PRs
+    # into preview read preview's ledger, the rest production's). Client/test-only PR
+    # edits need no database access; server/schema/dependency changes still do,
+    # once the PR is ready for review. Forks receive no database credentials; the
     # final gate rejects skipped readiness whenever the classified change requires it.
     if: ${{ needs.changes.outputs.migration == 'true' && needs.changes.outputs.draft != 'true' && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preview')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     runs-on: ubuntu-24.04
@@ -399,8 +400,35 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: apps/studio/package-lock.json
+      # Push preview and PRs into preview read the preview ledger with its own read-only
+      # migration role; everything else reads production. Each step receives only its own
+      # secret, and a missing preview secret fails here instead of reading production.
+      - name: Select the migration ledger (preview or production)
+        id: ledger
+        shell: bash
+        env:
+          PREVIEW_SECRET_SET: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}
+        run: |
+          if { [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/preview ]; } \
+            || { [ "$GITHUB_EVENT_NAME" = pull_request ] && [ "$GITHUB_BASE_REF" = preview ]; }; then
+            ledger=preview
+          else
+            ledger=production
+          fi
+          if [ "$ledger" = preview ] && [ "$PREVIEW_SECRET_SET" != true ]; then
+            echo "::error title=Preview migration readiness::The repository secret CROUPIER_PREVIEW_DATABASE_URL (preview's read-only migration role) is missing. Preview never falls back to the production ledger."
+            exit 1
+          fi
+          echo "Migration ledger: $ledger"
+          echo "environment=$ledger" >> "$GITHUB_OUTPUT"
       - run: npm --prefix apps/studio ci
+      - name: Studio migration readiness (preview ledger)
+        if: steps.ledger.outputs.environment == 'preview'
+        run: node tools/check-migration-readiness.mjs
+        env:
+          CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}
       - name: Studio migration readiness (production ledger)
+        if: steps.ledger.outputs.environment == 'production'
         run: node tools/check-migration-readiness.mjs
         env:
           CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
