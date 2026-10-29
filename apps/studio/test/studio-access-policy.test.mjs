@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { SYSTEM_SECTIONS } from '../lib/admin-system-sections.mjs';
 import * as legacyPolicy from '../lib/studio-access-policy.mjs';
 import * as sharedPolicy from '../../../packages/studio-access/studio-access-policy.mjs';
 import {
@@ -17,7 +17,7 @@ test('legacy policy imports retain the shared functions and immutable catalogs',
 test('administrator is the only Studio role and owns every existing section/action', () => {
   assert.deepEqual(STUDIO_ROLES, ['admin']);
   // Hidden historical sections keep their existing API permissions until retirement.
-  assert.ok(BACKOFFICE_SECTIONS.every(section => STUDIO_ADMIN_SECTIONS.some(policy => policy.id === section.id)));
+  assert.ok(SYSTEM_SECTIONS.every(section => STUDIO_ADMIN_SECTIONS.some(policy => policy.id === section.id)));
   assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, STUDIO_ADMIN_ACTIONS.length);
   for (const id of ['resource-lifecycle', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'moving-drift']) {
     assert.equal(studioAdminActionPolicy(id)?.minimumRole, 'admin');
