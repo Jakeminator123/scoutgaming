@@ -213,7 +213,8 @@ function resources() {
       { username: actor('superadmin').username, role: 'superadmin', active: 1 },
       { username: 'other@example.test', role: 'staff', active: 1 },
     ] } },
-    apikeys: { payload: { keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true }] } },
+    apikeys: { payload: { operatorBinding: 'ready', operators: [{ id: 'north', name: 'North Casino', active: true }, { id: 'paused', name: 'Paused Bets', active: false }],
+      keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true, operatorId: 'north', operatorName: 'North Casino' }] } },
     transactions: { payload: { tx: [{ player_id: 'player-closed', type: 'open', amount: 42, currency: 'EUR', at: '2026-10-02T00:00:00Z' }] } },
     shoes:{payload:{rules:{decks:8,total:416,cutAfter:312,burn:1},tableCount:2,shoes:2,activeRounds:1,cutReached:0,observedAt:'2026-10-03T02:00:00.000Z'}},
     emails:{payload:{previewOnly:true,templates:[{id:'welcome',name:'Welcome',heading:'Hello <script>',text:'Preview',fields:[['Account','[PLAYER EMAIL]']],action:'Take a seat'}]}},
@@ -724,9 +725,11 @@ test('partner result projection rejects malformed credentials and cross-origin/a
     'https://game.example.test/game?dealer=astrid&launch=a.b.c#secret']) {
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
   }
-  for (const url of ['https://game.example.test/game?launch=a.b.c','https://game.example.test/blackjack?launch=a.b.c'])
+  // Nyckel→bolag: the engine names the key's company in the address of a bound key.
+  for (const url of ['https://game.example.test/game?launch=a.b.c','https://game.example.test/blackjack?launch=a.b.c','https://game.example.test/game?operator=north&launch=a.b.c'])
     assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'))),{kind:'launch',url,playerRef:'player'});
-  for (const url of ['https://game.example.test/game?operator=north&launch=a.b.c','https://game.example.test/game?launch=a.b.c&launch=a.b.c'])
+  for (const url of ['https://game.example.test/game?launch=a.b.c&launch=a.b.c','https://game.example.test/game?operator=North&launch=a.b.c',
+    'https://game.example.test/game?operator=api&launch=a.b.c','https://game.example.test/game?operator=north&operator=south&launch=a.b.c','https://game.example.test/game?operator=north&table=t&launch=a.b.c'])
     assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
   // Dealer-independent: any well-formed registered identity, not a historical name list.
   for (const dealer of ['astrid','dragan','linnea-2']) {
@@ -739,7 +742,7 @@ test('partner result projection rejects malformed credentials and cross-origin/a
 test('Integrationer launch projection is exactly the shared rule in lib/partner-launch-url.mjs (the Demo-builder uses it too)', () => {
   const h = harness(), origin = 'https://game.example.test';
   const urls = [`${origin}/game?launch=a.b.c`,`${origin}/blackjack?launch=a.b.c`,`${origin}/game?dealer=astrid&launch=a.b.c`,`${origin}/game?launch=a.b.c&dealer=linnea-2`,
-    `${origin}/game?dealer=Wrong&launch=a.b.c`,`${origin}/game?operator=north&launch=a.b.c`,`${origin}/game?launch=a.b.c&launch=a.b.c`,`${origin}/game?launch=bad`,
+    `${origin}/game?dealer=Wrong&launch=a.b.c`,`${origin}/game?operator=north&launch=a.b.c`,`${origin}/game?operator=..%2Fnorth&launch=a.b.c`,`${origin}/game?launch=a.b.c&launch=a.b.c`,`${origin}/game?launch=bad`,
     `${origin}/game?launch=a.b.c#x`,`${origin}/other?launch=a.b.c`,'http://game.example.test/game?launch=a.b.c','https://outside.test/game?launch=a.b.c',
     `${origin}/game?launch=${'a'.repeat(16400)}.b.c`,'not a url'];
   let accepted = 0;
@@ -748,7 +751,7 @@ test('Integrationer launch projection is exactly the shared rule in lib/partner-
     if (approved) { accepted++; assert.deepEqual(JSON.parse(JSON.stringify(h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin))),{kind:'launch',url:approved.href,playerRef:'player'}); }
     else assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},origin),status(503),url);
   }
-  assert.equal(accepted, 4);
+  assert.equal(accepted, 5);
   assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`},origin),status(503),'playerRef is still required');
   for (const gameOrigin of [undefined,'',`${origin}/`,'http://game.example.test']) assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url:`${origin}/game?launch=a.b.c`,playerRef:'player'},gameOrigin),status(503),String(gameOrigin));
 });
@@ -1262,4 +1265,69 @@ test('scoped proof GET carries only validated query fields through the identity-
  for(const query of [{roomId:'room-1',extra:'x'},{roomId:'../room'},{shoeId:'shoe-2'},{roomId:'room-1',shoeId:2}])
    await assert.rejects(client.request('GET','shared-table-proof',undefined,undefined,actor,query),error=>error.status===400);
  assert.equal(calls.length,1);
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Admin chooses the company when it creates a key, the list
+// shows each key's company, and the server's fixed refusals are explained instead of a generic error.
+test('Integration creates a key for a chosen active company and shows each key\'s company', () => {
+  const h = harness(), calls = [], data = resources();
+  data.apikeys.payload.keys.push({ id: 'legacy', name: 'Old partner', scopes: ['play'], walletConfigured: false, operatorId: null, operatorName: null });
+  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'partners'), resources: data, command: (action, body) => calls.push({ action, body }) });
+  const html = renderToStaticMarkup(tree);
+  // Each key row names its own company; the legacy key without one does not borrow another key's company.
+  const keyRow = name => nodes(tree, node => node.type === 'div' && nodes(node, child => child.type === 'strong' && child.props.children === name).length && nodes(node, child => child.type === 'dl').length)
+    .map(node => renderToStaticMarkup(node)).sort((a, b) => a.length - b.length)[0];
+  assert.match(keyRow('Test partner'), /North Casino/); assert.doesNotMatch(keyRow('Old partner'), /North Casino/);
+  const select = nodes(tree, node => node.type === 'select' && node.props.name === 'operatorId')[0];
+  assert.equal(select.props.required, true); assert.equal(select.props.disabled, false);
+  assert.deepEqual(nodes(select, node => node.type === 'option').map(node => [node.props.value, node.props.disabled === true]), [['', true], ['north', false]],
+    'only active companies are offered');
+  const form = formsWith(tree, 'walletUrl')[0];
+  const create = nodes(form, node => node.type === 'button')[0];
+  assert.equal(create.props.disabled, false);
+  form.props.onSubmit({ preventDefault() {}, currentTarget: new Form({ operatorId: 'north', name: 'North live', walletUrl: '', ipAllow: '', 'scope-launch': 'on', 'scope-play': 'on' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'apikeys/create', body: { operatorId: 'north', name: 'North live', scopes: ['launch', 'play'], walletUrl: '', ipAllow: '' } }]);
+});
+
+test('Integration says why a key cannot be created yet: before migration 012, or without an active company', () => {
+  const reasons = new Map();
+  for (const [change, kind] of [
+    [payload => { payload.operatorBinding = 'pending'; }, 'migration'],
+    [payload => { payload.operators = [{ id: 'paused', name: 'Paused Bets', active: false }]; }, 'no-company'],
+    [payload => { delete payload.operators; payload.operatorBinding = 'unknown'; }, 'no-company'],
+  ]) {
+    const h = harness(), data = resources(); change(data.apikeys.payload);
+    const tree = h.StudioAdministrationView({ ...viewProps('admin', 'partners'), resources: data });
+    const disclosure = nodes(tree, node => node.type === 'details' && formsWith(node, 'walletUrl').length)[0];
+    const reason = nodes(disclosure, node => node.props?.role === 'status').map(node => renderToStaticMarkup(node)).join('');
+    assert.ok(reason, kind + ' is explained');
+    if (reasons.has(kind)) assert.equal(reason, reasons.get(kind)); else reasons.set(kind, reason);
+    assert.equal(nodes(formsWith(tree, 'walletUrl')[0], node => node.type === 'button')[0].props.disabled, true);
+  }
+  assert.notEqual(reasons.get('migration'), reasons.get('no-company'), 'a pending migration and a missing company are explained apart');
+});
+
+test('the key list projection keeps company ids and names only, and apikeys/create refusals are explained by their fixed code', async () => {
+  const h = harness();
+  assert.deepEqual(JSON.parse(JSON.stringify(h.partnerMetadata([{ id: 'k', name: 'K', operatorId: 'north', operatorName: 'North', operator_secret: 'x' },
+    { id: 'j', operatorId: '../south', operatorName: '   ' }]).map(row => [row.operatorId, row.operatorName]))), [['north', 'North'], [null, null]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.keyOperators([{ id: 'north', name: 'North', status: 'active', secret: 'x' }, { id: 'paused', status: 'suspended' }, { id: 'bad id' }, 'north']))),
+    [{ id: 'north', name: 'North', active: true }, { id: 'paused', name: 'paused', active: false }]);
+  const listing = { keys: [], operators: [{ id: 'north', name: 'North', status: 'active' }], operatorBinding: 'ready', extra: 'DROPPED' };
+  const read = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply(listing) });
+  assert.deepEqual(JSON.parse(JSON.stringify((await read.request('GET', 'apikeys')).payload)), { keys: [], operators: [{ id: 'north', name: 'North', active: true }], operatorBinding: 'ready' });
+  const explained = [];
+  for (const [code, statusCode] of [['partner_key_operator_schema_pending', 503], ['partner_key_operator_invalid', 422]]) {
+    const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply({ error: 'SECRET_DB_URL', code }, statusCode) });
+    await assert.rejects(client.request('POST', 'apikeys/create', { operatorId: 'north', name: 'North' }), error => {
+      explained.push(error.message);
+      return error.status === statusCode && error.code === code && error.message !== new h.StudioAdminUiError(statusCode).message && !error.message.includes('SECRET');
+    });
+  }
+  assert.notEqual(explained[0], explained[1], 'each fixed refusal has its own explanation');
+  // Another action, or an unknown code, keeps the generic message.
+  for (const [action, body, code] of [['apikeys/rotate', { id: 'k' }, 'partner_key_operator_schema_pending'], ['apikeys/create', { operatorId: 'north', name: 'N' }, 'partner_unknown']]) {
+    const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async () => reply({ error: 'x', code }, 503) });
+    await assert.rejects(client.request('POST', action, body), error => error.status === 503 && error.code === undefined && error.message === new h.StudioAdminUiError(503).message);
+  }
 });

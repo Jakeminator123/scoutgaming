@@ -194,14 +194,19 @@ test('create without purpose shows the secret exactly once, in its reply; the ke
   assert.equal(created.key.key, stored[2]); assert.equal(created.key.secret, stored[3]); assert.match(created.key.secret,/^cs_[A-Za-z0-9_-]{43}$/);
   assert.equal(JSON.stringify(created).split(stored[3]).length - 1, 1);
   // GET apikeys (the Integrationer list) against the stored row, honouring the handler's own column list.
-  const row = Object.fromEntries(['id','name','key','secret','scopes','wallet_url','ip_allow','created_by','created_at'].map((column, index) => [column, stored[index]]));
+  const row = Object.fromEntries(['id','name','key','secret','scopes','wallet_url','ip_allow','created_by','created_at','operator_id'].map((column, index) => [column, stored[index]]));
   Object.assign(row, { last_used: null, revoked_at: null });
   const listDb = { prepare(sql) {
-    const columns = /^SELECT (.+) FROM api_keys ORDER BY created_at DESC$/.exec(sql)?.[1].split(',');
+    // Nyckel→bolag: the column probe (012 present here) and this scope's companies for the chooser.
+    if (sql.includes(' FROM pg_attribute ') && sql.includes("attname='operator_id'")) return { get: async () => ({ present: true }) };
+    if (sql.startsWith('SELECT operator_id,name,status FROM croupier_studio.operators WHERE environment_id=? AND workspace_id=?')) {
+      return { all: async (...args) => args[0] === scope.environment && args[1] === scope.workspaceId ? [{ operator_id: 'north', name: 'North', status: 'active' }] : [] };
+    }
+    const columns = /^SELECT (.+) FROM api_keys k ORDER BY k\.created_at DESC$/.exec(sql)?.[1].split(',').map(column => column.replace(/^k\./, ''));
     assert.ok(columns, sql);
     const project = () => Object.fromEntries(columns.map(column => {
       const alias = / AS ([a-z_]+)$/.exec(column)?.[1];
-      if (alias === 'wallet_configured' && column.startsWith('(wallet_url IS NOT NULL')) return [alias, Boolean(row.wallet_url)];
+      if (alias === 'wallet_configured' && column.startsWith('(k.wallet_url IS NOT NULL')) return [alias, Boolean(row.wallet_url)];
       assert.ok(Object.hasOwn(row, column), `unknown column ${column}`);
       return [column, row[column]];
     }));
@@ -209,7 +214,8 @@ test('create without purpose shows the secret exactly once, in its reply; the ke
   }, transaction: work => work() };
   const data = createStudioAdminData({ db: listDb, boDb: listDb, scope, repository: { readDocument: async () => null, saveDocument: async () => assert.fail('no writes') } });
   const listed = await data.handlers.get('GET /studio/api/admin/apikeys')({ actor: { user: 'operator', role: 'admin' }, scope });
-  assert.deepEqual(listed.keys.map(key => [key.id, key.name, key.scopes]), [[stored[0], 'Partner AB', ['launch','wallet']]]);
+  assert.deepEqual(listed.keys.map(key => [key.id, key.name, key.scopes, key.operatorId, key.operatorName]), [[stored[0], 'Partner AB', ['launch','wallet'], 'north', 'North']]);
+  assert.deepEqual([listed.operatorBinding, listed.operators], ['ready', [{ id: 'north', name: 'North', status: 'active' }]]);
   for (const value of [stored[2], stored[3], 'ck_live_', 'cs_']) assert.equal(JSON.stringify(listed).includes(value), false, value);
   assert.equal(Object.hasOwn(listed.keys[0], 'secret') || Object.hasOwn(listed.keys[0], 'key'), false);
 });

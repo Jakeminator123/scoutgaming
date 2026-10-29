@@ -169,6 +169,19 @@ test('Spelare, Ekonomi, Integration and Hjälp render honest content without inv
   const integration = render({ initialView: 'integration' });
   assert.match(integration, /<h1>Integration<\/h1>/); assert.match(integration, /<code>\/game\?operator=johnsspelbolag<\/code>/);
   assert.match(integration, /Er nyckel hanteras av Scoutgaming/); assert.doesNotMatch(integration, /api_keys|steg F|O03|Spelarkonton för den här operatören|\/admin\/admin\/players/);
+  // Nyckel→bolag: with integrations.read the server sends the company's own keys, masked.
+  const own = realSnapshot().operator.id, key = (id, extra) => ({ id, operatorId: own, name: `Nyckel ${id}`, status: 'active', scopes: ['launch', 'play'],
+    walletConfigured: false, createdAt: '2026-10-28T08:00:00.000Z', lastUsed: null, revokedAt: null, ...extra });
+  const keyed = render({ initialView: 'integration', initialSnapshot: realSnapshot({ apiKeys: { status: 'connected', keys: [key('live'),
+    key('old', { status: 'revoked', revokedAt: '2026-10-29T09:00:00.000Z' })] } }) });
+  assert.match(keyed, /<h2>.*API-nycklar<\/h2>/); assert.match(keyed, /1 aktiv/); assert.match(keyed, /Nyckel live/); assert.match(keyed, /rättigheter launch, play · skapad 28 okt/);
+  assert.match(keyed, /inte använd ännu/); assert.match(keyed, /återkallad 29 okt/); assert.match(keyed, /ck_live_••••/);
+  assert.match(keyed, /Nyckel och hemlighet visas aldrig här/); assert.doesNotMatch(keyed, /Er nyckel hanteras av Scoutgaming|cs_/);
+  for (const [apiKeys, text] of [[{ status: 'pending', keys: [] }, /Era nycklar visas här när Scoutgaming har knutit dem till bolaget/],
+    [{ status: 'connected', keys: [] }, /Ni har ingen nyckel ännu/], [{ status: 'not-connected', reason: 'read-failed', keys: [] }, /Nycklarna kunde inte läsas just nu/]]) {
+    assert.match(render({ initialView: 'integration', initialSnapshot: realSnapshot({ apiKeys }) }), text, apiKeys.status);
+  }
+  assert.throws(() => render({ initialView: 'integration', initialSnapshot: realSnapshot({ apiKeys: { status: 'connected', keys: [key('foreign', { operatorId: 'another-company' })] } }) }), /fel bolagskontext/);
   const help = render({ initialView: 'help' });
   assert.match(help, /<h1>Hjälp och kontakt<\/h1>/); assert.match(help, /Begär material/);
   assert.match(help, /href="mailto:\?subject=Beg%C3%A4ran%20om%20material%20fr%C3%A5n%20Johns%20Bet/);

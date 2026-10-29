@@ -3,6 +3,7 @@
   "repository": "Jakeminator123/scoutgaming",
   "branch": "main",
   "featureBranches": ["jakob/*"],
+  "environmentBranches": ["preview"],
   "protectedBranches": ["kevin*", "codex/kevin-*", "john*", "emil*", "jakob-export", "jakob-gren", "roulette-on-kevin-staging", "codex/pr-automation"],
   "gitlabPaused": true,
   "checkpointTag": "Jakobs-v1",
