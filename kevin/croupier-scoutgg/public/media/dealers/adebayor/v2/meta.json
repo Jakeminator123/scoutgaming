@@ -161,11 +161,8 @@
   "nick": "nick/s7212.mp4",
   "handtrumma": "handtrumma/s7222.mp4",
   "handflytt": "handflytt/s7222.mp4",
-  "handknapp": "handknapp/s7222.mp4",
-  "handgnid": "handgnid/s7222.mp4",
-  "handstryk": "handstryk/s7222.mp4",
-  "handlyft": "handlyft/s7222.mp4"
+  "handgnid": "handgnid/s7222.mp4"
  },
  "kept": [],
- "built": "2026-10-29T10:23:27.105Z"
+ "built": "2026-10-29T10:25:09.121Z"
 }
