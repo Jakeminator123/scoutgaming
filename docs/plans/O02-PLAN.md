@@ -1,6 +1,6 @@
 # O02: oberoende samprov av en fryst kandidat
 
-Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (skriven mot `e7a4e251`); den finns i Git-historiken. Kriterierna står i [MASTERPLAN](../../migrering/MASTERPLAN.md#o02--oberoende-samprov) (rad 70–76) och status i [STATUS](../../migrering/STATUS.md). Målet: O02 startar samma dag som K04–K07 blir VERIFIED. Allt som inte kräver den frysta kandidaten är förberett här.
+Omskriven 2026-10-28 mot `main` `b0d02bbd`. Ersätter planen från 27 oktober (skriven mot `e7a4e251`); den finns i Git-historiken. Kriterierna stod i MASTERPLAN, avsnittet O02 (rad 70–76 i `git show 6f2d8236:migrering/MASTERPLAN.md`); status står i [STATUS](../../migrering/STATUS.md). Målet: O02 startar samma dag som K04–K07 blir VERIFIED. Allt som inte kräver den frysta kandidaten är förberett här.
 
 | Verktyg | Vad |
 | --- | --- |
@@ -162,4 +162,4 @@ Beslutet per läcka (rättad med PR och SHA, eller bokförd med Jakobs ok) skriv
 
 ## 6. Efter O02
 
-O03 följer [MASTERPLAN](../../migrering/MASTERPLAN.md#o03--integration-och-leverans): ägar-, head-, CI- och säkerhetskontroll, schema i godkänd ordning, release med verifierad Vercel- och Render-SHA och restore dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md). `CROUPIER_SHARED_TABLE_ENABLED` sätts i produktionen bara med Jakobs separata godkännande. Stagingen behålls som preview efter O03 (Jakobs beslut D5, se [START-HERE](../../START-HERE.md#preview)); restoremålet `croupier_staging_restore_o02` raderas av Jakob efter O03.
+O03 följde MASTERPLAN, avsnittet O03 (`git show 6f2d8236:migrering/MASTERPLAN.md`): ägar-, head-, CI- och säkerhetskontroll, schema i godkänd ordning, release med verifierad Vercel- och Render-SHA och restore dokumenterad mot migrerat schema i [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md). `CROUPIER_SHARED_TABLE_ENABLED` sätts i produktionen bara med Jakobs separata godkännande. Stagingen behålls som preview efter O03 (Jakobs beslut D5, se [START-HERE](../../START-HERE.md#preview)); restoremålet `croupier_staging_restore_o02` raderas av Jakob efter O03.
