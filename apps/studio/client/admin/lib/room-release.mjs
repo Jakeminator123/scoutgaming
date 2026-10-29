@@ -159,12 +159,15 @@ export function roomReleaseAreas(preview, {dealerName, rooms = []} = {}) {
   });
   // Dealerns namn finns i klienten (registret); bakgrund och bordsgrafik har bara id här.
   const choice = (key, value) => value == null ? '–' : key === 'dealer' && typeof dealerName === 'function' ? dealerName(value) || value : value;
-  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after));
+  const appearance = appearanceView(preview, {dealerName, rooms});
+  // Ett val i utkastet som ger spelbordets ändring visas här, en gång, med var det kommer ifrån.
+  const origin = {company:' (bolagets val i utkastet)', own:' (eget val i utkastet)'};
+  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after)
+    + (origin[appearance?.folded.get(row.key)] ?? ''));
   const rebinding = (Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []).filter(row => row?.rebinds)
     .map(row => (row.name || row.id) + ' binds om och behåller sina spelinställningar');
   const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra scenmallar eller dealers)');
   const area = (key, label, rows) => ({area:key, label, changed:rows.length > 0, rows});
-  const appearance = appearanceView(preview, {dealerName, rooms});
   return [area('speech', 'Tal per replik', speech), area('clips', 'Klipp', clips), area('idle', 'Vila', idle), area('placement', 'Placering', placement),
     area('settings', 'Inställningar', settings), area('roomChoices', 'Spelbordets val', choices),
     ...(appearance ? [area('appearance', appearance.label, appearance.rows)] : []), area('rooms', 'Andra spelbord', rebinding),
@@ -189,33 +192,57 @@ function appearanceView(preview, {dealerName, rooms = []} = {}) {
     if (key === 'dealer' && typeof dealerName === 'function' && typeof raw === 'string') return dealerName(raw) || raw;
     return typeof raw === 'string' || typeof raw === 'number' ? String(raw) : JSON.stringify(raw);
   };
+  // Regeln för ett val en gång (rutan och antalet i statusraden):
+  // 1. Bolagets rader (roomId null) och raderna roomOverrides.* är val i utkastet.
+  // 2. Ett spelbords rad med samma nyckel och samma nya värde som bolagets rad är bara bolagets
+  //    val som ärvs; den är inget eget val och spelbordet nämns i stället under "Gäller även".
+  //    Övriga spelbordsrader är spelbordets eget val.
+  // 3. Ett val som når det valda spelbordet med en nyckel som redan finns under roomChoices
+  //    (servern bygger kandidaten på utkastets val) visas och räknas bara där, med sitt ursprung.
+  // En ensam dealerändring hos ett bolag med ett spelbord blir då en rad och "1 ändring".
+  const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const selected = preview?.roomId;
+  const roomChoiceKeys = new Set(changes.filter(row => row?.area === 'roomChoices' && typeof row.key === 'string').map(row => row.key));
+  const list = entries.flatMap(entry => (Array.isArray(entry.changes) ? entry.changes : []).filter(row => object(row) && typeof row.key === 'string'));
+  const company = new Map(list.filter(row => !id(row.roomId)).map(row => [row.key, row]));
+  const inherited = row => id(row.roomId) && company.has(row.key) && same(row.after, company.get(row.key).after);
+  const folded = new Map();
   const rows = [], affected = [];
-  for (const entry of entries) {
-    for (const row of Array.isArray(entry.changes) ? entry.changes : []) {
-      if (!object(row) || typeof row.key !== 'string') continue;
-      const override = row.key.startsWith('roomOverrides.'), key = override ? row.key.slice('roomOverrides.'.length) : row.key;
-      const subject = id(row.roomId) ? 'Spelbordet ' + roomName(row.roomId) : 'Bolaget';
-      rows.push(subject + ' · ' + (appearanceKeys[key] ?? key) + (override ? ' (eget val)' : '') + ': ' + value(key, row.before) + ' → ' + value(key, row.after));
+  for (const row of list) {
+    const override = row.key.startsWith('roomOverrides.'), key = override ? row.key.slice('roomOverrides.'.length) : row.key;
+    if (!override && inherited(row)) continue;
+    if (!override && roomChoiceKeys.has(key)) {
+      if (row.roomId === selected) { folded.set(key, 'own'); continue; }
+      if (!id(row.roomId) && list.some(other => other.roomId === selected && other.key === key && inherited(other))) {
+        if (!folded.has(key)) folded.set(key, 'company');
+        continue;
+      }
     }
-    for (const roomId of Array.isArray(entry.affectedRooms) ? entry.affectedRooms : []) if (id(roomId) && !affected.includes(roomId)) affected.push(roomId);
+    const subject = id(row.roomId) ? 'Spelbordet ' + roomName(row.roomId) : 'Bolaget';
+    rows.push(subject + ' · ' + (appearanceKeys[key] ?? key) + (override ? ' (eget val)' : '') + ': ' + value(key, row.before) + ' → ' + value(key, row.after));
   }
+  for (const entry of entries)
+    for (const roomId of Array.isArray(entry.affectedRooms) ? entry.affectedRooms : []) if (id(roomId) && !affected.includes(roomId)) affected.push(roomId);
   const changeCount = rows.length;
-  if (!rows.length) rows.push('Utkastet' + (draftRevision ? ' ' + draftRevision : '') + ' publiceras samtidigt');
+  if (!rows.length) rows.push('Utkastet' + (draftRevision ? ' ' + draftRevision : '') + ' publiceras samtidigt'
+    + (folded.size ? ' (valen står under Spelbordets val)' : ''));
   // Ett bolagsövergripande utkast kan ändra andra spelbord än det valda: det ska synas här.
   const others = affected.filter(roomId => roomId !== preview?.roomId);
   if (others.length) rows.push('Gäller även: ' + others.map(roomName).join(', '));
-  return {label:'Utseende' + (draftRevision ? ' (utkast ' + draftRevision + ')' : ' (utkast)'), rows, changeCount};
+  return {label:'Utseende' + (draftRevision ? ' (utkast ' + draftRevision + ')' : ' (utkast)'), rows, changeCount, folded};
 }
 
 /**
- * Antal ändringar som väntar, för statusraden. Utseendeutkastet räknas med sina rader
- * (bolaget och varje spelbord), som de visas i området Utseende.
+ * Antal ändringar som väntar, för statusraden. Utseendeutkastet räknas med sina val enligt
+ * regeln i appearanceView: varje val en gång, och inte igen när det redan räknas under
+ * roomChoices. Ett utkast utan ändringsrader räknas som en ändring.
  */
 export const roomReleaseChangeCount = preview => {
   const changes = Array.isArray(preview?.changes) ? preview.changes : [];
   const others = changes.filter(row => row?.area !== 'appearance').length;
   if (others === changes.length) return others;
-  return others + Math.max(1, appearanceView(preview)?.changeCount ?? 0);
+  const view = appearanceView(preview);
+  return others + (view?.changeCount || (view?.folded.size ? 0 : 1));
 };
 
 /**
