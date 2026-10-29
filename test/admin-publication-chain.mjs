@@ -463,11 +463,17 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       await page.waitForFunction(element => element.getAttribute('aria-pressed') === 'true', element);
     };
     await choose(page.getByRole('list', {name: 'Spelbolag', exact: true}).getByRole('button', {name: /C6 North/}));
-    await choose(page.getByRole('list', {name: 'Spelrum', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
+    await choose(page.getByRole('list', {name: 'Spelbord', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
     await choose(page.getByRole('button', {name: 'Välj Astrid', exact: true}));
-    const play = page.getByRole('dialog', {name: 'Astrid', exact: true}).getByRole('link', {name: 'Spela med Astrid', exact: true});
-    assert.equal(await play.getAttribute('href'), chain.href);
-    await play.press('Enter');
+    // The new table has no published game settings: the lobby shows it as being prepared and offers no
+    // game start (the shared table would refuse every seat with room_config_missing).
+    const chosen = page.getByRole('dialog', {name: 'Astrid', exact: true});
+    await chosen.getByText('C6 publicerat rum hos C6 North').waitFor();
+    assert.equal(await chosen.getByRole('link', {name: 'Spela med Astrid', exact: true}).count(), 0, 'no game start while the table is being prepared');
+    await page.keyboard.press('Escape'); await chosen.waitFor({state: 'hidden'});
+    await page.getByRole('complementary', {name: 'Ditt val', exact: true}).getByRole('status').filter({hasText: 'Förbereds'}).waitFor();
+    // The entry route itself still resolves the table, which is what the rest of this chain follows.
+    await page.goto(origin + chain.href);
     const dataset = await page.locator('html').evaluate(element => ({...element.dataset}));
     const entry = gameLaneFromDocument(dataset);
     assert.equal(entry.roomId, receipt.room.id); assert.equal(entry.packageRevision, nextRevision);

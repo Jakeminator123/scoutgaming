@@ -395,6 +395,20 @@ test('another company, a key without company and a changed key binding are refus
   await assert.rejects(swapped.read(),denied);swapped.assertReleased();
 });
 
+// Granskning PR #642: the company check runs before the game settings are read, so a partner from another
+// company is refused as partner_operator_mismatch, never room_config_missing, and no settings row is read.
+test('another company is refused by name before the table settings are read, also when the table has none',async()=>{
+  const mismatch={code:'partner_operator_mismatch',statusCode:403};
+  for(const change of [()=>{},s=>{delete s.pack.branding.roomGameConfigVersions['room-a'];},s=>{delete s.heads['room-a'];}]) {
+    const h=fixture();partner(h,'south');change(h.state);
+    await assert.rejects(h.read(),mismatch);
+    assert.equal(h.trace.includes('shared-room-access:config'),false,'the settings head is never read for another company');h.assertReleased();
+    const g=fixture();partner(g);const binding=await g.read();change(g.state);g.state.session.operatorId='south';
+    await assert.rejects(g.access.revalidate(binding),mismatch);
+    await assert.rejects(g.repository.transaction(()=>g.access.revalidateLocked(binding)),mismatch);g.assertReleased();
+  }
+});
+
 test('the room company check runs inside the channel prepare, so the upgrade refusal keeps its code',async()=>{
   const h=fixture(),channel=createSharedRoomChannel({origin:'https://ui.invalid',...h.access,now:()=>1000,
     readSnapshot:()=>assert.fail('prepare cannot read game state'),readPresentation:()=>assert.fail('prepare cannot read presentation')});

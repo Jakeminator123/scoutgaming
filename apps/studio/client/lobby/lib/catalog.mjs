@@ -39,7 +39,8 @@ export function parseLobbyCatalog(payload) {
         ...(environment.image ? { image: environment.image } : {}),
         ...(room.limitPreset ? { limitPreset: room.limitPreset } : {}), illustration: roomIllustration(room.limitPreset),
         // Without published game settings the room is shown as being prepared and offers no game start.
-        ...(room.status === 'preparing' ? { preparing: true } : {}),
+        // A status this build does not know is treated the same: no game start.
+        ...(Object.hasOwn(room, 'status') ? { preparing: true } : {}),
         dealerDefault: room.dealerDefault,
         dealers: room.dealers.map(dealer => ({ ...dealer, name: dealer.label })),
         playUrl: room.playUrl,

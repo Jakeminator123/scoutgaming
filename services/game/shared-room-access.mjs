@@ -55,7 +55,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     ||!repository||!['transaction','withTransactionClient','readDocument'].every(key=>typeof repository[key]==='function')
     ||!same(scope,validateStudioScope(repository.scope)))throw new TypeError('Explicit scoped room access required');
   const parameters=[scope.environment,scope.workspaceId];
-  async function current(roomId,signal,details=false) {
+  async function current(roomId,signal,details=false,value=null) {
     aborted(signal);
     return repository.transaction(()=>repository.withTransactionClient(async client=>{
       aborted(signal);
@@ -80,6 +80,9 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       if(!presentation)deny();
       const dealerId=resolvePackageRoomDealer(pack,room,presentation);
       if(!dealerId||entry.selection.dealer!==dealerId)deny();
+      // The company check runs before the game settings are read: a partner from another company is refused
+      // as partner_operator_mismatch, never told whether this company's table has published settings.
+      if(value)admit(value,{operatorId:operator.id});
       const bindings=pack.branding?.roomGameConfigVersions;
       if(!bindings||typeof bindings!=='object'||!Object.hasOwn(bindings,roomId))configMissing();
       const version=bindings[roomId];
@@ -101,7 +104,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
   }
   async function bind(value,roomId,signal) {
     const accepted=session(value,now);aborted(signal);
-    const publication=await current(roomId,signal);aborted(signal);
+    const publication=await current(roomId,signal,false,value);aborted(signal);
     admit(value,publication);
     // Recheck revocation/expiry after the registry wait, with no retained token.
     const fresh=await auth.bindingById(accepted.sessionId),latest=session(fresh,now);aborted(signal);
@@ -135,7 +138,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     aborted(signal);
     const value=await commandAuth.bindingById(binding.sessionId,{actorId:binding.actorId,signal}),fresh=session(value,now);
     if(['actorId','sessionId','expiresAt'].some(key=>fresh[key]!==binding[key]))deny();
-    const publication=await current(binding.roomId,signal);
+    const publication=await current(binding.roomId,signal,false,value);
     if(['operatorId','roomId','packageRevision'].some(key=>publication[key]!==binding[key]))deny();
     admit(value,publication);
     aborted(signal);

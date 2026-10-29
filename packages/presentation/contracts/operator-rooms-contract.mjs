@@ -63,8 +63,10 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
     // The published bet profile's key (casual, prive, high), for the lobby's picture only. The format is
     // checked here; a key this build does not know is shown with the default picture, never rejected.
     if (Object.hasOwn(room,'limitPreset') && (typeof room.limitPreset !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.limitPreset))) fail();
-    // An open blackjack room whose package binds no game settings yet: shown as being prepared, never played.
-    if (Object.hasOwn(room,'status') && room.status !== 'preparing') fail();
+    // 'preparing': an open blackjack room without published game settings, shown as being prepared, never played.
+    // The format is checked; a status this build does not know is passed on and means no game start, never a
+    // rejected catalogue (forward compatibility, see ROOM_OPTIONAL above).
+    if (Object.hasOwn(room,'status') && (typeof room.status !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(room.status))) fail();
     if (!isGameLaneId(room.id) || !isGameLaneId(room.laneId)) fail();
     text(room.name, 100); exact(room.presentation, ['id', 'label']);
     if (!isGameLaneId(room.presentation.id)) fail();

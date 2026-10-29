@@ -382,6 +382,13 @@ test('an open room without published game settings is flagged in Admin and the l
   assert.deepEqual(after.admin,['north-b','south'].map(f.id).sort(),'only the published room loses its warning; its sibling and the other company keep theirs');
   assert.deepEqual(after.lobby,['north-b','south'].map(f.id).sort());
   assert.deepEqual(after.open,[f.id('north-a')],'the lobby offers the room once its settings are published');
+  // Granskning PR #642: the table also refuses a binding whose published head is missing (room_config_missing).
+  // Admin and the lobby read the same head, so they say the same as the table.
+  await f.pool.query('DELETE FROM croupier_game.shared_table_config_heads WHERE room_id=$1',[f.id('north-a')]);
+  const headless=await flagged();
+  assert.deepEqual(headless.admin,all,'a binding without its published head is flagged in Admin');
+  assert.deepEqual(headless.lobby,all,'and shown as being prepared in the lobby');
+  assert.deepEqual(headless.open,[]);
 });
 
 test('without the 009 game-settings storage the preview blocks and publication is a 503 before any write',async t=>{
