@@ -128,7 +128,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const tab=adminTabId('company',query.get('flik')),create=query.get('view')==='create';
     const own=operator?rooms.filter(room=>room.operatorId===operator.id):[];
     return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies'},{label:operator?.name??'Bolag'}]}/>} title={operator?.name??'Bolag'} chip={operator?operatorChip(operator):undefined}
-      intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?`Bolaget ${id} finns inte i registret.`:'Läser katalogen…'}
+      intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?<span data-not-found="company">{`Bolaget ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
       actions={operator&&<><Link className={buttonVariants()} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link><a className={buttonVariants()} href={'/partner/'+encodeURIComponent(operator.slug)}>Öppna Partnerportalen<ExternalLink aria-hidden="true"/></a></>}>
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
       {status}
@@ -168,7 +168,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     ...(status_?[status_.draft?'sparat utkast väntar på publicering':'inget opublicerat utkast']:[])]:[];
   return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies?tab=spelbord'},...(operator?[{label:operator.name,href:companyHref(operator,'spelbord')}]:[]),{label:room?.name??'Spelbord'}]}/>}
     title={room?<span className="inline-flex min-w-0 items-center gap-4"><RoomPicture room={room} className="h-12 w-20 max-md:h-10 max-md:w-16"/><span className="min-w-0">{room.name}</span></span>:'Spelbord'} chip={room?<>{stateChip(room)}{status_?.draft&&<Chip tone="info">utkast</Chip>}</>:undefined}
-    intro={room?facts.join(' · '):catalog?`Spelbordet ${id} finns inte i registret.`:'Läser katalogen…'}
+    intro={room?facts.join(' · '):catalog?<span data-not-found="room">{`Spelbordet ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
     actions={room&&<>
       {room.playUrl&&<a className={buttonVariants()} href={room.playUrl} target="_blank" rel="noopener">Öppna i spelet<ExternalLink aria-hidden="true"/></a>}
       <ActionMenu name={room.name} actions={[

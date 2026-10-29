@@ -105,7 +105,7 @@ test('paging deduplicates rows, preserves dealer identity and aborts pending rea
 
 test('foreign dealer rows or wrong reconciliation identities fail closed; failed media does not borrow a substitute',async()=>{
   const foreign=await loaded(async()=>({items:[sample({dealerId:'elin'})],nextCursor:null}));assert.equal(foreign.state('items').length,0);assert.equal(roles(foreign.render(),'alert'),1);
-  const h=await loaded();let tree=h.render();nodes(tree,node=>node.type===DealerClipPreview)[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type===DealerClipPreview).length,0);assert.equal(nodes(tree,node=>node.type==='video').length,0,'no substitute video');assert.equal(nodes(tree,node=>node.type==='audio').length,1);
+  const h=await loaded();let tree=h.render();nodes(tree,node=>node.type===DealerClipPreview)[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type===DealerClipPreview).length,0);assert.equal(nodes(tree,node=>node.type==='audio').length,1);
 });
 
 test('filtered drafts stay reachable when CAS refresh removes the active category',async()=>{

@@ -138,7 +138,7 @@ test('failed readback after a saved mutation blocks another write and retains a 
 test('an external write lock and missing package both disable mutations, and unmounted reads are ignored',async()=>{
   const h=harness({disabled:true});await h.ready(snapshot({operators:[company('north',{packageRevision:null,lanes:[]})],rooms:[room({packageRevision:null,published:false,canArchive:false})]}));
   assert.equal(h.button('room-archive').props.disabled,true);assert.equal(h.button('room-state').props.disabled,true);
-  h.button('room-archive').props.onClick();h.confirm()?.props.onClick();assert.equal(h.requests.length,1);
+  h.button('room-archive').props.onClick();h.confirm().props.onClick();assert.equal(h.requests.length,1);
   const late=harness();late.render();late.unmount();await late.reply(0,snapshot());assert.equal(late.changed.length,0);
 });
 

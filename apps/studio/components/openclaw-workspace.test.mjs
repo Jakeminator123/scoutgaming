@@ -20,7 +20,7 @@ function load(file, overrides = {}, globals = {}) {
       : name === '../lib/openclaw-dashboard.mjs' ? dashboard : name === '../lib/lab-url.mjs' ? labUrls : require(name)) });
   return module.exports;
 }
-const { OpenClawWorkspace } = load('./openclaw-workspace.tsx');
+const { OpenClawWorkspace, OPENCLAW_RUNTIME_TEXT } = load('./openclaw-workspace.tsx');
 const render = props => renderToStaticMarkup(React.createElement(OpenClawWorkspace, props));
 
 function harness(fetchImpl, globals = {}) {
@@ -76,7 +76,10 @@ const textOf = node => typeof node === 'string' || typeof node === 'number' ? St
 const byRole = (h, role) => nodes(h.render(), node => node.props?.role === role).map(textOf);
 /** A confirmed save names the agent and its new model in a status; nothing else does. */
 const confirmed = (h, agent = 'croupier-director', primary = 'lab-provider/new') => byRole(h, 'status').some(text => text.includes(agent) && text.includes(primary));
-const runtimeState = h => nodes(h.render(), node => node.props?.['data-runtime-state'] !== undefined)[0]?.props['data-runtime-state'];
+const runtimeLine = h => nodes(h.render(), node => node.props?.['data-runtime-state'] !== undefined)[0];
+const runtimeState = h => runtimeLine(h)?.props['data-runtime-state'];
+/** Whether the page claims that Gateway runs the read settings: by attribute or by the active text. */
+const claimsActive = h => runtimeLine(h)?.props['data-claim'] === 'active' || html(h).includes(OPENCLAW_RUNTIME_TEXT.active);
 function change(h, value = 'lab-provider/new', id) { select(h, id).props.onChange({ target: { value } }); view(h); }
 async function started(fetchImpl, globals) { const h = harness(fetchImpl, globals); view(h); await flush(); view(h); return h; }
 
@@ -90,7 +93,7 @@ test('load uses same-origin no-store transport; read-only render never writes an
   const current = nodes(select(h), node => node.type === 'option' && node.props.value === 'lab-provider/old');
   assert.equal(current.length, 1); assert.equal(current[0].props.disabled, true, 'the current model stays visible but cannot be chosen again');
   assert.equal(save(h).props.disabled, true);
-  assert.equal(confirmed(h, 'croupier-director', 'lab-provider/old'), false); assert.notEqual(runtimeState(h), 'true'); h.unmount();
+  assert.equal(confirmed(h, 'croupier-director', 'lab-provider/old'), false); assert.equal(claimsActive(h), false); h.unmount();
 });
 
 test('save preserves ordered fallbacks, locks overlapping requests and confirms only after a real GET', async () => {
@@ -214,13 +217,14 @@ test('save uncertainty and malformed receipt never display success or discard ch
 });
 
 test('Gateway applied status is fact-bound; false and unknown never claim active runtime configuration', async () => {
-  const shown = [];
-  for (const applied of [true, false, null]) {
+  assert.equal(new Set(Object.values(OPENCLAW_RUNTIME_TEXT)).size, 4, 'each runtime state has its own text');
+  for (const [applied, key] of [[true, 'active'], [false, 'saved'], [null, 'unknown']]) {
     const initial = before(); initial.gateway.applied = applied;
     const h = await started(async () => reply(initial)); assert.equal(runtimeState(h), String(applied));
-    shown.push(textOf(nodes(h.render(), node => node.props?.['data-runtime-state'] !== undefined)[0])); h.unmount();
+    assert.equal(textOf(runtimeLine(h)), OPENCLAW_RUNTIME_TEXT[key], String(applied));
+    assert.equal(claimsActive(h), applied === true, `applied=${applied} ${applied === true ? 'claims' : 'never claims'} the active configuration`);
+    h.unmount();
   }
-  assert.equal(new Set(shown).size, 3, 'applied, not applied and unknown read differently');
 });
 
 test('invalid snapshot fails closed and a failed refresh blocks saving stale choices', async () => {

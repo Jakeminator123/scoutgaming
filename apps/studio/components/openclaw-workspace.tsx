@@ -64,6 +64,19 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
   return value;
 }
 
+// What the page may say about the Gateway's running configuration. Only `active` claims that the read
+// settings are in use; the key is derived once, so the text and its data-claim cannot drift apart.
+export const OPENCLAW_RUNTIME_TEXT = {
+  stale: 'De här valen kommer från senaste lyckade hämtningen. Hämta aktuella val för att kontrollera statusen.',
+  active: 'Gateway använder de hämtade inställningarna.',
+  saved: 'Inställningarna är sparade. Gateway har ännu inte tagit dem i bruk.',
+  unknown: 'Gateway är nåbar. Det går inte att bekräfta vilka inställningar som används i körningen.',
+} as const;
+type RuntimeKey = keyof typeof OPENCLAW_RUNTIME_TEXT;
+function runtimeKey(needsRefresh: boolean, applied: boolean | null): RuntimeKey {
+  return needsRefresh ? 'stale' : applied === true ? 'active' : applied === false ? 'saved' : 'unknown';
+}
+
 export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string};embedded?:boolean }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
@@ -122,6 +135,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
     return () => { alive.current = false; controller.current?.abort(); controller.current = null; };
   }, []);
 
+  const runtime = runtimeKey(needsRefresh, data?.gateway.applied ?? null);
   const changedAgents = data?.agents.filter(agent => (drafts[agent.id] ?? agent.model.primary) !== agent.model.primary) ?? [];
   const dirty = changedAgents.length > 0 || Object.keys(drafts).some(id => !data?.agents.some(agent => agent.id === id));
   const unsaved=useRef(false);unsaved.current=dirty;
@@ -223,10 +237,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
     </div>
     {data && <section className={styles.panel} aria-labelledby="agent-models">
       <div className={styles.panelHeading}><h2 id="agent-models">Registrerade agentroller</h2><span>{dirty ? 'Osparade ändringar' : 'Senast hämtade val'}</span></div>
-      <p className={styles.runtimeState} data-runtime-state={needsRefresh ? 'stale' : String(data.gateway.applied)}>{needsRefresh ? 'De här valen kommer från senaste lyckade hämtningen. Hämta aktuella val för att kontrollera statusen.'
-        : data.gateway.applied === true ? 'Gateway använder de hämtade inställningarna.'
-        : data.gateway.applied === false ? 'Inställningarna är sparade. Gateway har ännu inte tagit dem i bruk.'
-          : 'Gateway är nåbar. Det går inte att bekräfta vilka inställningar som används i körningen.'}</p>
+      <p className={styles.runtimeState} data-runtime-state={needsRefresh ? 'stale' : String(data.gateway.applied)} data-claim={runtime === 'active' ? 'active' : undefined}>{OPENCLAW_RUNTIME_TEXT[runtime]}</p>
       <p>Rollerna har olika uppgifter och kan dela modell. Listan visar konfiguration, inte att alla körs just nu. Tal kan välja en annan modell för ett enskilt anrop.</p>
       {data.agents.length === 0 && <p className={styles.empty}>Inga Croupier-agenter kunde läsas från OpenClaw.</p>}
       {data.agents.map(agent => {

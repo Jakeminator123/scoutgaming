@@ -344,6 +344,8 @@ test('recorded take review posts only the exact played identity and shows the tr
   const fieldset=()=>h.nodes(h.render(),node=>node.type==='fieldset'&&node.props['aria-label']==='Bedöm tagningen')[0];
   assert.equal(fieldset().props.disabled,false);assert.equal(h.button(tree,'approve').props.disabled,false);
   assert.equal(h.button(tree,'reject').props.disabled,false);assert.equal(h.button(tree,'clear-review'),undefined);
+  const attested=tree=>h.nodes(tree,node=>node.type==='p'&&node.props['data-attestation']==='human');
+  assert.equal(attested(tree).length,0,'a pending take is not presented as approved');
   h.button(tree,'approve').props.onClick();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(h.calls.length,1);assert.equal(h.calls[0].url,'/studio/api/videos/speech-review');assert.equal(h.calls[0].init.method,'POST');
@@ -352,8 +354,8 @@ test('recorded take review posts only the exact played identity and shows the tr
     expectedIdentity:recordedSpeechIdentity(speech),verdict:'approved'});
   assert.deepEqual(inventories,[{videos:[approved]}]);
   tree=h.render();
-  const approvedStatus=studioRecordedSpeechStatus(studioRecordedSpeech({},{videos:[approved]},'dragan')[0]);
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children===approvedStatus).length,'the trusted reviewer from the registry is shown');
+  const approval=attested(tree);assert.equal(approval.length,1,'the approval is marked as a human attestation');
+  assert.ok(String(approval[0].props.children).includes(approved.classification.recordedSpeech.review.by),'the trusted reviewer from the registry is shown');
   assert.equal(h.button(tree,'approve').props.disabled,true);assert.ok(h.button(tree,'clear-review'));
   reply={ok:false,status:409,body:{error:'studio_speech_identity_changed',code:'studio_speech_identity_changed'}};
   h.button(tree,'clear-review').props.onClick();

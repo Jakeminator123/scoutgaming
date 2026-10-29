@@ -202,12 +202,18 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
     onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
   const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipDetails,{data:{...data,...patch}}));
   // The card is read through its data hooks: status, actions and the recorded speech, never its words.
-  const status=html=>html.match(/class="studio-card-status[^"]*" data-status="([^"]+)"/)?.[1];
+  // The status key, checked against the text the card shows for it: the two cannot drift apart.
+  const {CLIP_STATUS_LABEL}=module.exports;
+  const status=html=>{
+    const match=html.match(/class="studio-card-status[^"]*" data-status="([^"]+)">(?:<svg[\s\S]*?<\/svg>|<span class="studio-empty-dot"><\/span>)?([^<]*)</);
+    assert.ok(match,'the card shows one status');assert.equal(match[2],CLIP_STATUS_LABEL[match[1]].replace(/&/g,'&amp;'),'the shown text is the label of its status key');
+    return match[1];
+  };
   const action=(html,name)=>new RegExp(`data-action="${name}"`).test(html);
   const unbound=render({});assert.equal(status(unbound),'selected');assert.ok(action(unbound,'bind'));
   assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
   const usage={configured:true,when:'Teknisk källa: event.type=idle',rules:['Automatiskt var 27 s.']};
-  const saved=render({usage});assert.equal(status(saved),'bound');assert.match(saved,/Automatiskt var 27 s/);assert.equal(action(saved,'bind'),false);
+  const saved=render({usage});assert.equal(status(saved),'bound','a saved binding is shown as part of the draft');assert.doesNotMatch(saved,/Publicerad/i,'a draft binding is never shown as published');assert.match(saved,/Automatiskt var 27 s/);assert.equal(action(saved,'bind'),false);
   assert.match(saved,/event.type=idle/);assert.doesNotMatch(saved.replace(/<details[\s\S]*?<\/details>/g,''),/event.type/,'the technical source stays in the details');
   assert.ok(saved.includes(slotExplanation(slot)),'the situation is explained by the shared slot text');
   assert.ok(action(saved,'edit-rule'));

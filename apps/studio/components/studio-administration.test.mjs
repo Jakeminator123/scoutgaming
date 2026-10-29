@@ -830,7 +830,7 @@ test('a POST response from before pagehide cannot restore credentials after page
   resolvePost(reply({ok:true,key:{id:'partner-one',key,secret}}));await flush();
   const restored=renderToStaticMarkup(h.render(props));
   assert.ok(!restored.includes(secret));assert.doesNotMatch(restored,/data-one-time/);
-  assert.match(restored,/role="status"/,'the acknowledged write is still reported');assert.equal(writes,1);h.unmount();
+  assert.match(restored,/data-notice="acknowledged"/,'the acknowledged write is still reported');assert.equal(writes,1);h.unmount();
 });
 
 test('keys/invite responses are projected before state, and server errors never echo secret bodies', async () => {
@@ -969,7 +969,7 @@ test('secondary account and partner forms remain functional inside closed disclo
 test('operations readouts keep honest certification limitations', () => {
   const h = harness();
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
-  assert.match(html,/312/,'the cut card position is the server value');assert.doesNotMatch(html, /CERTIFIED|VALID|certifierad/i);
+  assert.match(html, /data-certification="missing"/, 'the missing certification evidence is stated');assert.doesNotMatch(html, /CERTIFIED|VALID|certifierad/i);
 });
 
 test('native mail previews escape content, render placeholders and never send or navigate',()=>{
@@ -1176,7 +1176,7 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
   native.props.onDirty(form); native.props.command('players/status', { playerId: 'player-active', status: 'blocked', reason: 'Fixture' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
   // A fully refreshed success would reset the form and release its draft; here both are kept.
-  assert.match(html, /role="status"/); assert.doesNotMatch(html, /SECRET_DB_ERROR/);
+  assert.match(html, /data-notice="acknowledged-unrefreshed"/, 'the page warns that the write took but the data is not re-read'); assert.doesNotMatch(html, /data-notice="acknowledged"/); assert.doesNotMatch(html, /SECRET_DB_ERROR/);
   assert.equal(form.resets, 0); assert.equal(control(tree, 'discard-drafts').length, 1); h.unmount();
 });
 

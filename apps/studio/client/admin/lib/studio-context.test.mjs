@@ -266,7 +266,8 @@ test('the room nav resolves the registered owner and never falls back for an unk
     assert.ok(hrefs(html).includes('/admin/companies/b?flik=spelbord'));assert.equal(hrefs(html).some(href=>href.includes('/admin/companies/a')),false);
   }
   const missing=await companiesPageHtml({page:'room',id:'missing',search:'?flik=utseende'});
-  assert.doesNotMatch(missing,/data-registered-studio=/);assert.match(missing,/missing/,'the unknown room is named');
+  assert.doesNotMatch(missing,/data-registered-studio=/);assert.match(missing,/data-not-found="room"/,'the page states that the room is not registered');
+  assert.doesNotMatch(await companiesPageHtml({page:'room',id:'other',search:'?flik=utseende',compositions}),/data-not-found=/,'a known room is not reported missing');
   const direct=await registeredStudioHtml({operatorId:'b',roomId:'other',mode:'room',section:'appearance'});
   assert.match(direct,/data-room-editor="other"/);assert.match(direct,/data-operator="b"/);
   const archived=await registeredStudioHtml({operatorId:'a',roomId:'archived',mode:'room',section:'appearance'});
@@ -316,7 +317,7 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   const other=await companiesPageHtml({page:'company',id:'b',search:'?flik=spelbord',compositions});
   assert.deepEqual([...new Set(hrefs(other).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/other?flik=utseende']);
   const missing=await companiesPageHtml({page:'company',id:'missing',search:'?flik=spelbord',compositions});
-  assert.match(missing,/missing/,'the unknown company is named');assert.doesNotMatch(missing,/data-registered-studio=|\/admin\/rooms\//);
+  assert.match(missing,/data-not-found="company"/,'the page states that the company is not registered');assert.doesNotMatch(other,/data-not-found=/,'a known company is not reported missing');assert.doesNotMatch(missing,/data-registered-studio=|\/admin\/rooms\//);
   const filtered=await companiesPageHtml({page:'companies',search:'?tab=spelbord&operator=a',compositions});
   assert.deepEqual([...new Set(hrefs(filtered).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/bj?flik=utseende','/admin/rooms/roulette?flik=utseende'],'the room list filters by company');
 });
