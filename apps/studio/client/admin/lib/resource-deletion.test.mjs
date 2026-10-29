@@ -191,7 +191,7 @@ test('dependency overview has an accessible active Admin link and unique resourc
   runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
     require:name=>name.includes('admin-navigation')?adminNavigation:name==='./admin-logout'?{AdminLogout:()=>null}:name==='./theme-toggle'?{ThemeToggle:()=>null}:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
   const dependencyLinks=()=>{
-    const all=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='a');
+    const all=nodes(expand(module.exports.StudioMenu()),node=>node.type==='a');
     assert.ok(!all.some(node=>node.props.href==='/admin/structure'),'the retired overview has no menu entry of its own');
     const links=all.filter(node=>node.props.href==='/admin/system');
     assert.ok(links.length,'the dependency overview remains reachable through System');
@@ -199,8 +199,8 @@ test('dependency overview has an accessible active Admin link and unique resourc
     return links;
   };
   assert.ok(dependencyLinks().every(link=>link.props['aria-current']==='page'));
-  assert.equal(nodes(module.exports.StudioSidebar(),node=>node.type?.name==='AdminLogout').length,1,'the menu holds the one Admin logout');
-  assert.equal(nodes(module.exports.StudioSidebar(),node=>node.type?.name==='ThemeToggle').length,1,'the menu holds the one mode choice');
+  assert.equal(nodes(module.exports.StudioMenu(),node=>node.type?.name==='AdminLogout').length,1,'the menu holds the one Admin logout');
+  assert.equal(nodes(module.exports.StudioMenu(),node=>node.type?.name==='ThemeToggle').length,1,'the menu holds the one mode choice');
   pathname='/admin';assert.ok(dependencyLinks().every(link=>link.props['aria-current']===undefined));
   assert.notEqual(resourceAnchor('media','a:b'),resourceAnchor('media','a_3Ab'));
   assert.notEqual(resourceAnchor('media','é'),resourceAnchor('dealer','é'));

@@ -20,6 +20,7 @@ Det ett bolag kan ändra är en delmängd av det Admin kan ändra; spelaren ser 
 - **Klipp** (`clip`): en filmad situation, till exempel utdelning eller kortvändning.
 - **Klippkarta** (`slots`): dealerns klipp ordnade per situation.
 - **Vila** (`idle`): dealerns grundloop mellan händelserna; **vilosekvens** (`rotation`) är flera viloklipp i följd.
+- **Körregel** (`idlePolicy`, `dealerIdlePolicies`, `mediaPolicy`): när och hur ett klipp spelas, till exempel Av, Ibland eller i vilosekvensen. Ordet står kvar eftersom OpenClaw ska kunna styra klipp genom körregeln.
 - **Replik** och **tagning** (`take`): en mening med exakt text, och en godkänd inspelning av den.
 - **Röst och tal** (`speech`): dealerns inspelade och genererade tal. **Röstprofil** (`speechProfile.voice`): dealerns sparade röst (ElevenLabs röst-ID och modell) i projektet i Neon; talet läser den, röstkatalogen föreslår bara.
 - **Landningar** (`landing`): var dealerns hand lägger korten i bild.
@@ -53,7 +54,7 @@ Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på de
 | BO, Backoffice | tabeller `bo_*`, cookien `bo_jwt` | Admin |
 | Lissabon | tabeller `lissabon_*`, `lissabon-stream-lane`, redirect `/labb-lissabon` | inget produktord |
 | Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-login.tsx` och `partner-team-loader.mjs` | bolag, bolagets team |
-| Rum, spelrum | kodnamnet `room`; i UI lobbyn (`client/lobby`) | spelbord |
+| Rum, spelrum | kodnamnet `room`, adressen `/admin/rooms`; lobbyn och Admin säger spelbord | spelbord |
 | Scenmall (Admin och portalen till 2026-10-29) | kodnamnet `lane`, `composition`; adressen `/admin/scenes?tab=mallar` | miljö |
 | Mall, sammansättning | `lane`, `composition` | miljö |
 | Nivå 1/2/3, intern administration | i UI `studio-administration.tsx` | Admin, Partnerportalen, spelaren |

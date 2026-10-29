@@ -6,23 +6,22 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Ordvakt för Admin: legacy-ord får inte stå i text som en administratör kan se.
-// Rätt ord: miljö (inte sammansättning, scenmall), spelbord (inte spelrum, Rumsnamn), Scoutgaming
-// (inte Croupier); Astrid är raderad. Se apps/studio/docs/TERMINOLOGI.md.
+// Rätt ord: miljö (inte sammansättning, scenmall), spelbord (inte rum, rummet, spelrum, Rumsnamn),
+// Scoutgaming (inte Croupier); Astrid är raderad. Se apps/studio/docs/TERMINOLOGI.md.
+// "rum" är ett helt ord eller ett förled (rummet, rummens, rumsregistret), aldrig en del av datarum eller utrymme.
 const require = createRequire(import.meta.url);
 const studio = fileURLToPath(new URL('..', import.meta.url));
 const repo = join(studio, '..', '..');
-export const LEGACY_WORDS = /sammansättning|scenmall|spelrum|Rumsnamn|Astrid|Croupier/i;
+export const LEGACY_WORDS = /sammansättning|scenmall|spelrum|Rumsnamn|Astrid|Croupier|(?<!\p{L})rum(?:met|men|mets|mens|s\p{L}*)?(?!\p{L})/iu;
 
-// Filerna ändras i öppna PR:er (room-game-config i #656–#658). Byt orden och ta bort raden när PR:en är mergad.
-const PENDING = new Set([
-  'apps/studio/components/room-game-config.tsx',
-]);
+// Filer som ändras i en öppen PR: byt orden där och ta bort raden när PR:en är mergad.
+const PENDING = new Set([]);
 
-function tsxFiles(dir, recursive) {
+function sourceFiles(dir, recursive, pattern = /\.tsx$/) {
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) return recursive && entry.name !== 'node_modules' ? tsxFiles(path, true) : [];
-    return entry.isFile() && entry.name.endsWith('.tsx') ? [path] : [];
+    if (entry.isDirectory()) return recursive && entry.name !== 'node_modules' ? sourceFiles(path, true, pattern) : [];
+    return entry.isFile() && pattern.test(entry.name) && !/\.(?:test|d)\.m?[jt]s$/.test(entry.name) ? [path] : [];
   });
 }
 
@@ -70,7 +69,11 @@ export async function visibleTexts(source, fileName = 'file.tsx') {
   return texts;
 }
 
-const files = [...tsxFiles(join(studio, 'client', 'admin'), true), ...tsxFiles(join(studio, 'components'), false)]
+// Admin: dess komponenter och sidor, Admins egna lib (meddelanden och planer), de delade komponenterna och
+// klienterna vars meddelanden bara Admin visar (Spelinställningar, Nytt spelbord).
+const files = [...sourceFiles(join(studio, 'client', 'admin'), true), ...sourceFiles(join(studio, 'client', 'admin', 'lib'), false, /\.(?:mjs|ts)$/),
+  ...sourceFiles(join(studio, 'app', 'admin'), true), ...sourceFiles(join(studio, 'components'), false),
+  join(studio, 'lib', 'room-game-config-client.mjs'), join(studio, 'lib', 'presentation-room-client.mjs')]
   .map(path => relative(repo, path).split('\\').join('/')).sort();
 
 async function hits(paths) {
@@ -90,10 +93,14 @@ export function A(){ const id='croupier-director'; const url='/admin/spelrum?dea
   assert.deepEqual(texts.map(row => row.text), ['Spelrummet öppnas', 'Rumsnamn', 'x', 'Välj i Croupier', 'Schemat croupier_auth.users läses, inte Croupier.', 'Astrid']);
   assert.deepEqual(texts.map(row => row.line), [4, 4, 4, 4, 5, 5]);
   assert.deepEqual(texts.filter(row => legacyWord(row.text)).map(row => row.text), ['Spelrummet öppnas', 'Rumsnamn', 'Välj i Croupier', 'Schemat croupier_auth.users läses, inte Croupier.', 'Astrid']);
+  const words = ['Rum', 'rummet', 'Rummens arkiv', 'rumsregistret', 'Rum: Norr', 'Rumba', 'datarum', 'utrymme', 'spelbordet', 'room-id'];
+  assert.deepEqual(words.filter(legacyWord), ['Rum', 'rummet', 'Rummens arkiv', 'rumsregistret', 'Rum: Norr']);
 });
 
-test('Admin shows no legacy words: sammansättning, scenmall, spelrum, Rumsnamn, Astrid or Croupier', async () => {
+test('Admin shows no legacy words: sammansättning, scenmall, rum, spelrum, Rumsnamn, Astrid or Croupier', async () => {
   assert.ok(files.length > 50, 'the guard reads Admin and the shared components');
+  for (const path of ['apps/studio/client/admin/lib/resource-deletion.mjs', 'apps/studio/app/admin/login/page.tsx', 'apps/studio/lib/room-game-config-client.mjs'])
+    assert.ok(files.includes(path), `the guard reads ${path}`);
   for (const path of PENDING) assert.ok(files.includes(path), `${path} finns inte; ta bort raden ur PENDING`);
   const found = await hits(files.filter(path => !PENDING.has(path)));
   assert.deepEqual(found, [], 'byt till miljö, spelbord, spelbordets namn eller Scoutgaming:\n' + found.join('\n'));

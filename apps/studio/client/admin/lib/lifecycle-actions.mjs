@@ -56,7 +56,7 @@ export function dealerArchivePlan({ label, impact }) {
   const items = impact ? [
     `${plural(impact.mediaCount, 'klipp', 'klipp')} följer med till papperskorgen`,
     ...impact.compositions.map(row => `Miljö: ${row.label} arkiveras`),
-    ...impact.rooms.map(row => `Rum: ${row.name} kopplas loss och avpubliceras`),
+    ...impact.rooms.map(row => `Spelbord: ${row.name} kopplas loss och avpubliceras`),
     ...impact.operators.map(row => `Spelbolag: ${row.name} får ett ändrat paket`),
     impact.speechEnabled ? 'AI-tal stängs av' : 'AI-tal är redan avstängt',
   ] : [];
@@ -70,7 +70,7 @@ export function dealerArchivePlan({ label, impact }) {
 export function dealerRestorePlan({ label, compositions = [] }) {
   return {
     kind: 'dealer-restore', title: `Återställ ${label}?`,
-    summary: 'Dealern, klippen och sparade miljöer återförs som utkast. AI-tal förblir avstängt. Rum återställs eller öppnas inte automatiskt.',
+    summary: 'Dealern, klippen och sparade miljöer återförs som utkast. AI-tal förblir avstängt. Spelbord återställs eller öppnas inte automatiskt.',
     items: [`Sparade miljöer (${compositions.length})`, ...compositions.map(row => `Miljö: ${row.label}`)],
     confirmLabel: 'Återställ dealern', cancelLabel: 'Avbryt', busyLabel: 'Återställer…',
   };

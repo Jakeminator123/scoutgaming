@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {labBasePath,labUrl} from '../lib/lab-url.mjs';
 import styles from './control-resource-lifecycle.module.css';
 import {ConfirmDialog} from '../client/admin/components/ui/dialog';
+import {Button,buttonVariants} from '../client/admin/components/ui/kit';
 
 type Operator = {id:string;slug:string;name:string;status:string;lanes:string[];packageRevision:number|null;archivedAt:string|null;roomCount:number;archivedRoomCount:number};
 type Room = {id:string;name:string;operatorId:string;presentationLaneId:string;state:string;archivedAt:string|null;packageRevision:number|null;published:boolean;canArchive:boolean;canRestore:boolean;restoreBlockers:string[]};
@@ -114,14 +115,14 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
   if(!available)return null;
   if(compact&&!problem&&!notice&&!intent)return null;
   if(compact)return <section aria-label="Ändra spel hos bolaget">
-    {problem&&<p role="alert">{problem} <button className="sg-btn" type="button" data-action="refresh" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></p>}
+    {problem&&<p role="alert">{problem} <Button size="sm" data-action="refresh" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Uppdatera</Button></p>}
     {notice&&<p role="status">{notice}</p>}
-    {intent&&intent.operatorId===operatorId&&<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna ':'Pausa '):'Ta bort '}{intent.name} hos {operator?.name}?</legend><p>{intent.kind==='state'?(intent.state==='live'?'Spelet öppnas för bolagets spelare med sina publicerade inställningar.':'Spelet stängs tillfälligt för nya spelare. Inställningar och historik behålls.'):'Spelet försvinner från bolagets utbud och stängs för spelare. Gemensamma dealers, bord, bakgrunder och historik behålls. Spelet går att återställa.'}</p><div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="confirm" onClick={()=>void apply()}>{busy?'Sparar…':intent.kind==='state'?(intent.state==='live'?'Öppna spel':'Pausa spel'):'Ta bort spel'}</button><button type="button" className="sg-btn" data-action="cancel" onClick={()=>setIntent(null)}>Avbryt</button></div></fieldset>}
+    {intent&&intent.operatorId===operatorId&&<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna ':'Pausa '):'Ta bort '}{intent.name} hos {operator?.name}?</legend><p>{intent.kind==='state'?(intent.state==='live'?'Spelet öppnas för bolagets spelare med sina publicerade inställningar.':'Spelet stängs tillfälligt för nya spelare. Inställningar och historik behålls.'):'Spelet försvinner från bolagets utbud och stängs för spelare. Gemensamma dealers, bord, bakgrunder och historik behålls. Spelet går att återställa.'}</p><div className={styles.actions}><Button variant="primary" data-action="confirm" onClick={()=>void apply()}>{busy?'Sparar…':intent.kind==='state'?(intent.state==='live'?'Öppna spel':'Pausa spel'):'Ta bort spel'}</Button><Button data-action="cancel" onClick={()=>setIntent(null)}>Avbryt</Button></div></fieldset>}
   </section>;
-  if(!operatorId)return problem?<p role="alert">{problem} <button type="button" data-action="refresh" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Försök igen</button></p>:null;
+  if(!operatorId)return problem?<p role="alert">{problem} <Button size="sm" data-action="refresh" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Försök igen</Button></p>:null;
   return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelbord':'Bolagets papperskorg'}>
     <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{archiveOnly?'Borttagna spel':kind==='rooms'?'Spelbord':'Papperskorg & återställning'}</h2></div>
-      <button className="sg-btn sg-btn-ghost" type="button" data-action="refresh" disabled={disabled||busy||loading} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></header>
+      <Button variant="ghost" data-action="refresh" disabled={disabled||busy||loading} onClick={()=>setReload(value=>value+1)}>Uppdatera</Button></header>
     {loading?<p role="status">Hämtar aktuella uppgifter…</p>:null}
     {problem?<p role="alert" className={styles.feedback}>{problem}</p>:null}
     {notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
@@ -132,17 +133,17 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
         <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>
-            <a className="sg-btn sg-btn-secondary" href={navigation?.compositionHref(operator,room)??labUrl('/admin/scenes?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera miljö</a>
-            {room.state==='live'&&operator.status==='active'&&room.published?<a className="sg-btn sg-btn-secondary" href={labUrl('/admin/rooms?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>{navigation?.rehearsalLabel??'Provspela & följ'}</a>:null}
-            <button className="sg-btn sg-btn-secondary" type="button" data-action="room-state" disabled={writesOff||operator.status!=='active'||!room.published} onClick={()=>setIntent({kind:'state',operatorId,id:room.id,name:room.name,state:room.state==='live'?'pending':'live'})}>{room.state==='live'?'Pausa spelbord':'Öppna spelbord'}</button>
-            <button className="sg-btn sg-btn-ghost" type="button" data-action="room-archive" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Flytta till papperskorgen</button>
-          </>:<button className="sg-btn sg-btn-secondary" type="button" data-action="room-restore" disabled={writesOff||!room.canRestore} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:false})}>Återställ spelbord</button>}
+            <a className={buttonVariants()} href={navigation?.compositionHref(operator,room)??labUrl('/admin/scenes?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera miljö</a>
+            {room.state==='live'&&operator.status==='active'&&room.published?<a className={buttonVariants()} href={labUrl('/admin/rooms?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>{navigation?.rehearsalLabel??'Provspela & följ'}</a>:null}
+            <Button data-action="room-state" disabled={writesOff||operator.status!=='active'||!room.published} onClick={()=>setIntent({kind:'state',operatorId,id:room.id,name:room.name,state:room.state==='live'?'pending':'live'})}>{room.state==='live'?'Pausa spelbord':'Öppna spelbord'}</Button>
+            <Button variant="ghost" data-action="room-archive" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Flytta till papperskorgen</Button>
+          </>:<Button data-action="room-restore" disabled={writesOff||!room.canRestore} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:false})}>Återställ spelbord</Button>}
         </div>
         {room.archivedAt&&!room.canRestore?<p>{room.restoreBlockers.map(code=>blockers[code]??'Spelbordets beroenden behöver granskas.').join(' ')}</p>:null}
       </li>)}</ul>}
     </>:kind==='operator'&&operator?<div className={styles.company}>
       <p>{operator.status==='active'?`Flytta bolaget och dess ${operator.roomCount} spelbord till papperskorgen. Spelborden kopplas loss från den aktiva strukturen. Team, gemensamma media och historik bevaras.`:operator.archivedAt?'Bolaget ligger i papperskorgen. Team, media och publiceringshistorik finns kvar.':'Bolaget är avstängt sedan tidigare och kan inte återställas via arkivet.'}</p>
-      {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" data-action="operator-lifecycle" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Flytta bolag till papperskorgen':'Återställ bolag'}</button>:null}
+      {operator.status==='active'||operator.archivedAt?<Button data-action="operator-lifecycle" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Flytta bolag till papperskorgen':'Återställ bolag'}</Button>:null}
     </div>:null}
     {intent&&intent.operatorId===operatorId?<ConfirmDialog open title={`${intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Flytta till papperskorgen:':'Återställ'} ${intent.name}`} danger={intent.kind!=='state'&&Boolean(intent.archived)}
       description={intent.kind==='operator'?(intent.archived?'Bolagets portal stängs och alla dess spelbord avpubliceras och flyttas till papperskorgen. Återställning sker uttryckligen, ett spelbord i taget.':'Bolagets åtkomst återställs. Spelborden stannar i papperskorgen tills du återställer dem som pausade spelbord.'):intent.kind==='state'?(intent.state==='live'?'Spelbordet blir tillgängligt i bolagets spellobby.':'Spelbordet döljs från spellobbyn.'):intent.archived?'Spelbordet avpubliceras och flyttas till papperskorgen. Media och historik behålls.':'Spelbordet återställs som pausat, så att du kan granska det innan det öppnas.'}
