@@ -7,6 +7,7 @@ import { createSharedRoomController, ROOM_NOT_READY } from './shared-room-contro
 import { createSharedRoomView } from './shared-room-view.mjs';
 import { mountSharedRoomPresentation } from './shared-room-presentation.mjs';
 import { createSharedRoomWaiting } from './shared-room-waiting.mjs';
+import { createSharedRoomChatPanel } from './shared-room-chat.mjs';
 import { canonicalGameDestination } from '../../../packages/navigation/game-entry.mjs';
 
 // The player's sign-in for this table (as auth-modal.mjs): /player-login with the table's own game query,
@@ -168,7 +169,7 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
 
 export async function mountSharedRoomApp({document=globalThis.document,window=globalThis.window,
   createSocket=createSharedRoomClient,createCommands=createSharedRoomCommandClient,
-  createView=createSharedRoomView,createPresentation=mountSharedRoomPresentation,presentationTransport=null,
+  createView=createSharedRoomView,createPresentation=mountSharedRoomPresentation,createChat=createSharedRoomChatPanel,presentationTransport=null,
   fetchImpl=(...args)=>window.fetch(...args),bindingRetryDelaysMs=[250,1000]}={}) {
   if(!Array.isArray(bindingRetryDelaysMs)||bindingRetryDelaysMs.length>4||!bindingRetryDelaysMs.every(ms=>Number.isSafeInteger(ms)&&ms>=0&&ms<=5000))
     throw new TypeError('shared_room_invalid_options');
@@ -177,10 +178,10 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   const loading=document.getElementById('presentation-loading'),loadingText=loading?.textContent??'Visar spelbordet…';
   let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
-  let presentation,view,controller,socket,commands,seats,closed=false;
+  let presentation,view,controller,socket,commands,seats,chat,closed=false;
   // A room without published game settings says so on the loading screen too, not the generic reload text.
   const fail=code=>{startup.fail(code===ROOM_CONFIG_MISSING?ROOM_NOT_READY:undefined);controller?.fail(code);};
-  const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();seats?.stop();controller?.stop();
+  const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();seats?.stop();chat?.close();controller?.stop();
     if(!controller){commands?.stop();view?.close();presentation?.close();}startup.close();};
   window.addEventListener('pagehide',close,{once:true});
   try {
@@ -195,9 +196,11 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
     // K6: at a full table without a seat the viewer's wait is renewed after each restored snapshot (shared-room-waiting.mjs).
     seats=createSharedRoomWaiting({roomId,createCommands,state:()=>controller.state});
     const restoreSnapshot=async(raw,options)=>{await controller.restoreSnapshot(raw,options);seats.update();};
+    // Chat (PR 1b): text with the dealer; a missing or failing chat never changes the table.
+    try{chat=createChat({document,roomId,fetchImpl,state:()=>controller.state});}catch{chat=null;}
     // A spent reconnect budget leaves the socket offline: the table keeps its last state and offers Återanslut.
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot,
-      present:controller.present,onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
+      present:controller.present,onChat:line=>chat?.receive(line),onError:error=>socket?.status?.().state==='offline'?controller.offline():fail(error?.code),callbackTimeoutMs:30000});
     socket.start();
     // The room's chat panel plays an answer with presentation.speak(result.decision.speechStream).
     return Object.freeze({close,controller,presentation:Object.freeze({speak:presentation.speak,enableSound:presentation.enableSound})});
