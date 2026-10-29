@@ -49,8 +49,8 @@ async function setup(t, options = {}) {
     onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
     onPreparationFailure:receipt=>{preparationFailures.push(receipt);return options.onPreparationFailure?.(receipt);},
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
-    readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
-    readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
+    readEvidence: async context => { state.reads++; (state.contexts??=[]).push(context); const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
+    readPresentation:async()=>{state.presentationReads=(state.presentationReads??0)+1;const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readRest: async () => new Response(original, { headers: { 'content-type': 'video/mp4', 'content-length': String(original.length), 'cache-control': 'private, no-store' } }),
     bankRead: options.bankRead ?? (async () => assert.fail('runtime fixture must never download bank bytes')),
     dealerRuntime: { async prepareMoving(input) {
@@ -183,6 +183,20 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
   assert.deepEqual(f.failures, []);
+});
+
+test('a shared-room context is accepted without presentationVersion: rest-frame speech, no deal reservation', async t => {
+  const f = await setup(t), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+  const d = await f.runtime.forContext(room, undefined, 's-room').prepare({ ...f.input, context: undefined, owner: 'player-' + 'f'.repeat(64) });
+  assert.equal(d.kind, 'moving-speech-stream'); assert.equal(Object.hasOwn(d, 'presentationVersion'), false);
+  assert.ok(f.state.contexts.length > 0 && f.state.contexts.every(context => context === room), 'evidence is read with the room context');
+  assert.equal(f.state.presentationReads ?? 0, 0, 'no solo deal plan is read');
+  assert.doesNotThrow(() => f.runtime.normalPresentation(f.input.playerId, 7), 'no deal reservation was taken');
+  assert.equal(f.admitted.ownerHash, digest('player-' + 'f'.repeat(64)));
+  // A context naming another dealer never reaches voice, publication or admission.
+  const other = await setup(t);
+  await assert.rejects(other.runtime.forContext({ ...room, dealerId: 'paow' }, undefined, 's-room').prepare(other.input), error => error.code === 'moving_speech_input');
+  assert.deepEqual(other.trace, []); assert.equal(other.state.reads, 0);
 });
 
 test('maximum PCM prepares 600 frames; the next sample stops TTS consumption before render dispatch', async t => {
