@@ -20,6 +20,8 @@ export const ROOM_RELEASE_PUBLISH_PATH = '/api/admin/operator-package';
 const languages = Object.freeze({en:'engelska', sv:'svenska'});
 const limits = Object.freeze({casual:'Casual', prive:'Privé', high:'High'});
 const roles = Object.freeze({background:'Bakgrund', dealer:'Dealer', table:'Bordsgrafik'});
+// Utseendets nycklar (packages/operators/contracts/branding.mjs PARTNER_BRANDING_FIELDS).
+const appearanceKeys = Object.freeze({...roles, lane:'Scenmall', color:'Färg'});
 export const languageLabel = value => languages[value] ?? String(value ?? '–');
 export const limitLabel = value => limits[value] ?? String(value ?? '–');
 
@@ -55,6 +57,7 @@ const invalidReasons = Object.freeze({
   studio_dealer_idle_policy_mismatch:'Dealerns vila stämmer inte med de sparade klippen.',
   studio_dealer_background_required:'Scenmallen saknar bakgrund.',
   studio_media_binding_invalid:'Ett klipp i scenmallen är felkopplat.',
+  studio_room_choices_draft_invalid:'Utseendeutkastet passar inte med de sparade scenmallarna.',
 });
 
 const conflictSteps = Object.freeze({
@@ -64,6 +67,7 @@ const conflictSteps = Object.freeze({
   room_config_head:'Spelinställningarna har publicerats från ett annat håll.',
   media:'Ett klipp har ändrats medan publiceringen förbereddes.',
   materials:'Bolagets eget material har ändrats sedan förhandsvisningen.',
+  room_choices:'Utseendeutkastet har ändrats sedan förhandsvisningen.',
 });
 const RELOAD = ' Läs in igen.';
 // "Inget publicerades" sägs bara när servern med en känd kod har vägrat före commit. Ett 5xx-svar
@@ -125,6 +129,8 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms
     case 'studio_release_invalid': {
       const text = invalidReasons[blocker.reason] ?? 'Scenmallarna kan inte publiceras' + (code(blocker.reason) ? ' (' + blocker.reason + ')' : '') + '.';
       if (['studio_dealer_idle_required','studio_dealer_idle_policy_mismatch'].includes(blocker.reason) && dealer) return {text, ...link(dealerHref(dealer, 'klipp'), 'Öppna dealerns klippkarta')};
+      // Utkastet åtgärdas under Utseende, inte i scenmallarna.
+      if (blocker.reason === 'studio_room_choices_draft_invalid') return {text, ...link(roomHref(roomId, 'utseende'), 'Öppna Utseende')};
       return {text, ...link('/admin/scenes?tab=mallar', 'Öppna Scenmallar')};
     }
     case 'studio_media_registry_unavailable': return {text:'Medieregistret svarar inte just nu. Läs in igen om en stund.', ...none};
@@ -136,7 +142,7 @@ export function roomReleaseBlocker(blocker, {roomId = '', dealerId = null, rooms
 
 // En rad per område, i den ordning Admin visar dem. Oförändrade områden visas också.
 /** @returns {{area:string;label:string;changed:boolean;rows:string[]}[]} */
-export function roomReleaseAreas(preview, {dealerName} = {}) {
+export function roomReleaseAreas(preview, {dealerName, rooms = []} = {}) {
   const changes = Array.isArray(preview?.changes) ? preview.changes : [];
   const of = area => changes.filter(row => row?.area === area);
   const take = value => value?.takeId ? 'tagning ' + value.takeId : 'ingen tagning';
@@ -153,18 +159,91 @@ export function roomReleaseAreas(preview, {dealerName} = {}) {
   });
   // Dealerns namn finns i klienten (registret); bakgrund och bordsgrafik har bara id här.
   const choice = (key, value) => value == null ? '–' : key === 'dealer' && typeof dealerName === 'function' ? dealerName(value) || value : value;
-  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after));
+  const appearance = appearanceView(preview, {dealerName, rooms});
+  // Ett val i utkastet som ger spelbordets ändring visas här, en gång, med var det kommer ifrån.
+  const origin = {company:' (bolagets val i utkastet)', own:' (eget val i utkastet)'};
+  const choices = of('roomChoices').map(row => (roles[row.key] ?? row.key) + ': ' + choice(row.key, row.before) + ' → ' + choice(row.key, row.after)
+    + (origin[appearance?.folded.get(row.key)] ?? ''));
   const rebinding = (Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []).filter(row => row?.rebinds)
     .map(row => (row.name || row.id) + ' binds om och behåller sina spelinställningar');
   const other = of('package').map(() => 'Annat i bolagets tilldelning ändras (andra scenmallar eller dealers)');
   const area = (key, label, rows) => ({area:key, label, changed:rows.length > 0, rows});
   return [area('speech', 'Tal per replik', speech), area('clips', 'Klipp', clips), area('idle', 'Vila', idle), area('placement', 'Placering', placement),
-    area('settings', 'Inställningar', settings), area('roomChoices', 'Spelbordets val', choices), area('rooms', 'Andra spelbord', rebinding),
+    area('settings', 'Inställningar', settings), area('roomChoices', 'Spelbordets val', choices),
+    ...(appearance ? [area('appearance', appearance.label, appearance.rows)] : []), area('rooms', 'Andra spelbord', rebinding),
     ...(other.length ? [area('package', 'Övrigt', other)] : [])];
 }
 
-/** Antal ändringar som väntar, för statusraden. */
-export const roomReleaseChangeCount = preview => Array.isArray(preview?.changes) ? preview.changes.length : 0;
+// Bolagets utseendeutkast som följer med publiceringen (servern med steg D v2): Utseendes
+// granskningsrader {roomId, key, before, after} och de spelbord utkastet påverkar. Servern
+// utan steg D v2 skickar varken området eller appearanceDraft; då visas inget.
+function appearanceView(preview, {dealerName, rooms = []} = {}) {
+  const changes = Array.isArray(preview?.changes) ? preview.changes : [];
+  const entries = changes.filter(row => row?.area === 'appearance');
+  const draft = object(preview?.appearanceDraft) ? preview.appearanceDraft : null;
+  if (!entries.length && draft?.included !== true) return null;
+  const draftRevision = [entries[0]?.draftRevision, draft?.revision].find(count);
+  const names = new Map();
+  for (const row of [...(Array.isArray(preview?.affectedRooms) ? preview.affectedRooms : []), ...(Array.isArray(rooms) ? rooms : [])])
+    if (id(row?.id) && typeof row.name === 'string' && row.name && !names.has(row.id)) names.set(row.id, row.name);
+  const roomName = roomId => names.get(roomId) ?? roomId;
+  const value = (key, raw) => {
+    if (raw == null) return '–';
+    if (key === 'dealer' && typeof dealerName === 'function' && typeof raw === 'string') return dealerName(raw) || raw;
+    return typeof raw === 'string' || typeof raw === 'number' ? String(raw) : JSON.stringify(raw);
+  };
+  // Regeln för ett val en gång (rutan och antalet i statusraden):
+  // 1. Bolagets rader (roomId null) och raderna roomOverrides.* är val i utkastet.
+  // 2. Ett spelbords rad med samma nyckel och samma nya värde som bolagets rad är bara bolagets
+  //    val som ärvs; den är inget eget val och spelbordet nämns i stället under "Gäller även".
+  //    Övriga spelbordsrader är spelbordets eget val.
+  // 3. Ett val som når det valda spelbordet med en nyckel som redan finns under roomChoices
+  //    (servern bygger kandidaten på utkastets val) visas och räknas bara där, med sitt ursprung.
+  // En ensam dealerändring hos ett bolag med ett spelbord blir då en rad och "1 ändring".
+  const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const selected = preview?.roomId;
+  const roomChoiceKeys = new Set(changes.filter(row => row?.area === 'roomChoices' && typeof row.key === 'string').map(row => row.key));
+  const list = entries.flatMap(entry => (Array.isArray(entry.changes) ? entry.changes : []).filter(row => object(row) && typeof row.key === 'string'));
+  const company = new Map(list.filter(row => !id(row.roomId)).map(row => [row.key, row]));
+  const inherited = row => id(row.roomId) && company.has(row.key) && same(row.after, company.get(row.key).after);
+  const folded = new Map();
+  const rows = [], affected = [];
+  for (const row of list) {
+    const override = row.key.startsWith('roomOverrides.'), key = override ? row.key.slice('roomOverrides.'.length) : row.key;
+    if (!override && inherited(row)) continue;
+    if (!override && roomChoiceKeys.has(key)) {
+      if (row.roomId === selected) { folded.set(key, 'own'); continue; }
+      if (!id(row.roomId) && list.some(other => other.roomId === selected && other.key === key && inherited(other))) {
+        if (!folded.has(key)) folded.set(key, 'company');
+        continue;
+      }
+    }
+    const subject = id(row.roomId) ? 'Spelbordet ' + roomName(row.roomId) : 'Bolaget';
+    rows.push(subject + ' · ' + (appearanceKeys[key] ?? key) + (override ? ' (eget val)' : '') + ': ' + value(key, row.before) + ' → ' + value(key, row.after));
+  }
+  for (const entry of entries)
+    for (const roomId of Array.isArray(entry.affectedRooms) ? entry.affectedRooms : []) if (id(roomId) && !affected.includes(roomId)) affected.push(roomId);
+  const changeCount = rows.length;
+  if (!rows.length) rows.push('Utkastet' + (draftRevision ? ' ' + draftRevision : '') + ' publiceras samtidigt'
+    + (folded.size ? ' (valen står under Spelbordets val)' : ''));
+  // Ett bolagsövergripande utkast kan ändra andra spelbord än det valda: det ska synas här.
+  const others = affected.filter(roomId => roomId !== preview?.roomId);
+  if (others.length) rows.push('Gäller även: ' + others.map(roomName).join(', '));
+  return {label:'Utseende' + (draftRevision ? ' (utkast ' + draftRevision + ')' : ' (utkast)'), rows, changeCount, folded};
+}
+
+/**
+ * Antal ändringar som väntar, för statusraden. Utseendeutkastet räknas med sina val enligt
+ * regeln i appearanceView: varje val en gång, och inte igen när det redan räknas under
+ * roomChoices. Ett utkast utan ändringsrader räknas som en ändring.
+ */
+export const roomReleaseChangeCount = preview => {
+  const changes = Array.isArray(preview?.changes) ? preview.changes : [];
+  const others = changes.filter(row => row?.area !== 'appearance').length;
+  if (others === changes.length) return others;
+  const view = appearanceView(preview);
+  return others + (view?.changeCount || (view?.folded.size ? 0 : 1));
+};
 
 /**
  * Huvudknappens läge. Inaktiv med "Inget att publicera" när inget skiljer sig och inget hinder

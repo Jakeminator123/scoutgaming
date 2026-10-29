@@ -34,7 +34,7 @@
 .preview-admin .sg-btn-ghost { background: transparent; color: var(--sg-muted); }
 .preview-admin .sg-btn-ghost:hover:not(:disabled) { background: var(--sg-hover); color: var(--sg-text); }
 .preview-admin .sg-btn:disabled, .preview-admin .sg-btn[aria-disabled="true"] { background: var(--sg-disabled-bg); border-color: transparent; color: var(--sg-disabled-text); cursor: not-allowed; }
-.preview-admin .sg-btn:focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 3px; }
+.preview-admin .sg-btn:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
 
 .react-flow__controls-button {
   background: var(--sg-surface);
@@ -55,7 +55,7 @@
 .studio-material-controls button {display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 11px;border:1px solid var(--sg-border);border-radius:5px;background:var(--sg-surface-2);color:var(--sg-muted);font-size:11px;cursor:pointer}
 .studio-material-controls button:hover:not(:disabled) {border-color:var(--sg-faint);color:var(--sg-text)}
 .studio-material-controls button:disabled {opacity:.4;cursor:default}
-.studio-material-controls :focus-visible {outline:2px solid var(--sg-lime);outline-offset:3px}
+.studio-material-controls :focus-visible {outline:2px solid var(--sg-mark);outline-offset:3px}
 .studio-material-controls summary {cursor:pointer;padding:8px 0;color:var(--sg-text)}
 .studio-material-controls details > details,.studio-material-controls section > details {margin-top:16px;border-top:1px solid var(--sg-border);padding-top:8px}
 .studio-material-controls :is(section,details) > fieldset {margin-top:16px;padding:16px;border:1px solid var(--sg-accent-line);border-radius:6px;background:var(--sg-accent-bg)}
@@ -101,7 +101,7 @@
 .dealer-import button:disabled, .dealer-import input:disabled, .dealer-import select:disabled, .dealer-import textarea:disabled { opacity: .48; cursor: not-allowed; }
 .dealer-import button.dealer-import-primary { border-color: var(--sg-lime); background: var(--sg-lime); color: var(--sg-on-accent); font-weight: 600; }
 .dealer-import button.dealer-import-primary:hover:not(:disabled) { background: var(--sg-lime); }
-.dealer-import button:focus-visible, .dealer-import input:focus-visible, .dealer-import select:focus-visible, .dealer-import textarea:focus-visible, .dealer-import summary:focus-visible, .dealer-import-tabs button:focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 3px; }
+.dealer-import button:focus-visible, .dealer-import input:focus-visible, .dealer-import select:focus-visible, .dealer-import textarea:focus-visible, .dealer-import summary:focus-visible, .dealer-import-tabs button:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
 .dealer-import label.dealer-import-check { flex-direction: row; align-items: flex-start; gap: 10px; padding: 14px 0 0; line-height: 1.6; }
 .dealer-import-check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--sg-lime); flex: 0 0 auto; }
 .dealer-import-drop { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 16px; margin-bottom: 20px; border: 1px dashed #5d6462; border-radius: 7px; background: var(--sg-accent-bg); text-align: center; }
@@ -109,7 +109,7 @@
 .dealer-import-drop > strong { font-size: 14px; }
 .dealer-import-drop p { color: var(--sg-muted); font-size: 12px; }
 .dealer-import .dealer-import-file-button { position: relative; overflow: hidden; min-width: 130px; margin-top: 5px; background: var(--sg-accent-bg); border-color: var(--sg-accent-line); cursor: pointer; }
-.dealer-import-file-button:focus-within { outline: 2px solid var(--sg-lime); outline-offset: 3px; }
+.dealer-import-file-button:focus-within { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
 .dealer-import-help { margin: 10px 0 16px; color: var(--sg-muted); font-size: 12px !important; }
 .dealer-import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 .dealer-import a { color: var(--sg-accent-text); text-decoration: underline; text-underline-offset: 3px; }
@@ -139,7 +139,7 @@
 .dealer-import-naming-legend dt { color: var(--sg-muted); }
 .dealer-import-naming-legend dd { margin: 0; color: var(--sg-text); }
 .dealer-import-naming-list { max-height: 340px; margin-top: 12px; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--sg-border); }
-.dealer-import-naming-list:focus-visible { outline: 2px solid var(--sg-lime); outline-offset: 2px; }
+.dealer-import-naming-list:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 2px; }
 .dealer-import-naming-group { padding: 9px 0 10px; border-bottom: 1px solid var(--sg-border); }
 .dealer-import-naming-group dl { display: grid; gap: 5px; margin: 0; }
 .dealer-import-naming-group dl > div { display: grid; grid-template-columns: minmax(96px,.8fr) minmax(0,1.2fr) minmax(0,1.1fr); gap: 2px 12px; align-items: baseline; font-size: 12px; }
@@ -239,7 +239,7 @@
 .studio-card-actions label{position:relative}.studio-card-actions svg{flex-shrink:0}.studio-card-actions input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer}.studio-card-bind{width:100%;min-height:34px;padding:7px;margin-top:8px;border:1px solid #d6ff3a66;border-radius:4px;color:var(--sg-lime);font-size:12px;line-height:1.4}
 .studio-clip-card footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;border-top:1px solid var(--sg-border);padding:8px 12px;font:11px/1.4 var(--font-sans);color:var(--sg-muted)}
 .studio-clip-card button:disabled,.studio-clip-card select:disabled{opacity:.45;cursor:default}
-.studio-clip-card :focus-visible{outline:2px solid var(--sg-lime);outline-offset:3px}
+.studio-clip-card :focus-visible{outline:2px solid var(--sg-mark);outline-offset:3px}
 .studio-drawer[hidden]{display:none}
 /* Sidomenyn: ink in both modes, lime for the current page (the sketch's shell). */
 .studio-sidebar{width:248px;flex-shrink:0;display:flex;flex-direction:column;padding:18px 12px 12px;background:var(--sg-side);color:var(--sg-side-text)}
@@ -248,6 +248,8 @@
 .studio-sidebar>nav{display:flex;flex-direction:column;gap:2px}
 .studio-nav-group{display:flex;flex-direction:column;gap:2px;margin-top:10px}.studio-nav-label{margin:8px 10px 4px;color:var(--sg-side-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .studio-sidebar a:focus-visible,.studio-sidebar button:focus-visible{outline:2px solid var(--sg-lime);outline-offset:-2px}
+/* Den valda posten är lime, så en lime ram innanför den syns inte. Mörk inre ram mot lime: 17,1:1 i mörkt läge, 14,8:1 i ljust. */
+.studio-sidebar [aria-current=page]:focus-visible{outline-color:var(--sg-on-accent);outline-offset:-4px}
 .studio-sidebar nav>a,.studio-nav-group>a{display:flex;align-items:center;gap:10px;padding:9px 10px;font-size:13.5px;font-weight:500;line-height:1.45;color:var(--sg-side-text);border-radius:8px;cursor:pointer;text-decoration:none}.studio-sidebar nav svg{flex-shrink:0}.studio-sidebar nav>a:hover,.studio-nav-group>a:hover{background:var(--sg-side-2)}.studio-sidebar [aria-current=page]{background:var(--sg-lime);color:var(--sg-on-accent);font-weight:600}
 .studio-sidebar-foot{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-top:auto;padding-top:12px;border-top:1px solid var(--sg-side-line);color:var(--sg-side-muted);font-size:12.5px;line-height:1.4}
 /* Portalraden: 1 Admin · 2 Partnerportalen · 3 Lobbyn. */
@@ -293,7 +295,7 @@
 .studio-clip-workspace summary::-webkit-details-marker,.studio-system-menu>summary::-webkit-details-marker{display:none}
 .studio-clip-workspace summary::after,.studio-system-menu>summary::after{content:'';display:inline-block;flex-shrink:0;width:7px;height:7px;margin-left:12px;margin-right:4px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);vertical-align:3px}
 .studio-clip-workspace details[open]>summary::after,.studio-system-menu[open]>summary::after{transform:rotate(225deg);vertical-align:0}
-.studio-clip-workspace :is(button,a,select,summary):focus-visible,.studio-system-menu>summary:focus-visible{outline:3px solid var(--sg-lime);outline-offset:3px}
+.studio-clip-workspace :is(button,a,select,summary):focus-visible,.studio-system-menu>summary:focus-visible{outline:3px solid var(--sg-mark);outline-offset:3px}
 .studio-clip-workspace .studio-canvas-toolbar{gap:14px;flex-wrap:wrap}
 .studio-clip-workspace .studio-canvas-toolbar h1{font-size:18px;font-weight:600;letter-spacing:0}
 .studio-clip-workspace .studio-canvas-toolbar h1 span{font-size:14px}
@@ -407,7 +409,7 @@
 .preview-admin .admin-system-page summary::-webkit-details-marker{display:none}
 .preview-admin .admin-system-page summary::before{content:'';width:7px;height:7px;flex-shrink:0;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
 .preview-admin .admin-system-page details[open]>summary::before{transform:rotate(45deg)}
-.preview-admin .admin-system-page :is(a,button,summary,select):focus-visible{outline:3px solid var(--sg-lime);outline-offset:3px}
+.preview-admin .admin-system-page :is(a,button,summary,select):focus-visible{outline:3px solid var(--sg-mark);outline-offset:3px}
 .preview-admin .admin-system-page.admin-workspace-tool .sg-page{padding:0;margin:0;max-width:none}
 .preview-admin .admin-system-page .sg-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px;padding-bottom:12px;border-bottom:1px solid var(--sg-border)}
 .preview-admin .admin-system-page .sg-tabs>a{display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:7px;color:var(--sg-muted);border:1px solid transparent}
@@ -493,7 +495,7 @@
 .studio-policy-error{color:var(--sg-danger-text);font-size:13px}.studio-policy-warning{color:var(--sg-warning);font-size:13px}
 .studio-policy-panel .studio-field{font-size:13px;gap:5px}
 .studio-policy-panel .studio-field :is(select,input){min-height:38px;font-size:14px}
-.studio-policy-panel :is(button,select,input,summary):focus-visible{outline:3px solid var(--sg-lime);outline-offset:3px}
+.studio-policy-panel :is(button,select,input,summary):focus-visible{outline:3px solid var(--sg-mark);outline-offset:3px}
 .studio-policy-body:disabled{opacity:.6}
 
 /* Three layers at a glance before the detailed template fields. */
@@ -571,7 +573,7 @@
 .studio-sidebar :is(.studio-logout,.studio-theme-toggle){display:flex;width:100%;align-items:center;gap:10px;padding:9px 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:13px;line-height:1.45;color:var(--sg-side-muted);text-align:left;cursor:pointer}
 .studio-sidebar :is(.studio-logout,.studio-theme-toggle):hover{color:var(--sg-side-text);background:var(--sg-side-2)}.studio-sidebar .studio-logout:disabled{cursor:wait;opacity:.7}
 .studio-logout-error{margin:4px 10px;color:var(--sg-warning);font-size:12px;line-height:1.4}
-.studio-portal-bar>.studio-mobile-logout{display:none}.studio-mobile-logout .studio-logout{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--sg-line-2);border-radius:5px;background:none;color:inherit;font:inherit;font-size:13px;cursor:pointer}.studio-mobile-logout .studio-logout:focus-visible{outline:2px solid var(--sg-lime);outline-offset:2px}.studio-mobile-logout .studio-logout-error{margin:4px 0}
+.studio-portal-bar>.studio-mobile-logout{display:none}.studio-mobile-logout .studio-logout{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--sg-line-2);border-radius:5px;background:none;color:inherit;font:inherit;font-size:13px;cursor:pointer}.studio-mobile-logout .studio-logout:focus-visible{outline:2px solid var(--sg-mark);outline-offset:2px}.studio-mobile-logout .studio-logout-error{margin:4px 0}
 @media(max-width:600px){.studio-portal-bar>.studio-mobile-logout{display:flex;flex-direction:column;align-items:flex-end}}
 /* Split account pages: own header above the native reader, which reads and shows one section. */
 .preview-admin .admin-accounts-page .admin-system-page{padding:0}
@@ -614,7 +616,7 @@ body.preview-admin{overflow:hidden}
 .material-library .material-trash-list>li:first-child{border-top:0}
 .material-library :is(section>[role=alert],.material-trash-list) button{min-height:32px;padding:4px 12px;border:1px solid var(--sg-border);border-radius:8px;background:var(--sg-surface);color:var(--sg-text);font:600 12.5px var(--sg-font-body);cursor:pointer}
 .material-library :is(section>[role=alert],.material-trash-list) button:disabled{opacity:.5;cursor:not-allowed}
-.material-library :is(button,summary):focus-visible{outline:2px solid var(--sg-lime);outline-offset:3px}
+.material-library :is(button,summary):focus-visible{outline:2px solid var(--sg-mark);outline-offset:3px}
 
 /* Kit rules that hold everywhere in Admin: the hidden attribute wins over display utilities, and lime
    text (made for the dark sidebar) reads as the accent ink on light surfaces. */

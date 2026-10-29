@@ -172,7 +172,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               <img src={reference} alt={'Inspirationsbild: ' + referenceName} className="h-16 w-24 rounded-md border border-sg-border object-cover" />
               <span className="min-w-0 flex-1 truncate text-xs">{referenceName}</span>
               <Button variant="ghost" size="sm" disabled={busy} onClick={() => { setReference(null); setReferenceName(''); }}>Ta bort</Button>
-            </div> : <label className={cn(buttonVariants(), 'w-fit focus-within:ring-2 focus-within:ring-sg-lime')}>
+            </div> : <label className={cn(buttonVariants(), 'w-fit focus-within:ring-2 focus-within:ring-sg-mark focus-within:ring-offset-2 focus-within:ring-offset-sg-surface')}>
               <ImagePlus aria-hidden="true" />Välj bild
               <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
             </label>}
