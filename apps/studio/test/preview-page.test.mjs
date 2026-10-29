@@ -53,7 +53,6 @@ test('shared preview data authorization rejects unauthenticated and partner acce
     'next/navigation':{redirect:url=>{throw Object.assign(Error('redirect'),{redirect:url});}},
     './http-guard.mjs':{assertLocalPageRequest:()=>{throw Error('native must not reach the local fallback');}},
     './studio-server.mjs':{studioInitialData:()=>{throw Error('native must not read the legacy store');}},
-    './remote-ui.mjs':{remoteUiConfiguration:()=>null},
     './studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>native},
     './studio-native-request.mjs':{normalizeNativeStudioPageRequest:request=>request},
   });
