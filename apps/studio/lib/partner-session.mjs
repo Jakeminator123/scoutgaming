@@ -422,15 +422,18 @@ async function decidedPartnerContext({ session, store, operator, context, member
 }
 // tables.read styr spelbordslistan, som i snapshoten (partner-data.mjs). Utan den
 // bär utseendet bara bolagets val: inga spelbord (namn, scenmall, spel), inga
-// dealerval per spelbord och, i granskningen, bara bolagsradernas ändringar; en
-// tom `affectedRooms` betyder då att spelborden inte visas, inte att inga berörs
-// (en publicering gäller alltid alla bolagets spelbord). Formen är densamma, så
-// klienten (partner-appearance-state.mjs) läser tomma listor som inga spelbord.
+// dealerval per spelbord och, i granskningen, bara bolagsradernas ändringar.
+// Granskningen säger då `tablesHidden: true` (en tom `affectedRooms` betyder att
+// spelborden inte visas, inte att inga berörs: en publicering gäller alltid alla
+// bolagets spelbord) och `hiddenTableChanges`, antalet dolda spelbordsrader, så
+// att ett utkast som bara ändrar spelbordsval fortfarande kan publiceras.
 // Spelbordens id som nycklar i branding.roomOverrides hör till utseendet
 // (presentations.read), precis som i snapshotens branding.
 function brandingWithoutTables(view) {
   if (Object.hasOwn(view, 'reviewToken')) {
-    return { ...view, affectedRooms: [], changes: (view.changes ?? []).filter(row => row.roomId === null) };
+    const changes = view.changes ?? [];
+    const visible = changes.filter(row => row.roomId === null);
+    return { ...view, affectedRooms: [], changes: visible, hiddenTableChanges: changes.length - visible.length, tablesHidden: true };
   }
   return { ...view, rooms: [], roomDealerChoices: {} };
 }
@@ -515,9 +518,10 @@ async function brandingResponse(prepared, config) {
   const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
   return json({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true},200,[],{vary:true});
 }
-// Publiceringshistoriken: bolagets publicerade versioner, utan ändringsinnehåll.
+// Publiceringshistoriken: bolagets publicerade versioner, utan ändringsinnehåll
+// och utan vem/hur (konto-id, accessClass, requestId, resourceType/Id).
 const PUBLICATION_ACTIONS = Object.freeze(['package.publish']);
-const publicationEntry = entry => { const copy = { ...entry }; delete copy.changes; return copy; };
+const publicationEntry = ({ id, atMs, beforeRevision, afterRevision }) => ({ id, atMs, beforeRevision, afterRevision });
 async function journalResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const decided = await decidedPartnerContext(found);

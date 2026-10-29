@@ -440,8 +440,13 @@ test('publication history needs reports.read and carries only publications; the 
   const body=await response.json();
   assert.equal(body.operatorId,'north');assert.equal(body.nextCursor,null);
   // Samma tidsstämpel i fixturen: raderna jämförs i revisionsordning.
-  assert.deepEqual(body.entries.map(row=>[row.action,row.resourceType,row.resourceId,row.afterRevision]).sort((a,b)=>a[3]-b[3]),[['package.publish','package','north',1],['package.publish','package','north',2]],name);
-  assert.ok(body.entries.every(row=>!Object.hasOwn(row,'changes')),name+': no change content');
+  assert.deepEqual(body.entries.map(row=>[row.beforeRevision,row.afterRevision]).sort((a,b)=>a[1]-b[1]),[[null,1],[1,2]],name);
+  // Bara id, tid och revisioner: inget konto-id, accessClass, requestId, resourceType/Id eller ändringsinnehåll.
+  for(const row of body.entries){
+   assert.deepEqual(Object.keys(row).sort(),['afterRevision','atMs','beforeRevision','id'],name);
+   assert.match(row.id,/^[a-f0-9-]{36}$/,name);assert.ok(Number.isSafeInteger(row.atMs),name);
+  }
+  assert.doesNotMatch(JSON.stringify(body),/fixture|partner|internal-admin|"package"/,name);
   assert.doesNotMatch(JSON.stringify(body),/room-a|room-b|south|team\.|membership\.|role\.|operator\.create|admin@north/,name);
   // Sidor och markör räknar bara publiceringar.
   const first=await (await handlePartnerAuth(read(cookie,publications+'&limit=1'),f.config)).json();

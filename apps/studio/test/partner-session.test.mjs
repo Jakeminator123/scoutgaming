@@ -780,3 +780,32 @@ test('branding still denies company B and a caller without membership',async()=>
     assert.equal((await g.get('demo-south')).status,403,standard.id);
   }
 });
+// Ett utkast som bara ändrar spelbordsval: utan tables.read döljs raderna i
+// granskningen men räknas (hiddenTableChanges), och tablesHidden säger att en
+// tom affectedRooms betyder dolda spelbord. Spelbordens id i
+// branding.roomOverrides hör till utseendet och syns avsiktligt utan tables.read.
+test('review without tables.read counts hidden table changes, flags hidden tables and can publish them',async()=>{
+  const roomOnly={roomOverrides:{'room-native':{color:'#334455'}}};
+  const saveRoomOnly=f=>f.command({action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding:roomOnly});
+  const editor=await nativeBrandingFixture({anchors:true});
+  assert.equal((await saveRoomOnly(editor)).status,200);
+  const full=await(await editor.review()).json();
+  assert.ok(full.changes.length);assert.ok(full.changes.every(row=>row.roomId==='room-native'));
+  assert.deepEqual(full.affectedRooms,['room-native']);
+  assert.equal(Object.hasOwn(full,'hiddenTableChanges'),false);assert.equal(Object.hasOwn(full,'tablesHidden'),false);
+  const writer=await nativeBrandingFixture({anchors:true,permissions:['overview.read','presentations.read','presentations.configure']});
+  assert.equal((await saveRoomOnly(writer)).status,200);
+  const reviewed=await writer.review();assert.equal(reviewed.status,200);
+  const review=await reviewed.json();
+  assert.deepEqual(review.changes,[]);assert.equal(review.hiddenTableChanges,full.changes.length);
+  assert.equal(review.tablesHidden,true);assert.deepEqual(review.affectedRooms,[]);
+  assert.doesNotMatch(JSON.stringify({changes:review.changes,affectedRooms:review.affectedRooms}),/room-native/);
+  const published=await writer.publish(review.reviewToken);assert.equal(published.status,200);
+  assert.equal((await published.json()).packageRevision,2);
+  // Fixturen HAR nu roomOverrides: spelbordslistan och dealervalen per spelbord
+  // är tomma och namnet syns inte, men id:t i roomOverrides syns (avsiktligt).
+  const read=await(await writer.get()).json();
+  assert.deepEqual(read.rooms,[]);assert.deepEqual(read.roomDealerChoices,{});
+  assert.deepEqual(read.branding.roomOverrides,roomOnly.roomOverrides);
+  assert.doesNotMatch(JSON.stringify(read),/Linneas rum/);
+});
