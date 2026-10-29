@@ -11,7 +11,7 @@ import Link, { navigate, useSearchParams } from '../../../runtime/navigation';
 import { ConfirmAcknowledgement, ConfirmDialog, Dialog, DialogSteps } from '../ui/dialog';
 import { DealerAvatar } from './dealer-identity-portrait';
 import { HubPage, Card, Chip, ActionMenu, Empty } from '../ui/hub';
-import { Button, plural } from '../ui/kit';
+import { Button, cn, focusRing, plural } from '../ui/kit';
 import { toast } from '../ui/toast';
 
 const client = createStudioClient(), lifecycle = createLifecycleClient();
@@ -164,7 +164,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         <div className="flex items-center gap-4">
           <DealerAvatar dealer={{id:'new',label:name.trim()||'?'}} size={64}/>
           <label className="grid min-w-0 flex-1 gap-1.5 text-[13px] font-semibold text-sg-text">Namn<input autoFocus required maxLength={120} value={name} disabled={disabled} placeholder="Till exempel Nora" onChange={event=>setName(event.target.value)}
-            className="h-10 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime"/></label>
+            className={cn('h-10 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint',focusRing)}/></label>
         </div>
         {error&&<p role="alert" className="m-0 rounded-lg bg-sg-warn-bg px-3 py-2 text-[13px] text-sg-warn">{error}</p>}
       </form>:<div className="flex items-center gap-4 rounded-xl border border-sg-border bg-sg-surface-2 p-4">

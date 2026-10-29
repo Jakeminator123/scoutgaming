@@ -8,7 +8,7 @@ import {ChevronRight} from 'lucide-react';
 // setting). Pages build from these and from the layout in hub.tsx; nothing here reads data.
 export function cn(...inputs:ClassValue[]) { return twMerge(clsx(inputs)); }
 
-export const focusRing='focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-accent-text focus-visible:ring-offset-2 focus-visible:ring-offset-sg-surface';
+export const focusRing='focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-mark focus-visible:ring-offset-2 focus-visible:ring-offset-sg-surface';
 export const buttonVariants=cva(
   'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border font-semibold no-underline transition-[background-color,border-color,color,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 '+focusRing,
   {variants:{
