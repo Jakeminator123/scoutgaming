@@ -49,6 +49,21 @@ const API_WRITES = [
   { id: 'team POST suspend', path: 'team', action: 'suspend', requires: [...TEAM_WRITE, 'team.suspend', ...TARGET_PERMISSIONS] },
   { id: 'team POST reactivate', path: 'team', action: 'reactivate', requires: [...TEAM_WRITE, 'team.suspend', ...TARGET_PERMISSIONS] },
   { id: 'team POST invite', path: 'team', action: 'invite', requires: [...TEAM_WRITE, 'team.invite', ...TARGET_PERMISSIONS] },
+  // Byta dealer inom tilldelningen: utseendets rätt; allow.dealer följer scenmallen (operatorAdjustable).
+  { id: 'dealer POST', path: 'dealer', action: 'dealer', requires: BRANDING_WRITE },
+];
+// Spelbordens skrivvägar (partner-table-api.mjs) går genom Studio-transaktionen och den nativa
+// grinden, som minnesfixturen saknar. Här provas nekandet: utan behörigheten 403 och inget ändrat,
+// med den aldrig 403. Att rätt roll lyckas (200), allow, val utanför tilldelningen (422), annat
+// bolags spelbord (404) och CAS (409) provas på PGlite i partner-table-actions.test.mjs.
+const TABLE_WRITE = ['tables.read', 'tables.configure'];
+const API_TABLE_WRITES = [
+  { id: 'room-settings POST save-draft', path: 'room-settings', action: 'save-draft', requires: TABLE_WRITE,
+    body: { action: 'save-draft', roomId: 'alfa-bord', expectedPackageRevision: 1, expectedDraftRevision: null, gameConfig: { language: 'sv', limitPreset: 'casual' } } },
+  { id: 'room-settings POST publish', path: 'room-settings', action: 'publish', requires: TABLE_WRITE,
+    body: { action: 'publish', roomId: 'alfa-bord', expectedPackageRevision: 1, expectedDraftRevision: 'room-config-00000000-0000-4000-8000-000000000000' } },
+  { id: 'room-state POST', path: 'room-state', action: 'pause', requires: TABLE_WRITE,
+    body: { roomId: 'alfa-bord', state: 'pending', expectedState: 'live', expectedPackageRevision: 1 } },
 ];
 
 const ROLES = [
@@ -169,6 +184,7 @@ async function prepare(f, write) {
   if (write.action === 'suspend') return { action: 'suspend', userId: '50', expectedRevision: await revision('50') };
   if (write.action === 'reactivate') return { action: 'reactivate', userId: '51', expectedRevision: await revision('51') };
   if (write.action === 'invite') return { action: 'invite', email: 'ny@partner.invalid', roleId: 'mal' };
+  if (write.action === 'dealer') return { roomId: 'alfa-bord', dealer: 'astrid', expectedDraftRevision: 0, expectedPackageRevision: 1 };
   throw new Error(`okänd åtgärd ${write.action}`);
 }
 
@@ -181,9 +197,8 @@ test('kartan täcker alla tolv behörigheter, alla vyer i menyn och varje vy har
   });
   assert.deepEqual([...partnerNavigationItems.map(item => item.id)].sort(), [...PARTNER_VIEWS].sort());
   for (const view of PARTNER_VIEWS) assert.ok(PARTNER_PERMISSIONS.includes(PARTNER_VIEW_PERMISSIONS[view]), view);
-  const used = new Set([...PARTNER_VIEWS.flatMap(viewRequires), ...API_READS.flatMap(item => item.requires), ...API_WRITES.flatMap(item => item.requires)]);
-  // tables.configure styr ännu ingen vy eller åtgärd (steg C); när den gör det utökas kartan här.
-  assert.deepEqual(PARTNER_PERMISSIONS.filter(permission => !used.has(permission)), ['tables.configure']);
+  const used = new Set([...PARTNER_VIEWS.flatMap(viewRequires), ...[...API_READS, ...API_WRITES, ...API_TABLE_WRITES].flatMap(item => item.requires)]);
+  assert.deepEqual(PARTNER_PERMISSIONS.filter(permission => !used.has(permission)), []);
   assert.equal(ROLES.length, 3 + 2 * PARTNER_PERMISSIONS.length);
 });
 
@@ -247,6 +262,18 @@ test('varje roll får exakt de skrivningar kartan ger, och en nekad skrivning ä
   }
 });
 
+test('spelbordens skrivvägar: utan tables.read och tables.configure 403 och inget ändrat, med dem aldrig 403', async () => {
+  const f = await fixture();
+  const before = JSON.stringify(f.pool.tables);
+  for (const write of API_TABLE_WRITES) for (const role of ROLES) {
+    const result = await call(f, f.cookies.get(role.id), write.path, { body: write.body });
+    if (allows(role, write.requires)) assert.notEqual(result.status, 403, `${role.id} ${write.id}: ${result.text.slice(0, 200)}`);
+    else assert.equal(result.status, 403, `${role.id} ${write.id}: ${result.text.slice(0, 200)}`);
+    assert.doesNotMatch(result.text, B_MARKERS, `${role.id} ${write.id}`);
+    assert.equal(JSON.stringify(f.pool.tables), before, `${role.id} ${write.id} ändrade lagret`);
+  }
+});
+
 test('bolag B och ett okänt bolag: 403 respektive 404 för varje roll, vy och åtgärd, utan B:s data', async () => {
   const f = await fixture();
   const unknown = { slug: 'okantbolag' };
@@ -258,7 +285,7 @@ test('bolag B och ett okänt bolag: 403 respektive 404 för varje roll, vy och �
       assert.equal(foreign.status, 403, `${role.id} ${view} B`); assert.doesNotMatch(foreign.text, B_MARKERS);
       assert.equal((await page(f, cookie, view, unknown)).status, 404, `${role.id} ${view} okänt bolag`);
     }
-    for (const item of [...API_READS, ...API_WRITES]) {
+    for (const item of [...API_READS, ...API_WRITES, ...API_TABLE_WRITES]) {
       const body = item.action ? { action: item.action } : undefined;
       const foreign = await call(f, cookie, item.path, { company: B, query: item.query, body });
       assert.equal(foreign.status, 403, `${role.id} ${item.id} B`);

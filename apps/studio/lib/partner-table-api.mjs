@@ -10,8 +10,18 @@ import { readPackagePresentation, resolvePackageRoomDealer } from '../../../pack
 import { listPackageRooms } from '../../../packages/presentation/server/package-rooms.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
-import { validateRoomGameDrafts } from '../../../packages/presentation/contracts/room-game-config.mjs';
+import { validateRoomGameConfig, validateRoomGameDrafts } from '../../../packages/presentation/contracts/room-game-config.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
+import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
+import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { resolveNativeRoomGameMaterial } from '../../../packages/presentation/server/native-room-game-material.mjs';
+import { partnerAllow } from './partner-assignment.mjs';
+import { partnerOperatorContext, decidedPartnerContext } from './partner-session.mjs';
+import { operatorAuditContext } from './operator-audit-context.mjs';
+import { NATIVE_FILMED_PLANNING_MUTATION, wrapNativePresentationRepository } from './presentation-runtime-readiness.mjs';
+import { createNativePresentationMutationTransaction } from './studio-native-runtime.mjs';
+import { createRoomGameConfigApi } from './room-game-config-api.mjs';
+import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 
 function fail(statusCode) {
   throw Object.assign(new Error('partner_table_rejected'), { statusCode });
@@ -82,4 +92,115 @@ export async function readPartnerAssignment({ found, decided, config }) {
           draft: draft ? { revision: draft.revision, gameConfig: { ...draft.gameConfig } } : null } };
     }) } : {}),
   };
+}
+
+const TABLE_WRITE = Object.freeze(['tables.read', 'tables.configure']);
+const ROOM_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
+function exactKeys(body, fields) {
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).sort().join(',') !== [...fields].sort().join(',')) fail(400);
+}
+const packageRevision = value => Number.isSafeInteger(value) && value >= 1;
+
+// Spelinställningar och läge för ett eget spelbord. Samma skrivkod som Admins
+// (room-game-config-api.mjs, resource-lifecycle-api.mjs) genom samma nativa
+// grind; bolaget, behörigheten och `allow` läses om under bolagets lås i
+// transaktionen och spelbordet måste höra till bolaget (annars 404).
+function intentOf(action, body) {
+  if (action === 'room-settings') {
+    const save = body?.action === 'save-draft';
+    exactKeys(body, ['action', 'roomId', 'expectedPackageRevision', 'expectedDraftRevision', ...(save ? ['gameConfig'] : [])]);
+    if (!['save-draft', 'publish'].includes(body.action) || !ROOM_ID.test(body.roomId) || !packageRevision(body.expectedPackageRevision)
+      || !(body.expectedDraftRevision === null && save || typeof body.expectedDraftRevision === 'string' && /^room-config-[a-f0-9-]{36}$/.test(body.expectedDraftRevision))) fail(400);
+    if (save) validateRoomGameConfig(body.gameConfig);
+    return { requires: allow => allow.language || allow.limit, presentation: [{ kind: 'administration', value: { roomGameConfigs: [] } },
+      ...(save ? [] : [NATIVE_FILMED_PLANNING_MUTATION])], operatorPackage: !save };
+  }
+  exactKeys(body, ['roomId', 'state', 'expectedState', 'expectedPackageRevision']);
+  if (!ROOM_ID.test(body.roomId) || !['live', 'pending'].includes(body.state) || !['live', 'pending'].includes(body.expectedState)
+    || body.state === body.expectedState || !packageRevision(body.expectedPackageRevision)) fail(400);
+  return { requires: allow => allow.pause, presentation: { kind: 'resource-lifecycle', value: {} }, operatorPackage: true };
+}
+
+export async function partnerTableAction(prepared, config, readBody) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const { session, operator } = found;
+  const may = context => TABLE_WRITE.every(permission => allowsWorkspaceResource(context, permission, { scope: session.scope, operatorId: operator.id }));
+  if (!may(decided)) fail(403);
+  const body = await readBody();
+  const intent = intentOf(prepared.action, body);
+  if (typeof config.pool?.connect !== 'function' || typeof config.pool?.query !== 'function' || typeof config.boDb?.transaction !== 'function') fail(503);
+  const repository = config.repository ?? wrapNativePresentationRepository(createStudioRepository({ pool: config.pool, scope: config.scope }),
+    { env: config.env ?? process.env, fetchImpl: config.fetchImpl ?? fetch });
+  const transaction = config.presentationTransaction
+    ?? createNativePresentationMutationTransaction({ repository, boDb: config.boDb, pool: config.pool, scope: config.scope });
+  const actor = { user: session.user, audit: operatorAuditContext(session) };
+  // Insatsprofilerna i tilldelningen när Admin inte angett någon lista: de som
+  // bolagets spelbord har publicerade, lästa före transaktionen (frågan hör
+  // till spelmotorns tabeller). Admins uttryckliga lista läses under låset.
+  const settings = prepared.action === 'room-settings' ? await settingsBefore(config, operator) : null;
+  const options = { presentationDocuments: ['project', 'administration'], presentationMutation: intent.presentation,
+    ...(intent.operatorPackage ? { presentationOperatorIds: [operator.id] } : {}) };
+  return transaction(() => repository.transaction(() => repository.withTransactionClient(async client => {
+    try {
+      // Samma ordning som övriga Studio-skrivare: scope-lås, sedan bolagets rad.
+      const locked = await client.query(
+        '/* operator-store:lock-operator */ SELECT operator_id FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE',
+        [config.scope.environment, config.scope.workspaceId, operator.id]);
+      if (!locked.rows.length) fail(404);
+      const store = await createOperatorStore({ sql: client, scope: config.scope, now: config.now,
+        transaction: work => repository.withTransactionClient(work) });
+      // Sessionen, bolaget, medlemskapet och rollen läses om, som i `branding`.
+      const current = await partnerOperatorContext(prepared, { ...config, store });
+      const latest = await decidedPartnerContext(current);
+      if (current.operator.id !== operator.id || current.session.accountId !== session.accountId
+        || current.session.accessClass !== session.accessClass || !may(latest)) fail(403);
+      const pack = await store.getCurrentPackage(operator.id);
+      if (!pack || pack.operatorId !== operator.id) fail(404);
+      const allow = partnerAllow(pack, readPackagePresentation(pack));
+      if (!intent.requires(allow)) fail(403);
+      if (prepared.action === 'room-settings') return await roomSettings({ client, repository, config, operator, body, actor, allow, settings });
+      const lifecycle = createResourceLifecycleApi({ repository, scope: config.scope, now: config.now });
+      const changed = await lifecycle.setRoomState(store, { operatorId: operator.id, roomId: body.roomId, state: body.state,
+        expectedPackageRevision: body.expectedPackageRevision }, actor, async ({ room, pack: locked }) => {
+        if (room.state !== body.expectedState) fail(409);
+        // Bara ett spelbord som redan har publicerade spelinställningar kan öppnas av bolaget;
+        // ett spelbord som aldrig släppts öppnas av Admin.
+        if (body.state === 'live' && typeof locked?.branding?.roomGameConfigVersions?.[room.id] !== 'string') fail(409);
+      });
+      return { ok: true, room: { id: changed.room.id, state: changed.room.state }, packageRevision: changed.packageRevision };
+    } catch (error) {
+      if (Number.isInteger(error?.statusCode) && !(error instanceof StudioStorageError)) throw new StudioStorageError('partner_request_rejected', error.statusCode);
+      throw error;
+    }
+  })), options);
+}
+
+async function settingsBefore(config, operator) {
+  const pack = await (await createOperatorStore({ sql: config.pool, scope: config.scope, now: config.now })).getCurrentPackage(operator.id);
+  const presentation = readPackagePresentation(pack);
+  if (!pack || pack.operatorId !== operator.id || !presentation) return new Map();
+  const administration = await readAdministrationValue(config);
+  const rooms = partnerPackageRooms({ administration, pack, presentation, operatorId: operator.id });
+  return publishedRoomSettings({ query: (text, values) => config.pool.query(text, values), operatorId: operator.id, rooms, pack });
+}
+
+async function roomSettings({ client, repository, config, operator, body, actor, allow, settings }) {
+  const api = createRoomGameConfigApi({ repository, scope: config.scope, now: config.now,
+    resolveMaterial: input => resolveNativeRoomGameMaterial(input, { version: 2 }) });
+  const save = body.action === 'save-draft';
+  const receipt = await api.writeRoom(client, { action: body.action, operatorId: operator.id, roomId: body.roomId,
+    expectedPackageRevision: body.expectedPackageRevision, ...(save ? { gameConfig: body.gameConfig } : { expectedDraftRevision: body.expectedDraftRevision }) },
+  actor, async saved => {
+    if (save && (saved.draft?.revision ?? null) !== body.expectedDraftRevision) fail(409);
+    const candidate = save ? body.gameConfig : saved.draft?.gameConfig;
+    if (!candidate) return; // Inget utkast att publicera: skrivkoden svarar 409.
+    // Jämför med det publicerade: det är det spelaren ser och det bolaget ändrar.
+    const baseline = saved.published?.gameConfig ?? null;
+    const assignment = partnerAssignmentDetail(saved.pack, saved.presentation, settings);
+    if (candidate.language !== baseline?.language && (!allow.language || !assignment.languages.includes(candidate.language))) fail(422);
+    if (candidate.limitPreset !== baseline?.limitPreset && (!allow.limit || !assignment.limitPresets.includes(candidate.limitPreset))) fail(422);
+  });
+  const { administrationRevision: _hidden, ...visible } = receipt;
+  return visible;
 }
