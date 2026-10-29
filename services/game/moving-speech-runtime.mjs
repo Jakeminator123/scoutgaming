@@ -16,7 +16,7 @@ const STREAM_FAILURE_CODES = new Set([
   'moving_speech_cancelled', 'moving_speech_not_authorized', 'moving_speech_transport_consumed',
   'invalid_moving_speech_transport', 'moving_speech_client_backpressure', 'moving_speech_client_closed',
   'moving_speech_invalid_credit', 'moving_speech_credit_timeout', 'moving_speech_consumer_timeout',
-  'moving_speech_playback_timeout', 'moving_speech_context_changed', 'moving_deal_changed',
+  'moving_speech_playback_timeout', 'moving_speech_context_changed', 'moving_deal_changed', 'moving_speech_no_listeners',
   'generated_speech_profile_changed', 'generated_speech_reference_changed', 'generated_speech_moving_reference_unavailable',
   'generated_speech_cancelled', 'generated_speech_moving_release_timeout', 'generated_speech_moving_endpoint_mismatch',
   'generated_speech_moving_job_not_accepted',
@@ -116,8 +116,10 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     }).finally(()=>records.delete(record.id));
     return record.cancelled;
   }
-  async function current(record,{checkSession=true,submissionPhase=false}={}) {
-    record.signal.throwIfAborted(); await record.beforeCostly();
+  // asker:false (room pump only): the answer belongs to the table, not to the asker, so the asker's own chat freshness
+  // is not checked per chunk. Session, voice profile and publication evidence (the dealer's freshness) still are.
+  async function current(record,{checkSession=true,submissionPhase=false,asker=true}={}) {
+    record.signal.throwIfAborted(); if(asker) await record.beforeCostly();
     if(checkSession) await record.session?.assertCurrent?.({submissionPhase});
     await record.voice.assertFresh();
     if(record.deal){
@@ -154,12 +156,14 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       audio:{format:'s16le',sampleRate:24000,channels:1,byteLength:record.pcm.length}});
   }
   // Room answer: the worker streams into the relay at once, never waiting for a listener's credit. Every chunk
-  // still passes the asker's (unlocked) freshness check once, however many listeners read it.
+  // passes the dealer's freshness (session, voice, publication) once, however many listeners read it; the asker
+  // leaving the table or a new round does not end it for the others. Nobody listening and no ticket left to
+  // redeem stops the GPU at the next chunk.
   async function pump(record) {
     const broadcast=record.broadcast;let phase='dispatch';
     try {
       await record.session.dispatch(record.input,{onChunk:async (meta,bytes)=>{
-        phase='chunk-current'; await current(record);
+        phase='chunk-current'; if(!broadcast.listened())fail('moving_speech_no_listeners'); await current(record,{asker:false});
         phase='chunk-send'; if(!broadcast.push([[JSON.stringify(meta),false],[bytes,true]],meta.rutor.length))fail('moving_speech_cancelled');
         phase='dispatch';
       }});
@@ -315,7 +319,11 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
         || input.text !== input.text.trim() || input.text.length > 500 || /[\u0000-\u001f\u007f-\u009f]/.test(input.text)) fail('moving_speech_input');
       const lane=dealers.get(input.dealerId),{bank,sessions}=lane;
-      const controller=new AbortController(),signal=AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
+      // A room answer follows the asker's request signal only while it is prepared; once the descriptor is out it
+      // belongs to everyone at the table, and the asker's HTTP request ending must not cut the others off.
+      const controller=new AbortController(),follow=()=>controller.abort(input.signal.reason);
+      const signal=input.room?controller.signal:AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
+      if(input.room&&input.signal){input.signal.addEventListener('abort',follow,{once:true});if(input.signal.aborted)follow();}
       const record={...input,lane,controller,signal,state:'preparing'}; pending.add(record);
       let phase='guard';
       try {
@@ -348,9 +356,10 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           return {dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256};
         }});
-        // Room answers (PR 4) start TTS once admitted, in parallel with submit and worker-ready (1-2 s sooner); a
-        // refused admission still never starts TTS. A TTS failure aborts the preparation and vice versa (one signal).
-        // While submit runs, the session may be submission_started: the parallel TTS check permits that state.
+        // Room answers (PR 4) start TTS as soon as submit is done, in parallel with worker-ready, but only when the
+        // admission saw a warm worker; a cold admission waits for ready as solo does, so a cold start (up to 296 s,
+        // possibly aborted) never pays for voice. A refused admission never starts TTS. Starting after submit means a
+        // TTS failure can abort only ready, never a submit in flight (which would lock the budget as uncertain).
         const collect=async(options)=>{
           const chunks=[];let size=0;
           for await (const chunk of record.voice.source({text:input.text,signal,beforeCostly:()=>current(record,options)})) {
@@ -374,8 +383,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           bankDownload:async({sessionSignal,ttlMs})=>{record.download=lane.downloads.issue({
             signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record,{submissionPhase:true})});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
-        if(input.room){speaking=collect({submissionPhase:true}).catch(error=>{record.voiceFailure=error;controller.abort();throw error;});speaking.catch(()=>{});}
         phase='submit'; await record.session.submit();
+        if(input.room&&record.session.warm===true){speaking=collect().catch(error=>{record.voiceFailure=error;controller.abort();throw error;});speaking.catch(()=>{});}
         phase='worker-ready'; await record.session.ready();
         phase='current'; await current(record);
         } catch(error) {if(record.voiceFailure){phase='voice';throw record.voiceFailure;}throw error;}
@@ -412,7 +421,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         } catch {}
         await cancel(record);throw error;
       }
-      finally {pending.delete(record);}
+      finally {pending.delete(record);input.signal?.removeEventListener('abort',follow);}
     },
     async handleHttp(req,res) {
       const path=new URL(req.url,origin).pathname;

@@ -53,6 +53,10 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
         items.push({ parts: copied, frames: count }); wake(); return true;
       },
       end() { if (state === 'open') { state = 'done'; wake(); settle(); } },
+      // Someone can still hear this answer: a listener, or an issued ticket that can still be redeemed and attached.
+      listened() {
+        return listeners.size > 0 || [...tickets.values()].some(entry => !entry.attached && entry.exp > now() && !entry.recipient.signal?.aborted);
+      },
       fail: close, close, settle,
       issue(recipient) {
         if (state === 'closed' || state === 'failed' || recipient?.signal?.aborted || typeof recipient?.owner !== 'string' || !recipient.owner
@@ -91,7 +95,8 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
   async function attach({ broadcast: b, recipient, entry }, ws) {
     const controller = new AbortController(), signal = controller.signal;
     let credit = 0, sent = 0, index = 0, wakeSelf = null;
-    const listener = { stop: () => { controller.abort(); wakeSelf?.(); } };
+    // Stopping also terminates the socket: a listener stuck in a send that never drains is cut off as well.
+    const listener = { stop: () => { if (signal.aborted) return; controller.abort(); wakeSelf?.(); ws.terminate(); } };
     const fromSocket = () => listener.stop();
     entry.attached = true; b.listeners.add(listener);
     if (!['open', 'done'].includes(b.state)) listener.stop();

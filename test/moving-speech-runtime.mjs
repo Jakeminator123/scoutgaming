@@ -66,7 +66,7 @@ async function setup(t, options = {}) {
     sessions: { async admit(args) {
       trace.push('admit'); admitted = args; await options.onAdmit?.(args,state); await args.beforeCostly();
       const binding = { ...args.binding, schemaVersion: 1, sessionId, attemptId: 'attempt-1', nonce: '2'.repeat(64) };
-      return { sessionId, binding, async assertCurrent(admissionOptions){await options.assertSessionCurrent?.(state,admissionOptions);},
+      return { sessionId, binding, warm: options.warm === true, async assertCurrent(admissionOptions){await options.assertSessionCurrent?.(state,admissionOptions);},
         async submit() { trace.push('submit'); state.submitting=true;
           try {await args.beforeCostly();} finally {state.submitting=false;} },
         async ready() { trace.push('ready'); await options.onReady?.(state); }, handleUpgrade() { return false; },
@@ -199,11 +199,11 @@ test('a shared-room context is accepted without presentationVersion: rest-frame 
   assert.deepEqual(other.trace, []); assert.equal(other.state.reads, 0);
 });
 
-test('room answer (PR 4): TTS starts before worker ready; one dispatch feeds the asker and another listener alike', async t => {
-  const f = await setup(t), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+test('room answer (PR 4): with a warm admission TTS starts after submit, before worker ready; one dispatch feeds the asker and another listener alike', async t => {
+  const f = await setup(t, { warm: true }), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
   const service = f.runtime.forContext(room, undefined, 's-room', { room: true });
   const d = await service.prepare({ ...f.input, context: undefined });
-  assert.ok(f.trace.indexOf('admit') < f.trace.indexOf('tts') && f.trace.indexOf('tts') < f.trace.indexOf('ready'), f.trace.join(','));
+  assert.deepEqual(f.trace.filter(x => ['admit', 'submit', 'tts', 'ready'].includes(x)).slice(0, 4), ['admit', 'submit', 'tts', 'ready']);
   await until(() => f.state.chunks === 3);
   assert.equal(f.state.dispatched, 1, 'the worker streams into the relay without waiting for a listener');
   const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
@@ -662,4 +662,82 @@ test('two dealers are two lanes: each attempt uses only its own bank, sessions, 
   assert.equal(paow.seen.admitted[1].signal.aborted, false);
   await runtime.cancelDealer('paow');
   await assert.rejects(held, /moving_speech_cancelled/);
+});
+
+// Rättelser efter oberoende granskning (PR 4a).
+const room4 = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+const roomPrepare = (f, overrides = {}) => f.runtime.forContext(room4, undefined, 's-room', { room: true }).prepare({ ...f.input, context: undefined, ...overrides });
+
+test('room: 296 s cold wait generates no TTS; voice starts after ready as in solo, and a warm TTS failure never meets a running submit', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000000 });
+  let attest; const attestation = new Promise(resolve => attest = resolve), abort = new AbortController();
+  const f = await setup(t, { onReady: () => attestation });
+  const rejected = assert.rejects(roomPrepare(f, { signal: abort.signal }), /abort|cancel/i);
+  for (let i = 0; i < 100 && !f.trace.includes('ready'); i++) await new Promise(setImmediate);
+  assert.ok(f.trace.includes('ready'));
+  t.mock.timers.tick(296000); assert.equal(f.trace.includes('tts'), false, 'cold admission: no voice during the cold start');
+  abort.abort(); attest(); await rejected;
+  assert.equal(f.trace.includes('tts'), false); assert.ok(f.state.cancelled > 0);
+  t.mock.timers.reset();
+  // Cold but completed: TTS after ready, exactly like solo.
+  const cold = await setup(t); await roomPrepare(cold);
+  assert.deepEqual(cold.trace.filter(x => ['submit', 'ready', 'tts'].includes(x)).slice(0, 3), ['submit', 'ready', 'tts']);
+  // Warm: a TTS failure starts only after submit has finished and keeps its own code.
+  const error = Object.assign(Error('private'), { code: 'generated_speech_voice_unavailable' });
+  const warm = await setup(t, { warm: true, onTts: state => { assert.equal(state.submitting, false); throw error; } });
+  await assert.rejects(roomPrepare(warm), actual => actual === error);
+  assert.deepEqual(warm.trace.filter(x => ['submit', 'tts'].includes(x)), ['submit', 'tts']);
+  assert.equal(warm.preparationFailures[0].phase, 'voice'); assert.equal(warm.state.dispatched, 0);
+});
+
+test('room: the asker going stale or their request ending after chunk 1 does not end the answer for the table', async t => {
+  let stale = false; const asker = new AbortController();
+  const f = await setup(t, { beforeCostly: () => { if (stale) throw Error('stale_round_revision'); },
+    afterChunk: async state => { if (state.chunks === 1) { stale = true; asker.abort(); } } });
+  const service = f.runtime.forContext(room4, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined, signal: asker.signal });
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 3, 'the worker finished the answer'); assert.deepEqual(f.failures, []);
+  const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  const bob = f.connect(other, { headers: { cookie: 'owner=two' } }); assert.equal((await bob.opened).status, 101);
+  await until(() => bob.messages.length === 3); bob.send({ t: 'credit', id: bob.messages[0].plan.start.id, frames: 36 });
+  assert.equal((await bob.close).code, 1000); assert.deepEqual(bob.messages.at(-1), { t: 'done', id: bob.messages[0].plan.start.id, frames: 36 });
+  assert.equal((await f.connect(d).opened).status, 403, 'the stale asker\'s own ticket is checked with the asker\'s freshness');
+});
+
+test('room: nobody listening and no ticket left stops the GPU at the next chunk', async t => {
+  const f = await setup(t, { afterChunk: async state => { if (state.chunks === 1) state.now += 16000; } });
+  await roomPrepare(f);
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 1, 'no chunk after the asker\'s ticket expired unredeemed');
+  assert.equal(f.failures[0].code, 'moving_speech_no_listeners');
+});
+
+test('room: a publication change after chunk 1 stops the answer for every listener', async t => {
+  const f = await setup(t, { afterChunk: async state => { if (state.chunks === 1) state.projectRevision = 2; } });
+  const d = await roomPrepare(f);
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 1); assert.equal(f.failures[0].code, 'moving_speech_context_changed');
+  assert.equal((await f.connect(d).opened).status, 403, 'the failed buffer is gone');
+});
+
+test('room: cancelDealer, cancelOwner, cancelPlayer and close end a finished answer\'s connected listeners', async t => {
+  for (const stop of [r => r.cancelDealer('dragan'), r => r.cancelOwner('owner-one'), r => r.cancelPlayer('player-one'), r => r.close()]) {
+    const f = await setup(t), d = await roomPrepare(f);
+    await until(() => f.state.cancelled === 1 && f.state.chunks === 3);
+    const client = f.connect(d); assert.equal((await client.opened).status, 101);
+    await until(() => client.messages.length === 3);
+    await stop(f.runtime);
+    const closed = await Promise.race([client.close, pause(1000).then(() => 'still open')]);
+    assert.notEqual(closed, 'still open', String(stop)); assert.notEqual(closed.code, 1000, String(stop));
+    assert.equal(client.messages.some(m => m.t === 'done'), false);
+  }
+});
+
+test('room: issue needs the answer\'s own attempt and nonce', async t => {
+  const f = await setup(t), service = f.runtime.forContext(room4, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined }), bob = { owner: 'other-owner', playerId: 'player-two' };
+  assert.equal(service.issue({ ...d, nonce: '3'.repeat(64) }, bob), null);
+  assert.equal(service.issue({ ...d, attemptId: 'attempt-0' }, bob), null);
+  assert.ok(service.issue(d, bob));
 });

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { EventEmitter } from 'node:events';
 import { createRequire } from 'node:module';
 import { createMovingSpeechRoomRelay } from '../services/game/moving-speech-room-relay.mjs';
 
@@ -123,4 +124,38 @@ test('more frames than the plan close the broadcast instead of buffering them', 
   for (const n of [0, 1, 2]) assert.equal(f.broadcast.push(chunk(n, 12), 12), true);
   assert.equal(f.broadcast.push(chunk(3, 12), 12), false);
   assert.notEqual(await a.close, 1000); assert.equal(f.relay.get(id), null);
+});
+
+// Rättelser efter oberoende granskning (PR 4a).
+test('a listener stuck in a send that never drains is terminated when the broadcast closes', async () => {
+  const relay = createMovingSpeechRoomRelay({ ticketSecret: 'fixture-only'.repeat(4), resolveOwner: async () => 'o' });
+  const b = relay.open({ id, attemptId: 'x', nonce: 'n', planId, frames: 12, owner: 'o', playerId: 'p1', dealerId: 'd' });
+  b.push([['{"t":"ready"}', false]]);
+  const listener = await relay.redeem(b.issue({ owner: 'o', playerId: 'p1' }).ticket, { headers: {} });
+  const ws = Object.assign(new EventEmitter(), { readyState: 1, bufferedAmount: 0, terminated: false,
+    send() { /* the TCP send never completes */ }, terminate() { this.terminated = true; this.readyState = 3; this.emit('close'); }, close() {} });
+  let settled = false; const attached = relay.attach(listener, ws).finally(() => { settled = true; });
+  await pause(20); assert.equal(settled, false);
+  relay.cancel(() => true);
+  assert.equal(ws.terminated, true); assert.equal(b.listeners.size, 1, 'still awaiting the send');
+  await Promise.race([attached, pause(50)]);
+});
+
+test('redemption is refused when the recipient\'s own freshness check throws, and an aborted listener gets no rest frame', async t => {
+  const f = await setup(t);
+  let fresh = false;
+  const bob = f.broadcast.issue({ ...f.recipient('bob'), check: async () => { if (!fresh) throw Error('stale_round_revision'); } });
+  assert.equal(await f.connect(bob.ticket, 'bob').opened, 403, 'bob left the table: his ticket is refused');
+  fresh = true;
+  const carol = f.connect(f.broadcast.issue(f.recipient('carol')).ticket, 'carol'); assert.equal(await carol.opened, 101);
+  assert.deepEqual(await f.relay.authorizeRest(id, { headers: { cookie: 'player=carol' } }), { rest: 'evidence' });
+  f.room.carol.abort();
+  await assert.rejects(f.relay.authorizeRest(id, { headers: { cookie: 'player=carol' } }), /rest_unavailable/, 'carol\'s room socket closed');
+  // An aborted listener is refused before any read, and a socket closing during the check is refused after it.
+  let checks = 0;
+  const gone = new AbortController(), dave = f.broadcast.issue({ ...f.recipient('bob'), signal: gone.signal, check: async () => { checks++; } });
+  gone.abort();
+  await assert.rejects(f.relay.redeem(dave.ticket, { headers: { cookie: 'player=bob' } }), /moving_speech_ticket/); assert.equal(checks, 0);
+  const leaving = new AbortController(), erin = f.broadcast.issue({ ...f.recipient('bob'), signal: leaving.signal, check: async () => { leaving.abort(); } });
+  await assert.rejects(f.relay.redeem(erin.ticket, { headers: { cookie: 'player=bob' } }), /moving_speech_ticket/);
 });
