@@ -6,6 +6,9 @@ export type AiImageConfiguration={readonly apiKey:string;readonly endpoint:strin
 export type AiImageRequest={readonly role:AiImageRole;readonly prompt:string;readonly preset:AiImagePresetId;readonly count:number;readonly dealerId:string|null;
   readonly sceneTemplate:{readonly id:string;readonly composition:CompositionSettings|null}|null;
   readonly reference:{contentType:string;bytes:Uint8Array}|null};
+// The landing check from ai-table-landing-check.mjs; it only warns.
+export type AiLandingCheck={ok:boolean;worst:{zone:string;score:number;reason:'busy'|'edges'|'low_contrast'};
+  zones:{zone:string;ok:boolean;score:number;reason:'busy'|'edges'|'low_contrast';spread:number;edges:number;contrast:number|null}[]};
 export type AiImageDailyLimit={remaining(limit:number):number;reserve(limit:number,count:number):boolean};
 
 export const AI_IMAGE_DEFAULT_MODEL: string;
@@ -20,7 +23,7 @@ export function aiImageConfiguration(env?:Record<string,string|undefined>):AiIma
 export function createAiImageDailyLimit(options?:{clock?:()=>number}):AiImageDailyLimit;
 export function validateAiImageRequest(body:unknown):AiImageRequest;
 export function aiImageProviderBody(settings:AiImageConfiguration,input:{text:string;images:string[];size:{width:number;height:number};action:'generate'|'edit'}):Record<string,unknown>;
-export function renderAiProposal(bytes:Uint8Array,input:{role:AiImageRole;template:FilmedTableTemplate|null;preset:AiImagePresetId},options:{sharp:unknown}):Promise<{width:number;height:number;bytes:Uint8Array}>;
+export function renderAiProposal(bytes:Uint8Array,input:{role:AiImageRole;template:FilmedTableTemplate|null;preset:AiImagePresetId},options:{sharp:unknown}):Promise<{width:number;height:number;bytes:Uint8Array;check:AiLandingCheck|null}>;
 export function createAiBackgroundApi(options:{
   authorize:(request:Request)=>Promise<{user:string;role:string;scope:unknown}|null>;
   config:{scope:unknown;apiBase:string;[key:string]:unknown};

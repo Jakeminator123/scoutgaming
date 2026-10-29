@@ -284,7 +284,7 @@ test('actual browser partner login returns to the authorized operator and room w
         await page.waitForURL(origin+'/partner/login?returnTo='+encodeURIComponent(target));
         // Both deployed login document addresses consume the same safe return.
         await page.goto(origin+prefix+'/partner/login?returnTo='+encodeURIComponent(prefix+target));
-        const internal=page.getByRole('link',{name:'Logga in som intern administratör'});
+        const internal=page.getByRole('link',{name:'Logga in i Admin'});
         assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo='+encodeURIComponent(target));
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+target);

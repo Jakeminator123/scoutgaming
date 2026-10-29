@@ -288,7 +288,7 @@ test('actual browser expired Admin login restores the real room view through his
           studioNativeRuntime:async()=>({authorize,readDesignCatalog:()=>catalog.registeredDesignCatalog({store,policy})})};
         const guard = load('../lib/ui-server.ts', {
           './studio-native-runtime.mjs':runtime,'./next-page-navigation.mjs':nextPage,
-          './studio-server.mjs':{studioInitialData:unexpected},'./remote-ui.mjs':{remoteUiConfiguration:unexpected},
+          './studio-server.mjs':{studioInitialData:unexpected},
         });
         const admin = load('../app/admin/[[...path]]/route.ts', {
           '../../../lib/ui-server':guard,'../../../lib/studio-native-runtime.mjs':runtime,

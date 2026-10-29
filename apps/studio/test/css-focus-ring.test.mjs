@@ -56,8 +56,9 @@ test('a lime focus ring is caught, and only a dark sidebar is exempt', () => {
   assert.ok(!darkSidebar.test('.studio-sidebar-note a:focus-visible'));
 });
 
-// Den valda posten i en mörk sidomeny har lime bakgrund. En lime fokusram med negativ offset
-// hamnar innanför posten, mot samma lime (1:1), och syns inte alls. Provet räknar fram vilken
+// Den valda posten i en mörk sidomeny har en 4px limekant (VISUELL-RIKTNING; tidigare lime
+// bakgrund). En lime fokusram med negativ offset hamnar innanför posten och smälter ihop med
+// kanten (mot lime bakgrund syns den inte alls, 1:1). Provet räknar fram vilken
 // outline den valda posten får vid fokus (förenklad kaskad: specificitet, sedan källordning) och
 // kräver att den inte är både lime och negativt förskjuten.
 const selectedEntries = [

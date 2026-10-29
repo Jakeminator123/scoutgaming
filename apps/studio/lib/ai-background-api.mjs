@@ -13,6 +13,7 @@ import {defaultCompositionSettings,validateCompositionSettings} from '../../../p
 import {backgroundRect,stageGeometry} from '../../../packages/presentation/compositor/geometry.js';
 import {AI_BACKGROUND_SIZE,AI_IMAGE_MAX_PROPOSALS,AI_IMAGE_PRESETS,AI_IMAGE_PROMPT_LENGTH,AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_EDGE,AI_IMAGE_ROLES,aiPlacementHash} from './ai-image-contract.mjs';
 import {filmedTableRequestSize,filmedTableSvg,filmedTableTemplate} from './filmed-table-template.mjs';
+import {BACKGROUND_TABLE_TOP,backgroundLandingZones,landingCheck,tableLandingZones} from './ai-table-landing-check.mjs';
 
 // The orchestrating model writes the image prompt from the fixed frame and the
 // references, then calls the Responses API's image tool. Jakob 2026-10-28:
@@ -157,7 +158,7 @@ function brief({role,prompt,preset,reference,template,sceneTemplate,size,index,c
     return ['MODE: background for a live-dealer blackjack scene.',
       `FRAME: one landscape 16:9 image rendered at ${size.width}x${size.height}; the server crops it to exactly ${width}x${height}. Eye-level view of an empty room behind the dealer.`,
       `DEALER SAFE AREA: the centre column x ${frame.dealer[0]}-${frame.dealer[1]} over the full height. A filmed dealer is composited there, waist up. Keep it calm and evenly lit, with no lamps, objects, edges or strong lines behind the head and shoulders.`,
-      'TABLE SAFE AREA: the lower part of that column, from about y 400 down, is covered by a separate table graphic and the dealer\'s hands. Keep it low in detail; never paint a table, counter or felt.',
+      `TABLE SAFE AREA: the lower part of that column, from about y ${BACKGROUND_TABLE_TOP} down, is covered by a separate table graphic and the dealer\'s hands. Keep it low in detail; never paint a table, counter or felt.`,
       `PHONE CROP: phones show only the strip x ${frame.phone[0]}-${frame.phone[1]} (9:16). That strip must carry the mood on its own; the sides are quieter continuations seen on desktop.`,
       'DEPTH: soft background focus so the dealer stands out.',
       `FORBIDDEN anywhere: ${FORBIDDEN}, gaming tables, felt or betting layouts.`,
@@ -243,8 +244,14 @@ async function encodeWithin(image,{width,height},options={}) {
   }
   return aiFail('ai_image_unavailable');
 }
+// The landing check only warns; a check that cannot run gives check null and
+// never costs the person a proposal.
+async function checkLandings(image,zones,options) {
+  try { return await landingCheck(image,zones,options); } catch { return null; }
+}
 // Backgrounds become 1920 x 1080. Table graphics are cut to the table shape
-// and get their boxes drawn by the server at the filmed landings.
+// and get their boxes drawn by the server at the filmed landings. Both carry
+// the landing check, measured before any box is drawn.
 export async function renderAiProposal(bytes,{role,template,preset},{sharp}) {
   if (bytes.length<16||bytes.length>PROVIDER_LIMIT) aiFail('ai_image_unavailable');
   try {
@@ -252,13 +259,16 @@ export async function renderAiProposal(bytes,{role,template,preset},{sharp}) {
     if (!['png','jpeg','webp'].includes(metadata.format)) aiFail('ai_image_unavailable');
     if (role==='background') {
       const base=await sharp(bytes,{limitInputPixels:PIXEL_LIMIT}).rotate().resize(AI_BACKGROUND_SIZE.width,AI_BACKGROUND_SIZE.height,{fit:'cover',position:'centre'}).removeAlpha().png().toBuffer();
-      return encodeWithin(sharp(base),AI_BACKGROUND_SIZE);
+      const check=await checkLandings(sharp(base),backgroundLandingZones(backgroundFrame(),AI_BACKGROUND_SIZE));
+      return {...await encodeWithin(sharp(base),AI_BACKGROUND_SIZE),check};
     }
     const {width,height}=template.canvas;
-    const shaped=await sharp(bytes,{limitInputPixels:PIXEL_LIMIT}).resize(width,height,{fit:'fill'}).ensureAlpha()
+    const fitted=sharp(bytes,{limitInputPixels:PIXEL_LIMIT}).resize(width,height,{fit:'fill'});
+    const check=await checkLandings(fitted.clone(),tableLandingZones(template),{stroke:STYLE[preset].stroke});
+    const shaped=await fitted.clone().ensureAlpha()
       .composite([{input:Buffer.from(filmedTableSvg(template,'mask')),blend:'dest-in'},
         {input:Buffer.from(filmedTableSvg(template,'boxes',{stroke:STYLE[preset].stroke}))}]).png().toBuffer();
-    return encodeWithin(sharp(shaped),template.canvas,{alphaQuality:100});
+    return {...await encodeWithin(sharp(shaped),template.canvas,{alphaQuality:100}),check};
   } catch (error) { if (error instanceof AiImageError) throw error; return aiFail('ai_image_unavailable'); }
 }
 const loadSharp=async()=>(await import('sharp')).default;
@@ -309,7 +319,8 @@ export function createAiBackgroundApi({authorize,config,setup=()=>aiImageSetup()
         const text=brief({...input,template,size,index,count:input.count});
         const bytes=await askProvider(settings,aiImageProviderBody(settings,{text,images,size,action}),{fetchImpl,signal:request.signal,log});
         const proposal=await renderAiProposal(bytes,{role:input.role,template,preset:input.preset},{sharp:image});
-        return {id:randomUUID(),dataUrl:'data:image/webp;base64,'+proposal.bytes.toString('base64'),width:proposal.width,height:proposal.height};
+        // check: the landing warning for the dialog; null when it could not be measured.
+        return {id:randomUUID(),dataUrl:'data:image/webp;base64,'+proposal.bytes.toString('base64'),width:proposal.width,height:proposal.height,check:proposal.check};
       }));
       const proposals=results.filter(row=>row.status==='fulfilled').map(row=>row.value);
       if (!proposals.length) {
