@@ -203,6 +203,9 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       }
       const api = {
         sessionId: binding.sessionId, attemptId: binding.attemptId, binding,
+        // Admission observed one running worker (capacity proof). A room answer may start paid TTS once submit is done
+        // only then; a cold or legacy admission waits for ready, so a cold start never pays for voice.
+        warm: admittedCapacity?.mode === 'warm',
         callbackUrl: connection.callbackUrl, handleUpgrade: connection.handleUpgrade, closed: connection.closed,
         // runtime.current calls this during voice/output freshness checks. Do
         // not call beforeCostly here: that callback itself reenters runtime.

@@ -41,7 +41,7 @@ test('partner launch lands in the lobby without a company and keeps an explicit 
     jwtSign:value => 'fixture.'+Buffer.from(JSON.stringify(value)).toString('base64url')+'.signature',logTx:() => {}});
   const key = await partner.keys.create({name:'lobby-landing',scopes:['launch']});
   const minted = await partner.keys.mintLaunch(key.id,{playerId:'external-ref',currency:'EUR'});
-  const routing = platformConfiguration({CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
+  const routing = platformConfiguration({CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
     CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_LAB_UI_ORIGIN:'https://lab.example.invalid',
     CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)});
   // L5: the launch passes the public bridge (launchBackendSearch) before the engine, as on Vercel.
@@ -66,4 +66,24 @@ test('partner launch lands in the lobby without a company and keeps an explicit 
   const company = land(publicOrigin+'/game?operator=sg-test&table=room-1&dealer=astrid&launch='+launch);
   assert.equal(company.destination,'/game?game=blackjack&dealer=astrid&table=room-1&operator=sg-test');
   assert.deepEqual(company.route,{kind:'frontend'});
+});
+
+test('the engine origin alone turns the platform transport on; the retired switch changes nothing',()=>{
+  const env={CROUPIER_PUBLIC_ORIGIN:'https://www.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
+    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)};
+  assert.equal(platformConfiguration({}),null);
+  assert.equal(platformConfiguration({...env,CROUPIER_BACKEND_ORIGIN:''}),null);
+  assert.equal(platformConfiguration({...env,CROUPIER_BACKEND_ORIGIN:undefined,CROUPIER_VERCEL_UI:'1'}),null);
+  assert.equal(platformConfiguration(env).backendOrigin,'https://engine.example.invalid');
+  assert.deepEqual(platformConfiguration({...env,CROUPIER_VERCEL_UI:'0'}),platformConfiguration(env));
+  assert.throws(()=>platformConfiguration({...env,CROUPIER_PUBLIC_ORIGIN:undefined}),/CROUPIER_PUBLIC_ORIGIN/);
+});
+
+test('a Vercel production deployment without the engine origin fails instead of shipping /game as 404',()=>{
+  const env={CROUPIER_PUBLIC_ORIGIN:'https://www.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)};
+  assert.throws(()=>platformConfiguration({...env,VERCEL_ENV:'production'}),/CROUPIER_BACKEND_ORIGIN is required/);
+  assert.throws(()=>platformConfiguration({...env,VERCEL_ENV:'production',CROUPIER_BACKEND_ORIGIN:''}),/CROUPIER_BACKEND_ORIGIN is required/);
+  for (const VERCEL_ENV of [undefined,'preview','development']) assert.equal(platformConfiguration({...env,VERCEL_ENV}),null);
+  assert.equal(platformConfiguration({...env,VERCEL_ENV:'production',CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
+    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1'}).backendOrigin,'https://engine.example.invalid');
 });

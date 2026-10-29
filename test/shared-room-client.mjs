@@ -597,6 +597,10 @@ test('chat frames reach onChat without touching snapshots; a malformed chat fram
   h.sockets[0].message(frame()); await until(() => h.calls.length === 2);
   assert.deepEqual(lines, [{ lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5 }]);
   assert.ok(Object.isFrozen(lines[0])); assert.deepEqual(h.calls, [['snapshot', 1, 100], ['present', 1]]);
+  // PR 4: a dealer line may carry this socket's own speech descriptor.
+  const speech = { kind: 'moving-speech-stream', ticket: 'own' };
+  h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'a-' + '1'.repeat(24), requestId: 'chat-1', who: 'dealer', seat: null, text: 'Hej', at: 5, speech });
+  await until(() => lines.length === 2); assert.deepEqual(lines[1].speech, speech); lines.pop();
   h.sockets[0].message({ type: 'shared-room-chat', roomId: 'room-a', lineId: 'q-' + '2'.repeat(24), requestId: 'chat-2', who: 'player', seat: 9, text: 'x', at: 6 });
   await until(() => h.errors.length === 1);
   assert.deepEqual(h.errors, [{ code: 'shared_room_invalid_state' }]); assert.equal(lines.length, 1);

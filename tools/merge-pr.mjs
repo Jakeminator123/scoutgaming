@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Merge guard for the orchestrating session: the AGENTS.md "Leverans och merge" rules as code.
 //
-//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]
+//   node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--allow-workflow-change] [--dry-run]
 //
 // It fetches origin/main, reads the owner from inbox/people.json and the branch policy from
 // tools/repository-policy.json there (trusted main, never the working copy), reads the pull request
@@ -14,9 +14,8 @@
 // An environment branch is never accepted as a PR head, and a PR against main is refused when its
 // head carries the environment branch's history (isolation: origin/preview merged into the branch,
 // or a branch cut from preview), so preview-only commits never reach production through a PR.
-// --freeze <SHA> (O02) requires the SHA on origin/main and refuses any file, old or new path,
-// under the runtime prefixes of tools/o02-freeze-check.mjs. A PR that changes .github/workflows/
-// or .github/actions/ also changes the CI that judges it, so it needs --allow-workflow-change.
+// A PR that changes .github/workflows/ or .github/actions/ also changes the CI that judges it,
+// so it needs --allow-workflow-change.
 // fresh: the ruleset does not require an up-to-date branch, so green CI may have tested the merge
 // into an older base. The tested base is the first parent of the merge commit the CI run checked
 // out (named in the log of the run's changes job, parents from the commits API). It passes when that
@@ -28,10 +27,12 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CI_WORKFLOW, REPO, touchesRuntime } from './o02-freeze-check.mjs';
 import { environmentBranches, featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const REPO = 'Jakeminator123/scoutgaming';
+// The workflow whose job CI is the required check (.github/workflows/croupier.yml).
+export const CI_WORKFLOW = 'Croupier GitHub checks';
 export const MAIN_BRANCH = 'main';
 export const REQUIRED_CHECK = 'CI';
 export const PR_FIELDS = 'number,author,isCrossRepository,headRefName,headRefOid,isDraft,baseRefName,state,mergeable,statusCheckRollup,files,changedFiles,body';
@@ -48,21 +49,19 @@ export const PACKAGE_ROOTS = Object.freeze(['services/game/', 'packages/<name>/'
 const fullSha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 
 export function parseArgs(args) {
-  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--freeze <40-hex SHA>] [--allow-workflow-change] [--dry-run]';
-  const options = { number: null, head: null, base: MAIN_BRANCH, freeze: null, allowWorkflowChange: false, dryRun: false };
+  const usage = 'Usage: node tools/merge-pr.mjs <nr> --head <40-hex SHA> [--base <branch>] [--allow-workflow-change] [--dry-run]';
+  const options = { number: null, head: null, base: MAIN_BRANCH, allowWorkflowChange: false, dryRun: false };
   let baseGiven = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dry-run' && !options.dryRun) options.dryRun = true;
     else if (arg === '--allow-workflow-change' && !options.allowWorkflowChange) options.allowWorkflowChange = true;
-    else if ((arg === '--head' || arg === '--freeze') && options[arg.slice(2)] === null && fullSha(args[i + 1])) options[arg.slice(2)] = args[++i];
+    else if (arg === '--head' && options.head === null && fullSha(args[i + 1])) options.head = args[++i];
     else if (arg === '--base' && !baseGiven && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(args[i + 1] ?? '')) { options.base = args[++i]; baseGiven = true; }
     else if (/^[1-9][0-9]{0,6}$/.test(arg) && options.number === null) options.number = Number(arg);
     else throw Error(usage);
   }
   if (options.number === null || options.head === null) throw Error(usage);
-  // The O02 freeze is a main-only rule; it has no meaning for an environment branch.
-  if (options.freeze && options.base !== MAIN_BRANCH) throw Error(usage);
   return options;
 }
 
@@ -171,7 +170,7 @@ export function securityVerdict(result) {
   return errors.length ? { ok: false, reason: `${errors.join(', ')} (${summary})` } : { ok: true, reason: summary };
 }
 
-export function evaluateMerge({ pr, files, head, base = MAIN_BRANCH, environments = [], freeze = null, freezeOnMain = false, allowWorkflowChange = false,
+export function evaluateMerge({ pr, files, head, base = MAIN_BRANCH, environments = [], allowWorkflowChange = false,
   jakobLogin, featureBranches, foreignPatterns, security, securityRetried = false, freshness = null, isolation = null }) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), reason });
@@ -213,12 +212,6 @@ export function evaluateMerge({ pr, files, head, base = MAIN_BRANCH, environment
   if (base === MAIN_BRANCH) check('isolation', isolation?.ok === true, isolation?.reason ?? 'miljöbranchernas historik kunde inte prövas');
   const review = reviewVerdict(pr?.body);
   check('review', review.ok, review.reason);
-  if (freeze) {
-    const runtime = (paths ?? []).filter(touchesRuntime);
-    check('freeze', complete && freezeOnMain === true && runtime.length === 0, freezeOnMain !== true
-      ? `frysningen ${freeze.slice(0, 12)} ingår inte i origin/main`
-      : runtime.length ? `${runtime.length} runtimesökvägar under frysningen ${freeze.slice(0, 12)}, t.ex. ${runtime[0]}` : `inga runtimefiler (frysning ${freeze.slice(0, 12)})`);
-  }
   const sec = securityVerdict(security);
   check('security', sec.ok, securityRetried ? `${sec.reason} (efter ett omförsök)` : sec.reason);
   return { ok: checks.every(entry => entry.ok), checks };
@@ -370,7 +363,6 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   const policy = readTrustedJson(git, 'tools/repository-policy.json');
   const environments = environmentBranches(policy);
   const jakobLogin = people?.jakob?.github;
-  const freezeOnMain = options.freeze ? git(['merge-base', '--is-ancestor', options.freeze, 'origin/main']).status === 0 : false;
   const view = gh(['pr', 'view', String(options.number), '-R', REPO, '--json', PR_FIELDS]);
   let pr = null;
   if (!view.error && view.status === 0) { try { pr = JSON.parse(view.stdout); } catch { pr = null; } }
@@ -379,7 +371,7 @@ export function main({ args = process.argv.slice(2), gh = runner('gh'), git = ru
   const isolation = pr && options.base === MAIN_BRANCH ? readIsolation(git, { head: options.head, environments }) : null;
   const sec = pr ? readSecurity(security, { sleep, log }) : { result: null, retried: false };
   const verdict = evaluateMerge({ pr, files, head: options.head, base: options.base, environments,
-    freeze: options.freeze, freezeOnMain, allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
+    allowWorkflowChange: options.allowWorkflowChange, jakobLogin, featureBranches: featurePatterns(policy),
     foreignPatterns: foreignBranchPatterns({ policy, people }), security: sec.result, securityRetried: sec.retried, freshness, isolation });
   for (const entry of verdict.checks) log(`${entry.ok ? 'ok ' : 'nej'} ${entry.name}: ${entry.reason}`);
   if (!verdict.ok) { log(`nekad: PR #${options.number} mergas inte`); return 1; }

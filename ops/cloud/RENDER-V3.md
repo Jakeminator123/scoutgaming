@@ -22,8 +22,8 @@ Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging
 
 Hela tabellen står i [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#render-croupier-v3-spelmotorn). Minsta uppsättningen för start:
 
-- `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane` (`NODE_ENV=production` sätts av imagen)
-- `CROUPIER_DATABASE=postgres`, `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
+- `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin` (`NODE_ENV=production` sätts av imagen; anslutnings-ID:t `lissabon-stream-lane` och databasvägen PostgreSQL är fasta i `ops/cloud/config.mjs`)
+- `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
 - `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`
 - `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
 - Ingress från Vercel: `CROUPIER_VERCEL_TRANSPORT_ORIGIN=https://croupier-v3.onrender.com`, `CROUPIER_PUBLIC_ORIGIN` och `PUBLIC_URL` (båda `https://www.scoutgaming.tech`), `CROUPIER_VERCEL_INGRESS_SECRET`

@@ -37,7 +37,7 @@ export function ScenePublication({project,savedProject,compositionId,operatorId,
   }
   return <section className="studio-scene-publication" aria-label="Publicera scenens placering">
     <h3>Publicera placeringen</h3>
-    <p>{operatorId?`${operatorName??operatorId} · ${rooms.map(room=>room.label).join(', ')||'ingen publicerad koppling till miljön'}`:'Välj spelbolag under Rum och publicering för att uppdatera dess rum.'}</p>
+    <p>{operatorId?`${operatorName??operatorId} · ${rooms.map(room=>room.label).join(', ')||'ingen publicerad koppling till miljön'}`:'Välj bolag under Bolag och spelbord för att uppdatera dess spelbord.'}</p>
     <p>Spara miljön och publicera i spelbordet: placeringen följer med där, tillsammans med tal, klipp och vila.</p>
     {dirty&&<p role="status">Spara projektutkastet före publicering.</p>}
     <div className="flex flex-wrap gap-2">
