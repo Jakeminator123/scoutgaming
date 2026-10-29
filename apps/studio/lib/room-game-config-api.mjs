@@ -23,6 +23,8 @@ const materialReasons=new Set(['native_material_bank_incomplete','native_materia
   'native_material_size_mismatch','native_material_slot_unsupported','native_material_speech_pose_unsupported','native_material_speech_slot_missing',
   'native_material_speech_timing_mismatch','native_material_speech_unbound','native_material_take_audio_truncated','native_material_take_mismatch',
   'native_material_take_unrecognized','native_material_timing_limit','native_material_transition_pose_missing','native_material_video_unavailable']);
+// Den fasta listan av materialskäl som får visas (delas med room-release.mjs).
+export const isRoomGameMaterialReason=value=>typeof value==='string'&&materialReasons.has(value);
 function intent(value) {
   const common=['action','operatorId','roomId','expectedAdministrationRevision','expectedPackageRevision'];
   if(!exact(value,[...common,...(value?.action==='save-draft'?['gameConfig']:['expectedDraftRevision'])])||!['save-draft','publish'].includes(value.action)

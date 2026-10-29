@@ -49,7 +49,7 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys/credit', 'admin', ['game-authority']],
   ['moving-drift', 'admin', ['moving-drift-control']],
   ['operator-package', 'admin'], ['presentation-room', 'admin'],
-  ['room-game-config', 'admin'], ['shared-table-proof', 'admin'],
+  ['room-game-config', 'admin'], ['room-release', 'admin'], ['shared-table-proof', 'admin'],
   ['operator-create-demo', 'admin'],
   ['operator-create', 'admin'], ['operator-role', 'admin'], ['operator-membership', 'admin'],
   ['resource-lifecycle','admin'], ['operator-lifecycle','admin'], ['room-lifecycle','admin'], ['room-state','admin'],

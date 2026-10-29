@@ -6,7 +6,10 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { partnerCopy, partnerNavigation } from '../components/partner/partner-copy.mjs';
 import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from '../components/partner/partner-workspace-context.mjs';
-import { PARTNER_PERMISSIONS } from '../../../packages/studio-access/server/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS, PARTNER_VIEW_PERMISSIONS } from '../../../packages/studio-access/server/partner-access-policy.mjs';
+import { PARTNER_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
+import { partnerNavigationItems, partnerRoomTabs } from '../../../packages/navigation/partner-navigation.mjs';
+import { adminRoomTabs } from '../../../packages/navigation/admin-navigation.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { jsxRequire } from './fixtures/jsx-require.mjs';
@@ -36,10 +39,9 @@ function days(values) {
 }
 function realSnapshot(overrides = {}) {
   const operator = { id: 'john', slug: 'johnsspelbolag', name: 'Johns Bet', packageRevision: '7' };
-  return { schemaVersion: 2, preview: false, mode: 'live', accessClass: 'partner', viewer: { user: 'john-admin', accessClass: 'partner' },
+  return { schemaVersion: 2, preview: false, accessClass: 'partner', viewer: { user: 'john-admin', accessClass: 'partner' },
     operator, operators: [operator], role: { id: 'partner-admin', label: 'administratör' }, permissions: [...PARTNER_PERMISSIONS], view: 'overview',
     packageRevision: '7', publishedAt: Date.UTC(2026, 9, 20, 9), generatedAt: '2026-10-28T12:00:00Z',
-    presentations: [{ id: 'lane-john', operatorId: 'john', name: 'Johns lane', dealer: 'paow' }],
     tables: [
       { id: 'room-john', operatorId: 'john', name: 'Johns bord', game: 'blackjack', state: 'live', status: 'active', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: 'config-3', settings: { language: 'en', limitPreset: 'casual' }, playUrl: '/game?game=blackjack&operator=johnsspelbolag&table=room-john' },
       { id: 'room-vip', operatorId: 'john', name: 'VIP-bordet', game: 'blackjack', state: 'pending', status: 'pending', presentationId: 'lane-john', dealer: { id: 'paow', label: 'PAOW' }, configVersion: null, playUrl: null },
@@ -48,23 +50,27 @@ function realSnapshot(overrides = {}) {
     assignment: { games: ['blackjack'], dealers: [{ id: 'paow', label: 'PAOW' }], lanes: [{ id: 'lane-john', label: 'Johns lane' }], backgrounds: [{ id: 'bg-lounge', label: 'Lounge' }], tables: [{ id: 'oak', label: 'Oak' }, { id: 'felt', label: 'Green felt' }] },
     reports: { status: 'ready', from: today - 30 * DAY, to: today, windowDays: 30, currency: 'USD', truncated: false,
       rooms: [{ roomId: 'room-john', rounds: 12, staked: 600, returned: 540, net: 60, days: days([0, 3, 2, 1, 2, 3, 1]) }, { roomId: 'room-vip', rounds: 0, staked: 0, returned: 0, net: 0, days: days([]) }] },
-    summary: { activeTables: 1 }, ...overrides };
+    ...overrides };
 }
 const render = (props, options) => renderToStaticMarkup(React.createElement(components(options).PartnerOperatorWorkspace, { surface: 'partner', user: 'john-admin', apiBase: '/studio/api/partner/snapshot', initialSnapshot: realSnapshot(), ...props }));
-const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/<span class="label">([^<]+)</g)].map(match => match[1]);
+// The menu is read by its links, not by its words: each entry's href is the view's address.
+const menuOf = html => [...(html.match(/<nav aria-label="Meny">[\s\S]*?<\/nav>/)?.[0] ?? '').matchAll(/<a href="([^"]+)" class="nav"/g)].map(match => match[1]);
+const hrefs = (...views) => views.map(view => workspaceSurfacePath('partner', view, 'johnsspelbolag'));
 
 test('the shell names the company, Partnerportalen, the assignment version and the role word; the menu follows the role', () => {
   const editor = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions] }) });
-  assert.deepEqual(menuOf(editor), ['Översikt', 'Spelbord', 'Hjälp och kontakt']);
+  assert.deepEqual(menuOf(editor), hrefs('overview', 'rooms', 'help'));
   assert.match(editor, /class="name">Johns Bet</); assert.match(editor, /class="sub">Partnerportalen</);
   assert.match(editor, /Tilldelning från Scoutgaming/); assert.match(editor, /<b>Version 7<\/b>/);
   assert.match(editor, /1 dealer · 1 bakgrund · 2 bordsgrafik/); assert.doesNotMatch(editor, /scenmall|revision 7/);
   assert.match(editor, /class="small">redaktör</);
-  assert.match(editor, /aria-current="page"[^>]*>[\s\S]*?<span class="label">Översikt</);
+  assert.match(editor, /<a href="\/partner\/johnsspelbolag" class="nav" aria-current="page"/);
+  assert.equal([...editor.matchAll(/aria-current="page"/g)].length, 1, 'one current menu entry');
+  assert.match(render({ initialView: 'rooms' }), /<a href="\/partner\/johnsspelbolag\/rooms" class="nav" aria-current="page"/);
   assert.match(editor, /aria-keyshortcuts="Control\+K Meta\+K"/, 'the ⌘K palette is offered in the shell');
   const viewer = render({ initialSnapshot: realSnapshot({ role: { id: 'partner-viewer', label: 'läsare' }, permissions: [...roleOf('partner-viewer').permissions] }) });
-  // Spelare stays out of the menu until players belong to the company; the server still guards the address.
-  assert.deepEqual(menuOf(viewer), ['Översikt', 'Spelbord', 'Ekonomi', 'Team', 'Integration', 'Hjälp och kontakt']);
+  // Every view, Spelare included (an honest empty state until players belong to the company).
+  assert.deepEqual(menuOf(viewer), hrefs(...PARTNER_VIEWS));
   assert.match(viewer, /class="small">läsare</);
   for (const [, href] of viewer.matchAll(/class="nav" href="([^"]+)"/g)) assert.match(href, /^\/partner\/johnsspelbolag(?:\/|$)/);
   for (const html of [editor, viewer]) {
@@ -73,7 +79,18 @@ test('the shell names the company, Partnerportalen, the assignment version and t
     assert.match(html, /Byt konto/); assert.match(html, /Logga ut/);
   }
   assert.deepEqual(partnerNavigation('sv', ['team.roles.assign']).map(item => item.id), []);
-  assert.deepEqual(partnerNavigation('en', ['overview.read', 'team.read']).map(item => item.label), ['Overview', 'Help and contact', 'Team'].sort((a, b) => ['Overview', 'Team', 'Help and contact'].indexOf(a) - ['Overview', 'Team', 'Help and contact'].indexOf(b)));
+  assert.deepEqual(partnerNavigation('en', ['overview.read', 'team.read']).map(item => item.id), ['overview', 'team', 'help']);
+});
+
+test('the menu module names every view once, in both languages, and the room tabs are Admin\'s ids without Bolagets val', () => {
+  assert.deepEqual(partnerNavigationItems.map(item => item.id), [...PARTNER_VIEWS]);
+  for (const item of partnerNavigationItems) {
+    assert.ok(PARTNER_VIEW_PERMISSIONS[item.id], item.id);
+    for (const language of ['sv', 'en']) assert.ok(item.label[language] && item.description[language], `${item.id} ${language}`);
+    assert.equal(partnerCopy('sv')[item.id], item.label.sv); assert.equal(partnerCopy('en')[item.id], item.label.en);
+  }
+  assert.deepEqual(partnerRoomTabs.map(tab => tab.id), adminRoomTabs.map(tab => tab.id).filter(id => id !== 'bolagets-val'));
+  assert.deepEqual(partnerRoomTabs.map(tab => tab.id), ['utseende', 'dealer', 'spel', 'tillganglighet', 'historik']);
 });
 
 test('a denied view renders the 403 card with role and permission inside the shell, never the view or its data', () => {
@@ -84,7 +101,7 @@ test('a denied view renders the 403 card with role and permission inside the she
   assert.match(html, /href="\/partner\/johnsspelbolag"[^>]*>Till översikten</);
   assert.doesNotMatch(html, /data-team="stub"/);
   // The shell stays: company, menu for the role and the role word.
-  assert.deepEqual(menuOf(html), ['Översikt', 'Spelbord', 'Hjälp och kontakt']); assert.match(html, /class="name">Johns Bet</); assert.match(html, /class="small">redaktör</);
+  assert.deepEqual(menuOf(html), hrefs('overview', 'rooms', 'help')); assert.match(html, /class="name">Johns Bet</); assert.match(html, /class="small">redaktör</);
   const allowed = render({ initialView: 'team' });
   assert.match(allowed, /data-team="stub"/); assert.doesNotMatch(allowed, />403</);
   // A denial for another view than the one shown does not hide the shown view.
@@ -93,10 +110,10 @@ test('a denied view renders the 403 card with role and permission inside the she
 
 test('a role without a section sees no such section, never invented rooms or assignment', () => {
   // A role that lacks tables.read or presentations.read gets a snapshot without those sections.
-  const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], presentations: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined, summary: {} }) });
+  const narrow = render({ initialSnapshot: realSnapshot({ role: { id: 'overview-only', label: 'Nattskift' }, permissions: ['overview.read'], tables: [], assignment: undefined, presentation: undefined, branding: undefined, reports: undefined }) });
   assert.doesNotMatch(narrow, />Var ni är publicerade<\/h2>|>Er tilldelning<\/h2>|spelbord öppna i lobbyn/);
   assert.doesNotMatch(narrow, /0 av 0/); assert.doesNotMatch(narrow, /Oak|Lounge|Johns bord/);
-  assert.deepEqual(menuOf(narrow), ['Översikt', 'Hjälp och kontakt']);
+  assert.deepEqual(menuOf(narrow), hrefs('overview', 'help'));
   const allowed = render({ initialView: 'team' });
   assert.match(allowed, /data-team="stub"/); assert.doesNotMatch(allowed, />403</);
 });
@@ -186,6 +203,10 @@ test('Spelare, Ekonomi, Integration and Hjälp render honest content without inv
   assert.match(help, /<h1>Hjälp och kontakt<\/h1>/); assert.match(help, /Begär material/);
   assert.match(help, /href="mailto:\?subject=Beg%C3%A4ran%20om%20material%20fr%C3%A5n%20Johns%20Bet/);
   assert.match(help, /Rollen administratör får/); assert.match(help, /Bestäms av Scoutgaming/);
+  // Hjälp lists the role's menu from the same module as the shell, with each entry's description.
+  for (const item of partnerNavigation('sv', PARTNER_PERMISSIONS)) assert.ok(help.includes(`<dt>${item.label}</dt><dd>${item.description}</dd>`), item.id);
+  const editorHelp = render({ initialView: 'help', initialSnapshot: realSnapshot({ role: { id: 'partner-editor', label: 'redaktör' }, permissions: [...roleOf('partner-editor').permissions], view: 'help' }) });
+  for (const item of partnerNavigationItems) assert.equal(editorHelp.includes(`<dd>${item.description.sv}</dd>`), ['overview', 'rooms', 'help'].includes(item.id), item.id);
   // "Önska bakgrund" is only a request by e-mail to Scoutgaming; nothing enters the package from here.
   assert.match(help, /<option value="background-wish" selected="">Önska bakgrund<\/option>/); assert.match(help, /Beskriv bakgrunden/);
   assert.match(help, /Scoutgaming tar fram förslag och lägger det godkända i er tilldelning/); assert.match(help, /href="mailto:\?subject=[^"]*%C3%96nska%20bakgrund/);
@@ -197,9 +218,9 @@ test('shell strings exist in both languages and the snapshot validator rejects f
   assert.deepEqual(Object.keys(sv), Object.keys(en));
   for (const copy of [sv, en]) for (const [key, value] of Object.entries(copy)) assert.ok(typeof value === 'string' && value, key);
   assert.equal(partnerCopy('unsupported'), sv);
-  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), preview: true, mode: 'fixture' }));
+  assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), preview: true }));
   assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), operators: [] }));
-  for (const key of ['tables', 'team', 'presentations']) {
+  for (const key of ['tables', 'team']) {
     assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: [{ id: 'foreign', operatorId: 'other' }] }), key);
     assert.throws(() => validatePartnerSnapshot({ ...realSnapshot(), [key]: null }), key);
   }
@@ -244,7 +265,7 @@ test('a verified own-company saved receipt updates the package view and clears t
   const receipt = { operatorId: 'john', packageRevision: 8, branding: { lane: lane.id, dealer: 'vera' }, presentation: { schemaVersion: 1, projectRevision: 'frozen-r1', lanes: [lane], assets: [] } };
   view().props.onAppearanceSaved({ ...receipt, operatorId: 'other' }); assert.deepEqual(view().props.runtime.snapshot, before);
   view().props.onAppearanceSaved(receipt); const after = view().props.runtime.snapshot;
-  assert.equal(after.packageRevision, '8'); assert.equal(after.operator.packageRevision, '8'); assert.equal(after.presentations[0].dealer, 'vera'); assert.equal(after.draft, null);
+  assert.equal(after.packageRevision, '8'); assert.equal(after.operator.packageRevision, '8'); assert.equal(after.branding.dealer, 'vera'); assert.equal(after.presentation, receipt.presentation); assert.equal(after.presentations, undefined); assert.equal(after.draft, null);
   assert.deepEqual(after.team, before.team); assert.deepEqual(after.tables, before.tables); assert.deepEqual(after.operators, before.operators);
   view().props.onAppearanceSaved({ ...receipt, packageRevision: 7, branding: { dealer: 'astrid' } }); assert.deepEqual(view().props.runtime.snapshot, after);
 });

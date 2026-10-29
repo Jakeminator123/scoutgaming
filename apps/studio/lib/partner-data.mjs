@@ -6,7 +6,7 @@ import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartnerWorkspace, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
 import { readPackagePresentation, publicPackageBranding, resolvePackageRoomDealer } from '../../../packages/presentation/server/presentation-package.mjs';
-import { partnerPackageProfiles, partnerLayerChoices } from './partner-package-view.mjs';
+import { partnerLayerChoices } from './partner-package-view.mjs';
 import { materialLabel } from '../../../packages/presentation/contracts/material-catalog.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
@@ -138,7 +138,6 @@ function snapshotBase(session, now) {
   return {
     schemaVersion: 2,
     preview: false,
-    mode: 'live',
     accessClass: session.accessClass,
     viewer: { user: session.user, accessClass: session.accessClass },
     generatedAt: new Date(now).toISOString(),
@@ -186,7 +185,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   const visible = await memberOperators(operators, session);
   if (!operatorSlug) {
     if (!visible.length && session.accessClass !== 'internal-admin') fail(403);
-    return { ...snapshotBase(session, now), operators: visible, permissions: [], presentations: [], tables: [], team: [] };
+    return { ...snapshotBase(session, now), operators: visible, permissions: [], tables: [], team: [] };
   }
   if (typeof operators.getOperatorBySlug !== 'function' || typeof operators.getCurrentPackage !== 'function') fail(503);
   const operator = canonicalOperator(await operators.getOperatorBySlug(operatorSlug));
@@ -234,8 +233,6 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   if (pack?.operatorId && pack.operatorId !== operator.id) fail(403);
   const presentation = readPackagePresentation(pack);
   const branding = publicPackageBranding(pack?.branding);
-  const presentations = !canPresentations ? [] : presentation ? partnerPackageProfiles(presentation, branding, operator.id)
-    : parseList(pack?.presentations ?? pack?.lanes).map(item => owned(item, operator.id, ['name', 'dealer', 'language', 'background', 'status'])).filter(Boolean);
   const administration = presentation && canTables ? await roomAdministration(resolved) : null;
   const gameLanes = administration ? gameLaneConfiguration(administration).gameLanes : [];
   const query = typeof resolved.pool?.query === 'function' ? (text, values) => resolved.pool.query(text, values) : null;
@@ -278,8 +275,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     view,
     ...(denied ? { denied } : {}),
     operators: choices.map(item => ({ id: item.id, slug: item.slug, name: item.name })),
-    presentations,
-    ...(presentation && canPresentations ? { presentation, branding, roomBindings: 'operator-owned-v2' } : {}),
+    ...(presentation && canPresentations ? { presentation, branding } : {}),
     tables,
     team,
     invitations: team.filter(member => member.status === 'invited').length,
@@ -288,7 +284,6 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     publications: canReports ? await publicationsOf(operators, operator.id) : [],
     ...(reports ? { reports } : {}),
     ...(apiKeys ? { apiKeys } : {}),
-    summary: canTables ? { activeTables: presentation ? tables.filter(table => table.status === 'active').length : tables.length } : {},
   };
 }
 

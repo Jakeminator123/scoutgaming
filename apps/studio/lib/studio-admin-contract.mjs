@@ -24,7 +24,7 @@ function adminEndpoint(method, action) {
 
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
   ...['overview', 'config', 'clips', 'generations', 'gen-verdicts',
-    'apikeys', 'users', 'players', 'transactions','emails','shoes', 'room-game-config', 'shared-table-proof', 'presentation-room', 'resource-lifecycle', 'moving-drift'].map(action => adminEndpoint('GET', action)),
+    'apikeys', 'users', 'players', 'transactions','emails','shoes', 'room-game-config', 'room-release', 'shared-table-proof', 'presentation-room', 'resource-lifecycle', 'moving-drift'].map(action => adminEndpoint('GET', action)),
   ...['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
@@ -63,7 +63,7 @@ export function studioAuthEndpoint(method, pathname) {
 // A narrowly read-only preparation query. Other endpoints keep exact paths
 // and no query parameters; this helper grants no role or Origin exception.
 export function isPresentationRoomReadQuery(method, url) {
-  if (isRoomGameConfigReadQuery(method,url) || isSharedTableProofReadQuery(method,url)) return true;
+  if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url)) return true;
   if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;
   const keys = [...url.searchParams.keys()];
   return (keys.length === 2 || keys.length === 3 && keys.includes('game') && ['blackjack','roulette'].includes(url.searchParams.get('game')))
@@ -77,6 +77,12 @@ const queryId = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:
 export function isRoomGameConfigReadQuery(method,url) {
   const keys=[...url.searchParams.keys()];
   return method==='GET'&&['/studio/api/admin/room-game-config','/api/admin/room-game-config'].includes(url.pathname)
+    &&keys.length===2&&new Set(keys).size===2&&keys.includes('operatorId')&&keys.includes('roomId')&&keys.every(key=>queryId(url.searchParams.get(key)));
+}
+// Rummets publicering (room-release.mjs): exakt operatorId och roomId, inget annat.
+export function isRoomReleaseReadQuery(method,url) {
+  const keys=[...url.searchParams.keys()];
+  return method==='GET'&&['/studio/api/admin/room-release','/api/admin/room-release'].includes(url.pathname)
     &&keys.length===2&&new Set(keys).size===2&&keys.includes('operatorId')&&keys.includes('roomId')&&keys.every(key=>queryId(url.searchParams.get(key)));
 }
 export function isSharedTableProofReadQuery(method,url) {

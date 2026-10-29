@@ -7,7 +7,7 @@ import { PartnerJournal } from './partner-journal-loader.mjs';
 const h = React.createElement;
 const ids = value => Array.isArray(value) && value.every(item => typeof item === 'string');
 
-// GET/POST /api/partner/team (lab/lib/partner-team-api.mjs). Anything else is not a team.
+// GET/POST /api/partner/team (lib/partner-team-api.mjs). Allt annat är inget team.
 export function readPartnerTeam(payload) {
   if (!payload || typeof payload !== 'object' || typeof payload.operatorId !== 'string'
     || !Array.isArray(payload.roles) || !Array.isArray(payload.members) || !ids(payload.inviteRoles)) return null;
@@ -18,7 +18,7 @@ export function readPartnerTeam(payload) {
   return payload.roles.every(roleOk) && payload.members.every(memberOk) ? payload : null;
 }
 
-// Kevin's TeamView reads members from snapshot.team. E-mail addresses are never listed.
+// TeamView (components/partner/views/team.jsx) läser medlemmarna ur snapshot.team. E-postadresser listas aldrig.
 export function partnerTeamSnapshot(snapshot, team) {
   const operatorId = snapshot.operator.id;
   return {
@@ -167,7 +167,7 @@ export function PartnerTeamLoader({ snapshot, runtime, surface, toast, base, Tea
     state !== 'ready' ? h('div', { className: 'note', role: state === 'error' ? 'alert' : 'status' },
       state === 'loading' ? (en ? 'Checking team access…' : 'Kontrollerar teamåtkomst…') : (en ? 'Team access could not be verified.' : 'Teamåtkomsten kunde inte verifieras.'),
       state === 'error' ? h('button', { type: 'button', className: 'btn sm', onClick: () => void reload() }, en ? 'Try again' : 'Försök igen') : null) : null,
-    h(Team, { snapshot: live ? partnerTeamSnapshot(snapshot, current) : snapshot?.preview === true ? snapshot : { ...snapshot, team: [], roles: [] }, runtime: { ...runtime, team: live, teamBusy: busy }, surface, toast, language }),
+    h(Team, { snapshot: live ? partnerTeamSnapshot(snapshot, current) : { ...snapshot, team: [], roles: [] }, runtime: { ...runtime, team: live, teamBusy: busy }, surface, toast, language }),
     live && current.can?.journal === true ? h(PartnerJournal, { key: operatorId, base, operatorSlug, operatorId, language, version: journalVersion }) : null);
 }
 

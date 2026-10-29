@@ -18,6 +18,7 @@ import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
+import {createRoomRelease,ROOM_RELEASE_ACTION} from './room-release.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -129,7 +130,9 @@ function freeze(value){
 
 // materials: optional sql => operator material store (Bolagets eget material).
 // Without it, or without migration 021, every publication is unchanged.
-export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory, materials = null } = {}) {
+// resolveRoomMaterial: optional pure room-material resolver for the room publication
+// (room-release.mjs); the default is the native frozen-material producer, version 2.
+export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory, materials = null, resolveRoomMaterial } = {}) {
   const handlers = new Map();
   async function store() {
     return openWritableOperatorStore({ pool, scope, now, storeFactory });
@@ -149,6 +152,10 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   const canExtend = () => typeof repository?.withMutationContext === 'function';
   const preparedValues = new WeakSet();
   const preparations = new Map();
+  // En publicering per spelbord (steg D). Egen förberedelse och transaktion; övriga actions oförändrade.
+  const release = createRoomRelease({pool, scope, repository, videoRegistry, now, materials, store,
+    ...(resolveRoomMaterial ? {resolveMaterial:resolveRoomMaterial} : {})});
+  handlers.set('GET /studio/api/admin/room-release', release.read);
   async function prepareIdleRefresh(context){
     const body=idleRefreshIntent(context.body);
     if(!repository?.readPresentationSnapshot||!repository.transaction||!repository.withTransactionClient
@@ -186,6 +193,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     preparedValues.add(value);return value;
   }
   async function prepare(context) {
+    if(context.body?.action===ROOM_RELEASE_ACTION)return release.prepare(context);
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
     if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
     const expectedPackageRevision = requestedPackageRevision(context.body);
@@ -238,6 +246,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     return {allowExtended};
   }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
+    if(context.body?.action===ROOM_RELEASE_ACTION)return release.publish(context);
     if(context.body?.action==='refresh-dealer-idle'){
       const body=idleRefreshIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
