@@ -20,6 +20,8 @@ export interface NativeStudioRuntime {
   repository: any; gamePolicy: any;
   replyRepository: any;
   readDesignCatalog(): Promise<unknown>;
+  /** Dealers with a moving bank here (movingDriftDealerIds); the project save refuses a new motion reference for others. */
+  movingSpeechDealers(): string[];
   assistantDatabaseInventory(): Promise<{source:string;partial:boolean;tables:{schema:string;name:string}[]}>;
   mutationTransaction<T>(work: () => Promise<T>): Promise<T>;
   validateProjectBindings?: (project: any) => Promise<void>;

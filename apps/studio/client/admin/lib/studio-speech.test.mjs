@@ -196,12 +196,15 @@ for(const change of ['offset','source','bytes'])test(`enabled motion ${change} e
   assert.equal(saved.reference.offsetMs,change==='offset'?400:200);assert.equal(h.calls.length,0);
 });
 
-test('voice-only editing preserves enabled motion identity without another preview',async()=>{
-  const h=await referencePanel('motion-video','enabled'),reference=structuredClone(h.props.project.dealers[0].speechProfile.reference);let tree=h.render();
+// Dragan in production: his enabled motion profile predates the bank list, and Paow's bank (T5) does not block it.
+for(const banks of [undefined,['paow']])test(`voice-only editing saves the voice and keeps Dragan's enabled motion identity (banks ${JSON.stringify(banks)})`,async()=>{
+  const h=await referencePanel('motion-video','enabled'),reference=structuredClone(h.props.project.dealers[0].speechProfile.reference);
+  if(banks)h.props.movingSpeechDealers=banks;let tree=h.render();
   h.field(tree,'voice-id').props.onChange({target:{value:'other-voice'}});tree=h.render();
   assert.equal(h.button(tree,'stage-profile').props.disabled,false);h.button(tree,'stage-profile').props.onClick();
-  assert.deepEqual(h.props.project.dealers[0].speechProfile.reference,reference);
-  assert.equal(h.props.project.dealers[0].speechProfile.state,'enabled');assert.equal(h.calls.length,0);
+  const saved=h.props.project.dealers[0].speechProfile;
+  assert.equal(saved.voice.voiceId,'other-voice','the voice change reaches the project');
+  assert.deepEqual(saved.reference,reference);assert.equal(saved.state,'enabled');assert.equal(h.calls.length,0);
 });
 
 test('an enabled motion reference can still be turned off without changing its identity',async()=>{

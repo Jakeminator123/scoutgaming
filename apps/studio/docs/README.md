@@ -234,7 +234,9 @@ En rörlig referens kan alltid sparas som förberedelse; bankbygget tar den
 valda positionen som vilaruta och kräver steg om 125 ms (hel ruta i 24 fps).
 **Begär AI-tal** går att slå på för en rörlig referens bara när miljöns
 driftprofil för dealern har en bankhash (`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`
-på Vercel); referensen ska vara ett av bankens klipp. Referenstypen kan inte
+på Vercel); servern vägrar annars sparningen (`studio_speech_bank_missing`),
+utom för en redan begärd profil med samma referens (rösten får bytas).
+Referensen ska vara ett av bankens klipp. Referenstypen kan inte
 bytas medan AI-tal är begärt. Paows körning:
 [PAOW-BANK-KORNING](../../../docs/PAOW-BANK-KORNING.md).
 

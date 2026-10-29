@@ -1,6 +1,6 @@
 # Paows rörliga bank: körning steg för steg
 
-Körbeskrivning för T4–T5 i [TALKEDJA](plans/TALKEDJA.md): bygg Paows bank i vårt format, lägg den i previews privata Blob och koppla den till en egen RunPod-endpoint i Kevins konto med vår worker-image. Jakob, eller en agent med nycklarna, kör stegen i ordning. Inga nycklar i repot; varje hemlighet sätts direkt i panelen eller i en ospårad lokal fil. Dragan och Kevins resurser (`7tcfouz8jib4wb`, `fxwf3rgwme748i`, `mq7eiwanda72fg`, podden `v01sxp6a4wmjq6`, banan `e2e-prod`) rörs aldrig. Kvittot fylls i [2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) (byt `XX` mot dagen när det fylls).
+Körbeskrivning för T4–T5 i [TALKEDJA](plans/TALKEDJA.md): bygg Paows bank i vårt format, lägg den i previews privata Blob och koppla den till en egen RunPod-endpoint i Kevins konto med vår worker-image. Jakob, eller en agent med nycklarna, kör stegen i ordning. Inga nycklar i repot; varje hemlighet sätts direkt i panelen eller i en ospårad lokal fil. Dragan och Kevins befintliga endpoints och poddar (och banan `e2e-prod`) rörs aldrig. Kvittot fylls i [2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) (byt `XX` mot dagen när det fylls).
 
 Banken byggs ur **samma miljös** register som den ska köras i. Spelmotorn kräver att talprofilens referens och varje bankklipp finns med samma ID och sha256 i miljöns register; en bank byggd ur produktionens register fungerar inte i preview. Börja i preview.
 
@@ -69,7 +69,7 @@ Serverless endpoint `scoutgaming-moving-paow`: image ur steg 6 med registry-auth
 
 ## 8. Miljö och aktivering
 
-Render `scoutgaming-preview-engine`: `CROUPIER_MOVING_SPEECH_ENABLED=1`, `CROUPIER_MOVING_SPEECH_BANK_RECORDS={"paow":<manifestpost>}`, `CROUPIER_MOVING_SPEECH_IMAGE`, `_RELEASE_SHA256`, `_RUNPOD_API_KEY` (Kevins konto), `_TICKET_SECRET`, `_WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com`, `ELEVENLABS_API_KEY` (Kevins konto), `CROUPIER_DEALER_SPEECH_PROFILES=1`, `CROUPIER_STUDIO_MOVING_DRIFT_API=1` och
+Render `scoutgaming-preview-engine`: `CROUPIER_MOVING_SPEECH_ENABLED=1`, `CROUPIER_MOVING_SPEECH_BANK_RECORDS={"paow":<manifestpost>}`, `CROUPIER_MOVING_SPEECH_IMAGE`, `_RELEASE_SHA256`, `_RUNPOD_API_KEY` (Kevins konto), `_TICKET_SECRET`, `_WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com`, `ELEVENLABS_API_KEY` (Kevins konto), `CROUPIER_DEALER_SPEECH_PROFILES=1` (kräver streaming: `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_STREAMING=1`, och `CROUPIER_STUDIO_NEON_POLICY=1`; annars stoppar `ops/cloud/config.mjs` starten), `CROUPIER_STUDIO_MOVING_DRIFT_API=1` och
 
 ```json
 [{"id":"paow","label":"Paow","dealerId":"paow","endpointId":"<endpoint>","releaseDigest":"<releaseSha256>","bankHash":"<archive.sha256>"}]

@@ -46,8 +46,9 @@ export function movingDriftConfiguration(env={}) {
 }
 
 /** Dealers whose drift profile names a bank hash in this environment: what
- * Admin may offer for "Begär AI-tal" with a motion reference. Advisory only;
- * the engine verifies each bank archive against bankHash at start. */
+ * Admin may offer for "Begär AI-tal" with a motion reference, and what the
+ * project save accepts as a new one (movingSpeechBanksAllowed). The engine
+ * still verifies each bank archive against bankHash at start. */
 export function movingDriftDealerIds(env={}) {
   let configuration=null;
   try {configuration=movingDriftConfiguration(env);} catch {return [];}
