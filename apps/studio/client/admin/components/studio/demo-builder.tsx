@@ -164,7 +164,7 @@ function TopUp({value,permissions,revoked}:{value:DemoLaunch;permissions:DemoPer
       <p className={cn(small,'mt-0.5')}>Saldo nu: {formatMoney(known.balance,currency)}. Påfyllningen går till demospelaren i kvittot.</p></div>
     <form className="grid items-end gap-2 sm:grid-cols-[minmax(0,220px)_auto] sm:justify-start" onSubmit={submit}>
       <Field id="demo-topup" label={`Belopp${currency?` (${currency})`:''}`}>
-        <input id="demo-topup" className={fieldClass} inputMode="decimal" autoComplete="off" value={amount} disabled={Boolean(blocked)||busy} onChange={event=>setAmount(event.target.value)}/></Field>
+        <input id="demo-topup" className={cn(fieldClass,'focus-visible:ring-offset-sg-surface-2')} inputMode="decimal" autoComplete="off" value={amount} disabled={Boolean(blocked)||busy} onChange={event=>setAmount(event.target.value)}/></Field>
       <Button type="submit" size="lg" disabled={Boolean(blocked)||busy||checked.amount===null}>{busy?'Fyller på…':'Fyll på'}</Button>
     </form>
     {blocked?<p className={missingClass}>{blocked}</p>:amount.trim()&&checked.missing&&<p className={missingClass}>{checked.missing}</p>}

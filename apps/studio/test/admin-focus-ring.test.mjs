@@ -20,18 +20,20 @@ const sources=root=>readdirSync(root,{withFileTypes:true,recursive:true})
   .filter(file=>!file.includes(`${'/'}node_modules${'/'}`));
 
 // En fokusklass är en Tailwind-klass med focus, focus-visible eller focus-within någonstans i
-// varianten (även has-[:focus-visible]: och [&_x:focus-visible]:) som sätter ringens färg.
-const focusRingColour=/[^\s'"`]*focus[^\s'"`]*:ring-sg-(?!offset)[a-z-]+/g;
+// varianten (även has-[:focus-visible]: och [&_x:focus-visible]:) som sätter ringens eller
+// outlinens färg: sg-token (även med opacitet, som kan sänka kontrasten) eller godtycklig färg.
+const focusRingColour=/[^\s'"`]*focus[^\s'"`]*:(?:inset-)?(?:ring|outline)-(?:sg-(?!offset)[a-z0-9-]+(?:\/[0-9.]+)?|\[[^\]]*(?:var\(|#)[^\]]*\])/g;
+const allowed=/:(?:ring|outline)-sg-mark$/;
 
 test('fokusringar i Admin och delade komponenter använder --sg-mark, aldrig lime', () => {
   const found=[];
   for(const root of roots)for(const file of sources(root)){
     const lines=readFileSync(file,'utf8').split('\n');
     lines.forEach((line,index)=>{for(const [klass] of line.matchAll(focusRingColour)){
-      if(!klass.endsWith(':ring-sg-mark'))found.push(`${relative(studio,file)}:${index+1} ${klass}`);
+      if(!allowed.test(klass))found.push(`${relative(studio,file)}:${index+1} ${klass}`);
     }});
   }
-  assert.deepEqual(found,[],'fokusringens färg ska vara ring-sg-mark (focusRing i client/admin/components/ui/kit.tsx)');
+  assert.deepEqual(found,[],'fokusringens färg ska vara ring-sg-mark eller outline-sg-mark utan opacitet (focusRing i client/admin/components/ui/kit.tsx)');
 });
 
 test('focusRing i kit.tsx och Admins Tailwind-tema pekar på --sg-mark', () => {
