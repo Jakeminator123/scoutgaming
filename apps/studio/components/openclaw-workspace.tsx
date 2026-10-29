@@ -64,6 +64,19 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
   return value;
 }
 
+// What the page may say about the Gateway's running configuration. Only `active` claims that the read
+// settings are in use; the key is derived once, so the text and its data-claim cannot drift apart.
+export const OPENCLAW_RUNTIME_TEXT = {
+  stale: 'De här valen kommer från senaste lyckade hämtningen. Hämta aktuella val för att kontrollera statusen.',
+  active: 'Gateway använder de hämtade inställningarna.',
+  saved: 'Inställningarna är sparade. Gateway har ännu inte tagit dem i bruk.',
+  unknown: 'Gateway är nåbar. Det går inte att bekräfta vilka inställningar som används i körningen.',
+} as const;
+type RuntimeKey = keyof typeof OPENCLAW_RUNTIME_TEXT;
+function runtimeKey(needsRefresh: boolean, applied: boolean | null): RuntimeKey {
+  return needsRefresh ? 'stale' : applied === true ? 'active' : applied === false ? 'saved' : 'unknown';
+}
+
 export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string};embedded?:boolean }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
@@ -122,6 +135,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
     return () => { alive.current = false; controller.current?.abort(); controller.current = null; };
   }, []);
 
+  const runtime = runtimeKey(needsRefresh, data?.gateway.applied ?? null);
   const changedAgents = data?.agents.filter(agent => (drafts[agent.id] ?? agent.model.primary) !== agent.model.primary) ?? [];
   const dirty = changedAgents.length > 0 || Object.keys(drafts).some(id => !data?.agents.some(agent => agent.id === id));
   const unsaved=useRef(false);unsaved.current=dirty;
@@ -213,7 +227,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
       title="Systeminställningar"
       intro="Välj modell och spara en agent i taget. Du använder din Studio-inloggning."
     />
-    <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
+    <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" data-action="reload" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">
       {busy === 'load' && <p role="status">Hämtar inställningar från OpenClaw…</p>}
       {busy === 'dashboard' && <p role="status">Öppnar OpenClaws egen dashboard…</p>}
@@ -223,10 +237,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
     </div>
     {data && <section className={styles.panel} aria-labelledby="agent-models">
       <div className={styles.panelHeading}><h2 id="agent-models">Registrerade agentroller</h2><span>{dirty ? 'Osparade ändringar' : 'Senast hämtade val'}</span></div>
-      <p className={styles.runtimeState}>{needsRefresh ? 'De här valen kommer från senaste lyckade hämtningen. Hämta aktuella val för att kontrollera statusen.'
-        : data.gateway.applied === true ? 'Gateway använder de hämtade inställningarna.'
-        : data.gateway.applied === false ? 'Inställningarna är sparade. Gateway har ännu inte tagit dem i bruk.'
-          : 'Gateway är nåbar. Det går inte att bekräfta vilka inställningar som används i körningen.'}</p>
+      <p className={styles.runtimeState} data-runtime-state={needsRefresh ? 'stale' : String(data.gateway.applied)} data-claim={runtime === 'active' ? 'active' : undefined}>{OPENCLAW_RUNTIME_TEXT[runtime]}</p>
       <p>Rollerna har olika uppgifter och kan dela modell. Listan visar konfiguration, inte att alla körs just nu. Tal kan välja en annan modell för ett enskilt anrop.</p>
       {data.agents.length === 0 && <p className={styles.empty}>Inga Croupier-agenter kunde läsas från OpenClaw.</p>}
       {data.agents.map(agent => {
@@ -254,27 +265,27 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
             {changed && <span className={styles.draft}>Nytt val: <code>{primary}</code></span>}
           </label>
           <div className={styles.actions}>
-            <button className="sg-btn sg-btn-secondary" type="button" aria-label={`Spara modell för ${agent.id}`} disabled={!changed || !inCatalog || agent.model.fallbacks.includes(primary) || !!busy || needsRefresh || !data.gateway.connected} onClick={() => void save(agent)}>{busy === agent.id ? 'Sparar…' : 'Spara'}</button>
-            {changed && <button className={styles.secondary} type="button" disabled={!!busy} aria-label={`Återställ modell för ${agent.id}`} onClick={() => {
+            <button className="sg-btn sg-btn-secondary" type="button" data-action="save" aria-label={`Spara modell för ${agent.id}`} disabled={!changed || !inCatalog || agent.model.fallbacks.includes(primary) || !!busy || needsRefresh || !data.gateway.connected} onClick={() => void save(agent)}>{busy === agent.id ? 'Sparar…' : 'Spara'}</button>
+            {changed && <button className={styles.secondary} type="button" data-action="reset" disabled={!!busy} aria-label={`Återställ modell för ${agent.id}`} onClick={() => {
               setDrafts(previous => { const next = { ...previous }; delete next[agent.id]; return next; }); setNotice('');
             }}>Återställ</button>}
           </div>
         </article>;
       })}
-      {Object.entries(drafts).filter(([id]) => !data.agents.some(agent => agent.id === id)).map(([id, primary]) => <div className={styles.orphan} key={id}>
+      {Object.entries(drafts).filter(([id]) => !data.agents.some(agent => agent.id === id)).map(([id, primary]) => <div className={styles.orphan} key={id} data-orphan={id}>
         <p role="alert">{id} finns inte längre i de hämtade inställningarna. Ditt osparade val är <code>{primary}</code>.</p>
-        <button className={styles.secondary} disabled={!!busy} type="button" onClick={() => setDrafts(previous => { const next = { ...previous }; delete next[id]; return next; })}>Ta bort utkast för {id}</button>
+        <button className={styles.secondary} data-action="discard" disabled={!!busy} type="button" onClick={() => setDrafts(previous => { const next = { ...previous }; delete next[id]; return next; })}>Ta bort utkast för {id}</button>
       </div>)}
     </section>}
     <section className={styles.advanced} aria-labelledby="openclaw-advanced">
       <div><h2 id="openclaw-advanced">Fler inställningar</h2><p>Agentchatt, sessioner och avancerade inställningar finns i OpenClaws egen dashboard.</p></div>
-      {url ? <button type="button" className={styles.secondary} disabled={!!busy || dirty} onClick={() => void openDashboard()}>Öppna OpenClaws egen dashboard ↗</button>
+      {url ? <button type="button" className={styles.secondary} data-action="open-dashboard" disabled={!!busy || dirty} onClick={() => void openDashboard()}>Öppna OpenClaws egen dashboard ↗</button>
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
       <p className={styles.advancedNote}>Din nivå 1-inloggning öppnar dashboarden utan lösenord eller terminalkommando. OpenClaw skapar en egen webbläsarsession som finns kvar när du loggar ut från sajten. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/admin/clips')}>Studio</a>.</p>
     </section>
     {changedAgents.length > 0 && <div className="sg-unsaved" role="status">
       <p>Osparade modellval: {changedAgents.length}. Spara varje agent på dess rad.</p>
-      <div className="sg-unsaved-actions"><button className="sg-btn sg-btn-ghost" type="button" disabled={!!busy} onClick={undoAll}>Ångra alla</button></div>
+      <div className="sg-unsaved-actions"><button className="sg-btn sg-btn-ghost" type="button" data-action="undo-all" disabled={!!busy} onClick={undoAll}>Ångra alla</button></div>
     </div>}
   </Shell>;
 }

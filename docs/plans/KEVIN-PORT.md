@@ -1,6 +1,6 @@
 # Kevins och Emils presentationsförbättringar: selektiv överföring
 
-Plan för punkt 8 i masterplanens [Efter O03](../../migrering/MASTERPLAN.md#efter-o03), skriven 28 oktober 2026 mot `origin/main` 74fdb27f. Utfört: P-E ([#541](https://github.com/Jakeminator123/scoutgaming/pull/541)), P-C ([#547](https://github.com/Jakeminator123/scoutgaming/pull/547)) och K10 (tangenterna, se tabellen). Varje PR i ordningen nedan är en vanlig PR med grön CI och provas i preview när orkestratorn bedömer att det behövs.
+Plan för Kevins portplan under [Efter O03](../NEXT-AGENT.md#efter-o03), skriven 28 oktober 2026 mot `origin/main` 74fdb27f. Utfört: P-E ([#541](https://github.com/Jakeminator123/scoutgaming/pull/541)), P-C ([#547](https://github.com/Jakeminator123/scoutgaming/pull/547)) och K10 (tangenterna, se tabellen). Varje PR i ordningen nedan är en vanlig PR med grön CI och provas i preview när orkestratorn bedömer att det behövs.
 
 **Regel ([AGENTS](../../AGENTS.md)):** Kevins grenar (`kevin`, `kevin-staging`, `kevin*`, `codex/kevin-*`) rörs aldrig. Vi läser dem med `git fetch`, `git log`, `git show` och `git diff`. Ett bra beteende skrivs om i mains egna moduler. Vi kopierar inga filer och gör inga merge eller cherry-picks.
 

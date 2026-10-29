@@ -172,7 +172,7 @@ export function DealerMaterialCreator({dealerId,initialIndex,initialState,active
   return <section aria-label="Skapa material" className={styles.workspace}>
       <h2>Skapa material{state?` · ${state.dealer.label}`:''}</h2>
       <p className={styles.muted}>Utgå från dealerns grundbilder och skapa förslag på klipp, repliker och scenbilder. Granska resultatet i klippbiblioteket och provspela innan du använder det i en publicerad sammansättning.</p>
-      {error?<div className={`${styles.banner} ${styles.bad}`} role="alert">{error} {unavailable?<button type="button" className="sg-btn" disabled={reading||busy} onClick={()=>void loadState(dealerId)}>{reading?'Ansluter…':'Försök ansluta igen'}</button>:null}</div>:null}
+      {error?<div className={`${styles.banner} ${styles.bad}`} role="alert">{error} {unavailable?<button type="button" className="sg-btn" data-action="reconnect" disabled={reading||busy} onClick={()=>void loadState(dealerId)}>{reading?'Ansluter…':'Försök ansluta igen'}</button>:null}</div>:null}
       {notice?<div className={`${styles.banner} ${styles.ok}`} role="status">{notice} <button type="button" className="sg-btn" onClick={()=>setNotice('')}>Ok</button></div>:null}
       {meta&&!meta.migrationReady?<div className={`${styles.banner} ${styles.warn}`}>Materialskapandet är inte färdigkonfigurerat. Kontakta administratören för att aktivera lagring av grundbilder och jobb.</div>:null}
       {meta&&!meta.runwayConfigured?<div className={`${styles.banner} ${styles.warn}`}>Genereringstjänsten är inte ansluten. Du kan förbereda grundbilder och profil. En administratör behöver ansluta tjänsten innan du skapar material.</div>:null}
@@ -192,7 +192,7 @@ export function DealerMaterialCreator({dealerId,initialIndex,initialState,active
                   <div><span className={`${styles.pill} ${styles[slot.status.level]}`}>{slot.status.label}</span></div>
                   <div className={styles.actions}>
                     <label className="sg-btn">{url?'Byt bild':'Ladda upp'}<input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy||!state.migrationReady} onChange={event=>void uploadAnchor(pose,event.target.files?.[0])} /></label>
-                    {pose==='redo'?<button type="button" className="sg-btn sg-btn-primary" disabled={busy||!state.profile.anchors.vila||!state.runwayConfigured||!state.migrationReady} onClick={()=>void openComposer(slot)}>Generera från VILA</button>:null}
+                    {pose==='redo'?<button type="button" className="sg-btn sg-btn-primary" data-action="generate-redo" disabled={busy||!state.profile.anchors.vila||!state.runwayConfigured||!state.migrationReady} onClick={()=>void openComposer(slot)}>Generera från VILA</button>:null}
                   </div>
                   {slot.jobs.filter(job=>ACTIVE.has(job.status)).map(job=><div key={job.jobId} className={styles.job}>⏳ {statusText[job.status]} {job.result?.progress!=null?`${Math.round(job.result.progress*100)} %`:''}</div>)}
                   {pose==='redo'?slot.jobs.filter(job=>job.status==='succeeded'&&job.result?.anchor&&job.result.anchor.sha256!==state.profile.anchors.redo?.sha256).slice(0,3).map(job=><div key={job.jobId} className={styles.inlineForm}><span className={styles.small}>Kandidat {job.jobId.slice(0,8)}</span><button type="button" className="sg-btn" disabled={busy} onClick={()=>void run(async()=>{await post(`/${encodeURIComponent(dealerId)}/pose/adopt`,{jobId:job.jobId});await loadState(dealerId);},'REDO-ankaret är bytt.')}>Använd som REDO</button></div>):null}
@@ -296,7 +296,7 @@ function Composer({composer,state,busy,onChange,onEdit,onSubmit,onClose,slot}:{c
       {missing.length?<span className={styles.bad}>Saknar ankare: {missing.join(', ').toUpperCase()}</span>:null}
     </div>
     <div className={styles.actions}>
-      <button type="button" className="sg-btn sg-btn-primary" disabled={busy||composer.loading||!plan||missing.length>0||(plan&&plan.credits>composer.maxCredits)} onClick={onSubmit}>Starta generering{plan?` (${plan.credits} kr)`:''}</button>
+      <button type="button" className="sg-btn sg-btn-primary" data-action="submit-job" disabled={busy||composer.loading||!plan||missing.length>0||(plan&&plan.credits>composer.maxCredits)} onClick={onSubmit}>Starta generering{plan?` (${plan.credits} kr)`:''}</button>
       <button type="button" className="sg-btn" onClick={onClose}>Stäng</button>
     </div>
   </div>;
