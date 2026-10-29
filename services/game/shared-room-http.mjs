@@ -1,5 +1,5 @@
 const namespace = /^\/api\/shared-room(?:[/?#]|$)/;
-const route = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
+const route = /^\/api\/shared-room\/([a-z0-9_-]{1,128})\/(command|chat)$/;
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store',
   'CDN-Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
 
@@ -34,15 +34,22 @@ async function send(res, status, responseHeaders, body) {
 }
 
 /** Node-only bridge; no route installation, authentication or automatic retry. */
-export async function handleSharedRoomHttp(req, res, { command, engineOrigin } = {}) {
+export async function handleSharedRoomHttp(req, res, { command, chat, engineOrigin } = {}) {
   const target = req.url;
   // Own malformed raw namespace paths even when URL normalization would move
   // them elsewhere; also reject paths normalized into the protected namespace.
   let normalized;
   try { normalized = new URL(target, 'http://local').pathname; } catch {}
   if (!namespace.test(target) && !namespace.test(normalized)) return false;
-  if (!route.test(target)) {
+  const match = route.exec(target);
+  if (!match) {
     await send(res, 400, headers, '{"error":"shared_room_invalid_path"}'); return true;
+  }
+  if (match[2] === 'chat') {
+    // Chat streams NDJSON on the Node response itself (shared-room-chat.mjs).
+    if (typeof chat !== 'function') await send(res, 503, headers, '{"error":"shared_room_service_unavailable"}');
+    else await chat(req, res, { roomId: match[1], url: new URL(target, engineOrigin) });
+    return true;
   }
   if (typeof command !== 'function') {
     await send(res, 503, headers, '{"error":"shared_room_service_unavailable"}'); return true;
