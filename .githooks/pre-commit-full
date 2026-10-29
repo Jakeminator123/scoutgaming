@@ -33,7 +33,7 @@ run_check studio frontend-typecheck 180 node apps/web/node_modules/typescript/bi
 run_node_tests studio studio-tests apps/studio/test/*.test.mjs apps/studio/components/*.test.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
-run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/saved-scene-preview.test.mjs
+run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/saved-scene-preview.test.mjs apps/studio/client/admin/lib/scene-preview-media.test.mjs apps/studio/client/admin/lib/scene-preview.test.mjs
 run_node_tests admin moving-drift-ui apps/studio/client/admin/lib/moving-drift-ui.test.mjs
 run_node_tests admin catalog apps/studio/client/lobby/lib/catalog.test.mjs apps/studio/client/lobby/components/lobby-provider.test.mjs apps/studio/client/admin/lib/dealer-artwork.test.mjs apps/studio/client/admin/lib/dealer-playback.test.mjs apps/studio/client/admin/lib/connected-studio.test.mjs apps/studio/client/admin/lib/studio-composition-panel.test.mjs apps/studio/client/admin/lib/studio-layout.test.mjs apps/studio/client/admin/lib/roulette-clip-map.test.mjs apps/studio/client/admin/lib/studio-policy.test.mjs apps/studio/client/admin/lib/studio-lifecycle.test.mjs apps/studio/client/admin/lib/studio-speech.test.mjs apps/studio/lib/dealer-sets.test.mjs apps/studio/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests admin dealer-import apps/studio/client/admin/lib/dealer-import.test.mjs apps/studio/client/admin/lib/clip-intake.test.mjs apps/studio/client/admin/lib/clip-intake-panel.test.mjs

@@ -14,9 +14,7 @@ import { CompositionPreview } from '../../../../components/composition-preview';
 import { CompositionZoomControls } from '../../../../components/composition-zoom-controls';
 import { BackgroundPlaybackEditor, LayerPlaybackEditor } from '../../../../components/background-playback-editor';
 import { effectiveDealerCompositing } from '../../../../../../packages/presentation/contracts/dealer-compositing.mjs';
-import { layerAssetFitsGame } from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import { selectableLayerBases } from '../../../../../../packages/presentation/contracts/background-playback-policy.mjs';
-import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
+import { useScenePreviewMedia } from '../../lib/scene-preview-media.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 
@@ -37,22 +35,14 @@ export function StudioCompositionPanel({operatorId,operatorSlug,operatorName,loc
   const game=requestedGame??(room?.game==='roulette'?'roulette':'blackjack');
   const layout=game==='roulette'?'desktop':selectedLayout;
   const choices=previewSelection.compositionId===lane?.id?previewSelection:{table:'',background:'',dealer:''};
-  const previewDealer=lane?.layers.dealer.allowed.includes(choices.dealer)?choices.dealer:lane?.layers.dealer.allowed.includes(dealerId)?dealerId:lane?.layers.dealer.default??dealerId;
-  const backgroundBases=selectableLayerBases(lane?.layers.background.allowed,lane?.backgroundPlayback,lane?.layers.background.default??null);
-  const previewBackground=backgroundBases.includes(choices.background)?choices.background:lane?.layers.background.default;
+  // Dealer idle, background and table graphics for the preview; shared with the dealer and room previews.
+  const {dealerId:previewDealer,backgroundId:previewBackground,backgroundBases,tables:editableTables,tableAsset,video,media}=useScenePreviewMedia({project,inventory,lane,game,dealerId,choices});
   const selectPreview=(role:'table'|'background'|'dealer',id:string)=>setPreviewSelection({...choices,compositionId:lane?.id??'',[role]:id});
-  const baseline=project.lines.find(row=>row.dealerId===previewDealer&&row.eventId==='idle.ready');
-  const selected=game==='roulette'?rouletteReferencePreview(inventory,previewDealer):inventory.videos.find(row=>row.id===baseline?.variants.find(item=>item.id===baseline.baselineVariantId)?.videoGenerationId&&row.available&&!row.classification?.archived&&row.classification?.game!=='roulette'&&row.integrity!=='unavailable');
-  const video=selected&&['image/png','video/mp4','video/webm'].includes(selected.contentType??'')?selected:null;
-  const media=(id:string|null|undefined)=>{const asset=assets.find(row=>row.id===id&&layerAssetFitsGame(row,game));return asset?{url:'/studio/api/layer-assets/'+asset.id,label:asset.label,contentType:asset.contentType}:null;};
   function change(next:StudioLane) { if(locked||!lane)return;try{onEdit(validateProject({...project,lanes:project.lanes?.map(row=>row.id===lane.id?next:row)}));setError('');}catch(cause){setError((cause as Error).message);} }
   function placement(role:'dealer'|'background'|'table',field:'x'|'y'|'scale'|'width',value:number) {
     if(!lane)return;
     try{change({...lane,composition:moveCompositionLayer(settings,layout,role,field,value,moveTogether),renderer:'layered'});}catch(cause){setError((cause as Error).message);}
   }
-  const tableBases=selectableLayerBases(lane?.layers.table.allowed,lane?.tablePlayback,lane?.layers.table.default??null);
-  const editableTables=assets.filter(row=>row.role==='table'&&layerAssetFitsGame(row,game)&&tableBases.includes(row.id));
-  const tableAsset=editableTables.find(row=>row.id===choices.table)??editableTables.find(row=>row.id===lane?.layers.table.default);
   const copyChoices=editableTables.filter(row=>row.id!==tableAsset?.id&&settings.blackjackTables?.some(profile=>profile.tableId===row.id));
   const copySource=copyChoices.some(row=>row.id===copyTable)?copyTable:copyChoices[0]?.id??'';
   const ui=settings[layout].gameUi??{actions:null,chat:{x:1,y:0,width:layout==='mobile'?.95:.28,height:.45}};
