@@ -25,7 +25,7 @@ export function RouletteIdleEditor({project,inventory,video,dealerId,blocked,onE
       <p>Gäller exakt denna grundloop och dess kopplade varianter med samma inramning. Punkter 0–1 i filmens bildyta. Tomt fält tar bort masken. Ny grundfilm rensar tidigare mask.</p>
       {error&&<p role="alert" className="text-sg-red">{error}</p>}
       <button className="studio-button" disabled={!dirty||!candidate||reviewDirty} onClick={()=>{if(candidate&&!reviewDirty){onEdit(candidate);setPolygons(candidate.dealers.find(row=>row.id===dealerId)?.rouletteIdle?.foregroundPolygons?JSON.stringify(candidate.dealers.find(row=>row.id===dealerId)!.rouletteIdle!.foregroundPolygons):'');}}}>Lägg handregion i utkast</button>
-      <p>Spara projektutkastet och publicera berörda rum separat. Ingen handregion fylls i automatiskt.</p>
+      <p>Spara projektutkastet och publicera berörda spelbord separat. Ingen handregion fylls i automatiskt.</p>
     </fieldset>:<p>Koppla filmen som roulette-grundloop på kortet för att ange dess handregion. Glasögonvarianter delar grundloopens mask.</p>}
   </div>;
 }

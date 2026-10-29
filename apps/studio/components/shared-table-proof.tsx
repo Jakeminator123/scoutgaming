@@ -66,7 +66,7 @@ export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoic
         {payload.selected.closedAt!=null?<><p>Bevisstatus: {payload.selected.verification?.status??'Ej verifierat'}</p>
           {payload.selected.traceability?.status==='verified'?<>
             <p>Runda och spelversion är verifierade mot auditkedjan.</p>
-            <p>Rum: <code>{payload.roomId}</code> · Sko: <code>{payload.selected.shoeId}</code></p>
+            <p>Spelbord: <code>{payload.roomId}</code> · Sko: <code>{payload.selected.shoeId}</code></p>
             <details><summary>Visa rundor och spelversioner ({payload.selected.traceability.references.length})</summary>
               <table><thead><tr><th scope="col">Runda</th><th scope="col">Spelversion</th></tr></thead>
                 <tbody>{payload.selected.traceability.references.map(row=><tr key={row.roundId}><td><code>{row.roundId}</code></td><td><code>{row.configVersion}</code></td></tr>)}</tbody>

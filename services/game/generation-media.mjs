@@ -1,42 +1,9 @@
-// Shared read-only media mount for authenticated BO and the token-protected API.
-// Only catalogue UUIDs (and their exact declared thumbnail suffix) are served.
-import { constants, openSync, closeSync, lstatSync, fstatSync, realpathSync, createReadStream } from 'node:fs';
-import { basename, dirname, extname, join, resolve } from 'node:path';
+// Byte-range responder for a descriptor already opened and validated by the caller
+// (server.mjs passes media-layout's openPublicMedia result). Closes the descriptor on
+// every branch that does not hand it to the response stream.
+import { closeSync, createReadStream } from 'node:fs';
 
-const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-const FILE = new RegExp(`^(${UUID})(\\.mp4|-thumb\\.(?:jpg|jpeg|png|webp))$`);
-const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
-const same = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-
-export function openGenerationMedia({ directory, catalog, fileName }) {
-  const match = typeof fileName === 'string' && FILE.exec(fileName);
-  if (!match || !Array.isArray(catalog)) return null;
-  const entry = catalog.find(item => item?.id === match[1]);
-  if (!entry) return null;
-  if (match[2] !== '.mp4') {
-    // Match the BO's thumbnail filename derivation exactly; never serve an
-    // arbitrary image or the original remote thumbnail URL as a filesystem path.
-    const suffix = typeof entry.thumb === 'string' && entry.thumb ? entry.thumb.match(/\.\w+$/)?.[0] || '.jpg' : null;
-    if (!suffix || fileName !== `${entry.id}-thumb${suffix}`) return null;
-  }
-  let fd;
-  try {
-    const base = resolve(directory), rootStat = lstatSync(base);
-    if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) return null;
-    const canonicalRoot = realpathSync(base), file = join(base, fileName), before = lstatSync(file);
-    if (!before.isFile() || before.isSymbolicLink() || !same(dirname(realpathSync(file)), canonicalRoot)) return null;
-    fd = openSync(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-    const current = fstatSync(fd), after = lstatSync(file);
-    if (!current.isFile() || after.isSymbolicLink() || !same(dirname(realpathSync(file)), canonicalRoot)
-      || current.dev !== before.dev || current.ino !== before.ino || current.dev !== after.dev || current.ino !== after.ino) {
-      closeSync(fd); return null;
-    }
-    return { fd, fileName: basename(fileName), size: current.size, mtimeMs: current.mtimeMs, dev: current.dev, ino: current.ino,
-      contentType: MIME[extname(fileName)], id: entry.id };
-  } catch { if (fd !== undefined) try { closeSync(fd); } catch {} return null; }
-}
-
-export function closeGenerationMedia(media) {
+function closeGenerationMedia(media) {
   if (media?.fd !== undefined) { closeSync(media.fd); media.fd = undefined; }
 }
 

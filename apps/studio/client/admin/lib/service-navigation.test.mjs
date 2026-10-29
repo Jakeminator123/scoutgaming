@@ -144,6 +144,8 @@ test('system navigation retains explicit ambiguous scope on every tab link',()=>
   const h=harness({search:'?flik=spelare&dealer=elin&operator=north&operator=other&room=one&room=two&panel=intake'});
   const page=h.render(h.system.SystemPage,{active:true,tab:'spelare'}),tabs=descendants(page).find(row=>row.type===h.hub.Tabs);
   assert.equal(tabs.props.active,'spelare');
+  // Intern lobby is no tab but a link in System's page header (Enkel väg 8).
+  assert.equal(page.props.actions.props.href,'/admin/lobby');assert.equal(page.props.actions.props.children,'Intern lobby');
   const links=descendants(h.render(h.hub.Tabs,tabs.props)).filter(row=>row.type==='a');
   assert.deepEqual(links.map(link=>new URL(link.props.href,'https://test.invalid').searchParams.get('flik')),adminNavigation.adminSystemTabs.map(tab=>tab.id),'every System tab is a link');
   assert.deepEqual(links.filter(link=>link.props['aria-current']==='page').map(link=>link.props.children[0]),['Spelarkonton']);
