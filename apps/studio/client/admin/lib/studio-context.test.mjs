@@ -721,3 +721,10 @@ test('the room editor publishes through the room release and keeps the PAOW idle
   paow().props.onClick();await p.settle();
   assert.equal(paow().props.disabled,true,'an unconfirmed receipt blocks the next refresh until readback');
 });
+
+// The AI link uses the shared context keys (hub.tsx tabContext), so the spelbord survives a switch between the Scenes tabs.
+test('a blackjack room\'s appearance links to the AI table dialog with its company and room as shared context',async()=>{
+  const html=await registeredStudioHtml({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},{compositions});
+  const link=hrefs(html).find(href=>href.startsWith('/admin/scenes?tab=bordsgrafik'));
+  assert.equal(link,'/admin/scenes?tab=bordsgrafik&operator=a&room=bj');
+});

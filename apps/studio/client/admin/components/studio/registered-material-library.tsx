@@ -20,11 +20,12 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   // The video register only feeds the AI dialog's scene preview (the dealer's idle).
   const [inventory,setInventory]=useState<VideoInventory|null>(null);
-  // Opened from a spelbord (?spelbord=<id>): the AI dialog can also publish there.
+  // Opened from a spelbord (?room=<id>, the shared context key that survives the tabs):
+  // the AI dialog can also publish there. Several rooms in the context name none.
   const [rooms,setRooms]=useState<Room[]>([]);
   const query=useSearchParams();
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
-  const spelbord=query.get('spelbord')??'',fromRoom=rooms.find(row=>row.id===spelbord&&row.state==='live'&&row.published&&row.game!=='roulette');
+  const roomIds=query.getAll('room'),fromRoom=roomIds.length===1?rooms.find(row=>row.id===roomIds[0]&&row.state==='live'&&row.published&&row.game!=='roulette'):undefined;
   const aiRoom=fromRoom?{id:fromRoom.id,name:fromRoom.name,operatorId:fromRoom.operatorId,compositionId:fromRoom.compositionId}:null;
   function select(key:'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);next.set('tab',role==='background'?'bakgrunder':'bordsgrafik');navigate(base+'?'+next);}
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
