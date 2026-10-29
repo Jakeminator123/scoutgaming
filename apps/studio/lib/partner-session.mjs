@@ -260,6 +260,11 @@ async function logout(request, body, config) {
   return json({ ok: true }, 200, [partnerCookie('', 0)]);
 }
 
+// Partner-API:ts egna vägar (ADMIN-FORENKLING 5.5, partner-table-api.mjs):
+// läsningar med GET och åtgärder med POST, alltid med ?operator=<slug>.
+const PARTNER_TABLE_GETS = Object.freeze(['assignment']);
+const PARTNER_TABLE_POSTS = Object.freeze([]);
+const PARTNER_OPERATOR_POSTS = Object.freeze(['branding', 'team', ...PARTNER_TABLE_POSTS]);
 function partnerAction(pathname, config) {
   const base = partnerApiBase(config);
   const bare = base.startsWith('/studio/') ? base.slice('/studio'.length) : base;
@@ -297,7 +302,7 @@ function preparePartnerRequest(request, config) {
     if (partnerAction(url.pathname, config) === 'snapshot' && !url.search) {
       if (url.hash) fail(400);
     } else operatorSlugValue = takeOperatorSlug(url);
-  } else if (request.method === 'POST' && ['branding', 'team'].includes(partnerAction(url.pathname, config))) {
+  } else if (request.method === 'POST' && PARTNER_OPERATOR_POSTS.includes(partnerAction(url.pathname, config))) {
     if (url.hash) fail(400);
     operatorSlugValue = takeOperatorSlug(url);
   } else if (url.search || url.hash) fail(400);
@@ -324,13 +329,13 @@ function preparePartnerRequest(request, config) {
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
   const action = partnerAction(pathname, config);
-  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'journal', 'set-password'].includes(action)) fail(404);
+  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'journal', 'set-password', ...PARTNER_TABLE_GETS, ...PARTNER_TABLE_POSTS].includes(action)) fail(404);
   if (action === 'branding' || action === 'team') {
     if (request.method !== 'GET' && request.method !== 'POST') {
       return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
   } else {
-    const allowed = action === 'snapshot' || action === 'journal' ? 'GET' : 'POST';
+    const allowed = ['snapshot', 'journal', ...PARTNER_TABLE_GETS].includes(action) ? 'GET' : 'POST';
     if (request.method !== allowed) {
       return { response: new Response(null, { status: 405, headers: { Allow: allowed, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
@@ -371,7 +376,7 @@ async function openBrandingStore(config) {
   }
 }
 // Session, operator and the caller's active membership, read fresh for this request.
-async function partnerOperatorContext(prepared, config) {
+export async function partnerOperatorContext(prepared, config) {
   const session = await authorizePartnerWorkspace(prepared.request, config);
   const store = await openBrandingStore(config);
   if (typeof store.getOperatorBySlug !== 'function') fail(503);
@@ -397,7 +402,7 @@ async function partnerOperatorContext(prepared, config) {
   if (membership.scope && !sameOperatorScope(membership.scope, session.scope)) fail(403);
   return { session, store, operator, context, membership };
 }
-async function decidedPartnerContext({ session, store, operator, context, membership }) {
+export async function decidedPartnerContext({ session, store, operator, context, membership }) {
   if (session.accessClass === 'internal-admin') return context;
   if (typeof store.getRole !== 'function') fail(503);
   const role = await store.getRole(operator.id, membership.roleId);
@@ -517,6 +522,13 @@ async function brandingResponse(prepared, config) {
   keys(body,actionFields[body.action]);
   const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
   return json({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true},200,[],{vary:true});
+}
+// Tilldelningen (presentations.read; spelborden med tables.read), partner-table-api.mjs.
+async function assignmentResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const { readPartnerAssignment } = await import('./partner-table-api.mjs');
+  return json(await readPartnerAssignment({ found, decided, config }), 200, [], { vary: true });
 }
 // Publiceringshistoriken: bolagets publicerade versioner, utan ändringsinnehåll
 // och utan vem/hur (konto-id, accessClass, requestId, resourceType/Id).
@@ -676,6 +688,7 @@ export async function handlePartnerAuth(request, injected) {
     if (prepared.action === 'branding') return await brandingResponse(prepared, config);
     if (prepared.action === 'team') return await teamResponse(prepared, config);
     if (prepared.action === 'journal') return await journalResponse(prepared, config);
+    if (prepared.action === 'assignment') return await assignmentResponse(prepared, config);
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     if (prepared.action === 'set-password') return await setPassword(prepared.request, body, config);

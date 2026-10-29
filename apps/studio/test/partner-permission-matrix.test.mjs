@@ -38,6 +38,7 @@ const BRANDING_ACTIONS = ['save-draft', 'discard-draft', 'review', 'publish', 'r
 const API_READS = [
   { id: 'snapshot', path: 'snapshot', requires: [FLOOR] },
   { id: 'branding GET', path: 'branding', requires: ['presentations.read'] },
+  { id: 'assignment', path: 'assignment', requires: ['presentations.read'] },
   { id: 'team GET', path: 'team', requires: ['team.read'] },
   { id: 'journal', path: 'journal', requires: TEAM_WRITE },
   { id: 'journal kind=publications', path: 'journal', query: '&kind=publications', requires: ['reports.read'] },
@@ -216,6 +217,12 @@ test('varje roll får exakt de läsningar kartan ger, och läsningen bär bara v
         // tables.read styr spelbordslistan i utseendet (4.3 punkt 1).
         assert.equal(body.rooms.length > 0, role.permissions.includes('tables.read'), `${role.id} spelbord i utseendet`);
         assert.equal(body.canConfigure, allows(role, BRANDING_WRITE), `${role.id} canConfigure`);
+      }
+      if (read.id === 'assignment') {
+        // Spelborden kräver tables.read; knapparna följer var sin configure-rättighet.
+        assert.equal('rooms' in body, role.permissions.includes('tables.read'), `${role.id} spelbord i tilldelningen`);
+        assert.deepEqual(body.canConfigure, { presentations: role.permissions.includes('presentations.configure'),
+          tables: role.permissions.includes('tables.configure') }, `${role.id} canConfigure i tilldelningen`);
       }
       if (read.id === 'team GET') {
         // Teamvyns knappar följer samma karta som servern använder för skrivningarna.
