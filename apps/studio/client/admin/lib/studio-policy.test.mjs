@@ -9,16 +9,32 @@ import {selectRegisteredIdleRule} from '../../../../../services/game/presentatio
 
 const ids=[1,2,3,4,5,6].map(number=>`${String(number).repeat(8)}-${String(number).repeat(4)}-4${String(number).repeat(3)}-8${String(number).repeat(3)}-${String(number).repeat(12)}`);
 
+// The real Admin kit (components/ui), compiled like the panel.
+async function adminKit(require) {
+  const {readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm'),cache=new Map();
+  const load=name=>{
+    if(cache.has(name))return cache.get(name).exports;
+    const module={exports:{}};cache.set(name,module);
+    runInNewContext(require('esbuild').transformSync(readFileSync(new URL(`../components/ui/${name}.tsx`,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+      {module,exports:module.exports,require:dependency=>dependency==='./kit'?load('kit'):require(dependency)});
+    return module.exports;
+  };
+  return name=>load(name.slice(name.lastIndexOf('/')+1));
+}
 // Renders the real panel with inert hooks. Edits are recorded, local state is not.
 async function policyPanel() {
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),policy=await import('./studio-policy.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),policy=await import('./studio-policy.mjs'),kit=await adminKit(require);
   const module={exports:{}},hooks={...React,useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect(){}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='react'?hooks:name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){assert.fail('Original duration is verified without a new media request');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
+    {module,exports:module.exports,require:name=>name==='react'?hooks:name.startsWith('../ui/')?kit(name):name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){assert.fail('Original duration is verified without a new media request');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
   return module.exports.StudioPolicyPanel;
 }
 const nodes=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(nodes):[node,...nodes(node.props?.children)];
+// The panel's own hook-free parts render in place; kit controls stay elements with their props.
+const PANEL_PARTS=new Set(['BehaviourClip','RotationClipRule','DescriptionField']);
+const rendered=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(rendered)
+  :typeof node.type==='function'&&PANEL_PARTS.has(node.type.name)?rendered(node.type(node.props)):[node,...rendered(node.props?.children)];
 const text=node=>node==null?'':Array.isArray(node)?node.map(text).join(''):typeof node==='object'?text(node.props?.children):String(node);
 const button=(tree,label)=>nodes(tree).find(row=>row.type==='button'&&text(row)===label);
 const clipBox=(tree,id)=>nodes(nodes(tree).find(row=>row.type==='label'&&text(row).startsWith(id+' ·'))).find(row=>row.type==='input');
@@ -212,7 +228,7 @@ test('usage describes the selected take, never borrowing another bound take or a
   assert.deepEqual(f.project,before);
 });
 
-test('usage exposes exact automatic timing, manual status and unverified OpenClaw wiring',()=>{
+test('usage exposes exact automatic timing, manual status and OpenClaw with its description',()=>{
   const f=fixture('idle.ready','',false);
   let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],4321,true);
   project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],7654,false);
@@ -224,7 +240,9 @@ test('usage exposes exact automatic timing, manual status and unverified OpenCla
   assert.equal(usage.configured,true);assert.match(usage.rules.join(' '),/var 27 s, variation ±4 s/);assert.match(usage.rules.join(' '),/paus 18 s; högst 2/);
   assert.deepEqual(project,before);
   policy.variants[0].use='openclaw';policy.variants[0].automatic=null;
-  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/inte verifierad/);
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/OpenClaw kan föreslå klippet vid tur eller resultat när/);
+  policy.variants[0].description='ler mot spelaren';
+  assert.deepEqual(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules.slice(1),['Beskrivning för OpenClaw: ler mot spelaren']);
   assert.equal(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[2]).configured,false);
 });
 
@@ -281,10 +299,10 @@ test('idle usage flags non-event predicates as disconnected instead of claiming 
 
 test('existing policy panel opens the selected take and never silently edits a different alternative',async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs'),kit=await adminKit(require);
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
+    {module,exports:module.exports,require:name=>name.startsWith('../ui/')?kit(name):name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
   const f=fixture();f.project=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[2],{priority:43});
   const render=(id,patch={})=>renderToStaticMarkup(React.createElement(module.exports.StudioPolicyPanel,{...f,selectedVideoId:id,blocked:false,onEdit(){assert.fail('render must not write');},...patch}));
   const selected=render(ids[2]);assert.ok(selected.includes(`value="${ids[2]}" selected=""`));assert.match(selected,/value="43"/);
@@ -302,10 +320,10 @@ test('existing policy panel opens the selected take and never silently edits a d
 
 test('idle rule view lists the four start modes and reads the schedule in plain language',async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs'),kit=await adminKit(require);
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
+    {module,exports:module.exports,require:name=>name.startsWith('../ui/')?kit(name):name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
   const f=fixture('idle.ready','',false);f.inventory.videos.forEach(video=>video.dealer=f.dealerId);
   let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
   project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],1000,false);
@@ -346,4 +364,65 @@ test('specific settlement presets win over generic ones and equal candidates sha
   const sourceEvent={type:'settle',dealerTotal:18,dealerBlackjack:false,hands:[{box:3,outcome:'win'}]};
   const selected=new Set(Array.from({length:20},(_,i)=>selectRegisteredIdleRule({project,dealerId:f.dealerId,sourceEvent,mode:'rules',requestId:'round-'+i},{inventory:f.inventory}).videoId));
   assert.deepEqual(selected,new Set([ids[2],ids[3]]));
+});
+
+// OpenClaw in the sequence: a saved clip at rest gets the choice and a description of at most 80 characters.
+test('a saved sequence clip at rest can be left to OpenClaw with a description; the choice survives a new subset',async()=>{
+  const Panel=await policyPanel(),source=idleRotationSource('paow');
+  const {project:saved,inventory,dealerId,slot}=idleBank('paow',source.clips),changes=[];
+  const render=project=>Panel({project,inventory,dealerId,slot,blocked:false,onEdit:next=>changes.push(next)});
+  const toggle=(tree,id)=>rendered(tree).find(row=>row.props?.['aria-label']===`OpenClaw får föreslå ${id}`);
+  const field=(tree,id)=>rendered(tree).find(row=>row.props?.['aria-label']===`Vad ${id} visar`);
+  const variant=(project,id)=>project.dealerIdlePolicies[0].policy.variants.find(row=>row.videoId===inventory.videos.find(video=>video.label===id).id);
+  assert.equal(toggle(render(saved),'djupandetag'),undefined,'no choice before the sequence is bound');
+  button(render(saved),'Koppla 21 viloklipp').props.onClick();
+  const bound=render(changes[0]);
+  for(const id of ['andas','knappin5101','knappandas5101','knapput5101'])assert.equal(toggle(bound,id),undefined,id+' is the base or leaves rest');
+  for(const id of ['djupandetag','blickvanster','plattandas5101'])assert.equal(toggle(bound,id).props.checked,false,id);
+  assert.equal(field(bound,'djupandetag'),undefined,'the description belongs to an OpenClaw clip');
+  toggle(bound,'djupandetag').props.onCheckedChange(true);
+  const chosen=validateProject(structuredClone(changes[1]));assert.equal(variant(chosen,'djupandetag').use,'openclaw');
+  const open=render(chosen);assert.equal(toggle(open,'djupandetag').props.checked,true);
+  const input=field(open,'djupandetag');assert.equal(input.props.value,'djupandetag');assert.equal(input.props.maxLength,80);
+  input.props.onChange({target:{value:'tar ett djupt andetag och sänker axlarna'}});
+  assert.equal(variant(changes[2],'djupandetag').description,'tar ett djupt andetag och sänker axlarna');
+  input.props.onChange({target:{value:'x'.repeat(120)+'\n'}});assert.equal(variant(changes[3],'djupandetag').description,'x'.repeat(80));
+  input.props.onChange({target:{value:'   '}});assert.equal(Object.hasOwn(variant(changes[4],'djupandetag'),'description'),false);
+  // Leaving a clip out of the sequence keeps the other clips' choices and descriptions.
+  clipBox(render(changes[2]),'fingrar').props.onChange({target:{checked:false}});
+  const fewer=validateProject(structuredClone(changes[5]));
+  assert.deepEqual([variant(fewer,'djupandetag').use,variant(fewer,'djupandetag').description],['openclaw','tar ett djupt andetag och sänker axlarna']);
+  assert.equal(fewer.dealerIdlePolicies[0].policy.rotation.clips.length,20);
+  toggle(render(fewer),'djupandetag').props.onCheckedChange(false);assert.equal(variant(changes[6],'djupandetag').use,'rotation');
+  assert.match(studioClipUsage(fewer,inventory,dealerId,slot,variant(fewer,'djupandetag').videoId).rules.join(' '),/ingår också i vilosekvensen\. Beskrivning för OpenClaw: tar ett djupt/i);
+  assert.equal(studioClipUsage(fewer,inventory,dealerId,slot,variant(fewer,'blickvanster').videoId).rules[0],'Ingår i vilosekvensen.');
+});
+
+test('a sequence clip a game rule proposes keeps its rule: shown as Regler, without the OpenClaw switch',async()=>{
+  const Panel=await policyPanel(),source=idleRotationSource('paow');
+  const {project:saved,inventory,dealerId,slot}=idleBank('paow',source.clips),changes=[];
+  const render=project=>Panel({project,inventory,dealerId,slot,blocked:false,onEdit:next=>changes.push(next)});
+  const toggle=(tree,id)=>rendered(tree).find(row=>row.props?.['aria-label']===`OpenClaw får föreslå ${id}`);
+  const videoId=id=>inventory.videos.find(video=>video.label===id).id;
+  button(render(saved),'Koppla 21 viloklipp').props.onClick();
+  const ruled=structuredClone(changes[0]);
+  ruled.dealerIdlePolicies[0].policy.variants.find(row=>row.videoId===videoId('fingrar')).use='rules';
+  const tree=render(validateProject(ruled));
+  assert.equal(toggle(tree,'fingrar'),undefined,'the switch never turns a rule into OpenClaw or the sequence');
+  assert.match(text(rendered(tree)),/Regler · en spelregel får föreslå klippet\./);
+  assert.equal(toggle(tree,'djupandetag').props.checked,false,'other clips at rest keep the switch');
+  assert.equal(changes.length,1);
+});
+
+test('an OpenClaw behaviour clip outside a sequence gets the same description field',async()=>{
+  const Panel=await policyPanel(),f=fixture('idle.ready','',false),changes=[];
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+  project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],1000,false);
+  const render=value=>Panel({...f,project:value,blocked:false,onEdit:next=>changes.push(next)});
+  const describe=tree=>rendered(tree).find(row=>typeof row.props?.['aria-label']==='string'&&row.props['aria-label'].startsWith('Vad ')&&row.props.maxLength===80);
+  assert.equal(describe(render(project)),undefined);
+  rendered(render(project)).find(row=>row.type==='button'&&text(row)==='OpenClaw').props.onClick();
+  const openclaw=changes[0];assert.equal(openclaw.dealerIdlePolicies[0].policy.variants[0].use,'openclaw');
+  describe(render(openclaw)).props.onChange({target:{value:'blinkar åt spelaren'}});
+  assert.equal(validateProject(structuredClone(changes[1])).dealerIdlePolicies[0].policy.variants[0].description,'blinkar åt spelaren');
 });

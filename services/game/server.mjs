@@ -86,6 +86,7 @@ if (sharedRoomFlag !== undefined && !['0','1'].includes(sharedRoomFlag)) throw E
 const sharedRoomsEnabled = sharedRoomFlag === '1';
 let sharedRoomService = null;
 let sharedRoomCommand = null;
+let sharedRoomChat = null;
 // createPostgresStore validates the game/zones URLs; the owned QA launcher supplies its own pool.
 const storage = sharedRoomQa?.storage ?? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL });
@@ -589,7 +590,7 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
 const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
-  if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
+  if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,chat:sharedRoomChat,engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
   const pathname=new URL(req.url,'http://local').pathname;
   if (sharedRoomsEnabled && pathname === '/__cloud/shared-room-health') {
     const health = sharedRoomService?.health() ?? { ready:false };
@@ -1174,9 +1175,9 @@ const server = createServer(async (req, res) => {
 let gameUpgradeDispatcher = null;
 if (sharedRoomsEnabled) {
   if (!studioPolicyRuntime || !storage.gamePool) throw Error('shared_room_postgres_registry_required');
-  const [{createSharedRoomService},{createGameUpgradeDispatcher},{createSharedCommandAuth},{createSharedRoomCommand}] = await Promise.all([
+  const [{createSharedRoomService},{createGameUpgradeDispatcher},{createSharedCommandAuth},{createSharedRoomCommand},{createSharedRoomChat}] = await Promise.all([
     import('./shared-room-service.mjs'), import('./game-upgrade-dispatcher.mjs'),
-    import('./storage/shared-command-auth.mjs'), import('./shared-room-command.mjs'),
+    import('./storage/shared-command-auth.mjs'), import('./shared-room-command.mjs'), import('./shared-room-chat.mjs'),
   ]);
   const commandAuth = createSharedCommandAuth({db,boDb,scope:studioPolicyRuntime.scope,playerAccounts});
   sharedRoomService = createSharedRoomService({
@@ -1191,6 +1192,7 @@ if (sharedRoomsEnabled) {
   });
   sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:roomOrigins.origin,
     engineOrigin:roomOrigins.engineOrigin});
+  sharedRoomChat = createSharedRoomChat({service:sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.

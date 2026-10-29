@@ -6,6 +6,9 @@ import { ROOM_LIMIT_PRESETS } from '../../../packages/presentation/contracts/roo
 import { cardViewDepth } from '../../../packages/presentation/contracts/card-view.mjs';
 
 export const SEAT_COUNT = 7, WINDOW_SIZE = 3;
+// The seat circle ("Du" or the seat number) is 44 px tall at every scale (styles.css .seat-shared-join),
+// so its place below the box's hand total is measured from its fixed half height.
+export const SEAT_HALF_PX = 22;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const seat = value => Number.isInteger(value) && value >= 0 && value < SEAT_COUNT;
 
@@ -50,7 +53,7 @@ export function fallbackSeatLayout({ width, height, boxes, filmedProfile = null,
   const scale = Math.min(width / 1080, height / 1920), x = (width - 1080 * scale) / 2, y = (height - 1920 * scale) / 2;
   // A phone draws its cards larger than the film's prop card, so its circle keeps a whole card height clear.
   const card = filmedProfile?.card?.height ?? calibration.height, controlScale = Math.max(.65, scale);
-  const below = Math.max((calibration.height / 2 * cardViewDepth('table') + 38) * scale + 26 * controlScale + 6, compact ? card * scale + 34 : 0);
+  const below = Math.max((calibration.height / 2 * cardViewDepth('table') + 38) * scale + SEAT_HALF_PX + 6, compact ? card * scale + 34 : 0);
   const seats = boxes.map(box => ({ box, x: x + positions[String(box + 1)].cx * scale, y: y + positions[String(box + 1)].cy * scale + below }));
   const offsets = {};
   if (compact && seats.length > 1) {
