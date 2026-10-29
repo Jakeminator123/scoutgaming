@@ -123,7 +123,7 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
     {tree&&<div className="mt-6 space-y-6">
       {!tree.lifecycleAvailable&&<p role="alert" className="rounded border border-amber-500 p-3">Bolagens och rummens arkiv kunde inte läsas. Trädet är ofullständigt. Uppdatera för att försöka igen.</p>}
       {tree.warnings.length>0&&<ul role="status" className="space-y-1 text-amber-300">{tree.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
-      <section role="tabpanel" id="structure-panel-operators" aria-labelledby="structure-tab-operators" hidden={tab!=='operators'} className="space-y-4"><h2 className="text-xl font-semibold">Bolag → spel → spelbord</h2>
+      <section role="tabpanel" id="structure-panel-operators" aria-labelledby="structure-tab-operators" hidden={tab!=='operators'} className="space-y-4"><h2 className="text-xl font-semibold">Bolag, spel och spelbord</h2>
         <p className="text-sm text-sg-muted">Bolaget äger rummet. Dealers, bord och bakgrunder är delade filer som flera bolags rum kan använda.</p>
         {!tree.operators.length&&<p>Inga bolag i det lästa registret.</p>}
         <RegistryRows rows={tree.operators} render={operator=>{
@@ -136,7 +136,7 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
         }}/>
         {tree.unownedRoomIds.length>0&&<div className="space-y-3"><h3 className="font-semibold text-amber-300">Rum där bolaget saknas</h3><ul className="grid gap-3 lg:grid-cols-2">{tree.rooms.filter(room=>tree.unownedRoomIds.includes(room.id)).map(room=><RoomBranch key={room.id} room={room} tree={tree}/>)}</ul></div>}
       </section>
-      <section role="tabpanel" id="structure-panel-dealers" aria-labelledby="structure-tab-dealers" hidden={tab!=='dealers'} className="space-y-4"><h2 className="text-xl font-semibold">Dealers → klipp och registrerade filer</h2>
+      <section role="tabpanel" id="structure-panel-dealers" aria-labelledby="structure-tab-dealers" hidden={tab!=='dealers'} className="space-y-4"><h2 className="text-xl font-semibold">Dealers, klipp och registrerade filer</h2>
         <p className="text-sm text-sg-muted">Varje fil visas en gång. Dealers kan användas i flera bolags rum.</p>
         {!tree.dealers.length&&<p>Inga dealers i de lästa registren.</p>}
         <RegistryRows rows={tree.dealers} render={dealer=>{

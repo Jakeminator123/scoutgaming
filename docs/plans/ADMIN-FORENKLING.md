@@ -167,7 +167,7 @@ Målet: varje bolag får ett eget, litet adminsystem. Det ser ut som Admin och a
 | Integration | integrations.read | status, startadress, nycklar maskerade med status, "begär rotation", testsession, kontakt | saknas; `api_keys` saknar bolag → status och kontakt visas, nycklar efter steg F |
 | Hjälp och kontakt | alla | begrepp, vad man får ändra, "Begär material" | statisk |
 
-Redaktör ser inte Team eller Spelare (partner-editor saknar team.read och players.read). Läsare ser bara läsvyer. Allt rollen inte får visas inte i menyn, **och direktadressen nekas på servern**. I dag kontrolleras bara overview.read, team.*, presentations.configure på servern; players.read, tables.read, tables.configure, presentations.read, reports.read och integrations.read måste börja kontrolleras när vyerna byggs (steg A).
+Redaktör ser inte Team eller Spelare (partner-editor saknar team.read och players.read). Läsare ser bara läsvyer. Allt rollen inte får visas inte i menyn, **och direktadressen nekas på servern**. Läst på `6f2d8236`: elva av tolv behörigheter styr i dag vy, snapshot eller API på servern (vykartan `PARTNER_VIEW_PERMISSIONS` i `partner-access-policy.mjs:26-29`, snapshoten i `apps/studio/lib/partner-data.mjs`). Undantagen: tables.configure kontrolleras ingenstans, eftersom partner-API:t saknar skrivväg för spelinställningar och paus (krävs av steg C), och players.read styr vyn men har inga data före steg F. Läget per fil och PR-sekvensen för nivå 2 står i [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md).
 
 ### 5.2 Spelbord: editorn
 
@@ -204,15 +204,17 @@ Admin publicerar paketet som ny revision. Portalen läser den publicerade revisi
 
 Kodens tolv (`packages/studio-access/server/partner-access-policy.mjs:12-19`) och standardrollerna (`apps/studio/lib/operator-admin-api.mjs:16-25`) behålls:
 
-| Behörighet | partner-admin | partner-editor | partner-viewer | Kontrolleras på servern i dag |
+| Behörighet | partner-admin | partner-editor | partner-viewer | Kontrolleras på servern i dag (läst på `6f2d8236`) |
 |---|---|---|---|---|
-| overview.read | x | x | x | ja |
-| tables.read / tables.configure | x / x | x / – | x / – | **nej** |
-| presentations.read / presentations.configure | x / x | x / x | x / – | nej / ja |
-| players.read | x | – | x | **nej** |
-| reports.read | x | – | x | **nej** |
-| integrations.read | x | – | x | **nej** |
+| overview.read | x | x | x | ja, hela portalen |
+| tables.read / tables.configure | x / x | x / – | x / – | ja (vyn och snapshoten) / **nej, ingen skrivväg finns** (steg C) |
+| presentations.read / presentations.configure | x / x | x / x | x / – | ja / ja (branding, omprövad i transaktionen) |
+| players.read | x | – | x | ja (vyn); inga data före steg F |
+| reports.read | x | – | x | ja (vyn och snapshoten) |
+| integrations.read | x | – | x | ja (vyn och nycklarna, #561) |
 | team.read / team.invite / team.roles.assign / team.suspend | x | – | team.read | ja |
+
+Fil och rad per behörighet, och luckorna (spelbordslistan via branding med bara presentations.read, journalen som kräver team-behörigheter), står i [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md) avsnitt 2.4.
 
 Administratör utses bara av Admin och kan inte delegeras. Den sista administratören kan inte stängas av (409). Nya behörigheter som behövs: tables.pause (eller `allow.pause` + tables.configure), players.block, integration.request, material.request. De läggs till i samma lista, inte i en ny modell.
 

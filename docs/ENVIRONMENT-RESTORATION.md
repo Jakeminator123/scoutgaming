@@ -68,18 +68,18 @@ Efter en restore eller PITR återöppnas inga rum och inget tal aktiveras automa
 
 ### Migrerat schema i produktionen
 
-Läst 28 oktober 2026 före O03 och 14:21Z efter 011. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
+Läst 28 oktober 2026 före O03 och 14:21Z efter 011; raden för 012 bygger på läsningen 29 oktober. Projekt `croupier-production` `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, endpoint `ep-fragrant-meadow-b1qzb0qv`, databas `croupier_game`, PostgreSQL 18.6.
 
 | Del | Läge | Verktyg |
 | --- | --- | --- |
 | Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte). Readiness `ready:true`, inga väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
-| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`) och sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start |
+| Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46Z, efter backupgrenen `backup-api-key-operator-20261029`; `api_keys.operator_id` är `NOT NULL`, [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)) | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`) |
 | Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*` | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
 | Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/o02-snapshot.mjs` |
 | Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Flyttas eller tas bort efter O03 |
 | Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` är kvarlämnade QA-roller som tas bort efter O03 | Inventeras före restore i ett annat projekt |
 
-Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern bara `product-v1`). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
+Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern `product-v1` och `game-012-api-key-operator` men inte 011). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)
 
