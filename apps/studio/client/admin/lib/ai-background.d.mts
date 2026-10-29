@@ -5,7 +5,11 @@ export type {AiTableFitResult,AiTableMisfitCode,AiTableMisfit} from '../../../li
 import type {CompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 
 export type AiSceneTemplate={id:string;label:string;dealers:readonly string[];composition?:CompositionSettings};
-export type AiProposal={id:string;dataUrl:string;width:number;height:number};
+// The server's landing check (apps/studio/lib/ai-table-landing-check.mjs); it only warns, and older servers send none.
+export type AiLandingReason='busy'|'edges'|'low_contrast';
+export type AiLandingCheck={ok:boolean;worst:{zone:string;score:number;reason:AiLandingReason};
+  zones:{zone:string;ok:boolean;score:number;reason:AiLandingReason;spread:number;edges:number;contrast:number|null}[]};
+export type AiProposal={id:string;dataUrl:string;width:number;height:number;check?:AiLandingCheck|null};
 export type AiImageStatus={enabled:boolean;configured:boolean;problem:'missing_key'|'invalid_setting'|null;dailyLimit:number;remaining:number};
 export const AI_IMAGE_ENDPOINT: string;
 export const AI_IMAGE_MESSAGES: Readonly<Record<AiImageErrorCode,string>>;

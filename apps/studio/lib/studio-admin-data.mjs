@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -141,18 +140,6 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     if (!text(body.id,100) || !['live','preview','pending'].includes(body.state) || !Array.isArray(value.rooms)) fail();
     const room = value.rooms.find(item => item?.id === body.id); if (!room) fail(404);
     room.state = body.state;
-  });
-  change('pitboss', ['payout10x','streak5','randomWalkMin'], (value, body) => {
-    if (typeof body.payout10x !== 'boolean' || typeof body.streak5 !== 'boolean'
-      || !Number.isInteger(body.randomWalkMin) || body.randomWalkMin < 1 || body.randomWalkMin > 1440) fail();
-    value.pitboss = { payout10x: body.payout10x, streak5: body.streak5, randomWalkMin: body.randomWalkMin };
-  });
-  change('tournament', ['name','format','buyin','pool','cap','starts'], (value, body) => {
-    if (!text(body.name,100) || !text(body.format,100) || !text(body.starts,100)
-      || !['buyin','pool'].every(key => typeof body[key] === 'number' && Number.isFinite(body[key]) && body[key] >= 0 && body[key] <= 100_000_000)
-      || !Number.isSafeInteger(body.cap) || body.cap < 0 || body.cap > 1_000_000 || !Array.isArray(value.tournaments)) fail();
-    value.tournaments.unshift({ id: `t-${randomUUID()}`, name: body.name.trim(), format: body.format.trim(),
-      buyin: body.buyin, pool: body.pool, cap: body.cap, starts: body.starts.trim(), state: 'draft', entries: 0 });
   });
   if (typeof canAssignDealer === 'function') change('tier', ['tier','dealer'], async (value, body) => {
     const dealers = await savedDealerSet();

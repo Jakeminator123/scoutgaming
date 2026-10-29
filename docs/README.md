@@ -46,6 +46,8 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | [plans/PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md) | Partnerportalen från kevin-bo till mains mönster: inventering fil för fil, Kevin-beteenden som behålls, målstruktur, PR-sekvens och skydd | Orkestreraren och den som bygger varje PR | Per PR i sekvensen, raderas när den sista är verifierad |
 | [plans/REN-START](plans/REN-START.md) | Ren start: ordning, backup och go-punkter för att radera Astrid, testrum och operatörer | Orkestreraren och Jakob | Tills ren start är utförd |
 | [plans/ADMIN-KARTA](plans/ADMIN-KARTA.md), [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html) | Kablagekarta, målbild och klickbar skiss för Admin | Admin-arkitekten | Av Admin-arkitekten |
+| [plans/VISUELL-RIKTNING](plans/VISUELL-RIKTNING.md) | Visuell riktning (Johns palett översatt): skal, sidmall, typsnitt, färg via `--sg-*`, statusar och komponenter | Den som bygger skalet och sidorna | När skalet är byggt eller Jakob ändrar riktningen |
+| [plans/DESIGNSYSTEM](plans/DESIGNSYSTEM.md) | Kitet för Admin och Partnerportalen (shadcn-stil på Radix och `--sg-*`): komponenter, hur en vy konverteras, piloten och vyerna på tur | Den som bygger eller konverterar en vy | När alla vyer är konverterade |
 | [plans/VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) | Steg H: Admin-SPA:ns och lobbyns verktygskedja, alternativ A (behåll SPA:n med en Tailwind, en tokenfil och ett mörkt läge) och B (Admin som Next-sidor), rekommendation och PR-sekvens | Den som bygger steg H | Raderas när det valda alternativet är byggt och verifierat i drift |
 
 ## Ingångar för agenter och IDE:er

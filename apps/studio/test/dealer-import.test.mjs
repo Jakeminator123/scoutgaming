@@ -550,7 +550,7 @@ test('frozen Paow files are recognised by exact name and size and placed from th
     sha256: source.files.find(row => row.path.endsWith('/repliker/sv/goodluck_1.mp4')).sha256, k05: 'vald', kevinClipStatus: 'ej-godkand' });
   assert.match(rows[3].warnings.join(' '), /ingen talgranskning gjord/); assert.match(rows[3].warnings.join(' '), /exakt manus/);
   assert.match(rows[5].reason, /saknar facket speak\.other\/twentyone/); assert.match(rows[5].warnings.join(' '), /uppskjuten:G13/); assert.equal(rows[5].classification, null);
-  assert.match(rows[6].warnings.join(' '), /ej i K05-matrisen/); assert.match(rows[7].warnings.join(' '), /sprak-utanfor-en\/sv/);
+  assert.match(rows[6].warnings.join(' '), /inte med i urvalet/); assert.match(rows[7].warnings.join(' '), /sprak-utanfor-en\/sv/);
   assert.match(rows[8].reason, /använder den inte/); assert.equal(rows[8].classification, null);
   assert.doesNotMatch(rows[0].warnings.join(' '), /Ingen filmprofil/); assert.doesNotMatch(rows[2].warnings.join(' '), /Ingen filmprofil/);
   // Same name but other bytes: ordinary filename rules, without any source evidence.
