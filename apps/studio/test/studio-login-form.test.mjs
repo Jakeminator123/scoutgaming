@@ -206,7 +206,9 @@ test('actual browser expired Admin login restores the real room view through his
     const studio = page.getByRole('region',{name:'Klippkarta för vald dealer'});
     // The nav owns the dealer: the map names it, never offers it as a choice; the room context is chosen under Spelbord och publicering.
     await studio.locator('.studio-primary-context').getByText(expectedLabels.dealer,{exact:true}).waitFor();
-    await studio.locator('summary').filter({hasText:'Spelbord och publicering'}).click();
+    // Opened once; a history return to a still-mounted clip map keeps it open.
+    const roomContext = studio.locator('details').filter({has:page.locator('summary',{hasText:'Spelbord och publicering'})});
+    if (!await roomContext.evaluate(element => element.open)) await roomContext.locator('summary').click();
     const choices = [['Bolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],['Spelbord',expectedContext.table,expectedLabels.room]];
     for (const [name,value,label] of choices) {
       const select = studio.getByRole('combobox',{name,exact:true});await select.waitFor();
@@ -217,23 +219,21 @@ test('actual browser expired Admin login restores the real room view through his
     assert.equal(new URL(page.url()).pathname,'/admin/dealers/' + dealerId);
     assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedQuery);
   }
-  // Miljöer and back are in-app navigations of the same Admin document; the dealer and the room context travel with them.
+  // Miljöer is its own editor (#644): the clip map's link opens its environment by the explicit composition, the
+  // room context stays with the clip map, and history back restores the same room view.
   async function assertSceneRoundTrip(page) {
     const studio = page.getByRole('region',{name:'Klippkarta för vald dealer'});
-    const publicationRead = page.waitForResponse(response => new URL(response.url()).pathname === '/studio/api/partner/branding');
     await studio.getByRole('link',{name:'Öppna i Miljöer',exact:true}).click();
     await page.waitForURL(url=>url.pathname==='/admin/scenes');
-    assert.equal(new URL(page.url()).pathname,'/admin/scenes');
-    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'miljoer',...expectedContext},'Miljöer keeps the dealer and the room context');
-    const scene = page.getByRole('region',{name:'Sceneditor',exact:true});
-    const composition = page.getByRole('region',{name:'Gemensam miljö',exact:true});
-    await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();
-    assert.equal(await composition.getByRole('listitem').filter({hasText:expectedLabels.operator + ' · ' + expectedLabels.room}).textContent(),expectedLabels.operator + ' · ' + expectedLabels.room);
-    assert.equal(await composition.getByRole('combobox',{name:'Förvald dealer',exact:true}).inputValue(),expectedContext.dealer);
-    assert.equal((await publicationRead).status(),404,'the fixture operator has no published package');
-    assert.equal(await scene.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'opening the scene must not create a draft');
-    await scene.getByRole('link',{name:'Till klippkartan',exact:true}).click();
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'miljoer',composition:expectedContext.composition,game:expectedContext.game},
+      'Miljöer opens the clip map\'s environment and game, never the room context');
+    await page.getByRole('heading',{name:expectedLabels.composition,exact:true}).first().waitFor();
+    const uses = page.getByRole('list',{name:'Spelbord som använder miljön',exact:true});
+    await uses.getByRole('link',{name:expectedLabels.room,exact:true}).first().waitFor();
+    assert.equal(await page.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'opening the environment must not create a draft');
+    await page.goBack();
     await page.waitForURL(publicOrigin + target);
+    await assertRoomView(page);
     assert.equal(await studio.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'reading the room must not create a draft');
   }
   const unexpected = () => assert.fail('fixture must not access another runtime or data source');
@@ -371,11 +371,13 @@ test('actual browser expired Admin login restores the real room view through his
           await page.goForward();await page.waitForURL(publicOrigin + target);await assertRoomView(page);
           const readsBeforeReload = dataReads.length;
           await page.reload();await assertRoomView(page);
-          // The clip map reads the catalog, the project and the videos; the company's publication is read in Miljöer only.
+          // The clip map reads the catalog, the project and the videos.
           assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/project','/studio/api/videos']);
           const readsBeforeScene = dataReads.length;
           await assertSceneRoundTrip(page);
-          assert.deepEqual(dataReads.slice(readsBeforeScene),['/studio/api/partner/branding'],'Miljöer reads the publication once, without rereading the project');
+          // The round trip reads the catalog, the project and the videos once each; without a company in the address
+          // Miljöer reads no publication.
+          assert.deepEqual(dataReads.slice(readsBeforeScene).sort(),['/admin/_data/catalog','/studio/api/project','/studio/api/videos']);
           assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
           assert.deepEqual(storedDocuments(),storedBefore,'room inspection does not mutate saved data');
           const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');

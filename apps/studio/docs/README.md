@@ -25,24 +25,20 @@ spelbord.
 
 ## Arbetsgången
 
-Dealerns sida visar de sju första stegen överst och markerar de som är klara.
+Dealerns sida visar de fem första stegen överst och markerar de som är klara.
 
 1. **Skapa dealer**: Dealers → **Ny dealer** → namn → **Skapa dealer**.
 2. **Lägg till klipp**: dra in filmer i dealerns klippkarta.
 3. **Klipp per fack**: välj standardklipp för giv, vila och tal och
    **Spara utkast**. Mätarna **Giv**, **Tal** och **Vila** visar vad som
    saknas.
-4. **Mät landningar**: kommer senare; i dag finns landningar bara för de
-   filmade dealerna.
-5. **Röst och tal**: granska tagningarna och välj standard i varje talfack.
-6. **Godkänn**: checklistan under **Inställningar** visar läget. Godkännandet
-   sparas inte ännu.
-7. **Tilldela**: kryssa i dealern i en miljö
+4. **Röst och tal**: granska tagningarna och välj standard i varje talfack.
+5. **Tilldela**: kryssa i dealern i en miljö
    ([Miljöer](#miljöer-och-material)) och ge bolaget miljön under
    **Bolag › Tilldelning**.
-8. **Spelbord**: **Nytt spelbord** hos bolaget. **Skapa och publicera** skapar
+6. **Spelbord**: **Nytt spelbord** hos bolaget. **Skapa och publicera** skapar
    spelbordet öppet, med tilldelning och spelinställningar publicerade.
-9. **Publicera** senare ändringar; **Tillgänglighet** pausar och öppnar spelbordet.
+7. **Publicera** senare ändringar; **Tillgänglighet** pausar och öppnar spelbordet.
 
 ### Publicera i dag: en huvudknapp per spelbord
 
@@ -89,15 +85,15 @@ Astrid är en märkt äldre referens; hennes egna verktyg gäller bara henne.
 
 ### Klippkarta
 
-Fliken visar **Spel** (Blackjack eller Roulette), **Miljö** och
-**Scenförhandsvisning**. **Spelbord och publicering** låter dig välja bolag
+Fliken visar **Spel** (Blackjack eller Roulette), **Miljö**, **Scen &
+lager** och **Öppna i Miljöer**. **Spelbord och publicering** låter dig välja bolag
 och spelbord för sammanhang; kartan visar ändå alltid projektutkastet, och ett
 valt spelbord gör inte en ändring rumsspecifik.
 
 Kartan kan zoomas, panoreras och ordnas; **Visa alla kort** och **Återställ
 placering** ändrar inga kopplingar. **Förhandsvisa och redigera** öppnar
-klippet med situation, varianter och **Körregel**; **Klippguide** förklarar
-handlingen och poserna.
+klippet i lådan, som har **Klipp**, **Körregel** och **Lägg till klipp**;
+**Klippguide** förklarar handlingen och poserna.
 
 Kategorierna är spelhandlingar (plats 1–7, dealerns öppna och dolda kort,
 vändning, **Övergångar**), **Vila** och **Talade repliker**. En position utan
@@ -106,7 +102,7 @@ klipp hoppas över i spelet; kortet visas ändå.
 #### Lägg till klipp
 
 **Lägg till klipp** (`?flik=klipp&panel=intake`) har två vägar: **Ladda upp
-filer** och **Importera mapp**. **Skapa material** är avstängt tills vidare.
+filer** och **Importera mapp**.
 
 1. Dra in filer eller en mapp på kartan, eller släpp en fil på ett kort för ett
    bestämt fack. Varje fil visas med stillbild, föreslaget fack (**Kategori ›
@@ -203,8 +199,8 @@ godkänner film eller tal. Spara utkastet och publicera separat.
 
 #### Provspela
 
-**Scenförhandsvisning** öppnar **Provspela sparad scen**; samma prov finns
-under dealerns förhandsvisning och på fliken Landningar. Välj en sparad
+**Provspela sparad scen** finns under **Förhandsvisning** (fliken i kanten
+på Klippkarta) och på fliken Landningar. Välj en sparad
 miljö och starta. Provet använder miljöns sparade förval, inte osparade
 ändringar, det markerade klippet eller spelbordets publicerade val. Det har
 eget testsaldo; chatt och genererat tal är avstängda. Provet gäller Blackjack
@@ -251,7 +247,6 @@ bytas medan AI-tal är begärt. Paows körning:
 
 Under talpanelen finns:
 
-- **Tal vid inaktivitet**: inte anslutet per dealer ännu.
 - **Taldrift**: talets GPU-läge. Välj Av, Sparläge eller Varm och en
   GPU-profil; servern avgör vilka val som går. **Använd läge** sparar
   önskemålet. **Stoppa drift** begär Av; först en färsk observation bekräftar
@@ -273,8 +268,7 @@ bekräftat Av.
 ### Landningar
 
 Visar hur dealerns givklipp är kopplade och miljöerna som tillåter
-dealern, med **Provspela sparad scen**. **Mät landningar** och **Exportera
-landningsmall** kommer senare. Bordsgrafiken ritas efter dealern, inte
+dealern, med **Provspela sparad scen**. Bordsgrafiken ritas efter dealern, inte
 tvärtom; lagrens storlek och läge ändras under Miljöer.
 
 ### Används av
@@ -284,8 +278,8 @@ Spelbord, bolag och miljöer som använder dealern, och **Alla kopplingar**
 
 ### Inställningar
 
-- **Godkännande**: checklistan (giv, vila, tal, landningar, minst en
-  miljö). Den visar läget; godkännandet sparas inte ännu.
+- **Redo för spel**: checklistan (giv, vila, tal, minst en miljö). Den visar
+  läget.
 - Dealerns klipp och arkiv: **Bibliotek** och **Arkiv**, kategorier, **Radera
   valda** och **Radera alla**. Hela dealern tas bort under Dealers (se
   [Ta bort och återställa](#ta-bort-och-återställa)).
