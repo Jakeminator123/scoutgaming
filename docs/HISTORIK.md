@@ -75,6 +75,15 @@ Kod och media utan läsare i Admin eller lobbyn. API-routen `apps/studio/app/api
 | 2026-10-29 | `apps/studio/components/dealer-material-page.tsx` | Omslag kring Forge-UI:t, 0 läsare (#665) | `git show 9f9f20806:apps/studio/components/dealer-material-page.tsx` |
 | 2026-10-29 | `apps/studio/client/lobby/public/images/dealers/astrid.jpg`, `.../videos/dealers/astrid-look.mp4` | Astrids lobbyporträtt och porträttklipp; Astrid är raderad (#665) | `git show 9f9f20806:apps/studio/client/lobby/public/images/dealers/astrid.jpg` |
 
+## Raderade 29 oktober 2026: O02-verktygen
+
+O02 är VERIFIED och frysningen hävd. `tools/merge-pr.mjs` hade `--freeze` och läste `REPO` och `CI_WORKFLOW` därifrån; flaggan är borta och konstanterna står i `merge-pr.mjs`. `tools/o02-snapshot.mjs` raderades inte: det är steg 8 i restoreboken och heter nu `tools/db-snapshot.mjs`.
+
+| Datum | Fil | Vad det var | Läses med |
+| --- | --- | --- | --- |
+| 2026-10-28 | `tools/o02-freeze-check.mjs` (+ `test/o02-freeze-check.mjs`) | O02:s frysprov F1, F2, F5 och F8 för en kandidat, och runtimeprefixen bakom `merge-pr.mjs --freeze` | `git show d88d7a69c:tools/o02-freeze-check.mjs` |
+| 2026-10-29 | `media/layout.json`, roten `web/public/bo/gen` | Rot till `media/site/runtime/backoffice/gen`; ingen spårad fil, ingen rad i `files` eller `blob-index.json`, ingen läsare | `git show d88d7a69c:media/layout.json` |
+
 ## Tidigare raderingar
 
 - `docs/history/` (överlämningar, körlistor och kvitton från före 28 oktober) raderades i `8ad45fbf` och `a90dde8d` (28 oktober 2026). Läs med `git show 29ed6626bf:docs/history/<fil>`; `git log --diff-filter=D -- docs/history` listar filerna.

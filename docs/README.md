@@ -17,11 +17,11 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [CLOUD-MIGRATION](CLOUD-MIGRATION.md) | Ytor, datalagring, väg från merge till produktion, deploykontroll | Den som levererar | När driftvägen ändras |
-| [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore, Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
+| [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore (`tools/db-snapshot.mjs` jämför källa och mål), Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
 | [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) och [environment-variables.json](environment-variables.json) | Alla miljövariabler per tjänst, aldrig värden; JSON:en läses av `tools/check-environment-variables.mjs` | Alla som rör env | I samma PR som variabeln ändras |
 | [2026-10-29-ENV-INVENTORY](2026-10-29-ENV-INVENTORY.md) | Inventering 29 oktober av alla variabler i drift mot koden: rester, saknade namn, Neon-identiteter och förslag till borttagning (ersatte 28 oktobers) | Den som städar env | Daterad, ändras inte |
 | [PAOW-BANK-KORNING](PAOW-BANK-KORNING.md) och [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) | Steg för steg för Paows rörliga bank: källor, pool, GPU-förberedelse, Blob, image, RunPod-endpoint och aktivering i preview (T4–T5) | Jakob eller agent med nycklar | När bankverktyget eller endpointens mall ändras; mallen fylls och döps om vid körningen |
-| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
+| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering, manuell export till `media/blob-index.json`; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
 | [ops/cloud/RENDER-V3](../ops/cloud/RENDER-V3.md), [README](../ops/cloud/README.md), [CONTAINER-CONTEXT](../ops/cloud/CONTAINER-CONTEXT.md) | Spelmotorn på Render: tjänst, deploy, återgång, byggkontext | Den som deployar motorn | När tjänsten eller imagen ändras |
 
 ## Produkt och kontrakt

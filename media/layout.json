@@ -37,7 +37,6 @@
     "content/staging/2026-09-20/dealer-table-review": "media/game/staging/2026-09-20/dealer-table-review",
     "web/public/assets": "media/game/runtime/assets",
     "web/public/sfx": "media/game/runtime/audio",
-    "web/public/bo/gen": "media/site/runtime/backoffice/gen",
     "content/background.png": "media/game/source/scene/background.png",
     "content/cardback-scout.png": "media/game/source/cards/cardback-scout.png",
     "content/room-wide.png": "media/game/source/scene/room-wide.png",
