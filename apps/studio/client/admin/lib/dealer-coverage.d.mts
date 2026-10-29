@@ -6,3 +6,4 @@ export function dealerCoverage(project:StudioProject,inventory:VideoInventory,de
 export function dealerTemplates(project:StudioProject,dealerId:string):{id:string;label:string;isDefault:boolean}[];
 export function dealerUses(catalog:Catalog,dealerId:string):{rooms:Catalog['administration']['rooms'];operators:Catalog['administration']['operators']};
 export function dealerStill(project:StudioProject,inventory:VideoInventory,dealerId:string):{url:string;image:boolean;label:string}|null;
+export function dealerLandingsNote(dealerId:string):string|null;

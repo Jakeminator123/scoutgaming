@@ -127,7 +127,6 @@ async function mountRegisteredStudio(props,{fetch:customFetch,hash='',...overrid
     fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='react'?hooks.react:name==='../ui/kit'?{cn:(...names)=>names.filter(Boolean).join(' '),buttonVariants:()=>'button',TechnicalDetails:props=>React.createElement('details',null,React.createElement('summary',null,props.title),props.children)}
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
-      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}
       :name==='./dealer-identity-portrait'?portraitStubs(React)
       :name==='./assignment-field'?{AssignmentField:props=>React.createElement('section',{'data-assignment-field':String(props.revision??'none')})}
       :name==='./room-release'?{RoomRelease:props=>React.createElement('section',{'data-room-release':props.roomId,'data-eligible':String(Boolean(props.eligible)),'data-blocked-by':props.blockedBy??''})}
@@ -144,7 +143,7 @@ function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;r
 
 // Bolag och spelbord (companies-page.tsx) resolves the company and the room's registered owner from the path and
 // mounts RegisteredStudio per tab. Its children with their own reads are stubbed with their props.
-async function companiesPageHtml({page,id,search='',previews=false,...overrides}){
+async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=null,dialog=null,...overrides}){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const componentRequire=createRequire(new URL('../components/studio/companies-page.tsx',import.meta.url));
@@ -153,7 +152,7 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
   const adminNavigation=await import('../../../../../packages/navigation/admin-navigation.mjs');
   const value=registry(overrides),hooks=fakeHooks(React);
   const compile=(file,resolve)=>{const module={exports:{}};runInNewContext(transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,URLSearchParams,URL,AbortController,fetch:async()=>Response.json(value),document:{addEventListener:()=>{},removeEventListener:()=>{}},require:resolve});return module.exports;};
+    {module,exports:module.exports,URLSearchParams,URL,AbortController,fetch:fetchImpl??(async()=>Response.json(value)),document:{addEventListener:()=>{},removeEventListener:()=>{}},require:resolve});return module.exports;};
   const ui={},uiRequire=name=>name.endsWith('runtime/navigation')?navigation:name.startsWith('./')?(ui[name]??=compile('../components/ui/'+name.slice(2)+'.tsx',uiRequire)):require(name);
   // `previews` opens the preview panel and shows which revision each preview receives.
   const hub={...compile('../components/ui/hub.tsx',uiRequire),...(previews?{PreviewFlyout:props=>React.createElement('aside',{'data-flyout':props.title},props.children)}:{})};
@@ -166,8 +165,11 @@ async function companiesPageHtml({page,id,search='',previews=false,...overrides}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
     :name==='./room-settings-warning'?compile('../components/studio/room-settings-warning.tsx',dep=>dep.endsWith('runtime/navigation')?navigation:dep.startsWith('../ui/')?uiRequire('./'+dep.slice('../ui/'.length)):require(dep))
     :name.startsWith('../ui/')?uiRequire('./'+name.slice('../ui/'.length)):name.startsWith('.')?componentRequire(name):require(name));
-  const render=()=>{hooks.reset();const tree=module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
+  // `dialog` renders Nytt spelbord itself (its hooks run in the fake renderer, as the page's do).
+  const render=()=>{hooks.reset();const tree=dialog?module.CreateRoomDialog(dialog):module.CompaniesPage({page,id,active:true,disabled:false,onChanged(){}});hooks.flush();return tree;};
   render();await settle(1);
+  // A stubbed fetch lets reads made after mount (Nytt spelbord) land before the final render.
+  if(fetchImpl)for(let round=0;round<3;round++){render();await settle(6);}
   return renderToStaticMarkup(render());
 }
 
@@ -191,14 +193,9 @@ test('the room nav mounts the exact scoped editor per tab; the company nav owns 
   assert.ok(assignment);
   assert.deepEqual(walk(assignment,node=>node.type==='input'&&node.props?.name==='lanes').map(node=>node.props.value),['one','two']);
   const packageHtml=renderToStaticMarkupOf(h);
-  assert.doesNotMatch(packageHtml,/data-room-create=|data-room-editor=|data-game-config=/,'room creation opens only on the create view');
+  assert.doesNotMatch(packageHtml,/data-room-create=|data-room-editor=|data-game-config=/,'the assignment mounts no room editor');
   assert.match(packageHtml,/data-lifecycle="rooms"/,'the assignment reads the published package through the rooms lifecycle');
   assert.equal(walk(h.render(),node=>node.type==='button'&&node.props.type==='submit').length,1,'the assignment has one publish action');
-  // A new room starts from the company's first room template; without a matching template the first saved one.
-  for(const [overrides,composition] of [[{},'one'],[{rooms:[registryRoom(catalog.administration.rooms[1])]},'two'],[{rooms:[registryRoom(catalog.administration.rooms[2])]},'one']]){
-    const create=await mountRegisteredStudio({operatorId:'a',mode:'create'},{compositions,...overrides});
-    assert.equal(walk(create.render(),node=>typeof node.props?.onCreated==='function')[0].props.presentation.id,composition);
-  }
 });
 
 test('an unknown owner or a cross-owner room never mounts another room editor',async()=>{
@@ -220,12 +217,10 @@ test('unpublished rooms point to the company assignment without a frozen editor 
   assert.doesNotMatch(game,/data-game-config=/);assert.equal(roleCount(game,'status'),1);
 });
 
-test('an active company without registered rooms can still create its first room in Admin',async()=>{
+test('an active company without registered rooms still shows its assignment in Admin',async()=>{
   const html=await registeredStudioHtml({operatorId:'b',mode:'package'},{rooms:[],compositions});
   assert.equal(hrefs(html).some(href=>href.startsWith('/admin/publication')),false);
   assert.match(html,/aria-label="Tilldelning"/);assert.doesNotMatch(html,/data-room-create=|data-room-editor=|data-game-config=/);
-  const create=await registeredStudioHtml({operatorId:'b',mode:'create'},{rooms:[],compositions});
-  assert.match(create,/data-room-create="one"/);assert.doesNotMatch(create,/data-room-editor=|data-game-config=/);
 });
 
 test('partner and template links are scoped to the selected owner and never carry another company or its room',async()=>{
@@ -330,12 +325,10 @@ test('library context accepts only the explicitly selected room and its register
 });
 
 // "Provspela sparad scen" needs the saved project revision; without it the button is always disabled.
-test('the room preview and Nytt spelbord hand the saved project revision to the saved-scene preview',async()=>{
+test('the room preview hands the saved project revision to the saved-scene preview',async()=>{
   const room=await companiesPageHtml({page:'room',id:'bj',search:'?flik=utseende',compositions,previews:true});
   assert.match(room,/data-(?:scene-preview|saved-scene)="[^"]+" data-revision="p1"/,'the room preview receives the catalog project revision');
-  const create=await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions,previews:true});
-  assert.match(create,/data-saved-scene="one" data-revision="p1"/,'Nytt spelbord receives it as well');
-  assert.doesNotMatch(room+create,/data-revision="none"/);
+  assert.doesNotMatch(room,/data-revision="none"/);
 });
 
 test('the company nav lists only the owner\'s rooms and links each to its own room nav',async()=>{
@@ -343,7 +336,6 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   assert.deepEqual([...new Set(hrefs(html).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/bj?flik=utseende','/admin/rooms/roulette?flik=utseende']);
   assert.equal(hrefs(html).some(href=>/other|archived|operator=|\/control/.test(href)),false,'another company\'s room, the archive and query-selected owners stay out');
   assert.ok(hrefs(html).includes('/admin/companies/a?flik=spelbord&view=create'));assert.doesNotMatch(html,/data-registered-studio=/,'room creation opens only on request');
-  assert.match(await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions}),/data-registered-studio="create:a::"/);
   const assigned=await companiesPageHtml({page:'company',id:'a',search:'?flik=tilldelning',compositions});
   assert.match(assigned,/data-registered-studio="package:a::"/);
   // Bolag › Tilldelat lives in the assignment form with the company's published revision, not beside it.
@@ -354,6 +346,28 @@ test('the company nav lists only the owner\'s rooms and links each to its own ro
   assert.match(missing,/data-not-found="company"/,'the page states that the company is not registered');assert.doesNotMatch(other,/data-not-found=/,'a known company is not reported missing');assert.doesNotMatch(missing,/data-registered-studio=|\/admin\/rooms\//);
   const filtered=await companiesPageHtml({page:'companies',search:'?tab=spelbord&operator=a',compositions});
   assert.deepEqual([...new Set(hrefs(filtered).filter(href=>href.startsWith('/admin/rooms/')))],['/admin/rooms/bj?flik=utseende','/admin/rooms/roulette?flik=utseende'],'the room list filters by company');
+});
+
+// Nytt spelbord på ett steg (room-quick-create.mjs): standardvalen står i dialogen, Skapa och publicera kör kedjan
+// och den gamla guiden (RegisteredStudio create, scenmallsval i två steg) finns inte kvar.
+test('Nytt spelbord is one dialog with every choice preselected and one Skapa och publicera',async()=>{
+  const {QUICK_CREATE_NO_DEALER}=await import('./room-quick-create.mjs');
+  const {addDealer,createEmptyProject,defaultPresentationLane}=await import('../../../../../packages/presentation/contracts/studio-model.mjs');
+  const lane=(id,label,dealerId)=>({...defaultPresentationLane(dealerId),id,label});
+  const project={...addDealer(addDealer(createEmptyProject(),'astrid','Astrid'),'paow-v2','Paow'),revision:'p1',lanes:[lane('one','Standard','astrid'),lane('two','Kväll','paow-v2')]};
+  const value=registry({compositions}),reads=[];
+  const fetchImpl=async url=>{reads.push(String(url).split('?')[0]);return Response.json(String(url).startsWith('/studio/api/project')?{project}:String(url).startsWith('/studio/api/videos')?{videos:[]}:value);};
+  const page=await companiesPageHtml({page:'company',id:'a',search:'?flik=spelbord&view=create',compositions});
+  assert.doesNotMatch(page,/data-registered-studio=|data-saved-scene=/,'no second path: the guided template picker is gone');
+  const operators=value.administration.operators;
+  const html=await companiesPageHtml({page:'company',id:'a',compositions,fetchImpl,dialog:{open:true,operators:[operators[0]],initialOperator:'a',fixedOperator:true,disabled:false,onChanged(){},onClose(){}}});
+  assert.ok(['/admin/_data/catalog','/studio/api/project','/studio/api/videos'].every(path=>reads.includes(path)));
+  // Inga klipp: ingen dealer har hela klippbanken, så ingen förväljs (room-quick-create.test.mjs prövar förvalen).
+  assert.match(html,new RegExp(QUICK_CREATE_NO_DEALER.slice(0,40)),'one sentence instead of a silent incomplete dealer');
+  assert.match(html,/<option value="" selected="">Välj dealer<\/option>/);assert.match(html,/<button[^>]*disabled=""[^>]*>Skapa och publicera/,'nothing to create with');
+  assert.match(html,/Paow · klippen räcker inte än/);assert.match(html,/Roulette · enkel nolla/);
+  assert.match(html,/<option value="prive" selected="">/,'Privé is the bet profile');assert.match(html,/<option value="en" selected="">Engelska/);
+  assert.match(html,/Skapa och publicera/);assert.match(html,/blir öppet/);assert.doesNotMatch(html,/skapas pausat|Nästa: välj scenmall/);
 });
 
 // Papperskorg (the kit's pilot, docs/plans/DESIGNSYSTEM.md): the tab names the state, so rows carry no trash
@@ -614,29 +628,6 @@ test('the exact receipt accepts server-sorted choices and clears the draft; a ne
   p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
   assert.equal(receipt(),false,'a different revision is not this action receipt');
   assert.match(revisionChip(p.h.render()),/\b6\b/);assert.equal(p.status(),ready.replace(/\b4\b/,'6'),'back to the idle status, now naming the newer revision');
-});
-
-test('a room creation receipt advances the company package, re-reads the lifecycle and opens the new room nav',async()=>{
-  const p=await publicationHarness({props:{operatorId:'a',mode:'create'}});
-  p.lifecycle().props.onChanged(lifecycleSnapshot());
-  const label=id=>{const option=walk(p.h.render(),node=>node.type==='option'&&node.props.value===id)[0];return [option.props.children].flat(Infinity).join('');};
-  const name=id=>compositions.find(row=>row.id===id).name;
-  assert.equal(label('one'),name('one'));assert.notEqual(label('two'),name('two'),'a template outside the published package says so');assert.ok(label('two').startsWith(name('two')));
-  const create=walk(p.h.render(),node=>typeof node.props?.onCreated==='function')[0];
-  assert.equal(walk(p.h.render(),node=>node.type==='form').length,0,'the create view carries no package form');
-  const refreshBefore=p.lifecycle().props.refreshKey,notifications=p.h.notifications;
-  p.addRoom({id:'created',operatorId:'a',game:'blackjack',compositionId:'two'});
-  create.props.onCreated({packageRevision:5,room:{id:'created',operatorId:'a',presentationLaneId:'two',game:'blackjack'}});
-  await p.settle();p.h.render();await p.settle();
-  const refreshAfter=p.lifecycle().props.refreshKey;
-  assert.ok(refreshAfter>refreshBefore,'the lifecycle re-reads after the room receipt');
-  assert.equal(p.h.href,'/admin/rooms/created','the receipt opens the new room nav');assert.equal(p.h.notifications,notifications+1);assert.equal(p.h.confirms,0);
-  assert.equal(p.requests.length,0,'the receipt itself writes nothing more');
-  p.lifecycle().props.onChanged(packageOperators({packageRevision:5,lanes:['one','two']}));
-  assert.equal(p.lifecycle().props.refreshKey,refreshAfter,'a readback does not request itself again');
-  assert.equal(label('two'),name('two'),'the read-back package labels the new template as published');
-  p.lifecycle().props.onChanged(lifecycleSnapshot());
-  assert.equal(label('two'),name('two'),'an older snapshot cannot roll the package editor back');
 });
 
 test('unsaved Studio work blocks the company publication until it is saved',async()=>{

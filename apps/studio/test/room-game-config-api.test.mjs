@@ -213,7 +213,8 @@ test('material readiness exposes only fixed native reason codes and leaves publi
     await assert.rejects(f.publish(draft),error=>error.code==='studio_room_game_material_unavailable'&&error.reason===undefined);
   }
   const native=fixture({resolver:resolveNativeRoomGameMaterial}),draft=await native.save();
-  assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_profile_missing'});
+  // A dealer without its own filmed profile inherits PAOW's and reaches the material checks.
+  assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
 });
 test('J08 role and tenant failures happen before data reads; wrong room cannot publish',async()=>{
   const f=fixture();await assert.rejects(f.invoke('GET',undefined,{actor:{user:'partner',role:'partner'}}),{statusCode:403});
@@ -366,4 +367,16 @@ test('J08 public material error is restricted to its action, status and fixed co
     const response=await api.handle(new Request(origin+path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:'{}'}));
     assert.equal(response.status,statusCode);assert.deepEqual(await response.json(),expected);
   }
+});
+test('a missing draft is no blocker: the receipt checks the material that Publicera would save (enkel väg, klass C)',async()=>{
+  const languages=[],f=fixture({resolver:input=>{languages.push(input.language);return {...f.material(),language:input.language};}});
+  const first=await f.invoke('GET');
+  assert.equal(first.draft,null);assert.deepEqual(first.publication,{ready:true},'no studio_room_game_draft_required');
+  assert.deepEqual(languages,['en'],'without draft or publication the standard choice is checked');
+  const result=await f.publish(await f.save({language:'sv',limitPreset:'prive'}));
+  assert.equal(result.draft,null);assert.deepEqual(result.publication,{ready:true},'the published choice was just checked');
+  languages.length=0;assert.deepEqual((await f.invoke('GET')).publication,{ready:true});assert.deepEqual(languages,['sv'],'then the published choice');
+  const failing=fixture({resolver:()=>{throw Object.assign(Error('x'),{statusCode:422,code:'studio_room_game_material_unavailable',reason:'native_material_measurement_missing'});}});
+  assert.deepEqual((await failing.invoke('GET')).publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_measurement_missing'});
+  for(const body of [first,result])assert.doesNotMatch(JSON.stringify(body),/draft_required/);
 });

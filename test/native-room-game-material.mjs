@@ -9,6 +9,8 @@ import { createStudioRepository } from '../packages/studio-registry/server/docum
 import { canonicalStudioJson, validateStudioMedia } from '../packages/studio-registry/server/document-contract.mjs';
 import { addDealer, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
+import { filmedProfileOrPaow, registeredFilmedProfile } from '../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import { validateFilmedDealProfile } from '../packages/presentation/contracts/filmed-profile.mjs';
 import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 
 const resolve = f => resolveNativeRoomGameMaterial(f.input,{version:2});
@@ -314,4 +316,21 @@ test('Admin speech review of the ten bound PAOW takes satisfies the native speec
     // room-game-config publication additionally requires the registered row to equal the frozen copy.
     assert.equal(canonicalStudioJson(validateStudioMedia(stored)),canonicalStudioJson(validateStudioMedia(frozen)));
   }
+});
+
+test('a registered dealer without its own filmed profile inherits PAOW geometry instead of being blocked', () => {
+  const paow = registeredFilmedProfile('paow'), inherited = filmedProfileOrPaow('jakob-2');
+  assert.equal(registeredFilmedProfile('jakob-2'), null, 'the strict register still names only filmed dealers');
+  assert.equal(inherited.inherited, 'paow');
+  assert.equal(inherited.id, paow.id, 'the inherited profile keeps PAOW id, never the dealer id');
+  assert.deepEqual(inherited.positions, paow.positions); assert.deepEqual(inherited.card, paow.card); assert.deepEqual(inherited.plane, paow.plane);
+  validateFilmedDealProfile(inherited);
+  for (const dealerId of ['paow','dragan']) assert.equal(filmedProfileOrPaow(dealerId), registeredFilmedProfile(dealerId), dealerId + ' is unchanged');
+  for (const value of [undefined, 7, '', 'Bad Id', '__proto__!']) assert.equal(filmedProfileOrPaow(value), null);
+  assert.throws(() => validateFilmedDealProfile({...paow, inherited: 'jakob-2'}));
+  // Past the profile check; the takes still bind to PAOW's exact files, so the
+  // dealer's own bank (here none) is what fails, not a missing profile.
+  const f = nativeRoomMaterialFixture({dealerId:'jakob-2'});
+  assert.ok(f.presentation.registeredDealers.some(row => row.id === 'jakob-2'));
+  assert.throws(() => resolve(f), denied('native_material_bank_incomplete'));
 });

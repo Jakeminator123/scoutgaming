@@ -269,7 +269,8 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       assert.ok(portraitRequests.has(path), message);
     };
     await requested('/lobby/_assets/lobby/images/dealers/marten.jpg', 'the Mårten teaser loads its portrait from the public base');
-    await requested('/lobby/_assets/lobby/images/lobby/room-loungen.png', 'the High room card shows Loungen from the public base');
+    // The bet profile picks no picture (#641): a High room without miljöbild or background shows the design illustration.
+    await requested('/lobby/_assets/lobby/images/lobby/room-salongen.png', 'the High room card shows the design illustration from the public base');
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
       const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
       await trigger.focus(); await trigger.press('Enter');
