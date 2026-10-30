@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowUpRight, RefreshCw } from 'lucide-react';
 import { buttonVariants, cn, TechnicalDetails } from '../ui/kit';
 import {lifecycleSnapshotKey, operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
@@ -49,10 +49,10 @@ const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ b
 
 /** The company's package (mode package) and the room editor (mode room, one
  *  section per tab). The company and room come from the nav's path, never from a dealer-library query. */
-export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'room'; section?: 'appearance'|'game'|'state'; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void;
+export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'room'; section?: 'appearance'|'game'|'state'|'details'; navigation?:ReactNode; children?:ReactNode; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void;
   /** Package mode: what the company may change, with the catalog's package revision it was read at. */
   assignment?: AssignmentView | null; assignmentRevision?: number | null };
-export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', disabled = false, onChanged, onRoomStatus, assignment, assignmentRevision = null }: RegisteredStudioProps) {
+export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', navigation, children, disabled = false, onChanged, onRoomStatus, assignment, assignmentRevision = null }: RegisteredStudioProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
@@ -67,7 +67,6 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const [lifecycleSnapshot,setLifecycleSnapshot] = useState<LifecycleSnapshot|null>(null);
   const lifecycleKey = useRef(''), lifecycleOps = useRef(new Set<string>());
   const [packages,setPackages] = useState<Record<string,PackageEditor>>({});
-  const [roomStatus,setRoomStatus] = useState<AppearanceRoomStatus|null>(null);
   const [roomRequest,setRoomRequest] = useState<RoomLifecycleRequest>();
   // The assignment draft belongs to the catalog read it came from; a new company, revision or view starts it over.
   const assignmentKey = JSON.stringify([operatorId, assignmentRevision, assignment ?? null]);
@@ -229,7 +228,6 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     compositionHref: (_owner: {id:string}, room: {id:string;presentationLaneId:string}) => '/admin/scenes?' + new URLSearchParams({ tab:'miljoer', composition: room.presentationLaneId, table: room.id }),
     rehearsalLabel: 'Öppna spelbordet',
   };
-  const liveLabel = (value: string|null, label: string) => value ? label : '–';
   const reloadButton=<button type="button" disabled={state.status === 'loading'||anyBusy||anyDraft} onClick={()=>{reload();if(assignmentStale)onChanged?.();}} className={buttonVariants({size:'sm'})}><RefreshCw aria-hidden="true"/> Uppdatera</button>;
   // The published package revision (the publish precondition) and the room archive are read through the rooms
   // lifecycle, as on the retired /admin/rooms page. One reader per mount; compact, it stays silent until it has
@@ -256,25 +254,27 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
                 blockedBy={disabled?'Spara det pågående arbetet först':roomDirty||gameDirty?'Spara spelbordets ändringar först':!editorsIdle?'Väntar på pågående åtgärd':''}
                 refreshKey={refresh+':'+lifecycleRefresh+':'+releaseTick} playUrl={selectedRoom.playUrl} rooms={operatorRooms.map(row=>({id:row.id,name:row.name}))} dealerName={dealerName}
                 onBusyChange={setReleaseBusy} onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);reload();onChanged?.();}}/>
+              {navigation}
+              {children}
               {section==='appearance'&&<>
-                {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className="m-0 flex flex-wrap items-center gap-2 text-[12.5px] text-sg-muted" aria-label="Publicerat nu"><div className="flex items-center gap-2"><dt className="inline-flex items-center gap-1.5 font-semibold text-sg-text"><span className="size-1.5 rounded-full bg-sg-ok" aria-hidden="true"/>Publicerat nu</dt><dd className="m-0">{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div></dl>}
-                {gameSettingsRoom(selectedRoom)&&<p className="m-0"><a className={linkClass} href={'/admin/scenes?'+new URLSearchParams({tab:'bordsgrafik',operator:operator.id,room:selectedRoom.id})}>Skapa bord och bakgrund med AI för spelbordet</a></p>}
-                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||publishBusy||releaseBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>{setRoomStatus(status);onRoomStatus?.(status);}} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
+                <header className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-base font-semibold">Utseende</h2>
+                  {gameSettingsRoom(selectedRoom)&&<a className={buttonVariants({variant:'ghost',size:'sm'})} href={'/admin/scenes?'+new URLSearchParams({tab:'bordsgrafik',operator:operator.id,room:selectedRoom.id})}>Skapa material med AI <ArrowUpRight aria-hidden="true"/></a>}
+                </header>
+                {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices publication={gameSettingsRoom(selectedRoom)?'room':'inline'} disabled={disabled||lifecycleBusy||gameBusy||gameDirty||publishBusy||releaseBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={status=>onRoomStatus?.(status?.roomId===selectedRoom.id?status:null)} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}/>
                   : <div className={ui.unpublished} role="status"><h3>Spelbordet saknar ett publicerat paket</h3><p>Utseendet kan väljas när bolagets miljöer är publicerade under Bolag › Tilldelning.</p></div>}
-                {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<TechnicalDetails title="Avancerat" className="mt-0">
-                  <p className="m-0">Publicera bara PAOWs sparade vilosekvens i bolagets publicerade spelbord. Övriga publicerade val och placeringar behålls. Vanligen räcker Publicera, som tar med vilan.</p>
-                  <p className="m-0"><button type="button" data-action="refresh-dealer-idle" className={buttonVariants({size:'sm'})} disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button></p>
-                  {operatorPackage.message&&<p role="status" className="m-0">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert" className="m-0 text-sg-warn">{operatorPackage.error}</p>}
-                </TechnicalDetails>}
               </>}
               {section==='game'&&(gameSettingsRoom(selectedRoom)?<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name} dealers={selectedRoom.dealers}
-                disabled={disabled||lifecycleBusy||roomBusy||roomDirty||publishBusy||releaseBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
-                onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);onChanged?.();}}/>
+                disabled={disabled||lifecycleBusy||roomBusy||roomDirty||publishBusy||releaseBusy} onBusyChange={setGameBusy} onDirtyChange={setGameDirty}/>
                 :<div className={ui.unpublished} role="status"><h3>Spelinställningar kan sättas när spelbordet är öppet och publicerat</h3><p>Spelinställningar (språk, insatsprofil) gäller öppna, publicerade blackjack-spelbord. Öppna spelbordet under Tillgänglighet och publicera tilldelningen först.</p></div>)}
               {section==='state'&&<div className={ui.slot}>
                 {selectedRoom.published&&<p className="m-0 flex flex-wrap items-center gap-3"><button type="button" className={buttonVariants({variant:selectedRoom.state==='live'?'secondary':'primary'})} disabled={disabled||anyBusy||anyDraft} onClick={()=>{setRoomRequest({kind:'state',roomId:selectedRoom.id});scrollTo('room-lifecycle');}}>{selectedRoom.state==='live'?'Pausa spelbordet':'Öppna spelbordet'}</button><span className="text-xs text-sg-muted">Pausa gäller direkt. Pågående rundor spelas klart.</span></p>}
                 {lifecycleReader}
                 {selectedRoom.playUrl&&<p><a href={selectedRoom.playUrl} target="_blank" rel="noopener" className={linkClass}>Öppna spelbordet i spelet <ArrowUpRight size={13} aria-hidden="true"/></a></p>}
+                {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<TechnicalDetails title="Felsökning" className="mt-4">
+                  <p className="m-0">Uppdatera bara PAOWs vila om den gemensamma publiceringen är blockerad. Övriga publicerade val och placeringar behålls.</p>
+                  <p className="m-0"><button type="button" data-action="refresh-dealer-idle" className={buttonVariants({size:'sm'})} disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button></p>
+                  {operatorPackage.message&&<p role="status" className="m-0">{operatorPackage.message}</p>}{operatorPackage.error&&<p role="alert" className="m-0 text-sg-warn">{operatorPackage.error}</p>}
+                </TechnicalDetails>}
               </div>}
               {selectedRoom.materialWarning&&<p role="note" className={ui.problem}>Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bordsgrafik före nästa publicering.</p>}
             </>}
@@ -295,7 +295,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-sg-line-2 pt-4"><p role="status" className="m-0 text-[13px] text-sg-muted">{publishBusy?'Publicerar…':formStatus}</p>
                 <button className={buttonVariants({variant:'primary'})} type="submit" disabled={packageBlocked||nothingToPublish||Boolean(assignmentIssue)||assignmentStale}>{publishBusy?'Publicerar…':'Publicera'}</button></div>
             </form>
-            <TechnicalDetails title="Avancerat" className="mt-0">
+            <TechnicalDetails title="Felsökning" className="mt-0">
               <p className="m-0">Frys om bolagets miljöer utan att ändra urvalet. Vanligen räcker Publicera i spelbordet, som tar med tal, klipp, vila och placering.</p>
               <p className="m-0"><button type="button" data-action="republish-package" className={buttonVariants({size:'sm'})} disabled={packageBlocked||!assignmentUnchanged} onClick={()=>void publishPackage(true)}>{publishBusy?'Publicerar…':'Publicera igen'}</button></p>
             </TechnicalDetails>

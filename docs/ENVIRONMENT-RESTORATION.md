@@ -112,6 +112,31 @@ Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 
 SELECT p.environment_id, p.operator_id, p.package_revision, r->>'id' AS table_id, r->>'presentationLaneId' AS lane FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) * FROM croupier_studio.operator_packages ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) p JOIN croupier_studio.documents d ON d.environment_id = p.environment_id AND d.workspace_id = p.workspace_id AND d.kind = 'administration' CROSS JOIN LATERAL jsonb_array_elements(d.value->'rooms') r WHERE r->>'operatorId' = p.operator_id AND p.tables::jsonb ? (r->>'id') AND NOT p.lanes::jsonb ? (r->>'presentationLaneId');
 ```
 
+**Efter Studio 023 (Jakob): ompublicera paketen.** Paketraderna är oföränderliga, så ingen DML fyller i `rooms` i gamla versioner. `tools/republish-rooms.mjs` publicerar varje bolag vars nuvarande paket saknar `rooms` som pkg+1 genom produktens skrivare, med bordens rum ur administrationsdokumentet. Öppna utseendeutkast följer med; spelinställningsutkast för samma bolag och basrevision sparas om i Admin (antalet visas). Verktyget kräver både 023 i ledgern och en synlig `rooms`-kolumn innan något bolag behandlas. En andra körning publicerar inget när alla aktuella paket har `rooms`.
+
+Kör **preview först**, verifiera resultatet och kör sedan produktion. Använd den aktuella miljöns anslutning i `CROUPIER_GAME_DATABASE_URL`; sätt scope via `CROUPIER_STUDIO_ENVIRONMENT_ID` och `CROUPIER_STUDIO_WORKSPACE_ID`. Kontrollera den utskrivna målraden mot tabellen, inklusive rollen. Bekräftelsen binds till databasen och scopet som verktyget faktiskt läser.
+
+| Miljö | Databas / roll | Environment / workspace | `CROUPIER_REPUBLISH_CONFIRM` vid `--apply` |
+|---|---|---|---|
+| Preview | `croupier_staging` / `croupier_staging_app` | `staging_k06_k07` / `croupier` | `croupier_staging/staging_k06_k07/croupier` |
+| Produktion | `croupier_game` / `croupier_game` | `production` / `croupier` | `croupier_game/production/croupier` |
+
+```powershell
+node tools/republish-rooms.mjs                       # standard: provkörning, ingen skrivning
+node tools/republish-rooms.mjs --dry-run             # samma; --operator <id> begränsar bolagen
+# Kontrollera målrad och bolag, och att de berörda borden är tomma.
+# Sätt CROUPIER_REPUBLISH_CONFIRM i denna terminal till rätt värde i tabellen.
+node tools/republish-rooms.mjs --apply               # kräver exakt målbekräftelse
+node tools/check-migration-readiness.mjs             # stderr: paket utan rooms: N, per scope
+Remove-Item Env:CROUPIER_REPUBLISH_CONFIRM -ErrorAction SilentlyContinue
+```
+
+**Kontroll av tomma bord är manuell före varje `--apply`:** kontrollera att inga spelare är anslutna och inga spel pågår i de berörda borden. Verktyget kan inte intyga detta. Varje pkg+1 ger anslutna spelare 1008 och en ny socket. Provkörningen kör inte `publishWithin`; den kan härleda rum men garanterar inte att skarp publicering godkänns. Om Admin hinner publicera efter läsningen nekar revisionskontrollen just det bolaget (`studio_conflict`); andra bolag fortsätter. Varje bolags resultat skrivs direkt.
+
+Ett bolag vars bord saknas i dokumentet hoppas över och står kvar i `paket utan rooms: N`. Readiness räknar bara senaste paketet per environment/workspace/bolag och visar N per scope; detta är information, ingen extra readiness-spärr. Exit 0 betyder slutförd körning, även med överhoppade bolag. Exit 1 betyder minst ett misslyckat bolag; läs raderna och provkör igen efter rättning. Exit 2 betyder nekad eller avbruten körning (exempelvis fel bekräftelse, saknad kolumn eller databasfel); tidigare utskrivna publiceringar kan redan vara sparade. Kontrollera raden för det aktuella scopet före nästa miljö.
+
+Verifiering för [PR 685](https://github.com/Jakeminator123/scoutgaming/pull/685): isolerade PostgreSQL-tester täcker målbekräftelse, saknad kolumn utan skrivning, idempotens, basrevisioner och en faktisk Admin-publicering mellan verktygets läsning och dess lås. PGlite-provet visar den committade interfolieringen och CAS, inte låskonkurrens mellan nätverksanslutningar. Ingen ompublicering har körts mot molnet i denna leverans.
+
 Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern bara `product-v1` och `game-012-api-key-operator`; 011 är inte körd där). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
 
 ## Lissabon-kontraktion (J09, `011-retire-lissabon.sql`)

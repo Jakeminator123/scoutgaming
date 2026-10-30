@@ -698,6 +698,73 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   }
 });
 
+test('migration readiness reads the preview ledger on preview runs, production otherwise, with no fallback to production', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
+  const readiness = yaml.split('\n  migration-readiness:\n')[1]?.split('\n  moving-worker:')[0];
+  assert.ok(readiness, 'the readiness job must exist');
+  const steps = readiness.split('\n      - ').slice(1).map(step => '      - ' + step);
+  const named = name => {
+    const found = steps.filter(step => step.startsWith(`      - name: ${name}\n`));
+    assert.equal(found.length, 1, 'exactly one step: ' + name);
+    return found[0];
+  };
+  // No expression anywhere in the workflow may pick a secret with a || reserve: a && b || c returns c when b is empty.
+  for (const expression of yaml.match(/\$\{\{[^}]*\}\}/g) ?? []) {
+    if (expression.includes('secrets.')) assert.doesNotMatch(expression, /\|\||&&/, 'a secret is never chosen with && / ||: ' + expression);
+  }
+  assert.equal(yaml.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2, 'the preview secret is read only by the readiness job (presence check and preview step)');
+  assert.equal(readiness.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2);
+  const preview = named('Studio migration readiness (preview ledger)');
+  const production = named('Studio migration readiness (production ledger)');
+  assert.ok(preview.includes("\n        if: steps.ledger.outputs.environment == 'preview'\n"));
+  assert.ok(preview.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}'));
+  assert.doesNotMatch(preview, /secrets\.CROUPIER_GAME_DATABASE_URL/, 'the preview step never receives production credentials');
+  assert.ok(production.includes("\n        if: steps.ledger.outputs.environment == 'production'\n"));
+  assert.ok(production.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_GAME_DATABASE_URL }}'));
+  assert.doesNotMatch(production, /CROUPIER_PREVIEW_DATABASE_URL/);
+  for (const step of [preview, production]) assert.ok(step.includes('\n        run: node tools/check-migration-readiness.mjs\n'));
+  const select = named('Select the migration ledger (preview or production)');
+  assert.ok(steps.indexOf(select) < steps.indexOf(preview) && steps.indexOf(select) < steps.indexOf(production), 'the ledger is chosen before readiness runs');
+  assert.ok(select.includes('\n        id: ledger\n') && select.includes('\n        shell: bash\n'));
+  assert.ok(select.includes("PREVIEW_SECRET_SET: $"+"{{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}"), 'the selector sees only whether the preview secret exists');
+  assert.doesNotMatch(select, /secrets\.CROUPIER_GAME_DATABASE_URL/);
+  const script = select.split('\n        run: |\n')[1]?.split('\n').map(line => line.slice(10)).join('\n');
+  assert.ok(script?.includes('GITHUB_OUTPUT'), 'the selector script must be extractable');
+  const root = mkdtempSync(join(tmpdir(), 'ci-ledger-'));
+  try {
+    let n = 0;
+    const choose = (env) => {
+      const output = join(root, `output-${n++}`);
+      writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      return {status: result.status, output: readFileSync(output, 'utf8'), log: result.stdout + result.stderr};
+    };
+    const cases = [
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'schedule', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/heads/preview', GITHUB_BASE_REF: 'main'}, 'production'],
+    ];
+    for (const [context, ledger] of cases) {
+      const chosen = choose({...context, PREVIEW_SECRET_SET: 'true'});
+      assert.equal(chosen.status, 0, JSON.stringify(context));
+      assert.equal(chosen.output, `environment=${ledger}\n`, 'ledger for ' + JSON.stringify(context));
+      const missing = choose({...context, PREVIEW_SECRET_SET: 'false'});
+      if (ledger === 'production') {
+        assert.equal(missing.status, 0, 'production does not need the preview secret');
+        assert.equal(missing.output, 'environment=production\n');
+      } else {
+        assert.equal(missing.status, 1, 'a missing preview secret fails: ' + JSON.stringify(context));
+        assert.equal(missing.output, '', 'a missing preview secret selects no ledger at all');
+        assert.match(missing.log, /::error title=Preview migration readiness::.*CROUPIER_PREVIEW_DATABASE_URL/);
+      }
+    }
+  } finally { rmSync(root, {recursive: true, force: true}); }
+});
+
 test('lipsync worker checks run in one regression leg with isolated Python and only attest after every command passes', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
   const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  browser-regression:\n')[0];
