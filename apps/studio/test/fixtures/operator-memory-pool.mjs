@@ -158,7 +158,7 @@ export function operatorMemoryPool({ apiKeyColumn = true } = {}) {
       if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
       snapshot();
       const revision = scoped('operator_packages').filter(row => row.operator_id === values[2]).reduce((max, row) => Math.max(max, Number(row.package_revision)), 0) + 1;
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
+      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7],rooms:values[8] };
       tables.operator_packages.push(row);
       return [copy(row)];
     }

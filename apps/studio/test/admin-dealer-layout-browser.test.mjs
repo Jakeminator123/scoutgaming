@@ -50,6 +50,7 @@ async function adminStylesheet(){return stylesheet??=(async()=>{
 })();}
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href);const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
 async function openDealer(browser,viewport,flik){
+  await Promise.all([fixtureBundle(),adminStylesheet()]);
   const context=await browser.newContext({viewport}),failures=[],writes=[];
   await context.addInitScript(studioHistoryBootstrap);
   await context.route('**/*',async route=>{try{
@@ -114,3 +115,19 @@ for(const viewport of [{width:1440,height:900},{width:390,height:844}])for(const
     }finally{await f.close();}
   }));
 }
+
+
+test('the real Admin shell opens search at 320, 390 and 1440px without overflow and keeps the destination on reload',{skip},()=>withBrowser(async browser=>{
+  for(const width of [320,390,1440]){
+    const f=await openDealer(browser,{width,height:900},'installningar');try{
+      const search=f.page.getByRole('button',{name:'Sök i Admin',exact:true});
+      assert.equal(await search.isVisible(),true);await search.click();
+      const box=f.page.getByRole('combobox',{name:/^Sök dealers/});await box.fill('Hjälp');
+      const overflow=await f.page.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:innerWidth,dialog:document.querySelector('dialog[open]').getBoundingClientRect().right}));
+      assert.ok(overflow.page<=width,JSON.stringify(overflow));assert.ok(overflow.dialog<=width,JSON.stringify(overflow));
+      await f.page.getByRole('dialog',{name:'Sök i Admin',exact:true}).getByRole('option',{name:/Hjälp/}).click();await f.page.waitForURL(origin+'/admin/guide');
+      await f.page.reload();await f.page.getByRole('button',{name:'Sök i Admin',exact:true}).waitFor();
+      assert.equal(new URL(f.page.url()).pathname,'/admin/guide');
+    }finally{await f.close();}
+  }
+}));

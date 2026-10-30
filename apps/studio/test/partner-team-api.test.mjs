@@ -424,9 +424,9 @@ test('publication history needs reports.read and carries only publications; the 
  await f.store.upsertMembership({actor:'fixture',operatorId:'north',userId:'45',roleId:'reports-only',status:'active'});
  await f.store.upsertMembership({actor:'fixture',operatorId:'north',userId:'46',roleId:'team-only',status:'active'});
  for(const tables of [['room-a'],['room-a','room-b']])
-  await f.store.publishPackage({actor:'fixture',operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables,branding:{}});
+  await f.store.publishPackage({actor:'fixture',operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables,rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live'})),branding:{}});
  await f.store.createOperator({actor:'fixture',operatorId:'south',slug:'south',name:'South'});
- await f.store.publishPackage({actor:'fixture',operatorId:'south',lanes:['mobile-phone'],games:['blackjack'],tables:['south-room'],branding:{}});
+ await f.store.publishPackage({actor:'fixture',operatorId:'south',lanes:['mobile-phone'],games:['blackjack'],tables:['south-room'],rooms:[{schemaVersion:2,id:'south-room',name:'South',operatorId:'south',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live'}],branding:{}});
  const [admin,viewer,editor,reader,teamAdmin]=await Promise.all(['north-admin','north-viewer','north-editor','outside-partner','north-second-admin'].map(user=>cookieFor(f.config,user)));
  assert.equal((await handlePartnerAuth(write(admin,{action:'suspend',userId:'44',expectedRevision:1}),f.config)).status,200);
  const full=origin+'/studio/api/partner/journal?operator=north',publications=full+'&kind=publications';

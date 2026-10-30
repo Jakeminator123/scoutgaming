@@ -457,7 +457,7 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
     rooms:[room('room-live',northId),room('room-preview',northId,'preview'),room('room-foreign','other-company'),
       room('room-not-in-package',northId)]};
   const pack={operatorId:northId,revision:9,lanes:['published-portrait'],
-    tables:['room-live','room-preview','room-foreign','room-missing'],branding:withPackagePresentation({},presentation)};
+    tables:['room-live','room-preview'],rooms:structuredClone(administration.rooms.slice(0,2)),branding:withPackagePresentation({},presentation)};
   const store={...memoryStore(),getCurrentPackage:async()=>pack};
   const request=new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}});
   const body=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
@@ -470,10 +470,14 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
     assert.equal(body.tables[0].operatorId,northId);
     assert.equal(body.tables[0].presentationId,'published-portrait');
     assert.deepEqual(body.tables.filter(row=>row.status==='active').map(row=>row.id),['room-live']);
-    administration.rooms[0].game='roulette';
+    pack.rooms[0].game='roulette';
     const roulette=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
     assert.equal(roulette.tables[0].game,'roulette');
     assert.equal(roulette.tables[1].game,'blackjack');
+    for(const broken of [{...pack,tables:[...pack.tables,'room-missing']},
+      {...pack,rooms:pack.rooms.map((room,index)=>index===0?{...room,operatorId:'other-company'}:room)}])
+      await assert.rejects(partnerWorkspaceData(request,{operatorSlug:'demo-north',store:{...store,getCurrentPackage:async()=>broken},
+        config:{...config,readAdministration:async()=>administration}}),{code:'studio_corrupt_operator'});
   }
   const incompatible=structuredClone(administration);
   incompatible.gameLanes[0].renderer='indexed-video';
@@ -523,7 +527,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   // Two tables written with the package's own rooms (Studio 023, L3).
   const nativeRooms=[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'},
     ...(packageRooms?[{schemaVersion:2,id:'room-two',name:'Andra bordet',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}]:[])];
-  if(packageRooms)Object.assign(state.packages[0],{tables:'["room-native","room-two"]',rooms:canonicalStudioJson(nativeRooms)});
+  Object.assign(state.packages[0],{tables:canonicalStudioJson(nativeRooms.map(room=>room.id)),rooms:canonicalStudioJson(nativeRooms)});
   function anchoredPresentation(){
     const value=structuredClone(presentation),target=value.lanes[0];
     target.layers.table={...target.layers.table,enabled:true,default:tableAsset.id,allowed:[tableAsset.id]};
@@ -532,6 +536,8 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     return value;
   }
   if(unrelatedAnchors)state.packages.push(scoped({...state.packages[0],operator_id:'other-operator',
+    tables:canonicalStudioJson(nativeRooms.map(room=>'other-'+room.id)),
+    rooms:canonicalStudioJson(nativeRooms.map(room=>({...room,id:'other-'+room.id,operatorId:'other-operator'}))),
     branding:canonicalStudioJson(withPackagePresentation({name:'Other'},anchoredPresentation()))}));
   let beforeWrite=null,clientSequence=0,writeTransactions=0;
   const copy=value=>structuredClone(value);
@@ -539,6 +545,11 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   function operatorQuery(sql,values,source) {
     const tag=/operator-store:([a-z-]+)/.exec(sql)?.[1];
     const rows=key=>source[key].filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]);
+    if(sql.includes('/* studio:current-package-rooms */')) {
+      const latest=new Map();
+      for(const row of rows('packages'))if(!latest.has(row.operator_id)||row.package_revision>latest.get(row.operator_id).package_revision)latest.set(row.operator_id,row);
+      return result([...latest.values()].sort((a,b)=>a.operator_id.localeCompare(b.operator_id)));
+    }
     if(tag==='operator-by-slug')return result(rows('operators').filter(row=>row.slug===values[2]));
     if(tag==='operator-by-id'||tag==='lock-operator')return result(rows('operators').filter(row=>row.operator_id===values[2]));
     if(tag==='get-role')return result(rows('roles').filter(row=>row.operator_id===values[2]&&row.role_id===values[3]));
@@ -556,7 +567,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     if(tag==='audit-write') {source.operatorAudits.push(copy(values));return result([{event_id:values[3]}]);}
     if(tag==='publish-package') {
       const revision=Math.max(0,...rows('packages').filter(row=>row.operator_id===values[2]).map(row=>row.package_revision))+1;
-      const row=scoped({operator_id:values[2],package_revision:revision,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]});
+      const row=scoped({operator_id:values[2],package_revision:revision,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7],rooms:values[8]});
       source.packages.push(row);return result([row],'INSERT');
     }
     throw Error('unsupported native operator fixture query '+tag);
@@ -572,7 +583,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
         const tag=/operator-store:([a-z-]+)/.exec(sql)?.[1]??/studio:([a-z-]+)/.exec(sql)?.[1]??sql.split(/\s/)[0];
         trace.push({client:id,tag,sql,values:copy(values)});
         if(sql.startsWith('BEGIN')) {readonly=sql.includes('READ ONLY');if(!readonly){writeTransactions++;mutating=true;if(beforeWrite){const change=beforeWrite;beforeWrite=null;change();}}working=copy(state);}
-        if(sql.includes('operator-store:'))return operatorQuery(sql,values,working);
+        if(sql.includes('operator-store:')||sql.includes('/* studio:current-package-rooms */'))return operatorQuery(sql,values,working);
         const response=await client.query(sql,values);
         if(sql==='COMMIT'&&!readonly&&response.command!=='ROLLBACK')state=working;
         if(sql==='COMMIT'||sql==='ROLLBACK'){if(mutating){writeTransactions--;mutating=false;}working=null;}
@@ -584,7 +595,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   const administration={rooms:structuredClone(nativeRooms),
     gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
-  await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
+  await repository.initializeDocument('administration',{value:{...administration,rooms:state.packages.flatMap(pack=>JSON.parse(pack.rooms))},revision:'admin-native-1',actor:'fixture'});
   const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project'),
     env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
       assert.equal(writeTransactions,0,'no capability HTTP inside SQL mutation');
@@ -615,7 +626,9 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     setPermissions:list=>{state.roles[0].permissions=JSON.stringify(list);},
     removeMembership:()=>{state.memberships=[];},
     addCompany:()=>{state.operators.push(scoped({operator_id:'operator-demo-south',slug:'demo-south',name:'South',status:'active',created_at_ms:1}));
-      state.packages.push(scoped({...state.packages[0],operator_id:'operator-demo-south'}));},
+      state.packages.push(scoped({...state.packages[0],operator_id:'operator-demo-south',
+        tables:canonicalStudioJson(nativeRooms.map(room=>'south-'+room.id)),
+        rooms:canonicalStudioJson(nativeRooms.map(room=>({...room,id:'south-'+room.id,operatorId:'operator-demo-south'})))}));},
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
 

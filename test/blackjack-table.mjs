@@ -288,6 +288,11 @@ test('disconnect: snapshot and deadlines are reconstructed after restart; absenc
   assert.equal(end.owners[3], null); assert.equal(end.owners[4], 'john');
   assert.equal(end.me.active, false); assert.equal(end.me.memberGen, 2, 'final release bumps memberGen');
   assert.ok(end.me.lastSettlement, 'the settlement receipt is kept for the reconnecting player');
+  assert.equal(end.me.lastSettlement.currency, 'USD');
+  t.store.test.setCurrency('kevin', 'EUR'); t.restart();
+  const reconnected = await t.snap('kevin');
+  assert.equal(reconnected.me.currency, 'EUR');
+  assert.equal(reconnected.me.lastSettlement.currency, 'USD', 'previous winnings retain their ledger currency');
 });
 
 test('ticks are idempotent: the same tickId twice (also concurrently) gives one effect', async () => {

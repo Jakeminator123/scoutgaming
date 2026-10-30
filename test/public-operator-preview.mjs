@@ -63,7 +63,7 @@ function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={
   const saved={operator:{id:'north-id',slug:'north',name:'North',status:'active',secret:'NEVER_PUBLIC'},
     administration:{gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Room',
       renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]},
-    package:{operatorId:'north-id',revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},presentation)}};
+    package:{operatorId:'north-id',revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({},presentation)}};
   if(roulette){room.game='roulette';saved.package.games=['blackjack','roulette'];}
   const reads=[],served=[];
   const api=createPublicOperatorPreview({readCurrentContext:async slug=>{reads.push(slug);return clone(saved);},
@@ -214,8 +214,8 @@ test('GET/HEAD forward Range and exact immutable storage tuple; every media reus
 test('stale revision and withdrawn room/operator/package are rejected before Blob I/O, even conditional requests',async()=>{
   const changes=[
     [409,f=>f.saved.package.revision++],[404,f=>f.saved.operator.status='suspended'],
-    [404,f=>f.saved.administration.rooms[0].state='preview'],[404,f=>f.saved.administration.rooms[0].operatorId='foreign'],
-    [404,f=>f.saved.package.tables=[]],[404,f=>f.saved.package.games=[]],[404,f=>f.saved.administration.rooms=[]],
+    [404,f=>f.saved.administration.rooms[0].state='preview'],[503,f=>f.saved.package.rooms[0].operatorId='foreign'],
+    [404,f=>{f.saved.package.tables=[];f.saved.package.rooms=[];}],[404,f=>f.saved.package.games=[]],[404,f=>{f.saved.package.rooms=[];f.saved.package.tables=[];}],
     [404,f=>f.saved.package=null],[404,f=>f.saved.operator=null],
   ];
   for(const [status,change] of changes) {

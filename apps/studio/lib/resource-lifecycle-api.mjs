@@ -193,16 +193,13 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
    if(saved.operator.status!=='active'||!saved.pack?.tables.includes(room.id)||!presentation||!isPresentationRoomLaneCompatible(gameLane,presentation.lanes.find(row=>row.id===room.presentationLaneId),presentation,room.game??'blackjack'))fail('studio_room_activation_blocked');
   }
   room.state=body.state;
-  // Plan L3 PR 3: the package carries the table's state, so a pause or an opening is a package
-  // revision (pkg+1) where only `rooms` differs. The document keeps the same state until the
-  // readers leave it. A room the package does not hold changes only in the document, as before.
-  const published=Boolean(saved.pack?.tables.includes(room.id));
+  if(!saved.pack?.tables.includes(room.id))fail('studio_room_not_found',404);
   // The settings drafts made on this package stay publishable on the next one.
-  if(published&&Array.isArray(saved.administration.roomGameConfigs))saved.administration.roomGameConfigs=saved.administration.roomGameConfigs.map(row=>
+  if(Array.isArray(saved.administration.roomGameConfigs))saved.administration.roomGameConfigs=saved.administration.roomGameConfigs.map(row=>
    row.operatorId===body.operatorId&&row.basePackageRevision===saved.pack.revision?{...row,basePackageRevision:saved.pack.revision+1}:row);
   const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(saved.administration),expectedRevision:saved.administrationRevision,actor:actor.user});
   let pack=saved.pack;
-  if(published){
+  {
    const input=packageInput(actor,body.operatorId,saved.pack,saved.pack.branding);
    // The journal's package.publish entry names the table and its new state (no DDL).
    pack=await operators.publishPackage({...input,rooms:packageRoomsFor(saved.administration,input),roomState:{roomId:room.id,state:body.state}});

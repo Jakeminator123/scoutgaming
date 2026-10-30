@@ -52,7 +52,7 @@ async function adoptFixture(t) {
   const rooms=[['north-a','north'],['north-b','north']].map(([name,operatorId])=>({schemaVersion:2,id:id(name),name:id(name),operatorId,
     presentationLaneId:lane,gameLaneId:'fixture-lane',state:'live'}));
   await raw.initializeDocument('project',{value:source.project,revision:source.project.revision,actor:'fixture'});
-  await raw.initializeDocument('administration',{value:{rooms,gameLane:'fixture-lane',gameLanes:[{schemaVersion:1,id:'fixture-lane',label:'Fixture',
+  await raw.initializeDocument('administration',{value:{rooms:[],gameLane:'fixture-lane',gameLanes:[{schemaVersion:1,id:'fixture-lane',label:'Fixture',
     renderer:'portrait-video',dealer:'dragan',mediaCollection:'dragan-presentation'}]},revision:'admin-initial',actor:'fixture'});
   for(const {revision,updatedAt,mediaTiming,...record} of structuredClone(source.records)) {
     const {media}=await raw.registerMedia(record,{actor:'fixture'});
@@ -66,7 +66,7 @@ async function adoptFixture(t) {
   const post=async body=>{const context={body,actor,scope};return api.handlers.get(POST)({...context,prepared:await api.preparations.get(POST)(context)});};
   await post({operatorId:'north',lanes:[lane]});
   const pack=await direct.getCurrentPackage('north');
-  await direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,tables:rooms.map(room=>room.id),branding:pack.branding});
+  await direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,tables:rooms.map(room=>room.id),rooms,branding:pack.branding});
   // The room is live with published settings (a prerequisite: the action publishes the room as it is).
   const configs=createRoomGameConfigApi({repository:raw,scope});
   const admin=await raw.readDocument('administration'),current=await direct.getCurrentPackage('north');

@@ -25,7 +25,7 @@ async function durable(store) {
 
 test('default absent snapshots and client snapshots without an actor retain null without new reads', async () => {
   const base = createMemoryTableStore();
-  const store = { ...base, read: { ...base.read, config: forbidden, available: forbidden, pausedUntil: forbidden },
+  const store = { ...base, read: { ...base.read, config: forbidden, funds: forbidden, available: forbidden, pausedUntil: forbidden },
     runLocked: forbidden, presence: { touch: forbidden } };
   const table = createTableCoordinator({ store, clock: { now: forbidden }, random: new Proxy({}, { get: forbidden }) });
   assert.equal(await table.snapshot(roomId, actorId), null);
@@ -46,7 +46,7 @@ test('unopened client snapshot is a virtual read with server funds and pause, wi
     contract: TABLE_CONTRACT, roomId, version: 0, configVersion: 'v2', windowId: 'unopened', phase: 'bets', roundId: null, turnSeq: 0,
     owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 })),
     deadline: null, actionDeadline: null, plan: null, round: null, shoe: null, presentationVer: 0, players: [], serverNow: clock.now(),
-    me: { id: actorId, seats: [], memberGen: 0, active: false, available: 375, pausedUntil: 200000, insuranceDue: false, lastSettlement: null },
+    me: { id: actorId, seats: [], memberGen: 0, active: false, available: 375, currency: 'USD', pausedUntil: 200000, insuranceDue: false, lastSettlement: null },
     unopened: true, settings: settings('v2', { ...DEFAULT_CONFIG, language: 'sv' }),
   });
   assert.deepEqual(await durable(base), before);
@@ -101,7 +101,7 @@ test('command client view is selected only by strict server context, including r
   }
 });
 
-function postgresFixture({ noHead = false, missingVersion, readError } = {}) {
+function postgresFixture({ noHead = false, missingVersion, readError, accounts = {} } = {}) {
   const calls = [], clients = [];
   const configs = { v1: { configVersion: 'v1', ...structuredClone(DEFAULT_CONFIG) },
     v2: { configVersion: 'v2', ...structuredClone(DEFAULT_CONFIG), language: 'sv' } };
@@ -112,6 +112,7 @@ function postgresFixture({ noHead = false, missingVersion, readError } = {}) {
         id: clients.length + 1, released: false,
         async query(sql, values = []) {
           calls.push({ client: this.id, sql, values });
+          if (sql.includes('FROM croupier_game.players p WHERE p.id=$1')) return { rows: accounts[values[0]] ? [accounts[values[0]]] : [] };
           if (sql.includes('FROM croupier_game.shared_table_config_heads')) return { rows: noHead ? [] : [{ version: 'v2' }] };
           if (sql.includes('FROM croupier_game.shared_table_configs')) {
             if (readError) throw readError;
@@ -169,4 +170,37 @@ test('PostgreSQL config reads inside the shared runner reuse the active client a
   const firstRead = h.calls.findIndex(call => call.sql.includes('shared_table_config'));
   const lastFence = h.calls.findLastIndex(call => call.sql.includes('pg_advisory_xact_lock'));
   assert.ok(firstRead > lastFence && lastFence >= 0);
+});
+
+test('snapshot funds keep the account currency and available amount in one PostgreSQL read', async () => {
+  const accounts = { alice: { available: '375.25', currency: 'EUR' }, bob: { available: '12.50', currency: 'USD' } };
+  const h = postgresFixture({ accounts });
+  for (const [actor, row] of Object.entries(accounts)) {
+    const before = h.calls.length;
+    assert.deepEqual(await h.store.read.funds(actor), { available: Number(row.available), currency: row.currency });
+    const reads = h.calls.slice(before).filter(call => call.sql.includes('FROM '));
+    assert.equal(reads.length, 1, 'currency and available cannot come from different account revisions');
+    assert.deepEqual(reads[0].values, [actor]);
+  }
+  await assert.rejects(h.store.read.funds('missing'), error => error.code === 'PLAYER_UNAVAILABLE');
+  assert.equal(h.calls.some(call => /INSERT|UPDATE|DELETE|pg_advisory|FOR SHARE|FOR UPDATE/.test(call.sql)), false);
+});
+
+test('unopened, joined and reconnected snapshots expose only the requested player currency', async () => {
+  const base = createMemoryTableStore();
+  base.test.fund(actorId, 500); base.test.fund('bob', 800);
+  base.test.setCurrency(actorId, 'EUR'); base.test.setCurrency('bob', 'SEK');
+  const table = createTableCoordinator({ store: base, clock, random: deterministicRandom('snapshot-currency') });
+  const before = await durable(base);
+  const unopened = await table.snapshot(roomId, actorId, { client: true });
+  assert.equal(unopened.me.currency, 'EUR'); assert.equal(unopened.me.available, 500);
+  assert.deepEqual(await durable(base), before);
+  const joined = await table.command({ actorId, clientSnapshot: true }, join);
+  assert.equal(joined.snapshot.me.currency, 'EUR');
+  const bob = await table.snapshot(roomId, 'bob', { client: true });
+  assert.equal(bob.me.currency, 'SEK'); assert.equal(bob.me.available, 800);
+  assert.equal(bob.players.some(player => Object.hasOwn(player, 'currency')), false);
+  base.test.setCurrency(actorId, 'USD');
+  const reconnect = createTableCoordinator({ store: base, clock, random: new Proxy({}, { get: forbidden }) });
+  assert.equal((await reconnect.snapshot(roomId, actorId, { client: true })).me.currency, 'USD');
 });

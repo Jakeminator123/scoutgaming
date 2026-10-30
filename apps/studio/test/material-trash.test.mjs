@@ -50,9 +50,9 @@ async function fixture({nativeVersion,frozenAnchors=false,measuredBank=false}={}
  const rooms=[{schemaVersion:2,id:'room-affected',name:'Berört rum',operatorId:'north',presentationLaneId:lane.id,gameLaneId:gameLane.id,state:'live'},
   {schemaVersion:2,id:'room-kept',name:'Behållet rum',operatorId:'north',presentationLaneId:retained.id,gameLaneId:gameLane.id,state:'live'}];
  await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
- await repository.initializeDocument('administration',{value:{tiers:{classic:'vera',high:'astrid',vip:'amira'},rooms,gameLanes:[gameLane],gameLane:gameLane.id,tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}},actor:'fixture'});
+ await repository.initializeDocument('administration',{value:{tiers:{classic:'vera',high:'astrid',vip:'amira'},rooms:[],gameLanes:[gameLane],gameLane:gameLane.id,tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}},actor:'fixture'});
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,now,transaction:fn=>repository.withTransactionClient(fn)}))));
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},frozenAnchors?withRetainedAnchors(cloud.presentation):cloud.presentation,{allowExtended:measuredBank})}));
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),rooms,branding:withPackagePresentation({},frozenAnchors?withRetainedAnchors(cloud.presentation):cloud.presentation,{allowExtended:measuredBank})}));
  const gates={version:nativeVersion,fetches:[],transactions:0,beforeMutation:null},nativeRepository=nativeVersion===undefined?repository:wrapNativePresentationRepository(repository,{
   env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
    assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.ok(!gates.active,'no HTTP under product lock');

@@ -13,7 +13,7 @@ const scope={environment:'test',workspaceId:'runtime-import'};
 const prepared=await prepareRuntimeMediaImport({scope,sourceRoot:root});
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const target={database:'croupier_isolated_test',role:'studio_qa',address:'127.0.0.1',port:55432};
-const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015','017']
+const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015','017','023']
   .map(version=>({version,checksum:hash(version),structureChecksum:hash('structure-'+version)}))};
 const schemaCheck=async()=>structuredClone(schema);
 const key=value=>JSON.stringify([value.environment,value.workspaceId]);
@@ -163,6 +163,7 @@ test('runtime import rejects required gaps unknown versions and invalid proofs',
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='015');},
+    value=>{value.applied=value.applied.filter(row=>row.version!=='023');},
     value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.reverse();},
@@ -215,7 +216,7 @@ test('required017 cannot be relabeled optional and every017 proof is rechecked u
 test('runtime import accepts missing or installed optional016 and still rechecks its ledger proof',async()=>{
   for(const installed of [false,true]){
     const state=structuredClone(schema),pool=memoryPool();
-    if(installed)state.applied.splice(-1,0,{version:'016',checksum:hash('016'),structureChecksum:hash('structure-016')});
+    if(installed)state.applied.splice(state.applied.findIndex(row=>row.version==='017'),0,{version:'016',checksum:hash('016'),structureChecksum:hash('structure-016')});
     else state.optionalPending=[{version:'016'}];
     pool.ledger=state.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum}));
     const check=async()=>structuredClone(state);

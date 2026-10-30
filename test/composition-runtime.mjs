@@ -147,6 +147,7 @@ test('room-specific table A uses its exact geometry without rewriting a shared A
   const cloud=cloudPresentationFixture({project:f.project,lanes:[lane],assets:f.project.layerAssets});
   f.pack.branding=withPackagePresentation({roomOverrides:{'room-a':{table:a.id}}},cloud.presentation);f.pack.tables=['room-a'];
   f.administration.rooms=[{schemaVersion:2,id:'room-a',name:'A',operatorId:'north',presentationLaneId:lane.id,gameLaneId:f.administration.gameLanes[0].id,state:'live'}];
+  f.pack.rooms=structuredClone(f.administration.rooms);
   const before=structuredClone({project:f.project,pack:f.pack});
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north'},package:f.pack})}});
   const result=await select('operator=north&table=room-a');assert.equal(result.status,200);
@@ -531,6 +532,7 @@ test('published Linnea follows her own room and frozen display label through act
   const pack={...f.pack,tables:['room-linnea'],branding:withPackagePresentation({},presentation)};
   const room={schemaVersion:2,id:'room-linnea',name:'Linneas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
   f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='linnea');
+  pack.rooms=[structuredClone(room)];
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
   assert.equal((await select('operator=north&table=room-linnea&dealer=astrid')).status,404);
   const {selection}=await select('operator=north&table=room-linnea');
@@ -560,6 +562,7 @@ test('historical v2 room entry rejects a drifted portrait adapter even when both
   const presentation=cloudPresentationFixture({project:f.project,lanes:[f.lane]}).presentation;presentation.schemaVersion=2;delete presentation.playback;
   const pack={...f.pack,tables:['room-overlap'],branding:withPackagePresentation({},presentation)};
   f.administration.rooms=[{schemaVersion:2,id:'room-overlap',name:'Overlap',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'}];
+  pack.rooms=structuredClone(f.administration.rooms);
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
   assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'linnea');
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';

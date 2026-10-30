@@ -136,26 +136,26 @@ async function fixture() {
   for (const user of users.filter(item => item.roleId)) await store.upsertMembership({ actor: 'fixture', operatorId: A.id, userId: user.id, roleId: user.roleId, status: 'active' });
   await store.upsertMembership({ actor: 'fixture', operatorId: A.id, userId: '50', roleId: 'mal', status: 'active' });
   await store.upsertMembership({ actor: 'fixture', operatorId: A.id, userId: '51', roleId: 'mal', status: 'suspended' });
-  await store.publishPackage({ actor: 'fixture', operatorId: A.id, lanes: [LANE], games: ['blackjack'], tables: ['alfa-bord'],
-    branding: withPackagePresentation({ lane: LANE }, presentation) });
-  await store.createOperator({ actor: 'fixture', operatorId: B.id, slug: B.slug, name: B.name });
-  for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId: B.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
-  await store.upsertMembership({ actor: 'fixture', operatorId: B.id, userId: '46', roleId: 'partner-admin', status: 'active' });
-  await store.publishPackage({ actor: 'fixture', operatorId: B.id, lanes: [LANE], games: ['blackjack'], tables: ['beta-bord'],
-    branding: withPackagePresentation({ lane: LANE, name: 'Betas bordsnamn' }, presentation) });
   const readAdministration = async () => ({ gameLane: 'actual-portrait',
     gameLanes: [{ schemaVersion: 1, id: 'actual-portrait', label: 'Runtime', renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }],
     rooms: [
       { schemaVersion: 2, id: 'alfa-bord', name: 'Alfas blackjack', operatorId: A.id, presentationLaneId: LANE, gameLaneId: 'actual-portrait', state: 'live' },
       { schemaVersion: 2, id: 'beta-bord', name: 'Betas blackjack', operatorId: B.id, presentationLaneId: LANE, gameLaneId: 'actual-portrait', state: 'live' },
     ] });
+  await store.publishPackage({ actor: 'fixture', operatorId: A.id, lanes: [LANE], games: ['blackjack'], tables: ['alfa-bord'],rooms:(await readAdministration()).rooms.filter(room=>room.operatorId===A.id),
+    branding: withPackagePresentation({ lane: LANE }, presentation) });
+  await store.createOperator({ actor: 'fixture', operatorId: B.id, slug: B.slug, name: B.name });
+  for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId: B.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
+  await store.upsertMembership({ actor: 'fixture', operatorId: B.id, userId: '46', roleId: 'partner-admin', status: 'active' });
+  await store.publishPackage({ actor: 'fixture', operatorId: B.id, lanes: [LANE], games: ['blackjack'], tables: ['beta-bord'],rooms:(await readAdministration()).rooms.filter(room=>room.operatorId===B.id),
+    branding: withPackagePresentation({ lane: LANE, name: 'Betas bordsnamn' }, presentation) });
   // config.store gör att skrivningarna inte går via transaktionsvägen med FOR UPDATE-låset
   // (partner-session.mjs); behörighet under lås provas av SQL-proven, inte här.
   const config = { boDb, scope, now: () => now, pool, readAdministration, store,
     gameDb: { prepare: () => ({ all: async () => [], get: async () => undefined }) },
     allowedOrigins: [origin, 'https://studio.example.invalid'], publicHosts: [host, 'studio.example.invalid'], apiBase: '/studio/api/admin', authBase: '/studio/api/auth',
     journal: createOperatorJournal({ log: () => {}, now: () => now }) };
-  return { store, pool, config, cookies, publishPackage: () => store.publishPackage({ actor: 'fixture', operatorId: A.id, lanes: [LANE], games: ['blackjack'], tables: ['alfa-bord'],
+  return { store, pool, config, cookies, publishPackage: async () => store.publishPackage({ actor: 'fixture', operatorId: A.id, lanes: [LANE], games: ['blackjack'], tables: ['alfa-bord'],rooms:(await readAdministration()).rooms.filter(room=>room.operatorId===A.id),
     branding: withPackagePresentation({ lane: LANE, name: 'Alfas andra version' }, presentation) }) };
 }
 

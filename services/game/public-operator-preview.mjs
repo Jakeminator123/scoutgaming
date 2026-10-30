@@ -29,7 +29,8 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     if(!operator||operator.status!=='active'||operator.slug!==context.operatorSlug||!pack)fail(404);
     if(pack.operatorId!==operator.id)fail();
     if(pack.revision!==context.packageRevision)fail(409);
-    const room = administration.rooms?.find(row=>row.id===context.roomId);
+    const room = pack.rooms?.find(row=>row.id===context.roomId);
+    if (!room) fail(404);
     if(!pack.games?.includes(room?.game ?? 'blackjack'))fail(404);
     const [{readPackagePresentation},{createGameEntrySelector},{supportsIndependentLayers},{resolveFrozenDealerIdle},{validateLayerAsset}]=await Promise.all([
       import('../../packages/presentation/server/presentation-package.mjs'),import('../../packages/presentation/server/game-entry-selector.mjs'),import('../../packages/operators/server/public-rooms.mjs'),

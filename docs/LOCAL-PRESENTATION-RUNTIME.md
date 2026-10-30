@@ -104,6 +104,12 @@ Det frysta innehållet omfattar mallarna (`lanes`) med tre lager (bakgrund, deal
 
 Rum (schema 2) skiljer presentationsmall och spelmall: `{schemaVersion: 2, id, name, operatorId, presentationLaneId, gameLaneId, state}` och ett `game` (saknat fält läses som blackjack). Rummets ägare, paketets `tables` och `lanes`, den frysta presentationen och spelmallen måste stämma; en uttrycklig `table`-query kräver ett levande rum och ger aldrig ett annat rum som reserv. Ett valt rum gör inte en ändring i mallen rumsspecifik; rummets egna val går via `roomOverrides`.
 
+`operator_packages.rooms` är rummens enda lagrade källa. Studio 023 krävs. Admins `administration.rooms` är en serverprojektion av varje bolags senaste paket inom exakt environment/workspace; dokumentet lagrar bara övriga administrationsfält. Rumsskrivningar publicerar den uttryckliga rumslistan tillsammans med `tables` och behåller dokumentets revisionskontroll i samma transaktion. En fristående dokumentändring får inte lägga till, ändra eller ta bort rum. Vanliga material- och utseendepubliceringar bevarar paketets rum.
+
+Historiska paket med `rooms: null` förblir oföränderliga och får inga rum från dagens dokument i revisionsvyer. Spelkonfigurationer kan fortfarande peka på ett sådant äldre materialpaket: den betrodda serverporten validerar konfigurationskedjan och skickar senaste paketet separat som `roomAuthorityPackage`. Presentation, konfigurationsversion och medie-URL:er behåller källpaketets revision. Dagens paket avgör ägare, rumsbindning och live-status; paus, arkiv eller borttagen medlemskap stänger även en äldre spelkontext. En låst pågående hand får behålla sin tidigare konfiguration efter en senare inställningspublicering.
+
+Partnern får endast återöppna sin egen obrutna paus. Den senaste explicita `package.publish`-händelsen för rummet måste vara en partnerpaus; hela paketkedjan till dagens revision ska behålla bordet och dess pausade status. Admins öppna–pausa och arkiv–återställ bryter detta bevis. Dokumenthistorik används inte som rumskälla.
+
 ## Rummets effektiva dealer
 
 Materialproducent, publiceringsvalidator, launch och åtkomst till delat bord använder samma paketbundna val (`resolvePackageRoomDealer`): rummets `roomOverrides` före bolagets standard och därefter mallens standard, alltid inom mallens publicerade `allowed` och bolagets rum. Bolagets `dealer: null` rensar dess standard. Ett ogiltigt uttryckligt rumsval ger ingen reserv. I ett rum med publicerade spelinställningar nekas en avvikande `?dealer=` före klientstart; rum utan publicerade spelinställningar behåller sitt tillåtna queryurval.
@@ -163,7 +169,7 @@ Ett avslutat kommandos `turn`/`settle` får trigga ett kopplat vilobeteende (`ru
 
 ## Delat bord
 
-Flera spelare vid samma blackjackbord. Inkopplingen styrs av `CROUPIER_SHARED_TABLE_ENABLED` på spelmotorn och kräver Postgres med spelmigreringarna 008–010 (start avbryts annars; inget installeras vid start). Staging kör `=1`; produktionen har flaggan osatt tills O03 och Jakobs separata godkännande. Se [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
+Flera spelare vid samma blackjackbord. Inkopplingen styrs av `CROUPIER_SHARED_TABLE_ENABLED` på spelmotorn och kräver Postgres med spelmigreringarna 008–010 (start avbryts annars; inget installeras vid start). Preview och produktion kör `CROUPIER_SHARED_TABLE_ENABLED=1` (verifierat 30 oktober 2026). Drift- och återställningsläget beskrivs i [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) och [NEXT-AGENT](NEXT-AGENT.md). Se [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
 
 - Rumsvägarna är `/shared-room/*` (WebSocket via Vercel-tjänsten `speech`) och `/api/shared-room/*`. I enkel-origin-layouten (PR #442) godtas den publika originen som webbläsarorigin.
 - Spelinställningarna binds per insatsfönster: ett nytt fönster binder rummets senast publicerade `configVersion`, och en pågående runda behåller sin version även om en ny publiceras. Plånbok, sko och audit är serverns.

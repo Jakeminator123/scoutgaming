@@ -11,6 +11,7 @@ function fixture() {
     package:{operatorId:'north-id',revision:7,lanes:['paow-presentation'],tables:['paow-room'],games:['blackjack']},
     administration:{rooms:[{schemaVersion:2,id:'paow-room',name:'PAOW room',operatorId:'north-id',presentationLaneId:'paow-presentation',gameLaneId:'portrait-paow',state:'live'}],
       gameLanes:[{schemaVersion:1,id:'portrait-paow',label:'PAOW',dealer:'paow',renderer:'portrait-video',mediaCollection:'paow-presentation'}]}};
+  saved.package.rooms=clone(saved.administration.rooms);
   const presentation={schemaVersion:2,projectRevision:'published-project',assets:[],lanes:[{id:'paow-presentation',dealers:['paow'],layers:{dealer:{allowed:['paow'],default:'paow'}}}],
     registeredDealers:[{id:'paow',label:'PAOW',idle:{id:'00000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,contentType:'video/mp4',pathname:'croupier/media/dealers/paow/review/uploads/00000000-0000-4000-8000-000000000001/'+ 'a'.repeat(64)+'.mp4',classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Idle',notes:'',playback:'once'}}}]};
   const reads=[];
@@ -51,7 +52,8 @@ test('safe syntax is not registration: extra dealer requires exact published con
 test('foreign operator/room/dealer, revoked room and removed package all fail closed',async()=>{
   for(const change of [
     f=>f.saved.operator.slug='other',f=>f.saved.operator.status='suspended',
-    f=>f.saved.administration.rooms[0].operatorId='other-id',f=>f.saved.administration.rooms[0].state='preview',
+    f=>f.saved.package.rooms[0].operatorId='other-id',f=>f.saved.package.rooms[0].state='preview',
+    f=>f.saved.package.rooms=null,
     f=>f.saved.package.tables=[],f=>f.saved.package.lanes=[],f=>f.saved.package=null,
     f=>f.presentation.lanes[0].layers.dealer.allowed=[],f=>f.presentation.registeredDealers=[],
   ]){
@@ -59,7 +61,7 @@ test('foreign operator/room/dealer, revoked room and removed package all fail cl
   }
 });
 test('fresh recheck blocks withdrawal or package change during async chat generation',async()=>{
-  for(const [status,change] of [[409,f=>f.saved.package.revision++],[403,f=>f.saved.administration.rooms[0].state='preview'],[403,f=>f.saved.operator.status='suspended']]){
+  for(const [status,change] of [[409,f=>f.saved.package.revision++],[403,f=>f.saved.package.rooms[0].state='preview'],[403,f=>f.saved.operator.status='suspended']]){
     const f=fixture(),granted=await f.authorize({dealerId:'paow',presentationContext:context});change(f);
     await assert.rejects(granted.recheck(),error(status));assert.equal(f.reads.length,2);
   }

@@ -116,12 +116,13 @@ test('switching or republishing a lane removes incompatible old design choices w
   // Baked variant: the old lane keeps its baked composition, so its room cannot drop the company's old
   // choices and the same switch is refused before anything is drafted or published.
   const baked={...presentation,lanes:[presentation.lanes[0],second]};let bakedWrites=0;
-  const bakedPack={...pack,tables:['room-main','room-vip'],lanes:baked.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},baked)};
+  const rooms=['room-main','room-vip'].map((id,index)=>({schemaVersion:2,id,name:id,operatorId:'north',gameLaneId:'mobile-phone',presentationLaneId:expanded.lanes[index].id,state:'live'}));
+  const bakedPack={...pack,tables:['room-main','room-vip'],rooms,lanes:baked.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},baked)};
   const bakedApi=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>bakedPack,publishPackage:async()=>{bakedWrites++;return bakedPack;}}),readProject:async()=>{throw Error('not the mutable project');}});
   await assert.rejects(publishThroughDraft(bakedApi,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{lane:'vip-table',dealer:'astrid'}}),error=>error.statusCode===422);
   assert.equal(bakedWrites,0);
-  let current={...pack,tables:['room-main','room-vip'],lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
-  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})}),readProject:async()=>{throw Error('not the mutable project');}});
+  let current={...pack,tables:['room-main','room-vip'],rooms,lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async value=>(current={...current,...value,revision:current.revision+1})}),readProject:async()=>{throw Error('not the mutable project');}});
   await assert.rejects(api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding:{lane:'vip-table',background:presentation.assets[0].id}}),error=>error.statusCode===422);
   const result=await publishThroughDraft(api,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{lane:'vip-table',dealer:'astrid'}});
   assert.deepEqual(result.branding,{lane:'vip-table',dealer:'astrid'});
@@ -273,7 +274,7 @@ function createPartnerBrandingApi(options) {
   const readAdministration=async()=>{
     const pack=await options.store.getCurrentPackage('north');
     return {revision:'admin-fixture',value:{gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
-      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId:'north',gameLaneId:'mobile-phone',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
+      rooms:structuredClone(pack.rooms??[])}};
   };
   return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
 }

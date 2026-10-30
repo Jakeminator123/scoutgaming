@@ -121,7 +121,7 @@ test('admin and public readers preserve historical sibling grants and expose the
   const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000992',role:'table',label:'Supplied blackjack',...source};table.pathname=layerAssetPath(table);
   frozen.assets=[...frozen.assets,table];frozen.lanes[0].layers.table={...frozen.lanes[0].layers.table,enabled:true,default:table.id,allowed:[table.id]};
   const bad={...f.room,id:'historical-roulette',name:'Historical roulette',game:'roulette'};
-  f.administration.rooms.push(bad);f.pack.tables.push(bad.id);f.pack.games.push('roulette');f.pack.branding=withPackagePresentation(f.pack.branding,frozen);
+  f.administration.rooms.push(bad);f.pack.rooms.push(bad);f.pack.tables.push(bad.id);f.pack.games.push('roulette');f.pack.branding=withPackagePresentation(f.pack.branding,frozen);
   const before=JSON.stringify({saved:f.saved,pack:f.pack});
   const result=await registeredDesignCatalog(f),good=result.administration.rooms.find(row=>row.id===f.room.id),historical=result.administration.rooms.find(row=>row.id===bad.id);
   assert.equal(good.published,true);assert.equal(good.playable,true);assert.ok(good.playUrl);

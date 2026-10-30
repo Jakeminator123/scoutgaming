@@ -32,7 +32,8 @@
 //   tx.savepoint() -> handle, tx.rollbackTo(handle)   (blocked consume, O01 2.5; mechanics owned by J07)
 //
 // Outside a unit of work (no game state written):
-//   store.read.{room, rooms, members, memberRooms, presence, tick, walletGen, reservation, available, pausedUntil}
+//   store.read.{room, rooms, members, memberRooms, presence, tick, walletGen, reservation, funds, available, pausedUntil}
+//   store.read.funds(actorId) -> {available, currency}, from the same account read
 //   store.presence.touch(roomId, actorId, at)   separate presence write (O01 2.2 `seen`)
 //   store.outbox.{pending(), deliveredVer(roomId), ack(row, status)}  delivery after COMMIT.
 //     deliveredVer(roomId) is the highest ver acked 'delivered' for the room. It only lets a

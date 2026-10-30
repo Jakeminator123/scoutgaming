@@ -43,9 +43,10 @@ function fixture({ secondDealer = false } = {}) {
 }
 function serviceFor(presentation) {
   const saved = {operator:{id:'north-id',slug:'north',status:'active'},
-    package:{operatorId:'north-id',revision:7,lanes:['johns-linnea'],tables:['room-linnea'],frozen:presentation},
+    package:{operatorId:'north-id',revision:7,lanes:['johns-linnea'],tables:['room-linnea'],rooms:[],frozen:presentation},
     administration:{rooms:[{schemaVersion:2,id:'room-linnea',name:'Linnea',operatorId:'north-id',presentationLaneId:'johns-linnea',gameLaneId:'portrait-linnea',state:'live'}],
       gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',dealer:'linnea',renderer:'portrait-video',mediaCollection:'linnea-presentation'}]}};
+  saved.package.rooms = saved.administration.rooms;
   const served = [];
   return {saved,served,service:createFrozenDealerPresentationContext({readCurrentContext:async () => structuredClone(saved),
     readPresentation:pack => validatePresentationPackage(pack.frozen),
@@ -92,7 +93,7 @@ test('schema3 idle and exact event URLs revalidate original bytes without alteri
     assert.equal(repeated.status,304); assert.equal(await repeated.text(),'');
   }
   assert.deepEqual(presentation,before);
-  const served=f.served.length;f.saved.administration.rooms[0].state='preview';
+  const served=f.served.length;f.saved.package.rooms[0].state='preview';
   const withdrawn=await f.service.response(new Request('https://game.invalid'+config.inventory.videos[0].src,
     {headers:{'if-none-match':`"sha256-${config.inventory.videos[0].sha256}"`}}));
   assert.equal(withdrawn.status,404);assert.equal(f.served.length,served);

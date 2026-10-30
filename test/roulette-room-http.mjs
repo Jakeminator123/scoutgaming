@@ -113,7 +113,7 @@ test('extra address keys never become roulette room context, so the client reach
   const {presentation}=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
   const room={schemaVersion:2,id:'roulette-one',name:'North Roulette',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live',game:'roulette'};
   const administration={rooms:[room],gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]};
-  const pack={operatorId:'north',revision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)};
+  const pack={operatorId:'north',revision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],rooms:[room],branding:withPackagePresentation({},presentation)};
   const access=createRouletteRoomAccess({readCurrentContext:async()=>({operator:{id:'north',slug:'north',name:'North',status:'active'},package:pack,administration})});
   const plain=await rouletteClient('?operator=north&table=roulette-one');
   const extra=await rouletteClient('?game=roulette&operator=north&table=roulette-one&utm_x=1');

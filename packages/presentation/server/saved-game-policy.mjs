@@ -81,7 +81,7 @@ export function createSavedGamePolicy({ documentContract } = {}) {
 function validateStudioGameAdministration(input) {
   const value = validateDocumentValue('administration', input, 'validation');
   const invalid = () => fail('studio_invalid_game_policy', 422);
-  if (!Array.isArray(value.rooms) || value.rooms.length > 1000) invalid();
+  if (Object.hasOwn(value, 'rooms') && (!Array.isArray(value.rooms) || value.rooms.length > 1000)) invalid();
   const roomIds = new Set();
   if (Object.hasOwn(value, 'legacyClipReview')) {
     const review = value.legacyClipReview;
@@ -90,7 +90,7 @@ function validateStudioGameAdministration(input) {
         || clipId.includes('..') || !object(record))) invalid();
   }
   let legacyRooms = false;
-  for (const room of value.rooms) {
+  for (const room of value.rooms ?? []) {
     const legacy = isLegacyGameRoom(room);
     if ((!legacy && !isPresentationRoom(room)) || roomIds.has(room.id)) invalid();
     legacyRooms ||= legacy;

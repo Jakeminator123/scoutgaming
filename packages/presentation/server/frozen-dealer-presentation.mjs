@@ -1,3 +1,4 @@
+import { packageRoomAuthority } from './package-rooms.mjs';
 import * as savedGameDocumentContract from '../../studio-registry/server/document-contract.mjs';
 
 import { registeredIdlePolicy, registeredIdleInventory } from '../runtime/registered-idle-policy.mjs';
@@ -67,9 +68,9 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       fail('studio_presentation_idle_context_unavailable', 503);
     }
     if (pack.revision !== context.packageRevision) fail('studio_presentation_idle_package_changed', 409);
-    if (!Array.isArray(administration?.rooms) || !Array.isArray(administration?.gameLanes)
+    if (!Array.isArray(administration?.gameLanes)
       || !Array.isArray(pack.tables) || !Array.isArray(pack.lanes)) fail('studio_presentation_idle_context_unavailable', 503);
-    const rooms = administration.rooms.filter(room => room?.id === context.roomId);
+    const rooms = packageRoomAuthority(pack, saved.roomAuthorityPackage).filter(room => room?.id === context.roomId);
     const room = rooms.length === 1 ? rooms[0] : null;
     // This endpoint exposes the blackjack playback contract. Roulette has its
     // own explicit idle descriptor and byte allowlist in public preview.
@@ -201,13 +202,14 @@ export function createFrozenDealerContextReader({ pool, scope } = {}) {
       let result = { operator: null, package: null };
       if (operator?.status === 'active') {
         let pack = await store.getCurrentPackage(operator.id);
+        const roomAuthorityPackage = pack;
         if (Number.isSafeInteger(packageRevision) && packageRevision > 0 && pack && packageRevision < pack.revision) {
           const previous = await store.getPackage(operator.id, packageRevision);
           if (sameFrozenPackage(pack, previous)) pack = previous;
         }
         const saved = await sql.query(`/* frozen-dealer:administration */ SELECT value FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3`, [scope.environment, scope.workspaceId, 'administration']);
         if (saved.rows.length !== 1) throw new StudioStorageError('studio_document_missing', 503);
-        result = { operator, package: pack, administration: validateStudioGameAdministration(saved.rows[0].value) };
+        result = { operator, package: pack, roomAuthorityPackage, administration: validateStudioGameAdministration(saved.rows[0].value) };
       }
       const committed = await client.query('COMMIT'); active = false;
       if (committed?.command === 'ROLLBACK') throw new StudioStorageError('studio_transaction_rolled_back', 503);

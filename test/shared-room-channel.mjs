@@ -391,3 +391,23 @@ test('PR 4: a spoken dealer line goes to each socket with its own ticket, bound 
   assert.equal(late.frames.some(f=>f.speech),false,'a socket that attaches later gets no speech');
   assert.throws(()=>h.channel.emitSpeech('room-a',{...line,lineId:'q-'+'4'.repeat(24)},()=>null),/shared_room_request_rejected/);
 });
+
+test('public snapshots preserve only the bound player and settlement currency, with no guessed legacy unit', () => {
+  for (const currency of ['USD', 'EUR', 'SEK']) {
+    const value = snapshot(); value.me.currency = currency;
+    value.me.lastSettlement = { returned: 25, currency: 'EUR', private: 'hidden' };
+    value.players[0].currency = 'SEK';
+    const result = projectSharedRoomSnapshot(value, binding());
+    assert.equal(result.me.currency, currency); assert.equal(result.me.lastSettlement.currency, 'EUR');
+    assert.equal(Object.hasOwn(result.players[0], 'currency'), false);
+    assert.equal(Object.hasOwn(result.me.lastSettlement, 'private'), false);
+    assert.throws(() => projectSharedRoomSnapshot(value, { ...binding(), actorId: 'other-player' }));
+  }
+  assert.equal(Object.hasOwn(projectSharedRoomSnapshot(snapshot(), binding()).me, 'currency'), false);
+  for (const currency of ['usd', 'SE', '<script>', '', null, 123]) {
+    const value = snapshot(); value.me.currency = currency;
+    assert.throws(() => projectSharedRoomSnapshot(value, binding()));
+    delete value.me.currency; value.me.lastSettlement = { currency };
+    assert.throws(() => projectSharedRoomSnapshot(value, binding()));
+  }
+});

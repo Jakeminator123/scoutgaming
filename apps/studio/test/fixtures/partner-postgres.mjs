@@ -59,7 +59,7 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
   const rooms = [['north-a', 'north'], ['north-b', 'north'], ['south', 'south']].map(([name, operatorId]) => ({ schemaVersion: 2, id: id(name), name: id(name), operatorId,
     presentationLaneId: lane.id, gameLaneId: 'fixture-lane', state: 'live' }));
   await raw.initializeDocument('project', { value: source.project, revision: source.project.revision, actor: 'fixture' });
-  await raw.initializeDocument('administration', { value: { rooms, gameLane: 'fixture-lane', gameLanes: [{ schemaVersion: 1, id: 'fixture-lane', label: 'Fixture',
+  await raw.initializeDocument('administration', { value: { rooms: [], gameLane: 'fixture-lane', gameLanes: [{ schemaVersion: 1, id: 'fixture-lane', label: 'Fixture',
     renderer: 'portrait-video', dealer: 'dragan', mediaCollection: 'dragan-presentation' }] }, revision: 'admin-initial', actor: 'fixture' });
   for (const { revision, updatedAt, mediaTiming, ...record } of structuredClone(source.records)) {
     const { media } = await raw.registerMedia(record, { actor: 'fixture' });
@@ -80,7 +80,7 @@ export async function partnerPostgresFixture(t, { deferOptional = [] } = {}) {
     await packages.handlers.get(POST)({ ...context, prepared: await packages.preparations.get(POST)(context) });
     const pack = await direct.getCurrentPackage(operatorId);
     await direct.publishPackage({ actor: 'fixture', operatorId, expectedRevision: pack.revision, lanes: pack.lanes, games: pack.games,
-      tables: rooms.filter(room => room.operatorId === operatorId).map(room => room.id), branding: pack.branding });
+      tables: rooms.filter(room => room.operatorId === operatorId).map(room => room.id), rooms: rooms.filter(room => room.operatorId === operatorId), branding: pack.branding });
   }
   // Konton, medlemskap och en giltig partnersession per konto (samma rader som login skriver).
   const tokens = {};

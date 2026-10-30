@@ -56,7 +56,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (!context.operator || explicitTable && context.operator.status === 'suspended') return { status: 404 };
     const current = context.package;
     if (!current) return {status:404};
-    const room = explicitTable ? resolvePackageRoom({ administration: saved.administration, package: current, operatorId: context.operator.id, roomId: tables[0] }) : null;
+    const room = explicitTable ? resolvePackageRoom({ administration: saved.administration, package: current, roomAuthorityPackage: context.roomAuthorityPackage, operatorId: context.operator.id, roomId: tables[0] }) : null;
     if (room && game !== 'any' && roomGame(room) !== game || game === 'roulette' && (!room || !current.games?.includes('roulette'))) return {status:404};
     if (explicitTable && (!room || room.state !== 'live' || !gameLanes.some(lane => lane.id === room.gameLaneId))) return { status: 404 };
     if (room) params.set('lane', room.gameLaneId);

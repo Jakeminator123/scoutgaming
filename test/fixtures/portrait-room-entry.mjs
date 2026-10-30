@@ -21,7 +21,7 @@ export function createPortraitRoomEntryFixture({dealer='linnea',allowedDealers=[
   const cloud = dealer==='amira' ? null : cloudPresentationFixture({project,lanes:[lane]});
   if(cloud)project=cloud.project;
   const presentation=cloud?.presentation ?? buildPresentationPackage(project,[lane.id],[]);
-  const pack={operatorId:room.operatorId,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'QA operator'},presentation)};
+  const pack={operatorId:room.operatorId,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({name:'QA operator'},presentation)};
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project,administration})},
     packages:{resolve:async slug=>slug===operator?{operator:{id:room.operatorId,slug:operator,status:'active'},package:pack}:{operator:null}},log(){}});
   const query='operator='+encodeURIComponent(operator)+'&table='+encodeURIComponent(room.id);

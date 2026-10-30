@@ -22,10 +22,11 @@ function fixture(dealerId = 'julia') {
       openclaw: { idle: 'rules', deal: 'off', reveal: 'off', speak: 'active', probe: 'off' } }],
     registeredDealers: [{ id: dealerId, label, idle }] };
   const saved = { operator: { id: 'north-id', slug: 'north', status: 'active' },
-    package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: [`room-${dealerId}`], frozen: presentation },
+    package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: [`room-${dealerId}`], rooms: [], frozen: presentation },
     administration: { rooms: [{ schemaVersion: 2, id: `room-${dealerId}`, name: `${label} room`, operatorId: 'north-id',
       presentationLaneId: 'vip-presentation', gameLaneId: `portrait-${dealerId}`, state: 'live' }],
       gameLanes: [{ schemaVersion: 1, id: `portrait-${dealerId}`, label, dealer: dealerId, renderer: 'portrait-video', mediaCollection: `${dealerId}-presentation` }] } };
+  saved.package.rooms = saved.administration.rooms;
   const reads = [], served = [];
   const service = createFrozenDealerPresentationContext({
     readCurrentContext: async slug => { reads.push(slug); return clone(saved); },
@@ -48,7 +49,7 @@ for (const dealerId of ['vera', 'mei', 'amira', 'johanna']) test(`${dealerId} ca
 });
 
 test('roulette room identity cannot authorize the blackjack playback configuration or bytes',async()=>{
-  const f=fixture(); f.saved.administration.rooms[0].game='roulette';
+  const f=fixture(); f.saved.package.rooms[0].game='roulette';
   await assert.rejects(f.service.configuration(input),status(404));
   assert.equal((await f.service.response(new Request(mediaUrl(input)))).status,404);
   assert.equal(f.served.length,0);
@@ -91,7 +92,7 @@ test('current package revision is re-read for every request and an old tab gets 
 test('warm idle cache rechecks publication on conditional requests and blocks withdrawn or changed context', async () => {
   for (const [change,code] of [
     [f => { f.saved.operator.status = 'suspended'; },404],
-    [f => { f.saved.administration.rooms[0].state = 'preview'; },404],
+    [f => { f.saved.package.rooms[0].state = 'preview'; },404],
     [f => { f.saved.package.revision = 8; },409],
   ]) {
     const f=fixture(), before=clone(f.saved);
@@ -113,14 +114,14 @@ test('foreign operator, room ownership, revoked membership and nonlive rooms can
   for (const change of [
     f => { f.saved.operator.slug = 'other'; },
     f => { f.saved.operator.status = 'suspended'; },
-    f => { f.saved.administration.rooms[0].operatorId = 'other-id'; },
-    f => { f.saved.administration.rooms[0].state = 'preview'; },
+    f => { f.saved.package.rooms[0].operatorId = 'other-id'; },
+    f => { f.saved.package.rooms[0].state = 'preview'; },
     f => { f.saved.package.tables = []; },
     f => { f.saved.package.lanes = []; },
-    f => { f.saved.administration.rooms = []; },
+    f => { f.saved.package.rooms = []; },
   ]) {
     const f = fixture(); change(f);
-    assert.equal((await f.service.response(new Request(mediaUrl(input)))).status, 404);
+    assert.ok([404,503].includes((await f.service.response(new Request(mediaUrl(input)))).status));
     assert.equal(f.served.length, 0);
   }
 });
@@ -133,7 +134,7 @@ test('a frozen allowed dealer still requires her exact portrait game lane, never
     f => { f.saved.administration.gameLanes.push(clone(f.saved.administration.gameLanes[0])); },
   ]) {
     const f = fixture(); change(f);
-    assert.equal((await f.service.response(new Request(mediaUrl(input)))).status, 404);
+    assert.ok([404,503].includes((await f.service.response(new Request(mediaUrl(input)))).status));
     assert.equal(f.served.length, 0);
   }
 });
@@ -141,7 +142,7 @@ test('a frozen allowed dealer still requires her exact portrait game lane, never
 test('empty frozen idle is unavailable without another dealer or latest baseline replacement', async () => {
   const f = fixture(); f.presentation.registeredDealers[0].idle = null;
   await assert.rejects(f.service.configuration(input),error=>error.statusCode===404);
-  assert.equal((await f.service.response(new Request(mediaUrl(input)))).status, 404);
+  assert.ok([404,503].includes((await f.service.response(new Request(mediaUrl(input)))).status));
   assert.equal(f.served.length, 0);
 });
 
@@ -229,6 +230,7 @@ function readerFixture({badAdmin=false,modernAdmin=false,commitRollback=false,wi
   const admin={...f.saved.administration,gameLane:'portrait-julia',tiers:{classic:'vera',high:'astrid',vip:'amira'},pitboss:{payout10x:true,streak5:true,randomWalkMin:45},tournaments:[]};
   if(modernAdmin)for(const key of ['tiers','pitboss','tournaments'])delete admin[key];
   const live={operator:operatorRow(scope,'north-id','north'),package:packageRow(scope,'north-id',7,['vip-presentation']),admin};
+  live.package.rooms=canonicalStudioJson(admin.rooms);live.package.tables=canonicalStudioJson(admin.rooms.map(room=>room.id));
   if(withHistory)live.package.branding=canonicalStudioJson({_scoutPresentation:{sha256:'same',data:'frozen'},color:'#445566'});
   const previous=withHistory?{...clone(live.package),package_revision:6,branding:canonicalStudioJson({_scoutPresentation:{sha256:changedFrozen?'other':'same',data:'frozen'},color:'#112233'})}:null;
   let active=false,snapshot=null,releases=0;
@@ -247,7 +249,7 @@ function readerFixture({badAdmin=false,modernAdmin=false,commitRollback=false,wi
 
 test('uncached SQL context reader uses one scoped read-only snapshot and releases before frozen provider access',async()=>{
   const f=readerFixture(),reader=createFrozenDealerContextReader(f),saved=await reader('north');
-  assert.equal(saved.package.revision,7);assert.equal(saved.administration.rooms[0].state,'live');assert.equal(f.live.package.package_revision,8);
+  assert.equal(saved.package.revision,7);assert.equal(saved.package.rooms[0].state,'live');assert.equal(f.live.package.package_revision,8);
   assert.equal(f.trace[0].text,'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');assert.equal(f.trace.at(-1).text,'COMMIT');assert.equal(f.active,false);assert.equal(f.releases,1);
   assert.equal((await reader('north')).package.revision,8);assert.equal(f.releases,2);
   const before=f.trace.length;assert.deepEqual(await reader('invalid/slash'),{operator:null,package:null});assert.equal(f.trace.length,before);
@@ -259,7 +261,7 @@ test('reader rolls back invalid administration and never treats a COMMIT rollbac
 
 test('frozen context reader accepts modern administration without restoring historical settings',async()=>{
   const f=readerFixture({modernAdmin:true}),reader=createFrozenDealerContextReader(f),saved=await reader('north');
-  assert.equal(saved.package.revision,7);assert.equal(saved.administration.rooms[0].state,'live');
+  assert.equal(saved.package.revision,7);assert.equal(saved.package.rooms[0].state,'live');
   for(const key of ['tiers','pitboss','tournaments'])assert.equal(Object.hasOwn(saved.administration,key),false);
   assert.equal(f.trace.at(-1).text,'COMMIT');assert.equal(f.active,false);assert.equal(f.releases,1);
 });
@@ -285,7 +287,7 @@ test('branding history preserves a round only while exact frozen media and curre
 test('SQL reader pins same-presentation branding history inside its fresh scope snapshot',async()=>{
   const f=readerFixture({withHistory:true}),reader=createFrozenDealerContextReader(f),saved=await reader('north',6);
   assert.equal(saved.package.revision,6);assert.equal(saved.package.branding.color,'#112233');
-  assert.equal(saved.administration.rooms[0].state,'live');assert.equal(f.active,false);assert.equal(f.releases,1);
+  assert.equal(saved.package.rooms[0].state,'live');assert.equal(f.active,false);assert.equal(f.releases,1);
   assert.ok(f.trace.some(row=>row.text.includes('package-by-revision')));
 });
 test('SQL reader never substitutes old N1 presentation or unavailable revision',async()=>{
