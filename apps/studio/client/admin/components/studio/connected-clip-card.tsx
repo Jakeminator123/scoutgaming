@@ -10,6 +10,7 @@ import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type C
 import { INTAKE_DRAG_TYPE } from '../../lib/clip-intake.mjs';
 import {registeredFilmedProfile} from '../../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
+  filmedProfile?:{takes:{sha256:string}[]}|null;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean; active?:boolean; onOpen?:()=>void;
   library?:ClipLibraryGroup[]; variants:{id:string;label:string;baseline?:boolean}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
   onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onBindNative?:()=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onFiles?:(files:File[])=>void; onSettings:()=>void;
@@ -18,8 +19,8 @@ export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlo
   // Mount point for actions owned elsewhere, such as a deletion button.
   actions?:ReactNode; };
 const isIntakeDrag=(event:DragEvent)=>Array.from(event.dataTransfer.types).includes(INTAKE_DRAG_TYPE);
-function filmedProfileFor(video?:VideoEntry){
-  const profile=registeredFilmedProfile(video?.classification?.dealerId??'');
+function filmedProfileFor(video?:VideoEntry,data?:CardData){
+  const profile=data?.filmedProfile??registeredFilmedProfile(video?.classification?.dealerId??'');
   return profile?.takes.some((take:{sha256:string})=>take.sha256===video?.sha256)?profile:null;
 }
 function filmedVideoBound(data:CardData,video:VideoEntry){
@@ -42,7 +43,7 @@ function clipStatusKey(data:CardData,{selected,ready,exactBinding,rendered=false
 export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{data:CardData;settingsOpen?:boolean;active?:boolean}) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
-  const filmedProfile=filmedProfileFor(selected),filmed=Boolean(filmedProfile);
+  const filmedProfile=filmedProfileFor(selected,data),filmed=Boolean(filmedProfile);
   const recording=selected?.classification?.recordedSpeech;
   const chain=data.slot.game==='roulette'?null:clipPoseChain(selected?.classification);
   const preview=useRef<HTMLVideoElement|null>(null);
@@ -115,7 +116,7 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
-  const ready=Boolean(selected&&(filmedProfileFor(selected)?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
+  const ready=Boolean(selected&&(filmedProfileFor(selected,data)?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const rendered=isRenderedOutcome(data.slot);
   const status=clipStatusKey(data,{selected,ready,exactBinding,rendered,empty:'missing'});
   const intake=data.intakeDrag&&!rendered?data.intakeDrag.check(data.slot.id):null;

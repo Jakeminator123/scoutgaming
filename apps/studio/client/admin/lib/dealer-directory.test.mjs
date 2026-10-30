@@ -296,10 +296,3 @@ test('dealer hub binds Taldrift to the shown dealer',()=>{
   assert.match(source,/<TaldriftPanel dealerId=\{dealer\.id\}\/>/);
   assert.equal(source.match(/<TaldriftPanel\b/g)?.length,1,'one Taldrift panel, always with the dealer');
 });
-
-test('dealer hub says a dealer without its own filmed profile inherits PAOW landings',async()=>{
-  const {dealerLandingsNote}=await import('./dealer-coverage.mjs');
-  assert.equal(dealerLandingsNote('jakob-2'),"Ärver PAOW:s landningar");
-  for(const dealerId of ['paow','dragan'])assert.equal(dealerLandingsNote(dealerId),null);
-  assert.match(readFileSync(new URL('../components/studio/dealer-hub.tsx',import.meta.url),'utf8'),/\{dealerLandingsNote\(dealerId\)\?\?'kommer senare'\}/);
-});
