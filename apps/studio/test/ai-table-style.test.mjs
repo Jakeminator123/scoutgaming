@@ -43,6 +43,10 @@ test('table styles colour the 3D mock-up; "Fri" with an inspiration image takes 
   const free=await feltAt({...base,preset:'free',reference:dataUrl('image/png',red)});
   assert.match(free.text,/LOOK: follow the staff description and the reference photo/);
   assert.ok(free.pixel[0]>free.pixel[1]+15&&free.pixel[0]>free.pixel[2]+15,'the felt follows the inspiration: '+free.pixel);
+  const cutout=await sharp({create:{width:128,height:128,channels:4,background:{r:0,g:0,b:0,alpha:0}}})
+    .composite([{input:red}]).png().toBuffer();
+  const transparent=await feltAt({...base,preset:'free',reference:dataUrl('image/png',cutout)});
+  assert.ok(transparent.pixel[0]>transparent.pixel[1]+15&&transparent.pixel[0]>transparent.pixel[2]+15,'transparent library margins must not turn red felt black: '+transparent.pixel);
   // The answer names the fitted placement, which "Använd i miljön" writes to the scene template.
   const answer=await (await api().handle(post({...base,preset:'casino'}))).json();
   assert.deepEqual(answer.fit,{dealerId:'paow',placement:aiPlacementHash(composition)});
@@ -61,5 +65,21 @@ test('"Fri" keeps a saturated inspiration colour but darkens it until the box st
     // The rendered mock-up passes the same landing check the server runs on a proposal.
     const check=await landingCheck(sharp(Buffer.from(filmedTableSvg(template,'surface',{look}))),zones,{stroke:AI_TABLE_STYLES.free.stroke});
     assert.equal(check.ok,true,`${name}: ${JSON.stringify(check.worst)}`);
+  }
+});
+
+test('multiple table proposals keep the same camera and edit geometry while varying only the finish',async()=>{
+  const calls=[],composition=filmedTableFit('paow').suggested.composition;
+  const response=await api({calls}).handle(post({role:'table',dealerId:'paow',prompt:'Lila filt och ek',preset:'free',count:2,sceneTemplate:{id:'studio',composition}}));
+  assert.equal(response.status,200);assert.equal(calls.length,2);
+  const [first,second]=calls.map(row=>row.body);
+  assert.deepEqual(first.tools,second.tools);
+  assert.deepEqual(first.input[0].content.slice(1),second.input[0].content.slice(1),'identical geometry is sent for both edits');
+  for(const request of [first,second]) {
+    const text=request.input[0].content[0].text;
+    assert.match(text,/vary only the material finish/);
+    assert.match(text,/Keep the same camera, perspective, silhouette, scale, framing/);
+    assert.match(text,/first image alone defines geometry, camera and size/);
+    assert.doesNotMatch(text,/different composition|STYLE REFERENCES/);
   }
 });
