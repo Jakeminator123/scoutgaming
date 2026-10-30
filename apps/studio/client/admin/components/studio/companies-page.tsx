@@ -192,19 +192,20 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         {id:'company',label:'Till bolaget',onSelect:()=>navigate(companyHref({id:room.operatorId},'spelbord'))},
       ]}/>
     </>}>
-    <Tabs items={adminRoomTabs} active={tab}/>
     {status}
-    {room&&tab!=='spel'&&<RoomSettingsWarning room={room} className="mb-4"/>}
     {room&&operator&&<>
-      {tab==='utseende'&&<RegisteredStudio mode="room" section="appearance" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed} onRoomStatus={setRoomStatus}/>}
+      <RegisteredStudio key={operator.id+':'+room.id} mode="room" section={tab==='utseende'?'appearance':tab==='spel'?'game':tab==='tillganglighet'?'state':'details'}
+        operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed} onRoomStatus={setRoomStatus}
+        navigation={<Tabs items={adminRoomTabs} active={tab}/> }>
+      {tab!=='spel'&&<RoomSettingsWarning room={room}/>}
       {tab==='dealer'&&<Card title="Dealer" aside={plural(room.dealers.length,'dealer','dealers')+' i spelbordets miljö'}>
         <Note>Dealern väljs under Utseende tillsammans med bakgrund och bordsgrafik, i bolagets utkast. Vilka dealers som kan väljas styrs av miljön.</Note>
         <div className="mt-3 grid">{room.dealers.map(dealer=><Row key={dealer.id} chip={<DealerAvatar dealer={{id:dealer.id,label:dealer.name}} size={44} motion={false}/>} title={<span className="inline-flex flex-wrap items-center gap-2">{dealer.name}<Chip tone={room.dealerSource==='published'?'ok':''}>{room.dealerSource==='published'?'publicerad':'sparad'}</Chip></span>} text="Klipp, tal och landningar finns på dealerns sida" href={`/admin/dealers/${encodeURIComponent(dealer.id)}?flik=klipp`}/>)}{!room.dealers.length&&<p className="m-0 text-[12.5px] text-sg-muted">Miljön tillåter ingen dealer ännu.</p>}</div>
       </Card>}
-      {tab==='spel'&&<RegisteredStudio mode="room" section="game" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/>}
-      {tab==='tillganglighet'&&<><Note className="mb-4">Pausa gäller direkt. Ett pausat spelbord syns inte i lobbyn och pågående rundor spelas klart.</Note><RegisteredStudio mode="room" section="state" operatorId={operator.id} roomId={room.id} disabled={disabled} onChanged={changed}/></>}
+      {tab==='tillganglighet'&&<Note>Pausa gäller direkt. Ett pausat spelbord syns inte i lobbyn och pågående rundor spelas klart.</Note>}
       {tab==='bolagets-val'&&<OperatorAdjustable laneId={room.compositionId} operator={operator} active={active&&tab==='bolagets-val'}/>}
       {tab==='historik'&&<Card title="Historik" aside="Bolagets publiceringar och utkast"><Footnote className="mb-3 mt-0">Journalen gäller hela bolaget; raderna för det här spelbordet nämner dess namn.</Footnote><PartnerJournal base="/studio/api/partner" operatorSlug={operator.slug} operatorId={operator.id}/></Card>}
+      </RegisteredStudio>
       <TechnicalDetails items={[['Spelbords-id',room.id],['Miljö-id',room.compositionId],['Spellane-id',room.laneId],['Bolags-id',room.operatorId]]}/>
       <RoomPreview room={room} revision={revision}/>
     </>}

@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { ciScope, ciSelection, ciOutputs, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired,
   gatewayContainerRequired, openClawDeployOnly, scopeOf, regressionLegs, draftPullRequest, REGRESSION_LEGS, SCOPE_LEGS, LIPSYNC_LEG,
-  BROWSER_MODES } from '../tools/ci-changes.mjs';
+  BROWSER_MODES, BROWSER_CLIENT_PREFIXES, browserAcceptanceRequired } from '../tools/ci-changes.mjs';
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
 // Nightly/manual/preview selection: the complete product, never a draft; Chrome is required.
@@ -117,6 +117,24 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
   }
   assert.equal(documentationOnly([]), false);
   assert.equal(documentationOnly([change('docs/removed.md', {status:'D',after:'000000'})]), true);
+});
+
+test('Chrome acceptance is required for browser client changes, including deletion and uncertain paths', () => {
+  assert.deepEqual(BROWSER_CLIENT_PREFIXES, ['services/game/public/', 'apps/studio/client/']);
+  for (const path of ['services/game/public/js/table.js', 'services/game/public/index.html', 'services/game/public/css/game.css',
+    'apps/studio/client/admin/router.tsx', 'apps/studio/client/package.json', 'apps/studio/client/build.mjs', '../unknown', 'a//b', '']) {
+    for (const extra of [{}, {status:'D',after:'000000'}]) {
+      assert.equal(browserAcceptanceRequired([change(path, extra)]), true, path);
+      assert.equal(browserAcceptanceRequired([change('services/game/server.mjs'), change(path, extra)]), true, 'mixed with ' + path);
+    }
+  }
+  // Server, Next pages and other Studio code keep Chrome advisory; so do look-alike prefixes.
+  for (const path of ['services/game/server.mjs', 'services/game/publication.mjs', 'services/game/public-api.mjs',
+    'apps/studio/components/editor.tsx', 'apps/studio/clients/x.mjs', 'apps/studio/lib/store.mjs', 'apps/web/app/page.tsx',
+    'test/card-view.mjs', '.github/workflows/croupier.yml', 'tools/ci-changes.mjs', 'docs/NEXT-AGENT.md']) {
+    assert.equal(browserAcceptanceRequired([change(path)]), false, path);
+  }
+  assert.equal(browserAcceptanceRequired([]), true);
 });
 
 test('Moving image verification follows worker and its workflow changes, including deletion and uncertain paths', () => {
@@ -443,6 +461,15 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     // A ready full-scope PR runs Chrome as advisory; a draft runs none.
     assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false,gateway:false,draft:false,browser:'advisory'});
     assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}),{scope:'full',migration:false,moving:false,gateway:false,draft:true,browser:'none'});
+    // Browser client code makes Chrome required on a ready PR; a draft still runs none.
+    for (const [branch, path] of [['admin-client','apps/studio/client/admin/router.tsx'],['game-client','services/game/public/js/table.js']]) {
+      git('checkout','-qb',branch); mkdirSync(join(root,...path.split('/').slice(0,-1)),{recursive:true});
+      put(path,'export const view = 1;\n'); commit(branch+' edit');
+      git('checkout','main'); git('merge','--no-ff',branch,'-m','test '+branch+' merge');
+      const ready = ciSelection({cwd:root,env:prEnv()});
+      assert.equal(ready.scope,'full',path); assert.equal(ready.draft,false); assert.equal(ready.browser,'required',path);
+      assert.equal(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}).browser,'none','a draft runs no Chrome: '+path);
+    }
     git('checkout','-qb','deploy'); mkdirSync(join(root,'services','openclaw','lab','deploy'),{recursive:true});
     put('services/openclaw/lab/deploy/start-gateway.mjs','export const gateway = 1;\n'); commit('gateway deploy edit');
     git('checkout','main'); git('merge','--no-ff','deploy','-m','test deploy merge');
@@ -696,6 +723,73 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     const name = runInNewContext("draft == 'true' && 'CI (utkast)' || 'CI'", { draft: draftFlag });
     assert.equal(name, expected);
   }
+});
+
+test('migration readiness reads the preview ledger on preview runs, production otherwise, with no fallback to production', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
+  const readiness = yaml.split('\n  migration-readiness:\n')[1]?.split('\n  moving-worker:')[0];
+  assert.ok(readiness, 'the readiness job must exist');
+  const steps = readiness.split('\n      - ').slice(1).map(step => '      - ' + step);
+  const named = name => {
+    const found = steps.filter(step => step.startsWith(`      - name: ${name}\n`));
+    assert.equal(found.length, 1, 'exactly one step: ' + name);
+    return found[0];
+  };
+  // No expression anywhere in the workflow may pick a secret with a || reserve: a && b || c returns c when b is empty.
+  for (const expression of yaml.match(/\$\{\{[^}]*\}\}/g) ?? []) {
+    if (expression.includes('secrets.')) assert.doesNotMatch(expression, /\|\||&&/, 'a secret is never chosen with && / ||: ' + expression);
+  }
+  assert.equal(yaml.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2, 'the preview secret is read only by the readiness job (presence check and preview step)');
+  assert.equal(readiness.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2);
+  const preview = named('Studio migration readiness (preview ledger)');
+  const production = named('Studio migration readiness (production ledger)');
+  assert.ok(preview.includes("\n        if: steps.ledger.outputs.environment == 'preview'\n"));
+  assert.ok(preview.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}'));
+  assert.doesNotMatch(preview, /secrets\.CROUPIER_GAME_DATABASE_URL/, 'the preview step never receives production credentials');
+  assert.ok(production.includes("\n        if: steps.ledger.outputs.environment == 'production'\n"));
+  assert.ok(production.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_GAME_DATABASE_URL }}'));
+  assert.doesNotMatch(production, /CROUPIER_PREVIEW_DATABASE_URL/);
+  for (const step of [preview, production]) assert.ok(step.includes('\n        run: node tools/check-migration-readiness.mjs\n'));
+  const select = named('Select the migration ledger (preview or production)');
+  assert.ok(steps.indexOf(select) < steps.indexOf(preview) && steps.indexOf(select) < steps.indexOf(production), 'the ledger is chosen before readiness runs');
+  assert.ok(select.includes('\n        id: ledger\n') && select.includes('\n        shell: bash\n'));
+  assert.ok(select.includes("PREVIEW_SECRET_SET: $"+"{{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}"), 'the selector sees only whether the preview secret exists');
+  assert.doesNotMatch(select, /secrets\.CROUPIER_GAME_DATABASE_URL/);
+  const script = select.split('\n        run: |\n')[1]?.split('\n').map(line => line.slice(10)).join('\n');
+  assert.ok(script?.includes('GITHUB_OUTPUT'), 'the selector script must be extractable');
+  const root = mkdtempSync(join(tmpdir(), 'ci-ledger-'));
+  try {
+    let n = 0;
+    const choose = (env) => {
+      const output = join(root, `output-${n++}`);
+      writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      return {status: result.status, output: readFileSync(output, 'utf8'), log: result.stdout + result.stderr};
+    };
+    const cases = [
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'schedule', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/heads/preview', GITHUB_BASE_REF: 'main'}, 'production'],
+    ];
+    for (const [context, ledger] of cases) {
+      const chosen = choose({...context, PREVIEW_SECRET_SET: 'true'});
+      assert.equal(chosen.status, 0, JSON.stringify(context));
+      assert.equal(chosen.output, `environment=${ledger}\n`, 'ledger for ' + JSON.stringify(context));
+      const missing = choose({...context, PREVIEW_SECRET_SET: 'false'});
+      if (ledger === 'production') {
+        assert.equal(missing.status, 0, 'production does not need the preview secret');
+        assert.equal(missing.output, 'environment=production\n');
+      } else {
+        assert.equal(missing.status, 1, 'a missing preview secret fails: ' + JSON.stringify(context));
+        assert.equal(missing.output, '', 'a missing preview secret selects no ledger at all');
+        assert.match(missing.log, /::error title=Preview migration readiness::.*CROUPIER_PREVIEW_DATABASE_URL/);
+      }
+    }
+  } finally { rmSync(root, {recursive: true, force: true}); }
 });
 
 test('lipsync worker checks run in one regression leg with isolated Python and only attest after every command passes', () => {

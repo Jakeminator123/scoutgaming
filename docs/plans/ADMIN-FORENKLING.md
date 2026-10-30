@@ -41,13 +41,17 @@ Menyn (`packages/navigation/admin-navigation.mjs`, sidomenyn `studio-sidebar.tsx
 | Miljöer och material | `/admin/scenes?tab=` | Miljöer · Material (filter Bakgrund, Bordsgrafik, Arkiverat) |
 | Bolag och spelbord | `/admin/companies?tab=` | Bolag · Alla spelbord · Papperskorg |
 | ett bolag | `/admin/companies/<id>?flik=` | Spelbord (standard, med startadresser och papperskorg) · Tilldelning · Team · Inställningar (med journalen) |
-| ett spelbord | `/admin/rooms/<id>?flik=` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik; **Publicera** överst på Utseende, Spelinställningar och Tillgänglighet; **Öppna i spelet** i sidhuvudet |
+| ett spelbord | `/admin/rooms/<id>?flik=` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik; en gemensam **Publicera** ovanför flikarna; **Öppna i spelet** i sidhuvudet |
 | System | `/admin/system?flik=` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden; Intern lobby i sidhuvudet |
 | Hjälp | `/admin/guide` | ingen; menyn, vem som får ändra vad, orden, dealerflödet, var uppgifterna kommer ifrån |
 
 Menyn visar räknare vid **Dealers** (dealers där klipp saknas) och **Bolag och spelbord** (spelbord som inte är spelbara), räknade ur det sidorna redan läst (`adminMenuCounts`); menyn läser inget själv. Gamla flik-id:n landar på närmaste flik (`adminTabAliases`), och pensionerade adresser omdirigeras i `packages/navigation/admin-workspace-routes.mjs`.
 
-**Publicera:** huvudvägen är spelbordets **Publicera** → **Publicera nu** (`room-release.tsx`, servern i `apps/studio/lib/room-release.mjs`), som jämför med live och tar med tal, klipp, vila, placering, utseende och spelinställningar. Bolagets urval av miljöer publiceras med **Publicera** under Tilldelning. Kvar på flikarna: Utseendets **Publicera · N ändringar** och **Publicera spelinställningar**; under Avancerat **Publicera igen**, **Publicera sparad placering** och **Publicera PAOWs viloklipp**.
+**Publicera:** spelbordets **Publicera** → **Publicera nu** (`room-release.tsx`, servern i `apps/studio/lib/room-release.mjs`) jämför med live och tar med tal, klipp, vila, placering, utseende och spelinställningar. Publiceringsraden ligger ovanför alla flikar och behåller sin jämförelse och sitt kvitto vid flikbyte. På öppna, publicerade blackjackbord sparar Utseende och Spelinställningar sina utkast; deras separata publiceringsknappar är borttagna. Osparade ändringar och pågående skrivning blockerar huvudknappen. Efter sparning läses jämförelsen igen.
+
+**Avgränsning:** den gemensamma servervägen stöder öppna, publicerade blackjackbord. Roulette och pausade bord behåller därför utseendets publicering; Partnerportalen är oförändrad. Bolagets urval publiceras under Tilldelning. Specialvägarna har annat omfång: **Publicera igen** ligger under Tilldelning → Felsökning, **Publicera PAOWs viloklipp** under Tillgänglighet → Felsökning (kan uppdatera ett fryst paket vars miljö saknas), och **Publicera sparad placering** under miljöns Avancerat (alla berörda spelbord). De tas inte bort utan verifierad ersättning.
+
+**Verifiering 30 oktober:** riktade klientprov kontrollerar sparning utan publicering, oförändrat grannrumsutkast, serverrevisioner, publiceringsspärr vid redigering/sparning och ny jämförelse efter sparning. Befintliga room-release-prov täcker den atomiska servervägen. Admin-klientens typkontroller och bygge passerar. CUA före/efter med syntetiska data i en tillfälligt utökad `admin-clips-fixture`: välj svenska → Publicera spärras → Spara → byt till Dealer → gemensamma granskningen visar engelska → svenska. Inget publicerades. Fixturens livscykelkvitto är ofullständigt; detta är UI-verifiering, inte deploy- eller produktionsacceptans.
 
 ## Kvar
 
@@ -56,6 +60,6 @@ Menyn visar räknare vid **Dealers** (dealers där klipp saknas) och **Bolag och
 | Steg F, per bolag | Spelarkonton och Integration ligger under System, inte i bolagets nav; bolagets flikar Spelare och Integration är borttagna och deras gamla id:n landar på Spelbord | [STEG-F](STEG-F.md): spelare och nycklar knyts till bolag; därefter får bolagets nav Spelare och ekonomi och Integration tillbaka |
 | Talkedjan | Röst och tal visar dagens verktyg; inget AI-tal fungerar i produktionen | [TALKEDJA](TALKEDJA.md): dealer-generisk kedja, Paow först |
 | Landningar 3/4–4/4 | 2/4 är mergad: en dealer som kopierat PAOW:s landningar får dem genom spelbordets låsta konfiguration (`test/shared-room-layout.mjs`); fliken Landningar visar "Ärver PAOW:s landningar" för en dealer utan egen filmad profil | landningsplanens steg 3 och 4 |
-| Publicera | flikarnas egna publiceringsknappar och tre under Avancerat står kvar bredvid huvudknappen | tas bort när huvudknappen bevisligen bevarar det de gör |
+| Publicera | en gemensam väg för öppna, publicerade blackjackbord; specialpublicering är avskild enligt ovan | roulette, pausade bord och riktade reparationer behöver likvärdigt serverstöd innan deras befintliga vägar kan tas bort |
 | Kitet | sidorna och Spelinställningar, Nytt spelbord och Tillgänglighet är byggda med kitet | vyerna på tur i [DESIGNSYSTEM](DESIGNSYSTEM.md) |
 | Partnerportalen | egen meny och vyer | [PARTNERPORTAL-KONVERTERING](PARTNERPORTAL-KONVERTERING.md) |

@@ -41,12 +41,14 @@ const ordered = (value:unknown):unknown => Array.isArray(value) ? value.map(orde
 const sameValue = (left:unknown,right:unknown) => JSON.stringify(ordered(left))===JSON.stringify(ordered(right));
 const PRESET_NAMES: Record<string, string> = {casual: 'Casual', prive: 'Privé', high: 'High'};
 
-export function PartnerAppearance({initial, apiBase, operatorSlug, language = 'sv', onSaved, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, onNotice, disabled = false, roomLayout = false, adminChoices = false, active: visible = true, roomState, settings, history, header, children}: {
+export function PartnerAppearance({initial, apiBase, operatorSlug, language = 'sv', onSaved, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, onNotice, disabled = false, roomLayout = false, adminChoices = false, publication = 'inline', active: visible = true, roomState, settings, history, header, children}: {
   initial: PartnerAppearanceInitial; apiBase: string; operatorSlug: string; language?: string;
   onSaved?: (saved: PartnerAppearanceInitial) => void;
   disabled?: boolean; roomLayout?: boolean; onBusyChange?: (busy: boolean) => void;
   // Admin (N1) may pick any layer the frozen composition allows; partners keep the company gate.
   adminChoices?: boolean; onStatus?: (status: AppearanceRoomStatus|null) => void;
+  /** Admin's open blackjack rooms publish their saved draft through RoomRelease. */
+  publication?: 'inline'|'room';
   // Partnerportalen shows the result of an action as a toast; without it the status line says it.
   onNotice?: (text: string) => void;
   // Admin room layout: a sibling editor (the room's game settings) under the layer choices.
@@ -299,7 +301,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       <Dropdown.Item className={styles.menuItem} onClick={() => setTab('historik')}><History size={14} aria-hidden="true"/>{t('Historik','History')}</Dropdown.Item>
     </Dropdown.Content></Dropdown.Portal>
   </Dropdown.Root>;
-  const actions = <div className={styles.actions}>{header?.playHref ? <a className="sg-btn sg-btn-ghost" href={header.playHref} target="_blank" rel="noopener">{t('Provspela','Play test')}<ExternalLink size={14} aria-hidden="true"/></a> : null}{saveButton}{reviewButton}{more}</div>;
+  const actions = <div className={styles.actions}>{header?.playHref ? <a className="sg-btn sg-btn-ghost" href={header.playHref} target="_blank" rel="noopener">{t('Provspela','Play test')}<ExternalLink size={14} aria-hidden="true"/></a> : null}{saveButton}{publication==='inline'&&reviewButton}{more}</div>;
 
   const allRooms = (server.rooms ?? []).map(row => row.label);
   const reviewDialog = <Dialog.Root open={reviewOpen} onOpenChange={open => { setReviewOpen(open); if (!open) setReceipt(null); }}>
@@ -397,9 +399,10 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   return <section ref={root} className={styles.panel + ' ' + styles.adminPanel} aria-label={t('Utkast och publicering','Draft and publishing')}>
     {alerts}
     {workbench}
+    {publication==='room'&&<p className={styles.hint}>{t('Spara dina val här. Publicera ovanför flikarna när spelbordet är klart.','Save your choices here. Publish above the tabs when the table is ready.')}</p>}
     <div className={styles.saveBar}><p className={styles.statusLine} role="status" aria-live="polite">{statusText}</p>{actions}</div>
     {children ? <details className={styles.gameSettings}><summary>{t('Spelinställningar','Game settings')}</summary>{children}</details> : null}
     <details className={styles.historyBox}><summary>{t('Versionshistorik','Version history')}</summary>{historyList}</details>
-    {reviewDialog}
+    {publication==='inline'&&reviewDialog}
   </section>;
 }
