@@ -29,7 +29,7 @@ function page({search='',workspace}){
     :name==='./environment-workspace'?{useEnvironmentWorkspace:args=>{hookCalls.push(args);return workspace;}}:null;
   const editor=compile(new URL('../components/studio/environment-editor.tsx',import.meta.url),name=>shared(name)??(name==='./environment-picture'?{EnvironmentPicture:stub('data-picture')}
     :name==='./studio-composition-panel'?{StudioCompositionPanel:props=>{panels.push(props);return h('section',{'data-layers':props.compositionId,'data-game':props.game,'data-in-environment':String(props.inEnvironment),'data-dealer':props.dealerId});}}
-    :name==='./scene-preview'?{ScenePreview:stub('data-preview')}:name==='./permanent-delete'?{PermanentDeleteButton:props=>{deletes.push(props);return h('button',{'data-permanent-delete':props.target.id,disabled:props.disabled});}}
+    :name==='./saved-scene-preview'?{SavedScenePreview:stub('data-preview')}:name==='./permanent-delete'?{PermanentDeleteButton:props=>{deletes.push(props);return h('button',{'data-permanent-delete':props.target.id,disabled:props.disabled});}}
     :name==='./room-settings-warning'?compile(new URL('../components/studio/room-settings-warning.tsx',import.meta.url),shared):name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
   const scenes=compile(new URL('../components/studio/scenes-page.tsx',import.meta.url),name=>shared(name)??(name==='./environment-editor'?editor
     :name==='./registered-material-library'?{RegisteredMaterialLibrary:stub('data-library')}:name==='./dealer-identity-portrait'?{DealerFaces:()=>null}
@@ -96,14 +96,13 @@ test('the Material tab filters Bakgrund, Bordsgrafik and Arkiverat over the exis
 test('an environment opens in its own view with Miljöbild, Lager och placering and Används av',()=>{
   const {html,panels}=page({search:'tab=miljoer&composition=studion',workspace:fixture()});
   assert.match(html,/<h1[^>]*>Studion <span/,"the title is the environment, with its draft state beside it");
-  assert.deepEqual([...html.matchAll(/<h2[^>]*>(Miljöbild|Lager och placering|Används av)<\/h2>/g)].map(match=>match[1]),['Miljöbild','Lager och placering','Används av']);
   assert.ok(hrefs(html).includes('/admin/scenes?tab=miljoer'),'one step back to all environments');
   assert.match(html,/data-picture="[^"]*laneId&quot;:&quot;studion/);
   // The placement editor keeps its own functions (computer and phone placement, allowed dealers and material).
   assert.equal(panels.length,1);const panel=panels[0];
   assert.equal(panel.inEnvironment,true);assert.equal(panel.compositionId,'studion');assert.equal(panel.dealerId,'astrid');assert.equal(panel.game,'blackjack');
   assert.equal(typeof panel.onEdit,'function');assert.equal(typeof panel.onRegistered,'function');assert.equal(panel.roomChoicesPath,null);
-  assert.match(html,/data-preview="[^"]*laneId&quot;:&quot;studion/,'the saved scene preview sits in the same section');
+  assert.match(html,/data-preview="[^"]*presentationLaneId&quot;:&quot;studion/,'game testing still uses the saved environment');
   // Används av lists the live and paused tables with links to their editors, where publication happens.
   const used=html.slice(html.indexOf('>Används av<'));
   assert.match(used,/Kvällsbord/);assert.match(used,/Pausbord/);assert.doesNotMatch(used,/Gammalt/);

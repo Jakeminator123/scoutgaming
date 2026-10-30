@@ -2,9 +2,9 @@
 import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {zoomComposition} from '../lib/composition-zoom.mjs';
 
-export function CompositionZoomControls({settings,disabled,onChange}:{settings:CompositionSettings;disabled:boolean;onChange:(settings:CompositionSettings)=>void}) {
+export function CompositionZoomControls({settings,layout='desktop',disabled,onChange}:{settings:CompositionSettings;layout?:'mobile'|'desktop';disabled:boolean;onChange:(settings:CompositionSettings)=>void}) {
   function candidate(factor:number) {
-    try { return zoomComposition(settings,'desktop',factor); } catch { return null; }
+    try { return zoomComposition(settings,layout,factor); } catch { return null; }
   }
   const smaller=candidate(1/1.1),larger=candidate(1.1);
   return <fieldset disabled={disabled} style={{border:0,padding:0,margin:'12px 0',minWidth:0}}>

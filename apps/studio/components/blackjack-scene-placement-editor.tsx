@@ -53,7 +53,7 @@ function SceneOverlay({dealerId,framing,value,layout,frames,selected,disabled,on
   </svg>{result.geometryWarning&&<p className={styles.warning} role="status">{result.geometryWarning}</p>}</>;
 }
 
-export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,disabled,onChange,scene,renderPreview,children}:{tableId:string;value?:BlackjackTableGeometry;savedValue?:BlackjackTableGeometry;layout:Layout;disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void;scene:Scene;renderPreview:(overlay?:ReactNode)=>ReactNode;children?:ReactNode}){
+export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,disabled,onChange,scene,renderPreview,children,showControls=true}:{tableId:string;value?:BlackjackTableGeometry;savedValue?:BlackjackTableGeometry;layout:Layout;disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void;scene:Scene;renderPreview:(overlay?:ReactNode)=>ReactNode;children?:ReactNode;showControls?:boolean}){
   const [target,setTarget]=useState('dealer'),[error,setError]=useState('');
   const geometry=value?.[layout],auto=geometry?.autoScale,followCards=geometry?.betMode==='under-cards'||!!auto?.chips,filmedCards=!!auto?.landing;
   const seatLabel=(i:number)=>`${layout==='mobile'?'Synlig plats':'Plats'} ${i+1}`;
@@ -72,9 +72,9 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
     update(next);
   }
   function placeInScene(id:string,p:TablePoint){if(!geometry)return;const rect=resolveAnchorRect(geometry.anchors?.[id.startsWith('bet')?'bets':'cards'],frames);place(id,{x:(p.x-rect.x)/rect.width,y:(p.y-rect.y)/rect.height});}
-  return <div className={styles.editor}>
+  return <div className={styles.editor} data-controls={showControls?'visible':'hidden'}>
     <div className={styles.preview}>{renderPreview(value?<SceneOverlay framing={scene.framing} dealerId={scene.dealerId} value={value} frames={frames} layout={layout} selected={selected?.id??''} disabled={disabled} onSelect={setTarget} onPlace={placeInScene}/>:undefined)}</div>
-    <div className={styles.controls}>{children}
+    <div className={styles.controls} hidden={!showControls}>{children}
     <fieldset disabled={disabled}><legend>Kort och marker · {layout==='mobile'?'mobil':'desktop'}</legend>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>{
       // New geometry starts with autoScale in both formats.

@@ -21,7 +21,7 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['EnvironmentPicture','ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['EnvironmentPicture','ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionPlacementEditor','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
   const componentRequire=name=>{
     if(name==='./scene-publication')return {ScenePublication:components.ScenePublication};
     if(name==='react')return hooks;
@@ -181,8 +181,9 @@ test('Admin table profile edits only the selected table and format behind templa
   assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].mobile.betMode,'under-cards');
   assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].desktop.betMode,undefined);
   const beforeDesktop=structuredClone(h.props.project.lanes[0].composition.desktop);
-  tree=h.render();const width=nodes(tree,node=>node.type==='label'&&text(node).startsWith('Bordsbredd'))[0];
-  nodes(width,node=>node.type==='input')[0].props.onChange({target:{valueAsNumber:165}});
+  tree=h.render();editor=nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0];
+  const visual=editor.props.renderPreview(),next=structuredClone(h.props.project.lanes[0].composition);next.mobile.table.width=1.65;
+  assert.equal(visual.type,h.CompositionPlacementEditor);assert.equal(visual.props.layout,'mobile');visual.props.onChange(next);
   assert.equal(h.edits.at(-1).lanes[0].composition.mobile.table.width,1.65);
   assert.deepEqual(h.edits.at(-1).lanes[0].composition.desktop,beforeDesktop);
   h.props.room.game='roulette';assert.equal(nodes(h.render(),node=>node.type===h.BlackjackScenePlacementEditor).length,0);
@@ -191,18 +192,31 @@ test('Admin table profile edits only the selected table and format behind templa
 
 test('roulette uses the player desktop format and zoom requires explicit shared-template editing',()=>{
   const h=panelHarness();h.props.room.game='roulette';const original=structuredClone(h.props.project);
-  let tree=h.render();let zoom=nodes(tree,node=>node.type===h.CompositionZoomControls)[0];
+  let tree=h.render();let zoom=nodes(tree,node=>node.type===h.CompositionPlacementEditor)[0];
   assert.equal(zoom.props.disabled,true);
+  zoom.props.onChange(settings.defaultCompositionSettings());assert.equal(h.edits.length,0,'scene placement cannot bypass the template edit lock');
   assert.equal(nodes(tree,node=>node.type===h.CompositionPreview)[0].props.layout,'desktop');
   assert.equal(nodes(tree,node=>node.props?.role==='tab'&&text(node)==='Mobil').length,0);
   nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam miljö')[0].props.onClick();
-  tree=h.render();zoom=nodes(tree,node=>node.type===h.CompositionZoomControls)[0];assert.equal(zoom.props.disabled,false);
+  tree=h.render();zoom=nodes(tree,node=>node.type===h.CompositionPlacementEditor)[0];assert.equal(zoom.props.disabled,false);
   const next=settings.defaultCompositionSettings();next.desktop.dealer.scale=1.1;
   zoom.props.onChange(next);
   assert.equal(h.props.project.lanes[0].composition.desktop.dealer.scale,1.1);
   assert.deepEqual(h.props.project.layerAssets,original.layerAssets);
   assert.equal(h.edits.length,1);assert.equal(h.props.room.id,'room-a');
-  h.props.blocked=true;tree=h.render();assert.equal(nodes(tree,node=>node.type===h.CompositionZoomControls)[0].props.disabled,true);
+  h.props.blocked=true;tree=h.render();zoom=nodes(tree,node=>node.type===h.CompositionPlacementEditor)[0];assert.equal(zoom.props.disabled,true);
+  zoom.props.onChange(settings.defaultCompositionSettings());assert.equal(h.edits.length,1,'a busy or blocked scene cannot stage placement changes');
+});
+
+test('an unmeasured table still previews but cannot open the card-placement plane',()=>{
+  const h=panelHarness(),lane=h.props.project.lanes[0],id='00000000-0000-4000-8000-000000000002';
+  lane.layers.table={enabled:true,default:id,allowed:[id]};
+  h.props.project.layerAssets=[{id,role:'table',game:'blackjack',label:'Unmeasured',contentType:'image/png'}];
+  const tree=h.render(),editor=nodes(tree,node=>node.type===h.CompositionPlacementEditor)[0];
+  assert.equal(editor.props.available.table,true);assert.equal(editor.props.onCardEditingChange,undefined);
+  assert.equal(nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor).length,0);
+  assert.equal(nodes(tree,node=>node.type===h.CompositionPreview)[0].props.table.url,'/studio/api/layer-assets/'+id);
+  assert.equal(h.edits.length,0);
 });
 
 test('table clips edit lanes[0].tablePlayback behind template edit ownership and reach the preview beside the background rules',()=>{
@@ -219,7 +233,7 @@ test('table clips edit lanes[0].tablePlayback behind template edit ownership and
   editor.props.onChange(policy);assert.equal(h.edits.length,1);
   assert.deepEqual(h.edits[0].lanes[0].tablePlayback,policy);assert.equal(h.edits[0].lanes[0].backgroundPlayback,undefined);
   // With a blackjack table the preview is rendered through the placement editor's render prop.
-  const previewOf=tree=>nodes(tree,node=>node.type===h.CompositionPreview)[0]??nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview();
+  const previewOf=tree=>nodes(tree,node=>node.type===h.CompositionPreview)[0]??nodes(nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview(),n=>n.type===h.CompositionPreview)[0];
   tree=h.render();let preview=previewOf(tree);
   assert.deepEqual(preview.props.tablePlayback,policy);assert.deepEqual(preview.props.tableAssets.map(row=>row.id),[still.id,clip.id]);
   assert.deepEqual(nodes(tree,n=>n.props?.['aria-label']==='Bord att placera kort på').flatMap(select=>nodes(select,n=>n.type==='option').map(option=>option.props.value)),[still.id]);
@@ -238,7 +252,7 @@ test('composition background preview and placement overlay receive the same base
  const lane=h.props.project.lanes[0];lane.layers.table.default='00000000-0000-4000-8000-000000000002';lane.layers.table.allowed=[lane.layers.table.default];
  h.props.project.layerAssets=[{id:lane.layers.table.default,role:'table',width:1672,height:941,game:'blackjack',contentType:'image/png',label:'Table'}];
  const editor=nodes(h.render(),n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.ok(editor);
- assert.deepEqual(editor.props.scene.framing,framing);assert.deepEqual(editor.props.renderPreview().props.framing,framing);
+ assert.deepEqual(editor.props.scene.framing,framing);assert.deepEqual(nodes(editor.props.renderPreview(),n=>n.type===h.CompositionPreview)[0].props.framing,framing);
 });
 
 test('every allowed board can be edited without changing defaults or room bindings, with matching preview',()=>{
@@ -248,7 +262,7 @@ test('every allowed board can be edited without changing defaults or room bindin
  const room=structuredClone(h.props.room),defaults=structuredClone(lane.layers),original=structuredClone(h.props.project);
  let tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Bord att placera kort på')[0].props.onChange({target:{value:assets[1].id}});
  tree=h.render();const editor=nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.equal(editor.props.tableId,assets[1].id);
- assert.equal(editor.props.renderPreview().props.table.url,'/studio/api/layer-assets/'+assets[1].id);assert.deepEqual(h.props.project,original);assert.deepEqual(h.props.room,room);
+ assert.equal(nodes(editor.props.renderPreview(),n=>n.type===h.CompositionPreview)[0].props.table.url,'/studio/api/layer-assets/'+assets[1].id);assert.deepEqual(h.props.project,original);assert.deepEqual(h.props.room,room);
  nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam miljö')[0].props.onClick();tree=h.render();
  nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0].props.onChange(settings.defaultBlackjackTableGeometry(assets[1].id));
  assert.equal(h.props.project.lanes[0].composition.blackjackTables[0].tableId,assets[1].id);assert.deepEqual(h.props.project.lanes[0].layers,defaults);
@@ -284,7 +298,7 @@ test('manual background and table clip previews restore their own base and polic
   }
   const before=structuredClone(h.props.project),room=structuredClone(h.props.room);
   const choose=(role,id)=>nodes(h.render(),node=>node.props?.['aria-label']===(role==='background'?'Bakgrund att förhandsvisa':'Bord att placera kort på'))[0].props.onChange({target:{value:id}});
-  const preview=()=>nodes(h.render(),node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview().props;
+  const preview=()=>nodes(nodes(h.render(),node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview(),n=>n.type===h.CompositionPreview)[0].props;
   const start=role=>nodes(h.render(),node=>node.type===(role==='background'?h.BackgroundPlaybackEditor:h.LayerPlaybackEditor))[0].props.onPreview(role+'-motion');
   for(const request of [1,2]){
     for(const role of ['background','table'])choose(role,materials[role][1].id);
