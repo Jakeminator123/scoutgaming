@@ -2,7 +2,7 @@ import {createServer} from 'node:http';
 import WebSocket, {WebSocketServer} from 'ws';
 import {platformConfiguration} from './configuration.mjs';
 import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath, SHARED_ROOM_SOCKET, sharedRoomSocketPath} from './paths.mjs';
-import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from './socket-core.mjs';
+import {platformSocketRequest, bridgePlatformSocket} from './socket-core.mjs';
 
 const BACKEND_FAILURES = new Set([400, 401, 403, 409, 429, 503, 504]);
 
@@ -32,7 +32,7 @@ function requestHeaders(request) {
 // Vercel owns the exported HTTP server's listener and socket lifecycle. Module
 // imports never bind a port; isolated fixtures explicitly listen and close it.
 export function createPlatformNativeWebSocketServer(publicPath, {env = process.env, WebSocketImpl = WebSocket,
-  handshakeMs = 10000, bridgeOptions, diagnosticEmit, WebSocketServerImpl = WebSocketServer} = {}) {
+  handshakeMs = 10000, bridgeOptions, WebSocketServerImpl = WebSocketServer} = {}) {
   if (publicPath !== SHARED_ROOM_SOCKET && publicPath !== MOVING_WORKER_SOCKET && !Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, publicPath)) throw Error('Unknown platform socket function.');
   const worker = publicPath === '/lipsync-worker';
   const room = publicPath === SHARED_ROOM_SOCKET;
@@ -61,7 +61,7 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
   const close = server.close;
   server.close = function (...args) {shutdown(); return close.apply(this, args);};
   server.on('upgrade', async (request, socket, head) => {
-    let bridge, trace = () => {}, abort;
+    let bridge, abort;
     try {
       const {configuration, status} = configure();
       if (status || !configuration) {reject(socket, status ?? 404); return;}
@@ -79,15 +79,13 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       const input = platformSocketRequest(new Request(configuration.publicOrigin + ((room || publicPath === MOVING_WORKER_SOCKET) ? request.url : publicPath),
         {headers: requestHeaders(request)}), configuration);
       if (input.status) {reject(socket, input.status); return;}
-      trace = platformSocketDiagnostics(configuration, env, publicPath, {emit: diagnosticEmit});
-      trace('created');
       const upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers,
         followRedirects: false, perMessageDeflate: false, handshakeTimeout: handshakeMs,
         maxPayload: (input.room || input.moving) ? input.maxPayload : 4 * 1024 * 1024});
-      bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.lifetimeMs ?? (worker ? 590000 : 290000), ...((input.room || input.moving) ? {maxBufferedBytes: input.maxBufferedBytes} : {}), ...bridgeOptions, trace});
+      bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.lifetimeMs ?? (worker ? 590000 : 290000), ...((input.room || input.moving) ? {maxBufferedBytes: input.maxBufferedBytes} : {}), ...bridgeOptions});
       bridges.add(bridge);
       bridge.done.then(() => bridges.delete(bridge));
-      abort = () => {trace('request_abort'); bridge.cancel();};
+      abort = () => bridge.cancel();
       socket.once('close', abort); socket.once('error', abort);
       const upstreamStatus = await new Promise(resolve => {
         upstream.once('open', () => resolve(101));
@@ -101,20 +99,18 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       if (upstreamStatus !== 101 || socket.destroyed || upstream.readyState !== WebSocket.OPEN) {
         bridge.cancel(); reject(socket, upstreamStatus === 101 ? 502 : upstreamStatus); return;
       }
-      trace('upstream_open');
       if ((input.protocols.length && upstream.protocol !== input.protocols[0]) || (input.room && upstream.protocol)) {bridge.cancel(); reject(socket, 502); return;}
       // Only Render can accept the current owner/session, single-use ticket or
       // worker bearer/capability. Its authenticated 101 precedes public upgrade.
       websocketServer.handleUpgrade(request, socket, head, frontend => {
         socket.removeListener('close', abort); socket.removeListener('error', abort);
         bridge.attach(frontend);
-        trace('returned', {status: 101});
       });
       // handleUpgrade can reject an invalid WebSocket key/version on its own.
       if (socket.destroyed) bridge.cancel();
       bridge.done.then(() => {socket.removeListener('close', abort); socket.removeListener('error', abort);});
     } catch {
-      trace('failed'); bridge?.cancel();
+      bridge?.cancel();
       if (abort) {socket.removeListener('close', abort); socket.removeListener('error', abort);}
       reject(socket, 502);
     }

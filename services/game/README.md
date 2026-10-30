@@ -1,6 +1,6 @@
-# Spelmotorn och spelklienten
+# Spelbackend, regelkärna och spelklient
 
-`services/game/` är spelmotorn för blackjack och roulette: sessioner, historik, kort, sko, saldo, utbetalningar, delat bord och spelklienten. Entrypunkten är [server.mjs](server.mjs); i drift kör den på Render `croupier-v3` bakom gatewayn i [ops/cloud](../../ops/cloud/README.md). Spelskalet finns i [apps/web](../../apps/web/README.md), talingressen i `apps/speech/` och Admin, partnerportal och lobby i [apps/studio](../../apps/studio/README.md).
+`services/game/` är spelbackendens samlade kod: regelkärna, sessioner, historik, saldo, delat bord, spelklient och talintegration. Render-tjänstens namn `croupier-v3` är en driftidentitet, inte ett påstående att all kod här är spelregler. Entrypunkten är [server.mjs](server.mjs); i drift kör den på Render `croupier-v3` bakom gatewayn i [ops/cloud](../../ops/cloud/README.md). Spelskalet finns i [apps/web](../../apps/web/README.md), talingressen i `apps/speech/` och Admin, partnerportal och lobby i [apps/studio](../../apps/studio/README.md).
 
 | Del | Ansvar |
 | --- | --- |
@@ -8,10 +8,17 @@
 | [storage/](storage/README.md) | PostgreSQL-pooler, läsarportar och publicerade presentationspaket |
 | `games/roulette/` | Rouletteregler, kommandon, åtkomst och lagring |
 | `generated-speech*`, `dealer-speech*`, `moving-speech-*`, `openclaw-chat.mjs` | Dealerchatt, tal och registrerade klipp |
-| `games/blackjack/round.mjs`, `core.mjs`, `table/` | Gemensamma handregler och V3:s delade bord |
+| `games/blackjack/round.mjs`, `core.mjs` | Gemensamma handregler och ren regelkärna |
+| `games/blackjack/table/` | Platser, kommandon, samtidighet och plånboks-/lagringsadaptrar kring kärnan |
 | `player-*`, `postgres-native-table.mjs`, `shoe-game.mjs`, `preview-table.mjs` | Spelaridentitet, historik och kvarvarande native-/provspelsadaptrar |
 
 Blackjack har en gemensam handregelklass men ännu olika kommando- och lagringsadaptrar. Nativeadaptern behövs bland annat av Admins Provspel och sparade rundor; den får inte raderas enbart för att det delade bordet är påslaget. [Blackjackguiden](../../docs/games/blackjack/README.md) beskriver gränsen, testerna och villkoren för fortsatt avveckling.
+
+## Vad som får ändras
+
+Spelkärnan bestämmer regler, slump, sko, kort och utfall. Presentation, navigation, sittperspektiv, insatsrutornas UI, rumspublicering och tal är andra ansvar och får förbättras eller ersättas. En befintlig adapter får också avvecklas när dess aktiva anrop har ersatts. Mappnamnet är inget ändringsförbud. Behörighet, atomisk bokföring och serverägda utfall ska fortfarande fungera efter ändringen.
+
+TTS och GPU-arbete utförs utanför regelkärnan. Vissa taladaptrar delar fortfarande Render-process med spelet; en framtida tjänsteuppdelning kan isolera start- och driftfel utan att ändra blackjackreglerna. Jakob-2:s läppsynk är pausad enligt senaste beslut, oberoende av denna kodgräns.
 
 ## Delade paket
 

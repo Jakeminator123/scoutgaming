@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {once, EventEmitter} from 'node:events';
 import WebSocket, {WebSocketServer} from 'ws';
 import {platformConfiguration} from '../../../packages/navigation/server/platform-routing.mjs';
-import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from '@croupier/server-transport/socket-core';
+import {platformSocketRequest, bridgePlatformSocket} from '@croupier/server-transport/socket-core';
 import {createPlatformNativeWebSocketServer} from '@croupier/server-transport/node-server';
 import {issueTicket} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
@@ -85,18 +85,6 @@ class FakeSocket extends EventEmitter {
   close(code) {this.codes.push(code); this.readyState = WebSocket.CLOSED; this.emit('close', code);}
   terminate() {this.close(1006);}
 }
-
-test('socket diagnostics stay silent for product origins and never observe bridge writes', () => {
-  const rows = [];
-  for (const runtime of [{NODE_ENV: 'production'}, {}]) {
-    for (const path of ['/speech-stream', '/lipsync-worker']) {
-      const trace = platformSocketDiagnostics(configuration, runtime, path, {emit: value => rows.push(value)});
-      assert.notEqual(trace.enabled, true, path);
-      trace('attached'); trace('upstream_receive', {bytes: 1, binary: true}); trace('done');
-    }
-  }
-  assert.deepEqual(rows, []);
-});
 
 test('bridge keeps a native socket cork it does not own and delivers exact frames after the owner uncorks', {timeout: 5000}, async () => {
   const server = createServer(), websocketServer = new WebSocketServer({noServer: true, perMessageDeflate: false});
