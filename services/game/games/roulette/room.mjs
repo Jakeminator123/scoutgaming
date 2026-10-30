@@ -31,7 +31,7 @@ export function roomView(state, room = ROOM) {
 }
 // Called only inside the wallet transaction. A failed commit exposes no outcome.
 // Version checks prevent stale/replayed commands from generating another result.
-export function roomCommand(state, request, balance, { draw = createSpinResult, currency = 'USD', room = ROOM } = {}) {
+export function roomCommand(state, request, balance, { draw = createSpinResult, currency = 'USD', room = ROOM, availableBalance = balance } = {}) {
   if (state.schemaVersion !== 1 || !Number.isSafeInteger(state.version) || state.version < 0 || !Array.isArray(state.rounds)) fail('invalid_saved_room');
   if (exact(request,['op']) && request.op === 'state') return { view:roomView(state,room), changed:false };
   if (!exact(request,['op','requestId','version','bets',...(Object.hasOwn(request ?? {},'currency')?['currency']:[])]) || request.op !== 'spin'
@@ -49,7 +49,7 @@ export function roomCommand(state, request, balance, { draw = createSpinResult, 
   if (state.version !== request.version) fail('room_changed');
   if (request.currency !== undefined && request.currency !== currency) fail('currency_changed');
   const wagered = bets.reduce((sum,bet)=>sum+cents(bet.amount),0);
-  if (cents(balance) < wagered) fail('insufficient_balance');
+  if (cents(availableBalance) < wagered) fail('insufficient_balance');
   const event = draw({ operatorId:room.operatorId, roomId:room.id, roundId:randomUUID() });
   const pocket = describePocket(event?.outcome?.number);
   if (pocket.color !== event.outcome.color) fail('invalid_outcome');

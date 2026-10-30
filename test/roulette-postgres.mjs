@@ -5,6 +5,8 @@ import {readFile} from 'node:fs/promises';
 import {createPostgresStore} from '../services/game/storage/postgres-store.mjs';
 import {createPostgresRouletteCommand} from '../services/game/games/roulette/storage.mjs';
 import {ROOM} from '../services/game/games/roulette/room.mjs';
+import {createPgliteStore} from './fixtures/pglite-pool.mjs';
+import {describePocket} from '../services/game/games/roulette/index.mjs';
 import {createRouletteRoomAccess} from '../services/game/games/roulette/access.mjs';
 import {createFrozenDealerContextReader} from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 import {createOperatorStore} from '../packages/operators/server/operator-store.mjs';
@@ -12,6 +14,65 @@ import {createStudioRepository} from '../packages/studio-registry/server/documen
 import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
+
+// Run the same persisted-funding checks locally in PGlite and in CI's isolated PostgreSQL.
+async function fundingChecks(pool) {
+  const id='roulette-funding-'+randomUUID(),reservation=randomUUID();let draws=0,number=2;
+  const run=createPostgresRouletteCommand({pool:createPostgresStore({pool}).gamePool,draw:context=>{
+    draws++;return {...context,eventId:randomUUID(),occurredAt:new Date().toISOString(),outcome:describePocket(number)};
+  }});
+  await pool.query('INSERT INTO croupier_game.players(id,name,currency,balance,created_at) VALUES($1,$2,$3,100,$4)',[id,'Synthetic funding','USD',new Date().toISOString()]);
+  await pool.query("INSERT INTO croupier_game.shared_wallet_reservations(reservation_id,player_id,room_id,kind,amount,generation) VALUES($1,$2,'synthetic-blackjack','stake',100,0)",[reservation,id]);
+  const blocked={id,op:'spin',requestId:randomUUID(),version:0,bets:[{id:'red',amount:100}]};
+  for(let i=0;i<2;i++) await assert.rejects(run(blocked),/insufficient_balance/);
+  assert.equal(draws,0);
+  const empty=await run({id,op:'state'});
+  assert.equal(empty.balance,100);assert.equal(empty.version,0);assert.equal(empty.rounds.length,0);
+  assert.equal(Number((await pool.query('SELECT count(*) AS n FROM croupier_game.transactions WHERE player_id=$1',[id])).rows[0].n),0);
+  await pool.query('UPDATE croupier_game.shared_wallet_reservations SET amount=80 WHERE reservation_id=$1',[reservation]);
+  const request={...blocked,requestId:randomUUID(),bets:[{id:'red',amount:20}]};
+  const loss=await run(request);
+  assert.equal(loss.balance,80);assert.equal(loss.round.net,-20);assert.equal(draws,1);
+  const replay=await run(request);
+  assert.equal(replay.replayed,true);assert.deepEqual(replay.round,loss.round);assert.equal(draws,1);
+  await assert.rejects(run({...request,requestId:randomUUID(),version:1}),/insufficient_balance/);
+  await pool.query('UPDATE croupier_game.shared_wallet_reservations SET amount=60 WHERE reservation_id=$1',[reservation]);
+  number=1;
+  const win=await run({...request,requestId:randomUUID(),version:1});
+  assert.equal(win.balance,100);assert.equal(win.round.net,20);assert.equal(draws,2);
+  assert.equal(Number((await pool.query('SELECT amount FROM croupier_game.shared_wallet_reservations WHERE reservation_id=$1',[reservation])).rows[0].amount),60);
+  const ledger=(await pool.query('SELECT type,amount FROM croupier_game.transactions WHERE player_id=$1 ORDER BY id',[id])).rows;
+  assert.deepEqual(ledger.map(row=>[row.type,Number(row.amount)]),[['roulette_bet',-20],['roulette_bet',-20],['roulette_payout',40]]);
+}
+
+async function reservationLockCheck(pool) {
+  const id='roulette-lock-'+randomUUID();let draws=0,entered;
+  await pool.query('INSERT INTO croupier_game.players(id,name,currency,balance,created_at) VALUES($1,$2,$3,100,$4)',[id,'Synthetic lock','USD',new Date().toISOString()]);
+  const waiting=new Promise(resolve=>{entered=resolve;});
+  const observed={query:(...args)=>pool.query(...args),async connect(){const client=await pool.connect();return {release:()=>client.release(),query(sql,values){
+    const result=client.query(sql,values);
+    if(sql.includes('players')&&sql.includes('FOR UPDATE')) entered();
+    return result;
+  }};}};
+  const run=createPostgresRouletteCommand({pool:createPostgresStore({pool:observed}).gamePool,draw:()=>{draws++;throw Error('must not draw');}});
+  const writer=await pool.connect();let attempt;
+  try {
+    await writer.query('BEGIN');
+    // The real reservation trigger acquires the player lock before its insert.
+    await writer.query("INSERT INTO croupier_game.shared_wallet_reservations(reservation_id,player_id,room_id,kind,amount,generation) VALUES($1,$2,'synthetic-blackjack','stake',100,0)",[randomUUID(),id]);
+    attempt=run({id,op:'spin',requestId:randomUUID(),version:0,bets:[{id:'red',amount:100}]}).then(value=>({value}),error=>({error}));
+    await Promise.race([waiting,attempt.then(()=>assert.fail('spin completed before acquiring the player lock'))]);
+    const pid=(await writer.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+    let blocked=false;
+    for(let i=0;i<100&&!blocked;i++){
+      blocked=(await writer.query('SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))) AS blocked',[pid])).rows[0].blocked;
+      if(!blocked) await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.equal(blocked,true,'roulette must be waiting for the reservation writer before its commit');
+    await writer.query('COMMIT');
+    assert.equal((await attempt).error?.message,'insufficient_balance');assert.equal(draws,0);
+  } finally {await writer.query('ROLLBACK');writer.release();await attempt;}
+}
 
 async function publicationPoolChecks(pool) {
   const scope={environment:'roulette-pool-qa',workspaceId:randomUUID()};
@@ -66,6 +127,7 @@ export async function runRoulettePostgresChecks({pool,restart}={}) {
   const open=()=>createPostgresRouletteCommand({pool:createPostgresStore({pool}).gamePool,draw});
   const sql=await readFile(new URL('../ops/neon-game/007-roulette-tables.sql',import.meta.url),'utf8');
   await pool.query(sql);await pool.query(sql);
+  await pool.query(await readFile(new URL('../ops/neon-game/008-shared-wallet.sql',import.meta.url),'utf8'));
   await pool.query('INSERT INTO croupier_game.players(id,name,currency,balance,created_at) VALUES($1,$2,$3,$4,$5)',[id,'Isolated roulette','USD',100,new Date().toISOString()]);
   let run=open();
   const request={id,op:'spin',requestId:randomUUID(),version:0,bets:[{id:'straight-0',amount:2}]};
@@ -109,6 +171,9 @@ export async function runRoulettePostgresChecks({pool,restart}={}) {
   await pool.query("UPDATE croupier_game.players SET status='blocked' WHERE id=$1",[id]);
   await assert.rejects(run(next),/player_unavailable/);
   checks.push('roulette: blocked players cannot read or play a room');
+  await fundingChecks(pool);
+  await reservationLockCheck(pool);
+  checks.push('roulette: reserved funds cannot spin, settled receipts replay and waiting commands see committed reservations');
   await publicationPoolChecks(pool);
   checks.push('roulette: eight real publication rechecks reuse the held wallet clients; revocation rolls back');
   return {pool,checks};
@@ -118,4 +183,9 @@ test('roulette SQL acceptance refuses non-isolated database identities before mu
   let queries=0;
   await assert.rejects(runRoulettePostgresChecks({pool:{query:async()=>{queries++;return {rows:[{address:'production.invalid',role:'owner',database:'game',listeners:'*'}]};}}}));
   assert.equal(queries,1);
+});
+
+test('roulette funding excludes reservations before entropy and settles only available stakes on the real schema',async t=>{
+  const store=await createPgliteStore();t.after(()=>store.close());
+  await fundingChecks(store.pool);
 });
