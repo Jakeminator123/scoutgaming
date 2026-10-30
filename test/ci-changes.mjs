@@ -120,9 +120,11 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
 });
 
 test('Chrome acceptance is required for browser client changes, including deletion and uncertain paths', () => {
-  assert.deepEqual(BROWSER_CLIENT_PREFIXES, ['services/game/public/', 'apps/studio/client/']);
+  assert.deepEqual(BROWSER_CLIENT_PREFIXES, ['services/game/public/', 'apps/studio/client/', 'apps/studio/components/']);
   for (const path of ['services/game/public/js/table.js', 'services/game/public/index.html', 'services/game/public/css/game.css',
-    'apps/studio/client/admin/router.tsx', 'apps/studio/client/package.json', 'apps/studio/client/build.mjs', '../unknown', 'a//b', '']) {
+    'apps/studio/client/admin/router.tsx', 'apps/studio/client/package.json', 'apps/studio/client/build.mjs',
+    'apps/studio/components/appearance-choices.tsx', 'apps/studio/components/partner-appearance.module.css',
+    'apps/studio/components/partner/views/rooms.jsx', '../unknown', 'a//b', '']) {
     for (const extra of [{}, {status:'D',after:'000000'}]) {
       assert.equal(browserAcceptanceRequired([change(path, extra)]), true, path);
       assert.equal(browserAcceptanceRequired([change('services/game/server.mjs'), change(path, extra)]), true, 'mixed with ' + path);
@@ -130,7 +132,7 @@ test('Chrome acceptance is required for browser client changes, including deleti
   }
   // Server, Next pages and other Studio code keep Chrome advisory; so do look-alike prefixes.
   for (const path of ['services/game/server.mjs', 'services/game/publication.mjs', 'services/game/public-api.mjs',
-    'apps/studio/components/editor.tsx', 'apps/studio/clients/x.mjs', 'apps/studio/lib/store.mjs', 'apps/web/app/page.tsx',
+    'apps/studio/components-old/editor.tsx', 'apps/studio/clients/x.mjs', 'apps/studio/lib/store.mjs', 'apps/web/app/page.tsx',
     'test/card-view.mjs', '.github/workflows/croupier.yml', 'tools/ci-changes.mjs', 'docs/NEXT-AGENT.md']) {
     assert.equal(browserAcceptanceRequired([change(path)]), false, path);
   }
@@ -458,8 +460,8 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     git('checkout','-qb','ui'); mkdirSync(join(root,'apps', 'studio','components'),{recursive:true});
     put('apps/studio/components/editor.tsx','export const label = "Editor";\n'); commit('client-only edit');
     git('checkout','main'); git('merge','--no-ff','ui','-m','test UI merge');
-    // A ready full-scope PR runs Chrome as advisory; a draft runs none.
-    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false,gateway:false,draft:false,browser:'advisory'});
+    // Shared Studio components require Chrome on a ready PR; a draft runs none.
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false,gateway:false,draft:false,browser:'required'});
     assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}),{scope:'full',migration:false,moving:false,gateway:false,draft:true,browser:'none'});
     // Browser client code makes Chrome required on a ready PR; a draft still runs none.
     for (const [branch, path] of [['admin-client','apps/studio/client/admin/router.tsx'],['game-client','services/game/public/js/table.js']]) {
@@ -763,16 +765,21 @@ test('migration readiness reads the preview ledger on preview runs, production o
     const choose = (env) => {
       const output = join(root, `output-${n++}`);
       writeFileSync(output, '');
-      const result = spawnSync('bash', ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      const shell = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+      const result = spawnSync(shell, ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      assert.ifError(result.error);
       return {status: result.status, output: readFileSync(output, 'utf8'), log: result.stdout + result.stderr};
     };
     const cases = [
       [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
       [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'preview'}, 'preview'],
       [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main'}, 'production'],
       [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'main'}, 'production'],
       [{GITHUB_EVENT_NAME: 'schedule', GITHUB_REF: 'refs/heads/main'}, 'production'],
       [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/jakob/codex-fixture'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/tags/preview'}, 'production'],
       [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/heads/preview', GITHUB_BASE_REF: 'main'}, 'production'],
     ];
     for (const [context, ledger] of cases) {
