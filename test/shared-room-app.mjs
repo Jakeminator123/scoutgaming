@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
 import { createSharedRoomController, ROOM_NOT_READY } from '../services/game/public/shared-room-controller.mjs';
 import { createSharedRoomView } from '../services/game/public/shared-room-view.mjs';
+import { seatWindow } from '../services/game/public/shared-room-layout.mjs';
 import { createSharedRoomPresentationPorts, mountSharedRoomPresentation } from '../services/game/public/shared-room-presentation.mjs';
 import { createSharedRoomCommandClient } from '../services/game/public/shared-room-command-client.mjs';
 import { createSharedRoomClient } from '../services/game/public/shared-room-client.mjs';
@@ -98,13 +99,57 @@ test('all server command intents use current window, membership and turn identif
 });
 
 test('stale or foreign controls cannot write; a disconnected snapshot cannot authorize a new command',async t=>{
-  const h=harness(t),connection=new AbortController();await h.restore(seated(2),connection.signal);
+  const h=harness(t),connection=new AbortController();await h.restore(seated(2,{owners:[actor,null,null,null,null,null,'bob']}),connection.signal);
   await h.controller.dispatch('bet',{seat:6,field:'main'});assert.equal(h.calls.length,0);
   await h.controller.dispatch('act',{action:'hit'});assert.equal(h.calls.length,0);
   connection.abort();await h.controller.dispatch('refill');assert.equal(h.calls.length,0);assert.equal(h.renders.at(-1).connected,false);
   await h.restore(seated(3,{windowId:'window-9',seatGen:[4,0,0,0,0,0,0]}));
   await h.controller.dispatch('bet',{seat:0,field:'main'});assert.equal(h.calls[0].windowId,'window-9');
   await assert.rejects(h.restore(seated(1)),{message:'shared_room_invalid_controls'});
+});
+
+test('a seated player can bet on every free box without moving local focus; the server claims it and rejects a racing owner',async t=>{
+  const store=createMemoryTableStore(),table=createTableCoordinator({store,clock:{now:()=>1000},random:deterministicRandom('free-box-bets')});
+  store.test.fund(actor,1000);store.test.fund('bob',1000);let n=0;
+  const send=(who,intent)=>table.command({actorId:who},{roomId,commandId:`free-box-${++n}`,...intent});
+  await send(actor,{op:'join',seats:[3],memberGen:0,seatGens:{3:0}});
+  await send('bob',{op:'join',seats:[6],memberGen:0,seatGens:{6:0}});
+  const h=harness(t,{send:async intent=>{try{return{status:'ok',...await send(actor,intent)};}catch(error){return{status:'rejected',code:error.code};}}});
+  const refresh=()=>table.snapshot(roomId,actor,{client:true}).then(s=>h.restore(s));
+  await refresh();h.controller.selectChip(5);
+  // Box 5 is still free in the displayed snapshot when the other player claims it.
+  const before=h.controller.state.snapshot,bob=await table.snapshot(roomId,'bob');
+  await send('bob',{op:'join',seats:[5,6],memberGen:bob.me.memberGen,seatGens:{5:bob.seatGen[5],6:bob.seatGen[6]}});
+  await h.controller.dispatch('bet',{seat:5,field:'main'});
+  assert.equal(h.calls.length,1,'a free main bet must reach the server');
+  assert.equal(h.controller.state.snapshot,before,'a rejected command cannot change local ownership or funds');
+  assert.match(h.renders.at(-1).notice,/upptagen/i);
+  assert.deepEqual((await table.snapshot(roomId,actor)).me.seats,[3]);
+  assert.equal((await table.snapshot(roomId,actor)).me.available,1000);
+  await send('bob',{op:'join',seats:[6],memberGen:bob.me.memberGen,seatGens:{6:bob.seatGen[6]}});await refresh();
+  for(const seat of [0,1,2,4,5]){
+    const snapshotBefore=h.controller.state.snapshot;
+    await h.controller.dispatch('bet',{seat,field:'main'});
+    assert.deepEqual(h.calls.at(-1),{op:'bet',windowId:snapshotBefore.windowId,seat,field:'main',chip:5});
+    assert.equal(h.controller.state.snapshot,snapshotBefore,'HTTP cannot claim a box before its snapshot');
+    await refresh();assert.ok(h.controller.state.snapshot.me.seats.includes(seat));
+    assert.equal(h.controller.state.snapshot.bets[seat].main,5);
+    assert.equal(seatWindow(h.controller.state.snapshot,h.renders.at(-1).focusSeat).centre,3,'bet ownership never changes the viewing focus');
+  }
+  const count=h.calls.length;await h.controller.dispatch('bet',{seat:6,field:'main'});assert.equal(h.calls.length,count);
+  assert.equal(h.controller.state.snapshot.me.available,975);
+});
+
+test('free-box bets still require membership, a main bet, an open window and a player who is not ready',async t=>{
+  const h=harness(t);await h.restore(snapshot());
+  await h.controller.dispatch('bet',{seat:3,field:'main'});assert.equal(h.calls.length,0,'first join is still required');
+  await h.restore(seated(1));
+  for(const field of ['pp','tp'])await h.controller.dispatch('bet',{seat:2,field});
+  for(const extra of [{deadline:999},{phase:'round'},{players:[{id:actor,seats:[0],ready:true,leaving:false}]}]){
+    await h.restore(seated(h.controller.state.snapshot.version+1,extra));
+    await h.controller.dispatch('bet',{seat:2,field:'main'});
+  }
+  assert.equal(h.calls.length,0);
 });
 
 test('uncertain HTTP result blocks new intents and explicit retry preserves exact original ID and body',async t=>{
@@ -397,7 +442,7 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   const {document,nodes}=documentFixture(),calls=[];const view=createSharedRoomView({document});
   view.bind({dispatch:(...args)=>calls.push(args),selectChip:amount=>calls.push(['chip',amount]),retry:()=>calls.push(['retry'])});
   const can={join:true,bet:true,leave:true,act:[],insurance:false};
-  view.render({snapshot:seated(1,{me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
+  view.render({snapshot:seated(1,{owners:[actor,null,null,null,null,null,'bob'],me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
   assert.match(nodes.get('balance').textContent,/17,5 USD demo/);assert.equal(nodes.get('seats').children.length,7);
   // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
   const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
@@ -409,14 +454,21 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   const status=nodes.get('scene').children.find(node=>node.id==='shared-room-status');assert.equal(status.children.some(node=>node.id==='shared-room-retry'),false);
   const controls=nodes.get('scene').children.find(node=>node.id==='shared-room-controls'),retry=controls.children.find(node=>node.id==='shared-room-retry');
   assert.equal(retry.hidden,false);retry.click();assert.deepEqual(calls[2],['retry']);
-  // Bet controls exist only on the player's own seat; other seats keep one touch-sized join control.
+  // Free boxes keep one touch-sized main-bet target, while full bet rows belong to owned boxes.
   assert.equal(own.children[0].children[1].hidden,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].hidden,true);
   assert.equal(nodes.get('seats').children[1].children[0].children[1].style.display,'none');
+  const free=nodes.get('seats').children[1].children[0].children[0],occupied=nodes.get('seats').children[6].children[0].children[0];
+  assert.equal(free.textContent,'+');assert.match(free.attributes['aria-label'],/Lägg huvudinsats 0,5 USD på plats 2/);
+  free.click();assert.deepEqual(calls[3],['bet',{seat:1,field:'main'}]);
+  assert.equal(occupied.disabled,true);occupied.click();assert.equal(calls.length,4);
+  // Joining can stay open after the betting deadline; the free main-bet target must not follow it.
+  view.render({snapshot:seated(2),chip:.5,can:{...can,bet:false},notice:'',connected:true});
+  assert.equal(free.disabled,true);free.click();assert.equal(calls.length,4);
   for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
   assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 USD · demo$/);
   view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
   assert.equal(nodes.get('limits').textContent,'–','no snapshot shows no stale placeholder limits');
-  view.close();leaveSeat.click();assert.equal(calls.length,3);
+  view.close();leaveSeat.click();assert.equal(calls.length,4);
 });
 
 // Jakob in staging 28 Oct 2026: Redo, Upprepa and the side bets went to the server, which answered 409 NO_BETS.
@@ -1564,7 +1616,7 @@ test('the status line tells a viewer without a seat at a full table that he wait
   render(fullTable(1));assert.equal(line(),'Väntar på plats');
   render(fullTable(2),'Skickar…');assert.equal(line(),'Skickar…','a command notice comes first');
   render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(line(),'Väntar på plats','a paused account does not wait');
-  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.equal(line(),'Välj plats och lägg insatser','a free seat ends the wait, title too');
+  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.match(line(),/Välj.*plats/,'a free seat ends the wait, title too');
   view.close();
 });
 test('the mounted table sends wait after a full table\'s snapshot, and not while the player has a seat',async t=>{

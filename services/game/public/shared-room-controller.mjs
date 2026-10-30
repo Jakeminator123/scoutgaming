@@ -7,6 +7,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
 const messages = {
   STALE_COMMAND:'Bordet har ändrats. Använd de aktuella kontrollerna.', REQUEST_REUSED:'Kommandot kunde inte bekräftas. Ladda om sidan.',
   PAUSED:'Din paus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
+  NOT_YOUR_BOX:'Platsen är upptagen. Välj en annan insatsplats.',
   INSUFFICIENT_BALANCE:'Ditt tillgängliga demosaldo räcker inte.', LIMITS:'Insatsen ligger utanför bordets gränser.',
   BETTING_CLOSED:'Insatsfönstret är stängt.', READY:'Du är redan redo. Vänta på de andra spelarna.',
   NO_BETS:'Lägg en insats först.', NO_REPEAT:'Det finns ingen tidigare insats att upprepa.',
@@ -106,7 +107,9 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     }
     if (op === 'leave') return {op,memberGen:s.me.memberGen};
     if (['bet','undo','clear','doubleBets','allSeats','repeat','ready'].includes(op)) {
-      if (op === 'bet' && (!seat(args.seat) || !s.me.seats.includes(args.seat) || !['main','pp','tp'].includes(args.field))) return null;
+      // A seated player's main bet claims a free box atomically on the server. Focus is only a view choice.
+      if (op === 'bet' && (!seat(args.seat) || !['main','pp','tp'].includes(args.field)
+        || !s.me.seats.includes(args.seat) && !(args.field === 'main' && s.owners[args.seat] === null))) return null;
       if (op === 'bet' && args.field !== 'main' && !sideOpen(s,args.seat)) return null;
       return {op,windowId:s.windowId,...(op === 'bet' ? {seat:args.seat,field:args.field,chip} : op === 'allSeats' ? {chip} : {})};
     }
@@ -152,6 +155,8 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       activeSignal?.removeEventListener('abort',disconnected);
       // Include time spent queued and checking the binding in the table clock.
       snapshot = next; activeSignal = signal; connected = true; offline = false; lost = false; clockOffset = next.serverNow-receivedAt;
+      // Keep the initial view when later bets add lower-numbered boxes to the sorted ownership list.
+      if (focusSeat === null && next.me.seats.length) focusSeat = next.me.seats[0];
       disconnected = () => { connected = false; lost = true; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
       activeSignal?.addEventListener('abort',disconnected,{once:true});
       if (!next.settings.chips.includes(chip)) chip = next.settings.chips[0];

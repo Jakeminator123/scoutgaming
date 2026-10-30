@@ -7,7 +7,7 @@ Produktens spel i drift: Johns Bet med dealern PAOW. Spelmotorn (`services/game`
 - Åtta kortlekar (416 kort), ett brännkort och cut efter 312 dragna kort. Ny blandning sker inför nästa runda, aldrig mitt i en runda. Servern behåller kortordning, brännkort och dolt hålkort.
 - S17, amerikanskt hålkort med peek, blackjack 3:2, försäkring 2:1, dubblering på två kort och efter split, högst fyra händer per plats. Delade ess får ett kort vardera. Ingen surrender. 21 efter split är vanlig 21.
 - Sidoinsatser (nettovinst): Perfect Pairs 25:1 perfekt, 12:1 samma färg, 6:1 blandad färg. 21+3 100:1 suited trips, 40:1 straight flush, 30:1 trips, 10:1 straight, 5:1 flush.
-- Sju spelarplatser (box 0–6). Det delade bordets insatsgränser kommer från rummets frysta spelkonfiguration. Den kvarvarande nativeadaptern har minst 5 och högst 2 000 per insatsfält. Sidoinsats kräver huvudinsats i båda fallen.
+- Sju insatsplatser (box 0–6), som kan ägas av samma eller olika spelare. Efter första platsvalet kan en spelare lägga huvudinsats på varje ledig ruta; servern tar rutan och reserverar insatsen atomiskt. En annan spelares ruta är spärrad. Vald vy/fokus styr vilka kontroller som visas, inte vilka lediga rutor som får spelas. På mobil kan de sju rutorna visas tre åt gången. ”Alla egna platser” lägger insats på spelarens redan ägda rutor. Det delade bordets insatsgränser kommer från rummets frysta spelkonfiguration. Den kvarvarande nativeadaptern har minst 5 och högst 2 000 per insatsfält. Sidoinsats kräver huvudinsats i båda fallen.
 
 ## Kodkarta
 
