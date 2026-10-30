@@ -33,6 +33,13 @@ Den befintliga moving-imagen är en renderare. Dess `forbered`-väg saknar Media
 Säker API-inventering ligger privat i `.cache/runpod-map-20261030/`: två konton, tre olika credentials, nio endpoints och 15 stoppade poddar. Lokal RunPod-nyckel är samma som previews movingnyckel och når kontot som Kevins inloggade webview visar. Produktionsnycklarna skiljer sig. Ingen generell env-synk är därför korrekt. Konto A har befintlig GHCR-registrybindning, men webview visar en lagrad `IMAGE_AUTH_ERROR` för Paows moving-image; en fungerande ny pull är inte verifierad. Produktionskontots moving-template pekar fortfarande på gamla `croupier-v2`; rätt framtida callback bestäms med taltjänstens gräns, inte genom blind namnändring. Befintliga resurser, `ELEVEN_KEVIN` och produktionsflaggor är orörda. Kevin-utkastet är lokalt och oskickat.
 
 
+Jakob-2:s nya ElevenLabs-replik är nu tekniskt genererad med den befintliga rösten (3,2 sekunder PCM, SHA256 `40fdcadfb2baa7c59205f08a921723e118d22562b4cfec0078ef32191f477108`). Privat underlag finns i `.cache/jakob2-moving-probe-20261030/`; inget ytterligare TTS-anrop krävs för samma prov. Preview har via ordinarie API fått 38 originalklipp samt de tio tidigare godkända spelreplikerna, egna cloudmätningar och paket 11. Det separata rummet `room-5cf6ec7b-bd83-7b6e-3810-4698fd44e71e` tillhör `jakobsspel` och miljön `jakob-2-realtid-prov`. Efterkontroll bekräftar att andra rums material och spelinställningar är oförändrade; endast beroende revisioner uppdaterades av normal publicering. Importkvitton finns i `.cache/jakob2-realtime-preview-20261030/`.
+
+Den nya moving-idle-vägen binder kroppen till den publicerade dealerns exakta original-SHA och bildruteantal. För detta prov följer 94 talrutor originalets 39 rutor cykliskt; kroppen avslutar sedan sin tredje cykel till 117 rutor med explicit tyst svans. Det är rörligt original, inte en fryst bild eller de tio förinspelade spelreplikerna. Autentiserad avbrottskanal och röst-/publiceringskontroller behålls tills uppspelningen kvitterats, med separata begränsningar för transport och uppspelning. Riktade kodprov passerar (91 godkända, två valfria browserprov överlämnade till CI); verklig GPU-rendering och läppsynk i spelet återstår.
+
+Första prep-publiceringen är städad: [run 41054426480](https://github.com/Jakeminator123/scoutgaming/actions/runs/41054426480) tog endast bort det oavsiktligt publika `moving-gpu-prep`-paketet och verifierade 404 för både paket och anonym manifesthämtning. [PR #705](https://github.com/Jakeminator123/scoutgaming/pull/705) kräver nu befintligt privat `moving-gpu-worker` och separat `prep-sha-*`-tagg före publicering. Renderarens låsta digest är oförändrad. Privat publicering och faktiskt GPU-kvitto ska kontrolleras före bankanvändning; inga befintliga RunPod-resurser eller talflaggor har ändrats.
+
+
 ## Efter O03
 
 Jakobs aktuella nattmål prioriterar dessa fyra områden. Orkestratorn samordnar filansvar, granskar och mergar; underagenter startas med tom kontext, gör avgränsade leveranser och väntar inte själva på CI.
@@ -44,7 +51,7 @@ Jakobs aktuella nattmål prioriterar dessa fyra områden. Orkestratorn samordnar
 
 ## Återstående ägarbeslut och dataåtgärder
 
-- Röstflytten till Kevin och mänsklig ljud-/bildbedömning återstår enligt avsnittet ovan.
+- Jakob-2:s befintliga ElevenLabs-röst ger nytt ljud; GPU-bank, rörlig läppsynk och mänsklig ljud-/bildbedömning återstår. Paow/Dragan använder andra kontouppgifter och ska inte blandas in i Jakob-provet.
 - F11:s driftacceptans återstår. Tills den är kvitterad gäller tomt bord och noll saldoreservationer före Render-deploy enligt [återställningsguiden](ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten). Stäng inte en okänd spelares flik för att passera kontrollen.
 - Paket med `rooms`: efter Studio 023 och med tomma bord kan ett separat godkänt uppdrag använda `republish-rooms.mjs --apply` med exakt `CROUPIER_REPUBLISH_CONFIRM=<databas>/<environment>/<workspace>`. Börja med provkörning och preview; [återställningsguiden](ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen) anger ordningen. Ingen skarp ompublicering gjordes av nattens kodarbete.
 - Kontrollera faktisk readiness före varje schemaåtgärd. `game-013` och eventuella väntande Studio-versioner är inte utförda bara för att verktyget är mergat. DDL/DML, molnrensning och aktivering följer sitt särskilda mandat och återställningsunderlag.
