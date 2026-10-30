@@ -8,6 +8,7 @@ const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 // Keep the frame layer's 48-frame ceiling. Slow providers must finish producing
 // the reply before audio starts; their encoded reply has a separate hard cap.
 const MAX_DECODED_FRAMES = 48, MAX_STAGED_BYTES = 4 * 1024 * 1024;
+const TRANSPORT_TIMEOUT_MS = 45000, PLAYBACK_GRACE_MS = 5000;
 const fail = code => { throw Error(code); };
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const abortError = () => new DOMException('Speech cancelled', 'AbortError');
@@ -171,6 +172,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   const loadRest = dependencies.loadRest ?? loadMovingSpeechRest;
   const raf = dependencies.requestAnimationFrame ?? globalThis.requestAnimationFrame;
   const caf = dependencies.cancelAnimationFrame ?? globalThis.cancelAnimationFrame;
+  const scheduleTimeout = dependencies.setTimeout ?? globalThis.setTimeout, cancelTimeout = dependencies.clearTimeout ?? globalThis.clearTimeout;
   const createURL = dependencies.createURL ?? URL.createObjectURL, revokeURL = dependencies.revokeURL ?? URL.revokeObjectURL;
   const now = dependencies.now ?? (() => performance.now()), timings = {};
   let connectedAt, socketOpenedAt;
@@ -180,13 +182,13 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
   let starting = false, started = false, firstFrame = false, completed = false, terminal = false, tail = Promise.resolve();
   const staged = [];
-  let stagedBytes = 0, decoding;
+  let stagedBytes = 0, decoding, playbackDurationMs, playbackTimeout;
   let resolveDone, rejectDone, failureCode;
   const noteFailure = error => { failureCode ??= chatFailureCode(error?.name === 'AbortError' ? 'chat_cancelled' : error?.message); };
   const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
   // Rejection can happen while awaiting descriptor validation or beforeStart.
   done.catch(() => {});
-  const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone) fail('moving_speech_socket_closed'); };
+  const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone || ready?.sequence) fail('moving_speech_socket_closed'); };
   const stop = error => {
     if (terminal) return; noteFailure(error); terminal = true; audio.pause(); audio.muted = true; controller.abort();
     if (frameHandle !== undefined) caf(frameHandle);
@@ -194,14 +196,14 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   };
   const abort = () => stop(abortError());
   signal?.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(() => stop(Error('moving_speech_timeout')), 45000);
+  const transportTimeout = scheduleTimeout(() => stop(Error('moving_speech_timeout')), TRANSPORT_TIMEOUT_MS);
   const check = () => { if (signal?.aborted || controller.signal.aborted) throw abortError(); assertCurrent(); };
   const credit = count => {
     const frames = Math.min(count, ready.plan.timeline.length - credited);
     if (frames > 0) { send({ t: 'credit', id: ready.plan.start.id, frames }); credited += frames; }
   };
   const finish = () => { if (audioEnded && workerDone && !terminal) {
-    if(speech.presentationVersion!==undefined)send({t:'played',id:ready.plan.start.id});
+    if(ready.sequence)send({t:'played',id:ready.plan.start.id});
     completed = terminal = true; resolveDone(); } };
   const finishAudioPlayback = () => {
     if (terminal) return;
@@ -262,6 +264,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if(ready.sequence&&renderFrame(bodyFrames.get(0))!==true)fail('moving_speech_render_failed');
     await abortable(audio.play(), controller.signal); check();
     if (audio.paused) fail('moving_speech_audio_paused');
+    // Generation/download and actual playback each need their own bounded budget.
+    cancelTimeout(transportTimeout);
+    playbackTimeout = scheduleTimeout(() => stop(Error('moving_speech_timeout')), Math.ceil(playbackDurationMs) + PLAYBACK_GRACE_MS);
     started = true; mark('first_playing_ms'); onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
       evidence: 'media-playing', planSha256: ready.plan.planSha256, reviewStatus: 'pending', timings: { ...timings } });
     tick();
@@ -275,7 +280,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         if (bytes.byteLength !== ready.audio.byteLength || await digest(bytes) !== ready.plan.binding.audioSha256) fail('moving_speech_pcm_hash_mismatch');
         check(); mark('first_media_ms');
         if (socketOpenedAt !== undefined) timings.socket_to_media_ms = Math.max(0, Math.round(now() - socketOpenedAt));
-        audioURL = createURL(wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
+        const audioBlob = wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined);
+        playbackDurationMs = (audioBlob.size - 44) / 48000 * 1000;
+        audioURL = createURL(audioBlob); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
       } else {
         if (!bytes.byteLength) fail('invalid_moving_speech_bytes');
         if (stagedBytes + bytes.byteLength > MAX_STAGED_BYTES) fail('moving_speech_queue_full');
@@ -343,19 +350,20 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     socket.onopen = () => { socketOpenedAt = now(); mark('socket_open_ms'); };
     socket.onmessage = event => {
       if (terminal) return;
+      // The initial envelope includes up to 1000 sequence frames plus the speech plan.
       const size = typeof event.data === 'string' ? event.data.length * 2 : event.data?.byteLength;
-      if (!integer(size) || size > (typeof event.data === 'string' ? 256 * 1024 : 2 * 1024 * 1024)
+      if (!integer(size) || size > (typeof event.data === 'string' ? (ready ? 256 : 1024) * 1024 : 2 * 1024 * 1024)
         || queued >= 8 || queuedBytes + size > 4 * 1024 * 1024) return stop(Error('moving_speech_queue_full'));
       queued++; queuedBytes += size;
       tail = tail.then(() => processMessage(event.data)).catch(stop).finally(() => { queued--; queuedBytes -= size; });
     };
     socket.onerror = () => stop(Error('moving_speech_socket_failed'));
-    socket.onclose = () => { tail.then(() => { if (!workerDone||(speech.presentationVersion!==undefined&&!audioEnded)) stop(Error('moving_speech_socket_closed')); }); };
+    socket.onclose = () => { tail.then(() => { if (!workerDone||(ready?.sequence&&!audioEnded)) stop(Error('moving_speech_socket_closed')); }); };
     await done;
   } catch (error) {
     noteFailure(error); throw error;
   } finally {
-    terminal = true; clearTimeout(timeout); signal?.removeEventListener('abort', abort); controller.abort();
+    terminal = true; cancelTimeout(transportTimeout); cancelTimeout(playbackTimeout); signal?.removeEventListener('abort', abort); controller.abort();
     audio.pause(); audio.muted = true; audio.onended = audio.onerror = null;
     if (frameHandle !== undefined) caf(frameHandle);
     if (socket) {

@@ -66,6 +66,8 @@ export function movingSpeechPreparationFailureReceipt({error, phase, streamId, r
 const same = (a,b) => typeof a === 'string' && typeof b === 'string'
   && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const publicPlan = plan => JSON.parse(JSON.stringify(plan));
+const TRANSPORT_MS = 45000;
+const idlePlaybackMs = record => Math.ceil(record.sequence.frames.length * 1000 / 24) + 5000;
 
 /** Opt-in moving path, one lane per dealer with a verified bank: its own
  * sessions (endpoint), drift admission and bank capabilities. A dealer without
@@ -92,25 +94,30 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   if (dealers.size !== lanes.length) fail('moving_speech_configuration');
   const records = new Map(), pending = new Set();
   // PR 4: a room answer is one GPU session with one buffer that every listener at the table reads (room relay).
-  const relay = createMovingSpeechRoomRelay({ticketSecret,resolveOwner,now,ticketMs:connectionMs});
+  const relay = createMovingSpeechRoomRelay({ticketSecret,resolveOwner,now,ticketMs:connectionMs,lifetimeMs:connectionMs+TRANSPORT_MS});
   const deals=createMovingDealReservations({now});
   const wss = new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false,
     handleProtocols: protocols=>protocols.has('moving-v1') ? 'moving-v1' : false});
   let closing = false;
   const sign = body => createHmac('sha256',ticketSecret).update(body).digest('base64url');
   const reject = socket => socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+  function releaseProducer(record) {
+    return record.released ??= (async()=>{
+      record.download?.revoke(); record.pcm?.fill(0); record.input?.cancel();
+      return await record.session?.cancel();
+    })();
+  }
   async function cancel(record) {
     if (record.cancelled) return record.cancelled;
     // Publish the promise before abort/close callbacks can re-enter cleanup.
     // An uncertain provider/journal result retains its durable reservation for
     // reconciliation, but must never crash the product server on disconnect.
     record.cancelled = Promise.resolve().then(async()=>{
-      record.controller.abort(); clearTimeout(record.timer); record.download?.revoke();
+      record.controller.abort(); clearTimeout(record.timer);
       if (!record.delivered) record.ws?.terminate();
       if (!record.delivered) record.broadcast?.fail();
-      record.pcm?.fill(0); record.input?.cancel();
       record.reservation?.finish();
-      return await record.session?.cancel();
+      return await releaseProducer(record);
     }).catch(()=>{
       try {onCleanupError();} catch {}
       return {cancelled:false,recoveryRequired:true};
@@ -121,7 +128,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   // is not checked per chunk. Session, voice profile and publication evidence (the dealer's freshness) still are.
   async function current(record,{checkSession=true,submissionPhase=false,asker=true}={}) {
     record.signal.throwIfAborted(); if(asker) await record.beforeCostly();
-    if(checkSession) await record.session?.assertCurrent?.({submissionPhase});
+    if(checkSession&&!record.produced) await record.session?.assertCurrent?.({submissionPhase});
     await record.voice.assertFresh();
     if(record.deal){
       record.reservation.assertCurrent();
@@ -170,9 +177,23 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         phase='chunk-send'; if(!broadcast.push([[JSON.stringify(meta),false],[bytes,true]],meta.rutor.length))fail('moving_speech_cancelled');
         phase='dispatch';
       }});
+      // The completed producer has released its journal lease. Playback keeps
+      // voice/publication freshness and cancellation, never that spent lease.
+      record.produced=true; await releaseProducer(record);
+      await current(record,{asker:false});
       phase='done';
       broadcast.push([[JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}),false]]);
-      record.delivered=true; broadcast.end();
+      broadcast.end(); phase='played';
+      while(broadcast.state!=='closed'){
+        await new Promise(resolve=>{
+          const done=()=>{clearTimeout(timer);record.signal.removeEventListener('abort',done);resolve();};
+          const timer=setTimeout(done,500);record.signal.addEventListener('abort',done,{once:true});
+          if(record.signal.aborted)done();
+        });
+        if(broadcast.state==='closed')break;
+        await current(record,{asker:false});
+      }
+      record.delivered=true;
     } catch(error) {
       try {Promise.resolve(onStreamFailure(movingSpeechFailureReceipt({error,phase,streamId:record.id,requestId:record.requestId}))).catch(()=>{});} catch {}
     } finally {await cancel(record);}
@@ -195,7 +216,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       try {
         if (binary) fail('moving_speech_invalid_credit');
         const value = JSON.parse(data.toString('utf8'));
-        if(record.deal&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
+        if((record.deal||record.idle)&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
           &&Object.keys(value).sort().join(',')==='id,t'){played=true;done=true;wake?.();return;}
         if (value.t === 'abort' && value.id === record.id && Object.keys(value).sort().join(',') === 'id,t') {void cancel(record); return;}
         if (Object.keys(value).sort().join(',') !== 'frames,id,t' || value.t !== 'credit'
@@ -233,12 +254,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         await send(ws,JSON.stringify(meta)); await send(ws,bytes,true);
         phase = 'dispatch';
       }});
+      if(record.idle)record.produced=true;
       phase = 'done';
       await send(ws,JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}));
       sentDone=true;
-      if(record.deal){
+      if(record.deal||record.idle){
         phase = 'played';
-        const deadline=now()+45000;
+        const budget=record.idle?TRANSPORT_MS+idlePlaybackMs(record):45000,deadline=now()+budget;
+        // A stalled freshness read cannot defeat the absolute playback bound.
+        if(record.idle){record.timer=setTimeout(()=>{report(Error('moving_speech_playback_timeout'),'played');void cancel(record);},budget);record.timer.unref?.();}
         while(!played){
           if(now()>deadline)fail('moving_speech_playback_timeout');
           await new Promise(resolve=>{const timer=setTimeout(resolve,500);wake=()=>{clearTimeout(timer);resolve();};});
@@ -406,7 +430,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         phase='current'; await current(record);
         if(input.room){
           record.broadcast=relay.open({id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,planId:record.input.plan.start.id,
-            frames:record.input.plan.timeline.length,owner:input.owner,playerId:input.playerId,dealerId:input.dealerId,data:record.evidence});
+            frames:record.input.plan.timeline.length,playbackMs:idlePlaybackMs(record),owner:input.owner,playerId:input.playerId,dealerId:input.dealerId,data:record.evidence});
           record.broadcast.push([[readyMessage(record),false]]);
           record.broadcast.push([[JSON.stringify({t:'pcm',id:record.id,byteLength:record.pcm.length}),false],[record.pcm,true]]);
           // The asker is the first listener; the chat route issues one more ticket per room socket.
@@ -419,7 +443,11 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           profileRevision:record.voice.profileRevision,avatarSha256:bank.archive.sha256,attemptId:record.binding.attemptId,nonce:record.binding.nonce,compositing:record.voice.compositing??null,
           ...(record.sequence?{...(record.deal?{presentationVersion:record.deal.version}:{sequenceKind:'idle'}),
             sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
-        if(input.room){record.state='pumping';void pump(record);return record.descriptor;}
+        if(input.room){
+          // Independent of pump's awaited freshness reads and the relay socket.
+          record.timer=setTimeout(()=>void cancel(record),connectionMs+TRANSPORT_MS+idlePlaybackMs(record));record.timer.unref?.();
+          record.state='pumping';void pump(record);return record.descriptor;
+        }
         record.state='prepared';record.timer=setTimeout(()=>void cancel(record),connectionMs);record.timer.unref?.();
         return record.descriptor;
       } catch(error) {

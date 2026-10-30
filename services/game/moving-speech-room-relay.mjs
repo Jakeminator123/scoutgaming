@@ -18,11 +18,12 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
   const sign = body => createHmac('sha256', ticketSecret).update(body).digest('base64url');
   const broadcasts = new Map();
 
-  function open({ id, attemptId, nonce, planId, frames, owner, playerId, dealerId, data = null }) {
-    if (typeof id !== 'string' || broadcasts.has(id) || !Number.isSafeInteger(frames) || frames < 1 || frames > maxFrames) fail('moving_speech_relay_invalid');
-    const items = [], tickets = new Map(), listeners = new Set(), wakers = new Set(), closesAt = now() + lifetimeMs;
+  function open({ id, attemptId, nonce, planId, frames, playbackMs = 0, owner, playerId, dealerId, data = null }) {
+    if (typeof id !== 'string' || broadcasts.has(id) || !Number.isSafeInteger(frames) || frames < 1 || frames > maxFrames
+      || !Number.isSafeInteger(playbackMs) || playbackMs < 0 || playbackMs > 47000) fail('moving_speech_relay_invalid');
+    const items = [], tickets = new Map(), listeners = new Set(), wakers = new Set(), closesAt = now() + lifetimeMs + playbackMs;
     let state = 'open', framesIn = 0, bytes = 0, settleTimer;
-    const timer = setTimeout(() => close(), lifetimeMs); timer.unref?.();
+    const timer = setTimeout(() => close(), lifetimeMs + playbackMs); timer.unref?.();
     const wake = () => { for (const waker of [...wakers]) waker(); };
     function close() {
       if (state === 'closed') return;
@@ -43,7 +44,7 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
       settleTimer = setTimeout(settle, latest - now() + 1); settleTimer.unref?.();
     }
     const b = {
-      id, attemptId, nonce, planId, frames, owner, playerId, dealerId, data, items, listeners, wakers, tickets, redeemed: new Set(),
+      id, attemptId, nonce, planId, frames, playbackMs, owner, playerId, dealerId, data, items, listeners, wakers, tickets, redeemed: new Set(),
       get state() { return state; },
       push(parts, count = 0) {
         if (state !== 'open') return false;
@@ -94,7 +95,7 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
   // Serves one listener from the buffer: an item with frames waits for that listener's credit.
   async function attach({ broadcast: b, recipient, entry }, ws) {
     const controller = new AbortController(), signal = controller.signal;
-    let credit = 0, sent = 0, index = 0, wakeSelf = null;
+    let credit = 0, sent = 0, index = 0, wakeSelf = null, awaitingPlayed = false, played = false, deadline;
     // Stopping also terminates the socket: a listener stuck in a send that never drains is cut off as well.
     const listener = { stop: () => { if (signal.aborted) return; controller.abort(); wakeSelf?.(); ws.terminate(); } };
     const fromSocket = () => listener.stop();
@@ -106,6 +107,9 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
       try {
         if (binary) fail('moving_speech_invalid_credit');
         const value = JSON.parse(data.toString('utf8'));
+        if (value?.t === 'played' && b.playbackMs && awaitingPlayed && value.id === b.planId && exactKeys(value, 'id,t')) {
+          played = true; wakeSelf?.(); return;
+        }
         if (value?.t === 'abort' && value.id === b.id && exactKeys(value, 'id,t')) { listener.stop(); return; }
         if (!value || value.t !== 'credit' || !exactKeys(value, 'frames,id,t') || value.id !== b.planId || !Number.isSafeInteger(value.frames)
           || value.frames < 1 || value.frames > 48 || credit + value.frames > 48 || sent + credit + value.frames > b.frames + 48) fail('moving_speech_invalid_credit');
@@ -132,7 +136,16 @@ export function createMovingSpeechRoomRelay({ ticketSecret, resolveOwner, now = 
           for (const [part, binary] of item.parts) await send(part, binary);
           continue;
         }
-        if (b.state === 'done') break;
+        if (b.state === 'done') {
+          if (!b.playbackMs || played) break;
+          awaitingPlayed = true;
+          // Delivery can precede client decoding/source download. Bound that
+          // transport time separately from the complete original body's audio.
+          deadline ??= now() + 45000 + b.playbackMs;
+          const remaining = deadline - now();
+          if (remaining <= 0) fail('moving_speech_playback_timeout');
+          await pause(remaining); continue;
+        }
         if (b.state !== 'open') fail('moving_speech_unavailable');
         await pause(lifetimeMs);
       }

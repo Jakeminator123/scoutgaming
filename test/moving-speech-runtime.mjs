@@ -87,6 +87,7 @@ async function setup(t, options = {}) {
             state.chunks++;
             await options.afterChunk?.(state,args.signal);
           }
+          state.producerDone=true;
         },
       };
     } },
@@ -108,7 +109,8 @@ async function setup(t, options = {}) {
       socket.once('unexpected-response', (_req, res) => { res.resume(); resolve({ status: res.statusCode }); });
       socket.once('error', error => resolve({ error }));
     });
-    return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)) };
+    return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)),
+      async played(){await until(()=>messages.some(m=>m.t==='done'));socket.send(JSON.stringify({t:'played',id:messages[0].plan.start.id}));} };
   };
   return { runtime, state, input, trace, failures, preparationFailures, original, pcm, registry, base, address, sourceSet, connect,
     prepare: overrides => runtime.prepare({ ...input, ...overrides }), get admitted() { return admitted; } };
@@ -188,7 +190,7 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   client.send({ t: 'credit', id: ready.plan.start.id, frames: 24 }); await until(() => f.state.chunks === 2);
   assert.equal(client.messages.filter(x => x.t === 'done').length, 0);
   client.send({ t: 'credit', id: ready.plan.start.id, frames: 12 });
-  assert.equal((await client.close).code, 1000);
+  await client.played(); assert.equal((await client.close).code, 1000);
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
   assert.deepEqual(f.failures, []);
@@ -232,6 +234,7 @@ test('room answer (PR 4): with a warm admission TTS starts after submit, before 
     &&row.sourceSha256===ready.sequence.frames[k].sourceSha256));
   assert.equal(ready.sequence.frames.length,48,'the final complete original cycle outlasts the 36 generated frames');
   for (const client of [asker, listener]) client.send({ t: 'credit', id: client.messages[0].plan.start.id, frames: 36 });
+  await asker.played(); await listener.played();
   assert.equal((await asker.close).code, 1000); assert.equal((await listener.close).code, 1000);
   assert.deepEqual(listener.messages, asker.messages); assert.deepEqual(asker.messages.at(-1), { t: 'done', id: asker.messages[0].plan.start.id, frames: 36 });
   assert.equal(f.state.dispatched, 1); assert.equal(f.state.cancelled, 1, 'the GPU session is released once its output is buffered');
@@ -737,7 +740,7 @@ test('room: the asker going stale or their request ending after chunk 1 does not
   const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
   const bob = f.connect(other, { headers: { cookie: 'owner=two' } }); assert.equal((await bob.opened).status, 101);
   await until(() => bob.messages.length === 3); bob.send({ t: 'credit', id: bob.messages[0].plan.start.id, frames: 36 });
-  assert.equal((await bob.close).code, 1000); assert.deepEqual(bob.messages.at(-1), { t: 'done', id: bob.messages[0].plan.start.id, frames: 36 });
+  await bob.played(); assert.equal((await bob.close).code, 1000); assert.deepEqual(bob.messages.at(-1), { t: 'done', id: bob.messages[0].plan.start.id, frames: 36 });
   assert.equal((await f.connect(d).opened).status, 403, 'the stale asker\'s own ticket is checked with the asker\'s freshness');
 });
 
@@ -776,4 +779,71 @@ test('room: issue needs the answer\'s own attempt and nonce', async t => {
   assert.equal(service.issue({ ...d, nonce: '3'.repeat(64) }, bob), null);
   assert.equal(service.issue({ ...d, attemptId: 'attempt-0' }, bob), null);
   assert.ok(service.issue(d, bob));
+});
+
+
+test('idle retains authorized cancellation and fresh voice/publication after producer done, for solo and every room listener', async t => {
+  for (const room of [false,true]) for (const change of ['drift','voice','publication','idle-policy']) {
+    const f=await setup(t,{assertSessionCurrent:state=>{if(state.producerDone)throw Error('completed producer lease');}});
+    const d=room?await roomPrepare(f):await f.prepare();
+    const client=f.connect(d);assert.equal((await client.opened).status,101);
+    await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+    assert.equal(client.socket.readyState,WebSocket.OPEN,'producer done is not playback done');
+    if(change==='drift')await f.runtime.cancelDealer('dragan');
+    else if(change==='voice')f.state.profileChanged=true;
+    else if(change==='publication')f.state.projectRevision++;
+    else f.state.idleDurationMs=2000;
+    assert.notEqual((await client.close).code,1000,room+' '+change);
+    assert.equal(f.state.cancelled,1,'producer cleanup is idempotent across playback cancel');
+    if(change!=='drift')assert.equal(f.failures[0].code,change==='voice'?'generated_speech_profile_changed':'moving_speech_context_changed');
+  }
+});
+
+test('room played acknowledgement belongs to one authenticated listener; disconnect stops only that listener', async t => {
+  const f=await setup(t),d=await roomPrepare(f);
+  const other=f.runtime.issue(d,{owner:'other-owner',playerId:'player-two'});
+  const alice=f.connect(d),bob=f.connect(other,{headers:{cookie:'owner=two'}});
+  for(const client of [alice,bob]){
+    assert.equal((await client.opened).status,101);await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+  }
+  alice.socket.terminate();await alice.close;
+  assert.equal(bob.socket.readyState,WebSocket.OPEN);
+  await bob.played();assert.equal((await bob.close).code,1000);
+  await until(()=>f.runtime.issue(d,{owner:'owner-one',playerId:'player-one'})===null);
+  assert.equal(f.state.cancelled,1);
+});
+
+test('solo idle waiting for playback ack expires without another producer read', async t => {
+  const f=await setup(t,{assertSessionCurrent:state=>{if(state.producerDone)throw Error('completed producer lease');}});
+  const client=f.connect(await f.prepare());await client.opened;await until(()=>client.messages.length===3);
+  client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+  await until(()=>client.messages.some(m=>m.t==='done'));
+  f.state.now+=53000;
+  assert.notEqual((await client.close).code,1000);
+  assert.equal(f.failures[0].code,'moving_speech_playback_timeout');assert.equal(f.state.cancelled,1);
+});
+
+
+test('idle hard watchdog closes solo and room sockets even when post-done freshness never resolves', async t => {
+  for(const room of [false,true]){
+    let release;const held=new Promise(resolve=>{release=resolve;});let blocked=false,entered=false;
+    const f=await setup(t,{onEvidence:async()=>{if(blocked){entered=true;await held;}}});
+    t.mock.timers.enable({apis:['setTimeout']});
+    const d=room?await roomPrepare(f):await f.prepare(),client=f.connect(d);
+    await client.opened;await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+    blocked=true;t.mock.timers.tick(500);await until(()=>entered);
+    t.mock.timers.tick(70000);
+    assert.notEqual((await client.close).code,1000,'hard timer bypasses blocked freshness read');
+    await until(()=>f.state.cancelled===1);
+    assert.equal(f.admitted.signal.aborted,true);
+    if(room)assert.equal(f.runtime.issue(d,{owner:'owner-one',playerId:'player-one'}),null);
+    else assert.equal(f.failures[0].code,'moving_speech_playback_timeout');
+    release();t.mock.timers.reset();
+  }
 });

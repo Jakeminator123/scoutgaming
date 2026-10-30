@@ -29,7 +29,7 @@ async function setup(t, options = {}) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = `ws://127.0.0.1:${server.address().port}/moving-speech-stream`, sockets = [];
   t.after(async () => { for (const socket of sockets) socket.terminate(); relay.close(); wss.close(); await new Promise(resolve => server.close(resolve)); });
-  const broadcast = relay.open({ id, attemptId: 'attempt-1', nonce: 'nonce-1', planId, frames: 36, owner: sessions.alice, playerId: 'alice', dealerId: 'paow', data: { rest: 'evidence' } });
+  const broadcast = relay.open({ id, attemptId: 'attempt-1', nonce: 'nonce-1', planId, frames: 36, playbackMs: options.playbackMs ?? 0, owner: sessions.alice, playerId: 'alice', dealerId: 'paow', data: { rest: 'evidence' } });
   broadcast.push([[JSON.stringify({ t: 'ready', id }), false]]);
   broadcast.push([[JSON.stringify({ t: 'pcm', id, byteLength: 4 }), false], [Buffer.from([1, 2, 3, 4]), true]]);
   // Each room socket's lifetime: the channel aborts it when that socket closes.
@@ -158,4 +158,33 @@ test('redemption is refused when the recipient\'s own freshness check throws, an
   await assert.rejects(f.relay.redeem(dave.ticket, { headers: { cookie: 'player=bob' } }), /moving_speech_ticket/); assert.equal(checks, 0);
   const leaving = new AbortController(), erin = f.broadcast.issue({ ...f.recipient('bob'), signal: leaving.signal, check: async () => { leaving.abort(); } });
   await assert.rejects(f.relay.redeem(erin.ticket, { headers: { cookie: 'player=bob' } }), /moving_speech_ticket/);
+});
+
+
+test('idle relay keeps each authorized socket until its own played ack, and rejects early or forged acknowledgements', async t => {
+  for(const ack of [{t:'played',id:'wrong-plan'},{t:'played',id:planId,extra:true},{t:'played',id:planId}]){
+    const f=await setup(t,{playbackMs:1000});
+    const a=f.connect(f.broadcast.issue(f.recipient('alice')).ticket,'alice');await a.opened;
+    await until(()=>a.messages.length===3);
+    a.socket.send(JSON.stringify(ack));assert.notEqual(await a.close,1000,'no played ack before done');
+  }
+  const f=await setup(t,{playbackMs:1000});
+  const a=f.connect(f.broadcast.issue(f.recipient('alice')).ticket,'alice'),b=f.connect(f.broadcast.issue(f.recipient('bob')).ticket,'bob');
+  for(const client of [a,b]){await client.opened;client.credit(36);}
+  for(const n of [0,1,2])f.broadcast.push(chunk(n,12),12);
+  f.broadcast.push([[JSON.stringify({t:'done',id:planId,frames:36}),false]]);f.broadcast.end();
+  await until(()=>[a,b].every(c=>c.messages.some(m=>m.t==='done')));
+  a.socket.send(JSON.stringify({t:'played',id:planId}));assert.equal(await a.close,1000);
+  assert.equal(b.socket.readyState,WebSocket.OPEN);
+  f.relay.cancel(row=>row.dealerId==='paow');assert.notEqual(await b.close,1000);
+});
+
+test('idle ack never arriving has a hard transport plus playback bound even after producer done', async t => {
+  const f=await setup(t,{lifetimeMs:80,playbackMs:30});
+  const a=f.connect(f.broadcast.issue(f.recipient('alice')).ticket,'alice');await a.opened;a.credit(36);
+  for(const n of [0,1,2])f.broadcast.push(chunk(n,12),12);
+  f.broadcast.push([[JSON.stringify({t:'done',id:planId,frames:36}),false]]);f.broadcast.end();
+  await until(()=>a.messages.some(m=>m.t==='done'));
+  assert.equal(a.socket.readyState,WebSocket.OPEN);
+  assert.notEqual(await a.close,1000);assert.equal(f.relay.get(id),null);
 });
