@@ -40,7 +40,7 @@ test('Vercel ingress owns the lobby prefix and transforms it to the mounted Stud
 
 test('public lobby routing preserves queries and leaves admin access on its existing route', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   for (const path of ['/lobby', '/lobby/', '/lobby/_assets/lobby/app.js', '/lobby/_assets/fonts/inter.woff2', '/admin', '/admin/lobby']) {
     assert.deepEqual(platformRoute(new URL(path + '?operator=alpha', config.publicOrigin), config),
@@ -343,7 +343,7 @@ test('lobby browser preserves choices, authenticated launch contract, account na
 
 test('shared room command transport routes only its exact HTTP path through the existing signed backend', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   const path = '/api/shared-room/room-1/command';
   assert.equal(backendPlatformPath(path), true);

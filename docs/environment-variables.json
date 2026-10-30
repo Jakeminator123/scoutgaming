@@ -7,9 +7,11 @@
       "CROUPIER_STUDIO_NATIVE_ADMIN",
       "CROUPIER_LAB_BASE_PATH",
       "CROUPIER_STUDIO_NEON_POLICY",
-      "CROUPIER_MEDIA_STORAGE"
+      "CROUPIER_MEDIA_STORAGE",
+      "CROUPIER_LAB_UI_ORIGIN",
+      "CROUPIER_PUBLIC_GAME_PATH"
     ],
-    "note": "Miljövariabler 2: one value in production and preview, fixed in code. tools/check-environment-variables.mjs fails when any tracked file outside docs/, Markdown and .github/workflows/ names one of them (source, test, build script, vercel.json or Next config)."
+    "note": "Miljövariabler 2: one value in production and preview, fixed in code. Miljövariabler 2b adds CROUPIER_LAB_UI_ORIGIN and CROUPIER_PUBLIC_GAME_PATH, which nothing reads since Miljövariabler 2. tools/check-environment-variables.mjs fails when any tracked file outside docs/, Markdown and .github/workflows/ names one of them (source, test, build script, vercel.json or Next config)."
   },
   "services": {
     "render-game": {

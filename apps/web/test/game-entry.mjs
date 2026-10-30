@@ -8,7 +8,7 @@ import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-e
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {launchBackendSearch,platformConfiguration,platformRoute} from '../../../packages/navigation/server/platform-routing.mjs';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:'https://game.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.onrender.com',
-  CROUPIER_LAB_UI_ORIGIN:'https://studio.vercel.app',CROUPIER_VERCEL_INGRESS_SECRET:'test-only-ingress-secret-'.repeat(3)};
+  CROUPIER_VERCEL_INGRESS_SECRET:'test-only-ingress-secret-'.repeat(3)};
 
 test('the game start validates the live session and preserves the engine document without a default dealer',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'lane-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));

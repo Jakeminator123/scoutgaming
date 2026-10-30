@@ -103,7 +103,6 @@ test('request handler logs the failing method, pathname and redacted cause',asyn
 });
 
 const env = { CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
-  CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') };
 
@@ -163,14 +162,12 @@ test('native mode is explicit, scoped and never substitutes zone/general databas
   }
 });
 test('explicit unified UI trusts only its public origin without a secondary alias', () => {
-  for (const secondary of [undefined, env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN, 'invalid-unused-alias']) {
-    const config = nativeStudioAdminConfiguration({ ...env, CROUPIER_LAB_UI_ORIGIN: secondary });
-    assert.equal(config.unifiedUi, true);
-    assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
-    assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
-    assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
-    assert.throws(() => assertNativeStudioRequest(new Request(env.CROUPIER_LAB_UI_ORIGIN + '/studio/api/auth/session'), config), error => error.statusCode === 403);
-  }
+  const config = nativeStudioAdminConfiguration(env);
+  assert.equal(config.unifiedUi, true);
+  assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
+  assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
+  assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
+  assert.throws(() => assertNativeStudioRequest(new Request('https://studio.example.invalid/studio/api/auth/session'), config), error => error.statusCode === 403);
 });
 test('unified UI retains exact HTTPS, scope, Neon and policy requirements', () => {
   for (const change of [
@@ -180,7 +177,7 @@ test('unified UI retains exact HTTPS, scope, Neon and policy requirements', () =
     { CROUPIER_GAME_DATABASE_URL: undefined },
     { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL },
   ]) {
-    assert.throws(() => nativeStudioAdminConfiguration({ ...env, CROUPIER_LAB_UI_ORIGIN: undefined, ...change }), error => error.statusCode === 503);
+    assert.throws(() => nativeStudioAdminConfiguration({ ...env, ...change }), error => error.statusCode === 503);
   }
 });
 test('exact trusted request host/origin before DB initialization', () => {

@@ -47,22 +47,19 @@ test('public endpoint reconciles the configured Vercel same-origin rewrite',asyn
  assert.equal((await handle(request)).status,200);
 });
 
-test('unified assistant origins need only the public origin and never trust the legacy Lab alias',async()=>{
+test('unified assistant origins need only the public origin and trust no other origin',async()=>{
  const lab='https://lab.example.invalid';
- for(const legacy of [undefined,lab,'not-an-origin']){
-  const unified=assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:legacy});
-  assert.deepEqual({...unified},{allowedOrigins:[origin],unifiedUi:true,publicHosts:['www.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'});
- }
+ const unified=assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin});
+ assert.deepEqual({...unified},{allowedOrigins:[origin],unifiedUi:true,publicHosts:['www.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'});
  for(const value of [undefined,'','http://www.example.invalid',origin+'/','https://www.example.invalid/x','https://user:pw@www.example.invalid','https://localhost','https://127.0.0.1'])
-  assert.equal(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:value,CROUPIER_LAB_UI_ORIGIN:lab}),null);
- const saved=Object.fromEntries(['CROUPIER_PUBLIC_ORIGIN','CROUPIER_LAB_UI_ORIGIN'].map(name=>[name,process.env[name]]));
+  assert.equal(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:value}),null);
+ const saved=process.env.CROUPIER_PUBLIC_ORIGIN;
  try{
-  Object.assign(process.env,{CROUPIER_PUBLIC_ORIGIN:origin});delete process.env.CROUPIER_LAB_UI_ORIGIN;
+  process.env.CROUPIER_PUBLIC_ORIGIN=origin;
   assert.equal((await publicAssistantEndpoint(req(null))).status,200);
-  process.env.CROUPIER_LAB_UI_ORIGIN=lab;
   assert.equal((await publicAssistantEndpoint(new Request(lab+'/studio/api/public-assistant',{headers:{origin:lab,'sec-fetch-site':'same-origin'}}))).status,403);
   delete process.env.CROUPIER_PUBLIC_ORIGIN;assert.equal((await publicAssistantEndpoint(req(null))).status,503);
- }finally{for(const [name,value]of Object.entries(saved))if(value===undefined)delete process.env[name];else process.env[name]=value;}
+ }finally{if(saved===undefined)delete process.env.CROUPIER_PUBLIC_ORIGIN;else process.env.CROUPIER_PUBLIC_ORIGIN=saved;}
 });
 
 test('a fast model reply waits for avatar connection; closing during startup suppresses speech',async t=>{

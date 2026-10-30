@@ -10,7 +10,7 @@ import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 
 const publicOrigin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
 const environment={
-  CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_UI_ORIGIN:labOrigin,
+  CROUPIER_PUBLIC_ORIGIN:publicOrigin,
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture')};
 // Configuration is always unified (one public origin); a panel Lab alias is ignored.

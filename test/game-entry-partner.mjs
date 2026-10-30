@@ -42,7 +42,7 @@ test('partner launch lands in the lobby without a company and keeps an explicit 
   const key = await partner.keys.create({name:'lobby-landing',scopes:['launch']});
   const minted = await partner.keys.mintLaunch(key.id,{playerId:'external-ref',currency:'EUR'});
   const routing = platformConfiguration({
-    CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_LAB_UI_ORIGIN:'https://lab.example.invalid',
+    CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
     CROUPIER_VERCEL_INGRESS_SECRET:'isolated-unit-secret-'.repeat(3)});
   // L5: the launch passes the public bridge (launchBackendSearch) before the engine, as on Vercel.
   const land = launchUrl => {

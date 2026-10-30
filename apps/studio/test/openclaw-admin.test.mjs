@@ -8,7 +8,7 @@ import { nativeStudioAdminConfiguration } from '../lib/studio-native-runtime.mjs
 
 const publicOrigin = 'https://public.example.invalid', labOrigin = 'https://studio.example.invalid';
 const unified = nativeStudioAdminConfiguration({
-  CROUPIER_PUBLIC_ORIGIN:publicOrigin, CROUPIER_LAB_UI_ORIGIN:labOrigin,
+  CROUPIER_PUBLIC_ORIGIN:publicOrigin,
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') });
 // Configuration is always unified now; the public-rewrite test below still exercises the

@@ -8,7 +8,6 @@ const env = {
   CROUPIER_VERCEL_UI: '1',
   CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com',
-  CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app',
   CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3),
 };
 const request = new Request('https://preview.example.test/play', {headers: {cookie: 'player_session=fixture'}});
