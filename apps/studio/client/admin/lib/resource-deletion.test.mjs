@@ -78,6 +78,65 @@ test('missing and conflicting references stay explicit and no names confer owner
   assert.match(tree.warnings.join(' '),/motstridiga dealer-ID/);
   assert.ok(!JSON.stringify(tree).includes('canDelete'));
 });
+test('missing targets retain their registry identity and all exact incoming references',()=>{
+  const {workspace,lifecycle}=publishedFixture();
+  workspace.project.dealers[0].speechProfile.reference.videoId='missing-id';
+  workspace.project.lines[0].variants[0].videoGenerationId='missing-id';
+  workspace.project.lanes[0].layers.background.allowed.push('missing-id');
+  workspace.inventory.videos.push({id:'orphan-owner-clip',label:'Äldre klipp',dealer:'missing-dealer',available:true});
+  const before=structuredClone(workspace),tree=buildResourceDeletionTree(workspace,lifecycle);
+  assert.deepEqual(workspace,before,'diagnostics never repair saved data');
+  assert.equal(tree.missingReferences.length,3,'one target per registry, even when several uses point at it');
+  const media=tree.missingReferences.find(row=>row.kind==='media');
+  assert.equal(media.id,'missing-id');
+  assert.deepEqual(media.uses.map(row=>[row.kind,row.id,row.relation]),[
+    ['dealer','dragan','Klippval · idle.ready · Bas'],['dealer','dragan','Referens för AI-tal'],
+  ]);
+  const material=tree.missingReferences.find(row=>row.kind==='material');
+  assert.equal(material.id,'missing-id','the same id in two registries represents two different targets');
+  assert.deepEqual(material.uses.map(row=>[row.kind,row.id]),[['composition','shared']]);
+  const dealer=tree.missingReferences.find(row=>row.kind==='dealer');
+  assert.equal(dealer.id,'missing-dealer');
+  assert.deepEqual(dealer.uses,[{kind:'media',id:'orphan-owner-clip',label:'Äldre klipp',relation:'Registrerad dealerägare'}]);
+  assert.deepEqual(tree.warnings,[],'missing targets have structured diagnostics instead of an anonymous count');
+});
+
+test('archived references remain diagnosable while unavailable bytes and published-only posts are not missing',()=>{
+  const {workspace,lifecycle}=publishedFixture();
+  workspace.project.dealerTrash=[{dealer:{id:'old',label:'Tidigare dealer'},activeMediaIds:['old-missing-clip']}];
+  workspace.inventory.videos[0].available=false;
+  workspace.inventory.videos[0].integrity='unavailable';
+  const tree=buildResourceDeletionTree(workspace,lifecycle);
+  assert.deepEqual(tree.missingReferences,[{kind:'media',id:'old-missing-clip',label:'old-missing-clip',archivedOnly:true,uses:[
+    {kind:'dealer',id:'old',label:'Tidigare dealer',relation:'Arkiverad mediakoppling'},
+  ]}]);
+  assert.equal(tree.media.find(row=>row.id==='clip').available,false);
+  assert.equal(tree.dealers.find(row=>row.id==='published-only').publishedOnly,true);
+});
+
+function missingArchivedRoomFixture(mixed=false){
+  const f=publishedFixture();
+  f.lifecycle.rooms.push({id:'archived-room',name:'Tidigare spelbord',operatorId:'company-b',presentationLaneId:'missing-archive-lane',state:'archived',archivedAt:null});
+  if(mixed){
+    f.workspace.catalog.administration.rooms[1].compositionId='missing-archive-lane';
+    f.lifecycle.rooms[1].presentationLaneId='missing-archive-lane';
+  }
+  return f;
+}
+test('only archived sources make a missing environment historical; mixed active and archived uses keep the warning',()=>{
+  for(const mixed of [false,true]){
+    const {workspace,lifecycle}=missingArchivedRoomFixture(mixed),before=structuredClone({workspace,lifecycle});
+    const tree=buildResourceDeletionTree(workspace,lifecycle),missing=tree.missingReferences.find(row=>row.kind==='composition');
+    assert.equal(missing.id,'missing-archive-lane');
+    assert.equal(missing.archivedOnly,!mixed);
+    assert.deepEqual(missing.uses.map(row=>[row.kind,row.id]),mixed?[['room','room-b'],['room','archived-room']]:[['room','archived-room']]);
+    assert.equal(tree.compositions.find(row=>row.id===missing.id).archivedOnly,!mixed);
+    assert.equal(tree.compositions.find(row=>row.id===missing.id).missing,true,'historical classification preserves the missing target');
+    assert.equal(tree.rooms.find(row=>row.id==='archived-room').archived,true,'classification uses the normalized source state');
+    assert.deepEqual({workspace,lifecycle},before,'classification does not repair or discard stored references');
+  }
+});
+
 test('mixed project, administration and operator package revisions cannot be presented as one snapshot',()=>{
   const {workspace,lifecycle}=fixture();
   for(const mutate of [
@@ -175,6 +234,53 @@ test('merged page opens the tab and item of the navigation context and keeps roo
   assert.equal(nodes(explicit.render(),row=>row.props?.id==='structure-panel-materials')[0].props.hidden,false);
   assert.deepEqual(explicit.scrolled,[]);
 });
+test('a dealer context identifies unrelated missing targets and links to their exact source and registry',async()=>{
+  const f=publishedFixture();
+  f.workspace.project.dealers.push({id:'other',label:'Annan dealer',speechProfile:{reference:{videoId:'other-missing-clip'}}});
+  const h=harness(f,'?dealer=dragan');await h.settle();const view=h.render();
+  const warning=nodes(view,row=>row.props?.['aria-label']==='Saknade registerposter')[0];
+  assert.ok(warning,'an unrelated missing reference is still reported');
+  assert.match(text(warning),/hela arbetsytan/);
+  const links=nodes(warning,row=>row.type==='a');
+  assert.equal(text(links.find(row=>row.props.href==='#'+resourceAnchor('media','other-missing-clip'))),'Fil: other-missing-clip');
+  assert.equal(text(links.find(row=>row.props.href==='#'+resourceAnchor('dealer','other'))),'Annan dealer');
+  assert.ok(!links.some(row=>row.props.href==='#'+resourceAnchor('dealer','dragan')),'the context does not attribute the warning to the selected dealer');
+  const ids=nodes(view,()=>true).map(row=>row.props?.id).filter(Boolean);
+  for(const link of links)assert.ok(ids.includes(link.props.href.slice(1)),'every warning link has a target');
+  nodes(view,row=>row.props?.id==='structure-tab-materials')[0].props.onClick();await h.settle();
+  h.render().props.onClick({target:{closest:()=>({getAttribute:()=>links[0].props.href})},stopPropagation(){},preventDefault(){}});
+  await h.settle();
+  assert.equal(nodes(h.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);
+  assert.equal(h.scrolled.at(-1),resourceAnchor('media','other-missing-clip'));
+});
+
+test('a dealer context separates archived-only missing targets while keeping mixed uses in the warning',async()=>{
+  for(const mixed of [false,true]){
+    const h=harness(missingArchivedRoomFixture(mixed),'?dealer=dragan');await h.settle();const view=h.render();
+    const warnings=nodes(view,row=>row.props?.['aria-label']==='Saknade registerposter');
+    const history=nodes(view,row=>row.props?.['aria-label']==='Saknade historiska registerposter');
+    assert.equal(warnings.length,mixed?1:0);assert.equal(history.length,mixed?0:1);
+    const section=(mixed?warnings:history)[0],links=nodes(section,row=>row.type==='a');
+    assert.match(text(section),/hela arbetsytan/);
+    assert.ok(links.some(row=>row.props.href==='#'+resourceAnchor('composition','missing-archive-lane')));
+    assert.ok(links.some(row=>row.props.href==='#'+resourceAnchor('room','archived-room')));
+    assert.equal(links.some(row=>row.props.href==='#'+resourceAnchor('room','room-b')),mixed);
+    assert.ok(!links.some(row=>row.props.href==='#'+resourceAnchor('dealer','dragan')));
+    const ids=nodes(view,()=>true).map(row=>row.props?.id).filter(Boolean);
+    assert.equal(new Set(ids).size,ids.length,'historical grouping never duplicates registry anchors');
+    for(const link of links)assert.ok(ids.includes(link.props.href.slice(1)),'historical and active reference links resolve');
+    const composition=nodes(view,row=>row.props?.id===resourceAnchor('composition','missing-archive-lane'))[0];
+    if(mixed)assert.doesNotMatch(text(composition),/enbart arkiverade kopplingar/);
+    else assert.match(text(composition),/Post saknas · enbart arkiverade kopplingar/);
+  }
+});
+
+test('complete registries do not show a missing-reference warning',async()=>{
+  const h=harness(publishedFixture());await h.settle();
+  assert.deepEqual(h.tree.missingReferences,[]);
+  assert.equal(nodes(h.render(),row=>row.props?.['aria-label']==='Saknade registerposter').length,0);
+});
+
 test('refresh failure removes the old tree and incomplete lifecycle stays visible as a warning',async()=>{
   const h=harness();h.tree.lifecycleAvailable=false;await h.settle();
   assert.match(text(h.render()),/Trädet är ofullständigt/);
