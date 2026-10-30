@@ -60,10 +60,11 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   // K06 O1: until the first snapshot names the room's stake profile, the heading names no profile at all.
   const profile=$(document,'table-profile');if(profile)profile.textContent='Blackjack';
   const labels={ 'undo-btn':['Ångra','undo'], 'clear-btn':['Rensa','clear'], 'double-btn':['Dubbla','doubleBets'],
-    'max-btn':['Upprepa','repeat'], 'all-sides':['Alla egna platser','allSeats'], 'add-funds':['Fyll på demosaldo','refill'],
+    'max-btn':['Upprepa','repeat'], 'all-sides':['Alla egna','allSeats'], 'add-funds':['Fyll på demosaldo','refill'],
     'pitboss':['Ta paus i 24 timmar','pause'], 'deal-now':['Redo','ready'] };
   // The 24-hour pause asks first (confirmPause); every other control acts at once.
-  for(const [id,[label,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.textContent=label;node.setAttribute('aria-label',label);listen(node,()=>op==='pause'?confirmPause():actions?.dispatch(op));}
+  for(const [id,[label,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.textContent=label;node.setAttribute('aria-label',op==='allSeats'?'Alla egna insatsrutor':label);
+    if(op==='allSeats')node.title='Lägg huvudinsats på alla egna rutor';listen(node,()=>op==='pause'?confirmPause():actions?.dispatch(op));}
   // The 24-hour pause is responsible gaming and the server takes it in every phase, also mid-round: it sits with the
   // seat controls, outside the betting-window buttons that a round hides. A phone shows "Ta paus"; its name keeps 24 h.
   // Not "Spelpaus": that is the national self-exclusion register (spelpaus.se), which this pause must not be mistaken for.
@@ -232,7 +233,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       const betCurrency=s.phase==='settled'?s.me.lastSettlement?.currency:s.me.currency;
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0),betCurrency);
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned,s.me.lastSettlement.currency):'–';
-      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?(s.me.seats.length?'Lägg insatser på dina eller lediga platser':'Välj en plats för att börja'):s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?(s.me.seats.length?'Lägg insatser':'Välj en plats för att börja'):s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
       $(document,'banner').title=$(document,'banner').textContent;
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
