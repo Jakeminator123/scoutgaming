@@ -5,6 +5,7 @@ import { createRegisteredMovingSpeech, assertMovingSpeechSource } from './moving
 import { createMovingBankDownloads } from './moving-speech-bank-artifacts.mjs';
 import { MOVING_SPEECH_MAX_PCM_BYTES, movingSpeechPcmFrameCount } from './moving-speech-timing.mjs';
 import {createMovingDealReservations,prepareMovingDealPlan,presentationFingerprint} from './moving-speech-deal-plan.mjs';
+import {prepareMovingIdleSource,prepareMovingIdlePlan} from './moving-speech-idle-plan.mjs';
 import {SPEECH_PREPARATION_FAILURE_CODES} from '../../packages/presentation/contracts/chat-response.mjs';
 import { createMovingSpeechRoomRelay } from './moving-speech-room-relay.mjs';
 const {WebSocketServer,WebSocket}=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');
@@ -32,7 +33,7 @@ const STREAM_FAILURE_CODES = new Set([
 ]);
 const STREAM_PHASES = new Set(['current', 'ready', 'audio', 'dispatch', 'credit', 'chunk-current', 'chunk-send', 'done', 'played', 'client-message']);
 
-const PREPARATION_FAILURE_CODES = new Set([...SPEECH_PREPARATION_FAILURE_CODES,...STREAM_FAILURE_CODES]);
+const PREPARATION_FAILURE_CODES = new Set([...SPEECH_PREPARATION_FAILURE_CODES,...STREAM_FAILURE_CODES,'moving_idle_source_mismatch']);
 const PREPARATION_PHASES = new Set(['guard','profile-voice','publication','deal-plan','source','admission','submit','worker-ready','current','voice','plan']);
 
 function safeFailureCode(error, codes) {
@@ -70,7 +71,7 @@ const publicPlan = plan => JSON.parse(JSON.stringify(plan));
  * sessions (endpoint), drift admission and bank capabilities. A dealer without
  * a lane is unsupported. The existing chat/Director still selects exact text.
  * All authorities and paid work stay here; the browser gets one spent ticket.
- * Initial playback is the bank's explicit rest frame between card sequences.
+ * Idle speech follows the publication's own baseline with exact source frames.
  * readEvidence(context, mediaId, bank) reads the publication for that bank. */
 export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, lanes, releaseSha256,
   dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
@@ -131,6 +132,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     const evidence = await readEvidence(record.context,bank.sourceSet.rest.videoId,bank);
     if (evidence.projectRevision !== record.evidence.projectRevision
       || JSON.stringify(evidence.mediaReferences) !== JSON.stringify(record.evidence.mediaReferences)) fail('moving_speech_context_changed');
+    if(record.idle&&prepareMovingIdleSource({frozenContext:evidence.frozenContext,sourceSet:bank.sourceSet,
+      publicVideo:id=>publicVideo(evidence.frozenContext,id)}).fingerprint!==record.idle.fingerprint)fail('moving_speech_context_changed');
     record.signal.throwIfAborted();
     // A newer committed deal may replace the reservation during either read.
     // Keep this final check synchronous after every awaited freshness check.
@@ -192,7 +195,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       try {
         if (binary) fail('moving_speech_invalid_credit');
         const value = JSON.parse(data.toString('utf8'));
-        if(record.sequence&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
+        if(record.deal&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
           &&Object.keys(value).sort().join(',')==='id,t'){played=true;done=true;wake?.();return;}
         if (value.t === 'abort' && value.id === record.id && Object.keys(value).sort().join(',') === 'id,t') {void cancel(record); return;}
         if (Object.keys(value).sort().join(',') !== 'frames,id,t' || value.t !== 'credit'
@@ -233,7 +236,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       phase = 'done';
       await send(ws,JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}));
       sentDone=true;
-      if(record.sequence){
+      if(record.deal){
         phase = 'played';
         const deadline=now()+45000;
         while(!played){
@@ -312,8 +315,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       if (closing || !input) fail('moving_speech_input');
       if (!api.supports(input.dealerId)) fail('moving_speech_dealer_unavailable');
       // Solo and shared-room contexts both name the published dealer; evidence is read with that
-      // context, so it must be this dealer's. A room context has no presentationVersion: the dealer
-      // speaks on the bank's rest frame and no deal reservation is taken (room deal speech is later).
+      // context, so it must be this dealer's. A room context has no presentationVersion:
+      // speech follows its published idle baseline without a deal reservation.
       if (!input.context || typeof input.context !== 'object' || input.context.dealerId !== input.dealerId) fail('moving_speech_input');
       if (!ID.test(input.requestId ?? '') || !input.owner
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
@@ -345,7 +348,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           record.sequence={version:record.deal.version,steps:record.deal.steps,sources:record.deal.sources,
             frames:record.deal.frames.map(row=>({take:'clip-'+row.videoId,frame:row.frame,
               sourceSha256:bank.sourceSet.clips.find(c=>c.videoId===row.videoId).sha256}))};
-        }
+        }else record.idle=prepareMovingIdleSource({frozenContext:record.evidence.frozenContext,sourceSet:bank.sourceSet,
+          publicVideo:typeof publicVideo==='function'?id=>publicVideo(record.evidence.frozenContext,id):undefined});
         phase='source';
         const expected=bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
         assertMovingSpeechSource((await readRegistry()).videos.find(v=>v.id===expected.videoId),input.dealerId,expected);
@@ -371,7 +375,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         try {
         phase='admission';
         record.session=await sessions.admit({ownerHash:digest(input.owner),userId:digest(input.owner),requestId:input.requestId,
-          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??null])),
+          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??record.idle?.fingerprint??null])),
           binding:{releaseSha256,dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,profileRevision:record.voice.profileRevision,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256,bankReceiptSha256:bank.receipt.sha256},
           mediaReferences:record.evidence.mediaReferences,projectRevision:record.evidence.projectRevision,
@@ -390,7 +394,11 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         } catch(error) {if(record.voiceFailure){phase='voice';throw record.voiceFailure;}throw error;}
         phase='voice';
         record.pcm=await (speaking??collect());
-        const frames=Array.from({length:movingSpeechPcmFrameCount(record.pcm.length)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
+        const frameCount=movingSpeechPcmFrameCount(record.pcm.length);
+        if(record.idle)record.sequence=prepareMovingIdlePlan(record.idle,frameCount);
+        const frames=Array.from({length:frameCount},(_,k)=>record.idle
+          ?{videoId:record.idle.source.videoId,frame:record.sequence.frames[k].frame}
+          :record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
         phase='plan';
         record.input=await registered.prepare({sourceSet:bank.sourceSet,avatarSha256:bank.archive.sha256,frozenContext:record.evidence.frozenContext,
           binding:{sessionId:record.id,talkId:input.requestId,revision:1,profileRevision:record.voice.profileRevision,textSha256:digest(input.text),audioSha256:digest(record.pcm)},
@@ -409,7 +417,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         record.descriptor=Object.freeze({schemaVersion:1,kind:'moving-speech-stream',id:record.id,requestId:input.requestId,dealerId:input.dealerId,
           exactText:input.text,textSha256:digest(input.text),reviewStatus:'pending',url:'/moving-speech-stream',ticket:record.ticket??body+'.'+sign(body),expiresAt:record.expiresAt,
           profileRevision:record.voice.profileRevision,avatarSha256:bank.archive.sha256,attemptId:record.binding.attemptId,nonce:record.binding.nonce,compositing:record.voice.compositing??null,
-          ...(record.sequence?{presentationVersion:record.deal.version,sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
+          ...(record.sequence?{...(record.deal?{presentationVersion:record.deal.version}:{sequenceKind:'idle'}),
+            sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
         if(input.room){record.state='pumping';void pump(record);return record.descriptor;}
         record.state='prepared';record.timer=setTimeout(()=>void cancel(record),connectionMs);record.timer.unref?.();
         return record.descriptor;

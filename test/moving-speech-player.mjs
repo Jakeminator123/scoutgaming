@@ -46,17 +46,21 @@ async function until(check, state) {
     await delay(5);
   }
 }
-function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount=0, beforeDecode = async () => {} } = {}) {
+function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount=0, idleCount=0, changeSequence, beforeDecode = async () => {} } = {}) {
   const speech = descriptor(), m = messages(speech, samples), sent = [], receipts = [], observations = [], decoded = [], rafs = new Map();
-  if(bodyCount){
+  if(bodyCount||idleCount){
     const videoId='98765432-1234-1234-1234-123456789abc',take='clip-'+videoId;
-    const sequence={version:7,frames:Array.from({length:bodyCount},(_,frame)=>({take,frame,sourceSha256:h})),
-      sources:[{videoId,take,sha256:h,fps:24,frameCount:bodyCount,width:320,height:240,bytes:100,url:'/api/presentation/registered-video/fixture/source'}],
-      steps:[{first:0,end:bodyCount,video:{id:videoId,sha256:h,filmedTake:{profileId:'fixture',takeKey:'4:iv'}},event:{type:'deal',to:'box',box:3,shoeDraw:1}}]};
-    speech.presentationVersion=7;speech.sequenceSha256=hash(JSON.stringify(sequence));m.ready.sequence=sequence;
-    m.plan=prepareMovingSpeechPlan({binding:m.plan.binding,clips:[{dealerId:'dragan',take,sha256:h,fps:24,frameCount:bodyCount,kind:'video'},
+    const sourceCount=idleCount||bodyCount,sequenceCount=idleCount?Math.ceil(m.plan.timeline.length/idleCount)*idleCount:bodyCount;
+    const sequence={...(idleCount?{kind:'idle'}:{version:7}),frames:Array.from({length:sequenceCount},(_,frame)=>({take,frame:frame%sourceCount,sourceSha256:h})),
+      sources:[{videoId,take,sha256:h,fps:24,frameCount:sourceCount,width:320,height:240,bytes:100,url:'/api/presentation/registered-video/fixture/source'}],
+      steps:[{first:0,end:sequenceCount,video:{id:videoId,sha256:h,...(idleCount?{}:{filmedTake:{profileId:'fixture',takeKey:'4:iv'}})},
+        ...(idleCount?{}:{event:{type:'deal',to:'box',box:3,shoeDraw:1}})}]};
+    if(idleCount)speech.sequenceKind='idle';else speech.presentationVersion=7;
+    changeSequence?.(sequence);
+    speech.sequenceSha256=hash(JSON.stringify(sequence));m.ready.sequence=sequence;
+    m.plan=prepareMovingSpeechPlan({binding:m.plan.binding,clips:[{dealerId:'dragan',take,sha256:h,fps:24,frameCount:sourceCount,kind:'video'},
       {dealerId:'dragan',take:'vila',sha256:h,fps:24,frameCount:1,kind:'still'}],
-      frames:m.plan.timeline.map((_,k)=>k<bodyCount?{take,frame:k}:{take:'vila',frame:0})});
+      frames:m.plan.timeline.map((_,k)=>k<sequenceCount?{take,frame:k%sourceCount}:{take:'vila',frame:0})});
     m.ready.plan=JSON.parse(JSON.stringify(m.plan));
     m.chunk=(from=0,n=12)=>({t:'lapp',id:m.plan.start.id,del:from/12,fran:from,rutor:m.plan.timeline.slice(from,from+n).map(r=>({tagning:r.take,ruta:r.frame,rect:[10,20,40,60]}))});
   }
@@ -71,7 +75,7 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount
   const promise = playMovingSpeech(speech, { ...options, prepareRendering: async () => {},
     assertCurrent: () => { if (!current) throw Error('stale_pose'); },
     renderFrame: (base, shown) => { observations.push(shown); if (shown&&(shown.speechFrame===undefined||shown.speechFrame<m.plan.timeline.length)) assert.notEqual(activeLayer.paint(base, shown), base); return true; },
-    onSequenceReady:async()=>{},onSequenceFrame:()=>{},onSequenceEnd:()=>{},
+    ...(idleCount?{}:{onSequenceReady:async()=>{},onSequenceFrame:()=>{},onSequenceEnd:()=>{}}),
     setMovingSpeechLayer: layer => { activeLayer = layer; }, onReceipt: receipt => receipts.push(receipt), ...overrides }, {
     document: doc, connect: (url, protocols) => {
       assert.equal(url, '/moving-speech-stream'); assert.deepEqual(protocols, ['moving-v1', `ticket.${speech.ticket}`]);
@@ -338,6 +342,63 @@ test('committed body uses PCM clock from frame0, preserves220ms lead, and finish
     assert.equal(f.sent.at(-1).t,'played');assert.ok(f.sent.filter(x=>x.t==='credit').every(x=>x.frames<=24));
     assert.ok(f.observations.filter(Boolean).slice(bodyCount).every(f=>f.take==='vila'&&f.frame===0));
   }
+});
+
+test('idle body repeats complete original cycles on the PCM clock and finishes explicit silence after shared relay done',async()=>{
+  for(const samples of [18000,42000]){
+    let blob;
+    const f=fixture({samples,idleCount:39,dependencies:{createURL:value=>{blob=value;return 'blob:idle';}}});
+    await f.ready();await f.pcm();await f.start();
+    f.socket.readyState=3;f.socket.onclose();
+    const count=Math.ceil(f.m.plan.timeline.length/39)*39;
+    assert.equal(blob.size,44+count*2000);
+    const bytes=new Uint8Array(await blob.arrayBuffer()),offset=44+5280*2;
+    assert.ok(bytes.slice(44,offset).every(v=>v===0));
+    assert.deepEqual(bytes.slice(offset,offset+f.m.pcm.length),f.m.pcm);
+    assert.ok(bytes.slice(offset+f.m.pcm.length).every(v=>v===0));
+    assert.equal(f.observations.find(Boolean).audioTimeSeconds,-.22);
+    for(let k=1;k<count;k++)await f.tick((k+.001)/24);
+    f.audio.onended();await f.promise;
+    assert.deepEqual(f.observations.filter(Boolean).map(row=>row.frame),Array.from({length:count},(_,k)=>k%39));
+    assert.ok(f.observations.filter(Boolean).every(row=>row.take.startsWith('clip-')));
+    assert.equal(f.sent.some(row=>row.t==='played'),false,'idle does not claim a deal reservation');
+    assert.equal(f.receipts.at(-1).state,'end');assert.equal(f.layer,null);
+  }
+});
+
+test('idle authority rejects mixed descriptor kinds, forged sequence kinds, frame substitutions and truncated cycles before audio',async()=>{
+  for(const change of [d=>d.sequenceKind='deal',d=>d.presentationVersion=7,d=>delete d.sequenceSha256,d=>d.sequenceSha256='bad']){
+    const d={...descriptor(),sequenceKind:'idle',sequenceSha256:h};change(d);
+    await assert.rejects(validateMovingSpeechStream(d,options),/moving_speech/);
+  }
+  for(const changeSequence of [s=>s.kind='deal',s=>s.version=7,s=>s.frames[0].frame=1,
+    s=>s.steps[0].event={type:'deal',shoeDraw:1},s=>{s.frames.pop();s.steps[0].end--;},
+    s=>s.sources[0].sha256='b'.repeat(64)]){
+    const f=fixture({idleCount:39,changeSequence});
+    await until(()=>f.socket,'socket');f.send(f.m.ready);
+    await assert.rejects(f.promise,/moving_speech/);assert.equal(f.audio.plays,0);
+  }
+  const f=fixture({idleCount:39});f.m.ready.sequence.frames[1].frame=2;
+  await until(()=>f.socket,'socket');f.send(f.m.ready);await assert.rejects(f.promise,/sequence/);
+  assert.equal(f.audio.plays,0,'an unhashed replacement never reaches audio');
+});
+
+test('idle still refuses incomplete transport, local stale ownership and abort after relay completion',async()=>{
+  for(const reason of ['transport','stale','abort']){
+    const controller=new AbortController();
+    const f=fixture({idleCount:39,overrides:{signal:controller.signal}});
+    await f.ready();await f.pcm();
+    if(reason==='transport'){f.socket.readyState=3;f.socket.onclose();}
+    else{
+      await f.start();f.socket.readyState=3;f.socket.onclose();
+      if(reason==='stale'){f.stale();await f.tick(.1);}else controller.abort();
+    }
+    await assert.rejects(f.promise,reason==='transport'?/socket_closed/:reason==='stale'?/stale_pose/:/Speech cancelled/);
+    assert.equal(f.audio.muted,true);assert.equal(f.receipts.at(-1).state,'interrupted');
+  }
+  const deal=fixture({bodyCount:48,overrides:{onSequenceReady:undefined,onSequenceFrame:undefined,onSequenceEnd:undefined}});
+  await until(()=>deal.socket,'socket');deal.send(deal.m.ready);
+  await assert.rejects(deal.promise,/sequence_owner_missing/);assert.equal(deal.audio.plays,0);
 });
 
 test('native ended state before the queued ended event finishes the 50-frame reply and 66-frame body once',async()=>{

@@ -33,7 +33,8 @@ export function movingSpeechSocketURL(path, origin) {
  * rejects substituted descriptors before opening a socket or starting work. */
 export async function validateMovingSpeechStream(value, { exactText, dealerId, requestId, now = Date.now() } = {}) {
   if (!keys(value, ['schemaVersion', 'kind', 'id', 'requestId', 'dealerId', 'exactText', 'textSha256',
-    'reviewStatus', 'url', 'ticket', 'expiresAt', 'profileRevision', 'avatarSha256', 'attemptId', 'nonce', 'compositing', ...(value?.presentationVersion!==undefined?['presentationVersion','sequenceSha256']:[])])
+    'reviewStatus', 'url', 'ticket', 'expiresAt', 'profileRevision', 'avatarSha256', 'attemptId', 'nonce', 'compositing',
+    ...(value?.sequenceKind!==undefined?['sequenceKind','sequenceSha256']:value?.presentationVersion!==undefined?['presentationVersion','sequenceSha256']:[])])
     || value.schemaVersion !== 1 || value.kind !== 'moving-speech-stream' || !/^[a-f0-9]{32}$/.test(value.id)
     || !ID.test(value.requestId) || value.requestId !== requestId || value.dealerId !== dealerId
     || !/^[a-z][a-z0-9-]{0,63}$/.test(value.dealerId) || !ID.test(value.attemptId) || !ID.test(value.nonce)
@@ -45,6 +46,8 @@ export async function validateMovingSpeechStream(value, { exactText, dealerId, r
     || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= now || value.expiresAt > now + 60000) fail('invalid_moving_speech_descriptor');
   const c = value.compositing;
   if(value.presentationVersion!==undefined&&(!integer(value.presentationVersion)||!value.presentationVersion||!HASH.test(value.sequenceSha256)))fail('invalid_moving_speech_sequence');
+  if(value.sequenceKind!==undefined&&(value.sequenceKind!=='idle'||value.presentationVersion!==undefined
+    ||!HASH.test(value.sequenceSha256)))fail('invalid_moving_speech_sequence');
   if (c !== null && (!keys(c, ['mode', 'threshold', 'softness', 'despill']) || c.mode !== 'green-screen'
     || !Number.isFinite(c.threshold) || c.threshold < 0 || c.threshold > 1 || !Number.isFinite(c.softness)
     || c.softness <= 0 || c.softness > 1 || !Number.isFinite(c.despill) || c.despill < 0 || c.despill > 1)) fail('invalid_moving_speech_compositing');
@@ -58,7 +61,7 @@ export async function validateMovingSpeechStream(value, { exactText, dealerId, r
 }
 
 async function readReady(message, speech) {
-  if (!keys(message, ['t', 'protocol', 'id', 'attemptId', 'nonce', 'plan', 'rest', 'audio',...(speech.presentationVersion!==undefined?['sequence']:[])]) || message.t !== 'ready'
+  if (!keys(message, ['t', 'protocol', 'id', 'attemptId', 'nonce', 'plan', 'rest', 'audio',...(speech.sequenceSha256!==undefined?['sequence']:[])]) || message.t !== 'ready'
     || message.protocol !== 1 || message.id !== speech.id || message.attemptId !== speech.attemptId || message.nonce !== speech.nonce) fail('invalid_moving_speech_ready');
   const { plan, rest, audio } = message, b = plan?.binding;
   if (!b || b.sessionId !== speech.id || b.talkId !== speech.requestId || b.dealerId !== speech.dealerId
@@ -76,8 +79,9 @@ async function readReady(message, speech) {
     || (audio.byteLength / 48000 + .22) * 24 > plan.timeline.length) fail('invalid_moving_speech_ready');
   const sequence=message.sequence;
   if(sequence){
-    if(sequence.version!==speech.presentationVersion||await digest(new TextEncoder().encode(JSON.stringify(sequence)))!==speech.sequenceSha256
-      ||!keys(sequence,['version','steps','sources','frames'])||!Array.isArray(sequence.frames)||!sequence.frames.length||sequence.frames.length>1000
+    const idle=speech.sequenceKind==='idle';
+    if((idle?sequence.kind!=='idle':sequence.version!==speech.presentationVersion)||await digest(new TextEncoder().encode(JSON.stringify(sequence)))!==speech.sequenceSha256
+      ||!keys(sequence,[idle?'kind':'version','steps','sources','frames'])||!Array.isArray(sequence.frames)||!sequence.frames.length||sequence.frames.length>1000
       ||!Array.isArray(sequence.steps)||!sequence.steps.length||sequence.steps.length>32||!Array.isArray(sequence.sources)||sequence.sources.length>32)fail('invalid_moving_speech_sequence');
     const sources=new Map();
     for(const s of sequence.sources){
@@ -88,11 +92,17 @@ async function readReady(message, speech) {
       sources.set(s.take,s);
     }
     let end=0;
+    if(idle&&(sequence.sources.length!==1||sequence.steps.length!==1))fail('invalid_moving_speech_steps');
     for(const step of sequence.steps){
       const s=sources.get('clip-'+step.video?.id);
-      if(!s||step.first!==end||step.end!==end+s.frameCount||step.video.sha256!==s.sha256||!step.video.filmedTake
-        ||step.event?.type!=='deal'||!integer(step.event.shoeDraw)||step.event.shoeDraw<1)fail('invalid_moving_speech_steps');
-      for(let k=step.first;k<step.end;k++){const f=sequence.frames[k];if(!f||f.take!==s.take||f.frame!==k-step.first||f.sourceSha256!==s.sha256)fail('invalid_moving_speech_steps');}
+      if(!s||step.first!==end||step.video.sha256!==s.sha256)fail('invalid_moving_speech_steps');
+      if(idle){
+        if(!keys(step,['first','end','video'])||step.video.filmedTake||step.end!==Math.ceil(plan.timeline.length/s.frameCount)*s.frameCount)
+          fail('invalid_moving_speech_steps');
+      }else if(step.end!==end+s.frameCount||!step.video.filmedTake||step.event?.type!=='deal'
+        ||!integer(step.event.shoeDraw)||step.event.shoeDraw<1)fail('invalid_moving_speech_steps');
+      for(let k=step.first;k<step.end;k++){const f=sequence.frames[k];if(!f||f.take!==s.take
+        ||f.frame!==(idle?k%s.frameCount:k-step.first)||f.sourceSha256!==s.sha256)fail('invalid_moving_speech_steps');}
       end=step.end;
     }
     if(end!==sequence.frames.length)fail('invalid_moving_speech_steps');
@@ -191,7 +201,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if (frames > 0) { send({ t: 'credit', id: ready.plan.start.id, frames }); credited += frames; }
   };
   const finish = () => { if (audioEnded && workerDone && !terminal) {
-    if(ready.sequence)send({t:'played',id:ready.plan.start.id});
+    if(speech.presentationVersion!==undefined)send({t:'played',id:ready.plan.start.id});
     completed = terminal = true; resolveDone(); } };
   const finishAudioPlayback = () => {
     if (terminal) return;
@@ -201,9 +211,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
         if(released===ready.sequence.frames.length-2){
           const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
-          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
+          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame?.(ready.sequence,k);
         }
-        onSequenceEnd(ready.sequence);
+        onSequenceEnd?.(ready.sequence);
       }
       if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
     } catch (error) { stop(error); }
@@ -289,8 +299,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       if (controller.signal.aborted) loadedRest.width = loadedRest.height = 0;
       check(); restCanvas = loadedRest;
       if(ready.sequence){
-        if(typeof onSequenceReady!=='function'||typeof onSequenceFrame!=='function'||typeof onSequenceEnd!=='function')fail('moving_speech_sequence_owner_missing');
-        await onSequenceReady(ready.sequence);check();
+        if(speech.presentationVersion!==undefined&&(typeof onSequenceReady!=='function'||typeof onSequenceFrame!=='function'||typeof onSequenceEnd!=='function'))fail('moving_speech_sequence_owner_missing');
+        await onSequenceReady?.(ready.sequence);check();
         const firstVideo=ready.sequence.steps[0].video;
         if(ready.sequence.steps.some(s=>JSON.stringify(s.video.compositing??null)!==JSON.stringify(firstVideo.compositing??null)
           ||JSON.stringify(s.video.framing??null)!==JSON.stringify(firstVideo.framing??null)))fail('moving_speech_geometry_changed');
@@ -340,7 +350,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       tail = tail.then(() => processMessage(event.data)).catch(stop).finally(() => { queued--; queuedBytes -= size; });
     };
     socket.onerror = () => stop(Error('moving_speech_socket_failed'));
-    socket.onclose = () => { tail.then(() => { if (!workerDone||(ready?.sequence&&!audioEnded)) stop(Error('moving_speech_socket_closed')); }); };
+    socket.onclose = () => { tail.then(() => { if (!workerDone||(speech.presentationVersion!==undefined&&!audioEnded)) stop(Error('moving_speech_socket_closed')); }); };
     await done;
   } catch (error) {
     noteFailure(error); throw error;
