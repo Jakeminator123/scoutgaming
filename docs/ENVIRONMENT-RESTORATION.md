@@ -190,7 +190,8 @@ Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar.
 | `apps/studio/` | Admin, partnerportal, lobby, auth och medie-API (`/studio` är teknisk basePath) | 24.x, Volta 24.21.0 |
 | `apps/web/` | Startsida, `/game`, `/play/{game}` och transport till spelmotorn | 24.x, Volta 24.21.0 |
 | `apps/speech/` | Talingress (lång WebSocket) | 24.x, Volta 24.21.0 |
-| `services/game/` | Spelmotorn: kort, sko, saldo, utbetalningar | ≥22.16; containern kör 24 |
+| `services/game/` | Spelmotorn: kort, sko, saldo, utbetalningar | ≥24; containern kör 24 |
+| `packages/server-transport/` | WebSocket-transport som `apps/web` och `apps/speech` delar | ≥24 |
 | `services/astrid-gpu-worker/gateway/` | Talrelä och transportkod som spelmotorn importerar | ≥22 |
 
 Volta väljer version efter arbetskatalog: kontrollera `node -p process.version` i paketet innan installation eller test. Installera med låsfilerna: `pnpm install --frozen-lockfile` i `apps/web`, `npm ci` i övriga (`npm ci --ignore-scripts` i `apps/speech`). Lokala pinnar styr inte Vercel eller Docker; de installerar själva från låsfilerna.
