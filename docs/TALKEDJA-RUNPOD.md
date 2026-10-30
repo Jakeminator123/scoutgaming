@@ -5,8 +5,10 @@ Skrivet 2026-10-29 på Jakobs fråga: "Alla värden som finns inlagda ska använ
 ## Kort svar
 
 - **Inte dokumenterat:** Kevins RunPod-läge fanns bara i Slack. K04:s `lipsync-underlag.md` (endpoint-id och ws-kontrakt, 22/10) flyttades till docs/history och raderades 28/10 (`8ad45fbf`); PAOW-LIPSYNC och TALKEDJA tog bara med delar. Det här är den samlade platsen.
-- **Fungerar inte:** (1) *Rapporterat* 22–23/10 (Jakobs agent i Slack): `croupier-v3` har Kevins/Emils RunPod-nyckel i `RUNPOD_API_KEY` och `kiud9j0a7fp5gn` som endpoint (variabelns namn angavs inte: `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` eller den olästa `CROUPIER_MOVING_SPEECH_ENDPOINT_ID`). `kiud9j0a7fp5gn` är Kevins staging-**pod** (Kevins agent 22/10: "dedikerad 4090-podd"), inte en serverless-endpoint, och `api.runpod.ai/v2/<id>` svarar 404. Mot vår stillbildsendpoint `zsudl8tmzcmiv1` ger Kevins nyckel 401. Paret fungerar alltså inte i något konto: ett pod-id där en endpoint ska stå, och Kevins nyckel når inte vår endpoint. (2) Mallen `5dkkc3wolw` för vår rörliga endpoint har `MOVING_CALLBACK_ORIGIN` mot raderade `croupier-v2`. (3) `croupier-v3` saknar `CROUPIER_MOVING_SPEECH_BANK_RECORDS`. (4) Vår kod talar inte Kevins protokoll (nedan). Följd i dag: inget AI-tal i produktionen. Dragans profil är rörlig (`motion-video`), rörligt är av, och stillbildsvägen nekar en rörlig profil (`services/game/dealer-speech-runtime.mjs:60`); Paow saknar profil.
-- **Inte aktiverat:** beslut 28/10 (Jakob, Kevin): talkedjan pausad till efter O03 och Dragan byts inte ut; `CROUPIER_MOVING_SPEECH_ENABLED=0`; preview har ingen taluppsättning (TALKEDJA T2 ej gjord).
+- **Färsk status, 2026-10-30 00:24 UTC:** produktionens stillbildsendpoint `zsudl8tmzcmiv1` gav auth/health HTTP 200. Det bevisar åtkomst och hälsosvar, inte att ljud eller video kan genereras. Rörligt tal är av (`moving flag=0`), `CROUPIER_MOVING_SPEECH_BANK_RECORDS` saknas och basprofilen saknar `dealerId`; rörlig generering är därför inte konfigurerad. I preview är `generated/moving=0` och bank samt endpoint saknas.
+- **Separat från nygenererat tal:** handoffen 2026-10-30 00:45 UTC rapporterar att `palma-man` (Jakob) har paket v9 publicerat i produktion med 10 godkända, förinspelade MP4-repliker. Det är inte bevis för att stillbilds- eller rörligt tal kan genereras live.
+- **Historiskt fel, rapporterat 22–23/10:** `croupier-v3` hade enligt en Slack-rapport Kevins/Emils RunPod-nyckel i `RUNPOD_API_KEY` och `kiud9j0a7fp5gn` som endpoint (variabelns namn angavs inte: `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` eller den olästa `CROUPIER_MOVING_SPEECH_ENDPOINT_ID`). `kiud9j0a7fp5gn` var Kevins staging-**pod**, inte en serverless-endpoint, och `api.runpod.ai/v2/<id>` svarade 404. Rapporten sade också att Kevins nyckel fick 401 mot vår stillbildsendpoint. Den uppgiften är inte aktuell status efter hälsokontrollen 2026-10-30. Mallen `5dkkc3wolw` för vår rörliga endpoint hade `MOVING_CALLBACK_ORIGIN` mot raderade `croupier-v2`; kontrollera den separat innan den används.
+- **Aktivering:** beslutet 28/10 pausade talkedjan till efter O03; O03 är sedan verifierat genomfört (#527). Vid statuskontrollen ovan var rörligt tal fortfarande av i produktionen och preview saknade bank och endpoint. Det beskriver inte de separat publicerade, förinspelade MP4-replikerna.
 
 ## Kevins RunPod 28/10 kl 15:30 (Kevins Slack, i sak ordagrant)
 
@@ -44,7 +46,7 @@ Cleanup (Kevins förslag, inget raderas utan hans ja): behåll Kevins prod-pod, 
 
 Per-dealer-kartan finns redan för rörligt tal: `CROUPIER_MOVING_SPEECH_BANK_RECORDS` och en driftprofil med egen endpoint per dealer, budget per dealer (`services/game/moving-speech-budget.mjs:20`). En-dealer-gränsen vid `moving-speech-runtime.mjs:242` togs bort i T3, och stillbildsvägen har aldrig haft den. Det som stoppar Paow bredvid Dragan är banken (T4), Admins val av rörlig referens (T5) och felkonfigurationen ovan. Därför ingen ny karta i den här PR:n.
 
-## Jämförelse
+## Jämförelse (inventering 2026-10-29; färsk status står ovan)
 
 | | Kevins prod | Vår prod `croupier-v3` | Vår preview `scoutgaming-preview-engine` |
 | --- | --- | --- | --- |
@@ -57,7 +59,7 @@ Per-dealer-kartan finns redan för rörligt tal: `CROUPIER_MOVING_SPEECH_BANK_RE
 | Cartesia | bara Astrid | krävs av starten, bara Astrids röst | ingen |
 | Talprofil | i koden | Dragan rörlig och på; Paow saknar | ej läst |
 | Vercel | – | driftväljaren med en profil (`baseline`, Dragan); inga talnycklar, vilket är rätt | inga |
-| Tal i dag | Paow och Dragan talar ovanpå vilan | inget AI-tal | inget |
+| Tal i dag | 10 godkända, förinspelade MP4-repliker för `palma-man` rapporteras publicerade; livegenerering är inte AV-verifierad | genererat/rörligt tal av, bank och endpoint saknas | inget |
 
 ## Kan vår kod tala med Kevins endpoints som de är?
 
