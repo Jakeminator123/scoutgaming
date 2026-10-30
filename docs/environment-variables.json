@@ -536,26 +536,8 @@
       "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation.",
       "panelRemovals": {
         "audit": "2026-10-29: Vercel names read 16:10; Render names from the 2026-10-28 REST read. Order: code stops reading, merge, deploy, then Jakob removes the panel entry. The previous Vercel list (speech flags, DEMO_GUEST_ACCESS, CROUPIER_LAB_REMOTE_UI, CROUPIER_MEDIA_BLOB_INDEX, CROUPIER_DATABASE, CROUPIER_STREAM_LANE, CROUPIER_LAB_UI_ORIGIN) is done: none is in the panel.",
-        "afterDeployOfThisChange": [
-          {
-            "where": "render scoutgaming-preview-engine",
-            "names": [
-              "CROUPIER_DATABASE",
-              "CROUPIER_STREAM_LANE"
-            ],
-            "reason": "Same as croupier-v3; only once branch preview has #664 (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, the preview engine stops at start."
-          }
-        ],
-        "afterDeployOfMiljovariabler2": [
-          {
-            "where": "render scoutgaming-preview-engine",
-            "names": [
-              "CROUPIER_STUDIO_NEON_POLICY",
-              "CROUPIER_MEDIA_STORAGE"
-            ],
-            "reason": "Same as croupier-v3; only once branch preview has the change and is deployed. Removed earlier, the preview engine stops at start."
-          }
-        ],
+        "afterDeployOfThisChange": [],
+        "afterDeployOfMiljovariabler2": [],
         "now": [
           {
             "where": "render croupier-v3",
@@ -593,7 +575,7 @@
           "scoutgaming-preview BLOB_READ_WRITE_TOKEN is Encrypted (flagged readable-secret); re-create as Sensitive.",
           "scoutgaming CROUPIER_BACKEND_ORIGIN is Sensitive although it is a public URL; Plain is consistent with scoutgaming-preview."
         ],
-        "nextChange": "The container workflow cleanup is merged in #689. Production Render cleanup is recorded below; preview engine removals still require a compatible deployed preview commit.",
+        "nextChange": "The container workflow cleanup is merged in #689. Production and preview Render retired fixed flags are now removed after compatible deployments; other speech/provider and integration decisions remain separate.",
         "verifyAfter": "/admin login, /lobby, /game with a played hand, /studio/api/assistant returns 200, Render /__cloud/health.",
         "completed": [
           {
@@ -648,6 +630,25 @@
             "afterCleanupCount": 42,
             "backup": "arkiv/2026-10-30/nattarbete/render-retired-flags-2026-10-30T01-58-29-986Z.json",
             "verification": "Four retired plain service flags removed through the per-key REST endpoint after a compatible deployment and an empty-table check. Immediate readback confirms all four absent and every unrelated environment value unchanged. Deployment dep-dbhvjkd9el5s738kdak0 is live; health returned HTTP 200 and version returned the exact fbc473c642 SHA. No provider credentials or speech activation flags changed."
+          },
+          {
+            "where": "render scoutgaming-preview-engine",
+            "completedDate": "2026-10-30",
+            "names": [
+              "CROUPIER_DATABASE",
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "alreadyAbsent": [
+              "CROUPIER_STREAM_LANE"
+            ],
+            "verifiedCompatibleSha": "71f4f4cd2bc3df48c3c88d7ba45d4520617815dc",
+            "deployTargetSha": "71f4f4cd2bc3df48c3c88d7ba45d4520617815dc",
+            "deployId": "dep-dbi03cafngtc73bskotg",
+            "beforeCount": 29,
+            "afterCleanupCount": 26,
+            "backup": "arkiv/2026-10-30/nattarbete/render-preview-retired-flags-2026-10-30T02-32-01-715Z.json",
+            "verification": "Three retired plain service flags removed after the UI reviewer released preview and an empty-table check. Every unrelated value remained unchanged. Pinned redeployment is live; health and exact version returned HTTP 200, and post-deploy readback confirms all four retired names absent. No provider credentials or speech activation flags changed."
           }
         ]
       }
