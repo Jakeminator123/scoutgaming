@@ -1,0 +1,4 @@
+absl-py @ https://files.pythonhosted.org/packages/8f/aa/ba0014cc4659328dc818a28827be78e6d97312ab0cb98105a770924dc11e/absl_py-2.3.1-py3-none-any.whl --hash=sha256:eeecf07f0c2a93ace0772c92e596ace6d3d3996c042b2128459aaae2a76de11d
+flatbuffers @ https://files.pythonhosted.org/packages/ee/1b/00a78aa2e8fbd63f9af08c9c19e6deb3d5d66b4dda677a0f61654680ee89/flatbuffers-25.9.23-py2.py3-none-any.whl --hash=sha256:255538574d6cb6d0a79a17ec8bc0d30985913b87513a01cce8bcdb6b4c44d0e2
+mediapipe @ https://files.pythonhosted.org/packages/07/ce/fe29a74c6af4dae88b0146b4a8c4a79b4ca3cf400ae08dd401a13f52305a/mediapipe-0.10.31-py3-none-manylinux_2_28_x86_64.whl --hash=sha256:360de896205822419b14d7574c2812e08946769228f7548c31dd871b150d9bcc
+sounddevice @ https://files.pythonhosted.org/packages/73/e7/9020e9f0f3df00432728f4c4044387468a743e3d9a4f91123d77be10010e/sounddevice-0.5.3-py3-none-any.whl --hash=sha256:ea7738baa0a9f9fef7390f649e41c9f2c8ada776180e56c2ffd217133c92a806

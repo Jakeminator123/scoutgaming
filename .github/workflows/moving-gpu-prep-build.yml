@@ -1,0 +1,72 @@
+name: Moving GPU prep image build check
+
+on:
+  # First build can be requested before this workflow reaches default main.
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      expected_head:
+        description: 'Full reviewed SHA; must equal the dispatched branch head'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: moving-gpu-prep-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.repository == 'Jakeminator123/scoutgaming' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.label.name == 'moving-gpu-prep-build' &&
+        github.event.pull_request.head.repo.full_name == github.repository))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.expected_head }}
+      SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Require the frozen source head
+        run: |
+          python3 - <<'PY'
+          import os, re
+          assert re.fullmatch(r'[a-f0-9]{40}', os.environ['EXPECTED_HEAD'])
+          assert os.environ['EXPECTED_HEAD'] == os.environ['SOURCE_HEAD']
+          PY
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            services/moving-gpu-prep
+            services/astrid-gpu-worker/workers
+            tools
+      - name: Verify the staged source and focused integrity tests
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 services/moving-gpu-prep/build.py --check
+          python3 -B -m unittest discover -s services/moving-gpu-prep/tests -v
+      - name: Authenticate for the private digest-pinned base
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Build on CPU and verify without network
+        run: |
+          python3 services/moving-gpu-prep/build.py --tag moving-gpu-prep:check
+          docker run --rm --network none --entrypoint /workspace/mt-venv/bin/python moving-gpu-prep:check -B /opt/moving-prep/verify_runtime.py
+          docker run --rm --network none moving-gpu-prep:check --help
+      - name: Record the exact build without publishing or provisioning
+        run: |
+          echo "CPU prep image verified at $EXPECTED_HEAD." >> "$GITHUB_STEP_SUMMARY"
+          python3 services/moving-gpu-prep/build.py --check >> "$GITHUB_STEP_SUMMARY"
+          docker image inspect moving-gpu-prep:check --format '{{.Id}}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No image publication, GPU resource, inference or visual approval.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove runner registry login
+        if: always()
+        run: docker logout ghcr.io

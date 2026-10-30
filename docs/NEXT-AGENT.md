@@ -1,6 +1,6 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 30 oktober 2026 mot kodbas `638a138d` och publicerat Jakob 2-paket 10. Läs [START-HERE](../START-HERE.md) för produktväg och leverans, [AGENTS](../AGENTS.md) för regler och sakguiden för ändringen. Historiska PR-listor finns i Git; de är inte en aktuell att-göra-lista.
+Uppdaterad 30 oktober 2026 mot main `cdf200ca` och publicerat Jakob 2-paket 10. Produktionsmotorns senast verifierade runtime är fortfarande `638a138d`; senare main-ändringar är inte ett nytt runtimekvitto. Läs [START-HERE](../START-HERE.md) för produktväg och leverans, [AGENTS](../AGENTS.md) för regler och sakguiden för ändringen. Historiska PR-listor finns i Git; de är inte en aktuell att-göra-lista.
 
 ## Läget
 
@@ -21,6 +21,17 @@ Paow-/Dragan-ID:na finns redan i röstkatalogen. Jakob bad också om tre separat
 Jakob 2:s talprofil är fortfarande `preparation`/`video-frame`. Ordinarie referenstjänst verifierade exakt registrerad Blob-SHA och tog ut en PNG 1080×1920; ett tvåsekunders Jakob-TTS-prov gav HTTP 200 och PCM 24 kHz. Stillbildsendpointen `zsudl8tmzcmiv1` gav health HTTP 200 med noll workers/jobb, men deployad image/protokoll är okända. Inget GPU-jobb startades i denna kontroll; det tidigare Paow-provet ovan använde en annan endpoint. Referens- och TTS-proven bevisar inte läppsynk eller spelacceptans.
 
 Två integrationsspärrar återstår på kodbas `638a138d`: delad presentation spelar inte `generated-speech-stream` eftersom dess väg saknar `assertCurrent` (`services/game/public/shared-room-presentation.mjs:51–54`), och chattens gemensamma distribution omfattar bara moving (`services/game/shared-room-chat.mjs:229–238`). `/studio-preview` har `externalServices.ai/speech=false` och provar därför inte nytt AI-tal. Moving är fortsatt av, Jakob 2 saknar bank och kontrollen ändrade ingen global konfiguration. Speloutboxen läses av presentationen; providerorkestrering på Render och GPU på RunPod kräver ingen stor refaktor för att bevara spelkärnans logiska ansvar. Talet delar dock Render-process/startkonfiguration med spelet: moving aktiverat utan bank kan stoppa motorstarten (`services/game/server.mjs:1219–1229`). Fysisk tjänsteutbrytning kan isolera sådana driftfel; fler miljövariabler ensamt löser inte integrationsspärrarna. Se [TALKEDJA](plans/TALKEDJA.md) för aktuella spärrar.
+
+## Egen Jakob 2-bank och RunPod, 30 oktober
+
+Preview-CI:s faktiska mål var `neondb` med rollen `croupier_staging_app`, verifierat i en tillfällig skrivskyddad [diagnos](https://github.com/Jakeminator123/scoutgaming/actions/runs/41049640677). Samma befintliga app-roll pekas nu mot verifierade `croupier_staging`; full readiness passerade före uppdateringen av GitHub-secreten. Ingen DDL eller rolländring behövdes. Återläsningen visar rätt databas och båda registren; preview-CI 41047120409 är grön efter omkörning av endast de misslyckade jobben. Diagnos-PR #703 är stängd utan merge och inför ingen produktfunktion.
+
+LIPSNK har färdigställt ett privat CPU-underlag för tal i vila: 39 bildrutor, 1080×1920, CFR24, explicit viloruta 0, verifierat mot samma registrerade original som paket 10. ZIP:en och dess kvitton finns i den kanoniska checkoutens `.cache/jakob2-moving-bank-20261030/`; ZIP-SHA256 är `927ce139a66823c6280e6ccb6ee28b56c32a488cea3932fef3f5483735eb9ee7`. Detta är varken GPU-preparerad bank, nygenererat ljud/bild eller godkänd läppsynk. Källklipp, talprofil och ZIP är oförändrade.
+
+Den befintliga moving-imagen är en renderare. Dess `forbered`-väg saknar MediaPipe-helper, wheel och tre modellfiler. [Det separata prep-paketet](../services/moving-gpu-prep/README.md) lägger till hashbundna förberedelseberoenden ovanpå exakt renderdigest och byggs endast i molnet. Den förseglade renderaren och v3 ändras inte. Lokala integritetsprov ska skiljas från det separata molnbygget, ett verkligt GPU-bankbygge och senare AV-/spelacceptans.
+
+Säker API-inventering ligger privat i `.cache/runpod-map-20261030/`: två konton, tre olika credentials, nio endpoints och 15 stoppade poddar. Lokal RunPod-nyckel är samma som previews movingnyckel och når kontot som Kevins inloggade webview visar. Produktionsnycklarna skiljer sig. Ingen generell env-synk är därför korrekt. Konto A har befintlig GHCR-registrybindning, men webview visar en lagrad `IMAGE_AUTH_ERROR` för Paows moving-image; en fungerande ny pull är inte verifierad. Produktionskontots moving-template pekar fortfarande på gamla `croupier-v2`; rätt framtida callback bestäms med taltjänstens gräns, inte genom blind namnändring. Befintliga resurser, `ELEVEN_KEVIN` och produktionsflaggor är orörda. Kevin-utkastet är lokalt och oskickat.
+
 
 ## Efter O03
 

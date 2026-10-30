@@ -117,13 +117,14 @@ Den historiska anvisningen var `python -I fixa-callback-origin.py --kör` i `Des
 
 ### T8. Taltjänsten ut ur motorn
 
-- **Avgränsning:** en framtida större tjänsteuppdelning, inte ett krav för att skydda spelkärnan eller en lösning på de nu verifierade integrationsspärrarna.
-- **Syfte:** `croupier-v3` blir ren kort, sko och matte. Gränsen: motorn skickar händelser (talbegäran med dealer, spelbord, runda, replik eller chattsvar), taltjänsten levererar media och strömmar till spelaren.
-- **Först en plan-PR** (docs) med kontrakt, tjänstens namn (inte `croupier-speech`, som är en OpenClaw-roll), ägarskap för journal, budget, banker och driftväljare, och hur `apps/speech` på Vercel pekar om.
-- **Filer, sedan:** `services/game/generated-speech-*`, `moving-speech-*`, `dealer-speech-*`, `moving-drift-*`, `packages/director`, `services/astrid-gpu-worker/gateway/` (det rörliga flyttar ut), `apps/speech`.
-- **DDL:** ja (egen roll och behörigheter för talets tabeller), Jakob kör. **Env:** ja, talnycklarna flyttar från `croupier-v3` till den nya tjänsten.
-- **Prov och preview:** som T5, plus att spelet fungerar med taltjänsten nere.
-- **Risk:** hög. Görs sist, efter Jakobs godkännande av T5 och T7.
+- **Riktning bekräftad 30 oktober:** v3 ska behålla spelregler, kort, sko, saldo och auktoritativ tid. Saknade gamla v2-variabler är inte fel i sig; gamla tjänster eller providerinställningar kopieras inte tillbaka för att fylla en lista.
+- **Nuläge:** speloutboxens presentationsadapter saknar skrivport till spelet, men talets journal, budget, TTS, RunPod-jobb, banker, drift och callback delar fortfarande v3-processen. `apps/speech` är ingress, inte en fristående arbetande taltjänst. Moving på utan giltig bank kan fälla `server.mjs` före `listen`; moving av gör banken avsiktligt valfri. Logisk separation är därför verifierad, processisolering återstår.
+- **Gräns:** en separat Render-process äger befintliga talmoduler och providerhemligheter. Motorn behåller medlemskap, behörighet, runda och färskhetskontroll via ett smalt autentiserat kontrakt. Talhändelser får inte skriva spelutfall eller plånbok; sena eller felbundna medier ska avvisas även vid återanslutning.
+- **Plan före flytt:** namnge tjänsten (inte `croupier-speech`, som är en OpenClaw-roll), specificera jobbidentitet, avbrott/färskhet, journal/budget, bank- och driftägare, callback/origin samt hur `apps/speech` pekar om. Flytta därefter befintlig funktion i avgränsade leveranser, utan en parallell v2-implementation.
+- **Filer, sedan:** `services/game/generated-speech-*`, `moving-speech-*`, `dealer-speech-*`, `moving-drift-*`, berörda director-/gateway-adaptrar och `apps/speech`.
+- **DDL:** egen begränsad databasroll kräver separat godkänd åtgärd. **Env:** talnycklar flyttas först när den nya ägaren är driftsatt och verifierad; inget tas bort från en aktiv konsument i förväg.
+- **Verifiering:** spelet ska starta och fortsätta när taltjänsten är nere, felkonfigurerad eller långsam. Behåll rum-/bolagsisolering, biljettengångsanvändning, budget och avvisning av gammal runda. Processflytten löser inte i sig stillbildsspärrarna i gemensam uppspelning.
+- **Ordning:** egen bankförberedelse och isolerade GPU-prov fortsätter utanför v3. Tjänstegräns och callback ska vara konkreta före en ny produktionsaktivering; en godkänd röst eller GPU-rendering bevisar inte processisolering. Ingen tjänst, roll eller skarp talflagga ändrades i granskningen.
 
 ## Jakob beslutar och gör
 
