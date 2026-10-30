@@ -441,6 +441,20 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(await client.get('/api/chat/memory?dealer=astrid'), old);
     assert.equal(captured.length, count);
   });
+  await t.test('native deposits reject sub-cent amounts and preserve exact credited ledger cents',async()=>{
+    const {client,player}=await guest();
+    const deposits=()=>database.store.db.prepare("SELECT amount FROM transactions WHERE player_id=? AND type='deposit' ORDER BY id").all(player.id);
+    for(const amount of [1.001,0.99,100_000_000.01]) assert.match((await client.post('/api/deposit',{amount},400)).error,/whole cents/);
+    assert.equal((await deposits()).length,0);
+    assert.equal((await database.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance,player.balance);
+    let expected=player.balance;
+    for(const amount of [1.01,1.15,1.1+0.2,'2.01']){
+      const normalized=Math.round(Number(amount)*100)/100;
+      expected=Math.round((expected+normalized)*100)/100;
+      assert.equal((await client.post('/api/deposit',{amount})).balance,expected);
+      assert.equal((await deposits()).at(-1).amount,normalized);
+    }
+  });
   if (lissabon) await t.test('results come from committed rounds and ignore browser claims and deposits', async () => {
     const { client, state: initial } = await guest();
     const command = (view, op, fields = {}) => client.post('/api/table', { op, version:view.version, requestId:crypto.randomUUID(), ...fields });

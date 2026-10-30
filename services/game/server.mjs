@@ -19,6 +19,7 @@ import { createPlayerChatMemory } from './storage/async-player-chat-memory.mjs';
 import { createPlayerProbeStore } from './storage/async-player-probe-store.mjs';
 import { installPartnerApi } from './storage/async-partner-api.mjs';
 import { createPostgresStore } from './storage/postgres-store.mjs';
+import { depositAmount } from './storage/deposit-amount.mjs';
 import { createPostgresNativeTableCommand } from './postgres-native-table.mjs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -231,8 +232,8 @@ async function postgresWallet(id, work) {
   });
 }
 const apiDeposit = async ({ id, amount }) => postgresWallet(id, async player => {
-  const value = Number(amount);
-  if (!Number.isFinite(value) || value < 1 || value > 100_000_000) return { error: 'amount must be 1-100000000' };
+  const value = depositAmount(Number(amount), { min:1, max:100_000_000 });
+  if (value === null) return { error: 'amount must be 1-100000000 in whole cents' };
   const balance = Math.round((player.balance + value) * 100) / 100;
   await db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance, id);
   await logTx(id, 'deposit', value, player.currency, 'demo test card');

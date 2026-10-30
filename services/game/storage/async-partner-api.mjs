@@ -7,6 +7,7 @@ import { buildAssetsManifest, presentationEvents } from '../partner-presentation
 
 import { normalizeDisplayName } from '../../../packages/studio-access/display-name.mjs';
 import { activeKeyOperator, keyOperator } from '../partner-operator.mjs';
+import { depositAmount } from './deposit-amount.mjs';
 
 export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/', readMetadata, hasPublicMedia, operatorById,
   // Neon is the one registry on every deployment, so native mode is on and legacy partner sessions are off.
@@ -57,7 +58,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     async credit(id, { playerId, amount }) {
       const row = (await boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id)); if (!row) throw new Error('unknown or revoked key');
       if (row.wallet_url) throw new Error('key uses a seamless wallet; fund the player in your own wallet');
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) throw new Error('amount 0-100000');
+      amount = depositAmount(amount);
+      if (amount === null) throw new Error('amount 0.01-100000 in whole cents');
       return db.transaction(async()=>{
       const p = (await playerFor({ ...row, scopes: JSON.parse(row.scopes) }, String(playerId), null));
       const nb = Math.round((p.balance + amount) * 100) / 100;
@@ -207,7 +209,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
           .all(k.id, ...[playerId, from, to].filter(Boolean), n)).map(r => ({ ...r, round: r.view ? JSON.parse(r.view) : null, view: undefined }));
         return send(200, { rounds: rows, count: rows.length }); }
       if (pathname === '/api/v1/demo-credit') { const e = need(k, 'wallet'); if (e) return send(e.status, e); if (k.wallet_url) return send(400, { error: 'not available with seamless wallet' });
-        const { playerId, amount } = input; if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) return send(400, { error: 'amount 0-100000' });
+        const { playerId } = input, amount = depositAmount(input.amount);
+        if (amount === null) return send(400, { error: 'amount 0.01-100000 in whole cents' });
         const value=await db.transaction(async()=>{const p = (await playerFor(k, playerId, input.currency)); const nb = Math.round((p.balance + amount) * 100) / 100; (await db.prepare('UPDATE players SET balance=? WHERE id=?').run(nb, p.id)); (await logTx(p.id, 'deposit', amount, p.currency, `partner-demo:${k.name}`)); return { playerId, balance: nb, currency: p.currency };});return send(200,value); }
       if (pathname === '/api/v1/balance') { const e = need(k, 'wallet'); if (e) return send(e.status, e);
         const { playerId } = input; const p = (await playerFor(k, playerId, input.currency)); return send(200, { playerId, balance: p.balance, currency: p.currency, note: k.wallet_url ? 'seamless wallet: partner is source of truth' : 'internal demo wallet' }); }
