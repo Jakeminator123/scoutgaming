@@ -35,7 +35,7 @@ Speloutboxen försörjer presentationen med läsning av spelhändelser; talet f�
 | Hårdkodade dealers i talet: personor, Astrids regler, röst och paketkontroll | `packages/presentation/contracts/dealer-chat-persona.mjs:29–33`, `packages/director/product-speech.mjs:132`, `:230`, `packages/director/speech-routing.mjs:11`, `services/game/generated-speech-stream.mjs:91`, `:241`, `packages/presentation/contracts/speech-package.mjs:80`, `:85`, `services/game/server.mjs` (`'astrid'` på 183, 526, 644, 706, 728, 747, 881, 946–947, 958, 1259) |
 | Hårdkodade dealers i materialkatalogen | `services/game/games/blackjack/presentation/media-catalogue.mjs:20`, `:28–32` (`KEYED` och kontaktdata för dragge, paow, marten), `material-revision.mjs:36` (`KEYED`), `:46` (`timingSourceOf`), `k04-media.tsv` (kolumnen `dealer`, 975 rader sedan K3) |
 | Uppgiften den 28 oktober var att Paow/Dragan låg hos Kevin (Pro, cirka 780 000 av 979 000 tecken använda). Den bevisar inte den aktiva nyckelns åtkomst den 30 oktober; se livekontrollen ovan | Render `croupier-v3` `ELEVENLABS_API_KEY`; voiceId i `packages/presentation/contracts/dealer-voice-catalog.json` |
-| RunPod-mallen `5dkkc3wolw` för `zjsdlni6cn8dvo` har `MOVING_CALLBACK_ORIGIN=https://croupier-v2.onrender.com` (raderad). Workern avvisar varje jobb vars callback-värd inte stämmer | `services/moving-gpu-worker/contracts.py:102–109` |
+| Kevins historiska rapport angav mallen `5dkkc3wolw` för `zjsdlni6cn8dvo` med `MOVING_CALLBACK_ORIGIN=https://croupier-v2.onrender.com` (raderad). Aktuell konto-/mall-/endpointbindning och callback är inte liveverifierade; verifiera dem före ändring. Workerkoden avvisar jobb vars callback-värd inte stämmer | `services/moving-gpu-worker/contracts.py:102–109` |
 | Rörligt tal är av i produktionen | Render `CROUPIER_MOVING_SPEECH_ENABLED=0` |
 | Preview har ingen taluppsättning (inga talnycklar) och dess Blob tar godkänt material (Jakobs beslut 2026-10-28) | [START-HERE](../../START-HERE.md#preview), Blob `store_7E06N1P4w9Mu1dZD` |
 
@@ -54,7 +54,7 @@ Numreringen kommer från planen den 28 oktober. Röståtkomsten i T7 måste lös
 - **DDL:** inget behov fastställt. **Env:** inget ändrat; eventuell nyckeländring följer T7 och miljöförteckningen.
 - **Prov:** Dialogtest mot Paow: text → röst → läppsynk från stillbild. Kontrollera att sessionsjournalen tar svaret (`generated-speech-stream.mjs:239–243`: utan journal tas bara den gamla avataren emot) och att reservationen räknas mot `CROUPIER_SPEECH_RUNPOD_*`.
 - **Preview:** först efter verifierad provideruppsättning. `/studio-preview` har AI och tal avstängda och kan inte utgöra detta prov. Planens tidigare Dialogtest i produktion med Paow otilldelad till bolag är ingen redan utförd acceptans.
-- **Risk:** låg för spelet. Kallstart på `zsudl8tmzcmiv1` (min 0, idle 5 s) ger sega svar; vilorutan kan få grön kant av padden i `dealer-speech-reference.mjs:89`; Kevins teckenkvot.
+- **Risk:** låg för spelet. Planens historiska uppgifter för `zsudl8tmzcmiv1` var min 0 och idle 5 s; dagens healthkontroll verifierar inte dessa inställningar eller svarstid. Kallstart, grön kant från padden i `dealer-speech-reference.mjs:89` och teckenkvot behöver bedömas i det faktiska provet.
 
 ### T2. Preview får taluppsättning
 
@@ -66,7 +66,7 @@ Numreringen kommer från planen den 28 oktober. Röståtkomsten i T7 måste lös
 
 ### Före T3: callback-adressen
 
-Jakob kör `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lipsync` (mallen `5dkkc3wolw` får `https://croupier-v3.onrender.com`; kopian före ändringen ligger bredvid), och sedan `python -I kontrollera.py`. Utan det kan inget rörligt tal fungera, inte heller Dragans.
+Den historiska anvisningen var `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lipsync` för att ändra mallen `5dkkc3wolw` till callback `https://croupier-v3.onrender.com`, följt av `python -I kontrollera.py`. Kopian före ändringen rapporterades ligga bredvid. Kör inte fixern på det underlaget ensamt: verifiera först vilket konto, vilken mall och vilken endpoint som faktiskt används samt aktuell callback. Först en bekräftad felbindning motiverar korrigering av just den konfigurationen.
 
 ### T3. Rörligt tal per dealer i motorn (spår 2, kod)
 
@@ -131,7 +131,7 @@ Jakob kör `python -I fixa-callback-origin.py --kör` i `Desktop\_SCOUT\info-lip
 2. **Röstunderlag:** Jakob-/ABYDM-underlag finns privat enligt [NEXT-AGENT](../NEXT-AGENT.md#talprov-och-röst-idn-2026-10-30). Rösterna på målkontot och Jakobs ljudbedömning måste verifieras före aktivt byte.
 3. **Preview-taluppsättning (T2):** ja eller nej, med kostnad (egna nycklar, egen budget, GPU), och om riktig dealermedia och bank får ligga i preview-Blob.
 4. **T1 i produktionen:** får Paows profil sparas i produktionens Admin för Dialogtest innan preview har tal?
-5. **Kör `fixa-callback-origin.py --kör`** före T3:s prov.
+5. **Verifiera RunPod-konto, mall, endpoint och callback** före eventuell korrigering; den historiska fixern är inte verifierad för dagens bindning (se Före T3).
 6. **När rörligt tal får slås på i produktionen** (`CROUPIER_MOVING_SPEECH_ENABLED=1`), och om en varm worker (min 1, kostar per timme) ska gälla under öppettid för stillbild respektive rörligt.
 7. **DDL** om T3 eller T8 kräver migrering.
 
