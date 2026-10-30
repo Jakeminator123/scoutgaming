@@ -79,7 +79,7 @@ Jakobs beslut 2026-10-30: projektet `scoutgaming` lagrar `ELEVENLABS_PAOW_VOICE_
 
 Posterna är valfria referensvärden utan runtime-läsare; de byter ingen dealers sparade talprofil och aktiverar ingen generering. Paow och Dragan finns redan i `packages/presentation/contracts/dealer-voice-catalog.json`. API-nyckeln måste separat ha åtkomst till valt röst-ID. Ingen ElevenLabs-nyckel kopieras till Vercel.
 
-Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Jakob men saknar Paows röst (`voice_not_found`). Kontoprofilen avvisar samma nyckel med `missing_permissions`; kontoägaren är därför inte verifierad. Äldre uppgift om Kevins konto får inte användas som bevis för dagens nyckel.
+Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Jakob och ABYDM men saknar Paows röst (`voice_not_found`). Kontoprofilen avvisar samma nyckel med `missing_permissions`. Jakob vidarebefordrade därefter Kevins besked: detta är Impactwin-kontot, där Jakob och Adebayor/ABYDM ligger; Paow och Dragan ligger kvar i Kevins vanliga ElevenLabs-konto. Kontotillhörigheten kommer från Kevins besked, inte en lyckad profilfråga. Runtime använder i dag en gemensam ElevenLabs-nyckel; ett byte till Kevins konto ger därför inte åtkomst till Impactwins röster. Inget nyckelbyte eller stöd för flera konton ingår i denna ändring.
 
 ## Fasta värden
 
