@@ -1,6 +1,6 @@
 # Återanvändbar dealerbordsmall
 
-`olive-blackjack-v1` är en separat fotografisk bordstillgång för showroom och fortsatt kalibrering. Den registrerar inget i Neon, ändrar inget fryst spelpaket och väljer ingen dealer. Rummet kan bytas utan att bordet genereras om, och ett annat bord får egen bild, proportion och egna ankare.
+`olive-blackjack-v1` och `navy-blackjack-v1` är separata fotografiska bordstillgångar för showroom och fortsatt kalibrering. De registrerar inget i Neon, ändrar inget fryst spelpaket och väljer ingen dealer. Rummet kan bytas utan att bordet genereras om, och ett annat bord får egen bild, proportion och egna ankare.
 
 ## Leverans och inmätta bilddata
 
@@ -84,3 +84,24 @@ Bildverktyg: inbyggd `image_gen`, `transparent_background: true`. Inget externt 
 > Edit this table image ONLY to make a production-ready clean alpha cutout. Preserve exact table design, empty olive green felt, worn dark leather rail, thin brass trim, walnut apron, wide front view and original photographic detail and lighting. Remove ALL surrounding dark background, warm/cool fog, glow, feathered haze, shadow and gradients outside the table silhouette. Outside the tabletop and apron must be alpha=0 fully transparent right up to a clean antialiased object edge. Inside the table must be fully opaque (alpha=255), with fine material textures unchanged. Keep complete left and right ends visible with 24px clear transparent padding. No added elements, no words, no logos, no cards, no chips, no people, no legs, no background. Maintain very wide 2048x768 canvas/aspect if possible. Do not draw a checkerboard into the pixels.
 
 Prompten är önskemål; tabellen ovan beskriver de uppmätta pixlarna. Riktade prov finns i `apps/studio/components/dealer-table-template.test.mjs`: produktens koordinatformel på båda scenplan, synlig utbredning, utbytbar bildproportion, ogiltiga ankare/placeringar samt faktisk avkodning, SHA, alfagränser och identisk PNG/WebP-alpha. Kalibrering med verklig dealer och produktacceptans återstår.
+
+## Marinblå variant: `navy-blackjack-v1`
+
+Varianten använder samma renderer genom `template: { definition, assetUrl }`: läs `dealer-table-assets/navy-blackjack-v1.json`, validera med `validateDealerTableDefinition` och använd URL från `navy-blackjack-v1.webp`. Ingen gemensam komponent eller produktidentitet ändras. Materialavsikten är marinblå filt, mörkt läder, champagnefärgad metall och mörk ek. Oliv-PNG:n var geometrireferens för inbyggd `image_gen`; en andra riktad iteration frilade bordet. Ingen extern API-generering eller molnpublicering ingår.
+
+| Fil | Mått | Byte | Användning |
+| --- | --- | --- | --- |
+| `navy-blackjack-v1.png` | 2046 × 768 | 1932854 | Genererat original, bevarad alpha och SHA-256 i JSON |
+| `navy-blackjack-v1.webp` | 2046 × 768 | 211214 | Runtime, kvalitet 88 / alpha 100 / effort 6; cirka 89 % mindre |
+
+- Faktisk `alphaBounds`: x=0, y=17, bredd=2029, höjd=751 vid alpha ≥ 1. Faktisk `visibleBounds`: x=24, y=109, bredd=2000, höjd=565 vid alpha ≥ 128. Svaga alfaspår finns utanför den synliga konturen; bounding box är ingen mask. 631319 av 1571328 pixlar är helt transparenta, 912367 har alpha ≥ 250, högsta alpha är 255. WebP bevarar exakt samma alpha som PNG; ingen efterritad mask eller beskärning används.
+- Verktygets slutbild är två pixlar smalare än olivreferensen. Deskriptorn anger de verkliga måtten; renderern behåller proportionen. Synlig kontur och material bedömdes i bilden, inga fysiska mått eller kameravinklar har mätts.
+- Placering och föreslagna ankare följer olivprofilen ovan: desktop `width=0.8597301349325337`, `x=-0.00020989505247377417`, `y=0.47596701649175405`; mobil `width=1.18`, `x=0`, `y=0.61`. Synligt desktopinnehåll ligger cirka x 8.00–92.04 %, y 55.74–97.95 %. Mobilen beskär sidorna och visar y 64.54–82.87 %.
+- Bildplanet använder pivot `(0.5, 0)`, dealerankare `(0.5, 0.3)`, sju desktopplatser och tre mobilplatser. Kortbredden är 0.04 respektive 0.06 av bordbildens bredd. Alla föreslagna ankarcentra ligger på alpha ≥ 250. **Kalibrering är ett förslag**; händer, hela kortytor, insatsytor och riktig dealer måste fortfarande bedömas tillsammans.
+- `dealer-table-navy.test.mjs` verifierar filernas faktiska format, byteantal, SHA-256, dimensioner, alfagränser, identisk PNG/WebP-alpha, ankarcentra och projicering på båda scenplan. Prov ersätter inte dealer-/produktacceptans.
+
+Slutlig friläggningsprompt, inbyggd `image_gen` med `transparent_background: true`:
+
+> Use case: background-extraction. Edit this exact navy table image ONLY to make a production-ready clean alpha cutout. Preserve exact table silhouette, navy-blue empty felt, charcoal leather rail, champagne metal trim, smoked-oak apron, perspective, dimensions and pixel placement on the 2048x768 canvas. Remove ALL surrounding dark background, warm/cool fog, glow, feathered haze, shadow, speckles and gradients outside the table silhouette. Outside the tabletop and apron must be alpha=0 fully transparent right up to a clean antialiased object edge. The top 100px and the bottom 90px of the canvas must be entirely transparent. Inside the table must be opaque with fine material textures unchanged. Keep complete left and right ends visible with clear transparent padding. No added elements, no words, no logos, no cards, no chips, no people, no legs, no room. Do not zoom, shift, crop, scale or change the table. Preserve the entire 2048x768 canvas. Do not draw a checkerboard into pixels.
+
+Prompten beskriver avsikten; mätningarna ovan redovisar resultatet och dess avvikelser.
