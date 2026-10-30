@@ -1,0 +1,23 @@
+[
+  {
+    "file": "mediapipe/face_landmarker.task",
+    "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+    "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+    "bytes": 3758596,
+    "provenance": "https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker"
+  },
+  {
+    "file": "face-parse-bisent/resnet18-5c106cde.pth",
+    "url": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
+    "sha256": "5c106cde386e87d4033832f2996f5493238eda96ccf559d1d62760c4de0613f8",
+    "bytes": 46827520,
+    "provenance": "https://github.com/TMElyralab/MuseTalk/blob/0a89dec45a0192b824e3cf4daf96c239440c5ed8/download_weights.sh"
+  },
+  {
+    "file": "face-parse-bisent/79999_iter.pth",
+    "url": "https://huggingface.co/ManyOtherFunctions/face-parse-bisent/resolve/9b440738b337fd51492d718685e452af3532acd0/79999_iter.pth",
+    "sha256": "468e13ca13a9b43cc0881a9f99083a430e9c0a38abd935431d1c28ee94b26567",
+    "bytes": 53289463,
+    "provenance": "https://github.com/TMElyralab/MuseTalk/blob/0a89dec45a0192b824e3cf4daf96c239440c5ed8/download_weights.sh"
+  }
+]
