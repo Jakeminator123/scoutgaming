@@ -1171,7 +1171,7 @@ html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex
   html[data-shared-room="1"] #wallet { gap: 4px; padding: 7px 6px; }
   html[data-shared-room="1"] #wallet span { font-size: 12px; line-height: 1.15; }
   html[data-shared-room="1"] #bottom-right { gap: 4px; }
-  html[data-shared-room="1"] #bottom-right button { max-width: 60px; white-space: normal; font-size: 11px; padding: 0 4px; }
+  html[data-shared-room="1"] #bottom-right button { width: 44px; min-width: 44px; max-width: 44px; white-space: normal; font-size: 11px; padding: 0; letter-spacing: 0; }
 }
 /* A narrow phone keeps the status line to two lines; the full text stays in its title and for screen readers. */
 @media (max-width: 400px) {
