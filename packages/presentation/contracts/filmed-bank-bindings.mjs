@@ -36,8 +36,11 @@ export function filmedBankState(inventory,dealerId,{project}={}) {
 function studioTakeFits(row,take,fps){
   try{
     const timing=normalizeMediaTiming(row.mediaTiming,{mediaId:row.id,sha256:row.sha256,size:row.bytes});
+    // A registered, exact-hash profile supplies poses for older unannotated
+    // media too. Explicit annotations must agree, as in publication/import.
+    const {startPose,endPose}=row.classification;
     return timing.video.fps===fps&&timing.video.frameCount===take.frames
-      &&row.classification.startPose===take.startPose&&row.classification.endPose===take.endPose;
+      &&(startPose===undefined&&endPose===undefined||startPose===take.startPose&&endPose===take.endPose);
   }catch{return false;}
 }
 

@@ -60,6 +60,22 @@ test('factory variants preserve their actual source timing and card track in eve
   }
 });
 
+test('an exact registered profile supplies missing pose annotations; explicit contradictions still fail',()=>{
+  const {profile,records}=factoryFixture();
+  for(const row of records.filter(row=>row.classification.label.endsWith(':base'))){
+    delete row.classification.startPose;delete row.classification.endPose;
+  }
+  const compact=importedFilmedProfile({dealerId,profile,records});
+  const project=addDealer(createSeedProject(),dealerId,'Factory');project.dealers.find(row=>row.id===dealerId).filmedProfile=compact;
+  const inventory={videos:records.map(row=>({...row,bytes:row.size,available:true,integrity:'verified'}))};
+  assert.equal(nativeFilmedBankState(project,inventory,dealerId).complete,true);
+  assert.doesNotThrow(()=>bindNativeFilmedBank(project,inventory,dealerId));
+  const wrong=records.find(row=>row.classification.label==='1:base');
+  wrong.classification.startPose='VILA';wrong.classification.endPose='REDO';
+  assert.equal(nativeFilmedBankState(project,inventory,dealerId).complete,false);
+  assert.throws(()=>importedFilmedProfile({dealerId,profile,records}),error=>error.code==='studio_filmed_profile_mismatch');
+});
+
 test('unbound, stale or missing measured bytes cannot be imported or linked as a complete bank',()=>{
   for(const corrupt of [row=>delete row.mediaTiming,row=>row.mediaTiming.sha256=hash('stale'),row=>row.mediaTiming.mediaId='20000000-0000-4000-8000-999999999999',row=>row.mediaTiming.video.frameCount--]){
     const {profile,records}=factoryFixture();corrupt(records.find(row=>row.classification.label==='3:iv'));

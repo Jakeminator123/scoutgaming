@@ -31,6 +31,8 @@ Paow-/Dragan-ID:na finns redan i röstkatalogen. Jakob bad också om tre separat
 
 ## Pending Jakob (blockerar inget)
 
+- **Jakob-2, läsande jämförelse 30 oktober:** nya fabriksprofilens alla 35 givtagningar matchar redan produktionens mediaregister och mätkvitton. Ingen ny uppladdning av dessa krävs för profilimporten. Tio base/hole/flip-poster saknar separata posetiketter; bankkopplingen använder deras exakta profilposer och avvisar motstridiga etiketter. 46/48 exportfiler matchar registret; de två lokala skoövergångarna har andra SHA än de uppladdade och ersätts inte automatiskt. Ny profilimport och publicering är ännu inte utförda.
+
 - **Dealerfabrikens returklipp (30 oktober):** `sourceTakeKey` binder v/iv till samma måls base/i när fabriken lagt på återgången. Geometri och kortbana kommer från den registrerade källtagningen, och importen kräver klippets bytebundna fps/rutantal. Admins Landningar importerar profilen; Klippkarta kopplar även egna dealerprofiler. Runtime capability **v35** krävs före skrivning av detta fält, inklusive arkiv och frysta paket; äldre profiler behåller sitt kontrakt. Verifierat med kontrakt-/API-prov, Adminbygge och isolerat UI-prov samt Palma-fabrikens 35 verkliga givfiler (38 med vila/sko), komplett sekvens med och utan separata skoövergångar. Fabriken på Jakobs Desktop är separat uppdaterad till 1.7 och `palma-man/admin_export` innehåller 38 klipp och 10 tal; v1.6:s felaktiga v/iv-tider ska inte importeras igen. Ingen produktionsdata eller AV-acceptans ändrad. Se [exportstandarden](LOCAL-PRESENTATION-RUNTIME.md#standard-för-exporterade-dealerklipp).
 
 - dragan-test: paket 16 är sparat; spelinställningen är inte publicerad (publicera i Admin eller pausa rummet).
