@@ -529,6 +529,7 @@
         "targets": ["production", "preview", "development"],
         "type": "config",
         "required": false,
+        "latestOwnerDecision": "2026-10-30: consolidate Paow, Dragan, Jakob and Adebayor/ABYDM in Kevin's existing ElevenLabs account. Jakob and ABYDM are verified Instant Voice Clones; their source samples have been retrieved privately for recreation. Kevin's account credential is still unavailable. No target voices, active key changes or profile changes have been made; validate all four target voices before switching and retain the Impactwin originals until replacement is verified.",
         "names": ["ELEVENLABS_PAOW_VOICE_ID", "ELEVENLABS_DRAGAN_VOICE_ID", "ELEVENLABS_JAKOB_VOICE_ID"],
         "note": "Explicit owner-requested reference values only; no runtime reader, profile update, provider credential copy or automatic activation. The separate scoutgaming-preview project is outside this request. Paow and Dragan already have entries in packages/presentation/contracts/dealer-voice-catalog.json. The current Render croupier-v3 ElevenLabs key lists Jakob and ABYDM but returns voice_not_found for Paow and missing_permissions for the account profile. Jakob relayed Kevin's confirmation on 2026-10-30: the tested account is Impactwin (Jakob and Adebayor/ABYDM); Paow and Dragan remain in Kevin's regular ElevenLabs account. Account attribution is human-reported, not verified through the profile API. Runtime still uses one ElevenLabs key; no key replacement or multi-account implementation is included."
       },

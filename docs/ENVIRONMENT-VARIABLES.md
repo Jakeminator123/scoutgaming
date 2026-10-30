@@ -81,6 +81,8 @@ Posterna är valfria referensvärden utan runtime-läsare; de byter ingen dealer
 
 Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Jakob och ABYDM men saknar Paows röst (`voice_not_found`). Kontoprofilen avvisar samma nyckel med `missing_permissions`. Jakob vidarebefordrade därefter Kevins besked: detta är Impactwin-kontot, där Jakob och Adebayor/ABYDM ligger; Paow och Dragan ligger kvar i Kevins vanliga ElevenLabs-konto. Kontotillhörigheten kommer från Kevins besked, inte en lyckad profilfråga. Runtime använder i dag en gemensam ElevenLabs-nyckel; ett byte till Kevins konto ger därför inte åtkomst till Impactwins röster. Inget nyckelbyte eller stöd för flera konton ingår i denna ändring.
 
+**Senaste beslut, Jakob 2026-10-30:** samla alla fyra röster hos Kevin. Jakob och ABYDM är API-verifierat Instant Voice Clones (`category=cloned`); deras ljudunderlag är hämtat privat inför återskapande på Kevins konto. Kopiorna får nya ID:n. Kevins kontonyckel saknas ännu; inga kopior eller aktiva nyckel-/profilbyten har gjorts. Verifiera alla fyra röster på målkontot före byte och bevara Impactwins original tills ersättningen är kontrollerad.
+
 ## Fasta värden
 
 <a id="fasta-värden"></a>
