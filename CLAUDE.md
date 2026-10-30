@@ -4,7 +4,7 @@ Läs `START-HERE.md` (produktväg, hur man testar och levererar), `docs/NEXT-AGE
 
 - Egen branch `jakob/claude-*` från färsk `origin/main`, PR mot `main`; aldrig `--no-verify`. Merga aldrig själv: orkestratorn mergar via `tools/merge-pr.mjs` efter grön CI.
 - Rör aldrig `kevin*`, `codex/kevin-*`, `john*`, `codex/john-*`, `emil*`, `codex/emil-*`.
-- Ord: se `apps/studio/docs/TERMINOLOGI.md` (referens). Sök hoppar över `.gitignore`, `.ignore` och `.cursorignore`; inventera med `git ls-files` (AGENTS.md).
+- Ord: se `apps/studio/docs/TERMINOLOGI.md` (referens). Terminalens `rg` använder `.gitignore` och `.ignore`; Cursor använder även `.cursorignore` för AI-åtkomst. Inventera spårade filer med `git ls-files` och följ sekretessgränserna i AGENTS.md.
 
 Claude Code: underagenter arbetar i `.claude/worktrees` på `jakob/claude-*` och mergar inte; den orkestrerande sessionen mergar efter grön CI.
 
