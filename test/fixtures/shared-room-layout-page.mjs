@@ -53,7 +53,7 @@ const pageScript = `
   window.fixture={app,sent,stage,push:snapshot=>restore(snapshot,{signal:connection.signal,receivedAt:Date.now()}),delay:ms=>{sendDelay=ms;},ready:true};
 `;
 
-export function tableSnapshot({ version = 1, own = [], others = {}, phase = 'bets', bets = {}, round = null, plan = null, settings = {}, lastSettlement = null } = {}) {
+export function tableSnapshot({ version = 1, own = [], others = {}, phase = 'bets', bets = {}, round = null, plan = null, settings = {}, currency = 'USD', lastSettlement = null } = {}) {
   const owners = Array.from({ length: 7 }, (_, i) => own.includes(i) ? actorId : others[i] ?? null);
   const players = [...(own.length ? [{ id: actorId, seats: [...own], ready: false, leaving: false }] : []),
     ...[...new Set(Object.values(others))].map(id => ({ id, seats: owners.flatMap((owner, i) => owner === id ? [i] : []), ready: false, leaving: false }))];
@@ -63,7 +63,7 @@ export function tableSnapshot({ version = 1, own = [], others = {}, phase = 'bet
     plan, round, shoe: null, serverNow: Date.now(),
     settings: { configVersion: 'layout-config', language: 'sv', betMs: 20000, actionMs: 15000,
       limits: { min: 5, max: 2000, sideMax: 200 }, chips: [5, 10, 25, 50, 100, 500], refill: 1000, ...settings },
-    me: { id: actorId, seats: [...own], memberGen: own.length ? 1 : 0, active: own.length > 0, available: 1000, pausedUntil: 0, insuranceDue: false, lastSettlement } };
+    me: { id: actorId, seats: [...own], memberGen: own.length ? 1 : 0, active: own.length > 0, available: 1000, currency, pausedUntil: 0, insuranceDue: false, lastSettlement } };
 }
 
 // Serves one built page per call; close() stops the server, the browser and removes the temporary build.

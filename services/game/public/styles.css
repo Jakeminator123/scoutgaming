@@ -1039,9 +1039,9 @@ html[data-studio-preview] body:not(.in-round) #player-choices { pointer-events: 
 /* The bottom grid holds, top to bottom: a phone's docked seat bets, the action zone (status line, Redo,
    Nästa runda, insurance, the decision panel) and the wallet, chips and table buttons. Each has its own row,
    so none covers another (K04 F12, F13), and the decision panel never covers the dealer's cards (F15). */
-html[data-shared-room="1"] #hud-bottom { grid-template-columns: auto minmax(0,1fr) auto; grid-template-areas: "dock dock dock" "status status status" "wallet chips right"; }
-/* The wallet keeps one line, so the bottom controls keep one height. */
-html[data-shared-room="1"] #wallet { flex-wrap: nowrap; }
+html[data-shared-room="1"] #hud-bottom { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); grid-template-areas: "dock dock dock" "status status status" "wallet chips right"; }
+/* Long currency labels wrap inside the wallet instead of covering the chip controls. */
+html[data-shared-room="1"] #wallet { flex-wrap: wrap; }
 @media (max-width: 1280px) and (min-width: 861px) {
   html[data-shared-room="1"] #add-funds { margin-left: 0; padding: 0; width: 36px; height: 36px; flex: 0 0 36px; font-size: 0; }
   html[data-shared-room="1"] #add-funds::before { content: '+'; font-size: 22px; }
@@ -1102,6 +1102,7 @@ html[data-shared-room="1"] #hud-bottom button, html[data-shared-room="1"] #hud-b
 
 @media (max-width: 860px) {
   html[data-shared-room="1"] #hud-bottom { grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "dock dock" "status status" "wallet right" "chips chips"; gap: 6px; }
+  html[data-shared-room="1"] #wallet { flex-wrap: nowrap; }
   .shared-room-actions { min-height: 52px; gap: 6px 10px; }
   #shared-room-actions > #banner { font-size: 11px; padding: 6px 12px; }
   #shared-room-actions > #deal-now, .shared-room-next { padding: 0 22px; font-size: 13px; }
@@ -1165,6 +1166,13 @@ html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex
 .shared-room-dialog p { margin: 0 0 16px; color: #c9cbd2; }
 .shared-room-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 .shared-room-dialog[hidden] { display: none; }
+/* Keep long/unknown currencies and both betting actions inside their columns on a narrow phone. */
+@media (max-width: 400px) {
+  html[data-shared-room="1"] #wallet { gap: 4px; padding: 7px 6px; }
+  html[data-shared-room="1"] #wallet span { font-size: 12px; line-height: 1.15; }
+  html[data-shared-room="1"] #bottom-right { gap: 4px; }
+  html[data-shared-room="1"] #bottom-right button { max-width: 60px; white-space: normal; font-size: 11px; padding: 0 4px; }
+}
 /* A narrow phone keeps the status line to two lines; the full text stays in its title and for screen readers. */
 @media (max-width: 400px) {
   #shared-room-actions > #banner { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
