@@ -4,6 +4,12 @@ En rad per dokument som raderats ur `main` efter att dess uppgift var klar. Inne
 
 Hänvisningar i `migrering/status.json` (fältet `evidence`) och i kodkommentarer till sökvägar nedan gäller fortfarande; de pekar på Git-versionen.
 
+## Raderade 31 oktober 2026
+
+| Fil | Vad det var och var det läses |
+| --- | --- |
+| `docs/2026-10-29-ENV-INVENTORY.md` | Daterad miljöinventering, ersatt av ENVIRONMENT-VARIABLES och ENVIRONMENT-RESTORATION. Kvarvarande gallringsfrågor är överförda. Sista main-version: `git show 6a3f976e4428627b135664ba7d13ae24593567c4:docs/2026-10-29-ENV-INVENTORY.md` |
+
 ## Raderade 29 oktober 2026
 
 Alla fanns i `main` på `a05917c3a05f23963006fc4e778f9c4ac8bbadcf` (läs: `git show a05917c3:<sökväg>`). Migreringen var klar (20/20, O03 VERIFIED via #527) och ingen kod eller CI läste filerna; kodkommentarer som citerar ett avsnitt ("K04-mappning G3", "K05-mappning 4b") står kvar och pekar på Git-versionen.
