@@ -8,12 +8,13 @@ import urllib.error
 import urllib.request
 from contracts import BASE_IMAGE, verify_release
 
-IMAGE = "ghcr.io/jakeminator123/moving-gpu-prep"
+IMAGE = "ghcr.io/jakeminator123/moving-gpu-worker"
+TAG_PREFIX = "prep-sha-"
 
 
-def privacy(allow_absent=False):
+def privacy():
     request = urllib.request.Request(
-        "https://api.github.com/users/Jakeminator123/packages/container/moving-gpu-prep",
+        "https://api.github.com/users/Jakeminator123/packages/container/moving-gpu-worker",
         headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"],
                  "Accept": "application/vnd.github+json"})
     try:
@@ -21,8 +22,10 @@ def privacy(allow_absent=False):
             if json.load(response).get("visibility") != "private":
                 raise RuntimeError("destination_must_be_private")
     except urllib.error.HTTPError as error:
-        if not (allow_absent and error.code == 404):
-            raise RuntimeError("package_visibility_unverified_http_" + str(error.code)) from None
+        # A missing package must never be created: GITHUB_TOKEN can inherit
+        # the public repository's visibility for a new package.
+        error.close()
+        raise RuntimeError("package_visibility_unverified_http_" + str(error.code)) from None
 
 
 def main():
@@ -31,19 +34,23 @@ def main():
     mode.add_argument("--before", action="store_true")
     mode.add_argument("--after", action="store_true")
     args = parser.parse_args()
-    if os.environ.get("GITHUB_REF") != "refs/heads/main" or os.environ.get("IMAGE") != IMAGE:
+    if (os.environ.get("GITHUB_REPOSITORY") != "Jakeminator123/scoutgaming"
+            or os.environ.get("GITHUB_REPOSITORY_ID") != "1380630440"
+            or os.environ.get("GITHUB_REF") != "refs/heads/main"
+            or os.environ.get("IMAGE") != IMAGE
+            or os.environ.get("APPROVED_TARGET") != IMAGE):
         raise RuntimeError("unapproved_publication")
-    privacy(allow_absent=args.before)
-    if args.before:
-        return
-    release = verify_release()
-    if release != os.environ["EXPECTED_RELEASE"]:
-        raise RuntimeError("release_changed")
     head = os.environ["GITHUB_SHA"]
     if not re.fullmatch(r"[a-f0-9]{40}", head) or head != os.environ["EXPECTED_HEAD"]:
         raise RuntimeError("head_changed")
+    release = verify_release()
+    if release != os.environ["EXPECTED_RELEASE"]:
+        raise RuntimeError("release_changed")
+    privacy()
+    if args.before:
+        return
     inspected = json.loads(subprocess.check_output(
-        ["docker", "image", "inspect", IMAGE + ":sha-" + head]))[0]
+        ["docker", "image", "inspect", IMAGE + ":" + TAG_PREFIX + head]))[0]
     refs = [ref for ref in inspected["RepoDigests"]
             if re.fullmatch(re.escape(IMAGE) + r"@sha256:[a-f0-9]{64}", ref)]
     labels = inspected["Config"]["Labels"]
@@ -51,7 +58,7 @@ def main():
             or labels["org.scoutgaming.moving.prep.base"] != BASE_IMAGE
             or inspected["Config"]["User"] != "10001"):
         raise RuntimeError("published_image_mismatch")
-    receipt = {"schemaVersion": 1, "image": refs[0], "commit": head,
+    receipt = {"schemaVersion": 1, "image": refs[0], "tag": TAG_PREFIX + head, "commit": head,
                "releaseSha256": release, "baseImage": BASE_IMAGE, "visibility": "private",
                "checks": "CPU build, offline model initialization and imports, integrity tests",
                "gpuPreparation": False, "deployed": False, "visualApproval": False}
