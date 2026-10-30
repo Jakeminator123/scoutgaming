@@ -73,11 +73,12 @@ function combinedPool() {
       if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
       if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
+      if(marker==='current-package-rooms')return result([...new Map(working.packages.filter(row=>sameScope(row,values)).sort((a,b)=>b.package_revision-a.package_revision).map(row=>[row.operator_id,row]).reverse()).values()]);
       if (marker === 'current-package') return result(packages().sort((a, b) => b.package_revision - a.package_revision).slice(0, 1));
       if (marker === 'used-key') return result(packages().filter(row => JSON.parse(row.tables).includes(values[3])).slice(0, 1));
       if (marker === 'publish-package') {
         const row = { environment_id: values[0], workspace_id: values[1], operator_id: values[2], package_revision: Math.max(0, ...packages().map(row => row.package_revision)) + 1,
-          lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
+          lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7], rooms: values[8] };
         working.packages.push(row); return result([row]);
       }
       if (marker === 'list-media') return result([...working.media.values()].filter(row => sameScope(row, values)));
@@ -112,7 +113,7 @@ async function fixture({catalog=readRuntimeCatalogFixture(),empty=false,...optio
     for (const {revision,...record} of cloud.mediaRows) pool.setMedia(record,revision);
     defaultPresentationLaneId = vip.id;
   }
-  const administration = empty ? {rooms:[],gameLanes:[],gameLane:null} : { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
+  const administration = empty ? {rooms:[],gameLanes:[],gameLane:null} : { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [],
     tiers: { classic: 'vera', high: 'astrid', vip: 'amira' }, tournaments: [], pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 } };
   await repository.initializeDocument('project', { value: project, revision: project.revision, actor: session.user });
   await repository.initializeDocument('administration', { value: administration, revision: 'admin-initial', actor: session.user });
@@ -124,7 +125,10 @@ async function fixture({catalog=readRuntimeCatalogFixture(),empty=false,...optio
   const payload = async (overrides = {}) => { const ready = await prepare(); return { operatorId: 'north', presentationLaneId: defaultPresentationLaneId, name: 'VIP room', idempotencyKey: key,
     expectedProjectRevision: ready.projectRevision, expectedAdministrationRevision: ready.administrationRevision, expectedPackageRevision: ready.packageRevision, ...overrides }; };
   const publish = async input => repository.transaction(() => repository.withTransactionClient(async client => {
-    const store = await createOperatorStore({ sql: client, scope, transaction: work => repository.withTransactionClient(work), now: () => 1700000000000 }); return store.publishPackage(input);
+    const store = await createOperatorStore({ sql: client, scope, transaction: work => repository.withTransactionClient(work), now: () => 1700000000000 });
+    const current=await store.getCurrentPackage(input.operatorId);
+    const rooms=input.rooms??input.tables.map(id=>current?.rooms?.find(room=>room.id===id)??{schemaVersion:2,id,name:id,operatorId:input.operatorId,presentationLaneId:input.lanes[0],gameLaneId:'mobile-phone',state:'live'});
+    return store.publishPackage({...input,rooms});
   }));
   return { pool, repository, project, administration, roomApi, videoRegistry, prepare, create, payload, publish };
 }
@@ -219,7 +223,7 @@ test('new rooms reuse an unchanged fixed scene but cannot replace an existing ro
   const body = await f.payload(), original = await f.create(body);
   const same = await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
   assert.notEqual(same.room.id, original.room.id);
-  const raw = f.pool.snapshot().packages.at(-1), frozen = readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding) });
+  const raw = f.pool.snapshot().packages.at(-1), frozen = readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) });
   // Model a valid historical publication made before the singleton requirement.
   frozen.lanes[0].layers.background.allowed.push(second.id); frozen.assets.push(second);
   await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: raw.package_revision,
@@ -266,7 +270,7 @@ test('roulette-only registered dealer publishes base and variant without requiri
   assert.equal((await f.prepare('north',f.lane.id)).ready,false,'blackjack cannot borrow roulette idle');
   const result=await f.create({operatorId:'north',presentationLaneId:f.lane.id,name:'Roulette only',game:'roulette',idempotencyKey:key,
     expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision});
-  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),games:JSON.parse(raw.games),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),games:JSON.parse(raw.games),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms)};
   const frozen=readPackagePresentation(pack),dealer=frozen.registeredDealers[0];
   assert.equal(dealer.idle,null);assert.equal(dealer.rouletteIdle.base.id,records[0].id);assert.equal(dealer.rouletteIdle.variants[0].id,records[1].id);
   assert.equal(result.room.game,'roulette');
@@ -357,7 +361,7 @@ test('actual room creation publishes atomically, selects the different compatibl
   assert.match(created.room.id, /^room-[a-f0-9-]+$/); assert.equal(created.room.gameLaneId, 'mobile-phone'); assert.equal(created.room.presentationLaneId, 'vip-presentation');
   const saved = { project: (await f.repository.readDocument('project')).value, administration: (await f.repository.readDocument('administration')).value };
   const rawPack = f.pool.snapshot().packages[0];
-  const pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(rawPack.lanes), tables: JSON.parse(rawPack.tables), branding: JSON.parse(rawPack.branding) };
+  const pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(rawPack.lanes), tables: JSON.parse(rawPack.tables), branding: JSON.parse(rawPack.branding),rooms:JSON.parse(rawPack.rooms) };
   const selector = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => saved.administration }, packages: { resolve: async slug => ({ operator: { id: slug, status: 'active' }, package: pack }) } });
   const entry = await selector(new URL(created.playUrl, origin).search);
   assert.equal(entry.status, 200); assert.equal(entry.selection.roomId, created.room.id); assert.equal(entry.selection.lane, 'mobile-phone');
@@ -399,12 +403,11 @@ test('publish or audit failure rolls back room, package, previous-revision histo
   }
 });
 
-test('removed package membership and removed rooms cannot be repaired by idempotent retry', async () => {
-  const f = await fixture(), body = await f.payload(), first = await f.create(body), current = f.pool.snapshot().packages.at(-1);
+test('removed package rooms cannot be repaired by old or refreshed idempotent requests', async () => {
+  const f = await fixture(), body = await f.payload();await f.create(body);const current = f.pool.snapshot().packages.at(-1);
   await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: 1, lanes: JSON.parse(current.lanes), games: ['blackjack'], tables: [], branding: JSON.parse(current.branding) });
   const before = f.pool.snapshot(); await assert.rejects(f.create(body), status(409)); assert.deepEqual(f.pool.snapshot(), before);
-  const admin = await f.repository.readDocument('administration'); await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: admin.revision, value: { ...admin.value, rooms: admin.value.rooms.filter(room => room.id !== first.room.id) } });
-  const removed = f.pool.snapshot(); await assert.rejects(f.create(await f.payload()), status(409)); assert.deepEqual(f.pool.snapshot(), removed);
+  await assert.rejects(f.create(await f.payload()), status(409)); assert.deepEqual(f.pool.snapshot(), before);
 });
 
 test('selected definition changes are isolated from other frozen lanes; branding and existing table IDs survive', async () => {
@@ -545,7 +548,7 @@ test('duplicate verifies the frozen room binding after a valid catalogue dealer 
   ] }, expectedRevision: admin.revision, actor: session.user });
   const before = f.pool.snapshot();
   const saved = { project: (await f.repository.readDocument('project')).value, administration: (await f.repository.readDocument('administration')).value };
-  const raw = before.packages.at(-1), pack = { operatorId: 'north', revision: raw.package_revision, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
+  const raw = before.packages.at(-1), pack = { operatorId: 'north', revision: raw.package_revision, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) };
   const entry = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => saved.administration }, packages: { resolve: async () => ({ operator: { id: 'north', status: 'active' }, package: pack }) } });
   await assert.rejects(entry(new URL(created.playUrl, origin).search), status(503));
   await assert.rejects(f.create(body), status(409));
@@ -585,7 +588,7 @@ test('Linnea without a technical lane creates one atomically and publishes her e
   const administration = (await f.repository.readDocument('administration')).value, lane = administration.gameLanes.find(row => row.id === result.room.gameLaneId);
   assert.deepEqual(lane, { schemaVersion: 1, id: result.room.gameLaneId, label: 'Johns Linnea', renderer: 'portrait-video', dealer: 'linnea', mediaCollection: 'linnea-presentation' });
   assert.equal(administration.gameLane, 'mobile-phone'); assert.equal(administration.gameLanes.length, 2);
-  const raw = state.packages.at(-1), pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
+  const raw = state.packages.at(-1), pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) };
   const frozen = readPackagePresentation(pack);
   assert.equal(frozen.schemaVersion, 3); assert.deepEqual(frozen.registeredDealers, [{ id: 'linnea', label: 'Linnea', idle: f.record }]);
   assert.deepEqual(pack.lanes, [f.lane.id]); assert.deepEqual(frozen.lanes[0].composition, f.lane.composition);
@@ -727,7 +730,7 @@ test('a new room on the same baked composition preserves the entire frozen idle 
     const retry = await f.create(firstBody);
     assert.equal(retry.duplicate, true); assert.deepEqual(retry.room, first.room); assert.deepEqual(f.pool.snapshot(), before, change);
     const raw = before.packages.at(-1), frozen = readPackagePresentation({ operatorId: 'north', revision: raw.package_revision,
-      lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) });
+      lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) });
     assert.deepEqual(frozen.registeredDealers.find(row => row.id === 'linnea').idle, f.record, change);
   }
 });
@@ -754,7 +757,7 @@ test('explicit active dealer registrations are playable only with frozen own idl
     await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
     const ready = await f.prepare(); assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 4);
     const room = await f.create(await f.payload()), raw = f.pool.snapshot().packages.at(-1);
-    const pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
+    const pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) };
     assert.equal(readPackagePresentation(pack).schemaVersion, 3);
     const saved = { project: (await f.repository.readDocument('project')).value, administration: (await f.repository.readDocument('administration')).value };
     const selector = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => saved.administration },
@@ -870,7 +873,8 @@ test('room listing exposes only live published rooms of this operator and presen
   assert.deepEqual((await f.prepare('north','mobile-phone')).rooms,[]);
   const saved=await f.repository.readDocument('administration'), draft=clone(saved.value);
   draft.rooms.find(item=>item.id===room.room.id).state='preview';
-  await f.repository.saveDocument('administration',{value:draft,expectedRevision:saved.revision,actor:session.user});
+  const raw=f.pool.snapshot().packages.at(-1);
+  await f.publish({actor:session.user,operatorId:'north',expectedRevision:raw.package_revision,lanes:JSON.parse(raw.lanes),games:JSON.parse(raw.games),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding),rooms:draft.rooms});
   assert.deepEqual((await f.prepare()).rooms,[]);
 });
 
@@ -887,7 +891,7 @@ test('a saved Elin-Linnea-Astrid presentation can add a room while preserving th
   const created=await f.create({operatorId:'north',presentationLaneId:'mobile-phone',name:'Jackes spelrum',
     idempotencyKey:'0eee0000-1111-4222-8333-444444444444',expectedProjectRevision:prepared.projectRevision,
     expectedAdministrationRevision:prepared.administrationRevision,expectedPackageRevision:prepared.packageRevision});
-  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms)};
   const frozen=readPackagePresentation(pack);
   assert.deepEqual(frozen.lanes.find(lane=>lane.id==='johns-linnea'),previous.lanes[0]);
   assert.deepEqual(frozen.registeredDealers.filter(row=>row.id==='linnea'),previous.registeredDealers);
@@ -988,7 +992,7 @@ test('an empty project and immutable bank publish only a newly registered synthe
  const body={operatorId:'north',presentationLaneId:lane.id,name:'Synthetic room',idempotencyKey:key,
   expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision};
  const created=await f.create(body);assert.equal(created.duplicate,false);assert.equal(created.packageRevision,1);
- const raw=f.pool.snapshot().packages[0],pack={operatorId:'north',revision:1,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+ const raw=f.pool.snapshot().packages[0],pack={operatorId:'north',revision:1,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms)};
  const presentation=readPackagePresentation(pack);assert.ok(presentation.playback.media.length>0);
  assert.deepEqual(presentation.registeredDealers.map(row=>row.id),[dealerId]);
  assert.deepEqual(presentation.assets,[background]);assert.deepEqual(presentation.lanes[0].composition,lane.composition);
@@ -1070,7 +1074,7 @@ test('a new room keeps the company\'s approved background and choice instead of 
   const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
   fixedBackground(saved.value, lane); lane.operatorAdjustable = [...lane.operatorAdjustable, 'background']; lane.composition = defaultCompositionSettings();
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
-  const allowed = () => { const raw = f.pool.snapshot().packages.at(-1); return { raw, frozen: readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding) }) }; };
+  const allowed = () => { const raw = f.pool.snapshot().packages.at(-1); return { raw, frozen: readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding),rooms:JSON.parse(raw.rooms) }) }; };
   await f.create(await f.payload());
   assert.equal(allowed().frozen.assets.some(row => row.id === own), false);
   rows = [{ materialId: own, revision: 2, state: 'approved', source: 'upload', role: 'background', asset: ownAsset, tableBinding: null, occurredAtMs: 1 }];

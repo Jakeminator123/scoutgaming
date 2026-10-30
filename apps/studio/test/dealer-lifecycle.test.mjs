@@ -76,7 +76,7 @@ test('archive automatically disables speech and moves affected compositions whil
  const doc=await f.repository.readDocument('administration');await f.repository.saveDocument('administration',{value:{genLandings:{dealer:'paow'}},expectedRevision:doc.revision,actor:'Admin'});
  const archived=await f.change();assert.deepEqual(archived.lanes,[]);assert.equal(archived.dealerTrash[0].dealer.speechProfile.state,'preparation');assert.equal(archived.dealerTrash[0].compositions.length,1);
  const restored=await f.change(f.operation(false,archived.revision));assert.equal(restored.dealers.at(-1).speechProfile.state,'preparation');assert.deepEqual(restored.lanes,f.project.lanes);
- assert.deepEqual((await f.repository.readDocument('administration')).value,{genLandings:{dealer:'paow'}});
+ assert.deepEqual((await f.repository.readDocument('administration')).value,{genLandings:{dealer:'paow'},rooms:[]});
 });
 
 test('historical packages never block reversible archive but still block permanent removal',async()=>{
@@ -461,10 +461,10 @@ test('dealer, media, room and current publication changes commit together and ro
  for(const failure of [null,'classify-media','save-document']){
   const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),lane={...defaultPresentationLane('paow'),id:'paow-scene'};
   const cloud=cloudPresentationFixture({lanes:[lane]}),project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
-  await repository.initializeDocument('administration',{value:{rooms:[{schemaVersion:2,id:'paow-room',name:'PAOW room',operatorId:'north',presentationLaneId:'paow-scene',gameLaneId:'paow-adapter',state:'live'}],gameLanes:[{schemaVersion:1,id:'paow-adapter',label:'PAOW',renderer:'portrait-video',dealer:'paow',mediaCollection:'paow-presentation'}],gameLane:'paow-adapter'},actor:'fixture'});
+  await repository.initializeDocument('administration',{value:{rooms:[],gameLanes:[{schemaVersion:1,id:'paow-adapter',label:'PAOW',renderer:'portrait-video',dealer:'paow',mediaCollection:'paow-presentation'}],gameLane:'paow-adapter'},actor:'fixture'});
   for(const {revision,...row} of cloud.mediaRows)pool.setMedia(row,revision);
   const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
-  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-scene'],games:['blackjack'],tables:['paow-room'],branding:withPackagePresentation({},cloud.presentation)}));
+  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-scene'],games:['blackjack'],tables:['paow-room'],rooms:[{schemaVersion:2,id:'paow-room',name:'PAOW room',operatorId:'north',presentationLaneId:'paow-scene',gameLaneId:'paow-adapter',state:'live'}],branding:withPackagePresentation({},cloud.presentation)}));
   const {impact}=await checkDealerArchive({repository,body:{dealerId:'paow',expectedRevision:project.revision}}),before=pool.snapshot();
   const execute=()=>changeDealerLifecycle({repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',expectedRevision:project.revision,archived:true,impactToken:impact.token}});
   if(failure){pool.fail(failure);await assert.rejects(execute());assert.deepEqual(pool.snapshot(),before);continue;}
@@ -507,11 +507,11 @@ async function frozenDealerArchiveFixture({version=21,anchors=true,anchorLane='r
  const cloud=cloudPresentationFixture({lanes:[removed,retained]}),project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
  const rooms=[removed,retained].map((lane,index)=>({schemaVersion:2,id:`room-${index}`,name:lane.label,operatorId:'north',presentationLaneId:lane.id,gameLaneId:`adapter-${index}`,state:'live'}));
  const gameLanes=[removed,retained].map((lane,index)=>({schemaVersion:1,id:`adapter-${index}`,label:lane.label,renderer:'portrait-video',dealer:lane.layers.dealer.default,mediaCollection:`${lane.layers.dealer.default}-presentation`}));
- await repository.initializeDocument('administration',{value:{rooms,gameLanes,gameLane:gameLanes[0].id},actor:'fixture'});
+ await repository.initializeDocument('administration',{value:{rooms:[],gameLanes,gameLane:gameLanes[0].id},actor:'fixture'});
  for(const {revision,...row} of cloud.mediaRows)pool.setMedia(row,revision);
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
  const presentation=anchors?dealerArchiveAnchors(cloud.presentation,anchorLane):cloud.presentation;
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[removed.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},presentation)}));
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[removed.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),rooms,branding:withPackagePresentation({},presentation)}));
  const gates={fetches:[],active:false,beforeMutation:null};
  const native=wrapNativePresentationRepository(repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
   assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.equal(gates.active,false,'no readiness HTTP under product lock');

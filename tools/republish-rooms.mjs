@@ -117,9 +117,12 @@ export async function republishRooms({ pool, scope, dryRun = true, confirm, oper
     checkConnection();
     const entry = { operatorId: owner.id, slug: owner.slug, fromRevision: null };
     try {
-      const { operator: current, package: pack, administration } = await store.getCurrentPresentationContext(owner.slug);
+      const { operator: current, package: pack } = await store.getCurrentPresentationContext(owner.slug);
       if (current && current.id !== owner.id) throw refuse('republish_rooms_operator_changed');
       if (!pack || pack.rooms !== null) continue;
+      const legacy = await first(pool, `/* republish-rooms:administration */ SELECT value FROM croupier_studio.documents
+        WHERE environment_id=$1 AND workspace_id=$2 AND kind='administration'`, [scope.environment, scope.workspaceId]);
+      const administration = legacy?.value;
       Object.assign(entry, { fromRevision: pack.revision, tables: pack.tables.length });
       const input = { actor: REPUBLISH_ROOMS_ACTOR, operatorId: owner.id, expectedRevision: pack.revision,
         lanes: [...pack.lanes], games: [...pack.games], tables: [...pack.tables], branding: structuredClone(pack.branding) };

@@ -29,17 +29,18 @@ function withFrozenAnchors(value){
  for(const layout of ['mobile','desktop'])board[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
  presentation.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};return presentation;
 }
-async function fixture({shared=false,nativeVersion,frozenAnchors=false,packageRooms=false}={}){
- const pool=combinedPool(scope,{packageRooms}),repository=createStudioRepository({pool,scope}),cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]}),project=cloud.project;
+async function fixture({shared=false,nativeVersion,frozenAnchors=false}={}){
+ const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]}),project=cloud.project;
  const gameLane={schemaVersion:1,id:'room-lane-test',label:'Generated',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
  const base={...gameLane,id:'mobile-phone',label:'Default'};
  const room={schemaVersion:2,id:'room-north',name:'North room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:gameLane.id,state:'live'};
  const administration={tiers:{classic:'vera',high:'astrid',vip:'amira'},rooms:[room,...(shared?[{...room,id:'room-other',operatorId:'other',name:'Other room'}]:[])],
   gameLanes:[base,gameLane],gameLane:base.id,tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
  await repository.initializeDocument('project',{value:project,actor:'fixture'});
- await repository.initializeDocument('administration',{value:administration,actor:'fixture'});
+ await repository.initializeDocument('administration',{value:{...administration,rooms:[]},actor:'fixture'});
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,now:clock,transaction:fn=>repository.withTransactionClient(fn)}))));
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['mobile-phone'],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},frozenAnchors?withFrozenAnchors(cloud.presentation):cloud.presentation)}));
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['mobile-phone'],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({},frozenAnchors?withFrozenAnchors(cloud.presentation):cloud.presentation)}));
+ if(shared)await stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:['mobile-phone'],games:['blackjack'],tables:['room-other'],rooms:administration.rooms.filter(row=>row.operatorId==='other'),branding:withPackagePresentation({},cloud.presentation)}));
  const gates={fetches:[],transactions:0,beforeMutation:null},nativeRepository=nativeVersion===undefined?repository:wrapNativePresentationRepository(repository,{
   env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
    assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.ok(!gates.active,'readiness HTTP precedes product mutation');
@@ -98,27 +99,24 @@ test('restore preserves room identity, returns pending, and opening needs a sepa
 // Plan L3 PR 3: Pausa/Öppna is a package revision (pkg+1) where only `rooms` differs, with and without
 // Studio 023; the document keeps the same state. With 023 every room writer sends `rooms` explicitly
 // (the fixture does not model the lock statement's document read, so nothing else could write them).
-for(const packageRooms of [false,true])test(`pause and opening are package revisions ${packageRooms?'with':'without'} Studio 023; archive and restore send rooms`,async t=>{
+test('pause, opening, archive and restore publish only their package rooms',async t=>{
  const warn=t.mock.method(console,'warn',()=>{});
- const f=await fixture({shared:true,packageRooms}),before=await f.pack(),states=pack=>pack.rooms?.map(row=>[row.id,row.state])??null;
+ const f=await fixture({shared:true}),before=await f.pack(),states=pack=>pack.rooms?.map(row=>[row.id,row.state])??null;
  const body=await f.body();delete body.archived;body.state='pending';
  const paused=await f.post('room-state',body);assert.equal(paused.status,200);
  assert.equal(paused.body.packageRevision,before.revision+1);assert.equal((await f.pack()).revision,before.revision+1);
- assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'pending']]:null);
+ assert.deepEqual(states(await f.pack()),[[f.room.id,'pending']]);
  const admin=(await f.repository.readDocument('administration')).value;
  assert.equal(admin.rooms.find(row=>row.id===f.room.id).state,'pending');
  assert.deepEqual(listPackageRooms({administration:admin,package:await f.pack(),operatorId:'north'}).map(row=>row.state),['pending']);
  assert.deepEqual(readPackagePresentation(await f.pack()),readPackagePresentation(before),'only the state differs');
  const opened=await f.post('room-state',{...body,state:'live',expectedAdministrationRevision:paused.body.administrationRevision,expectedPackageRevision:paused.body.packageRevision});
  assert.equal(opened.status,200);assert.equal(opened.body.packageRevision,before.revision+2);
- assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'live']]:null);
- // A table the package does not hold changes only in the document, as before.
- const other={...body,operatorId:'other',roomId:'room-other',expectedAdministrationRevision:opened.body.administrationRevision,expectedPackageRevision:null};
- const unpublished=await f.post('room-state',other);assert.equal(unpublished.status,200);assert.equal(unpublished.body.packageRevision,null);
- assert.equal(await f.stored(store=>store.getCurrentPackage('other')),null);
- assert.equal((await f.post('room-lifecycle',await f.body())).status,200);assert.deepEqual(states(await f.pack()),packageRooms?[]:null);
+ assert.deepEqual(states(await f.pack()),[[f.room.id,'live']]);
+ assert.equal((await f.stored(store=>store.getCurrentPackage('other'))).revision,1,'another company stays unchanged');
+ assert.equal((await f.post('room-lifecycle',await f.body())).status,200);assert.deepEqual(states(await f.pack()),[]);
  assert.equal((await f.post('room-lifecycle',await f.body({archived:false}))).status,200);
- assert.deepEqual(states(await f.pack()),packageRooms?[[f.room.id,'pending']]:null);
+ assert.deepEqual(states(await f.pack()),[[f.room.id,'pending']]);
  assert.equal(warn.mock.calls.every(call=>call.arguments[0]==='operator_package_rooms_missing'),true);
 });
 // The pause moves only this company's settings drafts made on its current package (another company's draft
@@ -194,7 +192,7 @@ test('a removed published composition produces a clear restore blocker instead o
  const before=f.pool.snapshot();assert.equal((await f.post('room-lifecycle',await f.body({archived:false}))).status,409);assert.deepEqual(f.pool.snapshot(),before);
 });
 test('archiving one room keeps playback configuration used by another operator room',async()=>{
- const f=await fixture({shared:true});const unconfigured=(await f.get()).rooms.find(row=>row.operatorId==='other');assert.equal(unconfigured.canArchive,false);assert.equal(unconfigured.packageRevision,null);assert.equal((await f.post('room-lifecycle',await f.body())).status,200);
+ const f=await fixture({shared:true});const unconfigured=(await f.get()).rooms.find(row=>row.operatorId==='other');assert.equal(unconfigured.canArchive,true);assert.equal(unconfigured.packageRevision,1);assert.equal((await f.post('room-lifecycle',await f.body())).status,200);
  const admin=(await f.repository.readDocument('administration')).value;assert.ok(admin.gameLanes.some(row=>row.id===f.gameLane.id));assert.equal(admin.rooms[0].operatorId,'other');
 });
 test('invalid methods, forged actor input and foreign origin cannot reach lifecycle writes',async()=>{

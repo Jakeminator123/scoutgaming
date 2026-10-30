@@ -73,7 +73,7 @@ function liveDirectory() {
     async getOperatorBySlug(slug){calls.rooms.push(slug);return rows.find(row=>row.slug===slug)??null;},
     async getCurrentPackage(id){calls.packages.push(id);if(id===fixture.room.operatorId)return fixture.pack;
       if(id==='unpublished')return null;
-      return {...fixture.pack,operatorId:id,tables:id==='missing'?['room-missing']:[fixture.room.id]};},
+      const room={...fixture.room,id:id==='missing'?'room-missing':fixture.room.id,operatorId:id,state:'pending'};return {...fixture.pack,operatorId:id,tables:[room.id],rooms:[room]};},
     save(){assert.fail('Public listing must never write');},
   };
   const rooms=createPublicOperatorRooms({store,policy:{readGameConfiguration(){assert.fail('Room catalog must use saved authoritative snapshot');},readSaved:async()=>({project:fixture.project,administration:fixture.administration})}});
@@ -89,8 +89,8 @@ test('anonymous list uses the real room authority and exposes only active publis
   assert.deepEqual({rows:f.rows,pack:f.fixture.pack,project:f.fixture.project,administration:f.fixture.administration},before);
   const head=await requestList(f.directory,{method:'HEAD'});assert.equal(head.status,200);assert.equal(head.body,undefined);assert.equal(head.headers['Cache-Control'],'no-store');
   assert.equal(f.calls.lists,2,'HEAD also checks current publication, without a cached list');
-  f.fixture.pack.tables=[];assert.deepEqual(JSON.parse((await requestList(f.directory)).body),{operators:[]});
-  f.fixture.pack.tables=[f.fixture.room.id];f.rows[0].status='suspended';assert.deepEqual(JSON.parse((await requestList(f.directory)).body),{operators:[]});
+  f.fixture.pack.tables=[];f.fixture.pack.rooms=[];assert.deepEqual(JSON.parse((await requestList(f.directory)).body),{operators:[]});
+  f.fixture.pack.tables=[f.fixture.room.id];f.fixture.pack.rooms=[f.fixture.room];f.rows[0].status='suspended';assert.deepEqual(JSON.parse((await requestList(f.directory)).body),{operators:[]});
 });
 
 test('list rejects methods and queries before touching storage, and has no offline demo fallback',async()=>{

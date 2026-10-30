@@ -191,7 +191,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       for(const asset of assets)if(!project.value.layerAssets?.some(row=>row.id===asset.id&&same(layerIdentity(row),layerIdentity(asset))))deny();
       aborted(signal);
       return {config,context:{operatorSlug:operator.slug,roomId:room.id,packageRevision:source.revision,dealerId},
-        saved:{operator,package:source,administration},
+        saved:{operator,package:source,roomAuthorityPackage:pack,administration},
         authority:{administrationRevision:saved.administrationRevision,projectRevision:project.revision,
           media:[...expected.values()],assets}};
     }));

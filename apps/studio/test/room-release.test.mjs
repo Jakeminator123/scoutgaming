@@ -57,7 +57,7 @@ async function releaseFixture(t,{without009=false}={}) {
   const rooms=[['north-a','north'],['north-b','north'],['south','south']].map(([name,operatorId])=>({schemaVersion:2,id:id(name),name:id(name),operatorId,
     presentationLaneId:lane,gameLaneId:'fixture-lane',state:'live'}));
   await raw.initializeDocument('project',{value:source.project,revision:source.project.revision,actor:'fixture'});
-  await raw.initializeDocument('administration',{value:{rooms,gameLane:'fixture-lane',gameLanes:[{schemaVersion:1,id:'fixture-lane',label:'Fixture',
+  await raw.initializeDocument('administration',{value:{rooms:[],gameLane:'fixture-lane',gameLanes:[{schemaVersion:1,id:'fixture-lane',label:'Fixture',
     renderer:'portrait-video',dealer:'dragan',mediaCollection:'dragan-presentation'}]},revision:'admin-initial',actor:'fixture'});
   for(const {revision,updatedAt,mediaTiming,...record} of structuredClone(source.records)) {
     const {media}=await raw.registerMedia(record,{actor:'fixture'});
@@ -73,7 +73,7 @@ async function releaseFixture(t,{without009=false}={}) {
     await post({operatorId,lanes:[lane]});
     const pack=await direct.getCurrentPackage(operatorId);
     await direct.publishPackage({actor:'fixture',operatorId,expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,
-      tables:rooms.filter(room=>room.operatorId===operatorId).map(room=>room.id),branding:pack.branding});
+      tables:rooms.filter(room=>room.operatorId===operatorId).map(room=>room.id),rooms:rooms.filter(room=>room.operatorId===operatorId),branding:pack.branding});
   }
   // Spelinställningarnas utkast sparas med den befintliga J08-åtgärden.
   const configs=createRoomGameConfigApi({repository:raw,scope});

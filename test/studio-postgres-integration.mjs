@@ -232,7 +232,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   });
   await check('two writers accept exactly one CAS and one history entry', async () => {
     const results = await Promise.allSettled(['a', 'b'].map(label => repository.saveDocument('administration', {
-      value: { rooms: [label] }, expectedRevision: saved.revision, actor: `qa-${label}`,
+      value: { voiceReview: {label} }, expectedRevision: saved.revision, actor: `qa-${label}`,
     })));
     assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
     assert.equal(results.filter(result => result.status === 'rejected' && result.reason.code === 'studio_conflict').length, 1);
@@ -245,7 +245,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   });
   await check('nested transaction rollback preserves value history and audit', async () => {
     await assert.rejects(repository.transaction(async inner => {
-      await inner.saveDocument('administration', { value: { rooms: ['rolled-back'] }, expectedRevision: saved.revision, actor: 'qa' });
+      await inner.saveDocument('administration', { value: { voiceReview: {label:'rolled-back'} }, expectedRevision: saved.revision, actor: 'qa' });
       throw Error('intentional fixture rollback');
     }));
     assert.deepEqual(await repository.readDocument('administration'), saved);
@@ -254,7 +254,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   });
   await check('caught nested failure poisons the transaction', async () => {
     await assert.rejects(repository.transaction(async inner => {
-      await inner.saveDocument('administration', { value: { rooms: ['not-committed'] }, expectedRevision: saved.revision, actor: 'qa' });
+      await inner.saveDocument('administration', { value: { voiceReview: {label:'not-committed'} }, expectedRevision: saved.revision, actor: 'qa' });
       try { await inner.saveDocument('administration', { value: { rooms: [] }, expectedRevision: 'stale', actor: 'qa' }); } catch { /* Outer transaction must still roll back. */ }
     }), hasCode('studio_conflict'));
     assert.deepEqual(await repository.readDocument('administration'), saved);

@@ -71,6 +71,11 @@ export function createStudioMemoryPool() {
             case 'media-current-owners': return result([...working.documents.values()].filter(row=>references(row.value,values[2])||JSON.stringify(row.value).includes(values[3])).slice(0,101));
             case 'media-all-packages': return result(pool.packages??[]);
             case 'lifecycle-packages': return result(pool.packages ?? []);
+            case 'current-package-rooms': {
+              const latest = new Map();
+              for (const row of pool.packages ?? []) if (scoped(row, values) && (!latest.has(row.operator_id) || latest.get(row.operator_id).package_revision < row.package_revision)) latest.set(row.operator_id, row);
+              return result([...latest.values()].sort((a,b) => a.operator_id.localeCompare(b.operator_id)));
+            }
             case 'read-document': return result(working.documents.has(key(values)) ? [working.documents.get(key(values))] : []);
             case 'list-documents': return result([...working.documents.values()].filter(row => scoped(row, values)).sort((a, b) => a.kind.localeCompare(b.kind)));
             case 'insert-document': {

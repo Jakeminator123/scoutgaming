@@ -74,7 +74,7 @@ test('trusted identity maps to stable account ID and one server request correlat
 // matchande rader, och utkastkedjans rader (draft.*) följer inte med.
 async function narrowedJournal(store){
  await store.upsertMembership({actor,audit,operatorId:'north',userId:'88',roleId:'viewer',status:'active'});
- await store.publishPackage({actor,audit,operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables:['room-a'],branding:{}});
+ await store.publishPackage({actor,audit,operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables:['room-a'],rooms:[{schemaVersion:2,id:'room-a',name:'Room A',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live'}],branding:{}});
  await store.upsertMembership({actor,audit,operatorId:'north',userId:'88',roleId:'viewer',status:'suspended',expectedRevision:1});
  await store.saveBrandingDraft({actor,audit,operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:1,branding:{color:'#112233'}});
  await store.publishBrandingDraft({actor,audit,operatorId:'north',expectedDraftRevision:1,expectedPackageRevision:1,branding:{color:'#112233'}});

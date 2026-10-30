@@ -37,10 +37,10 @@ async function fixture({labelCollision=false,measuredBank=false,illustration=nul
     cloud.mediaRows=[...cloud.mediaRows.filter(row=>row.classification.dealerId!==keptDealer),...bank.records.map(row=>({...row,revision:'fixture-media-1'}))];
   }
   const project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
-  await repository.initializeDocument('administration',{value:{rooms:[room('paow'),room(keptDealer)],gameLanes:[adapter('paow'),adapter(keptDealer)],gameLane:'room-lane-paow'},actor:'fixture'});
+  await repository.initializeDocument('administration',{value:{rooms:[],gameLanes:[adapter('paow'),adapter(keptDealer)],gameLane:'room-lane-paow'},actor:'fixture'});
   for(const {revision,...record} of cloud.mediaRows)pool.setMedia(record,revision);
   const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
-  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-room',keptDealer+'-room'],games:['blackjack'],tables:['paow-table',keptDealer+'-table'],branding:withPackagePresentation({dealer:'paow',roomOverrides:{'paow-table':{dealer:'paow'},[keptDealer+'-table']:{dealer:keptDealer}}},cloud.presentation,{allowExtended:measuredBank})}));
+  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-room',keptDealer+'-room'],games:['blackjack'],tables:['paow-table',keptDealer+'-table'],rooms:[room('paow'),room(keptDealer)],branding:withPackagePresentation({dealer:'paow',roomOverrides:{'paow-table':{dealer:'paow'},[keptDealer+'-table']:{dealer:keptDealer}}},cloud.presentation,{allowExtended:measuredBank})}));
   const unrelated=withoutPresentationLanes(cloud.presentation,['paow-room']);
   await stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:[keptDealer+'-room'],games:['blackjack'],tables:[],branding:withPackagePresentation(labelCollision?{label:'paow'}:{},unrelated,{allowExtended:measuredBank})}));
   const input={repository,dealerId:'paow',expectedRevision:project.revision};
@@ -136,12 +136,10 @@ test('dealer archive preserves another dealer large measured v2 bank and rolls b
 });
 
 test('archive removes only wholly assigned legacy tiers from modern or empty room administration',async()=>{
-  const legacyRoom={id:'legacy-table',name:'Legacy table',scene:'studio',felt:'green',dealer:'mei',state:'preview'};
   for(const {name,rooms,tiers,removed} of [
     {name:'modern rooms',rooms:[room('linnea')],tiers:{classic:'astrid',high:'astrid',vip:'astrid'},removed:true},
     {name:'empty rooms',rooms:[],tiers:{classic:'astrid',high:'astrid',vip:'astrid'},removed:true},
     {name:'mixed tiers',rooms:[room('linnea')],tiers:{classic:'astrid',high:'mei',vip:'astrid'},removed:false},
-    {name:'legacy room',rooms:[room('linnea'),legacyRoom],tiers:{classic:'astrid',high:'astrid',vip:'astrid'},removed:false},
   ]){
     const pool=combinedPool(scope),repository=createStudioRepository({pool,scope});
     const cloud=cloudPresentationFixture({lanes:[lane('astrid'),lane('linnea')]});
@@ -149,7 +147,12 @@ test('archive removes only wholly assigned legacy tiers from modern or empty roo
     const original={rooms,tiers,gameLanes:[adapter('linnea')],gameLane:'room-lane-linnea',
       pitboss:{payout10x:true,streak5:false,randomWalkMin:30},tournaments:[],voiceReview:{astrid:{}}};
     validateStudioGameAdministration(original);
-    const saved=await repository.initializeDocument('administration',{value:original,actor:'fixture'});
+    const {rooms:_projectedRooms,...storedAdministration}=original;
+    const saved=await repository.initializeDocument('administration',{value:storedAdministration,actor:'fixture'});
+    if(rooms.length)await repository.transaction(()=>repository.withTransactionClient(async client=>{
+      const store=await createOperatorStore({sql:client,scope,transaction:work=>repository.withTransactionClient(work)});
+      await store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['linnea-room'],games:['blackjack'],tables:rooms.map(row=>row.id),rooms,branding:withPackagePresentation({},withoutPresentationLanes(cloud.presentation,['astrid-room']))});
+    }));
     const input={repository,dealerId:'astrid',expectedRevision:project.revision};
     const before=pool.snapshot(),plan=await readDealerArchiveImpact(input),expected=structuredClone(original);
     if(removed)delete expected.tiers;
@@ -164,7 +167,7 @@ test('archive removes only wholly assigned legacy tiers from modern or empty roo
     assert.deepEqual(pool.snapshot().packages,before.packages,name);
     const history=pool.snapshot().history.filter(row=>row[2]==='administration');
     assert.equal(history.length,removed?1:0,name);
-    if(removed)assert.deepEqual(JSON.parse(history[0][4]),original,name);
+    if(removed)assert.deepEqual(JSON.parse(history[0][4]),storedAdministration,name);
   }
 });
 

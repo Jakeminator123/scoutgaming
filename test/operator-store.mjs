@@ -17,6 +17,7 @@ import { ROOM_GAME_TIMERS, ROOM_LIMIT_PRESETS } from '../packages/presentation/c
 const north = { environment: 'qa', workspaceId: 'workspace-north' };
 const south = { environment: 'qa', workspaceId: 'workspace-south' };
 const actor = 'tenant-test';
+const packageRoom = (id, operatorId = 'operator-unibet') => ({ schemaVersion: 2, id, name: id, operatorId, presentationLaneId: 'mobile-phone', gameLaneId: 'fixture-lane', state: 'live' });
 const partner = { userId: 'staff-1', role: 'partner', status: 'active' };
 const refusal = code => error => error instanceof StudioStorageError && error.code === code;
 const clock = () => 1_700_000_000_000;
@@ -317,7 +318,7 @@ test('permissions and packages round-trip as canonical JSON, and bigint strings 
   assert.equal(membership.revision, 2);
   assert.equal(membership.createdAtMs, clock());
   assert.equal(await store.getCurrentPackage('operator-unibet'), null);
-  const first = await store.publishPackage({ operatorId: 'operator-unibet', lanes: ['vip-table', 'mobile-phone'], games: ['blackjack'], tables: ['table-a'], branding: { color: 'green', name: 'Unibet' }, actor });
+  const first = await store.publishPackage({ operatorId: 'operator-unibet', lanes: ['vip-table', 'mobile-phone'], games: ['blackjack'], tables: ['table-a'], rooms: [packageRoom('table-a')], branding: { color: 'green', name: 'Unibet' }, actor });
   assert.equal(first.revision, 1);
   assert.deepEqual(first.lanes, ['mobile-phone', 'vip-table']);
   assert.deepEqual(first.branding, { color: 'green', name: 'Unibet' });
@@ -605,11 +606,11 @@ test('two concurrent admin demotions serialize on the operator lock', async () =
 test('all package publishers share the operator lock and CAS prevents lost tables after a concurrent publish', async () => {
   const sql = memorySql(), store = await open(north, sql);
   await seed(store);
-  const input = { operatorId: 'operator-unibet', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['room-first'], branding: { name: 'North' }, actor, expectedRevision: null };
+  const input = { operatorId: 'operator-unibet', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['room-first'], rooms: [packageRoom('room-first')], branding: { name: 'North' }, actor, expectedRevision: null };
   const first = await store.publishPackage(input); assert.equal(first.revision, 1);
   sql.holdUntilWaiters = 1;
   const results = await Promise.allSettled([
-    store.publishPackage({ ...input, tables: ['room-first', 'room-new'], expectedRevision: 1 }),
+    store.publishPackage({ ...input, tables: ['room-first', 'room-new'], rooms: [packageRoom('room-first'), packageRoom('room-new')], expectedRevision: 1 }),
     store.publishPackage({ ...input, branding: { name: 'stale' }, expectedRevision: 1 }),
   ]);
   assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
@@ -625,7 +626,7 @@ test('all package publishers share the operator lock and CAS prevents lost table
 test('extended immutable packages read safely but publication requires exact optional020 proof',async()=>{
   const sql=memorySql(),store=await open(north,sql);await seed(store);
   const {input}=nativeRoomMaterialFixture({allSpeechSlots:true});
-  const branding=input.package.branding,request={operatorId:'operator-unibet',lanes:['mobile-phone'],games:['blackjack'],tables:['room-first'],branding,actor,expectedRevision:null};
+  const branding=input.package.branding,request={operatorId:'operator-unibet',lanes:['mobile-phone'],games:['blackjack'],tables:['room-first'],rooms:[packageRoom('room-first')],branding,actor,expectedRevision:null};
   const before=structuredClone(sql.tables);
   await assert.rejects(store.assertExtendedPresentationReady(),refusal('studio_extended_presentation_storage_unavailable'));
   await assert.rejects(store.publishPackage(request),refusal('studio_extended_presentation_storage_unavailable'));
@@ -662,7 +663,7 @@ async function roomPublicationFixture({ imported = false, twoRooms = false } = {
   sql.extendedStorage = [{ checksum: EXTENDED_PRESENTATION_STORAGE_CHECKSUM, structure_checksum: 'a'.repeat(64), matching_checks: 2 }];
   const rooms = [room, ...(twoRooms ? [{ ...room, id: 'room-other', name: 'Other room' }] : [])];
   const versions = Object.fromEntries(rooms.map((row, index) => [row.id, `room-config-20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`]));
-  const pack = { ...source.input.package, revision: 1, tables: rooms.map(row => row.id), branding: {
+  const pack = { ...source.input.package, revision: 1, tables: rooms.map(row => row.id), rooms: structuredClone(rooms), branding: {
     ...source.input.package.branding, roomOverrides: { [room.id]: { color: '#112233' } }, roomGameConfigVersions: versions,
   } };
   const presentation = readPackagePresentation(pack), preset = ROOM_LIMIT_PRESETS.prive;
@@ -674,7 +675,7 @@ async function roomPublicationFixture({ imported = false, twoRooms = false } = {
   } });
   sql.tables.media_records.push(...source.records.map(record => ({ ...scoped, id: record.id, record: structuredClone(record) })));
   sql.tables.operator_packages.push({ ...scoped, operator_id: operatorId, package_revision: 1,
-    lanes: canonicalStudioJson(pack.lanes), games: canonicalStudioJson(pack.games), tables: canonicalStudioJson(pack.tables),
+    lanes: canonicalStudioJson(pack.lanes), games: canonicalStudioJson(pack.games), tables: canonicalStudioJson(pack.tables), rooms: canonicalStudioJson(pack.rooms),
     branding: canonicalStudioJson(pack.branding), published_at_ms: clock() });
   for (const currentRoom of rooms) {
     const material = resolveNativeRoomGameMaterial({ package: pack, room: currentRoom, language: 'sv' });
@@ -687,7 +688,7 @@ async function roomPublicationFixture({ imported = false, twoRooms = false } = {
     sql.tables.shared_table_config_heads.push({ room_id: currentRoom.id, version: body.configVersion });
   }
   const request = extra => ({ actor, operatorId, expectedRevision: 1, lanes: pack.lanes, games: pack.games, tables: pack.tables,
-    branding: structuredClone(pack.branding), ...extra });
+    branding: structuredClone(pack.branding), rooms: rooms.filter(room => (extra?.tables ?? pack.tables).includes(room.id)).map(room => structuredClone(room)), ...extra });
   const changedRequest = () => request({ branding: { ...pack.branding, roomOverrides: { [room.id]: { color: '#445566' } } } });
   const config = (roomId = room.id) => {
     const version = sql.tables.shared_table_config_heads.find(row => row.room_id === roomId)?.version;
@@ -785,10 +786,8 @@ test('removing a room clears only its current package binding and preserves immu
 
 test('unavailable or foreign room/config/head authority fails before any publication is committed', async () => {
   const changes = [
-    h => { h.sql.tables.documents.length = 0; },
-    h => { h.sql.tables.documents[0].workspace_id = south.workspaceId; },
-    h => { h.sql.tables.documents[0].value.rooms[0].operatorId = 'operator-foreign'; },
-    h => { h.sql.tables.documents[0].value.rooms[0].state = 'draft'; },
+    h => { h.rooms[0].operatorId = 'operator-foreign'; },
+    h => { h.rooms[0].state = 'draft'; },
     h => { h.sql.tables.shared_table_config_heads[0].version = 'room-config-30000000-0000-4000-8000-000000000001'; },
     h => { h.sql.tables.shared_table_configs[0].body.operatorId = 'operator-foreign'; },
     h => { h.sql.tables.shared_table_configs[0].body.roomId = 'room-foreign'; },
@@ -872,7 +871,7 @@ test('an imported material receipt survives N2 rotation only while its exact pre
 // pass, its own settings are not published while it is paused, and it opens again on the same settings.
 test('a paused room keeps its settings only while they still hold, and opens again on them', async () => {
   const h = await roomPublicationFixture({ twoRooms: true }), original = structuredClone(h.config());
-  const state = value => { h.sql.tables.documents[0].value.rooms.find(row => row.id === h.room.id).state = value; };
+  const state = value => { h.rooms.find(row => row.id === h.room.id).state = value; };
   state('pending');
   const paused = await h.store.publishPackage(h.request());
   assert.equal(paused.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'the pause keeps the settings');
@@ -1022,65 +1021,28 @@ test('package reads tolerate operator_packages with and without the rooms column
   }
 });
 
-// L3 PR 2: publishWithin writes `rooms` beside `tables` once Studio 023 exists, derived from the
-// administration document in its order and checked with the readers' own invariant. Real PostgreSQL
-// (PGlite) with every reviewed Studio migration, first without 023 and then with it.
-test('publishWithin writes package rooms only with Studio 023, in document order, under the readers\' invariant', async t => {
+test('package writers require explicit complete rooms, retain them across appearance edits and reject invalid lists atomically on PostgreSQL', async t => {
   const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }, { listPackageRooms }, { PACKAGE_ROOMS_MAX_TEXT }] = await Promise.all([
     import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/presentation/server/package-rooms.mjs'),
     import('../packages/presentation/contracts/package-rooms.mjs')]);
   const pool = await createPglitePool(); t.after(() => pool.end());
-  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true, deferOptional: ['023'] });
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
   const source = nativeRoomMaterialFixture(), first = source.input.room, operatorId = first.operatorId;
-  // Document order differs from id order, so a writer that sorts is caught.
-  const second = { ...first, id: 'room-a-second', name: 'Second' }, foreign = { ...first, id: 'room-foreign', operatorId: 'operator-other' };
+  const second = { ...first, id: 'room-a-second', name: 'Second', state: 'pending' };
   const gameLanes = [{ schemaVersion: 1, id: first.gameLaneId, label: 'Fixture', renderer: 'portrait-video', dealer: 'dragan', mediaCollection: 'dragan-presentation' }];
-  const administration = rooms => ({ rooms, gameLane: first.gameLaneId, gameLanes });
-  const saveDocument = value => pool.query(`INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'administration','admin-1',$3::jsonb)
-    ON CONFLICT (environment_id,workspace_id,kind) DO UPDATE SET value=EXCLUDED.value`, [north.environment, north.workspaceId, JSON.stringify(value)]);
   const store = await createOperatorStore({ sql: pool, scope: north, now: clock });
   await store.createOperator({ operatorId, slug: 'fixture', name: 'Fixture', status: 'active', actor });
-  await saveDocument(administration([first, foreign, second]));
-  const publish = (tables = [first.id, second.id]) => store.publishPackage({ actor, operatorId, lanes: source.input.package.lanes, games: ['blackjack'], tables, branding: source.input.package.branding });
-  // (a) Without 023 the package is written exactly as today.
-  assert.equal((await publish()).rooms, null);
-  assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
-  // Even a document room breaking the readers' invariant is neither validated nor warned about
-  // without the column, and the row carries no rooms at all.
-  const warn = t.mock.method(console, 'warn', () => {});
-  const broken = { ...second, presentationLaneId: 'other-lane' };
-  await saveDocument(administration([first, broken]));
-  const unchecked = await publish();
-  assert.equal(unchecked.revision, 2); assert.equal(unchecked.rooms, null);
-  assert.equal(warn.mock.callCount(), 0);
-  const hasRooms = async () => (await pool.query(`SELECT to_jsonb(p) ? 'rooms' AS has FROM croupier_studio.operator_packages p
-    WHERE operator_id=$1 ORDER BY package_revision DESC LIMIT 1`, [operatorId])).rows[0].has;
-  assert.equal(await hasRooms(), false);
-  await saveDocument(administration([first, foreign, second]));
-  const plan = await planStudioMigrations({ pool });
-  assert.deepEqual(plan.optionalPending.map(row => row.version), ['023']);
-  assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, ['023']);
-  // (b) With 023: the document's rooms for these tables, in its order, returned by the INSERT and every read.
-  const written = await publish();
-  assert.deepEqual(written.rooms, [first, second]); assert.deepEqual(written.tables, [second.id, first.id]);
-  const current = await store.getCurrentPackage(operatorId);
-  assert.equal(current.revision, 3); assert.deepEqual(current.rooms, [first, second]);
-  assert.deepEqual(listPackageRooms({ administration: administration([]), package: current, operatorId }), [first, second]);
-  // A table the document lacks leaves rooms null (the readers keep the document), never a partial list.
-  assert.equal((await publish([first.id, second.id, 'room-missing'])).rooms, null);
-  assert.equal(warn.mock.callCount(), 1);
-  // (c) A document room whose environment the package lacks (old data the readers skip) is treated
-  // as a missing table: the publication succeeds with rooms null and a warning naming the table,
-  // while the readers still refuse such a package list with their code.
-  await saveDocument(administration([first, broken]));
-  const skipped = await publish();
-  assert.equal(skipped.revision, 5); assert.equal(skipped.rooms, null);
-  assert.equal(warn.mock.callCount(), 2);
-  assert.deepEqual(warn.mock.calls[1].arguments, ['operator_package_rooms_invalid', { operatorId, tables: [broken.id], reason: 'presentation_lane_missing' }]);
-  assert.equal((await store.getCurrentPackage(operatorId)).rooms, null);
-  assert.equal(await hasRooms(), true);
-  assert.throws(() => listPackageRooms({ administration: administration([]), package: { ...current, rooms: [first, broken] }, operatorId }),
-    error => error.code === 'studio_corrupt_operator' && error.statusCode === 503);
+  const input = { actor, operatorId, lanes: source.input.package.lanes, games: ['blackjack'], tables: [first.id, second.id], branding: source.input.package.branding };
+  await assert.rejects(store.publishPackage(input), refusal('studio_corrupt_operator'));
+  const written = await store.publishPackage({ ...input, rooms: [first, second] });
+  assert.deepEqual(written.rooms, [first, second]);
+  const current = await store.publishPackage({ ...input, expectedRevision: written.revision });
+  assert.deepEqual(current.rooms, [first, second]);
+  assert.deepEqual(listPackageRooms({ administration: {gameLanes,gameLane:first.gameLaneId}, package: current, operatorId }), [first, second]);
+  for (const rooms of [null, [first], [first, {...second, operatorId:'foreign'}], [first, {...second,presentationLaneId:'missing'}]]) {
+    await assert.rejects(store.publishPackage({...input,expectedRevision:current.revision,rooms}), refusal('studio_corrupt_operator'));
+    assert.equal((await store.getCurrentPackage(operatorId)).revision, current.revision);
+  }
   // 32 rooms at every field's maximum fit both the contract and 023's CHECK; one character more does not.
   const owner = 'O'.repeat(100), id = index => `r${String(index).padStart(2, '0')}`.padEnd(64, 'a');
   const widest = Array.from({ length: 32 }, (_, index) => ({ schemaVersion: 2, id: id(index), name: '"'.repeat(100), operatorId: owner,

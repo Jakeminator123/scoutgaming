@@ -23,7 +23,7 @@ const legacy = { schemaVersion: 1, id: 'legacy', label: 'Legacy', renderer: 'ind
 const mobile = { schemaVersion: 1, id: 'mobile-phone', label: 'Mobile Phone Lane', renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' };
 const administration = (lanes = {}) => ({
   tiers: { classic: 'vera', high: 'astrid', vip: 'amira' },
-  rooms: [{ id: 'room', name: 'Room', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' }],
+  rooms: [],
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   tournaments: [], ...lanes,
 });

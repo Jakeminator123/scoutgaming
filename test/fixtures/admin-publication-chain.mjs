@@ -43,6 +43,7 @@ function publicationPool(studio, operators) {
         const result = await document.query(sql, values);
         await operator.query(sql, values); return result;
       }
+      if(sql.includes('/* studio:current-package-rooms */'))return {rows:clone([...new Map(operators.tables.operator_packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]).sort((a,b)=>a.package_revision-b.package_revision).map(row=>[row.operator_id,row])).values()])};
       if (sql.includes('/* operator-store:')) return operator.query(sql, values);
       if (sql.includes('/* presentation-room:used-key */')) return {rows: clone(operators.tables.operator_packages
         .filter(row => row.environment_id === values[0] && row.workspace_id === values[1]

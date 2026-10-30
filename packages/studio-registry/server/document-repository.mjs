@@ -1,3 +1,4 @@
+import { administrationRooms } from '../../presentation/server/administration-room-projection.mjs';
 import { createStudioRepository as createRepository } from './repository.mjs';
 import * as contract from './document-contract.mjs';
 import { isActiveDealerId } from '../../presentation/contracts/dealer-identity.mjs';
@@ -12,5 +13,5 @@ const dealerSets = Object.freeze({ validateDealerSetRecordOwners, dealerSetsForC
 // The application supplies its existing domain rules; the shared repository owns
 // all scoped SQL, transactions, CAS, history and snapshot operations together.
 export function createStudioRepository({ pool, scope } = {}) {
-  return createRepository({ pool, scope, contract, policy, runtimeCatalog, dealerSets });
+  return createRepository({ pool, scope, contract, policy, runtimeCatalog, dealerSets, administrationRooms });
 }

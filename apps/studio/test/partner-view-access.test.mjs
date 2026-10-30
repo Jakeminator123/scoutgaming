@@ -63,17 +63,6 @@ async function fixture(poolOptions) {
   }
   const lane = { ...defaultPresentationLane('astrid'), id: 'john-lane', composition: defaultCompositionSettings(), operatorAdjustable: ['dealer', 'branding'] };
   const presentation = cloudPresentationFixture({ lanes: [lane] }).presentation;
-  await store.publishPackage({ actor: 'fixture', operatorId: john.id, lanes: [lane.id], games: ['blackjack'], tables: ['john-room', 'john-paused'],
-    branding: withPackagePresentation({ lane: lane.id }, presentation) });
-  await store.createOperator({ actor: 'fixture', operatorId: south.id, slug: south.slug, name: south.name });
-  for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId: south.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
-  await store.upsertMembership({ actor: 'fixture', operatorId: south.id, userId: '46', roleId: 'partner-admin', status: 'active' });
-  await store.publishPackage({ actor: 'fixture', operatorId: south.id, lanes: [lane.id], games: ['blackjack'], tables: ['south-room'],
-    branding: withPackagePresentation({ lane: lane.id, name: 'Souths bordsnamn' }, presentation) });
-  // The room config binding is written by the Admin room publication (croupier_game tables the memory pool
-  // does not have); the stored package row carries it, so the readout sees the bound configVersion.
-  const row = pool.tables.operator_packages.find(item => item.operator_id === john.id);
-  row.branding = JSON.stringify({ ...JSON.parse(row.branding), roomGameConfigVersions: { 'john-room': 'config-7' } });
   const readAdministration = async () => ({ gameLane: 'actual-portrait',
     gameLanes: [{ schemaVersion: 1, id: 'actual-portrait', label: 'Runtime', renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }],
     rooms: [
@@ -81,6 +70,17 @@ async function fixture(poolOptions) {
       { schemaVersion: 2, id: 'john-paused', name: 'Pausat bord', operatorId: john.id, presentationLaneId: lane.id, gameLaneId: 'actual-portrait', state: 'pending' },
       { schemaVersion: 2, id: 'south-room', name: 'Souths blackjack', operatorId: south.id, presentationLaneId: lane.id, gameLaneId: 'actual-portrait', state: 'live' },
     ] });
+  await store.publishPackage({ actor: 'fixture', operatorId: john.id, lanes: [lane.id], games: ['blackjack'], tables: ['john-room', 'john-paused'],rooms:(await readAdministration()).rooms.filter(room=>room.operatorId===john.id),
+    branding: withPackagePresentation({ lane: lane.id }, presentation) });
+  await store.createOperator({ actor: 'fixture', operatorId: south.id, slug: south.slug, name: south.name });
+  for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId: south.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
+  await store.upsertMembership({ actor: 'fixture', operatorId: south.id, userId: '46', roleId: 'partner-admin', status: 'active' });
+  await store.publishPackage({ actor: 'fixture', operatorId: south.id, lanes: [lane.id], games: ['blackjack'], tables: ['south-room'],rooms:(await readAdministration()).rooms.filter(room=>room.operatorId===south.id),
+    branding: withPackagePresentation({ lane: lane.id, name: 'Souths bordsnamn' }, presentation) });
+  // The room config binding is written by the Admin room publication (croupier_game tables the memory pool
+  // does not have); the stored package row carries it, so the readout sees the bound configVersion.
+  const row = pool.tables.operator_packages.find(item => item.operator_id === john.id);
+  row.branding = JSON.stringify({ ...JSON.parse(row.branding), roomGameConfigVersions: { 'john-room': 'config-7' } });
   const config = { boDb, scope, now: () => now, pool, readAdministration, store,
     gameDb: { prepare: () => ({ all: async () => [], get: async () => undefined }) },
     allowedOrigins: [origin, 'https://studio.example.invalid'], publicHosts: [host, 'studio.example.invalid'], apiBase: '/studio/api/admin', authBase: '/studio/api/auth',

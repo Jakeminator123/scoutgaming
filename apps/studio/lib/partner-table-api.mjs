@@ -128,35 +128,6 @@ function intentOf(action, body) {
   return { requires: allow => allow.pause, presentation: { kind: 'resource-lifecycle', value: {} }, operatorPackage: true, journaled: true };
 }
 
-// Har bolaget självt pausat spelbordet, och har det varit pausat sedan dess?
-// Partnerns paus står i bolagets journal (room.state, accessClass partner) med
-// administrationsrevisionen den skapade. Från den revisionen följs
-// administrationsdokumentets historik (document_history, varje sparning ger en
-// rad med revisionen som ersatte den) framåt till den nuvarande revisionen;
-// spelbordet ska vara pausat i varje led. Har Admin öppnat och pausat igen, eller
-// pausat ett spelbord som aldrig pausats av bolaget, finns ingen sådan kedja.
-// Historiken läses i samma transaktion, under Studio-scopets och bolagets lås.
-const PAUSE_CHAIN_LIMIT = 500;
-const PAUSE_CHAIN_SQL = `/* partner-table:pause-chain */ WITH RECURSIVE chain(revision, replaced_by, state, depth) AS (
-    SELECT h.revision, h.replaced_by, (SELECT r->>'state' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(h.value->'rooms') = 'array' THEN h.value->'rooms' ELSE '[]'::jsonb END) r WHERE r->>'id' = $4 LIMIT 1), 1
-      FROM croupier_studio.document_history h
-      WHERE h.environment_id = $1 AND h.workspace_id = $2 AND h.kind = 'administration' AND h.revision = $3
-    UNION ALL
-    SELECT h.revision, h.replaced_by, (SELECT r->>'state' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(h.value->'rooms') = 'array' THEN h.value->'rooms' ELSE '[]'::jsonb END) r WHERE r->>'id' = $4 LIMIT 1), c.depth + 1
-      FROM chain c JOIN croupier_studio.document_history h
-        ON h.environment_id = $1 AND h.workspace_id = $2 AND h.kind = 'administration' AND h.revision = c.replaced_by
-      WHERE c.state = 'pending' AND c.replaced_by <> $5 AND c.depth < ${PAUSE_CHAIN_LIMIT})
-  SELECT revision, replaced_by, state FROM chain ORDER BY depth`;
-async function pausedByPartner({ client, store, config, operatorId, roomId, current }) {
-  if (typeof store.listPartnerRoomPauses !== 'function' || typeof current !== 'string') return false;
-  for (const paused of await store.listPartnerRoomPauses(operatorId, roomId)) {
-    if (paused === current) return true;
-    const { rows } = await client.query(PAUSE_CHAIN_SQL, [config.scope.environment, config.scope.workspaceId, paused, roomId, current]);
-    if (rows.length && rows.every(row => row.state === 'pending') && rows.at(-1).replaced_by === current) return true;
-  }
-  return false;
-}
-
 export async function partnerTableAction(prepared, config, readBody) {
   const found = await partnerOperatorContext(prepared, config);
   const decided = await decidedPartnerContext(found);
@@ -210,14 +181,14 @@ export async function partnerTableAction(prepared, config, readBody) {
       }
       const lifecycle = createResourceLifecycleApi({ repository, scope: config.scope, now: config.now });
       const changed = await lifecycle.setRoomState(store, { operatorId: operator.id, roomId: body.roomId, state: body.state,
-        expectedPackageRevision: body.expectedPackageRevision }, actor, async ({ room, pack: locked, administrationRevision }) => {
+        expectedPackageRevision: body.expectedPackageRevision }, actor, async ({ room, pack: locked }) => {
         if (room.state !== body.expectedState) fail(409);
         if (body.state !== 'live') return;
         // Bara ett spelbord som redan har publicerade spelinställningar kan öppnas av bolaget;
         // ett spelbord som aldrig släppts öppnas av Admin.
         if (typeof locked?.branding?.roomGameConfigVersions?.[room.id] !== 'string') fail(409);
         // Och bara en paus som bolaget självt satt: Admins paus hävs aldrig här.
-        if (!await pausedByPartner({ client, store, config, operatorId: operator.id, roomId: room.id, current: administrationRevision })) fail(409, 'admin-pause');
+        if (!await store.isRoomPausedByPartner(operator.id,room.id,locked.revision)) fail(409, 'admin-pause');
       });
       await store.recordPartnerTableEvent({ ...journal, action: 'room.state', before: { state: body.expectedState },
         after: { state: changed.room.state, administrationRevision: changed.administrationRevision } });

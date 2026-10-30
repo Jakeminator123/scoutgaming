@@ -253,7 +253,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (!rows.length) return { operator: null, package: null };
     const row = rows[0], owner = operator(row.operator), pack = row.package ? packageRow(row.package) : null;
     if (pack && pack.operatorId !== owner.id) fail('studio_corrupt_operator');
-    return { operator: owner, package: pack, administration: row.administration };
+    return { operator: owner, package: pack, administration: row.administration == null ? null : { ...row.administration, rooms: structuredClone(pack?.rooms ?? []) } };
   }
   async function getOperatorById(id) {
     return one(`/* operator-store:operator-by-id */
@@ -409,18 +409,10 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       try { client?.release?.(); } catch { /* Caller owns pool health. */ }
     }
   }
-  // publishWithin also reads, in the same statement, whether Studio 023's column exists and the
-  // administration document's rooms (packageRoomsWithin).
-  async function lockOperator(txQuery, operatorId, { packageRooms = false } = {}) {
+  async function lockOperator(txQuery, operatorId) {
     const rows = await txQuery(`/* operator-store:lock-operator */
-      SELECT environment_id, workspace_id, operator_id${packageRooms ? `,
-        EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='croupier_studio'
-          AND table_name='operator_packages' AND column_name='rooms') AS package_rooms_column,
-        (SELECT d.value->'rooms' FROM croupier_studio.documents d
-          WHERE d.environment_id=$1 AND d.workspace_id=$2 AND d.kind='administration') AS administration_rooms` : ''}
-      FROM croupier_studio.operators
-      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
-      FOR UPDATE`, [operatorId]);
+      SELECT environment_id, workspace_id, operator_id FROM croupier_studio.operators
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE`, [operatorId]);
     if (rows.length > 1) fail('studio_corrupt_operator');
     return rows[0] ?? null;
   }
@@ -617,38 +609,15 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       return saved;
     });
   }
-  // Studio 023 (plan L3 PR 2): the package's own tables, written in the same row as `tables`.
-  // Without the column (023 not applied) undefined: the row is written exactly as before. Explicit
-  // `rooms` wins (validated either way); null or absent means the administration document's rooms
-  // for these tables, in the document's order. A table the document lacks, or a document room that
-  // breaks the readers' own invariant (e.g. an environment the package or its frozen presentation
-  // lacks: old data the readers skip today), leaves `rooms` null with a warning (the readers keep the
-  // document), never a partial list and never a 503 for the operator's publications. Only an explicit
-  // `rooms` list breaking the invariant is refused with the readers' code, so a written package is
-  // never a 503 afterwards.
-  function packageRoomsWithin(locked, input, next) {
-    const column = locked.package_rooms_column === true;
-    let rooms = optionalOwn(input, 'rooms');
-    const explicit = rooms !== undefined && rooms !== null;
-    if (!explicit) {
-      if (!column) return undefined;
-      rooms = Array.isArray(locked.administration_rooms) ? locked.administration_rooms.filter(room => room?.schemaVersion === 2
-        && room.operatorId === next.operatorId && next.tables.includes(room.id)) : [];
-      const missing = next.tables.filter(id => !rooms.some(room => room.id === id));
-      if (missing.length) { console.warn('operator_package_rooms_missing', { operatorId: next.operatorId, missing }); return null; }
-    }
-    const presentation = readPackagePresentation(next);
-    const checked = checkPackageRooms({ ...next, rooms }, presentation);
-    if (!checked && !explicit) {
-      const tables = rooms.filter(room => !next.lanes.includes(room.presentationLaneId)
-        || presentation && !presentation.lanes.some(lane => lane.id === room.presentationLaneId)).map(room => room.id);
-      console.warn('operator_package_rooms_invalid', { operatorId: next.operatorId, tables,
-        reason: tables.length ? 'presentation_lane_missing' : 'rooms_contract' });
-      return null;
-    }
+  // Every new revision owns its rooms. Ordinary appearance/material writers
+  // retain current rooms; adding/changing a room requires an explicit list.
+  function packageRoomsWithin(current, input, next) {
+    const proposed = optionalOwn(input, 'rooms');
+    const rooms = proposed === undefined
+      ? (current?.rooms ?? []).filter(room => next.tables.includes(room.id)) : proposed;
+    const checked = checkPackageRooms({ ...next, rooms }, readPackagePresentation(next));
     if (!checked) fail('studio_corrupt_operator');
-    const text = canonicalPackageRooms(checked, next.operatorId, next.tables);
-    return column ? text : undefined;
+    return canonicalPackageRooms(checked, next.operatorId, next.tables);
   }
   // Plan L3 PR 3: every package revision (a pause too) carries the company's open appearance draft
   // over to itself in the same transaction, so that no other publication makes it stale
@@ -689,7 +658,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       if (roomState !== undefined && (!plain(roomState) || Object.keys(roomState).sort().join(',') !== 'roomId,state'
         || !['live', 'pending'].includes(roomState.state) || !JSON.parse(tables).includes(roomState.roomId)
         || optionalOwn(input, 'lifecycle') !== undefined)) fail('studio_invalid_data', 422);
-      const locked = await lockOperator(txQuery, operatorId, { packageRooms: true });
+      const locked = await lockOperator(txQuery, operatorId);
       if (!locked) fail('studio_operator_not_found', 404);
       let current=null,brandingDraft=false;
       {
@@ -697,7 +666,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         // the lock: a statement's subqueries share its snapshot, and the lock statement's is older than
         // a first draft committed while it waited for the lock.
         const rows = await txQuery(`/* operator-store:current-package */
-          SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms,
+          SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms, rooms,
             EXISTS(SELECT 1 FROM croupier_studio.operator_branding_drafts b
               WHERE b.environment_id=$1 AND b.workspace_id=$2 AND b.operator_id=$3) AS branding_draft
           FROM croupier_studio.operator_packages
@@ -725,21 +694,20 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         branding = canonicalBranding(nextBranding);
       }
       const nextBranding=JSON.parse(branding);
+      const rooms = packageRoomsWithin(current, input, { operatorId, lanes: JSON.parse(lanes), tables: JSON.parse(tables), branding: nextBranding });
       const roomWriter=replacement||Object.hasOwn(current?.branding??{},'roomGameConfigVersions')||Object.hasOwn(nextBranding,'roomGameConfigVersions')
         ?await import('../../presentation/server/room-game-publication.mjs'):null;
       const roomPublication=roomWriter?await roomWriter.prepareRoomGamePublication({query:txQuery,decodePackage:packageRow,current,
-        next:{operatorId,revision:(current?.revision??0)+1,lanes:JSON.parse(lanes),games:JSON.parse(games),tables:JSON.parse(tables),branding:nextBranding},replacement}):null;
+        next:{operatorId,revision:(current?.revision??0)+1,lanes:JSON.parse(lanes),games:JSON.parse(games),tables:JSON.parse(tables),rooms:JSON.parse(rooms),branding:nextBranding},replacement}):null;
       if(roomPublication)branding=canonicalBranding(roomPublication.branding);
       if (isExtendedPresentationEnvelope(JSON.parse(branding)[PRESENTATION_STORAGE_KEY])) await assertExtendedPresentationStorage(txQuery);
-      const rooms = packageRoomsWithin(locked, input, { operatorId, lanes: JSON.parse(lanes), tables: JSON.parse(tables), branding: JSON.parse(branding) });
-      const withRooms = rooms !== undefined;
       const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
-        (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms${withRooms ? ', rooms' : ''})
+        (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms, rooms)
       SELECT $1,$2,$3,COALESCE((SELECT MAX(package_revision) FROM croupier_studio.operator_packages
-        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3),0)+1,$4,$5,$6,$7,$8${withRooms ? ',$9' : ''}
-      RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms${withRooms ? ', rooms' : ''}`,
-    [operatorId, lanes, games, tables, branding, clock(), ...(withRooms ? [rooms] : [])]))[0];
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3),0)+1,$4,$5,$6,$7,$8,$9
+      RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms, rooms`,
+    [operatorId, lanes, games, tables, branding, clock(), rooms]))[0];
     if (!row) fail('studio_storage_unavailable');
       const saved=packageRow(row);
       if(roomPublication)await roomWriter.writeRoomGamePublication(txQuery,roomPublication,saved.revision);
@@ -808,18 +776,31 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       return Object.freeze({ operatorId, roomId, action });
     });
   }
-  // Administrationsrevisionerna där partnern (accessClass partner) pausade ett
-  // spelbord genom partner-API:t, nyaste först. Admins pauser skrivs aldrig hit.
-  async function listPartnerRoomPauses(operatorId, roomId, { limit = 20 } = {}) {
-    operatorId = idText(operatorId); roomId = idText(roomId);
-    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('studio_invalid_data', 400);
-    const rows = await query(`/* operator-store:partner-room-pauses */
-      SELECT changes FROM croupier_studio.operator_audit_events
-      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND action='room.state' AND access_class='partner'
-        AND resource_type='package' AND resource_id=$4
-      ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $5`, [operatorId, roomId, limit]);
-    return rows.map(row => storedJson(row.changes, canonicalStudioJson)?.after)
-      .filter(after => after?.state === 'pending' && typeof after.administrationRevision === 'string').map(after => after.administrationRevision);
+  // The latest explicit state publication owns the pause. Immutable package
+  // membership proves it was not archived/restored meanwhile; document history
+  // contains no room state. Pre-023 rows may lack rooms, but never the current row.
+  async function isRoomPausedByPartner(operatorId, roomId, currentRevision) {
+    operatorId=idText(operatorId);roomId=idText(roomId);
+    currentRevision=integer(currentRevision,1,'studio_invalid_data',422);
+    const [latest]=await query(`/* operator-store:last-room-state */
+      SELECT access_class,after_revision,changes FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND action='package.publish'
+        AND resource_type='package' AND resource_id=$3 AND changes::jsonb->'after'->>'roomId'=$4
+      ORDER BY after_revision DESC NULLS LAST,occurred_at_ms DESC,event_id DESC LIMIT 1`,[operatorId,roomId]);
+    if(!latest||latest.access_class!=='partner')return false;
+    const after=storedJson(latest.changes,canonicalStudioJson)?.after;
+    const start=Number(latest.after_revision);
+    if(after?.state!=='pending'||!Number.isSafeInteger(start)||start<1||start>currentRevision||currentRevision-start>=500)return false;
+    const rows=await query(`/* operator-store:room-pause-packages */ SELECT ${packageColumns}
+      FROM croupier_studio.operator_packages p WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+        AND package_revision >= $4 AND package_revision <= $5 ORDER BY package_revision LIMIT 500`,[operatorId,start,currentRevision]);
+    if(rows.length!==currentRevision-start+1)return false;
+    return rows.every((row,index)=>{
+      const pack=packageRow(row);
+      if(pack.revision!==start+index||!pack.tables.includes(roomId))return false;
+      if(pack.rooms===null)return pack.revision<currentRevision;
+      return pack.rooms.some(room=>room.id===roomId&&room.operatorId===operatorId&&room.state==='pending');
+    });
   }
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
   // Only the trusted J08 writer supplies a complete validated replacement. A
@@ -963,6 +944,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, getPublishedRoomLimitPresets, getPublishedRoomConfigHeads, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
-    assertPartnerJournalReady, recordPartnerTableEvent, listPartnerRoomPauses, recordPartnerRequest,
+    assertPartnerJournalReady, recordPartnerTableEvent, isRoomPausedByPartner, recordPartnerRequest,
   });
 }

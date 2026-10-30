@@ -38,7 +38,7 @@ export function createActiveRoomPresentationContext({saved,context,privateMedia,
   async function selection() {
     const select=createGameEntrySelector({game:'blackjack',log:()=>{},
       policy:{readSaved:async()=>({administration:saved.administration,project:{}}),readGameConfiguration:()=>fail()},
-      packages:{resolve:async()=>({operator:saved.operator,package:saved.package})}});
+      packages:{resolve:async()=>({operator:saved.operator,package:saved.package,roomAuthorityPackage:saved.roomAuthorityPackage})}});
     const result=await select(new URLSearchParams({operator:context.operatorSlug,table:context.roomId}));
     if(result.status!==200||result.selection?.roomId!==context.roomId||result.selection.packageRevision!==context.packageRevision
       ||result.selection.dealer!==context.dealerId)fail();

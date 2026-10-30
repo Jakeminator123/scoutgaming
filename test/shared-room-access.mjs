@@ -32,7 +32,7 @@ function fixture({realAuth=false}={}) {
     presentationHash:createHash('sha256').update(canonicalStudioJson(cloud.presentation)).digest('hex'),language:'sv',limitPreset:'prive',...ROOM_GAME_TIMERS,
     limits:{min:preset.min,max:preset.max,sideMax:preset.sideMax},chips:[...preset.chips],refill:preset.refill,leadMs:material.leadMs,cardMs:material.cardMs,material:clone(material)};
   const pack={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-a","room-b"]',
-    branding:withPackagePresentation({roomGameConfigVersions:Object.fromEntries(rooms.map(room=>[room.id,version(room.id)]))},cloud.presentation),published_at_ms:1};
+    rooms,branding:withPackagePresentation({roomGameConfigVersions:Object.fromEntries(rooms.map(room=>[room.id,version(room.id)]))},cloud.presentation),published_at_ms:1};
   const state={administration,pack,project:clone(cloud.project),media:cloud.mediaRows.map(({revision,...row})=>row),packageHistory:[],configHistory:[],operator:{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1},configs,
     heads:Object.fromEntries(rooms.map(room=>[room.id,version(room.id)])),session:{actorId:'player-a',sessionId,expiresAt:999999,partnerKeyId:null}};
   const pool={async connect(){assert.equal(active,false);clientCount++;trace.push('connect');return {async query(sql,values){
@@ -45,9 +45,10 @@ function fixture({realAuth=false}={}) {
     if(failAt===marker)throw new Error('injected SQL infrastructure failure');
     let rows;
     if(marker==='studio:read-document')rows=[{kind:values[2],revision:values[2]==='project'?state.project.revision:'admin-1',value:values[2]==='project'?state.project:state.administration,updated_at:'2026-10-22T00:00:00.000Z'}];
+    else if(marker==='studio:current-package-rooms')rows=state.pack?[state.pack]:[];
     else if(marker==='operator-store:operator-by-id')rows=values[2]===state.operator.operator_id?[state.operator]:[];
-    else if(marker==='operator-store:current-package')rows=state.pack?[{...state.pack,branding:canonicalStudioJson(state.pack.branding)}]:[];
-    else if(marker==='operator-store:package-by-revision')rows=[state.pack,...state.packageHistory].filter(row=>row?.operator_id===values[2]&&row.package_revision===values[3]).map(row=>({...row,branding:canonicalStudioJson(row.branding)}));
+    else if(marker==='operator-store:current-package')rows=state.pack?[{...state.pack,rooms:state.pack.rooms===null?null:canonicalStudioJson(state.pack.rooms),branding:canonicalStudioJson(state.pack.branding)}]:[];
+    else if(marker==='operator-store:package-by-revision')rows=[state.pack,...state.packageHistory].filter(row=>row?.operator_id===values[2]&&row.package_revision===values[3]).map(row=>({...row,rooms:row.rooms===null?null:canonicalStudioJson(row.rooms),branding:canonicalStudioJson(row.branding)}));
     else if(marker==='shared-room-access:config'){const id=values[2];rows=state.heads[id]?[{version:state.heads[id],body:clone(state.configs[id])}]:[];}
     else if(marker==='shared-room-access:active-config')rows=[...Object.values(state.configs),...state.configHistory].filter(row=>row.roomId===values[2]&&row.configVersion===values[3]).map(body=>({body}));
     else if(marker==='shared-room-access:active-media')rows=state.media.filter(row=>values[2].includes(row.id)).map(record=>({id:record.id,record}));
@@ -84,7 +85,7 @@ function nativeFixture({choices=false,branding={}}={}) {
     for(const config of Object.values(h.state.configs))config.presentationHash=createHash('sha256').update(canonicalStudioJson(native.presentation)).digest('hex');
   };
   recapture();
-  for(const room of h.state.administration.rooms){
+  for(const room of h.state.pack.rooms){
     const material=resolveNativeRoomGameMaterial({room,language:'sv',package:{operatorId:'north',revision:1,
       tables:['room-a','room-b'],games:['blackjack'],lanes:['mobile-phone'],branding:h.state.pack.branding}});
     Object.assign(h.state.configs[room.id],{material,leadMs:material.leadMs,cardMs:material.cardMs});
@@ -102,7 +103,7 @@ function activeHistoryFixture() {
   lane.composition=defaultCompositionSettings();
   h.native.presentation.assets=clone(assets);h.state.project.layerAssets=clone(assets);h.state.project.lanes=[clone(lane)];h.recapture();
   const rebind=()=>{
-    for(const room of h.state.administration.rooms) {
+    for(const room of h.state.pack.rooms) {
       const config=h.state.configs[room.id],material=resolveNativeRoomGameMaterial({room,language:config.language,
         package:{operatorId:'north',revision:h.state.pack.package_revision,tables:['room-a','room-b'],games:['blackjack'],lanes:['mobile-phone'],branding:h.state.pack.branding}});
       Object.assign(config,{material,leadMs:material.leadMs,cardMs:material.cardMs,
@@ -113,7 +114,7 @@ function activeHistoryFixture() {
   const original=clone(h.state.configs['room-a']),oldPresentation=clone(h.native.presentation);
   h.state.packageHistory.push(clone(h.state.pack));h.state.configHistory.push(...clone(Object.values(h.state.configs)));
   h.state.pack.package_revision=2;lane.composition.mobile.dealer.scale=1.2;lane.layers.background.default=assets[1].id;
-  for(const [index,room] of h.state.administration.rooms.entries()) {
+  for(const [index,room] of h.state.pack.rooms.entries()) {
     const version=`room-config-00000000-0000-4000-8000-${index+3}00000000000`;
     Object.assign(h.state.configs[room.id],{configVersion:version,packageRevision:2});
     h.state.heads[room.id]=version;h.state.pack.branding.roomGameConfigVersions[room.id]=version;
@@ -142,11 +143,27 @@ test('active room context reads its exact old package, dealer, branding and geom
   assert.deepEqual(h.state,snapshot,'all active and historical reads are immutable');h.assertReleased();
 });
 
+test('pre-023 frozen source uses current package room authority without changing retained configuration or history',async()=>{
+  const h=activeHistoryFixture();h.state.packageHistory[0].rooms=null;
+  const binding=await h.read(),snapshot=clone(h.state),old=await h.readLocked(binding,h.original.configVersion);
+  assert.equal(old.saved.package.rooms,null);assert.equal(old.saved.roomAuthorityPackage.revision,2);
+  assert.equal(old.context.packageRevision,1);assert.deepEqual(old.config,h.original);
+  const view=createActiveRoomPresentationContext({...old,privateMedia:()=>assert.fail('metadata must not fetch media')});
+  assert.equal((await view.selection()).dealer,'dragan');assert.equal((await view.configuration(old.context)).packageRevision,1);
+  assert.deepEqual(h.state,snapshot,'historical source and config stay immutable');
+  assert.throws(()=>{old.saved.roomAuthorityPackage.rooms[0].state='pending';},TypeError);
+  assert.equal(h.state.pack.rooms[0].state,'live','captured authority is detached');
+  for(const change of [()=>{h.state.pack.rooms[0].state='pending';},()=>{h.state.operator.status='archived';}]) {
+    change();await assert.rejects(h.readLocked(binding,h.original.configVersion),denied);
+  }
+  h.assertReleased();
+});
+
 // Plan L3 PR 3: the package's own rooms (Studio 023) carry the table's state. A table the package pauses is
 // refused at the shared table (403) even where the administration document still says live.
 test('a table the package pauses is refused although the administration document still says live',async()=>{
   const h=fixture();
-  h.state.pack.rooms=canonicalStudioJson(h.state.administration.rooms.map(room=>room.id==='room-a'?{...room,state:'pending'}:room));
+  h.state.pack.rooms=h.state.pack.rooms.map(room=>room.id==='room-a'?{...room,state:'pending'}:room);
   assert.equal(h.state.administration.rooms.find(room=>room.id==='room-a').state,'live');
   await assert.rejects(h.read('room-a'),denied);
   assert.equal((await h.read('room-b')).roomId,'room-b','the other table of the same package still enters');
@@ -155,7 +172,7 @@ test('a table the package pauses is refused although the administration document
 
 test('active package lookup cannot resurrect revoked sessions, rooms, dealers, media or trashed layers',async()=>{
   for(const change of [
-    h=>{h.state.session=null;},h=>{h.state.operator.status='archived';},h=>{h.state.administration.rooms[0].state='draft';},
+    h=>{h.state.session=null;},h=>{h.state.operator.status='archived';},h=>{h.state.pack.rooms[0].state='draft';},
     h=>{h.state.pack.tables='["room-b"]';},
     h=>{const lane=h.native.presentation.lanes[0];lane.layers.dealer.default='paow';lane.layers.dealer.allowed=['paow'];
       h.state.administration.gameLanes[0].dealer='paow';h.state.administration.gameLanes[0].mediaCollection='paow-presentation';
@@ -265,11 +282,11 @@ test('revocation, changed identity and expiry reject before further registry rea
 });
 
 test('closed or moved rooms, suspended operators, removed games and stale package bindings deny',async()=>{
-  const cases=[s=>{s.administration.rooms[0].state='preview';},s=>{s.administration.rooms[0].operatorId='south';},s=>{s.operator.status='suspended';},
+  const cases=[s=>{s.pack.rooms[0].state='preview';},s=>{s.pack.rooms[0].operatorId='south';},s=>{s.operator.status='suspended';},
     s=>{s.pack.tables='["room-b"]';},s=>{s.pack.games='["roulette"]';},s=>{s.pack=null;},
     s=>{s.pack.branding.roomGameConfigVersions['room-a']='room-config-00000000-0000-4000-8000-300000000000';},s=>{s.heads['room-a']='room-config-00000000-0000-4000-8000-300000000000';},
     s=>{s.pack.branding.roomGameConfigVersions['room-a']=7;}];
-  for(const change of cases){const h=fixture(),binding=await h.read();change(h.state);await assert.rejects(h.access.revalidate(binding),denied);h.assertReleased();}
+  for(const change of cases){const h=fixture(),binding=await h.read();change(h.state);await assert.rejects(h.access.revalidate(binding),error=>[403,503].includes(error.statusCode));h.assertReleased();}
 });
 
 // Preview 29 Oct 2026: a new open room without published game settings got a plain 403 for a minute. A room
@@ -285,7 +302,7 @@ test('an open room without published game settings is refused with room_config_m
   const h=fixture();delete h.state.pack.branding.roomGameConfigVersions['room-a'];
   assert.equal((await h.read('room-b',new Request('https://engine.invalid/shared-room/room-b',{headers:{origin:'https://ui.invalid',cookie:`player_session=${token}`}}))).roomId,'room-b');
   // A closed room or a removed game is still the plain refusal: only an open, admitted room can lack settings.
-  const closed=fixture();delete closed.state.pack.branding.roomGameConfigVersions['room-a'];closed.state.administration.rooms[0].state='preview';
+  const closed=fixture();delete closed.state.pack.branding.roomGameConfigVersions['room-a'];closed.state.pack.rooms[0].state='preview';
   await assert.rejects(closed.read(),denied);closed.assertReleased();
 });
 

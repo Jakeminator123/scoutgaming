@@ -1,15 +1,15 @@
 import { isPresentationRoom, isRoomOperatorId } from './presentation-room.mjs';
 
 // The tables of one published operator package (operator_packages.rooms, Studio 023, plan L3).
-// The same v2 room records as administration.rooms[] today, owned by the package's operator,
-// at most 32 like `tables`, and exactly the rooms `tables` lists. Null before 023 or before a
-// package was written with rooms; then the readers keep the administration document (fallback).
+// V2 room records owned by the package's operator, at most 32 like `tables`,
+// and exactly the rooms `tables` lists. Null marks pre-023 publication history;
+// historical packages never borrow current rooms and cannot grant play.
 export const PACKAGE_ROOMS_MAX = 32;
 // 32 rooms with every field at its maximum and a name of 100 escaped quotes is 19905 characters
 // of canonical JSON. The same bound is Studio 023's CHECK (ops/neon-studio/migrations.mjs).
 export const PACKAGE_ROOMS_MAX_TEXT = 20000;
 
-// A detached copy in the given order (the administration document's), or null when the list
+// A detached copy in the package's given order, or null when the list
 // breaks the contract. `tables` stays the sorted id index; the order lives in `rooms`.
 export function validatePackageRooms(value, { operatorId, tables } = {}) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length > PACKAGE_ROOMS_MAX

@@ -26,16 +26,25 @@ const administration = (rooms, extra = {}) => ({ rooms, gameLane: 'game-a', game
 
 async function fixture(t, rooms) {
   const pool = await createPglitePool(); t.after(() => pool.end());
-  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true, deferOptional: ['023'] });
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
+  await pool.query('ALTER TABLE croupier_studio.operator_packages DROP COLUMN rooms');
+  await pool.query("DELETE FROM croupier_studio.storage_migrations WHERE version='023'");
+  let installed=false;
   const store = await createOperatorStore({ sql: pool, scope, now: clock });
   const saveDocument = value => pool.query(`INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'administration','admin-1',$3::jsonb)
     ON CONFLICT (environment_id,workspace_id,kind) DO UPDATE SET value=EXCLUDED.value`, [scope.environment, scope.workspaceId, JSON.stringify(value)]);
   await saveDocument(administration(rooms));
-  const publish = async (operatorId, tables) => store.publishPackage({ actor, operatorId, expectedRevision: (await store.getCurrentPackage(operatorId))?.revision ?? null,
-    lanes: ['lane-a'], games: ['blackjack'], tables, branding: { name: operatorId } });
+  const publish = async (operatorId,tables) => {
+    if(installed)return store.publishPackage({actor,operatorId,expectedRevision:(await store.getCurrentPackage(operatorId))?.revision??null,
+      lanes:['lane-a'],games:['blackjack'],tables,rooms:rooms.filter(row=>row.operatorId===operatorId&&tables.includes(row.id)),branding:{name:operatorId}});
+    // Immutable pre-023 history is seeded as its original row, never through the strict new writer.
+    return pool.query(`INSERT INTO croupier_studio.operator_packages
+      (environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms)
+      VALUES ($1,$2,$3,1,'["lane-a"]','["blackjack"]',$4,$5,$6)`,[scope.environment,scope.workspaceId,operatorId,JSON.stringify(tables),JSON.stringify({name:operatorId}),clock()]);
+  };
   const installRooms = async () => {
     const plan = await planStudioMigrations({ pool });
-    assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, ['023']);
+    assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, ['023']);installed=true;
   };
   const rows = async () => (await pool.query(`SELECT operator_id, package_revision, to_jsonb(p)->>'rooms' AS rooms FROM croupier_studio.operator_packages p
     ORDER BY operator_id, package_revision`)).rows.map(row => [row.operator_id, Number(row.package_revision), row.rooms === null ? null : JSON.parse(row.rooms)]);
@@ -230,7 +239,7 @@ test('Admin publishes after the read and before the lock: north conflicts, west 
     if (read && values.at(-1) === 'north' && !raced) {
       raced = true;
       await f.store.publishPackage({ actor: 'admin-racer', operatorId: 'north', expectedRevision: 1,
-        lanes: ['lane-a'], games: ['blackjack'], tables: ['north-a'], branding: { name: 'Admin changed this' } });
+        lanes: ['lane-a'], games: ['blackjack'], tables: ['north-a'], rooms:[room('north-a','north')],branding: { name: 'Admin changed this' } });
     } else if (read && values.at(-1) === 'west') {
       westRead = true;
       assert.ok(output.some(line => line === 'misslyckades: north (north): paket 1: studio_conflict'),

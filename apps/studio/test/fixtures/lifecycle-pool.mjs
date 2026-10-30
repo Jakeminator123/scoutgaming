@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../../packages/presentation/server/presentation-storage.mjs';
 const clone=value=>structuredClone(value);
-// packageRooms: Studio 023's column exists. The lock statement's read of the administration document is
-// not modelled, so only a writer's explicit `rooms` reaches the row (plan L3 PR 3).
-export function combinedPool(scope,{extendedPresentationReady=false,packageRooms=false}={}) {
+export function combinedPool(scope,{extendedPresentationReady=false}={}) {
   let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], roomConfigs: [], roomConfigHeads: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
@@ -30,11 +28,15 @@ export function combinedPool(scope,{extendedPresentationReady=false,packageRooms
       assert.ok(working, 'all domain queries use the repository transaction');
       if (marker === 'extended-presentation-ready') return result(extendedPresentationReady ? [{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}] : []);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
-      if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2])
-        .map(row => marker === 'lock-operator' && packageRooms ? { ...row, package_rooms_column: true, administration_rooms: null } : row));
+      if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
       if (marker === 'list-operators') return result(working.operators.filter(row=>sameScope(row,values)));
       if (marker === 'lifecycle-packages') return result(working.packages.filter(row=>sameScope(row,values)));
       if (marker === 'operator-status') {const row=working.operators.find(row=>sameScope(row,values)&&row.operator_id===values[2]&&row.status===values[4]);if(!row)return result();row.status=values[3];return result([row]);}
+      if (marker === 'current-package-rooms') {
+        const latest = new Map();
+        for (const row of working.packages.filter(row => sameScope(row, values))) if (!latest.has(row.operator_id) || latest.get(row.operator_id).package_revision < row.package_revision) latest.set(row.operator_id,row);
+        return result([...latest.values()].sort((a,b)=>a.operator_id.localeCompare(b.operator_id)));
+      }
       if (marker === 'current-package') return result(packages().sort((a, b) => b.package_revision - a.package_revision).slice(0, 1));
       if (marker === 'package-by-revision') return result(packages().filter(row=>row.package_revision===values[3]));
       if (marker === 'room-config-administration') return result(working.documents.has(documentKey(values)) ? [working.documents.get(documentKey(values))] : []);
