@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {setImmediate} from 'node:timers/promises';
-import {createSeedProject,validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane,validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {environmentHref} from '../../../../../packages/navigation/admin-navigation.mjs';
 import {layerAssetReferences} from '../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
@@ -29,7 +30,8 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table',room
   const source=readFileSync(new URL('../components/studio/registered-material-library.tsx',import.meta.url),'utf8');
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URLSearchParams,AbortController,document:doc,location:{search},window:{addEventListener(){},removeEventListener(){}},require:name=>{
     if(name==='react')return hooks;
-    if(name.endsWith('/runtime/navigation'))return {useSearchParams:()=>new URLSearchParams(search),navigate:href=>{navigated.push(href);search=new URL(href,'https://fixture.invalid').search;}};
+    if(name.endsWith('/runtime/navigation'))return {__esModule:true,default:'a',useSearchParams:()=>new URLSearchParams(search),navigate:href=>{navigated.push(href);search=new URL(href,'https://fixture.invalid').search;}};
+    if(name==='../../lib/admin-navigation')return {environmentHref};
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('layer-asset-removal.mjs'))return {layerAssetReferences};
     if(name.includes('material-catalog.mjs'))return {materialLabel};
@@ -55,7 +57,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table',room
     return renderWith(cards.get(asset.id),element.type,element.props);
   };
   render();await setImmediate();
-  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,AiBackgroundDialog,ActionMenu,Dialog,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
+  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,AiBackgroundDialog,ActionMenu,Dialog,ConfirmDialog,navigated,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
 }
 
 test('real assets page scopes table upload and visible library to explicit game, with shared backgrounds',async()=>{
@@ -209,4 +211,37 @@ test('the AI dialog takes its spelbord from the shared room key, which survives 
   }
   for (const search of ['?tab=bordsgrafik&room=one&room=paused','?tab=bordsgrafik&room=two','?tab=bordsgrafik&room=paused','?tab=bordsgrafik&spelbord=one'])
     assert.equal(await dialogRoom(search),null,search);
+});
+
+
+test('material usage links use exact environment identities, keep the game and leave archived environments read-only',async()=>{
+  const h=await harness();try{
+    const asset=h.project.layerAssets[0],lane=defaultPresentationLane(h.project.dealers[0].id);
+    lane.layers.table={default:asset.id,allowed:[asset.id]};
+    h.project.lanes=[{...structuredClone(lane),id:'same-name-a',label:'Samma namn'},{...structuredClone(lane),id:'same-name-b',label:'Samma namn'}];
+    h.project.dealerTrash=[{compositions:[{...structuredClone(lane),id:'archived-scene',label:'Äldre miljö'}]}];
+    let tree=h.card(asset);
+    nodes(tree,node=>node.type===h.ActionMenu)[0].props.actions.find(action=>action.id==='uses').onSelect();
+    tree=h.card(asset);
+    const dialog=nodes(tree,node=>node.type===h.Dialog&&node.props.open)[0],links=nodes(dialog,node=>node.type==='a');
+    assert.deepEqual(links.map(link=>link.props.href),['same-name-a','same-name-b'].map(id=>environmentHref(id,{game:'roulette'})+'#lager'));
+    assert.match(text(dialog),/Arkiverad miljö/);assert.equal(links.some(link=>link.props.href.includes('archived-scene')),false);
+    assert.equal(nodes(tree,node=>node.type===h.ActionMenu)[0].props.actions.some(action=>action.id==='rename'),false,'no action claims an unsupported rename');
+    assert.equal(h.changed(),0,'opening a replacement editor never replaces or saves material');
+  }finally{h.close();}
+});
+
+test('material deletion explains closed tables and offers the existing editor before confirmation',async()=>{
+  const h=await harness();try{
+    const asset=h.project.layerAssets[0],lane={...defaultPresentationLane(h.project.dealers[0].id),id:'scene-a',label:'Miljö A'};
+    h.project.lanes=[lane];let confirmed=0;
+    const manager=nodes(h.render(),node=>node.type===h.LayerAssetManager)[0];
+    const plan={impact:{archived:true,label:asset.label,compositions:[{id:lane.id,label:lane.label}],rooms:[{id:'room-a',name:'Bord A',operatorId:'company-a'}],operators:[{id:'company-a',name:'Bolag A'}]},busy:false,onConfirm:()=>confirmed++,onCancel(){}};
+    const dialog=manager.props.renderPlan(plan);
+    assert.match(dialog.props.description,/spelbord stängs och flyttas till papperskorgen/);
+    assert.ok(dialog.props.consequences.some(value=>value.includes('Bord A · Bolag A')));
+    assert.equal(nodes(dialog,node=>node.type==='a')[0].props.href,environmentHref(lane.id,{game:'roulette'})+'#lager');
+    assert.equal(confirmed,0);assert.equal(h.changed(),0);
+    assert.equal(nodes(manager.props.renderPlan({...plan,busy:true}),node=>node.type==='a').length,0,'replacement cannot interrupt a running write');
+  }finally{h.close();}
 });

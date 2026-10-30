@@ -22,27 +22,28 @@ function App(){
     <Button id="open-dialog" onClick={()=>setOpen(true)}>Ny dealer</Button><Button id="open-confirm" onClick={()=>setConfirm(true)}>Arkivera</Button>
     <Dialog open={open} title="Ny dealer" onClose={()=>{window.__closed++;setOpen(false);}} footer={<Button onClick={()=>setOpen(false)}>Avbryt</Button>}><label>Namn<input id="name"/></label></Dialog>
     <ConfirmDialog open={confirm} title="Arkivera Nora?" confirmLabel="Flytta till papperskorgen" onConfirm={()=>{}} onCancel={()=>setConfirm(false)}/>
-    <CommandPalette/>
+    <input aria-label="Utkast" defaultValue="Sparat"/><CommandPalette/>
   </div>;
 }
 createRoot(document.getElementById('root')).render(<App/>);`,resolveDir:admin,loader:'tsx'},bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',
   define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"'},
   alias:{react:fileURLToPath(new URL('../client/node_modules/react',import.meta.url)),'react-dom':fileURLToPath(new URL('../client/node_modules/react-dom',import.meta.url))}}).then(result=>result.outputFiles[0].text);
 async function withPage(run){
+  await fixtureSource();
   const {chromium}=await import(pathToFileURL(browserModule).href);
   const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try{
-    const context=await browser.newContext(),failures=[],writes=[];
+    const context=await browser.newContext(),failures=[],writes=[],state={catalog:structuredClone(catalog),reads:0,status:200,beforeRead:null};
     await context.addInitScript(studioHistoryBootstrap);
     await context.route('**/*',async route=>{const url=new URL(route.request().url());
       if(url.origin!==origin){failures.push(Error('left the fixture: '+url.href));return route.abort();}
       if(route.request().method()!=='GET')writes.push(url.pathname);
       if(url.pathname==='/fixture.js')return route.fulfill({contentType:'text/javascript',body:await fixtureSource()});
-      if(url.pathname==='/admin/_data/catalog')return route.fulfill({json:catalog});
+      if(url.pathname==='/admin/_data/catalog'){state.reads++;const json=structuredClone(state.catalog),status=state.status;await state.beforeRead?.();return route.fulfill({status,json});}
       return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});});
     const page=await context.newPage();page.setDefaultTimeout(7000);page.on('pageerror',error=>failures.push(error));
     await page.goto(origin+'/admin/dealers');await page.getByRole('button',{name:'Åtgärder för Nora'}).waitFor();
-    try{await run(page);}finally{await context.close();assert.deepEqual(failures,[]);assert.deepEqual(writes,[],'the kit itself never writes');}
+    try{await run(page,state);}finally{await context.close();assert.deepEqual(failures,[]);assert.deepEqual(writes,[],'the kit itself never writes');}
   }finally{await browser.close();}
 }
 const focused=page=>page.evaluate(()=>({tag:document.activeElement?.tagName,id:document.activeElement?.id,role:document.activeElement?.getAttribute('role'),text:document.activeElement?.textContent?.trim()}));
@@ -81,7 +82,7 @@ test('a dialog is modal: it opens on its first field, keeps focus inside, closes
 
 test('Ctrl+K opens the search palette; typing filters, arrows choose and Enter jumps there',{skip:!browserModule},()=>withPage(async page=>{
   await page.keyboard.press('Control+k');
-  const box=page.getByRole('combobox',{name:'Sök dealers, bolag, spelbord och sidor'});await box.waitFor();
+  const box=page.getByRole('combobox',{name:'Sök dealers, bolag, spelbord, miljöer och sidor'});await box.waitFor();
   assert.equal(await box.evaluate(node=>node===document.activeElement),true);
   await page.getByRole('option',{name:/Nora/}).waitFor();
   await box.fill('priv');
@@ -97,4 +98,46 @@ test('Ctrl+K opens the search palette; typing filters, arrows choose and Enter j
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.equal(await box.count(),1,'en sen close-händelse lämnar den återöppnade paletten öppen');
   await page.keyboard.press('Escape');await box.waitFor({state:'detached'});
+}));
+
+
+test('reopening search refreshes renamed/deleted entries and routes companies and environments to their editors',{skip:!browserModule},()=>withPage(async(page,state)=>{
+  await page.keyboard.press('Control+k');await page.getByRole('option',{name:/Nora/}).waitFor();await page.keyboard.press('Escape');
+  state.catalog.administration.dealers=[{id:'archived',name:'Arkiverad dealer',archived:true}];
+  state.catalog.administration.rooms=[{id:'archived-room',name:'Arkiverat bord',state:'archived'}];
+  state.catalog.administration.operators.push({id:'archived-company',name:'Arkiverat bolag',archivedAt:'2026-01-01'});
+  state.catalog.administration.compositions=[{id:'scene-a',name:'Miljö med samma namn'},{id:'scene-b',name:'Miljö med samma namn'}];
+  await page.keyboard.press('Control+k');await page.getByRole('group',{name:'Bolag',exact:true}).getByRole('option',{name:/Johns Bet/}).waitFor();
+  assert.equal(state.reads,2);assert.equal(await page.getByRole('option',{name:/Nora|Privé|Arkivera/}).count(),0);
+  await page.getByRole('group',{name:'Bolag',exact:true}).getByRole('option',{name:/Johns Bet/}).click();await page.waitForURL(origin+'/admin/companies/johns-bet?flik=spelbord');
+  await page.keyboard.press('Control+k');await page.getByRole('option',{name:/Miljö med samma namn/}).nth(1).click();
+  await page.waitForURL(origin+'/admin/scenes?tab=miljoer&composition=scene-b');
+  await page.reload();await page.keyboard.press('Control+k');await page.getByRole('option',{name:/Miljö med samma namn/}).nth(1).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get('composition'),'scene-b','the exact environment survives document reload');
+}));
+
+test('closed search aborts old catalog reads and failed refresh never offers stale objects',{skip:!browserModule},()=>withPage(async(page,state)=>{
+  let release,readStarted;const started=new Promise(resolve=>{readStarted=resolve;});
+  state.beforeRead=()=>{state.beforeRead=null;readStarted();return new Promise(resolve=>{release=resolve;});};
+  await page.keyboard.press('Control+k');await page.getByRole('status').waitFor();
+  await started;
+  assert.equal(state.reads,1);await page.keyboard.press('Escape');
+  state.catalog.administration.dealers=[{id:'new',name:'Aktuell dealer',archived:false}];
+  await page.keyboard.press('Control+k');await page.getByRole('option',{name:/Aktuell dealer/}).waitFor();release();
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await page.getByRole('option',{name:/Nora/}).count(),0,'a late response cannot overwrite the next opening');
+  await page.keyboard.press('Escape');state.status=503;
+  await page.keyboard.press('Control+k');await page.getByRole('alert').waitFor();
+  assert.equal(await page.getByRole('option',{name:/Aktuell dealer|Johns Bet|Privé/}).count(),0);
+  await page.getByRole('option',{name:/Hjälp/}).click();await page.waitForURL(origin+'/admin/guide');
+}));
+
+test('search navigation honors the draft guard and leaves both query and draft available after cancellation',{skip:!browserModule},()=>withPage(async page=>{
+  await page.getByRole('textbox',{name:'Utkast'}).fill('Osparat materialval');
+  await page.evaluate(()=>{window.__guard=event=>event.preventDefault();window.addEventListener('scout:navigate',window.__guard);});
+  await page.keyboard.press('Control+k');await page.getByRole('group',{name:'Bolag',exact:true}).getByRole('option',{name:/Johns Bet/}).click();
+  assert.equal(new URL(page.url()).pathname,'/admin/dealers');assert.equal(await page.getByRole('dialog',{name:'Sök i Admin'}).isVisible(),true);
+  assert.equal(await page.getByRole('textbox',{name:'Utkast',includeHidden:true}).inputValue(),'Osparat materialval');
+  await page.evaluate(()=>window.removeEventListener('scout:navigate',window.__guard));
+  await page.getByRole('group',{name:'Bolag',exact:true}).getByRole('option',{name:/Johns Bet/}).click();await page.waitForURL(origin+'/admin/companies/johns-bet?flik=spelbord');
 }));

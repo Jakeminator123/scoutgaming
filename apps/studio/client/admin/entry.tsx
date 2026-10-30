@@ -69,13 +69,13 @@ function App() {
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
       <header className="studio-portal-bar"><span>Scoutgaming Admin <span className="studio-portal-divider">/</span> {pageTitle}</span>
-        <button type="button" onClick={openCommandPalette} aria-keyshortcuts="Control+K Meta+K" className={cn('ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted md:inline-flex',focusRing)}><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök dealers, bolag, spelbord…</span><Kbd>Ctrl K</Kbd></button>
+        <button type="button" onClick={openCommandPalette} aria-label="Sök i Admin" aria-keyshortcuts="Control+K Meta+K" className={cn('ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted md:inline-flex',focusRing)}><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök i Admin…</span><Kbd>Ctrl K</Kbd></button>
         <nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
-      <label className="preview-mobile-nav">Sida <select value={retired?retired.split('?')[0]:route.page==='dealer'?'/admin/dealers':route.page==='company'||route.page==='room'?'/admin/companies':path} onChange={event => navigate(previewHref(event.target.value))}>
+      <div className="preview-mobile-nav"><label htmlFor="admin-mobile-page">Sida</label><select id="admin-mobile-page" className="min-w-0" value={retired?retired.split('?')[0]:route.page==='dealer'?'/admin/dealers':route.page==='company'||route.page==='room'?'/admin/companies':path} onChange={event => navigate(previewHref(event.target.value))}>
         <option value="/admin">Översikt</option>
         {adminMenuLinks.map(link=><option key={link.href} value={link.href}>{link.label}</option>)}
-      </select></label>
+      </select><button type="button" onClick={openCommandPalette} aria-label="Sök i Admin" className={cn(buttonVariants({size:'sm'}),'shrink-0')}><Search className="size-4" aria-hidden="true"/>Sök</button></div>
       {show('home')&&<AdminHome workspace={workspace.current}/>}
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}

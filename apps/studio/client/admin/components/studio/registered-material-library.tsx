@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {navigate,useSearchParams} from '../../../runtime/navigation';
+import Link,{navigate,useSearchParams} from '../../../runtime/navigation';
 import type {StudioProject,LayerAsset} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {validateProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {LayerLibrary} from '../../../../components/layer-library';
@@ -13,7 +13,9 @@ import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetFitsGame} from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {createStudioClient,type Room,type VideoInventory} from '../../lib/connected-studio.mjs';
+import {environmentHref} from '../../lib/admin-navigation';
 
+type MaterialReference={id:string;label:string;href:string|null};
 const client=createStudioClient();
 // Mounted per filter under Miljöer och material › Material (Bakgrund, Bordsgrafik); `trashOnly` is the role's part of the Arkiverat filter.
 export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true,trashOnly=false}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean;trashOnly?:boolean}){
@@ -46,6 +48,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
   const noun=role==='background'?'bakgrunder':'bordsgrafik';
+  const reference=(row:{id:string;label:string}):MaterialReference=>({...row,href:project?.lanes?.some(lane=>lane.id===row.id)?environmentHref(row.id,{game})+'#lager':null});
   // Upload and AI register through the same layer-asset commit; the returned project must hold the
   // new asset with this role, fitting the chosen game, before the library accepts it.
   function registered(remote:StudioProject,id:string){
@@ -53,11 +56,15 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   }
   const planDialog=(plan:MaterialTrashPlanView)=>{const impact=plan.impact,rooms=impact.rooms.map(room=>`${room.name} · ${impact.operators.find(operator=>operator.id===room.operatorId)?.name??'okänt bolag'}`);
     return <ConfirmDialog open title={impact.archived?`Flytta ${impact.label} till papperskorgen?`:`Återställ ${impact.label}?`} busy={plan.busy} busyLabel="Sparar…"
-      description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Miljöer och spelbord förblir oförändrade.'}
+      description={impact.archived?'Filen kopplas loss där den används. Berörda publicerade spelbord stängs och flyttas till papperskorgen. Originalfilen och historiken behålls.':'Filen blir valbar igen. Miljöer och spelbord förblir oförändrade.'}
       consequences={impact.archived?[`Kopplas loss från ${plural(impact.compositions.length,'miljö','miljöer')}${impact.compositions.length?': '+impact.compositions.map(row=>row.label).join(', '):''}`,
         rooms.length?`${plural(rooms.length,'publicerat spelbord','publicerade spelbord')} avpubliceras och flyttas till papperskorgen: ${rooms.join(', ')}`:'Inga publicerade spelbord påverkas',
         ...(impact.operators.length?[`Publiceringen ändras hos ${impact.operators.map(row=>row.name).join(', ')}`]:[])]:[]}
-      confirmLabel={impact.archived?'Flytta till papperskorgen':'Återställ'} danger={impact.archived} onConfirm={plan.onConfirm} onCancel={plan.onCancel}/>;};
+      confirmLabel={impact.archived?'Flytta till papperskorgen':'Återställ'} danger={impact.archived} onConfirm={plan.onConfirm} onCancel={plan.onCancel}>
+      {impact.archived&&!plan.busy&&impact.compositions.length>0&&<div className="grid gap-2"><p className="m-0">Vill du byta material? Välj en ersättare i miljön och ta bort filen från tillåtna material. Spara, publicera berörda spelbord och kontrollera sedan påverkan här igen.</p>
+        <div className="grid max-h-40 gap-2 overflow-y-auto">{impact.compositions.map(reference).filter(row=>row.href).map(row=><Link key={row.id} href={row.href!} className="font-semibold text-inherit underline">Byt material i {row.label}</Link>)}</div>
+      </div>}
+    </ConfirmDialog>;};
   return <section className="grid gap-5" aria-label={trashOnly?'Papperskorg · '+noun:role==='background'?'Bakgrunder':'Bordsgrafik'} onPlayCapture={event=>{const media=event.target as HTMLMediaElement;if(preview.current!==media)preview.current?.pause();preview.current=media;if(!visible||document.hidden)media.pause();}}>
     {!trashOnly&&<p className="m-0 max-w-[72ch] text-sg-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en miljö och välj per spelbord.</p>}
     {disabled&&<p role="status" className="m-0 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">Spara klippkartans utkast innan du ändrar biblioteket.</p>}
@@ -73,13 +80,13 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
           <span className="text-xs text-sg-faint">{role==='background'?'Förslag efter din beskrivning':'Ritas efter dealerns landningar'}</span></div>}/>}
       <div className="material-library" id={trashOnly?'material-trash-'+role:undefined}><LayerAssetManager key={role+game+(trashOnly?':trash':'')} project={project} role={role} disabled={blocked} expanded view={trashOnly?'trash':'library'}
         filterAsset={trashOnly?undefined:asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved} renderPlan={planDialog}
-        renderAsset={(asset,actions)=><MaterialCard asset={asset} references={layerAssetReferences(project,asset.id).map(row=>row.label)} {...actions}/>}/></div>
+        renderAsset={(asset,actions)=><MaterialCard asset={asset} references={layerAssetReferences(project,asset.id).map(reference)} {...actions}/>}/></div>
     </div>}
   </section>;
 }
 
 const checker={backgroundImage:'repeating-conic-gradient(var(--sg-hover) 0 25%, var(--sg-surface) 0 50%)',backgroundSize:'16px 16px'};
-function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;references:string[];disabled:boolean;onTrash:()=>void}){
+function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;references:MaterialReference[];disabled:boolean;onTrash:()=>void}){
   const video=useRef<HTMLVideoElement>(null);
   const [state,setState]=useState<'loading'|'ready'|'error'>('loading');
   const [attempt,setAttempt]=useState(0),[playing,setPlaying]=useState(false),[playError,setPlayError]=useState('');
@@ -109,14 +116,14 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
         <p className="m-0 text-[12.5px] text-sg-muted">{references.length?`Används i ${plural(references.length,'miljö','miljöer')}`:'Inte vald i någon miljö'}</p>
         {playError&&<p role="alert" className="m-0 mt-1 text-[12.5px] text-sg-danger">{playError}</p>}</div>
       <ActionMenu small name={label} actions={[
-        {id:'rename',label:'Byt namn',disabled:'Namnet sätts vid uppladdning; namnbyte sparas inte ännu.',onSelect:()=>{}},
         {id:'uses',label:'Visa var den används',onSelect:()=>setPanel('uses')},
         {id:'details',label:'Tekniska detaljer',onSelect:()=>setPanel('details')},
         {id:'trash',label:'Flytta till papperskorgen',tone:'danger',disabled:disabled?'Vänta tills den pågående ändringen är klar':undefined,onSelect:onTrash},
       ]}/>
     </div>
     <Dialog open={panel==='uses'} title={'Var '+label+' används'} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>
-      {references.length?<ul className="m-0 grid list-none gap-2 p-0">{references.map(name=><li key={name} className="rounded-lg bg-sg-surface-2 px-3 py-2 font-semibold">{name}</li>)}</ul>
+      {references.length?<div className="grid gap-3"><p className="m-0 text-sg-muted">Välj en ersättare i miljön och ta bort filen från tillåtna material. Spara och publicera berörda spelbord. Papperskorgen kontrollerar sedan vad som fortfarande påverkas.</p>
+        <ul className="m-0 grid list-none gap-2 p-0">{references.map(row=><li key={row.id} className="rounded-lg bg-sg-surface-2 px-3 py-2">{row.href?<Link href={row.href} className="flex flex-wrap items-center justify-between gap-2 font-semibold text-inherit"><span>{row.label}</span><span className="text-xs">Byt material →</span></Link>:<span>{row.label} · Arkiverad miljö</span>}</li>)}</ul></div>
         :<p className="m-0 text-sg-muted">Filen är inte vald i någon miljö. Publicerade spelbord kontrolleras när du flyttar den till papperskorgen.</p>}
     </Dialog>
     <Dialog open={panel==='details'} title="Tekniska detaljer" description={label} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>

@@ -26,7 +26,9 @@ Menyn har tre grupper: **Innehåll** (Dealers, Miljöer och material), **Bolag**
 En räknare vid **Dealers** visar dealers där klipp saknas, och vid **Bolag och
 spelbord** spelbord som inte är spelbara. Portalraden överst leder till Admin,
 Partnerportalen och Lobbyn; intern personal når alla tre med samma konto.
-**Ctrl K** söker dealers, bolag och spelbord.
+**Sök** överst i Admin fungerar även på mobil. **Ctrl K** (eller **⌘K**)
+söker dealers, bolag, spelbord, miljöer och sidor. Registret läses på nytt varje
+gång sökningen öppnas. Ett bolag öppnas på **Spelbord**, en miljö i sin editor.
 
 ## Arbetsgången
 
@@ -399,10 +401,19 @@ synligt; rumsbilder blir miljöbilder. Valt förslag visas i miljön för dator 
 en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
 svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
 en filmad dealers landningar och passar bara miljöer med samma placering. Uppladdning ändrar inga
-scenval; **Visa var den används** visar vilka miljöer som använder filen.
+scenval. **Visa var den används** länkar till varje aktiv miljös **Lager och
+placering**, där du kan byta material. Välj en ersättare och ta bort den gamla
+filen från miljöns tillåtna material. Spara, publicera berörda spelbord och
+granska sedan papperskorgens aktuella konsekvenser. Arkiverade miljöer visas
+utan editorlänk.
 
-Arkiverade bakgrunder och bordsgrafik kan återställas; permanent radering är
-ett eget steg. Publicerade spelbord påverkas inte.
+**Flytta till papperskorgen** visar serverns kontroll av berörda miljöer,
+spelbord och bolag. Filen kopplas loss, och berörda publicerade spelbord
+stängs, avpubliceras och flyttas till papperskorgen. Dialogen erbjuder också
+länkar till miljöerna för att byta material först; inget byts automatiskt.
+Originalfilen och historiken behålls. Återställning gör filen valbar igen,
+men återställer inte miljöval eller öppnar spelbord. Permanent radering är
+ett eget steg.
 
 #### Bord och bakgrund med AI
 

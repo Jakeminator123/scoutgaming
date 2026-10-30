@@ -53,6 +53,35 @@ Menyn visar räknare vid **Dealers** (dealers där klipp saknas) och **Bolag och
 
 **Verifiering 30 oktober:** riktade klientprov kontrollerar sparning utan publicering, oförändrat grannrumsutkast, serverrevisioner, publiceringsspärr vid redigering/sparning och ny jämförelse efter sparning. Befintliga room-release-prov täcker den atomiska servervägen. Admin-klientens typkontroller och bygge passerar. CUA före/efter med syntetiska data i en tillfälligt utökad `admin-clips-fixture`: välj svenska → Publicera spärras → Spara → byt till Dealer → gemensamma granskningen visar engelska → svenska. Inget publicerades. Fixturens livscykelkvitto är ofullständigt; detta är UI-verifiering, inte deploy- eller produktionsacceptans.
 
+## Sökning och materialbyte
+
+**Sök** överst i Admin är tillgänglig på mobil och dator; **Ctrl K / ⌘K** öppnar
+samma palett. Den läser den registrerade katalogen varje gång den öppnas och
+avbryter pågående läsning när den stängs. Bolag öppnas på **Spelbord**, och
+miljöträffar går till den befintliga editorn med exakt miljö-id. Arkiverade
+dealers, bolag och spelbord filtreras som tidigare. Ett läsfel visar bara
+sidgenvägar, och navigationsspärren för utkast gäller även sökträffar.
+
+Materialkortets **Visa var den används** länkar till varje aktiv miljös
+**Lager och placering**. Arkiverade miljöer visas utan en trasig editorlänk.
+Den inaktiva låtsasåtgärden **Byt namn** är borttagen. Papperskorgens befintliga
+serverkontroll visas fortfarande före skrivning: berörda publicerade
+spelbord stängs, avpubliceras och flyttas till papperskorgen. Dialogen länkar
+till miljöeditorn för den som vill välja en ersättare, ta bort gamla filen
+från tillåtna material, spara och publicera spelborden först. Därefter
+kontrolleras påverkan igen. Inget material ersätts automatiskt; serverkontrakt och
+återställningsbeteende är oförändrade.
+
+**Verifiering 30 oktober:** 12 materialbiblioteksprov och 13 browserprov passerade:
+sökning med omläsning, sena/avbrutna svar, felrespons, arkivfilter, exakt miljö-id,
+utkastspärr och navigation/omladdning i 320/390/1440 px. Admin-klientens typer
+och bygge passerade. Den byggda appen provades separat i `admin-clips-fixture
+--scene`: Material → Visa var den används → rätt miljöeditor → omladdning i
+390 och 1440 px, med noll skrivningar och `scrollWidth = clientWidth`.
+Skärmbilder granskades och fixturen stoppades. Detta verifierar de ändrade
+vägarna med syntetiska data; ingen produktionspublicering eller full
+Adminacceptans ingår.
+
 ## Kvar
 
 | Område | Läge på `main` | Nästa |
