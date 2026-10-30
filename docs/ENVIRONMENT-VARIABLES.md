@@ -73,6 +73,16 @@ Studio läser inte längre `CROUPIER_STREAM_LANE` (Admins `connectedLane` är al
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
+### Sparade röst-ID:n i Vercel
+
+Jakobs beslut 2026-10-30: projektet `scoutgaming` lagrar `ELEVENLABS_PAOW_VOICE_ID`, `ELEVENLABS_DRAGAN_VOICE_ID` och `ELEVENLABS_JAKOB_VOICE_ID` som Config i **Production, Preview och Development**, utan branchfilter. Det gäller de tre miljöerna i detta projekt, inte det separata projektet `scoutgaming-preview`.
+
+Posterna är valfria referensvärden utan runtime-läsare; de byter ingen dealers sparade talprofil och aktiverar ingen generering. Paow och Dragan finns redan i `packages/presentation/contracts/dealer-voice-catalog.json`. API-nyckeln måste separat ha åtkomst till valt röst-ID. Ingen ElevenLabs-nyckel kopieras till Vercel.
+
+Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Jakob och ABYDM men saknar Paows röst (`voice_not_found`). Kontoprofilen avvisar samma nyckel med `missing_permissions`. Jakob vidarebefordrade därefter Kevins besked: detta är Impactwin-kontot, där Jakob och Adebayor/ABYDM ligger; Paow och Dragan ligger kvar i Kevins vanliga ElevenLabs-konto. Kontotillhörigheten kommer från Kevins besked, inte en lyckad profilfråga. Runtime använder i dag en gemensam ElevenLabs-nyckel; ett byte till Kevins konto ger därför inte åtkomst till Impactwins röster. Inget nyckelbyte eller stöd för flera konton ingår i denna ändring.
+
+**Senaste beslut, Jakob 2026-10-30:** samla alla fyra röster hos Kevin. Jakob och ABYDM är API-verifierat Instant Voice Clones (`category=cloned`); deras ljudunderlag är hämtat privat inför återskapande på Kevins konto. Kopiorna får nya ID:n. Kevins kontonyckel saknas ännu; inga kopior eller aktiva nyckel-/profilbyten har gjorts. Verifiera alla fyra röster på målkontot före byte och bevara Impactwins original tills ersättningen är kontrollerad.
+
 ## Fasta värden
 
 <a id="fasta-värden"></a>
@@ -97,25 +107,27 @@ Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsninge
 
 Den förra listan (talflaggorna, `DEMO_GUEST_ACCESS`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` och `CROUPIER_LAB_UI_ORIGIN` i `scoutgaming`) är utförd: ingen av dem finns i panelen 16:10. Kvar från den är Preview- och Development-scopet för `CROUPIER_DEALER_IMPORT_AI`.
 
+**Vercel utfört 2026-10-30:** MAIN tog bort exakt sex pensionerade Production-poster per projekt efter verifierad READY-deploy: `CROUPIER_VERCEL_UI` och de fem fasta namnen nedan. Backup finns privat i `arkiv/2026-10-30/vercel-env-cleanup/`; verifierade deploy-SHA var `abb7ad800fa2b7dac0d033ad87386842cbc5f7bc` för `scoutgaming` och `989858d39be31081f87f05ac6bee33d24f8f105f` för `scoutgaming-preview`. En efterföljande läsning bekräftar att alla sex saknas i båda projekten. MAIN rapporterar att övriga env-ID:n bevarades. Render-miljön ändrades inte; dess rader nedan återstår.
+
 ### Efter deploy av Miljövariabler 2
 
-Samma ordning som för #664: produktionsraderna när PR:en är deployad från `main` (Vercel `scoutgaming` och Render `croupier-v3`), preview-raderna först när `preview` har fått den (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad. Tas posterna bort i preview innan dess stoppar `scoutgaming-preview-engine` vid start (koden där kräver `CROUPIER_STUDIO_NEON_POLICY=1` och `CROUPIER_MEDIA_STORAGE=blob`) och `scoutgaming-preview` bygger Studio utan `/studio` och kastar i transporten. Vilka poster som finns i preview-panelerna står i #664:s matris och [inventeringen](2026-10-29-ENV-INVENTORY.md); kontrollera namnet i panelen innan det tas bort.
+Vercel-raderna är utförda enligt kvittot ovan. För återstående Render-rader gäller samma ordning som för #664: produktion efter deploy från `main`, preview först när `preview` har fått ändringen och är deployad. En för tidig borttagning av `CROUPIER_STUDIO_NEON_POLICY` eller `CROUPIER_MEDIA_STORAGE` kan stoppa den äldre previewmotorn vid start; kontrollera aktuell deploy och panel före ändring.
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
-| Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | Fasta i koden ([Fasta värden](#fasta-värden)); `CROUPIER_STUDIO_NATIVE_ADMIN` och `CROUPIER_LAB_BASE_PATH` lästes även vid bygget, så ta bort dem först när en deploy med PR:en har byggts |
-| Vercel `scoutgaming-preview`, Production | samma fem | Samma; först när `preview` har fått PR:en och är deployad |
+| Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | **Utfört 2026-10-30**, efter READY-deploy; fasta i koden ([Fasta värden](#fasta-värden)) |
+| Vercel `scoutgaming-preview`, Production | samma fem | **Utfört 2026-10-30**, efter READY-deploy |
 | Render `croupier-v3` | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | Fasta i `ops/cloud/config.mjs` och `services/game/server.mjs`; starten för dem inte längre vidare till spelprocessen |
 | Render `scoutgaming-preview-engine` | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | Samma; först när `preview` har fått PR:en och är deployad |
 
 ### Efter deploy av #664 (Miljövariabler 1)
 
-Produktionsraderna gäller när #664 är deployad från `main`. Preview-raderna (Vercel `scoutgaming-preview`, Render `scoutgaming-preview-engine`) gäller först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad. Tas posterna bort där innan dess stoppar `scoutgaming-preview-engine` vid start (koden på `preview` kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`) och `scoutgaming-preview` bygger utan transport (`/game` → 404).
+Vercel-raderna är utförda. Render-raderna återstår: produktion efter deploy av #664 från `main`, preview först när `preview` har fått #664 och är deployad. Tas posterna bort innan dess kan den äldre previewmotorn stoppa vid start eftersom den kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`.
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
-| Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UI` | Konstant `1`; transporten slås nu på av `CROUPIER_BACKEND_ORIGIN` (`packages/server-transport/configuration.mjs:14`) |
-| Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | Samma; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
+| Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UI` | **Utfört 2026-10-30**; transporten slås på av `CROUPIER_BACKEND_ORIGIN` (`packages/server-transport/configuration.mjs:14`) |
+| Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | **Utfört 2026-10-30**, efter READY-deploy |
 | Render `croupier-v3` | `CROUPIER_DATABASE` | Konstant `postgres`, enda värdet som startade; PostgreSQL är fast i `ops/cloud/config.mjs` och ingen källfil läser namnet |
 | Render `croupier-v3` | `CROUPIER_STREAM_LANE` | Konstant `lissabon-stream-lane`; starten sätter anslutnings-ID:t för spelprocessen själv (`ops/cloud/config.mjs`, `childSpecifications`) |
 | Render `scoutgaming-preview-engine` | `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` | Samma som `croupier-v3`; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
@@ -141,7 +153,7 @@ Produktionsraderna gäller när #664 är deployad från `main`. Preview-raderna 
 
 ### Räkning
 
-Med Miljövariabler 2 och integrationsposterna borta blir `scoutgaming` Production 18 poster, `scoutgaming-preview` 10 och spelmotorerna två färre var.
+MAINs cleanup gav 41 → 35 poster i `scoutgaming` och 16 → 10 i `scoutgaming-preview`. Efter de tre beställda röst-ID-referenserna visar aktuell Production-läsning **38 respektive 10**. Integrationsposterna och Render-raderna ovan är separata kvarstående åtgärder; antalet poster är inte i sig ett bevis för att något kan tas bort.
 
 `.github/workflows/product-container-check.yml:66-67` sätter fortfarande `-e CROUPIER_STUDIO_NEON_POLICY=1` och `-e CROUPIER_MEDIA_STORAGE=blob`, och sedan #664 `:65` `-e CROUPIER_DATABASE=postgres` och `:67` `-e CROUPIER_STREAM_LANE=lissabon-stream-lane`; ingen av dem läses, och de tas bort i en separat workflow-PR.
 
