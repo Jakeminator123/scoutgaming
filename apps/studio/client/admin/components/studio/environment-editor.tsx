@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {ArrowLeft} from 'lucide-react';
 import Link,{navigate} from '../../../runtime/navigation';
 import {HubPage,Empty,Note} from '../ui/hub';
@@ -9,15 +10,17 @@ import {environmentRoomContext,environmentRooms} from '../../lib/environment-wor
 import type {EnvironmentWorkspace} from './environment-workspace';
 import {EnvironmentPicture} from './environment-picture';
 import {StudioCompositionPanel} from './studio-composition-panel';
-import {ScenePreview} from './scene-preview';
+import {SavedScenePreview} from './saved-scene-preview';
 import {PermanentDeleteButton} from './permanent-delete';
 import {RoomSettingsWarning,roomPreparing} from './room-settings-warning';
 
-/** One environment in its own view, in three sections: Miljöbild; Lager och placering (the placement editor,
- * layers, allowed dealers and material, and the saved scene's preview); Används av (the tables that use it,
+/** One environment: placement first, then its catalogue picture and the tables that use it.
+ * The editor owns the single scene preview; an explicit game test still uses only the saved revision.
+ * Används av lists the tables that use it,
  * each linking to its own editor, where publication happens, and warning when a table cannot be played yet); last
  * Radera miljön (permanent; the server's check names what still uses it). Saving is one draft for the whole project. */
 export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operator=null,table=null,onChanged}:{workspace:EnvironmentWorkspace;laneId:string;game:'blackjack'|'roulette';visible:boolean;blocked:boolean;operator?:string|null;table?:string|null;onChanged:()=>void}) {
+  const [previewOpen,setPreviewOpen]=useState(false);
   const {data,base,status,busy,dirty,error,notice,conflicts,stale}=workspace;
   const lane=data?.project.lanes?.find(row=>row.id===laneId),savedLane=base?.lanes?.find(row=>row.id===laneId);
   const locked=blocked||busy||status!=='ready';
@@ -47,10 +50,6 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operato
       {context&&<Note tone={context.sameEnvironment?'':'warn'}>{context.room?<>Öppnad från spelbordet <strong>{context.room.name}</strong> ({context.operatorName}). </>:<>Öppnad för bolaget <strong>{context.operatorName}</strong>. </>}
         {context.sameEnvironment?'Publicera den sparade placeringen för bolaget under Lager och placering.':<>Spelbordet använder en annan miljö. <Link href={environmentHref(context.room!.compositionId,{...keep,...(context.room!.game==='roulette'?{game:'roulette'}:{})})} className="font-semibold text-inherit">Visa spelbordets miljö</Link>.</>}
         {context.choicesHref&&<> <Link href={context.choicesHref} className="font-semibold text-inherit">Välj material för {context.room!.name}</Link>.</>}</Note>}
-      <Card title="Miljöbild" id="miljobild">
-        <EnvironmentPicture project={data.project} savedProject={base} inventory={data.inventory} laneId={lane.id} blocked={locked} dirty={dirty}
-          onEdit={workspace.edit} onExported={(remote,id)=>workspace.registered(remote,id,'illustration',lane.id)}/>
-      </Card>
       <Card title="Lager och placering" id="lager" aside={<div className="flex items-center gap-2"><Label htmlFor="environment-game" className="text-sg-muted">Spel</Label>
         <Select value={game} onValueChange={setGame} disabled={busy}><SelectTrigger id="environment-game" className="h-8 w-36"><SelectValue/></SelectTrigger>
           <SelectContent><SelectItem value="blackjack">Blackjack</SelectItem><SelectItem value="roulette">Roulette</SelectItem></SelectContent></Select></div>}>
@@ -59,12 +58,17 @@ export function EnvironmentEditor({workspace,laneId,game,visible,blocked,operato
             dealerId={lane.layers.dealer.default} uses={compositionUses(data.catalog,lane.id)} roomChoicesPath={null} blocked={locked} projectDirty={dirty}
             onSelect={id=>navigate(environmentHref(id,{...keep,...(game==='roulette'?{game}:{})}))} onEdit={workspace.edit} onSaved={workspace.savedRemote} onBusyChange={workspace.setChildBusy}
             onRegistered={(remote,id,role)=>workspace.registered(remote,id,role,lane.id)}/>
-          <section aria-labelledby="environment-preview" className="grid gap-3 border-t border-sg-line-2 pt-4">
-            <h3 id="environment-preview" className="m-0 text-[14px] font-semibold">Förhandsvisning av den sparade miljön</h3>
-            {savedLane?<ScenePreview active={visible} laneId={lane.id} dealerId={savedLane.layers.dealer.default} game={game} revision={base?.revision} saved={base?{project:base,inventory:data.inventory}:null}/>
-              :<p className="m-0 text-[13px] text-sg-muted">Spara utkastet så kan miljön förhandsvisas och provspelas.</p>}
-          </section>
+          <details className="grid gap-3 border-t border-sg-line-2 pt-4" onToggle={event=>setPreviewOpen(event.currentTarget.open)}>
+            <summary className="cursor-pointer text-[14px] font-semibold">Provspela sparad miljö</summary>
+            <p className="text-[13px] text-sg-muted">Startar med testsaldo och senast sparad placering. Osparade ändringar visas bara i editorn ovan.</p>
+            {savedLane?<SavedScenePreview active={visible&&previewOpen} presentationLaneId={lane.id} dealerId={savedLane.layers.dealer.default} game={game} revision={base?.revision}/>
+              :<p className="m-0 text-[13px] text-sg-muted">Spara utkastet först för att provspela.</p>}
+          </details>
         </div>
+      </Card>
+      <Card title="Miljöbild" id="miljobild">
+        <EnvironmentPicture project={data.project} savedProject={base} inventory={data.inventory} laneId={lane.id} blocked={locked} dirty={dirty}
+          onEdit={workspace.edit} onExported={(remote,id)=>workspace.registered(remote,id,'illustration',lane.id)}/>
       </Card>
       <Card title="Används av" id="anvands" flush>
         {rooms.length?<ul className="m-0 grid list-none p-0" aria-label="Spelbord som använder miljön">{rooms.map(room=><li key={room.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-sg-line-2 px-5 py-3 first:border-t-0">

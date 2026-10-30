@@ -20,6 +20,10 @@ export function requestAiProposals(input:{role:AiImageRole;prompt:string;preset:
   options?:{fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<{images:AiProposal[];remaining:number;fit:AiTableFit|null}>;
 export function aiTableDealers<T extends {id:string}>(dealers:readonly T[]|null|undefined):T[];
 export function aiSceneTemplates<T extends AiSceneTemplate>(templates:readonly T[]|null|undefined,dealerId:string):T[];
+export function aiTableShapePreview(dealerId:string,composition:CompositionSettings|undefined,preset:AiImagePresetId):AiProposal|null;
+export type AiReferenceMaterial={id:string;label:string;url:string};
+export function aiReferenceMaterials(assets:StudioProject['layerAssets']|null|undefined,role:AiImageRole):AiReferenceMaterial[];
+export function prepareMaterialReference(id:string,options?:{fetchImpl?:typeof fetch;signal?:AbortSignal;prepare?:(file:File)=>Promise<string>}):Promise<string>;
 export function dataUrlFile(dataUrl:string,name:string):File;
 export function registerAiProposal(proposal:AiProposal,input:{role:AiImageRole;prompt:string;fit?:AiTableFit|null},options?:{
   fetchImpl?:typeof fetch;put?:(pathname:string,file:File,options:Record<string,unknown>)=>Promise<{pathname:string}>;
@@ -36,7 +40,6 @@ export type AiTableWidthSuggestion={changed:boolean;range:{readonly min:number;r
   current:{share:number;percent:{desktop:number;mobile:number}};
   suggested:{share:number;percent:{desktop:number;mobile:number};composition:CompositionSettings;tableWidth:{mobile:number;desktop:number}}};
 export function aiTableWidthSuggestion(dealerId:string,composition?:CompositionSettings|null):AiTableWidthSuggestion|null;
-export const AI_THEME_ENVIRONMENT_NOTE: string;
 export type AiAdoptMaterial={role:AiImageRole;assetId:string};
 export function adoptInTemplate(input:{project:StudioProject;compositionId:string;materials:AiAdoptMaterial[];tableWidth?:{mobile:number;desktop:number}|null},
   options:{save:(project:StudioProject,signal?:AbortSignal)=>Promise<StudioProject>;signal?:AbortSignal}):Promise<StudioProject>;
