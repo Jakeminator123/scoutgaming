@@ -170,6 +170,7 @@ async function qaHttpFixture(t, { overrideOrigin, env = {} } = {}) {
       presentationLaneId: lane.id, gameLaneId: 'portrait-linnea', state: 'live' }],
       gameLanes: [{ schemaVersion: 1, id: 'portrait-linnea', label: 'Linnea', dealer: 'linnea',
         renderer: 'portrait-video', mediaCollection: 'linnea-presentation' }] } };
+  saved.package.rooms = structuredClone(saved.administration.rooms);
   const seen = [];
   const frozenDealerContext = createFrozenDealerPresentationContext({
     readCurrentContext: async () => structuredClone(saved), readPresentation: pack => pack.frozen,
