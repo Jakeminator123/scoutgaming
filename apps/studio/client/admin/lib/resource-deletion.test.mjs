@@ -107,11 +107,34 @@ test('archived references remain diagnosable while unavailable bytes and publish
   workspace.inventory.videos[0].available=false;
   workspace.inventory.videos[0].integrity='unavailable';
   const tree=buildResourceDeletionTree(workspace,lifecycle);
-  assert.deepEqual(tree.missingReferences,[{kind:'media',id:'old-missing-clip',label:'old-missing-clip',uses:[
+  assert.deepEqual(tree.missingReferences,[{kind:'media',id:'old-missing-clip',label:'old-missing-clip',archivedOnly:true,uses:[
     {kind:'dealer',id:'old',label:'Tidigare dealer',relation:'Arkiverad mediakoppling'},
   ]}]);
   assert.equal(tree.media.find(row=>row.id==='clip').available,false);
   assert.equal(tree.dealers.find(row=>row.id==='published-only').publishedOnly,true);
+});
+
+function missingArchivedRoomFixture(mixed=false){
+  const f=publishedFixture();
+  f.lifecycle.rooms.push({id:'archived-room',name:'Tidigare spelbord',operatorId:'company-b',presentationLaneId:'missing-archive-lane',state:'archived',archivedAt:null});
+  if(mixed){
+    f.workspace.catalog.administration.rooms[1].compositionId='missing-archive-lane';
+    f.lifecycle.rooms[1].presentationLaneId='missing-archive-lane';
+  }
+  return f;
+}
+test('only archived sources make a missing environment historical; mixed active and archived uses keep the warning',()=>{
+  for(const mixed of [false,true]){
+    const {workspace,lifecycle}=missingArchivedRoomFixture(mixed),before=structuredClone({workspace,lifecycle});
+    const tree=buildResourceDeletionTree(workspace,lifecycle),missing=tree.missingReferences.find(row=>row.kind==='composition');
+    assert.equal(missing.id,'missing-archive-lane');
+    assert.equal(missing.archivedOnly,!mixed);
+    assert.deepEqual(missing.uses.map(row=>[row.kind,row.id]),mixed?[['room','room-b'],['room','archived-room']]:[['room','archived-room']]);
+    assert.equal(tree.compositions.find(row=>row.id===missing.id).archivedOnly,!mixed);
+    assert.equal(tree.compositions.find(row=>row.id===missing.id).missing,true,'historical classification preserves the missing target');
+    assert.equal(tree.rooms.find(row=>row.id==='archived-room').archived,true,'classification uses the normalized source state');
+    assert.deepEqual({workspace,lifecycle},before,'classification does not repair or discard stored references');
+  }
 });
 
 test('mixed project, administration and operator package revisions cannot be presented as one snapshot',()=>{
@@ -229,6 +252,27 @@ test('a dealer context identifies unrelated missing targets and links to their e
   await h.settle();
   assert.equal(nodes(h.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);
   assert.equal(h.scrolled.at(-1),resourceAnchor('media','other-missing-clip'));
+});
+
+test('a dealer context separates archived-only missing targets while keeping mixed uses in the warning',async()=>{
+  for(const mixed of [false,true]){
+    const h=harness(missingArchivedRoomFixture(mixed),'?dealer=dragan');await h.settle();const view=h.render();
+    const warnings=nodes(view,row=>row.props?.['aria-label']==='Saknade registerposter');
+    const history=nodes(view,row=>row.props?.['aria-label']==='Saknade historiska registerposter');
+    assert.equal(warnings.length,mixed?1:0);assert.equal(history.length,mixed?0:1);
+    const section=(mixed?warnings:history)[0],links=nodes(section,row=>row.type==='a');
+    assert.match(text(section),/hela arbetsytan/);
+    assert.ok(links.some(row=>row.props.href==='#'+resourceAnchor('composition','missing-archive-lane')));
+    assert.ok(links.some(row=>row.props.href==='#'+resourceAnchor('room','archived-room')));
+    assert.equal(links.some(row=>row.props.href==='#'+resourceAnchor('room','room-b')),mixed);
+    assert.ok(!links.some(row=>row.props.href==='#'+resourceAnchor('dealer','dragan')));
+    const ids=nodes(view,()=>true).map(row=>row.props?.id).filter(Boolean);
+    assert.equal(new Set(ids).size,ids.length,'historical grouping never duplicates registry anchors');
+    for(const link of links)assert.ok(ids.includes(link.props.href.slice(1)),'historical and active reference links resolve');
+    const composition=nodes(view,row=>row.props?.id===resourceAnchor('composition','missing-archive-lane'))[0];
+    if(mixed)assert.doesNotMatch(text(composition),/enbart arkiverade kopplingar/);
+    else assert.match(text(composition),/Post saknas · enbart arkiverade kopplingar/);
+  }
 });
 
 test('complete registries do not show a missing-reference warning',async()=>{

@@ -1,8 +1,8 @@
 import type {Workspace} from './connected-studio.mjs';
 export type ResourceKind='operator'|'room'|'composition'|'dealer'|'media'|'material'|'project';
 export type ResourceRef={kind:ResourceKind;id:string;label:string;relation:string};
-export type MissingResourceReference={kind:ResourceKind;id:string;label:string;uses:ResourceRef[]};
-export type ResourceNode={id:string;label:string;archived:boolean;missing:boolean;publishedOnly:boolean;uses:ResourceRef[]};
+export type MissingResourceReference={kind:ResourceKind;id:string;label:string;archivedOnly:boolean;uses:ResourceRef[]};
+export type ResourceNode={id:string;label:string;archived:boolean;missing:boolean;archivedOnly:boolean;publishedOnly:boolean;uses:ResourceRef[]};
 export type DeletionOperator=ResourceNode&{status:string;roomIds:string[]};
 export type DeletionRoom=ResourceNode&{operatorId:string;game:string|null;compositionId:string|null;published:boolean;playable:boolean;state:string;publishedDealerIds:string[];publication:PublishedRoomChoices|null;choicesPath:string|null};
 export type PublishedLayer={enabled:boolean;defaultId:string|null;allowed:{id:string;label:string}[];mode?:string};
