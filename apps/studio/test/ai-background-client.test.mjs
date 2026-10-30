@@ -6,14 +6,16 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
-import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,AI_THEME_ENVIRONMENT_NOTE,adoptInRoom,adoptInTemplate,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,aiTableWidthSuggestion,
-  dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,adoptInRoom,adoptInTemplate,aiImageErrorMessage,aiReferenceMaterials,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,aiTableShapePreview,aiTableWidthSuggestion,
+  dataUrlFile,prepareMaterialReference,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
 import {AI_IMAGE_PRESETS} from '../lib/ai-image-contract.mjs';
 import {AI_TABLE_STYLES,aiTableLookFromColour} from '../lib/ai-table-style.mjs';
 import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {aiImageLabel,aiPlacementHash,aiTableLabelFit,sha256Hex} from '../lib/ai-image-contract.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {materialById} from '../../../packages/presentation/contracts/material-catalog.mjs';
+import {filmedTableSvg,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
 
 const webp=async(width,height)=>sharp({create:{width,height,channels:3,background:{r:30,g:30,b:40}}}).webp().toBuffer();
 const proposalOf=async(width=1920,height=1080)=>({id:'00000000-0000-4000-8000-00000000000a',dataUrl:'data:image/webp;base64,'+(await webp(width,height)).toString('base64'),width,height});
@@ -197,14 +199,65 @@ test('styles: the bolder presets come first, every preset has a table style, and
   assert.equal(aiTableLookFromColour({r:300,g:0,b:0}),null);
 });
 
-test('the dialog suggests Bordsbredd % from the dealer\'s reach and names the skipped environment image',()=>{
+test('the dialog suggests Bordsbredd % from the dealer\'s reach',()=>{
   const suggestion=aiTableWidthSuggestion('paow',defaultCompositionSettings());
   assert.equal(suggestion.changed,true);assert.deepEqual(suggestion.current.percent,{desktop:31.6,mobile:100});
   assert.deepEqual(suggestion.suggested.percent,{desktop:37.7,mobile:119});
   assert.ok(suggestion.suggested.share>=suggestion.range.min&&suggestion.suggested.share<=suggestion.range.max);
   assert.deepEqual(suggestion.suggested.tableWidth,{mobile:suggestion.suggested.composition.mobile.table.width,desktop:suggestion.suggested.composition.desktop.table.width});
   assert.equal(aiTableWidthSuggestion('astrid',defaultCompositionSettings()),null);
-  assert.match(AI_THEME_ENVIRONMENT_NOTE,/^Miljöbild hoppas över/);
+});
+
+test('the shape preview uses the provider geometry and cuts away pixels outside the server silhouette',async()=>{
+  const composition=aiTableWidthSuggestion('paow').suggested.composition;
+  const template=filmedTableTemplate('paow',{composition});
+  for (const preset of ['casino','neon']) {
+    const preview=aiTableShapePreview('paow',composition,preset);
+    assert.deepEqual([preview.width,preview.height],[template.canvas.width,template.canvas.height]);
+    const actual=await sharp(Buffer.from(decodeURIComponent(preview.dataUrl.split(',')[1]))).ensureAlpha().raw().toBuffer();
+    const expected=await sharp(Buffer.from(filmedTableSvg(template,'reference',{look:AI_TABLE_STYLES[preset].look})))
+      .ensureAlpha().composite([{input:Buffer.from(filmedTableSvg(template,'mask')),blend:'dest-in'}]).raw().toBuffer();
+    // Browser SVG masking and libvips compositing can round a boundary pixel by one.
+    assert.equal(actual.length,expected.length);
+    let differences=0;for(let at=0;at<actual.length;at++)if(Math.abs(actual[at]-expected[at])>2)differences++;
+    assert.ok(differences<actual.length*.002,`${preset}: ${differences} changed channels`);
+    assert.equal(actual[3],0,'the background and dealer remain visible outside the table');
+    const at=(Math.round(template.dealer.center.y)*preview.width+Math.round(template.dealer.center.x))*4;
+    assert.equal(actual[at+3],255,'dealer cards land on opaque felt');
+  }
+  const bad=structuredClone(composition);bad.mobile.table.y+=.2;
+  assert.equal(aiTableShapePreview('paow',bad,'casino'),null);
+  assert.equal(aiTableShapePreview('missing',composition,'casino'),null);
+});
+
+test('library inspiration keeps catalogue identities and only lists registered, bounded images of the requested role',()=>{
+  const source=(material,id)=>({id,role:'table',label:'old label',...materialById(material).sources[0]});
+  const oak=source('blackjack-oak','00000000-0000-4000-8000-000000000001'),purple=source('blackjack-purple-rain','00000000-0000-4000-8000-000000000002');
+  const references=aiReferenceMaterials([oak,purple,{...oak,id:'https://other.invalid/a.png'},{...oak,role:'background'},
+    {...oak,contentType:'video/mp4'},{...oak,size:8*1024*1024+1}], 'table');
+  assert.deepEqual(references.map(row=>[row.id,row.label]),[[oak.id,'Blackjack · Oak'],[purple.id,'Blackjack · Purple Rain']]);
+  assert.deepEqual(references.map(row=>row.url),[oak,purple].map(row=>'/api/layer-assets/'+row.id));
+});
+
+test('library inspiration uses the authenticated media route, rejects foreign paths and errors, and bounds streamed bytes',async()=>{
+  const id='00000000-0000-4000-8000-000000000001',bytes=await webp(32,32),calls=[],files=[];
+  const prepare=async file=>{files.push(file);return 'prepared';};
+  const fetchImpl=async(url,init)=>{calls.push({url,init});return new Response(bytes,{headers:{'content-type':'image/webp'}});};
+  const controller=new AbortController();
+  assert.equal(await prepareMaterialReference(id,{fetchImpl,signal:controller.signal,prepare}),'prepared');
+  assert.equal(calls[0].url,'/api/layer-assets/'+id);assert.equal(calls[0].init.credentials,'same-origin');
+  assert.equal(calls[0].init.redirect,'error');assert.equal(calls[0].init.signal,controller.signal);
+  assert.equal(files[0].type,'image/webp');assert.deepEqual(Buffer.from(await files[0].arrayBuffer()),bytes);
+  for (const invalid of ['https://evil.invalid/image.png','../secrets',id+'?url=https://evil.invalid']) {
+    await assert.rejects(prepareMaterialReference(invalid,{fetchImpl:()=>assert.fail('no external fetch')}));
+  }
+  for(const response of [new Response(null,{status:403}),new Response('login',{headers:{'content-type':'text/html'}})]) {
+    await assert.rejects(prepareMaterialReference(id,{fetchImpl:async()=>response,prepare}),/kunde inte hämtas/);
+  }
+  let cancelled=false;
+  const oversized=new ReadableStream({start(stream){stream.enqueue(new Uint8Array(8*1024*1024));stream.enqueue(new Uint8Array(1));},cancel(){cancelled=true;}});
+  await assert.rejects(prepareMaterialReference(id,{fetchImpl:async()=>new Response(oversized,{headers:{'content-type':'image/png'}}),prepare}),/högst 8 MB/);
+  assert.equal(cancelled,true);assert.equal(files.length,1,'invalid responses never reach image preparation');
 });
 
 const TABLE='00000000-0000-4000-8000-0000000000a1';
