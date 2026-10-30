@@ -121,11 +121,11 @@ export function movingWorkerRequired(changes) {
     || path === '.github/workflows/moving-gpu-build.yml');
 }
 
-// Browser client code: the game's static client and the Studio/Admin SPA source.
-// A ready full-scope PR that changes either requires Chrome acceptance; any other
+// Browser client code: the game's static client, Studio/Admin SPA and shared Studio components.
+// A ready full-scope PR that changes any of these requires Chrome acceptance; any other
 // ready full-scope PR keeps it advisory. Deletions count (--no-renames), and
 // uncertain input stays strict.
-export const BROWSER_CLIENT_PREFIXES = Object.freeze(['services/game/public/', 'apps/studio/client/']);
+export const BROWSER_CLIENT_PREFIXES = Object.freeze(['services/game/public/', 'apps/studio/client/', 'apps/studio/components/']);
 
 export function browserAcceptanceRequired(changes) {
   return !changes.length || changes.some(({path}) =>

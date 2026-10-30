@@ -15,8 +15,9 @@ name: Croupier GitHub checks
 #                                          legs studio-admin-contracts + access-presentation,
 #                                          gateway container
 #     full (everything else)               every leg; Regression (browser) is required when the
-#                                          PR changes services/game/public/** or
-#                                          apps/studio/client/**, otherwise it runs but does not
+#                                          PR changes services/game/public/**,
+#                                          apps/studio/client/** or apps/studio/components/**;
+#                                          otherwise it runs but does not
 #                                          block (advisory); gateway container only when its
 #                                          inputs changed (services/openclaw/lab/deploy/**, lab
 #                                          root, .github/, .githooks/); Moving image on worker changes
@@ -309,7 +310,7 @@ jobs:
   # Real-browser acceptance (Chrome). The classifier output browser decides whether
   # the gate requires it: required on nightly, manual and preview runs and on ready
   # full-scope PRs that change browser client code (services/game/public/**,
-  # apps/studio/client/**); advisory on other ready full-scope PRs (it runs and
+  # apps/studio/client/**, apps/studio/components/**); advisory on other ready full-scope PRs (it runs and
   # reports, but a red result does not block CI).
   browser-regression:
     name: Regression (browser)
@@ -389,8 +390,8 @@ jobs:
   migration-readiness:
     name: Studio migration readiness
     needs: changes
-    # Main/preview/nightly/manual runs always check the ledger (push preview and PRs
-    # into preview read preview's ledger, the rest production's). Client/test-only PR
+    # Main/preview/nightly/manual runs always check the ledger (push/manual preview
+    # and PRs into preview read preview's ledger, the rest production's). Client/test-only PR
     # edits need no database access; server/schema/dependency changes still do,
     # once the PR is ready for review. Forks receive no database credentials; the
     # final gate rejects skipped readiness whenever the classified change requires it.
@@ -404,7 +405,7 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: apps/studio/package-lock.json
-      # Push preview and PRs into preview read the preview ledger with its own read-only
+      # Push/manual preview and PRs into preview read the preview ledger with its own read-only
       # migration role; everything else reads production. Each step receives only its own
       # secret, and a missing preview secret fails here instead of reading production.
       - name: Select the migration ledger (preview or production)
@@ -414,6 +415,7 @@ jobs:
           PREVIEW_SECRET_SET: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}
         run: |
           if { [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/preview ]; } \
+            || { [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" = refs/heads/preview ]; } \
             || { [ "$GITHUB_EVENT_NAME" = pull_request ] && [ "$GITHUB_BASE_REF" = preview ]; }; then
             ledger=preview
           else

@@ -42,6 +42,7 @@ Följ [AGENTS](../AGENTS.md): bevara andra agenters arbete och använd isolerade
 
 ## Kända fällor
 
+- **CI:s miljö- och browserurval:** manuell körning på exakt branchen `preview` använder previews läsande migreringsroll; saknad preview-secret stoppar jobbet. Ändringar under `apps/studio/components/**` kräver godkänt Chrome-prov precis som spel-/Admin-klienten. Git- och Bash-fixturerna i `test/ci-changes.mjs` provar båda spärrarna.
 - Render MCP:s env-skrivning startar deploy direkt; ett kodbyte måste bindas till avsedd SHA och verifieras med version, hälsa och berört flöde. Läs [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).
 - `game-012` och Studio 012 är olika ledgrar. [BLOB-NEON](storage/BLOB-NEON.md#scheman-och-skrivare) anger scheman och skrivare.
 - `recordedSpeech` v2 är MP4-talformatet, inte den gamla Render-motorn. Partner-API (`/api/v1/*`) och portal-API (`/studio/api/partner/*`) har olika ansvar; se [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
