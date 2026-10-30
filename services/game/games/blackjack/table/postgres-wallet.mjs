@@ -87,6 +87,8 @@ export function createPostgresTableWallet({ client, assertPlayer, assertRoom }) 
     await client.query('DELETE FROM croupier_game.shared_wallet_reservations WHERE reservation_id=$1', [reservationId]);
   }
   return {
+    // Pair the amount and its unit from one account read, including on unopened tables.
+    async funds(p) { const row = await account(p); return { available: amount(row.available), currency: row.currency }; },
     async available(p) { return amount((await account(p)).available); },
     async currency(p) { return (await account(p)).currency; },
     async gen(p) { return String((await account(p)).wallet_gen); },

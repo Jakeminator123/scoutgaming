@@ -256,7 +256,7 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
       members: id => members(queryClient, id), memberRooms: id => memberRooms(queryClient, id),
       presence: (room, player) => presence(queryClient, room, player), tick: id => readTick(queryClient, id),
       walletGen: id => readWallet().gen(id), reservation: id => readWallet().reservation(id),
-      available: id => readWallet().available(id), pausedUntil: id => pausedUntil(queryClient, id),
+      funds: id => readWallet().funds(id), available: id => readWallet().available(id), pausedUntil: id => pausedUntil(queryClient, id),
     },
     presence: { async touch(room, player, at) {
       safeNumber(at);

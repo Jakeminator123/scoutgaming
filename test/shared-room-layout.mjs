@@ -35,7 +35,7 @@ function snapshot(extra = {}) {
     owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 })), players: [], deadline: null, actionDeadline: null,
     plan: null, round: null, serverNow: 1000,
     settings: { configVersion: 'cfg-1', language: 'sv', betMs: 20000, actionMs: 15000, limits: { min: 5, max: 2000, sideMax: 200 }, chips: [5, 10, 25, 50, 100, 500], refill: 1000 },
-    me: { id: actor, seats: [], memberGen: 0, active: false, available: 1000, pausedUntil: 0, insuranceDue: false, lastSettlement: null }, ...extra };
+    me: { id: actor, seats: [], memberGen: 0, active: false, available: 1000, currency: 'USD', pausedUntil: 0, insuranceDue: false, lastSettlement: null }, ...extra };
 }
 const seatedAt = (seats, extra = {}) => snapshot({ owners: Array.from({ length: 7 }, (_, i) => seats.includes(i) ? actor : null),
   players: [{ id: actor, seats, ready: false, leaving: false }], me: { ...snapshot().me, seats, memberGen: 1, active: true }, ...extra });
@@ -321,5 +321,32 @@ test('the 24-hour pause is named Ta paus and dispatches only after Ja, pausa in 
   pause.click(); accept.click(); assert.deepEqual(calls, [['pause']]); assert.equal(ask.hidden, true);
   pause.disabled = true; pause.dispatchEvent(new Event('click')); assert.equal(ask.hidden, true, 'a running pause asks nothing');
   assert.equal(nodes.get('banner').title, nodes.get('banner').textContent, 'the clamped status line keeps its full text');
+  view.close();
+});
+
+test('money labels use the account unit and historical winnings retain their settlement unit', () => {
+  const { document, nodes } = viewDocument(), calls = [];
+  const view = createSharedRoomView({ document }); view.bind({ selectChip: amount => calls.push(amount) });
+  const compact = text => text.replace(/\s+/g, ' ');
+  for (const currency of ['USD', 'EUR', 'SEK']) {
+    const s = seatedAt([3]); s.me.currency = currency; s.me.available = 17.5;
+    s.bets[3] = { main: 5, pp: 1, tp: 0 };
+    s.me.lastSettlement = { returned: 25.5, currency: 'EUR' };
+    view.render({ snapshot: s, can: everything, notice: '', connected: true });
+    assert.equal(compact(nodes.get('balance').textContent), `17,5 ${currency} demo`);
+    assert.equal(compact(nodes.get('limits').textContent), `5 – 2 000 ${currency} · demo`);
+    assert.equal(nodes.get('total-bet').textContent, `6 ${currency}`);
+    assert.equal(nodes.get('last-win').textContent, '25,5 EUR');
+    const chip = nodes.get('chips').children[0];
+    assert.equal(chip.getAttribute('aria-label'), `5 ${currency}`); chip.click();
+    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    assert.ok(fields.some(node => node.getAttribute('aria-label')?.endsWith(`5 ${currency}`)));
+  }
+  assert.deepEqual(calls, [5, 5, 5], 'labelling changes no chip amount');
+  const legacy = snapshot(); delete legacy.me.currency;
+  legacy.me.lastSettlement = { returned: 25.5 };
+  view.render({ snapshot: legacy, can: everything, notice: '', connected: true });
+  assert.match(nodes.get('balance').textContent, /valuta saknas/);
+  assert.equal(nodes.get('last-win').textContent, '25,5 · valuta saknas');
   view.close();
 });

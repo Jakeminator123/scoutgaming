@@ -301,3 +301,23 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     await store.close();
   }
 });
+
+test('external wallet keys fail closed on every documented money endpoint and Admin launch', async t => {
+  const store = await createPgliteStore(); t.after(() => store.close());
+  const { db, boDb } = store, origin = 'https://partner.example.invalid';
+  const forbidden = () => assert.fail('Blocked wallet must not reach play, auth, or money writes');
+  const partner = installPartnerApi({ db, boDb, shoeCommand: forbidden, newGame: forbidden,
+    getPlayer: forbidden, logTx: forbidden, jwtSign: forbidden, publicUrl: origin, root: '.' });
+  const key = await partner.keys.create({ name: 'Synthetic external wallet', scopes: ['launch', 'play', 'wallet'], walletUrl: 'https://wallet.example.invalid' }, null);
+  for (const path of ['/api/v1/launch', '/api/v1/table', '/api/v1/demo-credit', '/api/v1/balance']) {
+    const body = JSON.stringify({ playerId: 'synthetic-external', op: 'start', amount: 10, currency: 'EUR' });
+    const ts = String(Math.floor(Date.now() / 1000));
+    const response = await invoke(partner.handle, origin + path, { method: 'POST', body, headers: {
+      'x-api-key': key.key, 'x-timestamp': ts, 'x-signature': createHmac('sha256', key.secret).update(`${ts}.POST.${path}.${body}`).digest('hex') } });
+    assert.equal(response.status, 503, path);
+    assert.match(JSON.parse(response.body).error, /External wallet is not enabled/);
+  }
+  await assert.rejects(partner.keys.mintLaunch(key.id, { playerId: 'synthetic-external' }), error => error.statusCode === 503);
+  for (const table of ['players', 'partner_players', 'transactions'])
+    assert.equal((await db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).n, 0, `${table} remains untouched`);
+});

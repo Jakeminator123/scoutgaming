@@ -2,7 +2,8 @@
 import { BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { SEAT_COUNT, WINDOW_SIZE, crowding, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
 import { installDecisionShortcuts } from './shared-room-shortcuts.mjs';
-const money = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
+const number = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
+const money = (value,currency) => `${number(value)} ${typeof currency==='string'&&/^[A-Z]{3}$/.test(currency)?currency:'· valuta saknas'}`;
 const $ = (document,id) => document.getElementById(id);
 function button(document,text,action) {
   const node=document.createElement('button'); node.type='button'; node.textContent=text;
@@ -222,24 +223,24 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
       const limits=$(document,'limits');
       if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';dockSeat(null);keepFocusSoon();return;}
-      $(document,'balance').textContent=money(s.me.available)+' demo';
-      if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
+      $(document,'balance').textContent=money(s.me.available,s.me.currency)+' demo';
+      if(limits)limits.textContent=`${number(s.settings.limits.min)} – ${money(s.settings.limits.max,s.me.currency)} · demo`;
       // K06 O1: the heading names the room's stake profile instead of a fixed "Privé".
       if(profile)profile.textContent=tableProfileName(s.settings);
-      $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
-      $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
+      $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0),s.me.currency);
+      $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned,s.me.lastSettlement.currency):'–';
       $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
       $(document,'banner').title=$(document,'banner').textContent;
       picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
       picker.value='';picker.disabled=!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
-      const key=JSON.stringify(s.settings.chips);
+      const key=JSON.stringify([s.me.currency,s.settings.chips]);
       // K6: a viewer without a seat at a full table waits for one (shared-room-waiting.mjs renews the wait). The
       // status line's title follows its final text.
       const banner=$(document,'banner');
       if(!value.notice&&!s.me.seats.length&&s.owners.every(owner=>owner!==null)&&!(s.me.pausedUntil>(value.serverNow??s.serverNow)))banner.textContent='Väntar på plats';
       banner.title=banner.textContent;
-      if(key!==chipKey){chipKey=key;chipHost.replaceChildren(...s.settings.chips.map(amount=>{const node=button(document,money(amount),()=>actions?.selectChip(amount));node.className='chip';node.dataset.value=String(amount);return node;}));}
+      if(key!==chipKey){chipKey=key;chipHost.replaceChildren(...s.settings.chips.map(amount=>{const node=button(document,number(amount),()=>actions?.selectChip(amount));node.setAttribute('aria-label',money(amount,s.me.currency));node.title=money(amount,s.me.currency);node.className='chip';node.dataset.value=String(amount);return node;}));}
       for(const node of chipHost.children){node.disabled=value.busy||!value.connected||value.retry;node.classList.toggle('sel',Number(node.dataset.value)===value.chip);node.setAttribute('aria-pressed',String(Number(node.dataset.value)===value.chip));}
       const several=s.me.seats.length>1,chosen=primarySeat(s,value.focusSeat);
       // Side bets and Lämna act only in the betting window; during a round the seat keeps its circle and main stake,
@@ -264,7 +265,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
           const closedSide=field!=='main'&&!(s.bets[i].main>0);
           node.disabled=!can.bet||!own||closedSide;node.title=closedSide?hints.side??'':'';
           node.classList.toggle('staked',s.bets[i][field]>0);
-          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+money(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field])}`);}
+          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],s.me.currency)}`);}
       }
       arrange();
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});

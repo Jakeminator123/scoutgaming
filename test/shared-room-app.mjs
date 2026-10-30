@@ -19,9 +19,9 @@ function snapshot(version=0,extra={}){
     phase:'bets',roundId:null,turnSeq:0,owners:Array(7).fill(null),seatGen:Array(7).fill(0),bets:Array.from({length:7},()=>({main:0,pp:0,tp:0})),
     players:[],deadline:null,actionDeadline:null,plan:null,round:null,serverNow:1000,unopened:version===0,
     settings:{configVersion:'cfg-1',language:'sv',betMs:20000,actionMs:15000,limits:{min:.5,max:2000,sideMax:100},chips:[.5,1,5],refill:1000},
-    me:{id:actor,seats:[],memberGen:0,active:false,available:1000,pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra};
+    me:{id:actor,seats:[],memberGen:0,active:false,available:1000,currency:'USD',pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra};
 }
-function seated(version=1,extra={}){return snapshot(version,{owners:[actor,null,null,null,null,null,null],seatGen:[1,0,0,0,0,0,0],players:[{id:actor,seats:[0],ready:false,leaving:false}],me:{id:actor,seats:[0],memberGen:1,active:true,available:1000,pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra});}
+function seated(version=1,extra={}){return snapshot(version,{owners:[actor,null,null,null,null,null,null],seatGen:[1,0,0,0,0,0,0],players:[{id:actor,seats:[0],ready:false,leaving:false}],me:{id:actor,seats:[0],memberGen:1,active:true,available:1000,currency:'USD',pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra});}
 function presentationBinding(s=snapshot(),{dealer='astrid',packageRevision=1,branding={}}={}){
   return {owner:'web',roomId,configVersion:s.configVersion,windowId:s.windowId,
     presentationContext:{operatorSlug:'north',roomId,packageRevision,dealerId:dealer},
@@ -398,7 +398,7 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   view.bind({dispatch:(...args)=>calls.push(args),selectChip:amount=>calls.push(['chip',amount]),retry:()=>calls.push(['retry'])});
   const can={join:true,bet:true,leave:true,act:[],insurance:false};
   view.render({snapshot:seated(1,{me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
-  assert.match(nodes.get('balance').textContent,/17,5 demo/);assert.equal(nodes.get('seats').children.length,7);
+  assert.match(nodes.get('balance').textContent,/17,5 USD demo/);assert.equal(nodes.get('seats').children.length,7);
   // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
   const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
   assert.equal(join.tagName,'BUTTON');assert.equal(join.textContent,'Du');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
@@ -413,7 +413,7 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.equal(own.children[0].children[1].hidden,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].hidden,true);
   assert.equal(nodes.get('seats').children[1].children[0].children[1].style.display,'none');
   for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
-  assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 kr · demo$/);
+  assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 USD · demo$/);
   view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
   assert.equal(nodes.get('limits').textContent,'–','no snapshot shows no stale placeholder limits');
   view.close();leaveSeat.click();assert.equal(calls.length,3);
