@@ -57,7 +57,11 @@ test('the preview environment branch can be fast-forwarded from the policy but n
   }
   assert.doesNotThrow(() => validatePush(url, update, { ...policy, environmentBranches: ['preview', 'preview-2', 'v1.0'] }, () => true));
   // The hook judges the remote ref, so a local checkout of someone else's branch is refused as a source too.
-  for (const local of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-gren', 'roulette-on-kevin-staging']) {
+  for (const pattern of ['kevin*', 'codex/kevin-*', 'john*', 'codex/john-*', 'emil*', 'codex/emil-*', 'roulette-on-kevin-staging']) {
+    assert.ok(policy.protectedBranches.includes(pattern), pattern);
+  }
+  for (const local of ['kevin', 'kevin-staging', 'kevin-merge-admin', 'kevin/x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-fix',
+    'emil', 'emil/x', 'codex/emil-fix', 'jakob-gren', 'roulette-on-kevin-staging']) {
     assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/preview ${sha('d')}`, policy, () => true), /Pushing from protected branch/, local);
     assert.throws(() => validatePush(url, `refs/heads/${local} ${sha('c')} refs/heads/jakob/port ${sha('0')}`, policy, () => true), /Pushing from protected branch/, local);
   }
@@ -76,7 +80,8 @@ test('merged feature branches can be deleted; main, protected and unmerged branc
   assert.throws(() => validatePush(url, `(delete) ${sha('0')} refs/heads/jakob/gone ${sha('0')}`, policy, merged, main), /does not exist/);
   assert.throws(() => validatePush(url, deletion('main'), policy, merged, main), /deletion is not allowed for main/);
   assert.deepEqual(policy.protectedBranches.includes('kevin*'), true);
-  for (const name of ['kevin', 'kevin-staging', 'kevin/x', 'codex/kevin-fix', 'john', 'emil', 'jakob-export', 'jakob-gren', 'roulette-on-kevin-staging', 'codex/pr-automation']) {
+  for (const name of ['kevin', 'kevin-staging', 'kevin-merge-admin', 'kevin/x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-fix',
+    'emil', 'emil/x', 'codex/emil-fix', 'jakob-export', 'jakob-gren', 'roulette-on-kevin-staging', 'codex/pr-automation']) {
     assert.throws(() => validatePush(url, deletion(name), policy, merged, main), /protected branch/, name);
   }
   assert.throws(() => validatePush(url, deletion('codex/example'), policy, merged, main), /feature branches/);
@@ -442,7 +447,7 @@ for (const scenario of ['warm', 'cold', 'incomplete', 'missing-tool']) {
 test('the required CI gate waits for every job in the PR workflow and runs even when one fails', async () => {
   const yaml = (await readFile(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const jobs = [...yaml.split('\njobs:\n')[1].matchAll(/^  ([a-z][a-z0-9-]*):\n/gm)].map(match => match[1]);
-  assert.ok(jobs.includes('ci') && jobs.includes('dealer-regression'));
+  assert.ok(jobs.includes('ci') && jobs.includes('dealer-regression') && jobs.includes('browser-regression'));
   const gate = yaml.split('\n  ci:\n')[1];
   // The ruleset requires the check named CI; a draft run renames the gate so that check stays missing.
   assert.match(gate, /^    name: \$\{\{ needs\.changes\.outputs\.draft == 'true' && 'CI \(utkast\)' \|\| 'CI' \}\}\n/);
@@ -451,6 +456,10 @@ test('the required CI gate waits for every job in the PR workflow and runs even 
   assert.deepEqual([...needs].sort(), jobs.filter(name => name !== 'ci').sort(), 'a job the gate does not need could fail without blocking a merge');
   assert.ok(jobs.includes('targeted'), 'draft PRs run the targeted job');
   const header = yaml.split('\njobs:\n')[0];
-  assert.match(header, /\non:\n  push:\n    branches: \[main, preview\]\n  pull_request:\n    branches: \[main, preview\]\n    types: \[opened, synchronize, reopened, ready_for_review\]\n/, 'main and preview share the gate; ready_for_review starts the full run');
+  assert.match(header, /\non:\n  push:\n    branches: \[main, preview\]\n  pull_request:\n    branches: \[main, preview\]\n    types: \[opened, synchronize, reopened, ready_for_review\]\n  schedule:\n    - cron: '0 2 \* \* \*'\n  workflow_dispatch:\n/, 'main and preview share the gate; ready_for_review starts the full run; the complete regression on main runs nightly at 02:00 UTC and on demand');
   assert.match(header, /\n  cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}\n/, 'only PR runs are replaced by a newer push');
+  // Event and ref both name the group, so a queued push on main never replaces the pending nightly run.
+  assert.match(header, /\n  group: croupier-\$\{\{ github\.workflow \}\}-\$\{\{ github\.event_name \}\}-\$\{\{ github\.ref \}\}\n/);
+  // merge-pr.mjs and the ruleset identify the required check by this workflow name and the job name CI.
+  assert.match(yaml, /^name: Croupier GitHub checks\n/);
 });

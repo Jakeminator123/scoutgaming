@@ -31,7 +31,6 @@ function browserBundle() {
   return bundlePromise ??= build({stdin: {contents: `
     import React from 'react';
     import {createRoot} from 'react-dom/client';
-    import {PresentationRoomCreate} from './apps/studio/components/presentation-room-create.tsx';
     import {PartnerOperatorWorkspace} from './apps/studio/components/partner/partner-operator-workspace.jsx';
     import {LobbyProvider} from './apps/studio/client/lobby/components/lobby-provider.tsx';
     import {OperatorsSection} from './apps/studio/client/lobby/components/sections/operators-section.tsx';
@@ -40,9 +39,8 @@ function browserBundle() {
     import {SelectionTicket} from './apps/studio/client/lobby/components/selection-ticket.tsx';
     const props = JSON.parse(document.getElementById('fixture-data').textContent);
     createRoot(document.getElementById('root')).render(props.surface === 'partner'
-      ? <PartnerOperatorWorkspace {...props}/> : location.pathname === '/lobby'
-      ? <LobbyProvider><OperatorsSection/><RoomsSection/><DealersSection/><SelectionTicket/></LobbyProvider>
-      : <PresentationRoomCreate {...props}/>);
+      ? <PartnerOperatorWorkspace {...props}/>
+      : <LobbyProvider><OperatorsSection/><RoomsSection/><DealersSection/><SelectionTicket/></LobbyProvider>);
   `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
   outfile: resolve(root, 'fixture.js'), external: ['/composition-runtime/compositor.js'],
   // Match Next's static-image import shape without reading or serving media.
@@ -133,7 +131,13 @@ async function assertPublishedChain(f, receipt) {
   const selected = lobbySelection(catalog, {operatorId: company.slug,
     roomKey: `${company.slug}:${receipt.room.id}`, dealerId: 'astrid'});
   assert.equal(selected.room.id, receipt.room.id);
-  const href = playUrlFor(selected);
+  // A new room has no published game settings yet: the lobby lists it as being prepared and offers no game
+  // start (the shared table would refuse every seat with room_config_missing). The entry route itself still
+  // resolves the room, which is what the rest of this chain follows.
+  assert.equal(selected.room.preparing, true);
+  assert.equal(playUrlFor(selected), undefined);
+  const settled = selection => ({...selection, room: {...selection.room, preparing: undefined}});
+  const href = playUrlFor(settled(selected));
   const launch = await f.request(href, {cookie: ''});
   assert.equal(launch.status, 200);
   const entry = decodeEntry(await launch.text());
@@ -145,7 +149,8 @@ async function assertPublishedChain(f, receipt) {
 
   const southSelection = lobbySelection(catalog, {operatorId: otherCompany.slug,
     roomKey: `${otherCompany.slug}:${southReceipt.room.id}`, dealerId: 'astrid'});
-  const southLaunch = await f.request(playUrlFor(southSelection), {cookie: ''});
+  assert.equal(southSelection.room.preparing, true);
+  const southLaunch = await f.request(playUrlFor(settled(southSelection)), {cookie: ''});
   assert.equal(southLaunch.status, 200, 'South can launch its own published room before the cross-company denial');
   const southEntry = decodeEntry(await southLaunch.text());
   assert.equal(southEntry.operator, otherCompany.slug);
@@ -187,7 +192,9 @@ test('C6 existing publication controller and APIs carry one new frozen revision 
   await assertPublishedChain(f, receipt);
 });
 
-test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the public lobby and game entry',
+// Admin skapar spelbordet med Nytt spelbord (room-quick-create.mjs); här samma POST genom den befintliga
+// kontrollern, och därefter N2 i webbläsaren.
+test('C5/C6 N1 room creation, N2 room draft and reviewed publication reach the public lobby and game entry',
   {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE to run the isolated C6 browser chain', timeout: 60_000}, async t => {
     const {chromium} = await import(pathToFileURL(browserModule).href);
     const channel = process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL;
@@ -205,7 +212,7 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
           {method: incoming.method, headers: incoming.headers, ...(body.length ? {body} : {})});
         const path = new URL(request.url).pathname;
         let response;
-        if (['/admin/publication', '/lobby'].includes(path) || /^\/(?:studio\/)?partner\//.test(path)) {
+        if (path === '/lobby' || /^\/(?:studio\/)?partner\//.test(path)) {
           const props = path.includes('/partner/') ? await f.partnerPageProps(request) : f.props;
           response = new Response(
           '<!doctype html><html lang="sv"><meta charset="utf-8"><link rel="stylesheet" href="/fixture.css"><div id="root"></div>'
@@ -241,14 +248,11 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       const path = new URL(response.url()).pathname;
       if (path.startsWith('/studio/api/') && response.status() >= 400) errors.push('Unexpected API response ' + response.status() + ' ' + path);
     });
-    await page.goto(origin + '/admin/publication');
-    await page.getByLabel('Rumsnamn', {exact: true}).fill('C6 publicerat rum');
-    const created = page.waitForResponse(response => response.url() === origin + roomEndpoint && response.request().method() === 'POST');
-    await page.getByRole('button', {name: 'Skapa spelrum', exact: true}).click();
-    const published = await created; assert.equal(published.status(), 200);
-    const receipt = await published.json(), chain = await assertPublishedChain(f, receipt);
+    const receipt = await publishWithExistingController(f), chain = await assertPublishedChain(f, receipt);
     await useCookie(f.auth.north);
-    const partner = await page.evaluate(async path => {const response = await fetch(path); return {status: response.status, body: await response.json()};}, partnerPath(company.slug));
+    // The page has not opened anything yet; read the partner snapshot through the same handler the server forwards to.
+    const partnerResponse = await f.handle(new Request(origin + partnerPath(company.slug), {headers: {cookie: f.auth.north}}));
+    const partner = {status: partnerResponse.status, body: await partnerResponse.json()};
     assert.equal(partner.status, 200); assert.deepEqual(partner.body.presentation, chain.partner.presentation);
     assert.equal(partner.body.packageRevision, String(receipt.packageRevision));
     // Unlike an API-only receipt, this mounts the complete N2 workspace from
@@ -336,10 +340,10 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
     await useCookie(f.auth.north);
     await page.goto(origin + rooms + roomQuery); await assertRoom();
     assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).count(), 0, 'no table colour control for partners');
-    assert.deepEqual(await appearance.getByRole('tab').allTextContents(), ['Utseende', 'Historik']);
+    assert.deepEqual(await appearance.getByRole('tab').allTextContents(), ['Utseende', 'Dealer', 'Spelinställningar', 'Tillgänglighet', 'Historik']);
     const locked = await appearance.locator('[data-locked]').evaluateAll(rows => rows.map(row => row.dataset.locked).sort());
     assert.deepEqual(locked, ['background', 'dealer', 'table'], 'background, table graphics and dealer are shown as locked, not hidden');
-    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /bestäms av Scoutgaming/);
+    assert.match(await appearance.locator('[data-locked="dealer"]').textContent(), /låst av Scoutgaming/);
     const color = '#445566', endpointPath = '/studio/api/partner/branding?operator=' + company.slug, endpoint = origin + endpointPath;
     const expectedBranding = {...branding.branding, roomOverrides: {[receipt.room.id]: {color}}};
     const southBefore = await f.store.getCurrentPackage(otherCompany.id);
@@ -456,11 +460,17 @@ test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the pub
       await page.waitForFunction(element => element.getAttribute('aria-pressed') === 'true', element);
     };
     await choose(page.getByRole('list', {name: 'Spelbolag', exact: true}).getByRole('button', {name: /C6 North/}));
-    await choose(page.getByRole('list', {name: 'Spelrum', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
+    await choose(page.getByRole('list', {name: 'Spelbord', exact: true}).getByRole('button', {name: /C6 publicerat rum/}));
     await choose(page.getByRole('button', {name: 'Välj Astrid', exact: true}));
-    const play = page.getByRole('dialog', {name: 'Astrid', exact: true}).getByRole('link', {name: 'Spela med Astrid', exact: true});
-    assert.equal(await play.getAttribute('href'), chain.href);
-    await play.press('Enter');
+    // The new table has no published game settings: the lobby shows it as being prepared and offers no
+    // game start (the shared table would refuse every seat with room_config_missing).
+    const chosen = page.getByRole('dialog', {name: 'Astrid', exact: true});
+    await chosen.getByText('C6 publicerat rum hos C6 North').waitFor();
+    assert.equal(await chosen.getByRole('link', {name: 'Spela med Astrid', exact: true}).count(), 0, 'no game start while the table is being prepared');
+    await page.keyboard.press('Escape'); await chosen.waitFor({state: 'hidden'});
+    await page.getByRole('complementary', {name: 'Ditt val', exact: true}).getByRole('status').filter({hasText: 'Förbereds'}).waitFor();
+    // The entry route itself still resolves the table, which is what the rest of this chain follows.
+    await page.goto(origin + chain.href);
     const dataset = await page.locator('html').evaluate(element => ({...element.dataset}));
     const entry = gameLaneFromDocument(dataset);
     assert.equal(entry.roomId, receipt.room.id); assert.equal(entry.packageRevision, nextRevision);

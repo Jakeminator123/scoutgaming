@@ -4,74 +4,77 @@ Så här arbetar du i Scoutgaming Admin (`/admin`) i dag. Varje avsnitt nedan
 motsvarar ett menyval och dess flikar. Orden förklaras i
 [ordlistan](TERMINOLOGI.md); Admins **Hjälp** (`/admin/guide`) är den korta
 versionen i produkten. Vissa äldre paneler säger fortfarande **rum** (spelbord)
-eller **sammansättning** (scenmall); guiden citerar knapparna som de står.
+eller **sammansättning** (miljö); guiden citerar knapparna som de står.
 
 ## Menyn
 
+Menyn har tre grupper: **Innehåll** (Dealers, Miljöer och material), **Bolag**
+(Bolag och spelbord) och **Scoutgaming** (System, Hjälp). **Översikt** står
+överst.
+
 | Menyval | Adress | Flikar |
 | --- | --- | --- |
-| Översikt | `/admin` | Det som väntar på dig, med länk dit det åtgärdas |
+| Översikt | `/admin` | Inga; det som väntar på dig, med länk dit det åtgärdas |
 | Dealers | `/admin/dealers`, en dealer `/admin/dealers/{dealer}` | Klippkarta · Röst och tal · Landningar · Används av · Inställningar |
-| Scenmallar och material | `/admin/scenes?tab=…` | Scenmallar · Bakgrunder · Bordsgrafik · Papperskorg |
+| Miljöer och material | `/admin/scenes?tab=…` | Miljöer · Material (Bakgrund, Bordsgrafik, Arkiverat) |
 | Bolag och spelbord | `/admin/companies?tab=…` | Bolag · Alla spelbord · Papperskorg |
-| ett bolag | `/admin/companies/{bolag}?flik=…` | Tilldelning · Spelbord · Spelare och ekonomi · Team · Integration · Journal · Inställningar |
+| ett bolag | `/admin/companies/{bolag}?flik=…` | Spelbord · Tilldelning · Team · Inställningar |
 | ett spelbord | `/admin/rooms/{spelbord}?flik=…` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik |
-| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden · Intern lobby |
-| Hjälp | `/admin/guide` | Menyn, vem som får ändra vad, orden och dealerflödet |
+| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden; **Intern lobby** i sidhuvudet |
+| Hjälp | `/admin/guide` | Inga; menyn, vem som får ändra vad, orden, dealerflödet och var uppgifterna kommer ifrån |
 
-Portalraden överst leder till Admin, Partnerportalen och Lobbyn; intern
-personal når alla tre med samma konto. **Ctrl K** söker dealers, bolag och
-spelbord.
+En räknare vid **Dealers** visar dealers där klipp saknas, och vid **Bolag och
+spelbord** spelbord som inte är spelbara. Portalraden överst leder till Admin,
+Partnerportalen och Lobbyn; intern personal når alla tre med samma konto.
+**Ctrl K** söker dealers, bolag och spelbord.
 
 ## Arbetsgången
 
-Dealerns sida visar de sju första stegen överst och markerar de som är klara.
+1. **Nytt spelbord**: den primära knappen på Översikt (också på
+   **Alla spelbord** och bolagets flik **Spelbord**). Rutan har allt förvalt:
+   bolag, dealer, miljö, namn, bordsspråk och insatsprofil. Ändra under
+   **Avancerat**.
+2. **Skapa och publicera**: kedjan **Miljö** → **Mät klipp** → **Spelbord,
+   tilldelning och spelinställningar** körs i ett svep, och spelbordet blir öppet
+   och publicerat. Stannar ett steg visas en mening och en knapp som löser det;
+   nästa försök kör bara det som återstår.
+3. **Öppna i spelet**: spelbordet som spelaren ser det. **Öppna spelbordet**
+   leder till spelbordets sida i Admin.
 
-1. **Skapa dealer**: Dealers → **Ny dealer** → namn → **Skapa dealer**.
-2. **Lägg till klipp**: dra in filmer i dealerns klippkarta.
-3. **Klipp per fack**: välj standardklipp för giv, vila och tal och
-   **Spara utkast**. Mätarna **Giv**, **Tal** och **Vila** visar vad som
-   saknas.
-4. **Mät landningar**: kommer senare; i dag finns landningar bara för de
-   filmade dealerna.
-5. **Röst och tal**: granska tagningarna och välj standard i varje talfack.
-6. **Godkänn**: checklistan under **Inställningar** visar läget. Godkännandet
-   sparas inte ännu.
-7. **Tilldela**: kryssa i dealern i en scenmall
-   ([Scenmallar](#scenmallar-och-material)) och ge bolaget scenmallen under
-   **Bolag › Tilldelning**.
-8. **Spelbord**: **Nytt spelbord** hos bolaget. Det skapas pausat.
-9. **Publicera** och öppna spelbordet under **Tillgänglighet**.
+Rutan förväljer bara en dealer vars klipp räcker för spel. En ny dealer gör
+först de fem stegen på dealerns sida (Skapa, Lägg till klipp, Klipp per fack,
+Röst och tal, Tilldela), se [Dealers](#dealers).
 
-### Publicera i dag: flera knappar
+### Publicera
 
 Att spara ändrar bara utkastet; spelaren ser ändringen först efter
-publicering. En gemensam knapp per spelbord är planerad (steg D i
-[ADMIN-FORENKLING](../../../docs/plans/ADMIN-FORENKLING.md), avsnitt 7). Tills
-den finns publicerar du i den här ordningen:
+publicering.
 
 | Knapp | Var | Vad den publicerar |
 | --- | --- | --- |
-| **Publicera för {bolag}** (sedan **Publicera igen**) | Bolag › Tilldelning | Bolagets scenmallar med dealers, klipp, tal, vila och placering, fryst som ny version |
-| **Publicera · N ändringar** → **Publicera nu** | Spelbord › Utseende | Spelbordets bakgrund, dealer och bordsgrafik |
-| **Publicera spelinställningar** | Spelbord › Spelinställningar | Bordsspråk och insatsprofil |
+| **Publicera** → **Publicera nu** | Spelbord, ovanför alla flikar (öppet, publicerat blackjackbord) | Allt som skiljer sig från live: tal, klipp, vila, placering, utseende och spelinställningar, som ny version |
+| **Publicera** | Bolag › Tilldelning | Bolagets urval av miljöer och det bolaget får ändra själv |
 
-Två smala knappar uppdaterar bara en del av det publicerade:
+På öppna, publicerade blackjackbord sparar du utseendet och
+spelinställningarna på respektive flik och använder sedan **Publicera**
+ovanför flikarna. Osparade ändringar måste sparas först. Roulette och
+pausade bord behåller utseendets egen publicering.
 
-- **Publicera sparad placering** (Scenmallar) uppdaterar placeringen i alla
-  bolagets spelbord som använder scenmallen.
-- **Publicera PAOWs viloklipp** (Spelbord › Utseende › **Publicera (tills
-  vidare)**) uppdaterar PAOWs vilosekvens.
-
-Nytt tal används först när tilldelningen och därefter spelinställningarna är
-publicerade.
+Riktade verktyg ligger avskilt: **Publicera igen** under Tilldelning ›
+Felsökning fryser om ett oförändrat urval. **Publicera PAOWs viloklipp**
+under Tillgänglighet › Felsökning uppdaterar bara PAOWs vila.
+**Publicera sparad placering** ligger under Avancerat i dealerns Klippkarta
+› Scen & lager, eller i en miljö öppnad för ett bolag. Nytt tal används
+först efter **Publicera** i spelbordet.
 
 ## Översikt
 
 Listar det som väntar: dealers där klipp saknas, pausade och opublicerade
-spelbord och bolag utan publicerad tilldelning. Genvägar: **Ny dealer**,
-**Nytt bolag**, **Nytt spelbord**, **Lägg till klipp**, **Tilldela innehåll**
-och **Skapa demo** (`/admin/demo`).
+spelbord och bolag utan publicerad tilldelning. Den primära åtgärden är
+**Nytt spelbord**; övriga genvägar: **Lägg till klipp**, **Tilldela innehåll**,
+**Ny dealer** och **Skapa demo** (`/admin/demo`). Menyns räknare bygger på
+det sidorna redan har läst eller sparat (`shareWorkspace` i
+`client/admin/lib/connected-studio.mjs`); menyn läser inget själv.
 
 ## Dealers
 
@@ -84,15 +87,15 @@ Astrid är en märkt äldre referens; hennes egna verktyg gäller bara henne.
 
 ### Klippkarta
 
-Fliken visar **Spel** (Blackjack eller Roulette), **Scenmall** och
-**Scenförhandsvisning**. **Spelbord och publicering** låter dig välja bolag
+Fliken visar **Spel** (Blackjack eller Roulette), **Miljö**, **Scen &
+lager** och **Öppna i Miljöer**. **Spelbord och publicering** låter dig välja bolag
 och spelbord för sammanhang; kartan visar ändå alltid projektutkastet, och ett
 valt spelbord gör inte en ändring rumsspecifik.
 
 Kartan kan zoomas, panoreras och ordnas; **Visa alla kort** och **Återställ
 placering** ändrar inga kopplingar. **Förhandsvisa och redigera** öppnar
-klippet med situation, varianter och **Körregel**; **Klippguide** förklarar
-handlingen och poserna.
+klippet i lådan, som har **Klipp**, **Körregel** och **Lägg till klipp**;
+**Klippguide** förklarar handlingen och poserna.
 
 Kategorierna är spelhandlingar (plats 1–7, dealerns öppna och dolda kort,
 vändning, **Övergångar**), **Vila** och **Talade repliker**. En position utan
@@ -101,7 +104,7 @@ klipp hoppas över i spelet; kortet visas ändå.
 #### Lägg till klipp
 
 **Lägg till klipp** (`?flik=klipp&panel=intake`) har två vägar: **Ladda upp
-filer** och **Importera mapp**. **Skapa material** är avstängt tills vidare.
+filer** och **Importera mapp**.
 
 1. Dra in filer eller en mapp på kartan, eller släpp en fil på ett kort för ett
    bestämt fack. Varje fil visas med stillbild, föreslaget fack (**Kategori ›
@@ -150,11 +153,13 @@ Under **Vila → Basloop och beteendeklipp** öppnar du **Förhandsvisa och
 redigera → Körregel**. Varje beteendeklipp startar **Av**, **Ibland ·
 intervall** (ungefär var N:e sekund med variation, minsta paus och tak per
 minut), **Vid spelhändelse** eller via **OpenClaw**. Händelseregler körs när
-scenmallens **Automatik / OpenClaw** står på **Regler** och utkastet är sparat
+miljöns **Automatik / OpenClaw** står på **Regler** och utkastet är sparat
 och publicerat. De
 väntar på kort, tal och basfilmens klippgräns; de skapar aldrig tal eller
 ändrar spelresultat. Kontrollera att ett beteendeklipp är tyst och återgår
-till vila.
+till vila. Ett klipp på **OpenClaw** får fältet **Vad klippet visar** (högst
+80 tecken); OpenClaw väljer utifrån den texten vid tur eller resultat
+när miljöns vila står på **OpenClaw**.
 
 #### Sammanhängande vilosekvens
 
@@ -173,10 +178,16 @@ sekvensen kan kopplas.
 3. En kopplad sekvens ändras genom att bocka ur eller i. Ligger klipp
    utanför källans urval kvar i en äldre sekvens, tar **Uppdatera till
    urvalet** bort dem; knappen visas bara då.
-4. Spara utkastet och publicera bolagets tilldelning. För PAOW är stegen
-   **Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp** i
-   spelbordet (produktionsutkastet har ingen sekvens än, så **Uppdatera
-   till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
+   Ett kopplat klipp som börjar och slutar i vila har brytaren **OpenClaw
+   får föreslå klippet** och då fältet **Vad klippet visar**. Klippet ingår
+   fortfarande i sekvensen; OpenClaw kan dessutom föreslå det vid tur och
+   resultat, och då spelas det en gång innan sekvensen fortsätter. Valen och
+   beskrivningarna behålls när urvalet ändras. Spelmotorn behöver
+   runtimekapabilitet v32 innan en sådan sekvens kan sparas.
+4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
+   **Koppla 21 viloklipp** → spara → **Publicera** (eller **Tillgänglighet** ›
+   **Felsökning** › **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
+   ingen sekvens än, så **Uppdatera till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
    sekvensen; originalen behålls.
 
 #### Övergångar och delat bord
@@ -190,9 +201,9 @@ godkänner film eller tal. Spara utkastet och publicera separat.
 
 #### Provspela
 
-**Scenförhandsvisning** öppnar **Provspela sparad scen**; samma prov finns
-under dealerns förhandsvisning och på fliken Landningar. Välj en sparad
-scenmall och starta. Provet använder scenmallens sparade förval, inte osparade
+**Provspela sparad scen** finns under **Förhandsvisning** (fliken i kanten
+på Klippkarta) och på fliken Landningar. Välj en sparad
+miljö och starta. Provet använder miljöns sparade förval, inte osparade
 ändringar, det markerade klippet eller spelbordets publicerade val. Det har
 eget testsaldo; chatt och genererat tal är avstängda. Provet gäller Blackjack
 på dator.
@@ -210,8 +221,8 @@ repliker som har filer.
    **Ta bort bedömning**.
 3. **Sätt som standard i talfacket** lägger tagningen som standard i
    projektutkastet. Spara utkastet.
-4. Publicera tilldelningen och därefter spelbordets spelinställningar; först då
-   används de godkända tagningarna.
+4. Välj **Publicera** i spelbordet; först då används de godkända
+   tagningarna.
 
 Status per tagning: **Godkänd av**, **Underkänd**, **Väntar på granskning**
 eller **Saknar talkvitto** (kan inte godkännas). **Godkänn tal** kräver en
@@ -224,9 +235,20 @@ röstprofil; dealers utan en sådan har **Förbered röstprofil för
 realtidstal**. Att spara en röstprofil gör inget betalt prov och godkänner
 ingen läppsynk.
 
+**Referenstyp** under realtidstal: **Stillbild** (en ruta ur dealerns egen
+video, stillbildsvägen) eller **Rörlig** (dealerns bank, `motion-video`).
+En rörlig referens kan alltid sparas som förberedelse; bankbygget tar den
+valda positionen som vilaruta och kräver steg om 125 ms (hel ruta i 24 fps).
+**Begär AI-tal** går att slå på för en rörlig referens bara när miljöns
+driftprofil för dealern har en bankhash (`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`
+på Vercel); servern vägrar annars sparningen (`studio_speech_bank_missing`),
+utom för en redan begärd profil med samma referens (rösten får bytas).
+Referensen ska vara ett av bankens klipp. Referenstypen kan inte
+bytas medan AI-tal är begärt. Paows körning:
+[PAOW-BANK-KORNING](../../../docs/PAOW-BANK-KORNING.md).
+
 Under talpanelen finns:
 
-- **Tal vid inaktivitet**: inte anslutet per dealer ännu.
 - **Taldrift**: talets GPU-läge. Välj Av, Sparläge eller Varm och en
   GPU-profil; servern avgör vilka val som går. **Använd läge** sparar
   önskemålet. **Stoppa drift** begär Av; först en färsk observation bekräftar
@@ -238,7 +260,7 @@ Under talpanelen finns:
   AI-inställningar, inte med inspelade tagningar.
 
 **Prova Dragans publicerade chatt och tal**: välj Sparläge under Taldrift när
-servern tillåter tal och kontrollera att spelbordets scenmall har **Automatik
+servern tillåter tal och kontrollera att spelbordets miljö har **Automatik
 / OpenClaw** satt till **Aktiv** för Tal. Öppna lobbyn och välj bolag,
 spelbord och Dragan. Börja med en kort textfråga med
 mikrofonen av; kontrollera röst, ljud, munrörelser och återgång till vila
@@ -247,41 +269,77 @@ bekräftat Av.
 
 ### Landningar
 
-Visar hur dealerns givklipp är kopplade och scenmallarna som tillåter
-dealern, med **Provspela sparad scen**. **Mät landningar** och **Exportera
-landningsmall** kommer senare. Bordsgrafiken ritas efter dealern, inte
-tvärtom; lagrens storlek och läge ändras under Scenmallar.
+Visar hur dealerns givklipp är kopplade och miljöerna som tillåter
+dealern, med **Provspela sparad scen**. Bordsgrafiken ritas efter dealern, inte
+tvärtom; lagrens storlek och läge ändras under Miljöer.
+
+En egen dealer kan importera **filmed_profile.json** från dealerfabriken här.
+Ladda upp klippen till rätt dealer och mät deras speltid först. Spara eller
+ångra osparade ändringar i klippkartan, välj filen och klicka **Importera profil**.
+Fel visas med berörd tagning och nästa åtgärd. Gå sedan till Klippkarta,
+**Koppla för delat bord** och spara. Granska kortkontakt och tal före publicering.
+Importen publicerar inget spelbord och godkänner inget tal.
 
 ### Används av
 
-Spelbord, bolag och scenmallar som använder dealern, och **Alla kopplingar**
+Spelbord, bolag och miljöer som använder dealern, och **Alla kopplingar**
 (samma läsning som System › Beroenden).
 
 ### Inställningar
 
-- **Godkännande**: checklistan (giv, vila, tal, landningar, minst en
-  scenmall). Den visar läget; godkännandet sparas inte ännu.
+- **Redo för spel**: checklistan (giv, vila, tal, minst en miljö). Den visar
+  läget.
 - Dealerns klipp och arkiv: **Bibliotek** och **Arkiv**, kategorier, **Radera
-  valda**, **Radera alla** och **Ta bort dealern** (se
+  valda** och **Radera alla**. Hela dealern tas bort under Dealers (se
   [Ta bort och återställa](#ta-bort-och-återställa)).
-- **Tekniska detaljer**: dealer-id, lagringsmapp och scenmallar.
+- **Tekniska detaljer**: dealer-id, lagringsmapp och miljöer.
 
-## Scenmallar och material
+## Miljöer och material
 
-En scenmall placerar bakgrund, dealer och bordsgrafik för dator och mobil och
+En miljö placerar bakgrund, dealer och bordsgrafik för dator och mobil och
 säger vilka dealers och vilket material den tillåter. Flera spelbord kan dela
-samma scenmall.
+samma miljö.
 
-### Scenmallar
+Sidan har två flikar, **Miljöer** och **Material**. En miljö öppnas i en egen
+vy med tre delar: **Miljöbild**, **Lager och placering** och **Används av**,
+sist **Radera miljön**.
+**Alla miljöer** leder tillbaka. Gamla bokmärken (`tab=mallar`,
+`tab=bakgrunder` och så vidare) öppnar rätt flik.
+Öppnas miljön från ett spelbord (portalen, **Beroenden**, bolagets
+spelbordslista) står spelbordet överst, och **Lager och placering** kan
+publicera den sparade placeringen för det bolaget; använder spelbordet en annan
+miljö länkar rutan dit. Medan en fil laddas upp i miljön går det inte att lämna
+sidan. Miljöerna läses bara på fliken **Miljöer**.
 
-Korten visar varje scenmall med dealers och spelbord som använder den. Välj ett
-kort för att redigera. **Ny sammansättning** skapar en ny scenmall med namn och
-dealer; det tekniska id:t skapas automatiskt.
+### Miljöer
 
-- **Redigera gemensam mall** låser upp mallen; editorn visar vilka spelbord
-  som berörs.
-- **Dealers i den gemensamma mallen** och **Förvald dealer**: här tillåter du
-  dealern i scenmallen, steg 7 i arbetsgången.
+Korten visar varje miljö med dealers och spelbord som använder den. Välj ett
+kort för att öppna miljön. **Ny miljö** frågar efter namn och dealer och
+skapar miljön i utkastet; det tekniska id:t skapas automatiskt. Kortet visar
+miljöbilden, annars bakgrunden och bordsgrafiken på sin placering för dator.
+
+- **Miljöbild – visas i lobbyn och Admin, aldrig i spelet**: välj en av
+  miljöns bilder eller **Ingen miljöbild**. **Exportera miljöbild** ritar den
+  sparade scenen för dator (1920 × 1080: bakgrund, bordsgrafik och dealern på
+  sin placering) och sparar den som nytt material, "<Miljö> · miljöbild v2".
+  Spara utkastet först. Den nya bilden väljs i utkastet. Miljöns äldre
+  exporterade bilder som ingen miljö visar flyttas till materialarkivet (de
+  räknas inte som bakgrund eller bordsgrafik); den bild miljön visar ligger kvar. Lobbyn visar miljöbilden, annars den publicerade bakgrunden, annars en
+  designillustration. Insatsprofilen väljer ingen bild.
+- **Lager och placering**: **Spel** (Blackjack eller Roulette) väljer vad
+  som förhandsvisas och placeras. **Redigera gemensam miljö** låser upp
+  miljön. Längst ned visar **Förhandsvisning av den sparade miljön**
+  dealerns vila i scenen, med provspelning.
+- **Används av**: spelborden som använder miljön, med länk till spelbordet.
+  Publicering sker i spelbordet. Ett öppet blackjackbord utan publicerade
+  spelinställningar står som **Förbereds** med varningen "Saknar
+  spelinställningar – spelare kan inte sätta sig" och en länk till
+  **Spelinställningar**.
+- **Radera miljön**: **Radera permanent** (miljöer har ingen papperskorg).
+  Spara eller kasta utkastet först; serverns kontroll visar vilka spelbord
+  eller tilldelningar som hindrar.
+- **Dealers i den gemensamma miljön** och **Förvald dealer**: här tillåter du
+  dealern i miljön, steg 7 i arbetsgången.
 - **Förhandsvisa och placera** växlar mellan tillåtet material utan att ändra
   standardval eller spelbord.
 - Välj **Mobil** eller **Desktop**. Kortpunkter, marker, kortstorlek,
@@ -327,25 +385,73 @@ basbilden.
 
 #### Spara och publicera placering
 
-**Spara utkast** sparar scenmallen; **Kasta ändringar** hämtar senast
-sparade. För att publicera bara placeringen: öppna **Spelbord och
-publicering**, välj bolag och sedan **Publicera sparad placering**; rutan
-visar berörda spelbord. **Läs in placering i mallen** hämtar ett bolags
-publicerade placering som utgångspunkt.
+**Spara utkast** och **Kasta ändringar** står överst i miljön och gäller hela
+utkastet. Spelborden får ändringen när de publiceras: öppna spelbordet under
+**Används av** och välj **Publicera**.
 
-### Bakgrunder och Bordsgrafik
+### Material
 
-Materialbiblioteket per lager. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
+Filtren **Bakgrund**, **Bordsgrafik** och **Arkiverat** visar materialbiblioteket
+per lager respektive det arkiverade materialet. **Ladda upp** tar PNG, JPEG, WebP, MP4 eller
 WebM, högst 128 MB. **Skapa med AI** tar fram förslag efter din beskrivning;
-välj ett och **Använd**. Bordsgrafik ritas efter en filmad dealers landningar
-och passar bara scenmallar med samma placering. Uppladdning ändrar inga
-scenval; **Visa var den används** visar vilka scenmallar som använder filen.
+välj ett och **Använd**. Bakgrunden ritas alltid från dealerkameran med golvet
+synligt; rumsbilder blir miljöbilder. Valt förslag visas i miljön för dator och mobil;
+en gul varning ("Korten kan bli svårlästa: box 4") betyder orolig filt eller
+svag kontrast där korten landar, men du väljer själv. Bordsgrafik ritas efter
+en filmad dealers landningar och passar bara miljöer med samma placering. Uppladdning ändrar inga
+scenval; **Visa var den används** visar vilka miljöer som använder filen.
 
-### Papperskorg
+Arkiverade bakgrunder och bordsgrafik kan återställas; permanent radering är
+ett eget steg. Publicerade spelbord påverkas inte.
 
-Bakgrunder och bordsgrafik i papperskorgen kan återställas; permanent radering
-är ett eget steg. Publicerade spelbord påverkas inte. En scenmall har ingen
-papperskorg; den tas bort när inget spelbord använder den.
+#### Bord och bakgrund med AI
+
+**Skapa med AI** i Bordsgrafik ritar bordet åt en vald dealer och scenmall.
+Spelbordets **Utseende** har länken **Skapa bord och bakgrund med AI för
+spelbordet**, som öppnar samma dialog för det spelbordet.
+
+- **Stil**: **Mörk lyx** (svart filt, rosenträ, guldkant) och **Aggressiv
+  neon** (svart filt, magenta och cyan ljuslinje) först, sedan **Klassiskt
+  casino** (grön filt, mahogny, guldrand) och de tre tidigare **Mörk studio**,
+  **Varm lounge** och **Ljus studio**. **Fri** följer bara beskrivningen och
+  inspirationsbilden; bildens dominerande färg blir bordets färg, mörkad
+  tills boxarnas vita streck har kontrasten 3:1 mot filten.
+- **Bredd**: bocken **Anpassa bordets bredd efter dealerns räckvidd** (på som
+  standard) ritar bordet så att boxarna fyller 75 % av bordet. Bordsbredd %
+  följer med till scenmallen för både dator och mobil; för PAOW blir det
+  37,7 % på dator (tidigare 31,6 %) och 119 % på mobil (tidigare 100 %).
+  Boxarna ritas exakt ur dealerns filmade profil, så korten landar i dem.
+- **Använd**: välj ett förslag och **Använd**. Med bocken **Använd i miljön
+  *scenmall* och i spelbordet *spelbord*** (när dialogen öppnats från ett
+  spelbord) tillåts materialet i scenmallen, blir standard, får sin
+  bordsbredd och spelbordet publiceras, allt i en transaktion. Utan spelbord
+  sparas scenmallen som utkast, och du publicerar själv. Utan bocken hamnar
+  förslaget bara i biblioteket. Detta stoppar **Använd** (felet
+  `studio_release_invalid` med skälet inom parentes); inget skrivs och
+  materialet ligger kvar i biblioteket:
+  - spelbordet har andra sparade men opublicerade ändringar, även ett
+    utkast till spelinställningarna (`studio_release_other_changes`; utkastet
+    står kvar), eller saknar publicerade spelinställningar
+    (`studio_room_game_config_missing`);
+  - spelbordet använder en annan scenmall (`ai_adopt_other_template`), eller
+    scenmallen eller materialet finns inte (`ai_adopt_template_missing`,
+    `ai_adopt_material_missing`);
+  - bolaget eller spelbordet har ett eget val som döljer mallens standard
+    (`ai_adopt_room_choice`); välj då materialet under Utseende;
+  - en ny bredd skulle nå ett annat öppet spelbord hos bolaget på samma
+    scenmall som visar ett annat bord, t.ex. Privé
+    (`ai_adopt_other_room_table`): bredden gäller hela mallen;
+  - bordsgrafiken passar inte scenmallens dealers eller placering
+    (`ai_adopt_table_misfit`), eller ett äldre AI-bord i mallen skulle bli
+    felpassat av den nya bredden (`ai_adopt_template_table_misfit`): ta bort
+    det ur mallen eller rita om det;
+  - samma material är redan live, så inget skiljer sig
+    (`studio_release_unchanged`).
+- **Tema**: **Skapa bord + bakgrund + miljöbild från samma tema** skapar bord
+  och bakgrund parallellt med samma beskrivning, stil och inspirationsbild;
+  välj ett av varje och **Använd** lägger in båda. Miljöbilden hoppas över
+  och dialogen säger det: scenexporten och rollen illustration finns inte
+  ännu.
 
 ## Bolag och spelbord
 
@@ -353,60 +459,73 @@ papperskorg; den tas bort när inget spelbord använder den.
   spelbord. **Nytt bolag** skapar bolaget och bjuder in dess första
   administratör; nästa steg är **Till bolagets tilldelning**.
 - **Alla spelbord**: alla bolags spelbord, filtrerbara per bolag. **Nytt
-  spelbord** frågar efter bolag, scenmall, spel (Blackjack eller Roulette) och
-  namn och visar den sparade scenen bredvid; avsluta med **Lägg till spel**.
-  Spelbordet skapas pausat. Bakgrund och bordsgrafik väljer du efteråt under
-  Utseende.
+  spelbord** förväljer dealer (bara en med hela klippbanken), miljö, namn,
+  språk och insatsprofil; allt går att ändra under Avancerat. **Skapa och
+  publicera** låser eller kopierar miljön, mäter omätta klipp och skapar
+  spelbordet öppet med tilldelning och spelinställningar i en publicering.
+  Stannar kedjan visas en mening och en knapp; ett nytt försök använder samma
+  miljö. Bakgrund och bordsgrafik väljer du efteråt under Utseende.
 - **Papperskorg**: arkiverade bolag och spelbord.
 
 ### Ett bolag
 
-- **Tilldelning**: kryssa i de scenmallar bolaget får använda; dealers,
-  bakgrunder och bordsgrafik följer med via scenmallarna. Markeringarna
-  ersätter urvalet, så behåll alla scenmallar bolaget fortsatt ska ha.
-  **Publicera för {bolag}** fryser urvalet som en ny version. Upplåsning per
-  val kommer senare.
-- **Spelbord**: bolagets spelbord, **Nytt spelbord** och bolagets papperskorg.
-- **Spelare och ekonomi**: inte anslutet ännu; spelarkonton finns under
-  System › Spelarkonton.
+Bolaget öppnas på **Spelbord**. Gamla flikadresser leder vidare:
+`?flik=spelare` och `?flik=integration` till Spelbord, `?flik=journal` till
+Inställningar. Spelare och ekonomi per bolag kommer tillbaka när spelarna
+hör till ett bolag; tills dess finns de under System › Spelarkonton, och
+API-nycklarna under System › Integration.
+
+- **Spelbord**: bolagets spelbord, **Nytt spelbord**, startadress per
+  spelbord och bolagets papperskorg.
+- **Tilldelning**: en form med en knapp. Kryssa i de miljöer bolaget får
+  använda; dealers, bakgrunder och bordsgrafik följer med via miljöerna.
+  Markeringarna ersätter urvalet, så behåll alla miljöer bolaget fortsatt
+  ska ha. Under **Tilldelat bolaget** väljer du vad bolaget får ändra själv i
+  Partnerportalen: dealer, bordsgrafik och bakgrund (bara där miljön
+  tillåter det; annars *Låst i miljön*), bordsspråk, insatsprofil och
+  paus, och vilka insatsprofiler och språk bolaget väljer bland. Ett upplåst
+  språk eller en upplåst insatsprofil kräver minst ett alternativ.
+  **Publicera** skickar det som är ändrat: urvalet först och sedan det bolaget
+  får ändra, på versionen från första kvittot. Varje steg ger paketet en ny
+  version och en rad i journalen; Partnerportalen läser den direkt. Stoppas
+  ett steg (till exempel för att någon annan har publicerat) försöker Admin
+  inte igen; läs in bolaget och publicera på nytt.
 - **Team**: medlemmar, roller och inbjudningar. Ett fält
   tar ny e-post eller ett befintligt partnerkontos användarnamn; en ny adress
   får en aktiveringslänk. **Vad får rollerna göra?** visar rollernas
   rättigheter. Administratören utses bara av Admin, och den sista
   administratören kan inte stängas av.
-- **Integration**: startadress per spelbord. API-nycklarna skapas under
-  System › Integration.
-- **Journal**: bolagets ändringar med tid, aktör, åtgärd och version; **Hämta
-  äldre ändringar** visar nästa sida.
-- **Inställningar**: namn, status och **Livscykel** (**Flytta bolag till
-  papperskorgen**, **Återställ bolag**). Namnet ändras inte från Admin i dag.
+- **Inställningar**: namn, status, **Livscykel** (**Flytta bolag till
+  papperskorgen**, **Återställ bolag**) och **Journal**: bolagets ändringar
+  med tid, aktör, åtgärd och version; **Hämta äldre ändringar** visar nästa
+  sida. Namnet ändras inte från Admin i dag.
 
 Knapparna **Skapa demo** och **Öppna Partnerportalen** ligger i rubriken.
 
 ### Ett spelbord
 
-Rubriken visar spel, dealer, scenmall, publicerad version och om ett utkast
+Rubriken visar spel, dealer, miljö, publicerad version och om ett utkast
 väntar. **Öppna i spelet** startar spelbordet.
 
-- **Utseende**: **Publicerat nu** visar live-valen. Välj bakgrund, dealer och
-  bordsgrafik inom scenmallen och **Spara utkast**. **Publicera · N
-  ändringar** öppnar **Granska och publicera** med skillnaden mot live och
-  berörda spelbord; **Publicera nu** publicerar. **Hämta senaste version**
+- **Utseende**: välj bakgrund, dealer och bordsgrafik inom miljön och
+  **Spara utkast**. På öppna blackjackbord öppnar **Publicera** ovanför
+  flikarna jämförelsen med live och berörda spelbord; **Publicera nu**
+  publicerar det sparade läget. **Hämta senaste version**
   bevarar din redigering tills du väljer hur den ska läsas in. **Kasta
   bolagets utkast** tar bort bolagets utkast; publicerade spelbord ändras
   inte. I versionshistoriken återställer **Återställ till utkast** en äldre
   version som nytt utkast. Utseendet kräver att tilldelningen är publicerad.
-- **Dealer**: dealers i spelbordets scenmall, med länk till dealerns sida.
+- **Dealer**: dealers i spelbordets miljö, med länk till dealerns sida.
   Dealern väljs under Utseende.
 - **Spelinställningar**: **Bordsspråk** och **Insatsprofil**. **Spara
-  spelinställningar** och sedan **Publicera spelinställningar**. Gäller
+  spelinställningar** och sedan **Publicera** ovanför flikarna. Gäller
   öppna, publicerade Blackjack-spelbord.
 - **Tillgänglighet**: **Pausa spelbordet** gäller direkt; ett pausat
   spelbord syns inte i lobbyn och pågående rundor spelas klart. **Öppna
   spelbordet** öppnar det för spelare.
 - **Bolagets val**: vad bolaget får ändra på spelbordet (dealer, bordsgrafik,
   bakgrund, utseende). Bordsspråk och insatsprofil är låsta. Valen gäller per
-  scenmall i dag.
+  miljö i dag.
 - **Historik**: bolagets journal; raderna för spelbordet nämner dess namn.
 
 ## Partnerportalen
@@ -416,7 +535,7 @@ personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap;
 intern personal når portalen med sin vanliga inloggning. På sina spelbord
 väljer bolaget bland det tilldelningen tillåter och publicerar med samma
 granskning som under Utseende; ändringar kräver rätt roll och version.
-Placeringen följer scenmallen. Bolagets egna API-nycklar visas maskerade.
+Placeringen följer miljön. Bolagets egna API-nycklar visas maskerade.
 Spelare, transaktioner och rapporter från spelmotorn är ännu inte kopplade
 till portalen. Ett bolag utan medlemmar får ingen partnerinloggning.
 
@@ -440,11 +559,11 @@ till portalen. Ett bolag utan medlemmar får ingen partnerinloggning.
   händelsetyp och tid i UTC.
 - **Integration**: API-nycklar och testsession. **Ny partnernyckel** kräver
   att du väljer bolaget som nyckeln gäller.
-- **Beroenden**: bolag, dealers, bordsgrafik, bakgrunder och scenmallar med
-  användning. **Ändra mallens kopplingar** öppnar scenmallen; **Ändra bara
+- **Beroenden**: bolag, dealers, bordsgrafik, bakgrunder och miljöer med
+  användning. **Ändra mallens kopplingar** öppnar miljön; **Ändra bara
   rummets val** öppnar ett publicerat spelbords egna val.
-- **Intern lobby**: `/admin/lobby` visar alla bolags spelbord, även pausade;
-  `/lobby` är den publika.
+- **Intern lobby** (länk i sidhuvudet, ingen flik): `/admin/lobby` visar alla
+  bolags spelbord, även pausade; `/lobby` är den publika.
 
 ## Roulette
 
@@ -471,8 +590,8 @@ ingenting; nekar servern visas orsaken.
   arkivet finns **Återställ** och **Radera permanent**. Permanent radering
   kräver att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter)
   löpt ut och att inget använder det; annars **Behåll i arkivet**.
-- **Dealers**: **Arkivera** i dealerlistan eller **Ta bort dealern** under
-  Inställningar flyttar dealern till **Papperskorg**, stänger av AI-tal och
+- **Dealers**: **Arkivera** i dealerlistan flyttar dealern till
+  **Papperskorg** under Dealers, stänger av AI-tal och
   avpublicerar berörda spelbord; källfiler bevaras. **Återställ** ger dealern
   tillbaka som utkast utan att öppna spelbord. **Radera permanent** kräver
   kryss i **Jag förstår att filerna raderas permanent**. Vid avbrott visas
@@ -484,10 +603,12 @@ ingenting; nekar servern visas orsaken.
   pausat) och öppna det under Tillgänglighet när beroendena är giltiga.
 - **Spelbord**: Admin har i dag ingen knapp för att flytta ett enskilt
   spelbord till papperskorgen; pausa det under Tillgänglighet.
-- **Material**: bakgrunder och bordsgrafik flyttas till Scenmallar ›
-  Papperskorg och kopplas loss där de används; publicerade versioner behålls.
-- **Scenmallar**: borttagning ändrar utkastet; publicerade spelbord behåller
-  sin version.
+- **Material**: bakgrunder och bordsgrafik flyttas till Material ›
+  Arkiverat och kopplas loss där de används; publicerade versioner behålls.
+- **Miljöer**: borttagning ändrar utkastet; publicerade spelbord behåller
+  sin version. **Radera permanent** ligger i miljöns egen vy under **Radera
+  miljön** och går bara när inget spelbord och ingen aktiv tilldelning
+  använder miljön.
 
 ## Lobby och spelstart
 
@@ -514,7 +635,7 @@ och fragment bevarade (`dealerId` blir `dealer`, `lane` blir `composition`):
 | --- | --- |
 | `/admin/clips`, `/admin/dealer-studio`, `/admin/events` | Dealers › Klippkarta (med vald dealer) |
 | `/admin/media-review`, `/admin/replies`, `/admin/dealer-agent`, `/admin/drift?tab=speech` | Dealers › Röst och tal |
-| `/admin/assets`, `/admin/compositions` | Scenmallar och material |
+| `/admin/assets`, `/admin/compositions` | Miljöer och material |
 | `/admin/rooms` | Bolag och spelbord › Alla spelbord, eller spelbordet |
 | `/admin/drift` | System › Drift |
 | `/admin/ai/models`, `/admin/openclaw?tab=models` | System › AI-agenter |

@@ -38,7 +38,7 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
   const proc={getuid:()=>uid,getgid:()=>gid,setgroups:value=>calls.push(['groups',value]),
     setgid:value=>{gid=value;calls.push(['gid',value]);},setuid:value=>{uid=value;calls.push(['uid',value]);}};
   const fs=new Proxy({}, {get:()=>async()=>assert.fail('Mountless startup must not touch a disk path.')});
-  const env={CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_MEDIA_STORAGE:'blob',
+  const env={
     BLOB_READ_WRITE_TOKEN:'fixture-blob-token',
     CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://game.neon.tech/game?sslmode=verify-full&channel_binding=require")};
   await prepareContainerUser(env,{fs,proc});
@@ -50,8 +50,7 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
     await prepareContainerUser({...env,CROUPIER_GAME_DATABASE_URL:env.CROUPIER_GAME_DATABASE_URL.replace('verify-full',mode)},{fs,proc});
     assert.deepEqual(calls,[]);
   }
-  for(const change of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATA_DIR:'/var/data/players'},
+  for(const change of [{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATA_DIR:'/var/data/players'},
     {CROUPIER_GENERATED_SPEECH_DIR:'/var/data/speech'},
     {CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://other.example/game?sslmode=require")},
     {CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://game.neon.tech/game?sslmode=disable")},
@@ -60,8 +59,7 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
   }
 });
 
-const qaEnv={CROUPIER_CLOUD_DATA_ROOT:'/var/data/native-studio-qa/abc92154cb15',CROUPIER_DATABASE:'postgres',
-  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'qa_native_abc92154cb15',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+const qaEnv={CROUPIER_CLOUD_DATA_ROOT:'/var/data/native-studio-qa/abc92154cb15',  CROUPIER_STUDIO_ENVIRONMENT_ID:'qa_native_abc92154cb15',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://fixture.neon.tech/croupier_studio_qa_abc92154cb15?sslmode=require", "croupier_studio_qa_abc92154cb15")};
 test('QA scratch is bounded to its own database and created after privilege drop without changing old files',async()=>{
   let uid=0,gid=0;const calls=[];
@@ -73,9 +71,9 @@ test('QA scratch is bounded to its own database and created after privilege drop
   assert.deepEqual(calls,[['chown','/var/data',1000,1000],['chmod','/var/data',0o700],
     ['mkdir','/var/data/native-studio-qa',{mode:0o700}],['mkdir',qaEnv.CROUPIER_CLOUD_DATA_ROOT,{mode:0o700}]]);
   for(const change of [{CROUPIER_GAME_DATABASE_URL:qaEnv.CROUPIER_GAME_DATABASE_URL.replace('/croupier_studio_qa_abc92154cb15?','/croupier_game?')},
-    {CROUPIER_STUDIO_NEON_POLICY:'0'},{CROUPIER_STUDIO_ENVIRONMENT_ID:'production'},
+    {CROUPIER_STUDIO_ENVIRONMENT_ID:'production'},
     {CROUPIER_CLOUD_DATA_ROOT:'/var/data/native-studio-qa/abc92154cb15/..'},
-    {CROUPIER_CLOUD_DATA_ROOT:'/var/data/players'},{CROUPIER_DATABASE:'sqlite'}]) {
+    {CROUPIER_CLOUD_DATA_ROOT:'/var/data/players'}]) {
     calls.length=0;await assert.rejects(prepareContainerUser({...qaEnv,...change},{fs,proc}));assert.deepEqual(calls,[]);
   }
   await assert.rejects(prepareContainerUser(qaEnv,{fs:{...fs,realpath:async path=>path.endsWith('abc92154cb15')?'/other':path},proc}));

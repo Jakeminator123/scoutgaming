@@ -393,7 +393,7 @@ test('published Nora uses the frozen named registry and rejects query requests f
   administration.gameLanes=[{...ownLane,dealer:'astrid',mediaCollection:'astrid-presentation'}];
   await assert.rejects(select('operator=north'),error=>error.statusCode===503&&error.message==='presentation_dealer_mismatch');
   administration.gameLanes=[ownLane];
-  const html=decorateGameEntryHtml('<html></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection);
+  const html=decorateGameEntryHtml('<html></html>',selection);
   assert.match(html,/data-game-local-dealer="nora"/);
   assert.equal(gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local',gameLocalDealer:'nora',gameRegisteredDealers:JSON.stringify([{id:'nora',label:'Nora'}])}).dealer,'nora');
   assert.throws(()=>gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local'}));
@@ -536,7 +536,7 @@ test('published Linnea follows her own room and frozen display label through act
   const {selection}=await select('operator=north&table=room-linnea');
   assert.equal(selection.dealer,'linnea');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'linnea',label:'Linnea vid publicering'}]);
   assert.deepEqual(selection.choices.dealers,['linnea']);assert.equal(selection.packageRevision,1);
-  const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
+  const html=decorateGameEntryHtml('<html lang="sv"></html>',selection),dataset={};
   for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
   const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'linnea');assert.equal(restored.roomId,room.id);
   assert.equal(restored.registeredDealers[0].label,'Linnea vid publicering');assert.deepEqual(restored.choices.dealers,['linnea']);

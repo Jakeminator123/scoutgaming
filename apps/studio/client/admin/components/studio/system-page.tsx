@@ -1,19 +1,20 @@
 import {useEffect,useState} from 'react';
 import Link from '../../../runtime/navigation';
 import {HubPage,Tabs,Card,Chip,Empty,KV} from '../ui/hub';
-import {buttonVariants,cn,Footnote} from '../ui/kit';
+import {buttonVariants,Footnote} from '../ui/kit';
 import {adminSystemTabs} from '../../lib/admin-navigation';
 import {Administration,AgentModelsPanel,EconomyPanel} from './connected-services';
 import {ResourceConnections} from './resource-connections';
 
 // System: drift, AI-agenter, Scoutgamings personal, spelarkonton (support until step F), integration
-// (keys are global until step F), beroenden and the internal lobby. Visited tabs stay mounted so the
-// native forms keep their drafts.
+// (keys are global until step F) and beroenden. The internal lobby is a link in the page header.
+// Visited tabs stay mounted so the native forms keep their drafts.
 export function SystemPage({active,tab}:{active:boolean;tab:string}) {
   const [visited,setVisited]=useState<string[]>([tab]);
   useEffect(()=>{if(active)setVisited(current=>current.includes(tab)?current:[...current,tab]);},[active,tab]);
   const panel=(id:string,content:React.ReactNode)=>visited.includes(id)?<div key={id} hidden={tab!==id}>{content}</div>:null;
-  return <HubPage wide title="System" intro="Drift, AI-agenter, personal, spelarkonton, integration, beroenden och den interna lobbyn.">
+  return <HubPage wide title="System" intro="Drift, AI-agenter, personal, spelarkonton, integration och beroenden."
+    actions={<a className={buttonVariants()} href="/admin/lobby" title="Alla bolags spelbord, även pausade. Bakom inloggning.">Intern lobby</a>}>
     <Tabs items={adminSystemTabs} active={tab}/>
     {panel('drift',<Administration group="operations"/>)}
     {panel('agenter',<div className="grid gap-4"><OpenAiCard active={active&&tab==='agenter'}/><AgentModelsPanel/></div>)}
@@ -21,10 +22,6 @@ export function SystemPage({active,tab}:{active:boolean;tab:string}) {
     {panel('spelare',<><Footnote className="mb-4 mt-0">Alla spelare oavsett bolag, för support. Spelare knyts till bolag senare; då flyttar vyn till bolagets egen sida.</Footnote><Administration group="accounts" section="players"/><EconomyPanel active={active&&tab==='spelare'}/></>)}
     {panel('integration',<><Footnote className="mb-4 mt-0">API-nycklar och testsession. Varje nyckel hör till ett bolag; du väljer bolaget när du skapar nyckeln.</Footnote><Administration group="partners"/></>)}
     {panel('beroenden',<ResourceConnections embedded/>)}
-    {panel('lobby',<Card title="Intern lobby" aside="Bakom inloggning">
-      <p className="mb-4 mt-0 max-w-[68ch] text-[13.5px] text-sg-muted">Den interna lobbyn visar alla bolags spelbord, även pausade. Spelet startar mot det som är publicerat. Spelarna ser den publika lobbyn.</p>
-      <div className="flex flex-wrap gap-2"><a className={buttonVariants({variant:'primary'})} href="/admin/lobby">Öppna den interna lobbyn</a><a className={buttonVariants()} href="/lobby">Öppna den publika lobbyn</a></div>
-    </Card>)}
   </HubPage>;
 }
 

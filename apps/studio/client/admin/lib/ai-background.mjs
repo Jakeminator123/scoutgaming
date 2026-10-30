@@ -10,6 +10,11 @@ import {AI_IMAGE_ERROR_CODES,AI_IMAGE_MAX_PROPOSALS,AI_IMAGE_PROMPT_LENGTH,AI_IM
 // The fit guard lives in the shared contract so publication runs the same check.
 export {AI_TABLE_MISFIT,aiTableFitsTemplate,aiTableMisfits,aiTableMisfitMessage} from '../../../lib/ai-image-contract.mjs';
 import {aiTableMisfits} from '../../../lib/ai-image-contract.mjs';
+import {AI_TABLE_FILL,filmedTableFit,filmedTableSvg,filmedTableTemplate} from '../../../lib/filmed-table-template.mjs';
+import {aiTableStyle} from '../../../lib/ai-table-style.mjs';
+import {materialLabel} from '../../../../../packages/presentation/contracts/material-catalog.mjs';
+import {AI_ADOPT_ACTION,adoptLayerAssets} from '../../../lib/ai-material-adoption.mjs';
+import {ROOM_RELEASE_PUBLISH_PATH,roomReleaseFailure} from './room-release.mjs';
 
 export const AI_IMAGE_ENDPOINT='/api/layer-assets/generate';
 export const AI_IMAGE_MESSAGES=Object.freeze({
@@ -66,6 +71,50 @@ export function aiSceneTemplates(templates,dealerId) {
   return (templates??[]).filter(row=>typeof row?.id==='string'&&Array.isArray(row.dealers)&&row.dealers.includes(dealerId));
 }
 
+// The same geometry and style as the server's edit source, before spending an
+// image request. This is a shape preview, never a generated or savable proposal.
+export function aiTableShapePreview(dealerId,composition,preset) {
+  try {
+    const template=filmedTableTemplate(dealerId,composition?{composition}:{});
+    if (!template) return null;
+    const {width,height}=template.canvas;
+    const reference=filmedTableSvg(template,'reference',{look:aiTableStyle(preset).look??undefined});
+    const mask=filmedTableSvg(template,'mask');
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><mask id="table-shape" maskUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}">${mask}</mask></defs><g mask="url(#table-shape)">${reference}</g></svg>`;
+    return {id:'table-shape-preview',dataUrl:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),...template.canvas};
+  } catch { return null; }
+}
+
+const assetId=id=>typeof id==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id);
+// Only registered image bytes, accessed through the existing authenticated
+// route. Catalogue labels identify Oak and Purple Rain separately by hash.
+export function aiReferenceMaterials(assets,role) {
+  return (assets??[]).filter(asset=>assetId(asset?.id)&&asset.role===role&&AI_IMAGE_REFERENCE_TYPES.includes(asset.contentType)
+    &&asset.size>=16&&asset.size<=AI_IMAGE_REFERENCE_FILE_MAX_BYTES)
+    .map(asset=>({id:asset.id,label:materialLabel(asset),url:labUrl('/api/layer-assets/'+asset.id)}));
+}
+
+export async function prepareMaterialReference(id,{fetchImpl=fetch,signal,prepare=prepareReferenceImage}={}) {
+  if (!assetId(id)) throw new Error('Välj en bild från materialbiblioteket.');
+  const response=await fetchImpl(labUrl('/api/layer-assets/'+id),{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',signal});
+  const contentType=response.headers.get('content-type')?.split(';')[0];
+  if (!response.ok||!AI_IMAGE_REFERENCE_TYPES.includes(contentType)) throw new Error('Bilden kunde inte hämtas från materialbiblioteket.');
+  const reader=response.body?.getReader();
+  if (!reader) throw new Error('Bilden kunde inte läsas.');
+  const chunks=[];let size=0;
+  try {
+    for (;;) {
+      signal?.throwIfAborted();
+      const {done,value}=await reader.read();if(done)break;
+      size+=value.byteLength;
+      if (size>AI_IMAGE_REFERENCE_FILE_MAX_BYTES) { await reader.cancel();throw new Error('Inspirationsbilden får vara högst 8 MB.'); }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  signal?.throwIfAborted();
+  return prepare(new File(chunks,'material',{type:contentType}));
+}
+
 
 export function dataUrlFile(dataUrl,name) {
   const match=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl??'');
@@ -101,8 +150,15 @@ function fileDataUrl(blob) {
 const browserMeasure=async file=>{const bitmap=await createImageBitmap(file);const size={width:bitmap.width,height:bitmap.height};bitmap.close();return size;};
 async function browserShrink(file,{width,height},quality) {
   const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');
-  canvas.width=width;canvas.height=height;canvas.getContext('2d')?.drawImage(bitmap,0,0,width,height);bitmap.close();
-  return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+  canvas.width=width;canvas.height=height;
+  try {
+    const context=canvas.getContext('2d');
+    if (!context) throw new Error('Inspirationsbilden kunde inte läsas.');
+    context.drawImage(bitmap,0,0,width,height);
+  } finally { bitmap.close(); }
+  // PNG and WebP can carry transparent table margins. JPEG would flatten them
+  // to black, so the server would mistake the margins for the dominant colour.
+  return new Promise(resolve=>canvas.toBlob(resolve,file.type==='image/jpeg'?'image/jpeg':'image/webp',quality));
 }
 // Inspirationsbild: sent along with the request only, never stored. Shrunk in
 // the browser to at most 1536 px and under 2 MB; the server checks it again.
@@ -134,4 +190,52 @@ export async function aiPackageMisfit({endpoint,lanes,fetchImpl=fetch,signal}) {
     const chosen=new Set(lanes);
     return aiTableMisfits(project.lanes.filter(lane=>chosen.has(lane?.id)),project.layerAssets)[0]??null;
   } catch { return null; }
+}
+
+const percent=value=>Math.round(value*1000)/10;
+/**
+ * Bordsbredd for a table drawn after the dealer's reach (filmed-table-template.mjs):
+ * the scene template's composition (or the defaults) and the suggested one, with
+ * the boxes' share of the table and both layouts' Bordsbredd % for the dialog.
+ * Null without a filmed profile or a valid placement.
+ */
+export function aiTableWidthSuggestion(dealerId,composition) {
+  const fit=filmedTableFit(dealerId,composition??undefined);
+  if (!fit) return null;
+  const widths=value=>({desktop:percent(value.desktop.table.width),mobile:percent(value.mobile.table.width)});
+  return {changed:fit.changed,range:AI_TABLE_FILL,current:{share:fit.current.share,percent:widths(fit.current.composition)},
+    suggested:{share:fit.suggested.share,percent:widths(fit.suggested.composition),composition:fit.suggested.composition,
+      tableWidth:{mobile:fit.suggested.composition.mobile.table.width,desktop:fit.suggested.composition.desktop.table.width}}};
+}
+
+/**
+ * "Använd i miljön" without a spelbord: the materials are allowed in the scene
+ * template and become its defaults (with the fitted table width) in the saved
+ * project draft. Nothing is published; the template's rooms show it after Publicera.
+ */
+export async function adoptInTemplate({project,compositionId,materials,tableWidth=null},{save,signal}) {
+  return save(adoptLayerAssets(project,{compositionId,materials,tableWidth}),signal);
+}
+
+const receiptOk=(value,input)=>value&&typeof value==='object'&&value.ok===true&&value.operatorId===input.operatorId&&value.roomId===input.roomId
+  &&Number.isSafeInteger(value.packageRevision)&&value.packageRevision===value.previousPackageRevision+1&&typeof value.projectRevision==='string'
+  &&typeof value.configVersion==='string'&&typeof value.publishedAt==='string'&&Number.isFinite(Date.parse(value.publishedAt));
+/**
+ * "Använd i miljön och i spelbordet": POST operator-package {action:'adopt-room-material'}.
+ * The server allows the materials in the room's scene template, makes them its
+ * defaults and publishes the room (steg D) in one transaction; any other saved
+ * but unpublished change stops it. One call per click, never retried.
+ */
+export async function adoptInRoom({operatorId,roomId,compositionId,materials,tableWidth=null,expectedProjectRevision},{fetchImpl=fetch}={}) {
+  const body={action:AI_ADOPT_ACTION,operatorId,roomId,compositionId,materials,tableWidth,expectedProjectRevision};
+  let response;
+  try {
+    response=await fetchImpl(labUrl(ROOM_RELEASE_PUBLISH_PATH),{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',
+      headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(body)});
+  } catch { return {ok:false,status:0,error:'Svaret kom inte fram. Läs in spelbordet igen för att se om publiceringen gick igenom.'}; }
+  if (!response.ok) return roomReleaseFailure(response,'publish');
+  let value=null;
+  try { value=await response.json(); } catch { value=null; }
+  if (!receiptOk(value,{operatorId,roomId})) return {ok:false,status:response.status,error:'Publiceringskvittot kunde inte bekräftas. Läs in spelbordet igen innan du fortsätter.'};
+  return {ok:true,receipt:value};
 }

@@ -2,15 +2,25 @@ name: Croupier GitHub checks
 
 # What runs when (the scope matrix lives in tools/ci-changes.mjs, SCOPE_LEGS):
 #
-#   push main/preview, workflow_dispatch   full: every regression leg, gateway container,
-#                                          migration readiness, Moving image on worker changes
+#   schedule (02:00 UTC, main), workflow_dispatch, push preview
+#                                          complete: every regression leg, Regression (browser)
+#                                          required, gateway container, migration readiness,
+#                                          Moving image (push preview: on worker changes)
+#   push main (integration)                changes, documentation, migration readiness, gateway
+#                                          container when its inputs changed; no regression leg:
+#                                          each change already passed its PR's ready CI
 #   PR ready for review (opened/synchronize/reopened/ready_for_review, not draft)
 #     documentation (reviewed prose only)  documentation job
 #     openclaw-deploy (services/openclaw/lab/deploy/** only)
-#                                          legs admin-contracts + access, gateway container
-#     full (everything else)               every leg; gateway container only when its inputs
-#                                          changed (services/openclaw/lab/deploy/**, lab root,
-#                                          .github/, .githooks/); Moving image on worker changes
+#                                          legs studio-admin-contracts + access-presentation,
+#                                          gateway container
+#     full (everything else)               every leg; Regression (browser) is required when the
+#                                          PR changes services/game/public/**,
+#                                          apps/studio/client/** or apps/studio/components/**;
+#                                          otherwise it runs but does not
+#                                          block (advisory); gateway container only when its
+#                                          inputs changed (services/openclaw/lab/deploy/**, lab
+#                                          root, .github/, .githooks/); Moving image on worker changes
 #   PR draft                               changes + targeted (tools/precommit-checks.mjs --pr-diff);
 #                                          the gate is named "CI (utkast)", so the required check CI
 #                                          is missing and tools/merge-pr.mjs cannot merge the head
@@ -24,15 +34,18 @@ on:
   pull_request:
     branches: [main, preview]
     types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: croupier-${{ github.workflow }}-${{ github.ref }}
-  # A newer push to the same PR replaces the running check; main and preview
-  # runs are integration receipts and always finish.
+  # Per event and ref, so a queued push on main never replaces the nightly run.
+  group: croupier-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A newer push to the same PR replaces the running check; main, preview,
+  # nightly and manual runs are integration receipts and always finish.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -45,6 +58,7 @@ jobs:
       moving: ${{ steps.scope.outputs.moving }}
       gateway: ${{ steps.scope.outputs.gateway }}
       draft: ${{ steps.scope.outputs.draft }}
+      browser: ${{ steps.scope.outputs.browser }}
       legs: ${{ steps.scope.outputs.legs }}
       matrix: ${{ steps.scope.outputs.matrix }}
     steps:
@@ -54,6 +68,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/croupier.yml
+            .github/actions/install-dependencies/action.yml
             .githooks/pre-commit-full
             test/ci-changes.mjs
             test/precommit-checks.mjs
@@ -80,11 +95,12 @@ jobs:
           node --test test/check-repo-limits.mjs
           node tools/check-repo-limits.mjs --tree HEAD --changed-since HEAD^1
 
+  # Prose-only PRs and every push to main (integration scope).
   documentation:
     needs: changes
-    if: needs.changes.outputs.scope == 'documentation'
+    if: needs.changes.outputs.scope == 'documentation' || needs.changes.outputs.scope == 'integration'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
         with:
@@ -98,6 +114,17 @@ jobs:
           node migrering/status.mjs --check
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
+      # PR caches are scoped to their own merge ref; only main-scoped entries are shared by
+      # every PR. The regression no longer runs on push main, so this keeps the package-tree
+      # entry current there: a lookup without download, and an install and save only when
+      # a lockfile or manifest changed. It is cache upkeep, not a check, so it fails softly.
+      - name: Keep the shared package-tree cache current on main
+        if: needs.changes.outputs.scope == 'integration'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: ./.github/actions/install-dependencies
+        with:
+          warm: 'true'
 
   # Draft PRs: the same targeted checks as the local pre-commit hook, on the PR
   # merge diff (syntax, registries, related tests, apps/web types, orphan tests
@@ -115,37 +142,24 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            apps/studio/package-lock.json
-            apps/studio/client/package-lock.json
-            apps/speech/package-lock.json
-            services/game/package-lock.json
-            services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
-      - run: npm --prefix apps/studio ci
-      - run: npm --prefix apps/studio/client ci --include=dev --ignore-scripts --no-audit --no-fund
-      - run: npm --prefix services/game ci --ignore-scripts
-      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
-      - run: npm --prefix apps/speech ci --ignore-scripts
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.2
-          run_install: false
-      - run: pnpm --dir apps/web install --frozen-lockfile
+      - name: Install locked package trees (one cache for every job)
+        timeout-minutes: 10
+        uses: ./.github/actions/install-dependencies
       - name: Targeted checks on the PR merge diff
         timeout-minutes: 15
         run: |
           node tools/precommit-checks.mjs --pr-diff --plan
           node tools/precommit-checks.mjs --pr-diff
 
-  # Same registry as local --full (.githooks/pre-commit-full), split into parallel legs.
-  # The matrix comes from the classifier (REGRESSION_LEGS filtered by scope). Every leg
-  # gets the same verified toolchain; a leg runs its suites to the end and fails if any
-  # suite fails. Engine runs only through its PostgreSQL harness, and the container
-  # suite has its own job.
+  # Same registry as local --full (.githooks/pre-commit-full), split into four parallel
+  # legs. The matrix comes from the classifier (REGRESSION_LEGS filtered by scope). Every
+  # leg installs the same verified toolchain once (ffmpeg, then the package trees from one
+  # shared cache); a leg runs its suites to the end and fails if any suite fails. Engine
+  # runs only through its PostgreSQL harness, the container suite and the Chrome
+  # acceptance have their own jobs.
   dealer-regression:
     name: Regression (${{ matrix.leg }})
     needs: changes
@@ -163,32 +177,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            apps/studio/package-lock.json
-            apps/studio/client/package-lock.json
-            apps/speech/package-lock.json
-            services/game/package-lock.json
-            services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
-      - run: npm --prefix apps/studio ci
-      # Bundled Admin and lobby component tests resolve the client's own packages.
-      # The access leg gets them from the real Studio build below.
-      - name: Install the Admin and lobby client packages
-        if: ${{ !matrix.build }}
-        run: npm --prefix apps/studio/client ci --include=dev --ignore-scripts --no-audit --no-fund
-      - run: npm --prefix services/game ci --ignore-scripts
-      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
-      - name: Install the speech service's own locked transport
-        run: npm --prefix apps/speech ci --ignore-scripts
-      - name: Install the real Next middleware used by frontend regression tests
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.2
-          run_install: false
-      - run: pnpm --dir apps/web install --frozen-lockfile
+      - name: Install locked package trees (one cache for every job)
+        timeout-minutes: 10
+        uses: ./.github/actions/install-dependencies
       - name: Restore Studio compiler cache
         if: ${{ matrix.build }}
         uses: actions/cache@v6
@@ -263,41 +257,10 @@ jobs:
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
           node tools/regression-group.mjs engine/http-postgres 660 node tools/run-engine-qa.mjs "${postgres_source[@]}"
-      - name: Restore the pinned browser driver
-        if: ${{ matrix.browser }}
-        id: browser_driver
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/croupier-browser-driver
-          key: ${{ runner.os }}-playwright-core-1.62.1
-      - name: Real browser acceptance (Chrome)
-        if: ${{ matrix.browser }}
-        timeout-minutes: 15
-        shell: bash
-        env:
-          DRIVER_CACHED: ${{ steps.browser_driver.outputs.cache-hit }}
-        run: |
-          set -euo pipefail
-          test -x /opt/google/chrome/chrome
-          /opt/google/chrome/chrome --version
-          driver="$HOME/.cache/croupier-browser-driver"
-          if [ "$DRIVER_CACHED" != true ] || [ ! -f "$driver/node_modules/playwright-core/index.mjs" ]; then
-            npm install --prefix "$driver" --no-save --package-lock=false --ignore-scripts \
-              --no-audit --no-fund playwright-core@1.62.1
-          fi
-          # Every test file that reads the browser fixture runs here, so a new
-          # browser test can never be skipped in CI by default. In the suites
-          # above the variable is unset and these cases skip.
-          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
-          test "${#files[@]}" -gt 0
-          printf 'Browser test file: %s\n' "${files[@]}"
-          CROUPIER_BROWSER_FIXTURE_MODULE="$driver/node_modules/playwright-core/index.mjs" \
-          CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome \
-            node tools/regression-group.mjs browser/chrome 840 node --test --test-concurrency=2 --test-reporter=spec "${files[@]}"
       - uses: actions/setup-node@v7
         if: ${{ !cancelled() && matrix.speech_node }}
         with:
-          node-version: '22.23.1'
+          node-version: '24.21.0'
       - name: Speech transport on its declared Node runtime
         if: ${{ !cancelled() && matrix.speech_node }}
         run: |
@@ -344,9 +307,72 @@ jobs:
           if-no-files-found: warn
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
 
+  # Real-browser acceptance (Chrome). The classifier output browser decides whether
+  # the gate requires it: required on nightly, manual and preview runs and on ready
+  # full-scope PRs that change browser client code (services/game/public/**,
+  # apps/studio/client/**, apps/studio/components/**); advisory on other ready full-scope PRs (it runs and
+  # reports, but a red result does not block CI).
+  browser-regression:
+    name: Regression (browser)
+    needs: changes
+    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.browser != 'none'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Install verified ffmpeg packages
+        timeout-minutes: 8
+        uses: ./.github/actions/setup-ffmpeg
+      - name: Install locked package trees (one cache for every job)
+        timeout-minutes: 10
+        uses: ./.github/actions/install-dependencies
+      - name: Restore the pinned browser driver
+        id: browser_driver
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/croupier-browser-driver
+          key: ${{ runner.os }}-playwright-core-1.62.1
+      - name: Real browser acceptance (Chrome)
+        timeout-minutes: 15
+        shell: bash
+        env:
+          DRIVER_CACHED: ${{ steps.browser_driver.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test -x /opt/google/chrome/chrome
+          /opt/google/chrome/chrome --version
+          driver="$HOME/.cache/croupier-browser-driver"
+          if [ "$DRIVER_CACHED" != true ] || [ ! -f "$driver/node_modules/playwright-core/index.mjs" ]; then
+            npm install --prefix "$driver" --no-save --package-lock=false --ignore-scripts \
+              --no-audit --no-fund playwright-core@1.62.1
+          fi
+          # Every test file that reads the browser fixture runs here, so a new
+          # browser test can never be skipped in CI by default. In the regression
+          # legs the variable is unset and these cases skip.
+          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
+          test "${#files[@]}" -gt 0
+          printf 'Browser test file: %s\n' "${files[@]}"
+          CROUPIER_BROWSER_FIXTURE_MODULE="$driver/node_modules/playwright-core/index.mjs" \
+          CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome \
+            node tools/regression-group.mjs browser/chrome 840 node --test --test-concurrency=2 --test-reporter=spec "${files[@]}"
+      - name: Save regression group timings
+        continue-on-error: true
+        timeout-minutes: 2
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dealer-regression-timing-browser-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/dealer-regression-timing.jsonl
+
   # The pinned OpenClaw Gateway image build (about 90 s, mostly the base pull) runs
   # beside the regression legs instead of inside the access suite, and only when
-  # its inputs changed (classifier output gateway) or on main/preview/manual runs.
+  # its inputs changed (classifier output gateway: PR diff or main push range) or on
+  # preview, nightly and manual runs.
   gateway-container:
     name: Gateway container
     needs: changes
@@ -364,11 +390,12 @@ jobs:
   migration-readiness:
     name: Studio migration readiness
     needs: changes
-    # Main/preview/manual runs always check the ledger. Client/test-only PR edits
-    # need no production access; server/schema/dependency changes still do, once
-    # the PR is ready for review. Forks receive no production credentials; the
+    # Main/preview/nightly/manual runs always check the ledger (push/manual preview
+    # and PRs into preview read preview's ledger, the rest production's). Client/test-only PR
+    # edits need no database access; server/schema/dependency changes still do,
+    # once the PR is ready for review. Forks receive no database credentials; the
     # final gate rejects skipped readiness whenever the classified change requires it.
-    if: ${{ needs.changes.outputs.migration == 'true' && needs.changes.outputs.draft != 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preview')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ needs.changes.outputs.migration == 'true' && needs.changes.outputs.draft != 'true' && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preview')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -378,8 +405,36 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: apps/studio/package-lock.json
+      # Push/manual preview and PRs into preview read the preview ledger with its own read-only
+      # migration role; everything else reads production. Each step receives only its own
+      # secret, and a missing preview secret fails here instead of reading production.
+      - name: Select the migration ledger (preview or production)
+        id: ledger
+        shell: bash
+        env:
+          PREVIEW_SECRET_SET: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}
+        run: |
+          if { [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/preview ]; } \
+            || { [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" = refs/heads/preview ]; } \
+            || { [ "$GITHUB_EVENT_NAME" = pull_request ] && [ "$GITHUB_BASE_REF" = preview ]; }; then
+            ledger=preview
+          else
+            ledger=production
+          fi
+          if [ "$ledger" = preview ] && [ "$PREVIEW_SECRET_SET" != true ]; then
+            echo "::error title=Preview migration readiness::The repository secret CROUPIER_PREVIEW_DATABASE_URL (preview's read-only migration role) is missing. Preview never falls back to the production ledger."
+            exit 1
+          fi
+          echo "Migration ledger: $ledger"
+          echo "environment=$ledger" >> "$GITHUB_OUTPUT"
       - run: npm --prefix apps/studio ci
+      - name: Studio migration readiness (preview ledger)
+        if: steps.ledger.outputs.environment == 'preview'
+        run: node tools/check-migration-readiness.mjs
+        env:
+          CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}
       - name: Studio migration readiness (production ledger)
+        if: steps.ledger.outputs.environment == 'production'
         run: node tools/check-migration-readiness.mjs
         env:
           CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
@@ -389,12 +444,12 @@ jobs:
     if: needs.changes.outputs.moving == 'true' && needs.changes.outputs.draft != 'true'
     uses: ./.github/workflows/moving-gpu-build.yml
 
-  # The required check is named CI only for runs that can merge (push, manual,
-  # PR ready for review). A draft run reports "CI (utkast)" instead, so the
+  # The required check is named CI only for runs that can merge (push, schedule,
+  # manual, PR ready for review). A draft run reports "CI (utkast)" instead, so the
   # ruleset and tools/merge-pr.mjs keep waiting for the real CI on that head.
   ci:
     name: ${{ needs.changes.outputs.draft == 'true' && 'CI (utkast)' || 'CI' }}
-    needs: [changes, documentation, targeted, dealer-regression, gateway-container, migration-readiness, moving-worker]
+    needs: [changes, documentation, targeted, dealer-regression, browser-regression, gateway-container, migration-readiness, moving-worker]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
@@ -411,30 +466,41 @@ jobs:
           const moving = jobs.changes?.outputs?.moving;
           const migration = jobs.changes?.outputs?.migration;
           const gateway = jobs.changes?.outputs?.gateway;
+          const browser = jobs.changes?.outputs?.browser;
           let legs;
           try { legs = JSON.parse(jobs.changes?.outputs?.legs ?? ''); } catch { legs = null; }
           const fail = message => { console.error(`CI failed: ${message}`); process.exit(1); };
           if (jobs.changes?.result !== 'success' || !['true', 'false'].includes(draft) || !Array.isArray(legs)
             || !legs.every(leg => typeof leg === 'string' && leg)) fail('the change classification is missing or malformed.');
+          // Prose-only PRs and pushes to main (integration) run the documentation job, no regression leg.
+          const legless = scope === 'documentation' || scope === 'integration';
+          if (!['required', 'advisory', 'none'].includes(browser) || (browser !== 'none' && (legless || draft === 'true'))) {
+            fail('the browser selection is missing or contradicts the classification.');
+          }
           if (draft === 'true') {
             // Targeted run only: nothing heavy may have run, and the targeted job must pass.
             const required = scope === 'documentation' ? ['documentation'] : ['targeted'];
-            const idle = ['dealer-regression', 'gateway-container', 'migration-readiness', 'moving-worker', scope === 'documentation' ? 'targeted' : 'documentation'];
-            if (required.some(name => jobs[name]?.result !== 'success') || idle.some(name => jobs[name]?.result !== 'skipped')) {
+            const idle = ['dealer-regression', 'browser-regression', 'gateway-container', 'migration-readiness', 'moving-worker', scope === 'documentation' ? 'targeted' : 'documentation'];
+            if (scope === 'integration' || required.some(name => jobs[name]?.result !== 'success') || idle.some(name => jobs[name]?.result !== 'skipped')) {
               fail('a draft run requires the targeted (or documentation) job to pass and nothing else to run.');
             }
             console.log(`CI (utkast) passed: ${scope}; the required check CI runs when the PR is marked ready for review.`);
             process.exit(0);
           }
-          const required = scope === 'documentation' ? ['documentation'] : legs.length ? ['dealer-regression'] : [];
-          if (!['true', 'false'].includes(migration)
+          const required = legless ? ['documentation'] : legs.length ? ['dealer-regression'] : [];
+          if (browser === 'required') required.push('browser-regression');
+          if (!['true', 'false'].includes(migration) || (scope === 'integration' && migration !== 'true')
             || (migration === 'true' && (scope === 'documentation'
               || jobs['migration-readiness']?.result !== 'success'))) {
             fail('required production migration readiness is missing or unsuccessful. Fork code must not receive production credentials; review and rerun from an authorized repository branch.');
           }
-          if (!['true', 'false'].includes(gateway) || (scope === 'documentation') !== (legs.length === 0)
+          if (!['true', 'false'].includes(gateway) || legless !== (legs.length === 0)
             || jobs['gateway-container']?.result !== (gateway === 'true' && scope !== 'documentation' ? 'success' : 'skipped')) {
             fail('the Gateway container check is missing, failed, or ran against the classification.');
+          }
+          if ((legless && jobs['dealer-regression']?.result !== 'skipped')
+            || (browser === 'none' && jobs['browser-regression']?.result !== 'skipped')) {
+            fail('a regression job ran against the classification.');
           }
           if (!['true', 'false'].includes(moving)
             || jobs['moving-worker']?.result !== (moving === 'true' ? 'success' : 'skipped')
@@ -443,5 +509,10 @@ jobs:
             || required.some(name => jobs[name]?.result !== 'success')) {
             fail('a required check failed, was cancelled, skipped, or was not reported.');
           }
-          console.log(`CI passed: ${scope} (${legs.join(', ') || 'no regression legs'})`);
+          // Advisory: a ready PR without browser client changes reports Chrome acceptance without waiting on it; the nightly run on main requires it.
+          const chrome = jobs['browser-regression']?.result;
+          if (browser === 'advisory' && chrome !== 'success') {
+            console.log(`::warning title=Regression (browser)::Chrome acceptance reported ${chrome ?? 'nothing'}. It does not block this PR; the nightly run on main requires it.`);
+          }
+          console.log(`CI passed: ${scope} (${legs.join(', ') || 'no regression legs'}; browser ${browser})`);
           NODE

@@ -90,10 +90,17 @@ export function rejectPartnerMethod() {
     headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
   });
 }
+// 409 med kod från spelbordens skrivvägar (partner-table-api.mjs): spelbordet är
+// pausat av Admin (eller aldrig pausat av bolaget självt), och bara Admin öppnar det.
+export const PARTNER_TABLE_CONFLICTS = Object.freeze(['admin-pause']);
 function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
-  const reason = status === 409 && PARTNER_TEAM_CONFLICTS.includes(error?.reason) ? error.reason : null;
+  // 503 studio_migration_required: koden väntar på en Studio-migrering (t.ex. 022).
+  // 429 partner_request_limit: bolagets tak för begäranden per timme är nått.
+  const reason = status === 409 && [...PARTNER_TEAM_CONFLICTS, ...PARTNER_TABLE_CONFLICTS].includes(error?.reason) ? error.reason
+    : status === 503 && error?.code === 'studio_migration_required' ? error.code
+      : status === 429 && error?.code === 'partner_request_limit' ? error.code : null;
   return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
@@ -260,6 +267,11 @@ async function logout(request, body, config) {
   return json({ ok: true }, 200, [partnerCookie('', 0)]);
 }
 
+// Partner-API:ts egna vägar (ADMIN-FORENKLING 5.5, partner-table-api.mjs):
+// läsningar med GET och åtgärder med POST, alltid med ?operator=<slug>.
+const PARTNER_TABLE_GETS = Object.freeze(['assignment']);
+const PARTNER_TABLE_POSTS = Object.freeze(['dealer', 'room-settings', 'room-state', 'request']);
+const PARTNER_OPERATOR_POSTS = Object.freeze(['branding', 'team', ...PARTNER_TABLE_POSTS]);
 function partnerAction(pathname, config) {
   const base = partnerApiBase(config);
   const bare = base.startsWith('/studio/') ? base.slice('/studio'.length) : base;
@@ -297,7 +309,7 @@ function preparePartnerRequest(request, config) {
     if (partnerAction(url.pathname, config) === 'snapshot' && !url.search) {
       if (url.hash) fail(400);
     } else operatorSlugValue = takeOperatorSlug(url);
-  } else if (request.method === 'POST' && ['branding', 'team'].includes(partnerAction(url.pathname, config))) {
+  } else if (request.method === 'POST' && PARTNER_OPERATOR_POSTS.includes(partnerAction(url.pathname, config))) {
     if (url.hash) fail(400);
     operatorSlugValue = takeOperatorSlug(url);
   } else if (url.search || url.hash) fail(400);
@@ -324,13 +336,13 @@ function preparePartnerRequest(request, config) {
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
   const action = partnerAction(pathname, config);
-  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'journal', 'set-password'].includes(action)) fail(404);
+  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'journal', 'set-password', ...PARTNER_TABLE_GETS, ...PARTNER_TABLE_POSTS].includes(action)) fail(404);
   if (action === 'branding' || action === 'team') {
     if (request.method !== 'GET' && request.method !== 'POST') {
       return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
   } else {
-    const allowed = action === 'snapshot' || action === 'journal' ? 'GET' : 'POST';
+    const allowed = ['snapshot', 'journal', ...PARTNER_TABLE_GETS].includes(action) ? 'GET' : 'POST';
     if (request.method !== allowed) {
       return { response: new Response(null, { status: 405, headers: { Allow: allowed, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
@@ -371,7 +383,7 @@ async function openBrandingStore(config) {
   }
 }
 // Session, operator and the caller's active membership, read fresh for this request.
-async function partnerOperatorContext(prepared, config) {
+export async function partnerOperatorContext(prepared, config) {
   const session = await authorizePartnerWorkspace(prepared.request, config);
   const store = await openBrandingStore(config);
   if (typeof store.getOperatorBySlug !== 'function') fail(503);
@@ -397,7 +409,7 @@ async function partnerOperatorContext(prepared, config) {
   if (membership.scope && !sameOperatorScope(membership.scope, session.scope)) fail(403);
   return { session, store, operator, context, membership };
 }
-async function decidedPartnerContext({ session, store, operator, context, membership }) {
+export async function decidedPartnerContext({ session, store, operator, context, membership }) {
   if (session.accessClass === 'internal-admin') return context;
   if (typeof store.getRole !== 'function') fail(503);
   const role = await store.getRole(operator.id, membership.roleId);
@@ -421,7 +433,7 @@ async function decidedPartnerContext({ session, store, operator, context, member
   };
 }
 // tables.read styr spelbordslistan, som i snapshoten (partner-data.mjs). Utan den
-// bär utseendet bara bolagets val: inga spelbord (namn, scenmall, spel), inga
+// bär utseendet bara bolagets val: inga spelbord (namn, miljö, spel), inga
 // dealerval per spelbord och, i granskningen, bara bolagsradernas ändringar.
 // Granskningen säger då `tablesHidden: true` (en tom `affectedRooms` betyder att
 // spelborden inte visas, inte att inga berörs: en publicering gäller alltid alla
@@ -437,7 +449,8 @@ function brandingWithoutTables(view) {
   }
   return { ...view, rooms: [], roomDealerChoices: {} };
 }
-async function brandingResponse(prepared, config) {
+// Utseendets API med partnersessionen: delas av `branding` och `dealer`.
+async function partnerBranding(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const { session, store, operator } = found;
   const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
@@ -500,6 +513,12 @@ async function brandingResponse(prepared, config) {
   if (!allowsWorkspaceResource(decided, 'presentations.read', { scope, operatorId: operator.id })) fail(403);
   const canConfigure = mayConfigure(decided);
   const mayReadTables = context => allowsWorkspaceResource(context, 'tables.read', { scope: session.scope, operatorId: operator.id });
+  // Svaret efter en ändring följer rollen som den var när ändringen gjordes.
+  const savedView = saved => ({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true});
+  return { found, api, decided, canConfigure, mayReadTables, savedView };
+}
+async function brandingResponse(prepared, config) {
+  const { found: { session, operator }, api, decided, canConfigure, mayReadTables, savedView } = await partnerBranding(prepared, config);
   if (prepared.request.method === 'GET') {
     const view = await api.readState({ operatorId: operator.id });
     return json({ ...(mayReadTables(decided) ? view : brandingWithoutTables(view)), canConfigure }, 200, [], { vary: true });
@@ -516,12 +535,94 @@ async function brandingResponse(prepared, config) {
   if(!Object.hasOwn(actionFields,body.action))fail(400);
   keys(body,actionFields[body.action]);
   const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
-  return json({...(reauthorized&&mayReadTables(reauthorized)?saved:brandingWithoutTables(saved)),canConfigure:true},200,[],{vary:true});
+  return json(savedView(saved),200,[],{vary:true});
+}
+// Byta dealer för ett eget spelbord inom tilldelningen (ADMIN-FORENKLING 5.5):
+// presentations.configure och allow.dealer. Valet sparas i bolagets
+// utseendeutkast (roomOverrides) med samma CAS som `branding`; publiceringen
+// går sedan genom utkastets granskning och publicering som förut.
+async function dealerResponse(prepared, config) {
+  const { found: { session, store, operator }, api, canConfigure, savedView } = await partnerBranding(prepared, config);
+  if (!canConfigure) fail(403);
+  const [{ cleanBrandingDraft }, { partnerAllow, partnerAssignment }, { readPackagePresentation }, { publicEditableBranding }] = await Promise.all([
+    import('./partner-branding-api.mjs'), import('./partner-assignment.mjs'),
+    import('../../../packages/presentation/server/presentation-package.mjs'), import('../../../packages/operators/contracts/branding.mjs')]);
+  const body = await bodyOf(prepared.request);
+  keys(body, ['roomId', 'dealer', 'expectedDraftRevision', 'expectedPackageRevision']);
+  if (!/^[a-z][a-z0-9-]{0,63}$/.test(body.roomId ?? '') || !text(body.dealer, 100)
+    || !Number.isSafeInteger(body.expectedDraftRevision) || body.expectedDraftRevision < 0
+    || !Number.isSafeInteger(body.expectedPackageRevision) || body.expectedPackageRevision < 1) fail(400);
+  if (!['getBrandingDraft', 'getCurrentPackage'].every(name => typeof store[name] === 'function')) fail(503);
+  const pack = await store.getCurrentPackage(operator.id);
+  if (!pack) fail(404);
+  if (pack.operatorId !== operator.id) fail(403);
+  // Utkastets bas läses vid de revisioner anroparen såg; transaktionen i
+  // api.command kontrollerar samma revisioner igen under bolagets lås.
+  if (pack.revision !== body.expectedPackageRevision) fail(409);
+  const presentation = readPackagePresentation(pack);
+  if (!partnerAllow(pack, presentation).dealer) fail(403);
+  if (!partnerAssignment(pack, presentation).dealers.some(dealer => dealer.id === body.dealer)) fail(422);
+  const draft = await store.getBrandingDraft(operator.id);
+  if ((draft?.revision ?? 0) !== body.expectedDraftRevision) fail(409);
+  const clean = await cleanBrandingDraft(draft, pack, store);
+  const base = clean ? clean.branding : publicEditableBranding(pack.branding);
+  const overrides = { ...(base.roomOverrides ?? {}) };
+  overrides[body.roomId] = { ...(overrides[body.roomId] ?? {}), dealer: body.dealer };
+  const saved = await api.command({ action: 'save-draft', expectedDraftRevision: body.expectedDraftRevision,
+    expectedPackageRevision: body.expectedPackageRevision, branding: { ...base, roomOverrides: overrides },
+    operatorId: operator.id, actor: session.user, audit: operatorAuditContext(session) });
+  return json(savedView(saved), 200, [], { vary: true });
+}
+// Begära material eller nyckelrotation (ADMIN-FORENKLING 5.5): en journalpost i
+// bolagets journal (operator_audit_events). Inget annat ändras. Den enda läsaren i
+// dag är partnerjournalen (`journal`, team.read + team.roles.assign), utan egen
+// etikett för request.* och utan meddelandet; en Admin-läsare av begäranden och
+// etiketterna i journalvyn är en egen UI-PR efter steg C.
+// Behörigheterna följer planen (ADMIN-FORENKLING 5.4): material.request (alla
+// standardroller) och integration.request (Integration-vyn kräver integrations.read).
+// Före Studio-migrering 022 svarar lagret 503 studio_migration_required, och högst
+// PARTNER_REQUEST_LIMIT begäranden per bolag och timme (429 partner_request_limit).
+export const PARTNER_REQUEST_KINDS = Object.freeze({
+  material: Object.freeze({ action: 'request.material', requires: Object.freeze(['material.request']) }),
+  'key-rotation': Object.freeze({ action: 'request.key-rotation', requires: Object.freeze(['integrations.read', 'integration.request']) }),
+});
+async function requestResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const { session, store, operator } = found;
+  const body = await bodyOf(prepared.request);
+  if (!body || !Object.hasOwn(PARTNER_REQUEST_KINDS, body.kind)) fail(400);
+  keys(body, ['kind', 'message'], ['kind']);
+  const kind = PARTNER_REQUEST_KINDS[body.kind];
+  if (!kind.requires.every(permission => allowsWorkspaceResource(decided, permission, { scope: session.scope, operatorId: operator.id }))) fail(403);
+  if (Object.hasOwn(body, 'message') && (!text(body.message, 500) || body.message.trim() !== body.message)) fail(400);
+  if (typeof store.recordPartnerRequest !== 'function') fail(503);
+  const saved = await store.recordPartnerRequest({ operatorId: operator.id, action: kind.action, actor: session.user,
+    audit: operatorAuditContext(session), ...(Object.hasOwn(body, 'message') ? { message: body.message } : {}) });
+  return json({ ok: true, kind: body.kind, message: saved.message }, 200, [], { vary: true });
+}
+// Tilldelningen (presentations.read; spelborden med tables.read), partner-table-api.mjs.
+async function assignmentResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const { readPartnerAssignment } = await import('./partner-table-api.mjs');
+  return json(await readPartnerAssignment({ found, decided, config }), 200, [], { vary: true });
 }
 // Publiceringshistoriken: bolagets publicerade versioner, utan ändringsinnehåll
 // och utan vem/hur (konto-id, accessClass, requestId, resourceType/Id).
 const PUBLICATION_ACTIONS = Object.freeze(['package.publish']);
 const publicationEntry = ({ id, atMs, beforeRevision, afterRevision }) => ({ id, atMs, beforeRevision, afterRevision });
+// Administrationsdokumentets revision (spelbordens läge, spelinställningsutkast)
+// är Scoutgamings interna, delade revision: den stannar i journalen på servern
+// och skickas aldrig till bolaget.
+const withoutAdministrationRevision = value => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const { administrationRevision: _hidden, ...rest } = value;
+  return rest;
+};
+const partnerJournalEntry = entry => (entry?.changes && typeof entry.changes === 'object' && !Array.isArray(entry.changes)
+  ? { ...entry, changes: Object.fromEntries(Object.entries(withoutAdministrationRevision(entry.changes))
+    .map(([key, value]) => [key, withoutAdministrationRevision(value)])) } : entry);
 async function journalResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const decided = await decidedPartnerContext(found);
@@ -536,7 +637,8 @@ async function journalResponse(prepared, config) {
   const result = await found.store.listAuditEvents(found.operator.id,{cursor:prepared.journalCursor,limit:prepared.journalLimit,
     ...(publications ? { actions: [...PUBLICATION_ACTIONS] } : {})});
   // Försvar på djupet: även om lagret skulle lämna andra rader bär svaret bara publiceringar.
-  const entries = publications ? result.entries.filter(entry => PUBLICATION_ACTIONS.includes(entry?.action)).map(publicationEntry) : result.entries;
+  const entries = publications ? result.entries.filter(entry => PUBLICATION_ACTIONS.includes(entry?.action)).map(publicationEntry)
+    : result.entries.map(partnerJournalEntry);
   return json({...result,entries,nextCursor:result.nextCursor ? Buffer.from(JSON.stringify(result.nextCursor)).toString('base64url') : null},200,[],{vary:true});
 }
 // Invite links an existing partner account, or creates an invited one (N2.6).
@@ -676,6 +778,13 @@ export async function handlePartnerAuth(request, injected) {
     if (prepared.action === 'branding') return await brandingResponse(prepared, config);
     if (prepared.action === 'team') return await teamResponse(prepared, config);
     if (prepared.action === 'journal') return await journalResponse(prepared, config);
+    if (prepared.action === 'assignment') return await assignmentResponse(prepared, config);
+    if (prepared.action === 'dealer') return await dealerResponse(prepared, config);
+    if (prepared.action === 'request') return await requestResponse(prepared, config);
+    if (prepared.action === 'room-settings' || prepared.action === 'room-state') {
+      const { partnerTableAction } = await import('./partner-table-api.mjs');
+      return json(await partnerTableAction(prepared, config, () => bodyOf(prepared.request)), 200, [], { vary: true });
+    }
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     if (prepared.action === 'set-password') return await setPassword(prepared.request, body, config);

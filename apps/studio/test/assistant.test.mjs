@@ -125,10 +125,10 @@ test('material action retains dependency token, review consequences and original
 });
 
 test('dealer restore preview lists saved compositions while retaining the original revision-bound command',async()=>{
- const h=actionFixture();h.state.project.dealerTrash=[{dealer:h.state.project.dealers[0],compositions:[{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}]}];h.state.project.dealers=[];
+ const h=actionFixture();h.state.project.dealerTrash=[{dealer:h.state.project.dealers[0],compositions:[{id:'first',label:'Första miljön'},{id:'second',label:'Andra miljön'}]}];h.state.project.dealers=[];
  const p=await prepareAssistantAction(h.native,req(),{action:'dealer.restore',targetId:'astrid',value:null},{services:h.services});
- assert.match(p.review.impact.notice,/sparade sammansättningar återförs som utkast/);
- assert.match(p.review.impact.notice,/Sparade sammansättningar \(2\): Första mallen, Andra mallen/);
+ assert.match(p.review.impact.notice,/sparade miljöer återförs som utkast/);
+ assert.match(p.review.impact.notice,/Sparade miljöer \(2\): Första miljön, Andra miljön/);
  assert.match(p.review.impact.notice,/AI-tal förblir avstängt/);assert.match(p.review.impact.notice,/Rum återställs eller öppnas inte automatiskt/);
  assert.equal(p.plan.path,'/dealers/archive');assert.deepEqual(p.plan.body,{dealerId:'astrid',expectedRevision:'p1',archived:false});assert.equal(h.state.calls.length,0);
 });
@@ -203,7 +203,7 @@ test('N1 read loop feeds scoped observations to the next model turn and never ex
  let calls=0,h;h=fixture({ask:async args=>{calls++;if(calls===1)return {reply:'Läser',proposal:null,read:{source:'media',query:'astrid',offset:0}};
  assert.equal(args.context.requestedData[0].items[0].label,'Saved clip');return {reply:'Hittade klippet',proposal:null,navigation:{page:'import',targetId:'astrid'}};},
  readData:async()=>({source:'media',total:1,complete:true,items:[{label:'Saved clip'}]})});
- const result=await(await h.post(chat())).json();assert.equal(calls,2);assert.equal(result.navigation.href,'/admin/clips?tool=import&dealer=astrid');assert.equal(h.state.executions,0);
+ const result=await(await h.post(chat())).json();assert.equal(calls,2);assert.equal(result.navigation.href,'/admin/clips?panel=intake&dealer=astrid');assert.equal(h.state.executions,0);
 });
 test('revocation during a scoped read prevents a second model call and private response',async()=>{
  let h,calls=0;h=fixture({ask:async()=>{calls++;return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};},readData:async()=>{h.state.actor=null;return {private:'SECRET'};}});

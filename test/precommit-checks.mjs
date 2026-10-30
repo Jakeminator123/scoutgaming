@@ -29,7 +29,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/new-runtime.md',
     'packages/presentation/README.md', 'apps/studio/client/README.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md', 'ops/cloud/README.md',
-    'START-HERE.md', 'inbox/README.md', 'docs/history/2026-10-27-receipt.json',
+    'START-HERE.md', 'inbox/README.md',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
     'services/astrid-gpu-worker/gateway/README.md',
     'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
@@ -126,6 +126,17 @@ test('a commit that adds a test file runs the orphan audit so CI cannot be the f
   assert.ok(checkPlan('focused', { changes: [change('test/new-rule.mjs', 'A')] }).some(args => args.join(' ') === audit.join(' ')));
   assert.ok(checkPlan('focused', { changes: [change('test/new-rule.mjs', 'M')] }).every(args => args.join(' ') !== audit.join(' ')));
   assert.ok(checkPlan('documentation', { changes: [change('docs/test/x.md', 'A')] }).every(args => args.join(' ') !== audit.join(' ')));
+});
+
+test('the focused hook runs the environment guard for changed source files, not for prose', () => {
+  const guard = [process.execPath, 'tools/check-environment-variables.mjs'].join(' ');
+  const runs = plan => plan.filter(args => args.join(' ') === guard).length;
+  for (const path of ['services/game/server.mjs', 'apps/studio/next.config.mjs', 'test/new-rule.mjs', 'vercel.json']) {
+    assert.equal(runs(checkPlan('focused', { changes: [change(path)] })), 1, path);
+  }
+  assert.equal(runs(checkPlan('focused', { changes: [change('docs/guide.md')] })), 0);
+  assert.equal(runs(checkPlan('documentation', { changes: [change('docs/environment-variables.json')] })), 1);
+  assert.equal(runs(checkPlan('documentation', { changes: [change('docs/guide.md')] })), 0);
 });
 
 test('staged parser preserves unusual filenames and rejects malformed output', () => {
@@ -447,8 +458,8 @@ test('source consumers are registered tests that load the path; data, comments a
     assert.deepEqual(focusedTests([change('apps/studio/client/admin/components/studio/panel.tsx', 'D')], root),
       ['apps/studio/client/admin/lib/panel-view.test.mjs']);
     // Documentation never searches for consumers.
-    await writeTree(root, { 'docs/history/receipt.json': '{}\n', 'test/receipt-reader.mjs': "readFileSync(resolve(root, 'docs/history/receipt.json'));\n" });
-    assert.deepEqual(tests('docs/history/receipt.json'), []);
+    await writeTree(root, { 'docs/plans/receipt.md': '# Kvitto\n', 'test/receipt-reader.mjs': "readFileSync(resolve(root, 'docs/plans/receipt.md'));\n" });
+    assert.deepEqual(tests('docs/plans/receipt.md'), []);
     // Negative: nothing loads this component.
     await writeTree(root, { 'apps/studio/client/admin/components/studio/unused-card.tsx': 'export {};\n' });
     assert.deepEqual(tests('apps/studio/client/admin/components/studio/unused-card.tsx'), []);

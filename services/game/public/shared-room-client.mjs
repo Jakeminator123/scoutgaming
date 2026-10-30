@@ -28,12 +28,25 @@ function presentationTimeout(presentation, stallMs) {
   return Math.ceil(Math.max(planned, mediaBudget) + stallMs);
 }
 
-function readState(data, roomId, maxMessageBytes) {
+function readFrame(data, maxMessageBytes) {
   // Browser WebSocket delivers the server's JSON text. Binary frames are never
   // decoded or expanded, and both UTF-16 length and wire bytes are bounded.
   if (typeof data !== 'string' || data.length > maxMessageBytes
     || new TextEncoder().encode(data).byteLength > maxMessageBytes) invalid();
-  const frame = JSON.parse(data), s = frame?.snapshot, p = frame?.presentation;
+  return JSON.parse(data);
+}
+// Chat (PR 1): one line in the room's chat log; never game state.
+// PR 4: a dealer line may carry this socket's own speech descriptor; the speech player validates it before use.
+function readChat(frame, roomId) {
+  const speech = frame.speech;
+  if (Object.keys(frame).length !== (speech === undefined ? 8 : 9) || (speech !== undefined && (!object(speech) || frame.who !== 'dealer')) || frame.roomId !== roomId || typeof frame.lineId !== 'string' || !/^[qa]-[0-9a-f]{24}$/.test(frame.lineId)
+    || !id(frame.requestId) || !['you', 'player', 'dealer'].includes(frame.who)
+    || !(frame.seat === null || (Number.isSafeInteger(frame.seat) && frame.seat >= 1 && frame.seat <= 7))
+    || typeof frame.text !== 'string' || !frame.text.trim() || frame.text.length > 1000 || !integer(frame.at)) invalid();
+  return Object.freeze({ lineId: frame.lineId, requestId: frame.requestId, who: frame.who, seat: frame.seat, text: frame.text, at: frame.at, ...(speech ? { speech } : {}) });
+}
+function readState(frame, roomId) {
+  const s = frame?.snapshot, p = frame?.presentation;
   if (!object(frame) || frame.type !== 'shared-room-state' || frame.roomId !== roomId
     || !object(s) || s.contract !== 'blackjack-table/1' || s.roomId !== roomId
     || !integer(s.version) || !integer(s.presentationVer) || !id(s.configVersion) || !id(s.windowId)
@@ -66,6 +79,9 @@ const recoverable = new Set(['shared_room_presentation_stale', 'shared_room_pres
 // A partner session refused for its key's company (docs/plans/NYCKEL-BOLAG.md): the server names the
 // reason in its 1008 close. No other socket changes that answer, so the client ends at once with it.
 const partnerRefusals = new Set(['partner_operator_mismatch', 'partner_key_unbound']);
+// A live room without published game settings (shared-room-access.mjs ROOM_CONFIG_MISSING). Admin can publish
+// them at any moment, so one more socket is tried; a second refusal ends the client with this code.
+export const ROOM_CONFIG_MISSING = 'room_config_missing';
 // A page and its network are optional wake-up sources; anything else is refused.
 const eventTarget = value => value && typeof value.addEventListener === 'function' && typeof value.removeEventListener === 'function';
 
@@ -94,14 +110,15 @@ const eventTarget = value => value && typeof value.addEventListener === 'functio
  * close (1008) gets one fresh socket, in case the browser renewed its session cookie
  * (which this client cannot read); a second refusal, or that socket closing before it
  * delivered a state, ends the client. A 1008 naming a partner refusal (another company, or a
- * key without one) ends it at once and reports that code.
+ * key without one) ends it at once and reports that code. A 1008 naming room_config_missing (the
+ * room has no published game settings) gets one more socket; a second one ends the client with it.
  * Renderer failure or timeout is terminal, except the recognized stale room binding
  * conflict and a binding read that kept failing transiently, which reconnect within
  * the same outage budget.
  */
 export function createSharedRoomClient({
   roomId, browserOrigin, WebSocket = globalThis.WebSocket,
-  restoreSnapshot, present, onError = () => {}, now = Date.now,
+  restoreSnapshot, present, onChat = () => {}, onError = () => {}, now = Date.now,
   maxMessageBytes = 256 * 1024, maxPendingStates = 4,
   maxReconnectAttempts = 20, reconnectDelayMs = 250, maxReconnectDelayMs = 5000, reconnectBudgetMs = 60000,
   connectTimeoutMs = 5000, callbackTimeoutMs = 10000,
@@ -112,7 +129,7 @@ export function createSharedRoomClient({
   try { origin = new URL(browserOrigin); } catch { throw new TypeError('shared_room_invalid_origin'); }
   if (!id(roomId) || origin.origin !== browserOrigin || !['http:', 'https:'].includes(origin.protocol)
     || (globalThis.location && globalThis.location.origin !== browserOrigin)
-    || ![WebSocket, restoreSnapshot, present, onError, now].every(port => typeof port === 'function')
+    || ![WebSocket, restoreSnapshot, present, onChat, onError, now].every(port => typeof port === 'function')
     || !Number.isSafeInteger(maxMessageBytes) || maxMessageBytes < 256 || maxMessageBytes > 1024 * 1024
     || !Number.isSafeInteger(maxPendingStates) || maxPendingStates < 1 || maxPendingStates > 32
     || !Number.isSafeInteger(maxReconnectAttempts) || maxReconnectAttempts < 0 || maxReconnectAttempts > 60
@@ -126,7 +143,7 @@ export function createSharedRoomClient({
   }
   const socketURL = `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}/shared-room/${roomId}`;
   let state = 'idle', connection, retryTimer, pumping = false, queue = [], playing = null;
-  let retries = 0, outageAt, outage, reauthorizing = false, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
+  let retries = 0, outageAt, outage, reauthorizing = false, configRetried = false, snapshotVersion = -1, snapshotPresentationVer = -1, appliedVer = 0, actorId;
   const timers = new Set();
   const current = candidate => state === 'running' && connection === candidate && !candidate.controller.signal.aborted;
   const report = code => { try { onError(Object.freeze({ code })); } catch {} };
@@ -181,6 +198,11 @@ export function createSharedRoomClient({
     if (!current(candidate)) return;
     if ([1002, 1003, 1007, 1009].includes(code)) { finish('shared_room_invalid_state'); return; }
     if (code === 1008 && partnerRefusals.has(reason)) { finish(reason); return; }
+    if (code === 1008 && reason === ROOM_CONFIG_MISSING) {
+      // Two attempts in all: this socket and one more. No minute of retries behind "Återansluter…".
+      if (configRetried) { finish(ROOM_CONFIG_MISSING); return; }
+      configRetried = true; disconnected(candidate); return;
+    }
     if (reauthorizing || code === 1008) {
       // The one re-authenticating socket was refused again or closed before any state.
       if (reauthorizing) { finish('shared_room_unauthorized'); return; }
@@ -254,12 +276,18 @@ export function createSharedRoomClient({
     const receivedAt = now();
     let frame;
     try {
-      frame = readState(event.data, roomId, maxMessageBytes);
+      frame = readFrame(event.data, maxMessageBytes);
+      if (object(frame) && frame.type === 'shared-room-chat') {
+        const line = readChat(frame, roomId);
+        try { onChat(line); } catch {}
+        return;
+      }
+      frame = readState(frame, roomId);
       if (actorId !== undefined && frame.snapshot.me.id !== actorId) invalid();
     } catch { finish('shared_room_invalid_state'); return; }
     actorId ??= frame.snapshot.me.id;
     // The server authorized this socket: a later 1008 gets its own single re-authentication.
-    reauthorizing = false;
+    reauthorizing = false; configRetried = false;
     const s = frame.snapshot, tail = queue.at(-1)?.frame.snapshot;
     // Never queue a state older than one already rendered or pending.
     if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer

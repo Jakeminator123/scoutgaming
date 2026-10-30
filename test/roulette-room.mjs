@@ -64,3 +64,14 @@ test('currency changes reject a new stake but preserve an already committed rece
   assert.throws(()=>roomCommand(state,{...request,requestId:randomUUID(),version:1},95,{currency:'EUR'}),/currency_changed/);
   assert.equal(state.version,1);assert.equal(first.round.wagered,5);
 });
+
+test('new spins need available funds while settlement and receipt replay retain the total wallet',()=>{
+  const state=newRoom(),request=command([{id:'red',amount:20}]);let draws=0;
+  const options={availableBalance:0,draw:context=>{draws++;return draw(1)(context);}};
+  for(let i=0;i<2;i++) assert.throws(()=>roomCommand(state,request,100,options),/insufficient_balance/);
+  assert.equal(draws,0);assert.deepEqual(state,newRoom());
+  const first=roomCommand(state,request,100,{...options,availableBalance:20});
+  assert.equal(first.round.balanceAfter,120);assert.equal(draws,1);
+  const replay=roomCommand(state,request,120,options);
+  assert.equal(replay.replayed,true);assert.deepEqual(replay.round,first.round);assert.equal(draws,1);
+});

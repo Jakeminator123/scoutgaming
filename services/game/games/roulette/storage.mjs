@@ -23,7 +23,10 @@ export function createPostgresRouletteCommand({ pool, draw }) {
       const before = playerBalance(player);
       const saved = (await client.query('SELECT state FROM croupier_game.roulette_tables WHERE player_id=$1 AND operator_id=$2 AND room_id=$3',[id,room.operatorId,room.id])).rows[0];
       const state = saved ? JSON.parse(saved.state) : newRoom();
-      const result = roomCommand(state,request,before,{ draw, currency:player.currency, room });
+      // Read after acquiring P: a reservation may have committed while we waited for the lock.
+      const held = (await client.query('SELECT COALESCE(sum(amount),0) AS reserved FROM croupier_game.shared_wallet_reservations WHERE player_id=$1',[id])).rows[0];
+      const availableBalance = (cents(before)-cents(Number(held.reserved)))/100;
+      const result = roomCommand(state,request,before,{ draw, currency:player.currency, room, availableBalance });
       let balance = before;
       if (result.changed) {
         balance = result.round.balanceAfter;

@@ -12,20 +12,25 @@ const packageRevision = value => Number.isSafeInteger(value) && value > 0;
 const roomName = (value, maximum = 100) => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= maximum && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
 const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large', 'presentation_room_environment_required']);
 const conflictMessages = Object.freeze({
-  presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
-  presentation_shared_layer_conflict: 'Ett bord eller en bakgrund skiljer sig från paketets frysta definition. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
-  presentation_legacy_package_conflict: 'Paketets äldre format kan inte uppdateras en presentation i taget. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
-  presentation_room_binding_conflict: 'Ett befintligt spelrum är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera sammansättningens startdealer mot rummets inställningar i Administration. Rummets koppling ändras inte av publicering.',
-  presentation_game_lane_conflict: 'Den tekniska spelkonfigurationen krockar med en befintlig definition. Kontrollera Bord & spelrum i Administration. Skapa inte ett extra rum för att kringgå konflikten.',
-  presentation_room_environment_conflict: 'Sammansättningen används redan av publicerade rum med en annan miljö. Skapa en separat sammansättning för det nya rummets fasta bakgrund. Befintliga rum och deras publicerade miljöer ändras inte här.',
+  presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga spelbord och dealers.',
+  presentation_shared_layer_conflict: 'Ett bord eller en bakgrund skiljer sig från paketets frysta definition. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga spelbord och dealers.',
+  presentation_legacy_package_conflict: 'Paketets äldre format kan inte uppdateras en presentation i taget. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga spelbord och dealers.',
+  presentation_room_binding_conflict: 'Ett befintligt spelbord är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera miljöns startdealer mot spelbordets inställningar i Admin. Spelbordets koppling ändras inte av publicering.',
+  presentation_game_lane_conflict: 'Den tekniska spelkonfigurationen krockar med en befintlig definition. Kontrollera bolagets spelbord i Admin. Skapa inte ett extra spelbord för att kringgå konflikten.',
+  presentation_room_environment_conflict: 'Miljön används redan av publicerade spelbord med en annan miljö. Skapa en separat miljö för det nya spelbordets fasta bakgrund. Befintliga spelbord och deras publicerade miljöer ändras inte här.',
 });
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
 export class PresentationRoomError extends Error {
-  constructor(message, { status = 0, uncertain = false } = {}) {
+  constructor(message, { status = 0, uncertain = false, code = null, materialReason = null } = {}) {
     super(message); this.name = 'PresentationRoomError'; this.status = status; this.uncertain = uncertain;
+    // Serverns fasta kod (t.ex. studio_room_choices_draft_pending) och materialets skäl (native_material_*), annars null.
+    this.code = code; this.materialReason = materialReason;
   }
 }
+// Spelinställningarna i samma POST (presentation-room-api.mjs gameConfig): språk och insatsprofil.
+const gameConfigShape = value => sameKeys(value, ['language', 'limitPreset']) && typeof value.language === 'string' && /^[a-z]{2}$/.test(value.language)
+  && typeof value.limitPreset === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(value.limitPreset);
 const invalid = () => { throw new PresentationRoomError('Svaret kunde inte verifieras.'); };
 function capability(value) {
   if (value === null) return null;
@@ -85,12 +90,17 @@ function receipt(value, context, payload) {
     || !revision(value.administrationRevision) || !packageRevision(value.packageRevision)) invalid();
   const playUrl = presentationRoomPlayUrl(value.playUrl, { operatorSlug: context.operator.slug, roomId: room.id });
   if (!playUrl.startsWith(`/play/${payload.game ?? 'blackjack'}?`)) invalid();
+  // Med spelinställningar: kvittot bär exakt de publicerade inställningarna.
+  const published = payload.gameConfig ? value.published : undefined;
+  if (payload.gameConfig && (!object(published) || !gameConfigShape(published.gameConfig) || published.gameConfig.language !== payload.gameConfig.language
+    || published.gameConfig.limitPreset !== payload.gameConfig.limitPreset || !packageRevision(published.packageRevision))) invalid();
   return Object.freeze({ ok: true, duplicate: value.duplicate, room: Object.freeze({ ...room }),
-    administrationRevision: value.administrationRevision, packageRevision: value.packageRevision, playUrl });
+    administrationRevision: value.administrationRevision, packageRevision: value.packageRevision, playUrl,
+    ...(published ? { published: Object.freeze({ packageRevision: published.packageRevision, gameConfig: Object.freeze({ ...published.gameConfig }) }) } : {}) });
 }
 function statusMessage(status) {
-  return ({ 401: 'Logga in igen för att skapa spelrummet.', 403: 'Åtkomst nekad.', 409: 'Uppgifterna har ändrats. Uppdatera innan du skapar rummet.',
-    422: 'Kontrollera rumsnamnet och presentationen.', 429: 'För många försök. Försök igen senare.', 503: 'Spelrumstjänsten är tillfälligt otillgänglig.' })[status] || 'Spelrummet kunde inte bekräftas.';
+  return ({ 401: 'Logga in igen för att skapa spelbordet.', 403: 'Åtkomst nekad.', 409: 'Uppgifterna har ändrats. Uppdatera innan du skapar spelbordet.',
+    422: 'Kontrollera spelbordets namn och presentationen.', 429: 'För många försök. Försök igen senare.', 503: 'Tjänsten för spelbord är tillfälligt otillgänglig.' })[status] || 'Spelbordet kunde inte bekräftas.';
 }
 export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
   async function request(path, options, writing) {
@@ -99,7 +109,12 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
       response = await fetchImpl(path, { credentials: 'same-origin', cache: 'no-store', redirect: 'error', ...options,
         headers: { Accept: 'application/json', ...(writing ? { 'Content-Type': 'application/json' } : {}) } });
     } catch { throw new PresentationRoomError(writing ? 'Svaret är osäkert. Försök igen med samma uppgifter.' : 'Uppgifterna kunde inte hämtas.', { uncertain: writing }); }
-    if (!response.ok) throw new PresentationRoomError(statusMessage(response.status), { status: response.status, uncertain: writing && response.status >= 500 });
+    if (!response.ok) {
+      let body = null; try { body = await response.json(); } catch {}
+      const code = typeof body?.code === 'string' && /^[a-z0-9_]{1,80}$/.test(body.code) ? body.code : null;
+      const materialReason = typeof body?.materialReason === 'string' && /^native_material_[a-z0-9_]{1,80}$/.test(body.materialReason) ? body.materialReason : null;
+      throw new PresentationRoomError(statusMessage(response.status), { status: response.status, uncertain: writing && response.status >= 500, code, materialReason });
+    }
     try { return await response.json(); } catch { throw new PresentationRoomError('Svaret kunde inte verifieras.', { uncertain: writing }); }
   }
   return Object.freeze({
@@ -112,21 +127,22 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
     async create(context, payload, { signal } = {}) {
       if (!validContext(context) || payload?.operatorId !== context.operator.id || payload?.presentationLaneId !== context.presentation.id
         || !roomName(payload.name) || !uuid(payload.idempotencyKey) || !revision(payload.expectedProjectRevision)
-        || !revision(payload.expectedAdministrationRevision) || !(payload.expectedPackageRevision === null || packageRevision(payload.expectedPackageRevision))) invalid();
+        || !revision(payload.expectedAdministrationRevision) || !(payload.expectedPackageRevision === null || packageRevision(payload.expectedPackageRevision))
+        || Object.hasOwn(payload, 'gameConfig') && ((payload.game ?? 'blackjack') !== 'blackjack' || !gameConfigShape(payload.gameConfig))) invalid();
       const value = await request(labUrl(ENDPOINT), { method: 'POST', body: JSON.stringify(payload), signal }, true);
-      try { return receipt(value, context, payload); } catch { throw new PresentationRoomError('Spelrummet kan ha skapats, men svaret kunde inte verifieras. Försök igen med samma uppgifter.', { uncertain: true }); }
+      try { return receipt(value, context, payload); } catch { throw new PresentationRoomError('Spelbordet kan ha skapats, men svaret kunde inte verifieras. Försök igen med samma uppgifter.', { uncertain: true }); }
     },
   });
 }
 function readinessMessage(prepared, context) {
   if (prepared.projectRevision !== context.projectRevision) return 'Presentationen har ändrats. Ladda om sidan.';
-  if (prepared.reason === 'presentation_room_environment_required') return 'Ett nytt spelrum behöver en fast miljö. Välj en enda tillåten bakgrund som standard i Sammansättningar och spara. Använd en separat sammansättning om den nuvarande redan delas av publicerade rum. Inbakade miljöer för flera dealers kan inte räknas som samma rum.';
-  if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan rummet kan skapas.';
-  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar sammansättning. Kontrollera vald grundloop, dealer och lager i Sammansättning och spara.';
+  if (prepared.reason === 'presentation_room_environment_required') return 'Ett nytt spelbord behöver en fast miljö. Välj en enda tillåten bakgrund som standard i Miljöer och spara. Använd en separat miljö om den nuvarande redan delas av publicerade spelbord. Inbakade miljöer för flera dealers kan inte räknas som samma spelbord.';
+  if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan spelbordet kan skapas.';
+  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar miljö. Kontrollera vald grundloop, dealer och lager i Miljö och spara.';
   if (prepared.reason === 'presentation_package_conflict' && prepared.conflictCode) return conflictMessages[prepared.conflictCode];
-  if (prepared.reason === 'presentation_package_conflict') return 'Paketet kan inte uppdateras eftersom uppgifter har ändrats eller ett befintligt spelrum påverkas. Läs in bolagets aktuella paket och kontrollera presentationerna.';
+  if (prepared.reason === 'presentation_package_conflict') return 'Paketet kan inte uppdateras eftersom uppgifter har ändrats eller ett befintligt spelbord påverkas. Läs in bolagets aktuella paket och kontrollera presentationerna.';
   if (prepared.reason === 'presentation_package_too_large') return 'Paketet är för stort. Minska presentationens innehåll eller paketets urval och försök igen.';
-  return prepared.ready ? null : 'Spelrummet kan inte skapas ännu.';
+  return prepared.ready ? null : 'Spelbordet kan inte skapas ännu.';
 }
   const empty = Object.freeze({ key: null, name: '', game: 'blackjack', status: 'idle', preflight: null, receipt: null, message: null });
 // One controller per mounted form. Attempts remain scoped to their original
@@ -169,7 +185,7 @@ export function createPresentationRoomController({ client = createPresentationRo
       const key = presentationRoomContextKey(context), attempt = attempts.get(key);
       const same = key === state.key;
       notify({ key, game: attempt?.payload.game ?? (same ? state.game : 'blackjack'), name: attempt?.payload.name ?? (same ? state.name : ''), preflight: null, receipt: null, status: 'idle',
-        message: !context.storeAvailable ? 'Spelrum kräver en ansluten lagring.' : !context.projectSaved ? 'Spara presentationen först.' : !validContext(context) ? 'Välj bolag och presentation.' : null });
+        message: !context.storeAvailable ? 'Spelbord kräver en ansluten lagring.' : !context.projectSaved ? 'Spara presentationen först.' : !validContext(context) ? 'Välj bolag och presentation.' : null });
       return refresh();
     },
     setName(value) {
@@ -190,7 +206,7 @@ export function createPresentationRoomController({ client = createPresentationRo
         || !['ready', 'uncertain', 'error'].includes(state.status)) return null;
       const key = state.key, chosen = structuredClone(context), name = state.name.trim(), game = state.game;
       let attempt = attempts.get(key);
-      if (!attempt && !roomName(name)) { notify({ message: 'Ange ett rumsnamn med högst 100 tecken.' }); return null; }
+      if (!attempt && !roomName(name)) { notify({ message: 'Ange spelbordets namn med högst 100 tecken.' }); return null; }
       locked = true; const token = generation, controller = new AbortController(); active = controller;
       notify({ status: 'busy', message: null, receipt: null });
       try {

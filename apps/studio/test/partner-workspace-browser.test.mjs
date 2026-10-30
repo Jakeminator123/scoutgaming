@@ -15,14 +15,12 @@ const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const origin='https://partner-workspace.fixture.invalid',studio=dirname(dirname(fileURLToPath(import.meta.url)));
 let source;
 async function fixtureSource(){return source??=build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
+import './app/globals.css';import './app/scout-theme.css';
 import {PartnerOperatorWorkspace} from './components/partner/partner-operator-workspace.jsx';
 const props=window.__PROPS__;createRoot(document.getElementById('root')).render(React.createElement(PartnerOperatorWorkspace,props));`,resolveDir:studio,loader:'jsx'},
-  bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent',
+  bundle:true,write:false,outfile:'fixture.js',platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent',
   define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"0"'},
-  plugins:[{name:'fixture-css',setup(builder){
-    builder.onResolve({filter:/\.css$/},args=>({path:args.path,namespace:'fixture-css'}));
-    builder.onLoad({filter:/.*/,namespace:'fixture-css'},args=>({contents:args.path.endsWith('.module.css')?'export default new Proxy({},{get:(_,key)=>String(key)});':'',loader:'js'}));
-  }}]}).then(result=>result.outputFiles[0].text);}
+  }).then(result=>({js:result.outputFiles.find(file=>file.path.endsWith('.js')).text,css:result.outputFiles.find(file=>file.path.endsWith('.css')).text}));}
 
 function fixtureState(){
   const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),operatorAdjustable:['dealer','branding']};
@@ -47,7 +45,8 @@ async function fixture(browser,path){
   await context.addInitScript(studioHistoryBootstrap);
   await context.route('**/*',async route=>{try{
     const request=route.request(),url=new URL(request.url()),method=request.method();assert.equal(url.origin,origin,'the fixture never contacts real services');
-    if(url.pathname==='/fixture.js')return route.fulfill({contentType:'text/javascript',body:await fixtureSource()});
+    if(url.pathname==='/fixture.js')return route.fulfill({contentType:'text/javascript',body:(await fixtureSource()).js});
+    if(url.pathname==='/fixture.css')return route.fulfill({contentType:'text/css',body:(await fixtureSource()).css});
     if(url.pathname==='/studio/api/partner/branding'){
       if(method==='GET')return route.fulfill({json:server});
       const body=JSON.parse(request.postData());writes.push(body);
@@ -60,7 +59,7 @@ async function fixture(browser,path){
     if(url.pathname.includes('/preview'))return route.fulfill({status:404,json:{}});
     if(url.pathname.startsWith('/studio/api/'))return route.fulfill({status:404,json:{}});
     assert.equal(method,'GET');
-    return route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="sv"><body><div id="root"></div><script>window.__PROPS__=${JSON.stringify({surface:'partner',user:'north-admin',apiBase:'/studio/api/partner/snapshot',initialSnapshot:snapshot,initialView:'rooms',initialRoomId:new URL(path,origin).searchParams.get('room')})}</script><script src="/fixture.js"></script></body></html>`});
+    return route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="sv"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script>window.__PROPS__=${JSON.stringify({surface:'partner',user:'north-admin',apiBase:'/studio/api/partner/snapshot',initialSnapshot:snapshot,initialView:'rooms',initialRoomId:new URL(path,origin).searchParams.get('room')})}</script><script src="/fixture.js"></script></body></html>`});
   }catch(error){failures.push(error);await route.fulfill({status:500,body:'Isolated fixture failed'});}});
   // Bundle before navigating so a busy machine never turns the build into a navigation timeout.
   await fixtureSource();
@@ -68,22 +67,69 @@ async function fixture(browser,path){
   return {page,writes,async close(){await context.close();assert.deepEqual(failures,[]);}};
 }
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
+// The bundle is built before navigating, but the first render still runs the whole shell, the editor's
+// dynamic import and its branding GET; on a busy CI machine that has exceeded the 10 s default.
+const FIRST_RENDER=30000;
 // Radix moves roving focus in a timeout after the key press; wait for it instead of sampling at once.
 const focusOn=(page,check)=>page.waitForFunction(check);
 const focused=page=>page.evaluate(()=>({role:document.activeElement?.getAttribute('role'),label:document.activeElement?.getAttribute('aria-label'),text:document.activeElement?.textContent?.trim(),inDialog:Boolean(document.activeElement?.closest('[role="dialog"]'))}));
 // Radix returns focus to the trigger after its close animation; poll briefly instead of sampling at once.
 async function hasFocus(locator,message){for(let i=0;i<100;i++){if(await locator.evaluate(element=>element===document.activeElement))return;await new Promise(resolve=>setTimeout(resolve,20));}assert.fail(message);}
 
+test('the styled table editor fits narrow screens and keeps actions, tabs and material choices reachable',{skip:!browserModule},()=>withBrowser(async browser=>{
+  const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
+  try{
+    const tabs=page.getByRole('tablist',{name:'Spelbordets inställningar'});
+    await tabs.waitFor({timeout:FIRST_RENDER});
+    for(const width of [320,390,1440]){
+      await page.setViewportSize({width,height:900});
+      await page.getByRole('tab',{name:'Utseende'}).click();
+      const bounds=await page.evaluate(()=>({viewport:document.documentElement.clientWidth,content:document.documentElement.scrollWidth}));
+      assert.ok(bounds.content<=bounds.viewport+1,`${width}px: page must not scroll sideways (${JSON.stringify(bounds)})`);
+      for(const action of ['save-draft','review']){
+        const rect=await page.locator(`[data-action="${action}"]`).boundingBox();
+        assert.ok(rect&&rect.x>=0&&rect.x+rect.width<=bounds.viewport+1,`${width}px: ${action} stays on screen`);
+      }
+      // Only the tab strip may scroll. Keyboard navigation must reveal the last tab.
+      await page.getByRole('tab',{name:'Utseende'}).focus();await page.keyboard.press('End');
+      await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Historik');
+      const history=await page.getByRole('tab',{name:'Historik'}).boundingBox();
+      assert.ok(history.x>=0&&history.x+history.width<=bounds.viewport+1,`${width}px: last tab is reachable`);
+      await page.keyboard.press('Enter');await page.getByRole('heading',{name:'Publicerade versioner'}).waitFor();
+      await page.getByRole('tab',{name:'Dealer'}).click();
+      const disclosure=page.locator('fieldset[data-kind="dealer"] summary');
+      await disclosure.press('Enter');await page.getByRole('radiogroup',{name:'Dealer'}).waitFor();
+      const option=await page.getByRole('radio',{name:'Dealer: Elin'}).boundingBox();
+      assert.ok(option&&option.x>=0&&option.x+option.width<=bounds.viewport+1,`${width}px: material choices stay on screen`);
+      await disclosure.press('Enter');
+    }
+    assert.deepEqual(f.writes,[]);
+  }finally{await f.close();}
+}));
+
 test('the table editor works with the keyboard: tabs, card choices, review dialog, actions menu; save → review → publish keep their order',{skip:!browserModule},()=>withBrowser(async browser=>{
   const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
   try{
-    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor();
-    const dealers=page.getByRole('radiogroup',{name:'Dealer'});await dealers.waitFor();
+    // First render: the heading shows while the editor loads (bundle, dynamic import and the branding
+    // GET), so wait for the editor's own tab list with a longer timeout than the later steps.
+    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor({timeout:FIRST_RENDER});
+    const tabs=page.getByRole('tablist',{name:'Spelbordets inställningar'});await tabs.waitFor({timeout:FIRST_RENDER});
+    assert.deepEqual((await tabs.getByRole('tab').allTextContents()).map(text=>text.trim()),['Utseende','Dealer','Spelinställningar','Tillgänglighet','Historik']);
     // Tabs (Radix, manual activation): arrows move focus, Enter opens the panel.
+    const dealers=page.getByRole('radiogroup',{name:'Dealer'});
     await page.getByRole('tab',{name:'Utseende'}).focus();await page.keyboard.press('ArrowRight');
+    await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Dealer');await page.keyboard.press('Enter');
+    const dealerDisclosure=page.locator('fieldset[data-kind="dealer"] summary');
+    await dealerDisclosure.waitFor();assert.equal(await dealers.isVisible(),false,'current choice is shown before alternatives');
+    await dealerDisclosure.focus();await page.keyboard.press('Enter');await dealers.waitFor();
+    await page.getByRole('tab',{name:'Dealer'}).focus();
+    await page.keyboard.press('End');
     await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Historik');await page.keyboard.press('Enter');
     await page.getByRole('heading',{name:'Publicerade versioner'}).waitFor();assert.equal(await dealers.isVisible(),false);
-    await page.keyboard.press('ArrowLeft');await page.keyboard.press('Enter');await dealers.waitFor();
+    // Game settings and availability are read-only until the partner API can change them.
+    await page.getByRole('tab',{name:'Spelinställningar'}).click();
+    await page.getByRole('heading',{name:'Spelinställningar'}).waitFor();await page.getByText('Låst av Scoutgaming.').first().waitFor();
+    await page.getByRole('tab',{name:'Dealer'}).focus();await page.keyboard.press('Enter');await dealers.waitFor();
     // Card choices (Radix RadioGroup): one tab stop, arrows choose, the status line follows.
     await page.getByRole('radio',{name:'Dealer: Astrid'}).focus();assert.equal(await page.getByRole('radio',{name:'Dealer: Astrid'}).getAttribute('aria-checked'),'true');
     // Radix checks the radio that receives arrow focus while the key is held, as a person presses it.
@@ -121,7 +167,8 @@ test('the table editor works with the keyboard: tabs, card choices, review dialo
 test('the ⌘K palette finds a table by name and opens its editor with the keyboard; the list opens from the breadcrumb',{skip:!browserModule},()=>withBrowser(async browser=>{
   const f=await fixture(browser,'/partner/north/rooms?room=room-vip');const {page}=f;
   try{
-    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor();
+    await page.getByRole('heading',{level:1,name:'VIP'}).waitFor({timeout:FIRST_RENDER});
+    await page.getByRole('tablist',{name:'Spelbordets inställningar'}).waitFor({timeout:FIRST_RENDER});
     await page.keyboard.press('Control+k');const input=page.getByRole('combobox');await input.waitFor();
     assert.equal(await input.evaluate(element=>element===document.activeElement),true);
     await page.keyboard.type('Main');await page.keyboard.press('Enter');

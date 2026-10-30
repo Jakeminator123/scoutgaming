@@ -1,0 +1,14 @@
+[
+  {
+    "file": "preprocessing_mp.py",
+    "source": "services/astrid-gpu-worker/workers/preprocessing_mp.py",
+    "sourceCommit": "cdf200ca95124cf0ba1fa4d106255eef5b79a6b3",
+    "sha256": "c44dbb3fbbe1d56615db75ebee63057c13488b1d35a64d10f9bd39d4d243df52"
+  },
+  {
+    "file": "build-moving-speech-bank.py",
+    "source": "tools/build-moving-speech-bank.py",
+    "sourceCommit": "cdf200ca95124cf0ba1fa4d106255eef5b79a6b3",
+    "sha256": "4dbca25b19426c6d40c210617eebb13f1d79c7d7c9b3d043de274fe2ec77bb03"
+  }
+]

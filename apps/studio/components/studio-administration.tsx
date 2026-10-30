@@ -3,7 +3,7 @@ import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { SYSTEM_GROUPS, SYSTEM_SECTIONS } from '../lib/admin-system-sections.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { approvedPartnerLaunchUrl } from '../lib/partner-launch-url.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
@@ -49,7 +49,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const SECTION_READS: Record<string, readonly string[]> = {
   ops: ['overview'], shoes: ['shoes'], players: ['players'], users: ['users'],
   apikeys: ['apikeys'], emails: ['emails'], pay: ['transactions'],
@@ -59,13 +59,7 @@ const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
 const OPERATOR_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const EMPTY_ACTIONS: readonly string[] = Object.freeze([]);
-// The retired `tables` group stays in the storage/API contract only; the UI
-// follows the same destinations and names as the shared sidebar.
-const ACTIVE_GROUPS = BACKOFFICE_GROUPS.filter(group => group.id !== 'tables').map(group => ({
-  ...group,
-  label: group.id === 'operations' ? 'Spelstatus & integritet' : group.id === 'accounts' ? 'Konton & åtkomst' : group.label,
-  area: group.area === 'Administration' ? 'System' : group.area,
-}));
+const ACTIVE_GROUPS = SYSTEM_GROUPS;
 function visibleSections(group: string, only?: readonly string[]): readonly string[] {
   return ACTIVE_GROUPS.find(item => item.id === group)?.sections.filter(section => !only || only.includes(section)) ?? [];
 }
@@ -119,6 +113,11 @@ const KEY_REFUSALS: Record<string, string> = {
   partner_key_operator_schema_pending: 'Nyckeln skapades inte: databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012). Nycklar kan skapas när Scoutgaming har lagt in den.',
   partner_key_operator_invalid: 'Nyckeln skapades inte: bolaget finns inte eller är avstängt. Välj ett aktivt bolag och försök igen.',
 };
+// Taldrift per dealer: the one fixed code moving-drift answers for a dealer without a drift profile.
+const DRIFT_REFUSALS: Record<string, string> = {
+  drift_unknown_dealer: 'Den här dealern har ingen driftprofil för rörligt tal.',
+};
+const REFUSALS: Record<string, string> = { ...KEY_REFUSALS, ...DRIFT_REFUSALS };
 export class StudioAdminUiError extends Error {
   readonly status: number;
   readonly code?: string;
@@ -133,19 +132,21 @@ export class StudioAdminUiError extends Error {
       501: 'Funktionen är ännu inte ansluten till den här administrationsytan.',
       503: 'Tjänsten är tillfälligt otillgänglig. Inga lokala ersättningsdata används.',
     };
-    const known = typeof code === 'string' && Object.hasOwn(KEY_REFUSALS, code) ? code : undefined;
-    super(known ? KEY_REFUSALS[known] : messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
+    const known = typeof code === 'string' && Object.hasOwn(REFUSALS, code) ? code : undefined;
+    super(known ? REFUSALS[known] : messages[status] ?? 'Åtgärden kunde inte bekräftas av servern. Ladda om innan du försöker igen.');
     this.name = 'StudioAdminUiError';
     this.status = status;
     if (known) this.code = known;
   }
 }
-/** The fixed refusal code of a failed apikeys/create, when it is one Admin explains; never other text. */
-async function keyRefusal(method: Method, action: string, response: Response): Promise<string | undefined> {
-  if (method !== 'POST' || action !== 'apikeys/create' || ![422, 503].includes(response.status)) return undefined;
+/** The fixed refusal code of a failed apikeys/create or moving-drift, when it is one Admin explains; never other text. */
+async function refusalCode(method: Method, action: string, response: Response): Promise<string | undefined> {
+  const codes = method === 'POST' && action === 'apikeys/create' && [422, 503].includes(response.status) ? KEY_REFUSALS
+    : action === 'moving-drift' && response.status === 422 ? DRIFT_REFUSALS : null;
+  if (!codes) return undefined;
   try {
     const body = object(await response.json());
-    return typeof body?.code === 'string' && Object.hasOwn(KEY_REFUSALS, body.code) ? body.code : undefined;
+    return typeof body?.code === 'string' && Object.hasOwn(codes, body.code) ? body.code : undefined;
   } catch { return undefined; }
 }
 
@@ -155,7 +156,7 @@ const WRITE_NOTICES = {
   acknowledged: 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.',
   'acknowledged-unrefreshed': 'Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.',
   'email-not-sent': 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.',
-  'invite-sent': 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
+  'invite-sent': 'Inbjudan till Scoutgamings personal har skickats för leverans. Kontot ger tillgång till Admin, Partnerportalen och spelet; bolagsåtkomst följer tilldelade medlemskap. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.',
   'resend-sent': 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.',
 } as const;
 const writeNoticeKind = (notice: string) => (Object.keys(WRITE_NOTICES) as (keyof typeof WRITE_NOTICES)[]).find(kind => WRITE_NOTICES[kind] === notice);
@@ -192,8 +193,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
   async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor, query?: Record<string,string>) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
-    if (query !== undefined && (method!=='GET'||action!=='shared-table-proof'||!object(query)||!query.roomId
-      || Object.keys(query).some(key=>!['roomId','shoeId'].includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
+    // Läsfrågor: delad bordskontroll (roomId, shoeId) och taldrift per dealer (dealerId).
+    const queryKeys = action === 'shared-table-proof' ? ['roomId','shoeId'] : action === 'moving-drift' ? ['dealerId'] : [];
+    if (query !== undefined && (method!=='GET'||!object(query)||!query[queryKeys[0]]
+      || Object.keys(query).some(key=>!queryKeys.includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
@@ -209,7 +212,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
     }
     const response = await send(method, action, body, signal, query);
-    if (!response.ok) throw new StudioAdminUiError(response.status, await keyRefusal(method, action, response));
+    if (!response.ok) throw new StudioAdminUiError(response.status, await refusalCode(method, action, response));
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
       || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
@@ -426,12 +429,12 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   }
   return <div className={styles.sections} onInput={event => { const target = event.target; if (target instanceof HTMLElement) { const form = target.closest('form'); if (form instanceof HTMLFormElement) onDirty?.(form); } }}>
     {sections.map(section => <section key={section} data-admin-section={section} className={styles.section} aria-labelledby={`admin-${section}`}>
-      <h3 id={`admin-${section}`}>{BACKOFFICE_SECTIONS.find(item => item.id === section)?.label}</h3>
+      <h3 id={`admin-${section}`}>{SYSTEM_SECTIONS.find(item => item.id === section)?.label}</h3>
       {section === 'ops' && <>
         {missing(resources.overview, 'overview')}
         {overview && <><dl className={styles.metrics}>
           <div><dt>Spelare</dt><dd>{label(overview.players)}</dd></div>
-          <div><dt>Rum</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
+          <div><dt>Spelbord</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
         </dl><p className={styles.notice}>Senast hämtade uppgifter.</p></>}
       </>}
       {section === 'shoes' && <>
@@ -447,7 +450,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </>}
       </>}
       {section === 'players' && <>
-        <p>Spelarkonton ger tillgång till nivå 3: spelarlobbyn och spelen. För adminåtkomst använder du Bjud in adminpersonal – nivå 1 under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
+        <p>Spelarkonton ger tillgång till lobbyn och spelen. För åtkomst till Admin använder du Bjud in personal till Admin under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
         {missing(resources.players, 'players')}
         {unavailableWrite('players/create')}{unavailableWrite('players/status')}{unavailableWrite('players/password')}
         {resources.players?.payload && <><EmptyRows count={rows(resources.players.payload.players).length} /><div className={styles.tableWrap}><table>
@@ -470,7 +473,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             </details></td>
           </tr>)}</tbody>
         </table></div></>}
-        {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration i den här miljön.</p>}
+        {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration här.</p>}
         {mayWrite('players/create') && resources.players?.payload?.administration === true && <details className={styles.disclosure}><summary>Skapa spelarkonto</summary><p>Det här kontot kan logga in i Blackjack. Det ger ingen administratörsbehörighet eller Studioåtkomst.</p><form method="post" className={styles.form} onSubmit={submit('players/create', form => {
           const password = String(new FormData(form).get('password') ?? '');
           const input = form.elements.namedItem('password');
@@ -485,9 +488,9 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </form></details>}
       </>}
       {section === 'users' && <>
-        <p>Intern adminpersonal hos ScoutGamingGroup bjuds in med e-post till nivå 1. Behörigheten omfattar hela nivå 1 (intern administration), nivå 2 (spelbolagens arbetsytor) och nivå 3 (spelarlobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord på alla tre nivåerna. Bolagsåtkomst följer tilldelade medlemskap.</p>
+        <p>Scoutgamings personal bjuds in med e-post. Behörigheten omfattar Admin, Partnerportalen (bolagens arbetsytor) och spelet (lobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord överallt. Bolagsåtkomst följer tilldelade medlemskap.</p>
         {missing(resources.users, 'users')}
-        {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas. Att skapa ett spelarkonto ger inte Studioåtkomst.</p>}
+        {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Admin behöver konfigureras innan inbjudningar kan skickas. Att skapa ett spelarkonto ger inte åtkomst till Admin.</p>}
         {['users/role', 'users/remove'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.users?.payload && <><EmptyRows count={rows(resources.users.payload.users).length} />{rows(resources.users.payload.users).map((user, index) => <div className={styles.row} key={label(user.username, String(index))}>
           <div><strong>{label(user.username)}</strong><p>{accountRole(user.role)} · {user.active ? 'aktiverat' : 'väntar på aktivering'}</p></div>
@@ -497,9 +500,9 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
-        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in adminpersonal – nivå 1</summary><p>Ange administratörens e-postadress. Mejlet bjuder in intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3. Bolagsåtkomst följer tilldelade medlemskap. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
+        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in personal till Admin</summary><p>Ange administratörens e-postadress. Mejlet bjuder in Scoutgamings personal med behörighet till Admin, Partnerportalen och spelet. Bolagsåtkomst följer tilldelade medlemskap. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
-          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör – nivå 1, 2 och 3</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
+          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form></details>}
       </>}
       {section === 'apikeys' && <>

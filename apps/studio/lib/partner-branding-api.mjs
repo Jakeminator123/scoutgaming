@@ -12,6 +12,7 @@ import { partnerPresentationDealerChoices } from './partner-presentation-choices
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
+import { partnerAllow } from './partner-assignment.mjs';
 import { mergeOperatorMaterialsForPublication, operatorMaterialFingerprint, presentationFits, publicationRooms } from './operator-material-publication.mjs';
 import { encodePresentationPackage } from '../../../packages/presentation/server/presentation-package.mjs';
 import { isExtendedPresentationEnvelope } from '../../../packages/presentation/server/presentation-storage.mjs';
@@ -123,6 +124,9 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
       && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
+  // One room's view of the package: `tables` and the package's own `rooms` (Studio 023) together,
+  // or the package rooms would no longer match `tables` and read as a corrupt package (503).
+  const roomPackage=(pack,room)=>({...pack,tables:[room.id],rooms:pack.rooms?.filter(row=>row.id===room.id)??null});
   const cleanDraft=(draft,pack,source=store)=>cleanBrandingDraft(draft,pack,source);
   async function state(operatorId,source=store,document=null) {
     requireDraftStore(source);
@@ -131,7 +135,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const history=await source.listPackages(operatorId,{limit:20});
     return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:await cleanDraft(draft,pack,source),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
-      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
+      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices(roomPackage(pack,room),readPackagePresentation(pack),document)[room.presentationLaneId]])),
       rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
   }
   function assertEditable(branding) {
@@ -147,9 +151,14 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   // The Admin route carries the server-derived access class in the audit
   // context. An N1 administrator may choose any layer the frozen composition
-  // allows; partner sessions keep the company's operatorAdjustable gate.
-  function laneRights(lane,adminChoices) {
-    return new Set(adminChoices?adminLayerAdjustments(lane):effectivePartnerAdjustments(lane));
+  // allows; partner sessions keep the company's operatorAdjustable gate,
+  // narrowed by Admins `allow` i tilldelningen (partner-assignment.mjs): utan
+  // allow.dealer, allow.tableAsset eller allow.background ändrar bolaget inte
+  // det lagret, oavsett väg (dealer, branding save-draft, restore, publish).
+  const ALLOW_LAYERS=Object.freeze({dealer:'dealer',table:'tableAsset',background:'background'});
+  function laneRights(lane,adminChoices,allow) {
+    if(adminChoices)return new Set(adminLayerAdjustments(lane));
+    return new Set(effectivePartnerAdjustments(lane).filter(token=>!Object.hasOwn(ALLOW_LAYERS,token)||allow?.[ALLOW_LAYERS[token]]===true));
   }
   async function validateDraft(pack,branding,document,adminChoices=false) {
     assertEditable(branding);
@@ -160,8 +169,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const lane=presentation.lanes.find(row=>row.id===laneId);
     if(!lane)fail(422);
     const defaults={...branding};delete defaults.roomOverrides;
+    // Läses ur samma paket som valideringen, under bolagets lås i skrivvägen.
+    const allow=partnerAllow(pack,presentation);
     function checkedValues(value,baseline,selectedLane,allowedDealers) {
-      const rights=laneRights(selectedLane,adminChoices);
+      const rights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS){
         const changed=canonicalStudioJson(value[key]??null)!==canonicalStudioJson(baseline[key]??null);
         const token=key==='color'?'table.color':key;
@@ -175,17 +186,25 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       }
     }
     checkedValues(defaults,resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},null,laneId),lane,choices(pack,presentation,document)[laneId]);
-    for(const id of Object.keys(branding.roomOverrides??{}))if(!rooms.some(room=>room.id===id))fail(422);
+    // Ett pausat (eller annars inte redigerbart) spelbord som fortfarande hör
+    // till bolagets paket behåller sin publicerade override oförändrad: utkastet
+    // får bära den vidare, men aldrig lägga till eller ändra den. Ett arkiverat
+    // spelbord finns inte i paketets spelbord och nekas som förut.
+    const held=new Set(listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).map(room=>room.id));
+    for(const [id,value]of Object.entries(branding.roomOverrides??{})){
+      if(rooms.some(room=>room.id===id))continue;
+      if(!held.has(id)||!Object.hasOwn(base.roomOverrides??{},id)||canonicalStudioJson(value)!==canonicalStudioJson(base.roomOverrides[id]))fail(422);
+    }
     for(const room of rooms){
       const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
       // Explicit overrides change future inheritance even when today's rendered value is equal.
       const explicitBefore=base.roomOverrides?.[room.id]??{},explicitAfter=branding.roomOverrides?.[room.id]??{};
-      const roomRights=laneRights(selectedLane,adminChoices);
+      const roomRights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(explicitBefore[key]??null)!==canonicalStudioJson(explicitAfter[key]??null)
         &&!roomRights.has(key==='color'?'table.color':key))fail(422);
       const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);
       const baseline=resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},room.id,room.presentationLaneId);
-      const roomDealers=choices({...pack,tables:[room.id]},presentation,document)[selectedLane.id];
+      const roomDealers=choices(roomPackage(pack,room),presentation,document)[selectedLane.id];
       checkedValues(value,baseline,selectedLane,roomDealers);
     }
     // Keep all N1-owned metadata exactly, replacing only the public editable surface.

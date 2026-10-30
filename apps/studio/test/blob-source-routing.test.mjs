@@ -59,7 +59,7 @@ async function fixture(t, { localFilm = false, mutateRow } = {}) {
   const film = join(bank, ...targetPath.split('/'));
   if (localFilm) { await mkdir(dirname(film), { recursive: true }); await writeFile(film, bytes); }
   const calls = [], objects = new Map([[row.storage.pathname, { bytes, contentType: 'video/mp4' }]]);
-  const env = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'test-only-private-token', CROUPIER_MEDIA_BLOB_INDEX: indexPath };
+  const env = { BLOB_READ_WRITE_TOKEN: 'test-only-private-token', CROUPIER_MEDIA_BLOB_INDEX: indexPath };
   const blobClient = {
     async get(pathname, options) {
       calls.push(pathname);

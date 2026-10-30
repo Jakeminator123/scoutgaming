@@ -28,7 +28,7 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   await repository.initializeDocument('project',{value:project,revision:'catalog-project',actor:'fixture'});
   await repository.initializeDocument('administration',{value:{rooms:[],legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{}}},revision:'catalog-admin',actor:'fixture'});
   await repository.registerMedia({id,sha256,size:32,contentType:'video/mp4',pathname:'croupier/media/dealers/paow/review/uploads/'+id+'/'+sha256+'.mp4',classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'PAOW idle',notes:''}},{actor:'fixture'});
-  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture'};
+  const env={BLOB_READ_WRITE_TOKEN:'fixture'};
   const media=createStudioMediaRuntime({repository,scope,repositoryRoot:root,env});
   const idle=createRegisteredDealerIdle({registryLoader:media.videoRegistry});
   for(const dealer of ['astrid','vera','amira','mei'])assert.equal(await idle(dealer,project),null,'catalog metadata cannot supply a missing saved baseline');

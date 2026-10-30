@@ -6,10 +6,10 @@ import assert from 'node:assert/strict';
 import {request as httpRequest} from 'node:http';
 import {createStudioNativeAuthActions} from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import {createStudioNativeAuth} from '../packages/studio-access/studio-native-auth.mjs';
-import {ENGINE_QA_SKIP,createEngineDatabase,freePort,startEngine} from './fixtures/engine-qa.mjs';
+import {ENGINE_QA_SKIP,createEngineDatabase,freePort,installBaseStudioRuntime,startEngine} from './fixtures/engine-qa.mjs';
 
 test('a native N1 login starts no player handoff on the actual isolated engine and logs out coherently',{skip:ENGINE_QA_SKIP},async t=>{
-  const database=await createEngineDatabase(t),port=await freePort();
+  const database=await createEngineDatabase(t),port=await freePort(),studio=await installBaseStudioRuntime(t,database);
   const origin='https://www.fixture.invalid',password='Isolated-N1-Player-Test-Password';
   const request=(path,{method='GET',cookie='',body,originHeader=origin}={})=>new Promise((resolve,reject)=>{
     const url=new URL(path,origin);
@@ -17,8 +17,8 @@ test('a native N1 login starts no player handoff on the actual isolated engine a
       const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>{const headers=new Headers();for(let i=0;i<res.rawHeaders.length;i+=2)headers.append(res.rawHeaders[i],res.rawHeaders[i+1]);resolve(new Response(Buffer.concat(chunks),{status:res.statusCode,headers}));});
     });req.on('error',reject);req.end(body===undefined?undefined:JSON.stringify(body));
   });
-  await startEngine(t,{database,port,preload:[new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href],
-    env:{NODE_ENV:'production',CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
+  await startEngine(t,{database,port,preload:[...studio.preload,new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href],
+    env:{...studio.env,NODE_ENV:'production',CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
       CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:password,
       CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',PUBLIC_URL:origin,BO_URL:origin}});
   const {boDb,db:gameDb}=database.store,scope={environment:'fixture',workspaceId:'croupier'};

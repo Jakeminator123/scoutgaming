@@ -1,4 +1,5 @@
 import { studioAdminSectionPolicy, studioAdminActionPolicy } from './studio-access-policy.mjs';
+import { MOVING_DRIFT_DEALER_ID } from '../../../packages/presentation/contracts/moving-drift.mjs';
 
 // Future-only addresses, not active routes or an automatic proxy/redirect.
 // Descriptors never perform session, Origin/CSRF, input or revision/CAS checks.
@@ -25,11 +26,11 @@ function adminEndpoint(method, action) {
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
   ...['overview', 'config', 'clips', 'generations', 'gen-verdicts',
     'apikeys', 'users', 'players', 'transactions','emails','shoes', 'room-game-config', 'room-release', 'shared-table-proof', 'presentation-room', 'resource-lifecycle', 'moving-drift'].map(action => adminEndpoint('GET', action)),
-  ...['tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
+  ...['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
-    'operator-package', 'room-game-config', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'moving-drift']
+    'operator-package', 'room-game-config', 'presentation-room', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'resource-delete-check', 'resource-delete', 'moving-drift']
     .map(action => adminEndpoint('POST', action)),
 ]);
 
@@ -63,7 +64,7 @@ export function studioAuthEndpoint(method, pathname) {
 // A narrowly read-only preparation query. Other endpoints keep exact paths
 // and no query parameters; this helper grants no role or Origin exception.
 export function isPresentationRoomReadQuery(method, url) {
-  if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url)) return true;
+  if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url) || isMovingDriftReadQuery(method,url)) return true;
   if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;
   const keys = [...url.searchParams.keys()];
   return (keys.length === 2 || keys.length === 3 && keys.includes('game') && ['blackjack','roulette'].includes(url.searchParams.get('game')))
@@ -89,4 +90,10 @@ export function isSharedTableProofReadQuery(method,url) {
   const keys=[...url.searchParams.keys()];
   return method==='GET'&&['/studio/api/admin/shared-table-proof','/api/admin/shared-table-proof'].includes(url.pathname)
     &&keys.length>=1&&keys.length<=2&&new Set(keys).size===keys.length&&keys.includes('roomId')&&keys.every(key=>['roomId','shoeId'].includes(key)&&queryId(url.searchParams.get(key)));
+}
+// Taldrift per dealer: exakt en parameter, dealerId (driftprofilens egen dealer-id-form).
+export function isMovingDriftReadQuery(method,url) {
+  const keys=[...url.searchParams.keys()];
+  return method==='GET'&&['/studio/api/admin/moving-drift','/api/admin/moving-drift'].includes(url.pathname)
+    &&keys.length===1&&keys[0]==='dealerId'&&MOVING_DRIFT_DEALER_ID.test(url.searchParams.get('dealerId'));
 }

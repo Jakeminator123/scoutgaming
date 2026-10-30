@@ -12,13 +12,17 @@
 // Existing internal Studio policy and player/game authority remain separate.
 import { validateStudioScope } from '../studio-scope.mjs';
 
+// material.request och integration.request (ADMIN-FORENKLING 5.4, PARTNERPORTAL-KONVERTERING
+// 2.4 punkt 5): begära material och nyckelrotation som journalposter. Namnen prövas bara i
+// koden (operator_roles.permissions är JSON-text utan CHECK); befintliga roller får dem inte
+// automatiskt.
 export const PARTNER_PERMISSIONS = Object.freeze([
   'overview.read',
   'players.read',
   'team.read', 'team.invite', 'team.roles.assign', 'team.suspend',
   'tables.read', 'tables.configure',
-  'presentations.read', 'presentations.configure',
-  'reports.read', 'integrations.read',
+  'presentations.read', 'presentations.configure', 'material.request',
+  'reports.read', 'integrations.read', 'integration.request',
 ]);
 
 // The only permission that can grant another operator administrator.

@@ -57,16 +57,27 @@ const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:roule
   // Older contracts retain their exact representations and v1 speech semantics.
   30:Object.freeze({...clipPoseContract,schemaVersion:30,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2'}),
   // v31 freezes reachable film topology with the room material.
-  31:Object.freeze({...clipPoseContract,schemaVersion:31,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2'})});
+  31:Object.freeze({...clipPoseContract,schemaVersion:31,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2'}),
+  // v32 reads a pose-graph rotation whose rest clips may also be proposed once by
+  // OpenClaw or a game rule (use openclaw/rules). Older readers reject those uses.
+  32:Object.freeze({...clipPoseContract,schemaVersion:32,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2',idleRotationOffers:'rest-proposals-v1'}),
+  // v33 reads a lane's miljöbild (lane.illustration) and the material role `illustration` in saved
+  // projects and frozen packages. Older strict readers reject both the lane field and the role.
+  33:Object.freeze({...clipPoseContract,schemaVersion:33,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2',idleRotationOffers:'rest-proposals-v1',laneIllustration:'environment-image-v1'}),
+  // v34 reads a dealer's own frozen filmed profile (dealers[].filmedProfile, package
+  // row and room material film v2) on top of v33. Older strict readers reject the field.
+  34:Object.freeze({...clipPoseContract,schemaVersion:34,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2',idleRotationOffers:'rest-proposals-v1',laneIllustration:'environment-image-v1',filmedProfiles:'frozen-studio-profile-v1'}),
+  // v35 reads an explicit registered source take for appended returns.
+  35:Object.freeze({...clipPoseContract,schemaVersion:35,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2',recordedEmbeddedAv:'embedded-mp4-av-v2',nativeFilmedPlanning:'frozen-topology-v2',idleRotationOffers:'rest-proposals-v1',laneIllustration:'environment-image-v1',filmedProfiles:'frozen-studio-profile-v1',filmedTakeSources:'registered-take-source-v1'})});
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v31. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v34. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -100,6 +111,10 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '29') return 29;
   if (header === '30') return 30;
   if (header === '31') return 31;
+  if (header === '32') return 32;
+  if (header === '33') return 33;
+  if (header === '34') return 34;
+  if (header === '35') return 35;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

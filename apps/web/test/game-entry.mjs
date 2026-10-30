@@ -8,7 +8,7 @@ import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-e
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {launchBackendSearch,platformConfiguration,platformRoute} from '../../../packages/navigation/server/platform-routing.mjs';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:'https://game.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.onrender.com',
-  CROUPIER_LAB_UI_ORIGIN:'https://studio.vercel.app',CROUPIER_VERCEL_INGRESS_SECRET:'test-only-ingress-secret-'.repeat(3)};
+  CROUPIER_VERCEL_INGRESS_SECRET:'test-only-ingress-secret-'.repeat(3)};
 
 test('the game start validates the live session and preserves the engine document without a default dealer',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'lane-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
@@ -16,7 +16,7 @@ test('the game start validates the live session and preserves the engine documen
   await writeFile(join(directory,'blackjack.html'),'<html><script src="blackjack-entry.mjs"></script></html>');
   let authenticated=false,failed=false,status=200;const calls=[];
   const cloudHtml='<html data-game-dealer="linnea" data-game-local-dealer="linnea" data-game-registered-dealers="cloud-context"><script src="app.mjs"></script></html>';
-  const options={env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1'},directory,fetchImpl:async(url,init)=>{
+  const options={env:{...env,},directory,fetchImpl:async(url,init)=>{
     calls.push({url,init});assert.equal(init.headers.get('cookie'),'fixture-session=existing');
     assert.equal(init.headers.get('x-croupier-vercel-secret'),env.CROUPIER_VERCEL_INGRESS_SECRET);
     if(failed)return new Response(null,{status:503});
@@ -58,7 +58,7 @@ test('the launch bridge keeps a valid operator on a partner launch and drops onl
   const search = query => launchBackendSearch(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+query));
   const kept = `?operator=sg-test&table=room-1&dealer=nora&launch=${partnerLaunch}`;
   assert.equal(search(kept),kept);
-  const config = platformConfiguration({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
+  const config = platformConfiguration({...env,});
   assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+kept),config),{kind:'backend',destination:env.CROUPIER_BACKEND_ORIGIN+'/game'+kept});
   for (const invalid of ['Not_A_Slug','sg-test&operator=other',''])
     assert.equal(search(`?operator=${invalid}&table=room-1&dealer=nora&launch=${partnerLaunch}`),`?table=room-1&dealer=nora&launch=${partnerLaunch}`,invalid);
@@ -67,7 +67,7 @@ test('the launch bridge keeps a valid operator on a partner launch and drops onl
 });
 
 test('a signed launch on the game start reaches the authoritative engine without another public alias',() => {
-  const config = platformConfiguration({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
+  const config = platformConfiguration({...env,});
   const query = '?dealer=nora&performance=staged&motion=smooth60&launch=fixture.claim.signature&returnTo=https://evil.invalid';
   for (const routing of [config, platformConfiguration(env)]) {
     assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+query),routing),{kind:'backend',destination:env.CROUPIER_BACKEND_ORIGIN+'/game'+query});
@@ -79,16 +79,13 @@ test('a signed launch on the game start reaches the authoritative engine without
   assert.deepEqual(engineReturn,{kind:'redirect',status:308,destination:env.CROUPIER_PUBLIC_ORIGIN+'/game?game=blackjack&dealer=nora'});
   assert.deepEqual(platformRoute(new URL(engineReturn.destination),config),{kind:'frontend'});
 });
-test('Neon flag makes /game the actual shared player; off keeps the local shell and no login document',async t => {
+test('/game is always the actual shared player and /player-login its login document (Neon is fixed)',async t => {
   const directory = await mkdtemp(join(tmpdir(),'game-address-ui-'));t.after(() => rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><script src="app.mjs"></script></html>');
   await writeFile(join(directory,'blackjack.html'),'<html><script src="blackjack-entry.mjs"></script></html>');
   const options = {env,directory,fetchImpl:async url => url.endsWith('/api/auth/session') ? Response.json({authenticated:true}) : new Response('<html data-game-path="/blackjack"><script src="app.mjs"></script></html>')};
-  const off = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=elin'),options);
-  assert.equal(off.status,200);assert.match(await off.text(),/app.mjs/);assert.doesNotMatch(await (await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game'),options)).text(),/data-game-path/);
-  assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/player-login'),options)).status,404);
+  // The retired local shell is gone: the static game.html is never served and /blackjack has no frontend document.
   assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack'),options)).status,404);
-  options.env = {...env,CROUPIER_STUDIO_NEON_POLICY:'1'};
   const game = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?operator=sg-test&dealer=elin'),options);
   assert.equal(game.status,200);assert.match(await game.text(),/data-game-path="\/blackjack".*app.mjs/);
   const bare = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?returnTo=https://evil.invalid'),options);
@@ -267,7 +264,7 @@ test('modal keeps one CRAIG/shared POST and exposes only a fixed or query-allowl
 test('unknown operator slug is the company 404 from the engine, not the open catalogue',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'operator-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><script src="app.mjs"></script></html>');
-  const unified={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unified={...env,};
   const enginePage='<!doctype html><html lang="sv"><head><title>Bolaget finns inte</title></head><body><h1>Bolaget finns inte</h1></body></html>';
   const calls=[];
   const fetchImpl=async(url,init)=>{
@@ -322,7 +319,7 @@ test('an Admin cookie without a player session gets the ordinary player login fo
   for(const [kind,cookie] of [['none',''],['admin','bo_jwt=verified']]) {
     const calls=[];
     const request=new Request('https://game.example.invalid/game?game=blackjack&operator=swedish-games&table=room-evening',{headers:cookie?{cookie}:{}});
-    const response=await platformUiDocument(request,{env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1'},fetchImpl:async(url)=>{
+    const response=await platformUiDocument(request,{env:{...env,},fetchImpl:async(url)=>{
       calls.push(new URL(url).pathname);assert.equal(new URL(url).pathname,'/api/auth/session');
       // A stale engine may still send the retired flag during the deploy window.
       return Response.json({authenticated:false,...(kind==='admin'?{backofficeHandoff:true}:{})});

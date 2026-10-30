@@ -88,7 +88,7 @@ async function fixture(t,{empty=false,bankless=false}={}) {
   const uploadDir = join(root,'retired-uploads'); await mkdir(uploadDir);
   await writeFile(join(uploadDir,'index.json'), 'deliberately invalid old register must not be read');
   await writeFile(join(uploadDir,'classifications.json'), 'retired classifications must not be read');
-  const env = {CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-secret',CROUPIER_MEDIA_BLOB_INDEX:indexPath};
+  const env = {BLOB_READ_WRITE_TOKEN:'fixture-secret',CROUPIER_MEDIA_BLOB_INDEX:indexPath};
   const blobClient = { async get(path) {
     const bytes = objects.get(path); if (!bytes) return null;
     return {statusCode:200,stream:new Response(bytes).body,blob:{pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,size:bytes.length,contentType:'video/mp4'}};
@@ -121,7 +121,7 @@ test('unavailable Neon does not become an empty review library or disk fallback'
 test('missing cloud source, wrong scope or corrupted immutable manifest is rejected', async t => {
   const {registry,repository,env,options,pool,runtimeCatalog} = await fixture(t);
   assert.throws(() => createNeonVideoRegistry({repository,scope:{...scope,workspaceId:'other'},env,options}), error => error.statusCode === 503);
-  await assert.rejects(createNeonVideoRegistry({repository,scope,env:{...env,CROUPIER_MEDIA_STORAGE:'disk'},options}).load(), error => error.code === 'studio_media_storage_unavailable');
+  await assert.rejects(createNeonVideoRegistry({repository,scope,env:{...env,BLOB_READ_WRITE_TOKEN:''},options}).load(), error => error.code === 'studio_media_storage_unavailable');
   pool.seedRuntimeCatalog(scope,{...runtimeCatalog,presentation:{invalid:true}});
   await assert.rejects(registry.load(),error => error.statusCode === 503);
   await assert.rejects(createNeonVideoRegistry({repository:{...repository,readRuntimeCatalog:undefined},scope,env,options}).load(),error=>error.statusCode===503);

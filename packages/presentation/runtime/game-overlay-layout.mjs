@@ -22,7 +22,7 @@ export function projectTableGamePlane(dims, rect, viewport, tableGeometry,tableL
     y:(viewport.height-dims[1]*fit)/2+rect[1]*fit,width:rect[2]*fit,height:rect[3]*fit}};
 }
 
-function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePlane,dealerPlane,cardsRect=rect,betsRect=rect},boxes,bounds,compact,cardView,filmedProfile){
+function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePlane,dealerPlane,cardsRect=rect,betsRect=rect},boxes,bounds,compact,cardView,filmedProfile,seatHalf){
   const layout=tableLayout??(compact?'mobile':'desktop'),geometry=tableGeometry[layout];
   // Kevin's model, opt-in per layout: the composited dealer plane decides the
   // filmed landing, the resting card size (the dealer's prop card) and the
@@ -44,7 +44,10 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
     :compact?Math.min(1,Math.max(.01,(bounds.right-bounds.left)/330)):(followCards?scale:betsRect.width*geometry.cardWidth/calibration.width);
   // Keep one vertical column per hand. Its chip target clears the resting card
   // and total badge in either view, including phone-sized touch controls.
-  const betGap=(calibration.height/2*cardViewDepth(cardView)+38)*scale+26*controlScale+6;
+  // The badge scales with the cards; a seat circle drawn at a fixed size (the
+  // shared table's, seatHalf px) keeps the same few pixels below it at every
+  // screen size, else the circle scales with controlScale.
+  const betGap=(calibration.height/2*cardViewDepth(cardView)+38)*scale+(seatHalf??26*controlScale)+6;
   const seats=boxes.map((box,index)=>{
     const seat=geometry.seats[layout==='mobile'?index:box],id=String(box+1);
     positions[id]=local(id,seat.card);
@@ -53,14 +56,23 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
       :followCards?{x:card.x,y:card.y+betGap}:screen(seat.bet,betsRect))};
   });
   // Touch targets may spread independently; film contacts and server box IDs stay fixed.
-  // Apply an explicit Admin offset after fitting, so it remains an actual override.
+  // Apply an explicit Admin offset after fitting, so it remains an actual override;
+  // the fit leaves room for it on screen when the row allows.
   const touchScale=compact?Math.max(1,controlScale):controlScale;
   if(compact&&auto?.chips){
     const half=49*touchScale,gap=2*half,dx=chips.dx*1080*dealerPlane.scale;
-    const left=bounds.left+half,right=bounds.right-half;
-    if(right-left>=gap*(seats.length-1)){
-      seats.forEach((seat,i)=>{seat.x=Math.max(left+i*gap,Math.min(right-(seats.length-1-i)*gap,seat.x-dx));
-        if(i)seat.x=Math.max(seat.x,seats[i-1].x-dx+gap);seat.x+=dx;});
+    const left=bounds.left+half,right=bounds.right-half,span=gap*(seats.length-1);
+    if(right-left>=span){
+      const lo=left-Math.min(0,dx),hi=right-Math.max(0,dx),[from,to]=hi-lo>=span?[lo,hi]:[left,right];
+      // Each target moves as little as it can from its box, evenly to both
+      // sides (pooled adjacent groups), so a middle box keeps its own circle;
+      // then the row moves inside the bounds as a whole.
+      const groups=[];
+      seats.forEach((seat,i)=>{groups.push({sum:seat.x-dx-i*gap,n:1});
+        while(groups.length>1&&groups.at(-2).sum/groups.at(-2).n>groups.at(-1).sum/groups.at(-1).n){const last=groups.pop();groups.at(-1).sum+=last.sum;groups.at(-1).n+=last.n;}});
+      let i=0;for(const group of groups)for(let k=0;k<group.n;k++,i++)seats[i].x=group.sum/group.n+i*gap;
+      const shift=Math.max(from-seats[0].x,Math.min(0,to-seats.at(-1).x));
+      seats.forEach(seat=>{seat.x+=shift+dx;});
     }
   }
   const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left-1e-6&&x+right<=bounds.right+1e-6&&y-top>=bounds.top-1e-6&&y+bottom<=bounds.bottom+1e-6;
@@ -79,20 +91,21 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
   return {x:origin.x,y:origin.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,fanSpread,
     ...(sourcePlane&&tableId?{sourcePlane,tableId,tableLayout:layout}:{}),
     geometryWarning:fits&&inside(dealer.x,dealer.y,...dealerHand.map(value=>value*scale))?''
-      :`Kort eller insatsplatser ryms inte. Justera ${auto?.landing?'dealerns':'bordets'} placering i Sammansättning.`};
+      :`Kort eller insatsplatser ryms inte. Justera ${auto?.landing?'dealerns':'bordets'} placering i Miljö.`};
 }
 
 // Keep server seat identities and card anchors together, including a resumed
 // desktop hand on a phone. A heavily cropped actor must not crop game controls.
 // An adjusted plane is static presentation, never evidence of filmed contact.
 // filmedProfile only supplies an autoScale layout's prop card size and landings.
-/** @param {{compact?:boolean, cardView?:string, filmedProfile?:{positions:Record<string,{cx:number,cy:number}>,card:{width:number}}|null}} [options] */
+// seatHalf: half the height in px of a seat circle that the client draws at a fixed size.
+/** @param {{compact?:boolean, cardView?:string, seatHalf?:number, filmedProfile?:{positions:Record<string,{cx:number,cy:number}>,card:{width:number}}|null}} [options] */
 export function layoutGameOverlay(plane, boxes, bounds, options={}) {
-  const {compact=false,filmedProfile=null}=options;
+  const {compact=false,filmedProfile=null,seatHalf}=options;
   let {cardView}=options;
   const format=plane.tableLayout??(compact?'mobile':'desktop');
   cardView=normalizeCardView(plane.tableGeometry?.[format]?.cardView??cardView??'table');
-  if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact,cardView,filmedProfile);
+  if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact,cardView,filmedProfile,seatHalf);
   const anchors = boxes.map(box => ({ box, ...calibration.positions[String(box + 1)] }));
   const left = Math.min(calibration.positions.dealer.cx - 310,...anchors.map(p => p.cx - 144));
   const right = Math.max(calibration.positions.dealer.cx + 45,...anchors.map(p => p.cx + 90));

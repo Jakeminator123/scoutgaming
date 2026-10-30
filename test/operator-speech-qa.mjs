@@ -37,7 +37,8 @@ async function fixture(t, { gated = true, lifetime = 60000 } = {}) {
     cancelOwner: owner => cancelled.push(owner), close: () => { closed++; },
   };
   const claims = { sub: 'operator', role: 'admin', source_stamp: 'current-stamp', auth_epoch: 1, exp: Math.floor(clock / 1000) + 3600 };
-  const options = { directory, origin: ORIGIN, now: () => clock,
+  // The retained disk gate is reachable only with the journal requirement explicitly off.
+  const options = { directory, journalRequired: false, origin: ORIGIN, now: () => clock,
     authenticate: req => !revoked && [COOKIE, OTHER].includes(req.headers.cookie) ? { ...claims, role } : null,
     service: () => stream,
     decide: async (request, status, signal, ownedContext) => {

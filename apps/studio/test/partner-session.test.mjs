@@ -431,7 +431,7 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
   const body=await response.json();
-  // Den frysta presentationen och tilldelningen bär scenmallen; projektionen partnerPackageProfiles provas i partner-package-view.test.mjs.
+  // Den frysta presentationen och tilldelningen bär miljön.
   assert.equal(body.presentation.lanes[0].label,'Publicerad North');
   assert.deepEqual(body.assignment.lanes,[{id:body.presentation.lanes[0].id,label:'Publicerad North'}]);
   assert.deepEqual(body.assignment.dealers.map(dealer=>dealer.id),['astrid']);
@@ -498,7 +498,7 @@ import {presentationCapabilitiesForVersion} from '../../../packages/presentation
 import {createGameEntrySelector} from '../../../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../../../packages/presentation/runtime/player-choices.mjs';
 
-async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabilityVersion=21,unrelatedAnchors=false,
+async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabilityVersion=21,unrelatedAnchors=false,packageRooms=false,
   permissions=['overview.read','tables.read','presentations.read','presentations.configure']}={}) {
   const base=createStudioMemoryPool(),trace=[];
   const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
@@ -520,6 +520,10 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(permissions),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
+  // Two tables written with the package's own rooms (Studio 023, L3).
+  const nativeRooms=[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'},
+    ...(packageRooms?[{schemaVersion:2,id:'room-two',name:'Andra bordet',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}]:[])];
+  if(packageRooms)Object.assign(state.packages[0],{tables:'["room-native","room-two"]',rooms:canonicalStudioJson(nativeRooms)});
   function anchoredPresentation(){
     const value=structuredClone(presentation),target=value.lanes[0];
     target.layers.table={...target.layers.table,enabled:true,default:tableAsset.id,allowed:[tableAsset.id]};
@@ -577,7 +581,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     },
   };
   const repository=createStudioRepository({pool,scope});
-  const administration={rooms:[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}],
+  const administration={rooms:structuredClone(nativeRooms),
     gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
   await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
@@ -747,6 +751,14 @@ test('branding without tables.read carries no tables, and the standard roles kee
     assert.deepEqual(view.rooms,[nativeRoom],standard.id);assert.deepEqual(view.roomDealerChoices,{'room-native':['linnea']},standard.id);
     assert.equal(view.canConfigure,standard.permissions.includes('presentations.configure'),standard.id);
   }
+});
+test('a package with its own rooms and two tables reads and saves the partner appearance per table (no 503)',async()=>{
+  const f=await nativeBrandingFixture({packageRooms:true,tableGeometry:true});
+  const read=await f.get();assert.equal(read.status,200);
+  const view=await read.json();
+  assert.deepEqual(view.rooms.map(room=>room.id),['room-native','room-two']);
+  assert.deepEqual(view.roomDealerChoices,{'room-native':['linnea'],'room-two':['linnea']});
+  assert.equal((await f.saveRoomColor()).status,200);
 });
 test('branding writes without tables.read return no tables, also when tables.read is lost inside the transaction',async()=>{
   const writer=await nativeBrandingFixture({permissions:['overview.read','presentations.read','presentations.configure']});

@@ -14,7 +14,7 @@ export function ModeSelector({ mode, onChange, configured, compact = false }: { 
   return <div className={`${styles.modeSelector} ${compact ? styles.compact : ''}`}><div className="mode-options" role="group" aria-label="Beslutsmodell">{(Object.keys(modeLabels) as DirectorMode[]).map(key => <button key={key} type="button" className={key === mode ? 'active' : ''} aria-pressed={key === mode} onClick={() => onChange(key)}><span>{modeLabels[key]}</span>{!compact ? <small>{modeExplanations[key]}</small> : null}</button>)}</div>{compact ? <p className="helper">{modeExplanations[mode]}</p> : null}{!configured && (mode === 'shadow' || mode === 'active') ? <p className="connection-warning">Ingen modellkoppling är konfigurerad. Testet använder säker standard och visar orsaken.</p> : null}</div>;
 }
 
-export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat, modelsHref = '/admin/ai/models', standaloneVoicePreviewAvailable = true }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void; modelsHref?:string; standaloneVoicePreviewAvailable?: boolean }) {
+export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat, standaloneVoicePreviewAvailable = true }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void; standaloneVoicePreviewAvailable?: boolean }) {
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
@@ -46,9 +46,9 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
     try {
       const response = await requestJson<{ reply: string }>('/api/chat', { method: 'POST', signal:active.signal, body: JSON.stringify({ message: text, conversationId: id, dealerId }) });
       if(active.signal.aborted)return;
-      if (typeof response.reply !== 'string' || !response.reply.trim()) throw new Error('OpenClaw returnerade inget läsbart svar.');
+      if (typeof response.reply !== 'string' || !response.reply.trim()) throw new Error('Dialogtestet fick inget läsbart svar.');
       setMessages(current => [...current, { role: 'assistant', text: response.reply }]);
-    } catch (cause) { if(!active.signal.aborted)setError(cause instanceof Error ? cause.message : 'Chatten kunde inte nå OpenClaw.'); }
+    } catch (cause) { if(!active.signal.aborted)setError(cause instanceof Error ? cause.message : 'Dialogtestet kunde inte nå AI-agenterna.'); }
     finally { if(request.current===active){request.current=null;setBusy(false);} }
   }
 
@@ -70,8 +70,8 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
     <aside className={styles.context}>
       <h2>Anslutning</h2><p>{status.reachable===true?'Kontakt verifierad':status.configured?'Konfigurerad, kontakt ännu inte verifierad':'Ingen modell ansluten'}</p>
       {status.message && <details><summary>Anslutningsdetaljer</summary><p>{status.message}</p></details>}
-      <p>Dialogtestet använder serverns svar. Spelarens chatt och spel sker i det publicerade spelrummet.</p>
-      <button type="button" onClick={onPlayerChat}>Öppna spelrum</button>
+      <p>Dialogtestet använder serverns svar. Spelarens chatt och spel sker vid det publicerade spelbordet.</p>
+      <button type="button" onClick={onPlayerChat}>Öppna spelbord</button>
       {standaloneVoicePreviewAvailable && <VoicePreviewPanel available latestReply={messages.findLast(item=>item.role==='assistant')?.text??''}/>}
     </aside>
   </div>;

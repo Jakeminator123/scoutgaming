@@ -10,12 +10,13 @@ import {
   matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readIsolation, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
 import { environmentBranches, featurePatterns } from '../tools/check-push-target.mjs';
+import { foreignBranchGuard } from '../tools/foreign-branch-guard.mjs';
 
 // tools/merge-pr.mjs is the orchestrator's only merge path. Every refusal rule has a case
 // here, and gh/git/security-status are injected so the test never touches the network.
 const HEAD = 'a'.repeat(40);
 const OTHER = 'b'.repeat(40);
-const FREEZE = 'c'.repeat(40);
+const SECOND = 'c'.repeat(40);
 const MAIN = 'd'.repeat(40);
 const MERGE = 'e'.repeat(40);
 const OLD_MAIN = 'f'.repeat(40);
@@ -49,7 +50,6 @@ test('a verified Jakob PR with green CI on the exact head passes every check', (
   assert.equal(verdict.ok, true, JSON.stringify(verdict.checks));
   assert.deepEqual(verdict.checks.map(entry => entry.name),
     ['pr', 'state', 'draft', 'base', 'source', 'head', 'branch', 'author', 'ci', 'mergeable', 'files', 'workflow', 'fresh', 'isolation', 'review', 'security']);
-  assert.equal(decide(goodPr(), { freeze: FREEZE, freezeOnMain: true }).ok, true, 'non-runtime files pass the freeze');
   assert.equal(decide(goodPr({ mergeable: 'UNKNOWN' })).ok, true, 'GitHub decides UNKNOWN at merge time');
 });
 
@@ -60,7 +60,8 @@ test('each refusal rule refuses on its own', () => {
     base: [goodPr({ baseRefName: 'kevin' })],
     source: [goodPr({ isCrossRepository: true })],
     head: [goodPr({ headRefOid: OTHER }), goodPr({ headRefOid: HEAD.slice(0, 12) })],
-    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: null })],
+    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: { login: 'Johncleochile' } }), goodPr({ author: { login: 'EmaCodeHero' } }),
+      goodPr({ author: { login: 'jakeminator123' } }), goodPr({ author: null })],
     ci: [goodPr({ statusCheckRollup: [] }),
       goodPr({ statusCheckRollup: [ciRun({ status: 'IN_PROGRESS', conclusion: '' })] }),
       goodPr({ statusCheckRollup: [ciRun({ conclusion: 'FAILURE' })] }),
@@ -97,7 +98,7 @@ test('only Jakob\'s delivery branches pass, and other people\'s branches never d
   const patterns = foreignBranchPatterns({ policy, people });
   for (const pattern of BASELINE_FOREIGN_BRANCHES) assert.ok(patterns.includes(pattern), pattern);
   for (const branch of ['kevin', 'kevin-ks', 'kevin/port', 'Kevin/Port', 'codex/kevin-fix', 'john', 'john/design', 'codex/john-x',
-    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging',
+    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging', 'kevin-staging', 'kevin-merge-admin', 'emil/x',
     // Not a featureBranches pattern even though Jakob opened it.
     'codex/fix-foo', 'feature/x', 'codex/jakob-x', 'main', 'jakob', 'jakob/', 'jakob-export']) {
     assert.deepEqual(failed(decide(goodPr({ headRefName: branch }))), ['branch'], branch);
@@ -134,8 +135,13 @@ test('--base preview merges into the environment branch with the same gate, and 
   assert.deepEqual(failed(decide(goodPr({ headRefName: 'main' }))), ['branch']);
   assert.deepEqual(failed(decide(intoPreview({ headRefName: 'preview' }), { base: 'preview' })), ['branch']);
   assert.deepEqual(failed(decide(goodPr({ headRefName: 'preview' }))), ['branch']);
-  for (const branch of ['kevin', 'kevin/port', 'codex/kevin-fix', 'john', 'roulette-on-kevin-staging']) {
+  for (const branch of ['kevin', 'kevin/port', 'kevin-staging', 'kevin-merge-admin', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+    'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging']) {
     assert.deepEqual(failed(decide(intoPreview({ headRefName: branch }), { base: 'preview' })), ['branch'], branch);
+  }
+  // Another GitHub account is refused into preview exactly as into main.
+  for (const login of ['invoicesolv', 'Johncleochile', 'EmaCodeHero']) {
+    assert.deepEqual(failed(decide(intoPreview({ author: { login } }), { base: 'preview' })), ['author'], login);
   }
   // The freshness diff names the base branch.
   const stale = freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: 2, files: ['docs/x.md'] }, ['docs/x.md'], true, 'preview');
@@ -154,25 +160,10 @@ test('a PR that changes the CI that judges it needs --allow-workflow-change', ()
   assert.equal(withFiles([{ filename: '.github/CODEOWNERS', status: 'modified' }]).ok, true);
 });
 
-test('--freeze refuses runtime paths, moves out of runtime and a candidate off main', () => {
-  const runtime = [{ filename: 'docs/README.md', status: 'modified' }, { filename: 'services/game/server.mjs', status: 'modified' }];
-  assert.deepEqual(failed(withFiles(runtime, { freeze: FREEZE, freezeOnMain: true })), ['freeze']);
-  assert.equal(withFiles(runtime).ok, true, 'without --freeze runtime files are allowed');
-  for (const filename of ['apps/studio/lib/x.mjs', 'packages/director/a.mjs', 'ops/neon-game/1.sql', 'apps/web/app/page.tsx']) {
-    assert.deepEqual(failed(withFiles([{ filename, status: 'modified' }], { freeze: FREEZE, freezeOnMain: true })), ['freeze'], filename);
-  }
-  // gh pr view only shows docs/x.ts for apps/web/x.ts -> docs/x.ts; the REST list names the old path.
-  for (const status of ['renamed', 'copied']) {
-    const moved = [{ filename: 'docs/x.ts', status, previous_filename: 'apps/web/x.ts' }];
-    assert.deepEqual(failed(withFiles(moved, { freeze: FREEZE, freezeOnMain: true })), ['freeze'], status);
-    assert.deepEqual(failed(withFiles([{ filename: 'docs/x.ts', status }], { freeze: FREEZE, freezeOnMain: true })), ['files', 'workflow', 'freeze'],
-      `${status} without its old path proves nothing`);
-  }
-  assert.equal(withFiles([{ filename: 'docs/b.md', status: 'renamed', previous_filename: 'docs/a.md' }], { freeze: FREEZE, freezeOnMain: true }).ok, true);
-  assert.deepEqual(failed(decide(goodPr(), { freeze: FREEZE, freezeOnMain: false })), ['freeze'], 'the candidate must be on origin/main');
-  assert.deepEqual(failed(decide(goodPr({ changedFiles: 150 }), { freeze: FREEZE, freezeOnMain: true })), ['files', 'workflow', 'freeze'],
-    'an incomplete list cannot prove the freeze');
+test('a rename or copy counts its old path too', () => {
   assert.deepEqual(changedPaths([{ filename: 'b', status: 'renamed', previous_filename: 'a' }]), ['b', 'a']);
+  assert.equal(withFiles([{ filename: 'docs/b.md', status: 'renamed', previous_filename: 'docs/a.md' }]).ok, true);
+  assert.deepEqual(failed(withFiles([{ filename: 'docs/x.ts', status: 'renamed' }])), ['files', 'workflow'], 'a rename without its old path proves nothing');
 });
 
 test('fresh passes CI against current main, or an older main without shared files or package roots', () => {
@@ -248,7 +239,7 @@ test('the CI base is the first parent of the merge commit named in the changes j
     ['log unreadable', refuses(ciGh({ fail: 'log' }).gh), /loggen för changes kunde inte läsas/],
     ['log without merge ref', refuses(ciGh({ log: 'HEAD is now at 1234567 something' }).gh), /ingen merge-commit för PR #42/],
     ['merge ref of another PR', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/43/merge` }).gh), /CI saknas för bas main/],
-    ['two merge refs', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/42/merge\n+${FREEZE}:refs/remotes/pull/42/merge` }).gh), /2 merge-commits för PR #42/],
+    ['two merge refs', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/42/merge\n+${SECOND}:refs/remotes/pull/42/merge` }).gh), /2 merge-commits för PR #42/],
     ['commit unreadable', refuses(ciGh({ fail: 'commit' }).gh), /föräldrarna \[main, aaaaaaaaaaaa\]/],
     ['second parent is not the head', refuses(ciGh({ parents: [OLD_MAIN, OTHER] }).gh), /föräldrarna/],
     ['not a merge commit', refuses(ciGh({ parents: [OLD_MAIN] }).gh), /föräldrarna/],
@@ -334,16 +325,16 @@ test('security-status refuses failures and reports only safe counts', () => {
 });
 
 test('arguments require a PR number and a full head SHA', () => {
-  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, base: 'main', freeze: null, allowWorkflowChange: false, dryRun: false });
-  assert.deepEqual(parseArgs(['--dry-run', '--freeze', FREEZE, '--head', HEAD, '7', '--allow-workflow-change']),
-    { number: 7, head: HEAD, base: 'main', freeze: FREEZE, allowWorkflowChange: true, dryRun: true });
-  assert.deepEqual(parseArgs(['42', '--base', 'preview', '--head', HEAD]), { number: 42, head: HEAD, base: 'preview', freeze: null, allowWorkflowChange: false, dryRun: false });
+  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, base: 'main', allowWorkflowChange: false, dryRun: false });
+  assert.deepEqual(parseArgs(['--dry-run', '--head', HEAD, '7', '--allow-workflow-change']),
+    { number: 7, head: HEAD, base: 'main', allowWorkflowChange: true, dryRun: true });
+  assert.deepEqual(parseArgs(['42', '--base', 'preview', '--head', HEAD]), { number: 42, head: HEAD, base: 'preview', allowWorkflowChange: false, dryRun: false });
   assert.equal(parseArgs(['42', '--base', 'main', '--head', HEAD]).base, 'main');
   for (const args of [[], ['42'], ['42', '--head', HEAD.slice(0, 12)], ['42', '--head', HEAD.toUpperCase()], ['--head', HEAD],
-    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze'], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD],
-    // --base needs a plain branch name, once, and the O02 freeze is main-only.
+    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze', SECOND], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD],
+    // --base needs a plain branch name, once; --freeze (O02) is gone.
     ['42', '--head', HEAD, '--base'], ['42', '--head', HEAD, '--base', '--dry-run'], ['42', '--head', HEAD, '--base', 'a', '--base', 'b'],
-    ['42', '--head', HEAD, '--base', '../x'], ['42', '--head', HEAD, '--base', 'preview', '--freeze', FREEZE]]) {
+    ['42', '--head', HEAD, '--base', '../x']]) {
     assert.throws(() => parseArgs(args), /Usage/, args.join(' '));
   }
 });
@@ -413,9 +404,6 @@ test('main fetches main, then merges with gh, the exact head and no admin or aut
   assert.equal(h.calls.security, 1);
   assert.ok(h.lines.some(line => /^ok  ci: CI SUCCESS/.test(line)));
   assert.match(h.lines.at(-1), /^mergad: PR #42/);
-  const frozen = harness();
-  assert.equal(frozen.run(['42', '--head', HEAD, '--freeze', FREEZE, '--dry-run']), 0);
-  assert.ok(frozen.calls.git.some(argv => argv.join(' ') === `merge-base --is-ancestor ${FREEZE} origin/main`));
   // CI tested an older main that changed one of the PR's files: refused, nothing merged.
   const stale = harness({ testedMain: MAIN });
   assert.equal(stale.run(['42', '--head', HEAD]), 1);
@@ -486,9 +474,6 @@ test('main refuses without merging, and dry-run never merges', () => {
   const stale = harness({ pr: goodPr({ headRefOid: OTHER }) });
   assert.equal(stale.run(['42', '--head', HEAD]), 1);
   assert.equal(merges(stale), 0);
-  const offMain = harness({ onMain: false });
-  assert.equal(offMain.run(['42', '--head', HEAD, '--freeze', FREEZE]), 1);
-  assert.equal(merges(offMain), 0);
   const workflow = harness({ files: [{ filename: '.github/workflows/croupier.yml', status: 'modified' }], pr: goodPr({ changedFiles: 1 }) });
   assert.equal(workflow.run(['42', '--head', HEAD]), 1);
   assert.equal(merges(workflow), 0);
@@ -612,4 +597,36 @@ test('readIsolation on a real repository: preview history never reaches main thr
   assert.equal(run(work, ['rev-parse', 'origin/preview']), run(temp, ['-C', remote, 'rev-parse', 'preview']));
   assert.match(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: ['preview'] }).reason, /origin\/preview kunde inte hämtas/);
   assert.deepEqual(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: [] }), { ok: true, reason: 'inga miljöbrancher i policyn' });
+});
+
+test('the Foreign branch guard check refuses other people\'s branches and other authors into main and preview', () => {
+  const guard = (overrides = {}) => foreignBranchGuard({ head: 'jakob/claude-x', author: 'Jakeminator123', base: 'main', policy, people, ...overrides });
+  for (const base of ['main', 'preview']) {
+    assert.equal(guard({ base }).ok, true, base);
+    assert.equal(guard({ base, head: 'main' }).ok, true, 'main into preview is not foreign');
+    for (const head of ['kevin', 'kevin/x', 'kevin-staging', 'kevin-merge-admin', 'Kevin-x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+      'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging', '']) {
+      const verdict = guard({ base, head });
+      assert.equal(verdict.ok, false, `${base} ${head}`);
+      assert.match(verdict.reasons.join('\n'), head ? /någon annans branch/ : /okänd/, head);
+    }
+    for (const author of ['invoicesolv', 'Johncleochile', 'EmaCodeHero', 'dependabot[bot]', '', undefined]) {
+      const verdict = guard({ base, author });
+      assert.equal(verdict.ok, false, `${base} ${author}`);
+      assert.match(verdict.reasons.join('\n'), /inte Jakeminator123/, String(author));
+    }
+  }
+  assert.equal(guard({ people: { ...people, jakob: {} } }).ok, false, 'no trusted owner, no pass');
+  assert.equal(guard({ base: 'kevin', head: 'kevin', author: 'invoicesolv' }).ok, true, 'other bases are not guarded');
+});
+
+test('the Foreign branch guard workflow runs from main on pull_request_target and is named for the ruleset', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/foreign-branch-guard.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  assert.match(yaml, /^name: Foreign branch guard$/m);
+  assert.match(yaml, /^ {4}name: Foreign branch guard$/m, 'the job name is the required check');
+  assert.match(yaml, /^ {2}pull_request_target:\n {4}branches: \[main, preview\]$/m);
+  assert.match(yaml, /^ {10}ref: main$/m, 'the policy is read from main, never from the pull request');
+  assert.doesNotMatch(yaml, /head\.sha|\$\{\{ *secrets\.|^ +pull_request:/m, 'no pull request code, no secrets');
+  assert.match(yaml, /HEAD_REF: \$\{\{ github\.event\.pull_request\.head\.ref \}\}/);
+  assert.match(yaml, /run: node tools\/foreign-branch-guard\.mjs$/m);
 });

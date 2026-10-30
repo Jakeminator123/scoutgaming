@@ -2,7 +2,7 @@ import type { StudioProject,StudioLine,MediaVariantPolicy } from '../../../../..
 import type { IdlePolicy,IdleVariantPolicy } from '../../../../../packages/presentation/runtime/idle-policy.mjs';
 import type { VideoInventory,VideoEntry,MediaFamily,ClipSlot } from './connected-studio.mjs';
 import type { PreparedIdleRotation } from '../../../lib/idle-rotation-sources.mjs';
-export type StudioPolicyContext={kind:'idle'|'family'|'line';family:MediaFamily|null;line:StudioLine;clips:VideoEntry[];policy:IdlePolicy|null;global:boolean;frequency:boolean};
+export type StudioPolicyContext={kind:'idle'|'family'|'line';family:MediaFamily|null;line:StudioLine;clips:VideoEntry[];policy:IdlePolicy|null};
 export function studioPolicyContext(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot):StudioPolicyContext;
 export function prepareStudioIdleRotation(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,selection?:readonly string[]|null):PreparedIdleRotation|null;
 export function savedIdleRotationSelection(prepared:PreparedIdleRotation,policy:IdlePolicy|null|undefined):{ids:string[];outside:number};
@@ -10,6 +10,9 @@ export function applyStudioIdlePolicy(project:StudioProject,inventory:VideoInven
 export function addStudioIdleClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,durationMs:number,asBase?:boolean):StudioProject;
 export function setStudioBaseWeight(policy:IdlePolicy,videoId:string,weight:number):IdlePolicy;
 export const IDLE_EVENT_RULES:readonly {id:string;label:string;type:string;conditions:unknown[][]}[];
+export const IDLE_DESCRIPTION_MAX:number;
+export function idleDescription(value:unknown):string;
+export function keepIdleRotationChoices(next:IdlePolicy,previous:IdlePolicy|null|undefined):IdlePolicy;
 export function applyStudioIdleVariantPolicy(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,patch:Partial<IdleVariantPolicy>):StudioProject;
 export function studioIdleEventRule(project:StudioProject,dealerId:string,videoId:string):string;
 export function applyStudioIdleEventRule(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,ruleId:string):StudioProject;

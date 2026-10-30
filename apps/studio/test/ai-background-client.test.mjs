@@ -6,10 +6,16 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import sharp from 'sharp';
-import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,aiImageErrorMessage,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,dataUrlFile,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_MESSAGES,AI_TABLE_MISFIT,adoptInRoom,adoptInTemplate,aiImageErrorMessage,aiReferenceMaterials,aiSceneTemplates,aiTableDealers,aiTableFitsTemplate,aiTableShapePreview,aiTableWidthSuggestion,
+  dataUrlFile,prepareMaterialReference,prepareReferenceImage,readAiImageStatus,registerAiProposal,requestAiProposals} from '../client/admin/lib/ai-background.mjs';
+import {AI_IMAGE_PRESETS} from '../lib/ai-image-contract.mjs';
+import {AI_TABLE_STYLES,aiTableLookFromColour} from '../lib/ai-table-style.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {aiImageLabel,aiPlacementHash,aiTableLabelFit,sha256Hex} from '../lib/ai-image-contract.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {materialById} from '../../../packages/presentation/contracts/material-catalog.mjs';
+import {filmedTableSvg,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
 
 const webp=async(width,height)=>sharp({create:{width,height,channels:3,background:{r:30,g:30,b:40}}}).webp().toBuffer();
 const proposalOf=async(width=1920,height=1080)=>({id:'00000000-0000-4000-8000-00000000000a',dataUrl:'data:image/webp;base64,'+(await webp(width,height)).toString('base64'),width,height});
@@ -65,7 +71,7 @@ test('proposal requests go to the one AI route and only fixed codes become text'
   assert.equal(sent[0].url,'/api/layer-assets/generate');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
   assert.deepEqual(JSON.parse(sent[0].init.body),{role:'background',prompt:'Filt',preset:'casino',count:2,reference:'data:image/png;base64,AAAA'});
   assert.deepEqual(result,{images:[image],remaining:7,fit:null},'malformed proposals are dropped');
-  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'mall'}},{fetchImpl});
+  await requestAiProposals({role:'background',prompt:'Studio',preset:'free',count:1,dealerId:'paow',sceneTemplate:{id:'miljö'}},{fetchImpl});
   assert.deepEqual(JSON.parse(sent[1].init.body),{role:'background',prompt:'Studio',preset:'free',count:1});
   const composition={mobile:{},desktop:{}};
   await requestAiProposals({role:'table',prompt:'Filt',preset:'casino',count:1,dealerId:'paow',sceneTemplate:{id:'paow-bord',composition}},{fetchImpl:tableAnswer});
@@ -174,13 +180,110 @@ test('choosing a table in a scene template blocks a misfit AI graphic and explai
   const {createElement}=localRequire('react'),{renderToStaticMarkup}=localRequire('react-dom/server');
   const placement=aiPlacementHash(defaultCompositionSettings()),asset=(id,label)=>({schemaVersion:1,id,role:'table',game:'blackjack',label,sha256:'a'.repeat(64),size:100,contentType:'image/webp',pathname:'x',width:1215,height:2074});
   const ai=asset('00000000-0000-4000-8000-0000000000a1',`AI · Grön filt · paow · ${placement}`),manual=asset('00000000-0000-4000-8000-0000000000a2','Blackjack · eget bord');
-  const lane=dealers=>({id:'mall',label:'Mall',dealers,layers:{table:{enabled:true,default:null,allowed:[]},background:{enabled:false,default:null,allowed:[],mode:'baked'}}});
+  const lane=dealers=>({id:'miljö',label:'Miljö',dealers,layers:{table:{enabled:true,default:null,allowed:[]},background:{enabled:false,default:null,allowed:[],mode:'baked'}}});
   const html=props=>renderToStaticMarkup(createElement(LayerAssetSelect,{role:'table',assets:[ai,manual],onChange:()=>{},...props}));
   const fits=html({lane:lane(['paow'])});
-  assert.doesNotMatch(fits,/passar inte scenmallen/);assert.doesNotMatch(fits,/<option[^>]*disabled=""[^>]*value="00000000-0000-4000-8000-0000000000a1"|value="00000000-0000-4000-8000-0000000000a1"[^>]*disabled=""/);
+  assert.doesNotMatch(fits,/passar inte miljön/);assert.doesNotMatch(fits,/<option[^>]*disabled=""[^>]*value="00000000-0000-4000-8000-0000000000a1"|value="00000000-0000-4000-8000-0000000000a1"[^>]*disabled=""/);
   const other=html({lane:lane(['astrid'])});
-  assert.match(other,/value="00000000-0000-4000-8000-0000000000a1" disabled=""/);assert.match(other,/passar inte scenmallen/);
+  assert.match(other,/value="00000000-0000-4000-8000-0000000000a1" disabled=""/);assert.match(other,/passar inte miljön/);
   assert.doesNotMatch(other,/value="00000000-0000-4000-8000-0000000000a2" disabled=""/,'manual material is never blocked');
   const chosen={...lane(['astrid']),layers:{...lane(['astrid']).layers,table:{enabled:true,default:ai.id,allowed:[ai.id]}}};
   assert.match(html({lane:chosen}),new RegExp('role="alert">'+ai.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+': Bordsgrafiken är ritad för en annan dealer'));
+});
+
+test('styles: the bolder presets come first, every preset has a table style, and "Fri" takes the inspiration\'s colour',()=>{
+  assert.deepEqual(AI_IMAGE_PRESETS.map(row=>row.label),['Mörk lyx','Aggressiv neon','Klassiskt casino','Mörk studio','Varm lounge','Ljus studio','Fri']);
+  assert.deepEqual(Object.keys(AI_TABLE_STYLES).sort(),AI_IMAGE_PRESETS.map(row=>row.id).sort());
+  for (const [id,style] of Object.entries(AI_TABLE_STYLES)) assert.match(style.stroke,/^rgba\(/,id);
+  assert.deepEqual(aiTableLookFromColour({r:20,g:120,b:60}),{felt:'#0d4f28',light:'#218b4b'},'kept dark enough for the white box stroke');
+  assert.equal(aiTableLookFromColour({r:300,g:0,b:0}),null);
+});
+
+test('the dialog suggests Bordsbredd % from the dealer\'s reach',()=>{
+  const suggestion=aiTableWidthSuggestion('paow',defaultCompositionSettings());
+  assert.equal(suggestion.changed,true);assert.deepEqual(suggestion.current.percent,{desktop:31.6,mobile:100});
+  assert.deepEqual(suggestion.suggested.percent,{desktop:37.7,mobile:119});
+  assert.ok(suggestion.suggested.share>=suggestion.range.min&&suggestion.suggested.share<=suggestion.range.max);
+  assert.deepEqual(suggestion.suggested.tableWidth,{mobile:suggestion.suggested.composition.mobile.table.width,desktop:suggestion.suggested.composition.desktop.table.width});
+  assert.equal(aiTableWidthSuggestion('astrid',defaultCompositionSettings()),null);
+});
+
+test('the shape preview uses the provider geometry and cuts away pixels outside the server silhouette',async()=>{
+  const composition=aiTableWidthSuggestion('paow').suggested.composition;
+  const template=filmedTableTemplate('paow',{composition});
+  for (const preset of ['casino','neon']) {
+    const preview=aiTableShapePreview('paow',composition,preset);
+    assert.deepEqual([preview.width,preview.height],[template.canvas.width,template.canvas.height]);
+    const actual=await sharp(Buffer.from(decodeURIComponent(preview.dataUrl.split(',')[1]))).ensureAlpha().raw().toBuffer();
+    const expected=await sharp(Buffer.from(filmedTableSvg(template,'reference',{look:AI_TABLE_STYLES[preset].look})))
+      .ensureAlpha().composite([{input:Buffer.from(filmedTableSvg(template,'mask')),blend:'dest-in'}]).raw().toBuffer();
+    // Browser SVG masking and libvips compositing can round a boundary pixel by one.
+    assert.equal(actual.length,expected.length);
+    let differences=0;for(let at=0;at<actual.length;at++)if(Math.abs(actual[at]-expected[at])>2)differences++;
+    assert.ok(differences<actual.length*.002,`${preset}: ${differences} changed channels`);
+    assert.equal(actual[3],0,'the background and dealer remain visible outside the table');
+    const at=(Math.round(template.dealer.center.y)*preview.width+Math.round(template.dealer.center.x))*4;
+    assert.equal(actual[at+3],255,'dealer cards land on opaque felt');
+  }
+  const bad=structuredClone(composition);bad.mobile.table.y+=.2;
+  assert.equal(aiTableShapePreview('paow',bad,'casino'),null);
+  assert.equal(aiTableShapePreview('missing',composition,'casino'),null);
+});
+
+test('library inspiration keeps catalogue identities and only lists registered, bounded images of the requested role',()=>{
+  const source=(material,id)=>({id,role:'table',label:'old label',...materialById(material).sources[0]});
+  const oak=source('blackjack-oak','00000000-0000-4000-8000-000000000001'),purple=source('blackjack-purple-rain','00000000-0000-4000-8000-000000000002');
+  const references=aiReferenceMaterials([oak,purple,{...oak,id:'https://other.invalid/a.png'},{...oak,role:'background'},
+    {...oak,contentType:'video/mp4'},{...oak,size:8*1024*1024+1}], 'table');
+  assert.deepEqual(references.map(row=>[row.id,row.label]),[[oak.id,'Blackjack · Oak'],[purple.id,'Blackjack · Purple Rain']]);
+  assert.deepEqual(references.map(row=>row.url),[oak,purple].map(row=>'/api/layer-assets/'+row.id));
+});
+
+test('library inspiration uses the authenticated media route, rejects foreign paths and errors, and bounds streamed bytes',async()=>{
+  const id='00000000-0000-4000-8000-000000000001',bytes=await webp(32,32),calls=[],files=[];
+  const prepare=async file=>{files.push(file);return 'prepared';};
+  const fetchImpl=async(url,init)=>{calls.push({url,init});return new Response(bytes,{headers:{'content-type':'image/webp'}});};
+  const controller=new AbortController();
+  assert.equal(await prepareMaterialReference(id,{fetchImpl,signal:controller.signal,prepare}),'prepared');
+  assert.equal(calls[0].url,'/api/layer-assets/'+id);assert.equal(calls[0].init.credentials,'same-origin');
+  assert.equal(calls[0].init.redirect,'error');assert.equal(calls[0].init.signal,controller.signal);
+  assert.equal(files[0].type,'image/webp');assert.deepEqual(Buffer.from(await files[0].arrayBuffer()),bytes);
+  for (const invalid of ['https://evil.invalid/image.png','../secrets',id+'?url=https://evil.invalid']) {
+    await assert.rejects(prepareMaterialReference(invalid,{fetchImpl:()=>assert.fail('no external fetch')}));
+  }
+  for(const response of [new Response(null,{status:403}),new Response('login',{headers:{'content-type':'text/html'}})]) {
+    await assert.rejects(prepareMaterialReference(id,{fetchImpl:async()=>response,prepare}),/kunde inte hämtas/);
+  }
+  let cancelled=false;
+  const oversized=new ReadableStream({start(stream){stream.enqueue(new Uint8Array(8*1024*1024));stream.enqueue(new Uint8Array(1));},cancel(){cancelled=true;}});
+  await assert.rejects(prepareMaterialReference(id,{fetchImpl:async()=>new Response(oversized,{headers:{'content-type':'image/png'}}),prepare}),/högst 8 MB/);
+  assert.equal(cancelled,true);assert.equal(files.length,1,'invalid responses never reach image preparation');
+});
+
+const TABLE='00000000-0000-4000-8000-0000000000a1';
+test('"Använd i miljön och i spelbordet" posts one adopt request and reads only a matching receipt',async()=>{
+  const sent=[],receipt={ok:true,operatorId:'north',roomId:'north-a',previousPackageRevision:7,packageRevision:8,projectRevision:'project-9',configVersion:'cfg-2',publishedAt:'2026-10-29T20:00:00.000Z',actor:'jakob',changes:[]};
+  const input={operatorId:'north',roomId:'north-a',compositionId:'paow-bord',materials:[{role:'table',assetId:TABLE}],tableWidth:{mobile:1.19,desktop:.377},expectedProjectRevision:'project-8'};
+  const ok=await adoptInRoom(input,{fetchImpl:async(url,init)=>{sent.push({url,init});return Response.json(receipt);}});
+  assert.deepEqual(ok,{ok:true,receipt});
+  assert.equal(sent.length,1);assert.equal(sent[0].url,'/api/admin/operator-package');assert.equal(sent[0].init.method,'POST');assert.equal(sent[0].init.credentials,'same-origin');
+  assert.deepEqual(JSON.parse(sent[0].init.body),{action:'adopt-room-material',...input});
+  const wrong=await adoptInRoom(input,{fetchImpl:async()=>Response.json({...receipt,roomId:'north-b'})});
+  assert.equal(wrong.ok,false);assert.match(wrong.error,/kvittot/);
+  const refused=await adoptInRoom(input,{fetchImpl:async()=>Response.json({error:'studio_release_invalid',code:'studio_release_invalid',reason:'studio_release_other_changes'},{status:422})});
+  assert.equal(refused.ok,false);assert.equal(refused.reason,'studio_release_other_changes');assert.match(refused.error,/andra opublicerade ändringar.*Inget publicerades/);
+  const lost=await adoptInRoom(input,{fetchImpl:async()=>{throw Error('offline');}});
+  assert.equal(lost.ok,false);assert.match(lost.error,/Svaret kom inte fram/);
+});
+
+test('"Använd i miljön" without a spelbord saves the adopted scene template as the project draft',async()=>{
+  const project=structuredClone(nativeRoomMaterialFixture({capture:false}).project),lane=project.lanes[0].id;
+  const asset={schemaVersion:1,id:TABLE,role:'table',game:'blackjack',label:aiImageLabel('Mörk lyx',{dealerId:'dragan',placement:aiPlacementHash(defaultCompositionSettings())}),
+    sha256:'b'.repeat(64),size:100,contentType:'image/webp',width:1215,height:2074};
+  project.layerAssets=[...(project.layerAssets??[]),{...asset,pathname:layerAssetPath(asset)}];
+  const saves=[];
+  const result=await adoptInTemplate({project,compositionId:lane,materials:[{role:'table',assetId:TABLE}]},{save:async next=>{saves.push(next);return next;}});
+  assert.equal(saves.length,1);assert.equal(result.lanes[0].layers.table.default,TABLE);assert.deepEqual(result.lanes[0].layers.table.allowed,[TABLE]);
+  assert.equal(project.lanes[0].layers.table.default,null,'the loaded project is not changed in place');
+  await assert.rejects(adoptInTemplate({project,compositionId:'saknas',materials:[{role:'table',assetId:TABLE}]},{save:async()=>assert.fail('nothing is saved')}),/Miljön finns inte/);
 });

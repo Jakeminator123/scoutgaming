@@ -90,13 +90,18 @@ function createServerChainIdle({ policy, inventory, dealerId, now, initialScene 
   });
 }
 
+// The dealer whose registered idle family the policy names (<dealer>/idle.ready/ready).
+const policyDealer = policy => typeof policy?.familyId === 'string' ? policy.familyId.split('/')[0] : null;
+
 /** A timer-free, renderer-driven idle controller. Selection is not playback:
  * started accounts for real starts; only presented proves standard position.
  * No promise here can delay the independent game or speech action queues.
  * mode 'own' (default, every existing caller) keeps the per-viewer weighted base; 'server-chain'
- * follows a server-laid room chain (see createServerChainIdle). */
-export function createLiveIdleController({ policy, inventory, dealerId = 'astrid', seed = 1,
+ * follows a server-laid room chain (see createServerChainIdle). Without dealerId the
+ * dealer is the one the policy's registered family names; no dealer is a default. */
+export function createLiveIdleController({ policy, inventory, dealerId = policyDealer(policy), seed = 1,
   now = () => performance.now(), initialScene = {}, mode = 'own' } = {}) {
+  if (typeof dealerId !== 'string' || !dealerId) throw Error('Invalid live idle dealer');
   if (mode === 'server-chain') {
     if (typeof now !== 'function') throw Error('Invalid live idle clock or seed');
     return createServerChainIdle({ policy, inventory, dealerId, now, initialScene });

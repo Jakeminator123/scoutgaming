@@ -33,7 +33,7 @@ Schemat följer alltså inte skrivaren. Båda tjänsterna ansluter med rollen `c
 
 Det finns två migreringsledgrar med krockande nummer: `ops/neon-game/011` och `012` är inte samma sak som `ops/neon-studio/011` och `012`. Ange alltid ledgern (`game-012`, Studio 012).
 
-- **Studio**, `croupier_studio.storage_migrations`: registret är listan i `ops/neon-studio/migrations.mjs`, och `tools/check-migration-readiness.mjs` (som CI kör) läser den. Produktionen har 001–008 och 011–020; 021 är valfri och inte körd.
+- **Studio**, `croupier_studio.storage_migrations`: registret är listan i `ops/neon-studio/migrations.mjs`, och `tools/check-migration-readiness.mjs` (som CI kör) läser den. Produktionen har 001–008 och 011–020; 021 och 022 är valfria och inte körda. 022 vidgar bara bolagsjournalens action-CHECK (`operator_audit_events`, 006) med partnerns egna åtgärder (spelbordens läge, spelinställningsutkast och begäran om material eller nyckelrotation); utan den svarar de partnervägarna 503 `studio_migration_required` och skriver ingenting. 022 körs först efter Jakobs uttryckliga "ja 022". 023 lägger bara till kolumnen `operator_packages.rooms` (text, NULL eller 2–20000 tecken): paketets egna spelbord som kanonisk JSON, skriven av `publishWithin` ur administrationsdokumentets `rooms[]` i dokumentets ordning (plan L3). Utan 023 skrivs paketen som förut och läsarna använder dokumentet; äldre paket behåller `rooms` NULL. 023 körs först när L3 PR 3 är ute i samma miljö, preview före produktion.
 - **Spel**, `croupier_game.storage_migrations`: motorn och Studio kontrollerar bara `product-v1`:s checksumma mot `ops/neon-game/product-schema.sql` vid start (`packages/storage/server/postgres-store.mjs:159`). Senare spelversioner är granskade engångstransaktioner som `tools/prepare-*.mjs` renderar och som själva skriver sin ledgerrad. Produktionen har `product-v1`, `sqlite-import-v1`, `game-011-retire-lissabon` (2026-10-28) och `game-012-api-key-operator` (2026-10-29 01:46Z). 008–010 (delat bord) applicerades utan ledgerrad, och readiness läser inte den här ledgern.
 
 Preview avviker: Studio saknar 016, 018 och 019, och spel-ledgern har `product-v1` och `game-012` men inte 011 ([ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen)).
@@ -131,6 +131,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 | Pose och utdelning | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `services/game/filmed-deal-selection.mjs` |
 | Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealer-lifecycle.mjs` |
 | Talrepliker | `packages/presentation/server/speech-reply-repository.mjs` |
+| `media/blob-index.json` (manuellt, inget skript anropar det) | `tools/export-media-blob.mjs`: torrkörning utan flaggor; `--output media/blob-index.json` skriver indexet, `--apply` laddar upp privat och verifierar |
 | Rörligt tal | `services/moving-gpu-worker/`, `services/game/moving-speech-*.mjs`, `services/game/generated-speech-stream.mjs` |
 
 Radera inte tester för aktiva kontrakt för att deras namn innehåller Astrid eller Kevin. Medieoriginal, kalibrering och privata checkpoints är aldrig genererbara byggrester.

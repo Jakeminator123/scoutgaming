@@ -91,15 +91,63 @@ test('unconfigured or invalid optional control plane leaves other Admin actions 
   }
 });
 
-test('one configured dealer addresses that dealer slot; several dealers keep the API closed until Admin selects one',async()=>{
+test('one configured dealer addresses that dealer slot with or without naming it',async()=>{
   const seen=[],store={transact:()=>assert.fail('construction reads no state')};
   const f=fixture({service:{storeFactory:options=>{seen.push(options);return store;}}});
   assert.equal(f.service.configured,true);
   assert.deepEqual(seen.map(({environmentId,dealerId})=>({environmentId,dealerId})),[{environmentId:scope.environment,dealerId:'dragan'}]);
-  const second={...profiles[0],id:'paow',label:'Paow',dealerId:'paow',endpointId:'private-endpoint-2'};
-  const several=createMovingDriftAdminApi({scope,env:{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([profiles[0],second])},
-    storeFactory:()=>assert.fail('several dealers must not open a store')});
-  assert.equal(several.configured,false);assert.deepEqual([...several.handlers.keys()],[]);
+  const one=fixture();
+  for(const url of [origin+path,origin+path+'?dealerId=dragan']) {
+    const response=await one.api.handle(new Request(url));
+    assert.equal(response.status,200,url);assert.deepEqual((await response.json()).profiles,[{id:'base',label:'Bas'}]);
+  }
+  const saved=await one.api.handle(request(stop({dealerId:'dragan'})));
+  assert.equal(saved.status,200);assert.equal((await saved.json()).revision,1);
+  const unknown=await one.api.handle(new Request(origin+path+'?dealerId=paow'));
+  assert.equal(unknown.status,422);
+  assert.deepEqual(await unknown.json(),{error:'Dealern har ingen driftprofil för rörligt tal.',code:'drift_unknown_dealer'});
+  assert.equal(one.state.revision,1);
+});
+
+test('several dealers: each request addresses the named dealer, and naming none is a clear 400',async()=>{
+  const second={...profiles[0],id:'paow',label:'Paow',dealerId:'paow',endpointId:'private-endpoint-2',bankHash:'c'.repeat(64)};
+  const stores=new Map(),states=new Map();
+  const storeFactory=({dealerId})=>{
+    const store={transact(work){const next=work(structuredClone(states.get(dealerId)??null),1792404000000);states.set(dealerId,structuredClone(next.state));return next.value;}};
+    stores.set(dealerId,store);return store;
+  };
+  const env={...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([profiles[0],second])};
+  const f=fixture({service:{env,storeFactory}});
+  assert.equal(f.service.configured,true);assert.deepEqual([...stores.keys()],['dragan','paow']);
+  assert.ok(f.api.availableActions(session).includes('GET moving-drift'));
+  for(const [dealerId,profile] of [['dragan',{id:'base',label:'Bas'}],['paow',{id:'paow',label:'Paow'}]]) {
+    const response=await f.api.handle(new Request(origin+path+'?dealerId='+dealerId)),body=await response.json();
+    assert.equal(response.status,200);assert.deepEqual(body.profiles,[profile]);
+    assert.equal(JSON.stringify(body).includes('private-endpoint'),false);
+  }
+  const written=await f.api.handle(request(stop({dealerId:'paow'})));
+  assert.equal(written.status,200);assert.equal((await written.json()).revision,1);
+  assert.equal(states.get('paow').revision,1);assert.equal(states.get('dragan')?.revision??0,0);
+  const required={error:'Välj vilken dealer taldriften gäller.',code:'drift_dealer_required'};
+  for(const req of [request(),request(stop({commandId:'none'})),request(stop({commandId:'null',dealerId:null}))]) {
+    const response=await f.api.handle(req);
+    assert.equal(response.status,400);assert.deepEqual(await response.json(),required);
+  }
+  for(const req of [new Request(origin+path+'?dealerId=astrid'),request(stop({commandId:'other',dealerId:'astrid'})),
+    request(stop({commandId:'typed',dealerId:['paow']}))]) {
+    const response=await f.api.handle(req);
+    assert.equal(response.status,422);assert.equal((await response.json()).code,'drift_unknown_dealer');
+  }
+  // Only ?dealerId= is a valid query; other names, extra keys and bad ids stay unrouted.
+  for(const query of ['?profileId=paow','?dealerId=paow&x=1','?dealerId=Paow','?dealerId=']) {
+    assert.equal((await f.api.handle(new Request(origin+path+query))).status,404,query);
+  }
+  // A write names its dealer in the body; the read query is not a write address.
+  const queried=new Request(origin+path+'?dealerId=paow',{method:'POST',body:JSON.stringify(stop({commandId:'p'})),
+    headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'}});
+  assert.equal((await f.api.handle(queried)).status,404);
+  assert.equal((await f.api.handle(request(stop({commandId:'q',dealerId:'paow'}),{}))).status,409);
+  assert.equal(states.get('paow').revision,1);assert.equal(states.get('dragan')?.revision??0,0);
 });
 
 test('API returns explicit public fields, private headers and repeatable CAS command results',async()=>{
@@ -164,6 +212,8 @@ test('native request handler uses the same API in both documented basePath confi
     const url=origin+apiBase+'/moving-drift';
     const get=await handler.handleNativeAdmin(new Request(url));
     assert.equal(get.status,200);assert.equal((await get.json()).revision,0);
+    const named=await handler.handleNativeAdmin(new Request(url+'?dealerId=dragan'));
+    assert.equal(named.status,200);assert.equal((await named.json()).revision,0);
     const post=await handler.handleNativeAdmin(new Request(url,{method:'POST',body:JSON.stringify(stop()),
       headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'}}));
     assert.equal(post.status,200);assert.equal((await post.json()).revision,1);
@@ -222,4 +272,17 @@ test('Admin reports connected only from a fresh shared executor lease, and loses
   response=await f.api.handle(request());body=await response.json();
   assert.equal(body.capabilities.connected,false);assert.equal(body.admission.allowed,false);
   assert.equal(body.observed.status,'unknown');
+});
+
+test('Admin catalog lists only dealers whose drift profile names a bank hash; ids only, never endpoints',async()=>{
+  const {withMovingSpeechDealers}=await import('../lib/studio-native-runtime.mjs');
+  const paow={id:'paow',label:'Paow',dealerId:'paow',endpointId:'private-endpoint-2',releaseDigest:'a'.repeat(64),bankHash:'c'.repeat(64)};
+  const env=list=>({CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify(list)});
+  const read=async value=>withMovingSpeechDealers(async()=>({source:'registered',administration:{}}),value)();
+  const both=await read(env([paow,...profiles]));
+  assert.deepEqual(both.movingSpeech,{dealerIds:['dragan','paow']});assert.equal(both.source,'registered');
+  assert.equal(JSON.stringify(both).includes('private-endpoint'),false);
+  assert.deepEqual((await read(env([{...paow,bankHash:'pending'},...profiles]))).movingSpeech.dealerIds,['dragan']);
+  for(const off of [{},{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_API:'0'},{CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:'not json'}])
+    assert.deepEqual((await read(off)).movingSpeech.dealerIds,[]);
 });

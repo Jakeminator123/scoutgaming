@@ -1,0 +1,24 @@
+.editor{display:grid;gap:.85rem;min-width:0;width:100%}
+.modes,.layers{display:flex;gap:.35rem;padding:.3rem;border:1px solid var(--sg-border);border-radius:14px;background:var(--sg-surface-2)}
+.modes button,.layers button{flex:1;min-width:0;padding:.7rem .5rem;border:0;border-radius:10px;background:transparent;color:var(--sg-text);font:inherit;font-size:.85rem;font-weight:650;cursor:pointer}
+.layers button{display:flex;align-items:center;justify-content:center;gap:.5rem}
+.layers button span{display:grid;place-items:center;width:1.4rem;height:1.4rem;border:1px solid var(--sg-border);border-radius:50%;font-size:.7rem}
+.modes button[aria-pressed=true],.layers button[aria-pressed=true]{background:var(--sg-surface);box-shadow:0 1px 4px #0002;color:var(--sg-accent-text)}
+.editor button:focus-visible,.selection:focus-visible{outline:3px solid #22d3ee;outline-offset:2px}
+.editor button:disabled{opacity:.45;cursor:default}
+.overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:8px}
+.selection{position:absolute;pointer-events:auto;touch-action:none;border:2px solid #22d3ee;background:linear-gradient(135deg,#22d3ee08,transparent);box-sizing:border-box;cursor:grab;user-select:none}
+.selection:active{cursor:grabbing}
+.selection[aria-disabled=true]{pointer-events:none;border-style:dashed;opacity:.6}
+.handle{position:absolute;left:50%;top:8px;transform:translateX(-50%);display:flex;align-items:center;gap:.7rem;padding:.45rem .7rem;white-space:nowrap;background:#083344e8;color:#ecfeff;border:1px solid #67e8f9;border-radius:8px;font-size:.75rem;box-shadow:0 2px 8px #0004}
+.bottom{position:absolute;left:50%;bottom:0;transform:translateX(-50%);padding:.15rem .4rem;border-radius:4px 4px 0 0;background:#083344e8;color:#ecfeff;font-size:.65rem;white-space:nowrap}
+.hint{margin:0;font-size:.8rem;line-height:1.5;color:var(--sg-muted)}
+.controls{display:grid;gap:.85rem;border:1px solid var(--sg-border);border-radius:14px;padding:1rem;min-width:0}
+.controls legend{padding:0 .4rem;font-weight:650}.controls legend span{font-size:.75rem;font-weight:400;color:var(--sg-muted)}
+.size label{display:grid;font-size:.85rem}.sizeCaption{display:flex;justify-content:space-between}.size output{font-variant-numeric:tabular-nums}.size input{width:100%;height:30px;accent-color:var(--sg-accent-text)}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}.actions button{font-size:.75rem}
+.nudge{display:flex;align-items:center;gap:.35rem}.nudge button{width:40px;min-height:40px;border:1px solid var(--sg-border);border-radius:9px;background:var(--sg-surface-2);color:var(--sg-text);font-size:1rem;cursor:pointer}.nudge small{font-size:.7rem;color:var(--sg-muted);margin-left:.25rem}
+.editor .toggle{display:flex;align-items:center;gap:.5rem;font-size:.8rem;line-height:1.4}.toggle input{flex:none;width:16px;height:16px}
+.precision{font-size:.8rem}.precision summary{cursor:pointer;padding:.5rem 0;color:var(--sg-muted)}.precision small{display:block;line-height:1.5;color:var(--sg-muted)}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.5rem 0}.fields label{display:grid;gap:.3rem}.fields input{width:100%;min-width:0}
+@media(max-width:480px){.controls{padding:.75rem}.layers button{gap:.3rem}.handle{font-size:.7rem}.actions button{flex-grow:1}.nudge small{font-size:.65rem}}

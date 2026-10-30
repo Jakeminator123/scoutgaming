@@ -66,8 +66,7 @@ async function withCache(options, work) {
 // reserves paid work and publishes these server-only references to a completed
 // owner-bound Neon journal record; Blob never stores the authoritative metadata.
 export function createSpeechBlobArtifacts({ env = process.env, blobClient } = {}) {
-  const options = { env: Object.freeze({ CROUPIER_MEDIA_STORAGE: env.CROUPIER_MEDIA_STORAGE,
-    BLOB_READ_WRITE_TOKEN: env.BLOB_READ_WRITE_TOKEN }), ...(blobClient ? { blobClient } : {}) };
+  const options = { env: Object.freeze({ BLOB_READ_WRITE_TOKEN: env.BLOB_READ_WRITE_TOKEN }), ...(blobClient ? { blobClient } : {}) };
   const configured = () => { if (!isCloudMediaConfigured(options.env)) fail(); };
   return Object.freeze({
     async save({ artifactId, ownerHash, speechPackage: value, audio, video } = {}) {

@@ -6,6 +6,7 @@ import {createSeedProject, addDealer, defaultPresentationLane} from '../packages
 import {buildPresentationPackage, validatePresentationPackage} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {encodePresentationPackage, decodePresentationPackage, readPackagePresentation, withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {captureFrozenPresentation, assertCapturedPresentationMedia, selectedRegisteredIdleDefaults, assertPublishedRoomBindings} from '../packages/presentation/server/frozen-presentation-capture.mjs';
+import {studioCopyProfile} from './fixtures/native-room-game-material.mjs';
 const scope={environment:'frozen-fixture',workspaceId:'isolated'};
 const id='10000000-0000-4000-8000-000000000001',sha256='a'.repeat(64);
 function fixture(){
@@ -136,4 +137,21 @@ test('v3 binding admits only a frozen allowed Astrid adapter for the Linnea defa
     assert.throws(() => assertPublishedRoomBindings(invalid), error => error.statusCode===409);
   }
   assert.equal(input.administration.rooms[0].gameLaneId, 'old-astrid');
+});
+
+test('the dealer\'s saved landings are frozen into its package row; a tampered profile is refused',()=>{
+  const input=fixture(),dealer=input.snapshot.projectDocument.value.dealers.find(row=>row.id==='linnea');
+  dealer.filmedProfile=studioCopyProfile('linnea','paow');
+  const {presentation}=captureFrozenPresentation(input);
+  assert.deepEqual(presentation.registeredDealers[0].filmedProfile,dealer.filmedProfile);
+  assert.deepEqual(decodePresentationPackage(encodePresentationPackage(presentation)).registeredDealers[0].filmedProfile,dealer.filmedProfile);
+  const copy=()=>structuredClone(presentation);
+  for(const tamper of [row=>{row.filmedProfile.base='kevin-unknown-00000000';},row=>{row.filmedProfile.extra=true;},
+    row=>{row.filmedProfile.takes['9:base']={sha256:'b'.repeat(64)};},row=>{row.filmedProfile.id='studio-other-00000000';},
+    row=>{row.filmedProfile.takes['1:i'].sha256=row.filmedProfile.takes['1:base'].sha256;}]){
+    const value=copy();tamper(value.registeredDealers[0]);
+    assert.throws(()=>validatePresentationPackage(value),/studio_invalid_presentation/);
+  }
+  const seeded=fixture();seeded.snapshot.projectDocument.value.dealers.find(row=>row.id==='linnea').filmedProfile={...studioCopyProfile('linnea','paow'),base:'nope'};
+  assert.throws(()=>captureFrozenPresentation(seeded));
 });

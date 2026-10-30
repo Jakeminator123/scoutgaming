@@ -58,7 +58,7 @@ test('native Studio media paths serve from the Neon catalogue when the bundle ha
       readDocument: async name => name === 'administration' ? { revision: 'fixture', value: { tiers: {}, rooms: [], pitboss: {}, tournaments: [], voiceReview: {},
         genVerdicts: {}, genLandings: {}, legacyClipReview: { sourceSha256: 'a'.repeat(64), neverAgain: {} } } } : null };
     // Produktionen har fortfarande CROUPIER_MEDIA_BLOB_INDEX satt (docs/ENVIRONMENT-VARIABLES.md); katalogen går före.
-    const env = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-no-network', CROUPIER_MEDIA_BLOB_INDEX: '/var/task/media/blob-index.json' };
+    const env = { BLOB_READ_WRITE_TOKEN: 'fixture-no-network', CROUPIER_MEDIA_BLOB_INDEX: '/var/task/media/blob-index.json' };
     const media = createStudioMediaRuntime({ repository: neon, scope, env, repositoryRoot: repository });
     const blobRows = new Map(catalog.blobIndex.files.map(row => [row.logicalPath, row]));
     const json = catalog.layout.files.find(row => row.access === 'public' && row.publicUrl && row.path.endsWith('.json') && blobRows.has(row.path));

@@ -157,7 +157,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
           }
           if(scene.current)renderer.current?.render(scene.current,actor,assets,[],undefined);
           if(time-lastInfo>400){lastInfo=time;setMediaInfo([...assets.entries()].map(([role,asset])=>{const title=role==='dealer'?'Dealer':role==='table'?t('Bord','Table'):t('Bakgrund','Background');return asset.el instanceof HTMLVideoElement?title+': '+(asset.el.paused?t('pausad','paused'):t('spelar','playing'))+' · '+asset.el.currentTime.toFixed(2)+' / '+asset.el.duration.toFixed(2)+' s · '+asset.width+' × '+asset.height:title+t(': bild · ',': image · ')+asset.width+' × '+asset.height;}).join('\n'));}
-        }catch(cause){pause();if(active)setError(cause instanceof Error?cause.message:t('Sammansättningen kunde inte visas.','The composition could not be displayed.'));return;}
+        }catch(cause){pause();if(active)setError(cause instanceof Error?cause.message:t('Miljön kunde inte visas.','The composition could not be displayed.'));return;}
         frame=requestAnimationFrame(render);
       }
       frame=requestAnimationFrame(render);

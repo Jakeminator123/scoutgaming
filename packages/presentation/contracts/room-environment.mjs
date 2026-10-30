@@ -18,7 +18,7 @@ export function roomEnvironment(room, operatorSlug) {
   const baked = dealers.filter(dealer => !dealer.independentLayers || dealer.background.mode === 'baked');
   if (baked.length === dealers.length) return {
     kind: 'baked', fixed: dealers.length === 1,
-    label: dealers.length === 1 ? 'Miljö i dealerfilmen' : 'Miljön följer vald dealer',
+    label: dealers.length === 1 ? 'Bakgrund i dealerfilmen' : 'Bakgrunden följer vald dealer',
   };
   if (dealers.some(dealer => dealer.independentLayers && dealer.background.mode !== 'baked' && !dealer.background.enabled)) {
     return { kind: 'variable', fixed: false, label: 'Bakgrund saknas för minst en dealer' };
@@ -28,6 +28,12 @@ export function roomEnvironment(room, operatorSlug) {
   const fixed = !baked.length && asset && dealers.every(dealer =>
     dealer.background.allowed.length === 1 && dealer.background.allowed[0].id === asset.id
       && dealer.background.default === asset.id && dealer.background.mode === first.mode);
-  if (!fixed) return { kind: 'variable', fixed: false, label: 'Flera miljöer', ...defaultBackgroundImage(room, operatorSlug) };
+  if (!fixed) return { kind: 'variable', fixed: false, label: 'Flera bakgrunder', ...defaultBackgroundImage(room, operatorSlug) };
   return { kind: first.mode, fixed: true, label: asset.label, ...(first.mode === 'image' ? { image: layerImage(operatorSlug, asset.id) } : {}) };
+}
+
+/** The room's miljöbild: the published environment picture served from the room's package, or undefined.
+ * It is shown in the lobby and Admin, never in the game. */
+export function roomIllustrationImage(room, operatorSlug) {
+  return typeof room?.illustration === 'string' ? layerImage(operatorSlug, room.illustration) : undefined;
 }

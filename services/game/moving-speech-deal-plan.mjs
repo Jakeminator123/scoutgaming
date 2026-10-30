@@ -45,7 +45,9 @@ export function createMovingDealReservations({now=Date.now}={}) {
   };
 }
 
-export function prepareMovingDealPlan({receipt,version,frozenContext,sourceSet,publicVideo,profile=registeredFilmedProfile(sourceSet?.dealerId)}={}) {
+// The frozen context's own landings (frozen-dealer-presentation.mjs resolve), else the code register.
+export function prepareMovingDealPlan({receipt,version,frozenContext,sourceSet,publicVideo,
+  profile=frozenContext?.filmedProfile&&frozenContext.dealer?.id===sourceSet?.dealerId?frozenContext.filmedProfile:registeredFilmedProfile(sourceSet?.dealerId)}={}) {
   if(!Number.isSafeInteger(version)||version<1||receipt?.version!==version||frozenContext?.schemaVersion!==3
     ||!frozenContext.project||typeof publicVideo!=='function')fail('moving_deal_context');
   let events;try{events=JSON.parse(receipt.payload);}catch{fail('moving_deal_instructions');}

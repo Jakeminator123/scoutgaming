@@ -12,8 +12,10 @@ import {platformUiDocument} from '../lib/server-ui.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
 
-const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_VERCEL_UNIFIED_UI:'0', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
-  CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
+// One public origin, native Admin and the canonical game entry are fixed in code; the
+// environment only supplies origins and the ingress secret.
+const env = {CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
+  CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 const roomMediaId='00000000-0000-4000-8000-000000000083';
 const roomPresentationRequests=[
@@ -55,8 +57,8 @@ test('published roulette browser contracts use exact backend routes without expo
 });
 
 test('unified Studio configuration needs no second UI origin and retains distinct game authority', () => {
-  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
-  delete unifiedEnv.CROUPIER_LAB_UI_ORIGIN;
+  // Studio is served from the public origin.
+  const unifiedEnv = {...env};
   const unified = platformConfiguration(unifiedEnv);
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
@@ -65,15 +67,14 @@ test('unified Studio configuration needs no second UI origin and retains distinc
     {kind:'redirect',destination:unified.publicOrigin+'/admin/system?flik=drift'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
-  assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
-  assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_VERCEL_UNIFIED_UI:'0'}));
+  assert.equal(unified.nativeStudio, true); assert.equal(unified.canonicalGame, true);
 });
 
-test('actual unified Studio middleware preserves auth transport and rejects encoded document aliases', async () => {
+test('actual unified Studio proxy preserves auth transport and rejects encoded document aliases', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
-  const middlewareUrl = new URL('../../studio/middleware.ts', import.meta.url);
+  const middlewareUrl = new URL('../../studio/proxy.ts', import.meta.url);
   const requireMiddlewareSource = createRequire(middlewareUrl);
   // The frontend service owns Next; Studio dependencies are installed separately.
   const requireMiddleware = specifier => specifier === 'next/server'
@@ -82,14 +83,14 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   const compiled = transpileModule(source, {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
   const module = {exports:{}};
   new Function('require', 'module', 'exports', compiled)(requireMiddleware, module, module.exports);
-  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1', CROUPIER_LAB_BASE_PATH:'/studio'};
+  const unifiedEnv = {...env};
   const previous = Object.fromEntries(Object.keys(unifiedEnv).map(key => [key, process.env[key]]));
   Object.assign(process.env, unifiedEnv);
   try {
     const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
       'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
     for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin', '/studio/admin/login']) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
       assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
       assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
       assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
@@ -98,7 +99,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login']) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin?room=room-7'),{nextConfig:{basePath:'/studio'}}));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin?room=room-7'),{nextConfig:{basePath:'/studio'}}));
       assert.equal(response.status,307);
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin?room=room-7'));
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
@@ -107,26 +108,26 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     const resetToken='fixture_restore_'.repeat(3);
     for (const prefix of ['', '/studio']) for (const old of ['/set-password','/control/set-password']) {
       for(const query of ['t='+resetToken,'token='+resetToken]) {
-        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query+'&foreign=discard',{nextConfig:{basePath:'/studio'}}));
+        const response=module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?'+query+'&foreign=discard',{nextConfig:{basePath:'/studio'}}));
         assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password?t='+resetToken);
         assert.equal(response.headers.get('referrer-policy'),'no-referrer');
       }
       for(const query of ['t=short','t='+resetToken+'&t='+resetToken,'t='+resetToken+'&token='+resetToken]) {
-        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query,{nextConfig:{basePath:'/studio'}}));
+        const response=module.exports.proxy(new NextRequest(config.publicOrigin+prefix+old+'?'+query,{nextConfig:{basePath:'/studio'}}));
         assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password');
       }
     }
     for (const old of ['/control/login','/studio/login','/control/set-password','/studio/set-password']) {
-      const response=module.exports.middleware(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
+      const response=module.exports.proxy(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
       assert.equal(response.status,400);assert.equal(response.headers.get('location'),null);
     }
     const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
-    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin?dealer=paow', {headers:navigation}));
+    const document = module.exports.proxy(new NextRequest(config.publicOrigin + '/admin?dealer=paow', {headers:navigation}));
     assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin?dealer=paow');
     // Known document metadata is normalized before a fetch hop can replace navigate with cors.
     assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
     assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
-    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin', {headers:{...navigation,origin:'https://foreign.example'}}));
+    const foreign = module.exports.proxy(new NextRequest(config.publicOrigin + '/admin', {headers:{...navigation,origin:'https://foreign.example'}}));
     assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
     for (const [path, init] of [
       ['/studio/api/project', {headers:navigation}],
@@ -137,32 +138,31 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       ['/control/replies', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
     ]) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, init));
+      const response = module.exports.proxy(new NextRequest(config.publicOrigin + path, init));
       if (path.startsWith('/control/')) assert.equal(response.status,400,path);
       else assert.equal(response.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site', path);
     }
-    const transport = module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
+    const transport = module.exports.proxy(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
     assert.equal(transport.headers.get('x-middleware-rewrite'), config.backendOrigin + '/studio/api/inputs');
     assert.equal(transport.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
-    const workspace = module.exports.middleware(new NextRequest(config.publicOrigin + '/partner/demo-north/team?_rsc=fixture', {headers}));
+    const workspace = module.exports.proxy(new NextRequest(config.publicOrigin + '/partner/demo-north/team?_rsc=fixture', {headers}));
     assert.equal(workspace.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/partner/demo-north/team?_rsc=fixture');
     for (const path of ['/studio/api/%61dmin/users', '/partner/demo-north/%74eam']) {
-      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 400, path);
+      assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + path)).status, 400, path);
     }
     for (const path of ['/api/internal', '/partner/api/admin']) {
-      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 404, path);
+      assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + path)).status, 404, path);
     }
-    delete process.env.CROUPIER_VERCEL_UNIFIED_UI;
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login','/set-password','/control/set-password']) {
       const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
-      const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
+      const response=module.exports.proxy(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
       const mode=old.endsWith('set-password')?'set-password':'login';
       // The legacy returnTo is kept but canonicalised: the retired publication page with one room is that room's nav.
       const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms/room-7');
       assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+expected);
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
     }
-    assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
+    assert.equal(module.exports.proxy(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
   } finally {
     for (const [key,value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
   }
@@ -187,7 +187,7 @@ test('generated workspace chunks allow encoded bracket folders without widening 
 });
 
 test('unknown document paths cannot create customer or API aliases', () => {
-  const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
+  const native = platformConfiguration({...env});
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
     '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
     assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, path.startsWith('/control/')?'reject':'frontend', path);
@@ -200,7 +200,7 @@ test('unknown document paths cannot create customer or API aliases', () => {
 });
 
 test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
-  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  const unified=platformConfiguration({...env,});
   for(const path of ['/play','/play/']){
     const url=new URL(path+'?operator=alpha&table=room-one&dealer=nora&launch=private&returnTo=https://evil.invalid',unified.publicOrigin);
     for(const method of ['GET','HEAD']) assert.deepEqual(platformRoute(url,unified,new Request(url,{method})),
@@ -224,7 +224,7 @@ test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
 });
 
 test('one game start: /play/blackjack, /blackjack and /roulette are 308 aliases and the game selector is strict',()=>{
-  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  const unified=platformConfiguration({...env,});
   for(const [old,destination] of [
     ['/play/blackjack?operator=alpha&table=room-one&dealer=nora&returnTo=https://evil.invalid','/game?game=blackjack&dealer=nora&table=room-one&operator=alpha'],
     ['/play/blackjack/?dealer=astrid','/game?game=blackjack&dealer=astrid'],
@@ -264,7 +264,7 @@ test('one game start: /play/blackjack, /blackjack and /roulette are 308 aliases 
 });
 
 test('unified player addresses preserve approved selectors and the existing signed launch handler',()=>{
-  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  const unified=platformConfiguration({...env,});
   for(const old of ['/blackjack','/blackjack/','/play/blackjack','/play/blackjack/'])assert.deepEqual(platformRoute(new URL(old+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
     {kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&dealer=astrid&lane=mobile-phone'});
   for(const path of ['/game','/game/'])assert.deepEqual(platformRoute(new URL(path+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),{kind:'frontend'});
@@ -290,7 +290,7 @@ test('unified player addresses preserve approved selectors and the existing sign
 test('new game document retains live session/policy checks, cookies and fail-closed errors',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'croupier-play-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
-  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unifiedEnv={...env,};
   const request=new Request(config.publicOrigin+'/game?game=blackjack&operator=sg-test&dealer=astrid',{headers:{cookie:'game_session=fixture'}});
   let calls=[];
   const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return url.endsWith('/api/auth/session')?Response.json({authenticated:true}):new Response('<html data-game-lane="saved-johanna" data-game-dealer="johanna"></html>');};
@@ -318,7 +318,7 @@ test('new game document retains live session/policy checks, cookies and fail-clo
 test('lobby operator survives into the engine proxy, also on a partner launch; only an invalid slug is dropped',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'croupier-operator-proxy-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
-  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unifiedEnv={...env,};
   const unified=platformConfiguration(unifiedEnv);
   const partner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({partner:'key-1',sub:'player-1'})).toString('base64url')}.sig`;
   const notPartner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({operator:'sg-test',sub:'player-1'})).toString('base64url')}.sig`;
@@ -372,7 +372,7 @@ test('lobby operator survives into the engine proxy, also on a partner launch; o
 });
 
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
-  const native = platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
+  const native = platformConfiguration({...env,});
   for (const path of ['/studio/api/project','/studio/api/social','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
     assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab',path);
   }
@@ -408,9 +408,11 @@ test('platform routes preserve exact backend boundaries, public origin and query
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));
   // /api/bo/speech-qa remains only for the engine's cloud startup probe (ops/cloud/access-check.mjs).
-  for (const path of ['/api/table', '/api/bo/speech-qa', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
+  for (const path of ['/api/table', '/api/bo/speech-qa', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
+  // Native Admin is fixed: Studio's own media API stays in Studio.
+  assert.equal(platformRoute(new URL('/studio/api/videos/id?requestId=a%20b', config.publicOrigin), config).kind, 'lab');
   // The retired Admin-to-player handoff and BO config have no backend ingress.
   for (const path of ['/api/bo/config', `/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`]) {
     assert.equal(backendPlatformPath(new URL(path, config.publicOrigin).pathname), false, path);
@@ -424,7 +426,9 @@ test('platform routes preserve exact backend boundaries, public origin and query
   }
   for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/studio/api/original-media', '/studio/api/original-media/player', '/api/bo/login', '/api/bo/users', '/api/bo/users/role', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
   assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'lab');
-  assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'frontend');
+  // A bare start is a lobby entry (canonical game entry is fixed); a room start is the frontend route.
+  assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'redirect');
+  assert.equal(platformRoute(new URL('/game?operator=sg-test&table=room-1', config.publicOrigin), config).kind, 'frontend');
   assert.equal(platformRoute(new URL('/game?launch=one-use', config.publicOrigin), config).kind, 'backend');
   const headers = platformBackendHeaders(new Headers({'x-croupier-vercel-secret': 'spoof', 'x-croupier-lab-authorized': 'spoof', origin: config.publicOrigin, cookie: 'player_session=test'}), config);
   assert.equal(headers.get('x-croupier-vercel-secret'), config.secret);
@@ -466,9 +470,13 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     await assert.rejects(readFile(join(directory, 'runtime-ui/casino.html'), 'utf8'));
     assert.ok(prepared.files.every(path => !/\.(mp4|webm|png|jpg|wav|mp3)$/.test(path)));
     assert.equal(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'),await readFile(new URL('../../../services/game/public/blackjack-entry.mjs',import.meta.url),'utf8'));
-    const game = await platformUiDocument(new Request(config.publicOrigin + '/game'), {env, directory: join(directory, 'runtime-ui')});
-    assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
-    assert.match(game.headers.get('cache-control'), /no-store/);
+    // The canonical game entry is fixed: the start asks the engine for the session and
+    // never serves a static shell; the player login document is the prepared one.
+    const login = await platformUiDocument(new Request(config.publicOrigin + '/player-login'), {env, directory: join(directory, 'runtime-ui')});
+    assert.equal(login.status, 200); assert.match(login.headers.get('cache-control'), /no-store/);
+    const game = await platformUiDocument(new Request(config.publicOrigin + '/game?operator=sg-test&table=room-1'), {env, directory: join(directory, 'runtime-ui'),
+      fetchImpl: async () => Response.json({authenticated:false})});
+    assert.equal(game.status, 303); assert.match(game.headers.get('location'), /^\/player-login/);
     // Retired document addresses have no frontend document any more.
     const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64);
     for (const path of ['/casino.html','/v2','/v2/','/bo','/bo/','/bo/index.html','/bo/login.html',`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,
@@ -599,11 +607,12 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   Object.assign(process.env, env);
   try {
     for (const path of ['/api/table', '/studio/api/project', '/studio/activity', '/api/presentation/select']) {
+      const lab = path.startsWith('/studio/');
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);
-      if (path === '/studio/activity') {
-        assert.match(response.headers.get('x-middleware-rewrite'), /^https:\/\/lab-ui\.vercel\.app/);
+      if (lab) {
+        assert.ok(response.headers.get('x-middleware-rewrite').startsWith(config.labUiOrigin + '/'));
         assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
       } else assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
     }
@@ -639,7 +648,6 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     }
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
-    process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1';
     for (const path of ['/admin', '/partner/demo-north']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path + '?_rsc=fixture', {headers:{
         cookie:'bo_session=isolated-admin-fixture', rsc:'1', 'x-croupier-vercel-secret':'spoof', 'x-croupier-lab-authorized':'spoof',
@@ -734,7 +742,7 @@ test('Studio preview transports only explicit session paths without acquiring or
     '/api/studio-preview//'+id,base.replace('/api/','/api/%73')]) assert.equal(backendPlatformPath(path),false,path);
 });
 test('bare game start enters the existing lobby without reading a player session or saved global lane',async()=>{
-  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unifiedEnv={...env,};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/play/blackjack?utm_source=bookmark&returnTo=https://evil.invalid']){
     assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack'});
@@ -760,7 +768,7 @@ test('bare game start enters the existing lobby without reading a player session
 });
 
 test('published room login retains operator, room and dealer while the administrator portal keeps its own session',async()=>{
-  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unifiedEnv={...env,};
   const calls=[];
   const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?game=blackjack&operator=sg-test&table=room-one&dealer=linnea'),{
     env:unifiedEnv,fetchImpl:async(url)=>{calls.push(url);return Response.json({authenticated:false});},
@@ -773,7 +781,7 @@ test('published room login retains operator, room and dealer while the administr
 });
 
 test('an operator-only Blackjack bookmark opens that company lobby without consuming player authentication',async()=>{
-  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unifiedEnv={...env,};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack?operator=sg-test','/blackjack?operator=sg-test&utm_source=partner']){
     assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&operator=sg-test'});
@@ -819,9 +827,9 @@ test('static redirects leave credentials and APIs to their authenticated handler
  const {unstable_getResponseFromNextConfig,getRedirectUrl}=require('next/experimental/testing/server');
  const keys=Object.keys(env),saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
  try{
-  for(const native of [true,false]){
-   Object.assign(process.env,env,{CROUPIER_STUDIO_NATIVE_ADMIN:native?'1':'0',CROUPIER_VERCEL_UNIFIED_UI:native?'1':'0'});
-   const {default:nextConfig}=await import('../next.config.mjs?return-navigation-'+native);
+  {
+   Object.assign(process.env,env);
+   const {default:nextConfig}=await import('../next.config.mjs?return-navigation');
    for(const path of ['/control/login?returnTo=%2Fadmin','/control/set-password?t=fixture','/api/auth/session','/api/table']){
     const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+path,nextConfig});
     assert.equal(getRedirectUrl(response),null,path);

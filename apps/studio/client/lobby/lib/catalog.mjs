@@ -1,16 +1,15 @@
 import { validatePublicOperatorRooms } from '../../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
-import { roomEnvironment } from '../../../../../packages/presentation/contracts/room-environment.mjs';
+import { roomEnvironment, roomIllustrationImage } from '../../../../../packages/presentation/contracts/room-environment.mjs';
 import { gameStartPath } from '../../../../../packages/navigation/game-entry.mjs';
-import { roomLimitProfileArtwork } from '../../../lib/room-limit-profiles.mjs';
 
-// The room card's illustration follows the published bet profile, with the same pictures as Admin's
-// profile cards (Studion, Salongen, Loungen). Without a known profile the card keeps Salongen,
-// which every room showed before (the Privé picture). The asset base lives here, inside client/lobby,
-// so the public build rewrites it to /lobby/_assets/lobby/ like every other lobby image (client/build.mjs).
+// The room card's picture, in order: the published environment's miljöbild, the published background, and
+// last this design illustration. The bet profile no longer picks a picture (Jakob 2026-10-29). The asset base
+// lives here, inside client/lobby, so the public build rewrites it to /lobby/_assets/lobby/ like every other
+// lobby image (client/build.mjs).
 const lobbyImages = '/admin/_assets/lobby/images/lobby/';
-export function roomIllustration(limitPreset) {
-  const { file, alt } = roomLimitProfileArtwork(limitPreset) ?? roomLimitProfileArtwork('prive');
-  return { image: lobbyImages + file, alt };
+const fallbackIllustration = Object.freeze({ image: lobbyImages + 'room-salongen.png', alt: 'Klassiskt blackjackrum i valnöt och mässing' });
+export function roomIllustration() {
+  return { ...fallbackIllustration };
 }
 
 /** Validate the published subcatalog, never use administration objects as playable data. */
@@ -27,7 +26,7 @@ export function parseLobbyCatalog(payload) {
     seen.add(slug);
     const dealerIds = new Set();
     for (const room of catalog.rooms) {
-      const environment = roomEnvironment(room, slug);
+      const environment = roomEnvironment(room, slug), image = roomIllustrationImage(room, slug) ?? environment.image;
       for (const dealer of room.dealers) {
         dealerIds.add(dealer.id);
         if (!dealerMap.has(dealer.id)) dealerMap.set(dealer.id, { id: dealer.id, name: dealer.label });
@@ -36,8 +35,11 @@ export function parseLobbyCatalog(payload) {
         id: room.id, key: `${slug}:${room.id}`, operatorId: slug, name: room.name,
         game: room.game ?? 'blackjack', presentation: room.presentation.label,
         environmentLabel: environment.label, environmentFixed: environment.fixed, environmentKind: environment.kind,
-        ...(environment.image ? { image: environment.image } : {}),
-        ...(room.limitPreset ? { limitPreset: room.limitPreset } : {}), illustration: roomIllustration(room.limitPreset),
+        ...(image ? { image } : {}),
+        ...(room.limitPreset ? { limitPreset: room.limitPreset } : {}), illustration: roomIllustration(),
+        // Without published game settings the room is shown as being prepared and offers no game start.
+        // A status this build does not know is treated the same: no game start.
+        ...(Object.hasOwn(room, 'status') ? { preparing: true } : {}),
         dealerDefault: room.dealerDefault,
         dealers: room.dealers.map(dealer => ({ ...dealer, name: dealer.label })),
         playUrl: room.playUrl,
@@ -95,6 +97,7 @@ export function lobbySelection(catalog, { operatorId = null, roomKey = null, dea
 /** Both tenant and room membership must still match when rendering a launch link.
  * The published playUrl is the engine's room contract; the link itself is the one game start. */
 export function playUrlFor({ operator, room, dealer }) {
+  if (room.preparing) return undefined;
   if (room.operatorId !== operator.id || !operator.roomIds.includes(room.key)
     || !room.dealers.some(row => row.id === dealer.id)) return undefined;
   const published = `/play/${room.game}?` + new URLSearchParams({ operator: operator.id, table: room.id });

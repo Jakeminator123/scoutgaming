@@ -3,14 +3,14 @@
 // (test/fixtures/engine-qa.mjs); this test never opens a running preview database.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ENGINE_QA_SKIP, createEngineDatabase, freePort, startEngine } from './fixtures/engine-qa.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, freePort, installBaseStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 test('authoritative table over HTTP: empty entry, debit once, retries, restart, settlement and shoe depletion', { skip: ENGINE_QA_SKIP }, async t => {
-  const database = await createEngineDatabase(t), { db } = database.store;
+  const database = await createEngineDatabase(t), { db } = database.store, studio = await installBaseStudioRuntime(t, database);
   const port = await freePort(), origin = `http://127.0.0.1:${port}`;
   const checks = [];
   let engine, cookie = '', player, state;
-  const start = async () => { engine = await startEngine(t, { database, port, env: { DEMO_GUEST_ACCESS: '1' } }); };
+  const start = async () => { engine = await startEngine(t, { database, port, preload: studio.preload, env: { ...studio.env, DEMO_GUEST_ACCESS: '1' } }); };
   const stop = async () => { await engine?.stop(); };
   async function post(path, body, expected = 200) {
     const response = await fetch(origin + path, {
@@ -58,14 +58,16 @@ test('authoritative table over HTTP: empty entry, debit once, retries, restart, 
     assert.equal(retired.status, 404, `retired V2 alias ${path} is gone, not redirected`);
     await retired.text();
   }
+  // The canonical entry is fixed: the root moves a dealer query to /game, whose shell
+  // never turns the query into a presentation without a published table.
   for (const path of ['/']) {
     const response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
-    assert.equal(response.status, 503, `empty installation entry ${path}`);
-    const html = await response.text();
-    assert.match(html,/Ingen presentation vald/);
-    assert.doesNotMatch(html,/data-game-dealer=|<video|src="app\.mjs"/,'a dealer query cannot create a playable presentation');
+    assert.equal(response.status, 307, `empty installation entry ${path}`);
+    assert.equal(response.headers.get('location'), '/game?dealer=astrid');
+    const html = await (await fetch(origin + '/game?dealer=astrid', { redirect: 'manual' })).text();
+    assert.doesNotMatch(html,/data-game-dealer=|data-dealer=|data-game-lane=/,'a dealer query cannot create a playable presentation');
     entryHtml ??= html;
-    assert.equal(html, entryHtml, 'the empty entry has one unavailable presentation response');
+    assert.equal(html, entryHtml, 'the empty entry has one response');
   }
   checks.push('Empty entry fails closed and V2 is gone; explicit dealer query never creates a presentation');
   player = await post('/api/player', {}); await refresh();

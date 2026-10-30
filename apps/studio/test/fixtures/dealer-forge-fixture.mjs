@@ -85,7 +85,7 @@ export function fixture({ runway: runwayOverrides = {}, project } = {}) {
   const videoRegistry = async () => ({ videos: [...media.values()].map(row => ({ id: row.id, label: row.classification.label, dealer: row.classification.dealerId, classification: row.classification, sha256: row.sha256, available: true, previewUrl: `/api/videos/${row.id}` })) });
   const clock = { now: 1_700_000_000_000 };
   const store = fakeStore(() => clock.now);
-  const service = createDealerForgeService({ repository, scope, env: { RUNWAY_API_KEY: 'test-key-0123456789abcdef', CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'x' }, mutationTransaction: async work => work(),
+  const service = createDealerForgeService({ repository, scope, env: { RUNWAY_API_KEY: 'test-key-0123456789abcdef', BLOB_READ_WRITE_TOKEN: 'x' }, mutationTransaction: async work => work(),
     gamePolicy, videoRegistry, validateProjectBindings: async () => {}, now: () => clock.now, runwayFactory: () => runway, store, images: fakeImages(), privateMedia });
   return { service, store, repository, runway, tasks, submitted, registered, blobs, documents, projectSaves, media, failPut, clock, privateMedia };
 }

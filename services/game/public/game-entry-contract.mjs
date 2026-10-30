@@ -1,4 +1,3 @@
-import {gameEntryEnabled} from '../../../packages/navigation/game-entry.mjs';
 import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import {assertGameChoices} from '../../../packages/presentation/contracts/game-selection.mjs';
@@ -23,9 +22,10 @@ function brandingAttribute(value) {
   if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
   return attributeText(text);
 }
-export function decorateGameEntryHtml(html,env,selection,{offline = false} = {}) {
-  if (!gameEntryEnabled(env) && offline !== true) return html;
-  let attributes = gameEntryEnabled(env) ? ' data-game-path="/blackjack"' : '';
+// The canonical game entry is always on (Neon is the one registry; no variable selects
+// it). Only the offline Studio preview document has no game path.
+export function decorateGameEntryHtml(html,selection,{offline = false} = {}) {
+  let attributes = offline === true ? '' : ' data-game-path="/blackjack"';
   if (selection) {
     if (selection.studioPreview !== undefined) {
       const preview = validateStudioPreview(selection.studioPreview);

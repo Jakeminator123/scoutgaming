@@ -187,7 +187,7 @@ test('a pending Studio draft blocks dealer mutations even when a stale button ha
 });
 
 test('restore confirmation names the saved compositions before any restore is submitted',async()=>{
-  const compositions=[{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}];
+  const compositions=[{id:'first',label:'Första miljön'},{id:'second',label:'Andra miljön'}];
   const h=harness(compositions);await h.settle();
   h.button('archive').props.onClick();await h.settle();h.confirm().props.onClick();await h.settle();
   h.button('restore').props.onClick();await h.settle();
@@ -289,4 +289,10 @@ test('a pending permanent deletion disables restore and only offers to finish th
   assert.equal(text(nodes(h.dialog(),node=>node.type==='h2')[0]),dealerDeletePlan({label:'Dragan',eligibility:{allowed:true,count:2},pending:true}).title);
   assert.deepEqual(h.deletionChecks,[{id:'dragan',revision:'studio.project.3'}]);
   assert.equal(h.archives.length,1,'restore is never submitted');assert.equal(h.deletions.length,0);
+});
+
+test('dealer hub binds Taldrift to the shown dealer',()=>{
+  const source=readFileSync(new URL('../components/studio/dealer-hub.tsx',import.meta.url),'utf8');
+  assert.match(source,/<TaldriftPanel dealerId=\{dealer\.id\}\/>/);
+  assert.equal(source.match(/<TaldriftPanel\b/g)?.length,1,'one Taldrift panel, always with the dealer');
 });

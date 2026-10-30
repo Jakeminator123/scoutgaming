@@ -40,7 +40,7 @@ async function fixture(t) {
     },
     async del(path) { calls.push('del'); objects.delete(path); },
   };
-  const options = { env: { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-only' }, blobClient,
+  const options = { env: { BLOB_READ_WRITE_TOKEN: 'fixture-only' }, blobClient,
     archiveDir, snapshotPath, uploadDir: join(dir, 'uploads'), cacheDir: join(dir, 'cache') };
   async function seed(fields=metadata,cloud=true) {
     const row=await seedLegacyVideo(options,bytes,fields,{cloud});
@@ -105,7 +105,7 @@ test('real NextRequest keeps public-origin Range for both disk and private Blob 
   const { options, calls, seed } = await fixture(t);
   const disk = await seed({ ...metadata, label: 'Disk proxy' },false);
   const cloud = await seed();
-  const env = { LAB_PUBLIC_URL: 'https://game.example', CROUPIER_LAB_INTERNAL_SECRET: 'fixture-proxy-secret-at-least-32-characters', CROUPIER_LAB_BASE_PATH: '/studio' };
+  const env = { LAB_PUBLIC_URL: 'https://game.example', CROUPIER_LAB_INTERNAL_SECRET: 'fixture-proxy-secret-at-least-32-characters' };
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });

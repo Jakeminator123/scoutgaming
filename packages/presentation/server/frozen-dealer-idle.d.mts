@@ -5,7 +5,7 @@ import type {StudioMediaRecord} from '../../studio-registry/server/managed-media
 // Reuse the shared managed StudioMediaRecord type; retained bank provenance
 // is validated separately by the server storage contract.
 export type FrozenStudioMediaRecord = StudioMediaRecord;
-export interface FrozenRegisteredDealer { id: string; label: string; idle: FrozenStudioMediaRecord | null; rouletteIdle?:{base:FrozenStudioMediaRecord;variants:FrozenStudioMediaRecord[];foregroundPolygons?:import('../contracts/roulette-idle-contract.mjs').RouletteForegroundPolygons};rouletteStart?:import('../contracts/roulette-start-contract.mjs').RouletteStartProfile&{clip:FrozenStudioMediaRecord} }
+export interface FrozenRegisteredDealer { id: string; label: string; idle: FrozenStudioMediaRecord | null; rouletteIdle?:{base:FrozenStudioMediaRecord;variants:FrozenStudioMediaRecord[];foregroundPolygons?:import('../contracts/roulette-idle-contract.mjs').RouletteForegroundPolygons};rouletteStart?:import('../contracts/roulette-start-contract.mjs').RouletteStartProfile&{clip:FrozenStudioMediaRecord};filmedProfile?:import('../contracts/filmed-profiles/studio-profile.mjs').StudioFilmedProfile }
 export type FrozenMediaRow = FrozenStudioMediaRecord & { revision: string; updatedAt?: string };
 export interface FrozenMediaPrecondition { id: string; revision: string; record: FrozenStudioMediaRecord }
 export function validateFrozenRegisteredDealers(entries: unknown, options: { dealerIds: readonly string[] }): readonly FrozenRegisteredDealer[];

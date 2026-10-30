@@ -11,7 +11,7 @@ import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/present
 const require=createRequire(import.meta.url),React=require('react');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
+async function harness(search='?tab=bordsgrafik&game=roulette',role='table',rooms=[]) {
   const project=createSeedProject();
   project.layerAssets=[['roulette','Roulette board','table'],['blackjack','Blackjack board','table'],[undefined,'Legacy board','table'],[undefined,'Shared background','background']].map(([game,label,role],index)=>{
     const asset={schemaVersion:1,id:`10000000-0000-4000-8000-00000000000${index}`,role,label,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1920,height:1080,...(game?{game}:{})};
@@ -41,7 +41,7 @@ async function harness(search='?tab=bordsgrafik&game=roulette',role='table') {
     if(name==='../ui/dialog')return {Dialog,ConfirmDialog};
     if(name==='../ui/kit')return {Button,buttonVariants:()=>'button',cn:(...names)=>names.filter(Boolean).join(' '),plural:(count,one,many)=>`${count} ${count===1?one:many}`};
     if(name==='lucide-react')return new Proxy({},{get:()=>()=>null});
-    if(name.includes('connected-studio.mjs'))return {createStudioClient:()=>({load:async()=>({project})})};
+    if(name.includes('connected-studio.mjs'))return {createStudioClient:()=>({load:async()=>({project,catalog:{administration:{rooms}}})})};
     return require(name);
   }});
   const props={role,base:'/admin/scenes',visible:true,disabled:false,refreshKey:'1',onChanged:()=>changed++};
@@ -70,7 +70,7 @@ test('real assets page scopes table upload and visible library to explicit game,
     const pill=(tree,label)=>nodes(tree,node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)===label)[0];
     assert.equal(pill(tree,'Roulette').props['aria-pressed'],true);
     pill(tree,'Blackjack').props.onClick();tree=h.render();
-    assert.deepEqual(h.navigated,['/admin/scenes?tab=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
+    assert.deepEqual(h.navigated,['/admin/scenes?tab=material&filter=bordsgrafik&game=blackjack'],'the game filter stays on the table graphics tab of Scenes');
     assert.equal(nodes(tree,node=>node.type===h.LayerLibrary)[0].props.game,'blackjack');
     assert.deepEqual(h.visible(tree).map(asset=>asset.label),['Blackjack board','Legacy board']);
     h.props.role='background';tree=h.render();
@@ -174,7 +174,7 @@ test('mounted material library follows alias context and keeps dealer and room w
     nodes(h.render(),node=>node.type==='button'&&node.props['aria-pressed']!==undefined&&text(node)==='Roulette')[0].props.onClick();
     const query=new URLSearchParams(h.query());
     assert.equal(query.get('dealer'),'dragan');assert.equal(query.get('room'),'one');
-    assert.equal(query.get('tab'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
+    assert.equal(query.get('tab'),'material');assert.equal(query.get('filter'),'bordsgrafik');assert.equal(query.get('game'),'roulette');
     assert.match(h.navigated.at(-1),/^\/admin\/scenes\?/);
     assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Roulette board']);
     h.navigate('?tab=bakgrunder&game=roulette&dealer=astrid');h.props.role='background';
@@ -195,4 +195,18 @@ test('material previews are exclusive and pause on hidden workspace or document 
     h.render().props.onPlayCapture({target:a});h.hide(true);assert.ok(first>1);
     h.hide(false);assert.equal(a.play,undefined,'returning never requests playback');
   }finally{h.close();}
+});
+
+// "Skapa bord och bakgrund med AI för spelbordet" opens with the shared context keys (operator, room),
+// which the Scenes tabs keep: the dialog still offers that spelbord after a switch to Bakgrunder.
+test('the AI dialog takes its spelbord from the shared room key, which survives the tabs',async()=>{
+  const live={id:'one',name:'Bord ett',operatorId:'north',compositionId:'lane-one',state:'live',published:true,game:'blackjack'};
+  const rooms=[live,{...live,id:'two',name:'Roulette',game:'roulette'},{...live,id:'paused',state:'paused'}];
+  const dialogRoom=async(search,role='table')=>{const h=await harness(search,role,rooms);try{const aside=nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.aside;const room=nodes(aside,node=>node.type===h.AiBackgroundDialog)[0].props.room;return room&&{...room};}finally{h.close();}};
+  for (const role of ['table','background']) {
+    assert.deepEqual(await dialogRoom(`?tab=${role==='table'?'bordsgrafik':'bakgrunder'}&game=blackjack&operator=north&room=one`,role),
+      {id:'one',name:'Bord ett',operatorId:'north',compositionId:'lane-one'},role);
+  }
+  for (const search of ['?tab=bordsgrafik&room=one&room=paused','?tab=bordsgrafik&room=two','?tab=bordsgrafik&room=paused','?tab=bordsgrafik&spelbord=one'])
+    assert.equal(await dialogRoom(search),null,search);
 });

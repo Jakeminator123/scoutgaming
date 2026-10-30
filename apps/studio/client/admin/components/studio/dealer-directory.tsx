@@ -11,7 +11,7 @@ import Link, { navigate, useSearchParams } from '../../../runtime/navigation';
 import { ConfirmAcknowledgement, ConfirmDialog, Dialog, DialogSteps } from '../ui/dialog';
 import { DealerAvatar } from './dealer-identity-portrait';
 import { HubPage, Card, Chip, ActionMenu, Empty } from '../ui/hub';
-import { Button, plural } from '../ui/kit';
+import { Button, cn, focusRing, plural } from '../ui/kit';
 import { toast } from '../ui/toast';
 
 const client = createStudioClient(), lifecycle = createLifecycleClient();
@@ -132,7 +132,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         <div className="flex items-center gap-3.5">
           <DealerAvatar dealer={dealer} still={dealerStill(workspace!.project,workspace!.inventory,dealer.id)} size={56}/>
           <div className="min-w-0 flex-1"><Link href={dealerHref(dealer.id)} className="block truncate text-base font-semibold text-sg-text no-underline after:absolute after:inset-0 after:rounded-xl hover:underline">{dealer.label}</Link>
-            <div className="text-[12.5px] text-sg-muted">{templates.length?`Tillåten i ${plural(templates.length,'scenmall','scenmallar')}`:'Ingen scenmall ännu'}</div></div>
+            <div className="text-[12.5px] text-sg-muted">{templates.length?`Tillåten i ${plural(templates.length,'miljö','miljöer')}`:'Ingen miljö ännu'}</div></div>
           <span className="relative z-10"><ActionMenu small name={dealer.label} actions={[
             {id:'open',label:'Öppna dealern',onSelect:()=>navigate(dealerHref(dealer.id))},
             {id:'intake',label:'Lägg till klipp',onSelect:()=>navigate(dealerHref(dealer.id,'klipp',{panel:'intake'}))},
@@ -164,16 +164,16 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
         <div className="flex items-center gap-4">
           <DealerAvatar dealer={{id:'new',label:name.trim()||'?'}} size={64}/>
           <label className="grid min-w-0 flex-1 gap-1.5 text-[13px] font-semibold text-sg-text">Namn<input autoFocus required maxLength={120} value={name} disabled={disabled} placeholder="Till exempel Nora" onChange={event=>setName(event.target.value)}
-            className="h-10 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime"/></label>
+            className={cn('h-10 rounded-lg border border-sg-border bg-sg-surface px-3 text-[14px] font-normal text-sg-text placeholder:text-sg-faint',focusRing)}/></label>
         </div>
         {error&&<p role="alert" className="m-0 rounded-lg bg-sg-warn-bg px-3 py-2 text-[13px] text-sg-warn">{error}</p>}
       </form>:<div className="flex items-center gap-4 rounded-xl border border-sg-border bg-sg-surface-2 p-4">
         <DealerAvatar dealer={{id:created.id,label:created.name}} size={56}/>
-        <div className="min-w-0 text-[13.5px] text-sg-muted"><div className="font-semibold text-sg-text">{created.name}</div>Ingen scenmall och inget bolag ännu. Dealern kan tilldelas när klipp och tal räcker för spel.</div>
+        <div className="min-w-0 text-[13.5px] text-sg-muted"><div className="font-semibold text-sg-text">{created.name}</div>Ingen miljö och inget bolag ännu. Dealern kan tilldelas när klipp och tal räcker för spel.</div>
       </div>}
     </Dialog>
     <ConfirmDialog open={review!==null} title={plan?.title??'Granska åtgärden'} description={plan?.summary} consequences={plan?.items??[]}
-      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, spelbord, bolag och scenmallar…'}
+      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, spelbord, bolag och miljöer…'}
       error={reviewError} busy={busy&&review!==null&&!review.checking} busyLabel={plan?.busyLabel}
       confirmLabel={confirmLabel} confirmDisabled={disabled&&!busy||Boolean(deletePlan?.requiresAcknowledgement&&!review?.acknowledged)}
       cancelLabel={stale||review?.error?'Stäng':plan?.cancelLabel} onConfirm={()=>void applyReview()} onCancel={()=>{if(!busy||review?.checking)setReview(null);}}>

@@ -4,7 +4,7 @@ import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import { laneMaterialIds, validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
@@ -13,16 +13,17 @@ import { createOperatorStore } from '../../../packages/operators/server/operator
 import { readPackagePresentation, withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom, roomGame, roomPlayPath} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
+import {packageRoomsFor,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
 import { resolveFrozenDealerIdle } from '../../../packages/presentation/server/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { validatePresentationCapabilities } from '../../../packages/presentation/capability-contract.mjs';
-import { presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
+import { NATIVE_FILMED_PLANNING_MUTATION, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../../packages/presentation/contracts/presentation-material-game.mjs';
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
+import {validateRoomGameConfig} from '../../../packages/presentation/contracts/room-game-config.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
@@ -36,8 +37,17 @@ export const PRESENTATION_ROOM_MUTATION = Object.freeze({ kind: 'administration'
   rooms: Object.freeze([Object.freeze({ schemaVersion: 2 })]),
 }) });
 
+// Förhandlingen före SQL-låset för POST presentation-room (studio-admin-api.mjs) och, utan dokument och
+// bolag, samma kontroll inne i transaktionen. Med gameConfig: samma som room-game-config publish.
+export function presentationRoomMutationOptions(body, prepared, { documents = true } = {}) {
+  const game = prepared?.game ?? 'blackjack';
+  return { ...(documents ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId ? { presentationOperatorIds: [body.operatorId] } : {}) } : {}),
+    presentationMutation: [game === 'roulette' ? { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } } : PRESENTATION_ROOM_MUTATION,
+      ...(prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : []),
+      ...(body?.gameConfig ? [{ kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION] : [])] };
+}
 function intent(body) {
-  const keys = ['operatorId', 'presentationLaneId', 'name', 'idempotencyKey', 'expectedProjectRevision', 'expectedAdministrationRevision', 'expectedPackageRevision', ...(Object.hasOwn(body ?? {},'game')?['game']:[])];
+  const keys = ['operatorId', 'presentationLaneId', 'name', 'idempotencyKey', 'expectedProjectRevision', 'expectedAdministrationRevision', 'expectedPackageRevision', ...(Object.hasOwn(body ?? {},'game')?['game']:[]), ...(Object.hasOwn(body ?? {},'gameConfig')?['gameConfig']:[])];
   if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== keys.length || keys.some(key => !Object.hasOwn(body, key))) fail(400);
   if (!['blackjack','roulette'].includes(roomGame(body))) fail();
   if (typeof body.operatorId !== 'string' || !operatorIdPattern.test(body.operatorId) || !isGameLaneId(body.presentationLaneId)
@@ -45,6 +55,8 @@ function intent(body) {
     || /[\u0000-\u001f\u007f-\u009f]/.test(body.name) || typeof body.idempotencyKey !== 'string' || !keyPattern.test(body.idempotencyKey)) fail();
   validateRevision(body.expectedProjectRevision); validateRevision(body.expectedAdministrationRevision);
   if (body.expectedPackageRevision !== null && (!Number.isSafeInteger(body.expectedPackageRevision) || body.expectedPackageRevision < 1)) fail();
+  // Nytt spelbord på ett steg: spelinställningarna publiceras i samma transaktion (bara blackjack).
+  if (Object.hasOwn(body, 'gameConfig')) { if (roomGame(body) !== 'blackjack') fail(); try { validateRoomGameConfig(body.gameConfig); } catch { fail(); } }
   return structuredClone(body);
 }
 function roomIdentity(scope, body) {
@@ -66,7 +78,7 @@ function roomEnvironment(project, id) {
   const dealers = new Set([...lane.dealers, ...lane.layers.dealer.allowed]);
   if (background.mode === 'baked' && !background.allowed.length && background.default === null) {
     return { kind: 'baked', fixed: dealers.size === 1,
-      label: dealers.size === 1 ? 'Miljö i dealerfilmen' : 'Miljön följer vald dealer' };
+      label: dealers.size === 1 ? 'Bakgrund i dealerfilmen' : 'Bakgrunden följer vald dealer' };
   }
   const asset = project.layerAssets?.find(row => row.id === background.default && row.role === 'background');
   const fixed = background.enabled && ['image', 'video'].includes(background.mode)
@@ -134,7 +146,7 @@ function mergePresentation(current, selected, old = current ? readPackagePresent
     if (assets.has(asset.id) && canonicalStudioJson(assets.get(asset.id)) !== canonicalStudioJson(asset)) fail(409, 'studio_presentation_shared_layer_conflict');
     assets.set(asset.id, asset);
   }
-  const used = new Set(lanes.flatMap(lane => ['background', 'table'].flatMap(role => lane.layers[role].allowed)));
+  const used = new Set(lanes.flatMap(laneMaterialIds));
   const base = { projectRevision: selected.projectRevision, lanes, assets: [...assets.values()].filter(asset => used.has(asset.id)) };
   if (old.schemaVersion === 1 && selected.schemaVersion === 1) return validatePresentationPackage({ schemaVersion: 1, ...base });
   const registry = new Map((old.registeredDealers ?? []).map(entry => [entry.id, entry]));
@@ -172,7 +184,8 @@ function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
   // check. Later contracts retain room support without matching an old list.
   if (capabilities?.rooms !== 'operator-owned-v2' || game === 'roulette' && capabilities.rouletteRooms !== 'european-single-zero-v1'
     ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
-    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
+    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1'
+    ||presentation?.registeredDealers?.some(row=>row.filmedProfile)&&capabilities.filmedProfiles!=='frozen-studio-profile-v1') return false;
   if (presentation?.schemaVersion >= 2 && (capabilities.registeredDealerMode !== 'saved-registry-idle-v1'
     || capabilities.frozenDealerIdle !== 'operator-package-v2')) return false;
   if (presentation?.schemaVersion === 3 && capabilities.frozenDealerEvents !== 'operator-package-v3') return false;
@@ -183,7 +196,8 @@ function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
   return true;
 }
 // materials: optional sql => operator material store (Bolagets eget material).
-export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now, materials = null } = {}) {
+// roomGameConfig: room-game-config-api.mjs, för `gameConfig` i POST (spelbord + spelinställningar i en transaktion).
+export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now, materials = null, roomGameConfig = null } = {}) {
   scope = validateStudioScope(scope);
   if (!repository?.transaction || !repository?.withTransactionClient || !repository?.saveDocument || !repository?.readPresentationSnapshot
     || canonicalStudioJson(scope) !== canonicalStudioJson(repository.scope) || typeof runtimeCapabilities !== 'function') fail(503);
@@ -332,7 +346,12 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         const room = resolvePackageRoom({ administration: saved.administration, package: saved.pack, operatorId: body.operatorId, roomId });
         if (!room) fail(409);
         assertReplayBinding(saved, room);
-        return receipt(saved, room, true);
+        if (!body.gameConfig) return receipt(saved, room, true);
+        // Samma nyckel med andra spelinställningar är en annan begäran, inte ett omförsök.
+        if (typeof roomGameConfig?.readPublished !== 'function') fail(503, 'studio_room_game_config_unavailable');
+        const published = await roomGameConfig.readPublished(client, { operator: saved.operator, pack: saved.pack, room: existing });
+        if (!published || canonicalStudioJson(published.gameConfig) !== canonicalStudioJson(validateRoomGameConfig(body.gameConfig))) fail(409);
+        return { ...receipt(saved, room, true), published };
       }
       const used = await client.query(`/* presentation-room:used-key */ SELECT package_revision FROM croupier_studio.operator_packages
         WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND tables::jsonb ? $4 LIMIT 1`, [...parameters, body.operatorId, roomId]);
@@ -341,6 +360,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
+      // Bolagets öppna utseendeutkast följer med till den nya paketversionen (operator-store.mjs, plan L3 PR 3).
+      if (body.gameConfig && typeof roomGameConfig?.publishNewRoom !== 'function') fail(503, 'studio_room_game_config_unavailable');
       // The same company material as negotiated; a decision in between is a conflict.
       if (materials && operatorMaterialFingerprint(saved.materialRows) !== prepared.materialFingerprint) fail(409);
       const frozen = adminFrozen(saved);
@@ -353,11 +374,22 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live', ...(roomGame(body)==='roulette'?{game:'roulette'}:{}) };
       const administration = validateStudioGameAdministration({ ...plan.administration, rooms: [...saved.administration.rooms, room] });
       const changed = await repository.saveDocument('administration', { value: administration, expectedRevision: body.expectedAdministrationRevision, actor: context.actor.user });
-      const pack = await saved.operators.publishPackage({ actor: context.actor.user, audit: operatorAuditContext(context.actor), operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
-        lanes: presentation.lanes.map(lane => lane.id), games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])],
-        tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) });
-      return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
-    }), { presentationMutation: [roomGame(body)==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(prepared.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : [])] });
+      const actor = { user: context.actor.user, audit: operatorAuditContext(context.actor) };
+      const candidate = { operatorId: body.operatorId, revision: (saved.pack?.revision ?? 0) + 1, lanes: presentation.lanes.map(lane => lane.id),
+        games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])], tables: [...(saved.pack?.tables ?? []), room.id],
+        branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) };
+      candidate.rooms = packageRoomsFor(administration, candidate);
+      if (!body.gameConfig) {
+        const pack = await saved.operators.publishPackage({ actor: actor.user, audit: actor.audit, operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
+          lanes: candidate.lanes, games: candidate.games, tables: candidate.tables, rooms: candidate.rooms, branding: candidate.branding });
+        return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
+      }
+      // Tilldelningen och spelinställningarna i samma paketversion (som room-release.mjs), på samma klient:
+      // räcker materialet inte rullas spelbordet tillbaka också.
+      const { pack, published } = await roomGameConfig.publishNewRoom(client, { operators: saved.operators, operator: saved.operator, room, candidate,
+        expectedPackageRevision: body.expectedPackageRevision, gameConfig: body.gameConfig }, actor);
+      return { ...receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false), published };
+    }), presentationRoomMutationOptions(body, prepared, { documents: false }));
   });
   return Object.freeze({ handlers, preparations });
 }

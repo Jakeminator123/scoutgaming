@@ -31,6 +31,10 @@ Kodåtergång, när en deploy är fel:
 
 **Delat bord av.** `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`, live 13:53:25Z; bordet var tomt före). Återgång till nativebordet: kontrollera att bordet är tomt enligt ovan, sätt flaggan till `0` med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>` startar ingen deploy) och deploya samma SHA låst. Reservationer som ändå står kvar ligger kvar i Neon tills flaggan slås på igen; de raderas aldrig för hand. Jakob har förgodkänt återgången flagga av och låst deploy av `3415c310` (D7, 2026-10-28).
 
+**Återgång förbi #664 (Miljövariabler 1).** Kod före #664 (till exempel live `6f2d8236`) läser fortfarande tre poster som #664 gjorde till konstanter. Innan en sådan SHA deployas eller en revert av #664 mergas läggs de tillbaka i panelen: `CROUPIER_DATABASE=postgres` och `CROUPIER_STREAM_LANE=lissabon-stream-lane` på Render `croupier-v3` (och `scoutgaming-preview-engine` om den också går tillbaka), `CROUPIER_VERCEL_UI=1` på Vercel `scoutgaming` (och `scoutgaming-preview`). Utan dem stoppar motorn vid start och Vercel-bygget tappar transporten tyst. Lägg in Render-posterna med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>`, ingen deploy) före den låsta deployen.
+
+**Återgång förbi Miljövariabler 2.** Kod före den PR:en läser fem flaggor som den gjorde till fasta värden. Har Jakob redan tagit bort posterna läggs de tillbaka innan en sådan SHA deployas eller en revert mergas: `CROUPIER_VERCEL_UNIFIED_UI=1`, `CROUPIER_STUDIO_NATIVE_ADMIN=1`, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STUDIO_NEON_POLICY=1` och `CROUPIER_MEDIA_STORAGE=blob` på Vercel `scoutgaming` (och `scoutgaming-preview`), `CROUPIER_STUDIO_NEON_POLICY=1` och `CROUPIER_MEDIA_STORAGE=blob` på Render `croupier-v3` (och `scoutgaming-preview-engine`). Utan dem stoppar motorn vid start, och Studio byggs utan `/studio`. Utan `CROUPIER_VERCEL_UNIFIED_UI=1` kräver den gamla `platformConfiguration` dessutom `CROUPIER_LAB_UI_ORIGIN`, som är borttagen ur `scoutgaming`, och kastar: `apps/web`-bygget fälls och Studio-proxyn svarar 500, inte 503. Två av Vercel-posterna läses vid bygget, så de måste finnas före bygget, inte bara före trafiken.
+
 Återställ inte gamla env-filer, gamla tjänster eller domänkopplingar som del av en kodåtergång. `croupier-v2` och `croupier-vercel-preview-qa` är raderade; det finns ingen äldre motor att gå tillbaka till. En ändrad miljövariabel, databasbehörighet eller talflagga har sin egen återgång och följer inte med koden. Render MCP:s env-skrivning sammanfogar nycklar och startar en deploy direkt.
 
 ## Neon: backup och restore
@@ -55,7 +59,7 @@ Kodåtergång, när en deploy är fel:
    Tillägget `pg_stat_statements` i schemat `croupier_game` återskapas av `croupier_game` utan fel.
 6. **Efterled som `neondb_owner`.** I produktionen ägs `croupier_studio.moving_drift_control` av `neondb_owner` (migrering 016), med `SELECT, INSERT, UPDATE` för `croupier_game`. `--no-owner` gör `croupier_game` till ägare, så återställ ägaren: `ALTER TABLE croupier_studio.moving_drift_control OWNER TO neondb_owner; GRANT SELECT, INSERT, UPDATE ON croupier_studio.moving_drift_control TO croupier_game;`. Alternativet är restore som `neondb_owner` utan `--no-owner`.
 7. **Databasens egna rättigheter följer inte med dumpen.** Produktionens `croupier_game` låter `PUBLIC` och `kevin_migration_readonly` ansluta. Ett mål som ska ersätta produktionen får samma `GRANT CONNECT` uttryckligen; ett provmål hålls snävare (bara `croupier_game`).
-8. **Verifiera.** `node tools/o02-snapshot.mjs --url-file <källa> --out s0.json`, samma mot målet till `s1.json`, sedan `node tools/o02-snapshot.mjs --compare s0.json s1.json` (exit 0: radantal, innehållshash per tabell och sekvenser lika). Därtill båda migreringsledgrarna, readiness mot målet och ägare och ACL, med samma fråga mot källa och mål:
+8. **Verifiera.** `node tools/db-snapshot.mjs --url-file <källa> --out s0.json`, samma mot målet till `s1.json`, sedan `node tools/db-snapshot.mjs --compare s0.json s1.json` (exit 0: radantal, innehållshash per tabell och sekvenser lika). Därtill båda migreringsledgrarna, readiness mot målet och ägare och ACL, med samma fråga mot källa och mål:
    ```sql
    SELECT n.nspname, c.relname, c.relkind, pg_get_userbyid(c.relowner) AS owner, c.relacl::text
    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -72,10 +76,10 @@ Databasen har två ledgrar med olika format och egna nummer. Spelets 011 och 012
 
 | Ledger | Format | Register och skrivare |
 | --- | --- | --- |
-| Studio `croupier_studio.storage_migrations` | `version` (`001`–`021`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
+| Studio `croupier_studio.storage_migrations` | `version` (`001`–`023`), `checksum`, `structure_checksum`, `applied_at` | `ops/neon-studio/migrations.mjs`; `node tools/check-migration-readiness.mjs --apply` skriver raden |
 | Spel `croupier_game.storage_migrations` | `version` (`product-v1`, `sqlite-import-v1`, `game-0NN-<namn>`), `checksum` (sha256 av källfilen med LF), `source_hashes` (evidens som JSON), `applied_at` (TEXT) | `ops/neon-game/migrations.mjs`; varje `ops/neon-game/0NN-*.sql` registreras där i samma PR och mergas till `main` innan den körs. Raden skrivs av den granskade transaktionen själv (`tools/prepare-*.mjs`). Motorn och Studio kontrollerar bara `product-v1`:s checksumma vid start |
 
-Spelversionerna 006–013 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.
+Spelversionerna 006–014 är valfria i readiness tills en PR gör dem obligatoriska (012 med PR C i [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), 014 med kravsteget i [STEG-F](plans/STEG-F.md), där också Jakobs kommando för 014 står). 006–010 blir obligatoriska i en uppföljande PR när 013 är körd i produktionen och readiness där visar `game-006`–`game-010` bland `applied`.
 
 **Efterhandsrader för 006–010 (`013-ledger-backfill.sql`).** 006 och 007 applicerades för hand innan spelversioner fick ledgerrader, och `tools/prepare-shared-schema.mjs` skriver ingen ledgerrad, så de syntes bara i katalogen. 013 skriver `game-006-player-profile`, `game-007-roulette-tables`, `game-008-shared-wallet`, `game-009-shared-blackjack` och `game-010-presentation-receiver` med filernas checksummor och respektive appliceringsdag, plus sin egen rad `game-013-ledger-backfill`. Den är bara DML i ledgern, kontrollerar först med en egen kontroll per version att 006:s kolumner och kontrollvillkor, 007:s tabell med primärnyckel och spelarreferens och 008–010:s 15 tabeller, index, funktioner, triggrar och kolumner finns (annars avbryts den utan skrivning) och är idempotent: en andra körning ändrar inget, och en befintlig rad med annan checksumma nekar hela transaktionen. Datumet för 008–010 i produktionen är 27 oktober 2026 (`git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`, "Uppdatering 27 oktober 2026", efter backupgrenen `backup-before-008-010-20261027` 17:41:31Z); klockslaget är okänt. För 006 och 007 finns inget antecknat appliceringsdatum; datumen nedan är filernas första commit i Git (006: `d5e3ffd5` 8 oktober 2026, 007: `15aa3192` 27 oktober 2026) och är osäkra. Verktyget ansluter aldrig till databasen; Jakob kör som `croupier_game` mot den direkta endpointen:
 
@@ -95,12 +99,43 @@ Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 
 
 | Del | Läge | Verktyg |
 | --- | --- | --- |
-| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte); 021 är inte körd. Readiness `ready:true`, inga obligatoriska väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
+| Studio-ledger `croupier_studio.storage_migrations` | 18 versioner: 001–008 och 011–020 (009 och 010 finns inte); 021 är inte körd. 023 (spelborden i paketet, valfri) kör Jakob med `node tools/check-migration-readiness.mjs --apply --only 023 --skip 021,022` (skippa de valfria som fortfarande väntar), först i preview och sedan här, när L3 PR 3 är ute (Pausa/Öppna skriver i dag bara dokumentet; med `rooms` i paketet skulle bordens läge frysas). Förkontrollen före 023 står under tabellen. Readiness `ready:true`, inga obligatoriska väntande | `node tools/check-migration-readiness.mjs`; `--apply` med `CROUPIER_MIGRATION_CONFIRM=apply-pending` bara i Jakobs terminal |
 | Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46:30Z, efter backupgrenen `backup-api-key-operator-20261029`): `api_keys.operator_id` är `NOT NULL` med index och oföränderlighetstrigger ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). Samma checksummor som filerna i `ops/neon-game` | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`); readiness läser hela ledgern |
 | Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*`. Efterhandsraderna skrivs med 013 ovan | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
-| Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/o02-snapshot.mjs` |
+| Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/db-snapshot.mjs` |
 | Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Flyttas eller tas bort efter O03 |
 | Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` är kvarlämnade QA-roller som tas bort efter O03 | Inventeras före restore i ett annat projekt |
+
+**Förkontroll före Studio 023 (Jakob).** Frågan listar bord i varje bolags senaste paket vars miljö saknas i paketets `lanes`; tomt svar krävs. Ett sådant bord blockerar inte publiceringen (skrivaren lämnar `rooms` NULL och varnar `operator_package_rooms_invalid`), men bolaget får då inga bord i paketet. Den frysta presentationens miljöer kontrolleras inte här.
+
+```sql
+SELECT p.environment_id, p.operator_id, p.package_revision, r->>'id' AS table_id, r->>'presentationLaneId' AS lane FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) * FROM croupier_studio.operator_packages ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) p JOIN croupier_studio.documents d ON d.environment_id = p.environment_id AND d.workspace_id = p.workspace_id AND d.kind = 'administration' CROSS JOIN LATERAL jsonb_array_elements(d.value->'rooms') r WHERE r->>'operatorId' = p.operator_id AND p.tables::jsonb ? (r->>'id') AND NOT p.lanes::jsonb ? (r->>'presentationLaneId');
+```
+
+**Efter Studio 023 (Jakob): ompublicera paketen.** Paketraderna är oföränderliga, så ingen DML fyller i `rooms` i gamla versioner. `tools/republish-rooms.mjs` publicerar varje bolag vars nuvarande paket saknar `rooms` som pkg+1 genom produktens skrivare, med bordens rum ur administrationsdokumentet. Öppna utseendeutkast följer med; spelinställningsutkast för samma bolag och basrevision sparas om i Admin (antalet visas). Verktyget kräver både 023 i ledgern och en synlig `rooms`-kolumn innan något bolag behandlas. En andra körning publicerar inget när alla aktuella paket har `rooms`.
+
+Kör **preview först**, verifiera resultatet och kör sedan produktion. Använd den aktuella miljöns anslutning i `CROUPIER_GAME_DATABASE_URL`; sätt scope via `CROUPIER_STUDIO_ENVIRONMENT_ID` och `CROUPIER_STUDIO_WORKSPACE_ID`. Kontrollera den utskrivna målraden mot tabellen, inklusive rollen. Bekräftelsen binds till databasen och scopet som verktyget faktiskt läser.
+
+| Miljö | Databas / roll | Environment / workspace | `CROUPIER_REPUBLISH_CONFIRM` vid `--apply` |
+|---|---|---|---|
+| Preview | `croupier_staging` / `croupier_staging_app` | `staging_k06_k07` / `croupier` | `croupier_staging/staging_k06_k07/croupier` |
+| Produktion | `croupier_game` / `croupier_game` | `production` / `croupier` | `croupier_game/production/croupier` |
+
+```powershell
+node tools/republish-rooms.mjs                       # standard: provkörning, ingen skrivning
+node tools/republish-rooms.mjs --dry-run             # samma; --operator <id> begränsar bolagen
+# Kontrollera målrad och bolag, och att de berörda borden är tomma.
+# Sätt CROUPIER_REPUBLISH_CONFIRM i denna terminal till rätt värde i tabellen.
+node tools/republish-rooms.mjs --apply               # kräver exakt målbekräftelse
+node tools/check-migration-readiness.mjs             # stderr: paket utan rooms: N, per scope
+Remove-Item Env:CROUPIER_REPUBLISH_CONFIRM -ErrorAction SilentlyContinue
+```
+
+**Kontroll av tomma bord är manuell före varje `--apply`:** kontrollera att inga spelare är anslutna och inga spel pågår i de berörda borden. Verktyget kan inte intyga detta. Varje pkg+1 ger anslutna spelare 1008 och en ny socket. Provkörningen kör inte `publishWithin`; den kan härleda rum men garanterar inte att skarp publicering godkänns. Om Admin hinner publicera efter läsningen nekar revisionskontrollen just det bolaget (`studio_conflict`); andra bolag fortsätter. Varje bolags resultat skrivs direkt.
+
+Ett bolag vars bord saknas i dokumentet hoppas över och står kvar i `paket utan rooms: N`. Readiness räknar bara senaste paketet per environment/workspace/bolag och visar N per scope; detta är information, ingen extra readiness-spärr. Exit 0 betyder slutförd körning, även med överhoppade bolag. Exit 1 betyder minst ett misslyckat bolag; läs raderna och provkör igen efter rättning. Exit 2 betyder nekad eller avbruten körning (exempelvis fel bekräftelse, saknad kolumn eller databasfel); tidigare utskrivna publiceringar kan redan vara sparade. Kontrollera raden för det aktuella scopet före nästa miljö.
+
+Verifiering för [PR 685](https://github.com/Jakeminator123/scoutgaming/pull/685): isolerade PostgreSQL-tester täcker målbekräftelse, saknad kolumn utan skrivning, idempotens, basrevisioner och en faktisk Admin-publicering mellan verktygets läsning och dess lås. PGlite-provet visar den committade interfolieringen och CAS, inte låskonkurrens mellan nätverksanslutningar. Ingen ompublicering har körts mot molnet i denna leverans.
 
 Previews schema skiljer sig (Studio 15 versioner utan de valfria 016, 018 och 019, spel-ledgern bara `product-v1` och `game-012-api-key-operator`; 011 är inte körd där). Ett restoreprov där bevisar inte produktionens schema; det görs på en gren i produktionsprojektet.
 
@@ -154,7 +189,7 @@ Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar.
 | --- | --- | --- |
 | `apps/studio/` | Admin, partnerportal, lobby, auth och medie-API (`/studio` är teknisk basePath) | 24.x, Volta 24.21.0 |
 | `apps/web/` | Startsida, `/game`, `/play/{game}` och transport till spelmotorn | 24.x, Volta 24.21.0 |
-| `apps/speech/` | Talingress (lång WebSocket) | 22.x, Volta 22.23.1 |
+| `apps/speech/` | Talingress (lång WebSocket) | 24.x, Volta 24.21.0 |
 | `services/game/` | Spelmotorn: kort, sko, saldo, utbetalningar | ≥24; containern kör 24 |
 | `packages/server-transport/` | WebSocket-transport som `apps/web` och `apps/speech` delar | ≥24 |
 | `services/astrid-gpu-worker/gateway/` | Talrelä och transportkod som spelmotorn importerar | ≥22 |
@@ -180,7 +215,7 @@ En `--single-branch`-klon hämtar bara `main`; lägg till den egna branchen med 
 
 ## Preview
 
-Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `croupier-k06-k07-staging` byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert-commit på `preview`, eller merga in `origin/main` så att `preview` åter följer produktionen), aldrig med force-push. Neon-projektet och Blob-lagret behåller sina staging-namn. Restoremålen `croupier_staging_restore` (25 oktober) och `croupier_staging_restore_o02` (O02) och produktionsgrenarna `backup-before-o03-20261028` och `o03-restore-proof` raderas av Jakob efter O03. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
+Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com`) byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert-commit på `preview`, eller merga in `origin/main` så att `preview` åter följer produktionen), aldrig med force-push. Neon-projektet och Blob-lagret behåller sina staging-namn. Restoremålen `croupier_staging_restore` (25 oktober) och `croupier_staging_restore_o02` (O02) och produktionsgrenarna `backup-before-o03-20261028` och `o03-restore-proof` raderas av Jakob efter O03. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
 
 ## Daterade kvitton
 

@@ -337,8 +337,8 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
-    // The merge guard shares the freeze prefixes and the branch policy.
-    if (/^tools\/(?:o02-freeze-check\.mjs|repository-policy\.json)$/.test(path)) add('test/merge-pr.mjs');
+    // The merge guard reads the branch policy.
+    if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
     if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
   }
   for (const path of fixtureConsumerTests(changes, root)) selected.add(path);
@@ -369,7 +369,12 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
   if (changes.some(({path}) => ['migrering/status.json', 'migrering/status.mjs', 'migrering/STATUS.md'].includes(path))) {
     commands.push([process.execPath, 'migrering/status.mjs', '--check']);
   }
-  if (changes.some(({path}) => /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path))) {
+  // The environment guard (registry reads and hard-coded names) runs for the registry and
+  // its tool, and in focused mode for every changed non-documentation file: any of them
+  // can reintroduce a read of a fixed name.
+  if (existsSync(resolve(root, 'tools/check-environment-variables.mjs')) && changes.some(({path}) =>
+    /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path)
+    || (mode === 'focused' && !isDocumentationPath(path)))) {
     commands.push([process.execPath, 'tools/check-environment-variables.mjs']);
   }
   if (changes.some(({path}) => /^apps\/web\/.+\.[cm]?[jt]sx?$/.test(path))) {

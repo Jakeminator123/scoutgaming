@@ -1,6 +1,6 @@
 # Paow: tal och läppsynk i mains kedja
 
-Utredning och prov 28 oktober 2026 (session scoutgaming-d6, på Jakobs begäran). Ingen produktkod ändrades och produktionen rördes inte. Beslut samma dag (Jakob, Kevin och orkestratorn): Paow ingår inte i O02/O03; efter O03 byggs talkedjan dealer-generisk med Paow som första testfall, och Dragan byts inte ut i produktionen. Underlaget utanför Git (filmer, ljud, lappar, röstprov, Emils överlämning) ligger hos Jakob i `Desktop\_SCOUT\info-lipsync`.
+Utredning och prov 28 oktober 2026 (session scoutgaming-d6, på Jakobs begäran). Ingen produktkod ändrades och produktionen rördes inte. Beslut samma dag (Jakob, Kevin och orkestratorn): Paow ingår inte i O02/O03; efter O03 byggs talkedjan dealer-generisk med Paow som första testfall, och Dragan byts inte ut i produktionen. O03 är nu genomfört (#527) och talkedjan har en separat genomförandeplan i [TALKEDJA](TALKEDJA.md). Aktuell produktions- och previewstatus finns i [TALKEDJA-RUNPOD](../TALKEDJA-RUNPOD.md). Underlaget utanför Git (filmer, ljud, lappar, röstprov, Emils överlämning) ligger hos Jakob i `Desktop\_SCOUT\info-lipsync`.
 
 ## Verifierat läge
 

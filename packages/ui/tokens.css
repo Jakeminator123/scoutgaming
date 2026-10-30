@@ -1,11 +1,16 @@
 /* Scoutgamings designtokens: den enda platsen där --sg-* får ett värde.
    Läses av Next-sidorna (app/scout-theme.css) och Admin (client/admin/app/studio.css).
+   Riktningen (Johns palett, översatt) står i docs/plans/VISUELL-RIKTNING.md.
    Mörkt läge är standard (steg H, beslut 2026-10-29). Ljust läge gäller när <html> har
    klassen light; startskriptet i lib/theme-mode.mjs sätter dark eller light efter det
    sparade valet (localStorage 'sg-theme'), aldrig efter operativsystemets läge.
-   Sidomenyn (--sg-side*) är mörk i båda lägena. Lime är knappfyllning och fokusring;
-   text i accentfärg använder --sg-accent-text. Typsnitten läser --sg-next-*, som Next
-   sätter med next/font och Admin med sina egna typsnittsfiler. */
+   Sidomenyn (--sg-side*) är mörk och likadan i båda lägena. Lime är bara knappfyllning; text i
+   accentfärg använder --sg-accent-text (lime i mörkt, olivgrön i ljust, minst 4,5:1). Statusar
+   använder pastellparen --sg-live-*, --sg-warn-*, --sg-info-*, --sg-danger-* och chip-paret.
+   Markeringar och fokusringar ska använda --sg-mark, som har minst 3:1 mot alla ytor i båda
+   lägena; Admins Tailwind-klasser gör det (focusRing i kit.tsx, ring-sg-mark) och ett källprov
+   vaktar dem. Typsnitten läser --sg-next-*, som Next sätter med next/font och Admin med sina
+   egna typsnittsfiler; tokenfilen laddar inga webbfonter, bara systemreserver. */
 :root {
   color-scheme: dark;
   --sg-bg: #0A0B0D;
@@ -50,49 +55,55 @@
   --sg-disabled-bg: #2A2F37;
   --sg-disabled-text: #8A8D88;
   --sg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.6);
-  --sg-font-body: var(--sg-next-body, Inter), Inter, system-ui, sans-serif;
-  --sg-font-display: var(--sg-next-display, "Space Grotesk"), "Space Grotesk", system-ui, sans-serif;
-  --sg-font-mono: var(--sg-next-mono, "JetBrains Mono"), "JetBrains Mono", ui-monospace, monospace;
+  /* Bakgrunden bakom modaler och sidopaneler (kitets Dialog och Sheet). */
+  --sg-overlay: rgba(5, 6, 8, 0.62);
+  --sg-font-sans: var(--sg-next-body, Inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Äldre namn för --sg-font-sans; komponenterna läser det tills skalet byts. */
+  --sg-font-body: var(--sg-font-sans);
+  --sg-font-display: var(--sg-next-display, "Space Grotesk"), "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sg-font-mono: var(--sg-next-mono, "JetBrains Mono"), "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-/* Ljust läge: den godkända Admin-skissen. Bara värden som skiljer sig från mörkt läge. */
+/* Ljust läge: Johns paper-palett (skissen på grenen john, 47af5385f). Bara värden som skiljer
+   sig från mörkt läge; sidomenyn har inga egna värden här och förblir mörk. */
 :root.light {
   color-scheme: light;
-  --sg-bg: #f4f5f7;
-  --sg-side: #1b1c1e;
-  --sg-surface: #ffffff;
-  --sg-surface-2: #f7f8fa;
-  --sg-hover: #eef0f3;
-  --sg-border: #e3e5e9;
-  --sg-line-2: #eef0f3;
-  --sg-field: #ffffff;
-  --sg-field-line: #e3e5e9;
-  --sg-strong: #c9ccd2;
-  --sg-text: #1b1c1e;
-  --sg-muted: #666c75;
-  --sg-faint: #8d939b;
-  --sg-ink: #1b1c1e;
-  /* Lime når inte 3:1 mot ljusa ytor; markeringen (vald flik, fokusring) blir mörk oliv. */
-  --sg-mark: #4d6b00;
-  --sg-on-accent: #1b1c1e;
-  --sg-accent-text: #4d6b00;
-  --sg-accent-bg: #f4ffcf;
-  --sg-accent-line: #b9cf5e;
+  --sg-bg: #F2F1ED;
+  --sg-surface: #FFFFFF;
+  --sg-surface-2: #ECEBE6;
+  --sg-hover: #F6F5F1;
+  --sg-border: #E0DED7;
+  --sg-line-2: #ECEAE4;
+  --sg-field: #FFFFFF;
+  --sg-field-line: #D3D1C9;
+  --sg-strong: #BEBCB4;
+  --sg-text: #0A0B0D;
+  --sg-muted: #55574F;
+  --sg-faint: #686A63;
+  --sg-ink: #0A0B0D;
+  --sg-lime-hover: #C8F21F;
+  /* Lime når inte 3:1 mot ljusa ytor; markeringen (vald flik, fokusring) blir olivgrön. */
+  --sg-mark: #4A6200;
+  --sg-on-accent: #0A0B0D;
+  --sg-accent-text: #4A6200;
+  --sg-accent-bg: #EEFFB8;
+  --sg-accent-line: #B9CF5E;
   --sg-chip-text: #3A3C37;
   --sg-live-bg: #EEFFB8;
   --sg-live-text: #3E5200;
-  --sg-ok: #1f8a4c;
-  --sg-ok-bg: #e6f6ec;
-  --sg-info: #2a5db0;
-  --sg-info-bg: #e6eefb;
+  --sg-ok: #1F7A45;
+  --sg-ok-bg: #E2F5E9;
+  --sg-info: #2A5DB0;
+  --sg-info-bg: #E3EDFF;
   --sg-info-text: #1E4FA8;
-  --sg-warning: #9a6200;
-  --sg-warn-text: #9a6200;
-  --sg-warn-bg: #fff3d6;
-  --sg-danger-text: #b4232c;
-  --sg-danger-bg: #fde8ea;
-  --sg-danger-line: #f2b8be;
-  --sg-disabled-bg: #eef0f3;
-  --sg-disabled-text: #8d939b;
-  --sg-shadow: 0 1px 2px rgba(20,22,26,.05), 0 8px 24px -16px rgba(20,22,26,.25);
+  --sg-warning: #8A5600;
+  --sg-warn-text: #7A4A00;
+  --sg-warn-bg: #FFEBCC;
+  --sg-danger-text: #9A2412;
+  --sg-danger-bg: #FFE3DE;
+  --sg-danger-line: #F2B5AA;
+  --sg-disabled-bg: #ECEBE6;
+  --sg-disabled-text: #8A8D88;
+  --sg-shadow: 0 1px 2px rgba(10,11,13,.05), 0 8px 24px -16px rgba(10,11,13,.25);
+  --sg-overlay: rgba(10, 11, 13, 0.4);
 }

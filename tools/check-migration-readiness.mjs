@@ -193,6 +193,38 @@ export function readinessOutput(result, { only, apply = false } = {}) {
   return output;
 }
 
+// L3 PR 4: companies whose current package has no `rooms` (Studio 023) yet, per scope; they are
+// published again by tools/republish-rooms.mjs. `to_jsonb(p)->>'rooms'` is NULL both before the
+// column exists and when unset; it is read for each company's current row only (the rows carry
+// frozen presentations). Information only: null when it cannot be read, and the line never blocks
+// readiness or changes the exit code.
+export async function countPackagesWithoutRooms({ pool } = {}) {
+  let rows;
+  try {
+    rows = (await pool.query(`/* readiness:packages-without-rooms */
+      SELECT p.environment_id, p.workspace_id, count(*)::integer AS missing
+      FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) *
+        FROM croupier_studio.operator_packages
+        ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) p
+      WHERE to_jsonb(p)->>'rooms' IS NULL GROUP BY p.environment_id, p.workspace_id ORDER BY p.environment_id, p.workspace_id`))?.rows;
+  } catch { return null; }
+  if (!Array.isArray(rows)) return null;
+  const scopes = [];
+  for (const row of rows) {
+    const missing = Number(row?.missing), scope = [row?.environment_id, row?.workspace_id];
+    if (!Number.isSafeInteger(missing) || missing < 1) return null;
+    scopes.push({ scope: scope.every(safeToken) ? scope.join('/') : null, missing });
+  }
+  return { total: scopes.reduce((sum, row) => sum + row.missing, 0), scopes };
+}
+
+/** `paket utan rooms: N`, with the scopes when N > 0 (the tool runs per scope); `okänt` when unread. */
+export function packageRoomsLine(count) {
+  if (!count || !Number.isSafeInteger(count.total) || !Array.isArray(count.scopes)) return 'paket utan rooms: okänt';
+  const named = count.total > 0 && count.scopes.every(row => typeof row.scope === 'string');
+  return `paket utan rooms: ${count.total}${named ? ` (${count.scopes.map(row => `${row.scope}: ${row.missing}`).join(', ')})` : ''}`;
+}
+
 function safeLine(text) {
   return typeof text === 'string' && text.length > 0 && !text.includes('postgres://') && !text.includes('@') && !text.includes('\n') && !text.includes('\r');
 }
@@ -244,6 +276,8 @@ async function main() {
         console.error('migration_check_unreachable');
         code = 2;
       }
+      // stderr like the other human lines: stdout stays the one JSON report line. Never blocks.
+      if (code !== 2) console.error(packageRoomsLine(await countPackagesWithoutRooms({ pool })));
     }
   } catch {
     console.error('migration_check_unreachable');

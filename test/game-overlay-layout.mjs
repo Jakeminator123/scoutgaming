@@ -115,7 +115,7 @@ test('actual seat layout handles compositor resize before the query change event
     const scene=sceneForComposition(settings,layout),g=stageGeometry(scene);
     return projectTableGamePlane(g.dims,tableRect(scene,{width:1672,height:941},g),{width,height},geometry,layout);
   };
-  const context=vm.createContext({layoutDealControl(){},cardViewChoice:{hidden:true},cardView:'raised',registeredFilmedProfile:()=>null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
+  const context=vm.createContext({layoutDealControl(){},cardViewChoice:{hidden:true},cardView:'raised',registeredFilmedProfile:()=>null,dealerFilmedProfile:null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
     $:selector=>nodes[selector],document:{createElement:node},layerComposition:{referencePlane:plane},localCards:{setProjection(value){projection=structuredClone(value);}}});
   vm.runInContext(fragment,context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
   width=390;height=844;query.matches=true;context.round={active:0,live:()=>[{box:6}]};
@@ -184,13 +184,18 @@ test('phone autoScale: three seats land on their own filmed boxes, resumed outer
     boxes.forEach((box,i)=>{const seat=String(box+1),x=d.x+calibration.positions[seat].cx*d.scale;
       close(r.x+r.positions[seat].cx*r.scale,x);close(r.y+r.positions[seat].cy*r.scale,d.y+calibration.positions[seat].cy*d.scale);if(boxes[0]===2)close(r.seats[i].x,x);});
     // Never moved off its filmed box: a hand outside the zoomed phone frame is reported.
-    assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Sammansättning.');
+    assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Miljö.');
   }
   // At the plate's own size the filmed boxes are 52 px apart: the touch row overlaps.
   const small=run(.36,[2,3,4]);assert.equal(small.geometryWarning,'');
   for(let i=1;i<small.seats.length;i++)assert.ok(small.seats[i].x-small.seats[i-1].x>=98);
-  const shifted=run(.36,[2,3,4],{chips:{dx:.1,dy:0,scale:1}});
-  small.seats.forEach((seat,i)=>close(shifted.seats[i].x-seat.x,.1*1080*.36));
+  // The middle box keeps its own circle; the outer two move apart evenly (not the whole row to one side).
+  close(small.seats[1].x,195);close(small.seats[1].x-small.seats[0].x,98);close(small.seats[2].x-small.seats[1].x,98);
+  const shifted=run(.36,[2,3,4],{chips:{dx:.05,dy:0,scale:1}});
+  small.seats.forEach((seat,i)=>close(shifted.seats[i].x-seat.x,.05*1080*.36));
+  // A larger Admin offset moves the row as a whole as far as the screen allows.
+  const far=run(.36,[2,3,4],{chips:{dx:.1,dy:0,scale:1}});
+  close(far.seats[2].x,378-49);far.seats.forEach((seat,i)=>close(seat.x-small.seats[i].x,far.seats[0].x-small.seats[0].x));
   close(run(.36,[2,3,4]).controlScale,.8);close(run(1.2,[2,3,4]).controlScale,1.2);
   close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:.5}}).controlScale,.8);close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:1.5}}).controlScale,1.8);
 });
@@ -212,7 +217,7 @@ test('fractional manual offsets on a 320px phone do not create false overlap war
  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
  board.mobile.autoScale={...defaultBlackjackAutoScale(),adjust:{chips:{dx:-.005,dy:0,scale:1}}};
  const result=layoutGameOverlay({tableGeometry:board,tableLayout:'mobile',rect:{x:0,y:420,width:320,height:180},dealerPlane:{x:160-540*.34,y:422-960*.34,scale:.34}},[2,3,4],{left:12,right:308,top:80,bottom:800},{compact:true});
- assert.equal(result.geometryWarning,'');[61.164,159.164,257.164].forEach((x,i)=>close(result.seats[i].x,x));
+ assert.equal(result.geometryWarning,'');[61,159,257].forEach((x,i)=>close(result.seats[i].x,x));
 });
 
 test('Admin UI and card spread are format-specific, validated and reach card poses',async()=>{

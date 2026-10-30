@@ -79,7 +79,6 @@ test('actual Studio SSR guard reaches mounted login after 401 and preserves othe
       'next/navigation': navigation,
       './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
       './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
-      './remote-ui.mjs': { remoteUiConfiguration: () => null },
       './studio-native-runtime.mjs': nativeOverrides(status),
       './studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
       './next-page-navigation.mjs': { nextStudioLoginRedirect },
@@ -102,7 +101,6 @@ test('actual native page guard returns every current view after public, standalo
       'next/navigation': navigation,
       './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
       './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
-      './remote-ui.mjs': { remoteUiConfiguration: () => null },
       './studio-native-runtime.mjs': { nativeStudioAdminEnabled: () => true, nativeStudioAdminConfiguration: () => config,
         assertNativeStudioRequest: () => {}, studioNativeRuntime: async () => ({ authorize: async request => {
           authorized.push(request.url); throw Object.assign(new Error('fixture authorization'), {statusCode: 401});
@@ -137,10 +135,9 @@ test('actual native page guard returns every current view after public, standalo
 test('retired AI documents reach their resource across flags and mounts without redirecting writes', () => {
   const platform = require('../../../packages/navigation/server/platform-routing.mjs');
   const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
-  for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
+  for (const basePath of ['/studio']) for (const unified of [true]) for (const nativeStudio of [false,true]) {
     const config = {publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware} = load('../middleware.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
-      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware} = load('../proxy.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}});
     for (const section of ['/openclaw','/operator-chat','/control/openclaw','/control/operator-chat','/control/ops']) for (const tab of ['', 'chat', 'models']) {
       const context = {dealer:'dragan',event:'idle.ready',operator:'north',room:'room-1',table:'room-1',game:'roulette',lane:'portrait',variant:'take-2',...(tab?{tab}:{})};
       const url = 'https://game.fixture.invalid'+basePath+section+'?'+new URLSearchParams(context)+'#selection';
@@ -275,10 +272,9 @@ test('legacy auth bookmarks use the central validator and reject writes or dupli
 test('Activity bookmarks retain only unambiguous observation identities across native and mounted middleware',()=>{
   const platform=require('../../../packages/navigation/server/platform-routing.mjs');
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
-  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+  for(const basePath of ['/studio'])for(const unified of [true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
-      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}});
     for(const section of ['/activity','/control/activity'])for(const duplicate of [false,true]){
       const query=new URLSearchParams({dealer:'saga',operator:'north',table:'room-1',room:'room-1',game:'roulette',lane:'portrait',event:'idle.ready',token:'private',unknown:'omit'});
       if(duplicate)for(const key of ['dealer','operator','table','room','game'])query.append(key,'ambiguous');
@@ -319,7 +315,6 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       'next/navigation': navigation,
       './http-guard.mjs': {assertLocalPageRequest:()=>assert.fail('no local fallback')},
       './studio-server.mjs': {studioInitialData:()=>assert.fail('no legacy fallback')},
-      './remote-ui.mjs': {remoteUiConfiguration:()=>null},
       './studio-native-runtime.mjs': {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>({authorize:async()=>{throw Object.assign(new Error('fixture authorization'),{statusCode:401});}})},
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
@@ -361,9 +356,9 @@ test('actual Admin middleware preserves document access with Node transport befo
   const f = await createPublicationChain(publicOrigin);
   const platform = {publicOrigin, labUiOrigin: publicOrigin, backendOrigin:'https://engine.fixture.invalid',
     unifiedUi:true, nativeStudio:true};
-  const middleware = load('../middleware.ts', {
+  const middleware = load('../proxy.ts', {
     '../../packages/navigation/server/platform-routing.mjs': {...routing, platformConfiguration:()=>platform},
-  }, {CROUPIER_VERCEL_UNIFIED_UI:'1'}).middleware;
+  }, {}).proxy;
   const runtime = {...nativeRuntime, nativeStudioAdminEnabled:()=>true, nativeStudioAdminConfiguration:()=>f.config,
     studioNativeRuntime:async()=>({authorize:createStudioNativeAuth({boDb:f.auth.boDb,scope:f.config.scope,now:f.config.now})})};
   const guard = load('../lib/ui-server.ts', {'./studio-native-runtime.mjs':runtime});
@@ -422,7 +417,7 @@ test('actual Admin middleware preserves document access with Node transport befo
 
 test('retired Control URLs use the central Admin destination with room and material context intact',()=>{
   // One company in a company-list bookmark is that company's nav in one redirect; its identity sits in the path.
-  for(const [section,destination,tab] of [['library','scenes','bakgrunder'],['lanes','companies/north',null],['preview','scenes','mallar'],['zones','scenes','mallar']]){
+  for(const [section,destination,tab] of [['library','scenes','material'],['lanes','companies/north',null],['preview','scenes','miljoer'],['zones','scenes','miljoer']]){
     const query='dealer=dragan&operator=north&room=one&room=two&game=roulette&lane=portrait&role=background&token=private&tab='+(section==='lanes'?'companies':'backgrounds');
     for(const basePath of ['','/studio']) {
       const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/'+section+'?'+query),{basePath});
@@ -445,11 +440,11 @@ test('a Control company bookmark resolves directly to the company nav',()=>{
 test('actual middleware centralizes exact legacy documents without changing native routing or write requests',()=>{
   const platform=require('../../../packages/navigation/server/platform-routing.mjs');
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
-  for(const basePath of ['','/studio']) for(const unified of [false,true]) {
+  for(const basePath of ['','/studio']) for(const unified of [true]) {
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio:unified};
-    const {middleware}=load('../middleware.ts',{
+    const {proxy:middleware}=load('../proxy.ts',{
       '../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config},
-    },{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    });
     const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
     if(unified && basePath==='/studio') {
       const response=middleware(request('/videos',{headers:{host:'studio.fixture.invalid','x-forwarded-host':'other.fixture.invalid','x-forwarded-proto':'http'}}));
@@ -461,7 +456,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
       ['activity','/admin/companies?tab=spelbord&dealer=dragan'],['administration','/admin/system?flik=drift&dealer=dragan'],['events','/admin/dealers/dragan?flik=klipp'],
       ['guide','/admin/guide?dealer=dragan'],['lissabon','/control'],['openclaw','/admin/system?flik=agenter&dealer=dragan'],
       ['operator-chat','/admin/dealers/dragan?flik=tal&verktyg=dialog'],['probe','/admin/dealers/dragan?flik=tal'],
-      ['tree','/admin/dealers/dragan?flik=klipp'],['videos','/admin/dealers/dragan?flik=klipp'],['zones','/admin/scenes?tab=mallar&dealer=dragan'],
+      ['tree','/admin/dealers/dragan?flik=klipp'],['videos','/admin/dealers/dragan?flik=klipp'],['zones','/admin/scenes?tab=miljoer&dealer=dragan'],
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
@@ -470,7 +465,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
     assert.equal(control.status,307);
     const target=new URL(control.headers.get('location'));
-    assert.equal(target.pathname,'/admin/scenes');assert.equal(target.searchParams.get('tab'),'bordsgrafik');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
+    assert.equal(target.pathname,'/admin/scenes');assert.equal(target.searchParams.get('tab'),'material');assert.equal(target.searchParams.get('filter'),'bordsgrafik');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
     assert.equal(target.searchParams.get('composition'),'portrait');
     assert.equal(target.searchParams.has('token'),unified,'native mapping retains its existing query policy');
     for(const path of ['/api/videos','/preview/compositor.js','/events/extra']) {
@@ -489,14 +484,13 @@ test('retired publication and tool documents redirect with context in every nati
   const platform=require('../../../packages/navigation/server/platform-routing.mjs');
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   // [section, destination, identity that moves into the nav path]
-  const dealerClips=['/admin/dealers/dragan?flik=klipp','dealer'],dealerSpeech=['/admin/dealers/dragan?flik=tal','dealer'],scene=['/admin/scenes?tab=mallar',null],table=['/admin/rooms/room-1','table'];
+  const dealerClips=['/admin/dealers/dragan?flik=klipp','dealer'],dealerSpeech=['/admin/dealers/dragan?flik=tal','dealer'],scene=['/admin/scenes?tab=miljoer',null],table=['/admin/rooms/room-1','table'];
   const targets=[['rooms',...table],['companies','/admin/companies/north','operator'],['lanes',...table],['guide','/admin/guide',null],['videos',...dealerClips],['probe',...dealerSpeech],['replies',...dealerSpeech],
     ['events',...dealerClips],['tree',...dealerClips],['compositions',...scene],['rehearsal',...table],['preview',...scene],['zones',...scene],['clips',...dealerClips]];
   const context={operator:'north',room:'room-1',table:'room-1',dealer:'dragan',game:'roulette',composition:'portrait',event:'idle.ready',variant:'take-2',situation:'dealer-hole',category:'greeting'};
-  for(const basePath of ['','/studio']) for(const unified of [false,true]) for(const nativeStudio of [false,true]){
+  for(const basePath of ['','/studio']) for(const unified of [true]) for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
-      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}});
     for(const [section,target,owner] of targets){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
       for(const method of ['GET','HEAD']){
@@ -521,11 +515,10 @@ test('historical tool documents reach Admin with context before unified frontend
   const platform=require('../../../packages/navigation/server/platform-routing.mjs');
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   // Two rooms beside one table are ambiguous, so the rehearsal lands on the company table list.
-  const clips=['/admin/dealers/saga?flik=klipp',true],scene=['/admin/scenes?tab=mallar',false];
-  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+  const clips=['/admin/dealers/saga?flik=klipp',true],scene=['/admin/scenes?tab=miljoer',false];
+  for(const basePath of ['/studio'])for(const unified of [true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
-      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}});
     for(const [section,target,dealerNav] of [['events',...clips],['tree',...clips],['compositions',...scene],['rehearsal','/admin/companies?tab=spelbord',false],['preview',...scene],['zones',...scene],['clips',...clips]])for(const selected of [false,true]){
       const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
       const query=new URLSearchParams({...context,token:'private',unknown:'omit'});query.append('room','one');query.append('room','two');
@@ -556,9 +549,9 @@ test('retired Administration entries preserve context across mounts and flags wi
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   const targets={operations:'/admin/system?flik=drift',accounts:'/admin/system?flik=personal',partners:'/admin/system?flik=integration',finance:'/admin/system?flik=spelare',
     tables:'/admin/companies?tab=spelbord','media-review':'/admin/dealers/elin?flik=tal'};
-  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+  for(const basePath of ['', '/studio'])for(const unified of [true])for(const nativeStudio of [false,true]){
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://studio.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
-    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const {proxy:middleware}=load('../proxy.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}});
     for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries(targets)){
       const query='tab='+tab+'&dealer=elin&operator=north&table=room-a&room=one&room=two&lane=portrait&game=roulette';
       const url=config.publicOrigin+basePath+entry+'?'+query+'#selected';

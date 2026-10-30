@@ -35,7 +35,7 @@ test('configuration reads are saved revision only; missing data never seeds', as
   assert.deepEqual(f.state.writes, []);
 });
 
-test('modern administration readouts and room edits never synthesize legacy sections', async () => {
+test('modern administration readouts never synthesize legacy sections', async () => {
   const f = fixture();
   delete f.state.document.value.tiers;
   delete f.state.document.value.tournaments;
@@ -45,9 +45,6 @@ test('modern administration readouts and room edits never synthesize legacy sect
     for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(result[key], undefined);
   }
   assert.deepEqual(f.state.writes, []);
-  await f.call('POST', 'room', { id: 'one', state: 'live', expectedRevision: 'studio-original' });
-  assert.equal(f.state.document.value.rooms[0].state, 'live');
-  for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(Object.hasOwn(f.state.document.value, key), false);
 });
 
 test('active lane requires admin and a current revision; it preserves the other administration data',async () => {
@@ -61,6 +58,18 @@ test('active lane requires admin and a current revision; it preserves the other 
   assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone',gameLanes:SAVED_GAME_LANES});
   await assert.rejects(f.call('POST','game-lane',{...body,lane:'original'}),error=>error.statusCode===409);
   assert.equal(f.state.document.value.gameLane,'mobile-phone');
+});
+
+// change() (bodyKeys, CAS, server actor), proven on game-lane now that A:room is gone (plan L3).
+test('change() saves with the server actor and exact CAS; a spoofed actor, an extra key or a stale revision saves nothing', async () => {
+  const f = fixture(), body = { lane: 'mobile-phone', expectedRevision: 'studio-original' };
+  for (const bad of [{ ...body, actor: 'attacker' }, { ...body, rooms: [] }, { ...body, expectedRevision: 'stale' }, { lane: 'mobile-phone' }]) {
+    await assert.rejects(f.call('POST', 'game-lane', bad));
+  }
+  assert.equal(f.state.writes.length, 0);
+  assert.deepEqual(await f.call('POST', 'game-lane', body), { ok: true, revision: 'studio-new' });
+  assert.equal(f.state.writes.length, 1);
+  assert.equal(f.state.writes[0].options.actor, 'operator'); assert.equal(f.state.writes[0].options.expectedRevision, 'studio-original');
 });
 
 test('lane creation and removal enforce role, CAS, replacement and preserve shared state', async () => {
@@ -86,23 +95,11 @@ test('lane creation and removal enforce role, CAS, replacement and preserve shar
   assert.ok(f.state.writes.every(write => write.kind === 'administration'));
 });
 
-test('room edit uses server actor and exact CAS; stale, spoofed and invalid edits do not save', async () => {
+// A:room set a room's state in the document without the activation check; room-state replaced it (plan L3).
+test('the retired pit boss, tournament and room writes have no handler and nothing is written', async () => {
   const f = fixture();
-  for (const body of [{ id: 'one', state: 'live', expectedRevision: 'stale' }, { id: 'one', state: 'anything', expectedRevision: 'studio-original' }, { id: 'one', state: 'live', expectedRevision: 'studio-original', actor: 'attacker' }]) {
-    await assert.rejects(f.call('POST','room',body));
-  }
+  for (const action of ['pitboss', 'tournament', 'room']) assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`), false, action);
   assert.equal(f.state.writes.length, 0);
-  assert.deepEqual(await f.call('POST','room',{ id: 'one', state: 'live', expectedRevision: 'studio-original' }), { ok: true, revision: 'studio-new' });
-  assert.equal(f.state.writes[0].options.actor, 'operator');
-  assert.equal(f.state.writes[0].options.value.rooms[0].state, 'live');
-});
-test('pit and tournament do not accept arbitrary config/body fields or synthetic authority', async () => {
-  const f = fixture();
-  await assert.rejects(f.call('POST','pitboss',{ payout10x: true, streak5: true, randomWalkMin: 0, expectedRevision: 'studio-original' }));
-  await f.call('POST','pitboss',{ payout10x: true, streak5: false, randomWalkMin: 45, expectedRevision: 'studio-original' });
-  await f.call('POST','tournament',{ name: 'Test', format: '20 rounds', buyin: 0, pool: 1000, cap: 10, starts: 'Tonight', expectedRevision: 'studio-new' });
-  assert.equal(f.state.document.value.tournaments[0].state, 'draft');
-  assert.equal(f.state.document.value.tournaments[0].entries, 0);
 });
 test('partner metadata does not select credentials and incomplete runtime actions are absent', async () => {
   // Nyckel→bolag: each key names its company once game migration 012 has added the column, and the

@@ -8,6 +8,8 @@ export function createStudioDocumentApi(options: {
   config: NativeStudioConfiguration;
   validateProjectBindings?(project: StudioProject): Promise<void>;
   mutationTransaction?<T>(work: () => Promise<T>): Promise<T>;
+  /** Dealers with a moving bank here; a new motion reference for another dealer is refused (default: none). */
+  movingSpeechDealers?(): readonly string[];
   gamePolicy?: {projectStore(options: {actor: string}): {load(): Promise<StudioProject>; save(next: StudioProject, expectedRevision: string): Promise<StudioProject>}};
 }): { handle(request: Request): Promise<Response> };
 export function handleNativeStudioDocument(request: Request): Promise<Response>;

@@ -91,5 +91,10 @@ test('Ctrl+K opens the search palette; typing filters, arrows choose and Enter j
   await box.fill('nora');await page.keyboard.press('Enter');
   await page.waitForURL(origin+'/admin/dealers/nora?flik=klipp');
   assert.equal(await page.getByRole('combobox').count(),0,'the palette closes after the jump');
-  await page.keyboard.press('Control+k');await box.waitFor();await page.keyboard.press('Escape');await box.waitFor({state:'detached'});
+  await page.keyboard.press('Control+k');await box.waitFor();
+  // En sen close-händelse från förra stängningen (webbläsaren skickar den vid nästa bildruta) får inte stänga den återöppnade paletten.
+  await page.evaluate(()=>document.querySelector('dialog[aria-label="Sök i Admin"]').dispatchEvent(new Event('close')));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await box.count(),1,'en sen close-händelse lämnar den återöppnade paletten öppen');
+  await page.keyboard.press('Escape');await box.waitFor({state:'detached'});
 }));

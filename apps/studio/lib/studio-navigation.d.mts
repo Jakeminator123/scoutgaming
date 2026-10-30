@@ -17,4 +17,5 @@ export type StudioNavigationOptions = StudioNavigationContext & {
 export const STUDIO_DEALER_TABS: readonly { id: StudioDealerTab; label: string; href: string }[];
 export function studioNavigationContextFromQuery(query?: Pick<URLSearchParams, 'get'> | null): StudioNavigationContext;
 export function studioNavigationHref(path: string, context?: StudioNavigationContext): string;
+export function studioScopedHref(path: string, query?: Pick<URLSearchParams, 'get' | 'getAll'> | null, context?: StudioNavigationContext): string;
 export function studioNavigationTabs(context?: StudioNavigationContext, hrefs?: Partial<Record<StudioDealerTab, string>>): { id: StudioDealerTab; label: string; href: string }[];

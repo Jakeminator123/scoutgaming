@@ -18,7 +18,7 @@ export function createResourceDeletionClient({workspaceClient=createStudioClient
   return {async load(signal){
     const lifecycle=fetchImpl('/studio/api/admin/resource-lifecycle',{method:'GET',credentials:'same-origin',cache:'no-store',redirect:'error',
       headers:{accept:'application/json'},signal}).then(async response=>{
-      if(!response.ok)throw Error('Bolagens och rummens arkiv kunde inte läsas.');
+      if(!response.ok)throw Error('Bolagens och spelbordens arkiv kunde inte läsas.');
       const value=await response.json();
       if(!validLifecycle(value))throw Error('Arkivregistret gav ett ogiltigt svar.');
       return value;
@@ -38,7 +38,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
   const administration=catalog.administration;
   if(lifecycle){
     if(!validLifecycle(lifecycle)||lifecycle.administrationRevision!==administration.revisions.administration)
-      throw Error('Rumsregistret ändrades under läsningen. Uppdatera för att läsa samma revision.');
+      throw Error('Spelbordsregistret ändrades under läsningen. Uppdatera för att läsa samma revision.');
     const published=new Map(administration.operators.map(row=>[row.id,row]));
     if(published.size!==lifecycle.operators.length||lifecycle.operators.some(row=>{
       const current=published.get(row.id);
@@ -46,7 +46,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     }))throw Error('Bolagens publicering ändrades under läsningen. Uppdatera innan du granskar beroenden.');
   }
   const warnings=[],operators=new Map(),rooms=new Map(),compositions=new Map(),dealers=new Map(),materials=new Map(),media=new Map();
-  const node=(id,label,archived=false,missing=false)=>({id,label:label||id,archived,missing,publishedOnly:false,uses:[]});
+  const node=(id,label,archived=false,missing=false)=>({id,label:label||id,archived,missing,archivedOnly:false,publishedOnly:false,uses:[]});
   for(const row of administration.operators)operators.set(row.id,{...node(row.id,row.name,Boolean(row.archivedAt)),status:row.status,roomIds:[]});
   for(const row of project.dealers)dealers.set(row.id,{...node(row.id,row.label),mediaIds:[]});
   for(const entry of list(project.dealerTrash))if(!dealers.has(entry.dealer.id))
@@ -85,9 +85,11 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
       layers[role]={enabled:layer.enabled===true,defaultId:layer.default||null,ids};
       for(const id of ids){
         const target=role==='dealer'?ensureDealer(id):ensureMaterial(id,role);
-        addRef(target.uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' mall · '+(layer.enabled?'tillåtet val':'inaktiverat lager')));
+        addRef(target.uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' miljö · '+(layer.enabled?'tillåtet val':'inaktiverat lager')));
       }
     }
+    // The miljöbild is the environment's picture, not a layer; it is still a use of that material.
+    if(typeof row.illustration==='string')addRef(ensureMaterial(row.illustration,'illustration').uses,ref('composition',row.id,row.label,(archived?'Arkiverad':'Sparad')+' miljö · miljöbild'));
     compositions.set(row.id,{...node(row.id,row.label,archived),layers,publishedTo:null,historicalPackageReferences:null});
   }
   for(const row of list(project.lanes))addComposition(row,false);
@@ -97,7 +99,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
   for(const row of sourceRooms){
     const stored=lifecycleRooms.get(row.id),compositionId=row.compositionId??row.presentationLaneId??null;
     if(stored&&(stored.operatorId!==row.operatorId||stored.presentationLaneId!==compositionId))
-      throw Error('Ett rum ändrades under läsningen. Uppdatera för att läsa samma revision.');
+      throw Error('Ett spelbord ändrades under läsningen. Uppdatera för att läsa samma revision.');
     const room={...node(row.id,row.name,Boolean(stored?.archivedAt||row.archivedAt||row.state==='archived')),
       // presentation-room-contract.mjs defines schema-v2 rooms without game as Blackjack.
       operatorId:row.operatorId,game:row.game??(row.schemaVersion===2||stored?.schemaVersion===2?'blackjack':null),compositionId,published:row.published===true,playable:row.playable===true,state:row.state||stored?.state||'',publication:null,
@@ -109,7 +111,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     room.choicesPath=room.archived?null:roomChoicesPath(administration.operators.find(current=>current.id===room.operatorId),{id:room.id,operatorId:room.operatorId,state:room.state,compositionId,game:room.game});
     if(compositionId){
       if(!compositions.has(compositionId))compositions.set(compositionId,{...node(compositionId,compositionId,false,true),layers:null,publishedTo:null,historicalPackageReferences:null});
-      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat rum':'Rummets sparade mall'));
+      addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat spelbord':'Spelbordets sparade miljö'));
     }
     for(const id of room.publishedDealerIds)addRef(ensureDealer(id).uses,ref('room',room.id,room.label,'Publicerat dealerval'));
   }
@@ -123,7 +125,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
       const room=rooms.get(source.id);
       if(!room||room.operatorId!==operator.id||room.compositionId!==source.presentation?.id
         ||room.game!==(source.game??'blackjack')||room.archived||!room.published)
-        throw Error('Rummets publicerade val stämmer inte med rumsregistret. Uppdatera trädet.');
+        throw Error('Spelbordets publicerade val stämmer inte med spelbordsregistret. Uppdatera trädet.');
       const choices=[];
       for(const sourceDealer of list(source.dealers)){
         const dealer=ensureDealer(sourceDealer.id);
@@ -156,7 +158,7 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     const count=presentation.historicalPackageReferences;
     composition.historicalPackageReferences=historyCoverage==='complete'&&Number.isSafeInteger(count)&&count>=0?count:null;
   }
-  if(historyCoverage==='incomplete')warnings.push('Sammansättningarnas historiska paketreferenser kunde inte räknas fullständigt.');
+  if(historyCoverage==='incomplete')warnings.push('Miljöernas historiska paketreferenser kunde inte räknas fullständigt.');
   function useMedia(id,dealerId,relation){
     if(!id)return;
     const value=ensureMedia(id);
@@ -186,16 +188,26 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     for(const base of list(entry.globalIdlePolicy?.base))useMedia(base.videoId,entry.dealer.id,'Arkiverad gemensam grundloop');
     for(const variant of list(entry.globalIdlePolicy?.variants))useMedia(variant.videoId,entry.dealer.id,'Arkiverad gemensam grundloopvariant');
   }
-  const all=[...operators.values(),...rooms.values(),...compositions.values(),...dealers.values(),...materials.values(),...media.values()];
-  const missingCount=all.filter(row=>row.missing).length;
-  if(missingCount)warnings.push(missingCount+' referenser saknar en egen post i de lästa registren.');
-  return {readAt:catalog.readAt,projectRevision:project.revision,lifecycleAvailable:Boolean(lifecycle),historyCoverage,warnings,
+  // Missing targets belong to the whole workspace, not the dealer used to open this view.
+  // Keep the exact target and incoming references so a warning can identify its cause.
+  const missingReferences=[];
+  const registries={operator:operators,room:rooms,composition:compositions,dealer:dealers,material:materials,media};
+  for(const [kind,registry] of Object.entries(registries)){
+    for(const row of registry.values())if(row.missing){
+      const uses=[...row.uses];
+      if(kind==='dealer')for(const id of row.mediaIds)addRef(uses,ref('media',id,media.get(id)?.label,'Registrerad dealerägare'));
+      // Only proven archived sources make a missing target historical; unknown or active uses keep the warning.
+      row.archivedOnly=uses.length>0&&uses.every(use=>registries[use.kind]?.get(use.id)?.archived===true);
+      missingReferences.push({kind,id:row.id,label:row.label,archivedOnly:row.archivedOnly,uses});
+    }
+  }
+  return {readAt:catalog.readAt,projectRevision:project.revision,lifecycleAvailable:Boolean(lifecycle),historyCoverage,warnings,missingReferences:sort(missingReferences),
     operators:sort([...operators.values()]),rooms:sort([...rooms.values()]),compositions:sort([...compositions.values()]),
     dealers:sort([...dealers.values()]),materials:sort([...materials.values()]),media:sort([...media.values()]),
     unownedRoomIds:[...rooms.values()].filter(row=>!operators.has(row.operatorId)).map(row=>row.id),
     coverage:[
-      'Sparad mall och publicerade spelval visas separat. Rummens egna förval ingår i publicerade spelval för spelbara rum. Pausade och arkiverade rums publicerade lagerval ingår inte.',
-      'Sammansättningarnas historiska paketreferenser visas som antal med täckningsstatus. Historiska paketens fullständiga filinnehåll ingår inte.',
+      'Sparad miljö och publicerade spelval visas separat. Spelbordens egna förval ingår i publicerade spelval för spelbara spelbord. Pausade och arkiverade spelbords publicerade lagerval ingår inte.',
+      'Miljöernas historiska paketreferenser visas som antal med täckningsstatus. Historiska paketens fullständiga filinnehåll ingår inte.',
       'Råa filer i Blob och statiska lobbybilder ingår inte i denna läsning. Äldre filbaserade klippbindningar ingår inte heller.',
       'Klippimporten tar för närvarande emot MP4 och WebM. Bord och bakgrundsbilder visas i materialbiblioteket.',
       'Inga synliga kopplingar betyder inte att ett objekt kan raderas permanent.',

@@ -48,7 +48,10 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
         nativeBar: document.getElementById('actions').checkVisibility(),
         pause: document.getElementById('pitboss').checkVisibility(),
         heading: document.getElementById('table-profile').textContent,
+        chat: document.querySelector('#shared-room-controls .room-chat-toggle')?.checkVisibility() ?? false,
       }));
+      // The folded chat is one of the seat controls, so measureLayout above proves it covers nothing (PR 4a fix).
+      assert.equal(state.chat, true, `${viewport.width}, ${label}: Chatt sits with the seat controls`);
       // "Visa platser" only where the table shows three boxes; "Lämna platser" only for a seated player.
       assert.equal(state.windows, phone, `${viewport.width}: seat window chooser`);
       if (phone) assert.match(state.windowText, /^Visa platser \d–\d$/);
@@ -97,6 +100,13 @@ test('Chrome shared-table play path: every phase\'s controls take a real click a
       };
       const where = `${viewport.width}${plane ? ' plane' : ''}`;
       await show(tableSnapshot({ version: 1, others: { 1: 'bob' } }));
+      // The opened chat is an overlay with its own close; Escape closes it too, and focus returns to Chatt.
+      await page.getByRole('button', { name: /^Chatt/ }).click();
+      await page.getByRole('textbox', { name: 'Meddelande till dealern' }).waitFor();
+      await button('Stäng chatten').click(); await page.locator('#shared-room-chat-body').waitFor({ state: 'hidden' });
+      await page.getByRole('button', { name: /^Chatt/ }).click(); await page.keyboard.press('Escape');
+      await page.locator('#shared-room-chat-body').waitFor({ state: 'hidden' });
+      assert.equal(await page.evaluate(() => document.activeElement?.className), 'room-chat-toggle', `${where}: focus returns to Chatt`);
       await button('Välj plats 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
       await show(tableSnapshot({ version: 2, own: [3] }));
       await button('Plats 4, huvudinsats, 0').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
@@ -140,6 +150,31 @@ test('Chrome shared-table focus: choosing another own seat and a round that empt
       await show(decision([2, 3], 2));
       assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), 'BODY', 'the emptied dock hands focus on');
     }
+    await context.close();
+  }
+});
+
+// Platsbrickorna (2026-10-29): on a table with published geometry the seat circle stands centred under the box where
+// the cards land, just below the hand total, in a 16:9, 16:10 and 21:9 window and on a phone (box 4 in the middle of 3-5).
+test('Chrome shared-table seat circles: centred under the cards\' box at 16:9, 16:10, 21:9 and on a phone', { skip, timeout: 180000 }, async t => {
+  const fixture = await openLayoutFixture(browserModule, { channel });
+  t.after(() => fixture.close());
+  for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 800 }, { width: 2560, height: 1080 }, { width: 390, height: 844 }]) {
+    const { page, context, show } = await fixture.open(viewport, { plane: 'table' });
+    await show(decision([3]));
+    const where = `${viewport.width}x${viewport.height}`;
+    const m = await page.evaluate(() => {
+      const box = rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, x: rect.left + rect.width / 2 });
+      const scene = document.getElementById('scene').getBoundingClientRect(), stage = window.fixture.stage();
+      return { circle: box(document.querySelector('.seat[data-seat="3"] .seat-shared-join').getBoundingClientRect()),
+        total: box(document.querySelector('#local-card-overlay .card-totals [data-seat="4"]').getBoundingClientRect()),
+        landing: scene.left + stage.x + 540 * stage.scale };
+    });
+    assert.ok(Math.abs(m.circle.x - m.landing) <= 1, `${where}: the circle is centred on box 4 (${m.circle.x} vs ${m.landing})`);
+    assert.ok(Math.abs(m.total.x - m.landing) <= 1, `${where}: the hand total is centred on box 4`);
+    const gap = m.circle.top - m.total.bottom;
+    assert.ok(gap >= -0.5 && gap <= 8, `${where}: the circle is ${gap.toFixed(1)} px below the hand total`);
+    assert.deepEqual(await page.evaluate(measureLayout), [], `${where}: no control covers another`);
     await context.close();
   }
 });

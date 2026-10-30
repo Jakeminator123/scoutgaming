@@ -52,7 +52,7 @@ export function createSpeechReplyLibrary({ repository, mediaStore, env = process
   if(repository.scope?.environment!==scope.environment||repository.scope?.workspaceId!==scope.workspaceId)fail('reply_library_invalid_scope',400);
   if (!mediaStore || ['putPrivateMedia','getPrivateMedia','deletePrivateMedia'].some(key => typeof mediaStore[key] !== 'function')) fail();
   const { putPrivateMedia, getPrivateMedia, deletePrivateMedia } = mediaStore;
-  const options = { env: { CROUPIER_MEDIA_STORAGE: env.CROUPIER_MEDIA_STORAGE, BLOB_READ_WRITE_TOKEN: env.BLOB_READ_WRITE_TOKEN }, ...(blobClient ? { blobClient } : {}), ...(cacheDir ? { cacheDir } : {}) };
+  const options = { env: { BLOB_READ_WRITE_TOKEN: env.BLOB_READ_WRITE_TOKEN }, ...(blobClient ? { blobClient } : {}), ...(cacheDir ? { cacheDir } : {}) };
   function requireMedia() { if (!isCloudMediaConfigured(options.env)) fail(); }
   async function read(dealerId, id) {
     identity(dealerId,id);

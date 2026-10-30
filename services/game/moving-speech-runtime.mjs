@@ -5,7 +5,9 @@ import { createRegisteredMovingSpeech, assertMovingSpeechSource } from './moving
 import { createMovingBankDownloads } from './moving-speech-bank-artifacts.mjs';
 import { MOVING_SPEECH_MAX_PCM_BYTES, movingSpeechPcmFrameCount } from './moving-speech-timing.mjs';
 import {createMovingDealReservations,prepareMovingDealPlan,presentationFingerprint} from './moving-speech-deal-plan.mjs';
+import {prepareMovingIdleSource,prepareMovingIdlePlan} from './moving-speech-idle-plan.mjs';
 import {SPEECH_PREPARATION_FAILURE_CODES} from '../../packages/presentation/contracts/chat-response.mjs';
+import { createMovingSpeechRoomRelay } from './moving-speech-room-relay.mjs';
 const {WebSocketServer,WebSocket}=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');
 
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -15,7 +17,7 @@ const STREAM_FAILURE_CODES = new Set([
   'moving_speech_cancelled', 'moving_speech_not_authorized', 'moving_speech_transport_consumed',
   'invalid_moving_speech_transport', 'moving_speech_client_backpressure', 'moving_speech_client_closed',
   'moving_speech_invalid_credit', 'moving_speech_credit_timeout', 'moving_speech_consumer_timeout',
-  'moving_speech_playback_timeout', 'moving_speech_context_changed', 'moving_deal_changed',
+  'moving_speech_playback_timeout', 'moving_speech_context_changed', 'moving_deal_changed', 'moving_speech_no_listeners',
   'generated_speech_profile_changed', 'generated_speech_reference_changed', 'generated_speech_moving_reference_unavailable',
   'generated_speech_cancelled', 'generated_speech_moving_release_timeout', 'generated_speech_moving_endpoint_mismatch',
   'generated_speech_moving_job_not_accepted',
@@ -31,7 +33,7 @@ const STREAM_FAILURE_CODES = new Set([
 ]);
 const STREAM_PHASES = new Set(['current', 'ready', 'audio', 'dispatch', 'credit', 'chunk-current', 'chunk-send', 'done', 'played', 'client-message']);
 
-const PREPARATION_FAILURE_CODES = new Set([...SPEECH_PREPARATION_FAILURE_CODES,...STREAM_FAILURE_CODES]);
+const PREPARATION_FAILURE_CODES = new Set([...SPEECH_PREPARATION_FAILURE_CODES,...STREAM_FAILURE_CODES,'moving_idle_source_mismatch']);
 const PREPARATION_PHASES = new Set(['guard','profile-voice','publication','deal-plan','source','admission','submit','worker-ready','current','voice','plan']);
 
 function safeFailureCode(error, codes) {
@@ -64,12 +66,14 @@ export function movingSpeechPreparationFailureReceipt({error, phase, streamId, r
 const same = (a,b) => typeof a === 'string' && typeof b === 'string'
   && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const publicPlan = plan => JSON.parse(JSON.stringify(plan));
+const TRANSPORT_MS = 45000;
+const idlePlaybackMs = record => Math.ceil(record.sequence.frames.length * 1000 / 24) + 5000;
 
 /** Opt-in moving path, one lane per dealer with a verified bank: its own
  * sessions (endpoint), drift admission and bank capabilities. A dealer without
  * a lane is unsupported. The existing chat/Director still selects exact text.
  * All authorities and paid work stay here; the browser gets one spent ticket.
- * Initial playback is the bank's explicit rest frame between card sequences.
+ * Idle speech follows the publication's own baseline with exact source frames.
  * readEvidence(context, mediaId, bank) reads the publication for that bank. */
 export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, lanes, releaseSha256,
   dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
@@ -89,32 +93,42 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   }));
   if (dealers.size !== lanes.length) fail('moving_speech_configuration');
   const records = new Map(), pending = new Set();
+  // PR 4: a room answer is one GPU session with one buffer that every listener at the table reads (room relay).
+  const relay = createMovingSpeechRoomRelay({ticketSecret,resolveOwner,now,ticketMs:connectionMs,lifetimeMs:connectionMs+TRANSPORT_MS});
   const deals=createMovingDealReservations({now});
   const wss = new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false,
     handleProtocols: protocols=>protocols.has('moving-v1') ? 'moving-v1' : false});
   let closing = false;
   const sign = body => createHmac('sha256',ticketSecret).update(body).digest('base64url');
   const reject = socket => socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+  function releaseProducer(record) {
+    return record.released ??= (async()=>{
+      record.download?.revoke(); record.pcm?.fill(0); record.input?.cancel();
+      return await record.session?.cancel();
+    })();
+  }
   async function cancel(record) {
     if (record.cancelled) return record.cancelled;
     // Publish the promise before abort/close callbacks can re-enter cleanup.
     // An uncertain provider/journal result retains its durable reservation for
     // reconciliation, but must never crash the product server on disconnect.
     record.cancelled = Promise.resolve().then(async()=>{
-      record.controller.abort(); clearTimeout(record.timer); record.download?.revoke();
+      record.controller.abort(); clearTimeout(record.timer);
       if (!record.delivered) record.ws?.terminate();
-      record.pcm?.fill(0); record.input?.cancel();
+      if (!record.delivered) record.broadcast?.fail();
       record.reservation?.finish();
-      return await record.session?.cancel();
+      return await releaseProducer(record);
     }).catch(()=>{
       try {onCleanupError();} catch {}
       return {cancelled:false,recoveryRequired:true};
     }).finally(()=>records.delete(record.id));
     return record.cancelled;
   }
-  async function current(record,{checkSession=true,submissionPhase=false}={}) {
-    record.signal.throwIfAborted(); await record.beforeCostly();
-    if(checkSession) await record.session?.assertCurrent?.({submissionPhase});
+  // asker:false (room pump only): the answer belongs to the table, not to the asker, so the asker's own chat freshness
+  // is not checked per chunk. Session, voice profile and publication evidence (the dealer's freshness) still are.
+  async function current(record,{checkSession=true,submissionPhase=false,asker=true}={}) {
+    record.signal.throwIfAborted(); if(asker) await record.beforeCostly();
+    if(checkSession&&!record.produced) await record.session?.assertCurrent?.({submissionPhase});
     await record.voice.assertFresh();
     if(record.deal){
       record.reservation.assertCurrent();
@@ -125,6 +139,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     const evidence = await readEvidence(record.context,bank.sourceSet.rest.videoId,bank);
     if (evidence.projectRevision !== record.evidence.projectRevision
       || JSON.stringify(evidence.mediaReferences) !== JSON.stringify(record.evidence.mediaReferences)) fail('moving_speech_context_changed');
+    if(record.idle&&prepareMovingIdleSource({frozenContext:evidence.frozenContext,sourceSet:bank.sourceSet,
+      publicVideo:id=>publicVideo(evidence.frozenContext,id)}).fingerprint!==record.idle.fingerprint)fail('moving_speech_context_changed');
     record.signal.throwIfAborted();
     // A newer committed deal may replace the reservation during either read.
     // Keep this final check synchronous after every awaited freshness check.
@@ -140,6 +156,47 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       if (ws.readyState !== WebSocket.OPEN || ws.bufferedAmount + Buffer.byteLength(value) > 4*1024*1024) return rejectSend(Error('moving_speech_client_backpressure'));
       ws.send(value,{binary},error=>error ? rejectSend(Error('moving_speech_client_closed')) : resolve());
     });
+  }
+  function readyMessage(record) {
+    const {bank} = record.lane;
+    const {videoId,sha256,fps,frameCount,width,height,bytes} = bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
+    return JSON.stringify({t:'ready',protocol:1,id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,
+      plan:publicPlan(record.input.plan),rest:{videoId,sha256,fps,frameCount,width,height,bytes,sourceFrame:bank.sourceSet.rest.frame,url:`/api/moving-speech/${record.id}/rest`},
+      ...(record.sequence?{sequence:record.sequence}:{}),
+      audio:{format:'s16le',sampleRate:24000,channels:1,byteLength:record.pcm.length}});
+  }
+  // Room answer: the worker streams into the relay at once, never waiting for a listener's credit. Every chunk
+  // passes the dealer's freshness (session, voice, publication) once, however many listeners read it; the asker
+  // leaving the table or a new round does not end it for the others. Nobody listening and no ticket left to
+  // redeem stops the GPU at the next chunk.
+  async function pump(record) {
+    const broadcast=record.broadcast;let phase='dispatch';
+    try {
+      await record.session.dispatch(record.input,{onChunk:async (meta,bytes)=>{
+        phase='chunk-current'; if(!broadcast.listened())fail('moving_speech_no_listeners'); await current(record,{asker:false});
+        phase='chunk-send'; if(!broadcast.push([[JSON.stringify(meta),false],[bytes,true]],meta.rutor.length))fail('moving_speech_cancelled');
+        phase='dispatch';
+      }});
+      // The completed producer has released its journal lease. Playback keeps
+      // voice/publication freshness and cancellation, never that spent lease.
+      record.produced=true; await releaseProducer(record);
+      await current(record,{asker:false});
+      phase='done';
+      broadcast.push([[JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}),false]]);
+      broadcast.end(); phase='played';
+      while(broadcast.state!=='closed'){
+        await new Promise(resolve=>{
+          const done=()=>{clearTimeout(timer);record.signal.removeEventListener('abort',done);resolve();};
+          const timer=setTimeout(done,500);record.signal.addEventListener('abort',done,{once:true});
+          if(record.signal.aborted)done();
+        });
+        if(broadcast.state==='closed')break;
+        await current(record,{asker:false});
+      }
+      record.delivered=true;
+    } catch(error) {
+      try {Promise.resolve(onStreamFailure(movingSpeechFailureReceipt({error,phase,streamId:record.id,requestId:record.requestId}))).catch(()=>{});} catch {}
+    } finally {await cancel(record);}
   }
   async function stream(record,ws) {
     record.ws = ws; clearTimeout(record.timer);
@@ -159,7 +216,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       try {
         if (binary) fail('moving_speech_invalid_credit');
         const value = JSON.parse(data.toString('utf8'));
-        if(record.sequence&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
+        if((record.deal||record.idle)&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
           &&Object.keys(value).sort().join(',')==='id,t'){played=true;done=true;wake?.();return;}
         if (value.t === 'abort' && value.id === record.id && Object.keys(value).sort().join(',') === 'id,t') {void cancel(record); return;}
         if (Object.keys(value).sort().join(',') !== 'frames,id,t' || value.t !== 'credit'
@@ -184,14 +241,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     };
     try {
       await current(record);
-      const {bank} = record.lane;
-      const source = bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
-      const {videoId,sha256,fps,frameCount,width,height,bytes} = source;
       phase = 'ready';
-      await send(ws,JSON.stringify({t:'ready',protocol:1,id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,
-        plan:publicPlan(record.input.plan),rest:{videoId,sha256,fps,frameCount,width,height,bytes,sourceFrame:bank.sourceSet.rest.frame,url:`/api/moving-speech/${record.id}/rest`},
-        ...(record.sequence?{sequence:record.sequence}:{}),
-        audio:{format:'s16le',sampleRate:24000,channels:1,byteLength:record.pcm.length}}));
+      await send(ws,readyMessage(record));
       phase = 'audio';
       await send(ws,JSON.stringify({t:'pcm',id:record.id,byteLength:record.pcm.length}));
       await send(ws,record.pcm,true);
@@ -203,12 +254,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         await send(ws,JSON.stringify(meta)); await send(ws,bytes,true);
         phase = 'dispatch';
       }});
+      if(record.idle)record.produced=true;
       phase = 'done';
       await send(ws,JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}));
       sentDone=true;
-      if(record.sequence){
+      if(record.deal||record.idle){
         phase = 'played';
-        const deadline=now()+45000;
+        const budget=record.idle?TRANSPORT_MS+idlePlaybackMs(record):45000,deadline=now()+budget;
+        // A stalled freshness read cannot defeat the absolute playback bound.
+        if(record.idle){record.timer=setTimeout(()=>{report(Error('moving_speech_playback_timeout'),'played');void cancel(record);},budget);record.timer.unref?.();}
         while(!played){
           if(now()>deadline)fail('moving_speech_playback_timeout');
           await new Promise(resolve=>{const timer=setTimeout(resolve,500);wake=()=>{clearTimeout(timer);resolve();};});
@@ -240,6 +294,13 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       const [body,signature,extra]=ticket.split('.');
       if (extra || !same(signature,sign(body))) fail('moving_speech_ticket');
       const claim=JSON.parse(Buffer.from(body,'base64url').toString());
+      if (Object.hasOwn(claim,'r')) {
+        // A room listener's own ticket: owner, socket and freshness are the relay's checks; a failure spends only this ticket.
+        const listener=await relay.redeem(ticket,req);
+        if (socket.destroyed) return;
+        wss.handleUpgrade(req,socket,head,ws=>{void relay.attach(listener,ws);});
+        return;
+      }
       const record=records.get(claim.sessionId);
       if (!record || record.used || record.state !== 'prepared' || record.expiresAt <= now()
         || !same(ticket,record.descriptor.ticket)) fail('moving_speech_ticket');
@@ -262,15 +323,34 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       }
     },
     normalPresentation: (playerId,version)=>deals.normal(playerId,version),
-    forContext: (context,presentationVersion,sessionRevision) => ({prepare:input=>api.prepare({...input,context,presentationVersion,sessionRevision})}),
+    // {room:true}: a shared-room answer (no presentationVersion), served to every listener through the relay.
+    forContext: (context,presentationVersion,sessionRevision,{room=false}={}) => ({
+      prepare:input=>api.prepare({...input,context,presentationVersion,sessionRevision,...(room&&presentationVersion===undefined?{room:true}:{})}),
+      ...(room?{issue:api.issue}:{})}),
+    // One more listener for a room answer: the same descriptor with that recipient's own single-use ticket, or null
+    // once the answer's buffer is gone (that listener keeps the text).
+    issue(descriptor,recipient) {
+      const broadcast=relay.get(descriptor?.id);
+      if (!broadcast||descriptor.attemptId!==broadcast.attemptId||descriptor.nonce!==broadcast.nonce) return null;
+      const issued=broadcast.issue(recipient);
+      return issued&&Object.freeze({...descriptor,...issued});
+    },
     async prepare(input) {
       if (closing || !input) fail('moving_speech_input');
       if (!api.supports(input.dealerId)) fail('moving_speech_dealer_unavailable');
+      // Solo and shared-room contexts both name the published dealer; evidence is read with that
+      // context, so it must be this dealer's. A room context has no presentationVersion:
+      // speech follows its published idle baseline without a deal reservation.
+      if (!input.context || typeof input.context !== 'object' || input.context.dealerId !== input.dealerId) fail('moving_speech_input');
       if (!ID.test(input.requestId ?? '') || !input.owner
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
         || input.text !== input.text.trim() || input.text.length > 500 || /[\u0000-\u001f\u007f-\u009f]/.test(input.text)) fail('moving_speech_input');
       const lane=dealers.get(input.dealerId),{bank,sessions}=lane;
-      const controller=new AbortController(),signal=AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
+      // A room answer follows the asker's request signal only while it is prepared; once the descriptor is out it
+      // belongs to everyone at the table, and the asker's HTTP request ending must not cut the others off.
+      const controller=new AbortController(),follow=()=>controller.abort(input.signal.reason);
+      const signal=input.room?controller.signal:AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
+      if(input.room&&input.signal){input.signal.addEventListener('abort',follow,{once:true});if(input.signal.aborted)follow();}
       const record={...input,lane,controller,signal,state:'preparing'}; pending.add(record);
       let phase='guard';
       try {
@@ -292,7 +372,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           record.sequence={version:record.deal.version,steps:record.deal.steps,sources:record.deal.sources,
             frames:record.deal.frames.map(row=>({take:'clip-'+row.videoId,frame:row.frame,
               sourceSha256:bank.sourceSet.clips.find(c=>c.videoId===row.videoId).sha256}))};
-        }
+        }else record.idle=prepareMovingIdleSource({frozenContext:record.evidence.frozenContext,sourceSet:bank.sourceSet,
+          publicVideo:typeof publicVideo==='function'?id=>publicVideo(record.evidence.frozenContext,id):undefined});
         phase='source';
         const expected=bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
         assertMovingSpeechSource((await readRegistry()).videos.find(v=>v.id===expected.videoId),input.dealerId,expected);
@@ -303,9 +384,22 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           return {dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256};
         }});
+        // Room answers (PR 4) start TTS as soon as submit is done, in parallel with worker-ready, but only when the
+        // admission saw a warm worker; a cold admission waits for ready as solo does, so a cold start (up to 296 s,
+        // possibly aborted) never pays for voice. A refused admission never starts TTS. Starting after submit means a
+        // TTS failure can abort only ready, never a submit in flight (which would lock the budget as uncertain).
+        const collect=async(options)=>{
+          const chunks=[];let size=0;
+          for await (const chunk of record.voice.source({text:input.text,signal,beforeCostly:()=>current(record,options)})) {
+            size+=chunk.byteLength;if(size>MOVING_SPEECH_MAX_PCM_BYTES)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
+          }
+          const pcm=Buffer.concat(chunks);chunks.forEach(chunk=>chunk.fill(0));return pcm;
+        };
+        let speaking=null;
+        try {
         phase='admission';
         record.session=await sessions.admit({ownerHash:digest(input.owner),userId:digest(input.owner),requestId:input.requestId,
-          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??null])),
+          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??record.idle?.fingerprint??null])),
           binding:{releaseSha256,dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,profileRevision:record.voice.profileRevision,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256,bankReceiptSha256:bank.receipt.sha256},
           mediaReferences:record.evidence.mediaReferences,projectRevision:record.evidence.projectRevision,
@@ -318,26 +412,42 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
             signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record,{submissionPhase:true})});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
         phase='submit'; await record.session.submit();
+        if(input.room&&record.session.warm===true){speaking=collect().catch(error=>{record.voiceFailure=error;controller.abort();throw error;});speaking.catch(()=>{});}
         phase='worker-ready'; await record.session.ready();
         phase='current'; await current(record);
+        } catch(error) {if(record.voiceFailure){phase='voice';throw record.voiceFailure;}throw error;}
         phase='voice';
-        const chunks=[];let size=0;
-        for await (const chunk of record.voice.source({text:input.text,signal,beforeCostly:()=>current(record)})) {
-          size+=chunk.byteLength;if(size>MOVING_SPEECH_MAX_PCM_BYTES)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
-        }
-        record.pcm=Buffer.concat(chunks);chunks.forEach(chunk=>chunk.fill(0));
-        const frames=Array.from({length:movingSpeechPcmFrameCount(size)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
+        record.pcm=await (speaking??collect());
+        const frameCount=movingSpeechPcmFrameCount(record.pcm.length);
+        if(record.idle)record.sequence=prepareMovingIdlePlan(record.idle,frameCount);
+        const frames=Array.from({length:frameCount},(_,k)=>record.idle
+          ?{videoId:record.idle.source.videoId,frame:record.sequence.frames[k].frame}
+          :record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
         phase='plan';
         record.input=await registered.prepare({sourceSet:bank.sourceSet,avatarSha256:bank.archive.sha256,frozenContext:record.evidence.frozenContext,
           binding:{sessionId:record.id,talkId:input.requestId,revision:1,profileRevision:record.voice.profileRevision,textSha256:digest(input.text),audioSha256:digest(record.pcm)},
           frames,audio:{pcm:record.pcm,format:'s16le',sampleRate:24000,channels:1},signal});
         phase='current'; await current(record);
-        record.expiresAt=now()+connectionMs;
+        if(input.room){
+          record.broadcast=relay.open({id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,planId:record.input.plan.start.id,
+            frames:record.input.plan.timeline.length,playbackMs:idlePlaybackMs(record),owner:input.owner,playerId:input.playerId,dealerId:input.dealerId,data:record.evidence});
+          record.broadcast.push([[readyMessage(record),false]]);
+          record.broadcast.push([[JSON.stringify({t:'pcm',id:record.id,byteLength:record.pcm.length}),false],[record.pcm,true]]);
+          // The asker is the first listener; the chat route issues one more ticket per room socket.
+          const issued=record.broadcast.issue({owner:input.owner,playerId:input.playerId,check:()=>input.beforeCostly()});
+          record.expiresAt=issued.expiresAt;record.ticket=issued.ticket;
+        } else record.expiresAt=now()+connectionMs;
         const body=Buffer.from(JSON.stringify({sessionId:record.id,exp:record.expiresAt,attemptId:record.binding.attemptId,nonce:record.binding.nonce})).toString('base64url');
         record.descriptor=Object.freeze({schemaVersion:1,kind:'moving-speech-stream',id:record.id,requestId:input.requestId,dealerId:input.dealerId,
-          exactText:input.text,textSha256:digest(input.text),reviewStatus:'pending',url:'/moving-speech-stream',ticket:body+'.'+sign(body),expiresAt:record.expiresAt,
+          exactText:input.text,textSha256:digest(input.text),reviewStatus:'pending',url:'/moving-speech-stream',ticket:record.ticket??body+'.'+sign(body),expiresAt:record.expiresAt,
           profileRevision:record.voice.profileRevision,avatarSha256:bank.archive.sha256,attemptId:record.binding.attemptId,nonce:record.binding.nonce,compositing:record.voice.compositing??null,
-          ...(record.sequence?{presentationVersion:record.deal.version,sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
+          ...(record.sequence?{...(record.deal?{presentationVersion:record.deal.version}:{sequenceKind:'idle'}),
+            sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
+        if(input.room){
+          // Independent of pump's awaited freshness reads and the relay socket.
+          record.timer=setTimeout(()=>void cancel(record),connectionMs+TRANSPORT_MS+idlePlaybackMs(record));record.timer.unref?.();
+          record.state='pumping';void pump(record);return record.descriptor;
+        }
         record.state='prepared';record.timer=setTimeout(()=>void cancel(record),connectionMs);record.timer.unref?.();
         return record.descriptor;
       } catch(error) {
@@ -348,7 +458,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         } catch {}
         await cancel(record);throw error;
       }
-      finally {pending.delete(record);}
+      finally {pending.delete(record);input.signal?.removeEventListener('abort',follow);}
     },
     async handleHttp(req,res) {
       const path=new URL(req.url,origin).pathname;
@@ -361,22 +471,26 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         response=await (issuers.find(lane=>lane.downloads.owns(request))??issuers[0]).downloads.response(request);
         if (!response) {
           const match=/^\/api\/moving-speech\/([a-f0-9]{32})\/rest$/.exec(path);
-          const record=match && records.get(match[1]);
-          if (!record || !['GET','HEAD'].includes(req.method) || new URL(req.url,origin).search) fail('moving_speech_rest_unavailable');
-          await owner(record,req);
-          response=await readRest(record.evidence,request);
+          if (!match || !['GET','HEAD'].includes(req.method) || new URL(req.url,origin).search) fail('moving_speech_rest_unavailable');
+          if (relay.get(match[1])) response=await readRest(await relay.authorizeRest(match[1],req),request);
+          else {
+            const record=records.get(match[1]);
+            if (!record) fail('moving_speech_rest_unavailable');
+            await owner(record,req);
+            response=await readRest(record.evidence,request);
+          }
         }
       } catch {response=new Response(null,{status:403,headers:{'Cache-Control':'private, no-store'}});}
       res.writeHead(response.status,Object.fromEntries(response.headers));
       if (!response.body) res.end(); else {const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);}
       return true;
     },
-    cancelActive: ()=>Promise.all(active().map(cancel)),
+    cancelActive: ()=>{relay.close();return Promise.all(active().map(cancel));},
     // A dealer's drift Off drains only that dealer's endpoint and attempts.
-    cancelDealer: dealerId=>Promise.all(active().filter(r=>r.dealerId===dealerId).map(cancel)),
-    cancelOwner: value=>Promise.all(active().filter(r=>r.owner===value).map(cancel)),
-    cancelPlayer: value=>Promise.all(active().filter(r=>r.playerId===value).map(cancel)),
-    async close() {closing=true;server.off('upgrade',upgrade);for(const lane of dealers.values())lane.downloads.close();await Promise.all(active().map(cancel));wss.close();},
+    cancelDealer: dealerId=>{relay.cancel(b=>b.dealerId===dealerId);return Promise.all(active().filter(r=>r.dealerId===dealerId).map(cancel));},
+    cancelOwner: value=>{relay.cancel(b=>b.owner===value);return Promise.all(active().filter(r=>r.owner===value).map(cancel));},
+    cancelPlayer: value=>{relay.cancel(b=>b.playerId===value);return Promise.all(active().filter(r=>r.playerId===value).map(cancel));},
+    async close() {closing=true;server.off('upgrade',upgrade);relay.close();for(const lane of dealers.values())lane.downloads.close();await Promise.all(active().map(cancel));wss.close();},
   };
   return Object.freeze(api);
 }

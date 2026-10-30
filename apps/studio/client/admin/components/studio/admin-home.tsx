@@ -2,8 +2,8 @@ import {useEffect,useState} from 'react';
 import {Building2,LayoutGrid,Plus,Presentation,Table2,Upload,UserRound,Users} from 'lucide-react';
 import {Bar,BarChart,CartesianGrid,XAxis,YAxis} from 'recharts';
 import Link from '../../../runtime/navigation';
-import {HubPage,Card,Chip,Row,Empty,KV,AsideLink} from '../ui/hub';
-import {buttonVariants,cn,Footnote,formatNumber,Loading,plural,Stat,textLinkClass} from '../ui/kit';
+import {HubPage,Card,Chip,Row,Empty,AsideLink} from '../ui/hub';
+import {buttonVariants,cn,formatNumber,Loading,plural,Stat} from '../ui/kit';
 import {ChartContainer,ChartTooltip,ChartTooltipContent} from '../ui/chart';
 import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
 import {dealerCoverage,dealerStill} from '../../lib/dealer-coverage.mjs';
@@ -103,10 +103,10 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
       </div>
       <div className="grid content-start gap-5">
         <Card title="Börja med"><div className="grid gap-2">
-          <Link className={cn(buttonVariants({variant:'primary'}),'justify-start')} href={firstDealer?`/admin/dealers/${encodeURIComponent(firstDealer.id)}?flik=klipp&panel=intake`:'/admin/dealers'}><Upload aria-hidden="true"/>Lägg till klipp</Link>
+          <Link className={cn(buttonVariants({variant:'primary'}),'justify-start')} href="/admin/companies?tab=spelbord&view=create"><Table2 aria-hidden="true"/>Nytt spelbord</Link>
+          <Link className={cn(buttonVariants(),'justify-start')} href={firstDealer?`/admin/dealers/${encodeURIComponent(firstDealer.id)}?flik=klipp&panel=intake`:'/admin/dealers'}><Upload aria-hidden="true"/>Lägg till klipp</Link>
           <Link className={cn(buttonVariants(),'justify-start')} href={activeOperators[0]?`/admin/companies/${encodeURIComponent(activeOperators[0].id)}?flik=tilldelning`:'/admin/companies'}><LayoutGrid aria-hidden="true"/>Tilldela innehåll</Link>
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/dealers?view=create"><Plus aria-hidden="true"/>Ny dealer</Link>
-          <Link className={cn(buttonVariants(),'justify-start')} href="/admin/companies?tab=spelbord&view=create"><Table2 aria-hidden="true"/>Nytt spelbord</Link>
           <Link className={cn(buttonVariants(),'justify-start')} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link>
         </div></Card>
         {data&&dealers.length>0&&<Card title="Dealers" aside={<AsideLink href="/admin/dealers" label="Alla dealers">Alla</AsideLink>}>
@@ -123,10 +123,6 @@ export function AdminHome({workspace}:{workspace:Workspace|null}) {
               <ChartTooltip content={<ChartTooltipContent formatter={value=>`${typeof value==='number'?formatNumber(value):value} händelser`}/>}/><Bar dataKey="n" fill="var(--color-n)" radius={[0,4,4,0]} isAnimationActive={false}/>
             </BarChart>
           </ChartContainer>:<p className="m-0 text-[13px] text-sg-muted">Inga spelhändelser registrerade ännu.</p>)}
-        </Card>
-        <Card title="Så hänger det ihop">
-          <KV items={[['Admin','skapar och tilldelar'],['Bolaget','väljer inom tilldelningen'],['Spelaren','ser bara det publicerade']]}/>
-          <Footnote>Varje <Link href="/admin/companies" className={textLinkClass}>bolag</Link> får en tilldelning. Bolagets spelbord har scenmall, dealer, språk och insatsprofil, och det är spelbordet spelaren möter i spelet.</Footnote>
         </Card>
       </div>
     </div>

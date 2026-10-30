@@ -51,10 +51,10 @@ test('dealer archive lists clips, compositions, rooms and companies from the ser
   const impact = { dealerId: 'paow-v2', token: 'b'.repeat(64), mediaCount: 3, speechEnabled: true, compositions: [{ id: 'c', label: 'Standard' }], rooms: [{ id: 'r', name: 'Rum 1', operatorId: 'o' }], operators: [{ id: 'o', name: 'Nordic' }] };
   const plan = dealerArchivePlan({ label: 'PAOW', impact });
   assert.equal(plan.title, 'Ta bort PAOW?'); assert.equal(plan.confirmLabel, 'Flytta till papperskorgen');
-  assert.deepEqual(plan.items, ['3 klipp följer med till papperskorgen', 'Sammansättning: Standard arkiveras', 'Rum: Rum 1 kopplas loss och avpubliceras', 'Spelbolag: Nordic får ett ändrat paket', 'AI-tal stängs av']);
+  assert.deepEqual(plan.items, ['3 klipp följer med till papperskorgen', 'Miljö: Standard arkiveras', 'Spelbord: Rum 1 kopplas loss och avpubliceras', 'Spelbolag: Nordic får ett ändrat paket', 'AI-tal stängs av']);
   assert.match(plan.summary, /Källfiler och publiceringshistorik bevaras/);
   assert.deepEqual(dealerArchivePlan({ label: 'PAOW' }).items, [], 'no consequences are invented before the server answered');
-  assert.deepEqual(dealerRestorePlan({ label: 'PAOW', compositions: [{ id: 'c', label: 'Standard' }] }).items, ['Sparade sammansättningar (1)', 'Sammansättning: Standard']);
+  assert.deepEqual(dealerRestorePlan({ label: 'PAOW', compositions: [{ id: 'c', label: 'Standard' }] }).items, ['Sparade miljöer (1)', 'Miljö: Standard']);
 });
 test('permanent dealer deletion requires the file acknowledgement only when files are deleted', () => {
   const allowed = dealerDeletePlan({ label: 'PAOW', mediaCount: 2, eligibility: { allowed: true, count: 5 } });

@@ -7,21 +7,19 @@ import { spawn } from 'node:child_process';
 import { createStorageExportServer, readStorageExportConfig } from '../storage-export.mjs';
 import { inspectCloudBootstrap, validateCloudConfig } from '../config.mjs';
 
-const studioEnv = () => ({ CROUPIER_STORAGE_MAINTENANCE: 'studio-export', CROUPIER_DATABASE: 'postgres',
-  CROUPIER_STUDIO_NEON_POLICY: '0', CROUPIER_GENERATED_SPEECH: '0', CROUPIER_CLOUD_GENERATED_SPEECH: '0',
+const studioEnv = () => ({ CROUPIER_STORAGE_MAINTENANCE: 'studio-export', CROUPIER_GENERATED_SPEECH: '0', CROUPIER_CLOUD_GENERATED_SPEECH: '0',
   CROUPIER_GENERATED_SPEECH_STREAMING: '0', CROUPIER_STORAGE_EXPORT_SECRET: 'fixture-export-secret-'.repeat(3) });
 
-test('Studio freeze requires PostgreSQL and every policy/provider flag explicitly off', () => {
+test('Studio freeze requires PostgreSQL and every provider flag explicitly off', () => {
   const env = studioEnv();
   assert.deepEqual(readStorageExportConfig(env), { mode: 'studio-export', secret: env.CROUPIER_STORAGE_EXPORT_SECRET });
-  for (const name of ['CROUPIER_STUDIO_NEON_POLICY', 'CROUPIER_GENERATED_SPEECH',
+  for (const name of ['CROUPIER_GENERATED_SPEECH',
     'CROUPIER_CLOUD_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_STREAMING']) {
     for (const value of [undefined, '', '1', 'false', '0 ']) {
       assert.throws(() => readStorageExportConfig({ ...env, [name]: value }), /maintenance/);
     }
   }
-  for (const changes of [ { CROUPIER_DATABASE: undefined }, { CROUPIER_DATABASE: 'sqlite' },
-    { CROUPIER_STORAGE_EXPORT_SECRET: 'short' }, { CROUPIER_STORAGE_EXPORT_SECRET: 'a'.repeat(32)+'\n' } ]) {
+  for (const changes of [ { CROUPIER_STORAGE_EXPORT_SECRET: 'short' }, { CROUPIER_STORAGE_EXPORT_SECRET: 'a'.repeat(32)+'\n' } ]) {
     assert.throws(() => readStorageExportConfig({ ...env, ...changes }), /maintenance/);
   }
 });
@@ -31,7 +29,7 @@ test('PostgreSQL Studio freeze validates cloud config but never connects or boot
     CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-studio-maintenance-fixture'),
     PUBLIC_URL: 'https://game.example.test', BO_URL: 'https://bo.example.test', LAB_PUBLIC_URL: 'https://lab.example.test',
     CROUPIER_GAME_ORIGIN: 'https://game.example.test', BETTALOTTO_PARTNER_BASE_URL: 'https://game.example.test',
-    CROUPIER_STREAM_LANE: 'lissabon-stream-lane', OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
     OPENCLAW_PRODUCT_SPEECH_TOKEN: 'unused-fixture-token',
     CROUPIER_GAME_DATABASE_URL: 'postgresql://fixture:never-use@fixture.neon.tech/neondb?sslmode=require' };
   const config = validateCloudConfig(env);
@@ -98,7 +96,7 @@ test('maintenance accepts only the PostgreSQL Studio freeze; the SQLite snapshot
   for (const env of [{ CROUPIER_STORAGE_MAINTENANCE: 'yes' },
     { CROUPIER_STORAGE_MAINTENANCE: 'export', CROUPIER_STORAGE_EXPORT_SECRET: secret },
     { ...studioEnv(), CROUPIER_STORAGE_MAINTENANCE: 'export', CROUPIER_STORAGE_EXPORT_SECRET: secret },
-    { CROUPIER_STORAGE_MAINTENANCE: 'export', CROUPIER_DATABASE: 'sqlite', CROUPIER_STORAGE_EXPORT_SECRET: secret }]) {
+    { CROUPIER_STORAGE_MAINTENANCE: 'export', CROUPIER_STORAGE_EXPORT_SECRET: secret }]) {
     assert.throws(() => readStorageExportConfig(env), /maintenance/);
   }
   assert.throws(() => createStorageExportServer({ database: 'postgres', gameOrigin: 'https://isolated.example.test' },

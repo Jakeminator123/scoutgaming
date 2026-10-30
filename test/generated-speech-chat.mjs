@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { completeChatWithSpeech } from '../services/game/generated-speech-chat.mjs';
+import { completeChatWithSpeech, selectChatSpeechStream } from '../services/game/generated-speech-chat.mjs';
 
 function fixture(change = () => {}) {
   let owner = 'session-one', stale = false, jobs = 0;
@@ -104,4 +104,19 @@ test('unpaid dealer preparation overlaps model work; paid preparation awaits it 
 test('failed unpaid preparation never substitutes a voice or masks a paid preparation error',async()=>{
   const f=fixture();f.data.streamService={prewarm:async()=>{throw Error('reference pending');},prepare:async()=>{throw Error('own voice unavailable');}};
   await assert.rejects(completeChatWithSpeech(f.data),/own voice unavailable/);assert.equal(f.jobs,0);
+});
+
+test('without the still-image provider a registered still dealer answers text-only with a reason, never 503', async () => {
+  const wrapper = { cancelOwner() {}, cancelPlayer() {}, close() {} }; // moving cancellation wrapper, no prepare
+  const route = selectChatSpeechStream({ dealerId: 'paow', registeredSpeech: true, selected: wrapper, acceptsSpeechStream: true, stillSpeechDisabled: true });
+  assert.deepEqual(route, { streamService: null, textOnlyReason: 'generated_speech_still_not_configured' });
+  assert.deepEqual(selectChatSpeechStream({ dealerId: 'paow', registeredSpeech: true, selected: null, acceptsSpeechStream: false, stillSpeechDisabled: true }), route);
+  const f = fixture(); f.data.status = { dealerId: 'paow' }; f.data.service = null;
+  const result = await completeChatWithSpeech({ ...f.data, ...route });
+  assert.deepEqual(result, { kind: 'generatedText', exactText: 'Hej.', speech: 'text-only', reason: 'generated_speech_still_not_configured' });
+  // A configured still path keeps its contract: a missing stream is still an error.
+  assert.throws(() => selectChatSpeechStream({ dealerId: 'paow', registeredSpeech: true, selected: wrapper, acceptsSpeechStream: true, stillSpeechDisabled: false }), /generated_speech_stream_required/);
+  const stream = { prepare: async () => ({}) };
+  assert.equal(selectChatSpeechStream({ dealerId: 'paow', registeredSpeech: true, selected: stream, acceptsSpeechStream: true, stillSpeechDisabled: true }).streamService, stream);
+  assert.equal(selectChatSpeechStream({ dealerId: 'astrid', registeredSpeech: false, selected: wrapper, acceptsSpeechStream: true, stillSpeechDisabled: true }).streamService, null);
 });

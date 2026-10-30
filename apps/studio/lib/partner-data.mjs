@@ -6,8 +6,7 @@ import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartnerWorkspace, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
 import { readPackagePresentation, publicPackageBranding, resolvePackageRoomDealer } from '../../../packages/presentation/server/presentation-package.mjs';
-import { partnerLayerChoices } from './partner-package-view.mjs';
-import { materialLabel } from '../../../packages/presentation/contracts/material-catalog.mjs';
+import { partnerAssignment } from './partner-assignment.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
@@ -148,22 +147,6 @@ function roleOf(session, context) {
   const id = typeof context.role?.id === 'string' ? context.role.id : String(context.membership?.roleId ?? '');
   return { id, label: partnerRoleWord(id, typeof context.role?.label === 'string' ? context.role.label : '') };
 }
-// Tilldelningen ur det frysta paketet: spel, dealers, scenmallar och det material
-// mallarna tillåter. Insatsprofiler finns inte i paketet; de läses från rummens
-// publicerade spelinställningar när de finns.
-function assignmentOf(pack, presentation, settings) {
-  const label = (id, role) => { const asset = presentation?.assets?.find(item => item.id === id && item.role === role); return asset ? materialLabel(asset) : id; };
-  const materials = role => [...new Set((presentation?.lanes ?? []).flatMap(lane => partnerLayerChoices(lane, role)))].map(id => ({ id, label: label(id, role) }));
-  const dealers = presentation?.registeredDealers?.length ? presentation.registeredDealers.map(dealer => ({ id: dealer.id, label: dealer.label ?? dealer.id }))
-    : [...new Set((presentation?.lanes ?? []).flatMap(lane => lane.layers?.dealer?.allowed ?? []))].map(id => ({ id, label: id }));
-  const limitPresets = [...new Set([...settings.values()].map(row => row.limitPreset))].sort();
-  return {
-    games: [...(Array.isArray(pack?.games) ? pack.games : [])],
-    dealers, lanes: (presentation?.lanes ?? []).map(lane => ({ id: lane.id, label: lane.label })),
-    backgrounds: materials('background'), tables: materials('table'),
-    ...(limitPresets.length ? { limitPresets } : {}),
-  };
-}
 async function draftOf(store, operatorId) {
   if (typeof store.getBrandingDraft !== 'function') return null;
   const draft = await store.getBrandingDraft(operatorId);
@@ -220,7 +203,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   // 403-kort med HTTP 200 (`denied`; API-vägarna svarar 403), och snapshoten
   // bär bara de avsnitt rollen får läsa:
   // tables.read → spelbord och deras inställningar, presentations.read →
-  // scenmall/utseende/tilldelning/utkast, reports.read → ekonomi och
+  // miljö/utseende/tilldelning/utkast, reports.read → ekonomi och
   // publiceringar, team.read → team och inbjudningar, integrations.read →
   // bolagets egna API-nycklar, maskerade (partner-api-keys.mjs).
   const required = PARTNER_VIEW_PERMISSIONS[view];
@@ -279,7 +262,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     tables,
     team,
     invitations: team.filter(member => member.status === 'invited').length,
-    ...(canPresentations ? { assignment: assignmentOf(pack, presentation, settings) } : {}),
+    ...(canPresentations ? { assignment: partnerAssignment(pack, presentation, settings) } : {}),
     draft: canPresentations ? await draftOf(operators, operator.id) : null,
     publications: canReports ? await publicationsOf(operators, operator.id) : [],
     ...(reports ? { reports } : {}),

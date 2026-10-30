@@ -12,8 +12,8 @@ const body = localFont({ src: './fonts/inter-latin-wght-normal.woff2', weight: '
 const mono = localFont({ src: './fonts/jetbrains-mono-latin-wght-normal.woff2', weight: '100 800', variable: '--sg-next-mono', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Croupier Studio · Scout Gaming',
-  description: 'Studio för klipp, regler, konton, drift och OpenClaw.',
+  title: 'Scoutgaming',
+  description: 'Scoutgamings Admin och Partnerportalen.',
   robots: { index: false, follow: false },
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <body>
       <Script id="sg-history" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: studioHistoryBootstrap }} />
       {children}
-      <Script src={(process.env.CROUPIER_LAB_BASE_PATH || '') + '/assistant-widget.js'} strategy="afterInteractive" />
+      <Script src="/studio/assistant-widget.js" strategy="afterInteractive" />
     </body>
   </html>;
 }

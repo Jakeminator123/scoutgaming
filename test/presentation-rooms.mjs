@@ -5,8 +5,10 @@ import assert from 'node:assert/strict';
 import { defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { cloudPresentationFixture } from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
-import {isPresentationRoom} from '../packages/presentation/contracts/presentation-room.mjs';
-import {listPackageRooms, resolvePackageRoom, inspectPackageRooms} from '../packages/presentation/server/package-rooms.mjs';
+import {isPresentationRoom, isRoomOperatorId, PRESENTATION_ROOM_SCHEMA_VERSION} from '../packages/presentation/contracts/presentation-room.mjs';
+import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
+import { StudioStorageError } from '../packages/studio-registry/server/document-contract.mjs';
+import {listPackageRooms, resolvePackageRoom, inspectPackageRooms, packageRoomsFor} from '../packages/presentation/server/package-rooms.mjs';
 import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
@@ -123,4 +125,97 @@ test('a VIP presentation binds a different real game lane without adding artific
   assert.equal(entry.selection.composition.settings.mobile.table.y, .12);
   assert.equal(entry.selection.composition.assets.length, 2); assert.deepEqual(pack.lanes, ['vip-presentation']);
   assert.deepEqual(await before(''), old, 'the unscoped legacy entry must not acquire VIP layers');
+});
+
+// L3 PR 1: `pack.rooms` (Studio 023) is read when the package has it; otherwise today's path.
+// Today's inspectPackageRooms, verbatim before L3, so the fallback is compared with the real thing.
+function todayInspect({ administration, package: pack, operatorId: owner } = {}) {
+  if (!Array.isArray(administration?.rooms)) throw new StudioStorageError('studio_corrupt_game_policy');
+  if (!isRoomOperatorId(owner) || pack?.operatorId !== owner || !Array.isArray(pack?.tables) || !Array.isArray(pack?.lanes)) return [];
+  const presentation = readPackagePresentation(pack);
+  if (!presentation) return [];
+  let gameLanes;
+  try { gameLanes = gameLaneConfiguration(administration).gameLanes; }
+  catch { throw new StudioStorageError('studio_corrupt_game_policy'); }
+  const result = [], seen = new Set();
+  for (const room of administration.rooms) {
+    if (seen.has(room?.id)) throw new StudioStorageError('studio_corrupt_game_policy');
+    seen.add(room?.id);
+    if (room?.schemaVersion !== PRESENTATION_ROOM_SCHEMA_VERSION) continue;
+    if (!isPresentationRoom(room)) throw new StudioStorageError('studio_corrupt_game_policy');
+    if (room.operatorId === owner && pack.tables.includes(room.id)
+      && pack.lanes.includes(room.presentationLaneId) && gameLanes.some(lane => lane.id === room.gameLaneId)
+      && presentation.lanes.some(lane => lane.id === room.presentationLaneId)) {
+      let materialsCompatible=true;
+      try { assertPresentationRoomMaterials(presentation,room); }
+      catch(error) {
+        if(!(error instanceof StudioStorageError)||error.code!=='studio_presentation_game_material_mismatch'||error.statusCode!==422)throw error;
+        materialsCompatible=false;
+      }
+      result.push({room:structuredClone(room),materialsCompatible});
+    }
+  }
+  return result;
+}
+const outcome = run => { try { return { rows: run() }; } catch (error) { return { code: error.code, status: error.statusCode }; } };
+test('a package without rooms reads exactly as today, whether the column is absent or null', () => {
+  const { administration, pack } = fixture(), extra = { ...room, id: 'room-two', name: 'Second' };
+  const base = { administration, package: pack, operatorId: 'north' };
+  const variants = [
+    () => {}, value => { value.administration.rooms.push(extra); value.package.tables = [room.id, extra.id]; },
+    value => value.administration.rooms.push(extra), value => value.operatorId = 'south', value => value.package.operatorId = 'south',
+    value => value.package.tables = [], value => value.package.lanes = [], value => value.administration.rooms[1].operatorId = 'south',
+    value => value.administration.rooms[1].gameLaneId = 'other', value => value.administration.rooms[1].presentationLaneId = 'other',
+    value => value.administration.rooms[1].state = 'pending', value => value.administration.rooms[1].name = '',
+    value => value.administration.rooms.push(structuredClone(room)), value => delete value.administration.rooms,
+    value => value.administration.gameLanes = 'broken', value => value.package.branding = {},
+  ];
+  for (const [index, change] of variants.entries()) {
+    const input = structuredClone(base); change(input);
+    const today = outcome(() => todayInspect(input));
+    assert.deepEqual(outcome(() => inspectPackageRooms(input)), today, `variant ${index}, rooms absent`);
+    assert.deepEqual(outcome(() => inspectPackageRooms({ ...input, package: { ...input.package, rooms: null } })), today, `variant ${index}, rooms null`);
+  }
+});
+test('a package with rooms is the list: the document neither adds, removes nor renames its tables', async () => {
+  const f = fixture(), packaged = { ...room, name: 'Packaged name' };
+  f.pack.rooms = [packaged];
+  for (const rooms of [[], [legacy], [{ ...room, name: 'Document name', state: 'pending' }], [{ ...room, id: 'room-other' }]]) {
+    f.administration.rooms = rooms;
+    assert.deepEqual(listPackageRooms({ administration: f.administration, package: f.pack, operatorId: 'north' }), [packaged]);
+  }
+  const { rooms, ...withoutRooms } = f.administration;
+  assert.deepEqual(resolvePackageRoom({ administration: withoutRooms, package: f.pack, operatorId: 'north', roomId: room.id }), packaged,
+    'the document needs no rooms once the package has them');
+  // The game entry follows the package: live there while the document has no such table (404 today).
+  const select = createGameEntrySelector({ policy: f.policy, packages: { resolve: async () => ({ operator: { id: 'north' }, package: f.pack }) } });
+  f.administration.rooms = [];
+  assert.equal((await select('?operator=north&table=room-one')).status, 200);
+  f.pack.rooms = [{ ...room, state: 'pending' }]; f.administration.rooms = [structuredClone(room)];
+  assert.equal((await select('?operator=north&table=room-one')).status, 404, 'paused in the package wins over live in the document');
+});
+// Plan L3 PR 3: the rooms every writer sends with its publication (packageRoomsFor). Null, never a throw, when
+// the list cannot be checked: publishWithin then keeps PR 2's path and the write is not refused for it.
+test('packageRoomsFor gives the document rooms of the package tables, or null when they cannot be checked', () => {
+  const f = fixture();
+  assert.deepEqual(packageRoomsFor(f.administration, f.pack), [room]);
+  assert.equal(packageRoomsFor(f.administration, { ...f.pack, tables: [room.id, 'room-two'] }), null, 'a table without its room');
+  // A frozen presentation the readers cannot read (its environments differ from the package's lanes).
+  const unreadable = { ...f.pack, lanes: ['mobile-phone', 'other'] };
+  assert.throws(() => readPackagePresentation(unreadable), error => error.statusCode === 503);
+  assert.equal(packageRoomsFor(f.administration, unreadable), null);
+});
+test('package rooms that disagree with the package itself are a corrupt package, never a silently missing table', () => {
+  const f = fixture(), input = { administration: f.administration, package: { ...f.pack, rooms: [structuredClone(room)] }, operatorId: 'north' };
+  assert.deepEqual(listPackageRooms(input), [room]);
+  for (const change of [
+    pack => pack.rooms[0].presentationLaneId = 'other', pack => pack.rooms[0].operatorId = 'south',
+    pack => pack.tables = [], pack => pack.tables = [room.id, 'room-two'], pack => pack.rooms.push(structuredClone(room)),
+    pack => pack.rooms[0].state = 'closed', pack => pack.rooms = {}, pack => pack.rooms = [legacy],
+  ]) {
+    const next = structuredClone(input); change(next.package);
+    assert.throws(() => listPackageRooms(next), error => error.code === 'studio_corrupt_operator' && error.statusCode === 503);
+  }
+  // Ownership and the frozen presentation are still read first, as today.
+  assert.deepEqual(listPackageRooms({ ...input, operatorId: 'south' }), []);
 });

@@ -15,12 +15,21 @@ export function filmedDealTarget(event) {
   return event.to === 'box' && Number.isInteger(event.box) && event.box >= 0 && event.box < 7 ? String(event.box + 1) : null;
 }
 export function validateFilmedDealProfile(profile) {
-  keys(profile, ['version','id','game','source','plane','card','positions','tracks','takes','timingEvidence']);
+  // `inherited` marks PAOW's profile used as another dealer's standard (registry).
+  keys(profile, ['version','id','game','source','plane','card','positions','tracks','takes','timingEvidence',...(object(profile) && 'inherited' in profile ? ['inherited'] : [])]);
+  if (profile.inherited !== undefined && profile.inherited !== 'paow') fail();
   if (profile.version !== 1 || profile.game !== 'blackjack' || !/^[a-z0-9-]{1,100}$/.test(profile.id)
       || !/^[a-z0-9-]{1,100}$/.test(profile.timingEvidence)) fail();
-  keys(profile.source,['commit','sources']);
-  if (!/^[a-f0-9]{40}$/.test(profile.source.commit) || !Array.isArray(profile.source.sources) || !profile.source.sources.length) fail();
-  for (const source of profile.source.sources) {
+  // A dealer's studio profile (filmed-profiles/studio-profile.mjs) names its dealer instead of a source commit.
+  const studio=object(profile.source)&&Object.hasOwn(profile.source,'studio');
+  if (studio) {
+    keys(profile.source,['studio']);
+    const origin=profile.source.studio;
+    keys(origin,['dealerId','kind',...(origin?.kind==='copy'?['base']:[])]);
+    if (!['copy','measured'].includes(origin.kind)||typeof origin.dealerId!=='string'||!profile.id.startsWith(`studio-${origin.dealerId}-`)) fail();
+  } else keys(profile.source,['commit','sources']);
+  if (!studio && (!/^[a-f0-9]{40}$/.test(profile.source.commit) || !Array.isArray(profile.source.sources) || !profile.source.sources.length)) fail();
+  for (const source of studio ? [] : profile.source.sources) {
     keys(source,['path','sha256']);
     if (typeof source.path !== 'string' || !source.path || source.path.includes('..') || !hash.test(source.sha256)) fail();
   }
@@ -52,7 +61,9 @@ export function validateFilmedDealProfile(profile) {
         ||seen.has(take.key)||hashes.has(take.sha256)||!hash.test(take.sha256)||typeof take.repositoryPath!=='string'||take.repositoryPath.includes('..')) fail();
     seen.add(take.key);hashes.add(take.sha256);
     if (!['VILA','REDO'].includes(take.startPose)||!['VILA','REDO'].includes(take.endPose)
-        ||take.track!==take.target+(take.variant.endsWith('v')?'v':'')||(!profile.tracks[take.track]&&take.track!=='hole')) fail();
+        ||!(take.track===take.target+(take.variant.endsWith('v')?'v':'')
+          ||studio&&profile.source.studio.kind==='copy'&&['v','iv'].includes(take.variant)&&take.track===take.target)
+        ||(!profile.tracks[take.track]&&take.track!=='hole'&&(!studio||profile.source.studio.kind==='copy'))) fail();
     if (![take.frames,take.offsetFrames,take.firstFaceFrame,take.contactFrame,take.landFrame,take.clearFrame].every(integer)
         ||take.frames<1||take.offsetFrames>=take.frames||take.firstFaceFrame<take.offsetFrames||take.contactFrame<take.offsetFrames
         ||take.contactFrame>take.landFrame||take.landFrame>take.clearFrame||Math.max(take.firstFaceFrame,take.clearFrame)>=take.frames) fail();

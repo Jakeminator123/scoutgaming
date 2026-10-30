@@ -4,13 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, createEmptyProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,studioCopyProfile} from '../../../test/fixtures/native-room-game-material.mjs';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../lib/studio-native-runtime.mjs';
 import { fixtureDatabaseUrl } from '../../../test/fixtures/database-url.mjs';
-import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../../packages/presentation/contracts/presentation-layers.mjs';
@@ -200,12 +200,12 @@ test('a background playback switch and a missing default cannot create a fixed-e
 
 test('baked environments are explicit and multiple dealers do not prove a shared scene', async () => {
   const f = await fixture(), ready = await f.prepare();
-  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
+  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' });
   const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
   lane.dealers = ['astrid', 'elin']; lane.layers.dealer.allowed = ['astrid', 'elin'];
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
   const blocked = await f.prepare(), before = f.pool.snapshot();
-  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
+  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Bakgrunden följer vald dealer' });
   assert.equal(blocked.reason, 'presentation_room_environment_required');
   await assert.rejects(f.create(await f.payload()), error => error.code === 'studio_presentation_room_environment_required');
   assert.deepEqual(f.pool.snapshot(), before);
@@ -444,8 +444,8 @@ test('unavailable runtime refuses before writer locks; an unrelated catalogue le
 
 test('unified room endpoint publishes while retaining fresh role, Origin and exact query/body/scope boundaries', async () => {
   const f = await fixture(); let role = 'admin';
-  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
-    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_BASE_PATH:'/studio',
+  const config = nativeStudioAdminConfiguration({
+    CROUPIER_PUBLIC_ORIGIN:origin,
     CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
     CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
   const api = createStudioAdminApi({ authorize: async () => ({ ...session, role }), allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts, handlers: f.roomApi.handlers, mutationTransaction: work => work() });
@@ -1091,4 +1091,18 @@ test('a new room keeps the company\'s approved background and choice instead of 
   ({ raw, frozen } = allowed());
   assert.equal(frozen.assets.some(row => row.id === own), false, 'revoked material leaves the next room publication');
   assert.equal(Object.hasOwn(JSON.parse(raw.branding), 'background'), false, 'the choice falls back to the template');
+});
+
+test('a package carrying a dealer\'s own filmed profile is not published to a v32 or v33 runtime; v34 accepts it',async()=>{
+  for(const version of [32,33,34]){
+    const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(version)}),saved=await f.repository.readDocument('project');
+    saved.value.dealers.find(row=>row.id==='astrid').filmedProfile=studioCopyProfile('astrid','paow');
+    await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
+    const ready=await f.prepare();
+    if(version<34){
+      assert.equal(ready.ready,false);assert.equal(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED,`v${version}`);
+      const body=await f.payload(),before=f.pool.snapshot();
+      await assert.rejects(f.create(body),error=>error.statusCode===503&&error.message===PRESENTATION_RUNTIME_UPDATE_REQUIRED);assert.deepEqual(f.pool.snapshot(),before);
+    } else assert.notEqual(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+  }
 });

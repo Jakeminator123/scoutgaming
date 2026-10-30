@@ -40,7 +40,7 @@ test('Vercel ingress owns the lobby prefix and transforms it to the mounted Stud
 
 test('public lobby routing preserves queries and leaves admin access on its existing route', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   for (const path of ['/lobby', '/lobby/', '/lobby/_assets/lobby/app.js', '/lobby/_assets/fonts/inter.woff2', '/admin', '/admin/lobby']) {
     assert.deepEqual(platformRoute(new URL(path + '?operator=alpha', config.publicOrigin), config),
@@ -253,18 +253,24 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     // Before a room is chosen, step 3 shows five locked portrait teasers under the glass.
     const dealerCards = page.locator('ul[aria-label="Dealers"] > li');
     await page.goto(origin + '/lobby');
-    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(4).waitFor();
-    assert.equal(await dealerCards.count(), 5);
+    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(3).waitFor();
+    assert.equal(await dealerCards.count(), 4);
     assert.equal(await page.locator('ul[aria-label="Dealers"] button:not([disabled])').count(), 0);
     assert.equal(await page.locator('a[href^="/game?game=blackjack"], a[href^="/game?game=roulette"]').count(), 0);
     await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
       ['Välj Nora', false], ['Välj Oskar', false],
-      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+      ...['Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig vid valt spelbord', true]),
     ], 'published dealers first, then disabled teasers');
-    assert.ok(portraitRequests.has('/lobby/_assets/lobby/images/dealers/astrid.jpg'));
-    assert.ok(portraitRequests.has('/lobby/_assets/lobby/images/lobby/room-loungen.png'), 'the High room card shows Loungen from the public base');
+    // The image request reaches the fixture server after the buttons render; wait for it (up to 5 s).
+    const requested = async (path, message) => {
+      for (let i = 0; i < 100 && !portraitRequests.has(path); i++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.ok(portraitRequests.has(path), message);
+    };
+    await requested('/lobby/_assets/lobby/images/dealers/marten.jpg', 'the Mårten teaser loads its portrait from the public base');
+    // The bet profile picks no picture (#641): a High room without miljöbild or background shows the design illustration.
+    await requested('/lobby/_assets/lobby/images/lobby/room-salongen.png', 'the High room card shows the design illustration from the public base');
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
       const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
       await trigger.focus(); await trigger.press('Enter');
@@ -337,11 +343,14 @@ test('lobby browser preserves choices, authenticated launch contract, account na
 
 test('shared room command transport routes only its exact HTTP path through the existing signed backend', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   const path = '/api/shared-room/room-1/command';
   assert.equal(backendPlatformPath(path), true);
   assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + path });
+  const chat = '/api/shared-room/room-1/chat'; // Room chat (PR 1) uses the same exact-path backend route.
+  assert.equal(backendPlatformPath(chat), true);
+  assert.deepEqual(platformRoute(new URL(chat, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + chat });
   const headers = platformBackendHeaders(new Headers({ cookie: 'player_session=browser', origin: config.publicOrigin,
     'x-croupier-vercel-secret': 'forged', 'x-croupier-public-origin': 'forged' }), config);
   assert.equal(headers.get('cookie'), 'player_session=browser'); assert.equal(headers.get('origin'), config.publicOrigin);

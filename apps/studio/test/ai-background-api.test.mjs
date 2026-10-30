@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import {AI_IMAGE_DEFAULT_MODEL,AI_IMAGE_DEFAULT_REASONING,AI_IMAGE_RENDERER,aiImageConfiguration,aiImageEnabled,aiImageSetup,createAiBackgroundApi,createAiImageDailyLimit} from '../lib/ai-background-api.mjs';
 import {filmedTableRequestSize,filmedTableTemplate} from '../lib/filmed-table-template.mjs';
-import {AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
+import {AI_BACKGROUND_CAMERA,AI_IMAGE_PROPOSAL_MAX_BYTES,AI_IMAGE_REFERENCE_MAX_BYTES,aiPlacementHash} from '../lib/ai-image-contract.mjs';
+import {NO_FLOOR_MESSAGE} from '../lib/ai-table-landing-check.mjs';
+import {stageGeometry,tableRect} from '../../../packages/presentation/compositor/geometry.js';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 // No real provider call anywhere: every test injects fetchImpl.
@@ -154,6 +156,8 @@ test('the mocked provider gives 1920 x 1080 proposals from gpt-6.1-sol with the 
     const [part,...images]=sent.input[0].content,text=part.text;
     assert.equal(part.type,'input_text');
     for (const phrase of ['1920x1080','x 656-1264','PHONE CROP','DEALER SAFE AREA','TABLE SAFE AREA','text, letters, digits','logos','people, faces','playing cards, chips, markers','amber, walnut',
+      'CAMERA (fixed','dealer camera at the dealer\'s eye height','HORIZON at y 486 (45 %)-540 (50 %)','FLOOR: the back wall meets the floor','about y 648 (60 %)','bird\'s-eye',
+      'LIGHT:','y 108 (10 %)-378 (35 %)','DEPTH: slight depth of field','THEME:','never move the camera','chairs, stools',
       'Lugn kvällsstudio med mjukt sidoljus',`VARIATION ${index+1} of 2`]) assert.ok(text.includes(phrase),phrase);
     // The reference photo goes along, re-encoded in memory without its metadata.
     assert.equal(images.length,1);assert.equal(images[0].type,'input_image');assert.match(images[0].image_url,/^data:image\/jpeg;base64,/);
@@ -213,14 +217,17 @@ test('table mode sends the computed landing template and draws the boxes exactly
   assert.deepEqual([proposal.width,proposal.height],[template.canvas.width,template.canvas.height]);
   const sent=calls[0].body,[brief,landing]=sent.input[0].content;
   assert.equal(sent.tools[0].action,'edit');assert.equal(sent.tools[0].size,`${size.width}x${size.height}`);
-  assert.match(brief.text,/landing template/);assert.match(brief.text,/FORBIDDEN: text, letters, digits/);assert.match(brief.text,/painted box outlines/);
+  assert.match(brief.text,/rendered 3D mock-up/);assert.match(brief.text,/FORBIDDEN: text, letters, digits/);assert.match(brief.text,/painted box outlines/);
+  assert.match(brief.text,/LOOK: Classic casino/);
   const reference=await sharp(Buffer.from(landing.image_url.split(',')[1],'base64')).metadata();
   assert.deepEqual([reference.format,reference.width,reference.height],['png',size.width,size.height]);
   const {data,info}=await sharp(Buffer.from(proposal.dataUrl.split(',')[1],'base64')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
   assert.equal(info.channels,4);
   const pixel=(x,y)=>{const at=(Math.round(y)*info.width+Math.round(x))*4;return [...data.subarray(at,at+4)];};
   assert.equal(pixel(4,4)[3],0,'outside the table is transparent');
-  assert.equal(pixel(template.canvas.width/2,template.canvas.height-2)[3],0,'below the rail is transparent');
+  // Below the rail the apron and the pedestal stay; beside the pedestal the scene shows through.
+  assert.equal(pixel(template.canvas.width/2,template.canvas.height-2)[3],255,'the pedestal reaches the frame');
+  assert.equal(pixel(4,template.canvas.height-2)[3],0,'beside the pedestal is transparent');
   for (const seat of [...template.seats,template.dealer]) {
     const inside=pixel(seat.center.x,seat.center.y),edge=pixel(seat.box.x,seat.center.y);
     assert.equal(inside[3],255);assert.ok(Math.abs(inside[1]-felt.g)<24,'felt inside the box');
@@ -259,13 +266,13 @@ test('an invalid scene template or composition is refused as ai_image_invalid_re
   const table={role:'table',dealerId:'paow',prompt:'Grön filt',preset:'casino',count:1},calls=[],handler=api({calls});
   const wide=facitComposition();wide.desktop.table.width=9;
   const skewed=facitComposition();skewed.mobile.table.x=.2;
-  for (const sceneTemplate of [{id:'Bad Id',composition:facitComposition()},{id:'',composition:facitComposition()},{id:'x'.repeat(64)},{id:'mall',composition:{mobile:{}}},
-    {id:'mall',composition:wide},{id:'mall',composition:{...facitComposition(),extra:true}},{id:'mall',composition:skewed},{id:'mall',composition:facitComposition(),label:'Mall'},'mall',[]]) {
+  for (const sceneTemplate of [{id:'Bad Id',composition:facitComposition()},{id:'',composition:facitComposition()},{id:'x'.repeat(64)},{id:'miljö',composition:{mobile:{}}},
+    {id:'miljö',composition:wide},{id:'miljö',composition:{...facitComposition(),extra:true}},{id:'miljö',composition:skewed},{id:'miljö',composition:facitComposition(),label:'Miljö'},'miljö',[]]) {
     const response=await handler.handle(post({...table,sceneTemplate}));
     assert.equal(response.status,400,JSON.stringify(sceneTemplate).slice(0,80));assert.equal((await response.json()).code,'ai_image_invalid_request');
   }
   const {dealerId:_dealer,...background}=table;
-  assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'mall'}}))).status,400);
+  assert.equal((await handler.handle(post({...background,role:'background',sceneTemplate:{id:'miljö'}}))).status,400);
   assert.equal(calls.length,0);
 });
 
@@ -346,4 +353,121 @@ test('an invalid renderer, model, reasoning, cap or API form is "invalid setting
   }
   assert.deepEqual({...aiImageSetup({OPENAI_API_KEY:KEY})},{settings:aiImageConfiguration({OPENAI_API_KEY:KEY}),problem:null});
   assert.equal(aiImageSetup({}).problem,'missing_key');
+});
+
+// Landing check: synthetic images only. A calm grey felt with fine grain passes,
+// a checkered pattern warns, and a warning never removes the proposal.
+async function syntheticPng(width,height,shade) {
+  const raw=Buffer.alloc(width*height*3);
+  for (let y=0;y<height;y++) for (let x=0;x<width;x++) {
+    const value=Math.max(0,Math.min(255,Math.round(shade(x,y)))),at=(y*width+x)*3;
+    raw[at]=value;raw[at+1]=value;raw[at+2]=value;
+  }
+  return sharp(raw,{raw:{width,height,channels:3}}).png().toBuffer();
+}
+const grain=(x,y)=>((Math.imul(y*7919+x+1,2654435761)>>>24)/255-.5)*12;
+const calm=base=>(x,y)=>base+grain(x,y);
+const checkered=(x,y)=>((Math.floor(x/8)+Math.floor(y/8))%2?190:60);
+const respondWith=bytes=>()=>Response.json({status:'completed',output:[{type:'image_generation_call',status:'completed',result:bytes.toString('base64')}]});
+const ZONES=['box-1','box-2','box-3','box-4','box-5','box-6','box-7','dealer'];
+
+test('table landing check: calm felt passes, a checkered felt warns on every zone, a dark felt under a dark stroke warns on contrast',async()=>{
+  const template=filmedTableTemplate('paow'),size=filmedTableRequestSize(template),table={role:'table',dealerId:'paow',prompt:'Grå filt',preset:'casino',count:1};
+  const ask=async(bytes,body=table)=>{
+    const response=await api({respond:respondWith(bytes)}).handle(post(body));
+    assert.equal(response.status,200,'a warning never refuses the proposal');
+    const [proposal]=(await response.json()).images;
+    assert.match(proposal.dataUrl,/^data:image\/webp;base64,/);
+    return proposal.check;
+  };
+  const quiet=await ask(await syntheticPng(size.width,size.height,calm(70)));
+  assert.equal(quiet.ok,true,JSON.stringify(quiet.worst));
+  assert.deepEqual(quiet.zones.map(zone=>zone.zone),ZONES);
+  for (const zone of quiet.zones) { assert.ok(zone.spread<8&&zone.edges<.01&&zone.contrast>=3,JSON.stringify(zone)); assert.equal(zone.ok,true); }
+  assert.ok(quiet.worst.score<=1&&ZONES.includes(quiet.worst.zone));
+  const busy=await ask(await syntheticPng(size.width,size.height,checkered));
+  assert.equal(busy.ok,false);assert.ok(['busy','edges'].includes(busy.worst.reason));assert.ok(busy.worst.score>1);
+  assert.ok(busy.zones.every(zone=>!zone.ok),'the pattern covers every landing');
+  // Light studio draws a dark stroke; on a near-black felt it disappears.
+  const dark=await ask(await syntheticPng(size.width,size.height,()=>18),{...table,preset:'light-studio'});
+  assert.equal(dark.ok,false);assert.equal(dark.worst.reason,'low_contrast');assert.ok(dark.zones.every(zone=>zone.contrast<3));
+  // Detail only between the boxes leaves the landings calm.
+  const boxes=[...template.seats,template.dealer].map(seat=>seat.box);
+  const scaleX=size.width/template.canvas.width,scaleY=size.height/template.canvas.height;
+  const inBox=(x,y)=>boxes.some(box=>x>=box.x*scaleX-4&&x<=(box.x+box.width)*scaleX+4&&y>=box.y*scaleY-4&&y<=(box.y+box.height)*scaleY+4);
+  const between=await ask(await syntheticPng(size.width,size.height,(x,y)=>inBox(x,y)?calm(70)(x,y):checkered(x,y)));
+  assert.equal(between.ok,true,JSON.stringify(between.worst));
+  // One busy box is named as the worst zone.
+  const four=template.seats.find(seat=>seat.id==='4').box;
+  const inFour=(x,y)=>x>=four.x*scaleX&&x<=(four.x+four.width)*scaleX&&y>=four.y*scaleY&&y<=(four.y+four.height)*scaleY;
+  const one=await ask(await syntheticPng(size.width,size.height,(x,y)=>inFour(x,y)?checkered(x,y):calm(70)(x,y)));
+  assert.equal(one.ok,false);assert.equal(one.worst.zone,'box-4');
+  assert.deepEqual(one.zones.filter(zone=>!zone.ok).map(zone=>zone.zone),['box-4']);
+});
+
+test('background landing check covers the area behind the dealer and the phone strip only',async()=>{
+  const ask=async bytes=>{
+    const response=await api({respond:respondWith(bytes)}).handle(post(background));
+    assert.equal(response.status,200);
+    return (await response.json()).images[0].check;
+  };
+  const quiet=await ask(await syntheticPng(1920,1088,(x,y)=>calm(40+y/20)(x,y)));
+  assert.equal(quiet.ok,true,JSON.stringify(quiet.worst));assert.deepEqual(quiet.zones.map(zone=>zone.zone),['dealer','phone']);
+  assert.ok(quiet.zones.every(zone=>zone.contrast===null),'a background has no box stroke');
+  const busy=await ask(await syntheticPng(1920,1088,checkered));
+  assert.equal(busy.ok,false);assert.ok(busy.zones.every(zone=>!zone.ok));
+  // Detail on the desktop-only sides (outside x 656-1264) is allowed.
+  const sides=await ask(await syntheticPng(1920,1088,(x,y)=>x<600||x>1320?checkered(x,y):calm(50)(x,y)));
+  assert.equal(sides.ok,true,JSON.stringify(sides.worst));
+  // A busy area above the table line behind the head warns as "dealer".
+  const head=await ask(await syntheticPng(1920,1088,(x,y)=>x>800&&x<1120&&y<380?checkered(x,y):calm(50)(x,y)));
+  assert.equal(head.ok,false);assert.equal(head.worst.zone,'dealer');
+});
+
+test('every background brief carries the same camera contract, whatever the theme',async()=>{
+  const camera=async body=>{
+    const calls=[];await api({calls}).handle(post(body));
+    return calls[0].body.input[0].content[0].text.split('\n').filter(line=>/^(MODE|FRAME|CAMERA|FLOOR|DEALER SAFE AREA|TABLE SAFE AREA|LIGHT|DEPTH|PHONE CROP|THEME|FORBIDDEN)\b/.test(line));
+  };
+  const lounge=await camera({...background,preset:'warm-lounge'});
+  assert.equal(lounge.length,11);
+  assert.deepEqual(await camera({...background,preset:'free',prompt:'Röd marsyta med kratrar, sett uppifrån som en karta'}),lounge);
+  assert.deepEqual(await camera({...background,preset:'casino',prompt:'Djungel med lianer och fukt'}),lounge);
+});
+
+test('the floor line follows the default table: below its rail ends, above its front edge',()=>{
+  const composition=defaultCompositionSettings(),template=filmedTableTemplate('paow');
+  const scene={layout:'desktop',stage:{mobile:composition.mobile.dealer,desktop:composition.desktop.dealer},tablePlacement:composition.desktop.table};
+  const geometry=stageGeometry(scene),[x,y,width]=tableRect(scene,template.canvas,geometry),k=width/template.canvas.width;
+  assert.deepEqual([Math.round(x),Math.round(x+width)],[656,1264],'the table sits in the dealer column');
+  const rail=template.felt.railOuter.map(([,railY])=>y+railY*k),floor=AI_BACKGROUND_CAMERA.floorLine*1080;
+  assert.ok(floor>=Math.min(...rail)&&floor<=Math.max(...rail),`floor ${floor} within rail ${Math.min(...rail)}-${Math.max(...rail)}`);
+  assert.ok(y+template.felt.top*k<AI_BACKGROUND_CAMERA.horizon.max*1080,'the felt starts above the horizon');
+  assert.ok(AI_BACKGROUND_CAMERA.horizon.max<AI_BACKGROUND_CAMERA.floorLine&&AI_BACKGROUND_CAMERA.lights.max<AI_BACKGROUND_CAMERA.horizon.min);
+});
+
+test('floor check: a wall over a floor passes; a flat backdrop, a soft falloff, a room from above or a one-sided floor warns no_floor',async()=>{
+  const floorOf=async shade=>{
+    const response=await api({respond:respondWith(await syntheticPng(1920,1088,shade))}).handle(post(background));
+    assert.equal(response.status,200,'a warning never refuses the proposal');
+    return (await response.json()).images[0].check.floor;
+  };
+  // The renderer's 1088 rows are cropped centred to 1080: 4 rows off the top.
+  const line=AI_BACKGROUND_CAMERA.floorLine*1080+4;
+  const standing=await floorOf((x,y)=>calm(y<line?40:85)(x,y));
+  assert.equal(standing.ok,true,JSON.stringify(standing));assert.equal(standing.code,null);
+  assert.deepEqual(standing.sides.map(side=>side.side),['left','right']);assert.ok(standing.sides.every(side=>side.difference>60));
+  // A floor only a dozen grey levels lighter than the wall still counts.
+  assert.equal((await floorOf((x,y)=>calm(y<line?50:62)(x,y))).ok,true);
+  for (const [name,shade] of [['flat',calm(50)],['falloff',(x,y)=>calm(40+y/20)(x,y)],['from above',(x,y)=>calm(y<300?40:85)(x,y)],
+    ['one side',(x,y)=>calm(x<656&&y>=line?85:40)(x,y)]]) {
+    const floor=await floorOf(shade);
+    assert.equal(floor.ok,false,name);assert.equal(floor.code,'no_floor');assert.equal(floor.message,NO_FLOOR_MESSAGE);
+  }
+  assert.equal(NO_FLOOR_MESSAGE,'Bakgrunden saknar synligt golv – bordet kommer att sväva');
+  // The floor under the table in the centre column is not measured.
+  assert.equal((await floorOf((x,y)=>calm(x>=656&&x<1264&&y>=line?85:40)(x,y))).ok,false);
+  // Table graphics carry no floor check.
+  const table=await api({respond:respondWith(await png())}).handle(post({role:'table',dealerId:'paow',prompt:'Grå filt',preset:'casino',count:1}));
+  assert.equal((await table.json()).images[0].check.floor,undefined);
 });

@@ -18,12 +18,38 @@ export const AI_IMAGE_REFERENCE_MAX_EDGE = 1536;
 export const AI_IMAGE_REFERENCE_FILE_MAX_BYTES = 8*1024*1024;
 // The scene's desktop format; phones show its centre strip.
 export const AI_BACKGROUND_SIZE = Object.freeze({width:1920,height:1080});
+// Camera contract for every AI background (Jakob 2026-10-29): the image is a
+// backdrop plate shot from the dealer camera, whatever the theme. A room seen
+// from above or as a montage works as an illustration but not behind a table
+// graphic, which then floats. The theme (preset, staff text, inspiration photo)
+// sets materials, colours and peripheral props only, never these values.
+// Shares of the image height (0 = top), measured against production's Privé
+// backdrop and the default scene template's table (compositor/geometry.js).
+export const AI_BACKGROUND_CAMERA = Object.freeze({
+  // A level camera at the dealer's eye height puts the vanishing point, and so
+  // the horizon, near the middle of the frame. The Privé backdrop's floor
+  // lines converge there; 45-50 % keeps the floor receding, not seen from above.
+  horizon:Object.freeze({min:.45,max:.5}),
+  // Where the back wall meets the floor in the outer columns. The default table
+  // graphic (desktop x 656-1264, top at y 43) ends its outer rail at y 644 at
+  // the column edges and y 724 at the front: 60-67 %. The Privé backdrop shows
+  // floor from about 55-60 % at the image edges. At 60 % the junction hides
+  // behind the rail's ends, and the floor is visible from there to the bottom
+  // edge, so the table graphic stands on it.
+  floorLine:.6,
+  // Sconces and lamps at the dealer's head and shoulder height: the Privé
+  // backdrop's wall lights span 7-28 % of the height, beside the dealer.
+  lights:Object.freeze({min:.1,max:.35}),
+});
 // Presets match the generic backgrounds. "Fri" sends only the staff text.
 export const AI_IMAGE_PRESETS = Object.freeze([
+  // Jakob 2026-10-29: bolder styles first; the earlier four stay.
+  Object.freeze({id:'dark-luxury',label:'Mörk lyx'}),
+  Object.freeze({id:'neon',label:'Aggressiv neon'}),
+  Object.freeze({id:'casino',label:'Klassiskt casino'}),
   Object.freeze({id:'dark-studio',label:'Mörk studio'}),
   Object.freeze({id:'warm-lounge',label:'Varm lounge'}),
   Object.freeze({id:'light-studio',label:'Ljus studio'}),
-  Object.freeze({id:'casino',label:'Casino'}),
   Object.freeze({id:'free',label:'Fri'}),
 ]);
 
@@ -93,10 +119,10 @@ export function aiTableLabelFit(label) {
 // land where that dealer lands, with the same dealer and table placement.
 // Any other material, also a renamed AI graphic, is not affected.
 export const AI_TABLE_MISFIT_CODE='ai_table_misfit';
-const REDRAW='Rita om bordet för den här scenmallen eller välj ett annat bord.';
+const REDRAW='Rita om bordet för den här miljön eller välj ett annat bord.';
 export const AI_TABLE_MISFIT=Object.freeze({
-  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än scenmallens. '+REDRAW,
-  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än scenmallens. '+REDRAW,
+  ai_table_other_dealer:'Bordsgrafiken är ritad för en annan dealer än miljöns. '+REDRAW,
+  ai_table_other_placement:'Bordsgrafiken är ritad för en annan placering än miljöns. '+REDRAW,
 });
 const landings=id=>{const profile=registeredFilmedProfile(id);return profile?JSON.stringify([profile.positions,profile.card]):null;};
 export function aiTableFitsTemplate(asset,lane) {
@@ -125,6 +151,6 @@ export function aiTableMisfits(lanes,assets) {
   return misfits;
 }
 export function aiTableMisfitMessage(misfit) {
-  const reason=AI_TABLE_MISFIT[misfit?.code]??AI_TABLE_MISFIT[misfit?.reason]??'Ett AI-ritat bord passar inte scenmallen. '+REDRAW;
+  const reason=AI_TABLE_MISFIT[misfit?.code]??AI_TABLE_MISFIT[misfit?.reason]??'Ett AI-ritat bord passar inte miljön. '+REDRAW;
   return (typeof misfit?.label==='string'&&misfit.label?misfit.label+': ':'')+reason;
 }

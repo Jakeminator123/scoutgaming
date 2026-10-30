@@ -19,6 +19,12 @@ const record = (extension, type, bytes) => ({ provider: 'vercel-blob',
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await pause(5); } assert.fail('runtime fixture did not settle'); }
 // The single-dealer fixture is one lane of the per-dealer runtime.
 const oneLane = ({ bank, sessions, admissionCheck, ...options }) => ({ ...options, lanes: [{ bank, sessions, admissionCheck }] });
+const idleClassification=dealerId=>({dealerId,eventId:'idle.ready',kind:'idle',role:'standard',label:'Idle',notes:'',situation:''});
+const idleProject=(dealerId,id,durationMs=1000)=>({dealers:[{id:dealerId}],
+  dealerIdlePolicies:[{dealerId,policy:{schemaVersion:1,familyId:dealerId+'/idle.ready/ready',
+    base:[{videoId:id,weight:100,durationMs}],variants:[]}}],
+  lines:[{dealerId,eventId:'idle.ready',baselineVariantId:dealerId+'.idle.ready.standard',
+    variants:[{id:dealerId+'.idle.ready.standard',triggerIds:[],videoGenerationId:id}]}]});
 
 async function setup(t, options = {}) {
   const original = Buffer.from('synthetic-original'), pcm = options.pcm ?? Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
@@ -30,15 +36,16 @@ async function setup(t, options = {}) {
     receipt: record('json', 'application/json', Buffer.from('{}')) };
   const registry = { videos: [...dealClips.map(c=>({id:c.videoId,dealer:'dragan',sha256:c.sha256,bytes:c.bytes,size:c.bytes,available:true,
     storage:'private-blob',contentType:'video/mp4',classification:{dealerId:'dragan',kind:'action'}})),{ id: videoId, dealer: 'dragan', sha256: digest(original), bytes: original.length,
-    available: true, storage: 'private-blob', contentType: 'video/mp4', classification: { dealerId: 'dragan', kind: 'idle' } }] };
+    available: true, storage: 'private-blob', contentType: 'video/mp4', classification: idleClassification('dragan') }] };
   const state = { projectRevision: 1, profileChanged: false, now: Date.now(), cancelled: 0, dispatched: 0, reads: 0, chunks: 0 };
   state.receipt={version:7,payload:JSON.stringify([{type:'deal',to:'box',box:3,shoeDraw:1},{type:'deal',to:'dealer',faceDown:false,shoeDraw:2},
     {type:'deal',to:'box',box:3,shoeDraw:3},{type:'deal',to:'dealer',faceDown:true,shoeDraw:4}])};
   const evidence = () => ({ projectRevision: state.projectRevision, mediaReferences: [{ id: videoId, sha256: digest(original) }],
     frozenContext: { schemaVersion: 3, context: { dealerId: 'dragan' }, dealer: { id: 'dragan' },
-      project:{lines:[{dealerId:'dragan',variants:dealClips.map(c=>({videoGenerationId:c.videoId}))}]},inventory:registry,
+      project:{...idleProject('dragan',videoId,state.idleDurationMs),lines:[...idleProject('dragan',videoId).lines,
+        {dealerId:'dragan',variants:dealClips.map(c=>({videoGenerationId:c.videoId}))}]},inventory:registry,
       records: [...registry.videos.filter(v=>v.id!==videoId),{ id: videoId,
-      sha256: digest(original), size: original.length, contentType: 'video/mp4', classification: { dealerId: 'dragan', kind: 'idle' } }] } });
+      sha256: digest(original), size: original.length, contentType: 'video/mp4', classification: idleClassification('dragan') }] } });
   let runtime, admitted;
   const server = createServer(async (req, res) => { if (!await runtime.handleHttp(req, res)) { res.writeHead(404); res.end(); } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -49,8 +56,8 @@ async function setup(t, options = {}) {
     onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
     onPreparationFailure:receipt=>{preparationFailures.push(receipt);return options.onPreparationFailure?.(receipt);},
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
-    readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
-    readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
+    readEvidence: async context => { state.reads++; (state.contexts??=[]).push(context); const snapshot=evidence(); await options.onEvidence?.(state,snapshot); return snapshot; }, readRegistry: async () => registry,
+    readPresentation:async()=>{state.presentationReads=(state.presentationReads??0)+1;const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readRest: async () => new Response(original, { headers: { 'content-type': 'video/mp4', 'content-length': String(original.length), 'cache-control': 'private, no-store' } }),
     bankRead: options.bankRead ?? (async () => assert.fail('runtime fixture must never download bank bytes')),
     dealerRuntime: { async prepareMoving(input) {
@@ -66,7 +73,7 @@ async function setup(t, options = {}) {
     sessions: { async admit(args) {
       trace.push('admit'); admitted = args; await options.onAdmit?.(args,state); await args.beforeCostly();
       const binding = { ...args.binding, schemaVersion: 1, sessionId, attemptId: 'attempt-1', nonce: '2'.repeat(64) };
-      return { sessionId, binding, async assertCurrent(admissionOptions){await options.assertSessionCurrent?.(state,admissionOptions);},
+      return { sessionId, binding, warm: options.warm === true, async assertCurrent(admissionOptions){await options.assertSessionCurrent?.(state,admissionOptions);},
         async submit() { trace.push('submit'); state.submitting=true;
           try {await args.beforeCostly();} finally {state.submitting=false;} },
         async ready() { trace.push('ready'); await options.onReady?.(state); }, handleUpgrade() { return false; },
@@ -80,6 +87,7 @@ async function setup(t, options = {}) {
             state.chunks++;
             await options.afterChunk?.(state,args.signal);
           }
+          state.producerDone=true;
         },
       };
     } },
@@ -101,7 +109,8 @@ async function setup(t, options = {}) {
       socket.once('unexpected-response', (_req, res) => { res.resume(); resolve({ status: res.statusCode }); });
       socket.once('error', error => resolve({ error }));
     });
-    return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)) };
+    return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)),
+      async played(){await until(()=>messages.some(m=>m.t==='done'));socket.send(JSON.stringify({t:'played',id:messages[0].plan.start.id}));} };
   };
   return { runtime, state, input, trace, failures, preparationFailures, original, pcm, registry, base, address, sourceSet, connect,
     prepare: overrides => runtime.prepare({ ...input, ...overrides }), get admitted() { return admitted; } };
@@ -173,16 +182,84 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   const client = f.connect(d); assert.equal((await client.opened).status, 101);
   await until(() => client.messages.length === 3);
   const [ready, pcmMeta, pcm] = client.messages;
-  assert.equal(ready.rest.sourceFrame, 7); assert.ok(ready.plan.timeline.every(r => r.take === 'vila' && r.frame === 0 && r.sourceSha256 === digest(f.original)));
+  assert.equal(ready.rest.sourceFrame, 7); assert.ok(ready.plan.timeline.every((r,k) => r.take === 'clip-'+videoId && r.frame === k%24 && r.sourceSha256 === digest(f.original)));
+  assert.equal(d.sequenceKind,'idle');assert.equal(d.sequenceSha256,digest(JSON.stringify(ready.sequence)));
+  assert.equal(ready.sequence.frames.length,48);assert.equal(ready.sequence.steps[0].end,48);
   assert.deepEqual(pcmMeta, { t: 'pcm', id: d.id, byteLength: f.pcm.length }); assert.deepEqual(pcm, f.pcm);
   assert.equal(ready.plan.binding.audioSha256, digest(pcm)); assert.equal(f.state.chunks, 0);
   client.send({ t: 'credit', id: ready.plan.start.id, frames: 24 }); await until(() => f.state.chunks === 2);
   assert.equal(client.messages.filter(x => x.t === 'done').length, 0);
   client.send({ t: 'credit', id: ready.plan.start.id, frames: 12 });
-  assert.equal((await client.close).code, 1000);
+  await client.played(); assert.equal((await client.close).code, 1000);
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
   assert.deepEqual(f.failures, []);
+});
+
+test('a shared-room context is accepted without presentationVersion: published idle speech, no deal reservation', async t => {
+  const f = await setup(t), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+  const d = await f.runtime.forContext(room, undefined, 's-room').prepare({ ...f.input, context: undefined, owner: 'player-' + 'f'.repeat(64) });
+  assert.equal(d.kind, 'moving-speech-stream'); assert.equal(Object.hasOwn(d, 'presentationVersion'), false);
+  assert.ok(f.state.contexts.length > 0 && f.state.contexts.every(context => context === room), 'evidence is read with the room context');
+  assert.equal(f.state.presentationReads ?? 0, 0, 'no solo deal plan is read');
+  assert.doesNotThrow(() => f.runtime.normalPresentation(f.input.playerId, 7), 'no deal reservation was taken');
+  assert.equal(f.admitted.ownerHash, digest('player-' + 'f'.repeat(64)));
+  // A context naming another dealer never reaches voice, publication or admission.
+  const other = await setup(t);
+  await assert.rejects(other.runtime.forContext({ ...room, dealerId: 'paow' }, undefined, 's-room').prepare(other.input), error => error.code === 'moving_speech_input');
+  assert.deepEqual(other.trace, []); assert.equal(other.state.reads, 0);
+});
+
+test('room answer (PR 4): with a warm admission TTS starts after submit, before worker ready; one dispatch feeds the asker and another listener alike', async t => {
+  const f = await setup(t, { warm: true }), room = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+  const service = f.runtime.forContext(room, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined });
+  assert.deepEqual(f.trace.filter(x => ['admit', 'submit', 'tts', 'ready'].includes(x)).slice(0, 4), ['admit', 'submit', 'tts', 'ready']);
+  await until(() => f.state.chunks === 3);
+  assert.equal(f.state.dispatched, 1, 'the worker streams into the relay without waiting for a listener');
+  const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  assert.notEqual(other.ticket, d.ticket);
+  for (const descriptor of [d, other]) assert.equal((await validateMovingSpeechStream(descriptor, { dealerId: 'dragan', requestId: f.input.requestId, exactText: f.input.text, now: f.state.now })).id, d.id);
+  assert.equal((await f.connect(other).opened).status, 403, 'the asker\'s session cannot redeem another listener\'s ticket');
+  const second = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  const asker = f.connect(d), listener = f.connect(second, { headers: { cookie: 'owner=two' } });
+  assert.equal((await asker.opened).status, 101); assert.equal((await listener.opened).status, 101);
+  const rest = await fetch(f.base + `/api/moving-speech/${d.id}/rest`, { headers: { cookie: 'owner=two' } });
+  assert.equal(rest.status, 200); assert.deepEqual(Buffer.from(await rest.arrayBuffer()), f.original);
+  await until(() => asker.messages.length === 3 && listener.messages.length === 3);
+  const ready=asker.messages[0];
+  assert.equal(d.sequenceKind,'idle');assert.equal(Object.hasOwn(d,'presentationVersion'),false);
+  assert.equal(d.sequenceSha256,digest(JSON.stringify(ready.sequence)));
+  assert.ok(ready.plan.timeline.every((row,k)=>row.take===ready.sequence.frames[k].take&&row.frame===ready.sequence.frames[k].frame
+    &&row.sourceSha256===ready.sequence.frames[k].sourceSha256));
+  assert.equal(ready.sequence.frames.length,48,'the final complete original cycle outlasts the 36 generated frames');
+  for (const client of [asker, listener]) client.send({ t: 'credit', id: client.messages[0].plan.start.id, frames: 36 });
+  await asker.played(); await listener.played();
+  assert.equal((await asker.close).code, 1000); assert.equal((await listener.close).code, 1000);
+  assert.deepEqual(listener.messages, asker.messages); assert.deepEqual(asker.messages.at(-1), { t: 'done', id: asker.messages[0].plan.start.id, frames: 36 });
+  assert.equal(f.state.dispatched, 1); assert.equal(f.state.cancelled, 1, 'the GPU session is released once its output is buffered');
+  // A refused admission still never starts TTS in a room.
+  const refused = await setup(t, { onAdmit: () => { throw Error('generated_speech_total_budget_exhausted'); } });
+  await assert.rejects(refused.runtime.forContext(room, undefined, 's-room', { room: true }).prepare({ ...refused.input, context: undefined }));
+  assert.equal(refused.trace.includes('tts'), false);
+});
+
+test('missing or changed frozen idle authority fails before admission or before any audio/frame dispatch',async t=>{
+  for(const change of [snapshot=>snapshot.frozenContext.project.dealerIdlePolicies=[],
+    snapshot=>snapshot.frozenContext.records[0].sha256='b'.repeat(64),
+    snapshot=>snapshot.frozenContext.project.lines[0].variants[0].videoGenerationId='22222222-2222-4222-8222-222222222222']){
+    const f=await setup(t,{onEvidence:(_state,snapshot)=>change(snapshot)});
+    await assert.rejects(f.prepare(),/moving_idle_source_mismatch/);
+    assert.equal(f.trace.includes('admit'),false);assert.equal(f.trace.includes('tts'),false);assert.equal(f.state.dispatched,0);
+  }
+  const policy=await setup(t,{onTts:state=>{state.idleDurationMs=2000;}});
+  await assert.rejects(policy.prepare(),/moving_speech_context_changed/);
+  assert.equal(policy.state.dispatched,0);assert.equal(policy.state.cancelled,1);
+  const source=await setup(t,{onEvidence:(state,snapshot)=>{if(state.chunks>0)snapshot.frozenContext.records[0].sha256='b'.repeat(64);}});
+  const d=await source.prepare(),client=source.connect(d);await client.opened;
+  await until(()=>client.messages.length===3);client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+  await client.close;
+  assert.equal(source.state.chunks,1);assert.equal(client.messages.some(m=>m.t==='done'),false);
 });
 
 test('maximum PCM prepares 600 frames; the next sample stops TTS consumption before render dispatch', async t => {
@@ -556,7 +633,7 @@ test('two dealers are two lanes: each attempt uses only its own bank, sessions, 
     const bank = { schemaVersion: 1, sourceSet, archive: artifact('bin', 'application/octet-stream', archive),
       receipt: artifact('json', 'application/json', Buffer.from('{}')) };
     const video = { id: videoId, dealer: dealerId, sha256: digest(original), bytes: original.length, available: true,
-      storage: 'private-blob', contentType: 'video/mp4', classification: { dealerId, kind: 'idle' } };
+      storage: 'private-blob', contentType: 'video/mp4', classification: idleClassification(dealerId) };
     const seen = { admitted: [], admissions: 0, cancelled: 0 };
     const sessions = { async admit(args) {
       seen.admitted.push(args);
@@ -570,7 +647,9 @@ test('two dealers are two lanes: each attempt uses only its own bank, sessions, 
   const dragan = lane('dragan', '11111111-1111-4111-8111-111111111111'), paow = lane('paow', '22222222-2222-4222-8222-222222222222');
   const lanes = [dragan, paow], byDealer = id => lanes.find(entry => entry.dealerId === id);
   const evidenceFor = bank => ({ projectRevision: 1, mediaReferences: [{ id: bank.sourceSet.rest.videoId, sha256: bank.sourceSet.clips[0].sha256 }],
-    frozenContext: { schemaVersion: 3, dealer: { id: bank.sourceSet.dealerId }, records: [] } });
+    frozenContext: { schemaVersion: 3, context:{dealerId:bank.sourceSet.dealerId},dealer: { id: bank.sourceSet.dealerId },
+      project:idleProject(bank.sourceSet.dealerId,bank.sourceSet.rest.videoId),inventory:{videos:[byDealer(bank.sourceSet.dealerId).video]},
+      records:[{...byDealer(bank.sourceSet.dealerId).video,size:bank.sourceSet.clips[0].bytes}] } });
   const evidenceBanks = [], reads = [];
   let runtime;
   const server = createServer(async (req, res) => { if (!await runtime.handleHttp(req, res)) { res.writeHead(404); res.end(); } });
@@ -582,6 +661,7 @@ test('two dealers are two lanes: each attempt uses only its own bank, sessions, 
   const options = { server, origin, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4),
     lanes: lanes.map(({ bank, sessions, admissionCheck }) => ({ bank, sessions, admissionCheck })),
     resolveOwner: async () => 'owner-one', readRegistry: async () => ({ videos: lanes.map(entry => entry.video) }),
+    publicVideo:(_frozen,id)=>({id,sha256:lanes.find(l=>l.video.id===id).video.sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readEvidence: async (_context, mediaId, bank) => { evidenceBanks.push([mediaId, bank.sourceSet.dealerId]); return evidenceFor(bank); },
     readRest: async () => new Response(null, { status: 404 }), onPreparationFailure: () => {},
     bankRead: async record => { reads.push(record.pathname); const owner = lanes.find(entry => entry.bank.archive.pathname === record.pathname);
@@ -621,4 +701,149 @@ test('two dealers are two lanes: each attempt uses only its own bank, sessions, 
   assert.equal(paow.seen.admitted[1].signal.aborted, false);
   await runtime.cancelDealer('paow');
   await assert.rejects(held, /moving_speech_cancelled/);
+});
+
+// Rättelser efter oberoende granskning (PR 4a).
+const room4 = Object.freeze({ operatorSlug: 'kasino', roomId: 'room-a', packageRevision: 2, dealerId: 'dragan' });
+const roomPrepare = (f, overrides = {}) => f.runtime.forContext(room4, undefined, 's-room', { room: true }).prepare({ ...f.input, context: undefined, ...overrides });
+
+test('room: 296 s cold wait generates no TTS; voice starts after ready as in solo, and a warm TTS failure never meets a running submit', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000000 });
+  let attest; const attestation = new Promise(resolve => attest = resolve), abort = new AbortController();
+  const f = await setup(t, { onReady: () => attestation });
+  const rejected = assert.rejects(roomPrepare(f, { signal: abort.signal }), /abort|cancel/i);
+  for (let i = 0; i < 100 && !f.trace.includes('ready'); i++) await new Promise(setImmediate);
+  assert.ok(f.trace.includes('ready'));
+  t.mock.timers.tick(296000); assert.equal(f.trace.includes('tts'), false, 'cold admission: no voice during the cold start');
+  abort.abort(); attest(); await rejected;
+  assert.equal(f.trace.includes('tts'), false); assert.ok(f.state.cancelled > 0);
+  t.mock.timers.reset();
+  // Cold but completed: TTS after ready, exactly like solo.
+  const cold = await setup(t); await roomPrepare(cold);
+  assert.deepEqual(cold.trace.filter(x => ['submit', 'ready', 'tts'].includes(x)).slice(0, 3), ['submit', 'ready', 'tts']);
+  // Warm: a TTS failure starts only after submit has finished and keeps its own code.
+  const error = Object.assign(Error('private'), { code: 'generated_speech_voice_unavailable' });
+  const warm = await setup(t, { warm: true, onTts: state => { assert.equal(state.submitting, false); throw error; } });
+  await assert.rejects(roomPrepare(warm), actual => actual === error);
+  assert.deepEqual(warm.trace.filter(x => ['submit', 'tts'].includes(x)), ['submit', 'tts']);
+  assert.equal(warm.preparationFailures[0].phase, 'voice'); assert.equal(warm.state.dispatched, 0);
+});
+
+test('room: the asker going stale or their request ending after chunk 1 does not end the answer for the table', async t => {
+  let stale = false; const asker = new AbortController();
+  const f = await setup(t, { beforeCostly: () => { if (stale) throw Error('stale_round_revision'); },
+    afterChunk: async state => { if (state.chunks === 1) { stale = true; asker.abort(); } } });
+  const service = f.runtime.forContext(room4, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined, signal: asker.signal });
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 3, 'the worker finished the answer'); assert.deepEqual(f.failures, []);
+  const other = service.issue(d, { owner: 'other-owner', playerId: 'player-two' });
+  const bob = f.connect(other, { headers: { cookie: 'owner=two' } }); assert.equal((await bob.opened).status, 101);
+  await until(() => bob.messages.length === 3); bob.send({ t: 'credit', id: bob.messages[0].plan.start.id, frames: 36 });
+  await bob.played(); assert.equal((await bob.close).code, 1000); assert.deepEqual(bob.messages.at(-1), { t: 'done', id: bob.messages[0].plan.start.id, frames: 36 });
+  assert.equal((await f.connect(d).opened).status, 403, 'the stale asker\'s own ticket is checked with the asker\'s freshness');
+});
+
+test('room: nobody listening and no ticket left stops the GPU at the next chunk', async t => {
+  const f = await setup(t, { afterChunk: async state => { if (state.chunks === 1) state.now += 16000; } });
+  await roomPrepare(f);
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 1, 'no chunk after the asker\'s ticket expired unredeemed');
+  assert.equal(f.failures[0].code, 'moving_speech_no_listeners');
+});
+
+test('room: a publication change after chunk 1 stops the answer for every listener', async t => {
+  const f = await setup(t, { afterChunk: async state => { if (state.chunks === 1) state.projectRevision = 2; } });
+  const d = await roomPrepare(f);
+  await until(() => f.state.cancelled === 1);
+  assert.equal(f.state.chunks, 1); assert.equal(f.failures[0].code, 'moving_speech_context_changed');
+  assert.equal((await f.connect(d).opened).status, 403, 'the failed buffer is gone');
+});
+
+test('room: cancelDealer, cancelOwner, cancelPlayer and close end a finished answer\'s connected listeners', async t => {
+  for (const stop of [r => r.cancelDealer('dragan'), r => r.cancelOwner('owner-one'), r => r.cancelPlayer('player-one'), r => r.close()]) {
+    const f = await setup(t), d = await roomPrepare(f);
+    await until(() => f.state.cancelled === 1 && f.state.chunks === 3);
+    const client = f.connect(d); assert.equal((await client.opened).status, 101);
+    await until(() => client.messages.length === 3);
+    await stop(f.runtime);
+    const closed = await Promise.race([client.close, pause(1000).then(() => 'still open')]);
+    assert.notEqual(closed, 'still open', String(stop)); assert.notEqual(closed.code, 1000, String(stop));
+    assert.equal(client.messages.some(m => m.t === 'done'), false);
+  }
+});
+
+test('room: issue needs the answer\'s own attempt and nonce', async t => {
+  const f = await setup(t), service = f.runtime.forContext(room4, undefined, 's-room', { room: true });
+  const d = await service.prepare({ ...f.input, context: undefined }), bob = { owner: 'other-owner', playerId: 'player-two' };
+  assert.equal(service.issue({ ...d, nonce: '3'.repeat(64) }, bob), null);
+  assert.equal(service.issue({ ...d, attemptId: 'attempt-0' }, bob), null);
+  assert.ok(service.issue(d, bob));
+});
+
+
+test('idle retains authorized cancellation and fresh voice/publication after producer done, for solo and every room listener', async t => {
+  for (const room of [false,true]) for (const change of ['drift','voice','publication','idle-policy']) {
+    const f=await setup(t,{assertSessionCurrent:state=>{if(state.producerDone)throw Error('completed producer lease');}});
+    const d=room?await roomPrepare(f):await f.prepare();
+    const client=f.connect(d);assert.equal((await client.opened).status,101);
+    await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+    assert.equal(client.socket.readyState,WebSocket.OPEN,'producer done is not playback done');
+    if(change==='drift')await f.runtime.cancelDealer('dragan');
+    else if(change==='voice')f.state.profileChanged=true;
+    else if(change==='publication')f.state.projectRevision++;
+    else f.state.idleDurationMs=2000;
+    assert.notEqual((await client.close).code,1000,room+' '+change);
+    assert.equal(f.state.cancelled,1,'producer cleanup is idempotent across playback cancel');
+    if(change!=='drift')assert.equal(f.failures[0].code,change==='voice'?'generated_speech_profile_changed':'moving_speech_context_changed');
+  }
+});
+
+test('room played acknowledgement belongs to one authenticated listener; disconnect stops only that listener', async t => {
+  const f=await setup(t),d=await roomPrepare(f);
+  const other=f.runtime.issue(d,{owner:'other-owner',playerId:'player-two'});
+  const alice=f.connect(d),bob=f.connect(other,{headers:{cookie:'owner=two'}});
+  for(const client of [alice,bob]){
+    assert.equal((await client.opened).status,101);await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+  }
+  alice.socket.terminate();await alice.close;
+  assert.equal(bob.socket.readyState,WebSocket.OPEN);
+  await bob.played();assert.equal((await bob.close).code,1000);
+  await until(()=>f.runtime.issue(d,{owner:'owner-one',playerId:'player-one'})===null);
+  assert.equal(f.state.cancelled,1);
+});
+
+test('solo idle waiting for playback ack expires without another producer read', async t => {
+  const f=await setup(t,{assertSessionCurrent:state=>{if(state.producerDone)throw Error('completed producer lease');}});
+  const client=f.connect(await f.prepare());await client.opened;await until(()=>client.messages.length===3);
+  client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+  await until(()=>client.messages.some(m=>m.t==='done'));
+  f.state.now+=53000;
+  assert.notEqual((await client.close).code,1000);
+  assert.equal(f.failures[0].code,'moving_speech_playback_timeout');assert.equal(f.state.cancelled,1);
+});
+
+
+test('idle hard watchdog closes solo and room sockets even when post-done freshness never resolves', async t => {
+  for(const room of [false,true]){
+    let release;const held=new Promise(resolve=>{release=resolve;});let blocked=false,entered=false;
+    const f=await setup(t,{onEvidence:async()=>{if(blocked){entered=true;await held;}}});
+    t.mock.timers.enable({apis:['setTimeout']});
+    const d=room?await roomPrepare(f):await f.prepare(),client=f.connect(d);
+    await client.opened;await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});
+    await until(()=>client.messages.some(m=>m.t==='done'));
+    blocked=true;t.mock.timers.tick(500);await until(()=>entered);
+    t.mock.timers.tick(70000);
+    assert.notEqual((await client.close).code,1000,'hard timer bypasses blocked freshness read');
+    await until(()=>f.state.cancelled===1);
+    assert.equal(f.admitted.signal.aborted,true);
+    if(room)assert.equal(f.runtime.issue(d,{owner:'owner-one',playerId:'player-one'}),null);
+    else assert.equal(f.failures[0].code,'moving_speech_playback_timeout');
+    release();t.mock.timers.reset();
+  }
 });

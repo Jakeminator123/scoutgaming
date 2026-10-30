@@ -95,16 +95,22 @@ test('legacy scene templates explain the baked layers and the partner editor nev
   assert.deepEqual(walk(fullTree,node=>node.type===AppearanceChoices).map(node=>node.props.kind).sort(),['background','dealer','table'],'no table colour or scene template choice');
   assert.equal(picker(fullTree,'background').props.effective,'bg-one');
 });
-test('locked layers and settings are quiet lines set by Scoutgaming, two tabs, and the review names every table',()=>{
+test('locked layers and settings are quiet lines locked by Scoutgaming, five tabs, and the review names every table',()=>{
   const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['dealer','branding'];
   initial.presentation.assets=[{id:'bg-one',role:'background',label:'Salong'},{id:'table-one',role:'table',label:'Grön filt'}];
   const options={roomId:'north-main',roomState:'pending',settings:{language:'sv',limitPreset:'prive'}};
   const locked=html(initial,options),lockedTree=stateful(initial,()=>assert.fail('render only'),options).render();
-  const quiet=walk(lockedTree,node=>node.props?.['data-quiet']!==undefined)[0];
-  assert.equal(walk(quiet,node=>node.type==='div').length,4,'two locked layers and two read-only settings');
-  assert.match(textOf(walk(quiet,node=>node.props?.['data-locked']==='background')[0]),/Salong/);assert.match(textOf(walk(quiet,node=>node.props?.['data-locked']==='table')[0]),/Grön filt/);
+  // Utseende: de två låsta lagren som lugna rader; Spelinställningar: de två publicerade inställningarna, låsta.
+  const [layersQuiet,quiet]=walk(lockedTree,node=>node.props?.['data-quiet']!==undefined);
+  assert.equal(walk(layersQuiet,node=>node.type==='div').length,2,'two locked layers');
+  assert.match(textOf(walk(layersQuiet,node=>node.props?.['data-locked']==='background')[0]),/Salong/);assert.match(textOf(walk(layersQuiet,node=>node.props?.['data-locked']==='table')[0]),/Grön filt/);
+  const game=walk(lockedTree,node=>node.props?.['data-readonly']==='spel')[0];
+  assert.ok(walk(game,node=>node===quiet).length,'the settings sit in the read-only game settings tab');
+  assert.equal(walk(quiet,node=>node.type==='div').length,2,'two read-only settings');assert.match(textOf(game),/Låst av Scoutgaming/);
+  assert.match(textOf(walk(lockedTree,node=>node.props?.['data-readonly']==='tillganglighet')[0]),/Låst av Scoutgaming[\s\S]*Pausat/);
   assert.deepEqual(walk(lockedTree,node=>node.type===AppearanceChoices).map(node=>node.props.kind),['dealer'],'only the unlocked dealer can be chosen');
-  assert.equal((locked.match(/role="tab"/g)||[]).length,2,'appearance and history are the only tabs');
+  assert.deepEqual([...locked.matchAll(/role="tab"[^>]*>([^<]+)</g)].map(match=>match[1]),['Utseende','Dealer','Spelinställningar','Tillgänglighet','Historik'],'the room tabs of Admin without Bolagets val');
+  assert.doesNotMatch(locked,/bestäms av Scoutgaming/i,'Admin’s word: Låst av Scoutgaming');
   const preset=ROOM_LIMIT_PRESETS.prive,amount=value=>new Intl.NumberFormat('sv-SE').format(value);
   assert.ok(textOf(quiet).includes(`${amount(preset.min)}–${amount(preset.max)}`),'the read-only limit preset shows its published amounts');
   assert.match(locked,/data-state="paused"/);
@@ -330,7 +336,7 @@ test('legacy published composition labels are translated in review, and the port
     const lane=initial.presentation.lanes[0];
     lane.label='Mobile Phone Lane';
     initial.presentation.lanes.push({...structuredClone(lane),id:'layer-preview',label:'Layer Preview Lane'},
-      {...structuredClone(lane),id:'company-custom',label:'Bolagets egen sammansättning'});
+      {...structuredClone(lane),id:'company-custom',label:'Bolagets egen miljö'});
     initial.lanes=initial.presentation.lanes.map(row=>row.id);
     const before=JSON.stringify(initial);
     const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);assert.equal(body.action,'review');return response(reviewed(initial,{changes:[{roomId:null,key:'lane',before:'mobile-phone',after:'layer-preview'}]}));},{language});
@@ -363,6 +369,22 @@ test('Admin room layout saves only its room override and reports busy for the en
   assert.deepEqual(body.branding.roomOverrides,{'north-main':{background:'bg-two'},'north-vip':{background:'bg-two'}});
   finish(response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}}));await saving;
   assert.equal(busy.at(-1),false);assert.equal(byAction(h.render(),'review').props.disabled,false);
+});
+
+test('central room publication leaves appearance saving scoped and never publishes from the editor',async()=>{
+  const initial=initialState({branding:{roomOverrides:{'north-vip':{background:'bg-one'}}}}),calls=[],dirty=[],busy=[];
+  const h=stateful(initial,async(_url,request)=>{
+    const body=JSON.parse(request.body);calls.push(body);
+    assert.equal(body.action,'save-draft');
+    return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});
+  },{roomId:'north-main',roomLayout:true,adminChoices:true,publication:'room',onDirtyChange:value=>dirty.push(value),onBusyChange:value=>busy.push(value)});
+  assert.equal(byAction(h.render(),'review'),undefined);
+  choice(h.render(),'Bakgrund').props.onChange('bg-two');h.render();assert.equal(dirty.at(-1),true);
+  await byAction(h.render(),'save-draft').props.onClick();h.render();
+  assert.equal(calls.length,1);assert.equal(calls[0].expectedPackageRevision,7);assert.equal(calls[0].expectedDraftRevision,0);
+  assert.deepEqual(calls[0].branding.roomOverrides,{'north-main':{background:'bg-two'},'north-vip':{background:'bg-one'}});
+  assert.equal(dirty.at(-1),false);assert.equal(busy.at(-1),false);
+  assert.equal(byAction(h.render(),'review'),undefined);assert.equal(byAction(h.render(),'publish'),undefined);
 });
 
 test('another Studio operation blocks room edits without changing its saved draft or issuing writes',async()=>{

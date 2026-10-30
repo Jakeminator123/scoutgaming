@@ -6,21 +6,28 @@ import {LayerLibrary} from '../../../../components/layer-library';
 import {LayerAssetManager,type MaterialTrashPlanView} from '../../../../components/layer-asset-manager';
 import {Play} from 'lucide-react';
 import {ActionMenu} from '../ui/hub';
-import {Button,buttonVariants,cn,plural} from '../ui/kit';
+import {Button,buttonVariants,cn,focusRing,plural} from '../ui/kit';
 import {AiBackgroundDialog} from './ai-background-dialog';
 import {ConfirmDialog,Dialog} from '../ui/dialog';
 import {layerAssetReferences} from '../../../../lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetFitsGame} from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {createStudioClient} from '../../lib/connected-studio.mjs';
+import {createStudioClient,type Room,type VideoInventory} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
-// Mounted per tab under Scenmallar och material (Bakgrunder, Bordsgrafik); `trashOnly` is the role's part of the Papperskorg tab.
+// Mounted per filter under Miljöer och material › Material (Bakgrund, Bordsgrafik); `trashOnly` is the role's part of the Arkiverat filter.
 export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,onChanged,refreshKey,visible=true,trashOnly=false}:{role:'background'|'table';base?:string;disabled:boolean;onChanged:()=>void;refreshKey:string;visible?:boolean;trashOnly?:boolean}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
+  // The video register only feeds the AI dialog's scene preview (the dealer's idle).
+  const [inventory,setInventory]=useState<VideoInventory|null>(null);
+  // Opened from a spelbord (?room=<id>, the shared context key that survives the tabs):
+  // the AI dialog can also publish there. Several rooms in the context name none.
+  const [rooms,setRooms]=useState<Room[]>([]);
   const query=useSearchParams();
   const game=query.get('game')==='roulette'?'roulette':'blackjack';
-  function select(key:'game',value:string){const next=new URLSearchParams(query.toString());next.set(key,value);next.set('tab',role==='background'?'bakgrunder':'bordsgrafik');navigate(base+'?'+next);}
+  const roomIds=query.getAll('room'),fromRoom=roomIds.length===1?rooms.find(row=>row.id===roomIds[0]&&row.state==='live'&&row.published&&row.game!=='roulette'):undefined;
+  const aiRoom=fromRoom?{id:fromRoom.id,name:fromRoom.name,operatorId:fromRoom.operatorId,compositionId:fromRoom.compositionId}:null;
+  function select(key:'game',value:string){const next=new URLSearchParams({tab:'material',filter:role==='background'?'bakgrund':'bordsgrafik'});for(const [name,item] of query)if(!['tab','filter',key].includes(name))next.append(name,item);next.set(key,value);navigate(base+'?'+next);}
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [reload,setReload]=useState(0);
   const active=useRef(new Set<string>()),busyRef=useRef(false);
@@ -28,7 +35,7 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   useEffect(()=>{if(!visible)preview.current?.pause();return()=>preview.current?.pause();},[visible]);
   useEffect(()=>{const hide=()=>{if(document.hidden)preview.current?.pause();};document.addEventListener('visibilitychange',hide);return()=>{document.removeEventListener('visibilitychange',hide);preview.current?.pause();};},[]);
   useEffect(()=>{if(busy)return;const controller=new AbortController();setLoading(true);setError('');void client.load(controller.signal).then(value=>{
-    if(!controller.signal.aborted)setProject(value.project);
+    if(!controller.signal.aborted){setProject(value.project);setInventory(value.inventory??null);setRooms(value.catalog?.administration?.rooms??[]);}
   }).catch(()=>{if(!controller.signal.aborted)setError('Biblioteket kunde inte läsas. Kontrollera inloggningen och läs om.');})
     .finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[refreshKey,busy,reload]);
   useEffect(()=>{const unload=(event:BeforeUnloadEvent)=>{if(busyRef.current){event.preventDefault();event.returnValue='';}};
@@ -46,13 +53,13 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
   }
   const planDialog=(plan:MaterialTrashPlanView)=>{const impact=plan.impact,rooms=impact.rooms.map(room=>`${room.name} · ${impact.operators.find(operator=>operator.id===room.operatorId)?.name??'okänt bolag'}`);
     return <ConfirmDialog open title={impact.archived?`Flytta ${impact.label} till papperskorgen?`:`Återställ ${impact.label}?`} busy={plan.busy} busyLabel="Sparar…"
-      description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Scenmallar och spelbord förblir oförändrade.'}
-      consequences={impact.archived?[`Kopplas loss från ${plural(impact.compositions.length,'scenmall','scenmallar')}${impact.compositions.length?': '+impact.compositions.map(row=>row.label).join(', '):''}`,
+      description={impact.archived?'Filen kopplas loss där den används. Originalfilen och publicerad historik behålls.':'Filen blir valbar igen. Miljöer och spelbord förblir oförändrade.'}
+      consequences={impact.archived?[`Kopplas loss från ${plural(impact.compositions.length,'miljö','miljöer')}${impact.compositions.length?': '+impact.compositions.map(row=>row.label).join(', '):''}`,
         rooms.length?`${plural(rooms.length,'publicerat spelbord','publicerade spelbord')} avpubliceras och flyttas till papperskorgen: ${rooms.join(', ')}`:'Inga publicerade spelbord påverkas',
         ...(impact.operators.length?[`Publiceringen ändras hos ${impact.operators.map(row=>row.name).join(', ')}`]:[])]:[]}
       confirmLabel={impact.archived?'Flytta till papperskorgen':'Återställ'} danger={impact.archived} onConfirm={plan.onConfirm} onCancel={plan.onCancel}/>;};
   return <section className="grid gap-5" aria-label={trashOnly?'Papperskorg · '+noun:role==='background'?'Bakgrunder':'Bordsgrafik'} onPlayCapture={event=>{const media=event.target as HTMLMediaElement;if(preview.current!==media)preview.current?.pause();preview.current=media;if(!visible||document.hidden)media.pause();}}>
-    {!trashOnly&&<p className="m-0 max-w-[72ch] text-sg-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en scenmall och välj per spelbord.</p>}
+    {!trashOnly&&<p className="m-0 max-w-[72ch] text-sg-muted">{role==='background'?'Bakgrunder':'Bordsgrafik'} är delat material: ladda upp här, tillåt i en miljö och välj per spelbord.</p>}
     {disabled&&<p role="status" className="m-0 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">Spara klippkartans utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert" className="m-0 flex flex-wrap items-center gap-3 rounded-lg bg-sg-warn-bg px-3.5 py-2.5 text-[13px] text-sg-warn">{error} <Button size="sm" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</Button></p>}
     {loading&&!project&&<div role="status" aria-label="Läser biblioteket…" className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">{[0,1,2,3].map(index=><div key={index} className="aspect-[4/3] animate-pulse rounded-xl border border-sg-border bg-sg-surface-2"/>)}</div>}
@@ -61,7 +68,8 @@ export function RegisteredMaterialLibrary({role,base='/admin/scenes',disabled,on
     {project&&<div className="grid gap-5">
       {!trashOnly&&<LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={registered}
         aside={<div className="grid min-w-[200px] place-content-center justify-items-center gap-1.5 rounded-xl border border-sg-border bg-sg-surface-2 px-5 py-4 text-center">
-          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
+          <AiBackgroundDialog role={role} game={game} dealers={project.dealers} templates={project.lanes} project={project} inventory={inventory} room={aiRoom}
+            saveProject={(next,signal)=>client.save(next,signal)} disabled={blocked} onBusyChange={value=>operation('ai',value)} onRegistered={registered}/>
           <span className="text-xs text-sg-faint">{role==='background'?'Förslag efter din beskrivning':'Ritas efter dealerns landningar'}</span></div>}/>}
       <div className="material-library" id={trashOnly?'material-trash-'+role:undefined}><LayerAssetManager key={role+game+(trashOnly?':trash':'')} project={project} role={role} disabled={blocked} expanded view={trashOnly?'trash':'library'}
         filterAsset={trashOnly?undefined:asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved} renderPlan={planDialog}
@@ -94,11 +102,11 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
       {state==='loading'&&<span className="absolute inset-0 grid place-items-center text-xs font-semibold text-sg-muted" role="status"><span className="absolute inset-0 animate-pulse bg-sg-surface-2"/><span className="relative">Läser förhandsvisning…</span></span>}
       {state==='error'&&<div className="absolute inset-0 grid place-content-center justify-items-center gap-2 bg-sg-surface-2 p-3 text-center"><p role="alert" className="m-0 text-[12.5px] text-sg-muted">Förhandsvisningen kunde inte läsas.</p>
         <button type="button" className={buttonVariants({size:'sm'})} onClick={()=>{setState('loading');setPlaying(false);setAttempt(value=>value+1);}}>Försök igen</button></div>}
-      {isVideo&&state==='ready'&&!playing&&<button type="button" aria-label={'Spela '+label+' med ljud'} onClick={()=>void play()} className="absolute bottom-2.5 left-2.5 inline-flex h-8 items-center gap-1.5 rounded-full border-0 bg-[rgba(15,16,18,.72)] px-3 text-xs font-semibold text-white backdrop-blur hover:bg-[rgba(15,16,18,.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime"><Play className="size-3.5" aria-hidden="true"/>Spela med ljud</button>}
+      {isVideo&&state==='ready'&&!playing&&<button type="button" aria-label={'Spela '+label+' med ljud'} onClick={()=>void play()} className={cn('absolute bottom-2.5 left-2.5 inline-flex h-8 items-center gap-1.5 rounded-full border-0 bg-[rgba(15,16,18,.72)] px-3 text-xs font-semibold text-white backdrop-blur hover:bg-[rgba(15,16,18,.85)]',focusRing)}><Play className="size-3.5" aria-hidden="true"/>Spela med ljud</button>}
     </div>
     <div className="flex items-start gap-2 p-3.5">
       <div className="min-w-0 flex-1"><h2 title={label} className="m-0 truncate text-[14px] font-semibold text-sg-text">{label}</h2>
-        <p className="m-0 text-[12.5px] text-sg-muted">{references.length?`Används i ${plural(references.length,'scenmall','scenmallar')}`:'Inte vald i någon scenmall'}</p>
+        <p className="m-0 text-[12.5px] text-sg-muted">{references.length?`Används i ${plural(references.length,'miljö','miljöer')}`:'Inte vald i någon miljö'}</p>
         {playError&&<p role="alert" className="m-0 mt-1 text-[12.5px] text-sg-danger">{playError}</p>}</div>
       <ActionMenu small name={label} actions={[
         {id:'rename',label:'Byt namn',disabled:'Namnet sätts vid uppladdning; namnbyte sparas inte ännu.',onSelect:()=>{}},
@@ -109,7 +117,7 @@ function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;refe
     </div>
     <Dialog open={panel==='uses'} title={'Var '+label+' används'} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>
       {references.length?<ul className="m-0 grid list-none gap-2 p-0">{references.map(name=><li key={name} className="rounded-lg bg-sg-surface-2 px-3 py-2 font-semibold">{name}</li>)}</ul>
-        :<p className="m-0 text-sg-muted">Filen är inte vald i någon scenmall. Publicerade spelbord kontrolleras när du flyttar den till papperskorgen.</p>}
+        :<p className="m-0 text-sg-muted">Filen är inte vald i någon miljö. Publicerade spelbord kontrolleras när du flyttar den till papperskorgen.</p>}
     </Dialog>
     <Dialog open={panel==='details'} title="Tekniska detaljer" description={label} onClose={()=>setPanel('')} footer={<Button onClick={()=>setPanel('')}>Stäng</Button>}>
       <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[13px]">

@@ -37,7 +37,7 @@ export function createSpeechSessionManager(configuration, {
   // A cold worker also prepares the selected avatar. Use the existing
   // admission window; playback and provider execution limits stay separate.
   readyTimeoutMs = SPEECH_SESSION_POLICY.admissionWindowMs, pollMs = 500, idleTimeoutMs = 60000,
-  journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1', leaseManager,
+  journal = null, journalRequired = true, leaseManager,
 } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
   const { directory, apiKey, endpointId, workerSecret, origin, reserveUsd, dailyBudgetUsd } = configuration ?? {};

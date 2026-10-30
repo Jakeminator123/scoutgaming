@@ -5,6 +5,7 @@ import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from '../../studio-registry/server/managed-media-contract.mjs';
 import {validateFrozenRouletteIdle} from './roulette-idle-contract.mjs';
 import {validateFrozenRouletteStart} from './roulette-start-contract.mjs';
+import {validateStudioFilmedProfile} from './filmed-profiles/studio-profile.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
 export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from './layer-asset-contract.mjs';
 import {LAYER_ASSET_ROLES, validateLayerAsset} from './layer-asset-contract.mjs';
@@ -52,9 +53,14 @@ function layer(value, role, authorisedDealers = dealers) {
   if (value.colors !== undefined) list(value.colors, color => typeof color === 'string' && /^#[a-f0-9]{6}$/.test(color));
   return structuredClone(value);
 }
+/** Every material a frozen lane references: its background and table choices and its miljöbild. */
+export function laneMaterialIds(lane) {
+  return [...LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed), ...(typeof lane.illustration === 'string' ? [lane.illustration] : [])];
+}
 export function validatePresentationLane(value, {dealerIds = [...dealers]} = {}) {
   const authorisedDealers = new Set(list(dealerIds, isDealerId, MAX_DEALERS));
-  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback']);
+  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback', 'illustration']);
+  if (value.illustration !== undefined && !assetId(value.illustration)) reject();
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
@@ -100,7 +106,7 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
   const expected = selected.filter(id => !BASE_DEALER_IDS.includes(id) || entries.some(row => row?.id === id));
   const checked = [], seen = new Set();
   for (const entry of entries) {
-    exact(entry, ['id', 'label', 'idle'], ['rouletteIdle','rouletteStart']);
+    exact(entry, ['id', 'label', 'idle'], ['rouletteIdle','rouletteStart','filmedProfile']);
     if (!expected.includes(entry.id) || seen.has(entry.id) || typeof entry.label !== 'string'
       || !entry.label.trim() || entry.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(entry.label)) reject();
     seen.add(entry.id);
@@ -120,7 +126,12 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
       if(!rouletteIdle)reject();
       try {rouletteStart=validateFrozenRouletteStart(entry.rouletteStart,entry.id,validateManagedStudioMedia);} catch {reject();}
     }
-    checked.push({id:entry.id, label:entry.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{})});
+    // The dealer's own landings, frozen like rouletteStart; the producer never reads the project live.
+    let filmedProfile;
+    if(Object.hasOwn(entry,'filmedProfile')) {
+      try {filmedProfile=validateStudioFilmedProfile(entry.filmedProfile,{dealerId:entry.id});} catch {reject();}
+    }
+    checked.push({id:entry.id, label:entry.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{}),...(filmedProfile?{filmedProfile}:{})});
   }
   if (seen.size !== expected.length) reject();
   return checked;
@@ -151,6 +162,11 @@ export function validatePresentationPackage(value) {
       used.add(id);
     }
   }
+  // The miljöbild travels with its lane for the lobby; it is never one of the lane's layers.
+  for (const lane of lanes) if (lane.illustration !== undefined) {
+    if (byId.get(lane.illustration)?.role !== 'illustration') reject();
+    used.add(lane.illustration);
+  }
   if (assets.some(asset => !used.has(asset.id))) reject();
   for (const lane of lanes) if (Object.hasOwn(lane, 'backgroundPlayback')) {
     validateBackgroundPlayback(lane.backgroundPlayback, { assets,
@@ -169,7 +185,7 @@ export function buildPresentationPackage(project, selectedLaneIds, library, opti
   const selected = list(selectedLaneIds, id => typeof id === 'string' && token.test(id));
   const lanes = selected.map(id => project.lanes?.find(lane => lane.id === id));
   if (lanes.some(lane => !lane || lane.dealers.some(id=>!project.dealers?.some(dealer=>dealer.id===id)))) reject();
-  const used = new Set(lanes.flatMap(lane => LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed)));
+  const used = new Set(lanes.flatMap(laneMaterialIds));
   const v2 = Object.hasOwn(options, 'registeredDealers');
   return validatePresentationPackage({ schemaVersion:Object.hasOwn(options, 'playback') ? 3 : v2 ? 2 : 1, projectRevision:project.revision, lanes,
     assets:library.filter(asset => used.has(asset.id)), ...(v2 ? {registeredDealers:options.registeredDealers} : {}), ...(Object.hasOwn(options, 'playback') ? {playback:options.playback} : {}) });

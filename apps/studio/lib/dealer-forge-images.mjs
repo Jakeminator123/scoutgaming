@@ -9,12 +9,12 @@ const fail = (message, status = 422, code = 'forge_invalid_image') => { throw Ob
 
 async function sharpModule() {
   try { return (await import('sharp')).default; }
-  catch { fail('Bildbehandling (sharp) är inte tillgänglig i denna miljö.', 503, 'forge_sharp_unavailable'); }
+  catch { fail('Bildbehandling (sharp) är inte tillgänglig här.', 503, 'forge_sharp_unavailable'); }
 }
 
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
-export async function imageInfo(bytes) {
+async function imageInfo(bytes) {
   const sharp = await sharpModule();
   let meta;
   try { meta = await sharp(bytes, { limitInputPixels: 64_000_000 }).metadata(); } catch { fail('Filen kunde inte läsas som bild.'); }

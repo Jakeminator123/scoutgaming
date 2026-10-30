@@ -21,7 +21,7 @@ import {adminMenuLinks,adminPageLabels,adminTabId} from './lib/admin-navigation'
 import {Search} from 'lucide-react';
 import {CommandPalette,openCommandPalette} from './components/ui/command';
 import {Toaster} from './components/ui/toast';
-import {Kbd,buttonVariants} from './components/ui/kit';
+import {Kbd,buttonVariants,cn,focusRing} from './components/ui/kit';
 
 // Pages that stay mounted once visited so their drafts and native forms survive menu changes.
 const keepMounted=new Set(['dealers','scenes','companies','company','room','system']);
@@ -46,11 +46,11 @@ function App() {
   const [workspace,setWorkspace]=useState<{current:ClipMapWorkspace|null;saved:StudioProject|null}>({current:null,saved:null});
   const workspaceChanged=useCallback((current:ClipMapWorkspace|null,saved:StudioProject|null)=>setWorkspace({current,saved}),[]);
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
-  // The clip map is one instance: under the dealer nav and under Scenmallar › Scenmallar.
+  // The clip map is one instance under the dealer nav. Miljöer och material has its own environment editor.
   const dealerTab=route.page==='dealer'?adminTabId('dealer',query.get('flik')):'';
   const sceneTab=route.page==='scenes'?adminTabId('scenes',query.get('tab')):'';
-  const mapRoute=route.page==='dealer'?{kind:'dealer' as const,dealerId:route.id,base:'/admin/dealers/'+encodeURIComponent(route.id)}:route.page==='scenes'?{kind:'scenes' as const,base:'/admin/scenes'}:null;
-  const mapShown=!redirected&&(route.page==='dealer'&&mapTabs.has(dealerTab)||sceneTab==='mallar');
+  const mapRoute=route.page==='dealer'?{kind:'dealer' as const,dealerId:route.id,base:'/admin/dealers/'+encodeURIComponent(route.id)}:null;
+  const mapShown=!redirected&&route.page==='dealer'&&mapTabs.has(dealerTab);
   const mapActive=mapShown&&query.get('tool')!=='import';
   const [mapVisited,setMapVisited]=useState(Boolean(mapRoute)&&!redirected);
   useEffect(()=>{if(mapRoute&&!redirected)setMapVisited(true);},[mapRoute?.kind,redirected]);
@@ -69,7 +69,7 @@ function App() {
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
       <header className="studio-portal-bar"><span>Scoutgaming Admin <span className="studio-portal-divider">/</span> {pageTitle}</span>
-        <button type="button" onClick={openCommandPalette} aria-keyshortcuts="Control+K Meta+K" className="ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-lime md:inline-flex"><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök dealers, bolag, spelbord…</span><Kbd>Ctrl K</Kbd></button>
+        <button type="button" onClick={openCommandPalette} aria-keyshortcuts="Control+K Meta+K" className={cn('ml-auto mr-3 hidden h-8 min-w-[260px] items-center gap-2 rounded-lg border border-sg-border bg-sg-surface-2 px-2.5 text-[13px] text-sg-faint transition-colors hover:border-sg-faint hover:text-sg-muted md:inline-flex',focusRing)}><Search className="size-4" aria-hidden="true"/><span className="flex-1 text-left">Sök dealers, bolag, spelbord…</span><Kbd>Ctrl K</Kbd></button>
         <nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Partnerportalen</a><a href="/lobby"><b>3</b> Lobbyn</a></nav><div className="studio-mobile-logout"><AdminLogout/></div></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={retired?retired.split('?')[0]:route.page==='dealer'?'/admin/dealers':route.page==='company'||route.page==='room'?'/admin/companies':path} onChange={event => navigate(previewHref(event.target.value))}>
@@ -78,15 +78,18 @@ function App() {
       </select></label>
       {show('home')&&<AdminHome workspace={workspace.current}/>}
       {visited.includes('dealers')&&<div hidden={!show('dealers')}><DealerDirectory active={show('dealers')} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
-      {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
-      {show('scenes')&&<ScenesPage part="head" tab={sceneTab} workspace={workspace.current}/>}
-      <div className="flex min-h-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
+      {show('dealer')&&<DealerHub part="head" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
+      {/* <main> is a viewport-high flex column: the map keeps its full height (shrink-0) so the tab's own
+          content below starts after it instead of being painted under it. */}
+      <div className="flex shrink-0 flex-col border-t border-sg-border [&[hidden]]:hidden" hidden={!mapShown}>
         {mapVisited&&lastMapRoute&&<Clips active={mapShown} dealerId={lastMapRoute.kind==='dealer'?lastMapRoute.dealerId:''} base={lastMapRoute.base} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>
           <ConnectedClipMap route={lastMapRoute} active={mapActive} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} onWorkspaceChange={workspaceChanged} refreshKey={studioRefresh}/>
         </Clips>}
       </div>
-      {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
-      {visited.includes('scenes')&&<div hidden={!show('scenes')||sceneTab==='mallar'}><ScenesPage part="tail" tab={sceneTab} visible={show('scenes')} disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
+      {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
+      {visited.includes('scenes')&&<div hidden={!show('scenes')}><ScenesPage tab={sceneTab} filter={route.page==='scenes'?query.get('filter'):null} compositionId={route.page==='scenes'?query.get('composition')??'':''} game={route.page==='scenes'?query.get('game'):null}
+        operator={route.page==='scenes'?query.get('operator'):null} table={route.page==='scenes'?query.get('table'):null}
+        visible={show('scenes')} blocked={studioDirty||importBusy} onChanged={materialChanged} refreshKey={studioRefresh+':'+studioRevision}/></div>}
       {(visited.includes('companies')||visited.includes('company')||visited.includes('room'))&&<div hidden={!(show('companies')||show('company')||show('room'))}><CompaniesPage page={route.page==='company'?'company':route.page==='room'?'room':'companies'} id={route.id} active={show('companies')||show('company')||show('room')} disabled={studioDirty||importBusy} onChanged={materialChanged}/></div>}
       {visited.includes('system')&&<div hidden={!show('system')}><SystemPage active={show('system')} tab={adminTabId('system',query.get('flik'))}/></div>}
       {show('guide')&&<AdminHelp/>}

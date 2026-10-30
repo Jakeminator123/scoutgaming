@@ -75,7 +75,7 @@ export function AdminPublicationPage({ operators, storeAvailable, directory, ini
     setResourcesRevision(value => value + 1);
   }
 
-  return <PageTemplate eyebrow="// SPELBOLAG" title="Bolag & team" intro="Välj ett bolag för att hantera team, spelrum och åtkomst.">
+  return <PageTemplate eyebrow="// SPELBOLAG" title="Bolag & team" intro="Välj ett bolag för att hantera team, spelbord och åtkomst.">
     <div className={styles.page}>
       {!storeAvailable ? <p role="status" className={styles.card}>{OFFLINE}</p> : null}
       <ControlOperatorDirectory directory={directory ?? null} selectedOperatorId={operatorId} onSelect={chooseOperator} lifecycleStatuses={lifecycleStatuses} lifecycleArchives={lifecycleArchives}

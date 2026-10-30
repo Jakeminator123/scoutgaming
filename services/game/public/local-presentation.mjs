@@ -237,6 +237,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
   const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
+  // OpenClaw's reaction to a game event is answered only for a shared table (idleConfigRead=false);
+  // a single-player table in active/shadow sends no request.
+  const behaviourUse = value => value === 'rules' ? 'rules' : !preview && !idleConfigRead && ['active','shadow'].includes(value) ? 'openclaw' : null;
   async function observeEvents(events, {command,previousVersion,signal} = {}) {
     if(signal?.aborted)return;
     // Successful collection completes the same settled round. Carry only its
@@ -245,8 +248,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       settlementContinuation={from:previousVersion,to:version()};
       if(pendingRule?.sourceType==='settle'&&pendingRule.version===previousVersion)Object.assign(pendingRule,{version:version(),collected:true});
     }
-    if (!idle || mode !== 'rules' || packageChanged || closed || document.hidden || !Array.isArray(events)
-      || !config.idlePolicy?.variants.some(item=>item.use==='rules')) return;
+    // A turn or settlement asks for an idle reaction: a saved rule in the mode Regler, OpenClaw
+    // in active/shadow (shadow is only recorded). Other modes make no request.
+    const startedMode = mode, use = behaviourUse(startedMode);
+    if (!idle || !use || packageChanged || closed || document.hidden || !Array.isArray(events)
+      || !config.idlePolicy?.variants.some(item=>item.use===use)) return;
     const event = events?.findLast(item => ['turn','settle'].includes(item.type));
     if (!event) return;
     const requestVersion=version(), key=JSON.stringify([requestVersion,event.type,event.box,event.handIndex]);
@@ -255,11 +261,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const own=++behaviourRequest;
     try {
       const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
+        body:JSON.stringify({dealerId,version:requestVersion,mode:startedMode,event:{type:event.type,
           ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
-      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!==startedMode || behaviourVersion(requestVersion,event.type)!==version()) return;
       const result=await response.json();
-      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!==startedMode || behaviourVersion(requestVersion,event.type)!==version()) return;
       retainRule(result,requestVersion,event.type);offerPendingRule();
     } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
   }
@@ -458,19 +464,24 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onProgress?.({phase:'complete'});
     } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; if (playing?.own === own) playing = null; if (soundRetry?.own === own) soundRetry = null; }
   }
+  // A rule (idleRule) or OpenClaw's reaction to the game event (idleAdvice), bound to this
+  // request's mode, version and package. Shadow advice is recorded and never played.
   function retainRule(result, requestVersion, sourceType) {
-    const rule = result.idleRule;
-    if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
+    const use = behaviourUse(mode), rule = use === 'rules' ? result.idleRule : use === 'openclaw' ? result.idleAdvice : null;
+    if (!idle || !use || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision?.requestId
       || JSON.stringify(rule.presentationContext) !== JSON.stringify(context)) return;
+    if (use === 'openclaw') receipt({ event: 'idle-advice', state: 'selected', source: 'game-event', result: rule, projectRevision: result.projectRevision, configurationSource });
+    if (typeof rule.videoId !== 'string' || mode === 'shadow') return;
     const remaining = Math.max(0, Math.min(30000, Date.parse(rule.expiresAt) - Date.now()));
     if (!Number.isFinite(remaining) || !remaining) return;
-    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:behaviourVersion(requestVersion,sourceType),sourceType,collected:sourceType==='settle'&&settlementContinuation?.from===requestVersion};
+    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:behaviourVersion(requestVersion,sourceType),sourceType,
+      mode,use,collected:sourceType==='settle'&&settlementContinuation?.from===requestVersion};
   }
   function offerPendingRule() {
     if (!pendingRule || action || speech || ready || document.hidden || pendingRule.sourceType==='settle'&&!pendingRule.collected) return;
     const rule = pendingRule; pendingRule = null;
-    if (mode === 'rules' && rule.version === version() && rule.expiresAt > performance.now())
-      idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:'rules'});
+    if (mode === rule.mode && rule.version === version() && rule.expiresAt > performance.now())
+      idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:rule.use});
   }
   function requireReload(error) {
     if (error.code !== 'studio_presentation_idle_package_changed' && !(preview && error.code?.startsWith('studio_preview_'))) return false;
@@ -690,6 +701,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, observeEvents, start: resumeIdle,
     get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
+    // The package row's frozen landings (frozen-dealer-presentation.mjs configuration), when the dealer has its own.
+    get filmedProfile() { return config.filmedProfile?structuredClone(config.filmedProfile):null; },
     // language: the plan's language (the room's), so a spoken line without the plan's speechTake finds its take.
     prepareSequence(events, { selectAhead: early = false, language } = {}) {
       if (['en', 'sv'].includes(language)) speechLanguage = language;

@@ -5,7 +5,7 @@ export const MEDIA_MIME = { mp4:'video/mp4', webm:'video/webm', mov:'video/quick
 const MIME = MEDIA_MIME;
 const PATH = /^croupier\/(videos|zones)\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/([a-f0-9]{64})\.(mp4|webm)$/;
 const UUID='[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
-const NEW_PATH=new RegExp('^croupier/media/((?:dealers/[a-z][a-z0-9-]{0,39}|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*|backgrounds/|tables/)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
+const NEW_PATH=new RegExp('^croupier/media/((?:dealers/[a-z][a-z0-9-]{0,39}|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*|backgrounds/|tables/|illustrations/)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
 const validDealerPath=path=>!path.startsWith('croupier/media/dealers/')||isDealerId(path.split('/')[3]);
 const safeSegments=path=>path.split('/').every(part=>part&&part!=='.'&&part!=='..'&&!/[\\%?#:\u0000-\u0020\u007f]/.test(part));
 export function mediaBlobPath(directory,id,sha256,extension){const path=`croupier/media/${directory}/${id}/${sha256}.${extension}`;if(!NEW_PATH.test(path)||!safeSegments(path)||!validDealerPath(path)||!MIME[extension])fail('Ogiltig logisk mediasökväg.',422);return path;}
@@ -15,8 +15,9 @@ export function privateContentTypeMatches(actual,expected){
   const [essence,...parameters]=actual.split(';').map(part=>part.trim().toLowerCase());
   return essence===expected.toLowerCase()&&(!parameters.length||(['application/json','model/gltf+json','image/svg+xml'].includes(essence)&&parameters.length===1&&/^charset\s*=\s*(?:utf-8|"utf-8")$/.test(parameters[0])));
 }
+// Private Blob is the only media store; no variable selects it.
 export function isCloudMediaConfigured(env = process.env) {
-  return env.CROUPIER_MEDIA_STORAGE === 'blob' && Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
+  return Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 /** Persist this server-owned reference, never a client-supplied URL or token. */
 export function validatePrivateMedia(record) {
