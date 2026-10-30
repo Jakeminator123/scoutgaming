@@ -218,7 +218,18 @@ En `--single-branch`-klon hämtar bara `main`; lägg till den egna branchen med 
 
 ## Preview
 
-Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com`) byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert-commit på `preview`, eller merga in `origin/main` så att `preview` åter följer produktionen), aldrig med force-push. Neon-projektet och Blob-lagret behåller sina staging-namn. Restoremålen `croupier_staging_restore` (25 oktober) och `croupier_staging_restore_o02` (O02) och produktionsgrenarna `backup-before-o03-20261028` och `o03-restore-proof` raderas av Jakob efter O03. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
+Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com`) byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert-commit på `preview`, eller merga in `origin/main` så att `preview` åter följer produktionen), aldrig med force-push. Neon-projektet heter `scoutgaming-preview` (`red-violet-36066351`); databas-, roll- och Render-värdnamn behåller sina staging-identiteter. Kvarvarande restoremål bedöms separat enligt nedan. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
+
+## Kvar att bedöma för gallring
+
+Inventeringen den 29 oktober identifierade följande kandidater. Detta är underlag för en ny läsning, inte ett besked om att de fortfarande finns eller är säkra att radera. Kontrollera aktiva anslutningar, behörigheter, ägarskap och återställningsbehov före Jakobs uttryckliga beslut; dokumentstädning ger inget mandat att ändra databasen.
+
+| Miljö | Kandidater från inventeringen |
+| --- | --- |
+| Neon produktion | QA-rollerna `croupier_game_qa`, `croupier_studio_qa_abc92154cb15`; grenarna `backup-before-008-010-20261027`, `backup-ren-start-20261028`, `backup-before-o03-20261028`, `o03-restore-proof` och deras endpoints |
+| Neon preview | Databaserna `croupier_staging_restore`, `croupier_staging_restore_o02` och Marketplace-standarden `neondb`; den aktiva appdatabasen är `croupier_staging` |
+
+Den avsiktliga rollen `kevin_migration_readonly` ingår inte i städlistan. Radera ingen gren som fortfarande är enda återställningsunderlaget.
 
 ## Daterade kvitton
 
