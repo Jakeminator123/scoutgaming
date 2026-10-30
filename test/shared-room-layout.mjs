@@ -35,7 +35,7 @@ function snapshot(extra = {}) {
     owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 })), players: [], deadline: null, actionDeadline: null,
     plan: null, round: null, serverNow: 1000,
     settings: { configVersion: 'cfg-1', language: 'sv', betMs: 20000, actionMs: 15000, limits: { min: 5, max: 2000, sideMax: 200 }, chips: [5, 10, 25, 50, 100, 500], refill: 1000 },
-    me: { id: actor, seats: [], memberGen: 0, active: false, available: 1000, pausedUntil: 0, insuranceDue: false, lastSettlement: null }, ...extra };
+    me: { id: actor, seats: [], memberGen: 0, active: false, available: 1000, currency: 'USD', pausedUntil: 0, insuranceDue: false, lastSettlement: null }, ...extra };
 }
 const seatedAt = (seats, extra = {}) => snapshot({ owners: Array.from({ length: 7 }, (_, i) => seats.includes(i) ? actor : null),
   players: [{ id: actor, seats, ready: false, leaving: false }], me: { ...snapshot().me, seats, memberGen: 1, active: true }, ...extra });
@@ -321,5 +321,77 @@ test('the 24-hour pause is named Ta paus and dispatches only after Ja, pausa in 
   pause.click(); accept.click(); assert.deepEqual(calls, [['pause']]); assert.equal(ask.hidden, true);
   pause.disabled = true; pause.dispatchEvent(new Event('click')); assert.equal(ask.hidden, true, 'a running pause asks nothing');
   assert.equal(nodes.get('banner').title, nodes.get('banner').textContent, 'the clamped status line keeps its full text');
+  view.close();
+});
+
+test('money labels use the account unit and historical winnings retain their settlement unit', () => {
+  const { document, nodes } = viewDocument(), calls = [];
+  const view = createSharedRoomView({ document }); view.bind({ selectChip: amount => calls.push(amount) });
+  const compact = text => text.replace(/\s+/g, ' ');
+  for (const currency of ['USD', 'EUR', 'SEK']) {
+    const s = seatedAt([3]); s.me.currency = currency; s.me.available = 17.5;
+    s.bets[3] = { main: 5, pp: 1, tp: 0 };
+    s.me.lastSettlement = { returned: 25.5, currency: 'EUR' };
+    view.render({ snapshot: s, can: everything, notice: '', connected: true });
+    assert.equal(compact(nodes.get('balance').textContent), `17,5 ${currency} demo`);
+    assert.equal(compact(nodes.get('limits').textContent), `5 – 2 000 ${currency} · demo`);
+    assert.equal(nodes.get('total-bet').textContent, `6 ${currency}`);
+    assert.equal(nodes.get('last-win').textContent, '25,5 EUR');
+    const chip = nodes.get('chips').children[0];
+    assert.equal(chip.getAttribute('aria-label'), `5 ${currency}`); chip.click();
+    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    assert.ok(fields.some(node => node.getAttribute('aria-label')?.endsWith(`5 ${currency}`)));
+  }
+  assert.deepEqual(calls, [5, 5, 5], 'labelling changes no chip amount');
+  const legacy = snapshot(); delete legacy.me.currency;
+  legacy.me.lastSettlement = { returned: 25.5 };
+  view.render({ snapshot: legacy, can: everything, notice: '', connected: true });
+  assert.match(nodes.get('balance').textContent, /valuta saknas/);
+  assert.equal(nodes.get('last-win').textContent, '25,5 · valuta saknas');
+  view.close();
+});
+
+test('settled own stakes keep their receipt currency after a wallet change and reset for the next round', () => {
+  const { document, nodes } = viewDocument();
+  const view = createSharedRoomView({ document });
+  const s = seatedAt([3], { phase: 'round', roundId: 'r1' });
+  s.bets[3] = { main: 20, pp: 2, tp: 3 };
+  s.me.lastSettlement = { roundId: 'r0', returned: 10, currency: 'EUR' };
+  const render = () => view.render({ snapshot: s, can: everything, notice: '', connected: true });
+  const stakes = currency => {
+    assert.equal(nodes.get('total-bet').textContent, `25 ${currency}`);
+    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    assert.deepEqual(fields.map(node => node.getAttribute('aria-label')), [
+      `Plats 4, par, 2 ${currency}`, `Plats 4, huvudinsats, 20 ${currency}`, `Plats 4, 21 plus 3, 3 ${currency}`,
+    ]);
+  };
+  render(); stakes('USD');
+  s.phase = 'settled'; s.me.lastSettlement = { roundId: 'r1', returned: 50, currency: 'USD' };
+  render(); stakes('USD');
+  s.me.currency = 'EUR'; s.me.available = 17.5;
+  render(); stakes('USD');
+  assert.equal(nodes.get('last-win').textContent, '50 USD');
+  assert.equal(nodes.get('balance').textContent, '17,5 EUR demo');
+  assert.equal(nodes.get('limits').textContent.replace(/\s+/g, ' '), '5 – 2 000 EUR · demo');
+  assert.equal(nodes.get('chips').children[0].getAttribute('aria-label'), '5 EUR');
+  assert.equal(nodes.get('chips').children[0].title, '5 EUR');
+  s.phase = 'bets'; s.roundId = null;
+  render(); stakes('EUR');
+  assert.equal(nodes.get('last-win').textContent, '50 USD');
+  view.close();
+});
+
+test('settled stakes with an old receipt without currency never borrow the current wallet currency', () => {
+  const { document, nodes } = viewDocument();
+  const view = createSharedRoomView({ document });
+  const s = seatedAt([3], { phase: 'settled', roundId: 'legacy-round' });
+  s.me.currency = 'EUR'; s.me.lastSettlement = { roundId: 'legacy-round', returned: 50 };
+  s.bets[3] = { main: 25, pp: 0, tp: 0 };
+  view.render({ snapshot: s, can: everything, notice: '', connected: true });
+  assert.equal(nodes.get('total-bet').textContent, '25 · valuta saknas');
+  assert.equal(nodes.get('last-win').textContent, '50 · valuta saknas');
+  const main = nodes.get('seats').children[3].children[0].children[1].children[1];
+  assert.equal(main.getAttribute('aria-label'), 'Plats 4, huvudinsats, 25 · valuta saknas');
+  assert.equal(nodes.get('balance').textContent.replace(/\s+/g, ' '), '1 000 EUR demo');
   view.close();
 });

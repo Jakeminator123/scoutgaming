@@ -25,7 +25,7 @@ function cloneDb(s) {
 }
 
 export function createMemoryTableStore({ hooks = {} } = {}) {
-  let db = { rooms: {}, members: {}, presence: {}, receipts: {}, ticks: {}, pauses: {}, balances: {}, walletGen: {},
+  let db = { rooms: {}, members: {}, presence: {}, receipts: {}, ticks: {}, pauses: {}, balances: {}, currencies: {}, walletGen: {},
     reservations: {}, ledger: [], audit: [], shoes: {}, outbox: [], delivered: {},
     configs: { latest: 'v1', versions: { v1: { configVersion: 'v1', ...clone(DEFAULT_CONFIG) } } } };
   const failures = new Map(); // name -> calls to let through before failing once
@@ -82,6 +82,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       },
       wallet: {
         available: async p => { player(p); return available(get(), p); },
+        currency: async p => { player(p); return get().currencies[p] ?? 'USD'; },
         gen: async p => { player(p); return get().walletGen[p] ?? 0; },
         reservation: async id => { maybeFail('wallet.reservation'); return clone(get().reservations[id]) ?? null; },
         reserve: async (p, { reservationId, roomId, kind, amount }) => {
@@ -155,6 +156,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       tick: async id => clone(db.ticks[id]) ?? null,
       walletGen: async p => db.walletGen[p] ?? 0,
       reservation: async id => clone(db.reservations[id]) ?? null,
+      funds: async p => ({ available: available(db, p), currency: db.currencies[p] ?? 'USD' }),
       available: async p => available(db, p),
       pausedUntil: async a => db.pauses[a] ?? 0,
     },
@@ -175,6 +177,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       stats,
       failOnce: (name, skip = 0) => failures.set(name, skip),
       fund: (p, amount) => { db.balances[p] = (db.balances[p] ?? 0) + amount; db.walletGen[p] = (db.walletGen[p] ?? 0) + 1; },
+      setCurrency: (p, currency) => { db.currencies[p] = currency; },
       // Another main writer that respects reservations (O01 2.5): refuses to cut into them.
       otherWriterDebit: (p, amount) => { if (amount > available(db, p)) return false; ledgerRow(db, p, 'other-writer', -amount, `other:${db.ledger.length}`); return true; },
       // A writer outside the contract (or an aggregator refusal) that leaves reservations uncovered.

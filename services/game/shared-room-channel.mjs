@@ -34,8 +34,8 @@ const snapshotShape = {
   round:{...fields('phase active holeDraw'),boxes:list(hand,7),hands:list(hand,28),dealer:list(card),legalActions:list(true,8)},
   shoe:fields('id total remaining dealt cutAfter cutReached commitment shufflePending decks burn'),
   players:list({...fields('id ready leaving online'),seats:list(true,7)},7),
-  me:{...fields('id memberGen active available pausedUntil insuranceDue'),seats:list(true,7),
-    lastSettlement:{...fields('roundId settledAt returned staked net'),hands:list(hand,28)}}
+  me:{...fields('id memberGen active available currency pausedUntil insuranceDue'),seats:list(true,7),
+    lastSettlement:{...fields('roundId settledAt returned staked net currency'),hands:list(hand,28)}}
 };
 // K04 F5c: a filmed step's server choice (shared-room-filmed-steps.mjs); never a card.
 const clipRef = fields('id sha256');
@@ -67,6 +67,8 @@ export function projectSharedRoomSnapshot(rawSnapshot,binding) {
   const s=project(rawSnapshot,snapshotShape);
   if(!s||s.contract!=='blackjack-table/1'||s.roomId!==binding.roomId||s.me?.id!==binding.actorId
     ||!integer(s.version)||!integer(s.presentationVer)||!id(s.configVersion)||!id(s.windowId))fail();
+  for(const currency of [s.me.currency,s.me.lastSettlement?.currency])
+    if(currency!==undefined&&(typeof currency!=='string'||!/^[A-Z]{3}$/.test(currency)))fail();
   if(s.unopened!==undefined&&typeof s.unopened!=='boolean')fail();
   if(s.settings!==undefined) {
     const cfg=s.settings,positive=value=>typeof value==='number'&&Number.isFinite(value)&&value>0;

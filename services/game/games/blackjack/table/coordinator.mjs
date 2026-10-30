@@ -306,11 +306,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         const staked = hands.reduce((n, h) => n + h.stake + h.pp + h.tp + (h.insured || 0), 0);
         const ledgerId = returned > 0 ? (await tx.wallet.credit(p, { amount: returned, kind: 'payout',
           key: ledgerKey({ ...origin, roomId: r.roomId, playerId: p, effect: 'payout' }) })).ledgerId : null;
-        const receipt = { roundId: r.roundId, settledAt: at, returned, staked, net: returned - staked, hands };
-        r.lastSettlement[p] = receipt;
-        // The ledger currency of this round: the player's history must not follow a later currency change.
+        // Keep the round's ledger currency in the reconnect receipt as well as history.
         const currency = typeof tx.wallet.currency === 'function' ? await tx.wallet.currency(p) : undefined;
-        await audit(tx, r.roomId, r.roundId, 'wallet.settlement', { playerId: p, ...receipt, ledgerId, ...(currency ? { currency } : {}) }, parent);
+        const receipt = { roundId: r.roundId, settledAt: at, returned, staked, net: returned - staked, hands, ...(currency ? { currency } : {}) };
+        r.lastSettlement[p] = receipt;
+        await audit(tx, r.roomId, r.roundId, 'wallet.settlement', { playerId: p, ...receipt, ledgerId }, parent);
         receipts.push({ playerId: p, returned, staked, ledgerId });
         if (ledgerId) ids.push(ledgerId);
       }
@@ -761,7 +761,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       return { contract: TABLE_CONTRACT, roomId, version: 0, configVersion: settings.configVersion, windowId: 'unopened',
         phase: 'bets', roundId: null, turnSeq: 0, owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: emptyBets(),
         deadline: null, actionDeadline: null, plan: null, round: null, shoe: null, presentationVer: 0, players: [], serverNow: now(),
-        me: { id: actorId, seats: [], memberGen: 0, active: false, available: await store.read.available(actorId),
+        me: { id: actorId, seats: [], memberGen: 0, active: false, ...await store.read.funds(actorId),
           pausedUntil: await store.read.pausedUntil(actorId), insuranceDue: false, lastSettlement: null }, unopened: true, settings };
     }
     const view = publicView(r.game), members = await store.read.members(roomId), t = now();
@@ -771,7 +771,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       online: t - ((await store.read.presence(roomId, m.actorId)) ?? -Infinity) < onlineMs });
     const m = actorId && members.find(x => x.actorId === actorId);
     const me = actorId ? { id: actorId, seats: owned(r, actorId), memberGen: m?.memberGen ?? 0, active: Boolean(m?.active),
-      available: await store.read.available(actorId), pausedUntil: await store.read.pausedUntil(actorId),
+      ...await store.read.funds(actorId), pausedUntil: await store.read.pausedUntil(actorId),
       insuranceDue: r.roundPhase === 'insurance' && handsOf(r, actorId).length > 0 && !Object.hasOwn(r.insurance, actorId),
       lastSettlement: r.lastSettlement[actorId] ?? null } : null;
     const result = { contract: TABLE_CONTRACT, roomId, version: r.version, configVersion: r.configVersion, windowId: r.windowId,

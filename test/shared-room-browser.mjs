@@ -32,7 +32,7 @@ function initial() {
     plan: null, round: null, shoe: null, unopened: true, serverNow: Date.now(),
     settings: { configVersion: 'browser-config', language: 'sv', betMs: 20000, actionMs: 15000,
       limits: { min: 1, max: 2000, sideMax: 100 }, chips: [1, 5, 25], refill: 1000 },
-    me: { id: actorId, seats: [], memberGen: 0, active: false, available: 1000, pausedUntil: 0, insuranceDue: false, lastSettlement: null } };
+    me: { id: actorId, seats: [], memberGen: 0, active: false, available: 1000, currency: 'USD', pausedUntil: 0, insuranceDue: false, lastSettlement: null } };
 }
 const browserFixture = `
   // Import without the automatic mount so only decoding/media ports can be
@@ -212,7 +212,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     await page.goto(origin); await page.waitForFunction(() => window.fixture?.ready && window.fixture.app.controller.state.snapshot?.version === 0);
     assert.deepEqual(bindingReads,[1,2].map(()=>({configVersion:snapshot.configVersion,windowId:snapshot.windowId,cookie})),
       'the actual browser verifies the same active binding before and after its media port loads');
-    assert.equal(await page.locator('#balance').textContent(), '1 000 demo');
+    assert.equal(await page.locator('#balance').textContent(), '1 000 USD demo');
     assert.ok(imported.has('/packages/presentation/contracts/shared-room-replay.mjs'), 'actual built canonical replay import loaded');
     assert.equal(imported.has('/app.mjs'), false, 'legacy writer is never imported by shared mount');
     const picker = page.getByLabel('Välj eller lämna plats', { exact: true });
@@ -260,10 +260,10 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
       assert.deepEqual(visible, [0, 1, 2, 3, 4, 5, 6]);
       for (const seat of [0, 6]) assert.equal(await page.locator(`.seat[data-seat="${seat}"] .spot`).isVisible(), true);
     }
-    const wager = page.getByRole('button', { name: 'Plats 1, huvudinsats, 0', exact: true });
+    const wager = page.getByRole('button', { name: 'Plats 1, huvudinsats, 0 USD', exact: true });
     let received = nextRequest(); await wager.focus(); await wager.press('Enter'); await received;
     await page.locator('#shared-room-retry').waitFor({ state: 'visible' });
-    assert.equal(await wager.isDisabled(), true); assert.equal(await page.locator('#balance').textContent(), '1 000 demo');
+    assert.equal(await wager.isDisabled(), true); assert.equal(await page.locator('#balance').textContent(), '1 000 USD demo');
     assert.equal(httpBodies.length, 3); assert.equal(effects, 1);
     const uncertainBody = httpBodies[2].bytes;
     received = nextRequest(); await page.locator('#shared-room-retry').focus(); await page.locator('#shared-room-retry').press('Enter'); await received;
@@ -271,7 +271,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     assert.equal(httpBodies[3].bytes, uncertainBody); assert.equal(effects, 1, 'explicit retry replays exactly one fixture effect');
     assert.ok(httpBodies.every(call => call.cookie === cookie && call.origin === origin && call.url === `${origin}/api/shared-room/${roomId}/command`));
     broadcast(); await page.waitForFunction(() => window.fixture.app.controller.state.waiting === null && window.fixture.app.controller.state.snapshot.me.available === 999);
-    assert.equal(await page.locator('#balance').textContent(), '999 demo');
+    assert.equal(await page.locator('#balance').textContent(), '999 USD demo');
     snapshot.version++; snapshot.presentationVer = 1; snapshot.phase = 'round'; snapshot.roundId = 'round-a';
     snapshot.round = { id: 'round-a', phase: 'decisions', active: 0, hands: [{ box: 0, cards: [{ r: 'A', s: 'S', shoeDraw: 1 }] }], dealer: [], legalActions: ['stand'] };
     presentation = { roomId, ver: 1, talkId: 'talk-a', auditSeq: 1, status: 'ready', kind: 'plan', configVersion: snapshot.configVersion,
