@@ -73,6 +73,14 @@ Studio läser inte längre `CROUPIER_STREAM_LANE` (Admins `connectedLane` är al
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
+### Sparade röst-ID:n i Vercel
+
+Jakobs beslut 2026-10-30: projektet `scoutgaming` lagrar `ELEVENLABS_PAOW_VOICE_ID`, `ELEVENLABS_DRAGAN_VOICE_ID` och `ELEVENLABS_JAKOB_VOICE_ID` som Config i **Production, Preview och Development**, utan branchfilter. Det gäller de tre miljöerna i detta projekt, inte det separata projektet `scoutgaming-preview`.
+
+Posterna är valfria referensvärden utan runtime-läsare; de byter ingen dealers sparade talprofil och aktiverar ingen generering. Paow och Dragan finns redan i `packages/presentation/contracts/dealer-voice-catalog.json`. API-nyckeln måste separat ha åtkomst till valt röst-ID. Ingen ElevenLabs-nyckel kopieras till Vercel.
+
+Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Jakob men saknar Paows röst (`voice_not_found`). Kontoprofilen avvisar samma nyckel med `missing_permissions`; kontoägaren är därför inte verifierad. Äldre uppgift om Kevins konto får inte användas som bevis för dagens nyckel.
+
 ## Fasta värden
 
 <a id="fasta-värden"></a>
