@@ -78,13 +78,13 @@ async function publicationPoolChecks(pool) {
   const scope={environment:'roulette-pool-qa',workspaceId:randomUUID()};
   const {presentation}=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
   const room={schemaVersion:2,id:'roulette-one',name:'Pool QA',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live',game:'roulette'};
-  const administration={rooms:[room],gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+  const administration={gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
   const repository=createStudioRepository({pool,scope});
   await repository.initializeDocument('administration',{value:administration,actor:'qa'});
   const operators=await createOperatorStore({sql:pool,scope});
   await operators.createOperator({operatorId:'north',slug:'north',name:'North',actor:'qa'});
-  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:null,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)});
+  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:null,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],rooms:[room],branding:withPackagePresentation({},presentation)});
   const ids=Array.from({length:8},()=>randomUUID());
   for(const id of ids) await pool.query('INSERT INTO croupier_game.players(id,name,currency,balance,created_at) VALUES($1,$2,$3,$4,$5)',[id,'Pool QA','USD',100,new Date().toISOString()]);
   let active=0,peak=0,acquired=0,barrier=null,unblock;
@@ -108,12 +108,8 @@ async function publicationPoolChecks(pool) {
   assert.equal((await together('state')).length,8);assert.equal((await together('spin')).length,8);
   assert.equal(peak,8);assert.equal(active,0);
   const before=await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]]);
-  const saved=await repository.readDocument('administration');administration.rooms[0].state='preview';
-  await repository.saveDocument('administration',{value:administration,actor:'qa',expectedRevision:saved.revision});
-  // With Studio 023 the package's own rooms freeze the state, so the pause is also published as
-  // pkg+1 with the document's rooms (the dual write L3 PR 3 gives A:room-state). Without 023 the
-  // package has no rooms and the document alone revokes, as before.
-  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)});
+  // Current package withdrawal must revoke even a previously resolved wallet context.
+  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],rooms:[{...room,state:'preview'}],branding:withPackagePresentation({},presentation)});
   await assert.rejects(run({id:ids[0],op:'spin',requestId:randomUUID(),version:1,currency:'USD',bets:[{id:'red',amount:1}]},context),/roulette_room_not_found/);
   assert.deepEqual((await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]])).rows,before.rows);
   assert.equal(active,0);

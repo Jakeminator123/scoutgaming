@@ -24,7 +24,7 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
   const actor = { user: 'j08-admin', role: 'admin' }, roomId = 'room-j08', operatorId = 'j08-operator';
   const cloud = cloudPresentationFixture({ lanes: [defaultPresentationLane('linnea')] });
   const room = { schemaVersion: 2, id: roomId, name: 'Isolated J08', operatorId, presentationLaneId: 'mobile-phone', gameLaneId: 'room-lane', state: 'live' };
-  const administration = { rooms: [room], gameLane: 'room-lane', gameLanes: [{ schemaVersion: 1, id: 'room-lane', label: 'Room', renderer: 'portrait-video', dealer: 'linnea', mediaCollection: 'linnea-presentation' }] };
+  const administration = { gameLane: 'room-lane', gameLanes: [{ schemaVersion: 1, id: 'room-lane', label: 'Room', renderer: 'portrait-video', dealer: 'linnea', mediaCollection: 'linnea-presentation' }] };
   let secondPool = createPool(), repository, otherRepository, api, otherApi, store, table, time = 100000, command = 0;
   const checks = [], check = async (name, work) => { await work(); checks.push(name); console.log(`ok - ${name}`); };
   // Synthetic timings and exact fixture metadata are explicit injection here only.
@@ -57,7 +57,7 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
     const current = await operators.getCurrentPackage(operatorId);
     assert.ok(current, 'fixture must already have a published package');
     const input = { actor: actor.user, operatorId, expectedRevision: current.revision,
-      lanes: current.lanes, games: current.games, tables: current.tables, branding: structuredClone(current.branding) };
+      lanes: current.lanes, games: current.games, tables: current.tables, rooms: structuredClone(current.rooms), branding: structuredClone(current.branding) };
     return work({ operators, input, current, client });
   }));
   const appearanceInput = (input, color) => ({ ...input, branding: { ...input.branding,
@@ -70,8 +70,8 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
   await pool.query('INSERT INTO croupier_studio.runtime_media_catalogs(environment_id,workspace_id,revision,value) VALUES($1,$2,$3,$4::jsonb)',
     [...params, runtimeCatalogRevision(catalog), runtimeCatalogJson(catalog)]);
   await pool.query('INSERT INTO croupier_studio.operators(environment_id,workspace_id,operator_id,slug,name,status,created_at_ms) VALUES($1,$2,$3,$4,$5,$6,$7)', [...params, operatorId, 'j08-operator', 'Isolated operator', 'active', 1]);
-  await pool.query('INSERT INTO croupier_studio.operator_packages(environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms) VALUES($1,$2,$3,1,$4,$5,$6,$7,1)',
-    [...params, operatorId, '["mobile-phone"]', '["blackjack"]', JSON.stringify([roomId]), canonicalStudioJson(withPackagePresentation({}, cloud.presentation))]);
+  await pool.query('INSERT INTO croupier_studio.operator_packages(environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms,rooms) VALUES($1,$2,$3,1,$4,$5,$6,$7,1,$8)',
+    [...params, operatorId, '["mobile-phone"]', '["blackjack"]', JSON.stringify([roomId]), canonicalStudioJson(withPackagePresentation({}, cloud.presentation)), canonicalStudioJson([room])]);
   // A real PostgreSQL trigger rejects the final audit write, after every earlier mutation.
   await pool.query(`CREATE FUNCTION croupier_studio.j08_fixture_fail_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
     IF NEW.actor='j08-sql-fault' THEN RAISE EXCEPTION 'isolated J08 injected SQL audit failure'; END IF; RETURN NEW; END $$;

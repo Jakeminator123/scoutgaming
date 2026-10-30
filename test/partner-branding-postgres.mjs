@@ -20,6 +20,7 @@ import { defaultPresentationLane } from '../packages/presentation/contracts/stud
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { withPackagePresentation, readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { resolvePackageRoom } from '../packages/presentation/server/package-rooms.mjs';
 import { PRESENTATION_CAPABILITY_VERSION_HEADER, presentationCapabilitiesForVersion } from '../packages/presentation/capability-contract.mjs';
 
 const origin = 'https://n2-branding-qa.example.invalid';
@@ -76,8 +77,9 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
   for (const operatorId of ['draft-north', 'draft-south']) {
     await store.createOperator({ actor: 'fixture', operatorId, slug: operatorId, name: operatorId });
     for (const role of STANDARD_OPERATOR_ROLES) await store.upsertRole({ actor: 'fixture', operatorId, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
-    await store.publishPackage({ actor: 'fixture', operatorId, lanes: fixture.lanes.map(row => row.id), games: ['blackjack'],
-      tables: operatorId === 'draft-north' ? ['draft-room-first', 'draft-room-vip'] : ['draft-room-foreign'],
+    const tables = operatorId === 'draft-north' ? ['draft-room-first', 'draft-room-vip'] : ['draft-room-foreign'];
+    await store.publishPackage({ actor: 'fixture', operatorId, lanes: fixture.lanes.map(row => row.id), games: ['blackjack'], tables,
+      rooms: fixture.administration.rooms.filter(room => room.operatorId === operatorId && tables.includes(room.id)),
       branding: withPackagePresentation({ lane: fixture.lanes[0].id, dealer: 'astrid', color: '#112233' }, fixture.presentation) });
   }
   for (const [userId, roleId] of [['242', 'partner-admin'], ['243', 'partner-editor'], ['244', 'partner-viewer']]) {
@@ -307,7 +309,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     } finally { await operatorPool.query('ALTER TABLE croupier_studio.operator_branding_drafts DROP CONSTRAINT n2_branding_refuse_save'); }
   });
 
-  await check('real repeatable-read context preserves branding history but never restores replaced N1 media', async () => {
+  await check('real repeatable-read context applies current package withdrawal but never restores replaced N1 media', async () => {
     const administration = { ...structuredClone(fixture.administration), tiers: { classic: 'vera', high: 'astrid', vip: 'amira' },
       pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
     await operatorPool.query('INSERT INTO croupier_studio.documents(environment_id,workspace_id,kind,revision,value) VALUES($1,$2,$3,$4,$5)',
@@ -315,11 +317,15 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const reader = createFrozenDealerContextReader({ pool: operatorPool, scope });
     const current = await store.getCurrentPackage('draft-north'), historical = current.revision - 1;
     assert.equal((await reader('draft-north', historical)).package.revision, historical);
-    administration.rooms[0].state = 'preview';
-    await operatorPool.query('UPDATE croupier_studio.documents SET revision=$3,value=$4 WHERE environment_id=$1 AND workspace_id=$2 AND kind=\'administration\'',
-      [scope.environment, scope.workspaceId, 'qa-frozen-context-2', JSON.stringify(administration)]);
-    assert.equal((await reader('draft-north', historical)).administration.rooms[0].state, 'preview', 'current room withdrawal is never replaced by historical administration');
-    const changed = await store.publishPackage({ actor: 'fixture-n1', operatorId: 'draft-north', expectedRevision: current.revision,
+    const paused = await store.publishPackage({ actor: 'fixture-n1', operatorId: 'draft-north', expectedRevision: current.revision,
+      lanes: current.lanes, games: current.games, tables: current.tables, branding: current.branding,
+      rooms: current.rooms.map(room => room.id === 'draft-room-first' ? { ...room, state: 'preview' } : room) });
+    const withdrawn = await reader('draft-north', historical);
+    assert.equal(withdrawn.package.revision, historical, 'unchanged historical media remains readable');
+    assert.equal(resolvePackageRoom({ ...withdrawn, operatorId: 'draft-north', roomId: 'draft-room-first' }).state, 'preview',
+      'current package withdrawal is never replaced by historical room state');
+    assert.equal((await store.getPackage('draft-north', historical)).rooms.find(room => room.id === 'draft-room-first').state, 'live');
+    const changed = await store.publishPackage({ actor: 'fixture-n1', operatorId: 'draft-north', expectedRevision: paused.revision,
       lanes: current.lanes, games: current.games, tables: current.tables,
       branding: withPackagePresentation(current.branding, { ...fixture.presentation, projectRevision: 'replacement-N1-media' }) });
     const deniedHistorical = await reader('draft-north', historical);
@@ -346,10 +352,11 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const role = STANDARD_OPERATOR_ROLES.find(row => row.id === 'partner-admin');
     await store.upsertRole({ actor: 'fixture', operatorId, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable });
     await store.upsertMembership({ actor: 'fixture', operatorId, userId: '242', roleId: role.id, status: 'active' });
-    await store.publishPackage({ actor: 'fixture', operatorId, lanes: [lane.id], games: ['blackjack'], tables, branding: initial });
+    const rooms = tables.map(id => ({ schemaVersion: 2, id, name: id, operatorId,
+      presentationLaneId: lane.id, gameLaneId: 'portrait', state: 'live' }));
+    await store.publishPackage({ actor: 'fixture', operatorId, lanes: [lane.id], games: ['blackjack'], tables, rooms, branding: initial });
     const configuration = () => ({ ...config, readAdministration: async () => ({ revision: 'qa-large-rooms-1', value: {
-      ...fixture.administration, rooms: tables.map(id => ({ schemaVersion: 2, id, name: id, operatorId,
-        presentationLaneId: lane.id, gameLaneId: 'portrait', state: 'live' })),
+      ...fixture.administration, rooms: structuredClone(rooms),
     } }) });
     const command = async (body, status = 200) => {
       const response = await call(`branding?operator=${operatorId}`, { cookie: admin, ...(body ? { body } : {}) }, configuration());
@@ -409,7 +416,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
   // Plan L3 PR 3: whether the company has a draft is read after the operator lock, in its own statement. A
   // company's first draft, committed while a package publication waits for that lock, is carried over too.
   await check('a first draft committed while a publication waits for the operator lock is carried over', async () => {
-    const operatorId = 'draft-east', input = { actor: 'fixture', operatorId, lanes: [], games: ['blackjack'], tables: [], branding: { name: operatorId } };
+    const operatorId = 'draft-east', input = { actor: 'fixture', operatorId, lanes: [], games: ['blackjack'], tables: [], rooms: [], branding: { name: operatorId } };
     await store.createOperator({ actor: 'fixture', operatorId, slug: operatorId, name: operatorId });
     const first = await store.publishPackage(input), holder = await operatorPool.connect();
     let pending, saved;
