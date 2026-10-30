@@ -20,7 +20,7 @@ import {validatePrivateMedia} from '../../../packages/studio-registry/server/pri
 const origin='https://studio.example.invalid',scope={environment:'scene-export-test',workspaceId:'isolated'};
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid','studio.example.invalid']};
 const url=origin+'/studio/api/layer-assets/scene-export',videoId='00000000-0000-4000-8000-0000000000d1';
-const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'vercel_blob_rw_fixture_not_real'};
+const env={BLOB_READ_WRITE_TOKEN:'vercel_blob_rw_fixture_not_real'};
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const solid=(width,height,color)=>sharp({create:{width,height,channels:4,background:color}}).png().toBuffer();
 function material(n,role,bytes,width,height){

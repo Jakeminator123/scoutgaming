@@ -24,8 +24,8 @@ Hela tabellen står i [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.m
 
 - `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin` (`NODE_ENV=production` sätts av imagen; anslutnings-ID:t `lissabon-stream-lane` och databasvägen PostgreSQL är fasta i `ops/cloud/config.mjs`)
 - `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
-- `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`
-- `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
+- `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` (Neon som register är fast i koden)
+- `BLOB_READ_WRITE_TOKEN` (privat Blob är fast i koden)
 - Ingress från Vercel: `CROUPIER_VERCEL_TRANSPORT_ORIGIN=https://croupier-v3.onrender.com`, `CROUPIER_PUBLIC_ORIGIN` och `PUBLIC_URL` (båda `https://www.scoutgaming.tech`), `CROUPIER_VERCEL_INGRESS_SECRET`
 
 Utan `PUBLIC_URL` härleds originen från `RENDER_EXTERNAL_URL` och starten stoppar med `Invalid or missing CROUPIER_PUBLIC_ORIGIN`. `BO_URL`, `LAB_PUBLIC_URL` och `CROUPIER_GAME_ORIGIN` härleds och sätts inte. `CROUPIER_SHARED_TABLE_ENABLED=1` är satt i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg`, [regeln](../../docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling)); `CROUPIER_CLOUD_LAB_CHILD` är borttagen och `1` stoppar starten.

@@ -16,8 +16,8 @@ const manifestFor = dealerId => ({ provider:'vercel-blob',sha256:hash('fixture m
   pathname:`croupier/media/dealers/${dealerId}/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest '+dealerId)}.json` });
 const privateManifest = manifestFor('dragan'), paowManifest = manifestFor('paow');
 const base = () => ({NODE_ENV:'production',PORT:'10000',  CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
-  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob',
+  CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+  BLOB_READ_WRITE_TOKEN:'fixture-private-blob',
   PUBLIC_URL:'https://game.example.test',BO_URL:'https://bo.example.test',LAB_PUBLIC_URL:'https://lab.example.test',RENDER_EXTERNAL_URL:'https://fixture-game.onrender.com',
   CROUPIER_GAME_ORIGIN:'https://game.example.test',BETTALOTTO_PARTNER_BASE_URL:'https://game.example.test',
   OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test',OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-product-speech',
@@ -45,6 +45,22 @@ test('database path and stream lane are fixed in code; panel values are ignored,
     assert.equal(children(env).web.env.CROUPIER_STREAM_LANE,'lissabon-stream-lane');
     assert.equal(children(env).web.env.CROUPIER_DATABASE,undefined);
   }
+});
+
+// Miljövariabler 2: the fixed names come from the registry (no source names them,
+// docs/ENVIRONMENT-VARIABLES.md#fasta-värden). Stale or contrary panel values change
+// nothing and never reach the game child, until Jakob removes them from the panels.
+test('fixed Neon, Blob and Studio flags ignore stale panel values and are never forwarded',async()=>{
+  const {hardcodedNames}=JSON.parse(await readFile(new URL('../docs/environment-variables.json',import.meta.url),'utf8'));
+  assert.ok(hardcodedNames.names.length>0);
+  const expected=children(base());
+  for(const value of ['0','','disk','/other','1','blob','/studio']){
+    const env={...base(),...Object.fromEntries(hardcodedNames.names.map(name=>[name,value]))};
+    assert.deepEqual(children(env),expected,value);
+    for(const name of hardcodedNames.names)assert.equal(Object.hasOwn(children(env).web.env,name),false,name);
+  }
+  // Blob stays the only store: without its token the product start stops.
+  assert.throws(()=>validateCloudConfig({...base(),BLOB_READ_WRITE_TOKEN:''}),/BLOB_READ_WRITE_TOKEN/);
 });
 
 test('moving configuration is explicit and passes its private values to Web only; Astrid stays unchanged',()=>{
@@ -92,8 +108,7 @@ test('unset and disabled moving flags forward no staged credentials and preserve
 
 test('moving activation requires registered profiles, Neon and private Blob without enabling them implicitly',()=>{
   const env={...base(),...moving()};
-  for(const change of [{CROUPIER_DEALER_SPEECH_PROFILES:'0'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},
+  for(const change of [{CROUPIER_DEALER_SPEECH_PROFILES:'0'},{BLOB_READ_WRITE_TOKEN:''},
     {CROUPIER_GENERATED_SPEECH_STREAMING:'0'},
     {CROUPIER_GAME_DATABASE_URL:fixtureConnection.href.replace('game.neon.tech','other.example.test')}])
     assert.throws(()=>validateCloudConfig({...env,...change}));
@@ -242,4 +257,21 @@ test('today\'s production shape still starts: moving off, retired single-bank na
   await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1'}),/Invalid or missing CROUPIER_MOVING_SPEECH_BANK_RECORDS\./);
   await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
     /CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
+});
+
+test('streamed still-image speech is optional as a group: none means off, one of three still fails',()=>{
+  const still=['CARTESIA_API_KEY','RUNPOD_API_KEY','CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
+  const without=Object.fromEntries(Object.entries({...base(),...moving()}).filter(([key])=>!still.includes(key)));
+  const config=validateCloudConfig(without);
+  assert.equal(config.speechProvider,null); assert.equal(config.streaming,true); assert.ok(config.movingSpeech);
+  const web=childSpecifications(config,without).web.env;
+  for(const key of still)assert.equal(web[key],undefined);
+  assert.equal(web.CROUPIER_MOVING_SPEECH_ENABLED,'1');
+  assert.deepEqual(validateCloudConfig(base()).speechProvider,{cartesiaKey:'fixture-cartesia',runpodKey:'fixture-legacy-runpod',runpodEndpointId:'legacy-endpoint'});
+  for(const key of still){
+    assert.throws(()=>validateCloudConfig({...without,[key]:base()[key]}),/CARTESIA_API_KEY\/RUNPOD_API_KEY\/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/,key);
+  }
+  // Non-streamed generated speech has no moving path and still needs the provider.
+  const fullfile={...without,CROUPIER_GENERATED_SPEECH_STREAMING:'0',CROUPIER_DEALER_SPEECH_PROFILES:'0',CROUPIER_MOVING_SPEECH_ENABLED:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'1'};
+  assert.throws(()=>validateCloudConfig(fullfile),/CARTESIA_API_KEY\/RUNPOD_API_KEY\/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/);
 });

@@ -3,24 +3,23 @@ import assert from 'node:assert/strict';
 import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
 import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination, requestedGame, gameStartPath, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath} from '../packages/navigation/game-entry.mjs';
 import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
-const env = {CROUPIER_STUDIO_NEON_POLICY:'1'},origin = 'https://game.example.invalid';
+import {platformConfiguration, platformRoute} from '../packages/navigation/server/platform-routing.mjs';
+const origin = 'https://game.example.invalid';
 test('canonical game address is /game and aliases preserve only unambiguous public selectors',() => {
-  assert.equal(publicGamePath({}),'/');assert.equal(publicGamePath({CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/game');
-  assert.equal(publicGamePath({...env,CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/game');assert.equal(publicGamePath(env),'/game');
-  assert.throws(() => publicGamePath({CROUPIER_PUBLIC_GAME_PATH:'/blackjack'}));
+  // The canonical entry is fixed (Neon is the registry): no variable selects another path.
+  assert.equal(publicGamePath(),'/game');
   const url = new URL('/game?dealer=linnea&presentation=local&performance=staged&motion=smooth60&rehearsal=1&table=bj-1&returnTo=https://evil.invalid&playerId=forged#secret',origin);
-  assert.equal(gameEntryRedirect(url,{}),null);
-  assert.equal(gameEntryRedirect(url,env),null,'the game start with context is served, not redirected');
+  assert.equal(gameEntryRedirect(url),null,'the game start with context is served, not redirected');
   assert.equal(canonicalGameDestination(url),'/game?dealer=linnea&presentation=local&rehearsal=1&table=bj-1');
   assert.equal(canonicalGameDestination(new URL('/game?dealer=astrid&dealer=elin&presentation=evil&rehearsal=true&launch=a.b.c&launch=x.y.z',origin)),'/game');
   assert.equal(canonicalGameDestination(new URL('/play/roulette?game=roulette&operator=alpha&table=r-1&game=roulette',origin)),'/game?table=r-1&operator=alpha','a repeated game selector is ambiguous');
   assert.equal(canonicalGameDestination(new URL('/play/roulette?game=roulette&operator=alpha&table=r-1',origin)),'/game?game=roulette&table=r-1&operator=alpha');
-  assert.equal(gameEntryRedirect(new URL('/game',origin),env),'/lobby');
-  assert.equal(gameEntryRedirect(new URL('/game/?operator=alpha&game=roulette&table=r-1',origin),env),null);
-  assert.equal(gameEntryRedirect(new URL('/game?operator=alpha&room=r-1',origin),env),'/lobby?operator=alpha&room=r-1');
-  assert.equal(gameEntryRedirect(new URL('/',origin),env),null);
-  assert.equal(gameEntryRedirect(new URL('/?dealer=elin',origin),env),'/game?dealer=elin');
-  assert.equal(gameEntryRedirect(new URL('/?rehearsal=1&motion=smooth60',origin),env),'/game?rehearsal=1');
+  assert.equal(gameEntryRedirect(new URL('/game',origin)),'/lobby');
+  assert.equal(gameEntryRedirect(new URL('/game/?operator=alpha&game=roulette&table=r-1',origin)),null);
+  assert.equal(gameEntryRedirect(new URL('/game?operator=alpha&room=r-1',origin)),'/lobby?operator=alpha&room=r-1');
+  assert.equal(gameEntryRedirect(new URL('/',origin)),null);
+  assert.equal(gameEntryRedirect(new URL('/?dealer=elin',origin)),'/game?dealer=elin');
+  assert.equal(gameEntryRedirect(new URL('/?rehearsal=1&motion=smooth60',origin)),'/game?rehearsal=1');
   assert.equal(approvedGameQuery('launch=a.b.c',{includeLaunch:false}).toString(),'');
   assert.equal(approvedGameQuery('game=poker&dealer=elin').toString(),'dealer=elin');
 });
@@ -52,12 +51,12 @@ test('observer survives only as complete valid same-cloud or loopback pair; laun
 test('retired dealers cannot enter public selectors or forged registered documents',()=>{
   for(const dealer of ['vera','mei','amira','johanna']){
     assert.equal(approvedGameQuery(new URLSearchParams({dealer})).has('dealer'),false);
-    assert.throws(()=>decorateGameEntryHtml('<html>',env,{lane:'saved',dealer,presentation:'local',localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]}));
+    assert.throws(()=>decorateGameEntryHtml('<html>',{lane:'saved',dealer,presentation:'local',localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]}));
   }
 });
-test('server marker changes player links without new browser flags and keeps off mode byte-identical',t => {
+test('server marker changes player links without new browser flags',t => {
   const html = '<!doctype html><html lang="sv"><body></body></html>';
-  assert.equal(decorateGameEntryHtml(html,{}),html);assert.match(decorateGameEntryHtml(html,env),/<html data-game-path="\/blackjack" lang="sv">/);
+  assert.match(decorateGameEntryHtml(html),/<html data-game-path="\/blackjack" lang="sv">/);
   const prior = globalThis.document;t.after(() => {if(prior === undefined) delete globalThis.document;else globalThis.document = prior;});
   globalThis.document = {documentElement:{dataset:{gamePath:'/blackjack',gameLane:'saved',gamePresentation:'local',gameRegisteredDealers:JSON.stringify(['elin','astrid','linnea'].map(id=>({id,label:id})))}}};
   for (const dealer of ['elin','astrid','linnea']) assert.equal(new URL(dealerVersionPath(dealer,'original'),'https://example.test').searchParams.get('dealer'),dealer);
@@ -71,20 +70,18 @@ test('server marker changes player links without new browser flags and keeps off
 test('offline decoration opts in to validated dealer metadata without claiming the Neon game URL', () => {
   const html = '<html lang="en"><body></body></html>';
   const selection = { lane:'saved',dealer:'linnea',presentation:'local',localDealer:'linnea',registeredDealers:[{id:'linnea',label:'Linnea'}] };
-  const decorated = decorateGameEntryHtml(html, {}, selection, { offline: true });
+  const decorated = decorateGameEntryHtml(html, selection, { offline: true });
   assert.match(decorated, /data-game-lane="saved" data-game-dealer="linnea" data-game-presentation="local"/);
   assert.doesNotMatch(decorated, /data-game-path=/);
-  assert.equal(decorateGameEntryHtml(html, {}, selection), html);
-  assert.throws(() => decorateGameEntryHtml(html, {}, { ...selection, dealer: '" onclick="bad' }, { offline: true }));
-  assert.match(decorateGameEntryHtml(html, env, selection, { offline: true }), /data-game-path="\/blackjack"/);
+  assert.match(decorateGameEntryHtml(html, selection), /<html data-game-path="\/blackjack" data-game-lane="saved"/);
+  assert.throws(() => decorateGameEntryHtml(html, { ...selection, dealer: '" onclick="bad' }, { offline: true }));
 });
 
 
 test('offline documents carry no retired comparison banner, whatever the environment names', () => {
   const html = '<html><head><title>Game</title></head><body><header id="hud-top"></header><a class="casino-return" href="/lobby">Till lobbyn</a></body></html>';
-  const retired = { PUBLIC_URL:'http://localhost:4194' };
-  assert.equal(decorateGameEntryHtml(html, retired, undefined, { offline:true }), html);
-  assert.equal(decorateGameEntryHtml(html, retired), html);
+  assert.equal(decorateGameEntryHtml(html, undefined, { offline:true }), html);
+  assert.equal(decorateGameEntryHtml(html), html.replace('<html>', '<html data-game-path="/blackjack">'));
 });
 
 
@@ -96,7 +93,7 @@ test('retired document addresses redirect permanently to /game by game and drop 
   }
   for (const path of ['/v2','/v2/','/v2/index.html','/game','/','/play','/play/profil','/play/roulette','/play/roulette/','/blackjack/extra','/casino.html','/demo']) {
     assert.equal(legacyGameStartRedirect(new URL(path+'?dealer=elin',origin)),null,path);
-    assert.equal(gameEntryRedirect(new URL(path+'?dealer=elin',origin),env),path==='/'?'/game?dealer=elin':null,path);
+    assert.equal(gameEntryRedirect(new URL(path+'?dealer=elin',origin)),path==='/'?'/game?dealer=elin':null,path);
   }
 });
 
@@ -105,7 +102,7 @@ test('the initial document selects the presentation before client JavaScript run
   const source=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
   for (const dealer of ['astrid','elin','linnea']) {
     const presentation='local';
-    const html=decorateGameEntryHtml(source,env,{lane:'mobile-phone',dealer,presentation,localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]});
+    const html=decorateGameEntryHtml(source,{lane:'mobile-phone',dealer,presentation,localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]});
     assert.match(html,/data-presentation-startup="pending"/);
     assert.ok(html.includes('data-presentation="'+(presentation==='original'?'indexed':presentation)+'"'));
     assert.ok(html.indexOf('href="local-presentation.css"')<html.indexOf('</head>'));
@@ -195,4 +192,14 @@ test('the engine names the game on every /game return and never carries a launch
   // A partner launch is blackjack only; a roulette launch is refused instead of opening another game.
   assert.equal(publicGameStart('game=roulette&table=r-1',{origin,games:['blackjack']}),null);
   assert.equal(publicGameStart(new URLSearchParams('game=blackjack&dealer=astrid'),{origin,games:['blackjack']}),'/game?game=blackjack&dealer=astrid');
+});
+
+test('the platform router sends a root address with game selectors to the canonical /game start',() => {
+  const config = platformConfiguration({CROUPIER_PUBLIC_ORIGIN:'https://www.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',
+    CROUPIER_VERCEL_INGRESS_SECRET:'isolated-routing-fixture-'.repeat(3)});
+  const route = path => platformRoute(new URL(path,config.publicOrigin),config);
+  // Only approved selectors survive; a forged or unknown value is dropped, not passed on.
+  assert.deepEqual(route('/?table=bj-1&rehearsal=1&returnTo=https://evil.invalid'),{kind:'redirect',destination:config.publicOrigin+'/game?rehearsal=1&table=bj-1'});
+  assert.deepEqual(route('/?dealer=linnea&presentation=evil&motion=smooth60'),{kind:'redirect',destination:config.publicOrigin+'/game?dealer=linnea'});
+  assert.notEqual(route('/').kind,'redirect');
 });

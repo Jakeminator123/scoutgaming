@@ -18,12 +18,12 @@ const publicOrigin = 'https://example.vercel.app', transport = 'https://example.
 const ingressEnv = () => ({
   NODE_ENV: 'production', PORT: '10000', CROUPIER_CLOUD_LAYOUT: 'single-origin',
   CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'game'),
-  CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'cloud-fixture',
-  CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
+  CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'cloud-fixture',
+  BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-shared-room-origin-fixture'),
   PUBLIC_URL: publicOrigin, RENDER_EXTERNAL_URL: transport,
   CROUPIER_PUBLIC_ORIGIN: publicOrigin, CROUPIER_VERCEL_TRANSPORT_ORIGIN: transport,
-  CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3), CROUPIER_PUBLIC_GAME_PATH: '/game',
+  CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3),
   CROUPIER_SHARED_TABLE_ENABLED: '1',
   OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-only',
 });

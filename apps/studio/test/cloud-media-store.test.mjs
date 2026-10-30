@@ -10,7 +10,7 @@ import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, isCloudMediaConfi
 const bytes = Buffer.from('0000ftypisom00000private-video-fixture-exact-bytes');
 const sha256 = createHash('sha256').update(bytes).digest('hex');
 const contentType = 'video/mp4';
-const env = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-server-only' };
+const env = { BLOB_READ_WRITE_TOKEN: 'fixture-server-only' };
 const pathname = () => `croupier/videos/${randomUUID()}/${sha256}.mp4`;
 const request = (headers = {}, method = 'GET') => new Request('http://localhost/media', { headers, method });
 
@@ -255,8 +255,10 @@ test('foreign origins, bad ranges and arbitrary URLs/paths are rejected before p
     assert.throws(() => validatePrivateMedia({ ...record, pathname: path }), /mediareferens/);
   }
   assert.equal(calls.length, 0);
-  assert.equal(isCloudMediaConfigured({ BLOB_READ_WRITE_TOKEN: 'alone' }), false);
-  assert.equal((await getPrivateMedia(record, request(), { ...options, env: { CROUPIER_MEDIA_STORAGE: 'blob' } })).status, 503);
+  // Private Blob is the only store: the token alone configures it; a blank token does not.
+  assert.equal(isCloudMediaConfigured({ BLOB_READ_WRITE_TOKEN: 'alone' }), true);
+  for (const env of [{}, { BLOB_READ_WRITE_TOKEN: '' }, { BLOB_READ_WRITE_TOKEN: '  ' }]) assert.equal(isCloudMediaConfigured(env), false);
+  assert.equal((await getPrivateMedia(record, request(), { ...options, env: {} })).status, 503);
   assert.equal(calls.length, 0);
 });
 

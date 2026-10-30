@@ -8,71 +8,69 @@ eller **sammansättning** (miljö); guiden citerar knapparna som de står.
 
 ## Menyn
 
+Menyn har tre grupper: **Innehåll** (Dealers, Miljöer och material), **Bolag**
+(Bolag och spelbord) och **Scoutgaming** (System, Hjälp). **Översikt** står
+överst.
+
 | Menyval | Adress | Flikar |
 | --- | --- | --- |
-| Översikt | `/admin` | Det som väntar på dig, med länk dit det åtgärdas |
+| Översikt | `/admin` | Inga; det som väntar på dig, med länk dit det åtgärdas |
 | Dealers | `/admin/dealers`, en dealer `/admin/dealers/{dealer}` | Klippkarta · Röst och tal · Landningar · Används av · Inställningar |
 | Miljöer och material | `/admin/scenes?tab=…` | Miljöer · Material (Bakgrund, Bordsgrafik, Arkiverat) |
 | Bolag och spelbord | `/admin/companies?tab=…` | Bolag · Alla spelbord · Papperskorg |
 | ett bolag | `/admin/companies/{bolag}?flik=…` | Spelbord · Tilldelning · Team · Inställningar |
 | ett spelbord | `/admin/rooms/{spelbord}?flik=…` | Utseende · Dealer · Spelinställningar · Tillgänglighet · Bolagets val · Historik |
-| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden · Intern lobby |
-| Hjälp | `/admin/guide` | Menyn, vem som får ändra vad, orden och dealerflödet |
+| System | `/admin/system?flik=…` | Drift · AI-agenter · Scoutgamings personal · Spelarkonton · Integration · Beroenden; **Intern lobby** i sidhuvudet |
+| Hjälp | `/admin/guide` | Inga; menyn, vem som får ändra vad, orden, dealerflödet och var uppgifterna kommer ifrån |
 
-Portalraden överst leder till Admin, Partnerportalen och Lobbyn; intern
-personal når alla tre med samma konto. **Ctrl K** söker dealers, bolag och
-spelbord.
+En räknare vid **Dealers** visar dealers där klipp saknas, och vid **Bolag och
+spelbord** spelbord som inte är spelbara. Portalraden överst leder till Admin,
+Partnerportalen och Lobbyn; intern personal når alla tre med samma konto.
+**Ctrl K** söker dealers, bolag och spelbord.
 
 ## Arbetsgången
 
-Dealerns sida visar de fem första stegen överst och markerar de som är klara.
+1. **Nytt spelbord**: den primära knappen på Översikt (också på
+   **Alla spelbord** och bolagets flik **Spelbord**). Rutan har allt förvalt:
+   bolag, dealer, miljö, namn, bordsspråk och insatsprofil. Ändra under
+   **Avancerat**.
+2. **Skapa och publicera**: kedjan **Miljö** → **Mät klipp** → **Spelbord,
+   tilldelning och spelinställningar** körs i ett svep, och spelbordet blir öppet
+   och publicerat. Stannar ett steg visas en mening och en knapp som löser det;
+   nästa försök kör bara det som återstår.
+3. **Öppna i spelet**: spelbordet som spelaren ser det. **Öppna spelbordet**
+   leder till spelbordets sida i Admin.
 
-1. **Skapa dealer**: Dealers → **Ny dealer** → namn → **Skapa dealer**.
-2. **Lägg till klipp**: dra in filmer i dealerns klippkarta.
-3. **Klipp per fack**: välj standardklipp för giv, vila och tal och
-   **Spara utkast**. Mätarna **Giv**, **Tal** och **Vila** visar vad som
-   saknas.
-4. **Röst och tal**: granska tagningarna och välj standard i varje talfack.
-5. **Tilldela**: kryssa i dealern i en miljö
-   ([Miljöer](#miljöer-och-material)) och ge bolaget miljön under
-   **Bolag › Tilldelning**.
-6. **Spelbord**: **Nytt spelbord** hos bolaget. **Skapa och publicera** skapar
-   spelbordet öppet, med tilldelning och spelinställningar publicerade.
-7. **Publicera** senare ändringar; **Tillgänglighet** pausar och öppnar spelbordet.
+Rutan förväljer bara en dealer vars klipp räcker för spel. En ny dealer gör
+först de fem stegen på dealerns sida (Skapa, Lägg till klipp, Klipp per fack,
+Röst och tal, Tilldela), se [Dealers](#dealers).
 
-### Publicera i dag: en huvudknapp per spelbord
+### Publicera
 
 Att spara ändrar bara utkastet; spelaren ser ändringen först efter
-publicering. Huvudvägen är spelbordets egen **Publicera** (steg D i
-[ADMIN-FORENKLING](../../../docs/plans/ADMIN-FORENKLING.md), avsnitt 7), som
-visar vad som ändras jämfört med live och tar med tal, klipp, vila och
-placering för bolaget:
+publicering.
 
 | Knapp | Var | Vad den publicerar |
 | --- | --- | --- |
-| **Publicera** → **Publicera nu** | Spelbord (öppet blackjackbord) | Bolagets sparade tal, klipp, vila och placering, fryst som ny version |
-| **Publicera** | Bolag › Tilldelning | Ett ändrat urval av miljöer och det bolaget får ändra själv (insatsprofiler, språk), i den ordningen |
-| **Publicera · N ändringar** → **Publicera nu** | Spelbord › Utseende | Spelbordets bakgrund, dealer och bordsgrafik |
-| **Publicera spelinställningar** | Spelbord › Spelinställningar | Bordsspråk och insatsprofil |
+| **Publicera** → **Publicera nu** | Spelbord (överst på Utseende, Spelinställningar och Tillgänglighet; öppet blackjackbord) | Allt som skiljer sig från live: tal, klipp, vila, placering, utseende och spelinställningar, som ny version |
+| **Publicera** | Bolag › Tilldelning | Bolagets urval av miljöer och det bolaget får ändra själv |
 
-Under **Avancerat** finns smala knappar för det huvudknappen inte når:
-
-- **Publicera igen** (Bolag › Tilldelning) fryser om ett oförändrat urval,
-  till exempel för roulette eller ett spelbord som inte är öppet.
-- **Publicera sparad placering** (dealerns Klippkarta › Scen & lager, med
-  bolaget valt under **Spelbord och publicering**) uppdaterar placeringen i
-  alla bolagets spelbord som använder miljön.
-- **Publicera PAOWs viloklipp** (Spelbord › Utseende) uppdaterar PAOWs
-  vilosekvens, även när miljön är borttagen eller klippen underkänns.
-
-Nytt tal används först efter **Publicera** i spelbordet.
+Flikarna har kvar egna, smalare knappar: **Publicera · N ändringar** under
+Utseende (bakgrund, dealer och bordsgrafik) och **Publicera spelinställningar**
+(bordsspråk och insatsprofil). Under **Avancerat** finns **Publicera igen**
+(Tilldelning, fryser om ett oförändrat urval), **Publicera sparad placering**
+(dealerns Klippkarta › Scen & lager, eller en miljö öppnad för ett bolag) och
+**Publicera PAOWs viloklipp** (Utseende). Nytt tal används först efter
+**Publicera** i spelbordet.
 
 ## Översikt
 
 Listar det som väntar: dealers där klipp saknas, pausade och opublicerade
-spelbord och bolag utan publicerad tilldelning. Genvägar: **Ny dealer**,
-**Nytt bolag**, **Nytt spelbord**, **Lägg till klipp**, **Tilldela innehåll**
-och **Skapa demo** (`/admin/demo`).
+spelbord och bolag utan publicerad tilldelning. Den primära åtgärden är
+**Nytt spelbord**; övriga genvägar: **Lägg till klipp**, **Tilldela innehåll**,
+**Ny dealer** och **Skapa demo** (`/admin/demo`). Menyns räknare bygger på
+det sidorna redan har läst eller sparat (`shareWorkspace` i
+`client/admin/lib/connected-studio.mjs`); menyn läser inget själv.
 
 ## Dealers
 
@@ -553,8 +551,8 @@ till portalen. Ett bolag utan medlemmar får ingen partnerinloggning.
 - **Beroenden**: bolag, dealers, bordsgrafik, bakgrunder och miljöer med
   användning. **Ändra mallens kopplingar** öppnar miljön; **Ändra bara
   rummets val** öppnar ett publicerat spelbords egna val.
-- **Intern lobby**: `/admin/lobby` visar alla bolags spelbord, även pausade;
-  `/lobby` är den publika.
+- **Intern lobby** (länk i sidhuvudet, ingen flik): `/admin/lobby` visar alla
+  bolags spelbord, även pausade; `/lobby` är den publika.
 
 ## Roulette
 

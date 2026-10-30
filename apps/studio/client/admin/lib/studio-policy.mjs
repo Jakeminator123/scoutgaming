@@ -218,7 +218,7 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
     if (variation.use === 'manual') return result(true, ['Endast manuellt prov; startar inte automatiskt.']);
     const description = variation.description?.trim() ? [`Beskrivning för OpenClaw: ${variation.description.trim()}`] : [];
     if (variation.use === 'rotation') return result(true, ['Ingår i vilosekvensen.', ...description]);
-    if (variation.use === 'openclaw') return result(true, [`OpenClaw kan föreslå klippet vid tur eller resultat när scenmallens vila står på OpenClaw.${scope.policy.rotation ? ' Det ingår också i vilosekvensen.' : ''}`, ...description]);
+    if (variation.use === 'openclaw') return result(true, [`OpenClaw kan föreslå klippet vid tur eller resultat när miljöns vila står på OpenClaw.${scope.policy.rotation ? ' Det ingår också i vilosekvensen.' : ''}`, ...description]);
     const definitions = scope.line.variants.filter(row => row.videoGenerationId === videoId && selectionFor(row).rules && row.triggerIds.length);
     return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning, vändning, tur eller resultat; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
       : ['Regelurval valt, men inga kopplade händelsevillkor finns för tagningen.']);

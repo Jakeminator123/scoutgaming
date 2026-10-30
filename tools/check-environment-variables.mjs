@@ -15,10 +15,48 @@ export function referencedNames(source) {
   return new Set([...dotted, ...bracketed]);
 }
 
+// Names whose single production value is fixed in code. Only docs/, Markdown and
+// workflow files (changed in their own PR) may still name them.
+export const HARDCODED_EXCLUDES = Object.freeze([':(exclude)docs/**', ':(exclude)*.md', ':(exclude).github/workflows/**']);
+
+export function hardcodedNames(registry) {
+  return registry?.hardcodedNames?.names ?? [];
+}
+
+// Every tracked text file (source, test, build script, vercel.json, Next config) that
+// names a hard-coded variable. git grep also covers files that ripgrep ignores.
+export function hardcodedNameReferences(names, { cwd = root, run = execFileSync } = {}) {
+  if (!names.length) return [];
+  let output;
+  try {
+    output = run('git', ['grep', '-I', '-n', '-w', '-F', ...names.flatMap(name => ['-e', name]), '--', '.', ...HARDCODED_EXCLUDES],
+      { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  } catch (error) {
+    if (error?.status === 1) return [];
+    throw error;
+  }
+  return output.split(/\r?\n/).filter(Boolean).map(line => {
+    const [path, lineNumber, ...rest] = line.split(':');
+    const text = rest.join(':');
+    return { path, line: Number(lineNumber), names: names.filter(name => new RegExp(`\\b${name}\\b`).test(text)) };
+  });
+}
+
 export function validateRegistry(registry) {
   const errors = [];
   if (registry?.schema !== 1 || !registry.services || typeof registry.services !== 'object') {
     return ['Invalid environment registry schema.'];
+  }
+  const fixed = registry.hardcodedNames?.names;
+  if (fixed !== undefined && (!Array.isArray(fixed) || fixed.some(name => typeof name !== 'string' || !namePattern.test(name)))) {
+    errors.push('hardcodedNames: names must be a list of key names');
+  }
+  for (const name of Array.isArray(fixed) ? fixed : []) {
+    for (const [service, entry] of Object.entries(registry.services)) {
+      if (categories.some(category => Array.isArray(entry[category]) && entry[category].includes(name))) {
+        errors.push(`${service}: ${name} is hard-coded and must not be listed as read`);
+      }
+    }
   }
   for (const [service, entry] of Object.entries(registry.services)) {
     const names = new Set();
@@ -101,6 +139,9 @@ function stagedChangesNeedDocs(registry) {
 async function audit(registry) {
   const errors = validateRegistry(registry);
   if (errors.length) return errors;
+  for (const { path, line, names } of hardcodedNameReferences(hardcodedNames(registry))) {
+    errors.push(`${path}:${line} names ${names.join(', ')}, which is hard-coded (docs/ENVIRONMENT-VARIABLES.md#fasta-värden); use the fixed value instead of reading the variable.`);
+  }
   for (const [service, entry] of Object.entries(registry.services)) {
     const listed = new Set(categories.flatMap(category => entry[category]));
     for (const sourcePath of entry.sources) {

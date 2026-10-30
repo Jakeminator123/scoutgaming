@@ -130,7 +130,7 @@ test('foreign receipts block retries until a fresh read and never update another
 
 test('failed readback after a saved mutation blocks another write and retains a visible recovery action',async()=>{
   const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
-  await h.reply(1,{ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:4});
+  await h.reply(1,{ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:5});
   await h.reply(2,{},503);assert.equal(h.uncertain.length,1);assert.equal(h.role('alert'),1);
   assert.equal(h.button('room-state').props.disabled,true);assert.equal(h.button('refresh').props.disabled,false);
 });
@@ -143,19 +143,21 @@ test('an external write lock and missing package both disable mutations, and unm
 });
 
 
-const pausedReceipt=()=>({ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:4});
-const pausedSnapshot=()=>snapshot({administrationRevision:'admin-2',rooms:[room({state:'pending'})]});
+// A pause is a package revision (plan L3 PR 3): 4 → 5.
+const pausedReceipt=()=>({ok:true,room:room({state:'pending'}),administrationRevision:'admin-2',packageRevision:5});
+const pausedSnapshot=()=>snapshot({administrationRevision:'admin-2',operators:[company('north',{packageRevision:5})],rooms:[room({state:'pending',packageRevision:5})]});
 
 test('room-state readback must confirm the administration revision, exact target and resulting state',async()=>{
   const changes=[
     ['older administration',value=>({...value,administrationRevision:'admin-1'})],
     ['different administration',value=>({...value,administrationRevision:'admin-3'})],
-    ['wrong state',value=>({...value,rooms:[room()]})],
+    ['wrong state',value=>({...value,rooms:[room({packageRevision:5})]})],
     ['missing room',value=>({...value,rooms:[]})],
-    ['foreign room',value=>({...value,rooms:[room({state:'pending',operatorId:'south'})]})],
-    ['different composition',value=>({...value,rooms:[room({state:'pending',presentationLaneId:'other'})]})],
-    ['unexpected archive',value=>({...value,rooms:[room({state:'pending',archivedAt:'2026-10-12T00:00:00Z'})]})],
-    ['different package',value=>({...value,operators:[company('north',{packageRevision:5})]})],
+    ['foreign room',value=>({...value,rooms:[room({state:'pending',operatorId:'south',packageRevision:5})]})],
+    ['different composition',value=>({...value,rooms:[room({state:'pending',presentationLaneId:'other',packageRevision:5})]})],
+    ['unexpected archive',value=>({...value,rooms:[room({state:'pending',archivedAt:'2026-10-12T00:00:00Z',packageRevision:5})]})],
+    ['different package',value=>({...value,operators:[company('north',{packageRevision:6})]})],
+    ['unchanged room package',value=>({...value,rooms:[room({state:'pending'})]})],
   ];
   for(const [name,change] of changes){
     const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
@@ -168,7 +170,7 @@ test('room-state readback must confirm the administration revision, exact target
 });
 
 test('room-state receipt itself must contain the requested state and correct revisions before readback',async()=>{
-  for(const patch of [{room:room()},{room:room({state:'pending',id:'other'})},{administrationRevision:'admin-1'},{administrationRevision:''},{packageRevision:5},{packageRevision:null},{ok:false}]){
+  for(const patch of [{room:room()},{room:room({state:'pending',id:'other'})},{administrationRevision:'admin-1'},{administrationRevision:''},{packageRevision:4},{packageRevision:6},{packageRevision:null},{ok:false}]){
     const h=harness();await h.ready();h.button('room-state').props.onClick();h.confirm().props.onClick();
     await h.reply(1,{...pausedReceipt(),...patch});
     assert.equal(h.requests.length,2);assert.equal(h.changed.length,1);assert.equal(h.uncertain.length,1);assert.equal(h.button('room-state').props.disabled,true);
@@ -183,7 +185,7 @@ test('a confirmed room pause updates the visible status and releases writes only
   assert.equal(h.changed.length,2);assert.equal(h.uncertain.length,0);assert.equal(h.role('status'),1);
   assert.equal(h.button('room-state').props.disabled,false);
   h.button('room-state').props.onClick();h.confirm().props.onClick();
-  assert.deepEqual(h.body(3),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-2',expectedPackageRevision:4,state:'live'},'the paused room is now offered for opening');
+  assert.deepEqual(h.body(3),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-2',expectedPackageRevision:5,state:'live'},'the paused room is now offered for opening');
 });
 
 test('operator archive readback must confirm both suspended status and the recorded archive',async()=>{

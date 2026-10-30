@@ -128,6 +128,17 @@ test('a commit that adds a test file runs the orphan audit so CI cannot be the f
   assert.ok(checkPlan('documentation', { changes: [change('docs/test/x.md', 'A')] }).every(args => args.join(' ') !== audit.join(' ')));
 });
 
+test('the focused hook runs the environment guard for changed source files, not for prose', () => {
+  const guard = [process.execPath, 'tools/check-environment-variables.mjs'].join(' ');
+  const runs = plan => plan.filter(args => args.join(' ') === guard).length;
+  for (const path of ['services/game/server.mjs', 'apps/studio/next.config.mjs', 'test/new-rule.mjs', 'vercel.json']) {
+    assert.equal(runs(checkPlan('focused', { changes: [change(path)] })), 1, path);
+  }
+  assert.equal(runs(checkPlan('focused', { changes: [change('docs/guide.md')] })), 0);
+  assert.equal(runs(checkPlan('documentation', { changes: [change('docs/environment-variables.json')] })), 1);
+  assert.equal(runs(checkPlan('documentation', { changes: [change('docs/guide.md')] })), 0);
+});
+
 test('staged parser preserves unusual filenames and rejects malformed output', () => {
   assert.deepEqual(parseStagedChanges('A\0docs/åäö with space\nname.md\0'), [change('docs/åäö with space\nname.md', 'A')]);
   assert.deepEqual(parseStagedChanges(''), []);

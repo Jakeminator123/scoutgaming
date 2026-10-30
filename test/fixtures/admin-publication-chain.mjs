@@ -172,7 +172,7 @@ export async function createPublicationChain(origin = fixtureOrigin, {roomAppear
       const query = new URLSearchParams(url.searchParams); query.delete('game');
       const entry = await select(query);
       return new Response(entry.status === 200 ? decorateGameEntryHtml('<html lang="sv"><body>Isolerad spelstart</body></html>',
-        {CROUPIER_STUDIO_NEON_POLICY: '1'}, entry.selection) : 'Not found',
+        entry.selection) : 'Not found',
       {status: entry.status, headers: {'content-type': 'text/html; charset=utf-8'}});
     }
     return new Response(null, {status: 404});

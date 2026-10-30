@@ -30,10 +30,10 @@ export function isRetiredBackofficePost({ studioPolicyActive, method, pathname }
  * database or provider. All paid work uses the supplied product stream service,
  * including its immutable reservations, worker admission and budget policy. */
 export function createOperatorSpeechQa({ directory, origin, authenticate, service, decide, now = Date.now,
-  gateStore, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' }) {
-  // Shared mode never consults or recreates the retained disk gate. A missing
-  // adapter is disabled, even if a valid legacy directory was supplied.
-  const sharedGate = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' || journalRequired || Boolean(gateStore);
+  gateStore, journalRequired = true }) {
+  // Shared mode (Neon, the default on every deployment) never consults or recreates the
+  // retained disk gate. A missing adapter is disabled, even if a valid legacy directory was supplied.
+  const sharedGate = journalRequired || Boolean(gateStore);
   const root = typeof directory === 'string' && isAbsolute(directory) ? resolve(directory) : null;
   let publicOrigin;
   try { const url = new URL(origin); if (url.origin === origin && url.protocol === 'https:') publicOrigin = url; } catch {}

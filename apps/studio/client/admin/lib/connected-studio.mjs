@@ -301,6 +301,20 @@ export function uploadMetadata(project, dealerId, slot, file, compositing) {
   }, { forWrite: true });
 }
 
+// The last catalog, project and inventory any Admin page read or saved, so the menu's counters follow the
+// pages' own data without requests of their own. Each part is replaced whole; listeners run after every share.
+let sharedWorkspace = null;
+const sharedListeners = new Set();
+export function shareWorkspace(part) {
+  if (!part) return;
+  const next = { ...sharedWorkspace };
+  for (const key of ['catalog', 'project', 'inventory']) if (part[key]) next[key] = part[key];
+  sharedWorkspace = next;
+  for (const listener of [...sharedListeners]) listener();
+}
+export function readSharedWorkspace() { return sharedWorkspace; }
+export function subscribeSharedWorkspace(listener) { sharedListeners.add(listener); return () => { sharedListeners.delete(listener); }; }
+
 export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativeVideo } = {}) {
   async function json(url, init = {}) {
     const response = await fetchImpl(url, { ...init, credentials: 'same-origin', cache: 'no-store', redirect: 'error',
@@ -323,13 +337,17 @@ export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativ
       if (catalog.source !== 'registered' || !saved.project || !Array.isArray(inventory.videos)
         || catalog.administration?.revisions?.project !== saved.project.revision) throw Error('Registren ändrades under läsningen. Läs om för att få samma revision.');
       validateProject(saved.project);
-      return { catalog, project: saved.project, inventory };
+      const workspace = { catalog, project: saved.project, inventory };
+      shareWorkspace(workspace);
+      return workspace;
     },
     async save(project, signal) {
       const submitted = validateProject(structuredClone(project));
       const result = await json('/studio/api/project', { method: 'PUT', body: JSON.stringify({ project: submitted, expectedRevision: submitted.revision }), signal });
       if (!result.project) throw Error('Den sparade revisionen kunde inte verifieras. Behåll utkastet och läs om.');
-      return validateProject(result.project);
+      const savedProject = validateProject(result.project);
+      shareWorkspace({ project: savedProject });
+      return savedProject;
     },
     async upload(file, metadata, signal) {
       if(metadata.mediaType==='image')throw Error('PNG kan provas lokalt men kan ännu inte sparas under Dealers.');
@@ -338,6 +356,7 @@ export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativ
       const contentType = /\.png$/i.test(file.name) ? 'image/png' : /\.mp4$/i.test(file.name) ? 'video/mp4' : 'video/webm';
       const result = await uploadImpl(file, metadata, contentType, { signal, fetchImpl });
       const inventory = await json('/studio/api/videos', { signal });
+      if (Array.isArray(inventory.videos)) shareWorkspace({ inventory });
       const video = inventory.videos?.find(row => row.id === result.id && row.available === true);
       const rouletteSlot=metadata.game==='roulette'?rouletteClipSlots().find(slot=>slot.eventId===metadata.eventId&&slot.situation===metadata.situation):null;
       if (!video || !(rouletteSlot?rouletteClipMatches(video,metadata.dealerId,rouletteSlot):videoFitsLine(video, metadata.dealerId, metadata.eventId))

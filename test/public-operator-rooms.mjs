@@ -214,6 +214,17 @@ test('catalog only lists live owned rooms referenced by the current frozen packa
   f.state.pack.tables=[];assert.deepEqual((await f.api.read('north')).rooms,[]);
 });
 
+// Plan L3 PR 3: a pause is a package revision, so a package written with its own rooms (Studio 023) is the
+// table's state. A table the package pauses leaves the catalogue even where the document still says live.
+test('a table the package pauses is not listed although the administration document still says live',async()=>{
+  const f=fixture();f.state.pack.rooms=[{...f.room,state:'pending'}];
+  assert.equal(f.state.administration.rooms[0].state,'live');
+  const value=await f.api.read('north');
+  assert.equal(value.packageRevision,7);assert.deepEqual(value.rooms,[]);
+  f.state.pack.rooms=[{...f.room}];
+  assert.deepEqual((await f.api.read('north')).rooms.map(room=>room.id),['room-north'],'the same package room live is listed');
+});
+
 test('existing plain-text operator and room names remain valid without HTML interpretation',async()=>{
   const f=fixture();f.state.operator.name='North <VIP>';f.room.name='Room <1>';
   const value=await f.api.read('north');assert.equal(value.operator.name,'North <VIP>');assert.equal(value.rooms[0].name,'Room <1>');

@@ -1,6 +1,6 @@
 // Nytt spelbord på ett steg, serversidan (plan-enkel-vag PR 1b): POST presentation-room med `gameConfig`
 // skapar spelbordet, publicerar tilldelningen och spelinställningarna i en transaktion och en paketversion.
-// Ett öppet utseendeutkast stoppar före första skrivningen; räcker materialet inte rullas spelbordet tillbaka.
+// Ett öppet utseendeutkast följer med till den nya paketversionen (plan L3 PR 3); räcker materialet inte rullas spelbordet tillbaka.
 // Provet går produktens väg: HTTP-gränsen (studio-admin-api.mjs, förhandlingen före SQL), produktens
 // transaktion med bolagets paket (createNativePresentationMutationTransaction) och produktens koppling av
 // tjänsterna (createNativeRoomApis). PostgreSQL via PGlite med produktens repository och operatörsbutik.
@@ -104,7 +104,7 @@ test('samma idempotensnyckel: samma spelinställningar är ett omförsök, andra
   assert.deepEqual(await f.persisted(),before,'inget skrevs');
 });
 
-test('räcker materialet inte rullas spelbordet tillbaka; ett öppet utseendeutkast stoppar före första skrivningen (koden syns i svaret)', async t => {
+test('räcker materialet inte rullas spelbordet tillbaka; ett öppet utseendeutkast följer med till den nya paketversionen', async t => {
   const f=await quickFixture(t);
   assert.equal((await f.post(await f.body('Dragan Blackjack 1',{gameConfig:settings}))).status,200);
   // Fixturen har bara svenskt tal: engelska kan inte publiceras och spelbordet får inte finnas kvar.
@@ -116,8 +116,9 @@ test('räcker materialet inte rullas spelbordet tillbaka; ett öppet utseendeutk
   assert.equal((await f.raw.readDocument('administration')).value.rooms.length,1);
   await f.store.saveBrandingDraft({operatorId:'north',actor:'partner',audit:{actorId:'actor-partner',accessClass:'partner',requestId:'00000000-0000-4000-8000-0000000000aa'},
     expectedDraftRevision:0,expectedPackageRevision:1,branding:{color:'#112233'}});
-  const drafted=await f.persisted();
-  const pending=await f.post(await f.body('Dragan Blackjack 2',{gameConfig:settings}));
-  assert.equal(pending.status,409);assert.deepEqual(pending.json,{error:'studio_room_choices_draft_pending',code:'studio_room_choices_draft_pending'});
-  assert.deepEqual(await f.persisted(),drafted,'inget skrevs');
+  const draft=await f.store.getBrandingDraft('north');
+  const created=await f.post(await f.body('Dragan Blackjack 2',{gameConfig:settings}));
+  assert.equal(created.status,200,JSON.stringify(created.json));assert.equal(created.json.packageRevision,2);
+  const kept=await f.store.getBrandingDraft('north');
+  assert.deepEqual([kept.revision,kept.action,kept.basePackageRevision,kept.branding],[draft.revision+1,'draft.save',2,draft.branding],'samma utkast på den nya versionen');
 });

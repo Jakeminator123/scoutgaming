@@ -2,17 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
-import React from 'react';
-import {renderToStaticMarkup} from 'react-dom/server';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
+// The form renders in Admin with Admin's kit, so React, the kit and its packages all come from client/.
+const client=createRequire(new URL('../client/package.json',import.meta.url)),React=client('react'),{renderToStaticMarkup}=client('react-dom/server');
+function load(url,controller){
+ const module={exports:{}},local=createRequire(url);
+ vm.runInNewContext(transformSync(readFileSync(url,'utf8'),{filename:fileURLToPath(url),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,
+  {module,exports:module.exports,require:name=>name==='../lib/room-game-config-client.mjs'?{createRoomGameConfigController:()=>controller}:name.endsWith('.css')?{default:{}}
+   :/^react(?:\/|$)/.test(name)?client(name):/^\.\.?\//.test(name)&&!/\.[cm]?js$/.test(name)?load(new URL(name+'.tsx',url),controller):local(name)});
+ return module.exports;
+}
 function render({dirty=false,stale=false,ready=true,reason,materialReason,dealers,draft={revision:'draft-2'}}={}) {
  const state={context:{operatorId:'op',roomId:'room'},fields:{language:'sv',limitPreset:'high'},busy:false,stale,error:'',message:'',receipt:{draft,published:{configVersion:'config-1'},packageRevision:4,publication:{ready,reason,materialReason}}};
  const controller={subscribe:()=>()=>{},getSnapshot:()=>state,dirty:()=>dirty};
- const module={exports:{}};
- vm.runInNewContext(transformSync(readFileSync(new URL('./room-game-config.tsx',import.meta.url),'utf8'),{filename:'room-game-config.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,
- {module,exports:module.exports,require:name=>name==='../lib/room-game-config-client.mjs'?{createRoomGameConfigController:()=>controller}:name.endsWith('.css')?{default:{}}:require(name)});
- return renderToStaticMarkup(React.createElement(module.exports.RoomGameConfig,{operatorId:'op',roomId:'room',roomName:'Kvällsbord',dealers}));
+ return renderToStaticMarkup(React.createElement(load(new URL('./room-game-config.tsx',import.meta.url),controller).RoomGameConfig,{operatorId:'op',roomId:'room',roomName:'Kvällsbord',dealers}));
 }
 test('room form presents fixed demo timers, selected saved fields and separate save/publish actions',()=>{
  const html=render();assert.match(html,/Kvällsbord/);assert.match(html,/<option value="sv" selected="">Svenska/);assert.match(html,/<input type="radio"[^>]*name="limit-preset-room" checked="" value="high"/);

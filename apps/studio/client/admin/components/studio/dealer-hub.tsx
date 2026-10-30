@@ -77,7 +77,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved,onMaterialChanged}:
     {tab==='klipp'&&<DealerPreview dealerId={dealer.id} templates={templates} saved={saved} workspace={workspace}/>}
     {talVisited&&<div className="mt-5 grid gap-4" hidden={tab!=='tal'}>
       <Note tone="warn">Talkedjan byggs om, likadant för alla dealers: text, röst och läppsynk. Verktygen nedan fungerar som i dag.</Note>
-      <Card title="Taldrift" aside="Talets GPU-läge"><TaldriftPanel/></Card>
+      <Card title="Taldrift" aside="Talets GPU-läge"><TaldriftPanel dealerId={dealer.id}/></Card>
       <Card title="Svarsbibliotek" aside="Dealerns inspelade svar i kategorier"><WorkspaceTool section="replies" overrides={{dealer:dealer.id}}/></Card>
       <Card title="Dialogtest" aside="Chatta med dealern">{query.get('verktyg')==='dialog'?<WorkspaceTool section="dealer-agent" overrides={{dealer:dealer.id}}/>:<p className="m-0 flex flex-wrap items-center gap-3"><Link className={buttonVariants()} href={href('tal',{verktyg:'dialog'})}>Öppna Dialogtest</Link><span className="text-[12.5px] text-sg-muted">Chattar med dealerns sparade AI-inställningar, inte med inspelade tagningar.</span></p>}</Card>
     </div>}

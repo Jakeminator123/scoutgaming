@@ -18,7 +18,8 @@ export function readVercelIngressConfig(env = process.env) {
   }
   return { transportOrigin, publicOrigin, secret,
     ...(movingWorkerOrigin ? {movingWorkerOrigin} : {}),
-    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? {canonicalGame:true} : {}) };
+    // The canonical game entry is always on (Neon is the one registry; no flag selects it).
+    canonicalGame: true };
 }
 
 const MOVING_CHANNEL = /^\/lipsync-moving\/[a-f0-9]{48}\?(?:token=[a-f0-9]{64}&avatar=[a-z][a-z0-9-]{0,39}|avatar=[a-z][a-z0-9-]{0,39}&token=[a-f0-9]{64})$/;

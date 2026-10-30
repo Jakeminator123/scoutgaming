@@ -43,7 +43,7 @@ function fixture({layered=false,fullFrame=false}={}) {
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:{lanes:[],dealers:[]},administration})},
     packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:structuredClone(pack)})},log:()=>{}});
   function document(selection) {
-    const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
+    const html=decorateGameEntryHtml('<html lang="sv"></html>',selection),dataset={};
     for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g))dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
     return gameLaneFromDocument(dataset);
   }

@@ -10,12 +10,11 @@ export const GAME_START_PATHS = Object.freeze(['/game', '/game/']);
 export const GAMES = Object.freeze(['blackjack', 'roulette']);
 // Selectors that make a game start an actual room/presentation choice rather than a lobby entry.
 export const GAME_CONTEXT_KEYS = Object.freeze(['dealer','presentation','lane','rehearsal','table','launch','labObserverOrigin','labObserverChannel']);
-export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
-export function publicGamePath(env = {}) {
-  if (gameEntryEnabled(env)) return GAME_START_PATH;
-  const value = env.CROUPIER_PUBLIC_GAME_PATH || '/';
-  if (!['/','/game'].includes(value)) throw new Error('Invalid public game path');
-  return value;
+// Neon is the one registry on every deployment, so the canonical game entry is always
+// on; no variable selects it (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+export const gameEntryEnabled = () => true;
+export function publicGamePath() {
+  return GAME_START_PATH;
 }
 
 // The game selector is strict: absent means blackjack, one known value selects
@@ -97,8 +96,7 @@ export function legacyGameStartRedirect(url) {
   const text = query.toString();
   return `${GAME_START_PATH}?game=${game}${text ? `&${text}` : ''}`;
 }
-export function gameEntryRedirect(url,env) {
-  if (!gameEntryEnabled(env)) return null;
+export function gameEntryRedirect(url) {
   if (GAME_START_PATHS.includes(url.pathname) && !GAME_CONTEXT_KEYS.some(key => url.searchParams.has(key))) return playerLobbyPath(url.searchParams,url.hash);
   if (url.pathname === '/' && [...GAME_CONTEXT_KEYS,'performance','motion'].some(key => url.searchParams.has(key))) return canonicalGameDestination(url);
   return null;

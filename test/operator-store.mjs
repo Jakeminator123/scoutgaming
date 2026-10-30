@@ -866,6 +866,42 @@ test('an imported material receipt survives N2 rotation only while its exact pre
   }
 });
 
+// L3 PR 3: a pause is a package revision. A paused room keeps its published settings only while its presentation,
+// dealer and appearance stay as they were checked. A change to them is refused (409) while it is paused, as before
+// PR 3, so that opening it never meets settings it cannot use (422). The pause itself and another table's change
+// pass, its own settings are not published while it is paused, and it opens again on the same settings.
+test('a paused room keeps its settings only while they still hold, and opens again on them', async () => {
+  const h = await roomPublicationFixture({ twoRooms: true }), original = structuredClone(h.config());
+  const state = value => { h.sql.tables.documents[0].value.rooms.find(row => row.id === h.room.id).state = value; };
+  state('pending');
+  const paused = await h.store.publishPackage(h.request());
+  assert.equal(paused.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'the pause keeps the settings');
+  const neighbour = await h.store.publishPackage(h.request({ expectedRevision: 2, branding: { ...paused.branding,
+    roomOverrides: { ...paused.branding.roomOverrides, 'room-other': { color: '#778899' } } } }));
+  assert.equal(neighbour.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'another table\'s change keeps them');
+  assert.notEqual(neighbour.branding.roomGameConfigVersions['room-other'], h.pack.branding.roomGameConfigVersions['room-other']);
+  const reframed = mutate => {
+    const changed = structuredClone(h.presentation); mutate(changed);
+    return withPackagePresentation(neighbour.branding, changed, { allowExtended: true });
+  };
+  for (const [change, branding] of [
+    ['dealer', { ...neighbour.branding, roomOverrides: { ...neighbour.branding.roomOverrides, [h.room.id]: { color: '#112233', dealer: 'paow' } } }],
+    ['presentation', reframed(presentation => { presentation.lanes[0].openclaw.speak = 'rules'; })],
+  ]) {
+    const before = structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishPackage(h.request({ expectedRevision: 3, branding })), refusal('studio_conflict'), change);
+    assert.deepEqual(h.sql.tables, before, `${change}: nothing is written`);
+  }
+  const before = structuredClone(h.sql.tables);
+  await assert.rejects(h.store.publishRoomGameConfig(h.request({ expectedRevision: 3, branding: neighbour.branding }),
+    { roomId: h.room.id, gameConfig: { language: 'sv', limitPreset: 'casual' }, material: structuredClone(original.material) }), refusal('studio_conflict'));
+  assert.deepEqual(h.sql.tables, before, 'its own settings wait until it is open');
+  state('live');
+  const opened = await h.store.publishPackage(h.request({ expectedRevision: 3, branding: neighbour.branding }));
+  assert.equal(opened.branding.roomGameConfigVersions[h.room.id], original.configVersion, 'opened on the same settings');
+  assert.deepEqual(h.config(), original);
+});
+
 test('the explicit J08 writer authors its own config version without changing an unrelated retained room', async () => {
   const h = await roomPublicationFixture({ twoRooms: true }), old = structuredClone(h.sql.tables.shared_table_configs);
   const gameConfig = { language: 'sv', limitPreset: 'casual' }, material = structuredClone(h.config().material);
@@ -1056,4 +1092,75 @@ test('publishWithin writes package rooms only with Studio 023, in document order
   assert.ok(canonicalStudioJson(widest).length <= PACKAGE_ROOMS_MAX_TEXT);
   assert.equal((await store.getPackage(owner, 1)).rooms.length, 32);
   await assert.rejects(row(2, 'x'.repeat(PACKAGE_ROOMS_MAX_TEXT + 1)), error => error.code === '23514');
+});
+
+// L3 PR 3: every package revision carries the company's open appearance draft over to itself in the
+// same transaction (the rule: a draft is never thrown away), so a pause or a new table never makes it
+// stale. A published or discarded draft, and one already based on an older package, stay as they are.
+// Real PostgreSQL (PGlite) with every reviewed Studio migration.
+test('a package revision carries the open appearance draft over; published, discarded and older drafts stay', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }, { publicEditableBranding }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/operators/contracts/branding.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock }), operatorId = 'north';
+  await store.createOperator({ operatorId, slug: 'north', name: 'North', status: 'active', actor });
+  const publish = async () => store.publishPackage({ actor, operatorId, expectedRevision: (await store.getCurrentPackage(operatorId))?.revision ?? null,
+    lanes: [], games: ['blackjack'], tables: [], branding: { name: 'North' } });
+  const draft = () => store.getBrandingDraft(operatorId);
+  const audit = { actorId: 'actor-partner', accessClass: 'partner', requestId: '00000000-0000-4000-8000-0000000000aa' };
+  await publish();
+  await store.saveBrandingDraft({ operatorId, actor, audit, expectedDraftRevision: 0, expectedPackageRevision: 1, branding: { color: '#112233' } });
+  const open = await draft();
+  assert.equal((await publish()).revision, 2);
+  const kept = await draft();
+  assert.deepEqual([kept.revision, kept.action, kept.basePackageRevision, kept.sourcePackageRevision, kept.publishedPackageRevision],
+    [open.revision + 1, 'draft.save', 2, null, null]);
+  assert.deepEqual(kept.branding, open.branding, 'the same choices on the new base');
+  // Publishable on the new base, through the ordinary publication (no second carry-over row).
+  const published = await store.publishBrandingDraft({ operatorId, actor, expectedDraftRevision: kept.revision, expectedPackageRevision: 2, branding: { name: 'North', color: '#112233' } });
+  assert.deepEqual([published.package.revision, published.draft.revision, published.draft.action], [3, kept.revision + 1, 'draft.publish']);
+  await publish();
+  assert.deepEqual(await draft(), published.draft, 'a published draft stays');
+  // A restore of an older package keeps its source; a discard (restore of the base) stays discarded.
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: published.draft.revision, expectedPackageRevision: 4, sourcePackageRevision: 2,
+    branding: publicEditableBranding((await store.getPackage(operatorId, 2)).branding) });
+  const restored = await draft();
+  await publish();
+  assert.deepEqual([(await draft()).action, (await draft()).sourcePackageRevision, (await draft()).basePackageRevision], ['draft.restore', 2, 5]);
+  const base = await store.getCurrentPackage(operatorId);
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: restored.revision + 1, expectedPackageRevision: base.revision, sourcePackageRevision: base.revision,
+    branding: publicEditableBranding(base.branding) });
+  const discarded = await draft();
+  await publish();
+  assert.deepEqual(await draft(), discarded, 'a discarded draft is not brought back');
+  // A draft already based on an older package (written before this rule) stays as it is.
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: discarded.revision, expectedPackageRevision: 6, branding: { color: '#445566' } });
+  await pool.query('UPDATE croupier_studio.operator_branding_drafts SET base_package_revision=5 WHERE operator_id=$1 AND draft_revision=$2', [operatorId, discarded.revision + 1]);
+  const older = await draft();
+  await publish();
+  assert.deepEqual(await draft(), older);
+});
+
+// L3 PR 3: a latest draft row that is not canonical never stops a publication (a pause, a new table, an
+// archive): the package is published, the row is left as it is, and a warning names the company.
+test('a non-canonical latest draft row is left as it is, with a warning, and the package is still published', async t => {
+  const [{ createPglitePool }, { planStudioMigrations, applyStudioMigrations }] = await Promise.all([
+    import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs')]);
+  const pool = await createPglitePool(); t.after(() => pool.end());
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
+  const store = await createOperatorStore({ sql: pool, scope: north, now: clock }), operatorId = 'north';
+  await store.createOperator({ operatorId, slug: 'north', name: 'North', status: 'active', actor });
+  const publish = async () => store.publishPackage({ actor, operatorId, expectedRevision: (await store.getCurrentPackage(operatorId))?.revision ?? null,
+    lanes: [], games: ['blackjack'], tables: [], branding: { name: 'North' } });
+  await publish();
+  await store.saveBrandingDraft({ operatorId, actor, expectedDraftRevision: 0, expectedPackageRevision: 1, branding: { color: '#112233' } });
+  const stored = '{ "color": "#112233" }';
+  await pool.query('UPDATE croupier_studio.operator_branding_drafts SET branding=$2 WHERE operator_id=$1', [operatorId, stored]);
+  await assert.rejects(store.getBrandingDraft(operatorId), refusal('studio_corrupt_operator'));
+  const warn = t.mock.method(console, 'warn', () => {});
+  assert.equal((await publish()).revision, 2);
+  assert.deepEqual(warn.mock.calls.filter(call => call.arguments[0] === 'operator_branding_draft_unreadable').map(call => call.arguments[1]), [{ operatorId }]);
+  const rows = (await pool.query('SELECT draft_revision,base_package_revision,branding FROM croupier_studio.operator_branding_drafts WHERE operator_id=$1', [operatorId])).rows;
+  assert.deepEqual(rows.map(row => [Number(row.draft_revision), Number(row.base_package_revision), row.branding]), [[1, 1, stored]]);
 });

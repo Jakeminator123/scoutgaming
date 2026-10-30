@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Flat ban (Jakob 2026-10-27: one product path, no SQLite): no tracked file may mention
 // Node's SQLite module or its synchronous database class, except documentation.
-// Documentation is the reviewed prose set in tools/documentation-paths.mjs (guides,
-// docs/**, migrering/**.md, docs/history/**); it has no runtime role. Runtime Markdown
-// (prompts, runtime bundles, package docs outside that set) is code here and stays banned.
+// Documentation is the reviewed prose set in tools/documentation-paths.mjs (the listed
+// guides, Markdown under docs/, apps/studio/docs/ and migrering/, the runbooks directly in
+// ops/cloud/, and migrering/status.json); it has no runtime role. Other Markdown (prompts,
+// runtime bundles, package docs outside that set) is code here and stays banned.
 // CI runs this in the full regression (contracts/no-sqlite). A documentation-only PR
 // cannot add a violation, because every file it touches is exempt.
 import { execFileSync } from 'node:child_process';

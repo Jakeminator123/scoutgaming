@@ -8,7 +8,7 @@ import {createSpeechReplyRepository} from '../../packages/presentation/server/sp
 import * as replyMediaStore from '../../services/game/blob-media.mjs';
 import {createSpeechReplyLibrary} from '../../packages/presentation/server/speech-reply-library.mjs';
 export const scope={environment:'qa',workspaceId:'jakob'};
-export const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-token'};
+export const env={BLOB_READ_WRITE_TOKEN:'fixture-private-token'};
 export const input=(dealerId='astrid')=>({id:randomUUID(),dealerId,exactText:'Hej! Tack för frågan.',language:'sv',profileRevision:'a'.repeat(64),audio:{bytes:Buffer.from('WAV exact bytes'),contentType:'audio/wav'},video:{bytes:Buffer.from('MP4 exact bytes'),contentType:'video/mp4'}});
 export function memorySql(){
   const data=new Map(),calls=[];

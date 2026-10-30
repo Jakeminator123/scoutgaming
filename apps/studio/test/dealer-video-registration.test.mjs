@@ -45,7 +45,7 @@ test('valid identity syntax cannot substitute for a registered saved dealer',asy
 test('upload token issuance checks saved roster and removal revokes a signed grant before Blob IO',async()=>{
   let saved=project(),tokens=0,reads=0,writes=0;
   const repository={scope,readDocument:async()=>({value:saved}),getMedia:async()=>null,registerMedia:async()=>{writes++;return{duplicate:false};}};
-  const service=createStudioUploadService({repository,scope,ticketKey:Buffer.alloc(32,9),env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-only'},clientToken:async()=>{tokens++;return'fixture-client';},privateMedia:async()=>{reads++;throw Error('must not read');},now:()=>1000});
+  const service=createStudioUploadService({repository,scope,ticketKey:Buffer.alloc(32,9),env:{BLOB_READ_WRITE_TOKEN:'fixture-only'},clientToken:async()=>{tokens++;return'fixture-client';},privateMedia:async()=>{reads++;throw Error('must not read');},now:()=>1000});
   const body={operation:'prepare',sha256,size:32,contentType:'video/mp4',classification};
   saved={dealers:BASE_DEALER_IDS.map(id=>({id}))};
   await assert.rejects(service.prepare(body,{actor:'Operator'}),error=>error.code==='studio_dealer_not_registered');assert.equal(tokens,0);

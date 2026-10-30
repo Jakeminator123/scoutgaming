@@ -232,7 +232,7 @@ test('timing receipts cannot be supplied through classify or ordinary upload req
   assert.equal((await f.api.handle(request('/studio/api/videos/classify','POST',{id:mediaId,sha256,
     previous:f.record.classification,metadata:{...f.record.classification,mediaTiming:timing}}))).status,422);
   const uploads=createStudioUploadService({repository:f.repository,scope,ticketKey:Buffer.alloc(32,7),
-    env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token'},
+    env:{BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token'},
     clientToken:async()=>assert.fail('forged timing cannot request an upload token'),
     privateMedia:async()=>assert.fail('forged timing cannot download bytes')});
   const api=createStudioMediaApi({repository:f.repository,config,authorize:async()=>({user:'Operator',role:'admin',scope}),uploads,

@@ -204,7 +204,17 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
       lanes: current.lanes, games: current.games, tables: current.tables, branding: current.branding });
     const before = await snapshot();
     await post({ action: 'publish', ...versions(state), reviewToken: reviewed.reviewToken }, { status: 409 });
-    assert.deepEqual(await snapshot(), before); assert.equal((await get()).draft.basePackageRevision, 1);
+    assert.deepEqual(await snapshot(), before);
+    // Plan L3 PR 3 (Jakob's rule: a draft is never thrown away): every package revision carries the
+    // company's open draft over to itself in the same transaction (operator-store.mjs rebaseOpenDraft).
+    // The draft therefore no longer stays on package 1. Scout's new package keeps it as the next draft
+    // revision, with the same choices, on the new base. The review was of package 1 and the old draft
+    // revision, so its token cannot publish the carried-over draft either, not even with fresh versions.
+    const carried = (await get()).draft;
+    assert.deepEqual([carried.revision, carried.basePackageRevision, carried.sourcePackageRevision, carried.branding],
+      [state.draft.revision + 1, current.revision + 1, state.draft.sourcePackageRevision, state.draft.branding]);
+    await post({ action: 'publish', ...versions(await get()), reviewToken: reviewed.reviewToken }, { status: 409 });
+    assert.deepEqual(await snapshot(), before);
     await post({ action: 'save-draft', ...versions(await get()), branding: editable });
   });
   await check('real SQL journal failure rolls back publication and draft marker atomically', async () => {
@@ -395,6 +405,33 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
       await f.command({ action, ...versions(state), ...(action === 'publish' ? { reviewToken: 'unused' } : {}) }, 413);
       assert.deepEqual(await f.snapshot(), legacy);
     }
+  });
+  // Plan L3 PR 3: whether the company has a draft is read after the operator lock, in its own statement. A
+  // company's first draft, committed while a package publication waits for that lock, is carried over too.
+  await check('a first draft committed while a publication waits for the operator lock is carried over', async () => {
+    const operatorId = 'draft-east', input = { actor: 'fixture', operatorId, lanes: [], games: ['blackjack'], tables: [], branding: { name: operatorId } };
+    await store.createOperator({ actor: 'fixture', operatorId, slug: operatorId, name: operatorId });
+    const first = await store.publishPackage(input), holder = await operatorPool.connect();
+    let pending, saved;
+    try {
+      await holder.query('BEGIN');
+      const held = await createOperatorStore({ sql: holder, scope, transaction: work => work(holder) });
+      saved = await held.saveBrandingDraft({ actor: 'fixture', operatorId, expectedDraftRevision: 0, expectedPackageRevision: first.revision, branding: { color: '#112233' } });
+      pending = store.publishPackage({ ...input, expectedRevision: first.revision });
+      for (let tries = 0; ; tries++) {
+        const { count } = (await operatorPool.query(`SELECT count(*)::int AS count FROM pg_stat_activity WHERE pid<>pg_backend_pid()
+          AND wait_event_type='Lock' AND query LIKE '%operator-store:lock-operator%'`)).rows[0];
+        if (count === 1) break;
+        assert.ok(tries < 300, 'the publication waits for the operator lock');
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      await holder.query('COMMIT');
+    } catch (error) {
+      await holder.query('ROLLBACK').catch(() => {}); await pending?.catch(() => {}); throw error;
+    } finally { holder.release(); }
+    const published = await pending, carried = await store.getBrandingDraft(operatorId);
+    assert.equal(published.revision, first.revision + 1);
+    assert.deepEqual([carried.revision, carried.action, carried.basePackageRevision, carried.branding], [saved.revision + 1, 'draft.save', published.revision, saved.branding]);
   });
   return { checks, operatorPool, authPool };
 }

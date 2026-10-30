@@ -72,7 +72,7 @@ export async function openLayoutFixture(browserModule, { channel } = {}) {
   const outputRoot = resolve(output);
   await build({ origin: 'http://127.0.0.1:1', local: true, frontendPreview: true, output: pathToFileURL(output + sep) });
   const originalHtml = await readFile(new URL('../../services/game/public/index.html', import.meta.url), 'utf8');
-  const html = withSharedRoomEntry(decorateGameEntryHtml(originalHtml, {}, selection, { offline: true }), { enabled: true, selection })
+  const html = withSharedRoomEntry(decorateGameEntryHtml(originalHtml, selection, { offline: true }), { enabled: true, selection })
     .replace(/<link\b[^>]*href="https?:\/\/[^>]*>/g, '')
     .replace('<script src="/studio/assistant-widget.js" defer></script>', '')
     .replace('src="/shared-room-app.mjs"', 'src="/fixture.mjs"');

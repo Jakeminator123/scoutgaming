@@ -9,8 +9,8 @@ import { normalizeDisplayName } from '../../../packages/studio-access/display-na
 import { activeKeyOperator, keyOperator } from '../partner-operator.mjs';
 
 export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/', readMetadata, hasPublicMedia, operatorById,
-  nativeMode=process.env.CROUPIER_STUDIO_NEON_POLICY==='1'||process.env.CROUPIER_CLOUD_RUNTIME==='1',
-  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' }) {
+  // Neon is the one registry on every deployment, so native mode is on and legacy partner sessions are off.
+  nativeMode = true, allowLegacyPartnerSessions = false }) {
   if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;

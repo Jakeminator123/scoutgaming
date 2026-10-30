@@ -30,7 +30,7 @@ async function fixture(t, generate = async ({ text }) => result(text)) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const config = { directory };
   const provider = { generate };
-  return { directory, config, provider, service: createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider }) };
+  return { directory, config, provider, service: createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider, journalRequired: false }) };
 }
 
 async function sharedFixture(t,{policy=true,configPatch={},providerGenerate}={}){
@@ -56,19 +56,22 @@ async function sharedFixture(t,{policy=true,configPatch={},providerGenerate}={})
     counts:()=>({calls,tts,gpu,saves}),getTime:()=>time,setTime:v=>{time=v;}};
 }
 
-test('env gate requires both opt-ins, loopback, private directory and dedicated speech endpoint', () => {
+test('env gate requires both opt-ins, loopback and dedicated speech endpoint; the disk directory is never read', () => {
   const env = { HOST: '127.0.0.1', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1',
-    CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'croupier-preview-fixture'), CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
+    CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.deepEqual(generatedSpeechStatus(env), { enabled: true, configured: true, preview: true, dealerId: 'astrid', reviewStatus: 'pending' });
   for (const patch of [{ HOST: '0.0.0.0' }, { HOST: undefined }, { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_GENERATED_SPEECH_PREVIEW: '0' },
-    { CROUPIER_GENERATED_SPEECH_DIR: undefined }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('web/public/generated') }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('services/game/public/generated') }, { CARTESIA_API_KEY: '' },
+    { CARTESIA_API_KEY: '' },
     { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: undefined, RUNPOD_ENDPOINT_ID: 'old-shared-endpoint' }]) {
     assert.equal(generatedSpeechStatus({ ...env, ...patch }).configured, false);
   }
   assert.equal(generatedSpeechStatus({ ...env, CARTESIA_API_KEY: undefined, ELEVENLABS_API_KEY: 'fixture-primary' }).configured, false);
+  // Paid file jobs are journaled in Neon, so a public or missing disk directory changes nothing.
+  for (const directory of [undefined, resolve('web/public/generated')])
+    assert.deepEqual(generatedSpeechStatus({ ...env, CROUPIER_GENERATED_SPEECH_DIR: directory }), generatedSpeechStatus(env));
   assert.doesNotMatch(JSON.stringify(generatedSpeechStatus(env)), /secret|endpoint|directory|API/);
-  assert.throws(() => createGeneratedSpeechService({ directory: process.cwd() }, { repositoryRoot: speechRepositoryRoot }), { code: 'generated_speech_invalid_directory' });
-  assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }, { repositoryRoot: speechRepositoryRoot }), { code: 'generated_speech_unknown_profile' });
+  assert.throws(() => createGeneratedSpeechService({ directory: process.cwd() }, { repositoryRoot: speechRepositoryRoot, journalRequired: false }), { code: 'generated_speech_invalid_directory' });
+  assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }, { repositoryRoot: speechRepositoryRoot, journalRequired: false }), { code: 'generated_speech_unknown_profile' });
 });
 
 test('production speech needs an explicit cloud opt-in, HTTPS origin and authenticated mode', () => {
@@ -78,7 +81,7 @@ test('production speech needs an explicit cloud opt-in, HTTPS origin and authent
     CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret',
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.equal(generatedSpeechStatus(env).configured, true);
-  assert.equal(generatedSpeechStatus({ ...env, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
+  assert.equal(generatedSpeechStatus({ ...env, CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
     'Neon journal plus private Blob artifacts replaces the cloud speech directory');
   assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_RUNTIME: '1' }).configured, true,
     'a guarded cloud Web child can use loopback behind the HTTPS gateway');
@@ -130,7 +133,7 @@ test('deduplication is concurrent, durable, conflict-safe and returns independen
   const [first, duplicate] = await Promise.all([service.generate(input()), service.generate(input())]);
   assert.equal(calls, 1); assert.deepEqual(first, duplicate); assert.notEqual(first, duplicate);
   duplicate.exactText = 'mutated';
-  const restarted = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider });
+  const restarted = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider, journalRequired: false });
   assert.deepEqual(await restarted.generate(input()), first);
   assert.equal(calls, 1);
   await assert.rejects(restarted.generate(input({ text: 'Other words.' })), { code: 'generated_speech_request_conflict' });
@@ -144,7 +147,7 @@ test('failed or uncertain paid requests are never automatically retried after a 
   const { service, config, provider, directory } = await fixture(t, async () => { calls++; throw new Error('https://secret-provider/?token=PRIVATE'); });
   await assert.rejects(service.generate(input()), error => error.code === 'generated_speech_failed' && !error.message.includes('PRIVATE'));
   await assert.rejects(service.generate(input()), { code: 'generated_speech_request_already_attempted' });
-  await assert.rejects(createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider }).generate(input()), { code: 'generated_speech_request_already_attempted' });
+  await assert.rejects(createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider, journalRequired: false }).generate(input()), { code: 'generated_speech_request_already_attempted' });
   assert.equal(calls, 1);
   assert.equal((await readdir(directory)).includes('provider.lock'), false);
   for (const name of await readdir(directory)) assert.doesNotMatch(await readFile(join(directory, name), 'utf8'), /PRIVATE|secret-provider/);
@@ -158,7 +161,7 @@ test('single-flight lock works across services and a duplicate changed while pen
   const first = service.generate(input());
   await beginning;
   await assert.rejects(service.generate(input({ text: 'Different text.' })), { code: 'generated_speech_request_conflict' });
-  const other = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider });
+  const other = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider, journalRequired: false });
   await assert.rejects(other.generate(input({ requestId: 'second-request' })), { code: 'generated_speech_busy' });
   release(); await first;
   assert.equal((await other.generate(input({ requestId: 'second-request' }))).reviewStatus, 'pending');
@@ -240,7 +243,7 @@ test('managed cloud streaming never opens fullfile with an injected provider and
   const f = await sharedFixture(t), runtime = acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot });
   const env = { NODE_ENV:'production', HOST:'127.0.0.1', PUBLIC_URL:'https://game.example.test', DEMO_GUEST_ACCESS:'0',
     CROUPIER_CLOUD_RUNTIME:'1', CROUPIER_GENERATED_SPEECH:'1', CROUPIER_CLOUD_GENERATED_SPEECH:'1',
-    CROUPIER_GENERATED_SPEECH_PREVIEW:'1', CROUPIER_GENERATED_SPEECH_STREAMING:'1', CROUPIER_STUDIO_NEON_POLICY:'1',
+    CROUPIER_GENERATED_SPEECH_PREVIEW:'1', CROUPIER_GENERATED_SPEECH_STREAMING:'1',
     CROUPIER_P6_QA_ROUTER:'1', CROUPIER_P6_BOUNDED_TEST:'1', CARTESIA_API_KEY:'isolated-fixture',
     RUNPOD_API_KEY:'isolated-fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture',
     CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.25', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1' };
@@ -263,7 +266,7 @@ test('managed cloud streaming never opens fullfile with an injected provider and
 });
 
 test('app consumers share the configured speech service and provider configuration within one module graph', async t => {
-  const f = await fixture(t);
+  const f = await sharedFixture(t);
   const runtime = acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot });
   assert.equal(studioSpeech.getGeneratedSpeechService, gameSpeech.getGeneratedSpeechService);
   assert.equal(studioSpeech.generatedSpeechStatus, gameSpeech.generatedSpeechStatus);
@@ -271,23 +274,28 @@ test('app consumers share the configured speech service and provider configurati
   assert.equal(acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot }), runtime);
   assert.throws(() => acquireGeneratedSpeechRuntime({ repositoryRoot: f.directory }), /repositoryRoot mismatch/);
   assert.throws(() => createGeneratedSpeechService({ directory: join(speechRepositoryRoot, 'private-fixture') },
-    { repositoryRoot: speechRepositoryRoot }), { code:'generated_speech_invalid_directory' });
+    { repositoryRoot: speechRepositoryRoot, journalRequired: false }), { code:'generated_speech_invalid_directory' });
+  // The journal is always required: no journal, no service (the disk directory is never read).
+  assert.throws(() => createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot }));
   const env = { CROUPIER_GENERATED_SPEECH:'1', CROUPIER_GENERATED_SPEECH_PREVIEW:'1', HOST:'127.0.0.1',
-    CROUPIER_STUDIO_NEON_POLICY:'0', CROUPIER_GENERATED_SPEECH_DIR:f.directory,
+    CROUPIER_GENERATED_SPEECH_DIR:f.directory,
     CARTESIA_API_KEY:'isolated-fixture', RUNPOD_API_KEY:'isolated-fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture' };
   const saved = new Map(Object.keys(env).map(key => [key, process.env[key]]));
   const providerFetch = () => assert.fail('acquisition must never call a provider');
   try {
     Object.assign(process.env, env);
+    runtime.configureGeneratedSpeechJournal(null);
+    assert.throws(() => gameSpeech.getGeneratedSpeechService(), 'a configured service without the journal is refused');
+    runtime.configureGeneratedSpeechJournal(f.journal, { artifacts: f.artifacts });
     const first = gameSpeech.getGeneratedSpeechService();
     assert.ok(first);
     assert.equal(studioSpeech.getGeneratedSpeechService(), first);
-    runtime.configureGeneratedSpeechJournal(null);
+    runtime.configureGeneratedSpeechJournal(f.journal, { artifacts: f.artifacts });
     assert.equal(runtime.getGeneratedSpeechService(), first);
-    runtime.configureGeneratedSpeechJournal(null, { providerFetch });
+    runtime.configureGeneratedSpeechJournal(f.journal, { artifacts: f.artifacts, providerFetch });
     const second = studioSpeech.getGeneratedSpeechService();
     assert.notEqual(second, first);
-    runtime.configureGeneratedSpeechJournal(null, { providerFetch });
+    runtime.configureGeneratedSpeechJournal(f.journal, { artifacts: f.artifacts, providerFetch });
     assert.equal(gameSpeech.getGeneratedSpeechService(), second);
     process.env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID = 'fixture-changed';
     assert.notEqual(gameSpeech.getGeneratedSpeechService(), second);
