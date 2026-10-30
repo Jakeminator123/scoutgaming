@@ -1,6 +1,6 @@
 /* Spelbordets editor i Partnerportalen och i Admins spelbord. Bara tokens (--sg-*):
    Partnerportalen pekar dem på sina ljusa/mörka tokens, Admin på sin palett. */
-.panel { container-type:inline-size; display:grid; gap:18px; min-width:0; color:var(--sg-text); font-family:var(--sg-font-body),system-ui,sans-serif; }
+.panel { container-type:inline-size; display:grid; grid-template-columns:minmax(0,1fr); gap:18px; min-width:0; color:var(--sg-text); font-family:var(--sg-font-body),system-ui,sans-serif; }
 .panel p, .panel h1, .panel h2, .panel h4 { margin:0; }
 .panel [hidden] { display:none !important; }
 .srOnly { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
@@ -30,7 +30,7 @@
 .statusLine { margin-top:6px !important; font-size:13.5px; color:var(--sg-muted); }
 
 /* Flikar (Radix Tabs). */
-.tabs { display:flex; gap:2px; border-bottom:1px solid var(--sg-border); overflow-x:auto; }
+.tabs { display:flex; gap:2px; border-bottom:1px solid var(--sg-border); overflow-x:auto; overflow-y:hidden; }
 .panel .tabs button { padding:10px 12px; margin-bottom:-1px; border:0; border-bottom:2px solid transparent; background:none; color:var(--sg-muted); font:inherit; font-weight:500; white-space:nowrap; cursor:pointer; }
 .panel .tabs button:hover { color:var(--sg-text); }
 .panel .tabs button[data-state=active] { color:var(--sg-text); border-bottom-color:var(--sg-text); font-weight:600; }
