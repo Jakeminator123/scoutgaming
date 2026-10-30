@@ -159,7 +159,7 @@ async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=nul
   const stub=(tag,pick)=>props=>React.createElement('section',{[tag]:pick(props)});
   const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
-    :name==='./registered-studio'?{RegisteredStudio:props=>React.createElement('section',{'data-registered-studio':[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'),'data-assignment-revision':String(props.assignmentRevision??'none')})}
+    :name==='./registered-studio'?{RegisteredStudio:props=>React.createElement('section',{'data-registered-studio':[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'),'data-assignment-revision':String(props.assignmentRevision??'none')},props.navigation,props.children)}
     :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
@@ -434,7 +434,20 @@ test('the room publication is keyed by company and room, and holds the room life
   const reader=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
   // En ny key per bolag och spelbord: kvitto, fel och ruta från ett spelbord följer aldrig med till ett annat.
   assert.equal(release().key,'release:a:bj');
+  for(const section of ['game','details','state','appearance']){
+    h.setProps({section});assert.equal(release().key,'release:a:bj','changing tab keeps the same room publication');
+  }
+  const appearance=walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+  assert.equal(appearance.props.publication,'room');
+  appearance.props.onDirtyChange(true);assert.ok(release().props.blockedBy);
+  appearance.props.onDirtyChange(false);appearance.props.onBusyChange(true);assert.ok(release().props.blockedBy);
+  const beforeSave=release().props.refreshKey;appearance.props.onBusyChange(false);h.render();
+  assert.notEqual(release().props.refreshKey,beforeSave,'a completed save refreshes the release comparison');
+  h.setProps({section:'game'});
+  assert.equal(walk(h.render(),node=>node.props?.roomName!==undefined&&node.props?.onDirtyChange)[0].props.onPublished,undefined,'the settings editor only saves');
+  h.setProps({section:'appearance'});
   h.setProps({roomId:'roulette'});assert.equal(release().key,'release:a:roulette');
+  assert.equal(walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0].props.publication,'inline','roulette keeps its existing publisher');
   h.setProps({operatorId:'b',roomId:'other'});await settle(1);assert.equal(release().key,'release:b:other');
   assert.equal(reader().props.disabled,false);
   release().props.onBusyChange(true);assert.equal(reader().props.disabled,true,'the room cannot be opened or paused while it publishes');
@@ -500,21 +513,14 @@ test('a lifecycle write in flight and an unconfirmed publish receipt keep the co
   assert.equal(requests.length,1,'an unconfirmed package requires readback before the next write');
 });
 
-test('the room status shows published materials only for the selected room and clears stale status',async()=>{
-  const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},{compositions});
+test('the room status forwards the published choices to its header and rejects another room',async()=>{
+  const statuses=[];
+  const h=await mountRegisteredStudio({operatorId:'a',roomId:'bj',mode:'room',section:'appearance',onRoomStatus:status=>statuses.push(status)},{compositions});
   const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
-  const publishedMaterials=()=>walk(h.render(),node=>node.type==='dl'&&node.props?.['aria-label']==='Publicerat nu')
-    .flatMap(region=>walk(region,node=>node.type==='dd')).map(node=>[node.props.children].flat(Infinity).join(''));
-  assert.deepEqual(publishedMaterials(),[]);
-  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:true,live:{background:null,dealer:'astrid',table:'table-1'},labels:{background:'Standard',dealer:'Astrid',table:'Grön filt'}});
-  assert.deepEqual(publishedMaterials(),['– · Astrid · Grön filt'],'an unpublished background is not presented as live while a draft exists');
-  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:false,live:{background:'bg',dealer:'astrid',table:'table-1'},labels:{background:'Salong',dealer:'Astrid',table:'Grön filt'}});
-  assert.deepEqual(publishedMaterials(),['Salong · Astrid · Grön filt']);
-  editor().props.onStatus({roomId:'other',packageRevision:9,draftRevision:0,draft:false,live:{background:'foreign',dealer:'paow-v2',table:'other-table'},labels:{background:'Annat bolag',dealer:'Paow',table:'Annat bord'}});
-  assert.deepEqual(publishedMaterials(),[],'a delayed status from another room cannot describe this room');
-  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:false,live:{background:'bg',dealer:'astrid',table:'table-1'},labels:{background:'Salong',dealer:'Astrid',table:'Grön filt'}});
-  assert.deepEqual(publishedMaterials(),['Salong · Astrid · Grön filt']);
-  editor().props.onStatus(null);assert.deepEqual(publishedMaterials(),[]);
+  const status={roomId:'bj',packageRevision:7,draftRevision:2,draft:true,live:{background:null,dealer:'astrid',table:'table-1'},labels:{background:'Standard',dealer:'Astrid',table:'Grön filt'}};
+  editor().props.onStatus(status);assert.equal(statuses.at(-1),status,'saved drafts never replace the reported live choices');
+  editor().props.onStatus({...status,roomId:'other'});assert.equal(statuses.at(-1),null);
+  editor().props.onStatus(null);assert.equal(statuses.at(-1),null);
 });
 // Publication proofs for the company package under Bolag › Tilldelning. They were first written for the retired
 // publication page (/admin/publication) and follow the same operator-package contract.
@@ -698,8 +704,8 @@ test('an unchanged assignment is re-frozen only under Avancerat and a changed on
   assert.deepEqual(first.requests.map(row=>row.body),[{operatorId:'a',lanes:['one'],expectedPackageRevision:null}]);
 });
 
-test('the room editor publishes through the room release and keeps the PAOW idle refresh under Avancerat',async()=>{
-  const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'appearance'},dealerIds:['astrid','paow']});
+test('the room editor publishes through the room release and keeps the scoped PAOW repair in availability',async()=>{
+  const p=await publicationHarness({props:{operatorId:'a',roomId:'bj',mode:'room',section:'state'},dealerIds:['astrid','paow']});
   p.lifecycle().props.onChanged(packageOperators({lanes:['one','retired']}));
   const tree=p.h.render();
   assert.equal(walk(tree,node=>node.type==='form').length,0,'the room editor carries no package form; the assignment stays on its own tab');
@@ -709,7 +715,7 @@ test('the room editor publishes through the room release and keeps the PAOW idle
   const isRefresh=node=>node.type==='button'&&node.props?.['data-action']==='refresh-dealer-idle';
   const advanced=()=>walk(p.h.render(),node=>node.props?.title!==undefined&&walk(node,isRefresh).length>0)[0];
   const paow=()=>walk(advanced(),isRefresh)[0];
-  assert.equal(advanced().props.title,'Avancerat','the idle refresh is advanced, beside the one Publicera');
+  assert.ok(advanced(),'the scoped repair is in a closed details component');
   // A scene template removed from Studio stops Publicera (studio_presentation_required) but never the idle refresh:
   // it publishes against the frozen package, never Studio lanes.
   assert.equal(paow().props.disabled,false,'refresh-dealer-idle uses the frozen package');

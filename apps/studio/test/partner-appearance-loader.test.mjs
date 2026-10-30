@@ -77,9 +77,11 @@ test('loader rejects unknown room games but accepts older responses without game
 
 test('Admin room mode forwards the Admin layer unlock and the header status callback',async()=>{
  const data={...receipt('op-a'),rooms:[{id:'room-a',game:'blackjack'}]},h=loaderHarness(async()=>ok(data));
- const onStatus=()=>{},props={apiBase:'/studio/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a',roomLayout:true,adminChoices:true,onStatus};
+ const onStatus=()=>{},props={apiBase:'/studio/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a',roomLayout:true,adminChoices:true,publication:'room',onStatus};
  h.render(props);await h.flush();const panel=h.render(props).props.children.props;
  assert.equal(panel.adminChoices,true);assert.equal(panel.onStatus,onStatus);
- const partner=h.render({...props,adminChoices:undefined}).props.children.props;
+ assert.equal(panel.publication,'room');
+ const partner=h.render({...props,adminChoices:undefined,publication:undefined}).props.children.props;
  assert.equal(partner.adminChoices,false,'partners keep the company gate by default');
+ assert.equal(partner.publication,'inline','partners retain their own publication');
 });
