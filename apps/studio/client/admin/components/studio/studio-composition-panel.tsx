@@ -57,10 +57,11 @@ export function StudioCompositionPanel({operatorId,operatorSlug,operatorName,loc
     onChange={composition=>change({...lane,composition,renderer:'layered'})}>
     <CompositionPreview dealer={localDealerReference?{url:localDealerReference,label:'Lokal VILA · inte sparad',contentType:'image/png'}:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null} background={media(previewBackground)} table={media(tableAsset?.id)} overlay={overlay} framing={framing} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={localDealerReference?{mode:'alpha'}:video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={previewBackground!==lane.layers.background.default?undefined:lane.backgroundPlayback} backgroundAssets={clipAssets('background')} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request} tablePlayback={game==='blackjack'&&tableAsset?.id!==lane.layers.table.default?undefined:lane.tablePlayback} tableAssets={clipAssets('table')} previewTableRuleId={tablePreview.id} previewTableRequest={tablePreview.request}/>
   </CompositionPlacementEditor>;
-  return <section className="studio-detail-panel" aria-label="Gemensam miljö">{metadata}<h2>{lane.label}</h2>
+  return <section className="studio-detail-panel" aria-label="Gemensam miljö">
+    {inEnvironment?<details><summary>Miljöns namn</summary>{metadata}</details>:<>{metadata}<h2>{lane.label}</h2></>}
     {room&&room.compositionId!==lane.id&&<p role="status">Du visar miljön {lane.label}. Spelbordet {room.name} använder en annan miljö. {onSelect&&<button type="button" className="studio-button" onClick={()=>onSelect(room.compositionId)}>Visa spelbordets miljö</button>}</p>}
     {(!inEnvironment||Boolean(operatorId))&&<ScenePublication project={project} savedProject={savedProject} compositionId={lane.id} operatorId={operatorId} operatorSlug={operatorSlug} operatorName={operatorName} blocked={blocked||uploadBusy} dirty={projectDirty} onEdit={onEdit} onBusyChange={value=>uploading('publication',value)}/>}
-    <p>Standardlager, placering, tillåtna alternativ och automatik delas av alla spelbord som använder denna miljö. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>
+    {!inEnvironment&&<><p>Standardlager, placering, tillåtna alternativ och automatik delas av alla spelbord som använder denna miljö. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>
     <div className="studio-layer-summary" role="list" aria-label="Scenens tre lager">{([
       {id:'background',title:'Bakgrund',name:media(lane.layers.background.default)?.label??'Ingen separat bakgrund',count:lane.layers.background.allowed.length,media:media(lane.layers.background.default)},
       {id:'dealer',title:'Dealer',name:project.dealers.find(row=>row.id===lane.layers.dealer.default)?.label??'Ingen förvald dealer',count:lane.layers.dealer.allowed.length,media:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null},
@@ -68,18 +69,19 @@ export function StudioCompositionPanel({operatorId,operatorSlug,operatorName,loc
     ] as const).map((tile,index)=><div key={tile.id} role="listitem" className={'studio-layer-tile is-'+tile.id}>
       <div className="studio-layer-tile-media" aria-hidden="true">{tile.media?tile.media.contentType.startsWith('video/')?<video src={tile.media.url+'#t=0.1'} muted playsInline preload="metadata" tabIndex={-1}/>:<img src={tile.media.url} alt=""/>:<span>Inget valt</span>}</div>
       <span className="studio-card-eyebrow">{index+1} · {tile.title}</span><strong>{tile.name}</strong><small>{tile.count} {tile.count===1?'tillåtet val':'tillåtna val'}</small>
-    </div>)}</div>
+    </div>)}</div></>}
     {!inEnvironment&&<><p><strong>Spelbord som använder miljön:</strong></p>
     <ul>{uses.length?uses.map(use=><li key={use.roomId}>{use.operatorName} · {use.roomName}</li>):<li>Inga registrerade spelbord.</li>}</ul>
     {roomChoicesPath?<a className="studio-button" href={roomChoicesPath}>Välj material för {room?.name}</a>:<p>Välj ett aktivt spelbord för att öppna dess egna val.</p>}</>}
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta miljöredigering':'Redigera gemensam miljö'}</button>
+    <details open={!inEnvironment||undefined}><summary>Tillåtna dealers och standardval</summary>
     <fieldset disabled={locked} className="space-y-2"><legend>Dealers i den gemensamma miljön</legend>
       {project.dealers.map(dealer=><label key={dealer.id} className="flex items-center gap-2"><input type="checkbox" checked={lane.layers.dealer.allowed.includes(dealer.id)} onChange={event=>{
         const ids=event.target.checked?[...lane.layers.dealer.allowed,dealer.id]:lane.layers.dealer.allowed.filter(id=>id!==dealer.id);
         try{onEdit(setTemplateDealers(project,lane.id,ids,ids.includes(lane.layers.dealer.default)?lane.layers.dealer.default:ids[0]));setError('');}catch(cause){setError((cause as Error).message);}
       }}/>{dealer.label}</label>)}
       <label className="studio-field">Förvald dealer<select value={lane.layers.dealer.default} onChange={event=>{try{onEdit(setTemplateDealers(project,lane.id,lane.layers.dealer.allowed,event.target.value));setError('');}catch(cause){setError((cause as Error).message);}}}>{project.dealers.filter(row=>lane.layers.dealer.allowed.includes(row.id)).map(dealer=><option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
-    </fieldset>
+    </fieldset></details>
     <div className="studio-game-tabs" role="tablist" aria-label="Kompositionsstorlek">{(['mobile','desktop'] as const).filter(id=>game!=='roulette'||id==='desktop').map(id=><button key={id} role="tab" aria-selected={layout===id} onClick={()=>setLayout(id)}>{id==='mobile'?'Mobil':'Desktop'}</button>)}</div>
     {game==='roulette'&&<p>Roulette använder Desktop 16:9 även på mobil.</p>}
     {game==='roulette'?<p>Förhandsvisningen använder dealerns roulette-VILA, annars första tillgängliga roulette-idle. Detta är ett materialprov; spelkoppling och godkännande återstår.</p>:null}
