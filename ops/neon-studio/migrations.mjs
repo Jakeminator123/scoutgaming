@@ -78,9 +78,8 @@ const sources = Object.freeze([
   { version:'022', file:'022-partner-journal.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['operator_audit_events'] },
   // Spelborden i paketet (plan L3): en kolumn operator_packages.rooms med sin längd-CHECK.
-  // Tolerant kod först: utan 023 skrivs paketen utan rooms och läsarna använder dokumentet.
-  // Kravet höjs först i L3 PR 5. Appliceras efter Jakobs ja, preview före produktion.
-  { version:'023', file:'023-operator-package-rooms.sql', deploymentOptional:true, tables:[], indexes:[],
+  // L3 steps 5-6: required after migration and verified republication.
+  { version:'023', file:'023-operator-package-rooms.sql', tables:[], indexes:[],
     fingerprintTables:['operator_packages'] },
 ]);
 /** Accept only a verified planner result with every required version installed.

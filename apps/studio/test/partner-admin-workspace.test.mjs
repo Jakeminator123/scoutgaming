@@ -300,7 +300,7 @@ async function seedBranding(f) {
   f.config.readProject=async()=>assert.fail('frozen package must not use the live project');
   f.config.readAdministration=async()=>({rooms:[{schemaVersion:2,id:'john-room',name:'John',operatorId:john.id,presentationLaneId:lane.id,gameLaneId:'indexed',state:'live'}],
     gameLane:'indexed',gameLanes:[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'}]});
-  await f.store.publishPackage({actor:'fixture',operatorId:john.id,lanes:[lane.id],games:['blackjack'],tables:['john-room'],
+  await f.store.publishPackage({actor:'fixture',operatorId:john.id,lanes:[lane.id],games:['blackjack'],tables:['john-room'],rooms:(await f.config.readAdministration()).rooms,
     branding:withPackagePresentation({lane:lane.id,color:'#112233'},presentation)});
   return body=>handlePartnerAuth(request(f.admin,selected('branding'),{body}),f.config);
 }

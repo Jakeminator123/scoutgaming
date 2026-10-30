@@ -18,7 +18,7 @@ const scope = Object.freeze({ environment: 'test', workspaceId: 'croupier' });
 const idle = dealerId => ({ dealerId, mediaId:'11111111-1111-4111-8111-111111111111',sha256:'a'.repeat(64),available:true });
 const administration = () => ({
   tiers: { classic: 'vera', high: 'astrid', vip: 'amira' },
-  rooms: [{ id: 'room', name: 'Room', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' }],
+  rooms: [],
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   tournaments: [{ id: 't1', name: 'Open', format: '20 rounds', buyin: 100, pool: 25000, entries: 0, cap: 250, starts: 'Tonight', state: 'registering' }],
   voiceReview: { privateReview: true }, genVerdicts: {}, genLandings: {},
@@ -51,11 +51,12 @@ test('operator rooms save and launch without legacy administration or invented d
   const roomFixture = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
   await repository.initializeDocument('project', { value: roomFixture.project, revision: 'modern-project', actor: 'import' });
-  await repository.initializeDocument('administration', { value: roomFixture.administration, revision: 'modern-admin', actor: 'import' });
+  pool.packages=[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:roomFixture.pack.operatorId,package_revision:roomFixture.pack.revision,lanes:roomFixture.pack.lanes,tables:roomFixture.pack.tables,rooms:roomFixture.pack.rooms}];
+  await repository.initializeDocument('administration', { value: {...roomFixture.administration,rooms:[]}, revision: 'modern-admin', actor: 'import' });
   const policy = createStudioGamePolicy({ repository, scope, dealerIdle: idle });
   const original = await policy.readAdministration();
   const draft = structuredClone(original.value);
-  draft.rooms[0].name = 'Operator-owned room';
+  draft.voiceReview = {checked:true};
   const saved = await policy.saveAdministration(draft, original.revision, { actor: 'operator' });
   const publicConfig = await policy.readGameConfiguration();
   for (const key of ['tiers', 'pitboss', 'tournaments']) {
@@ -72,7 +73,7 @@ test('operator rooms save and launch without legacy administration or invented d
   assert.equal(entry.selection.packageRevision, roomFixture.pack.revision);
   const history = await repository.listDocumentHistory('administration');
   assert.equal(history.length, 1);
-  assert.deepEqual(history[0].value, original.value);
+  const {rooms:_rooms,...stored}=original.value;assert.deepEqual(history[0].value,stored);
   await assert.rejects(policy.saveAdministration(draft, original.revision, { actor: 'operator' }), rejected('studio_conflict', 409));
 });
 
@@ -87,15 +88,14 @@ test('modern documents still reject malformed legacy sections and mixed legacy r
     { tournaments: null }, { tournaments: [{ id: 'incomplete' }] }]) {
     await assert.rejects(policy.saveAdministration({ ...minimal, ...section }, original.administrationRevision, { actor: 'operator' }), rejected('studio_invalid_game_policy', 422));
   }
-  const mixed = { ...original.administration, rooms: [...original.administration.rooms, room] };
+  const mixed = { ...original.administration, rooms: [{ id: 'legacy', name: 'Legacy', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' }, room] };
   for (const key of ['tiers', 'pitboss', 'tournaments']) {
     const incomplete = structuredClone(mixed);
     delete incomplete[key];
     await assert.rejects(policy.saveAdministration(incomplete, original.administrationRevision, { actor: 'operator' }), rejected('studio_invalid_game_policy', 422));
   }
-  const saved = await policy.saveAdministration(mixed, original.administrationRevision, { actor: 'operator' });
-  for (const key of ['tiers', 'pitboss', 'tournaments']) assert.deepEqual(saved.value[key], original.administration[key]);
-  assert.deepEqual(saved.value.rooms[0], original.administration.rooms[0]);
+  await assert.rejects(policy.saveAdministration(mixed, original.administrationRevision, { actor: 'operator' }),rejected('studio_room_publication_required',409));
+  assert.deepEqual((await policy.readSaved()).administration,original.administration);
 });
 
 test('shared configuration is always on, Neon-scoped, inert and never substitutes zones or defaults', () => {
@@ -214,7 +214,7 @@ test('historical tiers remain readable but never authorize foreign dealer media'
 test('invalid game domains, hidden administration data and incompatible animation choices cannot be saved', async () => {
   const { policy, pool } = await fixture(); const original = await policy.readSaved(); const connections = pool.connects;
   const cases = [value => { delete value.tiers.classic; }, value => { value.tiers.extra = 'vera'; }, value => { value.tiers.classic = 'unknown'; },
-    value => { delete value.rooms; }, value => { value.rooms[0].dealer = 'unknown'; }, value => { value.pitboss.randomWalkMin = -1; },
+    value => { value.rooms = [{schemaVersion:2}]; }, value => { value.pitboss.randomWalkMin = -1; },
     value => { value.tournaments[0].buyin = -100; }, value => { value.clipAssignments = {}; }];
   for (const change of cases) {
     const draft = structuredClone(original.administration); change(draft);
@@ -228,7 +228,7 @@ test('invalid game domains, hidden administration data and incompatible animatio
 
 test('persisted missing domains and SQL/schema/media failures produce fixed errors without disk/default fallback', async () => {
   const { policy, pool } = await fixture();
-  pool.corruptDocument(scope, 'administration', row => ({ ...row, value: { tiers: administration().tiers } }));
+  pool.corruptDocument(scope, 'administration', row => ({ ...row, value: { tiers: administration().tiers, pitboss:{} } }));
   await assert.rejects(policy.readSaved(), rejected('studio_corrupt_game_policy'));
   pool.failNext('read-document', new Error('secret connection Neon schema missing private path'));
   await assert.rejects(policy.readSaved(), error => rejected('studio_storage_unavailable')(error) && !error.message.includes('secret'));

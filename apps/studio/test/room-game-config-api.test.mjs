@@ -40,7 +40,7 @@ function fixture({resolver=true,speech=false,native=false,branding={}}={}) {
   const room={schemaVersion:2,id:'room-test',name:'Test room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'room-lane',state:'live'};
   const operator={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1};
   let state={document:{revision:'admin-1',value:{rooms:[room],gameLane:'room-lane',gameLanes:[{schemaVersion:1,id:'room-lane',label:'Room',renderer:'portrait-video',dealer:dealerId,mediaCollection:dealerId+'-presentation'}]}},
-    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation(branding,cloud.presentation,{allowExtended:Boolean(native)})),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
+    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',rooms:canonicalStudioJson([room]),branding:canonicalStudioJson(withPackagePresentation(branding,cloud.presentation,{allowExtended:Boolean(native)})),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
   let work=null,serial=Promise.resolve(),failure=null,captureChange=null,mediaChange=null,resolverChange=null;const trace=[];
   const client={async query(sql,values) {
     assert.ok(work,'every SQL query uses one active repository transaction');assert.deepEqual(values.slice(0,2),[scope.environment,scope.workspaceId]);
@@ -50,7 +50,7 @@ function fixture({resolver=true,speech=false,native=false,branding={}}={}) {
     if(marker==='operator-store:operator-by-id'||marker==='operator-store:lock-operator')rows=values[2]===operator.operator_id?[operator]:[];
     else if(marker==='operator-store:extended-presentation-ready')rows=[{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}];
     else if(marker==='operator-store:current-package')rows=work.packages.filter(row=>row.operator_id===values[2]).slice(-1);
-    else if(marker==='operator-store:publish-package') {const row={...work.packages.at(-1),package_revision:work.packages.at(-1).package_revision+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};work.packages.push(row);rows=[row];}
+    else if(marker==='operator-store:publish-package') {const row={...work.packages.at(-1),package_revision:work.packages.at(-1).package_revision+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7],rooms:values[8]};work.packages.push(row);rows=[row];}
     else if(marker==='operator-store:audit-write'){work.audits.push(values);rows=[{event_id:values[3]}];}
     else if(marker==='operator-store:room-config-lock')assert.match(sql,/pg_advisory_xact_lock/);
     else if(marker==='operator-store:room-config-administration')rows=[clone(work.document)];
@@ -149,7 +149,7 @@ test('embedded AV room override survives J08 save/read/publish and native access
   assert.deepEqual(read.published,published.published);assert.equal(read.draft,null);
   const version=read.published.configVersion,key='room-test:'+version,frozen=JSON.parse(state.configs[key]);
   const row=state.packages.at(-1),pack={operatorId:row.operator_id,revision:row.package_revision,
-    lanes:JSON.parse(row.lanes),games:JSON.parse(row.games),tables:JSON.parse(row.tables),branding:JSON.parse(row.branding)};
+    lanes:JSON.parse(row.lanes),games:JSON.parse(row.games),tables:JSON.parse(row.tables),rooms:JSON.parse(row.rooms),branding:JSON.parse(row.branding)};
   assert.equal(state.heads['room-test'],version);assert.equal(pack.branding.roomGameConfigVersions['room-test'],version);
   assert.equal(frozen.configVersion,version);assert.equal(frozen.packageRevision,read.published.packageRevision);
   assert.equal(pack.revision,2);assert.equal(read.packageRevision,pack.revision);assert.equal(frozen.packageRevision,pack.revision);

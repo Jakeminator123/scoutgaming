@@ -116,16 +116,19 @@ export async function installStudioRuntime(t, database, { project, administratio
   const plan = await planStudioMigrations({ pool });
   if (!isStudioMigrationPlanReady(plan) || plan.optionalPending.length) throw Error(`engine_qa_studio_schema_not_ready:${JSON.stringify(plan.applied.map(row => row.version))}`);
   const repository = createStudioRepository({ pool, scope });
-  const documents = [await repository.initializeDocument('project', { value: project, actor }),
-    await repository.initializeDocument('administration', { value: administration, actor })];
+  let documents;
   let published = null;
-  if (operator) {
-    const store = await createOperatorStore({ sql: pool, scope });
-    await store.createOperator({ actor, operatorId: operator.id, slug: operator.slug, name: operator.name });
-    published = await store.publishPackage({ actor, operatorId: operator.id, lanes: operator.lanes, games: operator.games,
-      tables: operator.tables, branding: operator.branding });
-    if (operator.revision !== undefined && published.revision !== operator.revision) throw Error(`engine_qa_package_revision:${published.revision}`);
-  }
+  await repository.transaction(() => repository.withTransactionClient(async client => {
+    documents = [await repository.initializeDocument('project', { value: project, actor }),
+      await repository.initializeDocument('administration', { value: administration, actor })];
+    if (operator) {
+      const store = await createOperatorStore({ sql: client, scope, transaction: work => repository.withTransactionClient(work) });
+      await store.createOperator({ actor, operatorId: operator.id, slug: operator.slug, name: operator.name });
+      published = await store.publishPackage({ actor, operatorId: operator.id, lanes: operator.lanes, games: operator.games,
+        tables: operator.tables, rooms: administration.rooms, branding: operator.branding });
+      if (operator.revision !== undefined && published.revision !== operator.revision) throw Error(`engine_qa_package_revision:${published.revision}`);
+    }
+  }));
   const env = { CROUPIER_STUDIO_ENVIRONMENT_ID: scope.environment, CROUPIER_STUDIO_WORKSPACE_ID: scope.workspaceId,
     // Startup requirements of the Studio surfaces that come with the policy runtime
     // (signed Studio commands, Lab session check). No test sends to these origins.
@@ -150,7 +153,7 @@ export async function installStudioRuntime(t, database, { project, administratio
  * `preload` into startEngine, once per database. */
 export async function installBaseStudioRuntime(t, database) {
   const { publishedChatStudio } = await import('./published-chat-authority.mjs');
-  return installStudioRuntime(t, database, { project: publishedChatStudio.project, administration: publishedChatStudio.administration });
+  return installStudioRuntime(t, database, { project: publishedChatStudio.project, administration: { ...publishedChatStudio.administration, rooms: [] } });
 }
 
 /** Starts services/game/server.mjs against `database` and waits for its readiness line.

@@ -81,7 +81,7 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
   const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea room',
     renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
   const operator={id:'north-id',slug:'north',name:'North',status:'active',internalSecret:'never-expose'};
-  const state={operator,project,administration,pack:{operatorId:operator.id,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],
+  const state={operator,project,administration,pack:{operatorId:operator.id,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],
     branding:withPackagePresentation({name:'North',dealer:'nora',table:tableClip?project.layerAssets.at(-1).id:project.layerAssets[3].id,background:project.layerAssets[1].id},presentation)}};
   const calls={operators:0,packages:0,snapshots:0};
   const api=createPublicOperatorRooms({store:{getOperatorBySlug:async slug=>{calls.operators++;return slug===operator.slug?structuredClone(state.operator):null;},
@@ -204,14 +204,12 @@ test('historical full-frame and baked flags expose only frozen allowed layers wi
   assert.deepEqual(f.state.pack,before);
 });
 
-test('catalog only lists live owned rooms referenced by the current frozen package',async()=>{
+test('catalog lists live package rooms and never adopts unregistered administration rooms',async()=>{
   const f=fixture();
-  for(const [id,changes,published]of [['preview',{state:'preview'},true],['pending',{state:'pending'},true],
-    ['foreign',{operatorId:'other'},true],['unpublished',{},false],['orphan',{presentationLaneId:'draft-only'},true]]){
-    f.state.administration.rooms.push({...f.room,id:'room-'+id,...changes});if(published)f.state.pack.tables.push('room-'+id);
-  }
+  for(const state of ['preview','pending']){const row={...f.room,id:'room-'+state,state};f.state.pack.rooms.push(row);f.state.pack.tables.push(row.id);}
+  f.state.administration.rooms.push({...f.room,id:'room-unpublished'},{...f.room,id:'room-foreign',operatorId:'other'});
   assert.deepEqual((await f.api.read('north')).rooms.map(room=>room.id),['room-north']);
-  f.state.pack.tables=[];assert.deepEqual((await f.api.read('north')).rooms,[]);
+  f.state.pack.tables=[];f.state.pack.rooms=[];assert.deepEqual((await f.api.read('north')).rooms,[]);
 });
 
 // Plan L3 PR 3: a pause is a package revision, so a package written with its own rooms (Studio 023) is the
@@ -272,7 +270,7 @@ test('unreadable or inconsistent published runtime fails closed without returnin
     if(mode==='digest')f.state.pack.branding._scoutPresentation={...f.state.pack.branding._scoutPresentation,sha256:'b'.repeat(64)};
     if(mode==='owner')f.state.pack.operatorId='someone-else';
     if(mode==='renderer'){Object.assign(f.state.administration.gameLanes[0],{renderer:'indexed-video',dealer:'amira',mediaCollection:'legacy-dealers'});}
-    if(mode==='duplicate-room')f.state.administration.rooms.push({...f.room});
+    if(mode==='duplicate-room')f.state.pack.rooms.push({...f.room});
     if(mode==='no-policy')api=createPublicOperatorRooms();
     const res=await request(api);assert.equal(res.status,503,mode);assert.deepEqual(JSON.parse(res.body),{error:'operator_rooms_unavailable'});
     await assert.rejects(api.read('north'),error=>isUnplayableOperatorRooms(error,'north')===(mode==='renderer'),mode);

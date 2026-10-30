@@ -9,6 +9,7 @@ const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const clock = () => 1_700_000_000_000;
 const actor = 'brand-actor';
 const operatorId = 'operator-unibet';
+const room = (id='room-1',presentationLaneId='mobile-phone') => ({schemaVersion:2,id,name:id,operatorId,presentationLaneId,gameLaneId:'portrait-astrid',state:'live'});
 
 function memoryPool() {
   const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operatorAudits: [] };
@@ -55,7 +56,7 @@ function memoryPool() {
     if (tag === 'publish-package') {
       if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
       const revision = scoped('operator_packages').filter(row => row.operator_id === values[2]).reduce((max, row) => Math.max(max, Number(row.package_revision)), 0) + 1;
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
+      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7], rooms: values[8] };
       tables.operator_packages.push(row);
       return { rows: [copy(row)] };
     }
@@ -85,7 +86,7 @@ async function seeded(lanes = ['vip-table', 'mobile-phone']) {
   });
   await store.upsertMembership({ actor, operatorId, userId: 'staff-1', roleId: 'partner-admin', status: 'active' });
   await store.publishPackage({
-    actor, operatorId, lanes, games: ['blackjack'], tables: ['table-a'],
+    actor, operatorId, lanes, games: ['blackjack'], tables: ['table-a'], rooms: [room('table-a',lanes[0])],
     branding: { [TABLE_COLOR_BRANDING_KEY]: '#112233', name: 'Unibet' },
   });
   const listed = await store.listOperators();
@@ -169,7 +170,7 @@ const draft=(api,branding,{expectedPackageRevision=1,expectedDraftRevision=0}={}
 
 test('canonical package rejects incompatible baked layer choices while retaining approved playback',async()=>{
   const presentation=makePresentation(false);
-  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({},presentation)};
   let writes=0;
   const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}}),readProject:async()=>assert.fail('published package must be authoritative')});
   assert.deepEqual((await api.readState({operatorId})).adjustable,['dealer','branding']);
@@ -181,8 +182,8 @@ test('canonical package rejects incompatible baked layer choices while retaining
 });
 test('canonical separate layers accept exact assigned assets and preserve games, room IDs and N1 metadata',async()=>{
   const presentation=makePresentation();
-  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({name:'Unibet'},presentation)};
-  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async input=>{current={...input,revision:current.revision+1};return current;}}),readProject:async()=>assert.fail('no live catalogue fallback')});
+  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({name:'Unibet'},presentation)};
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async input=>{current={...current,...input,revision:current.revision+1};return current;}}),readProject:async()=>assert.fail('no live catalogue fallback')});
   await assert.rejects(draft(api,{background:'foreign-asset'}),error=>error.statusCode===422);
   const saved=await publishThroughDraft(api,{operatorId,actor,expectedPackageRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'nora'}});
   assert.equal(saved.packageRevision,2);
@@ -196,7 +197,7 @@ test('canonical separate layers accept exact assigned assets and preserve games,
 
 test('a stale package revision is 409 and a field outside the template rights is 422; nothing is published',async()=>{
   let writes=0;
-  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
   const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async()=>{writes++;return current;}}),readProject:async()=>assert.fail('frozen only')});
   assert.deepEqual((await api.readState({operatorId})).adjustable,['table.color']);
   for(const branding of [{background:backgroundId},{table:tableId},{dealer:'nora'},{name:'Nord'},{constructor:'nope'},{_scoutPresentation:{}}])
@@ -211,7 +212,7 @@ test('review with a stale package revision is 409 from the API itself; review ne
   // Review only reads, so the fixture's CAS in saveBrandingDraft/publishBrandingDraft never sees it:
   // the 409 must come from the API's own check of the package revision.
   let writes=0;
-  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({},makePresentation(true,['table.color']))};
   const store=withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async()=>{writes++;return current;}});
   const api=createPartnerBrandingApi({store,readProject:async()=>assert.fail('frozen only')});
   await draft(api,{color:'#112233'});
@@ -224,7 +225,7 @@ test('review with a stale package revision is 409 from the API itself; review ne
 
 test('a package changed after the read is rejected by the atomic publisher',async()=>{
   const presentation=makePresentation();
-  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({},presentation)};
   let attempts=0;
   const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
     attempts++;
@@ -240,7 +241,7 @@ function createPartnerBrandingApi(options) {
   const readAdministration=async()=>{
     const pack=await options.store.getCurrentPackage(operatorId);
     return {revision:'admin-fixture',value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
-      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId,gameLaneId:'portrait-astrid',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
+      rooms:structuredClone(pack.rooms??[])}};
   };
   return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
 }
@@ -265,9 +266,9 @@ function guardedLegacyFixture({version=21,anchors=true,acquireAnchors=false}={})
     value.lanes[0].composition.blackjackTables=[geometry];
   }
   if(anchors)addAnchors(presentation);
-  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],rooms:[room()],branding:withPackagePresentation({},presentation)};
   const store=withBrandingDrafts({getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
-    assert.equal(locked,true);writes++;current={...structuredClone(input),revision:2};return current;
+    assert.equal(locked,true);writes++;current={...current,...structuredClone(input),revision:2};return current;
   }});
   const repository=wrapNativePresentationRepository({transaction:async work=>{
     calls.push('BEGIN');locked=true;

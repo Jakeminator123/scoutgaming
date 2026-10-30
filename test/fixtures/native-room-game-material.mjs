@@ -97,7 +97,7 @@ export function nativeRoomMaterialFixture({dealerId='dragan',copyOf=null,copyFra
   presentation.playback.lines = structuredClone(project.lines);
   presentation.playback.media = rows;
   const room = {schemaVersion:2,id:'room-native-fixture',name:'Fixture',operatorId:'operator-fixture',presentationLaneId:presentation.lanes[0].id,gameLaneId:'fixture-lane',state:'live'};
-  const pack = {operatorId:room.operatorId,revision:7,tables:[room.id],games:['blackjack'],lanes:[room.presentationLaneId],branding:{}};
+  const pack = {operatorId:room.operatorId,revision:7,tables:[room.id],rooms:[structuredClone(room)],games:['blackjack'],lanes:[room.presentationLaneId],branding:{}};
   const recapture = () => { pack.branding = capturePackagePresentation({},presentation,{allowExtended:true}); };
   if (capture) recapture();
   return {input:{package:pack,room,language},presentation,project,records:rows,profile,recapture};

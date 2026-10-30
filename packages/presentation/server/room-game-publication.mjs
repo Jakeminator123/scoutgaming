@@ -1,5 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto';
-import {canonicalStudioJson,cloneStudioJson,validateDocumentValue,validateStudioMedia,StudioStorageError} from '../../studio-registry/server/document-contract.mjs';
+import {canonicalStudioJson,cloneStudioJson,validateStudioMedia,StudioStorageError} from '../../studio-registry/server/document-contract.mjs';
 import {resolveRoomBranding} from '../../operators/contracts/branding.mjs';
 import {isPresentationRoom,roomGame} from '../contracts/presentation-room.mjs';
 import {validateRoomGameConfig,validateRoomGameMaterial,ROOM_GAME_TIMERS,ROOM_LIMIT_PRESETS} from '../contracts/room-game-config.mjs';
@@ -100,11 +100,7 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
   for(const [id,version] of Object.entries(previous))if(retained.has(id)&&incoming[id]!==version)fail('studio_forbidden',403);
   if(!Object.keys(previous).length&&!replacement)return {branding:next.branding,configs:[]};
 
-  const documents=await query(`/* operator-store:room-config-administration */ SELECT revision,value FROM croupier_studio.documents
-    WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3`,['administration']);
-  if(documents.length!==1)fail('studio_document_missing',503);
-  const administration=validateDocumentValue('administration',stored(documents[0].value),documents[0].revision,{allowLegacyRead:true});
-  const roomRows=administration.rooms??[],map={};
+  const roomRows=next.rooms??[],map={};
   const ids=[...new Set([...Object.keys(previous).filter(id=>retained.has(id)),...(replacement?[replacement.roomId]:[])])].sort();
   for(const id of ids)await query(`/* operator-store:room-config-lock */ SELECT pg_advisory_xact_lock($3::integer,$4::integer)
     WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL`,roomGameLockKeys(id));

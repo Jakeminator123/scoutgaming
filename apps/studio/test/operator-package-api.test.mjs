@@ -28,6 +28,8 @@ const session = { user: 'lane-actor', role: 'admin', scope };
 const clock = () => 1_700_000_000_000;
 
 const memoryPool = operatorMemoryPool;
+const testRoom=(id,operatorId,presentationLaneId='mobile-phone')=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId,gameLaneId:'johns-game',state:'live'});
+const withoutRooms=({rooms,...fields})=>fields;
 
 function apiFor(pool, project = createSeedProject(), storeFactory) {
   const lane = createOperatorPackageApi({ pool, scope, project, now: clock, storeFactory });
@@ -124,7 +126,7 @@ test('publishing lanes carries the operator branding, games and tables forward',
   const { api } = apiFor(pool);
   await createSgTest(pool);
   const direct = await createOperatorStore({ sql: pool, scope, now: clock });
-  await direct.publishPackage({ actor: 'partner-admin', operatorId: 'sg-test', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['t1'], branding: { color: '#112233', name: 'North' } });
+  await direct.publishPackage({ actor: 'partner-admin', operatorId: 'sg-test', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['t1'],rooms:[testRoom('t1','sg-test')], branding: { color: '#112233', name: 'North' } });
   const republished = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
   assert.equal(republished.status, 200);
   const body = await republished.json();
@@ -184,9 +186,10 @@ function nativePool(){
         if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
         const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
         if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:working.operatorStatus??'active',created_at_ms:1}]:[]);
+        if(marker==='current-package-rooms')return result([...new Map(working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]).sort((a,b)=>a.package_revision-b.package_revision).map(row=>[row.operator_id,row])).values()]);
         if(marker==='current-package')return result(packages().sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
         if(marker==='publish-package'){
-          const row={environment_id:values[0],workspace_id:values[1],operator_id:values[2],package_revision:Math.max(0,...packages().map(row=>row.package_revision))+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};
+          const row={environment_id:values[0],workspace_id:values[1],operator_id:values[2],package_revision:Math.max(0,...packages().map(row=>row.package_revision))+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7],rooms:values[8]};
           working.packages.push(row);return result([row]);
         }
         if(marker==='read-document')return result(working.documents.has(key(values))?[working.documents.get(key(values))]:[]);
@@ -264,8 +267,8 @@ async function placementFixture(options){
   lane.composition.blackjackTables=[board];
   const room={schemaVersion:2,id:'room-mobile',name:'Mobile',operatorId:'north',presentationLaneId:lane.id,gameLaneId:'johns-game',state:'live'};
   const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];
-  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
-  for(let revision=1;revision<9;revision++)await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:revision,lanes:[lane.id],games:['blackjack'],tables:[room.id],
+  await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
+  for(let revision=1;revision<9;revision++)await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:revision,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],
     branding:withPackagePresentation({name:'North',roomOverrides:{[room.id]:{table:placementTable}},privateMetadata:{kept:true}},presentation)});
   f.pool.seedBrandingDraft({revision:3,basePackageRevision:9,branding:{roomOverrides:{[room.id]:{dealer:'linnea'}}}});
   const composition=structuredClone(lane.composition);
@@ -408,9 +411,9 @@ test('saved scene publication reports all shared-lane package rooms without touc
   const f=await placementFixture(),admin=await f.repository.readDocument('administration');
   admin.value.rooms.push({...f.room,id:'room-shared',name:'Shared',state:'preview'},
     {...f.room,id:'room-not-published',name:'Not published'},{...f.room,id:'room-foreign',operatorId:'south'});
-  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
   const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
-    lanes:current.lanes,games:current.games,tables:[...current.tables,'room-shared'],branding:current.branding});f.body.expectedPackageRevision=10;
+    lanes:current.lanes,games:current.games,tables:[...current.tables,'room-shared'],rooms:admin.value.rooms.filter(row=>row.operatorId==='north'&&[...current.tables,'room-shared'].includes(row.id)),branding:current.branding});f.body.expectedPackageRevision=10;
   const before=f.pool.snapshot(),result=await f.publish();
   assert.deepEqual(result.affectedRooms,[{id:f.room.id,name:f.room.name,state:f.room.state},{id:'room-shared',name:'Shared',state:'preview'}]);
   assert.deepEqual(f.pool.snapshot().documents,before.documents);
@@ -434,8 +437,8 @@ test('saved scene publication retains another lane, supports a scene without roo
   const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.lanes[0]);
   other.id='other-published-lane';presentation.lanes.push(other);
   const admin=await f.repository.readDocument('administration');admin.value.rooms.push({...f.room,id:'room-other-lane',presentationLaneId:other.id});
-  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
-  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:presentation.lanes.map(lane=>lane.id),games:current.games,tables:[...current.tables,'room-other-lane'],
+  await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:presentation.lanes.map(lane=>lane.id),games:current.games,tables:[...current.tables,'room-other-lane'],rooms:admin.value.rooms,
     branding:withPackagePresentation(publicPackageBranding(current.branding),presentation)});
   f.body.expectedPackageRevision=10;const result=await f.publish();assert.deepEqual(result.presentation.lanes[1],other);assert.deepEqual(result.tables,[f.room.id,'room-other-lane']);
   const unpublished=await placementFixture(),pack=await unpublished.direct.getCurrentPackage('north');
@@ -452,7 +455,7 @@ test('saved scene CAS rejects changed package, project or administration and rol
     if(change==='package'){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
       lanes:current.lanes,games:current.games,tables:current.tables,branding:{...current.branding,name:'Concurrent branding'}});}
     if(change==='administration'){const admin=await f.repository.readDocument('administration');admin.value.rooms[0].name='Concurrent room edit';
-      await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});}
+      await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});}
     if(change==='project'){const doc=await f.repository.readDocument('project');doc.value.lanes[0].composition.mobile.dealer.x=.2;
       await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});}
     if(change==='failure')f.pool.failNext('publish-package');
@@ -538,7 +541,7 @@ test('native publication rejects project/admin/package or exact selected-media d
 });
 test('native publication uses server-read current package revision and preserves partner branding/games/tables',async()=>{
   const f=await nativeFixture();
-  await f.direct.publishPackage({actor:'partner',operatorId:'north',lanes:[f.lane.id],games:['blackjack'],tables:['legacy'],branding:{name:'Johns',color:'#123456'}});
+  await f.direct.publishPackage({actor:'partner',operatorId:'north',lanes:[f.lane.id],games:['blackjack'],tables:['legacy'],rooms:[testRoom('legacy','north',f.lane.id)],branding:{name:'Johns',color:'#123456'}});
   const prepared=await f.prepare();assert.equal(prepared.expectedPackageRevision,1);
   const result=await f.publish(prepared);assert.equal(result.packageRevision,2);assert.deepEqual(result.tables,['legacy']);
   assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),{name:'Johns',color:'#123456'});
@@ -559,8 +562,8 @@ test('native Nora also freezes an exact own idle and does not inherit Linnea or 
 test('advanced republication refuses removing an in-use presentation or changing its room dealer, then preserves a valid binding',async()=>{
   const f=await nativeFixture(),first=await f.publish();
   const room={schemaVersion:2,id:'room-10000000-0000-4000-8000-000000000002',name:'Johns',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
-  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
-  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'Johns'},first.presentation)});
+  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({name:'Johns'},first.presentation)});
   const saved=await f.repository.readDocument('project'),other=defaultPresentationLane('astrid');other.id='other-presentation';saved.value.lanes.push(other);
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   const context={...f.context,body:{operatorId:'north',lanes:[other.id]}};
@@ -591,9 +594,9 @@ test('lane operator choices carry each current published assignment and never bo
   await createSgTest(pool);
   await store.createOperator({actor:session.user,operatorId:'johns',slug:'johns',name:'Johns'});
   assert.deepEqual((await lane.listOperators()).map(row=>[row.id,row.publishedPackage]),[['johns',null],['sg-test',null]]);
-  await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
-  await store.publishPackage({actor:session.user,operatorId:'johns',lanes:['johns-linnea'],games:['blackjack'],tables:['room-johns'],branding:{name:'Other private detail'}});
-  await store.publishPackage({actor:session.user,operatorId:'sg-test',expectedRevision:1,lanes:['mobile-phone','evening'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],rooms:[testRoom('room-sg','sg-test')],branding:{name:'Private package detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'johns',lanes:['johns-linnea'],games:['blackjack'],tables:['room-johns'],rooms:[testRoom('room-johns','johns','johns-linnea')],branding:{name:'Other private detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'sg-test',expectedRevision:1,lanes:['mobile-phone','evening'],games:['blackjack'],tables:['room-sg'],rooms:[testRoom('room-sg','sg-test')],branding:{name:'Private package detail'}});
   const listed=await lane.listOperators();
   assert.deepEqual(listed.find(row=>row.id==='sg-test').publishedPackage,{revision:2,lanes:['evening','mobile-phone']});
   assert.deepEqual(listed.find(row=>row.id==='johns').publishedPackage,{revision:1,lanes:['johns-linnea']});
@@ -612,8 +615,8 @@ test('publishing the whole existing selection refreezes one shared dealer snapsh
   const rooms = [f.lane.id, second.id].map((presentationLaneId, i) => ({ schemaVersion: 2, id: 'room-10000000-0000-4000-8000-00000000000' + (i + 2),
     name: 'Room ' + i, operatorId: 'north', presentationLaneId, gameLaneId: 'johns-game', state: 'live' }));
   const admin = await f.repository.readDocument('administration'); admin.value.rooms = rooms;
-  await f.repository.saveDocument('administration', { value: admin.value, expectedRevision: admin.revision, actor: 'tester' });
-  await f.direct.publishPackage({ actor: 'tester', operatorId: 'north', expectedRevision: 1, lanes: f.context.body.lanes, games: ['blackjack'], tables: rooms.map(r => r.id),
+  await f.repository.saveDocument('administration', { value: withoutRooms(admin.value), expectedRevision: admin.revision, actor: 'tester' });
+  await f.direct.publishPackage({ actor: 'tester', operatorId: 'north', expectedRevision: 1, lanes: f.context.body.lanes, games: ['blackjack'], tables: rooms.map(r => r.id),rooms,
     branding: withPackagePresentation({ name: 'Johns' }, first.presentation) });
   const changed = await f.repository.readDocument('project');
   changed.value.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated shared event';
@@ -639,9 +642,9 @@ test('v3 republication changes the allowed default from Astrid to Linnea without
   admin.value.gameLanes[0].dealer='astrid';admin.value.gameLanes[0].mediaCollection='astrid-presentation';
   const room={schemaVersion:2,id:'room-existing-astrid',name:'Existing Astrid',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
   admin.value.rooms=[room];
-  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
   const first=await f.publish();
-  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'North'},first.presentation)});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({name:'North'},first.presentation)});
   const changed=await f.repository.readDocument('project');changed.value.lanes[0].layers.dealer.default='linnea';
   await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
   const beforeAdmin=await f.repository.readDocument('administration'), result=await f.publish();
@@ -845,9 +848,9 @@ async function withOwnRoom(f,lane){
   const first=await f.publish();
   const room={schemaVersion:2,id:'room-own',name:'Eget rum',operatorId:'north',presentationLaneId:lane.id,gameLaneId:'johns-game',state:'live'};
   const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];
-  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  await f.repository.saveDocument('administration',{value:withoutRooms(admin.value),expectedRevision:admin.revision,actor:'tester'});
   const rev1=await f.direct.getCurrentPackage('north');
-  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:rev1.lanes,games:['blackjack'],tables:[room.id],branding:rev1.branding});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:rev1.lanes,games:['blackjack'],tables:[room.id],rooms:[room],branding:rev1.branding});
   return {first,room};
 }
 const has=(presentation,id,role)=>presentation.assets.some(row=>row.id===id)&&presentation.lanes.every(lane=>lane.layers[role].allowed.includes(id));

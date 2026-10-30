@@ -355,9 +355,9 @@ test('Studio factory is inert; missing cloud rows stay missing and SQL scope is 
 test('Studio save is CAS plus previous revision history and audit in the same transaction', async () => {
   const pool = createStudioMemoryPool(), repo = repository(pool), initial = await initialize(repo);
   assert.equal(initial.revision, 'initial');
-  const saved = await repo.saveDocument('administration', { value: { rooms: ['new'] }, expectedRevision: initial.revision, actor: 'tester' });
+  const saved = await repo.saveDocument('administration', { value: { voiceReview: ['new'] }, expectedRevision: initial.revision, actor: 'tester' });
   assert.notEqual(saved.revision, initial.revision);
-  assert.deepEqual((await repo.readDocument('administration')).value, { rooms: ['new'] });
+  assert.deepEqual((await repo.readDocument('administration')).value, { voiceReview: ['new'], rooms: [] });
   const history = await repo.listDocumentHistory('administration');
   assert.equal(history.length, 1); assert.equal(history[0].revision, initial.revision);
   assert.equal(history[0].updatedAt, initial.updatedAt); assert.equal(history[0].replacedBy, saved.revision);
@@ -371,7 +371,7 @@ test('Studio save is CAS plus previous revision history and audit in the same tr
 test('concurrent writers of the same revision have exactly one winner', async () => {
   const pool = createStudioMemoryPool(), first = repository(pool), second = repository(pool), initial = await initialize(first);
   const outcomes = await Promise.allSettled([first, second].map((repo, index) => repo.saveDocument('administration', {
-    value: { rooms: [index] }, expectedRevision: initial.revision, actor: 'tester',
+    value: { voiceReview: [index] }, expectedRevision: initial.revision, actor: 'tester',
   })));
   assert.equal(outcomes.filter(row => row.status === 'fulfilled').length, 1);
   assert.equal(outcomes.filter(row => row.status === 'rejected' && rejection('studio_conflict')(row.reason)).length, 1);
@@ -392,7 +392,7 @@ test('audit failure rolls back document and history, exposing only a fixed safe 
 test('nested operations reuse one client; a caught inner conflict poisons and rolls back the outer unit', async () => {
   const pool = createStudioMemoryPool(), repo = repository(pool), initial = await initialize(repo), before = pool.snapshot(), connections = pool.connects;
   await assert.rejects(repo.transaction(async nested => {
-    await nested.saveDocument('administration', { value: { rooms: ['intermediate'] }, expectedRevision: initial.revision, actor: 'tester' });
+    await nested.saveDocument('administration', { value: { voiceReview: ['intermediate'] }, expectedRevision: initial.revision, actor: 'tester' });
     await assert.rejects(nested.transaction(() => nested.saveDocument('administration', { value: {}, expectedRevision: initial.revision, actor: 'tester' })), rejection('studio_conflict'));
     return 'caller incorrectly swallowed conflict';
   }), rejection('studio_conflict'));
@@ -484,7 +484,7 @@ test('snapshots reject scope/hash/date tampering and a later insert failure roll
 
 test('the bounded snapshot envelope accepts multiple individually bounded documents', async () => {
   const source = repository(createStudioMemoryPool()), large = 'x'.repeat(STUDIO_JSON_LIMIT - 2048);
-  await source.initializeDocument('administration', { value: { rooms: [large] }, actor: 'tester' });
+  await source.initializeDocument('administration', { value: { voiceReview: [large] }, actor: 'tester' });
   await source.initializeDocument('project', { value: createSeedProject(), actor: 'tester' });
   const snapshot = await source.exportSnapshot();
   assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) > STUDIO_JSON_LIMIT);
@@ -608,12 +608,12 @@ test('shared SQL cannot replace either bound scope parameter and caught rejectio
   const pool = createStudioMemoryPool(), repo = repository(pool);
   await initialize(repo);
   const otherScope = { ...scope, workspaceId: 'workspace-south' };
-  await createStudioRepository({ pool, scope: otherScope }).initializeDocument('administration', { value: { rooms: ['private-south'] }, actor: 'tester', revision: 'south' });
+  await createStudioRepository({ pool, scope: otherScope }).initializeDocument('administration', { value: { voiceReview: ['private-south'] }, actor: 'tester', revision: 'south' });
   const before = pool.snapshot();
   for (const parameters of [[scope.environment, otherScope.workspaceId, 'administration'], ['foreign-env', scope.workspaceId, 'administration']]) {
     await assert.rejects(repo.transaction(async () => {
       const saved = await repo.readDocument('administration');
-      await repo.saveDocument('administration', { value: { rooms: ['should-rollback'] }, expectedRevision: saved.revision, actor: 'tester' });
+      await repo.saveDocument('administration', { value: { voiceReview: ['should-rollback'] }, expectedRevision: saved.revision, actor: 'tester' });
       try {
         await repo.withTransactionClient(client => client.query('/* studio:read-document */ SELECT kind,revision,value,updated_at FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3', parameters));
         assert.fail('cross-scope query was accepted');
@@ -628,7 +628,7 @@ test('caught publisher input validation on a shared client rolls back earlier do
   await initialize(repo); const before = pool.snapshot();
   await assert.rejects(repo.transaction(async () => {
     const saved = await repo.readDocument('administration');
-    await repo.saveDocument('administration', { value: { rooms: ['changed'] }, expectedRevision: saved.revision, actor: 'tester' });
+    await repo.saveDocument('administration', { value: { voiceReview: ['changed'] }, expectedRevision: saved.revision, actor: 'tester' });
     await repo.withTransactionClient(async client => {
       const operators = await createOperatorStore({ sql: client, scope, transaction: work => repo.withTransactionClient(work) });
       try {
@@ -668,8 +668,8 @@ test('presentation snapshot reuses an active write client and rejects cross-scop
   await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
   const count=pool.connects;
   await repo.transaction(async bound=>{
-    await bound.saveDocument('administration',{value:{rooms:['uncommitted']},expectedRevision:'initial',actor:'tester'});
-    const snapshot=await bound.readPresentationSnapshot();assert.deepEqual(snapshot.administrationDocument.value.rooms,['uncommitted']);
+    await bound.saveDocument('administration',{value:{voiceReview:['uncommitted']},expectedRevision:'initial',actor:'tester'});
+    const snapshot=await bound.readPresentationSnapshot();assert.deepEqual(snapshot.administrationDocument.value.voiceReview,['uncommitted']);
   });
   assert.equal(pool.connects,count+1);
   const other=createStudioRepository({pool,scope:{...scope,workspaceId:'other'}});

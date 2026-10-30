@@ -39,7 +39,7 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
  const presentation={...captured,schemaVersion:2};
  const initial=withPackagePresentation({lane:lane.id,color:'#112233'},presentation);
  if(metadataBytes)initial.n1Note='x'.repeat(metadataBytes);
- await store.publishPackage({operatorId,actor,lanes:[lane.id],games:[...new Set(['blackjack',...Object.values(roomGames)])],tables,branding:initial});
+ await store.publishPackage({operatorId,actor,lanes:[lane.id],games:[...new Set(['blackjack',...Object.values(roomGames)])],tables,rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'portrait-astrid',state:'live',...(roomGames[id]?{game:roomGames[id]}:{})})),branding:initial});
  let allowed=true,adminRevision='a1';
  const readAdministration=async()=>({revision:adminRevision,value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
  rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'portrait-astrid',state:'live',...(roomGames[id]?{game:roomGames[id]}:{})}))}});

@@ -38,13 +38,13 @@ function fixture({schemaVersion=3,includeBaselineDealer=false,branding={}}={}) {
     gameLaneId:'portrait-linnea',state:'live'};
   const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea room',
     renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
-  let pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[room.id],
+  let pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],
     branding:withPackagePresentation({name:'Johns',...branding},presentation)};
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project,administration})},
     packages:{resolve:async slug=>slug==='north'?{operator:{id:'north',status:'active'},package:structuredClone(pack)}:{operator:null}},
     log:()=>{}});
   const store=withBrandingDrafts({getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
-    assert.equal(input.expectedRevision,pack.revision);pack={...input,revision:pack.revision+1};return structuredClone(pack);
+    assert.equal(input.expectedRevision,pack.revision);pack={...input,rooms:pack.rooms,revision:pack.revision+1};return structuredClone(pack);
   }});
   const readAdministration=async()=>({revision:'admin-snapshot',value:structuredClone(administration)});
   const api=createPartnerBrandingApi({store,readAdministration,readProject:()=>assert.fail('published choices cannot read the latest draft'),

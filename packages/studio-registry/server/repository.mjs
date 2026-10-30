@@ -23,7 +23,7 @@ const timestamp = value => {
 
 // Caller owns the pool and authenticated scope. Construction does no I/O.
 // No provider/HTTP calls may be performed inside transaction(callback).
-export function createStudioRepository({ pool, scope, contract, policy, runtimeCatalog, dealerSets } = {}) {
+export function createStudioRepository({ pool, scope, contract, policy, runtimeCatalog, dealerSets, administrationRooms } = {}) {
   const {
     studioStorageFailure, validateStudioScope, validateDocumentKind, validateDocumentValue,
     validateRevision, validateActor, validateStudioMedia, validateMediaId, validateSnapshot,
@@ -37,6 +37,7 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
   const { isActiveDealerId, assertStudioMediaStorageType } = requiredAdapter('policy', policy, ['isActiveDealerId', 'assertStudioMediaStorageType']);
   const { validateRuntimeCatalogRecord } = requiredAdapter('runtimeCatalog', runtimeCatalog, ['validateRuntimeCatalogRecord']);
   const { validateDealerSetRecordOwners, dealerSetsForClip } = requiredAdapter('dealerSets', dealerSets, ['validateDealerSetRecordOwners', 'dealerSetsForClip']);
+  if (administrationRooms) requiredAdapter('administration rooms', administrationRooms, ['read', 'store', 'same']);
   if (!pool || typeof pool.connect !== 'function') fail('studio_invalid_configuration', 503);
   scope = validateStudioScope(scope);
   const scopeKey = canonicalStudioJson(scope);
@@ -76,6 +77,7 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       current = { pool, client, scopeKey, readOnly, shared, serialize: shared && serialize, failed: null, closed: false };
       const result = await runPostgresTransactionOwner(current, () => context.run(current, () => shared ? runSharedPostgresTransaction(current, () => work(api)) : work(api)));
       if (current.failed) throw current.failed;
+      if (current.expectedRooms && !administrationRooms.same(current.expectedRooms, await context.run(current, () => administrationRooms.read(query)))) fail('studio_room_publication_required');
       if (shared) current.closed = true; // No escaped work may query while COMMIT is pending.
       const committed = await client.query('COMMIT'); begun = false; current.closed = true;
       if (committed?.command === 'ROLLBACK') fail('studio_transaction_rolled_back', 503);
@@ -110,10 +112,15 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       return { kind: row.kind, revision: row.revision, value, updatedAt: timestamp(row.updated_at) };
     } catch { fail('studio_corrupt_document', 503); }
   }
-  async function loadDocument(kind) {
-    return document((await query(`/* studio:read-document */
+  async function projectDocument(saved) {
+    if (saved?.kind !== 'administration' || !administrationRooms) return saved;
+    return { ...saved, value: { ...administrationRooms.store(saved.value), rooms: await administrationRooms.read(query) } };
+  }
+  async function loadDocument(kind, { raw = false } = {}) {
+    const saved = document((await query(`/* studio:read-document */
       SELECT kind, revision, value, updated_at FROM croupier_studio.documents
       WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3`, [kind])).rows[0]);
+    return raw ? saved : projectDocument(saved);
   }
   async function loadRuntimeCatalog() {
     const row=(await query(`/* studio:read-runtime-catalog */ SELECT revision,value FROM croupier_studio.runtime_media_catalogs
@@ -130,10 +137,11 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
     const row = (await query(`/* studio:insert-document */ INSERT INTO croupier_studio.documents
       (environment_id,workspace_id,kind,revision,value,updated_at) VALUES ($1,$2,$3,$4,$5::jsonb,COALESCE($6::timestamptz,now()))
       ON CONFLICT (environment_id,workspace_id,kind) DO NOTHING RETURNING kind,revision,value,updated_at`,
-    [kind, revision, canonicalStudioJson(value), updatedAt ?? null])).rows[0];
+    [kind, revision, canonicalStudioJson(kind === 'administration' && administrationRooms ? administrationRooms.store(value) : value), updatedAt ?? null])).rows[0];
     if (!row) fail('studio_conflict');
     await audit(action, kind, revision, actor);
-    return document(row);
+    if (kind === 'administration' && administrationRooms && value.rooms?.length) context.getStore().expectedRooms = value.rooms;
+    return projectDocument(document(row));
   }
   const media = row => {
     if (!row) return null;
@@ -219,9 +227,13 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         return { expectedRevision: validateRevision(options.expectedRevision), revision,
           value: validateDocumentValue(kind, options.value, revision, {allowLegacyRead:options.lifecycleAuthority === lifecycleAuthority}), actor: validateActor(options.actor) };
       }, async prepared => {
-        const previous = await loadDocument(kind);
+        const previous = await loadDocument(kind, { raw: true });
         if (!previous) fail('studio_document_missing', 404);
         if (previous.revision !== prepared.expectedRevision) fail('studio_conflict');
+        if (kind === 'administration' && administrationRooms) {
+          if (Array.isArray(prepared.value.rooms)) context.getStore().expectedRooms = prepared.value.rooms;
+          prepared.value = administrationRooms.store(prepared.value);
+        }
         if (kind === 'project') {
           // Retired profiles stay readable, but project PUT cannot register or restore one as new.
           if (prepared.value.dealers.some(dealer => !isActiveDealerId(dealer.id)
@@ -256,7 +268,7 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         [kind, prepared.revision, canonicalStudioJson(prepared.value), prepared.expectedRevision])).rows[0];
         if (!row) fail('studio_conflict');
         await audit('save_document', kind, prepared.revision, prepared.actor);
-        return document(row);
+        return projectDocument(document(row));
       });
     },
     // Server-only lifecycle entry point. HTTP project PUT cannot mint this authority.
@@ -580,7 +592,7 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       return operation(() => null, async () => {
         const documents = (await query(`/* studio:list-documents */ SELECT kind,revision,value,updated_at FROM croupier_studio.documents
           WHERE environment_id=$1 AND workspace_id=$2 ORDER BY kind`)).rows.map(row => {
-          const result = document(row); return { ...result, checksum: studioContentHash(result.value) };
+          const saved = document(row), result = saved.kind === 'administration' && administrationRooms ? {...saved,value:administrationRooms.store(saved.value)} : saved; return { ...result, checksum: studioContentHash(result.value) };
         });
         return { format: STUDIO_SNAPSHOT_FORMAT, scope, documents };
       }, true);
@@ -592,9 +604,14 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       }, async prepared => {
         const existing = (await query(`/* studio:list-documents */ SELECT kind,revision,value,updated_at FROM croupier_studio.documents
           WHERE environment_id=$1 AND workspace_id=$2 ORDER BY kind`)).rows.map(row => {
-          const result = document(row); return { ...result, checksum: studioContentHash(result.value) };
+          const saved = document(row), result = saved.kind === 'administration' && administrationRooms ? {...saved,value:administrationRooms.store(saved.value)} : saved; return { ...result, checksum: studioContentHash(result.value) };
         });
-        const incoming = [...prepared.snapshot.documents].sort((a, b) => a.kind.localeCompare(b.kind));
+        if (administrationRooms && prepared.snapshot.documents.some(item => item.kind === 'administration' && item.value.rooms?.length)) fail('studio_room_publication_required');
+        const incoming = prepared.snapshot.documents.map(item => {
+          if (item.kind !== 'administration' || !administrationRooms) return item;
+          const value = administrationRooms.store(item.value);
+          return {...item,value,checksum:studioContentHash(value)};
+        }).sort((a, b) => a.kind.localeCompare(b.kind));
         if (existing.length) {
           if (existing.length !== incoming.length || existing.some((item, index) => item.kind !== incoming[index].kind
             || item.revision !== incoming[index].revision || item.updatedAt !== incoming[index].updatedAt

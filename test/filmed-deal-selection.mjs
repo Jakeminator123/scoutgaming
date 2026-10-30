@@ -134,7 +134,7 @@ async function serverFixture(t,{frozen=false,shoe=false}={}){
   const presentation=decodePresentationPackage(encodePresentationPackage(captured.presentation));
   assert.equal(presentation.playback.media.length,shoe?38:36);
   const saved={operator:{id:'fixture-operator',slug:context.operatorSlug,status:'active'},
-    package:{operatorId:'fixture-operator',revision:4,lanes:['fixture-lane'],tables:[context.roomId],frozen:presentation},
+    package:{operatorId:'fixture-operator',revision:4,lanes:['fixture-lane'],tables:[context.roomId],rooms:[{schemaVersion:2,id:context.roomId,name:'Fixture',operatorId:'fixture-operator',presentationLaneId:'fixture-lane',gameLaneId:'fixture-game',state:'live'}],frozen:presentation},
     administration:{rooms:[{schemaVersion:2,id:context.roomId,name:'Fixture',operatorId:'fixture-operator',presentationLaneId:'fixture-lane',gameLaneId:'fixture-game',state:'live'}],
       gameLanes:[{schemaVersion:1,id:'fixture-game',label:'Fixture',dealer:'dragan',renderer:'portrait-video',mediaCollection:'dragan-presentation'}]}};
   const service=createFrozenDealerPresentationContext({readCurrentContext:async()=>{resolveCalls++;return structuredClone(saved);},

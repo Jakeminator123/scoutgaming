@@ -14,7 +14,8 @@ export function runRoomGameConfigQa(options = {}) {
     // (operator-store.mjs lockOperator/rebaseOpenDraft). This fixture has no drafts; nothing is carried over.
     for (const file of ['neon-game/product-schema.sql', 'neon-game/008-shared-wallet.sql', 'neon-game/009-shared-blackjack.sql',
       'neon-studio/001-studio-metadata.sql', 'neon-studio/005-operators.sql', 'neon-studio/006-operator-audit.sql',
-      'neon-studio/007-partner-branding-drafts.sql', 'neon-studio/012-runtime-media-catalog.sql'])
+      'neon-studio/007-partner-branding-drafts.sql', 'neon-studio/012-runtime-media-catalog.sql',
+      'neon-studio/023-operator-package-rooms.sql'])
       await context.pool.query(await readFile(new URL(`../ops/${file}`, import.meta.url), 'utf8'));
     return runRoomGameConfigSqlChecks(context);
   } });
