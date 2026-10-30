@@ -371,6 +371,22 @@ test('Admin room layout saves only its room override and reports busy for the en
   assert.equal(busy.at(-1),false);assert.equal(byAction(h.render(),'review').props.disabled,false);
 });
 
+test('central room publication leaves appearance saving scoped and never publishes from the editor',async()=>{
+  const initial=initialState({branding:{roomOverrides:{'north-vip':{background:'bg-one'}}}}),calls=[],dirty=[],busy=[];
+  const h=stateful(initial,async(_url,request)=>{
+    const body=JSON.parse(request.body);calls.push(body);
+    assert.equal(body.action,'save-draft');
+    return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});
+  },{roomId:'north-main',roomLayout:true,adminChoices:true,publication:'room',onDirtyChange:value=>dirty.push(value),onBusyChange:value=>busy.push(value)});
+  assert.equal(byAction(h.render(),'review'),undefined);
+  choice(h.render(),'Bakgrund').props.onChange('bg-two');h.render();assert.equal(dirty.at(-1),true);
+  await byAction(h.render(),'save-draft').props.onClick();h.render();
+  assert.equal(calls.length,1);assert.equal(calls[0].expectedPackageRevision,7);assert.equal(calls[0].expectedDraftRevision,0);
+  assert.deepEqual(calls[0].branding.roomOverrides,{'north-main':{background:'bg-two'},'north-vip':{background:'bg-one'}});
+  assert.equal(dirty.at(-1),false);assert.equal(busy.at(-1),false);
+  assert.equal(byAction(h.render(),'review'),undefined);assert.equal(byAction(h.render(),'publish'),undefined);
+});
+
 test('another Studio operation blocks room edits without changing its saved draft or issuing writes',async()=>{
   const h=stateful(initialState(),()=>assert.fail('blocked room write'),{roomId:'north-main',roomLayout:true,disabled:true});
   choice(h.render(),'Bakgrund').props.onChange('bg-two');

@@ -52,16 +52,20 @@ publicering.
 
 | Knapp | Var | Vad den publicerar |
 | --- | --- | --- |
-| **Publicera** → **Publicera nu** | Spelbord (överst på Utseende, Spelinställningar och Tillgänglighet; öppet blackjackbord) | Allt som skiljer sig från live: tal, klipp, vila, placering, utseende och spelinställningar, som ny version |
+| **Publicera** → **Publicera nu** | Spelbord, ovanför alla flikar (öppet, publicerat blackjackbord) | Allt som skiljer sig från live: tal, klipp, vila, placering, utseende och spelinställningar, som ny version |
 | **Publicera** | Bolag › Tilldelning | Bolagets urval av miljöer och det bolaget får ändra själv |
 
-Flikarna har kvar egna, smalare knappar: **Publicera · N ändringar** under
-Utseende (bakgrund, dealer och bordsgrafik) och **Publicera spelinställningar**
-(bordsspråk och insatsprofil). Under **Avancerat** finns **Publicera igen**
-(Tilldelning, fryser om ett oförändrat urval), **Publicera sparad placering**
-(dealerns Klippkarta › Scen & lager, eller en miljö öppnad för ett bolag) och
-**Publicera PAOWs viloklipp** (Utseende). Nytt tal används först efter
-**Publicera** i spelbordet.
+På öppna, publicerade blackjackbord sparar du utseendet och
+spelinställningarna på respektive flik och använder sedan **Publicera**
+ovanför flikarna. Osparade ändringar måste sparas först. Roulette och
+pausade bord behåller utseendets egen publicering.
+
+Riktade verktyg ligger avskilt: **Publicera igen** under Tilldelning ›
+Felsökning fryser om ett oförändrat urval. **Publicera PAOWs viloklipp**
+under Tillgänglighet › Felsökning uppdaterar bara PAOWs vila.
+**Publicera sparad placering** ligger under Avancerat i dealerns Klippkarta
+› Scen & lager, eller i en miljö öppnad för ett bolag. Nytt tal används
+först efter **Publicera** i spelbordet.
 
 ## Översikt
 
@@ -181,8 +185,8 @@ sekvensen kan kopplas.
    beskrivningarna behålls när urvalet ändras. Spelmotorn behöver
    runtimekapabilitet v32 innan en sådan sekvens kan sparas.
 4. Spara utkastet och välj **Publicera** i spelbordet. För PAOW är stegen
-   **Koppla 21 viloklipp** → spara → **Publicera** (eller **Avancerat** ›
-   **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
+   **Koppla 21 viloklipp** → spara → **Publicera** (eller **Tillgänglighet** ›
+   **Felsökning** › **Publicera PAOWs viloklipp**) i spelbordet (produktionsutkastet har
    ingen sekvens än, så **Uppdatera till urvalet** visas inte). **Återgå till enbart basklippet** tar bort
    sekvensen; originalen behålls.
 
@@ -496,10 +500,10 @@ Knapparna **Skapa demo** och **Öppna Partnerportalen** ligger i rubriken.
 Rubriken visar spel, dealer, miljö, publicerad version och om ett utkast
 väntar. **Öppna i spelet** startar spelbordet.
 
-- **Utseende**: **Publicerat nu** visar live-valen. Välj bakgrund, dealer och
-  bordsgrafik inom miljön och **Spara utkast**. **Publicera · N
-  ändringar** öppnar **Granska och publicera** med skillnaden mot live och
-  berörda spelbord; **Publicera nu** publicerar. **Hämta senaste version**
+- **Utseende**: välj bakgrund, dealer och bordsgrafik inom miljön och
+  **Spara utkast**. På öppna blackjackbord öppnar **Publicera** ovanför
+  flikarna jämförelsen med live och berörda spelbord; **Publicera nu**
+  publicerar det sparade läget. **Hämta senaste version**
   bevarar din redigering tills du väljer hur den ska läsas in. **Kasta
   bolagets utkast** tar bort bolagets utkast; publicerade spelbord ändras
   inte. I versionshistoriken återställer **Återställ till utkast** en äldre
@@ -507,7 +511,7 @@ väntar. **Öppna i spelet** startar spelbordet.
 - **Dealer**: dealers i spelbordets miljö, med länk till dealerns sida.
   Dealern väljs under Utseende.
 - **Spelinställningar**: **Bordsspråk** och **Insatsprofil**. **Spara
-  spelinställningar** och sedan **Publicera spelinställningar**. Gäller
+  spelinställningar** och sedan **Publicera** ovanför flikarna. Gäller
   öppna, publicerade Blackjack-spelbord.
 - **Tillgänglighet**: **Pausa spelbordet** gäller direkt; ett pausat
   spelbord syns inte i lobbyn och pågående rundor spelas klart. **Öppna

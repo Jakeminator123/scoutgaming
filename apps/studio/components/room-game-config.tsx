@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {createRoomGameConfigController,type RoomGameReceipt} from '../lib/room-game-config-client.mjs';
+import {createRoomGameConfigController} from '../lib/room-game-config-client.mjs';
 import {roomLimitProfiles,roomLimitProfileNote,formatAmount} from '../lib/room-limit-profiles.mjs';
 import {Button,Card} from '../client/admin/components/ui/kit';
 import {Field,fieldClass} from '../client/admin/components/ui/form';
@@ -10,11 +10,11 @@ const profiles=roomLimitProfiles();
 
 type RoomDealer={id:string;name:string};
 
-export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
+export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=false,onBusyChange,onDirtyChange}:{operatorId:string;roomId:string;roomName:string;dealers?:RoomDealer[];disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
   if(!ref.current)ref.current=createRoomGameConfigController();
   const controller=ref.current,state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
-  const callbacks=useRef({onBusyChange,onDirtyChange,onPublished});callbacks.current={onBusyChange,onDirtyChange,onPublished};
+  const callbacks=useRef({onBusyChange,onDirtyChange});callbacks.current={onBusyChange,onDirtyChange};
   const current=state.context?.operatorId===operatorId&&state.context?.roomId===roomId;
   const dirty=current&&controller.dirty(),receipt=current?state.receipt:null;
   const busy=current&&state.busy;
@@ -23,15 +23,12 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
   useEffect(()=>{callbacks.current.onDirtyChange?.(dirty);return()=>callbacks.current.onDirtyChange?.(false);},[dirty]);
   const [fixing,setFixing]=useState(''),[fixed,setFixed]=useState('');
   const off=disabled||busy||!current||fixing!=='';
-  const publication=receipt?.publication,single=dealers.length===1?dealers[0]:null;
-  // Utan utkast prövar servern det som Publicera sparar (#662), så spärren är alltid ett materialskäl.
-  const blocker=publication&&!publication.ready?blockerView(publication.reason,{roomId,operatorId,dealerId:single?.id,dealerName:single?.name,
-    language:state.fields.language,materialReason:publication.materialReason}):null;
-  // Publicera sparar först när fälten är ändrade eller inget utkast finns; sedan publiceras utkastet om materialet räcker.
-  const publishable=Boolean(receipt)&&!state.stale&&(dirty||!receipt?.draft||Boolean(publication?.ready));
-  async function act(action:'refresh'|'save'|'publish'){if(off)return;callbacks.current.onBusyChange?.(true);setFixed('');try{
-    if(action==='publish'&&(dirty||!receipt?.draft)){const saved=await controller.save();if(!saved?.publication.ready)return;}
-    const next=await controller[action]();if(action==='publish'&&next)callbacks.current.onPublished?.(next);}finally{callbacks.current.onBusyChange?.(controller.getSnapshot().busy);}}
+  const readiness=receipt?.publication,single=dealers.length===1?dealers[0]:null;
+  // Servern prövar även standardval utan utkast, så spärren är alltid ett materialskäl.
+  const blocker=readiness&&!readiness.ready?blockerView(readiness.reason,{roomId,operatorId,dealerId:single?.id,dealerName:single?.name,
+    language:state.fields.language,materialReason:readiness.materialReason}):null;
+  async function act(action:'refresh'|'save'){if(off)return;callbacks.current.onBusyChange?.(true);setFixed('');try{
+    await controller[action]();}finally{callbacks.current.onBusyChange?.(controller.getSnapshot().busy);}}
   // Mät omätta klipp direkt (#655); mätningen följer med när spelbordet publiceras.
   async function measure(){if(off)return;setFixing('Mäter…');setFixed('');try{
     const result=await runBlockerAction(blocker?.action,{dealerIds:dealers.map(row=>row.id),onProgress:({done,total})=>setFixing(`Mäter ${done}/${total}…`)});
@@ -39,7 +36,7 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
   function edit(field:'language'|'limitPreset',value:string){controller.edit(field,value);callbacks.current.onDirtyChange?.(controller.dirty());}
   // Admin's kit (client/admin/components/ui): Card, Field and Button; the section keeps its landmark name.
   return <section aria-label="Spelinställningar för spelbordet"><Card as="div" title={<>Spelinställningar · {roomName}</>}><div className="grid gap-4 text-[13px] leading-[1.6] text-sg-muted">
-    <p>Spara ett utkast och publicera när det är klart. En pågående runda behåller sin publicerade version.</p>
+    <p>Spara dina val här. Publicera ovanför flikarna när spelbordet är klart. En pågående runda behåller sin publicerade version.</p>
     <Field label="Bordsspråk" className="max-w-sm"><select className={fieldClass} value={state.fields.language} disabled={off||!receipt} onChange={event=>edit('language',event.target.value)}>
       <option value="en">Engelska</option><option value="sv">Svenska</option>
     </select></Field>
@@ -70,9 +67,8 @@ export function RoomGameConfig({operatorId,roomId,roomName,dealers=[],disabled=f
       :blocker.action?.href?<a className="font-semibold underline" href={blocker.action.href}>{blocker.action.label}</a>:null}</p>:null}
     {fixed?<p role="status">{fixed}</p>:null}
     <div className="flex flex-wrap items-center gap-2">
-      <Button disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</Button>
-      <Button disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</Button>
-      <Button variant="primary" disabled={off||!publishable} onClick={()=>void act('publish')}>Publicera spelinställningar</Button>
+      <Button data-action="save-game-settings" disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</Button>
+      <Button variant="ghost" disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</Button>
     </div>
     {busy?<p role="status">Hämtar eller sparar spelinställningar…</p>:null}
     {receipt?<details><summary>Versioner</summary><p>Sparat utkast: {receipt.draft?.revision??'Inget'}. Publicerad spelversion: {receipt.published?.configVersion??'Ingen'}. Paketversion: {receipt.packageRevision}.</p></details>:null}
