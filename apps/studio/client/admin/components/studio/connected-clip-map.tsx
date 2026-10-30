@@ -6,6 +6,7 @@ import '@xyflow/react/dist/style.css';
 import { ConnectedClipCard, ConnectedClipDetails, ClipThumb, type CardNode } from './connected-clip-card';
 import { ClipIntakePanel, type ClipIntakeHandle } from './clip-intake-panel';
 import { collectDroppedFiles, type IntakeEntry } from '../../lib/clip-intake.mjs';
+import {filmedProfileFor} from '../../../../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import { DealerIdentityPortrait } from './dealer-identity-portrait';
 import { bindClip, bindNativeFilmedBank, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace, type VideoInventory } from '../../lib/connected-studio.mjs';
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
@@ -329,6 +330,7 @@ function WorkspaceMap({route,active=true,onDirtyChange,onRevisionChange,onWorksp
   // ReactFlow measures expanded libraries too. Depend on sizes, not node/position object identity.
   const cardHeightKey = JSON.stringify(measuredCards);
   const cardPositions = layoutClipCards(measuredCards,canvasWidth,positions,game==='roulette'?440:355);
+  const filmedProfile=data&&dealer?filmedProfileFor(dealer.id,{project:data.project}):null;
   const nodes:CardNode[] = cardGroups.map(group => {
     const slot = group.slots.find(slot=>slot.id===cardSlots[group.id]) ?? group.slots[0];
     const line = data!.project.lines.find(row => row.dealerId === dealer!.id && row.eventId === slot.eventId);
@@ -340,7 +342,7 @@ function WorkspaceMap({route,active=true,onDirtyChange,onRevisionChange,onWorksp
     const library=clipLibraryForSlot(data!.project,data!.inventory,dealer!.id,slot);
     const usageChanged=Boolean(base&&(boundId!==currentClipId(base,dealer!.id,slot,variantId,data!.inventory)||JSON.stringify(usage)!==JSON.stringify(studioClipUsage(base,data!.inventory,dealer!.id,slot,selectedId,variantId))));
     return {id:group.id,type:'registeredClip',position:cardPositions[group.id],
-      data:{group,slot,clips,library,boundId,usage,usageChanged,active:clipPanel&&activeGroupId===group.id,onOpen:()=>{if(openPanel('clip')){setActiveGroupId(group.id);setSettingsSlot(null);}},boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:clipVariantChoices(data!.project,data!.inventory,dealer!.id,slot),
+      data:{group,slot,clips,library,filmedProfile,boundId,usage,usageChanged,active:clipPanel&&activeGroupId===group.id,onOpen:()=>{if(openPanel('clip')){setActiveGroupId(group.id);setSettingsSlot(null);}},boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:clipVariantChoices(data!.project,data!.inventory,dealer!.id,slot),
         onSlot:id=>{if(!openPanel('clip'))return;setActiveGroupId(group.id);setCardSlots(current=>({...current,[group.id]:id}));setSettingsSlot(null);},onSettings:()=>{if(!openPanel(slot.eventId==='roulette.wheel-start'?'roulette-start':slot.game==='roulette'?'roulette-media':slot.sourceType==='speak'?'room':'policy'))return;setActiveGroupId(group.id);setSettingsSlot(slot);setStartVideoId(selectedId||boundId);setStartVariantId(variantId);},
         onSelect:id=>{if(!openPanel('clip'))return;setSelected(current=>({...current,[slot.id]:id}));},onVariant:id=>{if(!openPanel('clip'))return;setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:currentClipId(data!.project,dealer!.id,slot,id,data!.inventory)}));},
          onBind:asAlternative=>{void link(slot,selectedId,asAlternative);},onBindNative:()=>{void work(async()=>{if(data&&dealer)edit(bindNativeFilmedBank(data.project,data.inventory,dealer.id));});},onUnbind:()=>{void work(async()=>{edit(validateProject(unbindRouletteClip(data!.project,dealer!.id,slot,selectedId)));});},onFile:file=>stage(file,slot),

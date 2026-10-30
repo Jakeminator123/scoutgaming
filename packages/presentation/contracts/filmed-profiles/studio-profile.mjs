@@ -24,13 +24,30 @@ export function copyTakeFrames(take,frameCount) {
   return Number.isInteger(frameCount)&&Number.isInteger(take?.frames)&&frameCount>=take.frames&&frameCount<=take.frames*2?frameCount:null;
 }
 
+/** An appended return uses the base/i footage, not the separately filmed v/iv
+ * take. Only that same-target, same-entry-pose derivation is supported. Timing
+ * and tracks stay registered data; this is provenance, never visual approval. */
+export function copiedFilmedTake(base,key,sourceTakeKey) {
+  const destination=base?.takes.find(take=>take.key===key);
+  if(!destination)return null;
+  if(sourceTakeKey===undefined)return destination;
+  const variant=destination.variant==='v'?'base':destination.variant==='iv'?'i':null;
+  if(variant===null||sourceTakeKey!==`${destination.target}:${variant}`)return null;
+  const source=base.takes.find(take=>take.key===sourceTakeKey);
+  if(!source||source.startPose!==destination.startPose||source.endPose!=='REDO'||destination.endPose!=='VILA')return null;
+  return {...source,key:destination.key,variant:destination.variant,endPose:destination.endPose};
+}
+
 function expand(value,dealerId) {
   const source={studio:{dealerId,kind:value.kind,...(value.kind==='copy'?{base:value.base}:{})}};
   const repositoryPath=key=>`studio/${dealerId}/${key}`;
   if(value.kind==='copy') {
     const base=registeredFilmedProfileById(value.base);
     return validateFilmedDealProfile({...base,id:value.id,source,takes:base.takes.filter(take=>Object.hasOwn(value.takes,take.key))
-      .map(take=>({...take,sha256:value.takes[take.key].sha256,repositoryPath:repositoryPath(take.key),frames:value.takes[take.key].frames??take.frames}))});
+      .map(take=>{
+        const binding=value.takes[take.key],sourceTake=copiedFilmedTake(base,take.key,binding.sourceTakeKey);
+        return {...sourceTake,sha256:binding.sha256,repositoryPath:repositoryPath(take.key),frames:binding.frames??sourceTake.frames};
+      })});
   }
   return validateFilmedDealProfile({version:1,id:value.id,game:'blackjack',source,plane:{...value.plane},card:{...value.card},
     positions:structuredClone(value.positions),tracks:{},timingEvidence:'studio-measured',
@@ -50,8 +67,9 @@ function checked(value,dealerId) {
     // A copy binds the dealer's own clips: never the code profile's own (Kevin's) media.
     const own=new Set(base?base.takes.map(row=>row.sha256):[]);
     if(!base||!takes.length||takes.some(([key,take])=>{
-      const row=base.takes.find(item=>item.key===key);
-      return !row||!exact(take,['sha256'],['frames'])||own.has(take.sha256)
+      const row=copiedFilmedTake(base,key,take?.sourceTakeKey);
+      return !row||!exact(take,['sha256'],['frames','sourceTakeKey'])||own.has(take.sha256)
+        ||Object.hasOwn(take,'sourceTakeKey')&&(!Object.hasOwn(take,'frames')||take.frames<=row.frames)
         ||Object.hasOwn(take,'frames')&&(take.frames===row.frames||copyTakeFrames(row,take.frames)===null);
     })) fail();
   } else if(value.kind==='measured') {

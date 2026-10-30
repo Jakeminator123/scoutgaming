@@ -1,5 +1,4 @@
 import {clipSlots,currentClipId} from './connected-studio.mjs';
-import {registeredFilmedProfile} from '../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import {NATIVE_ROOM_SPEECH_SLOTS} from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
 
 // What a dealer needs before publication (native-room-game-material.mjs:115-122): the whole deal bank,
@@ -42,5 +41,3 @@ export function dealerUses(catalog,dealerId){
   const operatorIds=[...new Set(rooms.map(room=>room.operatorId))];
   return {rooms,operators:catalog.administration.operators.filter(operator=>operatorIds.includes(operator.id))};
 }
-// Without its own filmed profile a dealer uses PAOW's landings (registry.mjs: filmedProfileOrPaow).
-export const dealerLandingsNote=dealerId=>registeredFilmedProfile(dealerId)?null:"Ärver PAOW:s landningar";

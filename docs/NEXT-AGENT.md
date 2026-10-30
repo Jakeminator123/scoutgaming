@@ -25,6 +25,8 @@ Uppdaterad 29 oktober 2026, morgon, mot `main` `5c55ce86` (efter #587; alla natt
 
 ## Pending Jakob (blockerar inget)
 
+- **Dealerfabrikens returklipp (30 oktober):** `sourceTakeKey` binder v/iv till samma måls base/i när fabriken lagt på återgången. Geometri och kortbana kommer från den registrerade källtagningen, och importen kräver klippets bytebundna fps/rutantal. Admins Landningar importerar profilen; Klippkarta kopplar även egna dealerprofiler. Runtime capability **v35** krävs före skrivning av detta fält, inklusive arkiv och frysta paket; äldre profiler behåller sitt kontrakt. Verifierat med kontrakt-/API-prov, Adminbygge och isolerat UI-prov samt Palma-fabrikens 35 verkliga givfiler (38 med vila/sko), komplett sekvens med och utan separata skoövergångar. Fabriken på Jakobs Desktop är separat uppdaterad till 1.7 och `palma-man/admin_export` innehåller 38 klipp och 10 tal; v1.6:s felaktiga v/iv-tider ska inte importeras igen. Ingen produktionsdata eller AV-acceptans ändrad. Se [exportstandarden](LOCAL-PRESENTATION-RUNTIME.md#standard-för-exporterade-dealerklipp).
+
 - dragan-test: paket 16 är sparat; spelinställningen är inte publicerad (publicera i Admin eller pausa rummet).
 - Vilosekvens per dealer (#560 mergad): för PAOW **Körregel → Koppla 21 viloklipp** → spara → **Publicera PAOWs viloklipp**. För Dragan laddas de 16 originalen i `apps/studio/lib/idle-rotation-sources/dragan-de31659c.json` upp till facket **Vila**, `andas` blir basklipp, sekvensen kopplas och paketet publiceras. Båda kräver Jakobs visuella godkännande.
 - Vercel-posterna ovan, och om `croupier-lab-ui.vercel.app` ska bli en redirect till www.

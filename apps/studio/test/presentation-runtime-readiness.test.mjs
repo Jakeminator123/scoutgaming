@@ -1486,6 +1486,21 @@ test('native package preflight discovers shared bindings before SQL while unboun
   }
 });
 
+test('v35 gates explicit footage sources in projects, archives and frozen packages',async()=>{
+  const frozen=nativeRoomMaterialFixture({dealerId:'jakob-2',copyOf:'paow',copyFrames:{'1:v':60},capture:false}).presentation;
+  const filmedProfile=frozen.registeredDealers[0].filmedProfile;
+  filmedProfile.takes['1:v'].sourceTakeKey='1:base';
+  for(const [kind,value] of [['project',{dealers:[{id:'jakob-2',filmedProfile}]}],
+    ['dealer-archive',{dealerTrash:[{dealer:{id:'jakob-2',filmedProfile}}]}],['presentation-package',frozen]])for(const version of [34,35]){
+    const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Math.min(version,Number(headers['X-Presentation-Capability-Version']))))});
+    f.repository.transaction=async work=>work(f.repository);
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:{kind,value}});
+    if(version<35)await assert.rejects(work,blocked,`${kind} v${version}`);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'35');
+  }
+  assert.ok(JSON.stringify(presentationCapabilitiesForVersion(35)).length<2048);
+});
+
 test('v34 gates a dealer\'s own filmed profile in the project, the dealer archive and a frozen package; v32 and v33 runtimes are blocked',async()=>{
   const filmedProfile={schemaVersion:1,id:'studio-jakob-2-00000000',kind:'copy',base:'kevin-paow-c7138759',takes:{}};
   for(const [kind,value] of [['project',{dealers:[{id:'jakob-2',filmedProfile}]}],['dealer-archive',{dealerTrash:[{dealer:{id:'jakob-2',filmedProfile}}]}],

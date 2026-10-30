@@ -1,12 +1,13 @@
 import {createHash} from 'node:crypto';
 import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {registeredFilmedProfile,registeredFilmedProfileById} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
-import {validateStudioFilmedProfile,filmedProfileFor,copyTakeFrames} from '../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
+import {validateStudioFilmedProfile,filmedProfileFor,copyTakeFrames,copiedFilmedTake} from '../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {filmedTakePlacement} from '../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
 import {requiredNativeFilmedTakes} from '../../../packages/presentation/runtime/filmed-deal-coverage.mjs';
 import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
 import {filmedTableTemplate} from './filmed-table-template.mjs';
+import {normalizeMediaTiming} from '../../../packages/presentation/contracts/media-timing.mjs';
 
 // Admin › Dealers › Landningar: dealers[].filmedProfile in the saved project.
 // Same CAS and journal as every project save (document_history, audit_events).
@@ -19,6 +20,7 @@ const studioId=(dealerId,value)=>`studio-${dealerId}-${createHash('sha256').upda
 const timed=(row,fps,frames)=>row.mediaTiming?.video?.fps===fps&&row.mediaTiming.video.frameCount===frames;
 // A copied take accepts the dealer's clip at the take's frames or longer (copyTakeFrames); a longer clip's own count is kept.
 const copyBinding=(row,fps,take)=>{
+  try{normalizeMediaTiming(row.mediaTiming,{mediaId:row.id,sha256:row.sha256,size:row.size});}catch{return null;}
   const frames=row.mediaTiming?.video?.fps===fps?copyTakeFrames(take,row.mediaTiming.video.frameCount):null;
   return frames===null?null:{sha256:row.sha256,...(frames>take.frames?{frames}:{})};
 };
@@ -48,8 +50,9 @@ export function copyFilmedProfile({dealerId,from,records}) {
   return validateStudioFilmedProfile({...value,id:studioId(dealerId,value)},{dealerId});
 }
 /** Dealer-fabriken's whole filmed_profile.json: a code profile (derivedFrom) with the
- * factory's own clips inserted. Geometry, tracks and every take's timing must be the
- * code profile's; each sha256 must name one of this dealer's own clips (never another
+ * factory's own clips inserted. Geometry/tracks stay registered; sourceTakeKey may
+ * name the same-target base/i footage with an appended return instead of v/iv's
+ * separate footage. Each sha256 must name one of this dealer's own clips (never another
  * dealer's) in the take's slot, at the take's frames or longer. Stored as a copy. */
 export function importedFilmedProfile({dealerId,profile,records}) {
   if(!profile||typeof profile!=='object'||Array.isArray(profile)||!Array.isArray(profile.takes)||profile.takes.length>128)fail('studio_invalid_request',400);
@@ -63,16 +66,21 @@ export function importedFilmedProfile({dealerId,profile,records}) {
     const code=base.takes.find(row=>row.key===take?.key);
     if(!code||seen.has(code.key)){mismatch.push({key:typeof take?.key==='string'?take.key.slice(0,40):null,reason:'unknown'});continue;}
     seen.add(code.key);
-    const {sha256,repositoryPath:_path,frames,...timing}=take,{sha256:_kevin,repositoryPath:_kevinPath,frames:codeFrames,...codeTiming}=code;
-    if(canonical(timing)!==canonical(codeTiming)||frames!==undefined&&copyTakeFrames(code,frames)===null){mismatch.push({key:code.key,reason:'timing'});continue;}
+    const {sha256,repositoryPath:_path,frames,sourceTakeKey,...timing}=take;
+    const source=copiedFilmedTake(base,code.key,sourceTakeKey);
+    if(!source){mismatch.push({key:code.key,reason:'source'});continue;}
+    const {sha256:_kevin,repositoryPath:_kevinPath,frames:codeFrames,...codeTiming}=source;
+    if(canonical(timing)!==canonical(codeTiming)||frames!==undefined&&copyTakeFrames(source,frames)===null
+      ||sourceTakeKey!==undefined&&(!Number.isInteger(frames)||frames<=source.frames)){mismatch.push({key:code.key,reason:'timing'});continue;}
     const row=typeof sha256==='string'?clips.find(item=>item.sha256===sha256):null;
     if(!row){missing.push({key:code.key,sha256:typeof sha256==='string'?sha256.slice(0,64):null});continue;}
     const slot=filmedTakePlacement(code),metadata=row.classification;
     if(metadata.eventId!==slot.eventId||metadata.situation!==slot.situation
       ||metadata.startPose!==undefined&&metadata.startPose!==code.startPose||metadata.endPose!==undefined&&metadata.endPose!==code.endPose)
       mismatch.push({key:code.key,reason:'slot',videoId:row.id});
-    else if(!copyBinding(row,base.plane.fps,code))mismatch.push({key:code.key,reason:'frames',videoId:row.id,frames:codeFrames,measured:row.mediaTiming?.video?.frameCount??null});
-    else takes[code.key]=copyBinding(row,base.plane.fps,code);
+    else if(!copyBinding(row,base.plane.fps,source)||sourceTakeKey!==undefined&&row.mediaTiming?.video?.frameCount!==frames)
+      mismatch.push({key:code.key,reason:'frames',videoId:row.id,frames:sourceTakeKey===undefined?codeFrames:frames,measured:row.mediaTiming?.video?.frameCount??null});
+    else takes[code.key]={...copyBinding(row,base.plane.fps,source),...(sourceTakeKey===undefined?{}:{sourceTakeKey})};
   }
   for(const key of required)if(!seen.has(key))mismatch.push({key,reason:'missing'});
   if(missing.length)fail('studio_filmed_profile_sha_missing',422,{missing});

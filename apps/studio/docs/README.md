@@ -269,6 +269,13 @@ Visar hur dealerns givklipp är kopplade och miljöerna som tillåter
 dealern, med **Provspela sparad scen**. Bordsgrafiken ritas efter dealern, inte
 tvärtom; lagrens storlek och läge ändras under Miljöer.
 
+En egen dealer kan importera **filmed_profile.json** från dealerfabriken här.
+Ladda upp klippen till rätt dealer och mät deras speltid först. Spara eller
+ångra osparade ändringar i klippkartan, välj filen och klicka **Importera profil**.
+Fel visas med berörd tagning och nästa åtgärd. Gå sedan till Klippkarta,
+**Koppla för delat bord** och spara. Granska kortkontakt och tal före publicering.
+Importen publicerar inget spelbord och godkänner inget tal.
+
 ### Används av
 
 Spelbord, bolag och miljöer som använder dealern, och **Alla kopplingar**

@@ -6,7 +6,7 @@ import {buttonVariants,cn,Footnote,plural,TechnicalDetails,textLinkClass} from '
 import {adminDealerTabs,adminDealerSteps} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import {dealerCoverage,dealerLandingsNote,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealer-coverage.mjs';
+import {dealerCoverage,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealer-coverage.mjs';
 import {DealerAvatar} from './dealer-identity-portrait';
 import {WorkspaceTool} from './workspace-tools';
 import {TaldriftPanel} from './taldrift-panel';
@@ -14,6 +14,7 @@ import {ResourceConnections} from './resource-connections';
 import {SavedScenePreview} from './saved-scene-preview';
 import {ScenePreview} from './scene-preview';
 import {DealerTimingAction} from './clip-timing';
+import {DealerFilmedProfilePanel} from './dealer-filmed-profile';
 
 type Props={part:'head'|'tail';dealerId:string;tab:string;workspace:Workspace|null;saved:StudioProject|null;onMaterialChanged?:()=>void};
 const base=(dealerId:string)=>'/admin/dealers/'+encodeURIComponent(dealerId);
@@ -81,7 +82,7 @@ export function DealerHub({part,dealerId,tab,workspace,saved,onMaterialChanged}:
       <Card title="Svarsbibliotek" aside="Dealerns inspelade svar i kategorier"><WorkspaceTool section="replies" overrides={{dealer:dealer.id}}/></Card>
       <Card title="Dialogtest" aside="Chatta med dealern">{query.get('verktyg')==='dialog'?<WorkspaceTool section="dealer-agent" overrides={{dealer:dealer.id}}/>:<p className="m-0 flex flex-wrap items-center gap-3"><Link className={buttonVariants()} href={href('tal',{verktyg:'dialog'})}>Öppna Dialogtest</Link><span className="text-[12.5px] text-sg-muted">Chattar med dealerns sparade AI-inställningar, inte med inspelade tagningar.</span></p>}</Card>
     </div>}
-    {tab==='landningar'&&<DealerLandings dealerId={dealer.id} templates={templates} saved={saved} dealTotal={coverage?.deal.total??0} dealBound={coverage?.deal.bound??0}/>}
+    {tab==='landningar'&&<DealerLandings dealerId={dealer.id} templates={templates} saved={saved} workspace={workspace} onSaved={onMaterialChanged}/>}
     {tab==='anvands'&&<div className="mt-5 grid gap-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card title="Spelbord">{uses.rooms.length?<div className="grid">{uses.rooms.map(room=><Row key={room.id} chip={<Chip tone={room.state==='live'?'ok':'warn'} dot>{room.state==='live'?'öppet':'pausat'}</Chip>} title={room.name} text={`${workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name??'Okänt bolag'} · ${room.published?'publicerat':'inte publicerat'}`} href={`/admin/rooms/${encodeURIComponent(room.id)}`}/>)}</div>:<p className="m-0 text-[12.5px] text-sg-muted">Inga spelbord använder dealern.</p>}</Card>
@@ -118,14 +119,13 @@ function DealerPreview({dealerId,templates,saved,workspace}:{dealerId:string;tem
   </PreviewFlyout>;
 }
 
-function DealerLandings({dealerId,templates,saved,dealTotal,dealBound}:{dealerId:string;templates:{id:string;label:string}[];saved:StudioProject|null;dealTotal:number;dealBound:number}) {
+function DealerLandings({dealerId,templates,saved,workspace,onSaved}:{dealerId:string;templates:{id:string;label:string}[];saved:StudioProject|null;workspace:Workspace|null;onSaved?:()=>void}) {
   const [open,setOpen]=useState(false);
   return <div className="mt-5 grid gap-4">
     <div className="grid gap-4 md:grid-cols-2">
-      <Card title="Var dealerns hand landar" aside={<Chip tone="warn">kommer senare</Chip>}>
-        <Footnote className="mb-3 mt-0">Korten ritas där handen landar i filmen: på varje spelarplats och hos dealern, för varje givklipp. Att mäta och spara landningarna i Admin kommer senare. I dag finns de bara för två filmade dealers.</Footnote>
-        <KV items={[['Givklipp',`${dealBound}/${plural(dealTotal,'fack','fack')} kopplade`],['Mobil','3 av 7 platser i ett glidande fönster, ingen zoom'],['Mäts ur','givklippen: när kortet nuddar, landar och lämnar handen']]}/>
-        <p className="mt-4 text-[12.5px] text-sg-muted">{dealerLandingsNote(dealerId)??'kommer senare'}</p>
+      <Card title="Var dealerns hand landar">
+        <Footnote className="mb-3 mt-0">Profilen kopplar varje givklipp till kortets bana, landning och handens poser.</Footnote>
+        <DealerFilmedProfilePanel key={dealerId} dealerId={dealerId} workspace={workspace} saved={saved} onSaved={onSaved}/>
       </Card>
       <Card title="Så ser det ut i scenen" aside="Dator">
         {templates.length?<><button type="button" className={buttonVariants()} onClick={()=>setOpen(value=>!value)} aria-expanded={open}>{open?'Stäng förhandsvisningen':'Provspela sparad scen'}</button>{open&&<div className="mt-3"><SavedScenePreview active presentationLaneId={templates[0].id} revision={saved?.revision} dealerId={dealerId} game="blackjack"/></div>}</>:<Empty chip={null} title="Ingen miljö tillåter dealern ännu" action={<Link className={buttonVariants()} href="/admin/scenes?tab=miljoer">Till Miljöer</Link>}/>}
