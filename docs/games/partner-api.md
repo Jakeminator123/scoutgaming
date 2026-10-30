@@ -1,6 +1,6 @@
 # Croupier Partner API v1
 
-Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.
+Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API. The current runtime supports internal demo funds only; external wallets and real-money operation are not enabled.
 
 The engine implements this API in `services/game/storage/async-partner-api.mjs` (Render `croupier-v3`). The base URL is the engine's `PUBLIC_URL`; the code default is `https://bettalotto.se`. All endpoints are `POST` with a JSON body unless stated otherwise.
 
@@ -32,7 +32,7 @@ async function call(path, payload) {
 console.log(await call('/api/v1/ping'));
 ```
 
-Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404. Key scopes: `launch`, `play`, `wallet`, `history`, `lobby`.
+Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404/503. Key scopes: `launch`, `play`, `wallet`, `history`, `lobby`.
 
 ## 2. Endpoints
 
@@ -77,7 +77,7 @@ Every non-`state` call needs a unique `requestId` (idempotency: replays return t
 Response: `{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, holeDraw, legalActions }, balance, requestId, presentation:[…] }`. Shoe order, burn card and the hole card's identity are never exposed before reveal. See *Presentation events* below.
 
 ### POST /api/v1/demo-credit (scope: wallet, internal wallet only)
-`{ playerId, amount }` adds demo funds for integration testing. Not available on keys with a seamless wallet.
+`{ playerId, amount }` adds demo funds for integration testing. `amount` must be a JSON number from 0.01 to 100000 in whole cents; sub-cent amounts are rejected. The same normalized amount is credited and journaled. Keys with a wallet URL receive HTTP 503 (external wallet disabled).
 
 
 ### POST /api/v1/assets (scope: lobby)
@@ -122,26 +122,18 @@ sig = HMAC-SHA256( `${ts}.GET./api/v1/events.${playerId}` , secret )
 Events: `hello` on connect, then `round` with `{ op, requestId, version, phase, balance, events:[…presentation] }` after every `table` call for that player. Keep-alive comment every 25 s. Reconnect with a fresh `ts`/`sig` (5-minute window).
 
 ### POST /api/v1/balance (scope: wallet)
-`{ playerId }` → `{ playerId, balance, currency }`. With a seamless wallet configured, your wallet is the source of truth and this is informational.
+`{ playerId }` → `{ playerId, balance, currency }` from the internal demo wallet. Keys with a wallet URL receive HTTP 503; no external wallet is contacted.
 
 ### POST /api/v1/history (scope: history)
 `{ playerId?, from?, to?, limit? }` (ISO timestamps, limit ≤ 1000) → `{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }`. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.
 
-## 3. Seamless wallet (recommended for production)
+## 3. Wallet availability
 
-If your key has a **wallet URL**, we never hold player money. Before each play call we ask your wallet for the balance, and on every debit/credit we call you:
+Without a wallet URL the key uses the internal demo wallet (starts at 0; integration testing only). A payout credits game balance; it is not a withdrawal to a bank account.
 
-```
-POST <your wallet URL>
-Headers: X-Api-Key, X-Timestamp, X-Signature   (signed with the same secret, path "/wallet")
-Body: { "type": "balance"|"bet"|"win", "playerId", "currency", "amount", "transactionId", "roundId", "at" }
-Response (200): { "balance": 123.45 }
-```
-- `transactionId` is unique per debit/credit. If you see it again, return the same result (do not double-book).
-- Reject a `bet` with a non-200 status if funds are insufficient; the round will not start.
-- Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.
+External wallet integration is disabled in the current PostgreSQL runtime. If a key has a wallet URL, `/api/v1/launch`, `/api/v1/table`, `/api/v1/demo-credit` and `/api/v1/balance` return HTTP 503 before creating a player or changing funds. Admin test launches are also blocked. The server does not call the configured URL and never falls back to internal demo funds for that key.
 
-Without a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).
+External wallet support requires a separate implementation and verification of reservations and recovery. There is currently no supported debit/credit callback contract or real-money integration to enable.
 
 ## 4. Regulatory notes
 
