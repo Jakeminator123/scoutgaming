@@ -23,7 +23,7 @@ Kontrollerna nedan är orkestratorns liveverifiering mot kodbas `638a138d07690cc
 | Adminspel | `/studio-preview` deklarerar `externalServices.ai=false` och `speech=false` (`services/game/studio-preview.mjs:198`). | Ett godkänt Adminspel provar därför inte nytt AI-tal. |
 | Rörligt tal | Moving är fortsatt av och Jakob 2 saknar bank. Ingen global konfiguration ändrades av verifieringen. | Bank, verifierad worker/protokollkedja och ljud-/bildacceptans krävs för det rörliga spåret. |
 
-Speloutboxen försörjer presentationen med läsning av spelhändelser; talet får inte ändra kort, sko, saldo eller utbetalningar. Providerorkestrering hör hemma på Render och GPU-beräkning på RunPod. En stor tjänsteuppdelning enligt T8 behövs inte för att bevara denna gräns; de konkreta integrationsspärrarna ovan behöver rättas och provas.
+Speloutboxen försörjer presentationen med läsning av spelhändelser; talet får inte ändra kort, sko, saldo eller utbetalningar. Providerorkestrering hör hemma på Render och GPU-beräkning på RunPod. En stor tjänsteuppdelning enligt T8 behövs inte för att bevara denna logiska gräns. Talorkestreringen delar däremot Render-process och startkonfiguration med spelet: aktiverad moving utan bank stoppar motorstarten (`services/game/server.mjs:1219–1229`). En fysisk tjänsteutbrytning kan isolera sådana driftfel. Fler miljövariabler ensamt rättar inte integrationsspärrarna ovan; dessa behöver rättas och provas.
 
 ## Inventering 28 oktober (historiskt underlag)
 
