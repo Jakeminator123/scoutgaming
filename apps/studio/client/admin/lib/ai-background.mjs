@@ -150,8 +150,15 @@ function fileDataUrl(blob) {
 const browserMeasure=async file=>{const bitmap=await createImageBitmap(file);const size={width:bitmap.width,height:bitmap.height};bitmap.close();return size;};
 async function browserShrink(file,{width,height},quality) {
   const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');
-  canvas.width=width;canvas.height=height;canvas.getContext('2d')?.drawImage(bitmap,0,0,width,height);bitmap.close();
-  return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+  canvas.width=width;canvas.height=height;
+  try {
+    const context=canvas.getContext('2d');
+    if (!context) throw new Error('Inspirationsbilden kunde inte läsas.');
+    context.drawImage(bitmap,0,0,width,height);
+  } finally { bitmap.close(); }
+  // PNG and WebP can carry transparent table margins. JPEG would flatten them
+  // to black, so the server would mistake the margins for the dominant colour.
+  return new Promise(resolve=>canvas.toBlob(resolve,file.type==='image/jpeg'?'image/jpeg':'image/webp',quality));
 }
 // Inspirationsbild: sent along with the request only, never stored. Shrunk in
 // the browser to at most 1536 px and under 2 MB; the server checks it again.
