@@ -82,7 +82,10 @@ async function gameEventAdvice({adviseIdle,frozen,project,capture,body,sourceEve
 // Media/Director work happens outside the access port's two SQL captures.
 export async function selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings={},directorFetchFactory,request,playerId,signal,adviseIdle=null,log=logAdvice}){
   signal.throwIfAborted();
-  const frozen=cloneStudioJson(await frozenDealerContext.resolve(body.presentationContext),{maxBytes:8*1024*1024});signal.throwIfAborted();
+  // Expanded copied profiles carry frame/quad arrays alongside the package's
+  // inventory and records (a valid 104-clip package has 25449 nodes). Keep this
+  // server-owned snapshot bounded independently of ordinary Studio documents.
+  const frozen=cloneStudioJson(await frozenDealerContext.resolve(body.presentationContext),{maxBytes:8*1024*1024,maxNodes:200000});signal.throwIfAborted();
   const {project,inventory,allowed}=narrow(frozen,capture,body),sourceEvent=capture.sourceEvent,published=capture.published;
   const publicVideo=id=>{
     if(id==null)return null;
