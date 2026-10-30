@@ -47,10 +47,25 @@ try:
 finally:
     mesh.close()
     preprocessing_mp._Mesh._inst = None
-# Load both exact checkpoints on CPU; no synthetic replacement or model patch.
+# Load both hash-bound checkpoints on CPU with PyTorch's default safe loader.
 parser = FaceParsing(left_cheek_width=90, right_cheek_width=90)
 if next(parser.net.parameters()).device.type != "cpu":
     raise RuntimeError("unexpected_model_device")
+# The modern ResNet bootstrap must not change the final, original parser state.
+expected_state = torch.load("/workspace/MuseTalk/models/face-parse-bisent/79999_iter.pth",
+                            map_location="cpu", weights_only=True)
+actual_state = parser.net.state_dict()
+for name, expected in expected_state.items():
+    actual = actual_state.get(name)
+    if actual is None or actual.dtype != expected.dtype or not torch.equal(actual, expected):
+        raise RuntimeError("face_parser_state_changed: " + name)
+# Older checkpoints omit these counters; both official ResNet files omit them too.
+for name in actual_state.keys() - expected_state.keys():
+    if not name.endswith(".num_batches_tracked") or torch.count_nonzero(actual_state[name]).item():
+        raise RuntimeError("unexpected_face_parser_state: " + name)
+if parser.net.training:
+    raise RuntimeError("face_parser_must_be_in_eval_mode")
 print(json.dumps({"releaseSha256": release, "rendererReleaseSha256": BASE_RELEASE,
                   "verifiedPrepModels": models, "uid": os.getuid(), "cpuModelLoad": True,
+                  "faceParserStateVerified": True,
                   "gpuPreparation": False, "visualApproval": False}))

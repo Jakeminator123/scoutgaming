@@ -8,10 +8,11 @@
   },
   {
     "file": "face-parse-bisent/resnet18-5c106cde.pth",
-    "url": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
-    "sha256": "5c106cde386e87d4033832f2996f5493238eda96ccf559d1d62760c4de0613f8",
-    "bytes": 46827520,
-    "provenance": "https://github.com/TMElyralab/MuseTalk/blob/0a89dec45a0192b824e3cf4daf96c239440c5ed8/download_weights.sh"
+    "url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "bytes": 46830571,
+    "provenance": "https://github.com/pytorch/vision/blob/v0.23.0/torchvision/models/resnet.py",
+    "compatibility": "Official ZIP state_dict at the filename required by pinned MuseTalk; its ResNet initialization is overwritten by the unchanged full 79999_iter.pth checkpoint."
   },
   {
     "file": "face-parse-bisent/79999_iter.pth",

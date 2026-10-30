@@ -22,9 +22,17 @@ It adds no game service, endpoint, runtime download, publication or AV approval.
   The mirror declares WTFPL; neither that declaration nor upstream code licenses
   establish independent commercial clearance for every training dataset/weight.
   This package records technical provenance for a private development trial.
+- ResNet compatibility: [TorchVision 0.23's official ZIP checkpoint](https://github.com/pytorch/vision/blob/v0.23.0/torchvision/models/resnet.py)
+  `resnet18-f37072fd.pth` is stored at MuseTalk's fixed `resnet18-5c106cde.pth`
+  path. The old file is a legacy tar that [PyTorch 2.8's default safe loader](https://docs.pytorch.org/docs/2.8/notes/serialization.html#torch-load-with-weights-only-true)
+  rejects. No loader is relaxed and no upstream code is patched. Pinned
+  [FaceParsing](https://github.com/TMElyralab/MuseTalk/blob/0a89dec45a0192b824e3cf4daf96c239440c5ed8/musetalk/utils/face_parsing/__init__.py)
+  then strictly loads the unchanged `79999_iter.pth` into the complete BiSeNet.
+  The CPU smoke compares every final checkpoint tensor and permits only zero
+  BatchNorm counters absent from the old checkpoint; it also requires eval mode.
 - Image checks: original renderer seal, every source/model hash, all installed
   base/prep package versions, actual FaceLandmarker detection on a blank CPU image
-  and FaceParsing CPU checkpoint load. Checks run as UID 10001 with no network.
+  and FaceParsing CPU checkpoint/state verification. Checks run as UID 10001 with no network.
   They do not establish CUDA inference or lip synchronization.
 
 ## Review and build
