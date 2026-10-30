@@ -84,7 +84,16 @@ O02 är VERIFIED och frysningen hävd. `tools/merge-pr.mjs` hade `--freeze` och 
 | 2026-10-28 | `tools/o02-freeze-check.mjs` (+ `test/o02-freeze-check.mjs`) | O02:s frysprov F1, F2, F5 och F8 för en kandidat, och runtimeprefixen bakom `merge-pr.mjs --freeze` | `git show d88d7a69c:tools/o02-freeze-check.mjs` |
 | 2026-10-29 | `media/layout.json`, roten `web/public/bo/gen` | Rot till `media/site/runtime/backoffice/gen`; ingen spårad fil, ingen rad i `files` eller `blob-index.json`, ingen läsare | `git show d88d7a69c:media/layout.json` |
 
+## Raderade 29 oktober 2026: Admin-kartan och skissen efter enkel väg
+
+Båda fanns i `main` på `989609e9b` (efter enkel väg PR 1–8). De beskrev Admin före förenklingen; [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) kortades samtidigt till läget på `main`, och hela målbilden läses med `git show 989609e9b:docs/plans/ADMIN-FORENKLING.md`.
+
+| Datum | Fil | Vad det var | Läses med |
+| --- | --- | --- | --- |
+| 2026-10-28 | `docs/plans/ADMIN-KARTA.md` | Kablagekarta över Admin (först läst på `34fc4cdc02`): sidor, läsningar, knappar som höjer paketrevisionen, pensionerade adresser, nivå 2 och 3 | `git show 989609e9b:docs/plans/ADMIN-KARTA.md` |
+| 2026-10-28 | `docs/plans/ADMIN-MALBILD-PROTOTYP.html` | Klickbar skiss av målbilden i en fil, med exempeldata i minnet | `git show 989609e9b:docs/plans/ADMIN-MALBILD-PROTOTYP.html` |
+
 ## Tidigare raderingar
 
 - `docs/history/` (överlämningar, körlistor och kvitton från före 28 oktober) raderades i `8ad45fbf` och `a90dde8d` (28 oktober 2026). Läs med `git show 29ed6626bf:docs/history/<fil>`; `git log --diff-filter=D -- docs/history` listar filerna.
-- Admin-kartan från 22 oktober raderades i `61cf0ee8` när [ADMIN-KARTA](plans/ADMIN-KARTA.md) ersatte den.
+- Admin-kartan från 22 oktober raderades i `61cf0ee8` när `docs/plans/ADMIN-KARTA.md` ersatte den (själv raderad, se ovan).

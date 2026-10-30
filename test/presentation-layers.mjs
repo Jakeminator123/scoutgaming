@@ -149,7 +149,7 @@ test('published bytes revalidate without retransmission; withdrawn assets cannot
       blob:{pathname,url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,contentType:asset.contentType,size:bytes.length}};
   }})});
   const handle=createPublishedLayerAssets({packages:{resolve:async()=>{resolves++;return active?{operator:{id:'north'},package:pack}:null;}},
-    privateMedia:(record,request)=>{reads++;return store.getPrivateMedia(record,request,{env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-only'}});}});
+    privateMedia:(record,request)=>{reads++;return store.getPrivateMedia(record,request,{env:{BLOB_READ_WRITE_TOKEN:'fixture-private-only'}});}});
   const url=`https://example.test/api/presentation/layers/north/${asset.id}`;
   const request=(headers={},method='GET')=>handle(new Request(url,{headers,method}));
   const first=await request();assert.equal(first.status,200);assert.deepEqual(Buffer.from(await first.arrayBuffer()),bytes);

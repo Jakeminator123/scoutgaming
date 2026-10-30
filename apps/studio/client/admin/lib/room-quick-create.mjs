@@ -112,7 +112,7 @@ export function planEnvironment({catalog, project, dealerId, laneId, operatorId 
 const dealerHref = (dealerId, flik) => `/admin/dealers/${encodeURIComponent(dealerId)}?flik=${flik}`;
 const roomHref = (roomId, flik) => `/admin/rooms/${encodeURIComponent(roomId)}?flik=${flik}`;
 // Dialogens stopp som spärrkoder i blocker-view.mjs: förhandsvisningens skäl saknar prefixet studio_.
-const stopBlockers = Object.freeze({appearance_draft:'studio_room_choices_draft_pending', environment_choice:'studio_presentation_room_environment_required',
+const stopBlockers = Object.freeze({environment_choice:'studio_presentation_room_environment_required',
   material:'studio_room_game_material_unavailable', conflict:'studio_conflict'});
 /**
  * En mening och en knapp per stopp (#642/#655). Spärrarna har sin text i blocker-view.mjs; `href` öppnar
@@ -147,7 +147,7 @@ export async function runQuickCreate(choice, {operator, memo = {}, onStep = () =
   studio = createStudioClient({fetchImpl}), rooms = createPresentationRoomClient({fetchImpl})} = {}) {
   const {dealerId, game = 'blackjack', name} = choice, refs = {operatorId:operator.id, dealerId, laneId:memo.laneId || choice.laneId};
   const stop = (step, code, detail = '') => { const view = stopView(signal?.aborted ? 'aborted' : code, {...refs, detail}); onStep(step, 'stopped', view.text); return {ok:false, step, ...view}; };
-  if (operator.appearanceDraft) return stop('miljo', 'appearance_draft');
+  // Ett öppet utseendeutkast stoppar inte: servern för det vidare till den nya paketversionen (plan L3 PR 3).
   if (!dealerId) return stop('miljo', 'no_dealer');
   let workspace, project, forceCopy = false;
   async function environment(replan = false) {
@@ -208,7 +208,6 @@ export async function runQuickCreate(choice, {operator, memo = {}, onStep = () =
       memo.uncertain = Boolean(error?.uncertain);
       if (error?.uncertain) return stop('spelbord', 'uncertain', error?.message);
       // Bekräftade nej: inget skrevs (servern rullar tillbaka spelbordet med inställningarna).
-      if (error?.status === 409 && error.code === 'studio_room_choices_draft_pending') return stop('spelbord', 'appearance_draft');
       if (error?.status === 422 && error.code === 'studio_room_game_material_unavailable') return stop('spelbord', error.materialReason ?? 'material');
       return stop('spelbord', error?.status === 409 ? 'conflict' : 'failed', error?.message);
     }

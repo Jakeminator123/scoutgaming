@@ -97,7 +97,7 @@ export async function createEngineDatabase(t) {
 }
 
 /** The Studio policy runtime the engine needs for chat, Probe and published rooms
- * (CROUPIER_STUDIO_NEON_POLICY=1): every reviewed croupier_studio migration through the
+ * (Neon is the fixed registry): every reviewed croupier_studio migration through the
  * product migrator, the saved project and administration documents through the Studio
  * repository and, optionally, one operator with one published package through the
  * operator store. Nothing is inserted beside those writers. Before any engine starts,
@@ -126,7 +126,7 @@ export async function installStudioRuntime(t, database, { project, administratio
       tables: operator.tables, branding: operator.branding });
     if (operator.revision !== undefined && published.revision !== operator.revision) throw Error(`engine_qa_package_revision:${published.revision}`);
   }
-  const env = { CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: scope.environment, CROUPIER_STUDIO_WORKSPACE_ID: scope.workspaceId,
+  const env = { CROUPIER_STUDIO_ENVIRONMENT_ID: scope.environment, CROUPIER_STUDIO_WORKSPACE_ID: scope.workspaceId,
     // Startup requirements of the Studio surfaces that come with the policy runtime
     // (signed Studio commands, Lab session check). No test sends to these origins.
     CROUPIER_VERCEL_INGRESS_SECRET: randomBytes(32).toString('hex'),
@@ -142,6 +142,15 @@ export async function installStudioRuntime(t, database, { project, administratio
       lanes: published.lanes, tables: published.tables, games: published.games } : null, ms: Date.now() - started };
   t.diagnostic(`engine-qa studio ${database.name}: ${JSON.stringify(seeded)}`);
   return { scope, env, preload: [new URL('./engine-studio-policy-register.mjs', import.meta.url).href], policy: runtime.policy, repository, seeded };
+}
+
+/** Neon is the engine's fixed Studio registry, so every engine starts with a Studio
+ * policy runtime. This installs the shared chat fixture's saved project and
+ * administration without a published operator package; callers spread `env` and
+ * `preload` into startEngine, once per database. */
+export async function installBaseStudioRuntime(t, database) {
+  const { publishedChatStudio } = await import('./published-chat-authority.mjs');
+  return installStudioRuntime(t, database, { project: publishedChatStudio.project, administration: publishedChatStudio.administration });
 }
 
 /** Starts services/game/server.mjs against `database` and waits for its readiness line.
@@ -183,8 +192,8 @@ export async function startEngine(t, { database, env = {}, preload = [], port, t
 }
 
 /** Runs the engine expecting it to refuse startup; returns its exit and output. */
-export function engineBootFailure({ database, port, env = {}, timeoutMs = 20000 }) {
-  const result = spawnSync(process.execPath, [ENGINE_SERVER], { cwd: ENGINE_DIRECTORY, encoding: 'utf8', timeout: timeoutMs, windowsHide: true,
+export function engineBootFailure({ database, port, env = {}, preload = [], timeoutMs = 20000 }) {
+  const result = spawnSync(process.execPath, [...preload.flatMap(url => ['--import', String(url)]), ENGINE_SERVER], { cwd: ENGINE_DIRECTORY, encoding: 'utf8', timeout: timeoutMs, windowsHide: true,
     env: { ...osEnvironment(), HOST: '127.0.0.1', PORT: String(port), ...env, CROUPIER_GAME_DATABASE_URL: database.url } });
   return { error: result.error, status: result.status, stdout: result.stdout, stderr: result.stderr };
 }

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { isIP } from 'node:net';
 import { isAbsolute, resolve } from 'node:path';
-import { createGeneratedSpeechService, isPrivateGeneratedSpeechDirectory, requireGeneratedSpeechArtifacts } from './generated-speech-service.mjs';
+import { createGeneratedSpeechService, requireGeneratedSpeechArtifacts } from './generated-speech-service.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from './generated-speech-provider.mjs';
 import { requireSpeechJournal } from './speech-journal-lease.mjs';
 
@@ -43,15 +43,14 @@ function configuration(env) {
   const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
   const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview)
     && !managedStreaming;
-  const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
-  const value = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR,
-    cartesiaApiKey: env.CARTESIA_API_KEY,
+  // Every paid file job is journaled in Neon; the retired private disk directory is never read.
+  const value = { cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
     voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId,
     reserveMicroUsd: budgetAmount(env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD),
     dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD, 20000000) };
   const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
-  const configured = enabled && (journaled || isPrivateGeneratedSpeechDirectory(value.directory, repositoryRoot))
+  const configured = enabled
     && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
   return { enabled, configured, value };
 }
@@ -76,8 +75,8 @@ function configureGeneratedSpeechJournal(journal, { artifacts = null, providerFe
 function getGeneratedSpeechService() {
   const { configured, value } = configuration(process.env);
   if (!configured) return null;
-  if (process.env.CROUPIER_STUDIO_NEON_POLICY === '1') requireSpeechJournal(speechJournal);
-  const key = digest(JSON.stringify([value, process.env.CROUPIER_STUDIO_NEON_POLICY === '1']));
+  requireSpeechJournal(speechJournal);
+  const key = digest(JSON.stringify(value));
   if (key !== singletonKey) { singleton = createGeneratedSpeechService(value, { repositoryRoot, journal:speechJournal, artifacts:speechArtifacts, fetchImpl:speechProviderFetch ?? fetch }); singletonKey = key; }
   return singleton;
 }

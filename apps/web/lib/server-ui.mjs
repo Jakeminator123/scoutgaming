@@ -50,7 +50,7 @@ export async function platformUiDocument(request, {env = process.env, directory 
   const url = new URL(request.url);
   const path = url.pathname;
   const headers = {'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer'};
-  const canonical = gameEntryEnabled(env);
+  const canonical = gameEntryEnabled();
   const gameStart = GAME_START_PATHS.includes(path);
   const file = gameStart ? 'game.html' : canonical && LOGIN_PATHS.includes(path) ? 'blackjack.html' : null;
   if (!config || !file) return new Response(null, {status: 404, headers});
@@ -91,5 +91,5 @@ export async function platformUiDocument(request, {env = process.env, directory 
   }
   let html;
   try { html = await readFile(resolve(directory, file), 'utf8'); } catch { return new Response(null, {status: 503, headers}); }
-  return new Response(request.method === 'HEAD' ? null : decorateGameEntryHtml(html,env), {headers: {...headers, 'Content-Type': 'text/html; charset=utf-8'}});
+  return new Response(request.method === 'HEAD' ? null : decorateGameEntryHtml(html), {headers: {...headers, 'Content-Type': 'text/html; charset=utf-8'}});
 }

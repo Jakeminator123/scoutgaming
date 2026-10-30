@@ -25,7 +25,7 @@ const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: sav
 
 const repositoryRoot=fileURLToPath(new URL('../',import.meta.url));
 const scope={environment:'media_source_qa',workspaceId:'croupier'};
-const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-no-network',
+const env={BLOB_READ_WRITE_TOKEN:'fixture-no-network',
   CROUPIER_MEDIA_BLOB_INDEX:fileURLToPath(new URL('../media/blob-index.json',import.meta.url))};
 async function fixture(){
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
@@ -144,7 +144,7 @@ test('retired calibration writer rejects in every mode before reading a body or 
   const begin=source.indexOf("  if (req.method === 'POST' && req.url === '/calibration') {");
   const end=source.indexOf("\n  if (req.method === 'POST' && pathname.startsWith('/api/bo/')",begin);
   assert.ok(policy&&begin>0&&end>begin,'production calibration route exists');
-  for(const env of [{},{CROUPIER_STUDIO_NEON_POLICY:'1'},{CROUPIER_CLOUD_RUNTIME:'1'}]){
+  for(const env of [{},{},{CROUPIER_CLOUD_RUNTIME:'1'}]){
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
     const reject=()=>{throw Error('native calibration must not touch body or disk');};
     vm.runInNewContext(`(()=>{${policy}\n${source.slice(begin,end)}\n})()`,{
@@ -248,7 +248,7 @@ test('media runtime default preserves its original token truthiness independentl
   const f=await neutralMediaFixture(),{services}=f.build();
   const publicFile=f.catalog.blobIndex.files.find(row=>row.access==='public');
   for(const [token,allowed] of [['',false],[' ',true],['configured',true]]){
-    const available=services.createStudioPublicMediaAvailability({env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:token},
+    const available=services.createStudioPublicMediaAvailability({env:{BLOB_READ_WRITE_TOKEN:token},
       repositoryRoot,repository:f.repository,runtimeCatalog:f.catalog});
     if(allowed)assert.equal(await available('media/'+publicFile.logicalPath),true);
     else await assert.rejects(available('media/'+publicFile.logicalPath),error=>error.code==='studio_media_storage_unavailable');

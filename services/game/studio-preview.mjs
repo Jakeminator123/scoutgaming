@@ -188,7 +188,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       if(s.owner!==actor.user)fail('studio_preview_not_found',404);live(s);s.active++;acquired=true;
       if(entry){
         if(!['GET','HEAD'].includes(request.method))fail('studio_preview_method_not_allowed',405);
-        const selected={...selection(s,url.searchParams),studioPreview:metadata(s)},decorated=decorateGameEntryHtml(await readHtml(),{},selected,{offline:true});live(s);
+        const selected={...selection(s,url.searchParams),studioPreview:metadata(s)},decorated=decorateGameEntryHtml(await readHtml(),selected,{offline:true});live(s);
         return new Response(request.method==='HEAD'?null:decorated,{status:200,headers:{...headers,'Content-Type':'text/html; charset=utf-8'}});
       }
       const route=api[2]??'';

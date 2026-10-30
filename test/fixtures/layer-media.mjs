@@ -23,7 +23,7 @@ export async function layerBlobFixture(cleanup,bytes,contentType='image/png') {
   const cacheDir=await mkdtemp(join(tmpdir(),'croupier-layer-inspection-'));
   cleanup(async()=>{assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-layer-inspection-/);await rm(cacheDir,{recursive:true,force:true});});
   const sha256=createHash('sha256').update(bytes).digest('hex');
-  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-only'};
+  const env={BLOB_READ_WRITE_TOKEN:'fixture-private-only'};
   const options={env,cacheDir,blobClient:{async get(path){return{statusCode:200,stream:new Response(bytes).body,
     blob:{pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType,size:bytes.length}};}}};
   return {options,sha256,size:bytes.length,contentType};

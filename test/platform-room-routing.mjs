@@ -27,7 +27,7 @@ let createSpeechIngress;
 try {({createSpeechIngress} = await import('../apps/speech/service.mjs'));} finally {hook.deregister();}
 const origin = 'https://player.example.test', transport = 'https://engine.example.test';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_BACKEND_ORIGIN:transport,
-  CROUPIER_LAB_UI_ORIGIN:'https://studio.example.test',CROUPIER_VERCEL_TRANSPORT_ORIGIN:transport,
+  CROUPIER_VERCEL_TRANSPORT_ORIGIN:transport,
   CROUPIER_VERCEL_INGRESS_SECRET:'isolated-private-room-ingress-'.repeat(3)};
 const ingress = readVercelIngressConfig(env);
 const signed = {host:'engine.example.test',origin,cookie:'player_session=a',upgrade:'websocket',connection:'Upgrade',

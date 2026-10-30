@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { ciScope, ciSelection, ciOutputs, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired,
@@ -401,6 +401,18 @@ test('the shared package-tree cache is keyed on every installed lockfile and man
   for (const { dir, lock } of installs) {
     for (const file of [`${dir}/${lock}`, `${dir}/package.json`]) assert.ok(hashed.includes(file), `key hashes ${file}`);
     assert.ok(paths[0].includes(`${dir}/node_modules`), `cache holds ${dir}/node_modules`);
+  }
+  // A file: dependency is a copy inside the cached tree; its sources must change the key.
+  // The changes job checks out only CI files (sparse); there the manifests are absent and full checkouts enforce this.
+  for (const { dir } of installs) {
+    const manifestUrl = new URL(`../${dir}/package.json`, import.meta.url);
+    if (!existsSync(manifestUrl)) continue;
+    const manifest = JSON.parse(readFileSync(manifestUrl, 'utf8'));
+    for (const spec of Object.values({ ...manifest.dependencies, ...manifest.devDependencies, ...manifest.optionalDependencies })) {
+      if (!String(spec).startsWith('file:')) continue;
+      const source = posix.normalize(posix.join(dir, String(spec).slice(5)));
+      assert.ok(hashed.includes(`${source}/**`), `key hashes the copied ${source} of ${dir}`);
+    }
   }
   assert.doesNotMatch(action, /restore-keys/, 'only an exact key skips the install');
   const steps = action.split('\n    - ').slice(1);

@@ -235,7 +235,7 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
     const moving = !!config.movingSpeech && (!vercelIngress || vercelIngress.movingWorkerOrigin === config.movingSpeech.workerOrigin);
     const movingClient = moving && incoming.url === '/moving-speech-stream';
     const movingWorker = moving && movingCallbackPath(incoming.url);
-    if (!(config.streaming && ['/speech-stream', '/lipsync-worker'].includes(incoming.url) || movingClient || movingWorker || room)
+    if (!(config.streaming && config.speechProvider && ['/speech-stream', '/lipsync-worker'].includes(incoming.url) || movingClient || movingWorker || room)
       || incoming.method !== 'GET'
       || incoming.headers.host !== new URL(config.gameOrigin).host
       || incoming.headers.upgrade?.toLowerCase() !== 'websocket'

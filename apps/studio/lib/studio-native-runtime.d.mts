@@ -5,7 +5,7 @@ export interface NativeStudioConfiguration {
   connectionString: string; allowedOrigins: string[]; publicHosts: string[];
   apiBase: '/studio/api/admin' | '/api/admin'; authBase: '/studio/api/auth' | '/api/auth';
 }
-export function nativeStudioAdminEnabled(env?: Record<string,string | undefined>): boolean;
+export function nativeStudioAdminEnabled(): true;
 export function nativeStudioAdminConfiguration(env?: Record<string,string | undefined>): NativeStudioConfiguration | null;
 export function assertNativeStudioRequest(request: Request, config: NativeStudioConfiguration | null): void;
 export function withMovingSpeechDealers<T extends object>(readCatalog: () => Promise<T>, env: Record<string,string | undefined>): () => Promise<T & {movingSpeech:{dealerIds:string[]}}>;

@@ -28,7 +28,7 @@ import { openClawChat } from './openclaw-chat.mjs';
 import { normalizeAstridObservation } from '../../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
-import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { completeChatWithSpeech, selectChatSpeechStream } from './generated-speech-chat.mjs';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
@@ -65,7 +65,11 @@ import { rouletteDocument } from './games/roulette/http.mjs';
 const sharedRoomQa = consumeSharedRoomQaContext();
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../../..');
-const localMediaEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' && process.env.CROUPIER_CLOUD_RUNTIME !== '1';
+// Neon is the one Studio registry and private Blob the one media store on every
+// deployment; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// The local media layout is therefore never served.
+const neonStudioEnabled = true;
+const localMediaEnabled = false;
 const mediaLayout = localMediaEnabled && existsSync(join(mediaRepository, 'media/layout.json'))
   ? await import(pathToFileURL(join(mediaRepository, 'tools/media-layout.mjs')).href) : null;
 const publicAssetPath = (...parts) => {
@@ -90,12 +94,10 @@ let sharedRoomChat = null;
 const storage = sharedRoomQa?.storage ?? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL });
 await storage.db.assertInstalled();
-const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
 const { launchGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
-const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
@@ -103,7 +105,7 @@ const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./stud
 const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
 const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? (neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null);
 const studioMediaRuntime = sharedRoomQa?.studioMediaRuntime ?? (studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null);
-const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
+const speechReplyLibrary = studioPolicyRuntime
   ? (await import('../../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
     repository:(await import('../../packages/presentation/server/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
@@ -177,6 +179,9 @@ const playerChatMemory = (await createPlayerChatMemory(db, {studioScope:studioPo
 let presentationApi;
 const activePlayerChats = new Map();
 let speechStreamService = null;
+// Streamed still-image speech is optional: none of its three provider values means it is off.
+const stillSpeechDisabled = process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1'
+  && !['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'].some(name => process.env[name]);
 let movingSpeechService = null;
 const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
@@ -271,7 +276,7 @@ let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(process.env), root,
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(), root,
   nativeMode:!localMediaEnabled, operatorById: partnerOperatorById,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
@@ -514,14 +519,12 @@ async function chatSessionOwner(req, playerId) {
 // Opt-in operator rehearsal shares the real relay and its budget, but never
 // calls player APIs or persists synthetic conversations in either database.
 const operatorSpeechQa = createOperatorSpeechQa({
-  directory: studioPolicyRuntime ? undefined : process.env.CROUPIER_GENERATED_SPEECH_DIR,
-  journalRequired: Boolean(studioPolicyRuntime),
   gateStore: studioPolicyRuntime
     ? (await import('./postgres-operator-speech-qa.mjs')).createPostgresOperatorSpeechQa({pool:storage.pool,scope:studioPolicyRuntime.scope})
     : undefined,
   origin: process.env.PUBLIC_URL ?? gameOrigin,
   authenticate: boSessionOk,
-  service: () => speechStreamService,
+  service: () => typeof speechStreamService?.prepare === 'function' ? speechStreamService : null,
   decide: (request, status, signal) => openClawChat(request, status, {
     fetchImpl: ((url, options = {}) => fetch(url, { ...options,
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
@@ -636,8 +639,8 @@ const server = createServer(async (req, res) => {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
   }
-  { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
+  { const u=new URL(req.url,gameOrigin); const launch=u.searchParams.get('launch');
+    if(['/', '/game', '/game/', '/blackjack','/blackjack/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
       // Nyckel→bolag: after the verified signature and before any session, a key's company must be the
@@ -646,8 +649,7 @@ const server = createServer(async (req, res) => {
       try { operator = await partnerLaunchOperator(claims,u.searchParams,{operatorById:partnerOperatorById}); }
       catch (error) { if (error?.statusCode !== 403) throw error; partnerRefused(req,res,error.code); return; }
       // A partner launch is a blackjack start and lands on the one public game start.
-      const destination = neonStudioEnabled ? launchGameStart(u.searchParams,{origin:u.origin,operator})
-        : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
+      const destination = launchGameStart(u.searchParams,{origin:u.origin,operator});
       if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }
@@ -941,7 +943,8 @@ const server = createServer(async (req, res) => {
         if(incoming.presentationVersion!==undefined&&(!movingSpeechService?.supports(dealerId)
           ||!Number.isSafeInteger(incoming.presentationVersion)||String(incoming.presentationVersion)!==incoming.roundRevision))
           throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
-        if (registeredSpeech && (typeof selectedSpeechStream?.prepare !== 'function' || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
+        const speechRoute = selectChatSpeechStream({ dealerId, registeredSpeech, selected: selectedSpeechStream,
+          acceptsSpeechStream: incoming.acceptsSpeechStream, stillSpeechDisabled });
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
             if (speechStreamService && incoming.acceptsSpeechStream === true && Number.isSafeInteger(ms) && ms >= 0) {
@@ -962,7 +965,7 @@ const server = createServer(async (req, res) => {
             })) });
           },
           service: dealerId==='astrid'?getGeneratedSpeechService():null,
-          streamService: (dealerId==='astrid'||registeredSpeech)&&incoming.acceptsSpeechStream === true ? selectedSpeechStream : null,
+          streamService: speechRoute.streamService, textOnlyReason: speechRoute.textOnlyReason,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
@@ -1043,7 +1046,7 @@ const server = createServer(async (req, res) => {
     if(response){res.writeHead(response.status,Object.fromEntries(response.headers));if(!response.body){res.end();return;}
       const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
   }
-  const gameRedirect = gameEntryRedirect(new URL(req.url,gameOrigin),process.env);
+  const gameRedirect = gameEntryRedirect(new URL(req.url,gameOrigin));
   if (gameRedirect) {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }
     res.writeHead(307,{Location:gameRedirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); res.end(); return;
@@ -1133,7 +1136,7 @@ const server = createServer(async (req, res) => {
         if (refusal) { partnerRefused(req,res,refusal); return; }
       }
     }
-    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection),{enabled:sharedRoomsEnabled,selection});
+    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
@@ -1193,14 +1196,15 @@ if (sharedRoomsEnabled) {
     engineOrigin:roomOrigins.engineOrigin});
   // Speech services are created below; the chat reads them per request (PR 2: ticket to the asker).
   sharedRoomChat = createSharedRoomChat({service:sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin,
-    speech:()=>({movingSpeech:movingSpeechService,speechStream:speechStreamService,dealerSpeech:dealerSpeechRuntime})});
+    speech:()=>({movingSpeech:movingSpeechService,speechStream:speechStreamService,dealerSpeech:dealerSpeechRuntime,stillSpeechDisabled})});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
   try { await sharedRoomService.start(); }
   catch (error) { gameUpgradeDispatcher.close(); await sharedRoomService.close(); throw error; }
 }
-if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
+if (stillSpeechDisabled) console.info(JSON.stringify({ event: 'generated_speech_still_disabled' }));
+else if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(gameUpgradeDispatcher?.port('speech') ?? server, streaming.configuration, {

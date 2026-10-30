@@ -10,7 +10,7 @@ import {issueTicket} from '../../../services/astrid-gpu-worker/gateway/auth.mjs'
 import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
 
 const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.test',
-  CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab.example.test',
+  CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com',
   CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-private-ingress-'.repeat(3)};
 const configuration = platformConfiguration(env);
 const ticketSecret = 'isolated-ticket-secret-'.repeat(3), workerSecret = 'isolated-worker-secret-'.repeat(3);

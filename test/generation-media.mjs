@@ -3,23 +3,27 @@ import test from 'node:test';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { fstatSync, openSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
-import { openGenerationMedia, closeGenerationMedia, serveGenerationMedia } from '../services/game/generation-media.mjs';
+import { serveGenerationMedia } from '../services/game/generation-media.mjs';
 import { publicRoutePaths, isRetiredGenerationRoute, isRetiredLocalDealerRoute } from '../services/game/retired-public-routes.mjs';
 
-// Synthetic catalogue entries: the retired BO catalogue file no longer ships with the server.
-const catalog = [{ id: 'c01866d1-7c93-43a4-9493-73f7c66d3725' }, { id: '15777d5f-4085-484e-a170-eb5c9a13d7b0' }];
-const [first, second] = catalog;
+// server.mjs hands serveGenerationMedia the descriptor from media-layout's openPublicMedia;
+// this opens one the same way so the test covers only the responder.
+function openFixtureMedia(file) {
+  const fd = openSync(file, 'r'), { size, mtimeMs } = fstatSync(fd);
+  return { fd, size, mtimeMs, contentType: 'video/mp4' };
+}
 
 test('served media honours GET, HEAD and byte ranges and refuses writes and bad ranges', async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-serve-'));
   const directory = join(tmp, 'media'); await mkdir(directory);
   const bytes = '0123456789abcdefgh';
-  await writeFile(join(directory, `${first.id}.mp4`), bytes);
+  const file = join(directory, 'clip.mp4'), opened = [];
+  await writeFile(file, bytes);
   const server = createServer((req, res) => {
-    const media = openGenerationMedia({ directory, catalog, fileName: `${first.id}.mp4` });
-    if (!media) { res.writeHead(404); res.end(); return; }
+    const media = openFixtureMedia(file); opened.push(media);
     serveGenerationMedia(req, res, media, { ETag: '"fixture"' });
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
@@ -42,6 +46,8 @@ test('served media honours GET, HEAD and byte ranges and refuses writes and bad 
     assert.equal(head.status, 200); assert.equal(head.headers.get('content-length'), String(bytes.length)); assert.equal(await head.text(), '');
     const write = await fetch(url, { method: 'POST', body: 'x' });
     assert.equal(write.status, 405); assert.equal(write.headers.get('allow'), 'GET, HEAD'); await write.arrayBuffer();
+    // Every branch either closes the descriptor or hands it to the response stream.
+    assert.ok(opened.length > 0 && opened.every(media => media.fd === undefined));
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(tmp, { recursive: true, force: true }); }
 });
 

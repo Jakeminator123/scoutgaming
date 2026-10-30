@@ -240,7 +240,7 @@ test('actual browser expired Admin login restores the real room view through his
   const load = (path, overrides) => {
     const url = new URL(path, import.meta.url), module = {exports:{}}, localRequire = createRequire(url);
     vm.runInNewContext(compile(readFileSync(url,'utf8'),url.pathname), {
-      module,exports:module.exports,Request,Headers,URL,process:{env:{CROUPIER_LAB_BASE_PATH:'/studio'}},
+      module,exports:module.exports,Request,Headers,URL,process:{env:{}},
       require:name => Object.hasOwn(overrides,name) ? overrides[name] : localRequire(name),
     });
     return module.exports;

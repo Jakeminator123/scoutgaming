@@ -10,6 +10,8 @@ runs:
   steps:
     # The key covers each lockfile and its package.json, so a manifest that drifts
     # from its lockfile always misses and npm ci / pnpm --frozen-lockfile reject it.
+    # npm and pnpm copy a file: dependency (packages/server-transport) into the tree, so
+    # its sources are part of the key; otherwise a restored tree runs the old copy.
     - name: Identify the Node ABI
       id: node
       shell: bash
@@ -27,7 +29,7 @@ runs:
           services/astrid-gpu-worker/gateway/node_modules
           apps/speech/node_modules
           apps/web/node_modules
-        key: ${{ runner.os }}-${{ runner.arch }}-locked-trees-v1-abi${{ steps.node.outputs.abi }}-${{ hashFiles('apps/studio/package-lock.json', 'apps/studio/package.json', 'apps/studio/client/package-lock.json', 'apps/studio/client/package.json', 'services/game/package-lock.json', 'services/game/package.json', 'services/astrid-gpu-worker/gateway/package-lock.json', 'services/astrid-gpu-worker/gateway/package.json', 'apps/speech/package-lock.json', 'apps/speech/package.json', 'apps/web/pnpm-lock.yaml', 'apps/web/package.json') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-locked-trees-v1-abi${{ steps.node.outputs.abi }}-${{ hashFiles('apps/studio/package-lock.json', 'apps/studio/package.json', 'apps/studio/client/package-lock.json', 'apps/studio/client/package.json', 'services/game/package-lock.json', 'services/game/package.json', 'services/astrid-gpu-worker/gateway/package-lock.json', 'services/astrid-gpu-worker/gateway/package.json', 'apps/speech/package-lock.json', 'apps/speech/package.json', 'apps/web/pnpm-lock.yaml', 'apps/web/package.json', 'packages/server-transport/**') }}
     - name: Install every locked package tree
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash

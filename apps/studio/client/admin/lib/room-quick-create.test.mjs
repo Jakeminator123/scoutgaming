@@ -120,13 +120,9 @@ test('kedjan: lås miljön → mät omätta klipp → spelbord, tilldelning och 
 
 test('kedjan stannar med en mening och rätt knapp; bara ett osäkert svar försöks igen med samma nyckel', async () => {
   const w = workspace();
-  const none = server(w);
-  const draft = await runQuickCreate(choice, {operator:{...operator, appearanceDraft:true}, fetchImpl:none.fetchImpl});
-  assert.deepEqual([draft.ok, draft.href, none.calls.length], [false, '/admin/companies/north?flik=journal', 0], 'öppet utseendeutkast: inget skrivs');
-  assert.match(draft.text, /opublicerat utseendeutkast/);
-  const pending = server(w, {'POST /api/admin/presentation-room':refused(409, 'studio_room_choices_draft_pending')});
-  const late = await runQuickCreate(choice, {operator, fetchImpl:pending.fetchImpl, newKey:keys()});
-  assert.deepEqual([late.step, late.href], ['spelbord', '/admin/companies/north?flik=journal'], 'utkastet som kom under tiden: serverns kod');
+  // Ett öppet utseendeutkast stoppar inte längre: servern för det vidare till den nya paketversionen (plan L3 PR 3).
+  const drafted = await runQuickCreate(choice, {operator:{...operator, appearanceDraft:true}, fetchImpl:server(w).fetchImpl, newKey:keys()});
+  assert.equal(drafted.ok, true, drafted.text);
   const material = server(w, {'POST /api/admin/presentation-room':refused(422, 'studio_room_game_material_unavailable', {materialReason:'native_material_speech_slot_missing'})});
   const stopped = await runQuickCreate(choice, {operator, fetchImpl:material.fetchImpl, newKey:keys()});
   assert.deepEqual([stopped.ok, stopped.step, stopped.href, stopped.label], [false, 'spelbord', '/admin/dealers/dragan?flik=tal', 'Öppna Röst och tal']);

@@ -178,7 +178,8 @@ test('HTTP endpoints expose no credentials, reject foreign origin and retire dis
   const options = { store, settings, voiceSettings: { key: 'voice-private', mismatch: false }, service: { chat: noCall, voice: noCall } };
   const result = await socialEndpoint(request('/api/social', 'GET'), options);
   assert.equal(result.status, 200);
-  const body = await result.json(); assert.equal(body.configured, true); assert.equal(body.voiceConfigured, true);
+  // The standalone voice preview is always off (Neon and native Admin are fixed), even with a key.
+  const body = await result.json(); assert.equal(body.configured, true); assert.equal(body.voiceConfigured, false);
   assert.ok(!JSON.stringify(body).includes('private')); assert.ok(!JSON.stringify(body).includes('fixture-only-secret'));
   const foreign = await socialEndpoint(request('/api/social/chat', 'POST', input(), { Origin: 'https://foreign.test' }), options);
   assert.equal(foreign.status, 403);

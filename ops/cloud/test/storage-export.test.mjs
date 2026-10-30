@@ -7,13 +7,13 @@ import { spawn } from 'node:child_process';
 import { createStorageExportServer, readStorageExportConfig } from '../storage-export.mjs';
 import { inspectCloudBootstrap, validateCloudConfig } from '../config.mjs';
 
-const studioEnv = () => ({ CROUPIER_STORAGE_MAINTENANCE: 'studio-export',   CROUPIER_STUDIO_NEON_POLICY: '0', CROUPIER_GENERATED_SPEECH: '0', CROUPIER_CLOUD_GENERATED_SPEECH: '0',
+const studioEnv = () => ({ CROUPIER_STORAGE_MAINTENANCE: 'studio-export', CROUPIER_GENERATED_SPEECH: '0', CROUPIER_CLOUD_GENERATED_SPEECH: '0',
   CROUPIER_GENERATED_SPEECH_STREAMING: '0', CROUPIER_STORAGE_EXPORT_SECRET: 'fixture-export-secret-'.repeat(3) });
 
-test('Studio freeze requires PostgreSQL and every policy/provider flag explicitly off', () => {
+test('Studio freeze requires PostgreSQL and every provider flag explicitly off', () => {
   const env = studioEnv();
   assert.deepEqual(readStorageExportConfig(env), { mode: 'studio-export', secret: env.CROUPIER_STORAGE_EXPORT_SECRET });
-  for (const name of ['CROUPIER_STUDIO_NEON_POLICY', 'CROUPIER_GENERATED_SPEECH',
+  for (const name of ['CROUPIER_GENERATED_SPEECH',
     'CROUPIER_CLOUD_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_STREAMING']) {
     for (const value of [undefined, '', '1', 'false', '0 ']) {
       assert.throws(() => readStorageExportConfig({ ...env, [name]: value }), /maintenance/);

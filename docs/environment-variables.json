@@ -1,11 +1,23 @@
 {
   "schema": 1,
-  "revisionNote": "Production web, Studio and speech are three Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAW_API_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes. 12 Oct 2026 cleanup: canonical OPENCLAW_API_KEY supported by the private Gateway startup and specified in both Render services and Compose; legacy name is compatibility-only. Local GEMINI_API_KEY, empty RUNPOD_ENDPOINT_ID and platform-owned VERCEL removed after a private backup. 13 Oct 2026: Jakob authorized a 20 USD daily GPU test ceiling in CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD and the production Neon policy. Effective cap remains their minimum; session/fullfile reserves and retained cost rows are unchanged. Studio migration 011 widens only the daily policy constraint; no new environment key. 14 Oct 2026: explicit owner request copies five .env.emil names into root .env.local and scoutgaming Production as sensitive server variables. Existing local assignments are commented; unrelated values and environments are preserved. These are stored credentials, not automatic speech activation. Render provider jobs and scoped CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID are unchanged; legacy RUNPOD_ENDPOINT_ID is not an alias and its supplied endpoint returned 404. No GitHub or GPU-worker credential copy. 14 Oct 2026 evening: supersedes the temporary Emil copy with explicit local EMIL_* test profile. Root Scoutgaming RunPod pair restored from verified Render configuration; unused local legacy endpoint/Gemini/webhook removed. Vercel Production removes four unused test copies (RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY, ELEVENLABS_API_KEY); CARTESIA_API_KEY stays for Studio voice checks. All other Vercel entries and Render/Emil remote resources unchanged. Read-only explicit-file provider checker rejects mixed profiles and never starts jobs. 28 Oct 2026: OPENAI_API_KEY (Sensitive), CROUPIER_AI_IMAGE_ENABLED=1 and CROUPIER_AI_IMAGE_DAILY_LIMIT=20 were set directly in the preview Vercel project croupier-k06-k07-staging (Production scope) for AI images; no value is recorded here. 29 Oct 2026: read-only Vercel audit. On unified UI the assistant endpoints trust only CROUPIER_PUBLIC_ORIGIN (assistantRequestConfiguration in apps/studio/lib/studio-native-request.mjs), so CROUPIER_LAB_UI_ORIGIN is no longer needed on Vercel. vercel-lab-ui.vercelProductionRemovals lists the names Jakob removes from scoutgaming Production after merge; nothing was changed in any panel by this revision. Stale apps/studio/.env.example removed; CROUPIER_ZONES_DATABASE_URL and the names only that template listed are dropped from local-lab-openclaw. 29 Oct 2026 (later, main a05917c3): full read-only inventory of Vercel (both projects), Render service metadata and Neon branches/databases/roles/endpoints (docs/2026-10-29-ENV-INVENTORY.md). Panel change by Jakob: CROUPIER_AI_IMAGE_ENABLED=1 and CROUPIER_AI_IMAGE_DAILY_LIMIT=12 set in scoutgaming for Production, Preview and Development (hard cost cap lives in the OpenAI project). Confirmed removed by Jakob: BO_URL, CROUPIER_ASTRID_CAMERA, CROUPIER_PLAYER_ACCOUNTS; the Neon connection now injects CROUPIER_NEON_* in Production only. All 16 CROUPIER_NEON_* belong to store_f0uLTbYiQKqQjLCY = Neon croupier-production wandering-hill-60561912; no source reads them, DATABASE_URL, POSTGRES_URL or PG*. Removal step 3 (CROUPIER_LAB_UI_ORIGIN) is unblocked: 3e866f74 is in production deployment dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3. runpod-gpu-worker gains MOVING_CALLBACK_ORIGIN and MOVING_BANK_STORE (read by services/moving-gpu-worker); the RunPod template still points MOVING_CALLBACK_ORIGIN at the deleted croupier-v2 and must be corrected before CROUPIER_MOVING_SPEECH_ENABLED=1. Render env names could not be re-read (no RENDER_API_KEY available); last read 28 Oct 2026. Nothing was changed in any panel by this revision. 29 Oct 2026 docs consolidation: vercel-lab-ui adds the readers http-guard.mjs, partner-reference.mjs, partner-observer.mjs, public-assistant.mjs and lab-url.mjs as sources and lists the names they read (CROUPIER_LAB_INTERNAL_SECRET, BETTALOTTO_API, BETTALOTTO_PARTNER_*, CROUPIER_GAME_ORIGIN, VERCEL and the esbuild-defined NEXT_PUBLIC_ADMIN_WORKSPACE and NEXT_PUBLIC_LAB_BASE_PATH); none is a Vercel panel entry. No panel change. 29 Oct 2026 (morning): the preview services were renamed outside the repo; names verified read-only. Vercel project prj_7dgyvW5zakx1qJ8YaH5pueVTVi14 is scoutgaming-preview (domain preview.scoutgaming.tech, branch preview; CROUPIER_PUBLIC_ORIGIN there points at that domain), Render srv-dbf61l0m7kps73ft7mk0 is scoutgaming-preview-engine (branch preview, address still croupier-k06-k07-staging.onrender.com), Neon project red-violet-36066351 keeps the name croupier-k06-k07-staging. Same 16 names in scoutgaming-preview; no name added or removed, no value recorded. 29 Oct 2026 (talkedja/RunPod): docs/TALKEDJA-RUNPOD.md records Kevin's RunPod setup (28 Oct 15:30), our speech paths and an activation plan against Kevin's account using our own worker images; ENVIRONMENT-VARIABLES.md lists the known croupier-v3 speech misconfigurations that Jakob must correct before activation (reported, not re-read). No name added or removed, no value recorded, no panel changed. 29 Oct 2026 (Miljövariabler 1): constants hard-coded and their reads removed. CROUPIER_VERCEL_UI (packages/server-transport/configuration.mjs now keys on CROUPIER_BACKEND_ORIGIN), CROUPIER_DATABASE (PostgreSQL fixed in ops/cloud/config.mjs, container-entry.mjs, storage-export.mjs, services/game/server.mjs, studio-policy-runtime.mjs and studio-render-persistence.mjs) and the panel read of CROUPIER_STREAM_LANE (the starter still sets it for the game child; Studio no longer reads it). Panel removals after deploy, the done earlier Vercel list and integration entries are in vercel-lab-ui.panelRemovals. No panel was changed by this revision.",
+  "revisionNote": "Production web, Studio and speech are three Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAW_API_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes. 12 Oct 2026 cleanup: canonical OPENCLAW_API_KEY supported by the private Gateway startup and specified in both Render services and Compose; legacy name is compatibility-only. Local GEMINI_API_KEY, empty RUNPOD_ENDPOINT_ID and platform-owned VERCEL removed after a private backup. 13 Oct 2026: Jakob authorized a 20 USD daily GPU test ceiling in CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD and the production Neon policy. Effective cap remains their minimum; session/fullfile reserves and retained cost rows are unchanged. Studio migration 011 widens only the daily policy constraint; no new environment key. 14 Oct 2026: explicit owner request copies five .env.emil names into root .env.local and scoutgaming Production as sensitive server variables. Existing local assignments are commented; unrelated values and environments are preserved. These are stored credentials, not automatic speech activation. Render provider jobs and scoped CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID are unchanged; legacy RUNPOD_ENDPOINT_ID is not an alias and its supplied endpoint returned 404. No GitHub or GPU-worker credential copy. 14 Oct 2026 evening: supersedes the temporary Emil copy with explicit local EMIL_* test profile. Root Scoutgaming RunPod pair restored from verified Render configuration; unused local legacy endpoint/Gemini/webhook removed. Vercel Production removes four unused test copies (RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY, ELEVENLABS_API_KEY); CARTESIA_API_KEY stays for Studio voice checks. All other Vercel entries and Render/Emil remote resources unchanged. Read-only explicit-file provider checker rejects mixed profiles and never starts jobs. 28 Oct 2026: OPENAI_API_KEY (Sensitive), CROUPIER_AI_IMAGE_ENABLED=1 and CROUPIER_AI_IMAGE_DAILY_LIMIT=20 were set directly in the preview Vercel project croupier-k06-k07-staging (Production scope) for AI images; no value is recorded here. 29 Oct 2026: read-only Vercel audit. On unified UI the assistant endpoints trust only CROUPIER_PUBLIC_ORIGIN (assistantRequestConfiguration in apps/studio/lib/studio-native-request.mjs), so CROUPIER_LAB_UI_ORIGIN is no longer needed on Vercel. vercel-lab-ui.vercelProductionRemovals lists the names Jakob removes from scoutgaming Production after merge; nothing was changed in any panel by this revision. Stale apps/studio/.env.example removed; CROUPIER_ZONES_DATABASE_URL and the names only that template listed are dropped from local-lab-openclaw. 29 Oct 2026 (later, main a05917c3): full read-only inventory of Vercel (both projects), Render service metadata and Neon branches/databases/roles/endpoints (docs/2026-10-29-ENV-INVENTORY.md). Panel change by Jakob: CROUPIER_AI_IMAGE_ENABLED=1 and CROUPIER_AI_IMAGE_DAILY_LIMIT=12 set in scoutgaming for Production, Preview and Development (hard cost cap lives in the OpenAI project). Confirmed removed by Jakob: BO_URL, CROUPIER_ASTRID_CAMERA, CROUPIER_PLAYER_ACCOUNTS; the Neon connection now injects CROUPIER_NEON_* in Production only. All 16 CROUPIER_NEON_* belong to store_f0uLTbYiQKqQjLCY = Neon croupier-production wandering-hill-60561912; no source reads them, DATABASE_URL, POSTGRES_URL or PG*. Removal step 3 (CROUPIER_LAB_UI_ORIGIN) is unblocked: 3e866f74 is in production deployment dpl_66mzFEGBVQYE2Ct1hGv1CwQ3qeN3. runpod-gpu-worker gains MOVING_CALLBACK_ORIGIN and MOVING_BANK_STORE (read by services/moving-gpu-worker); the RunPod template still points MOVING_CALLBACK_ORIGIN at the deleted croupier-v2 and must be corrected before CROUPIER_MOVING_SPEECH_ENABLED=1. Render env names could not be re-read (no RENDER_API_KEY available); last read 28 Oct 2026. Nothing was changed in any panel by this revision. 29 Oct 2026 docs consolidation: vercel-lab-ui adds the readers http-guard.mjs, partner-reference.mjs, partner-observer.mjs, public-assistant.mjs and lab-url.mjs as sources and lists the names they read (CROUPIER_LAB_INTERNAL_SECRET, BETTALOTTO_API, BETTALOTTO_PARTNER_*, CROUPIER_GAME_ORIGIN, VERCEL and the esbuild-defined NEXT_PUBLIC_ADMIN_WORKSPACE and NEXT_PUBLIC_LAB_BASE_PATH); none is a Vercel panel entry. No panel change. 29 Oct 2026 (morning): the preview services were renamed outside the repo; names verified read-only. Vercel project prj_7dgyvW5zakx1qJ8YaH5pueVTVi14 is scoutgaming-preview (domain preview.scoutgaming.tech, branch preview; CROUPIER_PUBLIC_ORIGIN there points at that domain), Render srv-dbf61l0m7kps73ft7mk0 is scoutgaming-preview-engine (branch preview, address still croupier-k06-k07-staging.onrender.com), Neon project red-violet-36066351 keeps the name croupier-k06-k07-staging. Same 16 names in scoutgaming-preview; no name added or removed, no value recorded. 29 Oct 2026 (talkedja/RunPod): docs/TALKEDJA-RUNPOD.md records Kevin's RunPod setup (28 Oct 15:30), our speech paths and an activation plan against Kevin's account using our own worker images; ENVIRONMENT-VARIABLES.md lists the known croupier-v3 speech misconfigurations that Jakob must correct before activation (reported, not re-read). No name added or removed, no value recorded, no panel changed. 29 Oct 2026 (Miljövariabler 1): constants hard-coded and their reads removed. CROUPIER_VERCEL_UI (packages/server-transport/configuration.mjs now keys on CROUPIER_BACKEND_ORIGIN), CROUPIER_DATABASE (PostgreSQL fixed in ops/cloud/config.mjs, container-entry.mjs, storage-export.mjs, services/game/server.mjs, studio-policy-runtime.mjs and studio-render-persistence.mjs) and the panel read of CROUPIER_STREAM_LANE (the starter still sets it for the game child; Studio no longer reads it). Panel removals after deploy, the done earlier Vercel list and integration entries are in vercel-lab-ui.panelRemovals. No panel was changed by this revision. 29 Oct 2026 (Miljövariabler 2): CROUPIER_VERCEL_UNIFIED_UI (1), CROUPIER_STUDIO_NATIVE_ADMIN (1), CROUPIER_LAB_BASE_PATH (/studio), CROUPIER_STUDIO_NEON_POLICY (1) and CROUPIER_MEDIA_STORAGE (blob) are fixed in code and no longer read; hardcodedNames lists them and the checker fails if any tracked code, test or build file names them again. As a consequence CROUPIER_LAB_UI_ORIGIN, CROUPIER_PUBLIC_GAME_PATH and the speech modules' CROUPIER_GENERATED_SPEECH_DIR are unread too. Panel removals after deploy are in vercel-lab-ui.panelRemovals.afterDeployOfMiljovariabler2. No panel was changed by this revision.",
+  "hardcodedNames": {
+    "names": [
+      "CROUPIER_VERCEL_UNIFIED_UI",
+      "CROUPIER_STUDIO_NATIVE_ADMIN",
+      "CROUPIER_LAB_BASE_PATH",
+      "CROUPIER_STUDIO_NEON_POLICY",
+      "CROUPIER_MEDIA_STORAGE",
+      "CROUPIER_LAB_UI_ORIGIN",
+      "CROUPIER_PUBLIC_GAME_PATH"
+    ],
+    "note": "Miljövariabler 2: one value in production and preview, fixed in code. Miljövariabler 2b adds CROUPIER_LAB_UI_ORIGIN and CROUPIER_PUBLIC_GAME_PATH, which nothing reads since Miljövariabler 2. tools/check-environment-variables.mjs fails when any tracked file outside docs/, Markdown and .github/workflows/ names one of them (source, test, build script, vercel.json or Next config)."
+  },
   "services": {
     "render-game": {
       "paowMovingSpeech_2026_10_29": {
         "status": "planned, not set in any panel (PR 5, docs/PAOW-BANK-KORNING.md)",
-        "renderPreview": "scoutgaming-preview-engine: CROUPIER_MOVING_SPEECH_ENABLED=1, CROUPIER_MOVING_SPEECH_BANK_RECORDS={\"paow\":<manifest>}, CROUPIER_STUDIO_MOVING_DRIFT_API=1, CROUPIER_STUDIO_MOVING_DRIFT_PROFILES=[{id:paow,dealerId:paow,endpointId:<new endpoint>,releaseDigest:<releaseSha256>,bankHash:<archive.sha256>}], CROUPIER_MOVING_SPEECH_IMAGE and _RELEASE_SHA256 from the publish receipt, _WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com, _RUNPOD_API_KEY (Kevin's account), _TICKET_SECRET, ELEVENLABS_API_KEY (Kevin's account), CROUPIER_DEALER_SPEECH_PROFILES=1 (required by CROUPIER_MOVING_SPEECH_ENABLED=1; itself requires streaming, i.e. CROUPIER_GENERATED_SPEECH=1, CROUPIER_CLOUD_GENERATED_SPEECH=1 and CROUPIER_GENERATED_SPEECH_STREAMING=1, and CROUPIER_STUDIO_NEON_POLICY=1; ops/cloud/config.mjs). No new names.",
+        "renderPreview": "scoutgaming-preview-engine: CROUPIER_MOVING_SPEECH_ENABLED=1, CROUPIER_MOVING_SPEECH_BANK_RECORDS={\"paow\":<manifest>}, CROUPIER_STUDIO_MOVING_DRIFT_API=1, CROUPIER_STUDIO_MOVING_DRIFT_PROFILES=[{id:paow,dealerId:paow,endpointId:<new endpoint>,releaseDigest:<releaseSha256>,bankHash:<archive.sha256>}], CROUPIER_MOVING_SPEECH_IMAGE and _RELEASE_SHA256 from the publish receipt, _WORKER_ORIGIN=https://croupier-k06-k07-staging.onrender.com, _RUNPOD_API_KEY (Kevin's account), _TICKET_SECRET, ELEVENLABS_API_KEY (Kevin's account), CROUPIER_DEALER_SPEECH_PROFILES=1 (required by CROUPIER_MOVING_SPEECH_ENABLED=1; itself requires streaming, i.e. CROUPIER_GENERATED_SPEECH=1, CROUPIER_CLOUD_GENERATED_SPEECH=1 and CROUPIER_GENERATED_SPEECH_STREAMING=1; Neon is fixed in code, ops/cloud/config.mjs). No new names.",
         "vercelPreview": "scoutgaming-preview: the same CROUPIER_STUDIO_MOVING_DRIFT_API and _PROFILES; Admin lists only their dealerIds with a bank hash (catalog movingSpeech.dealerIds). No speech keys on Vercel.",
         "runpodTemplate": "Kevin's account, endpoint scoutgaming-moving-paow: MOVING_CALLBACK_ORIGIN=https://croupier-k06-k07-staging.onrender.com, MOVING_BANK_STORE=/tmp/croupier-moving-banks."
       },
@@ -40,11 +52,11 @@
         "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER",
         "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD"
       ],
+      "stillSpeechProviderNote": "CARTESIA_API_KEY, RUNPOD_API_KEY, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: villkorlig, alla tre eller ingen. Med strömmat tal och ingen av dem är stillbildsvägen (astrid-gpu-worker) av; rörligt tal går ändå och dealers med stillbildsprofil svarar med text (generated_speech_still_not_configured). Rörligt tal utan trion fungerar bara med ElevenLabs-röst; en Cartesia-röst kräver trion (annars generated_speech_voice_not_configured). Delvis satt stoppar starten. Helfilstal utan streaming kräver alla tre (ops/cloud/config.mjs).",
       "conditional": [
         "OPENCLAW_PRODUCT_SPEECH_URL",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN",
         "CROUPIER_CLOUD_DATA_ROOT",
-        "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
         "CROUPIER_ZONES_DATABASE_URL",
@@ -73,13 +85,11 @@
         "CROUPIER_GAME_ORIGIN",
         "OPENCLAW_SPEECH_TIMEOUT_MS",
         "CROUPIER_GAME_DATABASE_URL",
-        "CROUPIER_PUBLIC_GAME_PATH",
         "CROUPIER_VERCEL_TRANSPORT_ORIGIN",
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET",
         "CROUPIER_STORAGE_MAINTENANCE",
         "CROUPIER_STORAGE_EXPORT_SECRET",
-        "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_ENVIRONMENT_ID",
         "CROUPIER_STUDIO_WORKSPACE_ID",
         "CROUPIER_DEALER_SPEECH_PROFILES",
@@ -122,7 +132,7 @@
         "CROUPIER_GENERATED_SPEECH_DIR",
         "CROUPIER_DATA_DIR"
       ],
-      "constantsInCode_2026_10_29": "CROUPIER_DATABASE (always postgres) and CROUPIER_STREAM_LANE (always lissabon-stream-lane, set by ops/cloud/config.mjs childSpecifications for the game child) are no longer read from the Render panel; remove both from croupier-v3 after the main deploy, and from scoutgaming-preview-engine only once branch preview has #664 and is deployed (ENVIRONMENT-VARIABLES.md#att-ta-bort-i-panelen). Neither is listed here, so --compare render-game shows both as unlisted until they are removed."
+      "constantsInCode_2026_10_29": "CROUPIER_DATABASE (always postgres) and CROUPIER_STREAM_LANE (always lissabon-stream-lane, set by ops/cloud/config.mjs childSpecifications for the game child) are no longer read from the Render panel; remove both from croupier-v3 after the main deploy, and from scoutgaming-preview-engine only once branch preview has #664 and is deployed (ENVIRONMENT-VARIABLES.md#att-ta-bort-i-panelen). Neither is listed here, so --compare render-game shows both as unlisted until they are removed. Miljövariabler 2: CROUPIER_STUDIO_NEON_POLICY (always 1) and CROUPIER_MEDIA_STORAGE (always blob) are fixed in ops/cloud/config.mjs, container-entry.mjs, storage-export.mjs, vercel-ingress.mjs and services/game; the starter no longer forwards them to the game child, and CROUPIER_PUBLIC_GAME_PATH (engine document fixed at /blackjack) is no longer read. Remove both from croupier-v3 after the main deploy and from scoutgaming-preview-engine once preview has the change and is deployed; --compare render-game shows them as unlisted until then."
     },
     "vercel-entry": {
       "sources": [
@@ -181,14 +191,10 @@
       "required": [],
       "firstBoot": [],
       "conditional": [
-        "CROUPIER_VERCEL_UNIFIED_UI",
-        "CROUPIER_STUDIO_NATIVE_ADMIN",
-        "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_MOVING_DRIFT_API",
         "CROUPIER_STUDIO_MOVING_DRIFT_PROFILES",
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_BACKEND_ORIGIN",
-        "CROUPIER_LAB_UI_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET",
         "CARTESIA_API_KEY"
       ],
@@ -380,7 +386,6 @@
       "required": [],
       "firstBoot": [],
       "conditional": [
-        "CROUPIER_MEDIA_STORAGE",
         "BLOB_READ_WRITE_TOKEN",
         "OPENCLAWAPI_KEY",
         "OPENCLAW_BASE_URL",
@@ -449,25 +454,19 @@
         "BETTALOTTO_API": "Local only (process env, repository-root .env or apps/studio/.env.local). Generation token for the local-only diagnostic /api/inputs/reference (apps/studio/lib/partner-reference.mjs:13-19, guarded at :67).",
         "BETTALOTTO_PARTNER_*": "Local only. KEY_ID, SECRET, PLAYER_ID and BASE_URL for the same diagnostic (apps/studio/lib/partner-observer.mjs:3-15,41); legacy LAB_PARTNER_* aliases are read dynamically. CROUPIER_GAME_ORIGIN is the only accepted non-default origin there.",
         "VERCEL": "Host-managed (Vercel sets it). apps/studio/lib/public-assistant.mjs:55 then keys the public assistant rate limit on x-vercel-forwarded-for.",
-        "NEXT_PUBLIC_ADMIN_WORKSPACE": "Never set: an esbuild define in apps/studio/client/build.mjs:55 and apps/studio/client/surface-bundle.mjs:18 (1 for admin, 0 otherwise), read by apps/studio/lib/lab-url.mjs:14. NEXT_PUBLIC_LAB_BASE_PATH is defined the same way from CROUPIER_LAB_BASE_PATH."
+        "NEXT_PUBLIC_ADMIN_WORKSPACE": "Never set: an esbuild define in apps/studio/client/build.mjs:42 and apps/studio/client/surface-bundle.mjs:19 (1 for admin, 0 otherwise), read by apps/studio/lib/lab-url.mjs:14. NEXT_PUBLIC_LAB_BASE_PATH is defined the same way, always /studio (also apps/studio/next.config.mjs)."
       },
       "required": [],
       "firstBoot": [],
       "conditional": [
-        "CROUPIER_VERCEL_UNIFIED_UI",
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_BACKEND_ORIGIN",
-        "CROUPIER_LAB_UI_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET",
-        "CROUPIER_LAB_BASE_PATH",
-        "CROUPIER_STUDIO_NATIVE_ADMIN",
-        "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_ENVIRONMENT_ID",
         "CROUPIER_STUDIO_WORKSPACE_ID",
         "CROUPIER_GAME_DATABASE_URL",
         "RESEND_API_KEY",
         "CROUPIER_STUDIO_MAIL_FROM",
-        "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
         "LAB_PUBLIC_URL",
@@ -556,6 +555,46 @@
             "reason": "Same as croupier-v3; only once branch preview has #664 (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, the preview engine stops at start."
           }
         ],
+        "afterDeployOfMiljovariabler2": [
+          {
+            "where": "vercel scoutgaming (production)",
+            "names": [
+              "CROUPIER_VERCEL_UNIFIED_UI",
+              "CROUPIER_STUDIO_NATIVE_ADMIN",
+              "CROUPIER_LAB_BASE_PATH",
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "reason": "Single value fixed in code (ENVIRONMENT-VARIABLES.md#fasta-värden); CROUPIER_STUDIO_NATIVE_ADMIN and CROUPIER_LAB_BASE_PATH were also read at build time, so remove them only after a deployment with the change has been built."
+          },
+          {
+            "where": "render croupier-v3",
+            "names": [
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "reason": "Fixed in ops/cloud/config.mjs and services/game/server.mjs; no longer forwarded to the game child."
+          },
+          {
+            "where": "vercel scoutgaming-preview (production scope)",
+            "names": [
+              "CROUPIER_VERCEL_UNIFIED_UI",
+              "CROUPIER_STUDIO_NATIVE_ADMIN",
+              "CROUPIER_LAB_BASE_PATH",
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "reason": "Same as scoutgaming; only once branch preview has the change (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, Studio builds without /studio and the transport throws."
+          },
+          {
+            "where": "render scoutgaming-preview-engine",
+            "names": [
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "reason": "Same as croupier-v3; only once branch preview has the change and is deployed. Removed earlier, the preview engine stops at start."
+          }
+        ],
         "now": [
           {
             "where": "render croupier-v3",
@@ -593,7 +632,7 @@
           "scoutgaming-preview BLOB_READ_WRITE_TOKEN is Encrypted (flagged readable-secret); re-create as Sensitive.",
           "scoutgaming CROUPIER_BACKEND_ORIGIN is Sensitive although it is a public URL; Plain is consistent with scoutgaming-preview."
         ],
-        "nextChange": "CROUPIER_VERCEL_UNIFIED_UI, CROUPIER_STUDIO_NATIVE_ADMIN and CROUPIER_LAB_BASE_PATH (read by apps/studio/lib/studio-native-runtime.mjs, changed in open PRs 656 and 658); CROUPIER_STUDIO_NEON_POLICY and CROUPIER_MEDIA_STORAGE (engine, Studio and many tests).",
+        "nextChange": "Done in Miljövariabler 2 (afterDeployOfMiljovariabler2). Follow-up workflow PR: .github/workflows/product-container-check.yml:66-67 still passes -e CROUPIER_STUDIO_NEON_POLICY=1 and -e CROUPIER_MEDIA_STORAGE=blob, and since #664 :65 -e CROUPIER_DATABASE=postgres and :67 -e CROUPIER_STREAM_LANE; none is read.",
         "verifyAfter": "/admin login, /lobby, /game with a played hand, /studio/api/assistant returns 200, Render /__cloud/health."
       }
     },

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readdirSync,readFileSync} from 'node:fs';
+import {existsSync,readdirSync,readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {runInNewContext} from 'node:vm';
@@ -96,4 +96,20 @@ test('the kit uses token colours only, and each one is in Admin\'s Tailwind them
   }
   assert.deepEqual(hex,[],'colours come from packages/ui/tokens.css');
   assert.deepEqual([...missing],[],'add --color-sg-* to client/admin/app/globals.css');
+});
+
+// Admin's forms that moved onto the kit (Spelinställningar, Tillgänglighet and the lifecycle panel): buttons are
+// Button or buttonVariants, never the old sg-btn classes, colours are tokens, and no CSS module is borrowed.
+// presentation-room-create.tsx is gone; Nytt spelbord is built from the kit in companies-page.tsx.
+test('room-game-config and control-resource-lifecycle use the kit: no sg-btn, no hex colour, no borrowed CSS module',()=>{
+  const components=new URL('../components/',import.meta.url),found=[];
+  for(const name of ['room-game-config','control-resource-lifecycle']){
+    // Comments may cite PR numbers (#662); only code and styles are read.
+    const source=readFileSync(new URL(name+'.tsx',components),'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm,'');
+    const css=existsSync(new URL(name+'.module.css',components))?readFileSync(new URL(name+'.module.css',components),'utf8'):'';
+    for(const [match] of (source+'\n'+css).matchAll(/\bsg-btn[\w-]*|#[0-9a-f]{3,8}\b/gi))found.push(`${name}: ${match}`);
+    for(const [,module] of source.matchAll(/from '\.\/([\w-]+)\.module\.css'/g))if(module!==name)found.push(`${name}: borrows ${module}.module.css`);
+    if(!source.includes("from '../client/admin/components/ui/kit'"))found.push(`${name}: does not import the kit`);
+  }
+  assert.deepEqual(found,[],'use Button, Field and Card from client/admin/components/ui');
 });

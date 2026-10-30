@@ -164,7 +164,7 @@ test('public rewrite and Next stripped basePath reach the same dealer lifecycle 
 
 function deletionFixture(f,{now=Date.now,del=async()=>{},readIndex=()=>new Map(),mutationTransaction=f.context.mutationTransaction}={}){
  return createStudioMediaDeletion({repository:f.repository,mutationTransaction,now,readIndex,
-  env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del}}});
+  env:{BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del}}});
 }
 const deletionInput=row=>({id:row.id,sha256:row.sha256,expectedRevision:row.revision});
 test('real deletion adapter commits tombstone and project fence before fakeBlob, then completes without deleting the row',async()=>{
@@ -274,7 +274,7 @@ test('unknown bank index or an upload pointer inside it cannot authorize deletio
 
 test('default deletion coverage reads Neon every time and never falls back to a configured disk index',async()=>{
  const f=await fixture(),row=await f.repository.getMedia(oldId);
- const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fake-fixture-token',CROUPIER_MEDIA_BLOB_INDEX:fileURLToPath(new URL('../../../media/blob-index.json',import.meta.url))};
+ const env={BLOB_READ_WRITE_TOKEN:'fake-fixture-token',CROUPIER_MEDIA_BLOB_INDEX:fileURLToPath(new URL('../../../media/blob-index.json',import.meta.url))};
  const service=createStudioMediaDeletion({repository:f.repository,mutationTransaction:f.context.mutationTransaction,env,purge:async()=>assert.fail('check must never delete')});
  const before=f.pool.snapshot();
  await assert.rejects(service.check(deletionInput(row)),{code:'studio_media_delete_coverage_incomplete'});
@@ -480,7 +480,7 @@ test('permanent deletion of cascade trash needs v7 before tombstones or provider
  for(const version of [5,6,7]){
   const f=await fixture();await f.change();const row=await f.repository.getMedia(id),before=f.pool.snapshot();let calls=0,requested;
   const wrapped=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,options)=>{requested=options.headers['X-Presentation-Capability-Version'];return Response.json(presentationCapabilitiesForVersion(version));}});
-  const service=createStudioMediaDeletion({repository:wrapped,mutationTransaction:(work,options)=>wrapped.withMutationContext(work,options.presentationMutation),readIndex:()=>new Map(),env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del:async()=>calls++}}});
+  const service=createStudioMediaDeletion({repository:wrapped,mutationTransaction:(work,options)=>wrapped.withMutationContext(work,options.presentationMutation),readIndex:()=>new Map(),env:{BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del:async()=>calls++}}});
   if(version<7){await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}),{code:'studio_presentation_runtime_update_required'});assert.deepEqual(f.pool.snapshot(),before);assert.equal(calls,0);}
   else{await service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'});assert.equal((await f.repository.getMedia(id)).deletion.state,'deleted');assert.equal(calls,1);}
   assert.equal(requested,'7');

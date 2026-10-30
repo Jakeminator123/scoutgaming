@@ -152,7 +152,7 @@ export function platformRoute(url, config, request) {
   if (path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
     return {kind: 'frontend'};
   }
-  const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
+  const gameRedirect=config.canonicalGame?gameEntryRedirect(url):null;
   if (gameRedirect) return {kind:'redirect',destination:config.publicOrigin+gameRedirect};
   // Internal Node endpoints are reachable through these two exact rewrites.
   // A direct browser/API request must not create an alternative public route.

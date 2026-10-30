@@ -30,7 +30,7 @@ function previewRoute(env, root, authorize=async()=>{}) {
 test('preview serves only the two shared renderer modules, in every environment, after authorization',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-preview-route-'));t.after(()=>rm(root,{recursive:true,force:true}));
   for(const name of ['compositor.js','geometry.js','preview.js','catalog.json'])await writeFile(join(root,name),'// '+name);
-  for(const env of [{},{CROUPIER_STUDIO_NEON_POLICY:'1'},{CROUPIER_CLOUD_RUNTIME:'1'},{CROUPIER_STUDIO_NATIVE_ADMIN:'1'}]){
+  for(const env of [{},{},{CROUPIER_CLOUD_RUNTIME:'1'},{}]){
     let authorizations=0;
     const route=previewRoute(env,root,async()=>{authorizations++;});
     for(const path of [['catalog.json'],['index.html'],['media','fixture.mp4'],['preview.js'],['media','compositor.js']])for(const method of ['GET','HEAD']){
@@ -45,7 +45,7 @@ test('preview serves only the two shared renderer modules, in every environment,
     }
     assert.equal(route.opens(),2);assert.equal(authorizations,12);
   }
-  const denied=previewRoute({CROUPIER_STUDIO_NEON_POLICY:'1'},root,async()=>{throw Object.assign(Error('denied'),{statusCode:403});});
+  const denied=previewRoute({},root,async()=>{throw Object.assign(Error('denied'),{statusCode:403});});
   assert.equal((await denied.GET(new Request('https://studio.example/preview/compositor.js'),{params:Promise.resolve({path:['compositor.js']})})).status,403);
   assert.equal(denied.opens(),0,'renderer code retains authorization');
 });
