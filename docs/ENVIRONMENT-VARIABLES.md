@@ -101,35 +101,37 @@ Följder: `CROUPIER_LAB_UI_ORIGIN` (bara utan unified-läget), `CROUPIER_PUBLIC_
 
 ## Att ta bort i panelen
 
+**Utfört på Render produktion 2026-10-30:** de fyra fasta flaggorna nedan togs bort efter kompatibel deploy och verifierat tomt bord. Antalet poster gick 46 → 42; återläsningen bekräftade att övriga namn och värden var oförändrade. Endast de borttagna icke-hemliga värdena säkerhetskopierades privat under `arkiv/2026-10-30/nattarbete/render-retired-flags-*.json`. Inga talflaggor, provideruppgifter eller previewvärden ändrades. Deploy `dep-dbhvjkd9el5s738kdak0` är låst till `fbc473c642da51930826f138af065e294ee54e28`; faktisk runtimekontroll redovisas i handoff.
+
 <a id="att-ta-bort-i-panelen"></a><a id="att-ta-bort-ur-vercel-production"></a>
 
 Granskning 2026-10-29 (Vercel-namnen lästa 16:10; Render-namnen från läsningen 2026-10-28, eftersom Render MCP inte visar namn). Ordningen är fast: koden slutar läsa namnet, PR:en mergas, deployen går ut (Vercel `scoutgaming` och Render `croupier-v3` från `main`; Vercel `scoutgaming-preview` och Render `scoutgaming-preview-engine` från branchen `preview`), och först därefter tar Jakob bort posten i panelen. En borttagning i panelen gäller från nästa deploy; Render startar en deploy direkt.
 
 Den förra listan (talflaggorna, `DEMO_GUEST_ACCESS`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` och `CROUPIER_LAB_UI_ORIGIN` i `scoutgaming`) är utförd: ingen av dem finns i panelen 16:10. Kvar från den är Preview- och Development-scopet för `CROUPIER_DEALER_IMPORT_AI`.
 
-**Vercel utfört 2026-10-30:** MAIN tog bort exakt sex pensionerade Production-poster per projekt efter verifierad READY-deploy: `CROUPIER_VERCEL_UI` och de fem fasta namnen nedan. Backup finns privat i `arkiv/2026-10-30/vercel-env-cleanup/`; verifierade deploy-SHA var `abb7ad800fa2b7dac0d033ad87386842cbc5f7bc` för `scoutgaming` och `989858d39be31081f87f05ac6bee33d24f8f105f` för `scoutgaming-preview`. En efterföljande läsning bekräftar att alla sex saknas i båda projekten. MAIN rapporterar att övriga env-ID:n bevarades. Render-miljön ändrades inte; dess rader nedan återstår.
+**Vercel utfört 2026-10-30:** MAIN tog bort exakt sex pensionerade Production-poster per projekt efter verifierad READY-deploy: `CROUPIER_VERCEL_UI` och de fem fasta namnen nedan. Backup finns privat i `arkiv/2026-10-30/vercel-env-cleanup/`; verifierade deploy-SHA var `abb7ad800fa2b7dac0d033ad87386842cbc5f7bc` för `scoutgaming` och `989858d39be31081f87f05ac6bee33d24f8f105f` för `scoutgaming-preview`. En efterföljande läsning bekräftar att alla sex saknas i båda projekten. MAIN rapporterar att övriga env-ID:n bevarades. Render ändrades inte i den Vercel-åtgärden. Produktionens fyra Render-flaggor rensades senare enligt kvittot ovan; previewmotorns rader återstår.
 
 ### Efter deploy av Miljövariabler 2
 
-Vercel-raderna är utförda enligt kvittot ovan. För återstående Render-rader gäller samma ordning som för #664: produktion efter deploy från `main`, preview först när `preview` har fått ändringen och är deployad. En för tidig borttagning av `CROUPIER_STUDIO_NEON_POLICY` eller `CROUPIER_MEDIA_STORAGE` kan stoppa den äldre previewmotorn vid start; kontrollera aktuell deploy och panel före ändring.
+Vercel-raderna är utförda enligt kvittot ovan. Produktionens Render-rader är också utförda. För previewmotorn gäller samma ordning som för #664: först när `preview` har fått ändringen och är deployad. En för tidig borttagning av `CROUPIER_STUDIO_NEON_POLICY` eller `CROUPIER_MEDIA_STORAGE` kan stoppa den äldre previewmotorn vid start; kontrollera aktuell deploy och panel före ändring.
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
 | Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | **Utfört 2026-10-30**, efter READY-deploy; fasta i koden ([Fasta värden](#fasta-värden)) |
 | Vercel `scoutgaming-preview`, Production | samma fem | **Utfört 2026-10-30**, efter READY-deploy |
-| Render `croupier-v3` | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | Fasta i `ops/cloud/config.mjs` och `services/game/server.mjs`; starten för dem inte längre vidare till spelprocessen |
+| Render `croupier-v3` | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | **Utfört 2026-10-30**; fasta i `ops/cloud/config.mjs` och `services/game/server.mjs`; starten för dem inte längre vidare till spelprocessen |
 | Render `scoutgaming-preview-engine` | `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | Samma; först när `preview` har fått PR:en och är deployad |
 
 ### Efter deploy av #664 (Miljövariabler 1)
 
-Vercel-raderna är utförda. Render-raderna återstår: produktion efter deploy av #664 från `main`, preview först när `preview` har fått #664 och är deployad. Tas posterna bort innan dess kan den äldre previewmotorn stoppa vid start eftersom den kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`.
+Vercel-raderna och Render `croupier-v3` är utförda 2026-10-30. Previewmotorns rader återstår tills en kompatibel `preview` är deployad. Tas posterna bort innan dess kan den äldre previewmotorn stoppa vid start eftersom den kräver `CROUPIER_DATABASE` och `CROUPIER_STREAM_LANE`.
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
 | Vercel `scoutgaming`, Production | `CROUPIER_VERCEL_UI` | **Utfört 2026-10-30**; transporten slås på av `CROUPIER_BACKEND_ORIGIN` (`packages/server-transport/configuration.mjs:14`) |
 | Vercel `scoutgaming-preview`, Production | `CROUPIER_VERCEL_UI` | **Utfört 2026-10-30**, efter READY-deploy |
-| Render `croupier-v3` | `CROUPIER_DATABASE` | Konstant `postgres`, enda värdet som startade; PostgreSQL är fast i `ops/cloud/config.mjs` och ingen källfil läser namnet |
-| Render `croupier-v3` | `CROUPIER_STREAM_LANE` | Konstant `lissabon-stream-lane`; starten sätter anslutnings-ID:t för spelprocessen själv (`ops/cloud/config.mjs`, `childSpecifications`) |
+| Render `croupier-v3` | `CROUPIER_DATABASE` | **Utfört 2026-10-30**; konstant `postgres`, enda värdet som startade; PostgreSQL är fast i `ops/cloud/config.mjs` och ingen källfil läser namnet |
+| Render `croupier-v3` | `CROUPIER_STREAM_LANE` | **Utfört 2026-10-30**; konstant `lissabon-stream-lane`; starten sätter anslutnings-ID:t för spelprocessen själv (`ops/cloud/config.mjs`, `childSpecifications`) |
 | Render `scoutgaming-preview-engine` | `CROUPIER_DATABASE`, `CROUPIER_STREAM_LANE` | Samma som `croupier-v3`; först när `preview` har fått #664 (main → preview, `node tools/push-github-work.mjs --environment preview`) och är deployad |
 
 ### Redan nu (läses inte av någon deployad kod)

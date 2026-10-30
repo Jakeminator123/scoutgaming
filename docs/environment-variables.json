@@ -538,14 +538,6 @@
         "audit": "2026-10-29: Vercel names read 16:10; Render names from the 2026-10-28 REST read. Order: code stops reading, merge, deploy, then Jakob removes the panel entry. The previous Vercel list (speech flags, DEMO_GUEST_ACCESS, CROUPIER_LAB_REMOTE_UI, CROUPIER_MEDIA_BLOB_INDEX, CROUPIER_DATABASE, CROUPIER_STREAM_LANE, CROUPIER_LAB_UI_ORIGIN) is done: none is in the panel.",
         "afterDeployOfThisChange": [
           {
-            "where": "render croupier-v3",
-            "names": [
-              "CROUPIER_DATABASE",
-              "CROUPIER_STREAM_LANE"
-            ],
-            "reason": "Single legal value hard-coded in ops/cloud/config.mjs; no source reads the panel entry."
-          },
-          {
             "where": "render scoutgaming-preview-engine",
             "names": [
               "CROUPIER_DATABASE",
@@ -555,14 +547,6 @@
           }
         ],
         "afterDeployOfMiljovariabler2": [
-          {
-            "where": "render croupier-v3",
-            "names": [
-              "CROUPIER_STUDIO_NEON_POLICY",
-              "CROUPIER_MEDIA_STORAGE"
-            ],
-            "reason": "Fixed in ops/cloud/config.mjs and services/game/server.mjs; no longer forwarded to the game child."
-          },
           {
             "where": "render scoutgaming-preview-engine",
             "names": [
@@ -609,7 +593,7 @@
           "scoutgaming-preview BLOB_READ_WRITE_TOKEN is Encrypted (flagged readable-secret); re-create as Sensitive.",
           "scoutgaming CROUPIER_BACKEND_ORIGIN is Sensitive although it is a public URL; Plain is consistent with scoutgaming-preview."
         ],
-        "nextChange": "Done in Miljövariabler 2 (afterDeployOfMiljovariabler2). Follow-up workflow PR: .github/workflows/product-container-check.yml:66-67 still passes -e CROUPIER_STUDIO_NEON_POLICY=1 and -e CROUPIER_MEDIA_STORAGE=blob, and since #664 :65 -e CROUPIER_DATABASE=postgres and :67 -e CROUPIER_STREAM_LANE; none is read.",
+        "nextChange": "The container workflow cleanup is merged in #689. Production Render cleanup is recorded below; preview engine removals still require a compatible deployed preview commit.",
         "verifyAfter": "/admin login, /lobby, /game with a played hand, /studio/api/assistant returns 200, Render /__cloud/health.",
         "completed": [
           {
@@ -647,6 +631,23 @@
             "afterCleanupCount": 10,
             "currentProductionCount": 10,
             "verification": "MAIN performed the six scoped removals after READY and reported unchanged unrelated env IDs. Independent readback confirms all six names absent. scoutgaming subsequently gained the three owner-requested voice-ID references. Render was not changed."
+          },
+          {
+            "where": "render croupier-v3",
+            "completedDate": "2026-10-30",
+            "names": [
+              "CROUPIER_DATABASE",
+              "CROUPIER_STREAM_LANE",
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE"
+            ],
+            "verifiedCompatibleSha": "5e0c8e0b69e2dda74d7b1961d44b106e83a3b84d",
+            "deployTargetSha": "fbc473c642da51930826f138af065e294ee54e28",
+            "deployId": "dep-dbhvjkd9el5s738kdak0",
+            "beforeCount": 46,
+            "afterCleanupCount": 42,
+            "backup": "arkiv/2026-10-30/nattarbete/render-retired-flags-2026-10-30T01-58-29-986Z.json",
+            "verification": "Four retired plain service flags removed through the per-key REST endpoint after a compatible deployment and an empty-table check. Immediate readback confirms all four absent and every unrelated environment value unchanged. Deployment dep-dbhvjkd9el5s738kdak0 is live; health returned HTTP 200 and version returned the exact fbc473c642 SHA. No provider credentials or speech activation flags changed."
           }
         ]
       }
