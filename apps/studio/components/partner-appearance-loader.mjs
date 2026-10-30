@@ -8,7 +8,7 @@ export function brandingApiBase(apiBase) {
 }
 
 /** @param {Omit<Parameters<typeof import('./partner-appearance').PartnerAppearance>[0], 'initial'> & {operatorId?: string}} props */
-export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onSaved, language = 'sv', roomId, onRoomChange = undefined, onDirtyChange, onBusyChange = undefined, onStatus = undefined, disabled = false, roomLayout = false, adminChoices = false, active = true, roomState = undefined, settings = undefined, history = undefined, header = undefined, onNotice = undefined, children = null }) {
+export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onSaved, language = 'sv', roomId, onRoomChange = undefined, onDirtyChange, onBusyChange = undefined, onStatus = undefined, disabled = false, roomLayout = false, adminChoices = false, publication = 'inline', active = true, roomState = undefined, settings = undefined, history = undefined, header = undefined, onNotice = undefined, children = null }) {
   const [state, setState] = React.useState({ status: 'loading' });
   const base = brandingApiBase(apiBase);
   const identity = `${base}:${operatorId || ''}:${operatorSlug}`;
@@ -65,7 +65,7 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, onS
   if (current.status === 'none') return state_('status', en ? 'Nothing is published yet. Scoutgaming publishes your tables first.' : 'Inget är publicerat än. Scoutgaming publicerar era spelbord först.');
   if (roomId && !current.initial.rooms?.some(room => room.id === roomId)) return state_('alert', en ? 'This table is not available in the published version. Reload the page.' : 'Spelbordet är inte tillgängligt i den publicerade versionen. Ladda om sidan.');
   return React.createElement('section', { className: 'partner-appearance-panel', 'aria-label': en ? 'Appearance and publishing' : 'Utseende och publicering' },
-    React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, language, active, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, disabled, roomLayout, adminChoices, roomState, settings, history, header, onNotice, onSaved: saved => {
+    React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, language, active, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, disabled, roomLayout, adminChoices, publication, roomState, settings, history, header, onNotice, onSaved: saved => {
       if (activeIdentity.current !== identity || saved.operatorId !== current.initial.operatorId) return;
       setState(previous => previous.status === 'ready' && previous.identity === identity && previous.initial.operatorId === saved.operatorId ? { ...previous, initial: saved } : previous);
       onSaved?.(saved);
