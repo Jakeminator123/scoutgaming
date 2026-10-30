@@ -40,7 +40,7 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
     rest: { videoId, frame: 7 } });
   const registry = { videos: [{ id: videoId, dealer: 'dragan', revision: 'fixture-media-1', sha256: digest(original),
     bytes: original.length, size: original.length, available: true, storage: 'private-blob', contentType: 'video/mp4',
-    classification: { dealerId: 'dragan', kind: 'idle', compositing: { mode: 'green-screen', threshold: .21, softness: .13, despill: .1 } } }] };
+    classification: { dealerId: 'dragan', eventId: 'idle.ready', kind: 'idle', role: 'standard', label: 'Idle', notes: '', situation: '', compositing: { mode: 'green-screen', threshold: .21, softness: .13, despill: .1 } } }] };
   const artifact = (extension, contentType, bytes) => ({ provider: 'vercel-blob',
     pathname: `croupier/media/dealers/dragan/runtime/moving-bank/${videoId}/${digest(bytes)}.${extension}`,
     contentType, size: bytes.length, sha256: digest(bytes) });
@@ -48,7 +48,11 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
     receipt: artifact('json', 'application/json', Buffer.from('{}')) };
   const project = { dealers: [{ id: 'dragan', speechProfile: { schemaVersion: 2, state: 'enabled',
     voice: { provider: 'elevenlabs', voiceId: 'own-dragan-voice', modelId: 'eleven_multilingual_v2', language: 'sv' },
-    reference: { kind: 'motion-video', videoId, sha256: digest(original), offsetMs: 0 } } }] };
+    reference: { kind: 'motion-video', videoId, sha256: digest(original), offsetMs: 0 } } }],
+    dealerIdlePolicies: [{ dealerId: 'dragan', policy: { schemaVersion: 1, familyId: 'dragan/idle.ready/ready',
+      base: [{ videoId, weight: 100, durationMs: 2000 }], variants: [] } }],
+    lines: [{ dealerId: 'dragan', eventId: 'idle.ready', baselineVariantId: 'dragan.idle.ready.standard',
+      variants: [{ id: 'dragan.idle.ready.standard', triggerIds: [], videoGenerationId: videoId }] }] };
   const dealerRuntime = createDealerSpeechRuntime({ readProject: async () => project, readVideoRegistry: async () => registry,
     referenceService: { prepare: async () => assert.fail('moving speech must not extract a still') },
     env: { CROUPIER_DEALER_SPEECH_PROFILES: '1', ELEVENLABS_API_KEY: 'fixture-only' },
@@ -142,7 +146,11 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
     ticketSecret: 'fixture-only-ticket-secret-32-characters', resolveOwner: async req => req.headers.cookie === 'owner=one' ? owner : 'other',
     readRegistry: async () => registry, readRest: async () => new Response(original),
     readEvidence: async () => ({ projectRevision: 1, mediaReferences: [{ id: videoId, sha256: digest(original) }],
-      frozenContext: { schemaVersion: 3, context, dealer: { id: 'dragan' }, records: registry.videos } }),
+      frozenContext: { schemaVersion: 3, context, dealer: { id: 'dragan' }, project, inventory: registry, records: registry.videos } }),
+    publicVideo: (frozen, id) => {
+      const video = frozen.records.find(row => row.id === id);
+      return { id: video.id, sha256: video.sha256, src: '/api/presentation/registered-video/fixture/' + video.id };
+    },
     bankRead: async () => assert.fail('no bank or provider download in this test'),
     onPreparationFailure: value => state.failed.push(value), onStreamFailure: value => state.failed.push(value),
     sessions: { async admit(input) {
@@ -176,7 +184,14 @@ async function setup(t, { transcript, reply, beforeTranscript = async () => {} }
       state.pcm.push(messages[2]);
       assert.equal(messages[0].plan.binding.audioSha256, digest(messages[2]));
       assert.equal(messages[0].plan.binding.textSha256, digest(decision.exactText));
+      assert.equal(descriptor.sequenceKind, 'idle');
+      assert.equal(messages[0].sequence.steps[0].video.id, videoId);
+      assert.ok(messages[0].plan.timeline.every((row, index) =>
+        row.take === 'clip-' + videoId && row.frame === index % 48 && row.sourceSha256 === digest(original)));
       ws.send(JSON.stringify({ t: 'credit', id: messages[0].plan.start.id, frames: messages[0].plan.timeline.length }));
+      await until(() => messages.some(message => message.t === 'done'));
+      assert.deepEqual(messages.at(-1), { t: 'done', id: messages[0].plan.start.id, frames: messages[0].plan.timeline.length });
+      ws.send(JSON.stringify({ t: 'played', id: messages[0].plan.start.id }));
       assert.equal((await closed)[0], 1000);
       return true;
     } });
