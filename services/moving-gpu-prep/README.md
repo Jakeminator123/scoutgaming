@@ -55,10 +55,57 @@ synchronize trigger or automatic build in global CI. Once installed, dispatch
 Both paths authenticate only for pulling the private base (packages:read).
 
 Publish is a separate main-only dispatch with exact head, overlay release SHA256
-and approved target `ghcr.io/jakeminator123/moving-gpu-prep`. It rebuilds/checks,
-rejects a non-private destination, publishes only an SHA tag and records a digest.
-GitHub creates a new package private by default; privacy is checked again afterward.
-The runner login is always removed. No GPU resources are created by either workflow.
+and approved target `ghcr.io/jakeminator123/moving-gpu-worker`. It requires that
+this existing package is private **before any image build or push**. A missing,
+public or inaccessible package fails closed; no new package may be created.
+The prep image uses only `prep-sha-<full-head>`, separate from the original
+renderer tags. The digest-pinned original renderer remains unchanged. The job
+rechecks privacy after publication and records the prep digest, tag, release
+and UID checks. The runner login is always removed. No GPU resources are created.
+
+Do not assume that a new GHCR package will be private. With `GITHUB_TOKEN`,
+[a new package can inherit the repository visibility](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions).
+This repository is public. Failed publication
+[run 41051847647](https://github.com/Jakeminator123/scoutgaming/actions/runs/41051847647)
+created the separate public `moving-gpu-prep` package before its final privacy
+check rejected it. That failed run is not an accepted private prep release.
+
+## One-off cleanup of the failed publication
+
+`moving-gpu-prep-cleanup.yml` is separate from publication and defaults to dry-run.
+It does not run on pushes or ordinary PR updates. Before merge, apply
+`moving-gpu-prep-cleanup-dry-run` to a same-repository PR to inspect its frozen
+head. Review that result and exact source head before deliberately applying
+`moving-gpu-prep-cleanup-approved`; that second label explicitly approves the
+fixed digest/head below. A main-installed workflow can instead be dispatched
+with `expected_head`; deletion additionally requires `execute=true`,
+`approved_digest` and `confirmed_head`. No cleanup has been executed merely
+by adding this code.
+
+- Only `Jakeminator123/scoutgaming` (repository ID `1380630440`) and package
+  `moving-gpu-prep` can be addressed. The private `moving-gpu-worker` is never
+  a cleanup target.
+- The only allowed version is
+  `sha256:5e3ecea7694d8b5dd4bf160dd27ad2ac4303da3caaed7080d1b9a3318d9c9e1b`,
+  with exactly tag `sha-8418878f25d9563358545c9b39ff2391c7036d7f`.
+  The confirmed publication head is `8418878f25d9563358545c9b39ff2391c7036d7f`.
+- Package and version creation must fall in the verified successful push step,
+  `2026-10-30T12:01:29Z` through `2026-10-30T12:01:38Z`, inside the fixed failed
+  run. Its head, repository, workflow and start/end times are checked live.
+  Additional active/deleted versions, tags, pages or changed identity refuse deletion.
+- The workflow uses only `contents:read` and `packages:write`. It relies on the
+  publishing repository's existing package-admin role; it creates no PAT and
+  grants no access. GitHub documents
+  [Actions deletion and restoration using that existing role](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
+- The safe JSON receipt is uploaded before deletion and retained as a workflow
+  artifact for 30 days. A failed upload prevents deletion. A second artifact
+  records the result. Both include package/version IDs and the restore endpoint.
+  GitHub allows restoration within 30 days if the namespace remains available;
+  any restore is a separate reviewed action.
+- Success requires DELETE 204, authenticated package GET 404, and unavailable
+  anonymous manifests for both the exact digest and tag using a previously
+  valid anonymous token. Any uncertain postcheck fails; the receipt preserves
+  what happened. Cleanup and publication share one concurrency group.
 
 ## GPU job contract
 
