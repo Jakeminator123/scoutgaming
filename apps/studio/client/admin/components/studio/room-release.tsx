@@ -93,10 +93,10 @@ export function RoomRelease({operatorId,roomId,roomName,eligible,blockedBy='',re
   if(status==='ready'||status==='error')announced.current=status==='error'?readError:button.hint;
 
   return <section aria-label="Publicera spelbordet" className="grid gap-3">
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sg-border bg-sg-surface px-4 py-3 shadow-sg">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sg-border bg-sg-surface px-5 py-4 shadow-sg">
       <div className="min-w-0">
-        <p className="m-0 text-[13px] font-semibold text-sg-text">{preview?`Live · version ${preview.revisions.package}`:'Publicering'}</p>
-        <p className="m-0 text-[12.5px] text-sg-muted" aria-hidden="true">{status==='error'?readError:button.hint}</p>
+        <p className="m-0 text-[14px] font-semibold text-sg-text">Spelbordets publicering{preview&&<span className="ml-2 text-xs font-normal text-sg-muted">Live · version {preview.revisions.package}</span>}</p>
+        <p className="mb-0 mt-1 text-[13px] text-sg-muted" aria-hidden="true">{status==='error'?readError:button.hint}</p>
         <p role="status" className="sr-only">{announced.current}</p>
       </div>
       <Button variant="primary" data-action="room-release" disabled={button.disabled||publishing} onClick={openDialog}>{publishing?'Publicerar…':button.label}</Button>
