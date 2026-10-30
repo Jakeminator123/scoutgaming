@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       approved_target:
-        description: 'Exact approved GHCR path: ghcr.io/jakeminator123/moving-gpu-prep'
+        description: 'Exact approved GHCR path: ghcr.io/jakeminator123/moving-gpu-worker'
         required: true
         type: string
       expected_head:
@@ -32,7 +32,7 @@ jobs:
       contents: read
       packages: write
     env:
-      IMAGE: ghcr.io/jakeminator123/moving-gpu-prep
+      IMAGE: ghcr.io/jakeminator123/moving-gpu-worker
       APPROVED_TARGET: ${{ inputs.approved_target }}
       EXPECTED_HEAD: ${{ inputs.expected_head }}
       EXPECTED_RELEASE: ${{ inputs.expected_release }}
@@ -41,7 +41,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import os, re
-          assert os.environ['APPROVED_TARGET'] == os.environ['IMAGE'] == 'ghcr.io/jakeminator123/moving-gpu-prep'
+          assert os.environ['APPROVED_TARGET'] == os.environ['IMAGE'] == 'ghcr.io/jakeminator123/moving-gpu-worker'
           assert re.fullmatch(r'[a-f0-9]{40}', os.environ['EXPECTED_HEAD'])
           assert os.environ['EXPECTED_HEAD'] == os.environ['GITHUB_SHA']
           assert re.fullmatch(r'[a-f0-9]{64}', os.environ['EXPECTED_RELEASE'])
@@ -64,7 +64,7 @@ jobs:
           PY
           python3 build.py --check
           python3 -B -m unittest discover -s tests -v
-      - name: Reject an existing non-private destination
+      - name: Require the existing private destination before any image build or push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 services/moving-gpu-prep/publication.py --before
@@ -77,10 +77,13 @@ jobs:
           python3 services/moving-gpu-prep/build.py --tag moving-gpu-prep:publish
           docker run --rm --network none --entrypoint /workspace/mt-venv/bin/python moving-gpu-prep:publish -B /opt/moving-prep/verify_runtime.py
           docker run --rm --network none moving-gpu-prep:publish --help
-      - name: Publish only the verified image
+      - name: Publish only the verified image to the still-private destination
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker tag moving-gpu-prep:publish "$IMAGE:sha-$GITHUB_SHA"
-          docker push "$IMAGE:sha-$GITHUB_SHA"
+          python3 services/moving-gpu-prep/publication.py --before
+          docker tag moving-gpu-prep:publish "$IMAGE:prep-sha-$GITHUB_SHA"
+          docker push "$IMAGE:prep-sha-$GITHUB_SHA"
       - name: Verify private publication and record immutable digest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
