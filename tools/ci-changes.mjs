@@ -23,8 +23,9 @@ export const LIPSYNC_LEG = 'speech-gameplay';
 
 // Real-browser acceptance (Chrome) is its own job, "Regression (browser)", outside
 // the leg matrix. The selection says whether the final gate requires it:
-//   required  complete runs (nightly schedule, manual, push preview)
-//   advisory  ready full-scope PRs: it runs and reports, but CI does not wait on its result
+//   required  complete runs (nightly schedule, manual, push preview) and ready full-scope
+//             PRs that change browser client code (browserAcceptanceRequired)
+//   advisory  other ready full-scope PRs: it runs and reports, but CI does not wait on its result
 //   none      drafts, documentation, openclaw-deploy and push main: it does not run
 export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
 
@@ -120,6 +121,18 @@ export function movingWorkerRequired(changes) {
     || path === '.github/workflows/moving-gpu-build.yml');
 }
 
+// Browser client code: the game's static client and the Studio/Admin SPA source.
+// A ready full-scope PR that changes either requires Chrome acceptance; any other
+// ready full-scope PR keeps it advisory. Deletions count (--no-renames), and
+// uncertain input stays strict.
+export const BROWSER_CLIENT_PREFIXES = Object.freeze(['services/game/public/', 'apps/studio/client/']);
+
+export function browserAcceptanceRequired(changes) {
+  return !changes.length || changes.some(({path}) =>
+    !path || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))
+    || BROWSER_CLIENT_PREFIXES.some(prefix => path.startsWith(prefix)));
+}
+
 export function gatewayContainerRequired(changes) {
   // The pinned Gateway image is built from services/openclaw/lab with only deploy/
   // inputs (Dockerfile.gateway COPY lines). Its own test, the lab root files, the
@@ -191,7 +204,8 @@ export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   const changes = parseDiff(git(['diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', '-z', 'HEAD^1', 'HEAD', '--']));
   const scope = scopeOf(changes), draft = draftPullRequest({ env });
   return {scope, migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes),
-    gateway: gatewayContainerRequired(changes), draft, browser: !draft && scope === 'full' ? 'advisory' : 'none'};
+    gateway: gatewayContainerRequired(changes), draft,
+    browser: draft || scope !== 'full' ? 'none' : browserAcceptanceRequired(changes) ? 'required' : 'advisory'};
 }
 
 export function ciScope(options) {
