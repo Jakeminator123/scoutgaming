@@ -350,3 +350,48 @@ test('money labels use the account unit and historical winnings retain their set
   assert.equal(nodes.get('last-win').textContent, '25,5 · valuta saknas');
   view.close();
 });
+
+test('settled own stakes keep their receipt currency after a wallet change and reset for the next round', () => {
+  const { document, nodes } = viewDocument();
+  const view = createSharedRoomView({ document });
+  const s = seatedAt([3], { phase: 'round', roundId: 'r1' });
+  s.bets[3] = { main: 20, pp: 2, tp: 3 };
+  s.me.lastSettlement = { roundId: 'r0', returned: 10, currency: 'EUR' };
+  const render = () => view.render({ snapshot: s, can: everything, notice: '', connected: true });
+  const stakes = currency => {
+    assert.equal(nodes.get('total-bet').textContent, `25 ${currency}`);
+    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    assert.deepEqual(fields.map(node => node.getAttribute('aria-label')), [
+      `Plats 4, par, 2 ${currency}`, `Plats 4, huvudinsats, 20 ${currency}`, `Plats 4, 21 plus 3, 3 ${currency}`,
+    ]);
+  };
+  render(); stakes('USD');
+  s.phase = 'settled'; s.me.lastSettlement = { roundId: 'r1', returned: 50, currency: 'USD' };
+  render(); stakes('USD');
+  s.me.currency = 'EUR'; s.me.available = 17.5;
+  render(); stakes('USD');
+  assert.equal(nodes.get('last-win').textContent, '50 USD');
+  assert.equal(nodes.get('balance').textContent, '17,5 EUR demo');
+  assert.equal(nodes.get('limits').textContent.replace(/\s+/g, ' '), '5 – 2 000 EUR · demo');
+  assert.equal(nodes.get('chips').children[0].getAttribute('aria-label'), '5 EUR');
+  assert.equal(nodes.get('chips').children[0].title, '5 EUR');
+  s.phase = 'bets'; s.roundId = null;
+  render(); stakes('EUR');
+  assert.equal(nodes.get('last-win').textContent, '50 USD');
+  view.close();
+});
+
+test('settled stakes with an old receipt without currency never borrow the current wallet currency', () => {
+  const { document, nodes } = viewDocument();
+  const view = createSharedRoomView({ document });
+  const s = seatedAt([3], { phase: 'settled', roundId: 'legacy-round' });
+  s.me.currency = 'EUR'; s.me.lastSettlement = { roundId: 'legacy-round', returned: 50 };
+  s.bets[3] = { main: 25, pp: 0, tp: 0 };
+  view.render({ snapshot: s, can: everything, notice: '', connected: true });
+  assert.equal(nodes.get('total-bet').textContent, '25 · valuta saknas');
+  assert.equal(nodes.get('last-win').textContent, '50 · valuta saknas');
+  const main = nodes.get('seats').children[3].children[0].children[1].children[1];
+  assert.equal(main.getAttribute('aria-label'), 'Plats 4, huvudinsats, 25 · valuta saknas');
+  assert.equal(nodes.get('balance').textContent.replace(/\s+/g, ' '), '1 000 EUR demo');
+  view.close();
+});

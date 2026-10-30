@@ -227,7 +227,9 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       if(limits)limits.textContent=`${number(s.settings.limits.min)} – ${money(s.settings.limits.max,s.me.currency)} · demo`;
       // K06 O1: the heading names the room's stake profile instead of a fixed "Privé".
       if(profile)profile.textContent=tableProfileName(s.settings);
-      $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0),s.me.currency);
+      // Settled bets stay on screen after wallet changes; an old receipt must not inherit the new currency.
+      const betCurrency=s.phase==='settled'?s.me.lastSettlement?.currency:s.me.currency;
+      $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0),betCurrency);
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned,s.me.lastSettlement.currency):'–';
       $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
@@ -265,7 +267,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
           const closedSide=field!=='main'&&!(s.bets[i].main>0);
           node.disabled=!can.bet||!own||closedSide;node.title=closedSide?hints.side??'':'';
           node.classList.toggle('staked',s.bets[i][field]>0);
-          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],s.me.currency)}`);}
+          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],betCurrency)}`);}
       }
       arrange();
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});
