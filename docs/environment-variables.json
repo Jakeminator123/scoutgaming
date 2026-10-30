@@ -666,6 +666,22 @@
       "managed": [],
       "blocked": []
     },
+    "local-republish-rooms": {
+      "sources": [
+        "tools/republish-rooms.mjs"
+      ],
+      "required": [
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_STUDIO_ENVIRONMENT_ID",
+        "CROUPIER_STUDIO_WORKSPACE_ID"
+      ],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_REPUBLISH_CONFIRM"
+      ],
+      "managed": [],
+      "blocked": []
+    },
     "local-emil-provider-check": {
       "sources": [
         "tools/check-provider-profile.mjs"

@@ -31,6 +31,7 @@ Uppdaterad 29 oktober 2026, morgon, mot `main` `5c55ce86` (efter #587; alla natt
 - Innehållet i `croupier_studio.documents` kunde inte läsas av agenter i natt. Förslag: `select kind, revision, length(value::text), updated_at from croupier_studio.documents`, och en titt på `dealerTrash`, `legacyClipReview` och bolaget `sg-test`.
 - Merga #588 (talingressen på Node 24).
 - Visuellt ok i preview för #567, #572, #577 (mörkt läge), #582 (Tailwind 4) och #589, och för bordet efter #536 och #556 på dator och telefon.
+- L3 PR 4: efter Studio 023 i en miljö, och när borden är tomma (varje pkg+1 ger bolagets spelare 1008 och ny socket), publiceras bolagens paket om med `rooms`: `node tools/republish-rooms.mjs` är nu provkörning som standard; skarp körning kräver `--apply` och `CROUPIER_REPUBLISH_CONFIRM=<databas>/<environment>/<workspace>` för målraden. Kör först i preview och därefter i produktionen ([ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen)). Readiness skriver `paket utan rooms: N` på stderr; N är 0 när alla bolag är klara.
 - `game-013` (efterhandsrader för 006–010, #576) i produktionen enligt [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md#två-migreringsledgrar); därefter blir 006–010 obligatoriska i en uppföljande PR.
 
 ## Efter O03
