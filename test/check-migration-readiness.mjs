@@ -302,7 +302,7 @@ test('readiness counts the companies whose current package has no rooms, per sco
     import('./fixtures/pglite-pool.mjs'), import('../ops/neon-studio/migrations.mjs'), import('../packages/operators/server/operator-store.mjs'),
     import('../tools/check-migration-readiness.mjs')]);
   const pool = await createPglitePool(); t.after(() => pool.end());
-  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true, deferOptional: ['023'] });
+  await applyStudioMigrations({ pool, expectedTarget: (await planStudioMigrations({ pool })).target, confirm: true });
   const line = async () => packageRoomsLine(await countPackagesWithoutRooms({ pool }));
   assert.equal(await line(), 'paket utan rooms: 0');
   const actor = 'readiness-test';
@@ -314,12 +314,12 @@ test('readiness counts the companies whose current package has no rooms, per sco
     await store.createOperator({ operatorId, slug: operatorId, name: operatorId, status: 'active', actor });
     if (operatorId !== 'empty') await publish(store, operatorId);
   }
-  // Without 023 every current package lacks rooms; a company counts once, and one without a package not at all.
+  // Emulate retained pre-023 publications in this isolated database: the column is installed,
+  // but older packages still have NULL until republished. Companies count once; no package never counts.
   await publish(production, 'alpha');
+  await pool.query('UPDATE croupier_studio.operator_packages SET rooms=NULL');
   assert.equal(await line(), 'paket utan rooms: 4 (production/croupier: 2, production/other: 1, staging_k06_k07/croupier: 1)');
-  const plan = await planStudioMigrations({ pool });
-  await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true });
-  // With 023 a new revision carries rooms: only the current package counts, not the history.
+  // A new revision carries rooms: only the current package counts, not the history.
   assert.deepEqual((await publish(production, 'alpha')).rooms, []);
   assert.equal(await line(), 'paket utan rooms: 3 (production/croupier: 1, production/other: 1, staging_k06_k07/croupier: 1)');
   for (const [store, operatorId] of [[production, 'beta'], [preview, 'alpha'], [otherWorkspace, 'alpha']]) await publish(store, operatorId);

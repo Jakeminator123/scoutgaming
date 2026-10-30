@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operat
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015','017'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015','017','023'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -140,7 +140,7 @@ test('speech import requires015 even when a caller labels it optional',async()=>
 test('speech import accepts optional016 pending or installed without weakening its ledger proof',async()=>{
   for(const present of [false,true]){
     const plan=structuredClone(installed);
-    if(present)plan.applied.splice(-1,0,{version:'016',checksum:hash('016'),structureChecksum:hash('structure-016')});
+    if(present)plan.applied.splice(plan.applied.findIndex(row=>row.version==='017'),0,{version:'016',checksum:hash('016'),structureChecksum:hash('structure-016')});
     else plan.optionalPending=[{version:'016'}];
     const live=structuredClone(plan),pool=memoryPool(live),input={...args(pool),schemaCheck:async()=>structuredClone(plan)};
     assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
@@ -159,6 +159,7 @@ test('speech import rejects required gaps unknown versions and invalid proofs',a
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='015');},
+    value=>{value.applied=value.applied.filter(row=>row.version!=='023');},
     value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.reverse();},
