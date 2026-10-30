@@ -1,0 +1,50 @@
+name: Preview database identity probe
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  identity:
+    if: >-
+      github.repository == 'Jakeminator123/scoutgaming' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'jakob/codex-preview-probe-1030' &&
+      github.event.pull_request.user.login == 'Jakeminator123'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: cdf200ca95124cf0ba1fa4d106255eef5b79a6b3
+          persist-credentials: false
+          sparse-checkout: apps/studio
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
+      - run: npm --prefix apps/studio ci --ignore-scripts
+      - name: Read only the connection identity and ledger presence
+        env:
+          PROBE_DATABASE_URL: ${{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}
+        run: |
+          node --input-type=module <<'JS'
+          import { createRequire } from 'node:module';
+          const require = createRequire(new URL('./apps/studio/package.json', import.meta.url));
+          const { Client } = require('pg');
+          const client = new Client({ connectionString: process.env.PROBE_DATABASE_URL, connectionTimeoutMillis: 15000 });
+          try {
+            await client.connect();
+            await client.query('BEGIN READ ONLY');
+            await client.query("SET LOCAL statement_timeout = '10000ms'");
+            const result = await client.query("SELECT current_database() AS database, current_user AS role, to_regclass('croupier_game.storage_migrations') IS NOT NULL AS game_ledger, to_regclass('croupier_studio.storage_migrations') IS NOT NULL AS studio_ledger");
+            await client.query('COMMIT');
+            const row = result.rows[0];
+            if (!/^[a-zA-Z_][a-zA-Z0-9_-]{0,62}$/.test(row.database) || !/^[a-zA-Z_][a-zA-Z0-9_-]{0,62}$/.test(row.role)) throw new Error();
+            console.log('PREVIEW_IDENTITY ' + JSON.stringify(row));
+          } catch {
+            console.error('preview_identity_probe_failed');
+            process.exitCode = 1;
+          } finally {
+            await client.end().catch(() => {});
+          }
+          JS
