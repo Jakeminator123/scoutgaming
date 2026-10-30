@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!-- Table Studio för roulette: samma utseende och flöde som kevin-stagings public/studio/ (studio-kevin.css är Kevins stilmall
+     ordagrant, studio.css lägger till det liggande 16:9-bordet). Steg: 00 spel, 01 dealer, 02 hjul, 03 rum, 04 gränser, 05 namn.
+     "Skapa bord" → POST /api/studio/roulette-table → klart-skärmen med länken /t/<slug>. Valen och miniatyrerna kommer ur
+     /roulette/katalog.json. Inloggningen är Kevins (/api/studio/session, /api/studio/login: back office-kontot). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scout Gaming · Roulette Table Studio</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="studio-kevin.css">
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+<section id="login" class="screen" data-screen-label="Login">
+  <div class="login-art" aria-hidden="true"><div class="layer" style="background-image:url('/media/roulette/preview/klassisk_onyx.jpg')"></div><div class="shade"></div>
+    <div class="wm"><span class="dot">AI live casino · Q4 2026</span><span class="tag-line">Photoreal dealers. Any language. Any hour.</span></div></div>
+  <div class="login-panel">
+    <div class="brand"><span>scout<b>/</b>gaming</span></div>
+    <form class="login-form" id="loginForm" novalidate>
+      <div class="kicker">AI live roulette · Demo</div>
+      <h1 class="h-split">One wheel.<br>Your <em>table.</em></h1>
+      <p class="sub">Sign in to choose a dealer, wheel, room and limits, then open the table you designed.</p>
+      <div class="fields">
+        <div class="field" id="fEmail"><label for="email">Email or username</label><input id="email" type="text" autocomplete="username" placeholder="Your back office login"></div>
+        <div class="field" id="fPw"><label for="pw">Password</label><div class="pw"><input id="pw" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" id="pwToggle">Show</button></div></div>
+      </div>
+      <p class="form-err" id="formErr" role="alert"></p>
+      <button class="btn-gold" type="submit">Sign in →</button>
+    </form>
+    <div class="login-foot"><div class="lic"><div class="row"><span>Blackjack tables: <a href="/studio/">Table Studio</a></span><a href="https://www.scoutgaminggroup.com/" target="_blank" rel="noopener">scoutgaminggroup.com →</a></div></div></div>
+  </div>
+</section>
+<section id="builder" class="screen" data-screen-label="Table builder">
+  <header class="topbar">
+    <div class="crumb"><div class="brand"><span>scout<b>/</b>gaming</span></div><i></i><nav class="nav" aria-label="Scout"><span class="cur">Table Studio</span><a href="https://www.scoutgaminggroup.com/ai-casino" target="_blank" rel="noopener">Live casino<span class="new">NEW</span></a></nav></div>
+    <div class="user"><a class="cta-link" href="/studio/">Blackjack studio →</a><span id="userEmail"></span><div class="avatar" id="avatar">R</div><button type="button" id="signOut">Sign out</button></div>
+  </header>
+  <div class="work">
+    <div class="preview-pane" id="previewHome">
+      <div class="stage wide" id="stage">
+        <img class="room" id="previewImg" alt="">
+        <div class="ov-top">
+          <div><div class="brand"><span>scout<b>/</b>gaming</span></div><div class="ov-name"><span id="ovName">Roulette</span> · <span id="ovRange">1 – 2 000</span></div><span class="ov-badge" id="ovBadge">Astrid · AI dealer · European roulette</span><div class="ov-live"><span class="dot">Live</span></div></div>
+        </div>
+        <div class="ov-bottom">
+          <div class="ov-prompt">Choose a chip and place your bet</div>
+          <div class="chips" id="ovChips"></div>
+          <div class="ov-wallet"><div><small>Demo balance</small><strong id="ovBal">1,000.00</strong></div><div><small>Total bet</small><strong>0.00</strong></div></div>
+        </div>
+      </div>
+      <div class="preview-note"><span>// Player view</span><span>·</span><span id="pnSpec">Astrid · Champagne · Champagne</span></div>
+    </div>
+    <aside class="config">
+      <div class="config-head"><div class="kicker">Table Studio · AI live casino</div><h1 class="h-split">Build your<br>own <em>table.</em></h1><p class="head-sub">Choose the dealer, the wheel, the room and the limits. The preview updates as you go.</p></div>
+      <div class="steps" id="steps">
+        <section class="step" data-step="game">
+          <div class="step-h"><span class="sec-l">// 00 · The game</span><span class="step-v" data-v="game">Roulette</span></div>
+          <div class="step-b"><div><div class="step-in">
+            <div class="grid2" role="radiogroup" aria-label="Game">
+              <button class="opt game-opt" type="button" role="radio" data-k="game" data-val="roulette" aria-checked="true"><span class="gt">Roulette</span><span class="gd">European, single zero · 3D wheel</span></button>
+              <a class="opt game-opt off" href="/studio/" title="Blackjack tables are built in the blackjack Table Studio"><span class="gt">Blackjack</span><span class="gd">In the blackjack Table Studio →</span></a>
+            </div>
+          </div></div></div>
+        </section>
+        <section class="step open" data-step="dealer">
+          <div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div>
+          <div class="step-b"><div><div class="step-in">
+            <div class="grid2" role="radiogroup" aria-label="Dealer" id="dealerGrid"></div>
+          </div></div></div>
+        </section>
+        <section class="step" data-step="wheel">
+          <div class="step-h"><span class="sec-l">// 02 · The wheel</span><span class="step-v" data-v="wheel">Champagne</span></div><p class="sec-d">The roulette wheel in 3D, rendered live.</p>
+          <div class="step-b"><div><div class="step-in">
+            <div class="grid2" role="radiogroup" aria-label="Wheel" id="wheelGrid"></div>
+          </div></div></div>
+        </section>
+        <section class="step" data-step="room">
+          <div class="step-h"><span class="sec-l">// 03 · Environment</span><span class="step-v" data-v="room">Champagne</span></div><p class="sec-d">The room behind the dealer and the wheel.</p>
+          <div class="step-b"><div><div class="step-in">
+            <div class="grid2" role="radiogroup" aria-label="Room" id="roomGrid"></div>
+          </div></div></div>
+        </section>
+        <section class="step" data-step="limit">
+          <div class="step-h"><span class="sec-l">// 04 · Limits</span><span class="step-v" data-v="limit">Classic</span></div><p class="sec-d">Bet range, maximum per round and demo balance.</p>
+          <div class="step-b"><div><div class="step-in">
+            <div class="limits" role="radiogroup" aria-label="Limits" id="limitList"></div>
+          </div></div></div>
+        </section>
+        <section class="step" data-step="name">
+          <div class="step-h"><span class="sec-l">// 05 · Name</span><span class="step-v" data-v="name">Roulette</span></div>
+          <div class="step-b"><div><div class="step-in">
+            <div class="name-field"><label for="tableName">Table name</label><input id="tableName" type="text" maxlength="28" value="Roulette"></div>
+          </div></div></div>
+        </section>
+      </div>
+      <div class="config-foot"><p>All choices can be changed later.</p><button class="btn-gold" type="button" id="createBtn">Create table →</button></div>
+    </aside>
+  </div>
+</section>
+
+<section id="ready" class="screen" data-screen-label="Table ready">
+  <header class="topbar">
+    <div class="crumb"><div class="brand"><span>scout<b>/</b>gaming</span></div><i></i><nav class="nav" aria-label="Scout"><span class="cur">Table Studio</span></nav></div>
+    <div class="user"><a class="cta-link" href="/studio/">Blackjack studio →</a><span id="userEmail"></span><div class="avatar" id="avatar">R</div><button type="button" id="signOut">Sign out</button></div>
+  </header>
+  <div class="ready-main">
+    <div class="ready-stage" id="readyHome"></div>
+    <div class="ready-info">
+      <span class="dot">Table created · Live</span>
+      <h1 id="readyName">Roulette</h1>
+      <dl class="specs">
+        <dt>Game</dt><dd>Roulette · European</dd>
+        <dt>Dealer</dt><dd id="rsDealer">Astrid</dd>
+        <dt>Wheel</dt><dd id="rsWheel">Champagne</dd>
+        <dt>Background</dt><dd id="rsRoom">Champagne</dd>
+        <dt>Limits</dt><dd id="rsLimit">Classic</dd>
+      </dl>
+      <div class="share"><code id="shareUrl">localhost/t/roulette</code><button type="button" id="copyBtn">Copy link</button></div>
+      <div class="ready-actions"><button class="btn-gold" type="button" id="playBtn">Open table →</button><button class="btn-quiet" type="button" id="editBtn">Edit table</button><button class="btn-quiet" type="button" id="newBtn">New table</button></div>
+    </div>
+  </div>
+</section>
+
+<div class="launch" id="launch"><div class="launch-in"><div class="launch-mark"><div class="ring"></div><span class="lm-slash">/</span></div><div class="kicker">AI live casino</div><strong>Setting up your table</strong><div class="launch-steps"><span><b>01</b>Seating the dealer</span><span><b>02</b>Setting up the wheel</span><span><b>03</b>Lighting the room</span></div></div></div>
+<script type="module" src="studio.js"></script>
+</body>
+</html>

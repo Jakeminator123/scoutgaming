@@ -1,0 +1,25 @@
+/* Tillägg till Kevins stilmall (studio-kevin.css, ordagrant ur kevin-staging) för roulette: bordet är 16:9 i stället för
+   mobilens 9:16, steget 00 för spelet och dealers som kommer senare. */
+html,body{height:100%}
+.screen.on{min-height:100vh;flex-direction:column}
+#builder.on{height:100vh}
+.stage.wide{aspect-ratio:16/9;height:auto;width:min(100%,calc((100vh - 190px)*16/9),1280px)}
+.stage.wide .ov-top{top:3.5%;left:3%;right:3%}
+.stage.wide .ov-bottom{left:auto;right:3%;bottom:4%;width:42%;align-items:flex-end}
+.stage.wide .ov-name{font-size:11px}.stage.wide .ov-badge{font-size:10px}
+.stage.wide .chip{width:clamp(26px,3vw,40px)}
+.stage.wide .ov-wallet{display:flex;gap:22px;padding:8px 14px;border-radius:10px;background:#0a0b0dcc;border:1px solid #ffffff1a}
+.stage.wide .ov-wallet small{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.stage.wide .ov-wallet strong{font:600 15px var(--disp)}
+.stage .chip.sel{transform:translateY(-4px);box-shadow:0 0 0 2px var(--gold),0 6px 12px #0008}
+.ready-stage .stage.wide{width:100%;max-width:820px}
+.ready-main{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.game-opt{display:flex;flex-direction:column;gap:4px;padding:16px 18px;text-decoration:none;color:var(--cream)}
+.game-opt .gt{font:600 18px var(--disp)}.game-opt .gd{font-size:13px;color:var(--mute)}
+.game-opt.off{opacity:.55}.game-opt.off:hover{opacity:.85;text-decoration:none}
+.dealer-opt.snart{opacity:.38;filter:grayscale(.7);cursor:not-allowed}
+.room-opt span small{display:block;margin-top:2px;font-weight:500;font-size:12px;color:var(--mute)}
+.steps{overflow:auto}
+
+/* inloggningen: Kevins stilmall pekar på studions egna assets/ (/studio/assets/), här visas rouletterummet i stället */
+.login-art{background:#000}

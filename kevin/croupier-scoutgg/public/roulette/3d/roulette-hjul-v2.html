@@ -1,0 +1,472 @@
+<!doctype html>
+<!-- Europeiskt roulettehjul, version 2: detaljerad geometri, procedurellt trä (ådring, porer, fanérsolfjäder), klarlack,
+     studioljus i reflexerna, ambient occlusion (GTAO), glans och skärpedjup. Samma scenkontrakt som v1 (kant y = 0,
+     ytterradie 1,02, kamera S1/S3), så den gröna attrappen och Astrids kant gäller oförändrat.
+
+     stil    champagne | rose | mahogny | svart | valnot | elfenben | klassisk | gron   (gron = allt grönt utom kulan, genomskinligt;
+             klassisk = svart pianolack, ebenholts och krom, samma silhuett och torn som champagne)
+     kam     S1 | S3, egna värden: elev, dist, fov, cx, cy, az
+     rotor   grader; boll ingen | ficka:N | vinkel:θ | spar:θ; fokus=1 (kameran tittar på kulan)
+     bakgrund  fil-URL: bild bakom hjulet (renderas ogenomskinligt, så AO/glans/skärpedjup blir rätt)
+     miljo   fil-URL: bild som speglas i lack och metall (standard = bakgrund)
+     dof     bländare för skärpedjup (0 = av), skarp = avstånd till skärpeplanet (standard: kulan/mitten)
+     bredd, hojd, pr, exp, env, nyckel, ao, glans
+     spel=1  ingen stillbild: scenen lämnas i window.__hjul för animering (spelets lätta läge, ingen efterbehandling)
+     spelprofil (standard = stillbildens värden): aa=0 utan antialias, pdb=0 utan preserveDrawingBuffer, skugga=1024 skuggkartans
+             storlek, geo=lag färre segment (rotationsytor 192, profiler 48, tornet 120 × 96, ringar 12 × 256, kulan 32 × 24).
+             window.__hjulQ (sträng) ersätter location.search när spelet kör modulen i sin egen sida.
+     Vinklar θ: 0 = närmast kameran, 90 = vänster sett från kameran, 180 = bortre kanten (dealerns sida). -->
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:transparent;overflow:hidden}</style>
+<script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.js","three/addons/":"../vendor/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+
+const Q = new URLSearchParams(window.__hjulQ ?? location.search);
+const num = (k, d) => (Q.has(k) ? parseFloat(Q.get(k)) : d);
+const W = num("bredd", 1920), H = num("hojd", 1080), PR = num("pr", 2);
+const STIL = Q.get("stil") || "champagne";
+const GRON = STIL === "gron";
+const GEO = Q.get("geo") === "lag" ? { seg: 192, tornSeg: 96, mjuk: 48, torn: 120, ring: [12, 256], kula: [32, 24] } : null;
+
+const WHEEL = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const N = 37, STEG = 360 / N;
+
+// ---------- stilar ----------
+// skal: lack (lackad kropp) eller tra; bana = kulbanan + nedre lutningen; kon = rotorns mitt (fanérsolfjäder)
+const TRA = {
+  lonn:    { c0: "#ecd3a2", c1: "#c99a5e", por: "#a77440" },
+  mahogny: { c0: "#7a2f18", c1: "#45150a", por: "#2a0c05" },
+  valnot:  { c0: "#7a5236", c1: "#3b2416", por: "#22140b" },
+  morkvalnot: { c0: "#4a3020", c1: "#22140c", por: "#140b06" },
+  ebenholts:  { c0: "#3a2a20", c1: "#120c09", por: "#0a0605" },
+  svartebenholts: { c0: "#271d16", c1: "#080605", por: "#030202" },   // klassisk: nästan svart ebenholts med svag ådring
+};
+const STILAR = {
+  champagne: { skal: "lack", lack: "#efe3c8", lack2: "#d9c296", bana: "lonn", kon: "lonn", metall: "#e5bd75", mruff: 0.14,
+               rod: "#a0121d", svart: "#151213", gron: "#0d6a39", siffra: "#fbf4e6", font: "Bahnschrift", torn: "pagod", ljus: "#fff1dc" },
+  rose:      { skal: "lack", lack: "#f7efea", lack2: "#ecd4cb", bana: "lonn", kon: "lonn", metall: "#eaa98f", mruff: 0.14,
+               rod: "#a0121d", svart: "#151213", gron: "#0d6a39", siffra: "#fdf6f2", font: "Bahnschrift", torn: "pagod", ljus: "#fff0ea" },
+  mahogny:   { skal: "tra", skalTra: "mahogny", bana: "mahogny", kon: "mahogny", inlagg: "#e9cf9a", metall: "#dcb064", mruff: 0.16,
+               rod: "#9c1019", svart: "#141011", gron: "#0d6a39", siffra: "#f6ecd6", font: "Georgia", torn: "klassisk", ljus: "#fff0d8" },
+  svart:     { skal: "lack", lack: "#0c0b0b", lack2: "#151313", bana: "ebenholts", kon: "morkvalnot", metall: "#e2b864", mruff: 0.12,
+               rod: "#8f0f18", svart: "#0b0a0a", gron: "#0b5c31", siffra: "#e9c77f", siffraMetall: true, font: "Bahnschrift", torn: "spindel", ljus: "#fff3e2" },
+  valnot:    { skal: "tra", skalTra: "valnot", bana: "valnot", kon: "valnot", inlagg: "#d8d8d8", metall: "#e9eaec", mruff: 0.07,
+               rod: "#a3131d", svart: "#121112", gron: "#0d6a39", siffra: "#ffffff", font: "Bahnschrift", torn: "spindel", ljus: "#fff6ec" },
+  elfenben:  { skal: "lack", lack: "#f1e9da", lack2: "#e0d2b8", bana: "valnot", kon: "valnot", metall: "#e3bb72", mruff: 0.14,
+               rod: "#a0121d", svart: "#151213", gron: "#0d6a39", siffra: "#fbf4e6", font: "Georgia", torn: "pagod", ljus: "#fff1dc" },
+  // klassisk svart (Emil 10-30): kasinostandard, svart pianolack, ebenholtsbana, krom, vita siffror. Tornet = pagod (samma
+  // silhuett som det gröna hjulet i dealerklippen: tornets topp ligger framför Astrids ärm och hand under kastet)
+  klassisk:  { skal: "lack", lack: "#0b0b0c", lack2: "#0e0e0f", bana: "svartebenholts", kon: "svartebenholts", inlagg: "#a7abaf", metall: "#d9dcdf", mruff: 0.1,
+               rod: "#a3101b", svart: "#0f0f10", gron: "#0b6b38", siffra: "#ffffff", font: "Times New Roman", torn: "pagod", ljus: "#fbf6ee" },
+};
+const S = STILAR[STIL] || STILAR.champagne;
+const GRONT = new THREE.Color("#22ca44"); // hex = sRGB, samma gröna som blackjackens platta (34, 202, 68)
+
+// ---------- renderare ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true && Q.get("aa") !== "0", alpha: true, preserveDrawingBuffer: true && Q.get("pdb") !== "0" });
+renderer.setPixelRatio(PR);
+renderer.setSize(W, H);
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = !GRON;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = GRON ? THREE.NoToneMapping : THREE.NeutralToneMapping; // Neutral: bakgrunden under 0,76 orörd
+renderer.toneMappingExposure = num("exp", 1.0);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+
+const ladda = (url) => new Promise((ok) => {
+  if (!url) return ok(null);
+  new THREE.TextureLoader().load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; ok(t); }, undefined, () => ok(null));
+});
+const [bakTex, miljoTex] = await Promise.all([ladda(Q.get("bakgrund")), ladda(Q.get("miljo") || Q.get("bakgrund"))]);
+
+// ---------- brus ----------
+let fro = 1234567;
+const slump = () => (fro = (fro * 16807) % 2147483647) / 2147483647;
+const PERM = new Uint8Array(512);
+{ const p = [...Array(256).keys()]; for (let i = 255; i > 0; i--) { const j = Math.floor(slump() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } for (let i = 0; i < 512; i++) PERM[i] = p[i & 255]; }
+const lerp = (a, b, t) => a + (b - a) * t;
+const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// värdebrus, periodiskt i x med perioden px gitterceller (0 = ej periodiskt)
+function vn(x, y, px) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const X0 = px ? ((xi % px) + px) % px : xi & 255, X1 = px ? (((xi + 1) % px) + px) % px : (xi + 1) & 255;
+  const h = (X, Y) => PERM[(PERM[X & 255] + (Y & 255)) & 511] / 255;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return lerp(lerp(h(X0, yi), h(X1, yi), u), lerp(h(X0, yi + 1), h(X1, yi + 1), u), v);
+}
+function fbm(x, y, px, okt = 4) { let s = 0, a = 0.5, f = 1; for (let i = 0; i < okt; i++) { s += a * vn(x * f, y * f, px * f); a *= 0.5; f *= 2; } return s / 0.9375; }
+const hex = (c) => { const k = new THREE.Color(c); return [k.r, k.g, k.b].map((v) => Math.round(Math.pow(v, 1 / 2.2) * 255)); };
+const rgb = (c) => { const k = new THREE.Color(c).convertLinearToSRGB(); return [k.r * 255, k.g * 255, k.b * 255]; };
+
+// textur från pixelfunktion: f(u, v) -> [r, g, b]
+function pixTex(w, h, f, { srgb = true, rep = [1, 1] } = {}) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"), id = g.createImageData(w, h), d = id.data;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const p = f(x / w, y / h, x, y), i = (y * w + x) * 4;
+    d[i] = p[0]; d[i + 1] = p[1]; d[i + 2] = p[2]; d[i + 3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  return tex(c, srgb, rep);
+}
+function tex(c, srgb, rep = [1, 1]) {
+  const t = new THREE.CanvasTexture(c);
+  t.flipY = false; // v = 0 är canvasens överkant = profilens första punkt
+  t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep);
+  t.anisotropy = 16;
+  return t;
+}
+// normalkarta ur höjdfält (Float32Array w*h), periodisk i x
+function normalTex(hf, w, h, styrka, rep) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"), id = g.createImageData(w, h), d = id.data;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const hx = hf[y * w + ((x + 1) % w)] - hf[y * w + ((x - 1 + w) % w)];
+    const hy = hf[Math.min(h - 1, y + 1) * w + x] - hf[Math.max(0, y - 1) * w + x];
+    let nx = -hx * styrka, ny = -hy * styrka, nz = 1; const l = Math.hypot(nx, ny, nz);
+    const i = (y * w + x) * 4; d[i] = (nx / l * 0.5 + 0.5) * 255; d[i + 1] = (ny / l * 0.5 + 0.5) * 255; d[i + 2] = (nz / l * 0.5 + 0.5) * 255; d[i + 3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  return tex(c, false, rep);
+}
+
+// trä: färg, höjd (normalkarta) och råhet (G) + metall (B) ur samma fält.
+// lage "langs": ådring längs u (svarvat/böjt trä runt hjulet). "sol": fanérsolfjäder med ådring längs v, bokmatchade segment.
+function traMaterial(art, lage, { w = 4096, h = 512, rep = [1, 1], inlagg = null, klar = 1, ruff = 0.42 } = {}) {
+  w = Math.round(w * num("tex", 1)); h = Math.round(h * num("tex", 1));        // tex=2: dubbel upplösning för helbild
+  const A = TRA[art], c0 = rgb(A.c0), c1 = rgb(A.c1), cp = rgb(A.por), ci = inlagg ? rgb(inlagg) : null;
+  const hf = new Float32Array(w * h), rough = new Uint8ClampedArray(w * h), metal = new Uint8ClampedArray(w * h);
+  const col = document.createElement("canvas"); col.width = w; col.height = h;
+  const g = col.getContext("2d"), id = g.createImageData(w, h), d = id.data;
+  const SEG = 16;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const u = x / w, v = y / h; let a, b, off = 0;          // a = tvärs ådringen, b = längs ådringen
+    if (lage === "sol") {
+      const s = Math.floor(u * SEG), c = u * SEG - s; a = s % 2 ? 1 - c : c; b = v * 3; off = Math.floor(s / 2) * 17.3;
+    } else { a = v * 4; b = u * 12; }
+    const warp = fbm(b * 0.6 + off, a * 1.5 + off, lage === "sol" ? 0 : 7) * (lage === "sol" ? 0.45 : 2.2); // fanér: rak ådring
+    const t = a * 7 + warp + 0.4 * fbm(a * 4 + off, b * 0.3, 0);
+    const r = t - Math.floor(t);
+    const sen = ss(0.0, 0.18, r) * (1 - ss(0.45, 0.95, r));                  // senved: mörkare band
+    const figur = fbm(a * 2.5 + off, b * 0.8 + 31, lage === "sol" ? 0 : 10);  // flammighet
+    const por = Math.pow(fbm(a * 240 + off, b * 6, lage === "sol" ? 0 : 26, 2), 4.0) * 3.0;  // porer: korta, glesa streck
+    let m = 0.5 * sen + 0.5 * (figur - 0.25) + 0.12;
+    m = Math.min(1, Math.max(0, m));
+    let px = [lerp(c0[0], c1[0], m), lerp(c0[1], c1[1], m), lerp(c0[2], c1[2], m)];
+    const pm = Math.min(1, Math.max(0, por - 0.45)) * 0.35;
+    px = px.map((cv, k) => lerp(cv, cp[k], pm));
+    let hh = -0.5 * sen - 1.2 * pm, ro = ruff + 0.25 * pm, me = 0;
+    if (ci) { // metallinlägg
+      const kant = lage === "sol" ? Math.min(u * SEG % 2, 2 - (u * SEG % 2)) * (w / SEG) : 99;
+      const ring = lage === "sol" ? Math.abs(v - 0.07) * h : 99;
+      if (kant < 3.2 || ring < 3.2) { px = ci; hh = 0.4; ro = 0.22; me = 1; }
+    }
+    const i = (y * w + x) * 4; d[i] = px[0]; d[i + 1] = px[1]; d[i + 2] = px[2]; d[i + 3] = 255;
+    hf[y * w + x] = hh; rough[y * w + x] = ro * 255; metal[y * w + x] = me * 255;
+  }
+  g.putImageData(id, 0, 0);
+  const orm = document.createElement("canvas"); orm.width = w; orm.height = h;
+  const og = orm.getContext("2d"), oid = og.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) { oid.data[i * 4] = 255; oid.data[i * 4 + 1] = rough[i]; oid.data[i * 4 + 2] = metal[i]; oid.data[i * 4 + 3] = 255; }
+  og.putImageData(oid, 0, 0);
+  const ormT = tex(orm, false, rep);
+  return new THREE.MeshPhysicalMaterial({
+    map: tex(col, true, rep), roughnessMap: ormT, metalnessMap: ormT, roughness: 1, metalness: inlagg ? 1 : 0,
+    normalMap: normalTex(hf, w, h, 2.2, rep), normalScale: new THREE.Vector2(0.6, 0.6),
+    clearcoat: klar, clearcoatRoughness: 0.06, envMapIntensity: 1,
+  });
+}
+// apelsinskal i klarlacken: svag normalkarta, upprepad
+const skalNormal = (() => {
+  const w = 512, h = 512, hf = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) hf[y * w + x] = fbm(x / w * 16, y / h * 16, 16, 3);
+  return normalTex(hf, w, h, 6, [48, 6]);
+})();
+// metallens mikrorepor: råhetsvariation
+const metallRuff = pixTex(1024, 128, (u, v) => { const n = fbm(u * 64, v * 2, 64, 3); return [255, (0.85 + 0.3 * n) * 255, 255]; }, { srgb: false, rep: [1, 1] });
+
+// ---------- ljus och miljö ----------
+if (!GRON) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const ms = new THREE.Scene();
+  const vagg = new THREE.Color(S.ljus).multiplyScalar(0.12);
+  ms.add(new THREE.Mesh(new THREE.BoxGeometry(14, 7, 14), new THREE.MeshBasicMaterial({ color: vagg, side: THREE.BackSide })));
+  if (miljoTex) for (const z of [-6.9, 6.9]) {               // rummet speglas i lack och metall (bakom och framför hjulet)
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(12.4, 7), new THREE.MeshBasicMaterial({ map: miljoTex, color: new THREE.Color(1.1, 1.1, 1.1) }));
+    pl.position.set(0, 0.5, z); pl.lookAt(0, 0.5, 0); ms.add(pl);
+  }
+  const PANEL = num("panel", 0.6);                              // Emil 10-29: mindre blänk (var 1)
+  const panel = (w, h, styrka, pos, f = S.ljus) => {          // studions ljuspaneler: ger de långa reflexerna i lacken
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(f).multiplyScalar(styrka * PANEL), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); ms.add(m);
+  };
+  panel(4.0, 1.6, 7, [0, 3.4, 0.6]);       // takpanel rakt ovanför
+  panel(0.7, 3.0, 4, [-3.6, 1.8, 2.6]);    // strip vänster fram
+  panel(0.7, 3.0, 2.5, [3.6, 1.6, 2.4]);   // strip höger fram
+  panel(3.2, 1.1, 5, [0.3, 2.7, -2.6]);    // softbox snett bakom: blanka reflexer på kant, bana och kon sedda ovanifrån
+  panel(2.5, 0.5, 2, [0, 1.2, -3.4]);      // svagt motljus
+  for (let k = 0; k < 6; k++) panel(0.35, 0.35, 9, [-2.5 + k, 3.6, -1.2]); // takspottar: små glintar i guld och kula
+  scene.environment = pmrem.fromScene(ms, 0.015).texture;
+  scene.environmentIntensity = num("env", 1.0);
+  const key = new THREE.DirectionalLight(S.ljus, num("nyckel", 1.6));
+  key.position.set(-1.0, 4.0, 1.2);
+  key.castShadow = true;
+  key.shadow.mapSize.set(num("skugga", 4096), num("skugga", 4096));
+  key.shadow.camera.left = key.shadow.camera.bottom = -1.3;
+  key.shadow.camera.right = key.shadow.camera.top = 1.3;
+  key.shadow.camera.near = 1; key.shadow.camera.far = 8;
+  key.shadow.radius = 3;
+  key.shadow.bias = -0.0002; key.shadow.normalBias = 0.002;
+  scene.add(key);
+  const fyll = new THREE.DirectionalLight("#ffffff", 0.35);
+  fyll.position.set(2, 1.5, 3);
+  scene.add(fyll);
+} else {
+  scene.add(new THREE.HemisphereLight("#ffffff", "#808080", num("himmel", 0.55)));
+  const d = new THREE.DirectionalLight("#ffffff", num("sol", 0.45));
+  d.position.set(-1, 4, 2);
+  scene.add(d);
+}
+
+// ---------- material ----------
+const gronM = () => new THREE.MeshLambertMaterial({ color: GRONT, emissive: GRONT.clone().multiplyScalar(num("gloed", 0.6)) });
+const lack = (c, ruff = 0.3) => new THREE.MeshPhysicalMaterial({ color: c, roughness: ruff, clearcoat: 1, clearcoatRoughness: 0.04,
+  clearcoatNormalMap: skalNormal, clearcoatNormalScale: new THREE.Vector2(0.06, 0.06) });
+let M;
+if (GRON) {
+  M = { lack: gronM(), lack2: gronM(), bana: gronM(), metall: gronM(), kon: gronM(), mork: gronM(), ring: gronM(), ficka: gronM() };
+} else {
+  const metall = new THREE.MeshPhysicalMaterial({ color: S.metall, metalness: 1, roughness: S.mruff, roughnessMap: metallRuff });
+  const skalTra = S.skal === "tra" ? traMaterial(S.skalTra, "langs", { rep: [2, 1] }) : null;
+  M = {
+    lack: skalTra || lack(S.lack),
+    lack2: skalTra || lack(S.lack2, 0.34),
+    bana: traMaterial(S.bana, "langs", { rep: [2, 1], ruff: 0.4 }),
+    kon: traMaterial(S.kon, "sol", { w: 4096, h: 1024, inlagg: S.inlagg || S.metall }),
+    metall,
+    mork: new THREE.MeshStandardMaterial({ color: "#0d0a08", roughness: 0.7 }),
+  };
+}
+const bollMat = GRON
+  ? new THREE.MeshLambertMaterial({ color: "#f4f1ea", emissive: new THREE.Color("#f4f1ea").multiplyScalar(0.55) })
+  : new THREE.MeshPhysicalMaterial({ color: "#f8f6ef", roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.03, sheen: 0.2 });
+
+// sifferring och fickbottnar: u = vinkel medurs, v = 0 ytterkant → 1 innerkant
+function nummerMaterial(medSiffror) {
+  const w = 16384, h = medSiffror ? 360 : 300, cw = w / N;
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  const o = document.createElement("canvas"); o.width = w; o.height = h;    // råhet (G) och metall (B)
+  const og = o.getContext("2d"); og.fillStyle = `rgb(255,${medSiffror ? 115 : 130},0)`; og.fillRect(0, 0, w, h);
+  for (let i = 0; i < N; i++) {
+    const n = WHEEL[i], x0 = (i - 0.5) * cw;
+    g.fillStyle = n === 0 ? S.gron : RED.has(n) ? S.rod : S.svart;
+    for (const dx of [0, w]) g.fillRect(x0 + dx - 1, 0, cw + 2, h);
+    if (medSiffror) {
+      for (const dx of [0, w]) {                                   // guldlinjer mellan facken
+        g.fillStyle = S.metall; g.fillRect(x0 + dx - 9, 0, 18, h);
+        og.fillStyle = "rgb(255,50,255)"; og.fillRect(x0 + dx - 9, 0, 18, h);
+      }
+      g.font = `600 ${h * 0.56}px "${S.font}", Arial, sans-serif`;
+      if ("fontStretch" in g && S.font === "Bahnschrift") g.fontStretch = "semi-condensed";
+      g.textAlign = "center"; g.textBaseline = "middle";
+      og.font = g.font; og.textAlign = "center"; og.textBaseline = "middle";
+      for (const dx of [0, w]) {
+        g.fillStyle = S.siffra; g.fillText(String(n), i * cw + dx, h * 0.5);
+        og.fillStyle = S.siffraMetall ? "rgb(255,60,255)" : "rgb(255,95,0)"; og.fillText(String(n), i * cw + dx, h * 0.5);
+      }
+    }
+  }
+  if (medSiffror) { g.fillStyle = S.metall; g.fillRect(0, 0, w, 10); g.fillRect(0, h - 10, w, 10); og.fillStyle = "rgb(255,50,255)"; og.fillRect(0, 0, w, 10); og.fillRect(0, h - 10, w, 10); }
+  const ormT = tex(o, false);
+  return new THREE.MeshPhysicalMaterial({ map: tex(c, true), roughnessMap: ormT, metalnessMap: ormT, roughness: 1, metalness: 1,
+    clearcoat: medSiffror ? num("ringklar", 0.15) : 0.15, clearcoatRoughness: 0.25 });  // matt lack: ingen bländning på siffrorna
+}
+
+// ---------- geometri ----------
+const rad = (d) => (d * Math.PI) / 180;
+const polar = (r, th) => [-r * Math.sin(rad(th)), r * Math.cos(rad(th))]; // θ medurs sett ovanifrån, 0 = mot kameran
+
+// rotationsyta genom profilpunkter [r, y]; u = vinkel medurs, v längs profilen; sömmen får gemensamma normaler
+function varv(prof, mat, seg = 512) {
+  if (GEO) seg = seg === 256 ? GEO.tornSeg : GEO.seg;
+  const pos = [], uv = [], idx = [];
+  const L = [0]; for (let i = 1; i < prof.length; i++) L.push(L[i - 1] + Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]));
+  for (let j = 0; j <= seg; j++) {
+    const th = (j / seg) * 360;
+    prof.forEach(([r, y], i) => { const [x, z] = polar(r, th); pos.push(x, y, z); uv.push(j / seg, L[i] / L[L.length - 1]); });
+  }
+  const P = prof.length;
+  for (let j = 0; j < seg; j++) for (let i = 0; i < P - 1; i++) {
+    const a = j * P + i, b = (j + 1) * P + i;
+    idx.push(a, a + 1, b, b, a + 1, b + 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const nr = geo.attributes.normal;
+  for (let i = 0; i < P; i++) {
+    const a = i, b = seg * P + i, v = new THREE.Vector3(nr.getX(a) + nr.getX(b), nr.getY(a) + nr.getY(b), nr.getZ(a) + nr.getZ(b)).normalize();
+    nr.setXYZ(a, v.x, v.y, v.z); nr.setXYZ(b, v.x, v.y, v.z);
+  }
+  const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true;
+  return m;
+}
+// mjuk profil genom styrpunkter (svarvade detaljer)
+const mjuk = (pts, n = 160) => new THREE.SplineCurve(pts.map(([r, y]) => new THREE.Vector2(r, y))).getPoints(GEO ? ({ 160: GEO.mjuk, 400: GEO.torn }[n] ?? n) : n).map((p) => [Math.max(0.0001, p.x), p.y]);
+const bage = (cr, cy, rr, a0, a1, n = 10) => Array.from({ length: n + 1 }, (_, i) => { const a = rad(a0 + (a1 - a0) * i / n); return [cr + rr * Math.cos(a), cy + rr * Math.sin(a)]; });
+
+const hjul = new THREE.Group(); scene.add(hjul);
+// skålen (står still): samma silhuett som v1
+hjul.add(varv(mjuk([[0.95, -1.2], [0.955, -0.8], [0.962, -0.66], [1.02, -0.62], [1.042, -0.57], [1.036, -0.52], [1.0, -0.492]], 60), M.lack2));
+hjul.add(varv(mjuk([[1.0, -0.492], [0.97, -0.474], [0.962, -0.42], [0.962, -0.24], [0.97, -0.207]], 50), M.lack2));
+hjul.add(varv([...mjuk([[0.97, -0.207], [0.996, -0.19], [1.013, -0.15], [1.022, -0.09], [1.019, -0.045], [1.006, -0.013], [0.985, 0.0]], 60),
+  [0.96, 0.0], [0.93, 0.0], ...bage(0.912, -0.007, 0.007, 90, 180, 6)], M.lack));
+for (const [r, y, t] of [[1.0, -0.49, 0.008], [0.972, -0.207, 0.006], [0.921, 0.0005, 0.0022]]) {          // guldringar och inlägg i kanten
+  const ring = new THREE.Mesh(GEO ? new THREE.TorusGeometry(r, t, ...GEO.ring) : new THREE.TorusGeometry(r, t, 24, 512), M.metall); ring.rotation.x = Math.PI / 2; ring.position.y = y;
+  ring.castShadow = ring.receiveShadow = true; hjul.add(ring);
+}
+// kulbanan: bakvägg och golv (polerat trä), nedre lutningen, inre kant ner mot rotorn
+hjul.add(varv(mjuk([[0.905, -0.007], [0.899, -0.02], [0.894, -0.036], [0.889, -0.05], [0.879, -0.058], [0.865, -0.062]], 30), M.bana));
+hjul.add(varv([[0.865, -0.062], [0.80, -0.083], [0.765, -0.095], [0.760, -0.098]], M.bana));
+hjul.add(varv([[0.760, -0.098], [0.758, -0.104], [0.757, -0.18]], M.mork));
+// avvisare: polerade romber på nedre lutningen, varannan längs och varannan tvärs, lutade som ytan
+const lut = Math.atan(0.035 / 0.105);
+const ytaY = (r) => -0.062 - (0.865 - r) * (0.036 / 0.105);
+for (let k = 0; k < 8; k++) {
+  const th = k * 45 + 22.5, [x, z] = polar(0.815, th);
+  const grp = new THREE.Group(); grp.position.set(x, ytaY(0.815), z); grp.rotation.y = -rad(th + 90);
+  const lang = k % 2 === 0;
+  const geo = new THREE.OctahedronGeometry(1, 0); geo.scale(lang ? 0.05 : 0.016, 0.011, lang ? 0.016 : 0.045);
+  const d = new THREE.Mesh(geo, M.metall); d.rotation.z = lut; d.position.y = 0.002;
+  d.castShadow = d.receiveShadow = true; grp.add(d); hjul.add(grp);
+}
+
+// rotorn
+const rotor = new THREE.Group(); hjul.add(rotor);
+const R_F0 = 0.648, R_F1 = 0.558, Y_F = -0.147;
+rotor.add(varv(mjuk([[0.754, -0.114], [0.754, -0.105], [0.749, -0.1005], [0.744, -0.1005], [0.740, -0.104]], 24), M.metall)); // rotorns ytterkant
+rotor.add(varv([[0.740, -0.104], [0.652, -0.116]], GRON ? M.ring : nummerMaterial(true)));                                   // sifferringen
+rotor.add(varv([[0.652, -0.116], [0.649, -0.118], [R_F0, -0.143]], M.metall));
+rotor.add(varv([[R_F0, -0.143], [0.626, -0.1465], [0.603, -0.147], [0.58, -0.1465], [R_F1, -0.143]], GRON ? M.ficka : nummerMaterial(false)));
+rotor.add(varv(mjuk([[R_F1, -0.143], [0.556, -0.121], [0.552, -0.1165], [0.546, -0.116], [0.542, -0.118]], 24), M.metall));    // inre fickkant
+rotor.add(varv(mjuk([[0.542, -0.118], [0.45, -0.106], [0.33, -0.09], [0.2, -0.072], [0.13, -0.06], [0.124, -0.058]], 60), M.kon));
+// fackväggar: tunna, rundade, högre ytterst
+const fretForm = new THREE.Shape();
+fretForm.moveTo(R_F1 + 0.001, Y_F - 0.004); fretForm.lineTo(R_F0 + 0.0005, Y_F - 0.004); fretForm.lineTo(R_F0 + 0.0005, -0.1175);
+fretForm.quadraticCurveTo(0.62, -0.1165, 0.59, -0.1185); fretForm.quadraticCurveTo(0.566, -0.12, R_F1 + 0.001, -0.1215); fretForm.closePath();
+const fretGeo = new THREE.ExtrudeGeometry(fretForm, { depth: 0.0026, bevelEnabled: true, bevelThickness: 0.0011, bevelSize: 0.0011, bevelSegments: 3, curveSegments: 12 });
+fretGeo.translate(0, 0, -0.0013);
+for (let i = 0; i < N; i++) {
+  const f = new THREE.Mesh(fretGeo, M.metall); f.rotation.y = -rad((i + 0.5) * STEG + 90);
+  f.castShadow = f.receiveShadow = true; rotor.add(f);
+}
+// tornet: rotationssymmetriskt (armar kan inte stå i samma vinkel varje runda, se README)
+const TORN = {
+  spindel: [[0, -0.06], [0.12, -0.06], [0.122, -0.05], [0.1, -0.04], [0.07, -0.027], [0.05, -0.006], [0.04, 0.03], [0.033, 0.08], [0.031, 0.108],
+    [0.05, 0.122], [0.074, 0.132], [0.075, 0.148], [0.052, 0.157], [0.031, 0.165], [0.026, 0.19], [0.034, 0.2], [0.037, 0.224], [0.029, 0.239], [0.0001, 0.244]],
+  pagod: [[0, -0.06], [0.125, -0.06], [0.128, -0.052], [0.12, -0.044], [0.095, -0.036], [0.07, -0.022], [0.052, 0.0], [0.044, 0.03], [0.04, 0.06],
+    [0.042, 0.075], [0.056, 0.082], [0.058, 0.09], [0.044, 0.096], [0.036, 0.11], [0.034, 0.14], [0.038, 0.15], [0.072, 0.158], [0.078, 0.166],
+    [0.076, 0.176], [0.06, 0.182], [0.036, 0.186], [0.03, 0.2], [0.034, 0.212], [0.036, 0.222], [0.028, 0.232], [0.0001, 0.235]],
+  klassisk: [[0, -0.06], [0.12, -0.06], [0.122, -0.05], [0.1, -0.04], [0.07, -0.026], [0.048, -0.004], [0.036, 0.03], [0.03, 0.08], [0.028, 0.11],
+    [0.044, 0.12], [0.046, 0.13], [0.03, 0.138], [0.022, 0.16], [0.02, 0.18], [0.026, 0.19], [0.036, 0.2], [0.04, 0.215], [0.036, 0.23], [0.024, 0.24], [0.0001, 0.243]],
+};
+const tornProf = mjuk(TORN[Q.get("torn") || S.torn || "spindel"], 400);
+rotor.add(varv(tornProf, M.metall, 256));
+const tornTopp = Math.max(...tornProf.map((p) => p[1]));
+
+rotor.rotation.y = -rad(num("rotor", 0));
+
+// kulan
+const BR = 0.024;
+const boll = new THREE.Mesh(GEO ? new THREE.SphereGeometry(BR, ...GEO.kula) : new THREE.SphereGeometry(BR, 64, 48), bollMat);
+boll.castShadow = boll.receiveShadow = true;
+const B = Q.get("boll") || "ingen";
+if (B !== "ingen") {
+  const [typ, v] = B.split(":");
+  let th, r, y;
+  if (typ === "ficka" || typ === "vinkel") {
+    th = typ === "ficka" ? WHEEL.indexOf(parseInt(v)) * STEG + num("rotor", 0) : parseFloat(v);
+    r = (R_F0 + R_F1) / 2; y = Y_F + BR * 0.98;
+  } else { th = parseFloat(v); r = 0.866; y = -0.062 + BR * 1.02; }
+  const [x, z] = polar(r, th); boll.position.set(x, y, z); hjul.add(boll);
+}
+
+// ---------- kamera ----------
+const KAM = {
+  S1: { elev: 13.3, dist: 3.6, fov: 30, cx: 715, cy: 809, az: -6 },  // passad mot runda 3:s Champagne-platta (±3 px)
+  S3: { elev: 52, dist: 3.0, fov: 30, cx: 960, cy: 480, az: 0 },     // Emil 10-29: lite nedvinklad så hela sifferringen syns (var dist 2,75, cy 560)
+};
+const k = { ...(KAM[Q.get("kam") || "S1"] || KAM.S1) };
+for (const n of ["elev", "dist", "fov", "cx", "cy", "az"]) if (Q.has(n)) k[n] = num(n, k[n]);
+const cam = new THREE.PerspectiveCamera(k.fov, W / H, 0.05, 50);
+const [cx, cz] = polar(k.dist * Math.cos(rad(k.elev)), k.az);
+cam.position.set(cx, k.dist * Math.sin(rad(k.elev)), cz);
+const mal = Q.get("fokus") === "1" && boll.parent ? boll.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3();
+cam.position.add(mal);
+cam.lookAt(mal);
+cam.setViewOffset(W, H, W / 2 - k.cx * (W / 1920), H / 2 - k.cy * (H / 1080), W, H);
+cam.updateProjectionMatrix();
+
+// ---------- rendering ----------
+const SPEL = Q.get("spel") === "1";
+// bakgrunden läggs in EFTER AO-passet (GTAO med scene.background ger trasig bild): blandas in under hjulets alfa
+const Bakom = {
+  uniforms: { tDiffuse: { value: null }, tBak: { value: bakTex } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: "uniform sampler2D tDiffuse, tBak; varying vec2 vUv; void main(){ vec4 f = texture2D(tDiffuse, vUv); vec3 b = texture2D(tBak, vUv).rgb; gl_FragColor = vec4(f.rgb + b * (1.0 - f.a), 1.0); }",
+};
+if (SPEL) {
+  if (bakTex) scene.background = bakTex;
+  window.__hjul = { THREE, scene, cam, renderer, hjul, rotor, boll, polar, rad, KAM, kamera: k, bakTex, miljoTex,
+    konst: { WHEEL, STEG, N, BR, R_F0, R_F1, Y_F, R_FICKA: (R_F0 + R_F1) / 2, SPAR_R: 0.866, SPAR_Y: -0.062, AVVISARE_R: 0.815, ytaY } };
+  document.body.dataset.ready = "1";
+} else if (GRON) {
+  renderer.render(scene, cam);
+} else {
+  const rt = new THREE.WebGLRenderTarget(W * PR, H * PR, { type: THREE.HalfFloatType, samples: 4 });
+  const comp = new EffectComposer(renderer, rt);
+  comp.addPass(new RenderPass(scene, cam));
+  const aoStyrka = num("ao", 1.0);
+  if (aoStyrka > 0) {
+    const ao = new GTAOPass(scene, cam, W * PR, H * PR);
+    ao.blendIntensity = aoStyrka;
+    ao.updateGtaoMaterial({ radius: 0.05, distanceExponent: 1.5, thickness: 0.02, scale: 1.2, samples: 16 });
+    ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 3, samples: 16 });
+    comp.addPass(ao);
+  }
+  if (bakTex) comp.addPass(new ShaderPass(Bakom));
+  const bl = num("dof", 0);
+  if (bl > 0) {
+    const fokusPunkt = boll.parent ? boll.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3();
+    const skarp = num("skarp", cam.position.distanceTo(fokusPunkt));
+    comp.addPass(new BokehPass(scene, cam, { focus: skarp, aperture: bl, maxblur: num("maxblur", 0.006) }));
+  }
+  const gl = num("glans", 0);
+  if (gl > 0) comp.addPass(new UnrealBloomPass(new THREE.Vector2(W * PR, H * PR), gl, 0.35, 0.92));
+  comp.addPass(new OutputPass());
+  comp.render();
+}
+if (!SPEL) {
+window.__png = renderer.domElement.toDataURL("image/png");
+const proj = (x, y, z) => { const p = new THREE.Vector3(x, y, z).project(cam); return [(p.x + 1) / 2 * 1920, (1 - p.y) / 2 * 1080]; };
+window.__info = { kamera: k, stil: STIL, boll: B !== "ingen" ? proj(boll.position.x, boll.position.y, boll.position.z) : null,
+  centrum: proj(0, 0, 0), torn_topp: proj(0, tornTopp, 0),
+  spar: Object.fromEntries([150, 165, 180, 195, 205, 215, 225, 240].map((t) => { const [x, z] = polar(0.866, t); return [t, proj(x, -0.04, z)]; })) };
+document.body.dataset.ready = "1";
+}
+</script>
+</body></html>

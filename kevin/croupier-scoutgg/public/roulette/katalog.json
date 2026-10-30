@@ -1,0 +1,53 @@
+{
+ "kommentar": "Rouletteborden: dealers, hjul, rum och gränser (som DEALERS/ROOMS i kevin-stagings studio.js). Alla sökvägar är absoluta från webbroten. Standard när bordet inte anger något: standard.",
+ "standard": { "dealer": "astrid2", "wheel": "champagne", "room": "champagne", "limit": "rl-motor" },
+ "dealers": {
+  "astrid2": {
+   "namn": "Astrid",
+   "vila": { "fil": "/media/dealers/astrid2/roulette/vila.png", "hojd": 1080, "beskarTopp": 0, "skarm": [34, 202, 68] },
+   "kast": "/media/dealers/astrid2/roulette/kast/kast_s7201.json",
+   "idle": {
+    "mapp": "/media/dealers/astrid2/roulette/idle/",
+    "skarm": [33, 201, 68],
+    "klipp": [
+     "idle_blick_hjul_f73_s8402_gron.mp4",
+     "idle_blick_sida_f73_s8401_gron.mp4", "idle_blick_sida_f73_s8402_gron.mp4",
+     "idle_blinka_f73_s8401_gron.mp4", "idle_blinka_f73_s8402_gron.mp4",
+     "idle_djupt_andetag_f73_s8401_gron.mp4", "idle_djupt_andetag_f73_s8402_gron.mp4",
+     "idle_kavaj_f73_s8401_gron.mp4", "idle_kavaj_f73_s8402_gron.mp4",
+     "idle_le_valkommen_f73_s8401_gron.mp4", "idle_le_valkommen_f73_s8402_gron.mp4",
+     "idle_nick_f73_s8401_gron.mp4", "idle_nick_f73_s8402_gron.mp4",
+     "idle_orhange_f73_s8401_gron.mp4", "idle_orhange_f73_s8402_gron.mp4",
+     "idle_smickrad_f73_s8401_gron.mp4", "idle_smickrad_f73_s8402_gron.mp4"
+    ],
+    "uteslutna": {
+     "idle_f73_s7301_gron.mp4": "ett färgat hjul över det gröna mitt i klippet",
+     "idle_f73_s7302_gron.mp4": "ett färgat hjul över det gröna mitt i klippet",
+     "idle_andas_f73_s8402_gron.mp4": "en bit av axeln blir ett grönt hål i ruta 44–56",
+     "idle_andas_f73_s8401_gron.mp4": "vita streck vid axeln i ruta 48–56",
+     "idle_blick_hjul_f73_s8401_gron.mp4": "armen sticker ner i det gröna hjulet"
+    }
+   },
+   "thumb": "/media/roulette/dealers/astrid2.jpg"
+  }
+ },
+ "wheels": {
+  "champagne": { "namn": "Champagne", "beskrivning": "Cream lacquer, maple and gold", "fil": "/roulette/3d/roulette-hjul-v2.html", "param": { "stil": "champagne" }, "thumb": "/media/roulette/wheels/champagne.jpg" },
+  "klassisk": { "namn": "Classic Black", "beskrivning": "Black piano lacquer, ebony and chrome", "fil": "/roulette/3d/roulette-hjul-v2.html", "param": { "stil": "klassisk", "torn": "pagod" }, "thumb": "/media/roulette/wheels/klassisk.jpg" }
+ },
+ "rooms": {
+  "champagne": { "namn": "Champagne", "s1": "/media/roulette/rooms/champagne/s1.jpg", "hjul": "/media/roulette/rooms/champagne/hjul.png", "thumb": "/media/roulette/rooms/champagne/thumb.jpg",
+   "grad": { "lift": [0.106, 0.047, 0.033], "gain": [1.058, 0.99, 0.925] }, "env": { "S1": 0.5, "hjul": 0.45 } },
+  "smaragd": { "namn": "Emerald", "s1": "/media/roulette/rooms/smaragd/s1.jpg", "hjul": "/media/roulette/rooms/smaragd/hjul.png", "thumb": "/media/roulette/rooms/smaragd/thumb.jpg",
+   "grad": { "lift": [0.018, 0.039, 0.047], "gain": [0.991, 1.007, 0.956] }, "env": { "S1": 0.5, "hjul": 0.45 } },
+  "onyx": { "namn": "Onyx", "s1": "/media/roulette/rooms/onyx/s1.jpg", "hjul": "/media/roulette/rooms/onyx/hjul.png", "thumb": "/media/roulette/rooms/onyx/thumb.jpg",
+   "grad": { "lift": [0.037, 0.03, 0.042], "gain": [1.048, 0.991, 0.944] }, "env": { "S1": 0.5, "hjul": 0.45 } },
+  "penthouse": { "namn": "Penthouse", "s1": "/media/roulette/rooms/penthouse/s1.jpg", "hjul": "/media/roulette/rooms/penthouse/hjul.png", "thumb": "/media/roulette/rooms/penthouse/thumb.jpg",
+   "grad": { "lift": [0.08, 0.033, 0.027], "gain": [1.039, 0.989, 0.99] }, "env": { "S1": 0.5, "hjul": 0.45 } }
+ },
+ "limits": {
+  "rl-motor": { "namn": "Standard", "min": 1, "maxPerBet": 2000, "maxTotal": 10000, "balance": 2500, "chips": [1, 5, 25, 100, 500], "kalla": "motorns LIMITS i rules.mjs" },
+  "rl-classic": { "namn": "Classic", "min": 1, "maxPerBet": 1000, "maxTotal": 10000, "balance": 1000, "chips": [1, 5, 25, 100, 500], "kalla": "ROULETTE_PRESETS i 093275fce (studio-tables.mjs)" },
+  "rl-high": { "namn": "High Roller", "min": 25, "maxPerBet": 25000, "maxTotal": 100000, "balance": 25000, "chips": [25, 100, 500, 1000, 5000], "kalla": "ROULETTE_PRESETS i 093275fce (studio-tables.mjs)" }
+ }
+}

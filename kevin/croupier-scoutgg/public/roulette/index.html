@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- Roulette med AI-dealer (1920×1080). Bordet väljs med ?table=<slug> (Table Studio, /studio/roulette/) eller ?wheel=&room=&dealer=&limit=.
+     Lokalt: node starta.mjs i spelmappen (se README.md). Alla sökvägar är absoluta från webbroten (public/ = kevin-stagings public/). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roulette · Astrid</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="spel.css">
+<script type="importmap">{"imports":{"three":"/roulette/vendor/three/build/three.module.js","three/addons/":"/roulette/vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="scen">
+  <div id="ui"></div>
+  <div id="laddar"><div class="inne">
+    <div class="over">Live roulette · AI dealer</div>
+    <div class="logo">Roulette <b>·</b> Astrid</div>
+    <ul class="lista"><li data-steg="rum">Room</li><li data-steg="astrid">Dealer</li><li data-steg="klipp">Clips</li><li data-steg="hjul">Wheel</li></ul>
+    <div class="stapel"><i></i></div><div class="txt">Opening the studio</div>
+  </div></div>
+</div>
+<script type="module" src="js/spel.mjs"></script>
+</body>
+</html>

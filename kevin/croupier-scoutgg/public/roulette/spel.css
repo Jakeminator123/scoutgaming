@@ -1,0 +1,275 @@
+/* Spelets utseende: satsningsbordet B3v2 ur metodik/design/ui/roulette-satsbord.html (Emils val), gjort interaktivt,
+   plus hjulvyns resultatbricka och insatslist (runda 6/08_spel). Scenen är 1920×1080 och skalas till fönstret. */
+:root{--guld:#e6c88a;--guld2:#b8914b;--ink:#f7f0e2;--dov:rgba(247,240,226,.66);--panel:rgba(38,26,13,.60);--linje:rgba(230,200,138,.30);
+  --serif:"Palatino Linotype",Palatino,Georgia,serif;--sans:"Segoe UI",Arial,sans-serif;--siffra:"Palatino Linotype",Palatino,Georgia,serif;
+  --zw:62px;--cw:48px;--sw:58px;--ch:66px;--dh:50px;--oh:56px;--gap:0px;--fs:34px;--fs2:23px;--ruta:26px;--cr:#951b25;--ck:#1c140d;--cz:#0d5f3b;
+  --cs:transparent;--ct:#f2dba6;--chip:42px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#1a110a,#050302 75%) fixed;color:var(--ink);font-family:var(--sans);user-select:none;-webkit-user-select:none}
+#scen{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:#0b0705}
+#scen>canvas{position:absolute;inset:0;width:1920px;height:1080px;display:block}
+#ui{position:absolute;inset:0}
+.abs{position:absolute}
+.glas{background:var(--panel);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--linje);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+button{all:unset;cursor:pointer}
+button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2px}
+/* ---------- toppen ---------- */
+.titel{left:36px;top:28px;display:flex;align-items:center;gap:16px}
+.titel .logo{font-family:var(--serif);font-size:30px;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,.55)}
+.titel .logo b{color:var(--guld);font-weight:inherit}
+.titel .grans{font-size:16px;color:var(--dov);padding:6px 14px;border-radius:999px}
+.ikoner{right:32px;top:26px;display:flex;gap:10px}
+.ikoner button{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+.ikoner svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:1.8}
+.historik{right:32px;top:84px;display:flex;align-items:center;gap:6px;padding:7px 8px}
+.historik em{font-style:normal;font-size:12px;letter-spacing:.22em;color:var(--dov);padding:0 8px}
+.historik i{font-style:normal;width:40px;height:40px;display:grid;place-items:center;font:600 18px "Segoe UI Semibold","Segoe UI",Arial,sans-serif;border-radius:7px;background:rgba(0,0,0,.32)}
+.historik i.red{color:#ff6b6f}.historik i.black{color:var(--ink)}.historik i.green{color:#4fd394}
+.historik i.senast{background:var(--guld);color:#1d140a;box-shadow:0 0 16px rgba(230,200,138,.7);animation:histIn .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes histIn{0%{transform:translateX(-30px) scale(.6);opacity:0}100%{transform:none;opacity:1}}
+/* dealerns undertext */
+.l3{left:36px;top:600px;padding:14px 26px 14px 18px;border-left:4px solid var(--guld);border-radius:0 14px 14px 0}
+.l3 .vem{font-size:14px;letter-spacing:.24em;text-transform:uppercase;color:var(--guld)}
+.l3 .sag{font-family:var(--serif);font-size:30px;margin-top:2px;white-space:nowrap}
+.l3.ny .sag{animation:sagIn .4s ease-out both}
+@keyframes sagIn{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+/* saldo */
+.planbok{left:36px;top:92px;display:flex;gap:30px;padding:12px 24px}
+.planbok div{display:flex;flex-direction:column}
+.planbok small{font-size:13px;letter-spacing:.18em;color:var(--dov);text-transform:uppercase}
+.planbok strong{font:600 26px var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.planbok strong.upp{color:#ffe7ae;text-shadow:0 0 14px rgba(246,214,140,.8)}
+/* ---------- satsningsytan ---------- */
+.bord{position:relative;display:grid;grid-template-columns:var(--zw) repeat(12,var(--cw)) var(--sw);
+  grid-template-rows:repeat(3,var(--ch)) var(--dh) var(--oh);gap:var(--gap)}
+.f{display:grid;place-items:center;font:700 var(--fs) var(--siffra);position:relative;color:#fcf4e2;font-variant-numeric:tabular-nums;white-space:nowrap;
+  box-shadow:inset 0 0 0 1.5px rgba(224,190,118,.9);border-radius:0;text-shadow:0 2px 0 rgba(0,0,0,.45);transition:filter .45s}
+.f.r{background:var(--cr)}.f.k{background:var(--ck)}.f.z{background:var(--cz);font-size:calc(var(--fs) + 4px);border-radius:80px 0 0 80px/50% 0 0 50%}
+.f.s,.f.d,.f.o{background:var(--cs);font-family:var(--serif);font-size:var(--fs2);letter-spacing:0;color:#f2dba6;text-transform:uppercase}
+.ruta{width:var(--ruta);height:var(--ruta);transform:rotate(45deg);border-radius:3px;display:block}
+.ruta.rod{background:#c21d2b;box-shadow:0 0 0 1.5px rgba(255,255,255,.55)}.ruta.svart{background:#0b0908;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)}
+.f.hov{filter:brightness(1.45) saturate(1.1);box-shadow:inset 0 0 0 2.5px #f8e0a2}
+.f.s.hov,.f.d.hov,.f.o.hov{background:rgba(230,200,138,.18)}
+.lager{position:absolute;inset:0;pointer-events:none;z-index:3}
+.klick{position:absolute;inset:0;z-index:6;cursor:pointer}
+.las .klick{cursor:default}
+.vinst .f.n:not(.vinnare){filter:brightness(.5)}
+.f.vinnare{z-index:2;outline:3px solid #fff1c9;outline-offset:-1px;background:linear-gradient(180deg,#fbe9b8,#d9b263)!important;color:#1d140a!important;text-shadow:none!important;
+  box-shadow:0 0 0 3px rgba(0,0,0,.35),0 0 26px 10px rgba(246,214,140,.9)}
+.f.traff{box-shadow:inset 0 0 0 2px var(--guld);background:rgba(230,200,138,.32)!important;color:#fff}
+.f.landad{z-index:2;box-shadow:inset 0 0 0 3px #f8e0a2,0 0 26px 8px rgba(246,214,140,.75)!important;filter:brightness(1.18)}
+/* marker */
+.marker{position:absolute;width:var(--chip);height:var(--chip);margin:calc(var(--chip)/-2) 0 0 calc(var(--chip)/-2);
+  border-radius:50%;display:grid;place-items:center;font:800 19px var(--sans);color:#fff;letter-spacing:-.02em;text-shadow:0 1px 2px rgba(0,0,0,.75);
+  background:radial-gradient(circle,var(--c) 0 56%,rgba(255,255,255,.92) 56% 60%,transparent 60.5%),
+             repeating-conic-gradient(from 10deg,#f3ece0 0 13deg,var(--c) 13deg 45deg);
+  box-shadow:0 2px 0 rgba(0,0,0,.5),0 4px 0 color-mix(in srgb,var(--c) 55%,#000),0 8px 12px rgba(0,0,0,.55);transition:opacity .45s,filter .45s}
+.marker.ljus{color:#2b241b;text-shadow:none}
+.marker.lang{font-size:15px;letter-spacing:-.04em}
+.marker.langre{font-size:12.5px;letter-spacing:-.05em}
+.lager .marker.ny{animation:lagg .22s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes lagg{0%{transform:translateY(-26px) scale(1.25);opacity:0}100%{transform:none;opacity:1}}
+.marker.vann{z-index:2;box-shadow:0 0 0 3px #f8e3ae,0 0 22px 10px rgba(246,214,140,.95),0 6px 10px rgba(0,0,0,.6);animation:lyser .6s .45s ease-out both}
+.marker.forlorade{opacity:.28;filter:grayscale(1)}
+@keyframes lyser{0%{filter:brightness(1)}50%{filter:brightness(1.6)}100%{filter:brightness(1.3)}}
+/* markerraden */
+.markerrad{right:24px;top:760px;padding:6px 10px;transition:opacity .4s}
+.verktyg{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.verktyg .grupp{display:flex;align-items:center;gap:7px;transition:opacity .3s}
+.verktyg .marker{position:relative;margin:0;--chip:44px;font-size:19px;cursor:pointer;transition:transform .18s,box-shadow .18s}
+.verktyg .marker.lang{font-size:15px}
+.verktyg .marker:hover{transform:translateY(-3px)}
+.verktyg .marker.vald{transform:translateY(-7px);box-shadow:0 0 0 3px var(--guld),0 0 20px rgba(230,200,138,.75),0 10px 16px rgba(0,0,0,.5)}
+.knapp{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dov)}
+.knapp i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--linje);background:rgba(0,0,0,.25);
+  font:700 17px var(--sans);color:var(--ink);font-style:normal;transition:background .2s}
+.knapp:hover i{background:rgba(230,200,138,.18)}
+.knapp svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.knapp.av{opacity:.4;pointer-events:none}
+.grupp.av{opacity:.42;pointer-events:none}
+.spela{height:62px;width:156px;border-radius:31px;display:grid;place-items:center;background:linear-gradient(180deg,#f5e0ab,#cfa75c);color:#1d140a;
+  font:800 20px var(--sans);letter-spacing:.12em;box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.65);white-space:nowrap;transition:filter .2s,transform .12s}
+.spela:hover{filter:brightness(1.08)}
+.spela:active{transform:translateY(1px)}
+.spela.av{background:rgba(20,13,6,.7);color:var(--guld);box-shadow:inset 0 0 0 1.5px var(--guld);letter-spacing:.1em;font-size:17px;pointer-events:none}
+.spela.tom{opacity:.55;pointer-events:none}
+/* bordet i perspektiv (B3v2): försvinningspunkt gemensam med kameran, till vänster om filten */
+.persp{position:absolute;inset:0;perspective:1500px;perspective-origin:1210px 900px;pointer-events:none;transition:opacity .45s}
+.persp>*{pointer-events:auto}
+.filt2{position:absolute;right:16px;bottom:16px;transform:rotateX(48deg);transform-origin:50% 100%;padding:18px 20px;border-radius:26px;
+  background:radial-gradient(ellipse 90% 110% at 45% 8%,#57381f,#2d1b0d 72%),#2d1b0d;border:3px solid #dcb86e;
+  box-shadow:inset 0 0 0 7px #23150a,inset 0 0 0 9px rgba(220,184,110,.6),inset 0 0 70px rgba(0,0,0,.5)}
+.filt2::after{content:"";position:absolute;inset:0;border-radius:26px;pointer-events:none;opacity:.2;mix-blend-mode:overlay;
+  background:repeating-radial-gradient(circle at 30% 40%,rgba(255,255,255,.35) 0 1px,transparent 1px 3px)}
+.kant2{position:absolute;right:16px;bottom:1px;height:17px;border-radius:0 0 20px 20px;
+  background:linear-gradient(180deg,#f6dc98,#b98a3e 40%,#5a3d17 85%,#2a1a08);box-shadow:0 12px 26px rgba(0,0,0,.65)}
+/* pjäsen */
+.pjas{position:absolute;z-index:20;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));animation:pjasNed .72s cubic-bezier(.25,.8,.25,1) both}
+.pjas svg{width:100%;height:100%;display:block;overflow:visible}
+.pjas .glint{animation:glint .6s .78s ease-out both}
+.pjasskugga{position:absolute;width:150px;height:84px;margin:-42px 0 0 -75px;border-radius:50%;z-index:4;transform-origin:25% 25%;
+  background:radial-gradient(closest-side,rgba(8,4,0,.8),rgba(8,4,0,.42) 50%,transparent);filter:blur(3px);animation:skuggaIn .72s cubic-bezier(.25,.8,.25,1) both}
+.pjaskontakt{position:absolute;width:64px;height:44px;margin:-22px 0 0 -32px;border-radius:50%;z-index:4;
+  background:radial-gradient(closest-side,rgba(6,3,0,.8),transparent);filter:blur(1.5px);animation:skuggaIn .72s cubic-bezier(.25,.8,.25,1) both}
+.pjasfot{position:absolute;width:0;height:0}
+.pjas.bort,.pjasskugga.bort,.pjaskontakt.bort{animation:pjasUpp .4s ease-in both}
+@keyframes pjasNed{0%{transform:translateY(-150px);opacity:0}30%{opacity:1}80%{transform:translateY(3px)}100%{transform:translateY(0)}}
+@keyframes pjasUpp{0%{transform:none;opacity:1}100%{transform:translateY(-120px);opacity:0}}
+@keyframes skuggaIn{0%{opacity:0;transform:scale(2.4) translate(26px,18px);filter:blur(12px)}100%{opacity:1;transform:none;filter:blur(3px)}}
+@keyframes glint{0%{transform:skewX(-18deg) translateX(0)}100%{transform:skewX(-18deg) translateX(100px)}}
+/* vinstkortet */
+.vinstkort{left:40px;top:214px;width:430px;padding:22px 26px;animation:inGlid .5s cubic-bezier(.2,.8,.2,1) both}
+.vinstkort.bort{animation:utGlid .35s ease-in both}
+.vinstkort .hu{display:flex;gap:18px;align-items:center}
+.nr{width:96px;height:96px;border-radius:12px;display:grid;place-items:center;font:700 56px var(--siffra);color:#fff;border:3px solid var(--guld);
+  box-shadow:0 0 26px rgba(230,200,138,.6)}
+.nr.black{background:#120e0b}.nr.red{background:#a3141f}.nr.green{background:#0e6b43}
+.egen{font-size:15px;letter-spacing:.18em;color:var(--dov);text-transform:uppercase;line-height:1.65}
+.egen b{color:var(--ink);font-weight:600}
+.du{font-size:15px;letter-spacing:.3em;color:var(--guld);text-transform:uppercase}
+.vinstkort .du{margin-top:18px}
+.summa{font:400 58px/1.05 var(--serif);color:#fff6df;white-space:nowrap;font-variant-numeric:tabular-nums}
+.vinstkort ul{list-style:none;margin-top:14px;border-top:1px solid var(--linje);padding-top:10px}
+.vinstkort li{display:flex;justify-content:space-between;gap:16px;font-size:18px;padding:3px 0;font-variant-numeric:tabular-nums}
+.vinstkort li span{color:var(--dov)}
+.vinstkort .netto{margin-top:8px;font-size:15px;color:var(--dov);letter-spacing:.06em}
+.vinstkort.miste .summa{font-size:28px;color:var(--dov);margin-top:14px;white-space:normal}
+@keyframes inGlid{0%{opacity:0;transform:translateX(-40px)}100%{opacity:1;transform:none}}
+@keyframes utGlid{0%{opacity:1;transform:none}100%{opacity:0;transform:translateX(-30px)}}
+/* ---------- hjulvyn: resultatbrickan och insatslisten ---------- */
+.resultat{left:50%;top:60px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:14px;animation:brickaIn .55s cubic-bezier(.2,.8,.2,1) both}
+.resultat.bort{animation:brickaUt .4s ease-in both}
+.resultat .rad{display:flex;align-items:center}
+.resultat .gr{width:90px;height:108px;display:grid;place-items:center;font:600 44px "Segoe UI Semibold","Segoe UI",sans-serif;color:#fff;background:rgba(32,22,12,.82);
+  border:1px solid var(--linje)}
+.resultat .gr.v{border-radius:14px 0 0 14px;border-right:0}.resultat .gr.h{border-radius:0 14px 14px 0;border-left:0}
+.resultat .gr.red{color:#ff8a8d}.resultat .gr.green{color:#5fe0a4}
+.resultat .stor{width:168px;height:168px;border-radius:16px;display:grid;place-items:center;font:700 92px "Segoe UI Semibold","Segoe UI",sans-serif;color:#fff;
+  border:4px solid #f5dfa8;box-shadow:0 0 34px rgba(246,214,140,.65),0 12px 30px rgba(0,0,0,.5);z-index:1}
+.resultat .stor.red{background:linear-gradient(180deg,#c42232,#9a1220)}.resultat .stor.black{background:linear-gradient(180deg,#25201b,#0c0a08)}
+.resultat .stor.green{background:linear-gradient(180deg,#139058,#0b5e39)}
+.resultat .egen2{padding:10px 28px;border-radius:12px;background:rgba(32,22,12,.82);border:1px solid var(--linje);font:500 24px var(--sans);letter-spacing:.24em;text-transform:uppercase}
+.resultat .vbox{padding:12px 44px;border-radius:14px;background:rgba(32,22,12,.86);border:1px solid var(--linje);text-align:center;animation:vboxIn .5s .45s cubic-bezier(.2,.8,.2,1) both}
+.resultat .vbox small{display:block;font-size:16px;letter-spacing:.3em;color:var(--guld);text-transform:uppercase}
+.resultat .vbox strong{font:400 56px/1.1 var(--serif);color:#fff6df;font-variant-numeric:tabular-nums}
+@keyframes brickaIn{0%{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.96)}100%{opacity:1;transform:translateX(-50%)}}
+@keyframes vboxIn{0%{opacity:0;transform:translateY(-10px) scale(.96)}100%{opacity:1;transform:none}}
+@keyframes brickaUt{0%{opacity:1}100%{opacity:0}}
+.insatsbar{right:32px;bottom:28px;display:flex;align-items:center;gap:22px;padding:14px 16px 14px 26px;transition:opacity .45s}
+.insatsbar em{font-style:normal;font-size:14px;letter-spacing:.22em;color:var(--dov)}
+.insatsbar .poster{display:flex;gap:18px;font-size:19px}
+.insatsbar .poster b{color:var(--guld);font-weight:600}
+.insatsbar .stopp{height:54px;padding:0 28px;border-radius:27px;display:grid;place-items:center;color:var(--guld);box-shadow:inset 0 0 0 1.5px var(--guld);
+  background:rgba(20,13,6,.7);font:800 17px var(--sans);letter-spacing:.14em}
+/* vyerna: satsningsbordet syns i spelvyn, insatslisten i hjulvyn */
+.vyS1,.vyHjul,.l3,.resultat{transition:opacity .45s ease .3s}   /* in: mitt i övertoningen */
+.dold{opacity:0!important;pointer-events:none!important;transition:opacity .25s ease 0s}   /* ut: direkt */
+/* laddningen */
+#laddar{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#3a2614,#120b05 70%);z-index:50;transition:opacity .6s}
+#laddar .inne{text-align:center}
+#laddar .logo{font-family:var(--serif);font-size:54px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+#laddar .logo b{color:var(--guld);font-weight:inherit}
+#laddar .stapel{width:360px;height:3px;margin:34px auto 14px;background:rgba(230,200,138,.18);border-radius:2px;overflow:hidden}
+#laddar .stapel i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b8914b,#f8e6b6);transition:width .3s}
+#laddar .txt{font-size:14px;letter-spacing:.3em;color:var(--dov);text-transform:uppercase}
+#laddar.klar{opacity:0;pointer-events:none}
+/* övertoningen mellan kamerorna sker i WebGL; UI tonas med samma tid */
+#fps{position:absolute;left:8px;bottom:6px;font:12px monospace;color:#9f9;z-index:60;text-shadow:0 0 3px #000}
+/* ---------- runda 3: knapparna i topplistan, panelerna, gråade valörer, fyll på, laddningen ---------- */
+.ikoner button{cursor:pointer;transition:background .2s,box-shadow .2s}
+.ikoner button:hover{background:rgba(70,48,24,.75)}
+.ikoner button.aktiv{box-shadow:inset 0 0 0 1.5px var(--guld)}
+.ikoner button.avstangd svg{stroke:#c9a98a;opacity:.75}
+.valor.av{opacity:.3;filter:grayscale(.8);cursor:not-allowed}
+.valor.av .marker:hover{transform:none}
+.l3 .fyll{display:none;margin-top:10px;padding:9px 18px;border-radius:20px;background:linear-gradient(180deg,#f5e0ab,#cfa75c);color:#1d140a;font:700 15px var(--sans);letter-spacing:.06em;cursor:pointer}
+.l3.tomt .fyll{display:inline-block}
+.paneler{position:absolute;inset:0;z-index:40;background:rgba(10,6,3,.45);display:grid;place-items:center;transition:opacity .25s}
+.paneler.dold{opacity:0;pointer-events:none}
+.panel{position:relative;width:720px;max-height:900px;overflow:auto;padding:30px 38px 28px;background:rgba(30,20,10,.88);border-radius:18px}
+.panel .stang{position:absolute;right:16px;top:12px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:300 30px var(--sans);color:var(--ink);cursor:pointer}
+.panel .stang:hover{background:rgba(230,200,138,.15)}
+.panel h2{font:400 34px var(--serif);letter-spacing:.04em;color:#fff6df;margin-bottom:8px}
+.panel h3{font:600 13px var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--guld);margin-bottom:10px}
+.panel .ingress{font-size:17px;color:var(--dov);line-height:1.5;margin-bottom:18px}
+.panel .not{font-size:14px;color:var(--dov);line-height:1.5;margin-top:16px}
+.panel table{width:100%;border-collapse:collapse;font-size:18px}
+.panel th{text-align:left;font:600 12px var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--guld);padding:6px 4px;border-bottom:1px solid var(--linje)}
+.panel td{padding:8px 4px;border-bottom:1px solid rgba(230,200,138,.12)}
+.panel td:nth-child(2),.panel th:nth-child(2){text-align:center}
+.panel td:last-child,.panel th:last-child{text-align:right;font-variant-numeric:tabular-nums;color:#fff6df}
+.panel .hk{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}
+.panel .kn{display:inline-grid;place-items:center;width:52px;height:58px;margin:0 8px 6px 0;border-radius:9px;font:600 22px "Segoe UI Semibold","Segoe UI",sans-serif;background:rgba(0,0,0,.35);border:1px solid var(--linje)}
+.panel .kn small{font:500 11px var(--sans);color:var(--dov);margin-top:-6px}
+.panel .kn.red{color:#ff8a8d}.panel .kn.green{color:#5fe0a4}
+.panel .fordel{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:14px;margin:10px 0}
+.panel .fordel span{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--dov)}
+.panel .bar{display:flex;height:30px;border-radius:7px;overflow:hidden;background:rgba(0,0,0,.3)}
+.panel .bar i{display:grid;place-items:center;font:600 13px var(--sans);font-style:normal;color:#fff;white-space:nowrap;overflow:hidden}
+.panel .bar .rod{background:#a3141f}.panel .bar .svart{background:#17110c}.panel .bar .noll{background:#0e6b43}
+.panel .bar .udda,.panel .bar .lag{background:#6b4b22}.panel .bar .jamnt,.panel .bar .hog{background:#3c2a14}
+.panel .senaste100{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;margin-top:20px}
+.panel .senaste100 i{font:600 12px "Segoe UI Semibold",sans-serif;font-style:normal;text-align:center;padding:4px 0;border-radius:3px;background:rgba(0,0,0,.35)}
+.panel .senaste100 i.red{color:#ff8a8d}.panel .senaste100 i.green{color:#5fe0a4}
+.panel .rad{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid rgba(230,200,138,.12);font-size:18px;flex-wrap:wrap}
+.panel .rad>span{width:150px;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--dov)}
+.panel input[type=range]{width:300px;accent-color:#d9b263}
+.panel input[type=checkbox],.panel input[type=radio]{accent-color:#d9b263;width:20px;height:20px}
+.panel .val{display:flex;align-items:center;gap:8px;margin-right:16px;cursor:pointer}
+#laddar .over{font:600 13px var(--sans);letter-spacing:.4em;text-transform:uppercase;color:var(--guld);margin-bottom:14px}
+#laddar .lista{list-style:none;display:flex;gap:34px;justify-content:center;margin-top:34px;font:500 15px var(--sans);letter-spacing:.2em;text-transform:uppercase;color:rgba(247,240,226,.35)}
+#laddar .lista li{display:flex;align-items:center;gap:10px;transition:color .3s}
+#laddar .lista li::before{content:"";width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(230,200,138,.45);transition:all .3s}
+#laddar .lista li.pagar{color:var(--dov)}
+#laddar .lista li.pagar::before{border-color:var(--guld);box-shadow:0 0 10px rgba(230,200,138,.6);animation:puls 1s ease-in-out infinite alternate}
+#laddar .lista li.klar{color:var(--ink)}
+#laddar .lista li.klar::before{background:var(--guld);border-color:var(--guld)}
+@keyframes puls{from{opacity:.4}to{opacity:1}}
+/* ---------- runda 4: guldpjäsen och utbetalningen i marker ---------- */
+.pjas.guld{z-index:22;filter:drop-shadow(0 2px 2px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,214,140,.25));transition:translate .45s cubic-bezier(.3,.8,.3,1) var(--lyftDelay,0ms),left .45s cubic-bezier(.3,.8,.3,1) var(--lyftDelay,0ms)}
+.pjas.guld img{width:100%;height:100%;display:block;user-select:none}
+.pjas.guld.lyft{translate:0 var(--lyft)}
+.marker.gomd{opacity:0!important;transition:none}
+.utbetalning{position:absolute;inset:0;pointer-events:none}   /* ingen egen z-ordning: staplarna läggs runt pjäsen (z 20) */
+.vstapel{position:absolute;width:0;height:0}
+.belopp{z-index:23}
+.vstapel .sm{position:absolute;left:calc(var(--d)/-2);width:var(--d);height:calc(var(--d)*.6);margin-bottom:calc(var(--d)*-.3);border-radius:50%;
+  background:radial-gradient(ellipse at center,var(--c) 0 52%,rgba(255,255,255,.9) 52% 56%,transparent 56.5%),
+             repeating-conic-gradient(from 10deg,#f3ece0 0 13deg,var(--c) 13deg 45deg);
+  box-shadow:0 calc(var(--d)*.07) 0 color-mix(in srgb,var(--c) 62%,#000),0 calc(var(--d)*.09) 0 color-mix(in srgb,var(--c) 40%,#000),0 calc(var(--d)*.12) 7px rgba(0,0,0,.55)}
+.vstapel .sm.in{animation:betala .34s cubic-bezier(.2,.85,.3,1.15) both}
+@keyframes betala{0%{transform:translateY(-70px);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+.belopp{position:absolute;display:flex;flex-direction:column;align-items:flex-start;padding:4px 10px 5px;border-radius:9px;white-space:nowrap;
+  background:linear-gradient(180deg,#f8e6b0,#d2a557);color:#24170a;box-shadow:0 4px 12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.7);
+  animation:beloppIn .35s ease-out both}
+.belopp b{font:800 17px/1.05 "Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.belopp small{font:700 11px/1.1 "Segoe UI",sans-serif;color:#5a3c12;letter-spacing:.02em}
+@keyframes beloppIn{0%{opacity:0;transform:translateY(6px) scale(.9)}100%{opacity:1;transform:none}}
+.vstapel.bort,.belopp.bort{animation:utTona .35s ease-in both}
+@keyframes utTona{to{opacity:0}}
+.vstapel .sm b{position:absolute;inset:0;display:grid;place-items:center;font:800 calc(var(--d)*.34) "Segoe UI",sans-serif;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);transform:scaleY(1.45)}
+.vstapel .sm.ljus b{color:#2b241b;text-shadow:none}
+.vstapel .sm.topp{box-shadow:0 calc(var(--d)*.07) 0 color-mix(in srgb,var(--c) 62%,#000),0 calc(var(--d)*.09) 0 color-mix(in srgb,var(--c) 40%,#000),0 calc(var(--d)*.12) 7px rgba(0,0,0,.55),0 0 0 2px #f8e3ae,0 0 16px 4px rgba(246,214,140,.7)}
+.vstapel .plus{position:absolute;left:0;transform:translateX(-50%);font:800 18px "Segoe UI",sans-serif;color:#ffe9b0;text-shadow:0 1px 3px #000,0 0 10px rgba(246,214,140,.8);white-space:nowrap;animation:plusUpp 1.2s ease-out both}
+@keyframes plusUpp{0%{opacity:0;transform:translate(-50%,8px)}15%{opacity:1}60%{opacity:1}100%{opacity:0;transform:translate(-50%,-30px);visibility:hidden}}
+
+/* ---------- runda 4b: besked i stället för dealerns textruta, pjäsen 20 % mindre, bordet i hjulvyn ---------- */
+.l3{display:none}
+.besked{right:24px;top:690px;display:flex;align-items:center;gap:14px;padding:10px 18px;border-radius:12px;font:600 17px var(--sans);color:#fff3d6;z-index:30;transition:opacity .3s}
+.besked.ny{animation:sagIn .3s ease-out both}
+.besked .fyll{display:none;margin:0}
+.besked.tomt .fyll{display:inline-block}
+.pjasskugga{width:120px;height:67px;margin:-34px 0 0 -60px}
+.pjaskontakt{width:51px;height:35px;margin:-18px 0 0 -26px}
+@keyframes pjasNed{0%{transform:translateY(-120px);opacity:0}30%{opacity:1}80%{transform:translateY(2px)}100%{transform:translateY(0)}}
+/* hjulvyn (S3 och närbilden): bordet fälls bakåt runt nederkanten och krymper mot hörnet nere till höger */
+.filt2,.kant2{transform-origin:100% 100%;transition:transform .7s cubic-bezier(.45,0,.25,1)}
+.hjulvy .filt2{transform:rotateX(64deg) scale(.66)}
+.hjulvy .kant2{transform:scale(.66,.5)}
+.markerrad,.utbetalning{transition:opacity .35s}
+.hjulvy .markerrad,.hjulvy .utbetalning,.hjulvy .besked{opacity:0;pointer-events:none}
+.hjulvy .klick{pointer-events:none}
+
+/* runda 5: totalskylten per vinnande fält (ingen text på markerna), kompakt guld */
+.belopp{padding:3px 8px 4px;border-radius:7px;min-height:26px;justify-content:center}
+.belopp b{font:800 15px/1.1 "Segoe UI",sans-serif}

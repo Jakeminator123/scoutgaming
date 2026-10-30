@@ -1,0 +1,44 @@
+{
+ "namn": "s7201 (H3 v7)",
+ "klipp": "kast_s7201_gron.mp4",
+ "sparning": "kast_s7201_kula.json",
+ "fps": 24,
+ "rutor": 90,
+ "bredd": 1920,
+ "hojd": 1088,
+ "beskarTopp": 4,
+ "skarm": [
+  33,
+  201,
+  68
+ ],
+ "kontrakt": {
+  "event": "roulette.wheel-start",
+  "durationMs": 3750,
+  "wheelImpulseMs": 700,
+  "ballReleaseMs": 2167
+ },
+ "spel": {
+  "slappTheta": 158,
+  "slappFart": 300,
+  "inkast": {
+   "xy": [
+    641,
+    796
+   ],
+   "t": 2146,
+   "hojd": -0.04,
+   "ms": 150
+  },
+  "banFriktion": 0.5
+ },
+ "matning": {
+  "kulaIFickan": "ruta 0–14 vid (866, 806), samma läge som 3D-kulan vid θ 205",
+  "plock": "ruta ~12 (0,5 s)",
+  "torn": "handen vid tornet ruta 12–26, vridningen ruta 16–22 (0,67–0,92 s)",
+  "slapp": "kulan syns sist i handen ruta 51 vid (643, 794); ruta 52 är den borta (H3:s kula är borttagen i klippet)",
+  "h3Kulan": "originalets kula (spårningen) ruta 53 (442, 824), 54 (398, 834), 55 (366, 847): ca 40 px per ruta, 55–75 px innanför 3D-hjulets kulbana",
+  "overtagning": "granskad ruta för ruta 2,0–2,4 s: 3D-kulan börjar där klippets kula syns sist (ruta 51) och rör sig med banans skärmfart, så den fortsätter rörelsen i stället för att stanna upp (släpp 2125 gav dubbel kula, fast handpunkt gav ett stillastående ögonblick)",
+  "banFriktion": "0,5: luft- och rullmotståndet på banan halverat (runda 4, Emil: längre från kast till vinnare). Kulan går ca 6 varv i stället för 3, och det tar ca 5,3 s längre från släppet till vila. Släpp och fart från klippet är oförändrade."
+ }
+}

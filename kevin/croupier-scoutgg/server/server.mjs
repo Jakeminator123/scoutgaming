@@ -27,6 +27,7 @@ import { createDealerMemory } from './dealer-memory.mjs';
 import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useCartesia, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
+import { createRouletteRoutes } from "./roulette-routes.mjs";
 import { createBoSession } from "./bo-session.mjs";
 import { createDemoGate } from "./demo-gate.mjs";
 import { createStudioActivity, sidOf } from "./studio-activity.mjs";
@@ -70,7 +71,7 @@ const MAINTENANCE_DEFAULT = "We are currently doing maintenance work. The dealer
 // The dealers' memory of each visitor lives next to the table database.
 // A studio slug never takes over a room people already play at (the public "astrid" room included).
 const activity = createStudioActivity(path.join(path.dirname(tableDb), "studio-activity.sqlite"), tableDb);   // per sign-in: studio-activity.mjs
-const studioTables = createStudioTables(path.join(path.dirname(tableDb), "studio-tables.json"), { reserved: slug => slug === "astrid" || shared.hasRoom(slug) });
+const studioTables = createStudioTables(path.join(path.dirname(tableDb), "studio-tables.json"), { reserved: slug => slug === "astrid" || shared.hasRoom(slug) || Boolean(roulette.tables.get(slug)) });
 const dealerMemory = createDealerMemory(path.join(path.dirname(tableDb), "dealer-memory.sqlite"));
 const safetyAudit=createSafetyAudit(tableDb);
 const chatLimit=createRateLimit();
@@ -447,7 +448,7 @@ async function welcomeGuest({session,name}) {
 function randomId(){return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 
 // ------------------------------------------------------------------ http ---
-const TYPES = { ".mp3": "audio/mpeg", '.wav': 'audio/wav', ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+const TYPES = { ".mp3": "audio/mpeg", '.wav': 'audio/wav', ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
 
 /**
@@ -619,6 +620,7 @@ async function api(req, res, route) {
     } else if (req.method !== "GET") return json(res, 405, { error: "Use GET or POST" });
     return json(res, 200, { runpod: Boolean(runpodKey()), elevenlabs: Boolean(process.env.ELEVENLABS_VIDEO_KEY), lipsync: rorlig ? rorlig.status() : null });
   }
+  if (await roulette.api(req, res, route)) return;
   if (route === "studio/table") {
     if (req.method === "GET") {
       const t = studioTables.get(new URL(req.url, "http://x").searchParams.get("slug") ?? "");
@@ -693,6 +695,12 @@ const DEMO_GATE_STRICT = process.env.DEMO_GATE_STRICT === "1";
 const strictDenied = res => { res.writeHead(401, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
   const href = demoGate.passwordPage.replace(/[<>"&]/g, "");
   res.end(`<!doctype html><meta charset="utf-8"><title>Sign in</title><p>Enter the demo password first: <a href="${href}">${href}</a></p>`); };
+// Roulette (Emil 30 Oct): its own Table Studio, tables (roulette-tables.json beside studio-tables.json), share links and
+// game page, all in server/roulette-routes.mjs; the blackjack's routes, tables and page policy are untouched.
+const roulette = createRouletteRoutes({ publicDir: PUBLIC, tablesFile: path.join(path.dirname(tableDb), "roulette-tables.json"),
+  reserved: slug => slug === "astrid" || shared.hasRoom(slug) || Boolean(studioTables.get(slug)), isOtherTable: slug => Boolean(studioTables.get(slug)),
+  sendFile, json, body, bo, sameOrigin, apiLimit, clientAddress, gate: demoGate, strict: DEMO_GATE_STRICT, denied: strictDenied,
+  onCreated: (req, who, t) => activity.log({ user: who.user, sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: "table.created", table: t.slug, detail: { name: t.name, dealer: t.dealer, room: t.room, game: "roulette", wheel: t.wheel } }) });
 const MEDIA_ORIGIN = /^https:\/\/[a-z0-9.-]+$/.test(process.env.MEDIA_BASE_URL ?? "") ? " " + process.env.MEDIA_BASE_URL : "";
 const http = createServer((req, res) => {
   handleHttp(req, res).catch(e => {
@@ -732,6 +740,7 @@ async function handleHttp(req, res) {
     try{if(statSync(file).mtimeMs<Date.now()-86400000)return json(res,404,{error:'Expired'});}catch{return json(res,404,{error:'Not found'});}
     res.setHeader('Cache-Control','private, no-store');return sendFile(req,res,file);
   }
+  if (await roulette.http(req, res)) return;
   // The demo starts at the Table Studio sign-in (John's flow: login, build, ready, play). Every game link carries
   // a query (/t/<slug> redirects to /?dealer=…&session=…), so only the bare address moves.
   if(p==="/"&&!new URL(req.url,"http://x").search){res.writeHead(302,{Location:"/studio/","Cache-Control":"no-store"});res.end();return;}
